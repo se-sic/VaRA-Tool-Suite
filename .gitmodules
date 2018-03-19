@@ -1,0 +1,3 @@
+[submodule "extern/benchbuild"]
+	path = extern/benchbuild
+	url = https://github.com/PolyJIT/benchbuild.git
