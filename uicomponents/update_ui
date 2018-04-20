@@ -1,0 +1,4 @@
+#!/bin/bash
+
+pyuic5 -x MainWindow.ui -o ../varats/gui/ui_MainWindow.py
+pyuic5 -x ExampleView.ui -o ../varats/gui/views/ui_ExampleView.py
