@@ -2,8 +2,8 @@
 VaRA-TS MainWindow
 """
 
-from gui.ui_MainWindow import Ui_MainWindow
-from gui.views.example_view import ExampleView
+from varats.gui.ui_MainWindow import Ui_MainWindow
+from varats.gui.views.example_view import ExampleView
 
 from PyQt5.QtWidgets import QMainWindow, QWidget
 
