@@ -34,14 +34,18 @@ class Ui_MainWindow(object):
         self.menuView.setObjectName("menuView")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
+        self.statusbar.setEnabled(True)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
         self.actionQuit = QtWidgets.QAction(MainWindow)
         self.actionQuit.setObjectName("actionQuit")
         self.actionExampleView = QtWidgets.QAction(MainWindow)
         self.actionExampleView.setObjectName("actionExampleView")
+        self.actionCR_BarView = QtWidgets.QAction(MainWindow)
+        self.actionCR_BarView.setObjectName("actionCR_BarView")
         self.menuFile.addAction(self.actionQuit)
         self.menuView.addAction(self.actionExampleView)
+        self.menuView.addAction(self.actionCR_BarView)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuView.menuAction())
 
@@ -58,6 +62,7 @@ class Ui_MainWindow(object):
         self.actionQuit.setText(_translate("MainWindow", "Quit"))
         self.actionQuit.setShortcut(_translate("MainWindow", "Ctrl+Q"))
         self.actionExampleView.setText(_translate("MainWindow", "ExampleView"))
+        self.actionCR_BarView.setText(_translate("MainWindow", "CR-BarView"))
 
 
 if __name__ == "__main__":

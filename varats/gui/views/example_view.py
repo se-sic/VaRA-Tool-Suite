@@ -22,3 +22,9 @@ class ExampleView(QWidget):
         Setup ExampleView
         """
         self.ui_mw.setupUi(self)
+
+    def clean(self):
+        """
+        Clean up
+        """
+        pass
