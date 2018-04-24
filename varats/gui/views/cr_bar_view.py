@@ -1,11 +1,11 @@
+"""
+Module to manage the CommitReport BarView
+"""
+
+from PyQt5.QtWidgets import QWidget, QFileDialog
 
 from varats.gui.views.ui_CRBarView import Ui_Form
-from varats.data.commit_report import CommitReport, generate_cfg_barplot
-
-from PyQt5.QtWidgets import QWidget
-
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-import matplotlib.pyplot as plt
+from varats.data.commit_report import CommitReport
 
 
 class CRBarView(QWidget):
@@ -17,11 +17,7 @@ class CRBarView(QWidget):
         super().__init__()
         self.ui_mw = Ui_Form()
 
-        self.commit_report = CommitReport(
-            "")
-
-        self.fig = generate_cfg_barplot(self.commit_report)
-        self.canvas = FigureCanvas(self.fig)
+        self.commit_report = None
 
         self.setup_ui()
 
@@ -30,11 +26,20 @@ class CRBarView(QWidget):
         Setup CR-BarView
         """
         self.ui_mw.setupUi(self)
-        self.ui_mw.gridLayout.addWidget(self.canvas)
+        self.ui_mw.loadCRButton.clicked.connect(self.load_commit_report)
 
-    def clean(self):
+    def load_commit_report(self):
         """
-        Clean up View, e.g., figures
+        Load new CommitReport from file_path.
         """
-        if self.fig is not None:
-            plt.close(self.fig)
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Load CommitReport file", "",
+            "Yaml Files (*.yaml *.yml);;All Files (*)", options=options)
+
+        if self.commit_report is None or \
+                (self.commit_report is not None
+                 and self.commit_report.path != file_path):
+            self.commit_report = CommitReport(file_path)
+            self.ui_mw.widget.update_plot(self.commit_report)

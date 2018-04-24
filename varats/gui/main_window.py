@@ -6,7 +6,7 @@ from varats.gui.ui_MainWindow import Ui_MainWindow
 from varats.gui.views.example_view import ExampleView
 from varats.gui.views.cr_bar_view import CRBarView
 
-from PyQt5.QtWidgets import QMainWindow, QWidget
+from PyQt5.QtWidgets import QMainWindow
 
 class MainWindow(object):
     """
@@ -47,7 +47,6 @@ class MainWindow(object):
     def __remove_tab(self, index):
         tab = self.ui_mw.tabWidget.widget(index)
         if tab is not None:
-            tab.clean()
             self.views.remove(tab)
 
             self.ui_mw.tabWidget.removeTab(index)

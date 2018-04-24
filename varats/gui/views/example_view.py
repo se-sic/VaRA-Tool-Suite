@@ -2,9 +2,10 @@
 An ExampleView that shows how graphs can be shown with VaRA-TS
 """
 
+from PyQt5.QtWidgets import QWidget
+
 from varats.gui.views.ui_ExampleView import Ui_example_view
 
-from PyQt5.QtWidgets import QWidget
 
 class ExampleView(QWidget):
     """
@@ -22,9 +23,3 @@ class ExampleView(QWidget):
         Setup ExampleView
         """
         self.ui_mw.setupUi(self)
-
-    def clean(self):
-        """
-        Clean up
-        """
-        pass
