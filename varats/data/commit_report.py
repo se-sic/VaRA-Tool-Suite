@@ -52,6 +52,14 @@ class RegionToRegionEdge(object):
     def __str__(self):
         return "{} -> {}".format(self._from, self._to)
 
+    @property
+    def edge_from(self):
+        return self._from
+
+    @property
+    def edge_to(self):
+        return self._to
+
 
 class FunctionGraphEdges(object):
 
@@ -159,6 +167,40 @@ class CRBarPlotWidget(QWidget):
         self.canvas.draw()
 
 
+def generate_inout_cfg_df(commit_report: CommitReport) -> pd.DataFrame:
+    """
+    Generates a pandas dataframe that contains the commit
+    region interaction information.
+    """
+    cf_map = dict()  # RM -> [from, to]
+    for reg_mapping in commit_report.region_mappings.values():
+        cf_map[reg_mapping] = [0, 0]
+
+    for _, func_g_edge in commit_report.graph_info.items():
+        for cf_edge in func_g_edge.cf_edges:
+
+            from_node = commit_report.region_mappings[cf_edge.edge_from]
+            to_node = commit_report.region_mappings[cf_edge.edge_to]
+            # if from_node not in cf_map:
+            #     cf_map[from_node] = [0, 0]
+            cf_map[from_node][0] += 1
+
+            # if to_node not in cf_map:
+            #     cf_map[to_node] = [0, 0]
+            cf_map[to_node][1] += 1
+
+    df2 = pd.DataFrame(columns=['Region', 'Amount', 'Direction'])
+    rows = []
+    for item in cf_map.items():
+        rows.append([item[0].representation, item[1][0], "From"])
+        rows.append([item[0].representation, item[1][1], "To"])
+
+    rows.sort(key=lambda row: (-row[1], row[2], row[0]))
+
+    return df2.append(pd.DataFrame(rows,
+                                   columns=['Region', 'Amount', 'Direction']))
+
+
 def plot_cfg_barplot(fig, commit_report: CommitReport):
     """
     Generates a bar plot that visualizes the IN/OUT
@@ -166,9 +208,18 @@ def plot_cfg_barplot(fig, commit_report: CommitReport):
     """
     if commit_report is None:
         return
-    #TODO: replace with actual bar plots
-    d = {'col1': [1, 2], 'col2': [3, 4]}
-    df = pd.DataFrame(data=d)
+    data = generate_inout_cfg_df(commit_report)
+
+    if data.empty:
+        # TODO: add logging
+        print("Error: CommitReport has no CF interactions")
+        return
+
     plt.figure(fig.number)
-    bar_p = sns.barplot(x="col1", y="col2", palette="Set3", data=df)
+    plt.clf()
+    bar_p = sns.barplot(x="Region", y="Amount",
+                        hue="Direction", data=data, palette="muted")
+    for label in bar_p.get_xticklabels():
+        label.set_rotation(20)
+
     fig.add_subplot(bar_p)
