@@ -189,16 +189,18 @@ def generate_inout_cfg_df(commit_report: CommitReport) -> pd.DataFrame:
             #     cf_map[to_node] = [0, 0]
             cf_map[to_node][1] += 1
 
-    df2 = pd.DataFrame(columns=['Region', 'Amount', 'Direction'])
+    df2 = pd.DataFrame(columns=['Region', 'Amount', 'Direction', 'TSort'])
     rows = []
     for item in cf_map.items():
-        rows.append([item[0].representation, item[1][0], "From"])
-        rows.append([item[0].representation, item[1][1], "To"])
+        total = item[1][0] + item[1][1]
+        rows.append([item[0].representation, item[1][0], "From", total])
+        rows.append([item[0].representation, item[1][1], "To", total])
 
-    rows.sort(key=lambda row: (-row[1], row[2], row[0]))
+    rows.sort(key=lambda row: (-row[3], -row[1], row[2], row[0]))
 
     return df2.append(pd.DataFrame(rows,
-                                   columns=['Region', 'Amount', 'Direction']))
+                                   columns=['Region', 'Amount',
+                                            'Direction', 'TSort']))
 
 
 def plot_cfg_barplot(fig, commit_report: CommitReport):
