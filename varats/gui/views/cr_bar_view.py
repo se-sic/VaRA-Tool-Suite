@@ -29,7 +29,9 @@ class CRBarView(QWidget):
         """
         self.ui_mw.setupUi(self)
         self.ui_mw.plot_up.set_cf_plot(True)
+        self.ui_mw.plot_up.hide()
         self.ui_mw.plot_down.set_cf_plot(False)
+        self.ui_mw.plot_down.hide()
 
         self.ui_mw.loadCRButton.clicked.connect(self.load_commit_report)
         self.ui_mw.check_cf_graph.stateChanged.connect(self.enable_cf_plot)
