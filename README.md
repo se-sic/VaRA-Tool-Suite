@@ -2,9 +2,9 @@
 
 ## Setup tool suite
 ```bash
-    > ./initVaRA-TS.sh
+    > pip install --user .
 ```
-This initializes `VaRA-TS`, by initializing the `benchbuild` submodule and creating symlinks into `benchbuild`, for VaRA's project and experiment descriptions.
+This initializes `VaRA-TS` and installs the `vara-graphview` tool to visualize VaRA results.
 
 ### benchbuild projects
 `VaRA-TS` defines a set of projects that can be analyzed with `benchbuild`.
