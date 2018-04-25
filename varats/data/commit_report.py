@@ -78,8 +78,11 @@ class FunctionGraphEdges(object):
             for edge in cf_edges:
                 self.cf_edges.append(RegionToRegionEdge(edge))
 
-        # TODO parsing
         self.df_relations = []
+        df_edges = raw_yaml['data-flow-relations']
+        if df_edges is not None:
+            for edge in df_edges:
+                self.df_relations.append(RegionToRegionEdge(edge))
 
     def __str__(self):
         repr_str = "FName: {}:\n\t CG-Edges [".format(self.fname)
@@ -144,8 +147,10 @@ class CRBarPlotWidget(QWidget):
     def __init__(self, parent):
         super(CRBarPlotWidget, self).__init__(parent)
 
+        self.cf_plot = True
+
         self.fig = plt.figure()
-        plot_cfg_barplot(self.fig, None)
+        plot_cfg_barplot(self.fig, None, self.cf_plot)
         self.canvas = FigureCanvas(self.fig)
 
         layout = QGridLayout(self)
@@ -159,15 +164,22 @@ class CRBarPlotWidget(QWidget):
         if self.fig is not None:
             plt.close(self.fig)
 
+    def set_cf_plot(self, is_cf_plot: bool):
+        """
+        Sets if the plot widget shows a control-flow graph 
+        or a data-flow graph
+        """
+        self.cf_plot = is_cf_plot
+
     def update_plot(self, commit_report: CommitReport):
         """
         Update the canvas with a new plot, generated from updated data.
         """
-        plot_cfg_barplot(self.fig, commit_report)
+        plot_cfg_barplot(self.fig, commit_report, self.cf_plot)
         self.canvas.draw()
 
 
-def generate_inout_cfg_df(commit_report: CommitReport) -> pd.DataFrame:
+def generate_inout_cfg_cf(commit_report: CommitReport) -> pd.DataFrame:
     """
     Generates a pandas dataframe that contains the commit
     region interaction information.
@@ -198,19 +210,52 @@ def generate_inout_cfg_df(commit_report: CommitReport) -> pd.DataFrame:
 
     rows.sort(key=lambda row: (-row[3], -row[1], row[2], row[0]))
 
-    return df2.append(pd.DataFrame(rows,
-                                   columns=['Region', 'Amount',
-                                            'Direction', 'TSort']))
+    return pd.DataFrame(rows, columns=['Region', 'Amount',
+                                       'Direction', 'TSort'])
 
 
-def plot_cfg_barplot(fig, commit_report: CommitReport):
+def generate_inout_cfg_df(commit_report: CommitReport) -> pd.DataFrame:
+    """
+    Generates a pandas dataframe that contains the commit region
+    data-flow interaction information.
+    """
+    df_map = dict()  # RM -> [from, to]
+    for reg_mapping in commit_report.region_mappings.values():
+        df_map[reg_mapping] = [0, 0]
+
+    for func_g_edge in commit_report.graph_info.values():
+        for df_edge in func_g_edge.df_relations:
+            from_node = commit_report.region_mappings[df_edge.edge_from]
+            to_node = commit_report.region_mappings[df_edge.edge_to]
+
+            df_map[from_node][0] += 1
+            df_map[to_node][1] += 1
+
+    rows = []
+    for item in df_map.items():
+        total = item[1][0] + item[1][1]
+        rows.append([item[0].representation, item[1][0], "From", total])
+        rows.append([item[0].representation, item[1][1], "To", total])
+
+    rows.sort(key=lambda row: (-row[3], -row[1], row[2], row[0]))
+
+    return pd.DataFrame(rows, columns=['Region', 'Amount',
+                                       'Direction', 'TSort'])
+
+
+def plot_cfg_barplot(fig, commit_report: CommitReport, draw_cf: bool):
     """
     Generates a bar plot that visualizes the IN/OUT
-    control-flow edges of regions.
+    control-flow/data-flow edges of regions.
     """
     if commit_report is None:
         return
-    data = generate_inout_cfg_df(commit_report)
+    if draw_cf:
+        data = generate_inout_cfg_cf(commit_report)
+        color_palette = "muted"
+    else:
+        data = generate_inout_cfg_df(commit_report)
+        color_palette = "Set2"
 
     if data.empty:
         # TODO: add logging
@@ -220,7 +265,7 @@ def plot_cfg_barplot(fig, commit_report: CommitReport):
     plt.figure(fig.number)
     plt.clf()
     bar_p = sns.barplot(x="Region", y="Amount",
-                        hue="Direction", data=data, palette="muted")
+                        hue="Direction", data=data, palette=color_palette)
     for label in bar_p.get_xticklabels():
         label.set_rotation(20)
 
