@@ -182,26 +182,20 @@ class CRBarPlotWidget(QWidget):
 def generate_inout_cfg_cf(commit_report: CommitReport) -> pd.DataFrame:
     """
     Generates a pandas dataframe that contains the commit
-    region interaction information.
+    region control-flow interaction information.
     """
     cf_map = dict()  # RM -> [from, to]
     for reg_mapping in commit_report.region_mappings.values():
         cf_map[reg_mapping] = [0, 0]
 
-    for _, func_g_edge in commit_report.graph_info.items():
+    for func_g_edge in commit_report.graph_info.values():
         for cf_edge in func_g_edge.cf_edges:
-
             from_node = commit_report.region_mappings[cf_edge.edge_from]
             to_node = commit_report.region_mappings[cf_edge.edge_to]
-            # if from_node not in cf_map:
-            #     cf_map[from_node] = [0, 0]
-            cf_map[from_node][0] += 1
 
-            # if to_node not in cf_map:
-            #     cf_map[to_node] = [0, 0]
+            cf_map[from_node][0] += 1
             cf_map[to_node][1] += 1
 
-    df2 = pd.DataFrame(columns=['Region', 'Amount', 'Direction', 'TSort'])
     rows = []
     for item in cf_map.items():
         total = item[1][0] + item[1][1]
