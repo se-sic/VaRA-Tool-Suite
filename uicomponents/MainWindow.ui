@@ -47,6 +47,15 @@
     <property name="title">
      <string>File</string>
     </property>
+    <widget class="QMenu" name="menuSetup">
+     <property name="title">
+      <string>Setup</string>
+     </property>
+     <addaction name="actionDownload_VaRA"/>
+     <addaction name="actionUpdate_VaRA"/>
+     <addaction name="actionShow_VaRA_status"/>
+    </widget>
+    <addaction name="menuSetup"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuView">
@@ -80,6 +89,29 @@
   <action name="actionCR_BarView">
    <property name="text">
     <string>CR-BarView</string>
+   </property>
+  </action>
+  <action name="actionSetup">
+   <property name="text">
+    <string>Setup</string>
+   </property>
+  </action>
+  <action name="actionDownload_VaRA">
+   <property name="text">
+    <string>Initialize VaRA</string>
+   </property>
+   <property name="toolTip">
+    <string>Downloads and builds VaRA</string>
+   </property>
+  </action>
+  <action name="actionUpdate_VaRA">
+   <property name="text">
+    <string>Update VaRA</string>
+   </property>
+  </action>
+  <action name="actionShow_VaRA_status">
+   <property name="text">
+    <string>Show VaRA status</string>
    </property>
   </action>
  </widget>
