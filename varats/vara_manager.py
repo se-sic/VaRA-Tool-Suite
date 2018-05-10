@@ -7,8 +7,10 @@ and providing necessary information.
 
 import os
 
+from enum import Enum
+
 from plumbum import local, FG
-from plumbum.cmd import git, mkdir, ln
+from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
 
 
 def download_repo(dl_folder, url: str, repo_name=None):
@@ -104,20 +106,52 @@ def checkout_vara_version(llvm_folder, version, dev):
                     "release_" + version)
 
 
-def init_vara_build(build_type):
+class BuildType(Enum):
+    """
+    This enum containts all VaRA prepared Build configurations.
+    """
+    DBG = 1
+    DEV = 2
+    OPT = 3
+    PGO = 4
+
+
+def get_cmake_var(var_name):
+    print(grep(var_name, "CMakeCache.txt"))
+    # TODO: find way to get cmake var
+    raise NotImplementedError
+
+
+def set_cmake_var(var_name, value):
+    cmake("-D" + var_name + "=" + value, ".")
+
+
+def init_vara_build(path_to_llvm, build_type: BuildType):
     """
     Initialize a VaRA build config.
     """
-    # TODO: needs enum
-    pass
+    full_path = path_to_llvm + "build/"
+    if not os.path.exists(full_path):
+        os.makedirs(full_path)
+
+    with local.cwd(full_path):
+        if build_type == BuildType.DEV:
+            local["./build_cfg/build-dev.sh"] & FG
 
 
-def build_vara(build_type):
+def build_vara(path_to_llvm: str, install_prefix: str, build_type: BuildType):
     """
-    Builds VaRA
+    Builds a VaRA configuration
     """
-    # TODO: needs enum
-    pass
+    full_path = path_to_llvm + "build/"
+    if build_type == BuildType.DEV:
+        full_path += "dev/"
+    if not os.path.exists(full_path):
+        init_vara_build(path_to_llvm, build_type)
+
+    with local.cwd(full_path):
+        set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix)
+        ninja["install"] & FG
 
 
 if __name__ == "__main__":

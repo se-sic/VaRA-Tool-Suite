@@ -133,6 +133,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="buildButton">
+        <property name="text">
+         <string>Build</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QWidget" name="widget_3" native="true">
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>

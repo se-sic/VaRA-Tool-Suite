@@ -71,6 +71,9 @@ class Ui_BuildSetup(object):
         self.updateButton = QtWidgets.QPushButton(self.widget_2)
         self.updateButton.setObjectName("updateButton")
         self.verticalLayout_2.addWidget(self.updateButton)
+        self.buildButton = QtWidgets.QPushButton(self.widget_2)
+        self.buildButton.setObjectName("buildButton")
+        self.verticalLayout_2.addWidget(self.buildButton)
         self.widget_3 = QtWidgets.QWidget(self.widget_2)
         self.widget_3.setObjectName("widget_3")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.widget_3)
@@ -97,6 +100,7 @@ class Ui_BuildSetup(object):
         self.installLabel.setText(_translate("BuildSetup", "VaRA install path"))
         self.initButton.setText(_translate("BuildSetup", "Init"))
         self.updateButton.setText(_translate("BuildSetup", "Update"))
+        self.buildButton.setText(_translate("BuildSetup", "Build"))
         self.checkDev.setText(_translate("BuildSetup", "Dev"))
         self.checkOpt.setText(_translate("BuildSetup", "Opt"))
 
