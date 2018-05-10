@@ -5,8 +5,20 @@ VaRA-TS MainWindow
 from varats.gui.ui_MainWindow import Ui_MainWindow
 from varats.gui.views.example_view import ExampleView
 from varats.gui.views.cr_bar_view import CRBarView
+from varats import vara_manager
+
+import os
 
 from PyQt5.QtWidgets import QMainWindow
+
+
+def setup_vara_to_cwd():
+    """
+    Downloads VaRA to the current working directory.
+    """
+    path = os.getcwd() + "/"
+    vara_manager.download_vara(path)
+    vara_manager.checkout_vara_version(path + "llvm/", 60, True)
 
 class MainWindow(object):
     """
@@ -27,6 +39,9 @@ class MainWindow(object):
         self.ui_mw.setupUi(self.main_window)
         self.ui_mw.actionExampleView.triggered.connect(self._spawn_exampleview)
         self.ui_mw.actionCR_BarView.triggered.connect(self._spawn_cr_bar_view)
+
+        # Signals for menubar
+        self.ui_mw.actionDownload_VaRA.triggered.connect(setup_vara_to_cwd)
 
         self.ui_mw.tabWidget.tabCloseRequested.connect(self.__remove_tab)
 
