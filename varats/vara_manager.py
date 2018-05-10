@@ -74,7 +74,8 @@ def download_vara(dl_folder):
                   "https://git.llvm.org/git/compiler-rt.git")
 
     mkdir[dl_folder + "build/"] & FG
-    ln["-s", dl_folder + "tools/VaRA/utils/vara/builds/", "build_cfg"] & FG
+    with local.cwd(dl_folder + "build/"):
+        ln["-s", dl_folder + "tools/VaRA/utils/vara/builds/", "build_cfg"] & FG
 
 
 def checkout_vara_version(llvm_folder, version, dev):

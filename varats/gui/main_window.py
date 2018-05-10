@@ -5,20 +5,10 @@ VaRA-TS MainWindow
 from varats.gui.ui_MainWindow import Ui_MainWindow
 from varats.gui.views.example_view import ExampleView
 from varats.gui.views.cr_bar_view import CRBarView
-from varats import vara_manager
-
-import os
+from varats.gui.buildsetup_window import BuildSetup
 
 from PyQt5.QtWidgets import QMainWindow
 
-
-def setup_vara_to_cwd():
-    """
-    Downloads VaRA to the current working directory.
-    """
-    path = os.getcwd() + "/"
-    vara_manager.download_vara(path)
-    vara_manager.checkout_vara_version(path + "llvm/", 60, True)
 
 class MainWindow(object):
     """
@@ -29,6 +19,7 @@ class MainWindow(object):
         self.ui_mw = Ui_MainWindow()
         self.main_window = QMainWindow()
         self.views = []
+        self.bwg = None
 
         self.setup_ui()
 
@@ -41,7 +32,7 @@ class MainWindow(object):
         self.ui_mw.actionCR_BarView.triggered.connect(self._spawn_cr_bar_view)
 
         # Signals for menubar
-        self.ui_mw.actionDownload_VaRA.triggered.connect(setup_vara_to_cwd)
+        self.ui_mw.actionVaRA_Setup.triggered.connect(self._spawn_vara_setup)
 
         self.ui_mw.tabWidget.tabCloseRequested.connect(self.__remove_tab)
 
@@ -58,6 +49,13 @@ class MainWindow(object):
         self.views.append(new_tab)
 
         self.ui_mw.tabWidget.addTab(new_tab, "CR-BarView")
+
+    def _spawn_vara_setup(self):
+        """
+        Spawn a setup window to configure and build VaRA
+        """
+        self.bwg = BuildSetup()
+        self.bwg.show()
 
     def __remove_tab(self, index):
         tab = self.ui_mw.tabWidget.widget(index)

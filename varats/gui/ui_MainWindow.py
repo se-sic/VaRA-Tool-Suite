@@ -53,10 +53,13 @@ class Ui_MainWindow(object):
         self.actionUpdate_VaRA.setObjectName("actionUpdate_VaRA")
         self.actionShow_VaRA_status = QtWidgets.QAction(MainWindow)
         self.actionShow_VaRA_status.setObjectName("actionShow_VaRA_status")
+        self.actionVaRA_Setup = QtWidgets.QAction(MainWindow)
+        self.actionVaRA_Setup.setObjectName("actionVaRA_Setup")
         self.menuSetup.addAction(self.actionDownload_VaRA)
         self.menuSetup.addAction(self.actionUpdate_VaRA)
         self.menuSetup.addAction(self.actionShow_VaRA_status)
         self.menuFile.addAction(self.menuSetup.menuAction())
+        self.menuFile.addAction(self.actionVaRA_Setup)
         self.menuFile.addAction(self.actionQuit)
         self.menuView.addAction(self.actionExampleView)
         self.menuView.addAction(self.actionCR_BarView)
@@ -83,6 +86,7 @@ class Ui_MainWindow(object):
         self.actionDownload_VaRA.setToolTip(_translate("MainWindow", "Downloads and builds VaRA"))
         self.actionUpdate_VaRA.setText(_translate("MainWindow", "Update VaRA"))
         self.actionShow_VaRA_status.setText(_translate("MainWindow", "Show VaRA status"))
+        self.actionVaRA_Setup.setText(_translate("MainWindow", "VaRA Setup"))
 
 
 if __name__ == "__main__":

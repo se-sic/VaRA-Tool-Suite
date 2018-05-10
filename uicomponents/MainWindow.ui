@@ -56,6 +56,7 @@
      <addaction name="actionShow_VaRA_status"/>
     </widget>
     <addaction name="menuSetup"/>
+    <addaction name="actionVaRA_Setup"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuView">
@@ -112,6 +113,11 @@
   <action name="actionShow_VaRA_status">
    <property name="text">
     <string>Show VaRA status</string>
+   </property>
+  </action>
+  <action name="actionVaRA_Setup">
+   <property name="text">
+    <string>VaRA Setup</string>
    </property>
   </action>
  </widget>
