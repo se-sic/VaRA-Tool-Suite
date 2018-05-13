@@ -7,19 +7,12 @@ from PyQt5.QtWidgets import QWidget
 from varats.gui.views.ui_ExampleView import Ui_example_view
 
 
-class ExampleView(QWidget):
+class ExampleView(QWidget, Ui_example_view):
     """
     Example data representation.
     """
 
     def __init__(self):
-        super().__init__()
-        self.ui_mw = Ui_example_view()
+        super(self.__class__, self).__init__()
 
-        self.setup_ui()
-
-    def setup_ui(self):
-        """
-        Setup ExampleView
-        """
-        self.ui_mw.setupUi(self)
+        self.setupUi(self)

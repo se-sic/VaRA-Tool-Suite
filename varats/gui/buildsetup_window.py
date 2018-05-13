@@ -9,20 +9,19 @@ from varats.gui.views.ui_BuildMenu import Ui_BuildSetup
 from varats import vara_manager
 
 
-class BuildSetup(QWidget):
+class BuildSetup(QWidget, Ui_BuildSetup):
     """
     """
 
     def __init__(self):
         super().__init__()
-        self.ui_setup = Ui_BuildSetup()
-        self.ui_setup.setupUi(self)
+        self.setupUi(self)
 
-        self.ui_setup.folderPath.insert(os.getcwd() + "/VaRA/")
-        self.ui_setup.installPath.insert(os.getcwd() + "/VaRA/install/")
+        self.folderPath.insert(os.getcwd() + "/VaRA/")
+        self.installPath.insert(os.getcwd() + "/VaRA/install/")
 
-        self.ui_setup.initButton.clicked.connect(self._setup_vara)
-        self.ui_setup.buildButton.clicked.connect(self._build_vara)
+        self.initButton.clicked.connect(self._setup_vara)
+        self.buildButton.clicked.connect(self._build_vara)
 
     def _setup_vara(self):
         """
@@ -40,19 +39,19 @@ class BuildSetup(QWidget):
             pass
 
     def _build_vara(self):
-        if self.ui_setup.checkDev.isChecked():
+        if self.checkDev.isChecked():
             vara_manager.build_vara(self.__get_llvm_path(),
                                     self.__get_install_path(),
                                     vara_manager.BuildType.DEV)
 
-        if self.ui_setup.checkOpt.isChecked():
+        if self.checkOpt.isChecked():
             raise NotImplementedError
 
     def __get_root_path(self):
-        return self.ui_setup.folderPath.text()
+        return self.folderPath.text()
 
     def __get_llvm_path(self):
         return self.__get_root_path() + "llvm/"
 
     def __get_install_path(self):
-        return self.ui_setup.installPath.text()
+        return self.installPath.text()
