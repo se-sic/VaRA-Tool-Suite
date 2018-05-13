@@ -5,7 +5,10 @@ Main drivers for VaRA-TS
 
 import sys
 
+from enum import Enum
+
 from varats.gui.main_window import MainWindow
+from varats.gui.buildsetup_window import BuildSetup
 
 from PyQt5.QtWidgets import QApplication
 
@@ -20,12 +23,30 @@ class VaRATSGui():
         sys.exit(self.app.exec_())
 
 
-def main():
+class VaRATSSetup():
+
+    def __init__(self):
+        self.app = QApplication(sys.argv)
+        self.main_window = BuildSetup()
+
+    def main(self):
+        sys.exit(self.app.exec_())
+
+
+def main_graph_view():
     """
-    Setup correct VaRA-TS driver an run application.
+    Start VaRA-TS driver and run application.
     """
     driver = VaRATSGui()
+    driver.main()
 
+
+def main_setup():
+    """
+    Start VaRA BuildSetup driver and run application.
+    """
+    raise NotImplementedError
+    driver = VaRATSSetup()
     driver.main()
 
 

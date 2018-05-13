@@ -18,6 +18,7 @@ setup(name='VaRA-Tool-Suite',
       author_email="sattlerf@fim.uni-passau.de",
       entry_points={
           "gui_scripts": [
-              'vara-graphview = varats.driver:main'
+              'vara-graphview = varats.driver:main_graph_view',
+              'vara-buildsetup = varats.driver:main_setup',
           ]
       })
