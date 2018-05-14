@@ -40,22 +40,13 @@
      <x>0</x>
      <y>0</y>
      <width>640</width>
-     <height>20</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File</string>
     </property>
-    <widget class="QMenu" name="menuSetup">
-     <property name="title">
-      <string>Setup</string>
-     </property>
-     <addaction name="actionDownload_VaRA"/>
-     <addaction name="actionUpdate_VaRA"/>
-     <addaction name="actionShow_VaRA_status"/>
-    </widget>
-    <addaction name="menuSetup"/>
     <addaction name="actionVaRA_Setup"/>
     <addaction name="actionQuit"/>
    </widget>
