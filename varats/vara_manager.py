@@ -6,14 +6,15 @@ and providing necessary information.
 """
 
 import os
+import subprocess as sp
 
 from enum import Enum
 
-from plumbum import local, FG
+from plumbum import local, FG, BG
 from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
 
 
-def download_repo(dl_folder, url: str, repo_name=None):
+def download_repo(dl_folder, url: str, repo_name=None, post_out = lambda x: None):
     """
     Download a repo into the specified folder.
     """
@@ -23,9 +24,19 @@ def download_repo(dl_folder, url: str, repo_name=None):
 
     with local.cwd(dl_folder):
         if repo_name is not None:
-            git["clone", url, repo_name] & FG
+            gc = git["clone", "--progress", url, repo_name]
+            with gc.bgrun(universal_newlines=True,
+                          stdout=sp.PIPE, stderr=sp.STDOUT) as pl:
+                while pl.poll() is None:
+                    for line in pl.stdout:
+                        post_out(line)
         else:
-            git["clone", url] & FG
+            gc = git["clone", "--progress", url]
+            with gc.bgrun(universal_newlines=True,
+                          stdout=sp.PIPE, stderr=sp.STDOUT) as pl:
+                while pl.poll() is None:
+                    for line in pl.stdout:
+                        post_out(line)
 
 
 def add_remote(repo_folder, remote, url):
@@ -53,28 +64,47 @@ def checkout_new_branch(repo_folder, branch, remote_branch):
         git["checkout", "-b", branch, remote_branch] & FG
 
 
-def download_vara(dl_folder):
+def get_download_steps():
+    """
+    Returns the amount of steps it takes to download VaRA. This can be used to 
+    track the progress during the long download phase.
+    """
+    return 6
+
+def download_vara(dl_folder, progress_func = lambda x: None, post_out = lambda x: None):
     """
     Downloads VaRA an all other necessary repos from github.
     """
-    download_repo(dl_folder, "https://git.llvm.org/git/llvm.git")
+    progress_func(0)
+    download_repo(dl_folder, "https://git.llvm.org/git/llvm.git",
+                  post_out=post_out)
     dl_folder += "llvm/"
     add_remote(dl_folder, "upstream", "git@github.com:se-passau/vara-llvm.git")
 
-    download_repo(dl_folder + "tools/", "https://git.llvm.org/git/clang.git")
+    progress_func(1)
+    download_repo(dl_folder + "tools/", "https://git.llvm.org/git/clang.git",
+                  post_out=post_out)
     add_remote(dl_folder + "tools/clang/", "upstream",
                "git@github.com:se-passau/vara-clang.git")
 
-    download_repo(dl_folder + "tools/", "git@github.com:se-passau/VaRA.git")
+    progress_func(2)
+    download_repo(dl_folder + "tools/", "git@github.com:se-passau/VaRA.git",
+                  post_out=post_out)
 
+    progress_func(3)
     download_repo(dl_folder + "tools/clang/tools/",
-                  "https://git.llvm.org/git/clang-tools-extra.git", "extra")
+                  "https://git.llvm.org/git/clang-tools-extra.git", "extra",
+                  post_out=post_out)
 
-    download_repo(dl_folder + "tools/", "https://git.llvm.org/git/lld.git")
+    progress_func(4)
+    download_repo(dl_folder + "tools/", "https://git.llvm.org/git/lld.git",
+                  post_out=post_out)
 
+    progress_func(5)
     download_repo(dl_folder + "projects/",
-                  "https://git.llvm.org/git/compiler-rt.git")
+                  "https://git.llvm.org/git/compiler-rt.git", post_out=post_out)
 
+    progress_func(6)
     mkdir[dl_folder + "build/"] & FG
     with local.cwd(dl_folder + "build/"):
         ln["-s", dl_folder + "tools/VaRA/utils/vara/builds/", "build_cfg"] & FG

@@ -77,32 +77,25 @@
         <property name="sizeHint" stdset="0">
          <size>
           <width>20</width>
-          <height>40</height>
+          <height>140</height>
          </size>
         </property>
        </spacer>
       </item>
       <item>
-       <widget class="QScrollArea" name="scrollArea">
-        <property name="widgetResizable">
-         <bool>true</bool>
-        </property>
-        <widget class="QWidget" name="scrollAreaWidgetContents">
-         <property name="geometry">
-          <rect>
-           <x>0</x>
-           <y>0</y>
-           <width>498</width>
-           <height>138</height>
-          </rect>
-         </property>
-        </widget>
-       </widget>
+       <widget class="QTextEdit" name="textOutput"/>
       </item>
       <item>
        <widget class="QProgressBar" name="progressBar">
         <property name="value">
          <number>24</number>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="statusLabel">
+        <property name="text">
+         <string/>
         </property>
        </widget>
       </item>
