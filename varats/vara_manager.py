@@ -10,11 +10,12 @@ import subprocess as sp
 
 from enum import Enum
 
-from plumbum import local, FG, BG
+from plumbum import local, FG
 from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
 
 
-def download_repo(dl_folder, url: str, repo_name=None, post_out = lambda x: None):
+def download_repo(dl_folder, url: str, repo_name=None,
+                  post_out=lambda x: None):
     """
     Download a repo into the specified folder.
     """
@@ -24,18 +25,18 @@ def download_repo(dl_folder, url: str, repo_name=None, post_out = lambda x: None
 
     with local.cwd(dl_folder):
         if repo_name is not None:
-            gc = git["clone", "--progress", url, repo_name]
-            with gc.bgrun(universal_newlines=True,
-                          stdout=sp.PIPE, stderr=sp.STDOUT) as pl:
-                while pl.poll() is None:
-                    for line in pl.stdout:
+            git_clone = git["clone", "--progress", url, repo_name]
+            with git_clone.bgrun(universal_newlines=True,
+                                 stdout=sp.PIPE, stderr=sp.STDOUT) as p_gc:
+                while p_gc.poll() is None:
+                    for line in p_gc.stdout:
                         post_out(line)
         else:
-            gc = git["clone", "--progress", url]
-            with gc.bgrun(universal_newlines=True,
-                          stdout=sp.PIPE, stderr=sp.STDOUT) as pl:
-                while pl.poll() is None:
-                    for line in pl.stdout:
+            git_clone = git["clone", "--progress", url]
+            with git_clone.bgrun(universal_newlines=True,
+                                 stdout=sp.PIPE, stderr=sp.STDOUT) as p_gc:
+                while p_gc.poll() is None:
+                    for line in p_gc.stdout:
                         post_out(line)
 
 
@@ -66,12 +67,13 @@ def checkout_new_branch(repo_folder, branch, remote_branch):
 
 def get_download_steps():
     """
-    Returns the amount of steps it takes to download VaRA. This can be used to 
+    Returns the amount of steps it takes to download VaRA. This can be used to
     track the progress during the long download phase.
     """
     return 6
 
-def download_vara(dl_folder, progress_func = lambda x: None, post_out = lambda x: None):
+def download_vara(dl_folder, progress_func=lambda x: None,
+                  post_out=lambda x: None):
     """
     Downloads VaRA an all other necessary repos from github.
     """
@@ -102,7 +104,8 @@ def download_vara(dl_folder, progress_func = lambda x: None, post_out = lambda x
 
     progress_func(5)
     download_repo(dl_folder + "projects/",
-                  "https://git.llvm.org/git/compiler-rt.git", post_out=post_out)
+                  "https://git.llvm.org/git/compiler-rt.git",
+                  post_out=post_out)
 
     progress_func(6)
     mkdir[dl_folder + "build/"] & FG
@@ -147,12 +150,18 @@ class BuildType(Enum):
 
 
 def get_cmake_var(var_name):
+    """
+    Fetch the value of a cmake variable from the current cmake config.
+    """
     print(grep(var_name, "CMakeCache.txt"))
     # TODO: find way to get cmake var
     raise NotImplementedError
 
 
 def set_cmake_var(var_name, value):
+    """
+    Sets a cmake variable in the current cmake config.
+    """
     cmake("-D" + var_name + "=" + value, ".")
 
 

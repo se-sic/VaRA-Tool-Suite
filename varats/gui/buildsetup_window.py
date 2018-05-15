@@ -26,7 +26,7 @@ class SetupWorker(QRunnable):
     """
 
     def __init__(self, path):
-        super(self.__class__, self).__init__()
+        super(SetupWorker, self).__init__()
         self.path = path
         self.signals = WorkerSignals()
         self.steps = vara_manager.get_download_steps() + 2
@@ -38,11 +38,18 @@ class SetupWorker(QRunnable):
         self.signals.text_update.emit(text)
 
     def get_steps(self):
+        """
+        Get the amount of sets to init VaRA.
+        """
         return self.steps
 
     @pyqtSlot()
     def run(self):
-        vara_manager.download_vara(self.path, self._update_progress, self._update_text)
+        """
+        Run, initializes VaRA in a different thread.
+        """
+        vara_manager.download_vara(self.path, self._update_progress,
+                                   self._update_text)
 
         self._update_progress(7)
         vara_manager.checkout_vara_version(self.path + "llvm/", 60, True)
@@ -82,11 +89,6 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         self.textOutput.insertPlainText(text)
         self.textOutput.moveCursor(QTextCursor.End)
 
-    def _setup_vara_test(self):
-        print("Test setup")
-        worker = SetupWorker()
-        self.thread_pool.start(worker)
-
     def _setup_vara(self):
         """
         Downloads VaRA to the current working directory.
@@ -109,7 +111,6 @@ class BuildSetup(QWidget, Ui_BuildSetup):
 
     def _setup_done(self):
         self.statusLabel.setText("Finished setup")
-
 
     def _build_vara(self):
         self.statusLabel.setText("Building VaRA")
