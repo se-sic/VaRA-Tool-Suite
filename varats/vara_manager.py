@@ -12,17 +12,21 @@ from enum import Enum
 
 from plumbum import local, FG
 from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
+from plumbum.commands.processes import ProcessExecutionError
 
 
 def run_with_output(pb_cmd, post_out=lambda x: None):
     """
     Run plumbum command and post output lines to function.
     """
-    with pb_cmd.bgrun(universal_newlines=True,
-                      stdout=sp.PIPE, stderr=sp.STDOUT) as p_gc:
-        while p_gc.poll() is None:
-            for line in p_gc.stdout:
-                post_out(line)
+    try:
+        with pb_cmd.bgrun(universal_newlines=True,
+                          stdout=sp.PIPE, stderr=sp.STDOUT) as p_gc:
+            while p_gc.poll() is None:
+                for line in p_gc.stdout:
+                    post_out(line)
+    except ProcessExecutionError:
+        post_out("ProcessExecutionError")
 
 
 def download_repo(dl_folder, url: str, repo_name=None,
