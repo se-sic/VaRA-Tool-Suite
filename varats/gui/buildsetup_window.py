@@ -93,6 +93,7 @@ class BuildWorker(QRunnable):
                                 self.install_prefix,
                                 self.build_type,
                                 self._update_text)
+        self.signals.finished.emit()
 
 
 class BuildSetup(QWidget, Ui_BuildSetup):
