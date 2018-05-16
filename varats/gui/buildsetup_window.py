@@ -165,7 +165,6 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         if self.checkOpt.isChecked():
             raise NotImplementedError
 
-
     def _build_done(self):
         self.statusLabel.setText("Finished build")
 

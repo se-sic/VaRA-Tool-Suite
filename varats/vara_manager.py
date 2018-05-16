@@ -37,18 +37,10 @@ def download_repo(dl_folder, url: str, repo_name=None,
     with local.cwd(dl_folder):
         if repo_name is not None:
             git_clone = git["clone", "--progress", url, repo_name]
-            with git_clone.bgrun(universal_newlines=True,
-                                 stdout=sp.PIPE, stderr=sp.STDOUT) as p_gc:
-                while p_gc.poll() is None:
-                    for line in p_gc.stdout:
-                        post_out(line)
+            run_with_output(git_clone, post_out)
         else:
             git_clone = git["clone", "--progress", url]
-            with git_clone.bgrun(universal_newlines=True,
-                                 stdout=sp.PIPE, stderr=sp.STDOUT) as p_gc:
-                while p_gc.poll() is None:
-                    for line in p_gc.stdout:
-                        post_out(line)
+            run_with_output(git_clone, post_out)
 
 
 def add_remote(repo_folder, remote, url):
