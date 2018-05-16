@@ -4,9 +4,9 @@ A module that manages the building of VaRa.
 import os
 import re
 
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget, QShortcut
 from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject
-from PyQt5.QtGui import QTextCursor
+from PyQt5.QtGui import QTextCursor, QKeySequence
 
 from varats.gui.views.ui_BuildMenu import Ui_BuildSetup
 from varats import vara_manager
@@ -103,6 +103,8 @@ class BuildSetup(QWidget, Ui_BuildSetup):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        self.__quit_sc = QShortcut(QKeySequence("Ctrl+Q"), self)
+        self.__quit_sc.activated.connect(self.close)
 
         self.folderPath.insert(os.getcwd() + "/VaRA/")
         self.installPath.insert(os.getcwd() + "/VaRA/install/")
@@ -116,6 +118,10 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         self.progressBar.setValue(0)
 
         self.statusLabel.hide()
+
+        self.advanced_view = False
+        self._set_advanced_view()
+        self.advancedMode.clicked.connect(self._toggle_advanced_view)
 
         self.thread_pool = QThreadPool()
 
@@ -172,7 +178,22 @@ class BuildSetup(QWidget, Ui_BuildSetup):
             raise NotImplementedError
 
     def _build_done(self):
+        self.progressBar.setValue(self.progressBar.maximum())
         self.statusLabel.setText("Finished build")
+
+    def _toggle_advanced_view(self):
+        self.advanced_view = not self.advanced_view
+        self._set_advanced_view()
+
+    def _set_advanced_view(self):
+        if self.advanced_view:
+            self.checkDev.setChecked(False)
+            self.checkDev.show()
+            self.checkOpt.show()
+        else:
+            self.checkDev.setChecked(True)
+            self.checkDev.hide()
+            self.checkOpt.hide()
 
     def __get_root_path(self):
         return self.folderPath.text()

@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>../../icons/straus64.png</normaloff>../../icons/straus64.png</iconset>
+    <normaloff>../../../icons/straus64.png</normaloff>../../../icons/straus64.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
@@ -109,6 +109,9 @@
   <action name="actionVaRA_Setup">
    <property name="text">
     <string>VaRA Setup</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+B</string>
    </property>
   </action>
  </widget>

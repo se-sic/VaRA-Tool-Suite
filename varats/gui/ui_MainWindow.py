@@ -13,7 +13,7 @@ class Ui_MainWindow(object):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(640, 480)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("../../icons/straus64.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap("../../../icons/straus64.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(icon)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -80,6 +80,7 @@ class Ui_MainWindow(object):
         self.actionUpdate_VaRA.setText(_translate("MainWindow", "Update VaRA"))
         self.actionShow_VaRA_status.setText(_translate("MainWindow", "Show VaRA status"))
         self.actionVaRA_Setup.setText(_translate("MainWindow", "VaRA Setup"))
+        self.actionVaRA_Setup.setShortcut(_translate("MainWindow", "Ctrl+B"))
 
 
 if __name__ == "__main__":
