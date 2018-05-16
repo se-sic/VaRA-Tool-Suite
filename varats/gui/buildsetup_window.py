@@ -2,6 +2,7 @@
 A module that manages the building of VaRa.
 """
 import os
+import re
 
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject
@@ -122,7 +123,12 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         self.progressBar.setValue(val)
 
     def _update_build_text(self, text):
-        # TODO: handle extra progrssbar updates
+        match = re.match(r"\[([0-9]+)/([0-9]+)\].*", text)
+        if match is not None:
+            processed_files = int(match.group(1))
+            max_files = int(match.group(2))
+            self.progressBar.setMaximum(max_files)
+            self.progressBar.setValue(processed_files)
         self._update_text(text)
 
     def _update_text(self, text):
