@@ -6,6 +6,7 @@ and providing necessary information.
 """
 
 import os
+import re
 import subprocess as sp
 
 from enum import Enum
@@ -78,6 +79,7 @@ def get_download_steps():
     track the progress during the long download phase.
     """
     return 6
+
 
 def download_vara(dl_folder, progress_func=lambda x: None,
                   post_out=lambda x: None):
@@ -202,6 +204,101 @@ def build_vara(path_to_llvm: str, install_prefix: str, build_type: BuildType,
         set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix)
         b_ninja = ninja["install"]
         run_with_output(b_ninja, post_out)
+
+###############################################################################
+# Git Handling
+###############################################################################
+
+
+class GitState(Enum):
+    """
+    Represent the direct state of a branch.
+    """
+    OK = 1
+    BEHIND = 2
+    ERROR = 3
+
+
+class GitStatus(object):
+    """
+    Represents the current update status of a git repository.
+    """
+
+    def __init__(self, state, msg: str = ""):
+        self.__state = state
+        self.__msg = msg
+
+    @property
+    def state(self) -> GitState:
+        """
+        Current state of the git.
+        """
+        return self.__state
+
+    @property
+    def msg(self):
+        """
+        Additional msg.
+        """
+        return self.__msg
+
+    def __str__(self):
+        if self.state == GitState.OK:
+            return "OK"
+        elif self.state == GitState.BEHIND:
+            return self.msg
+        return "Error"
+
+
+def get_llvm_status(llvm_folder) -> GitStatus:
+    """
+    Retrieve the git status of llvm.
+    """
+    with local.cwd(llvm_folder):
+        git_status = git['status']
+        stdout = git_status('-sb')
+        for line in stdout.split('\n'):
+            if line.startswith('## vara-60-dev'):
+                match = re.match(r".*\[(.*)\]", line)
+                if match is not None:
+                    return GitStatus(GitState.BEHIND, match.group(1))
+                return GitStatus(GitState.OK)
+
+    return GitStatus(GitState.ERROR)
+
+
+def get_clang_status(llvm_folder) -> GitStatus:
+    """
+    Retrieve the git status of clang.
+    """
+    with local.cwd(llvm_folder + 'tools/clang'):
+        git_status = git['status']
+        stdout = git_status('-sb')
+        for line in stdout.split('\n'):
+            if line.startswith('## vara-60-dev'):
+                match = re.match(r".*\[(.*)\]", line)
+                if match is not None:
+                    return GitStatus(GitState.BEHIND, match.group(1))
+                return GitStatus(GitState.OK)
+
+    return GitStatus(GitState.ERROR)
+
+
+def get_vara_status(llvm_folder) -> GitStatus:
+    """
+    Retrieve the git status of VaRA.
+    """
+    with local.cwd(llvm_folder + 'tools/VaRA'):
+        git_status = git['status']
+        stdout = git_status('-sb')
+        for line in stdout.split('\n'):
+            if line.startswith('## vara-dev'):
+                match = re.match(r".*\[(.*)\]", line)
+                if match is not None:
+                    return GitStatus(GitState.BEHIND, match.group(1))
+                return GitStatus(GitState.OK)
+
+    return GitStatus(GitState.ERROR)
 
 
 if __name__ == "__main__":

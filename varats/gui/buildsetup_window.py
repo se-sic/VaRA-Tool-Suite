@@ -115,6 +115,8 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         self.textOutput.setReadOnly(True)
         self.textOutput.ensureCursorVisible()
 
+        self.folderPath.editingFinished.connect(self._check_state)
+
         self.progressBar.setMaximum(1)
         self.progressBar.setValue(0)
 
@@ -123,6 +125,8 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         self.advanced_view = False
         self._set_advanced_view()
         self.advancedMode.clicked.connect(self._toggle_advanced_view)
+
+        self._check_state()
 
         self.thread_pool = QThreadPool()
 
@@ -195,6 +199,50 @@ class BuildSetup(QWidget, Ui_BuildSetup):
             self.checkDev.setChecked(True)
             self.checkDev.hide()
             self.checkOpt.hide()
+
+    def _check_state(self):
+        self._check_init()
+        self._check_versions()
+
+    def _check_init(self):
+        path = self.__get_llvm_path()
+        if not os.path.exists(path):
+            self.initButton.setEnabled(True)
+            self.buildButton.setDisabled(True)
+        else:
+            self.initButton.setDisabled(True)
+            self.buildButton.setEnabled(True)
+
+    def _check_versions(self):
+        if not os.path.exists(self.__get_llvm_path()):
+            self.llvmStatus.setText("---")
+            self.llvmStatus.setStyleSheet("QLabel { color : black; }")
+            self.clangStatus.setText("---")
+            self.clangStatus.setStyleSheet("QLabel { color : black; }")
+            self.varaStatus.setText("---")
+            self.varaStatus.setStyleSheet("QLabel { color : black; }")
+            return
+
+        llvm_status = vara_manager.get_llvm_status(self.__get_llvm_path())
+        self.llvmStatus.setText(str(llvm_status))
+        if llvm_status.state == vara_manager.GitState.OK:
+            self.llvmStatus.setStyleSheet("QLabel { color : green; }")
+        else:
+            self.llvmStatus.setStyleSheet("QLabel { color : orange; }")
+
+        clang_status = vara_manager.get_clang_status(self.__get_llvm_path())
+        self.clangStatus.setText(str(clang_status))
+        if clang_status.state == vara_manager.GitState.OK:
+            self.clangStatus.setStyleSheet("QLabel { color : green; }")
+        else:
+            self.clangStatus.setStyleSheet("QLabel { color : orange; }")
+
+        vara_status = vara_manager.get_vara_status(self.__get_llvm_path())
+        self.varaStatus.setText(str(vara_status))
+        if vara_status.state == vara_manager.GitState.OK:
+            self.varaStatus.setStyleSheet("QLabel { color : green; }")
+        else:
+            self.varaStatus.setStyleSheet("QLabel { color : orange; }")
 
     def __get_root_path(self):
         return self.folderPath.text()
