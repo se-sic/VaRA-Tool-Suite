@@ -14,6 +14,17 @@ from plumbum import local, FG
 from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
 
 
+def run_with_output(pb_cmd, post_out=lambda x: None):
+    """
+    Run plumbum command and post output lines to function.
+    """
+    with pb_cmd.bgrun(universal_newlines=True,
+                      stdout=sp.PIPE, stderr=sp.STDOUT) as p_gc:
+        while p_gc.poll() is None:
+            for line in p_gc.stdout:
+                post_out(line)
+
+
 def download_repo(dl_folder, url: str, repo_name=None,
                   post_out=lambda x: None):
     """
@@ -165,7 +176,8 @@ def set_cmake_var(var_name, value):
     cmake("-D" + var_name + "=" + value, ".")
 
 
-def init_vara_build(path_to_llvm, build_type: BuildType):
+def init_vara_build(path_to_llvm, build_type: BuildType,
+                    post_out=lambda x: None):
     """
     Initialize a VaRA build config.
     """
@@ -175,10 +187,12 @@ def init_vara_build(path_to_llvm, build_type: BuildType):
 
     with local.cwd(full_path):
         if build_type == BuildType.DEV:
-            local["./build_cfg/build-dev.sh"] & FG
+            cmake = local["./build_cfg/build-dev.sh"]
+            run_with_output(cmake, post_out)
 
 
-def build_vara(path_to_llvm: str, install_prefix: str, build_type: BuildType):
+def build_vara(path_to_llvm: str, install_prefix: str, build_type: BuildType,
+               post_out=lambda x: None):
     """
     Builds a VaRA configuration
     """
@@ -186,11 +200,12 @@ def build_vara(path_to_llvm: str, install_prefix: str, build_type: BuildType):
     if build_type == BuildType.DEV:
         full_path += "dev/"
     if not os.path.exists(full_path):
-        init_vara_build(path_to_llvm, build_type)
+        init_vara_build(path_to_llvm, build_type, post_out)
 
     with local.cwd(full_path):
         set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix)
-        ninja["install"] & FG
+        b_ninja = ninja["install"]
+        run_with_output(b_ninja, post_out)
 
 
 if __name__ == "__main__":
