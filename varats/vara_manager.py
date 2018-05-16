@@ -57,6 +57,17 @@ def add_remote(repo_folder, remote, url):
         git["fetch", remote] & FG
 
 
+def fetch_remote(remote, repo_folder=""):
+    """
+    Fetches the new changes from the remote.
+    """
+    if repo_folder == '':
+        git["fetch", remote] & FG
+    else:
+        with local.cwd(repo_folder):
+            git["fetch", remote] & FG
+
+
 def checkout_branch(repo_folder, branch):
     """
     Checks out a branch in the repository.
@@ -255,6 +266,7 @@ def get_llvm_status(llvm_folder) -> GitStatus:
     Retrieve the git status of llvm.
     """
     with local.cwd(llvm_folder):
+        fetch_remote('upstream')
         git_status = git['status']
         stdout = git_status('-sb')
         for line in stdout.split('\n'):
@@ -272,6 +284,7 @@ def get_clang_status(llvm_folder) -> GitStatus:
     Retrieve the git status of clang.
     """
     with local.cwd(llvm_folder + 'tools/clang'):
+        fetch_remote('upstream')
         git_status = git['status']
         stdout = git_status('-sb')
         for line in stdout.split('\n'):
@@ -289,6 +302,7 @@ def get_vara_status(llvm_folder) -> GitStatus:
     Retrieve the git status of VaRA.
     """
     with local.cwd(llvm_folder + 'tools/VaRA'):
+        fetch_remote('origin')
         git_status = git['status']
         stdout = git_status('-sb')
         for line in stdout.split('\n'):
