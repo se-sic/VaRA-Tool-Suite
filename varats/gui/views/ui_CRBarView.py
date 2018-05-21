@@ -66,7 +66,7 @@ class Ui_Form(object):
         self.check_cf_graph.setText(_translate("Form", "Show CF graph"))
         self.check_df_graph.setText(_translate("Form", "Show DF graph"))
 
-from varats.data.commit_report import CRBarPlotWidget
+from varats.plots.commit_report_plots import CRBarPlotWidget
 
 if __name__ == "__main__":
     import sys
