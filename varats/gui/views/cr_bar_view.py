@@ -7,6 +7,7 @@ from os.path import isfile
 from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox
 
 from varats.gui.views.ui_CRBarView import Ui_Form
+from varats.data.data_manager import VDM
 from varats.data.commit_report import CommitReport
 
 
@@ -16,7 +17,7 @@ class CRBarView(QWidget, Ui_Form):
     """
 
     def __init__(self):
-        super(self.__class__, self).__init__()
+        super(CRBarView, self).__init__()
 
         self.commit_report = None
 
@@ -62,11 +63,17 @@ class CRBarView(QWidget, Ui_Form):
         if self.commit_report is None or \
                 (self.commit_report is not None
                  and self.commit_report.path != file_path):
-            self.commit_report = CommitReport(file_path)
-            if self.check_cf_graph.isChecked():
-                self.plot_up.update_plot(self.commit_report)
-            if self.check_df_graph.isChecked():
-                self.plot_down.update_plot(self.commit_report)
+            self.statusLabel.setText("Loading file...")
+            VDM.load_data_class(file_path, CommitReport,
+                                self._set_new_commit_report)
+
+    def _set_new_commit_report(self, commit_report):
+        self.commit_report = commit_report
+        if self.check_cf_graph.isChecked():
+            self.plot_up.update_plot(self.commit_report)
+        if self.check_df_graph.isChecked():
+            self.plot_down.update_plot(self.commit_report)
+        self.statusLabel.setText("")
 
     def enable_cf_plot(self, state: int):
         """
