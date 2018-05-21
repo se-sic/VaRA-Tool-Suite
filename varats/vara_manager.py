@@ -11,6 +11,8 @@ import subprocess as sp
 
 from enum import Enum
 
+from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject
+
 from plumbum import local, FG
 from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
 from plumbum.commands.processes import ProcessExecutionError
@@ -66,6 +68,17 @@ def fetch_remote(remote, repo_folder=""):
     else:
         with local.cwd(repo_folder):
             git["fetch", remote] & FG
+
+
+def pull_current_branch(repo_folder=""):
+    """
+    Pull in changes in a certain branch.
+    """
+    if repo_folder == '':
+        git["pull"] & FG
+    else:
+        with local.cwd(repo_folder):
+            git["pull"] & FG
 
 
 def checkout_branch(repo_folder, branch):
@@ -313,6 +326,96 @@ def get_vara_status(llvm_folder) -> GitStatus:
                 return GitStatus(GitState.OK)
 
     return GitStatus(GitState.ERROR)
+
+
+###############################################################################
+# Qt interaction hanlders
+###############################################################################
+
+class GitStateSignals(QObject):
+    """
+    GitStateSignals to send state update to the GUI.
+    """
+    status_update = pyqtSignal(object, object, object)
+
+class CheckStateSignal(QObject):
+    """
+    This signal is emited when the state could have changed.
+    """
+    possible_state_change = pyqtSignal()
+
+class GitStateChecker(QRunnable):
+    """
+    GitStateChecker to fetch and verify the git status.
+    """
+
+    def __init__(self, state_signal, path_to_llvm):
+        super(GitStateChecker, self).__init__()
+        self.path_to_llvm = path_to_llvm
+        self.signals = state_signal
+
+    @pyqtSlot()
+    def run(self):
+        """
+        Retrieve status updates for llvm,clang, and VaRA
+        """
+        llvm_status = get_llvm_status(self.path_to_llvm)
+        clang_status = get_clang_status(self.path_to_llvm)
+        vara_status = get_vara_status(self.path_to_llvm)
+
+        self.signals.status_update.emit(llvm_status, clang_status, vara_status)
+
+
+class PullWorker(QRunnable):
+    """
+    QtWorker to update repositories.
+    """
+    def __init__(self, llvm_folder):
+        super(PullWorker, self).__init__()
+        self.llvm_folder = llvm_folder
+        self.check_state = CheckStateSignal()
+
+    @pyqtSlot()
+    def run(self):
+        """
+        Pull changes and update the current branch.
+        """
+        pull_current_branch(self.llvm_folder)
+        pull_current_branch(self.llvm_folder + "tools/clang/")
+        pull_current_branch(self.llvm_folder + "tools/VaRA/")
+        self.check_state.possible_state_change.emit()
+
+
+class VaRAStateManager(object):
+    """
+    """
+    def __init__(self, llvm_folder):
+        # TODO path propertie needs check
+        self.llvm_folder = llvm_folder
+        self.state_signal = GitStateSignals()
+
+        self.thread_pool = QThreadPool()
+
+    def change_llvm_folder(self, llvm_folder):
+        """
+        Change the current llvm folder.
+        """
+        self.llvm_folder = llvm_folder
+
+    def check_repo_state(self):
+        """
+        Check the state of the three VaRA repos.
+        """
+        worker = GitStateChecker(self.state_signal, self.llvm_folder)
+        self.thread_pool.start(worker)
+
+    def update_current_branch(self):
+        """
+        Update the current branches of the VaRA setup.
+        """
+        worker = PullWorker(self.llvm_folder)
+        worker.check_state.possible_state_change.connect(self.check_repo_state)
+        self.thread_pool.start(worker)
 
 
 if __name__ == "__main__":

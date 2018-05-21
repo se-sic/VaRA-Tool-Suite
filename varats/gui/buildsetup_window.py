@@ -96,35 +96,6 @@ class BuildWorker(QRunnable):
         self.signals.finished.emit()
 
 
-class GitStateSignals(QObject):
-    """
-    GitStateSignals to send state update to the GUI.
-    """
-    status_update = pyqtSignal(object, object, object)
-
-
-class GitStateChecker(QRunnable):
-    """
-    GitStateChecker to fetch and verify the git status.
-    """
-
-    def __init__(self, path_to_llvm):
-        super(GitStateChecker, self).__init__()
-        self.path_to_llvm = path_to_llvm
-        self.signals = GitStateSignals()
-
-    @pyqtSlot()
-    def run(self):
-        """
-        Retrieve status updates for llvm,clang, and VaRA
-        """
-        llvm_status = vara_manager.get_llvm_status(self.path_to_llvm)
-        clang_status = vara_manager.get_clang_status(self.path_to_llvm)
-        vara_status = vara_manager.get_vara_status(self.path_to_llvm)
-
-        self.signals.status_update.emit(llvm_status, clang_status, vara_status)
-
-
 class BuildSetup(QWidget, Ui_BuildSetup):
     """
     Window to control the setup and status of the local VaRA installation.
@@ -154,6 +125,13 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         self.advanced_view = False
         self._set_advanced_view()
         self.advancedMode.clicked.connect(self._toggle_advanced_view)
+
+        self.vara_state_mgr = \
+            vara_manager.VaRAStateManager(self.__get_llvm_path())
+        self.updateButton.clicked\
+            .connect(self.vara_state_mgr.update_current_branch)
+        self.vara_state_mgr.state_signal\
+            .status_update.connect(self._update_version)
 
         self.thread_pool = QThreadPool()
         self._check_state()
@@ -234,6 +212,7 @@ class BuildSetup(QWidget, Ui_BuildSetup):
 
     def _check_init(self):
         path = self.__get_llvm_path()
+        self.vara_state_mgr.change_llvm_folder(path)
         if not os.path.exists(path):
             self.initButton.setEnabled(True)
             self.buildButton.setDisabled(True)
@@ -256,9 +235,7 @@ class BuildSetup(QWidget, Ui_BuildSetup):
             self.clangStatus.setStyleSheet("QLabel { color : black; }")
             self.varaStatus.setText("checking...")
             self.varaStatus.setStyleSheet("QLabel { color : black; }")
-            worker = GitStateChecker(self.__get_llvm_path())
-            worker.signals.status_update.connect(self._update_version)
-            self.thread_pool.start(worker)
+            self.vara_state_mgr.check_repo_state()
 
     def _update_version(self, llvm_status, clang_status, vara_status):
         self.llvmStatus.setText(str(llvm_status))
