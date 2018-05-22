@@ -34,7 +34,7 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="0">
+   <item row="4" column="0">
     <spacer name="horizontalSpacer">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -47,7 +47,7 @@
      </property>
     </spacer>
    </item>
-   <item row="1" column="1" rowspan="3">
+   <item row="1" column="1" rowspan="4">
     <layout class="QGridLayout" name="gridLayout_2">
      <item row="0" column="0">
       <widget class="QPushButton" name="loadCRButton">
@@ -97,6 +97,13 @@
       </spacer>
      </item>
     </layout>
+   </item>
+   <item row="3" column="0">
+    <widget class="QSlider" name="fileSlider">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
