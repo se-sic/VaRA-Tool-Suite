@@ -174,6 +174,7 @@ class BuildSetup(QWidget, Ui_BuildSetup):
 
     def _setup_done(self):
         self.statusLabel.setText("Finished setup")
+        self._check_state()
 
     def _build_vara(self):
         self.statusLabel.setText("Building VaRA")
