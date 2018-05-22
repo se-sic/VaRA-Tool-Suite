@@ -156,7 +156,7 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         """
         Downloads VaRA to the current working directory.
         """
-        self.statusLabel.setText("Setting up VaRA")
+        self.statusLabel.setText("Setting up VaRA...")
         self.statusLabel.show()
         path = self.__get_root_path()
         if not os.path.exists(path):
