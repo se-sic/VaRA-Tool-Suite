@@ -12,11 +12,13 @@ setup(name='VaRA-Tool-Suite',
           "matplotlib>=2.2.0",
           "pandas>=0.22.0",
           "benchbuild>=2.0.0",
+          "plumbum>=1.6.6",
       ],
       author="Florian Sattler",
       author_email="sattlerf@fim.uni-passau.de",
       entry_points={
           "gui_scripts": [
-              'vara-graphview = varats.driver:main'
+              'vara-graphview = varats.driver:main_graph_view',
+              'vara-buildsetup = varats.driver:main_setup',
           ]
       })

@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>../../icons/straus64.png</normaloff>../../icons/straus64.png</iconset>
+    <normaloff>../../../icons/straus64.png</normaloff>../../../icons/straus64.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
@@ -40,13 +40,14 @@
      <x>0</x>
      <y>0</y>
      <width>640</width>
-     <height>20</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="actionVaRA_Setup"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuView">
@@ -80,6 +81,37 @@
   <action name="actionCR_BarView">
    <property name="text">
     <string>CR-BarView</string>
+   </property>
+  </action>
+  <action name="actionSetup">
+   <property name="text">
+    <string>Setup</string>
+   </property>
+  </action>
+  <action name="actionDownload_VaRA">
+   <property name="text">
+    <string>Initialize VaRA</string>
+   </property>
+   <property name="toolTip">
+    <string>Downloads and builds VaRA</string>
+   </property>
+  </action>
+  <action name="actionUpdate_VaRA">
+   <property name="text">
+    <string>Update VaRA</string>
+   </property>
+  </action>
+  <action name="actionShow_VaRA_status">
+   <property name="text">
+    <string>Show VaRA status</string>
+   </property>
+  </action>
+  <action name="actionVaRA_Setup">
+   <property name="text">
+    <string>VaRA Setup</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+B</string>
    </property>
   </action>
  </widget>

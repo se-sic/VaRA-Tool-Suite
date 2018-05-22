@@ -31,11 +31,9 @@ class Ui_Form(object):
         self.plot_up.setObjectName("plot_up")
         self.gridLayout.addWidget(self.plot_up, 1, 0, 1, 1)
         spacerItem = QtWidgets.QSpacerItem(40, 0, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.gridLayout.addItem(spacerItem, 3, 0, 1, 1)
+        self.gridLayout.addItem(spacerItem, 4, 0, 1, 1)
         self.gridLayout_2 = QtWidgets.QGridLayout()
         self.gridLayout_2.setObjectName("gridLayout_2")
-        spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.gridLayout_2.addItem(spacerItem1, 3, 0, 2, 1)
         self.loadCRButton = QtWidgets.QPushButton(Form)
         self.loadCRButton.setObjectName("loadCRButton")
         self.gridLayout_2.addWidget(self.loadCRButton, 0, 0, 1, 1)
@@ -45,7 +43,22 @@ class Ui_Form(object):
         self.check_df_graph = QtWidgets.QCheckBox(Form)
         self.check_df_graph.setObjectName("check_df_graph")
         self.gridLayout_2.addWidget(self.check_df_graph, 2, 0, 1, 1)
-        self.gridLayout.addLayout(self.gridLayout_2, 1, 1, 3, 1)
+        self.statusLabel = QtWidgets.QLabel(Form)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.statusLabel.sizePolicy().hasHeightForWidth())
+        self.statusLabel.setSizePolicy(sizePolicy)
+        self.statusLabel.setText("")
+        self.statusLabel.setObjectName("statusLabel")
+        self.gridLayout_2.addWidget(self.statusLabel, 6, 0, 1, 1)
+        spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.gridLayout_2.addItem(spacerItem1, 5, 0, 1, 1)
+        self.gridLayout.addLayout(self.gridLayout_2, 1, 1, 4, 1)
+        self.fileSlider = QtWidgets.QSlider(Form)
+        self.fileSlider.setOrientation(QtCore.Qt.Horizontal)
+        self.fileSlider.setObjectName("fileSlider")
+        self.gridLayout.addWidget(self.fileSlider, 3, 0, 1, 1)
 
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
@@ -57,7 +70,7 @@ class Ui_Form(object):
         self.check_cf_graph.setText(_translate("Form", "Show CF graph"))
         self.check_df_graph.setText(_translate("Form", "Show DF graph"))
 
-from varats.data.commit_report import CRBarPlotWidget
+from varats.plots.commit_report_plots import CRBarPlotWidget
 
 if __name__ == "__main__":
     import sys

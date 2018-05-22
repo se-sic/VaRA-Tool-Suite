@@ -7,35 +7,29 @@ from os.path import isfile
 from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox
 
 from varats.gui.views.ui_CRBarView import Ui_Form
+from varats.data.data_manager import VDM
 from varats.data.commit_report import CommitReport
 
 
-class CRBarView(QWidget):
+class CRBarView(QWidget, Ui_Form):
     """
     Bar view for commit reports
     """
 
     def __init__(self):
-        super().__init__()
-        self.ui_mw = Ui_Form()
+        super(CRBarView, self).__init__()
 
         self.commit_report = None
 
-        self.setup_ui()
+        self.setupUi(self)
+        self.plot_up.set_cf_plot(True)
+        self.plot_up.hide()
+        self.plot_down.set_cf_plot(False)
+        self.plot_down.hide()
 
-    def setup_ui(self):
-        """
-        Setup CR-BarView
-        """
-        self.ui_mw.setupUi(self)
-        self.ui_mw.plot_up.set_cf_plot(True)
-        self.ui_mw.plot_up.hide()
-        self.ui_mw.plot_down.set_cf_plot(False)
-        self.ui_mw.plot_down.hide()
-
-        self.ui_mw.loadCRButton.clicked.connect(self.load_commit_report)
-        self.ui_mw.check_cf_graph.stateChanged.connect(self.enable_cf_plot)
-        self.ui_mw.check_df_graph.stateChanged.connect(self.enable_df_plot)
+        self.loadCRButton.clicked.connect(self.load_commit_report)
+        self.check_cf_graph.stateChanged.connect(self.enable_cf_plot)
+        self.check_df_graph.stateChanged.connect(self.enable_df_plot)
 
     def load_commit_report(self):
         """
@@ -69,30 +63,36 @@ class CRBarView(QWidget):
         if self.commit_report is None or \
                 (self.commit_report is not None
                  and self.commit_report.path != file_path):
-            self.commit_report = CommitReport(file_path)
-            if self.ui_mw.check_cf_graph.isChecked():
-                self.ui_mw.plot_up.update_plot(self.commit_report)
-            if self.ui_mw.check_df_graph.isChecked():
-                self.ui_mw.plot_down.update_plot(self.commit_report)
+            self.statusLabel.setText("Loading file...")
+            VDM.load_data_class(file_path, CommitReport,
+                                self._set_new_commit_report)
+
+    def _set_new_commit_report(self, commit_report):
+        self.commit_report = commit_report
+        if self.check_cf_graph.isChecked():
+            self.plot_up.update_plot(self.commit_report)
+        if self.check_df_graph.isChecked():
+            self.plot_down.update_plot(self.commit_report)
+        self.statusLabel.setText("")
 
     def enable_cf_plot(self, state: int):
         """
         Enable control-flow plot
         """
         if state is 0:  # turned off
-            self.ui_mw.plot_up.hide()
+            self.plot_up.hide()
         else:
             if self.commit_report is not None:
-                self.ui_mw.plot_up.update_plot(self.commit_report)
-            self.ui_mw.plot_up.show()
+                self.plot_up.update_plot(self.commit_report)
+            self.plot_up.show()
 
     def enable_df_plot(self, state: int):
         """
         Enable data-flow plot
         """
         if state is 0:  # turned off
-            self.ui_mw.plot_down.hide()
+            self.plot_down.hide()
         else:
             if self.commit_report is not None:
-                self.ui_mw.plot_down.update_plot(self.commit_report)
-            self.ui_mw.plot_down.show()
+                self.plot_down.update_plot(self.commit_report)
+            self.plot_down.show()
