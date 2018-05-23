@@ -4,7 +4,7 @@ Module for different CommitReport plots
 
 import seaborn as sns
 
-from PyQt5.QtWidgets import QWidget, QGridLayout
+from PyQt5.QtWidgets import QWidget, QGridLayout, QSizePolicy
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg \
@@ -27,6 +27,8 @@ class CRBarPlotWidget(QWidget):
         self.fig = plt.figure()
         plot_cfg_barplot(self.fig, None, self.cf_plot)
         self.canvas = FigureCanvas(self.fig)
+        self.canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.canvas.updateGeometry()
 
         layout = QGridLayout(self)
         layout.addWidget(self.canvas)
@@ -73,11 +75,16 @@ def plot_cfg_barplot(fig, commit_report: CommitReport, draw_cf: bool):
         print("Error: CommitReport has no CF interactions")
         return
 
+    data['Region'] = data['Region'].apply(lambda x: x[0:6])
+
     plt.figure(fig.number)
     plt.clf()
     bar_p = sns.barplot(x="Region", y="Amount",
                         hue="Direction", data=data, palette=color_palette)
+
     for label in bar_p.get_xticklabels():
-        label.set_rotation(20)
+        label.set_rotation(90)
+        label.set_family("monospace")
 
     fig.add_subplot(bar_p)
+    # fig.tight_layout()
