@@ -1,4 +1,17 @@
 from setuptools import setup, find_packages
+from setuptools.command.develop import develop
+from setuptools.command.install import install
+from subprocess import check_call
+
+class CustomDevelopCommand(develop):
+    def run(self):
+        develop.run(self)
+        check_call("./varats/addLinksToBenchbuild.sh".split())
+
+class CustomInstallCommand(install):
+    def run(self):
+        install.run(self)
+        check_call("./varats/addLinksToBenchbuild.sh".split())
 
 setup(name='VaRA-Tool-Suite',
       version="0.1",
@@ -21,4 +34,8 @@ setup(name='VaRA-Tool-Suite',
               'vara-graphview = varats.driver:main_graph_view',
               'vara-buildsetup = varats.driver:main_setup',
           ]
+      },
+      cmdclass={
+          'install': CustomInstallCommand,
+          'develop': CustomDevelopCommand
       })
