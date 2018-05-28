@@ -31,9 +31,9 @@ class RegionMapping(object):
 
 class RegionToFunctionEdge(object):
 
-    def __init__(self, raw_yaml):
-        self._from = raw_yaml['from-region']
-        self._to = raw_yaml['to-functions']
+    def __init__(self, from_region : str, to_function : str):
+        self._from = from_region
+        self._to = to_function
 
     def __str__(self):
         return "{} -> {}".format(self._from, self._to)
@@ -66,7 +66,8 @@ class FunctionGraphEdges(object):
         cg_edges = raw_yaml['call-graph-edges']
         if cg_edges is not None:
             for edge in cg_edges:
-                self.cg_edges.append(RegionToFunctionEdge(edge))
+                for callee in edge['to-functions']:
+                    self.cg_edges.append(RegionToFunctionEdge(edge['from-region'], callee))
 
         self.cf_edges = []
         cf_edges = raw_yaml['control-flow-edges']
