@@ -23,10 +23,10 @@ class RegionMapping(object):
 
     def __init__(self, raw_yaml):
         self.id = raw_yaml['id']
-        self.representation = raw_yaml['representation']
+        self.hash = raw_yaml['hash']
 
     def __str__(self):
-        return "{} = {}".format(self.id, self.representation)
+        return "{} = {}".format(self.id, self.hash)
 
 
 class RegionToFunctionEdge(object):
@@ -60,7 +60,7 @@ class RegionToRegionEdge(object):
 class FunctionGraphEdges(object):
 
     def __init__(self, raw_yaml):
-        self.fname = raw_yaml['function-name']
+        self.fid = raw_yaml['function-id']
         self.cg_edges = []
 
         cg_edges = raw_yaml['call-graph-edges']
@@ -81,7 +81,7 @@ class FunctionGraphEdges(object):
                 self.df_relations.append(RegionToRegionEdge(edge))
 
     def __str__(self):
-        repr_str = "FName: {}:\n\t CG-Edges [".format(self.fname)
+        repr_str = "FName: {}:\n\t CG-Edges [".format(self.fid)
         sep = ""
         for cg_edge in self.cg_edges:
             repr_str += sep + str(cg_edge)
@@ -121,7 +121,7 @@ class CommitReport(object):
             # TODO: parse this into a full graph
             for raw_fg_edge in gedges:
                 f_edge = FunctionGraphEdges(raw_fg_edge)
-                self.graph_info[f_edge.fname] = f_edge
+                self.graph_info[f_edge.fid] = f_edge
 
     def __str__(self):
         return "FInfo:\n\t{}\nRegionMappings:\n\t{}\n" \
@@ -159,8 +159,8 @@ def generate_inout_cfg_cf(commit_report: CommitReport) -> pd.DataFrame:
     rows = []
     for item in cf_map.items():
         total = item[1][0] + item[1][1]
-        rows.append([item[0].representation, item[1][0], "From", total])
-        rows.append([item[0].representation, item[1][1], "To", total])
+        rows.append([item[0].hash, item[1][0], "From", total])
+        rows.append([item[0].hash, item[1][1], "To", total])
 
     rows.sort(key=lambda row: (-row[3], -row[1], row[2], row[0]))
 
@@ -188,8 +188,8 @@ def generate_inout_cfg_df(commit_report: CommitReport) -> pd.DataFrame:
     rows = []
     for item in df_map.items():
         total = item[1][0] + item[1][1]
-        rows.append([item[0].representation, item[1][0], "From", total])
-        rows.append([item[0].representation, item[1][1], "To", total])
+        rows.append([item[0].hash, item[1][0], "From", total])
+        rows.append([item[0].hash, item[1][1], "To", total])
 
     rows.sort(key=lambda row: (-row[3], -row[1], row[2], row[0]))
 
