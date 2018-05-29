@@ -43,6 +43,15 @@ class Ui_Form(object):
         self.statusLabel.setSizePolicy(sizePolicy)
         self.statusLabel.setText("")
         self.statusLabel.setObjectName("statusLabel")
+        self.gridLayout_2.addWidget(self.statusLabel, 6, 0, 1, 1)
+        spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.gridLayout_2.addItem(spacerItem1, 5, 0, 1, 1)
+        self.check_df_graph = QtWidgets.QCheckBox(Form)
+        self.check_df_graph.setObjectName("check_df_graph")
+        self.gridLayout_2.addWidget(self.check_df_graph, 3, 0, 1, 1)
+        self.check_merge_reports = QtWidgets.QCheckBox(Form)
+        self.check_merge_reports.setObjectName("check_merge_reports")
+        self.gridLayout_2.addWidget(self.check_merge_reports, 4, 0, 1, 1)
         self.gridLayout_2.addWidget(self.statusLabel, 8, 0, 1, 1)
         self.comboBox = QtWidgets.QComboBox(Form)
         self.comboBox.setObjectName("comboBox")
@@ -75,6 +84,7 @@ class Ui_Form(object):
         self.check_cf_graph.setText(_translate("Form", "Show CF graph"))
         self.loadCRButton.setText(_translate("Form", "Load Commit Report"))
         self.check_df_graph.setText(_translate("Form", "Show DF graph"))
+        self.check_merge_reports.setText(_translate("Form", "Merge reports"))
         self.label.setText(_translate("Form", "Order Function"))
 
 from varats.plots.commit_report_plots import CRBarPlotWidget

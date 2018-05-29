@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox
 
 from varats.gui.views.ui_CRBarView import Ui_Form
 from varats.data.data_manager import VDM
-from varats.data.commit_report import CommitReport
+from varats.data.commit_report import CommitReport, CommitReportMeta
 
 
 class CRBarView(QWidget, Ui_Form):
@@ -20,6 +20,7 @@ class CRBarView(QWidget, Ui_Form):
         super(CRBarView, self).__init__()
 
         self.commit_reports = []
+        self.commit_report_merged_meta = CommitReportMeta()
         self.current_report = None
         self.loading_files = 0
 
@@ -32,6 +33,7 @@ class CRBarView(QWidget, Ui_Form):
         self.loadCRButton.clicked.connect(self.load_commit_report)
         self.check_cf_graph.stateChanged.connect(self.enable_cf_plot)
         self.check_df_graph.stateChanged.connect(self.enable_df_plot)
+        self.check_merge_reports.stateChanged.connect(self.enable_merge_reports)
 
         self.fileSlider.sliderReleased.connect(self._slider_moved)
         self.fileSlider.setTickPosition(2)
@@ -87,6 +89,7 @@ class CRBarView(QWidget, Ui_Form):
 
         if commit_report not in self.commit_reports:
             self.commit_reports.append(commit_report)
+            self.commit_report_merged_meta.merge(commit_report)
             self._adjust_slider()
 
         if self.loading_files is 0:
@@ -98,11 +101,14 @@ class CRBarView(QWidget, Ui_Form):
     def _draw_plots(self):
         if self.current_report is None:
             return
+        meta=None
+        if self.check_merge_reports.isChecked():
+            meta=self.commit_report_merged_meta
 
         if self.check_cf_graph.isChecked():
-            self.plot_up.update_plot(self.current_report)
+            self.plot_up.update_plot(self.current_report, meta)
         if self.check_df_graph.isChecked():
-            self.plot_down.update_plot(self.current_report)
+            self.plot_down.update_plot(self.current_report, meta)
 
     def _adjust_slider(self):
         self.fileSlider.setMaximum(len(self.commit_reports) - 1)
@@ -114,6 +120,9 @@ class CRBarView(QWidget, Ui_Form):
                 .commit_reports[self.fileSlider.value()]
             self._draw_plots()
 
+    def enable_merge_reports(self, state: int):
+        self._draw_plots()
+
     def enable_cf_plot(self, state: int):
         """
         Enable control-flow plot
@@ -121,8 +130,7 @@ class CRBarView(QWidget, Ui_Form):
         if state is 0:  # turned off
             self.plot_up.hide()
         else:
-            if self.current_report is not None:
-                self.plot_up.update_plot(self.current_report)
+            self._draw_plots()
             self.plot_up.show()
 
     def enable_df_plot(self, state: int):
@@ -132,6 +140,5 @@ class CRBarView(QWidget, Ui_Form):
         if state is 0:  # turned off
             self.plot_down.hide()
         else:
-            if self.current_report is not None:
-                self.plot_down.update_plot(self.current_report)
+            self._draw_plots()
             self.plot_down.show()
