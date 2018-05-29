@@ -18,7 +18,6 @@ class FunctionInfo(object):
     def __str__(self):
         return "{} ({}): {}".format(self.name, self.id, self.region_id)
 
-
 class RegionMapping(object):
 
     def __init__(self, raw_yaml):
@@ -28,7 +27,6 @@ class RegionMapping(object):
     def __str__(self):
         return "{} = {}".format(self.id, self.hash)
 
-
 class RegionToFunctionEdge(object):
 
     def __init__(self, from_region : str, to_function : str):
@@ -37,7 +35,6 @@ class RegionToFunctionEdge(object):
 
     def __str__(self):
         return "{} -> {}".format(self._from, self._to)
-
 
 class RegionToRegionEdge(object):
 
@@ -55,7 +52,6 @@ class RegionToRegionEdge(object):
     @property
     def edge_to(self):
         return self._to
-
 
 class FunctionGraphEdges(object):
 
@@ -163,27 +159,25 @@ def generate_inout_cfg_cf(commit_report: CommitReport, cr_meta: CommitReportMeta
     # Add all from meta commit report and ...
     if cr_meta is not None:
         for reg_mapping in cr_meta.region_mappings.values():
-            cf_map[reg_mapping] = [0, 0]
+            cf_map[reg_mapping.id] = [0, 0]
 
     # if any information is missing add all from the original report to avoid errors.
     for reg_mapping in commit_report.region_mappings.values():
-        cf_map[reg_mapping] = [0, 0]
+        cf_map[reg_mapping.id] = [0, 0]
 
     for func_g_edge in commit_report.graph_info.values():
         for cf_edge in func_g_edge.cf_edges:
-            from_node = commit_report.region_mappings[cf_edge.edge_from]
-            to_node = commit_report.region_mappings[cf_edge.edge_to]
-
-            cf_map[from_node][0] += 1
-            cf_map[to_node][1] += 1
+            cf_map[cf_edge.edge_from][0] += 1
+            cf_map[cf_edge.edge_to][1] += 1
 
     rows = []
     for item in cf_map.items():
         total = item[1][0] + item[1][1]
-        rows.append([item[0].hash, item[1][0], "From", total])
-        rows.append([item[0].hash, item[1][1], "To", total])
 
-    rows.sort(key=lambda row: (-row[3], -row[1], row[2], row[0]))
+        rows.append([item[0], item[1][0], "From", total])
+        rows.append([item[0], item[1][1], "To", total])
+
+    rows.sort(key=lambda row: (row[0], -row[3], -row[1], row[2]))
 
     return pd.DataFrame(rows, columns=['Region', 'Amount',
                                        'Direction', 'TSort'])
@@ -199,27 +193,24 @@ def generate_inout_cfg_df(commit_report: CommitReport, cr_meta: CommitReportMeta
     # Add all from meta commit report and ...
     if cr_meta is not None:
         for reg_mapping in cr_meta.region_mappings.values():
-            df_map[reg_mapping] = [0, 0]
+            df_map[reg_mapping.id] = [0, 0]
 
     # if any information is missing add all from the original report to avoid errors.
     for reg_mapping in commit_report.region_mappings.values():
-        df_map[reg_mapping] = [0, 0]
+        df_map[reg_mapping.id] = [0, 0]
 
     for func_g_edge in commit_report.graph_info.values():
         for df_edge in func_g_edge.df_relations:
-            from_node = commit_report.region_mappings[df_edge.edge_from]
-            to_node = commit_report.region_mappings[df_edge.edge_to]
-
-            df_map[from_node][0] += 1
-            df_map[to_node][1] += 1
+            df_map[df_edge.edge_from][0] += 1
+            df_map[df_edge.edge_to][1] += 1
 
     rows = []
     for item in df_map.items():
         total = item[1][0] + item[1][1]
-        rows.append([item[0].hash, item[1][0], "From", total])
-        rows.append([item[0].hash, item[1][1], "To", total])
+        rows.append([item[0], item[1][0], "From", total])
+        rows.append([item[0], item[1][1], "To", total])
 
-    rows.sort(key=lambda row: (-row[3], -row[1], row[2], row[0]))
+    rows.sort(key=lambda row: (row[0], -row[3], -row[1], row[2]))
 
     return pd.DataFrame(rows, columns=['Region', 'Amount',
                                        'Direction', 'TSort'])
