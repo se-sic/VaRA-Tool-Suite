@@ -119,11 +119,7 @@ class CRBarView(QWidget, Ui_Form):
             self._draw_plots()
 
     def enable_merge_reports(self, state: int):
-        if self.current_report is not None:
-            meta=None
-            if self.check_merge_reports.isChecked():
-                meta=self.commit_report_merged_meta
-            self.plot_up.update_plot(self.current_report, meta)
+        self._draw_plots()
 
     def enable_cf_plot(self, state: int):
         """
@@ -132,11 +128,7 @@ class CRBarView(QWidget, Ui_Form):
         if state is 0:  # turned off
             self.plot_up.hide()
         else:
-            if self.current_report is not None:
-                meta=None
-                if self.check_merge_reports.isChecked():
-                    meta=self.commit_report_merged_meta
-                self.plot_up.update_plot(self.current_report, meta)
+            self._draw_plots()
             self.plot_up.show()
 
     def enable_df_plot(self, state: int):
@@ -146,9 +138,5 @@ class CRBarView(QWidget, Ui_Form):
         if state is 0:  # turned off
             self.plot_down.hide()
         else:
-            if self.current_report is not None:
-                meta=None
-                if self.check_merge_reports.isChecked():
-                    meta=self.commit_report_merged_meta
-                self.plot_up.update_plot(self.current_report, meta)
-            self.plot_up.show()
+            self._draw_plots()
+            self.plot_down.show()
