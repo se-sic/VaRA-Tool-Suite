@@ -36,6 +36,8 @@ class CRBarView(QWidget, Ui_Form):
         self.check_merge_reports.stateChanged.connect(self.enable_merge_reports)
 
         self.fileSlider.sliderReleased.connect(self._slider_moved)
+        self.fileSlider.setTickPosition(2)
+        self._adjust_slider()
 
     def load_commit_report(self):
         """
