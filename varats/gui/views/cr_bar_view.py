@@ -34,6 +34,8 @@ class CRBarView(QWidget, Ui_Form):
         self.check_df_graph.stateChanged.connect(self.enable_df_plot)
 
         self.fileSlider.sliderReleased.connect(self._slider_moved)
+        self.fileSlider.setTickPosition(2)
+        self._adjust_slider()
 
     def load_commit_report(self):
         """
