@@ -40,9 +40,6 @@ class Ui_Form(object):
         self.check_cf_graph = QtWidgets.QCheckBox(Form)
         self.check_cf_graph.setObjectName("check_cf_graph")
         self.gridLayout_2.addWidget(self.check_cf_graph, 1, 0, 1, 1)
-        self.check_df_graph = QtWidgets.QCheckBox(Form)
-        self.check_df_graph.setObjectName("check_df_graph")
-        self.gridLayout_2.addWidget(self.check_df_graph, 2, 0, 1, 1)
         self.statusLabel = QtWidgets.QLabel(Form)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
@@ -54,6 +51,12 @@ class Ui_Form(object):
         self.gridLayout_2.addWidget(self.statusLabel, 6, 0, 1, 1)
         spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.gridLayout_2.addItem(spacerItem1, 5, 0, 1, 1)
+        self.check_df_graph = QtWidgets.QCheckBox(Form)
+        self.check_df_graph.setObjectName("check_df_graph")
+        self.gridLayout_2.addWidget(self.check_df_graph, 3, 0, 1, 1)
+        self.check_merge_reports = QtWidgets.QCheckBox(Form)
+        self.check_merge_reports.setObjectName("check_merge_reports")
+        self.gridLayout_2.addWidget(self.check_merge_reports, 4, 0, 1, 1)
         self.gridLayout.addLayout(self.gridLayout_2, 1, 1, 4, 1)
         self.fileSlider = QtWidgets.QSlider(Form)
         self.fileSlider.setOrientation(QtCore.Qt.Horizontal)
@@ -69,6 +72,7 @@ class Ui_Form(object):
         self.loadCRButton.setText(_translate("Form", "Load Commit Report"))
         self.check_cf_graph.setText(_translate("Form", "Show CF graph"))
         self.check_df_graph.setText(_translate("Form", "Show DF graph"))
+        self.check_merge_reports.setText(_translate("Form", "Merge reports"))
 
 from varats.plots.commit_report_plots import CRBarPlotWidget
 

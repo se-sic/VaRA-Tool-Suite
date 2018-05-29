@@ -98,7 +98,6 @@ class FunctionGraphEdges(object):
 
         return repr_str
 
-
 class CommitReport(object):
 
     def __init__(self, path: str):
@@ -135,17 +134,38 @@ class CommitReport(object):
         """
         return self._path
 
+class CommitReportMeta(object):
+ 
+    def __init__(self):
+        self.finfos = dict()
+        self.region_mappings = dict()
+
+    def merge(self, commit_report : CommitReport):
+        self.finfos.update(commit_report.finfos)
+        self.region_mappings.update(commit_report.region_mappings)
+
+    def __str__(self):
+        return "FInfo:\n\t{}\nRegionMappings:\n\t{}\n" \
+            .format(self.finfos.keys(), self.region_mappings.keys())
+
 
 ###############################################################################
 # Connection Generators
 ###############################################################################
 
-def generate_inout_cfg_cf(commit_report: CommitReport) -> pd.DataFrame:
+def generate_inout_cfg_cf(commit_report: CommitReport, cr_meta: CommitReportMeta=None) -> pd.DataFrame:
     """
     Generates a pandas dataframe that contains the commit
     region control-flow interaction information.
     """
     cf_map = dict()  # RM -> [from, to]
+
+    # Add all from meta commit report and ...
+    if cr_meta is not None:
+        for reg_mapping in cr_meta.region_mappings.values():
+            cf_map[reg_mapping] = [0, 0]
+
+    # if any information is missing add all from the original report to avoid errors.
     for reg_mapping in commit_report.region_mappings.values():
         cf_map[reg_mapping] = [0, 0]
 
@@ -169,12 +189,19 @@ def generate_inout_cfg_cf(commit_report: CommitReport) -> pd.DataFrame:
                                        'Direction', 'TSort'])
 
 
-def generate_inout_cfg_df(commit_report: CommitReport) -> pd.DataFrame:
+def generate_inout_cfg_df(commit_report: CommitReport, cr_meta: CommitReportMeta=None) -> pd.DataFrame:
     """
     Generates a pandas dataframe that contains the commit region
     data-flow interaction information.
     """
     df_map = dict()  # RM -> [from, to]
+
+    # Add all from meta commit report and ...
+    if cr_meta is not None:
+        for reg_mapping in cr_meta.region_mappings.values():
+            df_map[reg_mapping] = [0, 0]
+
+    # if any information is missing add all from the original report to avoid errors.
     for reg_mapping in commit_report.region_mappings.values():
         df_map[reg_mapping] = [0, 0]
 

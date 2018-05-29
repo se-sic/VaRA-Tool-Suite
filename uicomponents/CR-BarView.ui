@@ -63,13 +63,6 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="0">
-      <widget class="QCheckBox" name="check_df_graph">
-       <property name="text">
-        <string>Show DF graph</string>
-       </property>
-      </widget>
-     </item>
      <item row="6" column="0">
       <widget class="QLabel" name="statusLabel">
        <property name="sizePolicy">
@@ -95,6 +88,20 @@
         </size>
        </property>
       </spacer>
+     </item>
+     <item row="3" column="0">
+      <widget class="QCheckBox" name="check_df_graph">
+       <property name="text">
+        <string>Show DF graph</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QCheckBox" name="check_merge_reports">
+       <property name="text">
+        <string>Merge reports</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>

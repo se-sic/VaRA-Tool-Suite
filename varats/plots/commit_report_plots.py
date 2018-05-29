@@ -11,7 +11,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg \
     as FigureCanvas
 
 from varats.data.commit_report import CommitReport, generate_inout_cfg_cf,\
-    generate_inout_cfg_df
+    generate_inout_cfg_df, CommitReportMeta
 
 
 class CRBarPlotWidget(QWidget):
@@ -25,7 +25,7 @@ class CRBarPlotWidget(QWidget):
         self.cf_plot = True
 
         self.fig = plt.figure()
-        plot_cfg_barplot(self.fig, None, self.cf_plot)
+        plot_cfg_barplot(self.fig, None, self.cf_plot, None)
         self.canvas = FigureCanvas(self.fig)
         self.canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.canvas.updateGeometry()
@@ -48,15 +48,15 @@ class CRBarPlotWidget(QWidget):
         """
         self.cf_plot = is_cf_plot
 
-    def update_plot(self, commit_report: CommitReport):
+    def update_plot(self, commit_report: CommitReport, cr_meta : CommitReportMeta=None):
         """
         Update the canvas with a new plot, generated from updated data.
         """
-        plot_cfg_barplot(self.fig, commit_report, self.cf_plot)
+        plot_cfg_barplot(self.fig, commit_report, self.cf_plot, cr_meta)
         self.canvas.draw()
 
 
-def plot_cfg_barplot(fig, commit_report: CommitReport, draw_cf: bool):
+def plot_cfg_barplot(fig, commit_report: CommitReport, draw_cf: bool, cr_meta : CommitReportMeta):
     """
     Generates a bar plot that visualizes the IN/OUT
     control-flow/data-flow edges of regions.
@@ -64,10 +64,10 @@ def plot_cfg_barplot(fig, commit_report: CommitReport, draw_cf: bool):
     if commit_report is None:
         return
     if draw_cf:
-        data = generate_inout_cfg_cf(commit_report)
+        data = generate_inout_cfg_cf(commit_report, cr_meta)
         color_palette = "muted"
     else:
-        data = generate_inout_cfg_df(commit_report)
+        data = generate_inout_cfg_df(commit_report, cr_meta)
         color_palette = "Set2"
 
     if data.empty:
