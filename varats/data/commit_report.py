@@ -18,6 +18,7 @@ class FunctionInfo(object):
     def __str__(self):
         return "{} ({}): {}".format(self.name, self.id, self.region_id)
 
+
 class RegionMapping(object):
 
     def __init__(self, raw_yaml):
@@ -27,14 +28,16 @@ class RegionMapping(object):
     def __str__(self):
         return "{} = {}".format(self.id, self.hash)
 
+
 class RegionToFunctionEdge(object):
 
-    def __init__(self, from_region : str, to_function : str):
+    def __init__(self, from_region: str, to_function: str):
         self._from = from_region
         self._to = to_function
 
     def __str__(self):
         return "{} -> {}".format(self._from, self._to)
+
 
 class RegionToRegionEdge(object):
 
@@ -53,6 +56,7 @@ class RegionToRegionEdge(object):
     def edge_to(self):
         return self._to
 
+
 class FunctionGraphEdges(object):
 
     def __init__(self, raw_yaml):
@@ -63,7 +67,8 @@ class FunctionGraphEdges(object):
         if cg_edges is not None:
             for edge in cg_edges:
                 for callee in edge['to-functions']:
-                    self.cg_edges.append(RegionToFunctionEdge(edge['from-region'], callee))
+                    self.cg_edges.append(RegionToFunctionEdge(
+                        edge['from-region'], callee))
 
         self.cf_edges = []
         cf_edges = raw_yaml['control-flow-edges']
@@ -93,6 +98,7 @@ class FunctionGraphEdges(object):
         repr_str += "]"
 
         return repr_str
+
 
 class CommitReport(object):
 
@@ -130,13 +136,14 @@ class CommitReport(object):
         """
         return self._path
 
+
 class CommitReportMeta(object):
- 
+
     def __init__(self):
         self.finfos = dict()
         self.region_mappings = dict()
 
-    def merge(self, commit_report : CommitReport):
+    def merge(self, commit_report: CommitReport):
         self.finfos.update(commit_report.finfos)
         self.region_mappings.update(commit_report.region_mappings)
 
@@ -149,7 +156,8 @@ class CommitReportMeta(object):
 # Connection Generators
 ###############################################################################
 
-def generate_inout_cfg_cf(commit_report: CommitReport, cr_meta: CommitReportMeta=None) -> pd.DataFrame:
+def generate_inout_cfg_cf(commit_report: CommitReport,
+                          cr_meta: CommitReportMeta = None) -> pd.DataFrame:
     """
     Generates a pandas dataframe that contains the commit
     region control-flow interaction information.
@@ -161,7 +169,8 @@ def generate_inout_cfg_cf(commit_report: CommitReport, cr_meta: CommitReportMeta
         for reg_mapping in cr_meta.region_mappings.values():
             cf_map[reg_mapping.id] = [0, 0]
 
-    # if any information is missing add all from the original report to avoid errors.
+    # if any information is missing add all from the original
+    # report to avoid errors.
     for reg_mapping in commit_report.region_mappings.values():
         cf_map[reg_mapping.id] = [0, 0]
 
@@ -183,7 +192,8 @@ def generate_inout_cfg_cf(commit_report: CommitReport, cr_meta: CommitReportMeta
                                        'Direction', 'TSort'])
 
 
-def generate_inout_cfg_df(commit_report: CommitReport, cr_meta: CommitReportMeta=None) -> pd.DataFrame:
+def generate_inout_cfg_df(commit_report: CommitReport,
+                          cr_meta: CommitReportMeta = None) -> pd.DataFrame:
     """
     Generates a pandas dataframe that contains the commit region
     data-flow interaction information.
@@ -195,7 +205,8 @@ def generate_inout_cfg_df(commit_report: CommitReport, cr_meta: CommitReportMeta
         for reg_mapping in cr_meta.region_mappings.values():
             df_map[reg_mapping.id] = [0, 0]
 
-    # if any information is missing add all from the original report to avoid errors.
+    # if any information is missing add all from the original report
+    # to avoid errors.
     for reg_mapping in commit_report.region_mappings.values():
         df_map[reg_mapping.id] = [0, 0]
 
