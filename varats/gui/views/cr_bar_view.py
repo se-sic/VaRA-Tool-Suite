@@ -5,6 +5,7 @@ Module to manage the CommitReport BarView
 from os.path import isfile
 
 from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox
+from PyQt5.QtCore import Qt
 
 from varats.gui.views.ui_CRBarView import Ui_Form
 from varats.data.data_manager import VDM
@@ -15,6 +16,11 @@ class CRBarView(QWidget, Ui_Form):
     """
     Bar view for commit reports
     """
+    __GRP_CR = "CommitReport"
+    __OPT_CR_MR = "Merge reports"
+
+    __OPT_SCF = "Show CF graph"
+    __OPT_SDF = "Show DF graph"
 
     def __init__(self):
         super(CRBarView, self).__init__()
@@ -31,9 +37,7 @@ class CRBarView(QWidget, Ui_Form):
         self.plot_down.hide()
 
         self.loadCRButton.clicked.connect(self.load_commit_report)
-        self.check_cf_graph.stateChanged.connect(self.enable_cf_plot)
-        self.check_df_graph.stateChanged.connect(self.enable_df_plot)
-        self.check_merge_reports.stateChanged.connect(self.enable_merge_reports)
+        self.treeWidget.itemChanged.connect(self._update_option)
 
         self.fileSlider.sliderReleased.connect(self._slider_moved)
         self.fileSlider.setTickPosition(2)
@@ -84,6 +88,17 @@ class CRBarView(QWidget, Ui_Form):
             VDM.load_data_class(file_path, CommitReport,
                                 self._set_new_commit_report)
 
+    def _update_option(self, item, col):
+        text = item.text(col)
+        if text == self.__OPT_CR_MR:
+            self._draw_plots()
+        elif text == self.__OPT_SCF:
+            self.enable_cf_plot(item.checkState(col))
+        elif text == self.__OPT_SDF:
+            self.enable_df_plot(item.checkState(col))
+        else:
+            raise LookupError("Could not find matching option")
+
     def _set_new_commit_report(self, commit_report):
         self.loading_files -= 1
 
@@ -101,13 +116,13 @@ class CRBarView(QWidget, Ui_Form):
     def _draw_plots(self):
         if self.current_report is None:
             return
-        meta=None
-        if self.check_merge_reports.isChecked():
-            meta=self.commit_report_merged_meta
+        meta = None
+        if self.__get_mr_state() != Qt.Unchecked:
+            meta = self.commit_report_merged_meta
 
-        if self.check_cf_graph.isChecked():
+        if self.__get_scf_state() != Qt.Unchecked:
             self.plot_up.update_plot(self.current_report, meta)
-        if self.check_df_graph.isChecked():
+        if self.__get_sdf_state() != Qt.Unchecked:
             self.plot_down.update_plot(self.current_report, meta)
 
     def _adjust_slider(self):
@@ -120,14 +135,11 @@ class CRBarView(QWidget, Ui_Form):
                 .commit_reports[self.fileSlider.value()]
             self._draw_plots()
 
-    def enable_merge_reports(self, state: int):
-        self._draw_plots()
-
     def enable_cf_plot(self, state: int):
         """
         Enable control-flow plot
         """
-        if state is 0:  # turned off
+        if state == Qt.Unchecked:  # turned off
             self.plot_up.hide()
         else:
             self._draw_plots()
@@ -137,8 +149,30 @@ class CRBarView(QWidget, Ui_Form):
         """
         Enable data-flow plot
         """
-        if state is 0:  # turned off
+        if state == Qt.Unchecked:  # turned off
             self.plot_down.hide()
         else:
             self._draw_plots()
             self.plot_down.show()
+
+    def __get_mr_state(self):
+        items = self.treeWidget.findItems(self.__GRP_CR, Qt.MatchExactly)
+        if not items:
+            return Qt.Unchecked
+        grp = items[0]
+        for i in range(0, grp.childCount()):
+            if grp.child(i).text(0) == self.__OPT_CR_MR:
+                return grp.child(i).checkState(0)
+        return Qt.Unchecked
+
+    def __get_scf_state(self):
+        items = self.treeWidget.findItems(self.__OPT_SCF, Qt.MatchExactly)
+        if not items:
+            return Qt.Unchecked
+        return items[0].checkState(0)
+
+    def __get_sdf_state(self):
+        items = self.treeWidget.findItems(self.__OPT_SDF, Qt.MatchExactly)
+        if not items:
+            return Qt.Unchecked
+        return items[0].checkState(0)
