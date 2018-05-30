@@ -29,26 +29,6 @@
    </item>
    <item row="0" column="1" rowspan="4">
     <layout class="QGridLayout" name="gridLayout_2">
-     <item row="0" column="0">
-      <widget class="QPushButton" name="loadCRButton">
-       <property name="text">
-        <string>Load Commit Report</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="0">
-      <widget class="QLabel" name="statusLabel">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-     </item>
      <item row="1" column="0">
       <widget class="QTreeWidget" name="treeWidget">
        <property name="sizePolicy">
@@ -70,16 +50,24 @@
         <number>26</number>
        </attribute>
        <attribute name="headerStretchLastSection">
-        <bool>true</bool>
+        <bool>false</bool>
        </attribute>
        <column>
         <property name="text">
          <string>Options</string>
         </property>
        </column>
+       <column>
+        <property name="text">
+         <string>Value</string>
+        </property>
+       </column>
        <item>
         <property name="text">
          <string>Show CF graph</string>
+        </property>
+        <property name="text">
+         <string/>
         </property>
         <property name="checkState">
          <enum>Unchecked</enum>
@@ -89,6 +77,9 @@
         <property name="text">
          <string>Show DF graph</string>
         </property>
+        <property name="text">
+         <string/>
+        </property>
         <property name="checkState">
          <enum>Unchecked</enum>
         </property>
@@ -97,14 +88,14 @@
         <property name="text">
          <string>CommitReport</string>
         </property>
+        <property name="text">
+         <string/>
+        </property>
         <item>
          <property name="text">
           <string>Merge reports</string>
          </property>
-         <property name="statusTip">
-          <string/>
-         </property>
-         <property name="whatsThis">
+         <property name="text">
           <string/>
          </property>
          <property name="checkState">
@@ -114,13 +105,16 @@
        </item>
       </widget>
      </item>
-     <item row="4" column="0">
-      <widget class="QComboBox" name="comboBox"/>
-     </item>
      <item row="3" column="0">
-      <widget class="QLabel" name="label">
+      <widget class="QLabel" name="statusLabel">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
-        <string>Order Function</string>
+        <string/>
        </property>
       </widget>
      </item>
@@ -136,6 +130,13 @@
         </size>
        </property>
       </spacer>
+     </item>
+     <item row="0" column="0">
+      <widget class="QPushButton" name="loadCRButton">
+       <property name="text">
+        <string>Load Commit Report</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>

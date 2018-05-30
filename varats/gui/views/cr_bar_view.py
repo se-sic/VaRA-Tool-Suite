@@ -4,7 +4,8 @@ Module to manage the CommitReport BarView
 
 from os.path import isfile
 
-from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox
+from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox,\
+                            QTreeWidgetItem, QComboBox, QHeaderView
 from PyQt5.QtCore import Qt
 
 from varats.gui.views.ui_CRBarView import Ui_Form
@@ -18,6 +19,7 @@ class CRBarView(QWidget, Ui_Form):
     """
     __GRP_CR = "CommitReport"
     __OPT_CR_MR = "Merge reports"
+    __OPT_CR_RORDER = "Report Order"
 
     __OPT_SCF = "Show CF graph"
     __OPT_SDF = "Show DF graph"
@@ -37,6 +39,7 @@ class CRBarView(QWidget, Ui_Form):
         self.plot_down.hide()
 
         self.loadCRButton.clicked.connect(self.load_commit_report)
+        self.__setup_options()
         self.treeWidget.itemChanged.connect(self._update_option)
 
         self.fileSlider.sliderReleased.connect(self._slider_moved)
@@ -89,13 +92,16 @@ class CRBarView(QWidget, Ui_Form):
                                 self._set_new_commit_report)
 
     def _update_option(self, item, col):
-        text = item.text(col)
+        text = item.text(0)
         if text == self.__OPT_CR_MR:
             self._draw_plots()
         elif text == self.__OPT_SCF:
-            self.enable_cf_plot(item.checkState(col))
+            self.enable_cf_plot(item.checkState(1))
         elif text == self.__OPT_SDF:
-            self.enable_df_plot(item.checkState(col))
+            self.enable_df_plot(item.checkState(1))
+        elif text == self.__OPT_CR_RORDER:
+            # TODO: impl
+            pass
         else:
             raise LookupError("Could not find matching option")
 
@@ -155,6 +161,20 @@ class CRBarView(QWidget, Ui_Form):
             self._draw_plots()
             self.plot_down.show()
 
+    def __setup_options(self):
+        # Fixing header
+        self.treeWidget.header().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.treeWidget.header().setSectionResizeMode(1,
+                                                      QHeaderView.Interactive)
+
+        # Add QBox item so select order function
+        items = self.treeWidget.findItems(self.__GRP_CR, Qt.MatchExactly)
+        grp = items[0]
+        drop_item = QTreeWidgetItem(grp)
+        combo_box = QComboBox()
+        self.treeWidget.setItemWidget(drop_item, 1, combo_box)
+        drop_item.setText(0, self.__OPT_CR_RORDER)
+
     def __get_mr_state(self):
         items = self.treeWidget.findItems(self.__GRP_CR, Qt.MatchExactly)
         if not items:
@@ -162,17 +182,17 @@ class CRBarView(QWidget, Ui_Form):
         grp = items[0]
         for i in range(0, grp.childCount()):
             if grp.child(i).text(0) == self.__OPT_CR_MR:
-                return grp.child(i).checkState(0)
+                return grp.child(i).checkState(1)
         return Qt.Unchecked
 
     def __get_scf_state(self):
         items = self.treeWidget.findItems(self.__OPT_SCF, Qt.MatchExactly)
         if not items:
             return Qt.Unchecked
-        return items[0].checkState(0)
+        return items[0].checkState(1)
 
     def __get_sdf_state(self):
         items = self.treeWidget.findItems(self.__OPT_SDF, Qt.MatchExactly)
         if not items:
             return Qt.Unchecked
-        return items[0].checkState(0)
+        return items[0].checkState(1)
