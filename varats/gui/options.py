@@ -3,7 +3,7 @@ Option module, providing different options to manage user modifications.
 """
 
 from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QHeaderView,\
-                            QComboBox
+                            QComboBox, QFileDialog
 from PyQt5.QtCore import Qt
 
 
@@ -30,6 +30,8 @@ class OptionTreeWidget(QTreeWidget):
         self.header().setMinimumSectionSize(26)
         self.header().setStretchLastSection(False)
 
+        self.itemDoubleClicked.connect(self._handle_item_double_click)
+
         self.__scf = QTreeWidgetItem(self)
         self.__scf.setCheckState(1, Qt.Unchecked)
         self.__scf.setText(0, self.OPT_SCF)
@@ -46,9 +48,6 @@ class OptionTreeWidget(QTreeWidget):
         self.__mr.setText(0, self.OPT_CR_MR)
 
         self.__cm = QTreeWidgetItem(grp)
-        self.__cm.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEditable |
-                           Qt.ItemIsDragEnabled | Qt.ItemIsUserCheckable |
-                           Qt.ItemIsEnabled)
         self.__cm.setText(0, self.OPT_CR_CMAP)
 
         # Add QBox item so select order function
@@ -92,3 +91,16 @@ class OptionTreeWidget(QTreeWidget):
         Register a callback for the combo box currentIndexChanged signal.
         """
         self.__combo_box.currentIndexChanged.connect(func)
+
+    def _handle_item_double_click(self, item, col):
+        if item is self.__cm and col == 1:
+            path = self._get_file()
+            self.__cm.setText(1, path)
+
+    def _get_file(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Load CommitReport file", "",
+            "All Files (*)", options=options)
+        return file_path

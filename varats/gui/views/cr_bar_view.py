@@ -118,6 +118,7 @@ class CRBarView(QWidget, Ui_Form):
             c_map_path = item.text(1)
             if path.isfile(c_map_path):
                 self.c_map = CommitMap(c_map_path)
+                self.current_report = self.current_report
             else:
                 self.c_map = None
             self._update_report_order()
