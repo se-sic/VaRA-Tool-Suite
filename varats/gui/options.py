@@ -1,0 +1,94 @@
+"""
+Option module, providing different options to manage user modifications.
+"""
+
+from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QHeaderView,\
+                            QComboBox
+from PyQt5.QtCore import Qt
+
+
+class OptionTreeWidget(QTreeWidget):
+    """
+    A Widget to manage different user options.
+    """
+    GRP_CR = "CommitReport"
+    OPT_CR_MR = "Merge reports"
+    OPT_CR_RORDER = "Report Order"
+    OPT_CR_CMAP = "Commit map"
+
+    OPT_SCF = "Show CF graph"
+    OPT_SDF = "Show DF graph"
+
+    def __init__(self, parent):
+        super(OptionTreeWidget, self).__init__(parent)
+        self.headerItem().setText(0, "Options")
+        self.headerItem().setText(1, "Value")
+        self.header().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.header().setSectionResizeMode(1, QHeaderView.Interactive)
+        self.header().setCascadingSectionResizes(False)
+        self.header().setDefaultSectionSize(100)
+        self.header().setMinimumSectionSize(26)
+        self.header().setStretchLastSection(False)
+
+        self.__scf = QTreeWidgetItem(self)
+        self.__scf.setCheckState(1, Qt.Unchecked)
+        self.__scf.setText(0, self.OPT_SCF)
+
+        self.__sdf = QTreeWidgetItem(self)
+        self.__sdf.setText(0, self.OPT_SDF)
+        self.__sdf.setCheckState(1, Qt.Unchecked)
+
+        grp = QTreeWidgetItem(self)
+        grp.setText(0, self.GRP_CR)
+
+        self.__mr = QTreeWidgetItem(grp)
+        self.__mr.setCheckState(1, Qt.Unchecked)
+        self.__mr.setText(0, self.OPT_CR_MR)
+
+        self.__cm = QTreeWidgetItem(grp)
+        self.__cm.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEditable |
+                           Qt.ItemIsDragEnabled | Qt.ItemIsUserCheckable |
+                           Qt.ItemIsEnabled)
+        self.__cm.setText(0, self.OPT_CR_CMAP)
+
+        # Add QBox item so select order function
+        drop_item = QTreeWidgetItem(grp)
+        self.__combo_box = QComboBox()
+        self.__combo_box.addItem("---")
+        self.__combo_box.addItem("Linear History")
+        self.setItemWidget(drop_item, 1, self.__combo_box)
+        drop_item.setText(0, self.OPT_CR_RORDER)
+
+    @property
+    def merge_report_checkstate(self):
+        """
+        Check state of merge report option.
+        """
+        return self.__mr.checkState(1)
+
+    @property
+    def show_cf_checkstate(self):
+        """
+        Check state of show cf plot option.
+        """
+        return self.__scf.checkState(1)
+
+    @property
+    def show_df_checkstate(self):
+        """
+        Check state of show df plot option.
+        """
+        return self.__sdf.checkState(1)
+
+    @property
+    def report_order(self):
+        """
+        Get current combo box selection.
+        """
+        return self.__combo_box.currentText()
+
+    def connect_cb_cic(self, func):
+        """
+        Register a callback for the combo box currentIndexChanged signal.
+        """
+        self.__combo_box.currentIndexChanged.connect(func)

@@ -37,7 +37,7 @@
       </widget>
      </item>
      <item row="1" column="0">
-      <widget class="QTreeWidget" name="treeWidget">
+      <widget class="OptionTreeWidget" name="optionsTree">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
          <horstretch>0</horstretch>
@@ -59,68 +59,6 @@
        <attribute name="headerStretchLastSection">
         <bool>false</bool>
        </attribute>
-       <column>
-        <property name="text">
-         <string>Options</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>Value</string>
-        </property>
-       </column>
-       <item>
-        <property name="text">
-         <string>Show CF graph</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="checkState">
-         <enum>Unchecked</enum>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Show DF graph</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="checkState">
-         <enum>Unchecked</enum>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>CommitReport</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <item>
-         <property name="text">
-          <string>Merge reports</string>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="checkState">
-          <enum>Unchecked</enum>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Commit map</string>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="flags">
-          <set>ItemIsSelectable|ItemIsEditable|ItemIsDragEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
-         </property>
-        </item>
-       </item>
       </widget>
      </item>
      <item row="2" column="0">
@@ -201,6 +139,11 @@
    <class>InfoTreeWidget</class>
    <extends>QTreeWidget</extends>
    <header>varats.gui.info</header>
+  </customwidget>
+  <customwidget>
+   <class>OptionTreeWidget</class>
+   <extends>QTreeWidget</extends>
+   <header>varats.gui.options</header>
   </customwidget>
  </customwidgets>
  <resources/>

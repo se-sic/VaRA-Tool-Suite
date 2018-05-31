@@ -5,25 +5,19 @@ Module to manage the CommitReport BarView
 from os import path
 
 from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox,\
-                            QTreeWidgetItem, QComboBox, QHeaderView
+                            QComboBox
 from PyQt5.QtCore import Qt
 
 from varats.gui.views.ui_CRBarView import Ui_Form
 from varats.data.data_manager import VDM
 from varats.data.commit_report import CommitReport, CommitReportMeta, CommitMap
+from varats.gui.options import OptionTreeWidget
 
 
 class CRBarView(QWidget, Ui_Form):
     """
     Bar view for commit reports
     """
-    __GRP_CR = "CommitReport"
-    __OPT_CR_MR = "Merge reports"
-    __OPT_CR_RORDER = "Report Order"
-    __OPT_CR_CMAP = "Commit map"
-
-    __OPT_SCF = "Show CF graph"
-    __OPT_SDF = "Show DF graph"
 
     def __init__(self):
         super(CRBarView, self).__init__()
@@ -41,8 +35,8 @@ class CRBarView(QWidget, Ui_Form):
         self.plot_down.hide()
 
         self.loadCRButton.clicked.connect(self.load_commit_report)
-        self.__setup_options()
-        self.treeWidget.itemChanged.connect(self._update_option)
+        self.optionsTree.connect_cb_cic(self._update_report_order)
+        self.optionsTree.itemChanged.connect(self._update_option)
 
         self.fileSlider.sliderReleased.connect(self._slider_moved)
         self.fileSlider.setTickPosition(2)
@@ -112,16 +106,15 @@ class CRBarView(QWidget, Ui_Form):
 
     def _update_option(self, item, col):
         text = item.text(0)
-        if text == self.__OPT_CR_MR:
+        if text == OptionTreeWidget.OPT_CR_MR:
             self._draw_plots()
-        elif text == self.__OPT_SCF:
+        elif text == self.optionsTree.OPT_SCF:
             self.enable_cf_plot(item.checkState(1))
-        elif text == self.__OPT_SDF:
+        elif text == self.optionsTree.OPT_SDF:
             self.enable_df_plot(item.checkState(1))
-        elif text == self.__OPT_CR_RORDER:
+        elif text == self.optionsTree.OPT_CR_RORDER:
             self._update_report_order()
-        elif text == self.__OPT_CR_CMAP:
-            print(item.text(1))
+        elif text == self.optionsTree.OPT_CR_CMAP:
             c_map_path = item.text(1)
             if path.isfile(c_map_path):
                 self.c_map = CommitMap(c_map_path)
@@ -149,12 +142,12 @@ class CRBarView(QWidget, Ui_Form):
         if self.current_report is None:
             return
         meta = None
-        if self.__get_mr_state() != Qt.Unchecked:
+        if self.optionsTree.merge_report_checkstate != Qt.Unchecked:
             meta = self.commit_report_merged_meta
 
-        if self.__get_scf_state() != Qt.Unchecked:
+        if self.optionsTree.show_cf_checkstate != Qt.Unchecked:
             self.plot_up.update_plot(self.current_report, meta)
-        if self.__get_sdf_state() != Qt.Unchecked:
+        if self.optionsTree.show_df_checkstate != Qt.Unchecked:
             self.plot_down.update_plot(self.current_report, meta)
 
     def _adjust_slider(self):
@@ -187,28 +180,8 @@ class CRBarView(QWidget, Ui_Form):
             self._draw_plots()
             self.plot_down.show()
 
-    def __setup_options(self):
-        # Fixing header
-        self.treeWidget.header().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.treeWidget.header().setSectionResizeMode(1,
-                                                      QHeaderView.Interactive)
-
-        # Add QBox item so select order function
-        items = self.treeWidget.findItems(self.__GRP_CR, Qt.MatchExactly)
-        grp = items[0]
-        drop_item = QTreeWidgetItem(grp)
-        self.combo_box = QComboBox()
-        self.combo_box.addItem("---")
-        self.combo_box.addItem("Linear History")
-        self.combo_box.currentIndexChanged.connect(self._update_report_order)
-        self.treeWidget.setItemWidget(drop_item, 1, self.combo_box)
-        drop_item.setText(0, self.__OPT_CR_RORDER)
-
-    def _update_report_order(self, index: int = -1):
-        if index == -1:
-            text = self.combo_box.currentText()
-        else:
-            text = self.combo_box.itemText(index)
+    def _update_report_order(self):
+        text = self.optionsTree.report_order
 
         if text == 'Linear History':
             def order_func(x):
@@ -226,25 +199,3 @@ class CRBarView(QWidget, Ui_Form):
         if self.current_report is not None:
             idx = self.commit_reports.index(self.current_report)
             self.fileSlider.setSliderPosition(idx)
-
-    def __get_mr_state(self):
-        items = self.treeWidget.findItems(self.__GRP_CR, Qt.MatchExactly)
-        if not items:
-            return Qt.Unchecked
-        grp = items[0]
-        for i in range(0, grp.childCount()):
-            if grp.child(i).text(0) == self.__OPT_CR_MR:
-                return grp.child(i).checkState(1)
-        return Qt.Unchecked
-
-    def __get_scf_state(self):
-        items = self.treeWidget.findItems(self.__OPT_SCF, Qt.MatchExactly)
-        if not items:
-            return Qt.Unchecked
-        return items[0].checkState(1)
-
-    def __get_sdf_state(self):
-        items = self.treeWidget.findItems(self.__OPT_SDF, Qt.MatchExactly)
-        if not items:
-            return Qt.Unchecked
-        return items[0].checkState(1)
