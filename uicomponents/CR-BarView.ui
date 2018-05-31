@@ -102,6 +102,17 @@
           <enum>Unchecked</enum>
          </property>
         </item>
+        <item>
+         <property name="text">
+          <string>Commit map</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="flags">
+          <set>ItemIsSelectable|ItemIsEditable|ItemIsDragEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
+         </property>
+        </item>
        </item>
       </widget>
      </item>

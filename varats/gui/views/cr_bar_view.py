@@ -2,7 +2,7 @@
 Module to manage the CommitReport BarView
 """
 
-from os.path import isfile
+from os import path
 
 from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox,\
                             QTreeWidgetItem, QComboBox, QHeaderView
@@ -10,7 +10,7 @@ from PyQt5.QtCore import Qt
 
 from varats.gui.views.ui_CRBarView import Ui_Form
 from varats.data.data_manager import VDM
-from varats.data.commit_report import CommitReport, CommitReportMeta
+from varats.data.commit_report import CommitReport, CommitReportMeta, CommitMap
 
 
 class CRBarView(QWidget, Ui_Form):
@@ -20,6 +20,7 @@ class CRBarView(QWidget, Ui_Form):
     __GRP_CR = "CommitReport"
     __OPT_CR_MR = "Merge reports"
     __OPT_CR_RORDER = "Report Order"
+    __OPT_CR_CMAP = "Commit map"
 
     __OPT_SCF = "Show CF graph"
     __OPT_SDF = "Show DF graph"
@@ -30,6 +31,7 @@ class CRBarView(QWidget, Ui_Form):
         self.commit_reports = []
         self.commit_report_merged_meta = CommitReportMeta()
         self.current_report = None
+        self.c_map = None
         self.loading_files = 0
 
         self.setupUi(self)
@@ -46,6 +48,8 @@ class CRBarView(QWidget, Ui_Form):
         self.fileSlider.setTickPosition(2)
         self._adjust_slider()
 
+        self._update_report_order()
+
     def load_commit_report(self):
         """
         Load new CommitReport from file_path.
@@ -57,7 +61,7 @@ class CRBarView(QWidget, Ui_Form):
             "Yaml Files (*.yaml *.yml);;All Files (*)", options=options)
 
         for file_path in file_paths:
-            if not isfile(file_path):
+            if not path.isfile(file_path):
                 err = QMessageBox()
                 err.setIcon(QMessageBox.Warning)
                 err.setWindowTitle("File not found.")
@@ -100,8 +104,15 @@ class CRBarView(QWidget, Ui_Form):
         elif text == self.__OPT_SDF:
             self.enable_df_plot(item.checkState(1))
         elif text == self.__OPT_CR_RORDER:
-            # TODO: impl
-            pass
+            self._update_report_order()
+        elif text == self.__OPT_CR_CMAP:
+            print(item.text(1))
+            c_map_path = item.text(1)
+            if path.isfile(c_map_path):
+                self.c_map = CommitMap(c_map_path)
+            else:
+                self.c_map = None
+            self._update_report_order()
         else:
             raise LookupError("Could not find matching option")
 
@@ -171,9 +182,35 @@ class CRBarView(QWidget, Ui_Form):
         items = self.treeWidget.findItems(self.__GRP_CR, Qt.MatchExactly)
         grp = items[0]
         drop_item = QTreeWidgetItem(grp)
-        combo_box = QComboBox()
-        self.treeWidget.setItemWidget(drop_item, 1, combo_box)
+        self.combo_box = QComboBox()
+        self.combo_box.addItem("---")
+        self.combo_box.addItem("Linear History")
+        self.combo_box.currentIndexChanged.connect(self._update_report_order)
+        self.treeWidget.setItemWidget(drop_item, 1, self.combo_box)
         drop_item.setText(0, self.__OPT_CR_RORDER)
+
+    def _update_report_order(self, index: int = -1):
+        if index == -1:
+            text = self.combo_box.currentText()
+        else:
+            text = self.combo_box.itemText(index)
+
+        if text == 'Linear History':
+            def order_func(x):
+                file_path = x.path
+                filename = path.basename(file_path)
+                c_hash = filename[5:-5]
+                if self.c_map is not None:
+                    return self.c_map.time_id(c_hash)
+                return c_hash
+        else:
+            def order_func(x):
+                return x
+
+        self.commit_reports.sort(key=order_func)
+        if self.current_report is not None:
+            idx = self.commit_reports.index(self.current_report)
+            self.fileSlider.setSliderPosition(idx)
 
     def __get_mr_state(self):
         items = self.treeWidget.findItems(self.__GRP_CR, Qt.MatchExactly)

@@ -33,6 +33,8 @@ class Ui_Form(object):
         item_0 = QtWidgets.QTreeWidgetItem(self.treeWidget)
         item_1 = QtWidgets.QTreeWidgetItem(item_0)
         item_1.setCheckState(1, QtCore.Qt.Unchecked)
+        item_1 = QtWidgets.QTreeWidgetItem(item_0)
+        item_1.setFlags(QtCore.Qt.ItemIsSelectable|QtCore.Qt.ItemIsEditable|QtCore.Qt.ItemIsDragEnabled|QtCore.Qt.ItemIsUserCheckable|QtCore.Qt.ItemIsEnabled)
         self.treeWidget.header().setCascadingSectionResizes(False)
         self.treeWidget.header().setDefaultSectionSize(100)
         self.treeWidget.header().setMinimumSectionSize(26)
@@ -88,6 +90,7 @@ class Ui_Form(object):
         self.treeWidget.topLevelItem(1).setText(0, _translate("Form", "Show DF graph"))
         self.treeWidget.topLevelItem(2).setText(0, _translate("Form", "CommitReport"))
         self.treeWidget.topLevelItem(2).child(0).setText(0, _translate("Form", "Merge reports"))
+        self.treeWidget.topLevelItem(2).child(1).setText(0, _translate("Form", "Commit map"))
         self.treeWidget.setSortingEnabled(__sortingEnabled)
         self.loadCRButton.setText(_translate("Form", "Load Commit Report"))
 
