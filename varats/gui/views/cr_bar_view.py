@@ -30,7 +30,7 @@ class CRBarView(QWidget, Ui_Form):
 
         self.commit_reports = []
         self.commit_report_merged_meta = CommitReportMeta()
-        self.current_report = None
+        self.__current_report = None
         self.c_map = None
         self.loading_files = 0
 
@@ -49,6 +49,21 @@ class CRBarView(QWidget, Ui_Form):
         self._adjust_slider()
 
         self._update_report_order()
+
+    @property
+    def current_report(self):
+        """
+        Current shown commit report.
+        """
+        return self.__current_report
+
+    @current_report.setter
+    def current_report(self, report):
+        self.__current_report = report
+        c_hash = path.basename(self.current_report.path)[5:-5]
+        self.infoTree.c_hash = c_hash
+        if self.c_map is not None:
+            self.infoTree.h_id = self.c_map.time_id(c_hash)
 
     def load_commit_report(self):
         """

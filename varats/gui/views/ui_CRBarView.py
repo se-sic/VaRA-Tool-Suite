@@ -18,6 +18,9 @@ class Ui_Form(object):
         self.gridLayout.addItem(spacerItem, 3, 0, 1, 1)
         self.gridLayout_2 = QtWidgets.QGridLayout()
         self.gridLayout_2.setObjectName("gridLayout_2")
+        self.loadCRButton = QtWidgets.QPushButton(Form)
+        self.loadCRButton.setObjectName("loadCRButton")
+        self.gridLayout_2.addWidget(self.loadCRButton, 0, 0, 1, 1)
         self.treeWidget = QtWidgets.QTreeWidget(Form)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
@@ -40,6 +43,8 @@ class Ui_Form(object):
         self.treeWidget.header().setMinimumSectionSize(26)
         self.treeWidget.header().setStretchLastSection(False)
         self.gridLayout_2.addWidget(self.treeWidget, 1, 0, 1, 1)
+        spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.gridLayout_2.addItem(spacerItem1, 2, 0, 1, 1)
         self.statusLabel = QtWidgets.QLabel(Form)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
@@ -48,12 +53,15 @@ class Ui_Form(object):
         self.statusLabel.setSizePolicy(sizePolicy)
         self.statusLabel.setText("")
         self.statusLabel.setObjectName("statusLabel")
-        self.gridLayout_2.addWidget(self.statusLabel, 3, 0, 1, 1)
-        spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.gridLayout_2.addItem(spacerItem1, 2, 0, 1, 1)
-        self.loadCRButton = QtWidgets.QPushButton(Form)
-        self.loadCRButton.setObjectName("loadCRButton")
-        self.gridLayout_2.addWidget(self.loadCRButton, 0, 0, 1, 1)
+        self.gridLayout_2.addWidget(self.statusLabel, 4, 0, 1, 1)
+        self.infoTree = InfoTreeWidget(Form)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.infoTree.sizePolicy().hasHeightForWidth())
+        self.infoTree.setSizePolicy(sizePolicy)
+        self.infoTree.setObjectName("infoTree")
+        self.gridLayout_2.addWidget(self.infoTree, 3, 0, 1, 1)
         self.gridLayout.addLayout(self.gridLayout_2, 0, 1, 4, 1)
         self.fileSlider = QtWidgets.QSlider(Form)
         self.fileSlider.setOrientation(QtCore.Qt.Horizontal)
@@ -82,6 +90,7 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
+        self.loadCRButton.setText(_translate("Form", "Load Commit Report"))
         self.treeWidget.headerItem().setText(0, _translate("Form", "Options"))
         self.treeWidget.headerItem().setText(1, _translate("Form", "Value"))
         __sortingEnabled = self.treeWidget.isSortingEnabled()
@@ -92,8 +101,8 @@ class Ui_Form(object):
         self.treeWidget.topLevelItem(2).child(0).setText(0, _translate("Form", "Merge reports"))
         self.treeWidget.topLevelItem(2).child(1).setText(0, _translate("Form", "Commit map"))
         self.treeWidget.setSortingEnabled(__sortingEnabled)
-        self.loadCRButton.setText(_translate("Form", "Load Commit Report"))
 
+from varats.gui.info import InfoTreeWidget
 from varats.plots.commit_report_plots import CRBarPlotWidget
 
 if __name__ == "__main__":
