@@ -151,7 +151,7 @@ class CRBarView(QWidget, Ui_Form):
             self.plot_down.update_plot(self.current_report, meta)
 
     def _adjust_slider(self):
-        self.fileSlider.setMaximum(len(self.commit_reports) - 1)
+        self.fileSlider.setMaximum(max(len(self.commit_reports) - 1, 0))
         self._slider_moved()
 
     def _slider_moved(self):
