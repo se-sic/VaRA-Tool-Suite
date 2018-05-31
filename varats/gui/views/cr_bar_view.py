@@ -138,6 +138,8 @@ class CRBarView(QWidget, Ui_Form):
             self.statusLabel.setText("Loading files... " +
                                      str(self.loading_files))
 
+        self._update_report_order()
+
     def _draw_plots(self):
         if self.current_report is None:
             return
