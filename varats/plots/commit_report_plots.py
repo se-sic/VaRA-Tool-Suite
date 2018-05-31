@@ -48,7 +48,8 @@ class CRBarPlotWidget(QWidget):
         """
         self.cf_plot = is_cf_plot
 
-    def update_plot(self, commit_report: CommitReport, cr_meta : CommitReportMeta=None):
+    def update_plot(self, commit_report: CommitReport,
+                    cr_meta: CommitReportMeta = None):
         """
         Update the canvas with a new plot, generated from updated data.
         """
@@ -56,7 +57,8 @@ class CRBarPlotWidget(QWidget):
         self.canvas.draw()
 
 
-def plot_cfg_barplot(fig, commit_report: CommitReport, draw_cf: bool, cr_meta : CommitReportMeta):
+def plot_cfg_barplot(fig, commit_report: CommitReport, draw_cf: bool,
+                     cr_meta: CommitReportMeta):
     """
     Generates a bar plot that visualizes the IN/OUT
     control-flow/data-flow edges of regions.
