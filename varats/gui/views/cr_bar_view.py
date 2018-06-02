@@ -40,6 +40,9 @@ class CRBarView(QWidget, Ui_Form):
 
         self.fileSlider.sliderReleased.connect(self._slider_moved)
         self.fileSlider.setTickPosition(2)
+        self.playButton.clicked.connect(self._click_next)
+        self.stopButton.clicked.connect(self._click_stop)
+        self.__preview = False
         self._adjust_slider()
 
         self._update_report_order()
@@ -202,3 +205,15 @@ class CRBarView(QWidget, Ui_Form):
         if self.current_report is not None:
             idx = self.commit_reports.index(self.current_report)
             self.fileSlider.setSliderPosition(idx)
+
+    def _click_next(self):
+        self.__preview = True
+        self._next_commit_report()
+
+    def _next_commit_report(self):
+        if self.__preview:
+            self.fileSlider.setSliderPosition(self.fileSlider.value() + 1)
+            self._slider_moved()
+
+    def _click_stop(self):
+        self.__preview = False
