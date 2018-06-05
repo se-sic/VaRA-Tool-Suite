@@ -6,7 +6,7 @@ from benchbuild.utils.run import run
 from benchbuild.utils.wrapping import wrap
 import benchbuild.project as prj
 from benchbuild.utils.cmd import cp, make, git, pwd
-from benchbuild.utils.downloader import update_hash, Copy, source_required
+from benchbuild.utils.downloader import Git
 
 from plumbum import local
 
@@ -25,15 +25,16 @@ class gzip(prj.Project):
         pass
 
     def download(self):
-        tgt_root = CFG["tmp_dir"].value()
-        dir = path.join(tgt_root, self.src_dir)
-        if not source_required(self.src_dir, tgt_root):
-            Copy(dir, ".")
-            return
-
-        git("clone", "--depth", "1", self.gzip_uri, dir)
-        update_hash(self.src_dir, tgt_root)
-        Copy(dir, ".")
+        # tgt_root = CFG["tmp_dir"].value()
+        # dir = path.join(tgt_root, self.src_dir)
+        # if not source_required(self.src_dir, tgt_root):
+        #     Copy(dir, ".")
+        #     return
+        #
+        # git("clone", "--depth", "1", self.gzip_uri, dir)
+        # update_hash(self.src_dir, tgt_root)
+        # Copy(dir, ".")
+        Git(self.gzip_uri, self.src_dir)
 
     def configure(self):
         self.cflags += ["-Wno-error=string-plus-int",

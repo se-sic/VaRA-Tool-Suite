@@ -7,13 +7,13 @@ from benchbuild import extensions as ext
 from benchbuild.extensions import RunWithTime, RuntimeExtension
 from benchbuild.settings import CFG
 from benchbuild.utils.downloader import Git
-from benchbuild.utils.actions import Build, Configure, Clean, Step
+from benchbuild.utils.actions import Clean, Step
 from benchbuild.utils.cmd import make
 from benchbuild.utils.run import run
 from plumbum import local
 from plumbum.path.utils import delete
 import logging
-import os
+from os import path
 
 LOG = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ EnvVars = {
     "CXXFLAGS": "-fvara-handleRM=Commit",
     "CC": "wllvm",
     "CXX": "wllvm++",
-    "WLLVM_OUTPUT_FILE": os.path.join(CFG["tmp_dir"].value(),"wllvm.log"),
+    "WLLVM_OUTPUT_FILE": path.join(CFG["tmp_dir"].value(),"wllvm.log"),
     "LLVM_COMPILER_PATH": "/home/hellmich/git/llvm/build/dev/bin"
 }
 
@@ -56,21 +56,21 @@ class vara(Experiment):
         project.runtime_extension = ext.RunWithTime(RuntimeExtension(project,
                 self, config={'jobs': int(CFG["jobs"].value())}))
 
-        project_src = os.path.join(project.builddir, project.src_dir) # TODO: in jedem Projekt die selbe Variable verwenden
+        project_src = path.join(project.builddir, project.src_dir) # TODO: in jedem Projekt die selbe Variable verwenden
 
         def evaluate_preparation():
             SRC_URL = "https://github.com/se-passau/VaRA.git"
-            Git(SRC_URL, "vara") # TODO: If not working third arg: CFG["tmp_dir"].value()
+            Git(SRC_URL, "vara")
             scripts_src = CFG["benchbuild_prefix"].value() + "/vara/tools/marker-region"
 
-            if not os.path.exists(scripts_src):
+            if not path.exists(scripts_src):
                 LOG.error("Following path does not exist", scripts_src)
                 return ""
 
             prepare = local[scripts_src + "/prepare.sh"]
             clang_bins = EnvVars["LLVM_COMPILER_PATH"]
 
-            if not os.path.exists(clang_bins):
+            if not path.exists(clang_bins):
                 LOG.error("Following path does not exist", clang_bins)
                 return ""
 
@@ -78,24 +78,20 @@ class vara(Experiment):
                 prepare("-c", clang_bins, "-t", scripts_src)
 
         def evaluate_configurationwllvm():
-            with local.cwd(os.path.join(project_src ,"out")):
+            with local.cwd(path.join(project_src ,"out")):
                 with local.env(**EnvVars):
-                    """For gource(src_dir):"""
                     if project.name == "gource":
                         run(local["./autogen.sh"])
                         run(local["./configure"])
 
-                    """For doxygen(src_dir):"""
                     if project.name == "doxygen":
                         cmake = local["cmake"]
                         delete("CMakeCache.txt")
                         cmake("-G", "Unix Makefiles", ".")
 
-                    """For minisat(SRC_FILE):"""
                     if project.name == "minisat":
                         run(make["config"])
 
-                    """For git(src_dir):"""
                     if project.name == "git":
                         delete("configure", "config.status")
                         run(make["configure"])
@@ -104,23 +100,25 @@ class vara(Experiment):
                     if project.name == "gzip":
                         run(local["./configure"])
 
-        """For leveldb(SRC_FILE) and openblas(SRC_FILE) and sqlite3 und doxygen (src_dir):"""
+                    if project.name == "busybox":
+                        #delete("configure", "config.status")
+                        run(make["defconfig"])
 
         def evaluate_buildwllvm():
-            with local.cwd(os.path.join(project_src ,"out")):
+            with local.cwd(path.join(project_src ,"out")):
                 with local.env(**EnvVars):
                     run(make["-j", CFG["jobs"]])
 
         def evaluate_extraction():
             extract = local["extract-bc"]
             with local.env(**EnvVars):
-                with local.cwd(os.path.join(project_src ,"out")):
+                with local.cwd(path.join(project_src ,"out")):
                     extract(project.name)
 
         def evaluate_analysis():
-            opt = local[os.path.join(EnvVars["LLVM_COMPILER_PATH"], "opt")]
+            opt = local[path.join(EnvVars["LLVM_COMPILER_PATH"], "opt")]
             run_cmd = opt["-vara-CFR", "-view-TFA", "-yaml-out-file=source.yaml",
-                os.path.join(project_src, "out", project.name + ".bc")]
+                path.join(project_src, "out", project.name + ".bc")]
             with local.cwd(CFG["tmp_dir"].value()):
                 run_cmd()
 
