@@ -5,8 +5,8 @@ from benchbuild.utils.compiler import lt_clang, lt_clang_cxx
 from benchbuild.utils.run import run
 from benchbuild.utils.wrapping import wrap
 import benchbuild.project as prj
-from benchbuild.utils.cmd import cp, make, git, pwd
-from benchbuild.utils.downloader import update_hash, Copy, source_required
+from benchbuild.utils.cmd import make
+from benchbuild.utils.downloader import Git
 
 from plumbum import local
 from os import path
@@ -26,15 +26,7 @@ class Git(prj.Project):
         pass
 
     def download(self):
-        tgt_root = CFG["tmp_dir"].value()
-        src_dir = path.join(tgt_root, self.src_dir)
-        if not source_required(self.src_dir, tgt_root):
-            Copy(src_dir, ".")
-            return
-
-        git("clone", "--depth", "1", self.git_uri, src_dir)
-        update_hash(self.src_dir, tgt_root)
-        Copy(src_dir, ".")
+        Git(self.git_uri, self.src_dir)
 
     def configure(self):
         clang = lt_clang(self.cflags, self.ldflags, self.compiler_extension)
