@@ -20,6 +20,7 @@ class busybox(Project):
 
     src_dir = NAME + "-{0}".format(VERSION)
     git_uri = "https://github.com/mirror/busybox.git"
+    EnvVars = {}
 
     def run_tests(self, experiment, run):
         pass
@@ -31,9 +32,10 @@ class busybox(Project):
         clang = lt_clang(self.cflags, self.ldflags, self.compiler_extension)
         with local.cwd(self.src_dir):
             with local.env(CC=str(clang)):
-                run(make["defconfig"])
-                #run(make["menuconfig"])
+                with local.env(**self.EnvVars):
+                    run(make["defconfig"])
 
     def build(self):
         with local.cwd(self.src_dir):
-            run(make["-j", CFG["jobs"]])
+            with local.env(**self.EnvVars):
+                run(make["-j", CFG["jobs"]])

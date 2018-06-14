@@ -7,6 +7,7 @@ import benchbuild.project as prj
 from benchbuild.utils.cmd import make
 from benchbuild.utils.downloader import Git
 
+from plumbum.path.utils import delete
 from plumbum import local
 from os import path
 
@@ -20,6 +21,7 @@ class Doxygen(prj.Project):
 
     src_dir = NAME + "-{0}".format(VERSION)
     git_uri = "https://github.com/doxygen/doxygen.git"
+    EnvVars = {}
 
     def run_tests(self, experiment, run):
         pass
@@ -32,9 +34,12 @@ class Doxygen(prj.Project):
         clangxx = lt_clang_cxx(self.cflags, self.ldflags, self.compiler_extension)
         with local.cwd(self.src_dir):
             with local.env(CC=str(clang), CXX=str(clangxx)):
-                cmake = local["cmake"]
-                cmake("-G", "Unix Makefiles", ".")
+                with local.env(**self.EnvVars):
+                    cmake = local["cmake"]
+                    delete("CMakeCache.txt")
+                    cmake("-G", "Unix Makefiles", ".")
 
     def build(self):
         with local.cwd(self.src_dir):
-            run(make["-j", CFG["jobs"]])
+            with local.env(**self.EnvVars):
+                run(make["-j", CFG["jobs"]])
