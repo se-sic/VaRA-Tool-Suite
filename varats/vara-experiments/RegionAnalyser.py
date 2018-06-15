@@ -25,6 +25,10 @@ EnvVars = {
     "LLVM_CXX_NAME": "clang++"
 }
 
+class Prepare(Step):
+    Name = "PREPARE"
+    DESCRIPTION = "Appends the Environment variables to the project."
+
 class Extract(Step):
     NAME = "EXTRACT"
     DESCRIPTION = "Extract bitcode out of the execution file."
@@ -41,7 +45,8 @@ class RegionAnalyser(Experiment):
         project.runtime_extension = ext.RunWithTime(RuntimeExtension(project,
                 self, config={'jobs': int(CFG["jobs"].value())}))
 
-        project_src = path.join(project.builddir, project.src_dir)
+        def evaluate_preparation():
+            project.EnvVars = EnvVars
 
         def evaluate_extraction():
             extract = local["extract-bc"]
@@ -50,7 +55,7 @@ class RegionAnalyser(Experiment):
 
         def evaluate_analysis():
             opt = local[path.join(EnvVars["LLVM_COMPILER_PATH"], "opt")]
-            run_cmd = opt["-wllvm", "-vara-trace", path.join(project_src, project.name + ".bc")]
+            run_cmd = opt["-wllvm", "-vara-trace", path.join(project.builddir, project.name + ".bc")]
             with local.cwd(CFG["tmp_dir"].value()):
                 run_cmd()
 
@@ -59,6 +64,7 @@ class RegionAnalyser(Experiment):
             if "CLEAN" in actn.NAME:
                 actns.remove(actn)
 
+        actns.append(Prepare(self, evaluate_preparation))
         actns.append(Configure(project))
         actns.append(Build(project))
         actns.append(Extract(self, evaluate_extraction))
