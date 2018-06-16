@@ -4,14 +4,14 @@ import benchbuild.project as prj
 
 from plumbum import local
 
-class minperf1(prj.Project):
-    """ minperf 1 """
+class fib(prj.Project):
+    """ Fibonacci """
 
-    NAME = 'minperf1'
+    NAME = 'fib'
     GROUP = 'Perf'
     DOMAIN = 'Perf'
 
-    src_dir = "min-1.c"
+    src_dir = "fib.c"
     git_uri = "https://raw.githubusercontent.com/se-passau/vara-perf-examples/master/examples/" + src_dir
     EnvVars = {}
 
@@ -24,4 +24,4 @@ class minperf1(prj.Project):
     def build(self):
         with local.env(**self.EnvVars):
             clang = local["/home/hellmich/git/llvm/build/dev/bin/clang"]
-            run(clang["-S", "-emit-llvm", "-fvara-handleRM=High", "min-1.c", "-o", "minperf1"])
+            run(clang["-S", "-emit-llvm", "-fvara-handleRM=High", "normal-fib.c", "-o", "fib"])
