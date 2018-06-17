@@ -1,5 +1,6 @@
 from benchbuild.utils.downloader import Wget
 from benchbuild.utils.run import run
+from benchbuild.settings import CFG
 import benchbuild.project as prj
 
 from plumbum import local
@@ -23,5 +24,5 @@ class minperf3(prj.Project):
 
     def build(self):
         with local.env(**self.EnvVars):
-            clang = local["/home/hellmich/git/llvm/build/dev/bin/clang"]
+            clang = local[CFG["compiler"]["c"]]
             run(clang["-S", "-emit-llvm", "-fvara-handleRM=High", "min-3.c", "-o", "minperf3"])

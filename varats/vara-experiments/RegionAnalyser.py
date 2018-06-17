@@ -55,7 +55,7 @@ class RegionAnalyser(Experiment):
 
         def evaluate_analysis():
             opt = local[path.join(EnvVars["LLVM_COMPILER_PATH"], "opt")]
-            run_cmd = opt["-vara-trace", "-S", "-o", path.join(project.builddir, project.name + ".ll"), path.join(project.builddir, project.name)]
+            run_cmd = opt["-vara-trace", path.join(project.builddir, project.name), "-S", "-o", path.join(project.builddir, project.name + ".ll")]
             with local.cwd(CFG["tmp_dir"].value()):
                 run_cmd()
 
