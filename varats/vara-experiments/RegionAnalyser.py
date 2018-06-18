@@ -25,18 +25,6 @@ EnvVars = {
     "LLVM_CXX_NAME": "clang++"
 }
 
-class Prepare(Step):
-    Name = "PREPARE"
-    DESCRIPTION = "Appends the Environment variables to the project."
-
-class Extract(Step):
-    NAME = "EXTRACT"
-    DESCRIPTION = "Extract bitcode out of the execution file."
-
-class Analyse(Step):
-    NAME = "ANALYSE"
-    DESCRIPTION = "Analyses the bitcode with VaRA."
-
 class RegionAnalyser(Experiment):
 
     NAME = "RegionAnalyser"
@@ -45,29 +33,9 @@ class RegionAnalyser(Experiment):
         project.runtime_extension = ext.RunWithTime(RuntimeExtension(project,
                 self, config={'jobs': int(CFG["jobs"].value())}))
 
-        def evaluate_preparation():
-            project.EnvVars = EnvVars
-
-        def evaluate_extraction():
-            extract = local["extract-bc"]
-            with local.env(**EnvVars):
-                extract(project.name)
-
-        def evaluate_analysis():
-            opt = local[path.join(EnvVars["LLVM_COMPILER_PATH"], "opt")]
-            run_cmd = opt["-vara-trace", path.join(project.builddir, project.name), "-S", "-o", path.join(project.builddir, project.name + ".ll")]
-            with local.cwd(CFG["tmp_dir"].value()):
-                run_cmd()
+        project.ldflags = ["-lTrace"]
+        project.cflags = ["-fvara-handleRM=High", "-mllvm", "-vara-tracer"]
+        project.EnvVars = EnvVars
 
         actns = self.default_runtime_actions(project)
-        for actn in actns:
-            if "CLEAN" in actn.NAME:
-                actns.remove(actn)
-
-        actns.append(Prepare(self, evaluate_preparation))
-        actns.append(Configure(project))
-        actns.append(Build(project))
-        actns.append(Extract(self, evaluate_extraction))
-        actns.append(Analyse(self, evaluate_analysis))
-        actns.append(Clean(project))
         return actns
