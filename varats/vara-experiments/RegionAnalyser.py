@@ -19,8 +19,8 @@ EnvVars = {
     "CXXFLAGS": "-fvara-handleRM=High",
     "CC": "wllvm",
     "CXX": "wllvm++",
-    "WLLVM_OUTPUT_FILE": path.join(CFG["tmp_dir"].value(),"wllvm.log"),
-    "LLVM_COMPILER_PATH": "/home/hellmich/git/llvm/build/dev/bin",
+    "WLLVM_OUTPUT_FILE": path.join(CFG["tmp_dir"].value(), "wllvm.log"),
+    "LLVM_COMPILER_PATH": CFG['env']['path'].value(),
     "LLVM_CC_NAME": "clang",
     "LLVM_CXX_NAME": "clang++"
 }
