@@ -1,7 +1,7 @@
 from os import path
 
 from benchbuild.settings import CFG
-from benchbuild.utils.compiler import lt_clang, lt_clang_cxx
+from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
 from benchbuild.utils.wrapping import wrap
 import benchbuild.project as prj
@@ -33,7 +33,7 @@ class gzip(prj.Project):
         "-Wno-error=shift-negative-value", "-Wno-string-plus-int",
         "-Wno-shift-negative-value"]
 
-        clang = lt_clang(self.cflags, self.ldflags, self.compiler_extension)
+        clang = cc(self)
         with local.cwd(self.src_dir):
             with local.env(CC=str(clang)):
                 with local.env(**self.EnvVars):

@@ -1,6 +1,6 @@
 from benchbuild.utils.downloader import Wget
 from benchbuild.utils.run import run
-from benchbuild.utils.compiler import lt_clang
+from benchbuild.utils.compiler import cc
 import benchbuild.project as prj
 
 from plumbum import local
@@ -23,6 +23,6 @@ class minperf3(prj.Project):
         Wget(self.git_uri, self.src_dir)
 
     def build(self):
-        clang = lt_clang(self.cflags, self.ldflags, self.compiler_extension)
+        clang = cc(self)
         with local.env(**self.EnvVars):
             run(clang[self.src_dir, "-o", "minperf3"])
