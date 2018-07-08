@@ -41,7 +41,7 @@ class Git(prj.Project):
         #Git(self.git_uri, self.src_dir)
 
     def configure(self):
-        clang = lt_clang(self.cflags, self.ldflags, self.compiler_extension)
+        clang = cc(self)
         with local.cwd(self.src_dir):
             with local.env(CC=str(clang)):
                 with local.env(**self.EnvVars):

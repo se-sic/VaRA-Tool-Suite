@@ -1,7 +1,7 @@
 from os import path
 
 from benchbuild.settings import CFG
-from benchbuild.utils.compiler import lt_clang, lt_clang_cxx
+from benchbuild.utils.compiler import cc, cxx
 from benchbuild.utils.run import run
 import benchbuild.project as prj
 from benchbuild.utils.cmd import make
@@ -30,8 +30,8 @@ class Doxygen(prj.Project):
         Git(self.git_uri, self.src_dir)
 
     def configure(self):
-        clang = lt_clang(self.cflags, self.ldflags, self.compiler_extension)
-        clangxx = lt_clang_cxx(self.cflags, self.ldflags, self.compiler_extension)
+        clang = cc(self)
+        clangxx = cxx(self)
         with local.cwd(self.src_dir):
             with local.env(CC=str(clang), CXX=str(clangxx)):
                 with local.env(**self.EnvVars):

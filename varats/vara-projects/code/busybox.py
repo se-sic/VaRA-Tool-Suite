@@ -1,7 +1,7 @@
 from os import path
 
 from benchbuild.settings import CFG
-from benchbuild.utils.compiler import lt_clang
+from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
 from benchbuild.project import Project
 from benchbuild.utils.cmd import make
@@ -29,7 +29,7 @@ class busybox(Project):
         Git(self.git_uri, self.src_dir)
 
     def configure(self):
-        clang = lt_clang(self.cflags, self.ldflags, self.compiler_extension)
+        clang = cc(self)
         with local.cwd(self.src_dir):
             with local.env(CC=str(clang)):
                 with local.env(**self.EnvVars):
