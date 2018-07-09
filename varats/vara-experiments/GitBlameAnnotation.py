@@ -12,9 +12,11 @@ EnvVars = {
     "CXXFLAGS": "-fvara-GB",
     "CC": "wllvm",
     "CXX": "wllvm++",
-    "WLLVM_OUTPUT_FILE": path.join(CFG["tmp_dir"].value(),"wllvm.log"),
+    "WLLVM_OUTPUT_FILE": path.join(str(CFG["tmp_dir"].value()), "wllvm.log"),
     "LLVM_CC_NAME": "clang",
-    "LLVM_CXX_NAME": "clang++"
+    "LLVM_CXX_NAME": "clang++",
+    "LLVM_COMPILER_PATH": path.join(str(CFG["env"]["path"].value()[0]), "bin/")
+    # TODO: LLVM_COMP_PATH needs to be replaced with an better VaRA config option
 }
 
 class Extract(Step):
@@ -24,6 +26,7 @@ class Extract(Step):
 class Analyse(Step):
     NAME = "ANALYSE"
     DESCRIPTION = "Analyses the bitcode with VaRA."
+
 
 class GitBlameAnntotation(Experiment):
     """Git Blame Annotation of VaRA."""
@@ -39,14 +42,15 @@ class GitBlameAnntotation(Experiment):
 
         def evaluate_extraction():
             extract = local["extract-bc"]
-            with local.env(**ENVVars):
+            with local.env(**EnvVars):
                 with local.cwd(project_src):
                     extract(project.name)
 
         def evaluate_analysis():
-            opt = local[path.join(str(CFG["env"]["path"].value()[0]), "opt")]
-            run_cmd = opt["-vara-CFR", "-view-TFA", "yaml-out-file=source.yaml",
-                path.join(project_src, project.name + ".bc")]
+            opt = local[path.join(str(CFG["env"]["path"].value()[0]),
+                        "bin/opt")]
+            run_cmd = opt["-vara-CFR", "-yaml-out-file=source.yaml",
+                          path.join(project_src, project.name + ".bc")]
             with local.cwd(CFG["tmp_dir"].value()):
                 run_cmd()
 

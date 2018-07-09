@@ -19,10 +19,10 @@ class gzip(prj.Project):
     VERSION = '1.6'
 
     src_dir = NAME + "-{0}".format(VERSION)
-    gzip_uri = "https://github.com/Distrotech/gzip.git"
+    gzip_uri = "https://git.savannah.gnu.org/git/gzip.git"
     EnvVars = {}
 
-    def run_tests(self, experiment, run):
+    def run_tests(self, runner):
         pass
 
     def download(self):
@@ -30,13 +30,15 @@ class gzip(prj.Project):
 
     def configure(self):
         self.cflags += ["-Wno-error=string-plus-int",
-        "-Wno-error=shift-negative-value", "-Wno-string-plus-int",
-        "-Wno-shift-negative-value"]
+                        "-Wno-error=shift-negative-value",
+                        "-Wno-string-plus-int",
+                        "-Wno-shift-negative-value"]
 
         clang = cc(self)
         with local.cwd(self.src_dir):
             with local.env(CC=str(clang)):
                 with local.env(**self.EnvVars):
+                    run(local["./bootstrap"])
                     run(local["./configure"])
 
     def build(self):

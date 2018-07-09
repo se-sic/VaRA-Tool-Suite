@@ -12,7 +12,7 @@ EnvVars = {
     "CXXFLAGS": "-fvara-handleRM=Commit",
     "CC": "wllvm",
     "CXX": "wllvm++",
-    "WLLVM_OUTPUT_FILE": path.join(CFG["tmp_dir"].value(),"wllvm.log"),
+    "WLLVM_OUTPUT_FILE": path.join(str(CFG["tmp_dir"].value()), "wllvm.log"),
     "LLVM_CC_NAME": "clang",
     "LLVM_CXX_NAME": "clang++"
 }
