@@ -37,16 +37,17 @@ class GitBlameAnntotation(Experiment):
         project.runtime_extension = ext.RunWithTime(RuntimeExtension(project,
                 self, config={'jobs': int(CFG["jobs"].value())}))
 
-        project_src = path.join(project.builddir, project.src_dir)
         project.EnvVars = EnvVars
 
         def evaluate_extraction():
             extract = local["extract-bc"]
+            project_src = path.join(project.builddir, project.src_dir)
             with local.env(**EnvVars):
                 with local.cwd(project_src):
                     extract(project.name)
 
         def evaluate_analysis():
+            project_src = path.join(project.builddir, project.src_dir)
             opt = local[path.join(str(CFG["env"]["path"].value()[0]),
                         "bin/opt")]
             run_cmd = opt["-vara-CFR", "-yaml-out-file=source.yaml",

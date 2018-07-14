@@ -43,7 +43,7 @@ class CommitAnnotationReport(Experiment):
 
         def evaluate_preparation():
             with local.cwd("/"):
-                scripts_src = path.join(local.path(str(CFG["env"]["path"].value()[0])).up(3), "tools/VaRA/tools/marker-region")
+                scripts_src = path.join(local.path(str(CFG["env"]["path"].value()[0])).up(2), "tools/VaRA/tools/marker-region")
 
             prepare = local[scripts_src + "/prepare.sh"]
             project.src_dir = path.join(project.src_dir, "out")
@@ -58,7 +58,7 @@ class CommitAnnotationReport(Experiment):
                     extract(project.name)
 
         def evaluate_analysis():
-            opt = local[path.join(str(CFG["env"]["path"].value()[0]), "opt")]
+            opt = local[path.join(str(CFG["env"]["path"].value()[0]), "bin/opt")]
             yamlAdd = "-yaml-out-file=" + project.name + ".yaml"
             run_cmd = opt["-vara-CFR", yamlAdd, path.join(project_src, "out", project.name + ".bc")]
             with local.cwd(CFG["tmp_dir"].value()):

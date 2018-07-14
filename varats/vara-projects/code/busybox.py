@@ -22,7 +22,7 @@ class busybox(Project):
     git_uri = "https://github.com/mirror/busybox.git"
     EnvVars = {}
 
-    def run_tests(self, experiment, run):
+    def run_tests(self, runner):
         pass
 
     def download(self):

@@ -23,7 +23,7 @@ class Doxygen(prj.Project):
     git_uri = "https://github.com/doxygen/doxygen.git"
     EnvVars = {}
 
-    def run_tests(self, experiment, run):
+    def run_tests(self, runner):
         pass
 
     def download(self):
@@ -43,3 +43,4 @@ class Doxygen(prj.Project):
         with local.cwd(self.src_dir):
             with local.env(**self.EnvVars):
                 run(make["-j", CFG["jobs"]])
+        self.src_dir = path.join(self.src_dir, "bin")

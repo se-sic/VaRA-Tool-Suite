@@ -1,7 +1,5 @@
-from os import path
-
 from benchbuild.settings import CFG
-from benchbuild.utils.compiler import lt_clang, lt_clang_cxx
+from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
 from benchbuild.utils.wrapping import wrap
 import benchbuild.project as prj
@@ -25,11 +23,11 @@ class Git(prj.Project):
     git_uri = "https://github.com/git/git.git"
     EnvVars = {}
 
-    def run_tests(self, experiment, run):
+    def run_tests(self, runner):
         pass
 
     def download(self):
-        tgt_root = CFG["tmp_dir"].value()
+        tgt_root = str(CFG["tmp_dir"].value())
         dir = path.join(tgt_root, self.src_dir)
         if not source_required(self.src_dir, tgt_root):
             Copy(dir, ".")
