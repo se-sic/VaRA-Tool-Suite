@@ -1,5 +1,3 @@
-from os import path
-
 from benchbuild.settings import CFG
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
@@ -8,7 +6,6 @@ from benchbuild.utils.cmd import make
 from benchbuild.utils.downloader import Git
 
 from plumbum import local
-from os import path
 
 class busybox(Project):
     """ busybox """
@@ -31,11 +28,9 @@ class busybox(Project):
     def configure(self):
         clang = cc(self)
         with local.cwd(self.src_dir):
-            with local.env(CC=str(clang)):
-                with local.env(**self.EnvVars):
-                    run(make["defconfig"])
+            run(make["defconfig"])
 
     def build(self):
         with local.cwd(self.src_dir):
             with local.env(**self.EnvVars):
-                run(make["-j", CFG["jobs"]])
+                run(make["-j", CFG["jobs"], "CC=wllvm"])
