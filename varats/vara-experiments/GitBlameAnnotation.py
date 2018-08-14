@@ -29,6 +29,15 @@ CFG["vara"] = {
 }
 
 
+class RunWLLVM(ext.Extension):
+    def __call__(self, command, *args, **kwargs):
+        with local.env(LLVM_COMPILER=str(command)):
+            from benchbuild.utils.cmd import wllvm
+            res = self.call_next(wllvm, *args, **kwargs)
+            res.append(run_info)
+        return res
+
+
 class Extract(actions.Step):
     NAME = "EXTRACT"
     DESCRIPTION = "Extract bitcode out of the execution file."
@@ -45,21 +54,21 @@ class GitBlameAnntotation(Experiment):
     NAME = "GitBlameAnnotation"
 
     def actions_for_project(self, project):
-        project.runtime_extension = \
-            RuntimeExtension(project, self) \
+        project.runtime_extension = RuntimeExtension(project, self) \
             << ext.RunWithTime()
 
-        project.EnvVars = EnvVars
+        project.compiler_extension = RunCompiler(project, self) \
+            << RunWLLVM() \
+            << ext.RunWithTimeout()
 
         def evaluate_extraction():
-            extract = local["extract-bc"]
+            from benchbuild.utils.cmd import extract_bc
             project_src = path.join(project.builddir, project.src_dir)
-            with local.env(**EnvVars):
-                with local.cwd(project_src):
-                    extract(project.name)
+            with local.cwd(project_src):
+                extract_bc(project.name)
 
         def evaluate_analysis():
-            from benchbuild.utils.cmd import opt
+            from benchbuild.utils.cmd import opt benchbuild.utils.cmd import opt
             project_src = path.join(project.builddir, project.src_dir)
             run_cmd = opt["-vara-CFR",
                           "-yaml-out-file={outfile}".format(
