@@ -2,7 +2,7 @@ from benchbuild.experiment import Experiment
 from benchbuild import extensions as ext
 from benchbuild.extensions import RunWithTime, RuntimeExtension
 from benchbuild.settings import CFG
-from benchbuild.utils.actions import Step
+import benchbuild.utils.actions as actions
 from plumbum import local
 from os import path
 
@@ -19,11 +19,22 @@ EnvVars = {
     # TODO: LLVM_COMP_PATH needs to be replaced with an better VaRA config option
 }
 
-class Extract(Step):
+CFG["vara"] = {
+    "cfg": {
+        "outfile": {
+            "default": "source.yaml",
+            "desc": "Path to store results of VaRA CFR analysis"
+        }
+    }
+}
+
+
+class Extract(actions.Step):
     NAME = "EXTRACT"
     DESCRIPTION = "Extract bitcode out of the execution file."
 
-class Analyse(Step):
+
+class Analyse(actions.Step):
     NAME = "ANALYSE"
     DESCRIPTION = "Analyses the bitcode with VaRA."
 
@@ -34,8 +45,9 @@ class GitBlameAnntotation(Experiment):
     NAME = "GitBlameAnnotation"
 
     def actions_for_project(self, project):
-        project.runtime_extension = ext.RunWithTime(RuntimeExtension(project,
-                self, config={'jobs': int(CFG["jobs"].value())}))
+        project.runtime_extension = \
+            RuntimeExtension(project, self) \
+            << ext.RunWithTime()
 
         project.EnvVars = EnvVars
 
@@ -47,15 +59,23 @@ class GitBlameAnntotation(Experiment):
                     extract(project.name)
 
         def evaluate_analysis():
+            from benchbuild.utils.cmd import opt
             project_src = path.join(project.builddir, project.src_dir)
-            opt = local[path.join(str(CFG["env"]["path"].value()[0]),
-                        "bin/opt")]
-            run_cmd = opt["-vara-CFR", "-yaml-out-file=source.yaml",
+            run_cmd = opt["-vara-CFR",
+                          "-yaml-out-file={outfile}".format(
+                              outfile=CFG["vara"]["cfg"]["outfile"].value()),
                           path.join(project_src, project.name + ".bc")]
-            with local.cwd(CFG["tmp_dir"].value()):
-                run_cmd()
+            run_cmd()
 
-        actns = self.default_runtime_actions(project)
-        actns.insert(len(actns)-1, Extract(self, evaluate_extraction))
-        actns.insert(len(actns)-1, Analyse(self, evaluate_analysis))
+        actns = [
+            actions.MakeBuildDir(project),
+            actions.Prepare(project),
+            actions.Download(project),
+            actions.Configure(project),
+            actions.Build(project),
+            actions.Run(project),
+            Extract(self, evaluate_extraction),
+            Analyse(self, evaluate_analysis),
+            actions.Clean(project)
+        ]
         return actns
