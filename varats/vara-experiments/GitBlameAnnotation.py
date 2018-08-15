@@ -1,23 +1,10 @@
 from benchbuild.experiment import Experiment
 from benchbuild import extensions as ext
-from benchbuild.extensions import RunWithTime, RuntimeExtension
+from benchbuild.extensions import RunWithTime, RuntimeExtension, RunCompiler
 from benchbuild.settings import CFG
 import benchbuild.utils.actions as actions
 from plumbum import local
 from os import path
-
-EnvVars = {
-    "LLVM_COMPILER": "clang",
-    "CFLAGS": "-fvara-GB",
-    "CXXFLAGS": "-fvara-GB",
-    "CC": "wllvm",
-    "CXX": "wllvm++",
-    "WLLVM_OUTPUT_FILE": path.join(str(CFG["tmp_dir"].value()), "wllvm.log"),
-    "LLVM_CC_NAME": "clang",
-    "LLVM_CXX_NAME": "clang++",
-    "LLVM_COMPILER_PATH": path.join(str(CFG["env"]["path"].value()[0]), "bin/")
-    # TODO: LLVM_COMP_PATH needs to be replaced with an better VaRA config option
-}
 
 CFG["vara"] = {
     "cfg": {
@@ -28,13 +15,11 @@ CFG["vara"] = {
     }
 }
 
-
 class RunWLLVM(ext.Extension):
     def __call__(self, command, *args, **kwargs):
-        with local.env(LLVM_COMPILER=str(command)):
+        with local.env(LLVM_COMPILER="clang"):
             from benchbuild.utils.cmd import wllvm
             res = self.call_next(wllvm, *args, **kwargs)
-            res.append(run_info)
         return res
 
 
@@ -61,6 +46,8 @@ class GitBlameAnntotation(Experiment):
             << RunWLLVM() \
             << ext.RunWithTimeout()
 
+        project.cflags = ["-fvara-GB"]
+
         def evaluate_extraction():
             from benchbuild.utils.cmd import extract_bc
             project_src = path.join(project.builddir, project.src_dir)
@@ -68,7 +55,7 @@ class GitBlameAnntotation(Experiment):
                 extract_bc(project.name)
 
         def evaluate_analysis():
-            from benchbuild.utils.cmd import opt benchbuild.utils.cmd import opt
+            from benchbuild.utils.cmd import opt
             project_src = path.join(project.builddir, project.src_dir)
             run_cmd = opt["-vara-CFR",
                           "-yaml-out-file={outfile}".format(
