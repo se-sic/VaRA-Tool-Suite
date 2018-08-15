@@ -27,7 +27,7 @@ class Doxygen(prj.Project):
         pass
 
     def download(self):
-        Git(self.git_uri, self.src_dir)
+        Git(self.git_uri, self.src_dir, shallow_clone=False)
 
     def configure(self):
         clang = cc(self)

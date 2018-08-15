@@ -26,7 +26,7 @@ class gzip(prj.Project):
         pass
 
     def download(self):
-        Git(self.gzip_uri, self.src_dir)
+        Git(self.gzip_uri, self.src_dir, shallow_clone=False)
 
     def configure(self):
         self.cflags += ["-Wno-error=string-plus-int",

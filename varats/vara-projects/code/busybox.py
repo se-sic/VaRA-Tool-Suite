@@ -17,20 +17,19 @@ class busybox(Project):
 
     src_dir = NAME + "-{0}".format(VERSION)
     git_uri = "https://github.com/mirror/busybox.git"
-    EnvVars = {}
+    clang = ""
 
     def run_tests(self, runner):
         pass
 
     def download(self):
-        Git(self.git_uri, self.src_dir)
+        Git(self.git_uri, self.src_dir, shallow_clone=False)
 
     def configure(self):
-        clang = cc(self)
+        self.clang = cc(self)
         with local.cwd(self.src_dir):
             run(make["defconfig"])
 
     def build(self):
         with local.cwd(self.src_dir):
-            with local.env(**self.EnvVars):
-                run(make["-j", CFG["jobs"], "CC=wllvm"])
+            run(make["-j", CFG["jobs"], "CC={}".format(str(self.clang))])
