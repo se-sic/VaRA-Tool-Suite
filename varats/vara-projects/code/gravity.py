@@ -4,11 +4,10 @@ from benchbuild.settings import CFG
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
 from benchbuild.project import Project
-from benchbuild.utils.cmd import make
+from benchbuild.utils.cmd import make, cmake
 from benchbuild.utils.downloader import Git
 
 from plumbum import local
-from os import path
 
 class gravity(Project):
     """ gravity """
@@ -20,7 +19,6 @@ class gravity(Project):
 
     src_dir = NAME + "-{0}".format(VERSION)
     git_uri = "https://github.com/marcobambini/gravity.git"
-    EnvVars = {}
 
     def run_tests(self, runner):
         pass
@@ -32,11 +30,8 @@ class gravity(Project):
         clang = cc(self)
         with local.cwd(self.src_dir):
             with local.env(CC=str(clang)):
-                with local.env(**self.EnvVars):
-                    cmake = local["cmake"]
-                    cmake("-G", "Unix Makefiles", ".")
+                cmake("-G", "Unix Makefiles", ".")
 
     def build(self):
         with local.cwd(self.src_dir):
-            with local.env(**self.EnvVars):
-                run(make["-j", CFG["jobs"]])
+            run(make["-j", CFG["jobs"]])

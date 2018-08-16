@@ -20,7 +20,6 @@ class gzip(prj.Project):
 
     src_dir = NAME + "-{0}".format(VERSION)
     gzip_uri = "https://git.savannah.gnu.org/git/gzip.git"
-    EnvVars = {}
 
     def run_tests(self, runner):
         pass
@@ -37,11 +36,9 @@ class gzip(prj.Project):
         clang = cc(self)
         with local.cwd(self.src_dir):
             with local.env(CC=str(clang)):
-                with local.env(**self.EnvVars):
-                    run(local["./bootstrap"])
-                    run(local["./configure"])
+                run(local["./bootstrap"])
+                run(local["./configure"])
 
     def build(self):
         with local.cwd(self.src_dir):
-            with local.env(**self.EnvVars):
-                run(make["-j", CFG["jobs"]])
+            run(make["-j", CFG["jobs"]])

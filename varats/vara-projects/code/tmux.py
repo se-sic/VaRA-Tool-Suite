@@ -1,5 +1,3 @@
-from os import path
-
 from benchbuild.settings import CFG
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
@@ -20,7 +18,6 @@ class tmux(Project):
 
     src_dir = NAME + "-{0}".format(VERSION)
     git_uri = "https://github.com/tmux/tmux.git"
-    EnvVars = {}
 
     def run_tests(self, runner):
         pass
@@ -32,11 +29,9 @@ class tmux(Project):
         clang = cc(self)
         with local.cwd(self.src_dir):
             with local.env(CC=str(clang)):
-                with local.env(**self.EnvVars):
-                    run(local["./autogen.sh"])
-                    run(local["./configure"])
+                run(local["./autogen.sh"])
+                run(local["./configure"])
 
     def build(self):
         with local.cwd(self.src_dir):
-            with local.env(**self.EnvVars):
-                run(make["-j", CFG["jobs"]])
+            run(make["-j", CFG["jobs"]])

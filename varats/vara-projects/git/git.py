@@ -21,7 +21,6 @@ class Git(prj.Project):
 
     src_dir = NAME + "-{0}".format(VERSION)
     git_uri = "https://github.com/git/git.git"
-    EnvVars = {}
 
     def run_tests(self, runner):
         pass
@@ -42,12 +41,10 @@ class Git(prj.Project):
         clang = cc(self)
         with local.cwd(self.src_dir):
             with local.env(CC=str(clang)):
-                with local.env(**self.EnvVars):
-                    delete("configure", "config.status")
-                    run(make["configure"])
-                    run(local["./configure"])
+                delete("configure", "config.status")
+                run(make["configure"])
+                run(local["./configure"])
 
     def build(self):
         with local.cwd(self.src_dir):
-            with local.env(**self.EnvVars):
-                run(make["-j", CFG["jobs"]])
+            run(make["-j", CFG["jobs"]])
