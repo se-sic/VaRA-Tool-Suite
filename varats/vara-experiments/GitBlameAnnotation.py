@@ -56,8 +56,8 @@ class GitBlameAnntotation(Experiment):
 
         def evaluate_analysis():
             project_src = path.join(project.builddir, project.src_dir)
-            outfile = "yaml-out-file={}".format(CFG["vara"]["cfr"]
-                      ["outfile"].value()) + str(project.name) + ".yaml"
+            outfile = "-yaml-out-file={}".format(CFG["vara"]["cfr"]
+                      ["outfile"].value()) + "/" + str(project.name) + ".yaml"
             run_cmd = opt["-vara-CFR", outfile,
                           path.join(project_src, project.name + ".bc")]
             run_cmd()
