@@ -14,7 +14,6 @@ class gcd(prj.Project):
 
     src_dir = "gcd.c"
     git_uri = "https://raw.githubusercontent.com/se-passau/vara-perf-examples/master/examples/" + src_dir
-    EnvVars = {}
 
     def run_tests(self, experiment, runner):
         pass
@@ -24,5 +23,4 @@ class gcd(prj.Project):
 
     def build(self):
         clang = cc(self)
-        with local.env(**self.EnvVars):
-            run(clang[self.src_dir, "-o", "gcd"])
+        run(clang[self.src_dir, "-o", "gcd"])
