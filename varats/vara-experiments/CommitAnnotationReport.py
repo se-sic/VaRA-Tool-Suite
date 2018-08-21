@@ -1,21 +1,25 @@
 from benchbuild.experiment import Experiment
 from benchbuild import extensions as ext
-from benchbuild.extensions import RunWithTime, RuntimeExtension
 from benchbuild.settings import CFG
 from benchbuild.utils.actions import Step
+from benchbuild.utils import actions
+from benchbuild.utils.cmd import extract_bc, wllvm, opt
 from plumbum import local
 from os import path
 
-EnvVars = {
-    "LLVM_COMPILER": "clang",
-    "CFLAGS": "-fvara-handleRM=Commit",
-    "CXXFLAGS": "-fvara-handleRM=Commit",
-    "CC": "wllvm",
-    "CXX": "wllvm++",
-    "WLLVM_OUTPUT_FILE": path.join(str(CFG["tmp_dir"].value()), "wllvm.log"),
-    "LLVM_CC_NAME": "clang",
-    "LLVM_CXX_NAME": "clang++"
+CFG["vara"] = {
+    "prepare" : {
+        "default": "",
+        "desc": "Path to the prepare script of Niederhuber in VaRA"
+    }
 }
+
+class RunWLLVM(ext.Extension):
+    def __cal__(self, command, *args, **kwargs):
+        with local.env(LLVM_COMPILER="clang", LLVM_OUTPUT_FILE="{}".format(
+                       path.join(str(CFG["tmp_dir"].value()), "wllvm.log"))):
+            res = self.call_next(wllvm, *args, **kwargs)
+        return res
 
 class Prepare(Step):
     NAME = "PREPARE"
@@ -35,37 +39,45 @@ class CommitAnnotationReport(Experiment):
     NAME = "CommitAnnotationReport"
 
     def actions_for_project(self, project):
-        project.runtime_extension = ext.RunWithTime(RuntimeExtension(project,
-                self, config={'jobs': int(CFG["jobs"].value())}))
+        project.runtime_extension = ext.RuntimeExtension(project, self) \
+            << ext.RunWithTime()
 
-        project.EnvVars = EnvVars
+        project.compiler_extension = ext.RunCompiler(project, self) \
+            << RunWLLVM() \
+            << ext.RunWithTimeout()
+
+        project.cflags = ["-fvara-handleRM=Commit"]
+
         project_src = path.join(project.builddir, project.src_dir)
 
         def evaluate_preparation():
-            with local.cwd("/"):
-                scripts_src = path.join(local.path(str(CFG["env"]["path"].value()[0])).up(2), "tools/VaRA/tools/marker-region")
-
-            prepare = local[scripts_src + "/prepare.sh"]
+            prepare = local["prepare.sh"]
             project.src_dir = path.join(project.src_dir, "out")
 
             with local.cwd(project_src):
-                prepare("-c", CFG["env"]["path"].value(), "-t", scripts_src)
+                prepare("-c", str(CFG["env"]["path"].value()[0]), "-t", 
+                        str(CFG["vara"]["prepare"].value()))
 
         def evaluate_extraction():
-            extract = local["extract-bc"]
-            with local.env(**EnvVars):
-                with local.cwd(path.join(project_src ,"out")):
-                    extract(project.name)
+            with local.cwd(path.join(project_src ,"out")):
+                extract_bc(project.name)
 
         def evaluate_analysis():
-            opt = local[path.join(str(CFG["env"]["path"].value()[0]), "bin/opt")]
-            yamlAdd = "-yaml-out-file=" + project.name + ".yaml"
-            run_cmd = opt["-vara-CFR", yamlAdd, path.join(project_src, "out", project.name + ".bc")]
-            with local.cwd(CFG["tmp_dir"].value()):
-                run_cmd()
+            outfile = "-yaml-out-file={}".format(CFG["vara"]["cfr"]
+                      ["outfile"].value()) + "/" + str(project.name) + ".yaml"
+            run_cmd = opt["-vara-CFR", outfile, path.join(project_src, "out", 
+                          project.name + ".bc")]
+            run_cmd()
 
-        actns = self.default_runtime_actions(project)
-        actns.insert(len(actns)-4, Prepare(self, evaluate_preparation))
-        actns.insert(len(actns)-1, Extract(self, evaluate_extraction))
-        actns.insert(len(actns)-1, Analyse(self, evaluate_analysis))
-        return actns
+        return [
+            actions.MakeBuildDir(project),
+            actions.Prepare(project),
+            actions.Download(project),
+            Prepare(self, evaluate_preparation),
+            actions.Configure(project),
+            actions.Build(project),
+            actions.Run(project),
+            Extract(self, evaluate_extraction),
+            Analyse(self, evaluate_analysis),
+            actions.Clean(project)
+        ]
