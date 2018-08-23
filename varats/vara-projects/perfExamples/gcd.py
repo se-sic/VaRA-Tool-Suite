@@ -15,7 +15,7 @@ class gcd(prj.Project):
     src_dir = "gcd.c"
     git_uri = "https://raw.githubusercontent.com/se-passau/vara-perf-examples/master/examples/" + src_dir
 
-    def run_tests(self, experiment, runner):
+    def run_tests(self, experiment):
         pass
 
     def download(self):

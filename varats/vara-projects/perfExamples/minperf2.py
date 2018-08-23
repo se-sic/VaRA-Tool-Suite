@@ -15,7 +15,7 @@ class minperf2(prj.Project):
     src_dir = "min-2.c"
     git_uri = "https://raw.githubusercontent.com/se-passau/vara-perf-examples/master/examples/" + src_dir
 
-    def run_tests(self, experiment, runner):
+    def run_tests(self, experiment):
         pass
 
     def download(self):
