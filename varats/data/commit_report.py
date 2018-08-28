@@ -23,7 +23,7 @@ class RegionMapping(object):
 
     def __init__(self, raw_yaml):
         self.id = raw_yaml['id']
-        self.representation = raw_yaml['representation']
+        self.representation = raw_yaml['hash']
 
     def __str__(self):
         return "{} = {}".format(self.id, self.representation)
@@ -60,7 +60,7 @@ class RegionToRegionEdge(object):
 class FunctionGraphEdges(object):
 
     def __init__(self, raw_yaml):
-        self.fname = raw_yaml['function-name']
+        self.fname = raw_yaml['function-id']
         self.cg_edges = []
 
         cg_edges = raw_yaml['call-graph-edges']
