@@ -11,6 +11,10 @@ CFG["vara"] = {
     "prepare" : {
         "default": "",
         "desc": "Path to the prepare script of Niederhuber in VaRA"
+    },
+    "outfile": {
+        "default": "",
+        "desc": "Path to store results of VaRA CFR analysis."
     }
 }
 
@@ -63,8 +67,9 @@ class CommitAnnotationReport(Experiment):
                 extract_bc(project.name)
 
         def evaluate_analysis():
-            outfile = "-yaml-out-file={}".format(CFG["vara"]["cfr"]
-                      ["outfile"].value()) + "/" + str(project.name) + ".yaml"
+            outfile = "-yaml-out-file={}".format(
+                CFG["vara"]["outfile"].value()) + "/" + str(project.name) + \
+                    "-" + str(project.run_uuid) + ".yaml"
             run_cmd = opt["-vara-CFR", outfile, path.join(project_src, "out", 
                           project.name + ".bc")]
             run_cmd()

@@ -7,15 +7,6 @@ from benchbuild.utils.cmd import extract_bc, opt
 from plumbum import local
 from os import path
 
-CFG["vara"] = {
-    "cfr": {
-        "outfile": {
-            "default": "source.yaml",
-            "desc": "Path to store results of VaRA CFR analysis"
-        }
-    }
-}
-
 class RunWLLVM(ext.Extension):
     def __call__(self, command, *args, **kwargs):
         with local.env(LLVM_COMPILER="clang"):
@@ -56,8 +47,9 @@ class GitBlameAnntotation(Experiment):
 
         def evaluate_analysis():
             project_src = path.join(project.builddir, project.src_dir)
-            outfile = "-yaml-out-file={}".format(CFG["vara"]["cfr"]
-                      ["outfile"].value()) + "/" + str(project.name) + ".yaml"
+            outfile = "-yaml-out-file={}".format(
+                CFG["vara"]["outfile"].value()) + "/" + str(project.name) + \
+                    "-" + str(project.run_uuid) + ".yaml"
             run_cmd = opt["-vara-CFR", outfile,
                           path.join(project_src, project.name + ".bc")]
             run_cmd()
