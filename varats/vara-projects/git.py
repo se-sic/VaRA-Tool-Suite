@@ -35,7 +35,7 @@ class Git(prj.Project):
         git("clone", self.git_uri, dir)
         update_hash(self.src_dir, tgt_root)
         Copy(dir, ".")
-        #Git(self.git_uri, self.src_dir)
+        #Git(self.git_uri, self.src_dir, shallow_clone=false)
 
     def configure(self):
         clang = cc(self)

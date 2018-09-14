@@ -1,9 +1,6 @@
-from os import path
-
 from benchbuild.settings import CFG
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
-from benchbuild.utils.wrapping import wrap
 import benchbuild.project as prj
 from benchbuild.utils.cmd import make
 from benchbuild.utils.downloader import Git

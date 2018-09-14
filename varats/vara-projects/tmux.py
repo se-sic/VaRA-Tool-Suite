@@ -1,24 +1,22 @@
-from os import path
-
 from benchbuild.settings import CFG
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
 from benchbuild.project import Project
-from benchbuild.utils.cmd import make, cmake
+from benchbuild.utils.cmd import make
 from benchbuild.utils.downloader import Git
 
 from plumbum import local
 
-class gravity(Project):
-    """ gravity """
+class tmux(Project):
+    """ tmux """
 
-    NAME = 'gravity'
+    NAME = 'tmux'
     GROUP = 'code'
     DOMAIN = 'UNIX utils'
-    VERSION = '0.5.1'
+    VERSION = '2.7'
 
     src_dir = NAME + "-{0}".format(VERSION)
-    git_uri = "https://github.com/marcobambini/gravity.git"
+    git_uri = "https://github.com/tmux/tmux.git"
 
     def run_tests(self, runner):
         pass
@@ -30,7 +28,8 @@ class gravity(Project):
         clang = cc(self)
         with local.cwd(self.src_dir):
             with local.env(CC=str(clang)):
-                cmake("-G", "Unix Makefiles", ".")
+                run(local["./autogen.sh"])
+                run(local["./configure"])
 
     def build(self):
         with local.cwd(self.src_dir):

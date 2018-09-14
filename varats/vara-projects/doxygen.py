@@ -1,7 +1,7 @@
 from benchbuild.settings import CFG
 from benchbuild.utils.compiler import cxx
 from benchbuild.utils.run import run
-import benchbuild.project as prj
+from benchbuild.project import Project
 from benchbuild.utils.cmd import make, cmake
 from benchbuild.utils.downloader import Git
 
@@ -9,7 +9,7 @@ from plumbum.path.utils import delete
 from plumbum import local
 from os import path
 
-class Doxygen(prj.Project):
+class Doxygen(Project):
     """ Doxygen """
 
     NAME = 'doxygen'
