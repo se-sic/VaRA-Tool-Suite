@@ -7,7 +7,7 @@ from benchbuild.utils.downloader import Git
 
 from plumbum import local
 
-class busybox(Project):
+class Busybox(Project):
     """ busybox """
 
     NAME = 'busybox'

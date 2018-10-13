@@ -7,7 +7,7 @@ from benchbuild.utils.downloader import Git
 
 from plumbum import local
 
-class tmux(Project):
+class Tmux(Project):
     """ tmux """
 
     NAME = 'tmux'

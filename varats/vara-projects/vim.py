@@ -8,7 +8,7 @@ from benchbuild.utils.downloader import Git
 from plumbum import local
 from os import path
 
-class vim(Project):
+class Vim(Project):
     """ vim """
 
     NAME = 'vim'

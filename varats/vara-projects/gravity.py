@@ -7,7 +7,7 @@ from benchbuild.utils.downloader import Git
 
 from plumbum import local
 
-class gravity(Project):
+class Gravity(Project):
     """ gravity """
 
     NAME = 'gravity'

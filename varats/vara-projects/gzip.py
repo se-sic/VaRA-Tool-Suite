@@ -7,7 +7,7 @@ from benchbuild.utils.downloader import Git
 
 from plumbum import local
 
-class gzip(prj.Project):
+class Gzip(prj.Project):
     """gzip aus git"""
 
     NAME = 'gzip'

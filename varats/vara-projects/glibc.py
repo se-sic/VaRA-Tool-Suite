@@ -7,7 +7,7 @@ from benchbuild.utils.downloader import Git
 from plumbum import local
 from os import path
 
-class glibc(Project):
+class Glibc(Project):
     """ glibc """
 
     NAME = 'glibc'
