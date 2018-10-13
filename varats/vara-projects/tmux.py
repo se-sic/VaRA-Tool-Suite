@@ -8,7 +8,7 @@ from benchbuild.utils.downloader import Git
 from plumbum import local
 
 class Tmux(Project):
-    """ tmux """
+    """ Terminal multiplexer Tmux """
 
     NAME = 'tmux'
     GROUP = 'code'

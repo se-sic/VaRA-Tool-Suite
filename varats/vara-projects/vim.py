@@ -9,7 +9,7 @@ from plumbum import local
 from os import path
 
 class Vim(Project):
-    """ vim """
+    """ Text processing tool vim """
 
     NAME = 'vim'
     GROUP = 'code'

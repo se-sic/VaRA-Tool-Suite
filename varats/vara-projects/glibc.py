@@ -8,7 +8,7 @@ from plumbum import local
 from os import path
 
 class Glibc(Project):
-    """ glibc """
+    """ Standard GNU C-library """
 
     NAME = 'glibc'
     GROUP = 'code'

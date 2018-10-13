@@ -7,8 +7,8 @@ from benchbuild.utils.downloader import Git
 
 from plumbum import local
 
-class Busybox(Project):
-    """ busybox """
+class busybox(Project):
+    """ UNIX utility wrapper Busybox """
 
     NAME = 'busybox'
     GROUP = 'code'

@@ -8,7 +8,7 @@ from benchbuild.utils.downloader import Git
 from plumbum import local
 
 class Gzip(prj.Project):
-    """gzip aus git"""
+    """ Compression and decompression tool Gzip (fetched by Git) """
 
     NAME = 'gzip'
     GROUP = 'git'

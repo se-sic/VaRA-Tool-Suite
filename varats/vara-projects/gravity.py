@@ -8,7 +8,7 @@ from benchbuild.utils.downloader import Git
 from plumbum import local
 
 class Gravity(Project):
-    """ gravity """
+    """ Programming language Gravity """
 
     NAME = 'gravity'
     GROUP = 'code'
