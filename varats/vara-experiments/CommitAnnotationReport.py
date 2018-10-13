@@ -48,7 +48,7 @@ class Prepare(Step):
     NAME = "PREPARE"
     DESCRIPTION = "Prepares the analysis by annotating the project with the \
         annotation-script of Florian Niederhuber that is provided through \
-        prepare.sh.
+        prepare.sh."
 
 class Extract(Step):
     NAME = "EXTRACT"
