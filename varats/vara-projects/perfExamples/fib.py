@@ -13,7 +13,7 @@ class fib(prj.Project):
     DOMAIN = 'Perf'
 
     src_dir = "fib.c"
-    git_uri = "https://raw.githubusercontent.com/se-passau/vara-perf-examples/master/examples/" + src_dir
+    git_uri = "https://raw.githubusercontent.com/se-passau/vara-perf-tests/master/examples/" + src_dir
 
     def run_tests(self, experiment):
         pass
