@@ -5,7 +5,7 @@ import benchbuild.project as prj
 
 from plumbum import local
 
-class gcd(prj.Project):
+class Gcd(prj.Project):
     """ GCD """
 
     NAME = 'gcd'

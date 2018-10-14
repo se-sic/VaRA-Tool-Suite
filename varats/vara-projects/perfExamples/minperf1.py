@@ -5,7 +5,7 @@ import benchbuild.project as prj
 
 from plumbum import local
 
-class minperf1(prj.Project):
+class MinPerf1(prj.Project):
     """ minperf 1 """
 
     NAME = 'minperf1'

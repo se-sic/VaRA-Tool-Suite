@@ -5,7 +5,7 @@ import benchbuild.project as prj
 
 from plumbum import local
 
-class fib(prj.Project):
+class Fib(prj.Project):
     """ Fibonacci """
 
     NAME = 'fib'
