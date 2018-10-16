@@ -5,14 +5,19 @@ This class implements the commit-flow report (CFR) analysis of the variability-
 aware region analyzer (VaRA).
 For annotation we use the git-blame data of git.
 """
-from benchbuild.experiment import Experiment
-from benchbuild import extensions as ext
-from benchbuild.extensions import RunWithTime, RuntimeExtension, RunCompiler
-from benchbuild.settings import CFG
-import benchbuild.utils.actions as actions
-from benchbuild.utils.cmd import extract_bc, opt
-from plumbum import local
 from os import path
+
+from plumbum import local
+
+import benchbuild.utils.actions as actions
+from benchbuild import extensions as ext
+from benchbuild.experiment import Experiment
+from benchbuild.extensions import RunCompiler, RuntimeExtension, RunWithTime
+from benchbuild.settings import CFG
+from benchbuild.utils.cmd import extract_bc, opt
+
+from varats.experiments.Extract import Extract as Extract
+
 
 class RunWLLVM(ext.Extension):
     """
@@ -27,11 +32,6 @@ class RunWLLVM(ext.Extension):
             from benchbuild.utils.cmd import wllvm
             res = self.call_next(wllvm, *args, **kwargs)
         return res
-
-
-class Extract(actions.Step):
-    NAME = "EXTRACT"
-    DESCRIPTION = "Extract bitcode out of the execution file."
 
 
 class Analyse(actions.Step):
@@ -64,15 +64,6 @@ class GitBlameAnntotation(Experiment):
         # annotation.
         project.cflags = ["-fvara-GB"]
 
-        def evaluate_extraction():
-            """
-            This step extracts the bitcode of the executable of the project
-            into one file.
-            """
-            project_src = path.join(project.builddir, project.src_dir)
-            with local.cwd(project_src):
-                extract_bc(project.name)
-
         def evaluate_analysis():
             """
             This step performs the actual analysis with the correct flags.
@@ -99,7 +90,7 @@ class GitBlameAnntotation(Experiment):
             actions.Configure(project),
             actions.Build(project),
             actions.Run(project),
-            Extract(self, evaluate_extraction),
+            Extract(project),
             Analyse(self, evaluate_analysis),
             actions.Clean(project)
         ]
