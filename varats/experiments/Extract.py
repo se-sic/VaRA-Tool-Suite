@@ -1,8 +1,10 @@
-import attr
-from plumbum import local
+import textwrap
 
+import attr
 import benchbuild.utils.actions as actions
-from benchbuild.utils.cmd import extract_bc
+from benchbuild.settings import CFG
+from benchbuild.utils.cmd import extract_bc, cp
+from plumbum import local
 
 
 @attr.s
@@ -10,15 +12,18 @@ class Extract(actions.Step):
     NAME = "EXTRACT"
     DESCRIPTION = "Extract bitcode out of the execution file."
 
-    action_fn = attr.ib(default=__evaluate_extraction, repr=False)
-
-
-    def __evaluate_extraction(self):
+    def __call__(self):
         """
         This step extracts the bitcode of the executable of the project
         into one file.
         """
+        if not self.obj:
+            return
         project = self.obj
-        project_src = local.path(project.builddir) / project.src_dir
-        with local.cwd(project_src):
-            extract_bc(project.name)
+        project_src = local.path(
+            project.builddir) / project.src_dir / project.name
+
+        with local.cwd(CFG["vara"]["result"].value()):
+            extract_bc(project_src)
+            cp(local.path(project_src) + ".bc", local.path(
+                str(CFG["vara"]["result"].value())) / project.name + ".bc")
