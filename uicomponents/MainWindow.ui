@@ -48,6 +48,7 @@
      <string>File</string>
     </property>
     <addaction name="actionVaRA_Setup"/>
+    <addaction name="actionSave_Config"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuView">
@@ -112,6 +113,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+B</string>
+   </property>
+  </action>
+  <action name="actionSave_Config">
+   <property name="text">
+    <string>Save Config</string>
    </property>
   </action>
  </widget>

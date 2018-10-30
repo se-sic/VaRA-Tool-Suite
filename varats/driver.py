@@ -7,6 +7,7 @@ import sys
 
 from enum import Enum
 
+from varats import settings
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
 

@@ -2,6 +2,7 @@
 VaRA-TS MainWindow
 """
 
+from varats.settings import CFG
 from varats.gui.ui_MainWindow import Ui_MainWindow
 from varats.gui.views.example_view import ExampleView
 from varats.gui.views.cr_bar_view import CRBarView
@@ -26,6 +27,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Signals for menubar
         self.actionVaRA_Setup.triggered.connect(self._spawn_vara_setup)
+        self.actionSave_Config.triggered.connect(self._save_config)
 
         self.tabWidget.tabCloseRequested.connect(self.__remove_tab)
 
@@ -49,6 +51,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """
         self.bwg = BuildSetup()
         self.bwg.show()
+
+    def _save_config(self):
+        """
+        Save current config to file.
+        """
+        if CFG["config_file"].value == None:
+            config_file = ".vara.yaml"
+        else:
+            config_file = str(CFG["config_file"])
+        CFG.store(config_file)
 
     def __remove_tab(self, index):
         tab = self.tabWidget.widget(index)

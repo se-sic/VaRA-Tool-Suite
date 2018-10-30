@@ -53,7 +53,10 @@ class Ui_MainWindow(object):
         self.actionShow_VaRA_status.setObjectName("actionShow_VaRA_status")
         self.actionVaRA_Setup = QtWidgets.QAction(MainWindow)
         self.actionVaRA_Setup.setObjectName("actionVaRA_Setup")
+        self.actionSave_Config = QtWidgets.QAction(MainWindow)
+        self.actionSave_Config.setObjectName("actionSave_Config")
         self.menuFile.addAction(self.actionVaRA_Setup)
+        self.menuFile.addAction(self.actionSave_Config)
         self.menuFile.addAction(self.actionQuit)
         self.menuView.addAction(self.actionExampleView)
         self.menuView.addAction(self.actionCR_BarView)
@@ -81,6 +84,7 @@ class Ui_MainWindow(object):
         self.actionShow_VaRA_status.setText(_translate("MainWindow", "Show VaRA status"))
         self.actionVaRA_Setup.setText(_translate("MainWindow", "VaRA Setup"))
         self.actionVaRA_Setup.setShortcut(_translate("MainWindow", "Ctrl+B"))
+        self.actionSave_Config.setText(_translate("MainWindow", "Save Config"))
 
 
 if __name__ == "__main__":
