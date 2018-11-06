@@ -80,6 +80,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Local to lazy initialize BenchBuild config
         from benchbuild.settings import CFG as BB_CFG
+        projects_conf = BB_CFG["plugins"]["projects"]
+        projects_conf.value[:] = [ x for x in projects_conf.value
+                                  if not x.endswith('gzip')]
+        projects_conf.value[:] += ['varats.vara-projects.git.gzip']
+
+        BB_CFG["env"] = {
+            # TODO (sattlerf): add path to vara install here
+            "path": "",
+        }
         bb_config_path = str(CFG["benchbuild_root"]) + "/.benchbuild.yml"
         BB_CFG.store(bb_config_path)
 
