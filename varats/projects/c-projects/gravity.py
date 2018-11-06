@@ -3,33 +3,30 @@ from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
 from benchbuild.project import Project
 from benchbuild.utils.cmd import make, cmake
-from benchbuild.utils.downloader import Git
+from benchbuild.utils.download import with_git
 
 from plumbum import local
 
+
+@with_git("https://github.com/marcobambini/gravity.git", limit=100, refspec="HEAD")
 class Gravity(Project):
     """ Programming language Gravity """
 
     NAME = 'gravity'
     GROUP = 'code'
     DOMAIN = 'UNIX utils'
-    VERSION = '0.5.1'
+    VERSION = 'HEAD'
 
-    src_dir = NAME + "-{0}".format(VERSION)
-    git_uri = "https://github.com/marcobambini/gravity.git"
+    SRC_FILE = NAME + "-{0}".format(VERSION)
 
     def run_tests(self, runner):
         pass
 
-    def download(self):
-        Git(self.git_uri, self.src_dir, shallow_clone=False)
+    def compile(self):
+        self.download()
 
-    def configure(self):
         clang = cc(self)
-        with local.cwd(self.src_dir):
+        with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
                 cmake("-G", "Unix Makefiles", ".")
-
-    def build(self):
-        with local.cwd(self.src_dir):
-            run(make["-j", CFG["jobs"]])
+            run(make["-j", int(CFG["jobs"])])

@@ -1,10 +1,10 @@
-from benchbuild.utils.downloader import Wget
+from benchbuild.utils.download import with_wget
 from benchbuild.utils.run import run
 from benchbuild.utils.compiler import cc
 import benchbuild.project as prj
 
-from plumbum import local
 
+@with_wget({"1.0": "https://raw.githubusercontent.com/se-passau/vara-perf-tests/master/examples/min-1.c"})
 class MinPerf1(prj.Project):
     """ minperf 1 """
 
@@ -12,15 +12,13 @@ class MinPerf1(prj.Project):
     GROUP = 'Perf'
     DOMAIN = 'Perf'
 
-    src_dir = "min-1.c"
-    git_uri = "https://raw.githubusercontent.com/se-passau/vara-perf-tests/master/examples/" + src_dir
+    SRC_FILE = "min-1.c"
 
     def run_tests(self, experiment):
         pass
 
-    def download(self):
-        Wget(self.git_uri, self.src_dir)
+    def compile(self):
+        self.download()
 
-    def build(self):
         clang = cc(self)
-        run(clang[self.src_dir, "-o", "minperf1"])
+        run(clang[self.SRC_FILE, "-o", "minperf1"])

@@ -5,19 +5,18 @@ This class implements the commit-flow report (CFR) analysis of the variability-
 aware region analyzer (VaRA).
 For annotation we use the git-blame data of git.
 """
-from os import path
+import os
 
 import benchbuild.utils.actions as actions
-from benchbuild import extensions as ext
 from benchbuild.experiment import Experiment
-from benchbuild.extensions import RunCompiler, RuntimeExtension, RunWithTime
+from benchbuild.extensions import compiler, run, time, base
 from benchbuild.settings import CFG
 from benchbuild.utils.cmd import opt
 from plumbum import local
 from varats.experiments.Extract import Extract as Extract
 
 
-class RunWLLVM(ext.Extension):
+class RunWLLVM(base.Extension):
     """
     This extension implements the WLLVM compiler.
 
@@ -51,13 +50,13 @@ class GitBlameAnntotationReport(Experiment):
         the call in a fixed order."""
 
         # Add the required runtime extensions to the project(s).
-        project.runtime_extension = RuntimeExtension(project, self) \
-                                    << ext.RunWithTime()
+        project.runtime_extension = run.RuntimeExtension(project, self) \
+                                    << time.RunWithTime()
 
         # Add the required compiler extensions to the project(s).
-        project.compiler_extension = RunCompiler(project, self) \
+        project.compiler_extension = compiler.RunCompiler(project, self) \
                                      << RunWLLVM() \
-                                     << ext.RunWithTimeout()
+                                     << run.WithTimeout()
 
         # This c-flag is provided by VaRA and it suggests to use the git-blame
         # annotation.
@@ -70,28 +69,22 @@ class GitBlameAnntotationReport(Experiment):
                 -vara-CFR: to run a commit flow report
                 -yaml-out-file=<path>: specify the path to store the results
             """
-            project_src = CFG["vara"]["result"].value()
+            project_src = local.path(str(CFG["vara"]["result"].value))
 
             # Add to the user-defined path for saving the results of the 
             # analysis also the name and the unique id of the project of every
             # run.
             outfile = "-yaml-out-file={}".format(
-                CFG["vara"]["outfile"].value()) + "/" + str(
+                str(CFG["vara"]["outfile"].value)) + "/" + str(
                 project.name) + "-" + str(project.run_uuid) + ".yaml"
-            run_cmd = opt["-vara-CFR", outfile, path.join(str(project_src),
-                                                          project.name + ".bc")]
+            run_cmd = opt[
+                "-vara-CFR", outfile, project_src / project.name + ".bc"]
             run_cmd()
 
         analysis_actions = []
-        if not path.exists(
-                path.join(str(CFG["vara"]["result"].value()),
-                          project.name + ".bc")):
-            analysis_actions.append(actions.MakeBuildDir(project))
-            analysis_actions.append(actions.Prepare(project))
-            analysis_actions.append(actions.Download(project))
-            analysis_actions.append(actions.Configure(project))
-            analysis_actions.append(actions.Build(project))
-            analysis_actions.append(actions.Run(project))
+        if not os.path.exists(local.path(
+                str(CFG["vara"]["result"].value)) / project.name + ".bc"):
+            analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(project))
 
         analysis_actions.append(Analyse(self, evaluate_analysis))

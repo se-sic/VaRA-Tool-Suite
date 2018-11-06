@@ -1,5 +1,3 @@
-import textwrap
-
 import attr
 import benchbuild.utils.actions as actions
 from benchbuild.settings import CFG
@@ -21,9 +19,9 @@ class Extract(actions.Step):
             return
         project = self.obj
         project_src = local.path(
-            project.builddir) / project.src_dir / project.name
+            project.builddir) / project.SRC_FILE / project.name
 
-        with local.cwd(CFG["vara"]["result"].value()):
+        with local.cwd(local.path(str(CFG["vara"]["result"].value))):
             extract_bc(project_src)
             cp(local.path(project_src) + ".bc", local.path(
-                str(CFG["vara"]["result"].value())) / project.name + ".bc")
+                str(CFG["vara"]["result"].value)) / project.name + ".bc")

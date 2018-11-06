@@ -1,10 +1,10 @@
-from benchbuild.utils.downloader import Wget
+from benchbuild.utils.download import with_wget
 from benchbuild.utils.run import run
 from benchbuild.utils.compiler import cc
 import benchbuild.project as prj
 
-from plumbum import local
 
+@with_wget({"1.0": "https://raw.githubusercontent.com/se-passau/vara-perf-tests/master/examples/gcd.c"})
 class Gcd(prj.Project):
     """ GCD """
 
@@ -12,15 +12,13 @@ class Gcd(prj.Project):
     GROUP = 'Perf'
     DOMAIN = 'Perf'
 
-    src_dir = "gcd.c"
-    git_uri = "https://raw.githubusercontent.com/se-passau/vara-perf-tests/master/examples/" + src_dir
+    SRC_FILE = "gcd.c"
 
     def run_tests(self, experiment):
         pass
 
-    def download(self):
-        Wget(self.git_uri, self.src_dir)
+    def compile(self):
+        self.download()
 
-    def build(self):
         clang = cc(self)
-        run(clang[self.src_dir, "-o", "gcd"])
+        run(clang[self.SRC_FILE, "-o", "gcd"])
