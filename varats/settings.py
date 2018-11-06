@@ -14,6 +14,10 @@ CFG = s.Configuration(
             "desc": "Config file path of varats. Not guaranteed to exist.",
             "default": None,
         },
+        "benchbuild_root": {
+            "desc": "Root folder to run BenchBuild in",
+            "default": None,
+        },
     }
 )
 

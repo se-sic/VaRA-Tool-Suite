@@ -2,14 +2,15 @@
 VaRA-TS MainWindow
 """
 
+from os import path
+
 from varats.settings import CFG
 from varats.gui.ui_MainWindow import Ui_MainWindow
 from varats.gui.views.example_view import ExampleView
 from varats.gui.views.cr_bar_view import CRBarView
-from varats.gui.buildsetup_window import BuildSetup
+from varats.gui.buildsetup_window import BuildSetup, create_missing_folders
 
 from PyQt5.QtWidgets import QMainWindow
-
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     """
@@ -26,8 +27,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionCR_BarView.triggered.connect(self._spawn_cr_bar_view)
 
         # Signals for menubar
-        self.actionVaRA_Setup.triggered.connect(self._spawn_vara_setup)
+        self.actionVaRA_Setup.triggered.connect(self._spawn_vara_build_setup)
         self.actionSave_Config.triggered.connect(self._save_config)
+        self.actionCreate_BenchBuild_Config.triggered.connect(
+            self._create_benchbuild_config)
 
         self.tabWidget.tabCloseRequested.connect(self.__remove_tab)
 
@@ -45,7 +48,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.tabWidget.addTab(new_tab, "CR-BarView")
 
-    def _spawn_vara_setup(self):
+    def _spawn_vara_build_setup(self):
         """
         Spawn a setup window to configure and build VaRA
         """
@@ -61,6 +64,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             config_file = str(CFG["config_file"])
         CFG.store(config_file)
+        CFG["config_file"] = path.abspath(config_file)
+
+        create_missing_folders()
+
+    def _create_benchbuild_config(self):
+        if CFG["config_file"].value is None:
+            print("No VaRA config found, please initialize a VaRA config first.")
+            return
+
+        if CFG["benchbuild_root"].value is None:
+            CFG["benchbuild_root"] = path.dirname(str(CFG["config_file"]))\
+                                                  + "/benchbuild"
+        create_missing_folders()
+
+        # Local to lazy initialize BenchBuild config
+        from benchbuild.settings import CFG as BB_CFG
+        bb_config_path = str(CFG["benchbuild_root"]) + "/.benchbuild.yml"
+        BB_CFG.store(bb_config_path)
 
     def __remove_tab(self, index):
         tab = self.tabWidget.widget(index)

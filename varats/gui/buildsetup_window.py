@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QWidget, QShortcut
 from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject
 from PyQt5.QtGui import QTextCursor, QKeySequence
 
+from varats.settings import CFG
 from varats.gui.views.ui_BuildMenu import Ui_BuildSetup
 from varats import vara_manager
 
@@ -94,6 +95,14 @@ class BuildWorker(QRunnable):
                                 self.build_type,
                                 self._update_text)
         self.signals.finished.emit()
+
+def create_missing_folders():
+    """
+    Create a folders that do not exist but where set in the config.
+    """
+    bb_root = CFG["benchbuild_root"]
+    if bb_root.value is not None and not os.path.isdir(bb_root.value):
+        os.makedirs(bb_root.value)
 
 
 class BuildSetup(QWidget, Ui_BuildSetup):

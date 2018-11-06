@@ -47,8 +47,15 @@
     <property name="title">
      <string>File</string>
     </property>
+    <widget class="QMenu" name="menuConfig">
+     <property name="title">
+      <string>Config</string>
+     </property>
+     <addaction name="actionCreate_BenchBuild_Config"/>
+     <addaction name="actionSave_Config"/>
+    </widget>
     <addaction name="actionVaRA_Setup"/>
-    <addaction name="actionSave_Config"/>
+    <addaction name="menuConfig"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuView">
@@ -118,6 +125,11 @@
   <action name="actionSave_Config">
    <property name="text">
     <string>Save Config</string>
+   </property>
+  </action>
+  <action name="actionCreate_BenchBuild_Config">
+   <property name="text">
+    <string>Create BenchBuild Config</string>
    </property>
   </action>
  </widget>
