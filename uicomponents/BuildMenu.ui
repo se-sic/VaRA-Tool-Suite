@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>VaRA build setup</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="2" column="0">
@@ -50,14 +50,14 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
-       <widget class="QLabel" name="folderLabel">
+       <widget class="QLabel" name="sourceLabel">
         <property name="text">
-         <string>VaRA folder path</string>
+         <string>VaRA source path</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QLineEdit" name="folderPath"/>
+       <widget class="QLineEdit" name="sourcePath"/>
       </item>
       <item>
        <widget class="QLabel" name="installLabel">

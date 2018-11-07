@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'BuildMenu.ui'
 #
-# Created by: PyQt5 UI code generator 5.10.1
+# Created by: PyQt5 UI code generator 5.11.3
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -33,12 +33,12 @@ class Ui_BuildSetup(object):
         self.widget.setObjectName("widget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.widget)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.folderLabel = QtWidgets.QLabel(self.widget)
-        self.folderLabel.setObjectName("folderLabel")
-        self.verticalLayout.addWidget(self.folderLabel)
-        self.folderPath = QtWidgets.QLineEdit(self.widget)
-        self.folderPath.setObjectName("folderPath")
-        self.verticalLayout.addWidget(self.folderPath)
+        self.sourceLabel = QtWidgets.QLabel(self.widget)
+        self.sourceLabel.setObjectName("sourceLabel")
+        self.verticalLayout.addWidget(self.sourceLabel)
+        self.sourcePath = QtWidgets.QLineEdit(self.widget)
+        self.sourcePath.setObjectName("sourcePath")
+        self.verticalLayout.addWidget(self.sourcePath)
         self.installLabel = QtWidgets.QLabel(self.widget)
         self.installLabel.setObjectName("installLabel")
         self.verticalLayout.addWidget(self.installLabel)
@@ -121,9 +121,9 @@ class Ui_BuildSetup(object):
 
     def retranslateUi(self, BuildSetup):
         _translate = QtCore.QCoreApplication.translate
-        BuildSetup.setWindowTitle(_translate("BuildSetup", "Form"))
+        BuildSetup.setWindowTitle(_translate("BuildSetup", "VaRA build setup"))
         self.advancedMode.setText(_translate("BuildSetup", "Toggle Dev View"))
-        self.folderLabel.setText(_translate("BuildSetup", "VaRA folder path"))
+        self.sourceLabel.setText(_translate("BuildSetup", "VaRA source path"))
         self.installLabel.setText(_translate("BuildSetup", "VaRA install path"))
         self.initButton.setText(_translate("BuildSetup", "Init"))
         self.updateButton.setText(_translate("BuildSetup", "Update"))

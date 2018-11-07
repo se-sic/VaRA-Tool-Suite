@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'MainWindow.ui'
 #
-# Created by: PyQt5 UI code generator 5.10.1
+# Created by: PyQt5 UI code generator 5.11.3
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -30,6 +30,8 @@ class Ui_MainWindow(object):
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
+        self.menuConfig = QtWidgets.QMenu(self.menuFile)
+        self.menuConfig.setObjectName("menuConfig")
         self.menuView = QtWidgets.QMenu(self.menubar)
         self.menuView.setObjectName("menuView")
         MainWindow.setMenuBar(self.menubar)
@@ -53,7 +55,14 @@ class Ui_MainWindow(object):
         self.actionShow_VaRA_status.setObjectName("actionShow_VaRA_status")
         self.actionVaRA_Setup = QtWidgets.QAction(MainWindow)
         self.actionVaRA_Setup.setObjectName("actionVaRA_Setup")
+        self.actionSave_Config = QtWidgets.QAction(MainWindow)
+        self.actionSave_Config.setObjectName("actionSave_Config")
+        self.actionCreate_BenchBuild_Config = QtWidgets.QAction(MainWindow)
+        self.actionCreate_BenchBuild_Config.setObjectName("actionCreate_BenchBuild_Config")
+        self.menuConfig.addAction(self.actionCreate_BenchBuild_Config)
+        self.menuConfig.addAction(self.actionSave_Config)
         self.menuFile.addAction(self.actionVaRA_Setup)
+        self.menuFile.addAction(self.menuConfig.menuAction())
         self.menuFile.addAction(self.actionQuit)
         self.menuView.addAction(self.actionExampleView)
         self.menuView.addAction(self.actionCR_BarView)
@@ -69,6 +78,7 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "VaRA-TS"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
+        self.menuConfig.setTitle(_translate("MainWindow", "Config"))
         self.menuView.setTitle(_translate("MainWindow", "View"))
         self.actionQuit.setText(_translate("MainWindow", "Quit"))
         self.actionQuit.setShortcut(_translate("MainWindow", "Ctrl+Q"))
@@ -81,6 +91,8 @@ class Ui_MainWindow(object):
         self.actionShow_VaRA_status.setText(_translate("MainWindow", "Show VaRA status"))
         self.actionVaRA_Setup.setText(_translate("MainWindow", "VaRA Setup"))
         self.actionVaRA_Setup.setShortcut(_translate("MainWindow", "Ctrl+B"))
+        self.actionSave_Config.setText(_translate("MainWindow", "Save VaRA Config"))
+        self.actionCreate_BenchBuild_Config.setText(_translate("MainWindow", "Create BenchBuild Config"))
 
 
 if __name__ == "__main__":
