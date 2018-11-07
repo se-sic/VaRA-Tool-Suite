@@ -28,6 +28,10 @@ CFG = s.Configuration(
             "desc": "Install dir for LLVM and VaRA",
             "default": None,
         },
+        "result_dir": {
+            "desc": "Result folder for collected results",
+            "default": None,
+        },
     }
 )
 
@@ -78,6 +82,7 @@ def create_missing_folders():
             makedirs(config_node.value)
 
     create_missing_folder_for_cfg("benchbuild_root")
+    create_missing_folder_for_cfg("result_dir")
 
 
 def save_config():
@@ -88,10 +93,13 @@ def save_config():
         config_file = ".vara.yaml"
     else:
         config_file = str(CFG["config_file"])
-    CFG.store(config_file)
     CFG["config_file"] = path.abspath(config_file)
+    if CFG["result_dir"].value is None:
+        CFG["result_dir"] = path.dirname(str(CFG["config_file"])) +\
+            "/results"
 
     create_missing_folders()
+    CFG.store(config_file)
 
 
 s.setup_config(CFG,['.vara.yaml', '.vara.yml'])
