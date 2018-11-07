@@ -4,13 +4,13 @@ VaRA-TS MainWindow
 
 from os import path
 
-from varats.settings import CFG
+from varats.settings import CFG, save_config
 from varats.gui.ui_MainWindow import Ui_MainWindow
 from varats.gui.views.example_view import ExampleView
 from varats.gui.views.cr_bar_view import CRBarView
 from varats.gui.buildsetup_window import BuildSetup, create_missing_folders
 
-from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtWidgets import QMainWindow, QMessageBox
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     """
@@ -52,6 +52,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """
         Spawn a setup window to configure and build VaRA
         """
+        if CFG["config_file"].value is None:
+            err = QMessageBox()
+            err.setIcon(QMessageBox.Warning)
+            err.setWindowTitle("Missing config file.")
+            err.setText("Could not find VaRA config file.\n"
+                        "A new config file can be created in File > Config.")
+            err.setStandardButtons(QMessageBox.Ok)
+            err.exec_()
+            return
         self.bwg = BuildSetup()
         self.bwg.show()
 
@@ -59,14 +68,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """
         Save current config to file.
         """
-        if CFG["config_file"].value == None:
-            config_file = ".vara.yaml"
-        else:
-            config_file = str(CFG["config_file"])
-        CFG.store(config_file)
-        CFG["config_file"] = path.abspath(config_file)
-
-        create_missing_folders()
+        save_config()
 
     def _create_benchbuild_config(self):
         if CFG["config_file"].value is None:

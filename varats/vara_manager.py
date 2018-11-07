@@ -105,15 +105,17 @@ def get_download_steps():
     return 6
 
 
-def download_vara(dl_folder, progress_func=lambda x: None,
+def download_vara(llvm_source_folder, progress_func=lambda x: None,
                   post_out=lambda x: None):
     """
     Downloads VaRA an all other necessary repos from github.
     """
+    dl_folder, llvm_dir = os.path.split(os.path.normpath(llvm_source_folder))
+
     progress_func(0)
-    download_repo(dl_folder, "https://git.llvm.org/git/llvm.git",
+    download_repo(dl_folder, "https://git.llvm.org/git/llvm.git", llvm_dir,
                   post_out=post_out)
-    dl_folder += "llvm/"
+    dl_folder += "/" + llvm_dir + "/"
     add_remote(dl_folder, "upstream", "git@github.com:se-passau/vara-llvm.git")
 
     progress_func(1)
@@ -152,6 +154,7 @@ def checkout_vara_version(llvm_folder, version, dev):
 
     ../llvm/ 60 dev
     """
+    llvm_folder = os.path.normpath(llvm_folder)
     version = str(version)
     version_name = ""
     version_name += version
@@ -160,15 +163,15 @@ def checkout_vara_version(llvm_folder, version, dev):
     print(version_name)
     checkout_new_branch(llvm_folder, "vara-" + version_name,
                         "upstream/vara-" + version_name)
-    checkout_new_branch(llvm_folder + "tools/clang/", "vara-" + version_name,
+    checkout_new_branch(llvm_folder + "/tools/clang/", "vara-" + version_name,
                         "upstream/vara-" + version_name)
     if dev:
-        checkout_branch(llvm_folder + "tools/VaRA/", "vara-dev")
+        checkout_branch(llvm_folder + "/tools/VaRA/", "vara-dev")
 
-    checkout_branch(llvm_folder + "tools/clang/tools/extra/",
+    checkout_branch(llvm_folder + "/tools/clang/tools/extra/",
                     "release_" + version)
-    checkout_branch(llvm_folder + "tools/lld/", "release_" + version)
-    checkout_branch(llvm_folder + "projects/compiler-rt/",
+    checkout_branch(llvm_folder + "/tools/lld/", "release_" + version)
+    checkout_branch(llvm_folder + "/projects/compiler-rt/",
                     "release_" + version)
 
 
@@ -396,9 +399,9 @@ class VaRAStateManager(object):
 
         self.thread_pool = QThreadPool()
 
-    def change_llvm_folder(self, llvm_folder):
+    def change_llvm_source_folder(self, llvm_folder):
         """
-        Change the current llvm folder.
+        Change the current llvm source folder.
         """
         self.llvm_folder = llvm_folder
 
@@ -419,5 +422,5 @@ class VaRAStateManager(object):
 
 
 if __name__ == "__main__":
-    download_vara("/tmp/foo/")
+    download_vara("/tmp/foo/llvm")
     checkout_vara_version("/tmp/foo/llvm/", 60, True)

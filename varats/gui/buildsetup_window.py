@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QWidget, QShortcut
 from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject
 from PyQt5.QtGui import QTextCursor, QKeySequence
 
-from varats.settings import CFG
+from varats.settings import CFG, get_value_or_default, create_missing_folders
 from varats.gui.views.ui_BuildMenu import Ui_BuildSetup
 from varats import vara_manager
 
@@ -54,7 +54,7 @@ class SetupWorker(QRunnable):
                                    self._update_text)
 
         self._update_progress(7)
-        vara_manager.checkout_vara_version(self.path + "llvm/", 60, True)
+        vara_manager.checkout_vara_version(self.path, 60, True)
 
         self._update_progress(8)
         self.signals.finished.emit()
@@ -96,15 +96,6 @@ class BuildWorker(QRunnable):
                                 self._update_text)
         self.signals.finished.emit()
 
-def create_missing_folders():
-    """
-    Create a folders that do not exist but where set in the config.
-    """
-    bb_root = CFG["benchbuild_root"]
-    if bb_root.value is not None and not os.path.isdir(bb_root.value):
-        os.makedirs(bb_root.value)
-
-
 class BuildSetup(QWidget, Ui_BuildSetup):
     """
     Window to control the setup and status of the local VaRA installation.
@@ -116,15 +107,20 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         self.__quit_sc = QShortcut(QKeySequence("Ctrl+Q"), self)
         self.__quit_sc.activated.connect(self.close)
 
-        self.folderPath.insert(os.getcwd() + "/VaRA/")
-        self.installPath.insert(os.getcwd() + "/VaRA/install/")
+        llvm_src_dir = get_value_or_default(CFG, "llvm_source_dir",
+                                            str(os.getcwd()) + "/vara-llvm/")
+        self.sourcePath.insert(llvm_src_dir)
+        self.sourcePath.editingFinished.connect(self._update_source_dir)
+
+        llvm_install_dir = get_value_or_default(CFG, "llvm_install_dir",
+                                                str(os.getcwd()) + "/VaRA/")
+        self.installPath.insert(llvm_install_dir)
+        self.installPath.editingFinished.connect(self._update_install_dir)
 
         self.initButton.clicked.connect(self._setup_vara)
         self.buildButton.clicked.connect(self._build_vara)
         self.textOutput.setReadOnly(True)
         self.textOutput.ensureCursorVisible()
-
-        self.folderPath.editingFinished.connect(self._check_state)
 
         self.progressBar.setMaximum(1)
         self.progressBar.setValue(0)
@@ -136,7 +132,7 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         self.advancedMode.clicked.connect(self._toggle_advanced_view)
 
         self.vara_state_mgr = \
-            vara_manager.VaRAStateManager(self.__get_llvm_path())
+            vara_manager.VaRAStateManager(self.__get_llvm_source_path())
         self.updateButton.clicked\
             .connect(self.vara_state_mgr.update_current_branch)
         self.vara_state_mgr.state_signal\
@@ -167,19 +163,17 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         """
         self.statusLabel.setText("Setting up VaRA...")
         self.statusLabel.show()
-        path = self.__get_root_path()
-        if not os.path.exists(path):
-            os.makedirs(path)
+        path = self.__get_llvm_source_path()
 
-        if os.listdir(path) == []:
+        if os.path.exists(path):
+            self.statusLabel.setText("VaRA already checkout.")
+        else:
             worker = SetupWorker(path)
             worker.signals.finished.connect(self._setup_done)
             worker.signals.update.connect(self._update_progress)
             worker.signals.text_update.connect(self._update_text)
             self.progressBar.setMaximum(worker.get_steps())
             self.thread_pool.start(worker)
-        else:
-            self.statusLabel.setText("VaRA already checkout.")
 
     def _setup_done(self):
         self.statusLabel.setText("Finished setup")
@@ -188,7 +182,7 @@ class BuildSetup(QWidget, Ui_BuildSetup):
     def _build_vara(self):
         self.statusLabel.setText("Building VaRA")
         if self.checkDev.isChecked():
-            worker = BuildWorker(self.__get_llvm_path(),
+            worker = BuildWorker(self.__get_llvm_source_path(),
                                  self.__get_install_path(),
                                  vara_manager.BuildType.DEV)
             worker.signals.finished.connect(self._build_done)
@@ -221,17 +215,19 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         self._check_versions()
 
     def _check_init(self):
-        path = self.__get_llvm_path()
-        self.vara_state_mgr.change_llvm_folder(path)
+        path = self.__get_llvm_source_path()
+        self.vara_state_mgr.change_llvm_source_folder(path)
         if not os.path.exists(path):
             self.initButton.setEnabled(True)
+            self.updateButton.setDisabled(True)
             self.buildButton.setDisabled(True)
         else:
             self.initButton.setDisabled(True)
+            self.updateButton.setEnabled(True)
             self.buildButton.setEnabled(True)
 
     def _check_versions(self):
-        if not os.path.exists(self.__get_llvm_path()):
+        if not os.path.exists(self.__get_llvm_source_path()):
             self.llvmStatus.setText("---")
             self.llvmStatus.setStyleSheet("QLabel { color : black; }")
             self.clangStatus.setText("---")
@@ -266,11 +262,17 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         else:
             self.varaStatus.setStyleSheet("QLabel { color : orange; }")
 
-    def __get_root_path(self):
-        return self.folderPath.text()
+    def _update_source_dir(self):
+        CFG["llvm_source_dir"] = self.__get_llvm_source_path()
+        save_config()
+        self._check_state()
 
-    def __get_llvm_path(self):
-        return self.__get_root_path() + "llvm/"
+    def _update_install_dir(self):
+        CFG["llvm_install_dir"] = self.__get_install_path()
+        save_config()
+
+    def __get_llvm_source_path(self):
+        return self.sourcePath.text()
 
     def __get_install_path(self):
         return self.installPath.text()
