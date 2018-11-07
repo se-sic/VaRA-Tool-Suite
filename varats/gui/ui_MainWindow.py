@@ -91,7 +91,7 @@ class Ui_MainWindow(object):
         self.actionShow_VaRA_status.setText(_translate("MainWindow", "Show VaRA status"))
         self.actionVaRA_Setup.setText(_translate("MainWindow", "VaRA Setup"))
         self.actionVaRA_Setup.setShortcut(_translate("MainWindow", "Ctrl+B"))
-        self.actionSave_Config.setText(_translate("MainWindow", "Save Config"))
+        self.actionSave_Config.setText(_translate("MainWindow", "Save VaRA Config"))
         self.actionCreate_BenchBuild_Config.setText(_translate("MainWindow", "Create BenchBuild Config"))
 
 

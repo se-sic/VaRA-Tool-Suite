@@ -121,7 +121,7 @@ class Ui_BuildSetup(object):
 
     def retranslateUi(self, BuildSetup):
         _translate = QtCore.QCoreApplication.translate
-        BuildSetup.setWindowTitle(_translate("BuildSetup", "Form"))
+        BuildSetup.setWindowTitle(_translate("BuildSetup", "VaRA build setup"))
         self.advancedMode.setText(_translate("BuildSetup", "Toggle Dev View"))
         self.sourceLabel.setText(_translate("BuildSetup", "VaRA source path"))
         self.installLabel.setText(_translate("BuildSetup", "VaRA install path"))

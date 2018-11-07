@@ -32,7 +32,7 @@ def run_with_output(pb_cmd, post_out=lambda x: None):
         post_out("ProcessExecutionError")
 
 
-def download_repo(dl_folder, url: str, repo_name=None,
+def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
                   post_out=lambda x: None):
     """
     Download a repo into the specified folder.
@@ -42,12 +42,16 @@ def download_repo(dl_folder, url: str, repo_name=None,
         return
 
     with local.cwd(dl_folder):
+        args = ["clone", "--progress", url]
+        if remote_name is not None:
+            args.append("--origin")
+            args.append(remote_name)
+
         if repo_name is not None:
-            git_clone = git["clone", "--progress", url, repo_name]
-            run_with_output(git_clone, post_out)
-        else:
-            git_clone = git["clone", "--progress", url]
-            run_with_output(git_clone, post_out)
+            args.append(repo_name)
+
+        git_clone = git[args]
+        run_with_output(git_clone, post_out)
 
 
 def add_remote(repo_folder, remote, url):
@@ -114,33 +118,33 @@ def download_vara(llvm_source_folder, progress_func=lambda x: None,
 
     progress_func(0)
     download_repo(dl_folder, "https://git.llvm.org/git/llvm.git", llvm_dir,
-                  post_out=post_out)
+                  remote_name="upstream", post_out=post_out)
     dl_folder += "/" + llvm_dir + "/"
-    add_remote(dl_folder, "upstream", "git@github.com:se-passau/vara-llvm.git")
+    add_remote(dl_folder, "origin", "git@github.com:se-passau/vara-llvm.git")
 
     progress_func(1)
     download_repo(dl_folder + "tools/", "https://git.llvm.org/git/clang.git",
-                  post_out=post_out)
-    add_remote(dl_folder + "tools/clang/", "upstream",
+                  remote_name="upstream", post_out=post_out)
+    add_remote(dl_folder + "tools/clang/", "origin",
                "git@github.com:se-passau/vara-clang.git")
 
     progress_func(2)
     download_repo(dl_folder + "tools/", "git@github.com:se-passau/VaRA.git",
-                  post_out=post_out)
+                  remote_name="origin", post_out=post_out)
 
     progress_func(3)
     download_repo(dl_folder + "tools/clang/tools/",
                   "https://git.llvm.org/git/clang-tools-extra.git", "extra",
-                  post_out=post_out)
+                  remote_name="upstream", post_out=post_out)
 
     progress_func(4)
     download_repo(dl_folder + "tools/", "https://git.llvm.org/git/lld.git",
-                  post_out=post_out)
+                  remote_name="upstream", post_out=post_out)
 
     progress_func(5)
     download_repo(dl_folder + "projects/",
                   "https://git.llvm.org/git/compiler-rt.git",
-                  post_out=post_out)
+                  remote_name="upstream", post_out=post_out)
 
     progress_func(6)
     mkdir[dl_folder + "build/"] & FG
@@ -160,11 +164,11 @@ def checkout_vara_version(llvm_folder, version, dev):
     version_name += version
     if dev:
         version_name += "-dev"
-    print(version_name)
+
     checkout_new_branch(llvm_folder, "vara-" + version_name,
-                        "upstream/vara-" + version_name)
+                        "origin/vara-" + version_name)
     checkout_new_branch(llvm_folder + "/tools/clang/", "vara-" + version_name,
-                        "upstream/vara-" + version_name)
+                        "origin/vara-" + version_name)
     if dev:
         checkout_branch(llvm_folder + "/tools/VaRA/", "vara-dev")
 
@@ -282,7 +286,7 @@ def get_llvm_status(llvm_folder) -> GitStatus:
     Retrieve the git status of llvm.
     """
     with local.cwd(llvm_folder):
-        fetch_remote('upstream')
+        fetch_remote('origin')
         git_status = git['status']
         stdout = git_status('-sb')
         for line in stdout.split('\n'):
@@ -300,7 +304,7 @@ def get_clang_status(llvm_folder) -> GitStatus:
     Retrieve the git status of clang.
     """
     with local.cwd(llvm_folder + 'tools/clang'):
-        fetch_remote('upstream')
+        fetch_remote('origin')
         git_status = git['status']
         stdout = git_status('-sb')
         for line in stdout.split('\n'):
