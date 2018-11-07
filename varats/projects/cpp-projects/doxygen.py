@@ -3,37 +3,32 @@ from benchbuild.utils.compiler import cxx
 from benchbuild.utils.run import run
 from benchbuild.project import Project
 from benchbuild.utils.cmd import make, cmake
-from benchbuild.utils.downloader import Git
+from benchbuild.utils.download import with_git
 
 from plumbum.path.utils import delete
 from plumbum import local
-from os import path
 
+
+@with_git("https://github.com/doxygen/doxygen.git", limit=100, refspec="HEAD")
 class Doxygen(Project):
     """ Doxygen """
 
     NAME = 'doxygen'
     GROUP = 'code'
     DOMAIN = 'documentation'
-    VERSION = '1.8.14'
+    VERSION = 'HEAD'
 
-    src_dir = NAME + "-{0}".format(VERSION)
-    git_uri = "https://github.com/doxygen/doxygen.git"
+    SRC_FILE = NAME + "-{0}".format(VERSION)
 
     def run_tests(self, runner):
         pass
 
-    def download(self):
-        Git(self.git_uri, self.src_dir, shallow_clone=False)
+    def compile(self):
+        self.download()
 
-    def configure(self):
         clangxx = cxx(self)
-        with local.cwd(self.src_dir):
+        with local.cwd(self.SRC_FILE):
             with local.env(CXX=str(clangxx)):
                 delete("CMakeCache.txt")
                 cmake("-G", "Unix Makefiles", ".")
-
-    def build(self):
-        with local.cwd(self.src_dir):
-            run(make["-j", CFG["jobs"]])
-        self.src_dir = path.join(self.src_dir, "bin")
+            run(make["-j", int(CFG["jobs"])])

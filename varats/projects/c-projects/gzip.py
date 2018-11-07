@@ -3,39 +3,36 @@ from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
 import benchbuild.project as prj
 from benchbuild.utils.cmd import make
-from benchbuild.utils.downloader import Git
+from benchbuild.utils.download import with_git
 
 from plumbum import local
 
+
+@with_git("https://git.savannah.gnu.org/git/gzip.git", limit=100, refspec="HEAD")
 class Gzip(prj.Project):
     """ Compression and decompression tool Gzip (fetched by Git) """
 
     NAME = 'gzip'
     GROUP = 'git'
     DOMAIN = 'version control'
-    VERSION = '1.6'
+    VERSION = 'HEAD'
 
-    src_dir = NAME + "-{0}".format(VERSION)
-    gzip_uri = "https://git.savannah.gnu.org/git/gzip.git"
+    SRC_FILE = NAME + "-{0}".format(VERSION)
 
     def run_tests(self, runner):
         pass
 
-    def download(self):
-        Git(self.gzip_uri, self.src_dir, shallow_clone=False)
+    def compile(self):
+        self.download()
 
-    def configure(self):
         self.cflags += ["-Wno-error=string-plus-int",
                         "-Wno-error=shift-negative-value",
                         "-Wno-string-plus-int",
                         "-Wno-shift-negative-value"]
 
         clang = cc(self)
-        with local.cwd(self.src_dir):
+        with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
                 run(local["./bootstrap"])
                 run(local["./configure"])
-
-    def build(self):
-        with local.cwd(self.src_dir):
-            run(make["-j", CFG["jobs"]])
+            run(make["-j", int(CFG["jobs"])])

@@ -3,35 +3,30 @@ from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
 from benchbuild.project import Project
 from benchbuild.utils.cmd import make
-from benchbuild.utils.downloader import Git
+from benchbuild.utils.download import with_git
 
 from plumbum import local
-from os import path
 
+
+@with_git("https://github.com/vim/vim.git", limit=100, refspec="HEAD")
 class Vim(Project):
     """ Text processing tool vim """
 
     NAME = 'vim'
     GROUP = 'code'
     DOMAIN = 'UNIX utils'
-    VERSION = '8.1'
+    VERSION = 'HEAD'
 
-    src_dir = NAME + "-{0}".format(VERSION)
-    git_uri = "https://github.com/vim/vim.git"
+    SRC_FILE = NAME + "-{0}".format(VERSION)
 
     def run_tests(self, runner):
         pass
 
-    def download(self):
-        Git(self.git_uri, self.src_dir, shallow_clone=False)
+    def compile(self):
+        self.download()
 
-    def configure(self):
         clang = cc(self)
-        with local.cwd(self.src_dir):
+        with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
                 run(local["./configure"])
-
-    def build(self):
-        with local.cwd(self.src_dir):
-            run(make["-j", CFG["jobs"]])
-        self.src_dir = path.join(self.src_dir, "src")
+            run(make["-j", int(CFG["jobs"])])
