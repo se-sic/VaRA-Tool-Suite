@@ -4,7 +4,7 @@
 
 ### Install dependencies
 To use the VaRA Tool Suite, make sure you have the necessary packages installed.
-For ubuntu, you can use the following command to install them (you system has to
+For ubuntu, you can use the following command to install them (your system has to
 have at least `python3.6`):
 
 ```bash
