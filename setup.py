@@ -23,5 +23,6 @@ setup(name='VaRA-Tool-Suite',
           "gui_scripts": [
               'vara-graphview = varats.driver:main_graph_view',
               'vara-buildsetup = varats.driver:main_setup',
+              'vara-gen-commitmap = varats.driver:main_gen_commitmap',
           ]
       })
