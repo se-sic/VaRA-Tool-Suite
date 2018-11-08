@@ -4,12 +4,14 @@ Main drivers for VaRA-TS
 """
 
 import sys
+import argparse
 
 from enum import Enum
 
 from varats import settings
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
+from varats.tools.commitmap import generate_commit_map
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
@@ -63,6 +65,25 @@ def main_setup():
     raise NotImplementedError
     driver = VaRATSSetup()
     driver.main()
+
+
+def main_gen_commitmap():
+    """
+    Create a commit map for a repository.
+    """
+    parser = argparse.ArgumentParser("Commit map creator")
+    parser.add_argument("path", help="Path to git repository")
+    parser.add_argument("-o", "--output", help="Output filename",
+                        default="c_map")
+    parser.add_argument("--end", help="End of the commit range (inclusive)",
+                        default="HEAD")
+    parser.add_argument("--start",
+                        help="Start of the commit range (exclusive)",
+                        default=None)
+
+    args = parser.parse_args()
+
+    generate_commit_map(args.path, args.output, args.end, args.start)
 
 
 if __name__ == "__main__":
