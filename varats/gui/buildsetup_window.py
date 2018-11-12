@@ -96,6 +96,7 @@ class BuildWorker(QRunnable):
                                 self._update_text)
         self.signals.finished.emit()
 
+
 class BuildSetup(QWidget, Ui_BuildSetup):
     """
     Window to control the setup and status of the local VaRA installation.
