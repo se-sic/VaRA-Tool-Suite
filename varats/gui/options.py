@@ -3,7 +3,8 @@ Option module, providing different options to manage user modifications.
 """
 
 from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QHeaderView,\
-                            QComboBox, QFileDialog
+                            QComboBox, QFileDialog, QLineEdit
+from PyQt5.QtGui import QIntValidator
 from PyQt5.QtCore import Qt
 
 
@@ -15,6 +16,7 @@ class OptionTreeWidget(QTreeWidget):
     OPT_CR_MR = "Merge reports"
     OPT_CR_RORDER = "Report Order"
     OPT_CR_CMAP = "Commit map"
+    OPT_CR_PT = "Play time"
 
     OPT_SCF = "Show CF graph"
     OPT_SDF = "Show DF graph"
@@ -58,6 +60,16 @@ class OptionTreeWidget(QTreeWidget):
         self.setItemWidget(drop_item, 1, self.__combo_box)
         drop_item.setText(0, self.OPT_CR_RORDER)
 
+        play_time_item = QTreeWidgetItem(grp)
+        play_time_item.setText(0, self.OPT_CR_PT)
+        self.__pt_lineedit = QLineEdit()
+        valid = QIntValidator()
+        valid.bottom = 10
+        valid.top = 50000
+        self.__pt_lineedit.setValidator(valid)
+        self.setItemWidget(play_time_item, 1, self.__pt_lineedit)
+        self.__pt_lineedit.insert(str(5000))
+
     @property
     def merge_report_checkstate(self):
         """
@@ -85,6 +97,13 @@ class OptionTreeWidget(QTreeWidget):
         Get current combo box selection.
         """
         return self.__combo_box.currentText()
+
+    @property
+    def play_time(self):
+        """
+        Get current play time.
+        """
+        return int(self.__pt_lineedit.text())
 
     def connect_cb_cic(self, func):
         """

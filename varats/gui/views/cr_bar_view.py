@@ -4,9 +4,11 @@ Module to manage the CommitReport BarView
 
 from os import path
 
+from threading import Timer
+
 from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox,\
                             QComboBox
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 
 from varats.gui.views.ui_CRBarView import Ui_Form
 from varats.data.data_manager import VDM
@@ -40,10 +42,12 @@ class CRBarView(QWidget, Ui_Form):
 
         self.fileSlider.sliderReleased.connect(self._slider_moved)
         self.fileSlider.setTickPosition(2)
-        self.playButton.clicked.connect(self._click_next)
+        self.playButton.clicked.connect(self._start_play)
         self.stopButton.clicked.connect(self._click_stop)
         self.__preview = False
         self._adjust_slider()
+        self._play_timer = QTimer()
+        self._play_timer.timeout.connect(self._click_next)
 
         self._update_report_order()
 
@@ -207,9 +211,14 @@ class CRBarView(QWidget, Ui_Form):
             idx = self.commit_reports.index(self.current_report)
             self.fileSlider.setSliderPosition(idx)
 
+    def _start_play(self):
+        self._play_timer.start(self.optionsTree.play_time)
+
     def _click_next(self):
         self.__preview = True
         self._next_commit_report()
+        if self.fileSlider.value() >= self.fileSlider.maximum():
+            self._click_stop()
 
     def _next_commit_report(self):
         if self.__preview:
@@ -218,3 +227,4 @@ class CRBarView(QWidget, Ui_Form):
 
     def _click_stop(self):
         self.__preview = False
+        self._play_timer.stop()
