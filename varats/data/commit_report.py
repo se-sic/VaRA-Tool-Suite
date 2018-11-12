@@ -133,6 +133,34 @@ class CommitReport(object):
         """
         return self._path
 
+    def calc_max_cf_edges(self):
+        """
+        Calulate the highest amount of control-flow interactions of a single
+        commit region.
+        """
+        cf_map = dict()
+        self.init_cf_map_with_edges(cf_map)
+
+        total = 0
+        for from_to_pair in cf_map.values():
+            total = max(max(from_to_pair[0], from_to_pair[1]), total)
+
+        return total
+
+    def calc_max_df_edges(self):
+        """
+        Calulate the highest amount of data-flow interactions of a single
+        commit region.
+        """
+        df_map = dict()
+        self.init_df_map_with_edges(df_map)
+
+        total = 0
+        for from_to_pair in df_map.values():
+            total = max(max(from_to_pair[0], from_to_pair[1]), total)
+
+        return total
+
     def __str__(self):
         return "FInfo:\n\t{}\nRegionMappings:\n\t{}\n" \
             .format(self.finfos.keys(), self.region_mappings.keys())
@@ -143,16 +171,58 @@ class CommitReport(object):
     def __lt__(self, other):
         return self.path < other.path
 
+    def init_cf_map_with_edges(self, cf_map):
+        """
+        Initialize control-flow map with edges and from/to counters.
+        """
+        # if any information is missing add all from the original
+        # report to avoid errors.
+        for reg_mapping in self.region_mappings.values():
+            cf_map[reg_mapping.id] = [0, 0]
+
+        for func_g_edge in self.graph_info.values():
+            for cf_edge in func_g_edge.cf_edges:
+                cf_map[cf_edge.edge_from][0] += 1
+                cf_map[cf_edge.edge_to][1] += 1
+
+    def init_df_map_with_edges(self, df_map):
+        """
+        Initialize data-flow map with edges and from/to counters.
+        """
+        # if any information is missing add all from the original report
+        # to avoid errors.
+        for reg_mapping in self.region_mappings.values():
+            df_map[reg_mapping.id] = [0, 0]
+
+        for func_g_edge in self.graph_info.values():
+            for df_edge in func_g_edge.df_relations:
+                df_map[df_edge.edge_from][0] += 1
+                df_map[df_edge.edge_to][1] += 1
+
 
 class CommitReportMeta(object):
 
     def __init__(self):
         self.finfos = dict()
         self.region_mappings = dict()
+        self.__cf_ylimit = 0
+        self.__df_ylimit = 0
 
     def merge(self, commit_report: CommitReport):
         self.finfos.update(commit_report.finfos)
         self.region_mappings.update(commit_report.region_mappings)
+        self.__cf_ylimit = max(self.__cf_ylimit,
+                               commit_report.calc_max_cf_edges())
+        self.__df_ylimit = max(self.__df_ylimit,
+                               commit_report.calc_max_df_edges())
+
+    @property
+    def cf_ylimit(self):
+        return self.__cf_ylimit
+
+    @property
+    def df_ylimit(self):
+        return self.__df_ylimit
 
     def __str__(self):
         return "FInfo:\n\t{}\nRegionMappings:\n\t{}\n" \
@@ -197,15 +267,7 @@ def generate_inout_cfg_cf(commit_report: CommitReport,
         for reg_mapping in cr_meta.region_mappings.values():
             cf_map[reg_mapping.id] = [0, 0]
 
-    # if any information is missing add all from the original
-    # report to avoid errors.
-    for reg_mapping in commit_report.region_mappings.values():
-        cf_map[reg_mapping.id] = [0, 0]
-
-    for func_g_edge in commit_report.graph_info.values():
-        for cf_edge in func_g_edge.cf_edges:
-            cf_map[cf_edge.edge_from][0] += 1
-            cf_map[cf_edge.edge_to][1] += 1
+    commit_report.init_cf_map_with_edges(cf_map)
 
     rows = []
     for item in cf_map.items():
@@ -233,15 +295,7 @@ def generate_inout_cfg_df(commit_report: CommitReport,
         for reg_mapping in cr_meta.region_mappings.values():
             df_map[reg_mapping.id] = [0, 0]
 
-    # if any information is missing add all from the original report
-    # to avoid errors.
-    for reg_mapping in commit_report.region_mappings.values():
-        df_map[reg_mapping.id] = [0, 0]
-
-    for func_g_edge in commit_report.graph_info.values():
-        for df_edge in func_g_edge.df_relations:
-            df_map[df_edge.edge_from][0] += 1
-            df_map[df_edge.edge_to][1] += 1
+    commit_report.init_df_map_with_edges(df_map)
 
     rows = []
     for item in df_map.items():
