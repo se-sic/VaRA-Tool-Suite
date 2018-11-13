@@ -69,12 +69,12 @@ def plot_cfg_barplot(fig, commit_report: CommitReport, draw_cf: bool,
     ylimit = None
     if draw_cf:
         data = generate_inout_cfg_cf(commit_report, cr_meta)
-        color_palette = "muted"
+        color_palette = sns.color_palette(["#004949", "#920000"])
         if cr_meta is not None:
             ylimit = cr_meta.cf_ylimit
     else:
         data = generate_inout_cfg_df(commit_report, cr_meta)
-        color_palette = "Set2"
+        color_palette = sns.color_palette(["#006DDB", "#920000"])
         if cr_meta is not None:
             ylimit = cr_meta.df_ylimit
 
@@ -87,8 +87,6 @@ def plot_cfg_barplot(fig, commit_report: CommitReport, draw_cf: bool,
 
     plt.figure(fig.number)
     plt.clf()
-    if ylimit is not None:
-        plt.ylim(0, ylimit)
     bar_p = sns.barplot(x="Region", y="Amount",
                         hue="Direction", data=data, palette=color_palette)
 
