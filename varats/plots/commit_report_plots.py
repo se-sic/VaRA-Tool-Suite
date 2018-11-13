@@ -67,10 +67,10 @@ def plot_cfg_barplot(fig, commit_report: CommitReport, draw_cf: bool,
         return
     if draw_cf:
         data = generate_inout_cfg_cf(commit_report, cr_meta)
-        color_palette = "muted"
+        color_palette = sns.color_palette(["#004949", "#920000"])
     else:
         data = generate_inout_cfg_df(commit_report, cr_meta)
-        color_palette = "Set2"
+        color_palette = sns.color_palette(["#006DDB", "#920000"])
 
     if data.empty:
         # TODO: add logging
