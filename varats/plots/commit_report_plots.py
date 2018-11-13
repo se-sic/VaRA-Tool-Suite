@@ -87,6 +87,8 @@ def plot_cfg_barplot(fig, commit_report: CommitReport, draw_cf: bool,
 
     plt.figure(fig.number)
     plt.clf()
+    if ylimit is not None:
+        plt.ylim(0, ylimit)
     bar_p = sns.barplot(x="Region", y="Amount",
                         hue="Direction", data=data, palette=color_palette)
 
