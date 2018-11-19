@@ -114,6 +114,18 @@ class DataManager(object):
         worker.signal.clean.connect(self._release_lock)
         self.thread_pool.start(worker)
 
+    def load_data_class_sync(self, file_path, DataClassTy):\
+            # pylint: disable=invalid-name
+        """
+        Load a DataClass of type <DataClassTy> from a file synchronosly.
+        """
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError
+
+        loaded_file = self.__load_data_class(file_path, DataClassTy)
+        self._release_lock()
+        return loaded_file
+
     def _release_lock(self):
         self.loader_lock.release()
 
