@@ -3,14 +3,17 @@
 Main drivers for VaRA-TS
 """
 
+import os
 import sys
 import argparse
 
 from enum import Enum
 
 from varats import settings
+from varats.settings import get_value_or_default, CFG
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
+from varats.vara_manager import setup_VaRA
 from varats.tools.commitmap import generate_commit_map
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
@@ -58,13 +61,39 @@ def main_graph_view():
     driver.main()
 
 
-def main_setup():
+def update_term(text):
+    text.rstrip('\r\n').replace('\n', ' ') #TODO: test with 'repr(text)'
+    print(text, end='\r', flush=True)
+
+
+def build_setup():
     """
-    Start VaRA BuildSetup driver and run application.
+    Build VaRA on terminal.
     """
-    raise NotImplementedError
-    driver = VaRATSSetup()
-    driver.main()
+    llvm_src_dir = get_value_or_default(CFG, "llvm_source_dir",
+                                        str(os.getcwd()) + "/vara-llvm/")
+    llvm_install_dir = get_value_or_default(CFG, "llvm_install_dir",
+                                            str(os.getcwd()) + "/VaRA/")
+
+    parser = argparse.ArgumentParser("Build LLVM environment")
+    parser.add_argument("-v", "--verbosity", action="count", default=0,
+                        help="For each 'v' increase the verbosity.")
+    parser.add_argument("--init", help="Initializes VaRA and all components.",
+                        const=True, nargs='?')
+    parser.add_argument("--update", help="Updates VaRA and all components.",
+                        const=True, nargs='?')
+    parser.add_argument("--build", help="Builds VaRA and all components.",
+                        const=True, nargs='?')
+    parser.add_argument("llvmfolder", help="Folder of LLVM. (Optional)",
+                        nargs='?', default=llvm_src_dir)
+    parser.add_argument("installprefix",
+                        help="Folder to install LLVM. (Optional)", nargs='?',
+                        default=llvm_install_dir)
+
+    args = parser.parse_args()
+
+    setup_VaRA(args.init, args.update, args.build, args.llvmfolder,
+               args.installprefix, update_term)
 
 
 def main_gen_commitmap():

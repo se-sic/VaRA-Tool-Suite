@@ -54,6 +54,24 @@ def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
         run_with_output(git_clone, post_out)
 
 
+def setup_VaRA(init, update, build, llvm_folder, installprefix,
+               post_out=lambda x: None):
+    """
+    Sets up VaRA over terminal.
+    """
+    if init:
+        download_vara(llvm_folder, post_out=post_out)
+
+    if update:
+        pull_current_branch(llvm_folder)
+        pull_current_branch(llvm_folder + "tools/clang/")
+        pull_current_branch(llvm_folder + "tools/VaRA/")
+
+    if build:
+        build_vara(llvm_folder, install_prefix=installprefix,
+                   build_type=BuildType.DEV)
+
+
 def add_remote(repo_folder, remote, url):
     """
     Adds new remote to the repository.
