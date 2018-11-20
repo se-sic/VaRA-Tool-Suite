@@ -7,8 +7,6 @@ import os
 import sys
 import argparse
 
-from enum import Enum
-
 from varats import settings
 from varats.settings import get_value_or_default, CFG
 from varats.gui.main_window import MainWindow
@@ -18,7 +16,8 @@ from varats.tools.commitmap import generate_commit_map
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
-class VaRATSGui():
+
+class VaRATSGui:
 
     def __init__(self):
         self.app = QApplication(sys.argv)
@@ -43,7 +42,7 @@ class VaRATSGui():
         sys.exit(self.app.exec_())
 
 
-class VaRATSSetup():
+class VaRATSSetup:
 
     def __init__(self):
         self.app = QApplication(sys.argv)
@@ -62,7 +61,7 @@ def main_graph_view():
 
 
 def update_term(text):
-    text.rstrip('\r\n').replace('\n', ' ') #TODO: test with 'repr(text)'
+    text.rstrip('\r\n').replace('\n', ' ')  # TODO: test with 'repr(text)'
     print(text, end='\r', flush=True)
 
 

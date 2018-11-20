@@ -54,7 +54,7 @@ def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
         run_with_output(git_clone, post_out)
 
 
-def setup_VaRA(init, update, build, llvm_folder, installprefix,
+def setup_vara(init, update, build, llvm_folder, installprefix,
                post_out=lambda x: None):
     """
     Sets up VaRA over terminal.
