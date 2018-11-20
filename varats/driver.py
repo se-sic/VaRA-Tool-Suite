@@ -76,8 +76,6 @@ def build_setup():
                                             str(os.getcwd()) + "/VaRA/")
 
     parser = argparse.ArgumentParser("Build LLVM environment")
-    parser.add_argument("-v", "--verbosity", action="count", default=0,
-                        help="For each 'v' increase the verbosity.")
     parser.add_argument("--init", help="Initializes VaRA and all components.",
                         const=True, nargs='?')
     parser.add_argument("--update", help="Updates VaRA and all components.",
