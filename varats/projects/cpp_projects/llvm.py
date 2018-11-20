@@ -7,10 +7,10 @@ from plumbum import local, path
 
 
 @with_git("https://github.com/se-passau/VaRA.git", limit=100, refspec="HEAD")
-class VaRA(Project):
-    """ VaRA """
+class LLVM(Project):
+    """ LLVM superclass """
 
-    NAME = 'vara'
+    NAME = 'llvm'
     GROUP = 'code'
     DOMAIN = 'analysis'
     VERSION = 'HEAD'
@@ -20,23 +20,13 @@ class VaRA(Project):
     def run_tests(self, runner):
         pass
 
-    def compile(self):
-        self.download()
-
-        with local.cwd(self.SRC_FILE):
-            run(local["./utils/vara/initVara.sh"])
-            self.build()
-
     def build(self):
         path.local.LocalPath.mkdir(local.path("llvm/build/dev"))
 
         with local.cwd("llvm/build/dev"):
             with local.env(CXXFLAGS="-O2 -g -fno-omit-frame-pointer",
                            CXX=str(cxx(self))):
-                cmake("-G", "Ninja",
-                      "-DCMAKE_C_FLAGS_DEBUG=",
-                      "-DCMAKE_CXX_FLAGS_DEBUG=",
-                      "-DLLVM_ENABLE_ASSERTIONS=ON",
-                      "-DBUILD_SHARED_LIBS=ON",
-                      "-DLLVM_TARGETS_TO_BUILD=X86",
-                      "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON", "../..")
+                run(cmake("-G", "Ninja",
+                          "-DLLVM_ENABLE_ASSERTIONS=ON",
+                          "-DBUILD_SHARED_LIBS=ON",
+                          "-DLLVM_TARGETS_TO_BUILD=X86", "../.."))
