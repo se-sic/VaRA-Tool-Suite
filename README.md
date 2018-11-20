@@ -17,10 +17,15 @@ sudo apt install python3-venv # If you want to install VaRA-TS in a python virtu
 #### Install to python user-directory (easier)
 
 To install VaRA-TS into the user directory use the following command.
-The same command can be used to update an existing installation.
+The same command can be used to update an existing installation (if necessary).
 
 ```bash
+# cd to VaRA-TS directory
 python3 -m pip install --user --upgrade -e .
+
+# developers also need to execute the next command
+# (if you want to contribute to VaRA/VaRA-TS):
+python3 -m pip install -r requirements.txt
 ```
 This initializes `VaRA-TS` and installs the `vara-graphview` tool to visualize VaRA results.
 
@@ -35,6 +40,10 @@ source /path/to/virtualenv/bin/activate
 
 # cd to VaRA-TS directory
 python3 -m pip install --upgrade -e .
+
+# developers also need to execute the next command
+# (if you want to contribute to VaRA/VaRA-TS):
+python3 -m pip install -r requirements.txt
 ```
 
 The virtualenv method has the advantage that it does not mess with your local python user
