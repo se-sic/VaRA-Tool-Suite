@@ -78,7 +78,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # If we want later to use default BB projects
         # projects_conf.value[:] = [ x for x in projects_conf.value
         #                           if not x.endswith('gzip')]
-        projects_conf.value[:] += ['varats.projects.c-projects.gzip']
+        projects_conf.value[:] += ['varats.projects.c_projects.gzip']
 
         BB_CFG["env"] = {
             # TODO (sattlerf): add path to vara install here
