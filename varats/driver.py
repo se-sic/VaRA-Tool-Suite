@@ -11,7 +11,7 @@ from varats import settings
 from varats.settings import get_value_or_default, CFG
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
-from varats.vara_manager import setup_VaRA
+from varats.vara_manager import setup_vara
 from varats.tools.commitmap import generate_commit_map
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
@@ -89,7 +89,7 @@ def build_setup():
 
     args = parser.parse_args()
 
-    setup_VaRA(args.init, args.update, args.build, args.llvmfolder,
+    setup_vara(args.init, args.update, args.build, args.llvmfolder,
                args.installprefix, update_term)
 
 
