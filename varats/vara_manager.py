@@ -33,7 +33,7 @@ def run_with_output(pb_cmd, post_out=lambda x: None):
 
 
 def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
-                  post_out=lambda x: None):
+                  post_out=lambda x: None, branch=None):
     """
     Download a repo into the specified folder.
     """
@@ -47,6 +47,11 @@ def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
             args.append("--origin")
             args.append(remote_name)
 
+        if branch is not None:
+            args.append("--single-branch")
+            args.append("-b")
+            args.append(branch)
+
         if repo_name is not None:
             args.append(repo_name)
 
@@ -54,13 +59,14 @@ def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
         run_with_output(git_clone, post_out)
 
 
-def setup_vara(init, update, build, llvm_folder, installprefix,
+def setup_vara(init, update, build, llvm_folder, installprefix, branch,
                post_out=lambda x: None):
     """
     Sets up VaRA over terminal.
     """
     if init:
         download_vara(llvm_folder, post_out=post_out)
+        download_vara(llvm_folder, post_out=post_out, branch=branch)
 
     if update:
         pull_current_branch(llvm_folder)
@@ -128,7 +134,7 @@ def get_download_steps():
 
 
 def download_vara(llvm_source_folder, progress_func=lambda x: None,
-                  post_out=lambda x: None):
+                  post_out=lambda x: None, branch=None):
     """
     Downloads VaRA an all other necessary repos from github.
     """
@@ -136,33 +142,33 @@ def download_vara(llvm_source_folder, progress_func=lambda x: None,
 
     progress_func(0)
     download_repo(dl_folder, "https://git.llvm.org/git/llvm.git", llvm_dir,
-                  remote_name="upstream", post_out=post_out)
+                  remote_name="upstream", post_out=post_out, branch=branch)
     dl_folder += "/" + llvm_dir + "/"
     add_remote(dl_folder, "origin", "git@github.com:se-passau/vara-llvm.git")
 
     progress_func(1)
     download_repo(dl_folder + "tools/", "https://git.llvm.org/git/clang.git",
-                  remote_name="upstream", post_out=post_out)
+                  remote_name="upstream", post_out=post_out, branch=branch)
     add_remote(dl_folder + "tools/clang/", "origin",
                "git@github.com:se-passau/vara-clang.git")
 
     progress_func(2)
     download_repo(dl_folder + "tools/", "git@github.com:se-passau/VaRA.git",
-                  remote_name="origin", post_out=post_out)
+                  remote_name="origin", post_out=post_out, branch=branch)
 
     progress_func(3)
     download_repo(dl_folder + "tools/clang/tools/",
                   "https://git.llvm.org/git/clang-tools-extra.git", "extra",
-                  remote_name="upstream", post_out=post_out)
+                  remote_name="upstream", post_out=post_out, branch=branch)
 
     progress_func(4)
     download_repo(dl_folder + "tools/", "https://git.llvm.org/git/lld.git",
-                  remote_name="upstream", post_out=post_out)
+                  remote_name="upstream", post_out=post_out, branch=branch)
 
     progress_func(5)
     download_repo(dl_folder + "projects/",
                   "https://git.llvm.org/git/compiler-rt.git",
-                  remote_name="upstream", post_out=post_out)
+                  remote_name="upstream", post_out=post_out, branch=branch)
 
     progress_func(6)
     mkdir[dl_folder + "build/"] & FG
