@@ -75,21 +75,25 @@ def build_setup():
                                             str(os.getcwd()) + "/VaRA/")
 
     parser = argparse.ArgumentParser("Build LLVM environment")
-    parser.add_argument("--init", help="Initializes VaRA and all components.",
-                        const=True, nargs='?')
-    parser.add_argument("--update", help="Updates VaRA and all components.",
-                        const=True, nargs='?')
-    parser.add_argument("--build", help="Builds VaRA and all components.",
-                        const=True, nargs='?')
+
+    parser.add_argument("-i", "--init", action="store_true", default=False,
+                        help="Initializes VaRA and all components.")
+    parser.add_argument("-u", "--update", action="store_true", default=False,
+                        help="Updates VaRA and all components.")
+    parser.add_argument("-b", "--build", help="Builds VaRA and all components.",
+                        action="store_true", default=False)
     parser.add_argument("--branch", default=None, nargs="?",
                         help="Branch name to download.")
     parser.add_argument("llvmfolder", help="Folder of LLVM. (Optional)",
                         nargs='?', default=llvm_src_dir)
-    parser.add_argument("installprefix",
-                        help="Folder to install LLVM. (Optional)", nargs='?',
-                        default=llvm_install_dir)
+    parser.add_argument("installprefix", default=llvm_install_dir, nargs='?',
+                        help="Folder to install LLVM. (Optional)")
 
     args = parser.parse_args()
+
+    if not (args.init or args.update or args.build):
+        parser.error("At least one argument of --init, --update or --build " +
+                     "must be given.")
 
     setup_vara(args.init, args.update, args.build, args.llvmfolder,
                args.branch, args.installprefix, update_term)
