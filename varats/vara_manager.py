@@ -10,6 +10,7 @@ import re
 import subprocess as sp
 
 from enum import Enum
+from varats.settings import save_config, CFG
 
 from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject
 
@@ -64,8 +65,12 @@ def setup_vara(init, update, build, llvm_folder, installprefix, branch,
     """
     Sets up VaRA over terminal.
     """
+
+    CFG["llvm_source_dir"] = llvm_folder
+    CFG["llvm_install_dir"] = installprefix
+
     if init:
-        download_vara(llvm_folder, post_out=post_out)
+        save_config()
         download_vara(llvm_folder, post_out=post_out, branch=branch)
 
     if update:
