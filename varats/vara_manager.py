@@ -60,17 +60,17 @@ def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
         run_with_output(git_clone, post_out)
 
 
-def setup_vara(init, update, build, llvm_folder, installprefix, branch,
+def setup_vara(init, update, build, llvm_folder, install_prefix, branch,
                post_out=lambda x: None):
     """
     Sets up VaRA over terminal.
     """
 
     CFG["llvm_source_dir"] = llvm_folder
-    CFG["llvm_install_dir"] = installprefix
+    CFG["llvm_install_dir"] = install_prefix
+    save_config()
 
     if init:
-        save_config()
         download_vara(llvm_folder, post_out=post_out, branch=branch)
 
     if update:
@@ -79,7 +79,7 @@ def setup_vara(init, update, build, llvm_folder, installprefix, branch,
         pull_current_branch(llvm_folder + "tools/VaRA/")
 
     if build:
-        build_vara(llvm_folder, install_prefix=installprefix,
+        build_vara(llvm_folder, install_prefix=install_prefix,
                    build_type=BuildType.DEV)
 
 
