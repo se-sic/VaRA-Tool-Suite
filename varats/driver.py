@@ -96,7 +96,7 @@ def build_setup():
                      "must be given.")
 
     setup_vara(args.init, args.update, args.build, args.llvmfolder,
-               args.branch, args.installprefix, update_term)
+               args.installprefix, args.branch, update_term)
 
 
 def main_gen_commitmap():
