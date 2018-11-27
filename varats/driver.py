@@ -61,7 +61,7 @@ def main_graph_view():
 
 
 def update_term(text):
-    text.rstrip('\r\n').replace('\n', ' ')  # TODO: test with 'repr(text)'
+    text = text.replace(os.linesep, ' ')
     print(text, end='\r', flush=True)
 
 
