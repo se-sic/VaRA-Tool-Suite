@@ -68,7 +68,7 @@ class BuildType(Enum):
 def setup_vara(init, update, build, llvm_folder, install_prefix, version,
                build_type: BuildType, post_out=lambda x: None):
     """
-    Sets up VaRA over terminal.
+    Sets up VaRA over cli.
     """
 
     CFG["llvm_source_dir"] = llvm_folder

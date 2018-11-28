@@ -67,7 +67,7 @@ def update_term(text):
 
 def build_setup():
     """
-    Build VaRA on terminal.
+    Build VaRA on cli.
     """
     llvm_src_dir = get_value_or_default(CFG, "llvm_source_dir",
                                         str(os.getcwd()) + "/vara-llvm/")
