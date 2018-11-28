@@ -82,8 +82,8 @@ def build_setup():
                         help="Updates VaRA and all components.")
     parser.add_argument("-b", "--build", help="Builds VaRA and all components.",
                         action="store_true", default=False)
-    parser.add_argument("--branch", default=None, nargs="?",
-                        help="Branch name to download.")
+    parser.add_argument("--version", default=None, nargs="?",
+                        help="Version to download.")
     parser.add_argument("llvmfolder", help="Folder of LLVM. (Optional)",
                         nargs='?', default=llvm_src_dir)
     parser.add_argument("installprefix", default=llvm_install_dir, nargs='?',
@@ -96,7 +96,7 @@ def build_setup():
                      "must be given.")
 
     setup_vara(args.init, args.update, args.build, args.llvmfolder,
-               args.installprefix, args.branch, update_term)
+               args.installprefix, args.version, update_term)
 
 
 def main_gen_commitmap():
