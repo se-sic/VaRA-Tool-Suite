@@ -55,8 +55,18 @@ def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
         run_with_output(git_clone, post_out)
 
 
+class BuildType(Enum):
+    """
+    This enum contains all VaRA prepared Build configurations.
+    """
+    DBG = 1
+    DEV = 2
+    OPT = 3
+    PGO = 4
+
+
 def setup_vara(init, update, build, llvm_folder, install_prefix, version,
-               post_out=lambda x: None):
+               build_type: BuildType, post_out=lambda x: None):
     """
     Sets up VaRA over terminal.
     """
@@ -68,7 +78,8 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, version,
     if init:
         if os.path.exists(llvm_folder):
             download_vara(llvm_folder, post_out=post_out)
-            checkout_vara_version(llvm_folder, version, True)
+            checkout_vara_version(llvm_folder, version,
+                                  build_type == BuildType.DEV)
 
     if update:
         pull_current_branch(llvm_folder)
@@ -77,7 +88,7 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, version,
 
     if build:
         build_vara(llvm_folder, install_prefix=install_prefix,
-                   build_type=BuildType.DEV)
+                       build_type=build_type, post_out=post_out)
 
 
 def add_remote(repo_folder, remote, url):
@@ -203,16 +214,6 @@ def checkout_vara_version(llvm_folder, version, dev):
     checkout_branch(llvm_folder + "/tools/lld/", "release_" + version)
     checkout_branch(llvm_folder + "/projects/compiler-rt/",
                     "release_" + version)
-
-
-class BuildType(Enum):
-    """
-    This enum containts all VaRA prepared Build configurations.
-    """
-    DBG = 1
-    DEV = 2
-    OPT = 3
-    PGO = 4
 
 
 def get_cmake_var(var_name):

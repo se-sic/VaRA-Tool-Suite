@@ -11,7 +11,7 @@ from varats import settings
 from varats.settings import get_value_or_default, CFG
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
-from varats.vara_manager import setup_vara
+from varats.vara_manager import setup_vara, BuildType
 from varats.tools.commitmap import generate_commit_map
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
@@ -84,6 +84,8 @@ def build_setup():
                         action="store_true", default=False)
     parser.add_argument("--version", default=None, nargs="?",
                         help="Version to download.")
+    parser.add_argument("--buildtype", default="dev", nargs="?",
+                        help="Build type to use for LLVM and all subpackages.")
     parser.add_argument("llvmfolder", help="Folder of LLVM. (Optional)",
                         nargs='?', default=llvm_src_dir)
     parser.add_argument("installprefix", default=llvm_install_dir, nargs='?',
@@ -91,12 +93,28 @@ def build_setup():
 
     args = parser.parse_args()
 
+    build_type = parse_string_to_build_type(args.buildtype)
+
     if not (args.init or args.update or args.build):
         parser.error("At least one argument of --init, --update or --build " +
                      "must be given.")
 
     setup_vara(args.init, args.update, args.build, args.llvmfolder,
-               args.installprefix, args.version, update_term)
+               args.installprefix, build_type, args.version, update_term)
+
+
+def parse_string_to_build_type(build_type: str) -> BuildType:
+    build_type = build_type.upper()
+    if build_type == "DBG":
+        return BuildType.DBG
+    if build_type == "DEV":
+        return BuildType.DEV
+    if build_type == "OPT":
+        return BuildType.OPT
+    if build_type == "PGO":
+        return BuildType.PGO
+
+    return BuildType.DEV
 
 
 def main_gen_commitmap():
