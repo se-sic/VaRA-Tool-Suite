@@ -16,7 +16,6 @@ from benchbuild.utils import actions
 from benchbuild.utils.actions import Step
 from benchbuild.utils.cmd import extract_bc, wllvm, opt, cp
 from plumbum import local
-import benchbuild.utils.settings as s
 
 # These two new config parameters are needed to include Niederhuber's prepare-
 # script and to make the folder in which the results of the analyses are
@@ -84,12 +83,12 @@ class CommitAnnotationReport(Experiment):
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
-                                    << time.RunWithTime()
+            << time.RunWithTime()
 
         # Add the required compiler extensions to the project(s).
         project.compiler_extension = compiler.RunCompiler(project, self) \
-                                     << RunWLLVM() \
-                                     << run.WithTimeout()
+            << RunWLLVM() \
+            << run.WithTimeout()
 
         # This c-flag is provided by VaRA and it suggests to use the commit
         # annotation.
@@ -108,7 +107,8 @@ class CommitAnnotationReport(Experiment):
             prepare = local["prepare.sh"]
 
             # Move the standard project source directory to the "out" folder,
-            # created in the prepare script, to acces the annotated source code.
+            # created in the prepare script, to acces the annotated source
+            # code.
             project.src_dir = project.src_dir / "out"
 
             with local.cwd(project_src):
@@ -124,7 +124,8 @@ class CommitAnnotationReport(Experiment):
                 extract_bc(project.name)
                 cp(local.path(project_src / "out" / project.name + ".bc"),
                    local.path(
-                       str(CFG["vara"]["result"].value)) / project.name + ".bc")
+                       str(CFG["vara"]["result"].value)) /
+                   project.name + ".bc")
 
         def evaluate_analysis():
             """
@@ -140,7 +141,7 @@ class CommitAnnotationReport(Experiment):
             # run.
             outfile = "-yaml-out-file={}".format(
                 CFG["vara"]["outfile"].value) + "/" + str(
-                project.name) + "-" + str(project.run_uuid) + ".yaml"
+                    project.name) + "-" + str(project.run_uuid) + ".yaml"
             run_cmd = opt[
                 "-vara-CFR", outfile, project_src / project.name + ".bc"]
             run_cmd()

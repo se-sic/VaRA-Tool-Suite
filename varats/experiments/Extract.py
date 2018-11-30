@@ -1,8 +1,20 @@
 import attr
 import benchbuild.utils.actions as actions
+
 from benchbuild.settings import CFG
 from benchbuild.utils.cmd import extract_bc, cp
 from plumbum import local
+
+CFG["vara"] = {
+    "outfile": {
+        "default": "",
+        "desc": "Path to store results of VaRA CFR analysis."
+    },
+    "result": {
+        "default": "",
+        "desc": "Path to store already annotated projects."
+    }
+}
 
 
 @attr.s
@@ -18,10 +30,10 @@ class Extract(actions.Step):
         if not self.obj:
             return
         project = self.obj
-        project_src = local.path(
-            project.builddir) / project.SRC_FILE / project.name
+        project_src = local.path(project.builddir) / project.SRC_FILE /\
+            project.name
 
-        with local.cwd(local.path(str(CFG["vara"]["result"].value))):
+        with local.cwd(local.path(str(CFG["vara"]["result"]))):
             extract_bc(project_src)
-            cp(local.path(project_src) + ".bc", local.path(
-                str(CFG["vara"]["result"].value)) / project.name + ".bc")
+            cp(local.path(project_src) + ".bc", local.path() /
+               project.name + ".bc")

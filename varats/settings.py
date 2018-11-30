@@ -5,7 +5,7 @@ All settings are stored in a simple dictionary. Each
 setting should be modifiable via environment variable.
 """
 
-from os import path, makedirs
+from os import path, makedirs, getcwd
 
 import benchbuild.utils.settings as s
 
@@ -58,15 +58,15 @@ CFG['db'] = {
 }
 
 
-def get_value_or_default(CFG, varname, default):
+def get_value_or_default(cfg, varname, default):
     """
     Checks if the config variable has a value and if it is not None.
     Then the value is returned. Otherwise, the default value is
     set and then returned.
     """
-    config_node = CFG[varname]
+    config_node = cfg[varname]
     if not config_node.has_value or config_node.value is None:
-        CFG[varname] = default
+        cfg[varname] = default
     return config_node.value
 
 
@@ -75,6 +75,9 @@ def create_missing_folders():
     Create a folders that do not exist but where set in the config.
     """
     def create_missing_folder_for_cfg(cfg_varname):
+        """
+        Create missing folders for a specific config path.
+        """
         config_node = CFG[cfg_varname]
         if config_node.has_value and\
                 config_node.value is not None and\
@@ -89,7 +92,7 @@ def save_config():
     """
     Persist VaRA config to a yaml file.
     """
-    if CFG["config_file"].value == None:
+    if CFG["config_file"].value is None:
         config_file = ".vara.yaml"
     else:
         config_file = str(CFG["config_file"])
@@ -102,5 +105,61 @@ def save_config():
     CFG.store(config_file)
 
 
-s.setup_config(CFG,['.vara.yaml', '.vara.yml'])
+def generate_benchbuild_config(vara_cfg, bb_config_path: str):
+    """
+    Generate a configuration file for benchbuild
+    """
+    from benchbuild.settings import CFG as BB_CFG
+
+    # Projects for VaRA
+    projects_conf = BB_CFG["plugins"]["projects"]
+    # If we want later to use default BB projects
+    # projects_conf.value[:] = [ x for x in projects_conf.value
+    #                           if not x.endswith('gzip')]
+    projects_conf.value[:] = []
+    projects_conf.value[:] += ['varats.projects.c-projects.busybox',
+                               'varats.projects.c-projects.git',
+                               'varats.projects.c-projects.glibc',
+                               'varats.projects.c-projects.gravity',
+                               'varats.projects.c-projects.gzip',
+                               'varats.projects.c-projects.tmux',
+                               'varats.projects.c-projects.vim']
+    projects_conf.value[:] += ['varats.projects.cpp-projects.doxygen']
+
+    # Experiments for VaRA
+    projects_conf = BB_CFG["plugins"]["experiments"]
+    projects_conf.value[:] = []
+    projects_conf.value[:] += ['varats.experiments.GitBlameAnnotationReport']
+
+    BB_CFG["env"] = {
+        "PATH": [str(vara_cfg["llvm_install_dir"]) + "bin/"]
+    }
+
+    # Add VaRA experiment config variables
+    BB_CFG["vara"] = {
+        "outfile": {
+            "default": "",
+            "desc": "Path to store results of VaRA CFR analysis.",
+            "value": str(vara_cfg["result_dir"])
+        },
+        "result": {
+            "default": "",
+            "desc": "Path to store already annotated projects.",
+            "value": "BC_files"
+        }
+    }
+
+    def replace_bb_cwd_path(cfg_varname, cfg_node=BB_CFG):
+        cfg_node[cfg_varname] = str(vara_cfg["benchbuild_root"]) +\
+            str(cfg_node[cfg_varname])[len(getcwd()):]
+
+    replace_bb_cwd_path("build_dir")
+    replace_bb_cwd_path("tmp_dir")
+    replace_bb_cwd_path("test_dir")
+    replace_bb_cwd_path("node_dir", BB_CFG["slurm"])
+
+    BB_CFG.store(bb_config_path)
+
+
+s.setup_config(CFG, ['.vara.yaml', '.vara.yml'])
 s.update_env(CFG)
