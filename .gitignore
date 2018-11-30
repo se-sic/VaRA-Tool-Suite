@@ -4,3 +4,5 @@
 *egg-info*/
 .eggs
 notebooks/.ipynb_checkpoints/
+Pipfile
+.idea/

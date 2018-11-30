@@ -10,6 +10,7 @@ import re
 import subprocess as sp
 
 from enum import Enum
+from varats.settings import save_config, CFG
 
 from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject
 
@@ -52,6 +53,48 @@ def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
 
         git_clone = git[args]
         run_with_output(git_clone, post_out)
+
+
+class BuildType(Enum):
+    """
+    This enum contains all VaRA prepared Build configurations.
+    """
+    DBG = 1
+    DEV = 2
+    OPT = 3
+    PGO = 4
+
+
+def setup_vara(init, update, build, llvm_folder, install_prefix, version,
+               build_type: BuildType, post_out=lambda x: None):
+    """
+    Sets up VaRA over cli.
+    """
+
+    CFG["llvm_source_dir"] = llvm_folder
+    CFG["llvm_install_dir"] = install_prefix
+    save_config()
+
+    if init:
+        if os.path.exists(llvm_folder):
+            print("LLVM was already checked out in '%s'.", llvm_folder)
+        else:
+            download_vara(llvm_folder, post_out=post_out)
+            checkout_vara_version(llvm_folder, version,
+                                  build_type == BuildType.DEV)
+
+    if not os.path.exists(llvm_folder):
+        print("LLVM was not initialized. Please initialize LLVM with VaRA, " +
+              "for example, with 'vara-buildsetup -i'.")
+    else:
+        if update:
+            pull_current_branch(llvm_folder)
+            pull_current_branch(llvm_folder + "tools/clang/")
+            pull_current_branch(llvm_folder + "tools/VaRA/")
+
+        if build:
+            build_vara(llvm_folder, install_prefix=install_prefix,
+                       build_type=build_type, post_out=post_out)
 
 
 def add_remote(repo_folder, remote, url):
@@ -177,16 +220,6 @@ def checkout_vara_version(llvm_folder, version, dev):
     checkout_branch(llvm_folder + "/tools/lld/", "release_" + version)
     checkout_branch(llvm_folder + "/projects/compiler-rt/",
                     "release_" + version)
-
-
-class BuildType(Enum):
-    """
-    This enum containts all VaRA prepared Build configurations.
-    """
-    DBG = 1
-    DEV = 2
-    OPT = 3
-    PGO = 4
 
 
 def get_cmake_var(var_name):
