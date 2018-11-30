@@ -158,6 +158,12 @@ def generate_benchbuild_config(vara_cfg, bb_config_path: str):
     replace_bb_cwd_path("test_dir")
     replace_bb_cwd_path("node_dir", BB_CFG["slurm"])
 
+    # Create caching folder for .bc files
+    BC_cache_path = str(vara_cfg["benchbuild_root"])
+    BC_cache_path += "/" + str(BB_CFG["vara"]["result"])
+    if not path.isdir(BC_cache_path):
+        makedirs(BC_cache_path)
+
     BB_CFG.store(bb_config_path)
 
 
