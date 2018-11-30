@@ -100,7 +100,7 @@ def build_setup():
                      "must be given.")
 
     setup_vara(args.init, args.update, args.build, args.llvmfolder,
-               args.installprefix, build_type, args.version, update_term)
+               args.installprefix, args.version, build_type, update_term)
 
 
 def parse_string_to_build_type(build_type: str) -> BuildType:
