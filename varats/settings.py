@@ -117,14 +117,14 @@ def generate_benchbuild_config(vara_cfg, bb_config_path: str):
     # projects_conf.value[:] = [ x for x in projects_conf.value
     #                           if not x.endswith('gzip')]
     projects_conf.value[:] = []
-    projects_conf.value[:] += ['varats.projects.c-projects.busybox',
-                               'varats.projects.c-projects.git',
-                               'varats.projects.c-projects.glibc',
-                               'varats.projects.c-projects.gravity',
-                               'varats.projects.c-projects.gzip',
-                               'varats.projects.c-projects.tmux',
-                               'varats.projects.c-projects.vim']
-    projects_conf.value[:] += ['varats.projects.cpp-projects.doxygen']
+    projects_conf.value[:] += ['varats.projects.c_projects.busybox',
+                               'varats.projects.c_projects.git',
+                               'varats.projects.c_projects.glibc',
+                               'varats.projects.c_projects.gravity',
+                               'varats.projects.c_projects.gzip',
+                               'varats.projects.c_projects.tmux',
+                               'varats.projects.c_projects.vim']
+    projects_conf.value[:] += ['varats.projects.cpp_projects.doxygen']
 
     # Experiments for VaRA
     projects_conf = BB_CFG["plugins"]["experiments"]
