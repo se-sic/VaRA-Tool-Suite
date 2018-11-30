@@ -8,6 +8,7 @@ For annotation we use the git-blame data of git.
 import os
 
 import benchbuild.utils.actions as actions
+
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import compiler, run, time, base
 from benchbuild.settings import CFG
@@ -51,12 +52,12 @@ class GitBlameAnntotationReport(Experiment):
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
-                                    << time.RunWithTime()
+            << time.RunWithTime()
 
         # Add the required compiler extensions to the project(s).
         project.compiler_extension = compiler.RunCompiler(project, self) \
-                                     << RunWLLVM() \
-                                     << run.WithTimeout()
+            << RunWLLVM() \
+            << run.WithTimeout()
 
         # This c-flag is provided by VaRA and it suggests to use the git-blame
         # annotation.
@@ -69,14 +70,14 @@ class GitBlameAnntotationReport(Experiment):
                 -vara-CFR: to run a commit flow report
                 -yaml-out-file=<path>: specify the path to store the results
             """
-            project_src = local.path(str(CFG["vara"]["result"].value))
+            project_src = local.path(str(CFG["vara"]["result"]))
 
-            # Add to the user-defined path for saving the results of the 
+            # Add to the user-defined path for saving the results of the
             # analysis also the name and the unique id of the project of every
             # run.
             outfile = "-yaml-out-file={}".format(
-                str(CFG["vara"]["outfile"].value)) + "/" + str(
-                project.name) + "-" + str(project.run_uuid) + ".yaml"
+                str(CFG["vara"]["outfile"])) + "/" +\
+                str(project.name) + "-" + str(project.run_uuid) + ".yaml"
             run_cmd = opt[
                 "-vara-CFR", outfile, project_src / project.name + ".bc"]
             run_cmd()
