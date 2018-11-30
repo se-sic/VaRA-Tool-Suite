@@ -77,14 +77,15 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, version,
 
     if init:
         if os.path.exists(llvm_folder):
-            print("LLVM already checked out in '%s'.", llvm_folder)
+            print("LLVM was already checked out in '%s'.", llvm_folder)
         else:
             download_vara(llvm_folder, post_out=post_out)
             checkout_vara_version(llvm_folder, version,
                                   build_type == BuildType.DEV)
 
     if not os.path.exists(llvm_folder):
-        print("It must first be called '-i' or '--init' to initialize LLVM.")
+        print("LLVM was not initialized. Please initialize LLVM with VaRA, " +
+              "for example, with 'vara-buildsetup -i'.")
     else:
         if update:
             pull_current_branch(llvm_folder)
