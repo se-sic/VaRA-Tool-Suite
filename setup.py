@@ -9,7 +9,7 @@ setup(name='VaRA-Tool-Suite',
       packages=find_packages(exclude=["extern", "benchbuild", "icons",
                                       "results", "uicomponents"]),
       setup_requires=["pytest-runner"],
-      tests_require=["pytest"],
+      tests_require=["pytest","pytest-cov"],
       install_requires=[
           "PyQt5>=5.10.0",
           "PyYAML>=3.12",
