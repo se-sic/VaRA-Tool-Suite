@@ -30,7 +30,7 @@ CFG["vara"] = {
         "desc": "Path to store results of VaRA CFR analysis."
     },
     "result": {
-        "default": s.ConfigPath(local.path(os.getcwd()) / "annotatedResults"),
+        "default": "missingPath/annotatedResults",
         "desc": "Path to store already annotated projects."
     }
 }

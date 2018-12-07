@@ -104,6 +104,22 @@ def build_setup():
 
 
 def parse_string_to_build_type(build_type: str) -> BuildType:
+    """
+    Convert a string into a BuildType
+
+    Test:
+    >>> parse_string_to_build_type("DEV")
+    <BuildType.DEV: 2>
+
+    >>> parse_string_to_build_type("random string")
+    <BuildType.DEV: 2>
+
+    >>> parse_string_to_build_type("oPt")
+    <BuildType.OPT: 3>
+
+    >>> parse_string_to_build_type("OPT")
+    <BuildType.OPT: 3>
+    """
     build_type = build_type.upper()
     if build_type == "DBG":
         return BuildType.DBG
