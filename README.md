@@ -63,3 +63,13 @@ you can execute the `vara-graphview` program.
     benchbuild
     └── experiments
 ```
+
+### Running tests
+Running all python tests: 
+```
+    python setup.py test
+```
+Running all test with coverage:
+```
+    python setup.py test --addopts "--cov=varats --cov-report term-missing"
+```

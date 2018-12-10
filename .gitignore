@@ -6,3 +6,4 @@
 notebooks/.ipynb_checkpoints/
 Pipfile
 .idea/
+.coverage
