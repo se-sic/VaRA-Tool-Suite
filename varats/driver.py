@@ -80,7 +80,8 @@ def build_setup():
                         help="Initializes VaRA and all components.")
     parser.add_argument("-u", "--update", action="store_true", default=False,
                         help="Updates VaRA and all components.")
-    parser.add_argument("-b", "--build", help="Builds VaRA and all components.",
+    parser.add_argument("-b", "--build",
+                        help="Builds VaRA and all components.",
                         action="store_true", default=False)
     parser.add_argument("--version", default=None, nargs="?",
                         help="Version to download.")
@@ -99,8 +100,10 @@ def build_setup():
         parser.error("At least one argument of --init, --update or --build " +
                      "must be given.")
 
+    vara_version = args.version if args.version is not None else CFG['version']
+
     setup_vara(args.init, args.update, args.build, args.llvmfolder,
-               args.installprefix, args.version, build_type, update_term)
+               args.installprefix, vara_version, build_type, update_term)
 
 
 def parse_string_to_build_type(build_type: str) -> BuildType:
