@@ -11,10 +11,14 @@ import benchbuild.utils.settings as s
 
 CFG = s.Configuration(
     "vara",
-    node = {
+    node={
         "config_file": {
             "desc": "Config file path of varats. Not guaranteed to exist.",
             "default": None,
+        },
+        "version": {
+            "desc": "VaRA version.",
+            "default": 60,
         },
         "benchbuild_root": {
             "desc": "Root folder to run BenchBuild in",

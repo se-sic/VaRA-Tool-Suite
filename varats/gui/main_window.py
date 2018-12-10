@@ -12,6 +12,7 @@ from varats.gui.buildsetup_window import BuildSetup, create_missing_folders
 
 from PyQt5.QtWidgets import QMainWindow, QMessageBox
 
+
 class MainWindow(QMainWindow, Ui_MainWindow):
     """
     Manages the GUI state and manages the different active views.
@@ -63,7 +64,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def _create_benchbuild_config(self):
         if CFG["config_file"].value is None:
-            print("No VaRA config found, please initialize a VaRA config first.")
+            print("No VaRA config found, please initialize a " +
+                  "VaRA config first.")
             return
 
         if CFG["benchbuild_root"].value is None:
