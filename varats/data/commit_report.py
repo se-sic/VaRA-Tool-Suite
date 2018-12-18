@@ -282,6 +282,26 @@ def generate_inout_cfg_cf(commit_report: CommitReport,
                                        'Direction', 'TSort'])
 
 
+def generate_interactions(commit_report: CommitReport,
+                          c_map: CommitMap) -> pd.DataFrame:
+    node_rows = []
+    for item in commit_report.region_mappings.values():
+        node_rows.append([item.hash, c_map.time_id(item.hash)])
+
+    node_rows.sort(key=lambda row: int(row[1]), reverse=True)
+    nodes = pd.DataFrame(node_rows, columns=['hash', 'id'])
+
+    link_rows = []
+    for item in commit_report.graph_info.values():
+        for cf_edge in item.cf_edges:
+            link_rows.append([cf_edge.edge_from, cf_edge.edge_to, 1,
+                              c_map.time_id(cf_edge.edge_from)])
+
+    links = pd.DataFrame(link_rows, columns=['source', 'target', 'value',
+                                             'src_id'])
+    return (nodes, links)
+
+
 def generate_inout_cfg_df(commit_report: CommitReport,
                           cr_meta: CommitReportMeta = None) -> pd.DataFrame:
     """
