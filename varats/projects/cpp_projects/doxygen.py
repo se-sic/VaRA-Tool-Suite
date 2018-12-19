@@ -2,7 +2,7 @@ from benchbuild.settings import CFG
 from benchbuild.utils.compiler import cxx
 from benchbuild.utils.run import run
 from benchbuild.project import Project
-from benchbuild.utils.cmd import make, cmake
+from benchbuild.utils.cmd import make, cmake, cp
 from benchbuild.utils.download import with_git
 
 from plumbum.path.utils import delete
@@ -32,3 +32,5 @@ class Doxygen(Project):
                 delete("CMakeCache.txt")
                 cmake("-G", "Unix Makefiles", ".")
             run(make["-j", int(CFG["jobs"])])
+
+            cp("bin/doxygen", ".")
