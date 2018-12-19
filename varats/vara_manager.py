@@ -73,7 +73,7 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, version,
 
     CFG["llvm_source_dir"] = llvm_folder
     CFG["llvm_install_dir"] = install_prefix
-    CFG["version"] = version
+    #CFG["version"] = version
     save_config()
 
     if init:
@@ -89,6 +89,23 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, version,
               "for example, with 'vara-buildsetup -i'.")
     else:
         if update:
+            if CFG["version"] != version:
+                fetch_current_branch(llvm_folder)
+                fetch_current_branch(llvm_folder + "tools/clang/")
+                fetch_current_branch(llvm_folder + "tools/VaRA/")
+
+                version_name = ""
+                version_name += version
+                if build_type == BuildType.DEV:
+                    version_name += "-dev"
+                checkout_branch(llvm_folder, "vara-" + version_name)
+                checkout_branch(llvm_folder + "/tools/clang/", "vara-" +
+                                version_name)
+                if build_type == BuildType.DEV:
+                    checkout_branch(llvm_folder + "/tools/VaRA/", "vara-dev")
+                CFG["version"] = version
+                save_config()
+
             pull_current_branch(llvm_folder)
             pull_current_branch(llvm_folder + "tools/clang/")
             pull_current_branch(llvm_folder + "tools/VaRA/")
@@ -127,6 +144,17 @@ def pull_current_branch(repo_folder=""):
     else:
         with local.cwd(repo_folder):
             git["pull"] & FG
+
+
+def fetch_current_branch(repo_folder=""):
+    """
+    Pull in changes in a certain branch.
+    """
+    if repo_folder == '':
+        git["fetch"] & FG
+    else:
+        with local.cwd(repo_folder):
+            git["fetch"] & FG
 
 
 def checkout_branch(repo_folder, branch):
