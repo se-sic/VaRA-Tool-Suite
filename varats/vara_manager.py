@@ -73,6 +73,7 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, version,
 
     CFG["llvm_source_dir"] = llvm_folder
     CFG["llvm_install_dir"] = install_prefix
+    CFG["version"] = version
     save_config()
 
     if init:
@@ -323,7 +324,7 @@ def get_llvm_status(llvm_folder) -> GitStatus:
         git_status = git['status']
         stdout = git_status('-sb')
         for line in stdout.split('\n'):
-            if line.startswith('## vara-60-dev'):
+            if line.startswith('## vara-' + str(CFG['version']) + '-dev'):
                 match = re.match(r".*\[(.*)\]", line)
                 if match is not None:
                     return GitStatus(GitState.BEHIND, match.group(1))
@@ -341,7 +342,7 @@ def get_clang_status(llvm_folder) -> GitStatus:
         git_status = git['status']
         stdout = git_status('-sb')
         for line in stdout.split('\n'):
-            if line.startswith('## vara-60-dev'):
+            if line.startswith('## vara-' + str(CFG['version']) + '-dev'):
                 match = re.match(r".*\[(.*)\]", line)
                 if match is not None:
                     return GitStatus(GitState.BEHIND, match.group(1))
@@ -460,4 +461,4 @@ class VaRAStateManager(object):
 
 if __name__ == "__main__":
     download_vara("/tmp/foo/llvm")
-    checkout_vara_version("/tmp/foo/llvm/", 60, True)
+    checkout_vara_version("/tmp/foo/llvm/", CFG['version'], True)
