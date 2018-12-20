@@ -66,6 +66,11 @@ Updating VaRA to a new version can also be done with `vara-buildsetup`.
     vara-buildsetup -b
 ```
 
+To upgrade VaRA to a new release, for example, `release_70`, use:
+```
+    vara-buildsetup -u --version 70
+```
+
 ### BenchBuild Projects
 `VaRA-TS` defines a set of projects that can be analyzed with `benchbuild`.
 ```
