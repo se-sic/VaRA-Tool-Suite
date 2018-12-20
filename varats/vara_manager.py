@@ -114,7 +114,7 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, version,
                 checkout_branch(llvm_folder + "/projects/compiler-rt/",
                                 "release_" + version)
 
-                CFG["version"] = version
+                CFG["version"] = int(version)
                 save_config()
 
             pull_current_branch(llvm_folder)
