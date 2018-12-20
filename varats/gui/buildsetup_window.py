@@ -54,7 +54,7 @@ class SetupWorker(QRunnable):
                                    self._update_text)
 
         self._update_progress(7)
-        vara_manager.checkout_vara_version(self.path, 60, True)
+        vara_manager.checkout_vara_version(self.path, CFG['version'], True)
 
         self._update_progress(8)
         self.signals.finished.emit()
