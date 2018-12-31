@@ -22,10 +22,9 @@ class Lrzip(prj.Project):
 
     def compile(self):
         self.download()
-
+        
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
                 run(local["./autogen.sh"])
-                run(local["./configure"])
             run(make["-j", int(CFG["jobs"])])
