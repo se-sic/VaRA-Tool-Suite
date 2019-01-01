@@ -89,7 +89,7 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, version,
               "for example, with 'vara-buildsetup -i'.")
     else:
         if update:
-            if str(CFG["version"]) != version:
+            if str(CFG["version"]) != str(version):
                 fetch_current_branch(llvm_folder)
                 fetch_current_branch(llvm_folder + "tools/clang/")
                 fetch_current_branch(llvm_folder + "tools/clang/tools/extra/")
@@ -98,7 +98,7 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, version,
                 fetch_current_branch(llvm_folder + "projects/compiler-rt/")
 
                 version_name = ""
-                version_name += version
+                version_name += str(version)
                 if build_type == BuildType.DEV:
                     version_name += "-dev"
                 checkout_branch(llvm_folder, "vara-" + version_name)
@@ -108,11 +108,11 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, version,
                     checkout_branch(llvm_folder + "/tools/VaRA/", "vara-dev")
 
                 checkout_branch(llvm_folder + "/tools/clang/tools/extra/",
-                                "release_" + version)
+                                "release_" + str(version))
                 checkout_branch(llvm_folder + "/tools/lld/",
-                                "release_" + version)
+                                "release_" + str(version))
                 checkout_branch(llvm_folder + "/projects/compiler-rt/",
-                                "release_" + version)
+                                "release_" + str(version))
 
                 CFG["version"] = int(version)
                 save_config()
