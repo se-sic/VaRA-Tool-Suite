@@ -9,8 +9,8 @@ from plumbum import local
 
 
 @with_git("https://git.videolan.org/git/x264.git", limit=100, refspec="HEAD")
-class X264(prj.Project):
-    NAME = 'x264'
+class X264_EM(prj.Project):
+    NAME = 'x264_EM'
     GROUP = 'encoder'
     DOMAIN = 'version control'
     VERSION = 'HEAD'
@@ -26,5 +26,6 @@ class X264(prj.Project):
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
-                run(local["./configure"])
+                conf = local["./configure"]
+                run(conf["--disable-asm"])
             run(make["-j", int(CFG["jobs"])])
