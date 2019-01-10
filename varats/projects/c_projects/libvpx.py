@@ -23,12 +23,8 @@ class Libvpx(prj.Project):
     def compile(self):
         self.download()
 
-        options = ["--enable-extra-warnings", "--disable-dependency-tracking",
-                   "--disable-install-docs", "--disable-docs"]
-        configure = local["./configure"]
-
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
-                run(configure(options))
+                run(local["./configure"])
             run(make["-j", int(CFG["jobs"])])
