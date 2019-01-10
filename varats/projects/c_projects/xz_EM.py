@@ -9,8 +9,8 @@ from plumbum import local
 
 
 @with_git("https://git.tukaani.org/xz.git", limit=100, refspec="HEAD")
-class Xz(prj.Project):
-    NAME = 'xz'
+class Xz_EM(prj.Project):
+    NAME = 'xz_EM'
     GROUP = 'encoder'
     DOMAIN = 'version control'
     VERSION = 'HEAD'
