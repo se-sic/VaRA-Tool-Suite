@@ -143,7 +143,7 @@ class CommitAnnotationReport(Experiment):
                 CFG["vara"]["outfile"].value) + "/" + str(
                     project.name) + "-" + str(project.run_uuid) + ".yaml"
             run_cmd = opt[
-                "-vara-CFR", outfile, project_src / project.name + ".bc"]
+                "-vara-CD", "-vara-CFR", outfile, project_src / project.name + ".bc"]
             run_cmd()
 
         analysis_actions = []

@@ -95,7 +95,7 @@ class GitBlameAnntotationReport(Experiment):
                 str(CFG["vara"]["outfile"])) + "/" +\
                 str(project.name) + "-" + str(project.run_uuid) + ".yaml"
             run_cmd = opt[
-                "-vara-CFR", outfile, project_src / project.name + ".bc"]
+                "-vara-BD", "-vara-CFR", outfile, project_src / project.name + ".bc"]
             run_cmd()
 
         analysis_actions = []
