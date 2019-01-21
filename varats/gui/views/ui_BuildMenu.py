@@ -112,6 +112,9 @@ class Ui_BuildSetup(object):
         self.checkOpt.setObjectName("checkOpt")
         self.verticalLayout_3.addWidget(self.checkOpt)
         self.verticalLayout_2.addWidget(self.widget_3)
+        self.libgitButton = QtWidgets.QCheckBox(self.widget_2)
+        self.libgitButton.setObjectName("libgitButton")
+        self.verticalLayout_2.addWidget(self.libgitButton)
         spacerItem2 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout_2.addItem(spacerItem2)
         self.gridLayout.addWidget(self.widget_2, 0, 2, 3, 1)
@@ -136,6 +139,7 @@ class Ui_BuildSetup(object):
         self.buildButton.setText(_translate("BuildSetup", "Build"))
         self.checkDev.setText(_translate("BuildSetup", "Dev"))
         self.checkOpt.setText(_translate("BuildSetup", "Opt"))
+        self.libgitButton.setText(_translate("BuildSetup", "Own Libgit"))
 
 
 if __name__ == "__main__":

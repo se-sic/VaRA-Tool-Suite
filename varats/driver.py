@@ -61,13 +61,10 @@ def main_graph_view():
     driver.main()
 
 
-def update_term(text, multiline=False):
-    if not multiline:
-        text = text.replace(os.linesep, ' ')
-        rows, columns = os.popen('stty size', 'r').read().split()
-        print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r', flush=True)
-    else:
-        print(text)
+def update_term(text):
+    text = text.replace(os.linesep, ' ')
+    rows, columns = os.popen('stty size', 'r').read().split()
+    print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r', flush=True)
 
 
 def build_setup():
@@ -96,6 +93,8 @@ def build_setup():
                         nargs='?', default=llvm_src_dir)
     parser.add_argument("installprefix", default=llvm_install_dir, nargs='?',
                         help="Folder to install LLVM. (Optional)")
+    parser.add_argument("--ownlibgit", action="store_true", default=False,
+                        help="Uses your own Libgit.")
 
     args = parser.parse_args()
 
@@ -108,7 +107,8 @@ def build_setup():
     vara_version = args.version if args.version is not None else CFG['version']
 
     setup_vara(args.init, args.update, args.build, args.llvmfolder,
-               args.installprefix, vara_version, build_type, update_term)
+               args.installprefix, args.ownlibgit, vara_version, build_type,
+               update_term)
 
 
 def parse_string_to_build_type(build_type: str) -> BuildType:
