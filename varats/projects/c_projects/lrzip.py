@@ -31,7 +31,7 @@ class Lrzip(prj.Project):
             run(make["-j", int(CFG["jobs"])])
 
     def download_em_config(self):
-        with lcoal.cwd(self.SRC_FILE):
+        with local.cwd(self.SRC_FILE):
             Git("https://github.com/se-passau/EnergyMetering_CaseStudies.git",
                 "em_config")
             Copy("em_config/lrzip/*", "..")
