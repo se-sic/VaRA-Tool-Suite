@@ -22,7 +22,7 @@ class Libvpx(prj.Project):
 
     def compile(self):
         self.download()
-        self.downloadEMConfig()
+        self.download_em_config()
 
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
@@ -30,7 +30,6 @@ class Libvpx(prj.Project):
                 run(local["./configure"])
             run(make["-j", int(CFG["jobs"])])
 
-    def downloadEMConfig(self):
-        with local.cwd(self.SRC_FILE):
-            Git("https://github.com/se-passau/EnergyMetering_CaseStudies/libvpx",
-                "EM_config")
+    def download_em_config(self):
+        Git("https://github.com/se-passau/EnergyMetering_CaseStudies/libvpx",
+            ".", prefix=self.SRC_FILE)
