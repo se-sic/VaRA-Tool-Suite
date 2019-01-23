@@ -3,7 +3,7 @@ from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
 import benchbuild.project as prj
 from benchbuild.utils.cmd import make
-from benchbuild.utils.download import with_git, Git
+from benchbuild.utils.download import with_git, Git, Copy
 
 from plumbum import local
 
@@ -32,5 +32,7 @@ class X264_EM(prj.Project):
             run(make["-j", int(CFG["jobs"])])
 
     def download_em_config(self):
-        Git("https://github.com/se-passau/EnergyMetering_CaseStudies/x264",
-            ".", prefix=self.SRC_FILE)
+        with local.cwd(self.SRC_FILE):
+            Git("https://github.com/se-passau/EnergyMetering_CaseStudies.git",
+                "em_config")
+            Copy("em_config/x264/*", "..")

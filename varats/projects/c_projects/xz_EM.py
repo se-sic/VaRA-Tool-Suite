@@ -3,12 +3,12 @@ from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
 import benchbuild.project as prj
 from benchbuild.utils.cmd import make, autoreconf
-from benchbuild.utils.download import with_git, Git
+from benchbuild.utils.download import with_git, Git, Copy
 
 from plumbum import local
 
 
-@with_git("https://git.tukaani.org/xz.git", limit=100, refspec="HEAD")
+@with_git("https://github.com/xz-mirror/xz.git", limit=100, refspec="HEAD")
 class Xz_EM(prj.Project):
     NAME = 'xz_EM'
     GROUP = 'encoder'
@@ -32,5 +32,7 @@ class Xz_EM(prj.Project):
             run(make["-j", int(CFG["jobs"])])
 
     def download_em_config(self):
-        Git("https://github.com/se-passau/EnergyMetering_CaseStudies/xz",
-            ".", prefix=self.SRC_FILE)
+        with local.cwd(self.SRC_FILE):
+            Git("https://github.com/se-passau/EnergyMetering_CaseStudies.git",
+                "em_config")
+            Copy("em_config/xz/*", "..")
