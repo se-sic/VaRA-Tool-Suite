@@ -3,7 +3,7 @@ from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
 import benchbuild.project as prj
 from benchbuild.utils.cmd import make, autoreconf
-from benchbuild.utils.download import with_git
+from benchbuild.utils.download import with_git, Git
 
 from plumbum import local
 
@@ -22,6 +22,7 @@ class Xz_EM(prj.Project):
 
     def compile(self):
         self.download()
+        self.downloadEMConfig()
 
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
@@ -29,3 +30,8 @@ class Xz_EM(prj.Project):
                 run(autoreconf["--install"])
                 run(local["./configure"])
             run(make["-j", int(CFG["jobs"])])
+
+    def downloadEMConfig(self):
+        with local.cwd(self.SRC_FILE):
+            Git("https://github.com/se-passau/EnergyMetering_CaseStudies/xz",
+                "EM_config")
