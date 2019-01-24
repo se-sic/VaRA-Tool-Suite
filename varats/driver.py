@@ -93,7 +93,7 @@ def build_setup():
                         nargs='?', default=llvm_src_dir)
     parser.add_argument("installprefix", default=llvm_install_dir, nargs='?',
                         help="Folder to install LLVM. (Optional)")
-    parser.add_argument("--ownlibgit", action="store_true", default=False,
+    parser.add_argument("--own-libgit2", action="store_true", default=False,
                         help="Uses your own Libgit.")
 
     args = parser.parse_args()
