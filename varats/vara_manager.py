@@ -19,7 +19,7 @@ from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
 from plumbum.commands.processes import ProcessExecutionError
 
 
-def run_with_output(pb_cmd, post_out=lambda x, y: None):
+def run_with_output(pb_cmd, post_out=lambda x: None):
     """
     Run plumbum command and post output lines to function.
     """
@@ -28,13 +28,13 @@ def run_with_output(pb_cmd, post_out=lambda x, y: None):
                           stdout=sp.PIPE, stderr=sp.STDOUT) as p_gc:
             while p_gc.poll() is None:
                 for line in p_gc.stdout:
-                    post_out(line, multiline=False)
+                    post_out(line)
     except ProcessExecutionError:
-        post_out("ProcessExecutionError", multiline=True)
+        post_out("ProcessExecutionError")
 
 
 def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
-                  post_out=lambda x, y: None):
+                  post_out=lambda x: None):
     """
     Download a repo into the specified folder.
     """
@@ -214,7 +214,7 @@ def get_download_steps():
 
 
 def download_vara(llvm_source_folder, progress_func=lambda x: None,
-                  post_out=lambda x, y: None):
+                  post_out=lambda x: None):
     """
     Downloads VaRA an all other necessary repos from github.
     """
