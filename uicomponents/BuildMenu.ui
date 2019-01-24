@@ -209,7 +209,7 @@
       <item>
        <widget class="QCheckBox" name="libgitButton">
         <property name="text">
-         <string>Own Libgit</string>
+         <string>Build own libgit2</string>
         </property>
        </widget>
       </item>
