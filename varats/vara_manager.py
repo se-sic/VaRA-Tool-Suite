@@ -314,7 +314,7 @@ def init_vara_build(path_to_llvm, build_type: BuildType,
             run_with_output(cmake, post_out)
 
 
-def build_vara(own_libgit, path_to_llvm: str, install_prefix: str,
+def build_vara(own_libgit: bool, path_to_llvm: str, install_prefix: str,
                build_type: BuildType, post_out=lambda x: None):
     """
     Builds a VaRA configuration
