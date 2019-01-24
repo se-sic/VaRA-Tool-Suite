@@ -7,6 +7,7 @@ from benchbuild.settings import CFG
 from benchbuild.utils.download import Git
 
 from plumbum import local
+from plumbum.path.utils import copy
 
 CFG["em"] = {
     "results": {
@@ -39,8 +40,19 @@ class EnergyMetering(Experiment):
         project.compiler_extension = compiler.RunCompiler(project, self)
 
         def download_em():
-            Git("https://github.com/se-passau/EnergyMetering.git",
-                self.NAME, prefix=project.builddir)
+            with local.cwd(project.builddir):
+                Git("https://github.com/se-passau/EnergyMetering.git",
+                    self.NAME)
+                Git("https://github.com/se-passau/EnergyMetering_CaseStudies.git",
+                    "em_config")
+            em_folder = project.builddir / "em_config" / project.name / "case-study"
+            copy([em_folder / "summary-info",
+                  em_folder / "summary-info-no-energy",
+                  em_folder / "main.sh",
+                  em_folder / "uiq2",
+                  em_folder / "FeatureModel.xml",
+                  em_folder / "configurations.csv",
+                  em_folder / "config"], project.builddir / project.SRC_FILE)
 
         def evaluate_em():
             em_input = local.path(project.builddir) / project.SRC_FILE

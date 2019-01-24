@@ -3,7 +3,7 @@ from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
 import benchbuild.project as prj
 from benchbuild.utils.cmd import make
-from benchbuild.utils.download import with_git, Git, Copy
+from benchbuild.utils.download import with_git
 
 from plumbum import local
 
@@ -22,7 +22,6 @@ class X264_EM(prj.Project):
 
     def compile(self):
         self.download()
-        self.download_em_config()
 
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
@@ -31,8 +30,3 @@ class X264_EM(prj.Project):
                 run(conf["--disable-asm"])
             run(make["-j", int(CFG["jobs"])])
 
-    def download_em_config(self):
-        with local.cwd(self.SRC_FILE):
-            Git("https://github.com/se-passau/EnergyMetering_CaseStudies.git",
-                "em_config")
-            Copy("em_config/x264/*", "..")

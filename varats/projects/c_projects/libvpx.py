@@ -3,12 +3,12 @@ from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
 import benchbuild.project as prj
 from benchbuild.utils.cmd import make
-from benchbuild.utils.download import with_git, Git, Copy
+from benchbuild.utils.download import with_git
 
 from plumbum import local
 
 
-@with_git("https://chromium.googlesource.com/webm/libvpx", limit=100, refspec="HEAD")
+@with_git("https://github.com/webmproject/libvpx.git", limit=100, refspec="HEAD")
 class Libvpx(prj.Project):
     NAME = 'libvpx'
     GROUP = 'encoder'
@@ -22,7 +22,6 @@ class Libvpx(prj.Project):
 
     def compile(self):
         self.download()
-        self.download_em_config()
 
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
@@ -30,8 +29,3 @@ class Libvpx(prj.Project):
                 run(local["./configure"])
             run(make["-j", int(CFG["jobs"])])
 
-    def download_em_config(self):
-        with local.cwd(self.SRC_FILE):
-            Git("https://github.com/se-passau/EnergyMetering_CaseStudies.git",
-                "em_config")
-            Copy("em_config/libvpx/*", "..")
