@@ -6,6 +6,8 @@ import yaml
 import pandas as pd
 import os
 
+from varats.data.version_header import VersionHeader
+
 from PyQt5.QtWidgets import QWidget, QGridLayout
 
 
@@ -107,6 +109,9 @@ class CommitReport(object):
         with open(path, "r") as stream:
             self._path = path
             documents = yaml.load_all(stream)
+            version_header = VersionHeader(next(documents))
+            version_header.raise_if_not_type("CommitReport")
+            version_header.raise_if_version_is_less_than(3)
 
             raw_infos = next(documents)
             self.finfos = dict()
