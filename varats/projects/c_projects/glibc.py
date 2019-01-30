@@ -25,8 +25,8 @@ class Glibc(Project):
         self.download()
 
         clang = cc(self)
-        local.path(self.SRC_FILE / "build").mkdir()
-        with local.cwd(self.src_dir / "build"):
+        local.path(self.SRC_FILE + "/" + "build").mkdir()
+        with local.cwd(self.SRC_FILE + "/" + "build"):
             with local.env(CC=str(clang)):
                 run(local["./../configure"])
             run(make["-j", int(CFG["jobs"])])

@@ -9,10 +9,13 @@ import os
 
 import benchbuild.utils.actions as actions
 
+from os import getenv
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import compiler, run, time, base
 from benchbuild.settings import CFG
 from benchbuild.utils.cmd import opt
+from benchbuild.utils.path import list_to_path
+from benchbuild.utils.path import path_to_list
 from plumbum import local
 from varats.experiments.Extract import Extract as Extract
 
@@ -26,11 +29,24 @@ class RunWLLVM(base.Extension):
     is used to transfer the complete project into LLVM-IR.
     """
 
-    def __call__(self, command, *args, **kwargs):
-        with local.env(LLVM_COMPILER="clang"):
-            from benchbuild.utils.cmd import wllvm
-            res = self.call_next(wllvm, *args, **kwargs)
-        return res
+    def __call__(self, cc, *args, **kwargs):
+        if str(cc).endswith("clang++"):
+            wllvm = local["wllvm++"]
+        else:
+            wllvm = local["wllvm"]
+
+        env = CFG["env"].value
+        path = path_to_list(getenv("PATH", ""))
+        path.extend(env.get("PATH", []))
+
+        libs_path = path_to_list(getenv("LD_LIBRARY_PATH", ""))
+        libs_path.extend(env.get("LD_LIBRARY_PATH", []))
+
+        wllvm = wllvm.with_env(LLVM_COMPILER="clang",
+                               PATH=list_to_path(path),
+                               LD_LIBRARY_PATH=list_to_path(libs_path))
+
+        return self.call_next(wllvm, *args, **kwargs)
 
 
 class Analyse(actions.Step):
@@ -79,7 +95,7 @@ class GitBlameAnntotationReport(Experiment):
                 str(CFG["vara"]["outfile"])) + "/" +\
                 str(project.name) + "-" + str(project.run_uuid) + ".yaml"
             run_cmd = opt[
-                "-vara-CFR", outfile, project_src / project.name + ".bc"]
+                "-vara-BD", "-vara-CFR", outfile, project_src / project.name + ".bc"]
             run_cmd()
 
         analysis_actions = []

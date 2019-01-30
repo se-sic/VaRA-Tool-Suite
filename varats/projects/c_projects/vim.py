@@ -2,7 +2,7 @@ from benchbuild.settings import CFG
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
 from benchbuild.project import Project
-from benchbuild.utils.cmd import make
+from benchbuild.utils.cmd import make, cp
 from benchbuild.utils.download import with_git
 
 from plumbum import local
@@ -30,3 +30,5 @@ class Vim(Project):
             with local.env(CC=str(clang)):
                 run(local["./configure"])
             run(make["-j", int(CFG["jobs"])])
+
+            cp("src/vim", ".")

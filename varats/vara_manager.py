@@ -19,7 +19,7 @@ from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
 from plumbum.commands.processes import ProcessExecutionError
 
 
-def run_with_output(pb_cmd, post_out=lambda x: None):
+def run_with_output(pb_cmd, post_out=lambda x, y: None):
     """
     Run plumbum command and post output lines to function.
     """
@@ -28,13 +28,13 @@ def run_with_output(pb_cmd, post_out=lambda x: None):
                           stdout=sp.PIPE, stderr=sp.STDOUT) as p_gc:
             while p_gc.poll() is None:
                 for line in p_gc.stdout:
-                    post_out(line)
+                    post_out(line, multiline=False)
     except ProcessExecutionError:
-        post_out("ProcessExecutionError")
+        post_out("ProcessExecutionError", multiline=True)
 
 
 def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
-                  post_out=lambda x: None):
+                  post_out=lambda x, y: None):
     """
     Download a repo into the specified folder.
     """
@@ -66,13 +66,14 @@ class BuildType(Enum):
 
 
 def setup_vara(init, update, build, llvm_folder, install_prefix, version,
-               build_type: BuildType, post_out=lambda x: None):
+               build_type: BuildType, post_out=lambda x, y: None):
     """
     Sets up VaRA over cli.
     """
 
     CFG["llvm_source_dir"] = llvm_folder
     CFG["llvm_install_dir"] = install_prefix
+    #CFG["version"] = version
     save_config()
 
     if init:
@@ -88,6 +89,34 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, version,
               "for example, with 'vara-buildsetup -i'.")
     else:
         if update:
+            if str(CFG["version"]) != str(version):
+                fetch_current_branch(llvm_folder)
+                fetch_current_branch(llvm_folder + "tools/clang/")
+                fetch_current_branch(llvm_folder + "tools/clang/tools/extra/")
+                fetch_current_branch(llvm_folder + "tools/VaRA/")
+                fetch_current_branch(llvm_folder + "tools/lld/")
+                fetch_current_branch(llvm_folder + "projects/compiler-rt/")
+
+                version_name = ""
+                version_name += str(version)
+                if build_type == BuildType.DEV:
+                    version_name += "-dev"
+                checkout_branch(llvm_folder, "vara-" + version_name)
+                checkout_branch(llvm_folder + "/tools/clang/", "vara-" +
+                                version_name)
+                if build_type == BuildType.DEV:
+                    checkout_branch(llvm_folder + "/tools/VaRA/", "vara-dev")
+
+                checkout_branch(llvm_folder + "/tools/clang/tools/extra/",
+                                "release_" + str(version))
+                checkout_branch(llvm_folder + "/tools/lld/",
+                                "release_" + str(version))
+                checkout_branch(llvm_folder + "/projects/compiler-rt/",
+                                "release_" + str(version))
+
+                CFG["version"] = int(version)
+                save_config()
+
             pull_current_branch(llvm_folder)
             pull_current_branch(llvm_folder + "tools/clang/")
             pull_current_branch(llvm_folder + "tools/VaRA/")
@@ -128,6 +157,17 @@ def pull_current_branch(repo_folder=""):
             git["pull"] & FG
 
 
+def fetch_current_branch(repo_folder=""):
+    """
+    Pull in changes in a certain branch.
+    """
+    if repo_folder == '':
+        git["fetch"] & FG
+    else:
+        with local.cwd(repo_folder):
+            git["fetch"] & FG
+
+
 def checkout_branch(repo_folder, branch):
     """
     Checks out a branch in the repository.
@@ -153,7 +193,7 @@ def get_download_steps():
 
 
 def download_vara(llvm_source_folder, progress_func=lambda x: None,
-                  post_out=lambda x: None):
+                  post_out=lambda x, y: None):
     """
     Downloads VaRA an all other necessary repos from github.
     """
@@ -323,7 +363,7 @@ def get_llvm_status(llvm_folder) -> GitStatus:
         git_status = git['status']
         stdout = git_status('-sb')
         for line in stdout.split('\n'):
-            if line.startswith('## vara-60-dev'):
+            if line.startswith('## vara-' + str(CFG['version']) + '-dev'):
                 match = re.match(r".*\[(.*)\]", line)
                 if match is not None:
                     return GitStatus(GitState.BEHIND, match.group(1))
@@ -341,7 +381,7 @@ def get_clang_status(llvm_folder) -> GitStatus:
         git_status = git['status']
         stdout = git_status('-sb')
         for line in stdout.split('\n'):
-            if line.startswith('## vara-60-dev'):
+            if line.startswith('## vara-' + str(CFG['version']) + '-dev'):
                 match = re.match(r".*\[(.*)\]", line)
                 if match is not None:
                     return GitStatus(GitState.BEHIND, match.group(1))
@@ -460,4 +500,4 @@ class VaRAStateManager(object):
 
 if __name__ == "__main__":
     download_vara("/tmp/foo/llvm")
-    checkout_vara_version("/tmp/foo/llvm/", 60, True)
+    checkout_vara_version("/tmp/foo/llvm/", CFG['version'], True)
