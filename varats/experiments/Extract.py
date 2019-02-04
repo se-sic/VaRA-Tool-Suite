@@ -36,4 +36,4 @@ class Extract(actions.Step):
         with local.cwd(local.path(str(CFG["vara"]["result"]))):
             extract_bc(project_src)
             cp(local.path(project_src) + ".bc", local.path() /
-               project.name + ".bc")
+               project.name + "-" + project.version + ".bc")

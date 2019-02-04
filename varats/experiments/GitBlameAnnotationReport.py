@@ -95,12 +95,14 @@ class GitBlameAnntotationReport(Experiment):
                 str(CFG["vara"]["outfile"])) + "/" +\
                 str(project.name) + "-" + str(project.run_uuid) + ".yaml"
             run_cmd = opt[
-                "-vara-BD", "-vara-CFR", outfile, project_src / project.name + ".bc"]
+                "-vara-BD", "-vara-CFR", outfile, project_src / project.name +
+                "-" + project.version + ".bc"]
             run_cmd()
 
         analysis_actions = []
         if not os.path.exists(local.path(
-                str(CFG["vara"]["result"].value)) / project.name + ".bc"):
+                str(CFG["vara"]["result"].value)) / project.name + "-" +
+                              project.version + ".bc"):
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(project))
 
