@@ -8,7 +8,21 @@ from benchbuild.utils.download import with_git
 from plumbum import local
 
 
-@with_git("https://git.savannah.gnu.org/git/gzip.git", limit=100, refspec="HEAD")
+def filter_func(version):
+    """
+    Example filter function.
+    TODO: remove
+    """
+    good = ["20540be",
+            "8aa53f1",
+            "a604573",
+            "e48a916",
+            "8ebed06"]
+    return version in good
+
+
+@with_git("https://git.savannah.gnu.org/git/gzip.git", limit=100,
+          refspec="HEAD", version_filter=filter_func)
 class Gzip(prj.Project):
     """ Compression and decompression tool Gzip (fetched by Git) """
 
