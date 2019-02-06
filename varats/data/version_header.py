@@ -61,7 +61,7 @@ class VersionHeader(object):
         otherwise, raises an exception.
         """
         if not self.is_type(type_name):
-            raise WrongYamlFileType(self.doc_type, type_name)
+            raise WrongYamlFileType(type_name, self.doc_type)
 
     @property
     def version(self) -> int:
