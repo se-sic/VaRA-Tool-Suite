@@ -22,6 +22,8 @@ class Lrzip(prj.Project):
 
     def compile(self):
         self.download()
+
+        self.cflags += ["-fPIC"]
         
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
