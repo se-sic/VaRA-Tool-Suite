@@ -1,11 +1,7 @@
 """
-Implements the commit-flow report with annotating over git blame.
-
-This class implements the commit-flow report (CFR) analysis of the variability-
-aware region analyzer (VaRA).
-For annotation we use the git-blame data of git.
+TODO
 """
-from os import path
+import os
 
 from plumbum import local
 
@@ -21,16 +17,15 @@ from varats.experiments.Wllvm import RunWLLVM
 
 class Analyse(actions.Step):
     NAME = "ANALYSE"
-    DESCRIPTION = "Analyses the bitcode with CFR of VaRA."
+    DESCRIPTION = "Analyses llvm bitcode with phasar."
 
 
-class GitBlameAnntotationReport(Experiment):
+class Phasar(Experiment):
     """
-    Generates a commit flow report (CFR) of the project(s) specified in the
-    call.
+    Runs the default Phasar analysis on an project.
     """
 
-    NAME = "GitBlameAnnotationReport"
+    NAME = "Phasar"
 
     def actions_for_project(self, project):
         """Returns the specified steps to run the project(s) specified in
@@ -45,31 +40,24 @@ class GitBlameAnntotationReport(Experiment):
             << RunWLLVM() \
             << run.WithTimeout()
 
-        # This c-flag is provided by VaRA and it suggests to use the git-blame
-        # annotation.
-        project.cflags = ["-fvara-GB"]
-
         def evaluate_analysis():
             """
-            This step performs the actual analysis with the correct flags.
-            Flags:
-                -vara-CFR: to run a commit flow report
-                -yaml-out-file=<path>: specify the path to store the results
+            This step performs the actual analysis.
             """
             project_src = local.path(str(CFG["vara"]["result"]))
 
             # Add to the user-defined path for saving the results of the
             # analysis also the name and the unique id of the project of every
             # run.
-            outfile = "-yaml-out-file={}".format(
-                str(CFG["vara"]["outfile"])) + "/" +\
-                str(project.name) + "-" + str(project.run_uuid) + ".yaml"
-            run_cmd = opt["-vara-BD", "-vara-CFR",
-                          outfile, project_src / project.name + ".bc"]
-            run_cmd()
+            run_cmd = opt["-load",
+                          "/home/vulder/git/phasar/build/dev/lib/PhasarPass" +
+                          "/libphasar_passd.so", "-phasar", "--entry-points",
+                          "main"]
+            # TODO: refactor out direct loading of phasar lib
+            run_cmd(project_src/project.name + ".bc")
 
         analysis_actions = []
-        if not path.exists(local.path(
+        if not os.path.exists(local.path(
                 str(CFG["vara"]["result"].value)) / project.name + ".bc"):
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(project))
