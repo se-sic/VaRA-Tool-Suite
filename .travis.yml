@@ -9,7 +9,7 @@ addons:
   apt:
     packages:
       - time
-      - libgit2
+      - libgit2-dev
 
 install:
   - pip install .
