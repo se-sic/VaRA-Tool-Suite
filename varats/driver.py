@@ -13,7 +13,7 @@ from varats.settings import get_value_or_default, CFG
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
 from varats.vara_manager import setup_vara, BuildType
-from varats.tools.commitmap import generate_commit_map
+from varats.tools.commit_map import generate_commit_map
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
