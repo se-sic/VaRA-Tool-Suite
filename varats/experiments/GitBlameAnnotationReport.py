@@ -49,9 +49,38 @@ class RunWLLVM(base.Extension):
         return self.call_next(wllvm, *args, **kwargs)
 
 
-class Analyse(actions.Step):
-    NAME = "ANALYSE"
+class CFRAnalysis(actions.Step):
+    """
+    Analyse a project with VaRA and generate a Commit-Flow Report.
+    """
+
+    NAME = "CFRAnalysis"
     DESCRIPTION = "Analyses the bitcode with CFR of VaRA."
+
+    def __call__(self):
+        """
+        This step performs the actual analysis with the correct flags.
+        Flags:
+            -vara-CFR: to run a commit flow report
+            -yaml-out-file=<path>: specify the path to store the results
+        """
+        if not self.obj:
+            return
+        project = self.obj
+
+        project_src = local.path(str(CFG["vara"]["result"]))
+
+        # Add to the user-defined path for saving the results of the
+        # analysis also the name and the unique id of the project of every
+        # run.
+        outfile = "-yaml-out-file={}".format(
+            str(CFG["vara"]["outfile"])) + "/" +\
+            str(project.name) + "-" + str(project.version) + "_" +\
+            str(project.run_uuid) + ".yaml"
+        run_cmd = opt[
+            "-vara-BD", "-vara-CFR", outfile, project_src / project.name +
+            "-" + project.version + ".bc"]
+        run_cmd()
 
 
 class GitBlameAnntotationReport(Experiment):
@@ -79,26 +108,6 @@ class GitBlameAnntotationReport(Experiment):
         # annotation.
         project.cflags = ["-fvara-GB"]
 
-        def evaluate_analysis():
-            """
-            This step performs the actual analysis with the correct flags.
-            Flags:
-                -vara-CFR: to run a commit flow report
-                -yaml-out-file=<path>: specify the path to store the results
-            """
-            project_src = local.path(str(CFG["vara"]["result"]))
-
-            # Add to the user-defined path for saving the results of the
-            # analysis also the name and the unique id of the project of every
-            # run.
-            outfile = "-yaml-out-file={}".format(
-                str(CFG["vara"]["outfile"])) + "/" +\
-                str(project.name) + "-" + str(project.run_uuid) + ".yaml"
-            run_cmd = opt[
-                "-vara-BD", "-vara-CFR", outfile, project_src / project.name +
-                "-" + project.version + ".bc"]
-            run_cmd()
-
         analysis_actions = []
         if not os.path.exists(local.path(
                 str(CFG["vara"]["result"].value)) / project.name + "-" +
@@ -106,7 +115,7 @@ class GitBlameAnntotationReport(Experiment):
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(project))
 
-        analysis_actions.append(Analyse(self, evaluate_analysis))
+        analysis_actions.append(CFRAnalysis(project))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
