@@ -10,6 +10,7 @@ addons:
     packages:
       - time
       - libgit2-dev
+      - ninja
 
 install:
   - pip install .
