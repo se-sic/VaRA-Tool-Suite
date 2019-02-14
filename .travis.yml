@@ -9,6 +9,7 @@ addons:
   apt:
     packages:
       - time
+      - libgit2
 
 install:
   - pip install .
