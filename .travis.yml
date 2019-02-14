@@ -1,0 +1,25 @@
+sudo: false
+dist: trusty
+language: python
+python:
+  - "3.5"
+  - "3.6"
+
+addons:
+  apt:
+    packages:
+      - time
+
+install:
+  - pip install .
+  - pip install -r requirements.txt
+  - pip install codecov
+  - pip install pytest-cov
+
+script:
+  - python setup.py test
+  - codecov
+
+branches:
+  only:
+    - master
