@@ -1,5 +1,5 @@
 """
-TODO
+Experiment module for phasa analyses.
 """
 import os
 
@@ -15,17 +15,39 @@ from varats.experiments.Extract import Extract
 from varats.experiments.Wllvm import RunWLLVM
 
 
-class Analyse(actions.Step):
+class DefaultAnalysis(actions.Step):
+    """
+    Analyse a project with Phasar's default analysis.
+    """
     NAME = "ANALYSE"
     DESCRIPTION = "Analyses llvm bitcode with phasar."
 
+    # TODO: refactor out direct loading of phasar lib
+    PATH_TO_PHASAR_PASS_LIB = "/home/vulder/git/phasar/build/dev/lib/" +\
+        "PhasarPass/libphasar_passd.so"
 
-class Phasar(Experiment):
+    def __call__(self):
+        """
+        This step performs the analysis.
+        """
+        if not self.obj:
+            return
+        project = self.obj
+
+        project_src = local.path(str(CFG["vara"]["result"]))
+
+        run_cmd = opt["-load", self.PATH_TO_PHASAR_PASS_LIB,
+                      "-phasar", "--entry-points", "main"]
+
+        run_cmd(project_src/project.name + ".bc")
+
+
+class PhasarDefault(Experiment):
     """
     Runs the default Phasar analysis on an project.
     """
 
-    NAME = "Phasar"
+    NAME = "PhasarDefault"
 
     def actions_for_project(self, project):
         """Returns the specified steps to run the project(s) specified in
@@ -40,29 +62,13 @@ class Phasar(Experiment):
             << RunWLLVM() \
             << run.WithTimeout()
 
-        def evaluate_analysis():
-            """
-            This step performs the actual analysis.
-            """
-            project_src = local.path(str(CFG["vara"]["result"]))
-
-            # Add to the user-defined path for saving the results of the
-            # analysis also the name and the unique id of the project of every
-            # run.
-            run_cmd = opt["-load",
-                          "/home/vulder/git/phasar/build/dev/lib/PhasarPass" +
-                          "/libphasar_passd.so", "-phasar", "--entry-points",
-                          "main"]
-            # TODO: refactor out direct loading of phasar lib
-            run_cmd(project_src/project.name + ".bc")
-
         analysis_actions = []
         if not os.path.exists(local.path(
                 str(CFG["vara"]["result"].value)) / project.name + ".bc"):
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(project))
 
-        analysis_actions.append(Analyse(self, evaluate_analysis))
+        analysis_actions.append(DefaultAnalysis(project))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
