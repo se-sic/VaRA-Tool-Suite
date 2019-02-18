@@ -56,13 +56,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.bwg = BuildSetup()
         self.bwg.show()
 
-    def _save_config(self):
+    @staticmethod
+    def _save_config():
         """
         Save current config to file.
         """
         save_config()
 
-    def _create_benchbuild_config(self):
+    @staticmethod
+    def _create_benchbuild_config():
         if CFG["config_file"].value is None:
             print("No VaRA config found, please initialize a " +
                   "VaRA config first.")

@@ -8,6 +8,7 @@ and providing necessary information.
 import os
 import re
 import subprocess as sp
+import tempfile
 
 from enum import Enum
 from varats.settings import save_config, CFG
@@ -499,5 +500,6 @@ class VaRAStateManager(object):
 
 
 if __name__ == "__main__":
-    download_vara("/tmp/foo/llvm")
-    checkout_vara_version("/tmp/foo/llvm/", CFG['version'], True)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        download_vara(tmp_dir + "/llvm")
+        checkout_vara_version(tmp_dir + "/llvm/", CFG['version'], True)
