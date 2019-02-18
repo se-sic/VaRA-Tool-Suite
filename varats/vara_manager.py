@@ -355,11 +355,11 @@ class GitStatus(object):
         return "Error"
 
 
-def get_llvm_status(llvm_folder) -> GitStatus:
+def get_llvm_project_status(llvm_folder, project_folder="") -> GitStatus:
     """
-    Retrieve the git status of llvm.
+    Retrieve the git status of a llvm project.
     """
-    with local.cwd(llvm_folder):
+    with local.cwd(llvm_folder + project_folder):
         fetch_remote('origin')
         git_status = git['status']
         stdout = git_status('-sb')
@@ -369,25 +369,6 @@ def get_llvm_status(llvm_folder) -> GitStatus:
                 if match is not None:
                     return GitStatus(GitState.BEHIND, match.group(1))
                 return GitStatus(GitState.OK)
-
-    return GitStatus(GitState.ERROR)
-
-
-def get_clang_status(llvm_folder) -> GitStatus:
-    """
-    Retrieve the git status of clang.
-    """
-    with local.cwd(llvm_folder + 'tools/clang'):
-        fetch_remote('origin')
-        git_status = git['status']
-        stdout = git_status('-sb')
-        for line in stdout.split('\n'):
-            if line.startswith('## vara-' + str(CFG['version']) + '-dev'):
-                match = re.match(r".*\[(.*)\]", line)
-                if match is not None:
-                    return GitStatus(GitState.BEHIND, match.group(1))
-                return GitStatus(GitState.OK)
-
     return GitStatus(GitState.ERROR)
 
 
@@ -419,11 +400,13 @@ class GitStateSignals(QObject):
     """
     status_update = pyqtSignal(object, object, object)
 
+
 class CheckStateSignal(QObject):
     """
     This signal is emited when the state could have changed.
     """
     possible_state_change = pyqtSignal()
+
 
 class GitStateChecker(QRunnable):
     """
@@ -440,8 +423,9 @@ class GitStateChecker(QRunnable):
         """
         Retrieve status updates for llvm,clang, and VaRA
         """
-        llvm_status = get_llvm_status(self.path_to_llvm)
-        clang_status = get_clang_status(self.path_to_llvm)
+        llvm_status = get_llvm_project_status(self.path_to_llvm)
+        clang_status = get_llvm_project_status(self.path_to_llvm,
+                                               "tools/clang")
         vara_status = get_vara_status(self.path_to_llvm)
 
         self.signals.status_update.emit(llvm_status, clang_status, vara_status)
