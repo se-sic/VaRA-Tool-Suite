@@ -5,7 +5,6 @@ Main drivers for VaRA-TS
 
 import os
 import sys
-import string
 import argparse
 
 from varats import settings
@@ -13,7 +12,7 @@ from varats.settings import get_value_or_default, CFG
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
 from varats.vara_manager import setup_vara, BuildType
-from varats.tools.commitmap import generate_commit_map
+from varats.tools.commit_map import generate_commit_map
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
@@ -64,8 +63,9 @@ def main_graph_view():
 def update_term(text, multiline=False):
     if not multiline:
         text = text.replace(os.linesep, ' ')
-        rows, columns = os.popen('stty size', 'r').read().split()
-        print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r', flush=True)
+        _, columns = os.popen('stty size', 'r').read().split()
+        print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r',
+              flush=True)
     else:
         print(text)
 

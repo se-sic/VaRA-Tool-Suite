@@ -4,13 +4,14 @@ VaRA-TS MainWindow
 
 from os import path
 
-from varats.settings import CFG, save_config, generate_benchbuild_config
+from PyQt5.QtWidgets import QMainWindow
+
+from varats.settings import CFG, save_config, generate_benchbuild_config,\
+    create_missing_folders
 from varats.gui.ui_MainWindow import Ui_MainWindow
 from varats.gui.views.example_view import ExampleView
 from varats.gui.views.cr_bar_view import CRBarView
-from varats.gui.buildsetup_window import BuildSetup, create_missing_folders
-
-from PyQt5.QtWidgets import QMainWindow, QMessageBox
+from varats.gui.buildsetup_window import BuildSetup
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -56,13 +57,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.bwg = BuildSetup()
         self.bwg.show()
 
-    def _save_config(self):
+    @staticmethod
+    def _save_config():
         """
         Save current config to file.
         """
         save_config()
 
-    def _create_benchbuild_config(self):
+    @staticmethod
+    def _create_benchbuild_config():
         if CFG["config_file"].value is None:
             print("No VaRA config found, please initialize a " +
                   "VaRA config first.")

@@ -10,6 +10,7 @@ addons:
   apt:
     packages:
       - time
+      - git
       - libgit2-dev
       - ninja
 
@@ -25,4 +26,5 @@ script:
 
 branches:
   only:
+    - vara
     - vara-dev
