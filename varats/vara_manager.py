@@ -15,7 +15,7 @@ from varats.settings import save_config, CFG
 
 from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject
 
-from plumbum import local, FG
+from plumbum import local
 from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
 from plumbum.commands.processes import ProcessExecutionError
 
