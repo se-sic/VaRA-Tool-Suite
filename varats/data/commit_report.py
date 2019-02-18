@@ -8,8 +8,6 @@ import os
 
 from varats.data.version_header import VersionHeader
 
-from PyQt5.QtWidgets import QWidget, QGridLayout
-
 
 class FunctionInfo(object):
 

@@ -4,13 +4,14 @@ VaRA-TS MainWindow
 
 from os import path
 
-from varats.settings import CFG, save_config, generate_benchbuild_config
+from PyQt5.QtWidgets import QMainWindow
+
+from varats.settings import CFG, save_config, generate_benchbuild_config,\
+    create_missing_folders
 from varats.gui.ui_MainWindow import Ui_MainWindow
 from varats.gui.views.example_view import ExampleView
 from varats.gui.views.cr_bar_view import CRBarView
-from varats.gui.buildsetup_window import BuildSetup, create_missing_folders
-
-from PyQt5.QtWidgets import QMainWindow, QMessageBox
+from varats.gui.buildsetup_window import BuildSetup
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):

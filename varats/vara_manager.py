@@ -132,8 +132,8 @@ def add_remote(repo_folder, remote, url):
     Adds new remote to the repository.
     """
     with local.cwd(repo_folder):
-        git["remote", "add", remote, url] & FG
-        git["fetch", remote] & FG
+        git("remote", "add", remote, url)
+        git("fetch", remote)
 
 
 def fetch_remote(remote, repo_folder=""):
@@ -141,10 +141,10 @@ def fetch_remote(remote, repo_folder=""):
     Fetches the new changes from the remote.
     """
     if repo_folder == '':
-        git["fetch", remote] & FG
+        git("fetch", remote)
     else:
         with local.cwd(repo_folder):
-            git["fetch", remote] & FG
+            git("fetch", remote)
 
 
 def pull_current_branch(repo_folder=""):
@@ -152,10 +152,10 @@ def pull_current_branch(repo_folder=""):
     Pull in changes in a certain branch.
     """
     if repo_folder == '':
-        git["pull"] & FG
+        git("pull")
     else:
         with local.cwd(repo_folder):
-            git["pull"] & FG
+            git("pull")
 
 
 def fetch_current_branch(repo_folder=""):
@@ -163,10 +163,10 @@ def fetch_current_branch(repo_folder=""):
     Pull in changes in a certain branch.
     """
     if repo_folder == '':
-        git["fetch"] & FG
+        git("fetch")
     else:
         with local.cwd(repo_folder):
-            git["fetch"] & FG
+            git("fetch")
 
 
 def checkout_branch(repo_folder, branch):
@@ -174,7 +174,7 @@ def checkout_branch(repo_folder, branch):
     Checks out a branch in the repository.
     """
     with local.cwd(repo_folder):
-        git["checkout", branch] & FG
+        git("checkout", branch)
 
 
 def checkout_new_branch(repo_folder, branch, remote_branch):
@@ -182,7 +182,7 @@ def checkout_new_branch(repo_folder, branch, remote_branch):
     Checks out a new branch in the repository.
     """
     with local.cwd(repo_folder):
-        git["checkout", "-b", branch, remote_branch] & FG
+        git("checkout", "-b", branch, remote_branch)
 
 
 def get_download_steps():
@@ -231,9 +231,9 @@ def download_vara(llvm_source_folder, progress_func=lambda x: None,
                   remote_name="upstream", post_out=post_out)
 
     progress_func(6)
-    mkdir[dl_folder + "build/"] & FG
+    mkdir(dl_folder + "build/")
     with local.cwd(dl_folder + "build/"):
-        ln["-s", dl_folder + "tools/VaRA/utils/vara/builds/", "build_cfg"] & FG
+        ln("-s", dl_folder + "tools/VaRA/utils/vara/builds/", "build_cfg")
 
 
 def checkout_vara_version(llvm_folder, version, dev):
