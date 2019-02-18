@@ -60,7 +60,7 @@ you can execute the `vara-graphview` program.
 ### Install VaRA
 Everything around VaRA can be setup automatically with either `vara-buildsetup` or by using the GUI Buildsetup, included in most GUI tools. The following example shows how to setup VaRA via command line.
 
-```
+```bash
     mkdir $VARA_ROOT_FOLDER
     cd $VARA_ROOT_FOLDER
     vara-buildsetup -i
@@ -68,13 +68,13 @@ Everything around VaRA can be setup automatically with either `vara-buildsetup` 
 ```
 
 Updating VaRA to a new version can also be done with `vara-buildsetup`.
-```
+```bash
     vara-buildsetup -u
     vara-buildsetup -b
 ```
 
 To upgrade VaRA to a new release, for example, `release_70`, use:
-```
+```bash
     vara-buildsetup -u --version 70
 ```
 
@@ -94,10 +94,10 @@ To upgrade VaRA to a new release, for example, `release_70`, use:
 
 ### Running tests
 Running all python tests: 
-```
+```bash
     python setup.py test
 ```
 Running all test with coverage:
-```
+```bash
     python setup.py test --addopts "--cov=varats --cov-report term-missing"
 ```
