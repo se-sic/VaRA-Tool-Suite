@@ -80,14 +80,14 @@ To upgrade VaRA to a new release, for example, `release_70`, use:
 
 ### BenchBuild Projects
 `VaRA-TS` defines a set of projects that can be analyzed with `benchbuild`.
-```
+```console
     benchbuild
     └── projects
 ```
 
 ### BenchBuild Experiments
 `VaRA-TS` defines a set of projects that can be analyzed with `benchbuild`.
-```
+```console
     benchbuild
     └── experiments
 ```
