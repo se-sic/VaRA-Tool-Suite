@@ -2,7 +2,7 @@
 Test the VersionHeader module.
 """
 import unittest
-from unittest.mock import patch, mock_open
+import unittest.mock as mock
 
 import yaml
 
@@ -26,7 +26,8 @@ Version:         3
 ...
 """
 
-        with patch('builtins.open', new=mock_open(read_data=file_content)):
+        with mock.patch('builtins.open',
+                        new=mock.mock_open(read_data=file_content)):
             with open('fake_file_path') as yaml_file:
                 docs = yaml.load(yaml_file)
                 cls.version_header = vh.VersionHeader(docs)
@@ -50,3 +51,21 @@ Version:         3
                           "FooReport")
         self.assertRaises(vh.WrongYamlFileVersion,
                           self.version_header.raise_if_version_is_less_than, 4)
+
+    @unittest.mock.patch("builtins.open", create=True)
+    def test_loading_of_wrong_yaml_doc(self, mock_open):
+        """
+        If we pass a wrong yaml document into VersionHeader we expect and
+        Exception.
+        """
+        mock_open.side_effect = [
+            mock.mock_open(read_data="""
+---
+Foo:            Bar
+...
+""").return_value,
+        ]
+
+        with open('fake_file_path') as yaml_file:
+            docs = yaml.load(yaml_file)
+            self.assertRaises(vh.NoVersionHeader, vh.VersionHeader, docs)
