@@ -29,7 +29,7 @@ Version:         3
         with mock.patch('builtins.open',
                         new=mock.mock_open(read_data=file_content)):
             with open('fake_file_path') as yaml_file:
-                docs = yaml.load(yaml_file)
+                docs = yaml.safe_load(yaml_file)
                 cls.version_header = vh.VersionHeader(docs)
 
     def test_if_fields_where_loaded_correctly(self):
@@ -67,5 +67,5 @@ Foo:            Bar
         ]
 
         with open('fake_file_path') as yaml_file:
-            docs = yaml.load(yaml_file)
+            docs = yaml.safe_load(yaml_file)
             self.assertRaises(vh.NoVersionHeader, vh.VersionHeader, docs)
