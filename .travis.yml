@@ -26,4 +26,5 @@ script:
 
 branches:
   only:
+    - vara
     - vara-dev

@@ -5,7 +5,6 @@ Main drivers for VaRA-TS
 
 import os
 import sys
-import string
 import argparse
 
 from varats import settings
@@ -64,8 +63,9 @@ def main_graph_view():
 def update_term(text, multiline=False):
     if not multiline:
         text = text.replace(os.linesep, ' ')
-        rows, columns = os.popen('stty size', 'r').read().split()
-        print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r', flush=True)
+        _, columns = os.popen('stty size', 'r').read().split()
+        print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r',
+              flush=True)
     else:
         print(text)
 
@@ -116,6 +116,12 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
     Convert a string into a BuildType
 
     Test:
+    >>> parse_string_to_build_type("DBG")
+    <BuildType.DBG: 1>
+
+    >>> parse_string_to_build_type("PGO")
+    <BuildType.PGO: 4>
+
     >>> parse_string_to_build_type("DEV")
     <BuildType.DEV: 2>
 

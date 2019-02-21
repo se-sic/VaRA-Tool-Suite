@@ -8,15 +8,25 @@ import os
 
 from varats.data.version_header import VersionHeader
 
-from PyQt5.QtWidgets import QWidget, QGridLayout
-
 
 class FunctionInfo(object):
 
     def __init__(self, raw_yaml):
-        self.name = raw_yaml['function-name']
-        self.id = raw_yaml['id']
-        self.region_id = raw_yaml['region-id']
+        self.__name = raw_yaml['function-name']
+        self.__id = raw_yaml['id']
+        self.__region_id = raw_yaml['region-id']
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def id(self):
+        return self.__id
+
+    @property
+    def region_id(self):
+        return self.__region_id
 
     def __str__(self):
         return "{} ({}): {}".format(self.name, self.id, self.region_id)
@@ -37,6 +47,14 @@ class RegionToFunctionEdge(object):
     def __init__(self, from_region: str, to_function: str):
         self._from = from_region
         self._to = to_function
+
+    @property
+    def region(self) -> str:
+        return self._from
+
+    @property
+    def function(self) -> str:
+        return self._to
 
     def __str__(self):
         return "{} -> {}".format(self._from, self._to)
