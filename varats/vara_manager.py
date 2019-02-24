@@ -83,7 +83,7 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, own_libgit,
             download_vara(llvm_folder, post_out=post_out)
             checkout_vara_version(llvm_folder, version,
                                   build_type == BuildType.DEV)
-            if not own_libgit:
+            if own_libgit:
                 init_all_submodules(llvm_folder + "/tools/VaRA/")
                 update_all_submodules(llvm_folder + "/tools/VaRA/")
 
@@ -123,7 +123,7 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, own_libgit,
             pull_current_branch(llvm_folder)
             pull_current_branch(llvm_folder + "tools/clang/")
             pull_current_branch(llvm_folder + "tools/VaRA/")
-            if not own_libgit:
+            if own_libgit:
                 update_all_submodules(llvm_folder + "/tools/VaRA/")
 
         if build:
@@ -327,13 +327,13 @@ def build_vara(own_libgit: bool, path_to_llvm: str, install_prefix: str,
 
     with local.cwd(full_path):
         if own_libgit:
-            set_cmake_var("VARA_BUILD_LIBGIT", "OFF", post_out)
-        else:
             set_cmake_var("VARA_BUILD_LIBGIT", "ON", post_out)
-
+        else:
+            set_cmake_var("VARA_BUILD_LIBGIT", "OFF", post_out)
         set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix, post_out)
         b_ninja = ninja["install"]
         run_with_output(b_ninja, post_out)
+
 
 ###############################################################################
 # Git Handling
