@@ -139,7 +139,7 @@ class Ui_BuildSetup(object):
         self.buildButton.setText(_translate("BuildSetup", "Build"))
         self.checkDev.setText(_translate("BuildSetup", "Dev"))
         self.checkOpt.setText(_translate("BuildSetup", "Opt"))
-        self.libgitButton.setText(_translate("BuildSetup", "Own Libgit"))
+        self.libgitButton.setText(_translate("BuildSetup", "Build own libgit2"))
 
 
 if __name__ == "__main__":
