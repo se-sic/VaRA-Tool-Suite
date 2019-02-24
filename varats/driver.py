@@ -107,7 +107,7 @@ def build_setup():
     vara_version = args.version if args.version is not None else CFG['version']
 
     setup_vara(args.init, args.update, args.build, args.llvmfolder,
-               args.installprefix, args.ownlibgit, vara_version, build_type,
+               args.installprefix, args.own_libgit2, vara_version, build_type,
                update_term)
 
 
