@@ -15,7 +15,7 @@ from varats.settings import save_config, CFG
 from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject
 
 from plumbum import local, FG
-from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
+from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake, cut
 from plumbum.commands.processes import ProcessExecutionError
 
 
@@ -287,9 +287,11 @@ def get_cmake_var(var_name):
     """
     Fetch the value of a cmake variable from the current cmake config.
     """
-    print(grep(var_name, "CMakeCache.txt"))
-    # TODO: find way to get cmake var
-    raise NotImplementedError
+    for line in iter(cmake("-LA", "-N", "CMakeLists.txt").splitlines()):
+        if var_name not in line:
+            continue
+        return line.split("=")[1] == "ON"
+    return False
 
 
 def set_cmake_var(var_name, value, post_out=lambda x: None):
@@ -326,13 +328,24 @@ def build_vara(own_libgit: bool, path_to_llvm: str, install_prefix: str,
         init_vara_build(path_to_llvm, build_type, post_out)
 
     with local.cwd(full_path):
-        if own_libgit:
-            set_cmake_var("VARA_BUILD_LIBGIT", "ON", post_out)
-        else:
-            set_cmake_var("VARA_BUILD_LIBGIT", "OFF", post_out)
+        verify_build_structure(own_libgit, path_to_llvm, install_prefix,
+                               post_out)
         set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix, post_out)
         b_ninja = ninja["install"]
         run_with_output(b_ninja, post_out)
+
+
+def verify_build_structure(own_libgit: bool, path_to_llvm: str,
+                           install_prefix: str, post_out=lambda x: None):
+    if (not get_cmake_var("VARA_BUILD_LIBGIT") or not os.path.exists(
+            path_to_llvm + "/tools/VaRA/external/libgit2/CMakeLists.txt")) and own_libgit:
+        init_all_submodules(path_to_llvm + "/tools/VaRA/")
+        update_all_submodules(path_to_llvm + "/tools/VaRA/")
+    if own_libgit:
+        set_cmake_var("VARA_BUILD_LIBGIT", "ON", post_out)
+    else:
+        set_cmake_var("VARA_BUILD_LIBGIT", "OFF", post_out)
+    set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix, post_out)
 
 
 ###############################################################################
