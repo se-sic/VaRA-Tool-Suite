@@ -330,7 +330,6 @@ def build_vara(own_libgit: bool, path_to_llvm: str, install_prefix: str,
     with local.cwd(full_path):
         verify_build_structure(own_libgit, path_to_llvm, install_prefix,
                                post_out)
-        set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix, post_out)
         b_ninja = ninja["install"]
         run_with_output(b_ninja, post_out)
 
