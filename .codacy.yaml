@@ -1,0 +1,4 @@
+---
+exclude_paths:
+  - 'varats/gui/ui_*'
+  - 'varats/gui/views/ui_*'

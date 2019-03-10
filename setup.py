@@ -1,7 +1,4 @@
 from setuptools import setup, find_packages
-from setuptools.command.develop import develop
-from setuptools.command.install import install
-from subprocess import check_call
 
 setup(name='VaRA-Tool-Suite',
       version="0.1",
@@ -9,7 +6,7 @@ setup(name='VaRA-Tool-Suite',
       packages=find_packages(exclude=["extern", "benchbuild", "icons",
                                       "results", "uicomponents"]),
       setup_requires=["pytest-runner"],
-      tests_require=["pytest","pytest-cov"],
+      tests_require=["pytest", "pytest-cov"],
       install_requires=[
           "PyQt5>=5.10.0",
           "PyYAML>=3.12",

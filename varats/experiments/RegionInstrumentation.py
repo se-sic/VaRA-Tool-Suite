@@ -19,7 +19,7 @@ class RegionAnalyser(Experiment):
     def actions_for_project(self, project):
         project.runtime_extension = run.RuntimeExtension(project, self) \
             << time.RunWithTime()
-        
+
         project.compiler_extension = compiler.RunCompiler(project, self) \
             << RunWLLVM() \
             << time.RunWithTimeout()
