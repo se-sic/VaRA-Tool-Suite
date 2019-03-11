@@ -8,7 +8,6 @@ from pathlib import Path
 import yaml
 import pandas as pd
 
-
 from varats.data.version_header import VersionHeader
 
 
@@ -132,7 +131,7 @@ class CommitReport():
     def __init__(self, path: str):
         with open(path, "r") as stream:
             self._path = path
-            documents = yaml.load_all(stream)
+            documents = yaml.load_all(stream, Loader=yaml.CLoader)
             version_header = VersionHeader(next(documents))
             version_header.raise_if_not_type("CommitReport")
             version_header.raise_if_version_is_less_than(3)

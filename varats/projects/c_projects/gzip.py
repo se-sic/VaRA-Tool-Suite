@@ -14,22 +14,24 @@ def filter_func(version):
     TODO: remove
     """
     new = [
-        "9c2a2de",
-        "62e1b9e",
         "fa0feec",
         "3557cd5",
-        "5671fac",
-        "30cc414",
     ]
     good = ["20540be",
             "8aa53f1",
             "a604573",
             "e48a916",
             "8ebed06",
-            "d2e7cf9"]
-    bad = ["63aa226"]
-    return version not in bad and version in new
-    #return version in new
+            "d2e7cf9",
+            "9c2a2de",
+            "62e1b9e",
+            ]
+    bad = ["63aa226",
+           "30cc414",
+           "5671fac",
+           ]
+    return version not in bad and version not in good
+    # return version in new
 
 
 @with_git("https://git.savannah.gnu.org/git/gzip.git", limit=100,
