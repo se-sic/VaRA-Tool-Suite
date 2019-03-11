@@ -193,6 +193,7 @@ def gen_fosd_example():
              'd2e7cf9': [0, 0, 0],
              '63aa226': [0, 30, 6]})
 
+    sns.set(font_scale=1.4)
     sns.heatmap(df, cmap=sns.color_palette("Reds", n_colors=30),
                 xticklabels=["20540be",
                              "8aa53f1",
