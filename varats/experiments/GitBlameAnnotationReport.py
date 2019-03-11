@@ -79,9 +79,9 @@ class GitBlameAnntotationReport(Experiment):
         project.cflags = ["-fvara-GB"]
 
         analysis_actions = []
-        if not os.path.exists(local.path(
+        if not path.exists(local.path(
                 str(CFG["vara"]["result"].value)) / project.name + "-" +
-                              project.version + ".bc"):
+                           project.version + ".bc"):
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(project))
 

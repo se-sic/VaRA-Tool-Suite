@@ -7,6 +7,12 @@ import os
 import sys
 import argparse
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+
+
 from varats import settings
 from varats.settings import get_value_or_default, CFG
 from varats.gui.main_window import MainWindow
@@ -145,6 +151,65 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
         return BuildType.PGO
 
     return BuildType.DEV
+
+
+def gen_fosd_graph():
+    from varats.settings import CFG
+    from varats.jupyterhelper.file import load_commit_report
+
+    from pathlib import Path
+
+    reports = []
+    result_dir = Path("/home/vulder/vara/fosd_results/")
+    for file_path in result_dir.iterdir():
+        if file_path.stem.startswith("gzip"):
+            print("Loading file: ", file_path)
+            reports.append(load_commit_report(file_path))
+    # Sort with commit map
+    commits = []
+    interactions = []
+    head_interactions = []
+
+    for report in reports:
+            commits.append(report.head_commit)
+            interactions.append(report.number_of_df_interactions())
+            hi = report.number_of_head_df_interactions()
+            head_interactions.append(hi[0] + hi[1])
+
+    df=pd.DataFrame({'x': commits, 'Interactions': interactions,
+                     "HEAD Interactions": head_interactions})
+    plt.plot('x', 'Interactions', data=df, color='red')
+    plt.plot('x', 'HEAD Interactions', data=df, color='green')
+    plt.show()
+
+
+def gen_fosd_example():
+    df = pd.DataFrame(
+            {'20540be': [25, 0, 0],
+             '8aa53f1': [0, 4, 5],
+             'a604573': [0, 0, 0],
+             'e48a916': [0, 0, 0],
+             '8ebed06': [17, 14, 0],
+             'd2e7cf9': [0, 0, 0],
+             '63aa226': [0, 30, 6]})
+
+    sns.heatmap(df, cmap=sns.color_palette("Reds", n_colors=30),
+                xticklabels=["20540be",
+                             "8aa53f1",
+                             "a604573",
+                             "e48a916",
+                             "8ebed06",
+                             "d2e7cf9",
+                             "63aa226"],
+                yticklabels=["Foo",
+                             "Bar",
+                             "Bazz"],
+                vmin=0, vmax=30,
+                linewidth=1,
+                linecolor="black",
+                cbar_kws={'label': "Interactions"})
+
+    plt.show()
 
 
 def main_gen_commitmap():

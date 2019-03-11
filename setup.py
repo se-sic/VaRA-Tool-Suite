@@ -24,5 +24,7 @@ setup(name='VaRA-Tool-Suite',
               'vara-graphview = varats.driver:main_graph_view',
               'vara-buildsetup = varats.driver:build_setup',
               'vara-gen-commitmap = varats.driver:main_gen_commitmap',
+              'vara-gen-fosd-graph = varats.driver:gen_fosd_graph',
+              'vara-gen-fosd-example = varats.driver:gen_fosd_example',
           ]
       })
