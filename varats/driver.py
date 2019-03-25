@@ -7,19 +7,12 @@ import os
 import sys
 import argparse
 
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-
-
 from varats import settings
 from varats.settings import get_value_or_default, CFG
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
 from varats.vara_manager import setup_vara, BuildType
 from varats.tools.commit_map import generate_commit_map
-from varats.data.commit_report import CommitMap
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
@@ -154,85 +147,8 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
     return BuildType.DEV
 
 
-def gen_fosd_graph():
-    from varats.settings import CFG
-    from varats.jupyterhelper.file import load_commit_report
-
-    from pathlib import Path
-
-    commit_map = CommitMap("/home/vulder/vara/c_map")
-
-    reports = []
-    result_dir = Path("/home/vulder/vara/fosd_results/")
-    for file_path in result_dir.iterdir():
-        if file_path.stem.startswith("gzip"):
-            print("Loading file: ", file_path)
-            reports.append(load_commit_report(file_path))
-
-    def sorter(report):
-        return commit_map.short_time_id(report.head_commit)
-
-    reports = sorted(reports, key=sorter)
-
-    # Sort with commit map
-    commits = []
-    df_interactions = []
-    cf_interactions = []
-    head_interactions = []
-
-    for report in reports:
-            commits.append(report.head_commit)
-            df_interactions.append(report.number_of_df_interactions())
-            cf_interactions.append(report.number_of_cf_interactions())
-            hi = report.number_of_head_df_interactions()
-            head_interactions.append(hi[0] + hi[1])
-
-    df=pd.DataFrame({'x': commits, 'DFInteractions': df_interactions,
-                     'CFInteractions': cf_interactions,
-                     "HEAD Interactions": head_interactions})
-
-    ax = plt.subplot()
-
-    for label in (ax.get_xticklabels() + ax.get_yticklabels()):
-            # label.set_fontname('Arial')
-            label.set_fontsize(14)
-
-    plt.plot('x', 'DFInteractions', data=df, color='red')
-    plt.plot('x', 'CFInteractions', data=df, color='blue')
-    plt.xlabel("Revisions", **{'size': '14'})
-    plt.ylabel("Interactions", **{'size': '14'})
-    # plt.plot('x', 'HEAD Interactions', data=df, color='green')
-    plt.show()
-
-
-def gen_fosd_example():
-    df = pd.DataFrame(
-            {'20540be': [25, 0, 0],
-             '8aa53f1': [0, 4, 5],
-             'a604573': [0, 0, 0],
-             'e48a916': [0, 0, 0],
-             '8ebed06': [17, 14, 0],
-             'd2e7cf9': [0, 0, 0],
-             '63aa226': [0, 30, 6]})
-
-    sns.set(font_scale=1.4)
-    sns.heatmap(df, cmap=sns.color_palette("Reds", n_colors=30),
-                xticklabels=["20540be",
-                             "8aa53f1",
-                             "a604573",
-                             "e48a916",
-                             "8ebed06",
-                             "d2e7cf9",
-                             "63aa226"],
-                yticklabels=["Foo",
-                             "Bar",
-                             "Bazz"],
-                vmin=0, vmax=30,
-                linewidth=1,
-                linecolor="black",
-                cbar_kws={'label': "Interactions"})
-
-    plt.show()
+def main_gen_graph():
+    print("foo")
 
 
 def main_gen_commitmap():
@@ -252,7 +168,3 @@ def main_gen_commitmap():
     args = parser.parse_args()
 
     generate_commit_map(args.path, args.output, args.end, args.start)
-
-
-if __name__ == "__main__":
-    main()
