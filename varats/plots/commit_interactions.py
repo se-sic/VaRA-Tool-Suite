@@ -1,24 +1,30 @@
+"""
+Generate commit interaction graphs.
+"""
+
+from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-import seaborn as sns
 
 from varats.data.commit_report import CommitMap
+from varats.jupyterhelper.file import load_commit_report
+from varats.plots.plot_utils import check_required_args
 
 
-def gen_fosd_graph():
-    from varats.settings import CFG
-    from varats.jupyterhelper.file import load_commit_report
-
-    from pathlib import Path
-
-    commit_map = CommitMap("/home/vulder/vara/c_map")
+@check_required_args([
+    "result_folder",
+    "project",
+    "cmap"
+])
+def gen_interaction_graph(**kwargs):
+    commit_map = CommitMap(kwargs["cmap"])
+    result_dir = Path(kwargs["result_folder"])
+    project_name = kwargs["project"]
 
     reports = []
-    result_dir = Path("/home/vulder/vara/fosd_results/")
     for file_path in result_dir.iterdir():
-        if file_path.stem.startswith("gzip"):
+        if file_path.stem.startswith(project_name):
             print("Loading file: ", file_path)
             reports.append(load_commit_report(file_path))
 
@@ -29,32 +35,58 @@ def gen_fosd_graph():
 
     # Sort with commit map
     commits = []
-    df_interactions = []
     cf_interactions = []
-    head_interactions = []
+    cf_head_interactions = []
+    df_interactions = []
+    df_head_interactions = []
 
     for report in reports:
-            commits.append(report.head_commit)
-            df_interactions.append(report.number_of_df_interactions())
-            cf_interactions.append(report.number_of_cf_interactions())
-            hi = report.number_of_head_df_interactions()
-            head_interactions.append(hi[0] + hi[1])
+        commits.append(report.head_commit)
 
-    df=pd.DataFrame({'x': commits, 'DFInteractions': df_interactions,
-                     'CFInteractions': cf_interactions,
-                     "HEAD Interactions": head_interactions})
+        cf_interactions.append(report.number_of_cf_interactions())
 
-    ax = plt.subplot()
+        cf_head_interactions_raw = report.number_of_head_cf_interactions()
+        cf_head_interactions.append(cf_head_interactions_raw[0] +
+                                    cf_head_interactions_raw[1])
 
-    for label in (ax.get_xticklabels() + ax.get_yticklabels()):
-            # label.set_fontname('Arial')
-            label.set_fontsize(14)
+        df_interactions.append(report.number_of_df_interactions())
 
-    plt.plot('x', 'DFInteractions', data=df, color='red')
-    plt.plot('x', 'CFInteractions', data=df, color='blue')
-    plt.xlabel("Revisions", **{'size': '14'})
+        df_head_interactions_raw = report.number_of_head_df_interactions()
+        df_head_interactions.append(df_head_interactions_raw[0] +
+                                    df_head_interactions_raw[1])
+
+    data_frame = pd.DataFrame({'x': commits, 'DFInteractions': df_interactions,
+                               'CFInteractions': cf_interactions,
+                               'HEAD CF Interactions': cf_head_interactions,
+                               'HEAD DF Interactions': df_head_interactions})
+
+    # Interaction plot
+    axis = plt.subplot(211)
+
+    for y_label in (axis.get_yticklabels()):
+        y_label.set_fontsize(14)
+
+    for x_label in (axis.get_xticklabels()):
+        x_label.set_visible(False)
+
+    plt.plot('x', 'CFInteractions', data=data_frame, color='blue')
+    plt.plot('x', 'DFInteractions', data=data_frame, color='red')
+
     plt.ylabel("Interactions", **{'size': '14'})
-    # plt.plot('x', 'HEAD Interactions', data=df, color='green')
+
+    # Head interaction plot
+    axis = plt.subplot(212)
+
+    for y_label in (axis.get_yticklabels()):
+        y_label.set_fontsize(14)
+
+    for x_label in (axis.get_xticklabels()):
+        x_label.set_fontsize(14)
+        x_label.set_rotation(270)
+
+    plt.plot('x', 'HEAD CF Interactions', data=data_frame, color='aqua')
+    plt.plot('x', 'HEAD DF Interactions', data=data_frame, color='crimson')
+
+    plt.xlabel("Revisions", **{'size': '14'})
+    plt.ylabel("HEAD Interactions", **{'size': '14'})
     plt.show()
-
-

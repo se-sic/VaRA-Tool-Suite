@@ -13,6 +13,7 @@ from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
 from varats.vara_manager import setup_vara, BuildType
 from varats.tools.commit_map import generate_commit_map
+from varats.plots.plots import extend_parser_with_graph_args, build_graph
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
@@ -148,7 +149,21 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
 
 
 def main_gen_graph():
-    print("foo")
+    parser = argparse.ArgumentParser("VaRA graph generator")
+    parser.add_argument("-r", "--result-folder",
+                        help="Folder with result files")
+    parser.add_argument("-p", "--project", help="Project name")
+    parser.add_argument("-c", "--cmap", help="Path to commit map")
+    parser.add_argument("-g", "--graph", help="Graph type")
+
+    extend_parser_with_graph_args(parser)
+
+    args = {
+        k: v for k, v in vars(parser.parse_args()).items()
+        if v is not None
+    }
+
+    build_graph(**args)
 
 
 def main_gen_commitmap():
