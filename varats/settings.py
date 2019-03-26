@@ -61,6 +61,13 @@ CFG['db'] = {
     }
 }
 
+CFG['experiment'] = {
+    "only_missing": {
+        "default": False,
+        "desc": "Only run missing version"
+    }
+}
+
 
 def get_value_or_default(cfg, varname, default):
     """

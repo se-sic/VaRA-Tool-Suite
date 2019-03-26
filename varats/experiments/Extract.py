@@ -13,7 +13,7 @@ CFG["vara"] = {
     "result": {
         "default": "",
         "desc": "Path to store already annotated projects."
-    }
+    },
 }
 
 

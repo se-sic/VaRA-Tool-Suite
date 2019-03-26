@@ -7,6 +7,8 @@ import os
 import sys
 import argparse
 
+from pathlib import Path
+
 from varats import settings
 from varats.settings import get_value_or_default, CFG
 from varats.gui.main_window import MainWindow
@@ -172,8 +174,7 @@ def main_gen_commitmap():
     """
     parser = argparse.ArgumentParser("Commit map creator")
     parser.add_argument("path", help="Path to git repository")
-    parser.add_argument("-o", "--output", help="Output filename",
-                        default="c_map")
+    parser.add_argument("-o", "--output", help="Output filename")
     parser.add_argument("--end", help="End of the commit range (inclusive)",
                         default="HEAD")
     parser.add_argument("--start",
@@ -182,4 +183,20 @@ def main_gen_commitmap():
 
     args = parser.parse_args()
 
-    generate_commit_map(args.path, args.output, args.end, args.start)
+    if args.path.endswith(".git"):
+        path = Path(args.path[:-4])
+    else:
+        path = Path(args.path)
+
+    if args.output is None:
+        output_name = "{result_folder}/{project_name}/{file_name}.cmap".format(
+            result_folder=CFG["result_dir"],
+            project_name=path.name,
+            file_name=path.name)
+    else:
+        if args.output.endswith(".cmap"):
+            output_name = args.output
+        else:
+            output_name = args.output + ".cmap"
+
+    generate_commit_map(path, output_name, args.end, args.start)

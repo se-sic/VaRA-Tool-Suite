@@ -2,8 +2,10 @@
 Commit map module.
 """
 
+from pathlib import Path
+
 from plumbum import local
-from plumbum.cmd import git
+from plumbum.cmd import git, mkdir
 
 
 def generate_commit_map(path: str, output_filename: str, end="HEAD",
@@ -21,6 +23,8 @@ def generate_commit_map(path: str, output_filename: str, end="HEAD",
     with local.cwd(path):
         out = git("--no-pager", "log", "--pretty=format:'%H'",
                   search_range)
+
+    mkdir("-p", Path(output_filename).parent)
 
     with open(output_filename, "w") as c_map:
         for number, line in enumerate(reversed(out.split('\n'))):
