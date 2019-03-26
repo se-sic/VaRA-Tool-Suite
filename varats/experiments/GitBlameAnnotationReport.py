@@ -12,7 +12,7 @@ from plumbum import local
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import compiler, run, time
 from benchbuild.settings import CFG
-from benchbuild.utils.cmd import opt
+from benchbuild.utils.cmd import opt, mkdir
 import benchbuild.utils.actions as actions
 
 from varats.experiments.Extract import Extract
@@ -27,6 +27,10 @@ class CFRAnalysis(actions.Step):
     NAME = "CFRAnalysis"
     DESCRIPTION = "Analyses the bitcode with CFR of VaRA."
 
+    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
+    RESULT_FILE_TEMPLATE = \
+        "{project_name}-{project_version}_{project_uuid}.yaml"
+
     def __call__(self):
         """
         This step performs the actual analysis with the correct flags.
@@ -38,18 +42,28 @@ class CFRAnalysis(actions.Step):
             return
         project = self.obj
 
-        project_src = local.path(str(CFG["vara"]["result"]))
+        bc_cache_folder = local.path(Extract.BC_CACHE_FOLDER_TEMPLATE.format(
+            cache_dir=str(CFG["vara"]["result"]),
+            project_name=str(project.name)))
 
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
-        outfile = "-yaml-out-file={}".format(
-            str(CFG["vara"]["outfile"])) + "/" +\
-            str(project.name) + "-" + str(project.version) + "_" +\
-            str(project.run_uuid) + ".yaml"
+        vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
+            result_dir=str(CFG["vara"]["outfile"]),
+            project_dir=str(project.name))
+
+        mkdir("-p", vara_result_folder)
+
+        result_file = self.RESULT_FILE_TEMPLATE.format(
+            project_name=str(project.name),
+            project_version=str(project.version),
+            project_uuid=str(project.run_uuid))
+
         run_cmd = opt[
-            "-vara-BD", "-vara-CFR", outfile, project_src / project.name +
-            "-" + project.version + ".bc"]
+            "-vara-BD", "-vara-CFR", "-yaml-out-file={res_folder}/{res_file}"
+            .format(res_folder=vara_result_folder, res_file=result_file),
+            bc_cache_folder / project.name + "-" + project.version + ".bc"]
         run_cmd()
 
 
@@ -80,8 +94,13 @@ class GitBlameAnntotationReport(Experiment):
 
         analysis_actions = []
         if not path.exists(local.path(
-                str(CFG["vara"]["result"].value)) / project.name + "-" +
-                           project.version + ".bc"):
+                Extract.BC_CACHE_FOLDER_TEMPLATE.format(
+                    cache_dir=str(CFG["vara"]["result"]),
+                    project_name=str(project.name)) +
+                Extract.BC_FILE_TEMPLATE.format(
+                    project_name=str(project.name),
+                    project_version=str(project.version)))):
+
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(project))
 
