@@ -1,0 +1,30 @@
+sudo: false
+dist: xenial
+language: python
+python:
+  - "3.5"
+  - "3.6"
+  - "3.7"
+
+addons:
+  apt:
+    packages:
+      - time
+      - git
+      - libgit2-dev
+      - ninja
+
+install:
+  - pip install .
+  # - pip install -r requirements.txt
+  - pip install codecov
+  - pip install pytest-cov
+
+script:
+  - pytest --cov=./ varats tests
+  - codecov
+
+branches:
+  only:
+    - vara
+    - vara-dev

@@ -5,7 +5,6 @@ Main drivers for VaRA-TS
 
 import os
 import sys
-import string
 import argparse
 
 from varats import settings
@@ -13,7 +12,7 @@ from varats.settings import get_value_or_default, CFG
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
 from varats.vara_manager import setup_vara, BuildType
-from varats.tools.commitmap import generate_commit_map
+from varats.tools.commit_map import generate_commit_map
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
@@ -116,6 +115,12 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
     Convert a string into a BuildType
 
     Test:
+    >>> parse_string_to_build_type("DBG")
+    <BuildType.DBG: 1>
+
+    >>> parse_string_to_build_type("PGO")
+    <BuildType.PGO: 4>
+
     >>> parse_string_to_build_type("DEV")
     <BuildType.DEV: 2>
 

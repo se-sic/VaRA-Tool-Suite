@@ -4,10 +4,7 @@ Module to manage the CommitReport BarView
 
 from os import path
 
-from threading import Timer
-
-from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox,\
-                            QComboBox
+from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox
 from PyQt5.QtCore import Qt, QTimer
 
 from varats.gui.views.ui_CRBarView import Ui_Form
