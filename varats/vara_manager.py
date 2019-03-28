@@ -15,7 +15,7 @@ from varats.settings import save_config, CFG
 from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject
 
 from plumbum import local, FG
-from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake, cut
+from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
 from plumbum.commands.processes import ProcessExecutionError
 
 
@@ -156,7 +156,7 @@ def init_all_submodules(folder):
     Inits all submodules.
     """
     with local.cwd(folder):
-        git["submodule", "init"] & FG
+        git("submodule", "init")
 
 
 def update_all_submodules(folder):
@@ -164,7 +164,7 @@ def update_all_submodules(folder):
     Updates all submodules.
     """
     with local.cwd(folder):
-        git["submodule", "update"] & FG
+        git("submodule", "update")
 
 
 def pull_current_branch(repo_folder=""):
@@ -316,6 +316,20 @@ def init_vara_build(path_to_llvm, build_type: BuildType,
             run_with_output(cmake, post_out)
 
 
+def verify_build_structure(own_libgit: bool, path_to_llvm: str,
+                           post_out=lambda x: None):
+    """
+    Verify the build strucutre of VaRA:
+        - ensure status of submodules
+        - update submodules
+    """
+    if (not get_cmake_var("VARA_BUILD_LIBGIT") or not os.path.exists(
+            path_to_llvm + "/tools/VaRA/external/libgit2/CMakeLists.txt")) \
+            and own_libgit:
+        init_all_submodules(path_to_llvm + "/tools/VaRA/")
+        update_all_submodules(path_to_llvm + "/tools/VaRA/")
+
+
 def build_vara(own_libgit: bool, path_to_llvm: str, install_prefix: str,
                build_type: BuildType, post_out=lambda x: None):
     """
@@ -328,22 +342,22 @@ def build_vara(own_libgit: bool, path_to_llvm: str, install_prefix: str,
         init_vara_build(path_to_llvm, build_type, post_out)
 
     with local.cwd(full_path):
-        verify_build_structure(own_libgit, path_to_llvm, install_prefix,
-                               post_out)
+        verify_build_structure(own_libgit, path_to_llvm, post_out)
+        set_vara_cmake_variables(own_libgit, install_prefix, post_out)
         b_ninja = ninja["install"]
         run_with_output(b_ninja, post_out)
 
 
-def verify_build_structure(own_libgit: bool, path_to_llvm: str,
-                           install_prefix: str, post_out=lambda x: None):
-    if (not get_cmake_var("VARA_BUILD_LIBGIT") or not os.path.exists(
-            path_to_llvm + "/tools/VaRA/external/libgit2/CMakeLists.txt")) and own_libgit:
-        init_all_submodules(path_to_llvm + "/tools/VaRA/")
-        update_all_submodules(path_to_llvm + "/tools/VaRA/")
+def set_vara_cmake_variables(own_libgit: bool, install_prefix: str,
+                             post_out=lambda x: None):
+    """
+    Set all wanted/needed cmake flags.
+    """
     if own_libgit:
         set_cmake_var("VARA_BUILD_LIBGIT", "ON", post_out)
     else:
         set_cmake_var("VARA_BUILD_LIBGIT", "OFF", post_out)
+
     set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix, post_out)
 
 
