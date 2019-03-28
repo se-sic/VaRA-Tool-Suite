@@ -75,13 +75,12 @@ class BuildWorker(QRunnable):
     """
 
     def __init__(self, path_to_llvm, install_prefix,
-                 build_type: vara_manager.BuildType, own_libgit):
+                 build_type: vara_manager.BuildType):
         super(BuildWorker, self).__init__()
         self.signals = BuilderSignals()
         self.path_to_llvm = path_to_llvm
         self.install_prefix = install_prefix
         self.build_type = build_type
-        self.own_libgit = own_libgit
 
     def _update_text(self, text):
         self.signals.text_update.emit(text)
@@ -91,8 +90,7 @@ class BuildWorker(QRunnable):
         """
         Run, build an installs VaRA in a diffrent thread.
         """
-        vara_manager.build_vara(self.own_libgit,
-                                self.path_to_llvm,
+        vara_manager.build_vara(self.path_to_llvm,
                                 self.install_prefix,
                                 self.build_type,
                                 self._update_text)
@@ -187,8 +185,7 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         if self.checkDev.isChecked():
             worker = BuildWorker(self.__get_llvm_source_path(),
                                  self.__get_install_path(),
-                                 vara_manager.BuildType.DEV,
-                                 self.libgitButton.isChecked())
+                                 vara_manager.BuildType.DEV)
             worker.signals.finished.connect(self._build_done)
             worker.signals.text_update.connect(self._update_build_text)
             self.thread_pool.start(worker)
@@ -209,13 +206,10 @@ class BuildSetup(QWidget, Ui_BuildSetup):
             self.checkDev.setChecked(False)
             self.checkDev.show()
             self.checkOpt.show()
-            self.libgitButton.setChecked(False)
-            self.libgitButton.show()
         else:
             self.checkDev.setChecked(True)
             self.checkDev.hide()
             self.checkOpt.hide()
-            self.libgitButton.hide()
 
     def _check_state(self):
         self._check_init()

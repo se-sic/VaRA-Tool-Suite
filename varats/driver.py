@@ -62,7 +62,7 @@ def main_graph_view():
 
 def update_term(text):
     text = text.replace(os.linesep, ' ')
-    rows, columns = os.popen('stty size', 'r').read().split()
+    _, columns = os.popen('/bin/stty size', 'r').read().split()
     print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r', flush=True)
 
 
@@ -92,8 +92,6 @@ def build_setup():
                         nargs='?', default=llvm_src_dir)
     parser.add_argument("installprefix", default=llvm_install_dir, nargs='?',
                         help="Folder to install LLVM. (Optional)")
-    parser.add_argument("--own-libgit2", action="store_true", default=False,
-                        help="Uses your own Libgit.")
 
     args = parser.parse_args()
 
@@ -105,8 +103,10 @@ def build_setup():
 
     vara_version = args.version if args.version is not None else CFG['version']
 
+    own_libgit2 = bool(CFG["own_libgit2"])
+
     setup_vara(args.init, args.update, args.build, args.llvmfolder,
-               args.installprefix, args.own_libgit2, vara_version, build_type,
+               args.installprefix, own_libgit2, vara_version, build_type,
                update_term)
 
 

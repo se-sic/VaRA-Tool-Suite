@@ -128,7 +128,7 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, own_libgit,
                 update_all_submodules(llvm_folder + "/tools/VaRA/")
 
         if build:
-            build_vara(own_libgit, llvm_folder, install_prefix=install_prefix,
+            build_vara(llvm_folder, install_prefix=install_prefix,
                        build_type=build_type, post_out=post_out)
 
 
@@ -331,11 +331,12 @@ def verify_build_structure(own_libgit: bool, path_to_llvm: str,
         update_all_submodules(path_to_llvm + "/tools/VaRA/")
 
 
-def build_vara(own_libgit: bool, path_to_llvm: str, install_prefix: str,
+def build_vara(path_to_llvm: str, install_prefix: str,
                build_type: BuildType, post_out=lambda x: None):
     """
     Builds a VaRA configuration
     """
+    own_libgit = bool(CFG["own_libgit2"])
     full_path = path_to_llvm + "build/"
     if build_type == BuildType.DEV:
         full_path += "dev/"
