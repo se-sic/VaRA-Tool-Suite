@@ -2,8 +2,10 @@ import attr
 import benchbuild.utils.actions as actions
 
 from benchbuild.settings import CFG
-from benchbuild.utils.cmd import extract_bc, cp
+from benchbuild.utils.cmd import cp
+from benchbuild.utils.path import path_to_list, list_to_path
 from plumbum import local
+from os import getenv
 
 CFG["vara"] = {
     "outfile": {
@@ -31,9 +33,16 @@ class Extract(actions.Step):
             return
         project = self.obj
         project_src = local.path(project.builddir) / project.SRC_FILE /\
-            project.name
+            project.BIN_NAME
 
         with local.cwd(local.path(str(CFG["vara"]["result"]))):
+            env = CFG["env"].value
+            path = path_to_list(getenv("PATH", ""))
+            path.extend(env.get("PATH", []))
+
+            extract_bc = local["extract-bc"]
+            extract_bc = extract_bc.with_env(PATH=list_to_path(path))
             extract_bc(project_src)
+
             cp(local.path(project_src) + ".bc", local.path() /
                project.name + ".bc")
