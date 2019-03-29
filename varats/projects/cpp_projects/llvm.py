@@ -14,6 +14,7 @@ class LLVM(Project):
     GROUP = 'code'
     DOMAIN = 'analysis'
     VERSION = 'HEAD'
+    BIN_NAME = NAME
 
     SRC_FILE = NAME + "-{0}".format(VERSION)
 

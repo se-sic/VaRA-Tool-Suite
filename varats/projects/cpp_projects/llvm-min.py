@@ -12,6 +12,7 @@ class LLVMmin(LLVM):
 
     NAME = 'llvm-min'
     VERSION = 'HEAD'
+    BIN_NAME = 'llvm'
 
     SRC_FILE = NAME + "-{0}".format(VERSION)
     LLVM_VERS = "60"

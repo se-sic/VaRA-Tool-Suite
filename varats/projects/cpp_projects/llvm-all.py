@@ -12,6 +12,7 @@ class LLVMall(LLVM):
 
     NAME = 'llvm-all'
     VERSION = 'HEAD'
+    BIN_NAME = 'llvm'
 
     SRC_FILE = NAME + "-{0}".format(VERSION)
     LLVM_VERS = "60"

@@ -17,6 +17,7 @@ class Doxygen(Project):
     GROUP = 'code'
     DOMAIN = 'documentation'
     VERSION = 'HEAD'
+    BIN_NAME = NAME
 
     SRC_FILE = NAME + "-{0}".format(VERSION)
 

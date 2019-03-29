@@ -16,6 +16,7 @@ class Gravity(Project):
     GROUP = 'code'
     DOMAIN = 'UNIX utils'
     VERSION = 'HEAD'
+    BIN_NAME = NAME
 
     SRC_FILE = NAME + "-{0}".format(VERSION)
 

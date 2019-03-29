@@ -16,6 +16,7 @@ class Gzip(prj.Project):
     GROUP = 'git'
     DOMAIN = 'version control'
     VERSION = 'HEAD'
+    BIN_NAME = NAME
 
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
