@@ -2,11 +2,12 @@
 
 # Form implementation generated from reading ui file 'ExampleView.ui'
 #
-# Created by: PyQt5 UI code generator 5.11.3
+# Created by: PyQt5 UI code generator 5.12.1
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_example_view(object):
     def setupUi(self, example_view):
@@ -27,6 +28,8 @@ class Ui_example_view(object):
         example_view.setWindowTitle(_translate("example_view", "Form"))
 
 
+
+
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
@@ -35,4 +38,3 @@ if __name__ == "__main__":
     ui.setupUi(example_view)
     example_view.show()
     sys.exit(app.exec_())
-

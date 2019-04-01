@@ -2,11 +2,12 @@
 
 # Form implementation generated from reading ui file 'BuildMenu.ui'
 #
-# Created by: PyQt5 UI code generator 5.11.3
+# Created by: PyQt5 UI code generator 5.12.1
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_BuildSetup(object):
     def setupUi(self, BuildSetup):
@@ -138,6 +139,8 @@ class Ui_BuildSetup(object):
         self.checkOpt.setText(_translate("BuildSetup", "Opt"))
 
 
+
+
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
@@ -146,4 +149,3 @@ if __name__ == "__main__":
     ui.setupUi(BuildSetup)
     BuildSetup.show()
     sys.exit(app.exec_())
-

@@ -36,6 +36,10 @@ CFG = s.Configuration(
             "desc": "Result folder for collected results",
             "default": None,
         },
+        "own_libgit2": {
+            "default": True,
+            "desc": "Build own libgit2",
+        },
     }
 )
 

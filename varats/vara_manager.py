@@ -20,7 +20,7 @@ from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
 from plumbum.commands.processes import ProcessExecutionError
 
 
-def run_with_output(pb_cmd, post_out=lambda x, y: None):
+def run_with_output(pb_cmd, post_out=lambda x: None):
     """
     Run plumbum command and post output lines to function.
     """
@@ -29,13 +29,13 @@ def run_with_output(pb_cmd, post_out=lambda x, y: None):
                           stdout=sp.PIPE, stderr=sp.STDOUT) as p_gc:
             while p_gc.poll() is None:
                 for line in p_gc.stdout:
-                    post_out(line, multiline=False)
+                    post_out(line)
     except ProcessExecutionError:
-        post_out("ProcessExecutionError", multiline=True)
+        post_out("ProcessExecutionError")
 
 
 def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
-                  post_out=lambda x, y: None):
+                  post_out=lambda x: None):
     """
     Download a repo into the specified folder.
     """
@@ -66,8 +66,8 @@ class BuildType(Enum):
     PGO = 4
 
 
-def setup_vara(init, update, build, llvm_folder, install_prefix, version,
-               build_type: BuildType, post_out=lambda x, y: None):
+def setup_vara(init, update, build, llvm_folder, install_prefix, own_libgit,
+               version, build_type: BuildType, post_out=lambda x: None):
     """
     Sets up VaRA over cli.
     """
@@ -84,6 +84,9 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, version,
             download_vara(llvm_folder, post_out=post_out)
             checkout_vara_version(llvm_folder, version,
                                   build_type == BuildType.DEV)
+            if own_libgit:
+                init_all_submodules(llvm_folder + "/tools/VaRA/")
+                update_all_submodules(llvm_folder + "/tools/VaRA/")
 
     if not os.path.exists(llvm_folder):
         print("LLVM was not initialized. Please initialize LLVM with VaRA, " +
@@ -121,6 +124,8 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, version,
             pull_current_branch(llvm_folder)
             pull_current_branch(llvm_folder + "tools/clang/")
             pull_current_branch(llvm_folder + "tools/VaRA/")
+            if own_libgit:
+                update_all_submodules(llvm_folder + "/tools/VaRA/")
 
         if build:
             build_vara(llvm_folder, install_prefix=install_prefix,
@@ -145,6 +150,22 @@ def fetch_remote(remote, repo_folder=""):
     else:
         with local.cwd(repo_folder):
             git("fetch", remote)
+
+
+def init_all_submodules(folder):
+    """
+    Inits all submodules.
+    """
+    with local.cwd(folder):
+        git("submodule", "init")
+
+
+def update_all_submodules(folder):
+    """
+    Updates all submodules.
+    """
+    with local.cwd(folder):
+        git("submodule", "update")
 
 
 def pull_current_branch(repo_folder=""):
@@ -194,7 +215,7 @@ def get_download_steps():
 
 
 def download_vara(llvm_source_folder, progress_func=lambda x: None,
-                  post_out=lambda x, y: None):
+                  post_out=lambda x: None):
     """
     Downloads VaRA an all other necessary repos from github.
     """
@@ -267,16 +288,18 @@ def get_cmake_var(var_name):
     """
     Fetch the value of a cmake variable from the current cmake config.
     """
-    print(grep(var_name, "CMakeCache.txt"))
-    # TODO: find way to get cmake var
-    raise NotImplementedError
+    for line in iter(cmake("-LA", "-N", "CMakeLists.txt").splitlines()):
+        if var_name not in line:
+            continue
+        return line.split("=")[1] == "ON"
+    return False
 
 
-def set_cmake_var(var_name, value):
+def set_cmake_var(var_name, value, post_out=lambda x: None):
     """
     Sets a cmake variable in the current cmake config.
     """
-    cmake("-D" + var_name + "=" + value, ".")
+    run_with_output(cmake["-D" + var_name + "=" + value, "."], post_out)
 
 
 def init_vara_build(path_to_llvm, build_type: BuildType,
@@ -294,11 +317,26 @@ def init_vara_build(path_to_llvm, build_type: BuildType,
             run_with_output(cmake, post_out)
 
 
-def build_vara(path_to_llvm: str, install_prefix: str, build_type: BuildType,
-               post_out=lambda x: None):
+def verify_build_structure(own_libgit: bool, path_to_llvm: str,
+                           post_out=lambda x: None):
+    """
+    Verify the build strucutre of VaRA:
+        - ensure status of submodules
+        - update submodules
+    """
+    if (not get_cmake_var("VARA_BUILD_LIBGIT") or not os.path.exists(
+            path_to_llvm + "/tools/VaRA/external/libgit2/CMakeLists.txt")) \
+            and own_libgit:
+        init_all_submodules(path_to_llvm + "/tools/VaRA/")
+        update_all_submodules(path_to_llvm + "/tools/VaRA/")
+
+
+def build_vara(path_to_llvm: str, install_prefix: str,
+               build_type: BuildType, post_out=lambda x: None):
     """
     Builds a VaRA configuration
     """
+    own_libgit = bool(CFG["own_libgit2"])
     full_path = path_to_llvm + "build/"
     if build_type == BuildType.DEV:
         full_path += "dev/"
@@ -306,9 +344,24 @@ def build_vara(path_to_llvm: str, install_prefix: str, build_type: BuildType,
         init_vara_build(path_to_llvm, build_type, post_out)
 
     with local.cwd(full_path):
-        set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix)
+        verify_build_structure(own_libgit, path_to_llvm, post_out)
+        set_vara_cmake_variables(own_libgit, install_prefix, post_out)
         b_ninja = ninja["install"]
         run_with_output(b_ninja, post_out)
+
+
+def set_vara_cmake_variables(own_libgit: bool, install_prefix: str,
+                             post_out=lambda x: None):
+    """
+    Set all wanted/needed cmake flags.
+    """
+    if own_libgit:
+        set_cmake_var("VARA_BUILD_LIBGIT", "ON", post_out)
+    else:
+        set_cmake_var("VARA_BUILD_LIBGIT", "OFF", post_out)
+
+    set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix, post_out)
+
 
 ###############################################################################
 # Git Handling
