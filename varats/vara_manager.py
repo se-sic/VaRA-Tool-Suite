@@ -11,19 +11,22 @@ import subprocess as sp
 import tempfile
 
 from enum import Enum
+from threading import RLock
 from varats.settings import save_config, CFG
 
-from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject
+from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject, QThread, QProcess
 
 from plumbum import local
-from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
+from plumbum.cmd import git, mkdir, ln, grep, cmake
 from plumbum.commands.processes import ProcessExecutionError
 
 
+# TODO: rename to 'run_plumbum_with_output'
 def run_with_output(pb_cmd, post_out=lambda x: None):
     """
     Run plumbum command and post output lines to function.
     """
+    print("vara_manager: run_with_output() begin")
     try:
         with pb_cmd.bgrun(universal_newlines=True,
                           stdout=sp.PIPE, stderr=sp.STDOUT) as p_gc:
@@ -32,7 +35,12 @@ def run_with_output(pb_cmd, post_out=lambda x: None):
                     post_out(line)
     except ProcessExecutionError:
         post_out("ProcessExecutionError")
+    print("vara_manager: run_with_output() end")
 
+def run_qprocess_with_output(process: QProcess, post_out=lambda x: None):
+    output = str(process.readAllStandardOutput().data().decode('utf-8'))
+    for line in output.splitlines(True):
+        post_out(line)
 
 def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
                   post_out=lambda x: None):
@@ -52,8 +60,11 @@ def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
         if repo_name is not None:
             args.append(repo_name)
 
-        git_clone = git[args]
-        run_with_output(git_clone, post_out)
+        proc = QProcess()
+        proc.setProcessChannelMode(QProcess.MergedChannels)
+        proc.readyReadStandardOutput.connect(lambda: run_qprocess_with_output(proc, post_out))
+        ProcessManager.start_process(proc, "git", args)
+        proc.waitForFinished(-1)
 
 
 class BuildType(Enum):
@@ -137,57 +148,74 @@ def add_remote(repo_folder, remote, url):
     Adds new remote to the repository.
     """
     with local.cwd(repo_folder):
-        git("remote", "add", remote, url)
-        git("fetch", remote)
+        proc = QProcess()
+        ProcessManager.start_process(proc, "git", ["remote", "add", remote, url])
+        proc.waitForFinished(-1)
+
+        proc = QProcess()
+        ProcessManager.start_process(proc, "git", ["fetch", remote])
+        proc.waitForFinished(-1)
 
 
 def fetch_remote(remote, repo_folder=""):
     """
     Fetches the new changes from the remote.
     """
+    proc = QProcess()
+
     if repo_folder == '':
-        git("fetch", remote)
+        ProcessManager.start_process(proc, "git", ["fetch", remote])
     else:
         with local.cwd(repo_folder):
-            git("fetch", remote)
+            ProcessManager.start_process(proc, "git", ["fetch", remote])
+    proc.waitForFinished(-1)
 
 
 def init_all_submodules(folder):
     """
     Inits all submodules.
     """
+    proc = QProcess()
     with local.cwd(folder):
-        git("submodule", "init")
+        ProcessManager.start_process(proc, "git", ["submodule", "init"])
+    proc.waitForFinished(-1)
 
 
 def update_all_submodules(folder):
     """
     Updates all submodules.
     """
+    proc = QProcess()
     with local.cwd(folder):
-        git("submodule", "update")
+        ProcessManager.start_process(proc, "git", ["submodule", "update"])
+    proc.waitForFinished(-1)
 
 
 def pull_current_branch(repo_folder=""):
     """
     Pull in changes in a certain branch.
     """
+    proc = QProcess()
     if repo_folder == '':
-        git("pull")
+        ProcessManager.start_process(proc, "git", ["pull"])
     else:
         with local.cwd(repo_folder):
-            git("pull")
+            ProcessManager.start_process(proc, "git", ["pull"])
+    proc.waitForFinished(-1)
 
 
 def fetch_current_branch(repo_folder=""):
     """
     Pull in changes in a certain branch.
     """
+    proc = QProcess()
     if repo_folder == '':
-        git("fetch")
+        ProcessManager.start_process(proc, "git", ["fetch"])
     else:
         with local.cwd(repo_folder):
-            git("fetch")
+            ProcessManager.start_process(proc, "git", ["fetch"])
+    proc.waitForFinished(-1)
+
 
 
 def checkout_branch(repo_folder, branch):
@@ -195,7 +223,9 @@ def checkout_branch(repo_folder, branch):
     Checks out a branch in the repository.
     """
     with local.cwd(repo_folder):
-        git("checkout", branch)
+        proc = QProcess()
+        ProcessManager.start_process(proc, "git", ["checkout", branch])
+        proc.waitForFinished(-1)
 
 
 def checkout_new_branch(repo_folder, branch, remote_branch):
@@ -203,7 +233,9 @@ def checkout_new_branch(repo_folder, branch, remote_branch):
     Checks out a new branch in the repository.
     """
     with local.cwd(repo_folder):
-        git("checkout", "-b", branch, remote_branch)
+        proc = QProcess()
+        ProcessManager.start_process(proc, "git", ["checkout", "-b", branch, remote_branch])
+        proc.waitForFinished(-1)
 
 
 def get_download_steps():
@@ -299,7 +331,11 @@ def set_cmake_var(var_name, value, post_out=lambda x: None):
     """
     Sets a cmake variable in the current cmake config.
     """
-    run_with_output(cmake["-D" + var_name + "=" + value, "."], post_out)
+    proc = QProcess()
+    proc.setProcessChannelMode(QProcess.MergedChannels)
+    proc.readyReadStandardOutput.connect(lambda: run_qprocess_with_output(proc, post_out))
+    ProcessManager.start_process(proc, "cmake", ["-D" + var_name + "=" + value, "."])
+    proc.waitForFinished(-1)
 
 
 def init_vara_build(path_to_llvm, build_type: BuildType,
@@ -313,8 +349,11 @@ def init_vara_build(path_to_llvm, build_type: BuildType,
 
     with local.cwd(full_path):
         if build_type == BuildType.DEV:
-            cmake = local["./build_cfg/build-dev.sh"]
-            run_with_output(cmake, post_out)
+            proc = QProcess()
+            proc.setProcessChannelMode(QProcess.MergedChannels)
+            proc.readyReadStandardOutput.connect(lambda: run_qprocess_with_output(proc, post_out))
+            ProcessManager.start_process(proc, "./build_cfg/build-dev.sh", [])
+            proc.waitForFinished(-1)
 
 
 def verify_build_structure(own_libgit: bool, path_to_llvm: str,
@@ -340,14 +379,24 @@ def build_vara(path_to_llvm: str, install_prefix: str,
     full_path = path_to_llvm + "build/"
     if build_type == BuildType.DEV:
         full_path += "dev/"
+    print("vara_manager: build_vara() - 1")
     if not os.path.exists(full_path):
         init_vara_build(path_to_llvm, build_type, post_out)
 
     with local.cwd(full_path):
+        print("vara_manager: build_vara() - 2")
         verify_build_structure(own_libgit, path_to_llvm, post_out)
+        print("vara_manager: build_vara() - 3")
         set_vara_cmake_variables(own_libgit, install_prefix, post_out)
-        b_ninja = ninja["install"]
-        run_with_output(b_ninja, post_out)
+        print("vara_manager: build_vara() - 4")
+
+        proc = QProcess()
+        proc.setProcessChannelMode(QProcess.MergedChannels)
+        proc.readyReadStandardOutput.connect(lambda: run_qprocess_with_output(proc, post_out))
+        ProcessManager.start_process(proc, "ninja", ["install"])
+        print("vara_manager: build_vara() - 5")
+        proc.waitForFinished(-1)
+        print("vara_manager: build_vara() - 6")
 
 
 def set_vara_cmake_variables(own_libgit: bool, install_prefix: str,
@@ -502,6 +551,80 @@ class PullWorker(QRunnable):
         pull_current_branch(self.llvm_folder + "tools/clang/")
         pull_current_branch(self.llvm_folder + "tools/VaRA/")
         self.check_state.possible_state_change.emit()
+
+
+class ProcessManager:
+    __instance = None
+
+    @staticmethod
+    def getInstance():
+        if ProcessManager.__instance == None:
+            ProcessManager()
+        return ProcessManager.__instance
+
+    @staticmethod
+    def start_process(process: QProcess, program: str, args: [str]):
+        ProcessManager.getInstance().__start_process(process, program, args)
+
+    @staticmethod
+    def shutdown():
+        inst = ProcessManager.getInstance()
+        with inst.mutex:
+            inst.__shutdown()
+            inst.__terminate_all_processes(block=False)
+
+    @staticmethod
+    def terminate_all_processes(block=False):
+        ProcessManager.getInstance().__terminate_all_processes(block)
+
+    def __init__(self):
+        if ProcessManager.__instance != None:
+            raise Exception("This class is a singleton!")
+        else:
+            ProcessManager.__instance = self
+
+        self.has_shutdown = False
+        self.processes = []
+        self.mutex = RLock()
+
+    def __process_finished(self):
+        print("ProcessManager: __process__finished() begin")
+        with self.mutex:
+            self.processes = [x for x in self.processes if x.state() != QProcess.NotRunning]
+            print("ProcessManager: __process__finished() end")
+
+    def __start_process(self, process: QProcess, program: str, args: [str]):
+        print("ProcessManager: __start_process() begin")
+        with self.mutex:
+            process.finished.connect(self.__process_finished)
+            self.processes.append(process)
+            process.start(program, args)
+            print("ProcessManager: __start_process() end")
+
+    def __shutdown(self):
+        print("ProcessManager: __shutdown() begin")
+        with self.mutex:
+            self.has_shutdown = True
+            print("ProcessManager: __shutdown() end")
+
+    def __terminate_all_processes(self, block=False):
+        print("ProcessManager: __terminate_all_processes() begin")
+        with self.mutex:
+            for process in self.processes:
+                process.finished.disconnect(self.__process_finished)
+                process.kill()
+                #process.terminate()
+                if block:
+                    print("ProcessManager: Waiting for process to terminate!")
+                    process.waitForFinished(-1)
+                    print("ProcessManager: Finished waiting!")
+            self.processes.clear()
+            print("ProcessManager: __terminate_all_processes() end")
+
+    def __del__(self):
+        with self.mutex:
+            self.__shutdown()
+            self.__terminate_all_processes(block=False)
 
 
 class VaRAStateManager(object):

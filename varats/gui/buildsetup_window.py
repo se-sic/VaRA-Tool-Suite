@@ -5,12 +5,13 @@ import os
 import re
 
 from PyQt5.QtWidgets import QWidget, QShortcut
-from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject
+from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject, QProcess
 from PyQt5.QtGui import QTextCursor, QKeySequence
 
 from varats.settings import CFG, get_value_or_default, save_config
 from varats.gui.views.ui_BuildMenu import Ui_BuildSetup
 from varats import vara_manager
+from varats.vara_manager import ProcessManager
 
 
 class WorkerSignals(QObject):
@@ -90,11 +91,13 @@ class BuildWorker(QRunnable):
         """
         Run, build an installs VaRA in a diffrent thread.
         """
+        print("BuildWorker: run() begin")
         vara_manager.build_vara(self.path_to_llvm,
                                 self.install_prefix,
                                 self.build_type,
                                 self._update_text)
         self.signals.finished.emit()
+        print("BuildWorker: run() finished")
 
 
 class BuildSetup(QWidget, Ui_BuildSetup):

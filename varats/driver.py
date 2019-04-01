@@ -11,10 +11,11 @@ from varats import settings
 from varats.settings import get_value_or_default, CFG
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
-from varats.vara_manager import setup_vara, BuildType
+from varats.vara_manager import setup_vara, BuildType, ProcessManager
 from varats.tools.commit_map import generate_commit_map
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt5.QtCore import QThreadPool
 
 
 class VaRATSGui:
@@ -39,7 +40,13 @@ class VaRATSGui:
 
     def main(self):
         """Setup and Run Qt application"""
-        sys.exit(self.app.exec_())
+        ret = self.app.exec_()
+        print("driver: Shutting down...")
+        ProcessManager.shutdown()
+        thread_pool = QThreadPool.globalInstance()
+        thread_count = thread_pool.activeThreadCount()
+        print("driver: thread_count: {}".format(thread_count))
+        sys.exit(ret)
 
 
 class VaRATSSetup:
