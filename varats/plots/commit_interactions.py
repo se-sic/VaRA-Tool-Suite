@@ -24,7 +24,8 @@ def gen_interaction_graph(**kwargs):
 
     reports = []
     for file_path in result_dir.iterdir():
-        if file_path.stem.startswith(project_name):
+        if file_path.stem.startswith(str(project_name) +
+                                     "-"):
             print("Loading file: ", file_path)
             reports.append(load_commit_report(file_path))
 

@@ -5,6 +5,7 @@ This class implements the commit-flow report (CFR) analysis of the variability-
 aware region analyzer (VaRA).
 For annotation we use the git-blame data of git.
 """
+import random
 from os import path
 from pathlib import Path
 
@@ -112,29 +113,44 @@ class GitBlameAnntotationReport(Experiment):
 
         return analysis_actions
 
+    @staticmethod
+    def __sample_num_versions(versions):
+        sample_size = int(V_CFG["experiment"]["sample_limit"])
+        versions = [versions[i] for i in
+                    sorted(random.sample(range(len(versions)),
+                                         min(sample_size, len(versions))))]
+        return versions
+
     def sample(self, prj_cls, versions):
         """
         Adapt version sampling process if needed, otherwise fallback to default
         implementation.
         """
+        if bool(V_CFG["experiment"]["random_order"]):
+            random.shuffle(versions)
+
         if bool(V_CFG["experiment"]["only_missing"]):
             res_dir = Path("{result_folder}/{project_name}/"
                            .format(result_folder=V_CFG["result_dir"],
                                    project_name=str(prj_cls.NAME)))
 
             processed_version = []
-            for res_file in res_dir.iterdir():
-                if not str(res_file.stem).startswith(
-                        "{}-".format(prj_cls.NAME)):
-                    continue
-                match = CR.FILE_NAME_REGEX.search(res_file.stem)
-                processed_version.append(match.group("file_commit_hash"))
+            if res_dir.exists():
+                for res_file in res_dir.iterdir():
+                    if not str(res_file.stem).startswith(
+                            "{}-".format(prj_cls.NAME)):
+                        continue
+                    match = CR.FILE_NAME_REGEX.search(res_file.stem)
+                    processed_version.append(match.group("file_commit_hash"))
 
-            versions = [vers for vers in prj_cls.versions()
+            versions = [vers for vers in versions
                         if vers not in processed_version]
             if not versions:
                 print("Could not find any unprocessed versions.")
                 return
+
+            if V_CFG["experiment"]["sample_limit"].value is not None:
+                versions = self.__sample_num_versions(versions)
 
             head, *tail = versions
             yield head
@@ -142,5 +158,8 @@ class GitBlameAnntotationReport(Experiment):
                 for version in tail:
                     yield version
         else:
+            if V_CFG["experiment"]["sample_limit"].value is not None:
+                versions = self.__sample_num_versions(versions)
+
             for val in Experiment.sample(self, prj_cls, versions):
                 yield val

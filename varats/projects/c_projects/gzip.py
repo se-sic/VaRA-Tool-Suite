@@ -1,3 +1,7 @@
+"""
+Project file for gzip.
+"""
+from plumbum import local
 from benchbuild.settings import CFG
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
@@ -5,7 +9,7 @@ import benchbuild.project as prj
 from benchbuild.utils.cmd import make
 from benchbuild.utils.download import with_git
 
-from plumbum import local
+from varats.paper.paper_config import project_filter_generator
 
 
 def filter_func(version):
@@ -30,12 +34,12 @@ def filter_func(version):
            "30cc414",
            "5671fac",
            ]
-    return version not in bad and version not in good
-    # return version in new
+    return True
 
 
 @with_git("https://git.savannah.gnu.org/git/gzip.git", limit=100,
-          refspec="HEAD", version_filter=filter_func)
+          refspec="HEAD",
+          version_filter=project_filter_generator("gzip"))
 class Gzip(prj.Project):
     """ Compression and decompression tool Gzip (fetched by Git) """
 

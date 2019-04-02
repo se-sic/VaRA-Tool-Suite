@@ -143,9 +143,11 @@ class CommitReport():
                 self.finfos[finfo.name] = finfo
 
             self.region_mappings = dict()
-            for raw_r_mapping in raw_infos['region-mapping']:
-                r_mapping = RegionMapping(raw_r_mapping)
-                self.region_mappings[r_mapping.id] = r_mapping
+            raw_region_mapping = raw_infos['region-mapping']
+            if raw_region_mapping is not None:
+                for raw_r_mapping in raw_region_mapping:
+                    r_mapping = RegionMapping(raw_r_mapping)
+                    self.region_mappings[r_mapping.id] = r_mapping
 
             gedges = next(documents)
             self.graph_info = dict()
