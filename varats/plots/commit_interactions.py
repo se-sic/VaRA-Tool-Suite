@@ -18,7 +18,9 @@ from varats.plots.plot_utils import check_required_args
     "cmap"
 ])
 def gen_interaction_graph(**kwargs):
-    commit_map = CommitMap(kwargs["cmap"])
+    with open(kwargs["cmap"], "r") as c_map_file:
+        commit_map = CommitMap(c_map_file.readlines())
+
     result_dir = Path(kwargs["result_folder"])
     project_name = kwargs["project"]
 

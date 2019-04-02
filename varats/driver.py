@@ -15,7 +15,7 @@ from varats.settings import get_value_or_default,\
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
 from varats.vara_manager import setup_vara, BuildType
-from varats.tools.commit_map import generate_commit_map
+from varats.tools.commit_map import generate_commit_map, store_commit_map
 from varats.plots.plots import extend_parser_with_graph_args, build_graph
 from varats.utils.cli_util import cli_yn_choice
 
@@ -237,4 +237,5 @@ def main_gen_commitmap():
         else:
             output_name = args.output + ".cmap"
 
-    generate_commit_map(path, output_name, args.end, args.start)
+    cmap = generate_commit_map(path, args.end, args.start)
+    store_commit_map(cmap, output_name)

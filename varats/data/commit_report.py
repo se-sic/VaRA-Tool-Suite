@@ -324,12 +324,11 @@ class CommitMap():
     Provides a mapping from commit hash to additional informations.
     """
 
-    def __init__(self, path):
+    def __init__(self, stream):
         self.__hash_to_id = dict()
-        with open(path, "r") as c_map_file:
-            for line in c_map_file.readlines():
-                slices = line.strip().split(', ')
-                self.__hash_to_id[slices[1]] = int(slices[0])
+        for line in stream:
+            slices = line.strip().split(', ')
+            self.__hash_to_id[slices[1]] = int(slices[0])
 
     def time_id(self, c_hash):
         """
@@ -343,6 +342,10 @@ class CommitMap():
         for key in self.__hash_to_id:
             if key.startswith(c_hash):
                 return self.__hash_to_id[key]
+
+    def write_to_file(self, target_file):
+        for item in self.__hash_to_id.items():
+            target_file.write("{}, {}\n".format(item[1], item[0]))
 
 
 ###############################################################################
