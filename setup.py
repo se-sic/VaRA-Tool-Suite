@@ -27,5 +27,6 @@ setup(name='VaRA-Tool-Suite',
           ],
           "console_scripts": [
               'vara-gen-graph = varats.driver:main_gen_graph',
+              'vara-gen-bbconfig = varats.driver:main_gen_benchbuild_config',
           ]
       })

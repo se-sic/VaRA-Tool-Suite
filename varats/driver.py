@@ -10,12 +10,14 @@ import argparse
 from pathlib import Path
 
 from varats import settings
-from varats.settings import get_value_or_default, CFG
+from varats.settings import get_value_or_default,\
+    CFG, generate_benchbuild_config, save_config
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
 from varats.vara_manager import setup_vara, BuildType
 from varats.tools.commit_map import generate_commit_map
 from varats.plots.plots import extend_parser_with_graph_args, build_graph
+from varats.utils.cli_util import cli_yn_choice
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
@@ -63,14 +65,10 @@ def main_graph_view():
     driver.main()
 
 
-def update_term(text, multiline=False):
-    if not multiline:
-        text = text.replace(os.linesep, ' ')
-        _, columns = os.popen('stty size', 'r').read().split()
-        print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r',
-              flush=True)
-    else:
-        print(text)
+def update_term(text):
+    text = text.replace(os.linesep, ' ')
+    _, columns = os.popen('/bin/stty size', 'r').read().split()
+    print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r', flush=True)
 
 
 def build_setup():
@@ -110,8 +108,11 @@ def build_setup():
 
     vara_version = args.version if args.version is not None else CFG['version']
 
+    own_libgit2 = bool(CFG["own_libgit2"])
+
     setup_vara(args.init, args.update, args.build, args.llvmfolder,
-               args.installprefix, vara_version, build_type, update_term)
+               args.installprefix, own_libgit2, vara_version, build_type,
+               update_term)
 
 
 def parse_string_to_build_type(build_type: str) -> BuildType:
@@ -166,6 +167,43 @@ def main_gen_graph():
     }
 
     build_graph(**args)
+
+
+def main_gen_benchbuild_config():
+    """
+    Main function for the benchbuild config creator.
+
+    `vara-gen-bbconfig`
+    """
+    parser = argparse.ArgumentParser("Benchbuild config generator.")
+    parser.add_argument("--bb-root",
+                        help="Set an alternative BenchBuild root folder.")
+    if settings.CFG["config_file"].value is None:
+        if cli_yn_choice("Error! No VaRA config found. Should we create one?"):
+            save_config()
+        else:
+            sys.exit()
+
+    args = parser.parse_args()
+    if args.bb_root is not None:
+        if os.path.isabs(str(args.bb_root)):
+            bb_root_path = str(args.bb_root)
+        else:
+            bb_root_path = os.path.dirname(str(CFG["config_file"])) +\
+                "/" + str(args.bb_root)
+
+        print("Setting BB path to: ", bb_root_path)
+        CFG["benchbuild_root"] = bb_root_path
+        save_config()
+
+    if CFG["benchbuild_root"].value is None:
+        CFG["benchbuild_root"] = os.path.dirname(str(CFG["config_file"]))\
+                                                 + "/benchbuild"
+        print("Setting BB path to: ", CFG["benchbuild_root"])
+        save_config()
+
+    generate_benchbuild_config(CFG, str(CFG["benchbuild_root"]) +
+                               "/.benchbuild.yml")
 
 
 def main_gen_commitmap():
