@@ -6,6 +6,7 @@ Main drivers for VaRA-TS
 import os
 import sys
 import argparse
+from argparse_utils import enum_action
 
 from pathlib import Path
 
@@ -18,6 +19,8 @@ from varats.vara_manager import setup_vara, BuildType
 from varats.tools.commit_map import generate_commit_map, store_commit_map
 from varats.plots.plots import extend_parser_with_graph_args, build_graph
 from varats.utils.cli_util import cli_yn_choice
+from varats.paper.case_study import SamplingMethod, generate_case_study,\
+    store_case_study
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
@@ -212,12 +215,23 @@ def main_gen_commitmap():
     """
     parser = argparse.ArgumentParser("Commit map creator")
     parser.add_argument("path", help="Path to git repository")
-    parser.add_argument("-o", "--output", help="Output filename")
     parser.add_argument("--end", help="End of the commit range (inclusive)",
                         default="HEAD")
     parser.add_argument("--start",
                         help="Start of the commit range (exclusive)",
                         default=None)
+    parser.add_argument("--case-study", action="store_true",
+                        help="Generate case study instead of commit map.")
+
+    cm_group = parser.add_argument_group("commit_map")
+    cm_group.add_argument("-o", "--output", help="Output filename")
+
+    cs_group = parser.add_argument_group("case_study")
+    cs_group.add_argument("--distribution",
+                          action=enum_action(SamplingMethod))
+    cs_group.add_argument("--paper-path", help="Path to paper folder.")
+    cs_group.add_argument("--num-rev", type=int, default=10,
+                          help="Number of revisions to select.")
 
     args = parser.parse_args()
 
@@ -238,4 +252,16 @@ def main_gen_commitmap():
             output_name = args.output + ".cmap"
 
     cmap = generate_commit_map(path, args.end, args.start)
-    store_commit_map(cmap, output_name)
+    if args.case_study:
+        if args.distribution is None:
+            parser.error("--case-study requires --distribution")
+        if args.paper_path is None:
+            parser.error("--case-study requires --paper-path")
+
+        case_study = generate_case_study(args.distribution,
+                                         args.num_rev,
+                                         cmap,
+                                         path.stem.replace("-HEAD", ""))
+        store_case_study(case_study, Path(args.paper_path))
+    else:
+        store_commit_map(cmap, output_name)

@@ -343,6 +343,12 @@ class CommitMap():
             if key.startswith(c_hash):
                 return self.__hash_to_id[key]
 
+    def mappings_items(self):
+        """
+        Get an iterator over the mappings items.
+        """
+        return self.__hash_to_id.items()
+
     def write_to_file(self, target_file):
         for item in self.__hash_to_id.items():
             target_file.write("{}, {}\n".format(item[1], item[0]))
