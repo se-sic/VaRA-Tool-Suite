@@ -237,6 +237,8 @@ def main_gen_commitmap():
     cs_group.add_argument("--paper-path", help="Path to paper folder.")
     cs_group.add_argument("--num-rev", type=int, default=10,
                           help="Number of revisions to select.")
+    cs_group.add_argument("--version", type=int, default=0,
+                          help="Case study version.")
 
     args = parser.parse_args()
 
@@ -266,7 +268,8 @@ def main_gen_commitmap():
         case_study = generate_case_study(args.distribution,
                                          args.num_rev,
                                          cmap,
-                                         path.stem.replace("-HEAD", ""))
+                                         path.stem.replace("-HEAD", ""),
+                                         args.version)
         store_case_study(case_study, Path(args.paper_path))
     else:
         store_commit_map(cmap, output_name)

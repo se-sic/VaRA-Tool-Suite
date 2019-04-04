@@ -10,7 +10,7 @@ from varats.paper import case_study as cs
 
 YAML_CASE_STUDY = """!CaseStudy
 _CaseStudy__project_name: gzip
-_CaseStudy__versions:
+_CaseStudy__revisions:
 - !HashIDTuple
   _HashIDTuple__commit_hash: 7620b817357d6f14356afd004ace2da426cf8c36
   _HashIDTuple__commit_id: 494
@@ -41,6 +41,7 @@ _CaseStudy__versions:
 - !HashIDTuple
   _HashIDTuple__commit_hash: b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a
   _HashIDTuple__commit_id: 41
+_CaseStudy__version: 1
 """
 
 
@@ -62,37 +63,43 @@ class TestCaseStudy(unittest.TestCase):
         """
         self.assertEqual(self.case_study.project_name, "gzip")
 
-    def test_num_versions(self):
+    def test_num_revisions(self):
         """
-        Check if all versions were loaded correctly.
+        Check if all revisions were loaded correctly.
         """
-        self.assertEqual(len(self.case_study.versions), 10)
+        self.assertEqual(len(self.case_study.revisions), 10)
 
-    def test_has_versions(self):
+    def test_version(self):
         """
-        Check if certain versions were loaded correctly.
+        Check if all revisions were loaded correctly.
+        """
+        self.assertEqual(self.case_study.version, 1)
+
+    def test_has_revisions(self):
+        """
+        Check if certain revisions were loaded correctly.
         """
         self.assertTrue(
-            self.case_study.has_version(
+            self.case_study.has_revision(
                 "b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"))
-        self.assertTrue(self.case_study.has_version("b8b25e7f15"))
-        self.assertTrue(self.case_study.has_version("a3db5806d01"))
-        self.assertTrue(self.case_study.has_version("a3"))
+        self.assertTrue(self.case_study.has_revision("b8b25e7f15"))
+        self.assertTrue(self.case_study.has_revision("a3db5806d01"))
+        self.assertTrue(self.case_study.has_revision("a3"))
 
         self.assertFalse(
-            self.case_study.has_version(
+            self.case_study.has_revision(
                 "42b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"))
-        self.assertFalse(self.case_study.has_version("42"))
+        self.assertFalse(self.case_study.has_revision("42"))
 
     def test_gen_filter(self):
         """
-        Check if the project generates a version filter.
+        Check if the project generates a revision filter.
         """
-        version_filter = self.case_study.get_version_filter()
+        revision_filter = self.case_study.get_revision_filter()
         self.assertTrue(
-            version_filter("b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"))
-        self.assertTrue(version_filter("b8b25e7f15"))
+            revision_filter("b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"))
+        self.assertTrue(revision_filter("b8b25e7f15"))
 
         self.assertFalse(
-            version_filter("42b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"))
-        self.assertFalse(version_filter("42"))
+            revision_filter("42b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"))
+        self.assertFalse(revision_filter("42"))

@@ -1,5 +1,5 @@
 """
-A case studie to ping down project settings and the exact set of versions that
+A case studie to ping down project settings and the exact set of revisions that
 should be analysed.
 """
 
@@ -61,9 +61,10 @@ class CaseStudy(yaml.YAMLObject):
     yaml_loader = yaml.SafeLoader
     yaml_tag = u'!CaseStudy'
 
-    def __init__(self, project_name):
+    def __init__(self, project_name, version):
         self.__project_name = project_name
-        self.__versions = []
+        self.__version = version
+        self.__revisions = []
 
     @property
     def project_name(self):
@@ -74,49 +75,56 @@ class CaseStudy(yaml.YAMLObject):
         return self.__project_name
 
     @property
-    def versions(self):
+    def version(self):
         """
-        Project versions that are part of this case study.
+        Version ID for this case study.
         """
-        return [x.commit_hash for x in self.__versions]
+        return self.__version
 
-    def has_version(self, version: str):
+    @property
+    def revisions(self):
         """
-        Check if a version is part of this case study.
+        Project revisions that are part of this case study.
         """
-        for cs_version in self.__versions:
-            if cs_version.commit_hash.startswith(version):
+        return [x.commit_hash for x in self.__revisions]
+
+    def has_revision(self, revision: str):
+        """
+        Check if a revision is part of this case study.
+        """
+        for cs_revision in self.__revisions:
+            if cs_revision.commit_hash.startswith(revision):
                 return True
 
         return False
 
-    def include_version(self, version, commit_id):
+    def include_revision(self, revision, commit_id):
         """
-        Add a version to this case study.
+        Add a revision to this case study.
         """
-        if not self.has_version(version):
-            self.__versions.append(HashIDTuple(version, commit_id))
+        if not self.has_revision(revision):
+            self.__revisions.append(HashIDTuple(revision, commit_id))
 
-    def include_versions(self, versions: [(str, int)]):
+    def include_revisions(self, revisions: [(str, int)]):
         """
-        Add multiple versions to this case study.
+        Add multiple revisions to this case study.
 
         Args:
-            versions: List of tuples with commit_hash and id
+            revisions: List of tuples with commit_hash and id
         """
-        for version in versions:
-            self.include_version(version[0], version[1])
+        for revision in revisions:
+            self.include_revision(revision[0], revision[1])
 
-    def get_version_filter(self):
+    def get_revision_filter(self):
         """
-        Generate a case study specific version filter that only allows version
-        that are part of the case study.
+        Generate a case study specific revision filter that only allows
+        revision that are part of the case study.
         """
 
-        def version_filter(version):
-            return self.has_version(version)
+        def revision_filter(revision):
+            return self.has_revision(revision)
 
-        return version_filter
+        return revision_filter
 
 
 ###############################################################################
@@ -134,7 +142,8 @@ class SamplingMethod(Enum):
 
 
 def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
-                        cmap, project_name: str) -> CaseStudy:
+                        cmap, project_name: str,
+                        case_study_version: int) -> CaseStudy:
     """
     Generate a case study for a given project.
 
@@ -142,7 +151,7 @@ def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
     given project and persists the selected set into a case study for
     evaluation.
     """
-    case_study = CaseStudy(project_name)
+    case_study = CaseStudy(project_name, case_study_version)
     items = sorted([x for x in cmap.mappings_items()], key=lambda x: x[1])
 
     if sampling_method == SamplingMethod.half_norm:
@@ -157,7 +166,7 @@ def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
         random.choice(len(items), num_samples, p=probabilities), reverse=True)
     for idx in idxs:
         item = items[idx]
-        case_study.include_version(item[0], item[1])
+        case_study.include_revision(item[0], item[1])
 
     return case_study
 
@@ -166,6 +175,7 @@ def store_case_study(case_study: CaseStudy, paper_path: str):
     """
     Store case study to file.
     """
-    with open(paper_path / str(case_study.project_name + ".case_study"),
-              "w") as cs_file:
+    file_name = "{project_name}_{version}.case_study".format(
+        project_name=case_study.project_name, version=case_study.version)
+    with open(paper_path / file_name, "w") as cs_file:
         cs_file.write(yaml.dump(case_study))

@@ -26,11 +26,15 @@ class PaperConfig():
                  if x.suffix == ".case_study"]:
             with open(case_study_file, "r") as cs_file:
                 case_study = yaml.safe_load(cs_file)
-                self.__case_studies[case_study.project_name] = case_study
+                if case_study.project_name in self.__case_studies.keys():
+                    self.__case_studies[case_study.project_name].append(
+                        case_study)
+                else:
+                    self.__case_studies[case_study.project_name] = [case_study]
 
-    def get_case_study(self, cs_name):
+    def get_case_studies(self, cs_name):
         """
-        Return case study with name `cs_name`.
+        Return case studies with project name `cs_name`.
         """
         return self.__case_studies[cs_name]
 
@@ -42,10 +46,25 @@ class PaperConfig():
 
     def get_filter_for_case_study(self, cs_name):
         """
-        Return case study specific version filter.
+        Return case study specific revision filter.
+        If a one case study includes a revision it should be considered.
+
+        Returns: True if a revision should be considered, False if it should
+                 be filtered.
         """
         if self.has_case_study(cs_name):
-            return self.get_case_study(cs_name).get_version_filter()
+            rev_filters = [
+                cs.get_revision_filter()
+                for cs in self.get_case_studies(cs_name)
+            ]
+
+            def multi_case_study_rev_filter(revision):
+                for rev_filter in rev_filters:
+                    if rev_filter(revision):
+                        return True
+                return False
+
+            return multi_case_study_rev_filter
 
         return lambda x: False
 
@@ -60,8 +79,9 @@ class PaperConfig():
         Persist the current state of the paper config.
         """
         for case_study in self.__case_studies.values():
-            with open(self.__path / str(case_study.project_name +
-                                        ".case_study"), "w") as cs_file:
+            with open(
+                    self.__path / str(case_study.project_name + ".case_study"),
+                    "w") as cs_file:
                 cs_file.write(yaml.dump(case_study))
 
     def __str__(self):
@@ -73,16 +93,17 @@ class PaperConfig():
 
 def project_filter_generator(project_name):
     """
-    Generate project specific version filters.
-    - if no paper config is loaded, we allow all versions
-    - otherwise the paper config generates a specific version filter
+    Generate project specific revision filters.
+    - if no paper config is loaded, we allow all revisions
+    - otherwise the paper config generates a specific revision filter
     """
     if CFG["paper_config"]["current_config"].value is None:
         return lambda x: True
 
     if not is_paper_config_loaded():
-        load_paper_config(str(CFG["paper_config"]["folder"]) + "/" +
-                          str(CFG["paper_config"]["current_config"]))
+        load_paper_config(
+            str(CFG["paper_config"]["folder"]) + "/" +
+            str(CFG["paper_config"]["current_config"]))
 
     return get_paper_config().get_filter_for_case_study(project_name)
 
