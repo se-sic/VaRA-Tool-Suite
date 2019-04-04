@@ -3,10 +3,7 @@ Test case study
 """
 
 import unittest
-import unittest.mock as mock
 import yaml
-
-from varats.paper import case_study as cs
 
 YAML_CASE_STUDY = """!CaseStudy
 _CaseStudy__project_name: gzip
