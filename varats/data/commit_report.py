@@ -343,9 +343,9 @@ class CommitMap():
             if key.startswith(c_hash):
                 return self.__hash_to_id[key]
 
-    def mappings_items(self):
+    def mapping_items(self):
         """
-        Get an iterator over the mappings items.
+        Get an iterator over the mapping items.
         """
         return self.__hash_to_id.items()
 

@@ -152,7 +152,7 @@ def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
     evaluation.
     """
     case_study = CaseStudy(project_name, case_study_version)
-    items = sorted([x for x in cmap.mappings_items()], key=lambda x: x[1])
+    items = sorted([x for x in cmap.mapping_items()], key=lambda x: x[1])
 
     if sampling_method == SamplingMethod.half_norm:
         print("Using half-normal distribution")
