@@ -2,7 +2,7 @@
 General plots module.
 """
 
-from varats.plots.commit_interactions import gen_interaction_graph 
+from varats.plots.commit_interactions import gen_interaction_graph
 
 
 def extend_parser_with_graph_args(parser):

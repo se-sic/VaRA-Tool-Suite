@@ -11,6 +11,11 @@ from scipy.stats import halfnorm
 
 
 class HashIDTuple(yaml.YAMLObject):
+    """
+    Combining a commit hash with a unique and ordered id, starting with 0 for
+    the first commit in the repository.
+    """
+
     yaml_loader = yaml.SafeLoader
     yaml_tag = u'!HashIDTuple'
 
@@ -44,6 +49,15 @@ class HashIDTuple(yaml.YAMLObject):
 
 
 class CaseStudy(yaml.YAMLObject):
+    """
+    A case study persists a set of configuration values for a project to allow
+    easy reevaluation.
+
+    Stored values:
+     - name of the related benchbuild.project
+     - a set of revisions
+    """
+
     yaml_loader = yaml.SafeLoader
     yaml_tag = u'!CaseStudy'
 
@@ -98,6 +112,7 @@ class CaseStudy(yaml.YAMLObject):
         Generate a case study specific version filter that only allows version
         that are part of the case study.
         """
+
         def version_filter(version):
             return self.has_version(version)
 
@@ -108,18 +123,27 @@ class CaseStudy(yaml.YAMLObject):
 # Case study generation
 ###############################################################################
 
+
 class SamplingMethod(Enum):
+    """
+    Enum for all currently supported sampling methods.
+    """
+
     uniform = 1
     half_norm = 2
 
 
-def generate_case_study(sampling_method: SamplingMethod,
-                        num_samples: int,
-                        cmap,
-                        project_name: str) -> CaseStudy:
+def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
+                        cmap, project_name: str) -> CaseStudy:
+    """
+    Generate a case study for a given project.
+
+    This function will draw `num_samples` revisions from the history of the
+    given project and persists the selected set into a case study for
+    evaluation.
+    """
     case_study = CaseStudy(project_name)
-    items = sorted([x for x in cmap.mappings_items()],
-                   key=lambda x: x[1])
+    items = sorted([x for x in cmap.mappings_items()], key=lambda x: x[1])
 
     if sampling_method == SamplingMethod.half_norm:
         print("Using half-normal distribution")
@@ -129,8 +153,8 @@ def generate_case_study(sampling_method: SamplingMethod,
         probabilities = random.uniform(0, 1.0, len(items))
 
     probabilities /= probabilities.sum()
-    idxs = sorted(random.choice(len(items), num_samples, p=probabilities),
-                  reverse=True)
+    idxs = sorted(
+        random.choice(len(items), num_samples, p=probabilities), reverse=True)
     for idx in idxs:
         item = items[idx]
         case_study.include_version(item[0], item[1])
@@ -139,6 +163,9 @@ def generate_case_study(sampling_method: SamplingMethod,
 
 
 def store_case_study(case_study: CaseStudy, paper_path: str):
-    with open(paper_path / str(case_study.project_name +
-                               ".case_study"), "w") as cs_file:
+    """
+    Store case study to file.
+    """
+    with open(paper_path / str(case_study.project_name + ".case_study"),
+              "w") as cs_file:
         cs_file.write(yaml.dump(case_study))

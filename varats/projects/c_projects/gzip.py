@@ -37,9 +37,11 @@ def filter_func(version):
     return True
 
 
-@with_git("https://git.savannah.gnu.org/git/gzip.git", limit=100,
-          refspec="HEAD",
-          version_filter=project_filter_generator("gzip"))
+@with_git(
+    "https://git.savannah.gnu.org/git/gzip.git",
+    limit=100,
+    refspec="HEAD",
+    version_filter=project_filter_generator("gzip"))
 class Gzip(prj.Project):
     """ Compression and decompression tool Gzip (fetched by Git) """
 
@@ -56,10 +58,10 @@ class Gzip(prj.Project):
     def compile(self):
         self.download()
 
-        self.cflags += ["-Wno-error=string-plus-int",
-                        "-Wno-error=shift-negative-value",
-                        "-Wno-string-plus-int",
-                        "-Wno-shift-negative-value"]
+        self.cflags += [
+            "-Wno-error=string-plus-int", "-Wno-error=shift-negative-value",
+            "-Wno-string-plus-int", "-Wno-shift-negative-value"
+        ]
 
         clang = cc(self)
         with local.cwd(self.SRC_FILE):

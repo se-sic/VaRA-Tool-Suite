@@ -155,9 +155,14 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
 
 
 def main_gen_graph():
+    """
+    Main function for the graph generator.
+
+    `vara-gen-graph`
+    """
     parser = argparse.ArgumentParser("VaRA graph generator")
-    parser.add_argument("-r", "--result-folder",
-                        help="Folder with result files")
+    parser.add_argument(
+        "-r", "--result-folder", help="Folder with result files")
     parser.add_argument("-p", "--project", help="Project name")
     parser.add_argument("-c", "--cmap", help="Path to commit map")
     parser.add_argument("-g", "--graph", help="Graph type")
@@ -165,8 +170,8 @@ def main_gen_graph():
     extend_parser_with_graph_args(parser)
 
     args = {
-        k: v for k, v in vars(parser.parse_args()).items()
-        if v is not None
+        k: v
+        for k, v in vars(parser.parse_args()).items() if v is not None
     }
 
     build_graph(**args)

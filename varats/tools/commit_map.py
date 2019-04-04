@@ -22,8 +22,7 @@ def generate_commit_map(path: str, end="HEAD", start=None):
     search_range += end
 
     with local.cwd(path):
-        out = git("--no-pager", "log", "--pretty=format:'%H'",
-                  search_range)
+        out = git("--no-pager", "log", "--pretty=format:'%H'", search_range)
 
         def format_stream():
             for number, line in enumerate(reversed(out.split('\n'))):

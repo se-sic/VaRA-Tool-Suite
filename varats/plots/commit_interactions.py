@@ -12,12 +12,12 @@ from varats.jupyterhelper.file import load_commit_report
 from varats.plots.plot_utils import check_required_args
 
 
-@check_required_args([
-    "result_folder",
-    "project",
-    "cmap"
-])
+@check_required_args(["result_folder", "project", "cmap"])
 def gen_interaction_graph(**kwargs):
+    """
+    Generate a plot, showing the amount of interactions between commits and
+    interactions between the HEAD commit and all others.
+    """
     with open(kwargs["cmap"], "r") as c_map_file:
         commit_map = CommitMap(c_map_file.readlines())
 
@@ -26,8 +26,7 @@ def gen_interaction_graph(**kwargs):
 
     reports = []
     for file_path in result_dir.iterdir():
-        if file_path.stem.startswith(str(project_name) +
-                                     "-"):
+        if file_path.stem.startswith(str(project_name) + "-"):
             print("Loading file: ", file_path)
             reports.append(load_commit_report(file_path))
 
@@ -58,18 +57,21 @@ def gen_interaction_graph(**kwargs):
         df_head_interactions.append(df_head_interactions_raw[0] +
                                     df_head_interactions_raw[1])
 
-    data_frame = pd.DataFrame({'x': commits, 'DFInteractions': df_interactions,
-                               'CFInteractions': cf_interactions,
-                               'HEAD CF Interactions': cf_head_interactions,
-                               'HEAD DF Interactions': df_head_interactions})
+    data_frame = pd.DataFrame({
+        'x': commits,
+        'DFInteractions': df_interactions,
+        'CFInteractions': cf_interactions,
+        'HEAD CF Interactions': cf_head_interactions,
+        'HEAD DF Interactions': df_head_interactions
+    })
 
     # Interaction plot
     axis = plt.subplot(211)
 
-    for y_label in (axis.get_yticklabels()):
+    for y_label in axis.get_yticklabels():
         y_label.set_fontsize(14)
 
-    for x_label in (axis.get_xticklabels()):
+    for x_label in axis.get_xticklabels():
         x_label.set_visible(False)
 
     plt.plot('x', 'CFInteractions', data=data_frame, color='blue')
@@ -80,10 +82,10 @@ def gen_interaction_graph(**kwargs):
     # Head interaction plot
     axis = plt.subplot(212)
 
-    for y_label in (axis.get_yticklabels()):
+    for y_label in axis.get_yticklabels():
         y_label.set_fontsize(14)
 
-    for x_label in (axis.get_xticklabels()):
+    for x_label in axis.get_xticklabels():
         x_label.set_fontsize(14)
         x_label.set_rotation(270)
 
