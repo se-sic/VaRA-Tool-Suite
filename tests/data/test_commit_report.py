@@ -358,6 +358,7 @@ class TestCommitConnectionGenerators(unittest.TestCase):
         Test generation of interaction links
         """
         links = generate_interactions(self.commit_report, self.cmap)[1]
+        links = links.sort_values(by=['source']).reset_index(drop=True)
         self.assertEqual(links.at[0, 'source'],
                          "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5")
         self.assertEqual(links.at[0, 'target'],
@@ -365,9 +366,9 @@ class TestCommitConnectionGenerators(unittest.TestCase):
         self.assertEqual(links.at[0, 'value'], 1)
         self.assertEqual(links.at[0, 'src_id'], 10)
 
-        self.assertEqual(links.at[1, 'source'],
+        self.assertEqual(links.at[2, 'source'],
                          "95ace546d3f6c5909a636017f141784105f9dab2")
-        self.assertEqual(links.at[1, 'target'],
+        self.assertEqual(links.at[2, 'target'],
                          "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5")
-        self.assertEqual(links.at[1, 'value'], 1)
-        self.assertEqual(links.at[1, 'src_id'], 9)
+        self.assertEqual(links.at[2, 'value'], 1)
+        self.assertEqual(links.at[2, 'src_id'], 9)
