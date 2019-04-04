@@ -92,6 +92,28 @@ To upgrade VaRA to a new release, for example, `release_70`, use:
     └── experiments
 ```
 
+### Running experiments and analysing projects
+VaRA-TS provides different experiments and projects.
+In order to execute an experiment on a project we use BenchBuild, the empirical-research toolkit.
+
+#### Setup: Generate BenchBuild config
+First, generating the BenchBuild config is done with:
+```console
+vara-gen-bbconfig
+```
+
+#### Running BenchBuild experiments
+Then, we can run an experiment like `GitBlameAnnotationReport` on provided projects, in this case we use `gzip`.
+```console
+benchbuild -vv run -E GitBlameAnnotationReport gzip
+```
+
+#### Creating a CaseStudy
+If one wants to fix the analysed revisions. Create a paper folder, where your paper config should be save. Then, create a case study that fixes the revision to be analysed. Here, VaRA-TS can use different sampling methods to choose revisions from the projects history.
+```console
+vara-gen-commitmap PATH_TO_REPO --case-study --distribution half_norm --num-rev 10 --paper-path PATH_TO_PAPER_CONF_DIR
+```
+
 ### Running tests
 Running all python tests: 
 ```bash
