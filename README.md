@@ -114,7 +114,7 @@ vara-gen-commitmap PATH_TO_REPO --case-study --distribution half_norm --num-rev 
 Created case studies should be grouped into folders, e.g., a set of case studies used for a paper.
 This allows the tool suite to tell BenchBuild which revisions should be analyzed to evaluate a set of case studies for a paper.
 
-## Extending the tool suite.
+## Extending the tool suite
 VaRA-TS allows the user to extend it with different projects, experiments, and data representations.
 
 ### BenchBuild Projects
