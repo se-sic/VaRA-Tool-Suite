@@ -7,6 +7,13 @@
 | vara    | [![Build Status](https://travis-ci.org/se-passau/VaRA-Tool-Suite.svg?branch=vara)](https://travis-ci.org/se-passau/VaRA-Tool-Suite) |
 | vara-dev| [![Build Status](https://travis-ci.org/se-passau/VaRA-Tool-Suite.svg?branch=vara-dev)](https://travis-ci.org/se-passau/VaRA-Tool-Suite) |
 
+## Using VaRA with VaRA-TS
+VaRA is a variability-aware framework to analyze interactions between code regions that convey a semantic meaning for the researcher, e.g., `CommitRegions` represent blocks of code that belongs to the same commit.
+Our tool suite allows the researcher to automatically run analyses provided by VaRA on different software projects.
+For this, we provides different preconfigured experiments and projects.
+Experiments abstract the actions that should be taken when analyzing a project, e.g., build, analyze, generate result graph.
+Projects describe how a software project should be configured and build, e.g., `gzip` provides all necessary information to checkout, configure, and compile the project.
+
 ## Setup Tool Suite
 
 ### Install dependencies
@@ -78,6 +85,38 @@ To upgrade VaRA to a new release, for example, `release_70`, use:
     vara-buildsetup -u --version 70
 ```
 
+## Running experiments and analyzing projects
+VaRA-TS provides different preconfigured experiments and projects.
+In order to execute an experiment on a project we use BenchBuild an empirical-research toolkit.
+
+### Setup: Configuring BenchBuild
+First, we need to generate a configuration file for BenchBuild, this is done with:
+```console
+vara-gen-bbconfig
+```
+
+### Running BenchBuild experiments
+Second, we run an experiment like `GitBlameAnnotationReport` on provided projects, in this case we use `gzip`.
+```console
+benchbuild -vv run -E GitBlameAnnotationReport gzip
+```
+The generated result files are place in the `vara/results/$PROJECT_NAME` folder and can be further visualized with VaRA-TS graph generators.
+
+### Creating a CaseStudy
+If one wants to analyze a particular set of revisions or wants to reevaluate the same revision over and over again, we can fix the analyzed revisions by creating a `CaseStudy`. First, create a folder, where your config should be save. Then, create a case study that fixes the revision to be analyzed.
+In order to ease the creation of case studies VaRA-TS offers different sampling methods to choose revisions from the projects history based on a probability distribution.
+
+For example, we can generate a new case study for `gzip`, drawing 10 revision from the projects history based on a half-normal distribution, with:
+```console
+vara-gen-commitmap PATH_TO_REPO --case-study --distribution half_norm --num-rev 10 --paper-path PATH_TO_PAPER_CONF_DIR
+```
+
+Created case studies should be grouped into folders, e.g., a set of case studies used for a paper.
+This allows the tool suite to tell BenchBuild which revisions should be analyzed to evaluate a set of case studies for a paper.
+
+## Extending the tool suite.
+VaRA-TS allows the user to extend it with different projects, experiments, and data representations.
+
 ### BenchBuild Projects
 `VaRA-TS` defines a set of projects that can be analyzed with `benchbuild`.
 ```console
@@ -90,28 +129,6 @@ To upgrade VaRA to a new release, for example, `release_70`, use:
 ```console
     benchbuild
     └── experiments
-```
-
-### Running experiments and analysing projects
-VaRA-TS provides different experiments and projects.
-In order to execute an experiment on a project we use BenchBuild, the empirical-research toolkit.
-
-#### Setup: Generate BenchBuild config
-First, generating the BenchBuild config is done with:
-```console
-vara-gen-bbconfig
-```
-
-#### Running BenchBuild experiments
-Then, we can run an experiment like `GitBlameAnnotationReport` on provided projects, in this case we use `gzip`.
-```console
-benchbuild -vv run -E GitBlameAnnotationReport gzip
-```
-
-#### Creating a CaseStudy
-If one wants to fix the analysed revisions. Create a paper folder, where your paper config should be save. Then, create a case study that fixes the revision to be analysed. Here, VaRA-TS can use different sampling methods to choose revisions from the projects history.
-```console
-vara-gen-commitmap PATH_TO_REPO --case-study --distribution half_norm --num-rev 10 --paper-path PATH_TO_PAPER_CONF_DIR
 ```
 
 ### Running tests
