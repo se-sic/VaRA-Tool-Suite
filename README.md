@@ -87,7 +87,7 @@ To upgrade VaRA to a new release, for example, `release_70`, use:
 
 ## Running experiments and analyzing projects
 VaRA-TS provides different preconfigured experiments and projects.
-In order to execute an experiment on a project we use BenchBuild an empirical-research toolkit.
+In order to execute an experiment on a project we use BenchBuild, an empirical-research toolkit.
 
 ### Setup: Configuring BenchBuild
 First, we need to generate a configuration file for BenchBuild, this is done with:
@@ -103,7 +103,7 @@ benchbuild -vv run -E GitBlameAnnotationReport gzip
 The generated result files are place in the `vara/results/$PROJECT_NAME` folder and can be further visualized with VaRA-TS graph generators.
 
 ### Creating a CaseStudy
-If one wants to analyze a particular set of revisions or wants to reevaluate the same revision over and over again, we can fix the analyzed revisions by creating a `CaseStudy`. First, create a folder, where your config should be save. Then, create a case study that fixes the revision to be analyzed.
+If one wants to analyze a particular set of revisions or wants to reevaluate the same revision over and over again, we can fix the analyzed revisions by creating a `CaseStudy`. First, create a folder, where your config should be saved. Then, create a case study that fixes the revision to be analyzed.
 In order to ease the creation of case studies VaRA-TS offers different sampling methods to choose revisions from the projects history based on a probability distribution.
 
 For example, we can generate a new case study for `gzip`, drawing 10 revision from the projects history based on a half-normal distribution, with:
