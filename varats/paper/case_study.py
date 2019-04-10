@@ -1,5 +1,5 @@
 """
-A case studie to ping down project settings and the exact set of revisions that
+A case study to pin down project settings and the exact set of revisions that
 should be analysed.
 """
 
@@ -157,7 +157,7 @@ def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
     if sampling_method == SamplingMethod.half_norm:
         print("Using half-normal distribution")
         probabilities = halfnorm.rvs(scale=1, size=len(items))
-    elif sampling_method == sorted(SamplingMethod.uniform):
+    elif sampling_method == SamplingMethod.uniform:
         print("Using uniform distribution")
         probabilities = random.uniform(0, 1.0, len(items))
 
