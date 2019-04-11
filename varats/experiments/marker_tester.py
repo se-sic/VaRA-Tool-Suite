@@ -48,8 +48,9 @@ class TraceBinaryCreator(base.Extension):
 
         fake_file_name = src_file.replace(".cpp", "_fake.ll")
 
-        clang_stage_1 = command["-stdlib=libc++", "-fvara-handleRM=High", "-S",
-                                "-emit-llvm", "-o", fake_file_name, src_file]
+        clang_stage_1 = command[self.extra_ldflags, "-Qunused-arguments",
+                                "-fvara-handleRM=High", "-S", "-emit-llvm",
+                                "-o", fake_file_name, src_file]
         with run.track_execution(clang_stage_1, self.project,
                                  self.experiment) as _run:
             res.append(_run())
