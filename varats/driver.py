@@ -218,27 +218,29 @@ def main_gen_commitmap():
     """
     Create a commit map for a repository.
     """
-    parser = argparse.ArgumentParser("Commit map creator")
+    parser = argparse.ArgumentParser("vara-gen-commitmap")
     parser.add_argument("path", help="Path to git repository")
-    parser.add_argument("--end", help="End of the commit range (inclusive)",
-                        default="HEAD")
-    parser.add_argument("--start",
-                        help="Start of the commit range (exclusive)",
-                        default=None)
-    parser.add_argument("--case-study", action="store_true",
-                        help="Generate case study instead of commit map.")
+    parser.add_argument(
+        "--end", help="End of the commit range (inclusive)", default="HEAD")
+    parser.add_argument(
+        "--start", help="Start of the commit range (exclusive)", default=None)
 
-    cm_group = parser.add_argument_group("commit_map")
-    cm_group.add_argument("-o", "--output", help="Output filename")
+    sub_parsers = parser.add_subparsers(
+        help="File type to generate.", dest="command")
+    cm_parser = sub_parsers.add_parser('cmap', help="Generate a commit map.")
+    cm_parser.add_argument("-o", "--output", help="Output filename")
 
-    cs_group = parser.add_argument_group("case_study")
-    cs_group.add_argument("--distribution",
-                          action=enum_action(SamplingMethod))
-    cs_group.add_argument("--paper-path", help="Path to paper folder.")
-    cs_group.add_argument("--num-rev", type=int, default=10,
-                          help="Number of revisions to select.")
-    cs_group.add_argument("--version", type=int, default=0,
-                          help="Case study version.")
+    cs_parser = sub_parsers.add_parser(
+        'case-study', help="Generate a case study.")
+    cs_parser.add_argument("distribution", action=enum_action(SamplingMethod))
+    cs_parser.add_argument("paper_path", help="Path to paper folder.")
+    cs_parser.add_argument(
+        "--num-rev",
+        type=int,
+        default=10,
+        help="Number of revisions to select.")
+    cs_parser.add_argument(
+        "--version", type=int, default=0, help="Case study version.")
 
     args = parser.parse_args()
 
@@ -247,29 +249,28 @@ def main_gen_commitmap():
     else:
         path = Path(args.path)
 
-    if args.output is None:
-        output_name = "{result_folder}/{project_name}/{file_name}.cmap".format(
-            result_folder=CFG["result_dir"],
-            project_name=path.name,
-            file_name=path.name)
-    else:
-        if args.output.endswith(".cmap"):
-            output_name = args.output
-        else:
-            output_name = args.output + ".cmap"
+    if not path.exists():
+        raise argparse.ArgumentTypeError("Repository path does not exist")
 
     cmap = generate_commit_map(path, args.end, args.start)
-    if args.case_study:
-        if args.distribution is None:
-            parser.error("--case-study requires --distribution")
-        if args.paper_path is None:
-            parser.error("--case-study requires --paper-path")
+    if args.command == 'case-study':
+        paper_path = Path(args.paper_path)
+        if not paper_path.exists():
+            raise argparse.ArgumentTypeError("Paper path does not exist")
 
-        case_study = generate_case_study(args.distribution,
-                                         args.num_rev,
-                                         cmap,
+        case_study = generate_case_study(args.distribution, args.num_rev, cmap,
                                          path.stem.replace("-HEAD", ""),
                                          args.version)
-        store_case_study(case_study, Path(args.paper_path))
+        store_case_study(case_study, paper_path)
     else:
+        if args.output is None:
+            output_name = "{result_folder}/{project_name}/{file_name}.cmap".format(
+                result_folder=CFG["result_dir"],
+                project_name=path.name,
+                file_name=path.name)
+        else:
+            if args.output.endswith(".cmap"):
+                output_name = args.output
+            else:
+                output_name = args.output + ".cmap"
         store_commit_map(cmap, output_name)
