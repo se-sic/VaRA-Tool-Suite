@@ -112,7 +112,26 @@ vara-gen-commitmap PATH_TO_REPO --case-study --distribution half_norm --num-rev 
 ```
 
 Created case studies should be grouped into folders, e.g., a set of case studies used for a paper.
-This allows the tool suite to tell BenchBuild which revisions should be analyzed to evaluate a set of case studies for a paper.
+This allows the tool suite to tell BenchBuild which revisions should be analyzed to evaluate a set of case studies for a paper. For example, a setup could look like:
+```console
+paper_configs
+    ├── ase-17
+    │       ├── gzip_0.case_study
+    │       ├── gzip_1.case_study
+    │       └── git_0.case_study
+    └── icse-18
+            ├── gzip_0.case_study
+            └── git_0.case_study
+```
+In this example, we got two paper configs, one for `ase-17` another for `icse-18`. We see different case studies for `gzip` and `git`, notice here that we can create multiple case studies for one project. If we now want to evaluate our set for `icse-18` we set the paper-config folder to the root of our config tree and select the `icse-18` folder as our current config.
+```yaml
+paper_config:
+    current_config:
+        value: icse-18
+    folder:
+        value: /home/foo/vara/paper_configs/
+```
+Next, we can run our experiment with BenchBuild as usual. During experiment execution BenchBuild will load our config and only evaluate the needed revisions.
 
 ## Extending the tool suite
 VaRA-TS allows the user to extend it with different projects, experiments, and data representations.
