@@ -13,7 +13,7 @@ class Tmux(Project):
     """ Terminal multiplexer Tmux """
 
     NAME = 'tmux'
-    GROUP = 'code'
+    GROUP = 'c_projects'
     DOMAIN = 'UNIX utils'
     VERSION = 'HEAD'
 

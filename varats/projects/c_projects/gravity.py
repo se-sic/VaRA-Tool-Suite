@@ -13,7 +13,7 @@ class Gravity(Project):
     """ Programming language Gravity """
 
     NAME = 'gravity'
-    GROUP = 'code'
+    GROUP = 'c_projects'
     DOMAIN = 'UNIX utils'
     VERSION = 'HEAD'
 
