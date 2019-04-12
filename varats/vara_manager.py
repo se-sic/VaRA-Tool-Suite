@@ -9,15 +9,110 @@ import os
 import re
 import subprocess as sp
 import tempfile
+from pathlib import Path
 
 from enum import Enum
-from varats.settings import save_config, CFG
 
 from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject
 
 from plumbum import local
 from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
 from plumbum.commands.processes import ProcessExecutionError
+
+from varats.settings import save_config, CFG
+
+
+class LLVMProject():
+    """
+    A sub project of LLVM.
+    """
+
+    def __init__(self, name: str, URL: str, sub_path: str):
+        self.__name = name
+        self.__url = URL
+        self.__sub_path = Path(sub_path)
+
+    @property
+    def name(self):
+        """
+        Name of the project
+        """
+        return self.__name
+
+    @property
+    def url(self):
+        """
+        Repository URL
+        """
+        return self.__url
+
+    @property
+    def path(self) -> Path:
+        """
+        Path to the project folder within llvm.
+        """
+        return self.__sub_path
+
+
+class LLVMProjects(Enum):
+    """
+    Mapping of all LLVM projects to paths.
+    """
+    clang = LLVMProject("clang", "", "tools/clang")
+    vara = LLVMProject("VaRA", "", "tools/VaRA")
+    clang_extra = LLVMProject("clang_extra", "", "tools/clang/tools/extra")
+    compiler_rt = LLVMProject("compiler-rt", "", "projects/compiler-rt")
+    lld = LLVMProject("lld", "", "tools/lld")
+
+    def __str__(self):
+        return str(self.value)
+
+    @property
+    def path(self):
+        """
+        Path to the project within llvm.
+        """
+        return self.value.path
+
+    def is_vara_project(self) -> bool:
+        """
+        Checks if this a VaRA controled projected.
+        """
+        return self is LLVMProjects.clang or self is LLVMProjects.vara
+
+    def is_extra_project(self) -> bool:
+        """
+        Checks wether this is an external llvm project.
+        """
+        return not self.is_vara_project()
+
+
+class VaRAProjectsIter(object):
+    def __init__(self):
+        self.__llvm_project_iter = iter(LLVMProjects)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        while True:
+            val = next(self.__llvm_project_iter)
+            if val.is_vara_project():
+                return val
+
+
+class VaRAExtraProjectsIter(object):
+    def __init__(self):
+        self.__llvm_project_iter = iter(LLVMProjects)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        while True:
+            val = next(self.__llvm_project_iter)
+            if val.is_extra_project():
+                return val
 
 
 def run_with_output(pb_cmd, post_out=lambda x: None):
@@ -72,9 +167,11 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, own_libgit,
     Sets up VaRA over cli.
     """
 
+    if not isinstance(llvm_folder, Path):
+        llvm_folder = Path(llvm_folder)
+
     CFG["llvm_source_dir"] = llvm_folder
     CFG["llvm_install_dir"] = install_prefix
-    #CFG["version"] = version
     save_config()
 
     if init:
@@ -85,8 +182,8 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, own_libgit,
             checkout_vara_version(llvm_folder, version,
                                   build_type == BuildType.DEV)
             if own_libgit:
-                init_all_submodules(llvm_folder + "/tools/VaRA/")
-                update_all_submodules(llvm_folder + "/tools/VaRA/")
+                init_all_submodules(llvm_folder / LLVMProjects.vara.path)
+                update_all_submodules(llvm_folder / LLVMProjects.vara.path)
 
     if not os.path.exists(llvm_folder):
         print("LLVM was not initialized. Please initialize LLVM with VaRA, " +
@@ -95,37 +192,33 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, own_libgit,
         if update:
             if str(CFG["version"]) != str(version):
                 fetch_current_branch(llvm_folder)
-                fetch_current_branch(llvm_folder + "tools/clang/")
-                fetch_current_branch(llvm_folder + "tools/clang/tools/extra/")
-                fetch_current_branch(llvm_folder + "tools/VaRA/")
-                fetch_current_branch(llvm_folder + "tools/lld/")
-                fetch_current_branch(llvm_folder + "projects/compiler-rt/")
+
+                for project in LLVMProjects:
+                    fetch_current_branch(llvm_folder / project.path)
 
                 version_name = ""
                 version_name += str(version)
                 if build_type == BuildType.DEV:
                     version_name += "-dev"
                 checkout_branch(llvm_folder, "vara-" + version_name)
-                checkout_branch(llvm_folder + "/tools/clang/", "vara-" +
-                                version_name)
+                checkout_branch(llvm_folder / LLVMProjects.clang.path,
+                                "vara-" + version_name)
                 if build_type == BuildType.DEV:
-                    checkout_branch(llvm_folder + "/tools/VaRA/", "vara-dev")
+                    checkout_branch(llvm_folder / LLVMProjects.vara.path,
+                                    "vara-dev")
 
-                checkout_branch(llvm_folder + "/tools/clang/tools/extra/",
-                                "release_" + str(version))
-                checkout_branch(llvm_folder + "/tools/lld/",
-                                "release_" + str(version))
-                checkout_branch(llvm_folder + "/projects/compiler-rt/",
-                                "release_" + str(version))
+                for project in VaRAExtraProjectsIter():
+                    checkout_branch(llvm_folder / project.path,
+                                    "release_" + str(version))
 
                 CFG["version"] = int(version)
                 save_config()
 
             pull_current_branch(llvm_folder)
-            pull_current_branch(llvm_folder + "tools/clang/")
-            pull_current_branch(llvm_folder + "tools/VaRA/")
+            pull_current_branch(llvm_folder / LLVMProjects.clang.path)
+            pull_current_branch(llvm_folder / LLVMProjects.vara.path)
             if own_libgit:
-                update_all_submodules(llvm_folder + "/tools/VaRA/")
+                update_all_submodules(llvm_folder / LLVMProjects.vara.path)
 
         if build:
             build_vara(llvm_folder, install_prefix=install_prefix,
