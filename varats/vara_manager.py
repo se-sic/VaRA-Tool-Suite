@@ -218,7 +218,7 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, own_libgit,
     if not isinstance(llvm_folder, Path):
         llvm_folder = Path(llvm_folder)
 
-    CFG["llvm_source_dir"] = llvm_folder
+    CFG["llvm_source_dir"] = str(llvm_folder)
     CFG["llvm_install_dir"] = install_prefix
     save_config()
 
@@ -445,12 +445,13 @@ def set_cmake_var(var_name, value, post_out=lambda x: None):
     run_with_output(cmake["-D" + var_name + "=" + value, "."], post_out)
 
 
-def init_vara_build(path_to_llvm, build_type: BuildType,
+def init_vara_build(path_to_llvm: Path,
+                    build_type: BuildType,
                     post_out=lambda x: None):
     """
     Initialize a VaRA build config.
     """
-    full_path = path_to_llvm + "build/"
+    full_path = path_to_llvm / "build/"
     if not os.path.exists(full_path):
         os.makedirs(full_path)
 
@@ -460,7 +461,8 @@ def init_vara_build(path_to_llvm, build_type: BuildType,
             run_with_output(cmake, post_out)
 
 
-def verify_build_structure(own_libgit: bool, path_to_llvm: str,
+def verify_build_structure(own_libgit: bool,
+                           path_to_llvm: Path,
                            post_out=lambda x: None):
     """
     Verify the build strucutre of VaRA:
@@ -468,21 +470,23 @@ def verify_build_structure(own_libgit: bool, path_to_llvm: str,
         - update submodules
     """
     if (not get_cmake_var("VARA_BUILD_LIBGIT") or not os.path.exists(
-            path_to_llvm + "/tools/VaRA/external/libgit2/CMakeLists.txt")) \
+            path_to_llvm / "/tools/VaRA/external/libgit2/CMakeLists.txt")) \
             and own_libgit:
-        init_all_submodules(path_to_llvm + "/tools/VaRA/")
-        update_all_submodules(path_to_llvm + "/tools/VaRA/")
+        init_all_submodules(path_to_llvm / LLVMProjects.vara.path)
+        update_all_submodules(path_to_llvm / LLVMProjects.vara.path)
 
 
-def build_vara(path_to_llvm: str, install_prefix: str,
-               build_type: BuildType, post_out=lambda x: None):
+def build_vara(path_to_llvm: Path,
+               install_prefix: str,
+               build_type: BuildType,
+               post_out=lambda x: None):
     """
     Builds a VaRA configuration
     """
     own_libgit = bool(CFG["own_libgit2"])
-    full_path = path_to_llvm + "build/"
+    full_path = path_to_llvm / "build/"
     if build_type == BuildType.DEV:
-        full_path += "dev/"
+        full_path /= "dev/"
     if not os.path.exists(full_path):
         init_vara_build(path_to_llvm, build_type, post_out)
 
@@ -551,11 +555,11 @@ class GitStatus(object):
         return "Error"
 
 
-def get_llvm_project_status(llvm_folder, project_folder="") -> GitStatus:
+def get_llvm_project_status(llvm_folder: Path, project_folder="") -> GitStatus:
     """
     Retrieve the git status of a llvm project.
     """
-    with local.cwd(llvm_folder + project_folder):
+    with local.cwd(llvm_folder / project_folder):
         fetch_remote('origin')
         git_status = git['status']
         stdout = git_status('-sb')
@@ -568,11 +572,11 @@ def get_llvm_project_status(llvm_folder, project_folder="") -> GitStatus:
     return GitStatus(GitState.ERROR)
 
 
-def get_vara_status(llvm_folder) -> GitStatus:
+def get_vara_status(llvm_folder: Path) -> GitStatus:
     """
     Retrieve the git status of VaRA.
     """
-    with local.cwd(llvm_folder + 'tools/VaRA'):
+    with local.cwd(llvm_folder / LLVMProjects.vara.path):
         fetch_remote('origin')
         git_status = git['status']
         stdout = git_status('-sb')
@@ -609,9 +613,9 @@ class GitStateChecker(QRunnable):
     GitStateChecker to fetch and verify the git status.
     """
 
-    def __init__(self, state_signal, path_to_llvm):
+    def __init__(self, state_signal, path_to_llvm: str):
         super(GitStateChecker, self).__init__()
-        self.path_to_llvm = path_to_llvm
+        self.path_to_llvm = Path(path_to_llvm)
         self.signals = state_signal
 
     @pyqtSlot()
@@ -621,7 +625,7 @@ class GitStateChecker(QRunnable):
         """
         llvm_status = get_llvm_project_status(self.path_to_llvm)
         clang_status = get_llvm_project_status(self.path_to_llvm,
-                                               "tools/clang")
+                                               LLVMProjects.clang.path)
         vara_status = get_vara_status(self.path_to_llvm)
 
         self.signals.status_update.emit(llvm_status, clang_status, vara_status)
@@ -642,8 +646,8 @@ class PullWorker(QRunnable):
         Pull changes and update the current branch.
         """
         pull_current_branch(self.llvm_folder)
-        pull_current_branch(self.llvm_folder + "tools/clang/")
-        pull_current_branch(self.llvm_folder + "tools/VaRA/")
+        pull_current_branch(self.llvm_folder / LLVMProjects.clang.path)
+        pull_current_branch(self.llvm_folder / LLVMProjects.vara.path)
         self.check_state.possible_state_change.emit()
 
 
