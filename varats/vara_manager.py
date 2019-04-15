@@ -27,9 +27,10 @@ class LLVMProject():
     A sub project of LLVM.
     """
 
-    def __init__(self, name: str, URL: str, sub_path: str):
+    def __init__(self, name: str, URL: str, remote: str, sub_path: str):
         self.__name = name
         self.__url = URL
+        self.__remote = remote
         self.__sub_path = Path(sub_path)
 
     @property
@@ -47,25 +48,64 @@ class LLVMProject():
         return self.__url
 
     @property
+    def remote(self):
+        """
+        Git remote
+        """
+        return self.__remote
+
+    @property
     def path(self) -> Path:
         """
         Path to the project folder within llvm.
         """
         return self.__sub_path
 
+    def __str__(self):
+        return "{name} [{url}:{remote}] {folder}".format(
+            name=self.name, url=self.url, remote=self.remote, folder=self.path)
+
 
 class LLVMProjects(Enum):
     """
     Mapping of all LLVM projects to paths.
     """
-    clang = LLVMProject("clang", "", "tools/clang")
-    vara = LLVMProject("VaRA", "", "tools/VaRA")
-    clang_extra = LLVMProject("clang_extra", "", "tools/clang/tools/extra")
-    compiler_rt = LLVMProject("compiler-rt", "", "projects/compiler-rt")
-    lld = LLVMProject("lld", "", "tools/lld")
+    clang = LLVMProject("clang", "https://git.llvm.org/git/clang.git",
+                        "upstream", "tools/clang")
+    vara = LLVMProject("VaRA", "git@github.com:se-passau/VaRA.git", "origin",
+                       "tools/VaRA")
+    clang_extra = LLVMProject(
+        "clang_extra", "https://git.llvm.org/git/clang-tools-extra.git",
+        "upstream", "tools/clang/tools/extra")
+    compiler_rt = LLVMProject("compiler-rt",
+                              "https://git.llvm.org/git/compiler-rt.git",
+                              "upstream", "projects/compiler-rt")
+    lld = LLVMProject("lld", "https://git.llvm.org/git/lld.git", "upstream",
+                      "tools/lld")
 
     def __str__(self):
         return str(self.value)
+
+    @property
+    def name(self):
+        """
+        Name of the project
+        """
+        return self.value.name
+
+    @property
+    def url(self):
+        """
+        Repository URL
+        """
+        return self.value.url
+
+    @property
+    def remote(self):
+        """
+        Git remote
+        """
+        return self.value.remote
 
     @property
     def path(self):
@@ -87,7 +127,11 @@ class LLVMProjects(Enum):
         return not self.is_vara_project()
 
 
-class VaRAProjectsIter(object):
+class VaRAProjectsIter():
+    """
+    Iterator over vara projects, meaning projects that are modfified to work with VaRA.
+    """
+
     def __init__(self):
         self.__llvm_project_iter = iter(LLVMProjects)
 
@@ -101,7 +145,11 @@ class VaRAProjectsIter(object):
                 return val
 
 
-class VaRAExtraProjectsIter(object):
+class VaRAExtraProjectsIter():
+    """
+    Iterator over all additional projects without VaRAs own mofified projects.
+    """
+
     def __init__(self):
         self.__llvm_project_iter = iter(LLVMProjects)
 
@@ -314,37 +362,39 @@ def download_vara(llvm_source_folder, progress_func=lambda x: None,
     """
     dl_folder, llvm_dir = os.path.split(os.path.normpath(llvm_source_folder))
 
-    progress_func(0)
-    download_repo(dl_folder, "https://git.llvm.org/git/llvm.git", llvm_dir,
-                  remote_name="upstream", post_out=post_out)
+    dl_counter = 0
+    progress_func(dl_counter)
+    download_repo(
+        dl_folder,
+        "https://git.llvm.org/git/llvm.git",
+        llvm_dir,
+        remote_name="upstream",
+        post_out=post_out)
     dl_folder += "/" + llvm_dir + "/"
     add_remote(dl_folder, "origin", "git@github.com:se-passau/vara-llvm.git")
+    dl_counter += 1
 
-    progress_func(1)
-    download_repo(dl_folder + "tools/", "https://git.llvm.org/git/clang.git",
-                  remote_name="upstream", post_out=post_out)
-    add_remote(dl_folder + "tools/clang/", "origin",
-               "git@github.com:se-passau/vara-clang.git")
+    for project in LLVMProjects:
+        progress_func(dl_counter)
+        dl_counter += 1
+        if project is LLVMProjects.clang_extra:
+            download_repo(
+                dl_folder / project.path.parent,
+                project.url,
+                "extra",
+                remote_name=project.remote,
+                post_out=post_out)
+        else:
+            download_repo(
+                dl_folder / project.path.parent,
+                project.url,
+                remote_name=project.remote,
+                post_out=post_out)
+            if project is LLVMProjects.clang:
+                add_remote(dl_folder / project.path, "origin",
+                           "git@github.com:se-passau/vara-clang.git")
 
-    progress_func(2)
-    download_repo(dl_folder + "tools/", "git@github.com:se-passau/VaRA.git",
-                  remote_name="origin", post_out=post_out)
-
-    progress_func(3)
-    download_repo(dl_folder + "tools/clang/tools/",
-                  "https://git.llvm.org/git/clang-tools-extra.git", "extra",
-                  remote_name="upstream", post_out=post_out)
-
-    progress_func(4)
-    download_repo(dl_folder + "tools/", "https://git.llvm.org/git/lld.git",
-                  remote_name="upstream", post_out=post_out)
-
-    progress_func(5)
-    download_repo(dl_folder + "projects/",
-                  "https://git.llvm.org/git/compiler-rt.git",
-                  remote_name="upstream", post_out=post_out)
-
-    progress_func(6)
+    progress_func(dl_counter)
     mkdir(dl_folder + "build/")
     with local.cwd(dl_folder + "build/"):
         ln("-s", dl_folder + "tools/VaRA/utils/vara/builds/", "build_cfg")
