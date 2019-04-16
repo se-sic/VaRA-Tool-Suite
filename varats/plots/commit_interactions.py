@@ -7,9 +7,85 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from varats.data.commit_report import CommitMap
+from varats.data.commit_report import CommitMap, CommitReport
 from varats.jupyterhelper.file import load_commit_report
 from varats.plots.plot_utils import check_required_args
+from varats.settings import CFG
+
+
+def _build_interaction_table(report_files: [str],
+                             commit_map: CommitMap) -> pd.DataFrame:
+    """
+    Create a table with commit interaction data.
+
+    Returns:
+        A pandas data frame with following rows:
+            - head_cm
+            - CFInteractions
+            - DFInteractions
+            - HEAD CF Interactions
+            - HEAD DF Interactions
+
+    """
+    csv_file_path = Path(str(
+        CFG["plots"]["data_cache"])) / "interaction_table.csv"
+    if csv_file_path.exists():
+        cached_df = pd.read_csv(str(csv_file_path))
+    else:
+        cached_df = pd.DataFrame(columns=[
+            'head_cm', 'CFInteractions', 'DFInteractions',
+            'HEAD CF Interactions', 'HEAD DF Interactions'
+        ])
+
+    def report_in_data_frame(report_file, df_col) -> bool:
+        match = CommitReport.FILE_NAME_REGEX.search(Path(report_file).name)
+        return (match.group("file_commit_hash") == df_col).any()
+
+    missing_report_files = [
+        report_file for report_file in report_files
+        if not report_in_data_frame(report_file, cached_df['head_cm'])
+    ]
+
+    missing_reports = []
+    total_missing_reports = len(missing_report_files)
+    for num, file_path in enumerate(missing_report_files):
+        print(
+            "Loading missing file ({num}/{total}): ".format(
+                num=(num + 1), total=total_missing_reports), file_path)
+        missing_reports.append(load_commit_report(file_path))
+
+    def sorter(report):
+        return commit_map.short_time_id(report.head_commit)
+
+    missing_reports = sorted(missing_reports, key=sorter)
+
+    def create_data_frame_for_report(report) -> pd.DataFrame:
+        cf_head_interactions_raw = report.number_of_head_cf_interactions()
+        df_head_interactions_raw = report.number_of_head_df_interactions()
+        return pd.DataFrame({
+            'head_cm':
+            report.head_commit,
+            'CFInteractions':
+            report.number_of_cf_interactions(),
+            'DFInteractions':
+            report.number_of_df_interactions(),
+            'HEAD CF Interactions':
+            cf_head_interactions_raw[0] + cf_head_interactions_raw[1],
+            'HEAD DF Interactions':
+            df_head_interactions_raw[0] + df_head_interactions_raw[1]
+        },
+                            index=[0])
+
+    new_data_frames = [
+        create_data_frame_for_report(report) for report in missing_reports
+    ]
+
+    new_df = pd.concat(
+        [cached_df] + new_data_frames, ignore_index=True, sort=False)
+
+    new_df.to_csv(str(csv_file_path))
+
+    return new_df
 
 
 @check_required_args(["result_folder", "project", "cmap"])
@@ -27,43 +103,9 @@ def gen_interaction_graph(**kwargs):
     reports = []
     for file_path in result_dir.iterdir():
         if file_path.stem.startswith(str(project_name) + "-"):
-            print("Loading file: ", file_path)
-            reports.append(load_commit_report(file_path))
+            reports.append(file_path)
 
-    def sorter(report):
-        return commit_map.short_time_id(report.head_commit)
-
-    reports = sorted(reports, key=sorter)
-
-    # Sort with commit map
-    commits = []
-    cf_interactions = []
-    cf_head_interactions = []
-    df_interactions = []
-    df_head_interactions = []
-
-    for report in reports:
-        commits.append(report.head_commit)
-
-        cf_interactions.append(report.number_of_cf_interactions())
-
-        cf_head_interactions_raw = report.number_of_head_cf_interactions()
-        cf_head_interactions.append(cf_head_interactions_raw[0] +
-                                    cf_head_interactions_raw[1])
-
-        df_interactions.append(report.number_of_df_interactions())
-
-        df_head_interactions_raw = report.number_of_head_df_interactions()
-        df_head_interactions.append(df_head_interactions_raw[0] +
-                                    df_head_interactions_raw[1])
-
-    data_frame = pd.DataFrame({
-        'x': commits,
-        'DFInteractions': df_interactions,
-        'CFInteractions': cf_interactions,
-        'HEAD CF Interactions': cf_head_interactions,
-        'HEAD DF Interactions': df_head_interactions
-    })
+    data_frame = _build_interaction_table(reports, commit_map)
 
     # Interaction plot
     axis = plt.subplot(211)
@@ -74,8 +116,8 @@ def gen_interaction_graph(**kwargs):
     for x_label in axis.get_xticklabels():
         x_label.set_visible(False)
 
-    plt.plot('x', 'CFInteractions', data=data_frame, color='blue')
-    plt.plot('x', 'DFInteractions', data=data_frame, color='red')
+    plt.plot('head_cm', 'CFInteractions', data=data_frame, color='blue')
+    plt.plot('head_cm', 'DFInteractions', data=data_frame, color='red')
 
     plt.ylabel("Interactions", **{'size': '14'})
 
@@ -89,8 +131,9 @@ def gen_interaction_graph(**kwargs):
         x_label.set_fontsize(14)
         x_label.set_rotation(270)
 
-    plt.plot('x', 'HEAD CF Interactions', data=data_frame, color='aqua')
-    plt.plot('x', 'HEAD DF Interactions', data=data_frame, color='crimson')
+    plt.plot('head_cm', 'HEAD CF Interactions', data=data_frame, color='aqua')
+    plt.plot(
+        'head_cm', 'HEAD DF Interactions', data=data_frame, color='crimson')
 
     plt.xlabel("Revisions", **{'size': '14'})
     plt.ylabel("HEAD Interactions", **{'size': '14'})

@@ -91,6 +91,13 @@ CFG['experiment'] = {
     },
 }
 
+CFG['plots'] = {
+    "data_cache": {
+        "default": "data_cache",
+        "desc": "Local data cache to store preprocessed files."
+    },
+}
+
 
 def get_value_or_default(cfg, varname, default):
     """
@@ -108,11 +115,12 @@ def create_missing_folders():
     """
     Create a folders that do not exist but where set in the config.
     """
-    def create_missing_folder_for_cfg(cfg_varname):
+    def create_missing_folder_for_cfg(cfg_varname, local_cfg=CFG):
         """
         Create missing folders for a specific config path.
         """
-        config_node = CFG[cfg_varname]
+
+        config_node = local_cfg[cfg_varname]
         if config_node.has_value and\
                 config_node.value is not None and\
                 not path.isdir(config_node.value):
@@ -120,6 +128,7 @@ def create_missing_folders():
 
     create_missing_folder_for_cfg("benchbuild_root")
     create_missing_folder_for_cfg("result_dir")
+    create_missing_folder_for_cfg("data_cache", CFG["plots"])
 
 
 def save_config():
