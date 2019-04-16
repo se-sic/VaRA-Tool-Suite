@@ -264,10 +264,11 @@ def main_gen_commitmap():
         store_case_study(case_study, paper_path)
     else:
         if args.output is None:
-            output_name = "{result_folder}/{project_name}/{file_name}.cmap".format(
-                result_folder=CFG["result_dir"],
-                project_name=path.name,
-                file_name=path.name)
+            output_name = "{result_folder}/{project_name}/{file_name}.cmap"\
+                .format(
+                    result_folder=CFG["result_dir"],
+                    project_name=path.name.replace("-HEAD", ""),
+                    file_name=path.name.replace("-HEAD", ""))
         else:
             if args.output.endswith(".cmap"):
                 output_name = args.output
