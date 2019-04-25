@@ -13,8 +13,8 @@ class Gzip(prj.Project):
     """ Compression and decompression tool Gzip (fetched by Git) """
 
     NAME = 'gzip'
-    GROUP = 'git'
-    DOMAIN = 'version control'
+    GROUP = 'c_projects'
+    DOMAIN = 'VCS'
     VERSION = 'HEAD'
 
     SRC_FILE = NAME + "-{0}".format(VERSION)

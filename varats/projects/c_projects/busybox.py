@@ -13,7 +13,7 @@ class busybox(Project):
     """ UNIX utility wrapper Busybox """
 
     NAME = 'busybox'
-    GROUP = 'code'
+    GROUP = 'c_projects'
     DOMAIN = 'UNIX utils'
     VERSION = 'HEAD'
 

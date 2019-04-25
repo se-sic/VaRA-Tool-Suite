@@ -13,8 +13,8 @@ class Vim(Project):
     """ Text processing tool vim """
 
     NAME = 'vim'
-    GROUP = 'code'
-    DOMAIN = 'UNIX utils'
+    GROUP = 'c_projects'
+    DOMAIN = 'editor'
     VERSION = 'HEAD'
 
     SRC_FILE = NAME + "-{0}".format(VERSION)

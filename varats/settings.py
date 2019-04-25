@@ -137,7 +137,10 @@ def generate_benchbuild_config(vara_cfg, bb_config_path: str):
     # Experiments for VaRA
     projects_conf = BB_CFG["plugins"]["experiments"]
     projects_conf.value[:] = []
-    projects_conf.value[:] += ['varats.experiments.GitBlameAnnotationReport']
+    projects_conf.value[:] += [
+        'varats.experiments.GitBlameAnnotationReport',
+        'varats.experiments.marker_tester'
+    ]
 
     BB_CFG["env"] = {
         "PATH": [str(vara_cfg["llvm_install_dir"]) + "bin/"]

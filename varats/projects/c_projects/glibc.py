@@ -12,7 +12,7 @@ class Glibc(Project):
     """ Standard GNU C-library """
 
     NAME = 'glibc'
-    GROUP = 'code'
+    GROUP = 'c_projects'
     DOMAIN = 'UNIX utils'
     VERSION = 'HEAD'
 
