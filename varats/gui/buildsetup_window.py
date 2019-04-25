@@ -4,6 +4,8 @@ A module that manages the building of VaRa.
 import os
 import re
 
+from pathlib import Path
+
 from PyQt5.QtWidgets import QWidget, QShortcut
 from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject
 from PyQt5.QtGui import QTextCursor, QKeySequence
@@ -90,10 +92,9 @@ class BuildWorker(QRunnable):
         """
         Run, build an installs VaRA in a diffrent thread.
         """
-        vara_manager.build_vara(self.path_to_llvm,
-                                self.install_prefix,
-                                self.build_type,
-                                self._update_text)
+        vara_manager.build_vara(
+            Path(self.path_to_llvm), self.install_prefix, self.build_type,
+            self._update_text)
         self.signals.finished.emit()
 
 

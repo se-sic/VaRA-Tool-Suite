@@ -18,7 +18,7 @@ CFG = s.Configuration(
         },
         "version": {
             "desc": "VaRA version.",
-            "default": 70,
+            "default": 80,
         },
         "benchbuild_root": {
             "desc": "Root folder to run BenchBuild in",
