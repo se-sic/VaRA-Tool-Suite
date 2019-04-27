@@ -17,11 +17,16 @@ from varats.tools.commit_map import generate_commit_map
 from varats.utils.cli_util import cli_yn_choice
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
-
+from PyQt5.QtCore import Qt
 
 class VaRATSGui:
 
     def __init__(self):
+        if hasattr(Qt, 'AA_EnableHighDpiScaling'):
+            QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+        if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
+            QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+
         self.app = QApplication(sys.argv)
 
         if settings.CFG["config_file"].value is None:
@@ -47,6 +52,11 @@ class VaRATSGui:
 class VaRATSSetup:
 
     def __init__(self):
+        if hasattr(Qt, 'AA_EnableHighDpiScaling'):
+            QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+        if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
+            QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+
         self.app = QApplication(sys.argv)
         self.main_window = BuildSetup()
 

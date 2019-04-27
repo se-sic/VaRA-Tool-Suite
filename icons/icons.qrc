@@ -1,0 +1,36 @@
+<RCC>
+  <qresource>
+    <file>breeze/light/cursor-cross.svg</file>
+    <file>breeze/light/document-new.svg</file>
+    <file>breeze/light/edit-delete.svg</file>
+    <file>breeze/light/folder-new.svg</file>
+    <file>breeze/light/go-bottom.svg</file>
+    <file>breeze/light/go-down-skip.svg</file>
+    <file>breeze/light/go-down.svg</file>
+    <file>breeze/light/go-first.svg</file>
+    <file>breeze/light/go-jump.svg</file>
+    <file>breeze/light/go-last.svg</file>
+    <file>breeze/light/go-next-skip.svg</file>
+    <file>breeze/light/go-next.svg</file>
+    <file>breeze/light/go-parent-folder.svg</file>
+    <file>breeze/light/go-previous-skip.svg</file>
+    <file>breeze/light/go-previous.svg</file>
+    <file>breeze/light/go-top.svg</file>
+    <file>breeze/light/go-up-skip.svg</file>
+    <file>breeze/light/go-up.svg</file>
+    <file>breeze/light/help-about.svg</file>
+    <file>breeze/light/list-add.svg</file>
+    <file>breeze/light/appointment-new.svg</file>
+    <file>breeze/light/im-user.svg</file>
+    <file>breeze/light/chronometer.svg</file>
+    <file>breeze/light/user-group-new.svg</file>
+    <file>breeze/light/document-save-as.svg</file>
+    <file>breeze/light/document-save.svg</file>
+    <file>breeze/light/application-exit.svg</file>
+    <file>breeze/light/document-open.svg</file>
+    <file>math/and-operator.svg</file>
+    <file>math/or-operator.svg</file>
+    <file>math/not-operator.svg</file>
+    <file>math/xor-operator.svg</file>
+  </qresource>
+</RCC>
