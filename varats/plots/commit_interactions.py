@@ -7,10 +7,11 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from varats.data.cache_helper import load_cached_df_or_none, cache_dataframe,\
+    GraphCacheType
 from varats.data.commit_report import CommitMap, CommitReport
 from varats.jupyterhelper.file import load_commit_report
 from varats.plots.plot_utils import check_required_args
-from varats.settings import CFG
 
 
 def _build_interaction_table(report_files: [str],
@@ -27,11 +28,8 @@ def _build_interaction_table(report_files: [str],
             - HEAD DF Interactions
 
     """
-    csv_file_path = Path(str(
-        CFG["plots"]["data_cache"])) / "interaction_table.csv"
-    if csv_file_path.exists():
-        cached_df = pd.read_csv(str(csv_file_path))
-    else:
+    cached_df = load_cached_df_or_none(GraphCacheType.CommitInteractionData)
+    if cached_df is None:
         cached_df = pd.DataFrame(columns=[
             'head_cm', 'CFInteractions', 'DFInteractions',
             'HEAD CF Interactions', 'HEAD DF Interactions'
@@ -83,7 +81,7 @@ def _build_interaction_table(report_files: [str],
     new_df = pd.concat(
         [cached_df] + new_data_frames, ignore_index=True, sort=False)
 
-    new_df.to_csv(str(csv_file_path))
+    cache_dataframe(GraphCacheType.CommitInteractionData, new_df)
 
     return new_df
 
