@@ -6,6 +6,9 @@ Main drivers for VaRA-TS
 import os
 import sys
 import argparse
+from argparse_utils import enum_action
+
+from pathlib import Path
 
 from varats import settings
 from varats.settings import get_value_or_default,\
@@ -13,8 +16,11 @@ from varats.settings import get_value_or_default,\
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
 from varats.vara_manager import setup_vara, BuildType
-from varats.tools.commit_map import generate_commit_map
+from varats.tools.commit_map import generate_commit_map, store_commit_map
+from varats.plots.plots import extend_parser_with_graph_args, build_graph
 from varats.utils.cli_util import cli_yn_choice
+from varats.paper.case_study import SamplingMethod, generate_case_study,\
+    store_case_study
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
@@ -148,6 +154,29 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
     return BuildType.DEV
 
 
+def main_gen_graph():
+    """
+    Main function for the graph generator.
+
+    `vara-gen-graph`
+    """
+    parser = argparse.ArgumentParser("VaRA graph generator")
+    parser.add_argument(
+        "-r", "--result-folder", help="Folder with result files")
+    parser.add_argument("-p", "--project", help="Project name")
+    parser.add_argument("-c", "--cmap", help="Path to commit map")
+    parser.add_argument("-g", "--graph", help="Graph type")
+
+    extend_parser_with_graph_args(parser)
+
+    args = {
+        k: v
+        for k, v in vars(parser.parse_args()).items() if v is not None
+    }
+
+    build_graph(**args)
+
+
 def main_gen_benchbuild_config():
     """
     Main function for the benchbuild config creator.
@@ -189,20 +218,60 @@ def main_gen_commitmap():
     """
     Create a commit map for a repository.
     """
-    parser = argparse.ArgumentParser("Commit map creator")
+    parser = argparse.ArgumentParser("vara-gen-commitmap")
     parser.add_argument("path", help="Path to git repository")
-    parser.add_argument("-o", "--output", help="Output filename",
-                        default="c_map")
-    parser.add_argument("--end", help="End of the commit range (inclusive)",
-                        default="HEAD")
-    parser.add_argument("--start",
-                        help="Start of the commit range (exclusive)",
-                        default=None)
+    parser.add_argument(
+        "--end", help="End of the commit range (inclusive)", default="HEAD")
+    parser.add_argument(
+        "--start", help="Start of the commit range (exclusive)", default=None)
+
+    sub_parsers = parser.add_subparsers(
+        help="File type to generate.", dest="command")
+    cm_parser = sub_parsers.add_parser('cmap', help="Generate a commit map.")
+    cm_parser.add_argument("-o", "--output", help="Output filename")
+
+    cs_parser = sub_parsers.add_parser(
+        'case-study', help="Generate a case study.")
+    cs_parser.add_argument("distribution", action=enum_action(SamplingMethod))
+    cs_parser.add_argument("paper_path", help="Path to paper folder.")
+    cs_parser.add_argument(
+        "--num-rev",
+        type=int,
+        default=10,
+        help="Number of revisions to select.")
+    cs_parser.add_argument(
+        "--version", type=int, default=0, help="Case study version.")
 
     args = parser.parse_args()
 
-    generate_commit_map(args.path, args.output, args.end, args.start)
+    if args.path.endswith(".git"):
+        path = Path(args.path[:-4])
+    else:
+        path = Path(args.path)
 
+    if not path.exists():
+        raise argparse.ArgumentTypeError("Repository path does not exist")
 
-if __name__ == "__main__":
-    main()
+    cmap = generate_commit_map(path, args.end, args.start)
+    if args.command == 'case-study':
+        paper_path = Path(args.paper_path)
+        if not paper_path.exists():
+            raise argparse.ArgumentTypeError("Paper path does not exist")
+
+        case_study = generate_case_study(args.distribution, args.num_rev, cmap,
+                                         path.stem.replace("-HEAD", ""),
+                                         args.version)
+        store_case_study(case_study, paper_path)
+    else:
+        if args.output is None:
+            output_name = "{result_folder}/{project_name}/{file_name}.cmap"\
+                .format(
+                    result_folder=CFG["result_dir"],
+                    project_name=path.name.replace("-HEAD", ""),
+                    file_name=path.name.replace("-HEAD", ""))
+        else:
+            if args.output.endswith(".cmap"):
+                output_name = args.output
+            else:
+                output_name = args.output + ".cmap"
+        store_commit_map(cmap, output_name)

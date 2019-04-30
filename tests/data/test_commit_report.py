@@ -8,7 +8,7 @@ import unittest.mock as mock
 import yaml
 
 from varats.data.commit_report import FunctionGraphEdges, FunctionInfo,\
-    RegionMapping, CommitReport
+    RegionMapping, CommitReport, CommitMap, generate_interactions
 
 YAML_DOC_1 = """---
 DocType:         CommitReport
@@ -84,8 +84,8 @@ class TestFunctionInfo(unittest.TestCase):
         """
         Load and parse function infos from yaml file.
         """
-        with mock.patch("builtins.open",
-                        new=mock.mock_open(read_data=YAML_DOC_2)):
+        with mock.patch(
+                "builtins.open", new=mock.mock_open(read_data=YAML_DOC_2)):
             with open("fake_file_path") as yaml_file:
                 yaml_doc = yaml.safe_load(yaml_file)
                 cls.finfos = {}
@@ -120,8 +120,8 @@ class TestRegionMapping(unittest.TestCase):
         """
         Load and parse region mappings from yaml file.
         """
-        with mock.patch("builtins.open",
-                        new=mock.mock_open(read_data=YAML_DOC_2)):
+        with mock.patch(
+                "builtins.open", new=mock.mock_open(read_data=YAML_DOC_2)):
             with open("fake_file_path") as yaml_file:
                 yaml_doc = yaml.safe_load(yaml_file)
                 cls.r_mappings = {}
@@ -152,8 +152,8 @@ class TestFunctionGraphEdges(unittest.TestCase):
         """
         Load and parse FunctionGraphEdges from yaml file.
         """
-        with mock.patch("builtins.open",
-                        new=mock.mock_open(read_data=YAML_DOC_3)):
+        with mock.patch(
+                "builtins.open", new=mock.mock_open(read_data=YAML_DOC_3)):
             with open("fake_file_path") as yaml_file:
                 yaml_doc = yaml.safe_load(yaml_file)
                 cls.edge_dict = {}
@@ -182,8 +182,7 @@ class TestFunctionGraphEdges(unittest.TestCase):
         bi_init = self.edge_dict['bi_init']
         self.assertEqual(bi_init.cg_edges[0].region,
                          "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5")
-        self.assertEqual(bi_init.cg_edges[0].function,
-                         "llvm.dbg.value")
+        self.assertEqual(bi_init.cg_edges[0].function, "llvm.dbg.value")
 
     def test_control_flow_edges(self):
         """
@@ -227,8 +226,8 @@ class TestCommitReport(unittest.TestCase):
         Setup file and CommitReport
         """
         file_content = YAML_DOC_1 + YAML_DOC_2 + YAML_DOC_3
-        with mock.patch('builtins.open',
-                        new=mock.mock_open(read_data=file_content)):
+        with mock.patch(
+                'builtins.open', new=mock.mock_open(read_data=file_content)):
             cls.commit_report = CommitReport("fake_file_path")
 
     def test_path(self):
@@ -243,3 +242,133 @@ class TestCommitReport(unittest.TestCase):
         """
         self.assertEqual(self.commit_report.calc_max_cf_edges(), 2)
         self.assertEqual(self.commit_report.calc_max_df_edges(), 3)
+
+
+RAW_COMMIT_LOG = """20540be6186c159880dda3a49a5827722c1a0ac9
+8aa53f1797315a541960d4225f00c9f27c9612fe
+a604573c68ae41e1126229dfeab5b63bfb3848c8
+e48a9161759686b9097edf392f8fa95c504b040b
+8ebed06de292295267c4c3628417762945c24214
+9c2a2de9a4c192c43b64ed42509d9e51f69aac44
+d2e7cf947f228339b516b7491de46faed9b0d475
+afd5c5938c6350d12fe4c4791ed5383a81469d64
+17f5c70d3f049a6e8c5415a7d6961654aba1a497
+361618d9cf28d91f07aa0a363df6b4d231d569dd
+3909cddc8e9a434dd9c346f1da596879dee2d00f
+62e1b9e30bc8a3bed955493c9a1b157561fff903
+26c140cf5377585d38d2a13a949e109724d4d406
+051ed82baa1090c4723b7addce64681bb417d3a9
+8b83dc0f588ccaed3bd7e37208cefab2ff4edb28
+30ba4a2b69e5ee34c3fcde12f275f80d1fbe8a59
+1252d056feaf71e7488cbaa5a78b3d45cd77f877
+bce795d0a38ae10f13b3297f1253acdeb4defc21
+222dc8c90f31f7027d0aa7a18206f5c56006f780
+9ef6a8ac4470aeac60445c7e4802349bc9272d5d
+38f87b03c2763bb2af05ae98905b0ac8ba55b3eb
+b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a
+3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5
+95ace546d3f6c5909a636017f141784105f9dab2
+203e40cc4558a80998d05eb74b373a51e796ca8b
+8ac1b3f73baceb4a16e99504807d23d38e5123b1
+7868e29c3faca087be3790ab78ba570c3018bcb7
+4c09ea0df417a948ded14ca890d34405c02347f6
+0078b8a5a38f2cce0fd3f0994210f2cad5ec23b8
+63aa2268a5abfed0116d04bbe3952e4a753af91d
+975508caa09d733099498ff9f7b8079cd71d7109
+ae332f2a5d2f6f3e0a23443f8a9bcb068c8af74d
+ef58a957a6c1887930cc70d6199ae7e48aa8d716"""
+
+
+def testing_gen_commit_map():
+    """
+    Generate a local commit map for testing.
+    """
+
+    def commit_log_stream():
+        for number, line in enumerate(reversed(RAW_COMMIT_LOG.split('\n'))):
+            yield "{}, {}\n".format(number, line)
+
+    return CommitMap(commit_log_stream())
+
+
+class TestCommitMap(unittest.TestCase):
+    """
+    Test CommitMap generation and Usage.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """
+        Setup file and CommitReport
+        """
+
+        cls.cmap = testing_gen_commit_map()
+
+    def test_time_id(self):
+        """
+        Test time id look up.
+        """
+        self.assertEqual(
+            self.cmap.time_id("ae332f2a5d2f6f3e0a23443f8a9bcb068c8af74d"), 1)
+        self.assertEqual(
+            self.cmap.time_id("ef58a957a6c1887930cc70d6199ae7e48aa8d716"), 0)
+        self.assertEqual(
+            self.cmap.time_id("20540be6186c159880dda3a49a5827722c1a0ac9"), 32)
+
+    def test_short_time_id(self):
+        """
+        Test short time id look up.
+        """
+        self.assertEqual(self.cmap.short_time_id("ae332f2"), 1)
+        self.assertEqual(self.cmap.short_time_id("ef58a957a6c1"), 0)
+        self.assertEqual(self.cmap.short_time_id("2054"), 32)
+
+
+class TestCommitConnectionGenerators(unittest.TestCase):
+    """
+    Test basic CommitReport functionality.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """
+        Setup file and CommitReport
+        """
+        file_content = YAML_DOC_1 + YAML_DOC_2 + YAML_DOC_3
+        with mock.patch(
+                'builtins.open', new=mock.mock_open(read_data=file_content)):
+            cls.commit_report = CommitReport("fake_file_path")
+
+        cls.cmap = testing_gen_commit_map()
+
+    def test_gen_interactions_nodes(self):
+        """
+        Test generation of interaction node
+        """
+        nodes = generate_interactions(self.commit_report, self.cmap)[0]
+        self.assertEqual(nodes.at[0, 'hash'],
+                         '38f87b03c2763bb2af05ae98905b0ac8ba55b3eb')
+        self.assertEqual(nodes.at[0, 'id'], 12)
+        self.assertEqual(nodes.at[3, 'hash'],
+                         '95ace546d3f6c5909a636017f141784105f9dab2')
+        self.assertEqual(nodes.at[3, 'id'], 9)
+
+    def test_gen_interactions_links(self):
+        """
+        Test generation of interaction links
+        """
+        links = generate_interactions(self.commit_report, self.cmap)[1]
+        links = links.sort_values(by=['source']).reset_index(drop=True)
+        self.assertEqual(links.at[0, 'source'],
+                         "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5")
+        self.assertEqual(links.at[0, 'target'],
+                         "b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+        self.assertEqual(links.at[0, 'value'], 1)
+        self.assertEqual(links.at[0, 'src_id'], 10)
+
+        self.assertEqual(links.at[2, 'source'],
+                         "95ace546d3f6c5909a636017f141784105f9dab2")
+        self.assertEqual(links.at[2, 'target'],
+                         "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5")
+        self.assertEqual(links.at[2, 'value'], 1)
+        self.assertEqual(links.at[2, 'src_id'], 9)

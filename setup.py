@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='VaRA-Tool-Suite',
-      version="0.1",
+      version="8.0.0",
       url='https://github.com/se-passau/VaRA-Tool-Suite',
       packages=find_packages(exclude=["extern", "benchbuild", "icons",
                                       "results", "uicomponents"]),
@@ -13,9 +13,10 @@ setup(name='VaRA-Tool-Suite',
           "seaborn>=0.8.0",
           "matplotlib>=2.2.0",
           "pandas>=0.22.0",
-          "benchbuild>=3.4.2",
+          "benchbuild>=3.5.0",
           "plumbum>=1.6.6",
           "wllvm>=1.1.4",
+          "argparse-utils>=1.2.0",
       ],
       author="Florian Sattler",
       author_email="sattlerf@fim.uni-passau.de",
@@ -26,6 +27,7 @@ setup(name='VaRA-Tool-Suite',
               'vara-gen-commitmap = varats.driver:main_gen_commitmap',
           ],
           "console_scripts": [
+              'vara-gen-graph = varats.driver:main_gen_graph',
               'vara-gen-bbconfig = varats.driver:main_gen_benchbuild_config',
           ]
       })

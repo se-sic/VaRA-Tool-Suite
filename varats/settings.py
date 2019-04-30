@@ -43,6 +43,17 @@ CFG = s.Configuration(
     }
 )
 
+CFG["paper_config"] = {
+    "folder": {
+        "desc": "Folder with paper configs.",
+        "default": None,
+    },
+    "current_config": {
+        "desc": "Paper config file to load.",
+        "default": None,
+    },
+}
+
 CFG["env"] = {
     "default": {},
     "desc": "The environment benchbuild's commands should operate in."
@@ -63,6 +74,21 @@ CFG['db'] = {
         "default": False,
         "desc": "Should we recreate our SQL functions from scratch?"
     }
+}
+
+CFG['experiment'] = {
+    "only_missing": {
+        "default": False,
+        "desc": "Only run missing version"
+    },
+    "random_order": {
+        "default": False,
+        "desc": "Randomize the order of versions to explore."
+    },
+    "sample_limit": {
+        "default": None,
+        "desc": "Randomize the order of versions to explore."
+    },
 }
 
 
