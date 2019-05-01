@@ -275,3 +275,27 @@ def main_gen_commitmap():
             else:
                 output_name = args.output + ".cmap"
         store_commit_map(cmap, output_name)
+
+
+def main_develop():
+    """
+    Handle and simplify common developer interactions with the project.
+    """
+    parser = argparse.ArgumentParser("Developer helper")
+    sub_parsers = parser.add_subparsers(help="Sub commands", dest="command")
+
+    new_branch_parser = sub_parsers.add_parser('new-branch')
+    # TODO: name different repos
+    # vara-develop new-branch llvm,vara BNAME
+    # BNAME: f-Foo or Foo -> f-Foo
+
+    # git checkout
+    # vara-develop checkout BNAME
+    # BNAME: f-Foo or Foo -> f-Foo
+
+    # - create branch (for different repos)
+    # - change branch
+    # - push/pull all branches
+    # Create new branch
+    # Checkout new branch
+    # Show list of current developed branches
