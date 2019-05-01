@@ -19,6 +19,18 @@ class GraphCacheType(Enum):
 
 
 def __get_data_file_path(data_id):
+    """
+
+    Test:
+    >>> str(__get_data_file_path("foo.txt"))
+    'data_cache/foo.txt'
+
+    >>> isinstance(__get_data_file_path("foo.txt"), Path)
+    True
+
+    >>> str(__get_data_file_path(GraphCacheType.CommitInteractionData))
+    'data_cache/interaction_table.csv'
+    """
     return Path(str(CFG["plots"]["data_cache"])) / (
         data_id.value if isinstance(data_id, GraphCacheType) else data_id)
 
