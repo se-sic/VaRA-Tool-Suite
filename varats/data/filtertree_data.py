@@ -1,4 +1,3 @@
-import abc
 import yaml
 
 from typing import List
@@ -9,7 +8,6 @@ class InteractionFilter(yaml.YAMLObject):
     yaml_tag = u'!InteractionFilter'
 
     def __init__(self, parent: 'InteractionFilter' = None, comment: str = None) -> None:
-        __metaclass__  = abc.ABCMeta
 
         self._parent = parent
         if comment is None:
@@ -92,7 +90,7 @@ class InteractionFilter(yaml.YAMLObject):
             self.setComment(value)
 
     @staticmethod
-    def resource(self):
+    def resource():
         return None
 
 
@@ -156,7 +154,8 @@ class AuthorFilter(UnaryInteractionFilter):
         elif column == 3:
             self.setAuthorEmail(value)
 
-    def resource(self):
+    @staticmethod
+    def resource():
         return ":/breeze/light/im-user.svg"
 
 
@@ -199,7 +198,8 @@ class CommitterFilter(UnaryInteractionFilter):
         elif column == 3:
             self.setCommitterEmail(value)
 
-    def resource(self):
+    @staticmethod
+    def resource():
         return ":/breeze/light/im-user.svg"
 
 
@@ -234,7 +234,8 @@ class AuthorDateMinFilter(UnaryInteractionFilter):
         if column == 2:
             self.setAuthorDateMin(value)
 
-    def resource(self):
+    @staticmethod
+    def resource():
         return ":/breeze/light/appointment-new.svg"
 
 
@@ -269,7 +270,8 @@ class AuthorDateMaxFilter(UnaryInteractionFilter):
         if column == 2:
             self.setAuthorDateMax(value)
 
-    def resource(self):
+    @staticmethod
+    def resource():
         return ":/breeze/light/appointment-new.svg"
 
 
@@ -304,7 +306,8 @@ class CommitDateMinFilter(UnaryInteractionFilter):
         if column == 2:
             self.setCommitDateMin(value)
 
-    def resource(self):
+    @staticmethod
+    def resource():
         return ":/breeze/light/appointment-new.svg"
 
 
@@ -339,7 +342,8 @@ class CommitDateMaxFilter(UnaryInteractionFilter):
         if column == 2:
             self.setCommitDateMax(value)
 
-    def resource(self):
+    @staticmethod
+    def resource():
         return ":/breeze/light/appointment-new.svg"
 
 
@@ -371,7 +375,8 @@ class AuthorDateDeltaMinFilter(UnaryInteractionFilter):
         if column == 2:
             self.setAuthorDateDeltaMin(value)
 
-    def resource(self):
+    @staticmethod
+    def resource():
         return ":/breeze/light/chronometer.svg"
 
 
@@ -403,7 +408,8 @@ class AuthorDateDeltaMaxFilter(UnaryInteractionFilter):
         if column == 2:
             self.setAuthorDateDeltaMax(value)
 
-    def resource(self):
+    @staticmethod
+    def resource():
         return ":/breeze/light/chronometer.svg"
 
 
@@ -435,7 +441,8 @@ class CommitDateDeltaMinFilter(UnaryInteractionFilter):
         if column == 2:
             self.setCommitDateDeltaMin(value)
 
-    def resource(self):
+    @staticmethod
+    def resource():
         return ":/breeze/light/chronometer.svg"
 
 
@@ -467,7 +474,8 @@ class CommitDateDeltaMaxFilter(UnaryInteractionFilter):
         if column == 2:
             self.setCommitDateDeltaMax(value)
 
-    def resource(self):
+    @staticmethod
+    def resource():
         return ":/breeze/light/chronometer.svg"
 
 
@@ -533,7 +541,8 @@ class AndOperator(FilterOperator):
     def parent(self) -> InteractionFilter:
         return self._parent
 
-    def resource(self):
+    @staticmethod
+    def resource():
         return ":/math/and-operator.svg"
 
 
@@ -590,7 +599,8 @@ class OrOperator(FilterOperator):
     def parent(self) -> InteractionFilter:
         return self._parent
 
-    def resource(self):
+    @staticmethod
+    def resource():
         return ":/math/or-operator.svg"
 
 
@@ -636,6 +646,7 @@ class NotOperator(FilterOperator):
     def parent(self) -> InteractionFilter:
         return self._parent
 
-    def resource(self):
+    @staticmethod
+    def resource():
         return ":/math/not-operator.svg"
 
