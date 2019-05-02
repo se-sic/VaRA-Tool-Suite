@@ -1,8 +1,6 @@
-import sys
 import yaml
 import os
 from threading import Lock
-from typing import List
 from PyQt5.QtWidgets import QWidget, QMainWindow, QMessageBox, QDataWidgetMapper, QMenu, QFileDialog
 from PyQt5.QtCore import QModelIndex
 from PyQt5.QtGui import QIcon, QPixmap, QCloseEvent
@@ -20,7 +18,7 @@ from varats.gui.views.ui_AuthorDateDeltaMinFilter import Ui_AuthorDateDeltaMinFi
 from varats.gui.views.ui_AuthorDateDeltaMaxFilter import Ui_AuthorDateDeltaMaxFilter
 from varats.gui.views.ui_CommitDateDeltaMinFilter import Ui_CommitDateDeltaMinFilter
 from varats.gui.views.ui_CommitDateDeltaMaxFilter import Ui_CommitDateDeltaMaxFilter
-from varats.gui import icons_rc
+from varats.gui import icons_rc # noqa # pylint: disable=unused-import
 from varats.gui.filtertree_model import FilterTreeModel
 from varats.data.filtertree_data import AndOperator
 
@@ -82,11 +80,7 @@ class PropertiesEditor(QWidget, Ui_FilterProperties):
 
         self._setEditorsInvisible()
 
-    def setSelection(self, current, old):
-        """
-        :param current: QModelIndex
-        :param old: QModelIndex
-        """
+    def setSelection(self, current: QModelIndex, old: QModelIndex) -> None:
         node = current.internalPointer()
 
         self._setEditorsInvisible()
@@ -173,10 +167,7 @@ class NodeEditor(QWidget, Ui_FilterNodeProperties):
         self._data_mapper.addMapping(self.uiName, 0)
         self._data_mapper.addMapping(self.uiComment, 1)
 
-    def setSelection(self, current):
-        """
-        :param current: QModelIndex
-        """
+    def setSelection(self, current: QModelIndex) -> None:
         parent = current.parent()
         self._data_mapper.setRootIndex(parent)
         self._data_mapper.setCurrentModelIndex(current)
@@ -196,11 +187,7 @@ class AuthorFilterEditor(QWidget, Ui_AuthorFilterProperties):
         self._data_mapper.addMapping(self.uiAuthorName, 2)
         self._data_mapper.addMapping(self.uiAuthorEmail, 3)
 
-    def setSelection(self, current):
-        """
-        :param current: QModelIndex
-        :param old: QModelIndex
-        """
+    def setSelection(self, current: QModelIndex) -> None:
         parent = current.parent()
         self._data_mapper.setRootIndex(parent)
         self._data_mapper.setCurrentModelIndex(current)
@@ -220,11 +207,7 @@ class CommitterFilterEditor(QWidget, Ui_CommitterFilterProperties):
         self._data_mapper.addMapping(self.uiCommitterName, 2)
         self._data_mapper.addMapping(self.uiCommitterEmail, 3)
 
-    def setSelection(self, current):
-        """
-        :param current: QModelIndex
-        :param old: QModelIndex
-        """
+    def setSelection(self, current: QModelIndex) -> None:
         parent = current.parent()
         self._data_mapper.setRootIndex(parent)
         self._data_mapper.setCurrentModelIndex(current)
@@ -243,11 +226,7 @@ class AuthorDateMinFilterEditor(QWidget, Ui_AuthorDateMinFilter):
         self._data_mapper.setModel(model)
         self._data_mapper.addMapping(self.uiAuthorDateMin, 2)
 
-    def setSelection(self, current):
-        """
-        :param current: QModelIndex
-        :param old: QModelIndex
-        """
+    def setSelection(self, current: QModelIndex) -> None:
         parent = current.parent()
         self._data_mapper.setRootIndex(parent)
         self._data_mapper.setCurrentModelIndex(current)
@@ -266,11 +245,7 @@ class AuthorDateMaxFilterEditor(QWidget, Ui_AuthorDateMaxFilter):
         self._data_mapper.setModel(model)
         self._data_mapper.addMapping(self.uiAuthorDateMax, 2)
 
-    def setSelection(self, current):
-        """
-        :param current: QModelIndex
-        :param old: QModelIndex
-        """
+    def setSelection(self, current: QModelIndex) -> None:
         parent = current.parent()
         self._data_mapper.setRootIndex(parent)
         self._data_mapper.setCurrentModelIndex(current)
@@ -289,11 +264,7 @@ class CommitDateMinFilterEditor(QWidget, Ui_CommitDateMinFilter):
         self._data_mapper.setModel(model)
         self._data_mapper.addMapping(self.uiCommitDateMin, 2)
 
-    def setSelection(self, current):
-        """
-        :param current: QModelIndex
-        :param old: QModelIndex
-        """
+    def setSelection(self, current: QModelIndex) -> None:
         parent = current.parent()
         self._data_mapper.setRootIndex(parent)
         self._data_mapper.setCurrentModelIndex(current)
@@ -312,11 +283,7 @@ class CommitDateMaxFilterEditor(QWidget, Ui_CommitDateMaxFilter):
         self._data_mapper.setModel(model)
         self._data_mapper.addMapping(self.uiCommitDateMax, 2)
 
-    def setSelection(self, current):
-        """
-        :param current: QModelIndex
-        :param old: QModelIndex
-        """
+    def setSelection(self, current: QModelIndex) -> None:
         parent = current.parent()
         self._data_mapper.setRootIndex(parent)
         self._data_mapper.setCurrentModelIndex(current)
@@ -335,11 +302,7 @@ class AuthorDateDeltaMinFilterEditor(QWidget, Ui_AuthorDateDeltaMinFilter):
         self._data_mapper.setModel(model)
         self._data_mapper.addMapping(self.uiAuthorDateDeltaMin, 2)
 
-    def setSelection(self, current):
-        """
-        :param current: QModelIndex
-        :param old: QModelIndex
-        """
+    def setSelection(self, current: QModelIndex) -> None:
         parent = current.parent()
         self._data_mapper.setRootIndex(parent)
         self._data_mapper.setCurrentModelIndex(current)
@@ -358,11 +321,7 @@ class AuthorDateDeltaMaxFilterEditor(QWidget, Ui_AuthorDateDeltaMaxFilter):
         self._data_mapper.setModel(model)
         self._data_mapper.addMapping(self.uiAuthorDateDeltaMax, 2)
 
-    def setSelection(self, current):
-        """
-        :param current: QModelIndex
-        :param old: QModelIndex
-        """
+    def setSelection(self, current: QModelIndex) -> None:
         parent = current.parent()
         self._data_mapper.setRootIndex(parent)
         self._data_mapper.setCurrentModelIndex(current)
@@ -381,11 +340,7 @@ class CommitDateDeltaMinFilterEditor(QWidget, Ui_CommitDateDeltaMinFilter):
         self._data_mapper.setModel(model)
         self._data_mapper.addMapping(self.uiCommitDateDeltaMin, 2)
 
-    def setSelection(self, current):
-        """
-        :param current: QModelIndex
-        :param old: QModelIndex
-        """
+    def setSelection(self, current: QModelIndex) -> None:
         parent = current.parent()
         self._data_mapper.setRootIndex(parent)
         self._data_mapper.setCurrentModelIndex(current)
@@ -404,11 +359,7 @@ class CommitDateDeltaMaxFilterEditor(QWidget, Ui_CommitDateDeltaMaxFilter):
         self._data_mapper.setModel(model)
         self._data_mapper.addMapping(self.uiCommitDateDeltaMax, 2)
 
-    def setSelection(self, current):
-        """
-        :param current: QModelIndex
-        :param old: QModelIndex
-        """
+    def setSelection(self, current: QModelIndex) -> None:
         parent = current.parent()
         self._data_mapper.setRootIndex(parent)
         self._data_mapper.setCurrentModelIndex(current)
@@ -668,6 +619,7 @@ class FilterWindow(QMainWindow, Ui_FilterEditor):
             msg.setWindowTitle("Error")
             msg.exec_()
 
+    @staticmethod
     def showHelp(self) -> None:
         help_text = "This editor can be used to create a custom interaction filter.\n\n" \
             "By using the buttons on the right side you can add, delete and move filter elements.\n\n" \

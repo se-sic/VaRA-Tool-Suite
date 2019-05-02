@@ -1,3 +1,4 @@
+import abc
 import yaml
 
 from typing import List
@@ -8,22 +9,28 @@ class InteractionFilter(yaml.YAMLObject):
     yaml_tag = u'!InteractionFilter'
 
     def __init__(self, parent: 'InteractionFilter' = None, comment: str = None) -> None:
+        __metaclass__  = abc.ABCMeta
+
         self._parent = parent
         if comment is None:
             self._comment = ""
         else:
             self._comment = comment
 
-    def addChild(self, child: 'InteractionFilter') -> bool:
+    @staticmethod
+    def addChild(child: 'InteractionFilter') -> bool:
         return False
 
-    def insertChild(self, position: int, child: 'InteractionFilter') -> bool:
+    @staticmethod
+    def insertChild(position: int, child: 'InteractionFilter') -> bool:
         return False
 
-    def moveChild(self, sourceRow: int, destinationRow: int) -> bool:
+    @staticmethod
+    def moveChild(sourceRow: int, destinationRow: int) -> bool:
         return False
 
-    def removeChild(self, position:int ) -> bool:
+    @staticmethod
+    def removeChild(position: int ) -> bool:
         return False
 
     def name(self) -> str:
@@ -41,10 +48,12 @@ class InteractionFilter(yaml.YAMLObject):
     def setParent(self, parent: 'InteractionFilter') -> None:
         self._parent = parent
 
-    def child(self, index: int) -> 'InteractionFilter':
+    @staticmethod
+    def child(index: int) -> 'InteractionFilter':
         return None
 
-    def childCount(self) -> int:
+    @staticmethod
+    def childCount() -> int:
         return 0
 
     def indexOfChild(self, child: 'InteractionFilter') -> int:
@@ -82,6 +91,7 @@ class InteractionFilter(yaml.YAMLObject):
         elif column == 1:
             self.setComment(value)
 
+    @staticmethod
     def resource(self):
         return None
 
@@ -606,7 +616,7 @@ class NotOperator(FilterOperator):
         child.setParent(self)
         return True
 
-    def removeChild(self, position:int ) -> bool:
+    def removeChild(self, position: int ) -> bool:
         if position != 0:
             return False
 

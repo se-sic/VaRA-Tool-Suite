@@ -35,10 +35,12 @@ class FilterTreeModel(QAbstractItemModel):
 
         return parent_node.childCount()
 
-    def columnCount(self, parent):
+    @staticmethod
+    def columnCount(parent):
         return 2
 
-    def data(self, index, role):
+    @staticmethod
+    def data(index, role):
         if not index.isValid():
             return None
 
@@ -67,14 +69,16 @@ class FilterTreeModel(QAbstractItemModel):
                 return True
         return False
 
-    def headerData(self, section, orientation, role):
+    @staticmethod
+    def headerData(section, orientation, role):
         if role == Qt.DisplayRole:
             if section == 0:
                 return "Name"
             if section == 1:
                 return "Comment"
 
-    def flags(self, index):
+    @staticmethod
+    def flags(index):
         return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
     def parent(self, index):
@@ -131,7 +135,7 @@ class FilterTreeModel(QAbstractItemModel):
 
         self.beginInsertRows(parent, parent_num_children, parent_num_children + rows - 1)
 
-        for row in range(rows):
+        for _ in range(rows):
             child_node = node_type(parent_node)
             success = parent_node.insertChild(position, child_node)
 
@@ -179,7 +183,7 @@ class FilterTreeModel(QAbstractItemModel):
 
         self.beginRemoveRows(parent, position, position + rows - 1)
 
-        for row in range(rows):
+        for _ in range(rows):
             success = parent_node.removeChild(position)
 
         self.endRemoveRows()
