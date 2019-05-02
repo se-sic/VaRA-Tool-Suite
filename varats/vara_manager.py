@@ -42,6 +42,7 @@ def run_qprocess_with_output(process: QProcess, post_out=lambda x: None):
     for line in output.splitlines(True):
         post_out(line)
 
+# TODO (julianbreiteneicher): Return success
 def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
                   post_out=lambda x: None):
     """
@@ -569,7 +570,7 @@ class ProcessManager:
     @staticmethod
     def shutdown():
         inst = ProcessManager.getInstance()
-        with inst.mutex:
+        with inst.__mutex:
             inst.__shutdown()
             inst.__terminate_all_processes(block=False)
 
@@ -583,34 +584,37 @@ class ProcessManager:
         else:
             ProcessManager.__instance = self
 
-        self.has_shutdown = False
-        self.processes = []
-        self.mutex = RLock()
+        self.__has_shutdown = False
+        self.__processes = []
+        self.__mutex = RLock()
 
     def __process_finished(self):
         print("ProcessManager: __process__finished() begin")
-        with self.mutex:
-            self.processes = [x for x in self.processes if x.state() != QProcess.NotRunning]
+        with self.__mutex:
+            self.__processes = [x for x in self.__processes if x.state() != QProcess.NotRunning]
             print("ProcessManager: __process__finished() end")
 
     def __start_process(self, process: QProcess, program: str, args: [str]):
         print("ProcessManager: __start_process() begin")
-        with self.mutex:
+        with self.__mutex:
+            if self.__has_shutdown:
+                print("ProcessManager has already shutdown.")
+                return
             process.finished.connect(self.__process_finished)
-            self.processes.append(process)
+            self.__processes.append(process)
             process.start(program, args)
             print("ProcessManager: __start_process() end")
 
     def __shutdown(self):
         print("ProcessManager: __shutdown() begin")
-        with self.mutex:
-            self.has_shutdown = True
+        with self.__mutex:
+            self.__has_shutdown = True
             print("ProcessManager: __shutdown() end")
 
     def __terminate_all_processes(self, block=False):
         print("ProcessManager: __terminate_all_processes() begin")
-        with self.mutex:
-            for process in self.processes:
+        with self.__mutex:
+            for process in self.__processes:
                 process.finished.disconnect(self.__process_finished)
                 process.kill()
                 #process.terminate()
@@ -618,11 +622,11 @@ class ProcessManager:
                     print("ProcessManager: Waiting for process to terminate!")
                     process.waitForFinished(-1)
                     print("ProcessManager: Finished waiting!")
-            self.processes.clear()
+            self.__processes.clear()
             print("ProcessManager: __terminate_all_processes() end")
 
     def __del__(self):
-        with self.mutex:
+        with self.__mutex:
             self.__shutdown()
             self.__terminate_all_processes(block=False)
 
