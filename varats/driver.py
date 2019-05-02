@@ -10,12 +10,13 @@ from argparse_utils import enum_action
 
 from pathlib import Path
 
+import varats.development as dev
 from varats import settings
 from varats.settings import get_value_or_default,\
     CFG, generate_benchbuild_config, save_config
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
-from varats.vara_manager import setup_vara, BuildType
+from varats.vara_manager import setup_vara, BuildType, LLVMProjects
 from varats.tools.commit_map import generate_commit_map, store_commit_map
 from varats.plots.plots import extend_parser_with_graph_args, build_graph
 from varats.utils.cli_util import cli_yn_choice
@@ -284,18 +285,56 @@ def main_develop():
     parser = argparse.ArgumentParser("Developer helper")
     sub_parsers = parser.add_subparsers(help="Sub commands", dest="command")
 
+    # new-branch
     new_branch_parser = sub_parsers.add_parser('new-branch')
-    # TODO: name different repos
-    # vara-develop new-branch llvm,vara BNAME
-    # BNAME: f-Foo or Foo -> f-Foo
+    new_branch_parser.add_argument(
+        'branch_name', type=str, help='Name of the new branch')
+    new_branch_parser.add_argument(
+        'projects',
+        nargs='+',
+        action=enum_action(LLVMProjects),
+        help="Projects to work on.")
 
-    # git checkout
-    # vara-develop checkout BNAME
-    # BNAME: f-Foo or Foo -> f-Foo
+    # checkout
+    checkout_parser = sub_parsers.add_parser('checkout')
+    checkout_parser.add_argument(
+        'branch_name', type=str, help='Name of the new branch')
+    checkout_parser.add_argument(
+        'projects',
+        nargs='+',
+        action=enum_action(LLVMProjects),
+        help="Projects to work on.")
+    checkout_parser.add_argument('-r', '--remote', action='store_true')
 
-    # - create branch (for different repos)
-    # - change branch
-    # - push/pull all branches
-    # Create new branch
-    # Checkout new branch
-    # Show list of current developed branches
+    # git pull
+    pull_parser = sub_parsers.add_parser('pull')
+    pull_parser.add_argument(
+        'projects',
+        nargs='+',
+        action=enum_action(LLVMProjects),
+        help="Projects to work on.")
+
+    # git push
+    push_parser = sub_parsers.add_parser('push')
+    push_parser.add_argument(
+        'projects',
+        nargs='+',
+        action=enum_action(LLVMProjects),
+        help="Projects to work on.")
+
+    args = parser.parse_args()
+    if args.command == 'new-branch':
+        dev.create_new_branch_for_projects(args.branch_name, args.projects)
+
+    if args.command == 'checkout':
+        if args.remote:
+            dev.checkout_remote_branch_for_projects(args.branch_name,
+                                                    args.projects)
+        else:
+            dev.checkout_branch_for_projects(args.branch_name, args.projects)
+
+    if args.command == 'pull':
+        dev.pull_projects(args.projects)
+
+    if args.command == 'push':
+        dev.push_projects(args.projects)
