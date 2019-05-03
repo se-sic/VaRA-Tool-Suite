@@ -347,7 +347,7 @@ class CommitDateMaxFilter(UnaryInteractionFilter):
         return ":/breeze/light/appointment-new.svg"
 
 
-class AuthorDateDeltaMinFilter(UnaryInteractionFilter):
+class AuthorDateDeltaMinFilter(BinaryInteractionFilter):
     yaml_tag = u'!AuthorDateDeltaMinFilter'
 
     def __init__(self, parent: InteractionFilter = None, comment: str = None,
@@ -380,7 +380,7 @@ class AuthorDateDeltaMinFilter(UnaryInteractionFilter):
         return ":/breeze/light/chronometer.svg"
 
 
-class AuthorDateDeltaMaxFilter(UnaryInteractionFilter):
+class AuthorDateDeltaMaxFilter(BinaryInteractionFilter):
     yaml_tag = u'!AuthorDateDeltaMaxFilter'
 
     def __init__(self, parent: InteractionFilter = None, comment: str = None,
@@ -413,7 +413,7 @@ class AuthorDateDeltaMaxFilter(UnaryInteractionFilter):
         return ":/breeze/light/chronometer.svg"
 
 
-class CommitDateDeltaMinFilter(UnaryInteractionFilter):
+class CommitDateDeltaMinFilter(BinaryInteractionFilter):
     yaml_tag = u'!CommitDateDeltaMinFilter'
 
     def __init__(self, parent: InteractionFilter = None, comment: str = None,
@@ -446,7 +446,7 @@ class CommitDateDeltaMinFilter(UnaryInteractionFilter):
         return ":/breeze/light/chronometer.svg"
 
 
-class CommitDateDeltaMaxFilter(UnaryInteractionFilter):
+class CommitDateDeltaMaxFilter(BinaryInteractionFilter):
     yaml_tag = u'!CommitDateDeltaMaxFilter'
 
     def __init__(self, parent: InteractionFilter = None, comment: str = None,
