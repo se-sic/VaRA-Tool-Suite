@@ -4,6 +4,28 @@ from typing import List
 from PyQt5.QtCore import QDateTime, Qt
 
 
+# #################################
+# InteractionFilter Class Hierarchy
+# #################################
+#
+# InteractionFilter
+#   ├── FilterOperator
+#   │     ├── AndOperator
+#   │     ├── OrOperator
+#   │     ├── NotOperator
+#   └── ConcreteInteractionFilter
+#         ├── UnaryInteractionFilter
+#         │     ├── AuthorFilter
+#         │     ├── CommitterFilter
+#         │     ├── AuthorDateMinFilter
+#         │     ├── AuthorDateMaxFilter
+#         │     ├── CommitDateMinFilter
+#         │     └── CommitDateMaxFilter
+#         └── BinaryInteractionFilter
+#               ├── AuthorDateDeltaMinFilter
+#               ├── AuthorDateDeltaMaxFilter
+#               ├── CommitDateDeltaMinFilter
+#               └── CommitDateDeltaMaxFilter
 class InteractionFilter(yaml.YAMLObject):
     yaml_tag = u'!InteractionFilter'
 
