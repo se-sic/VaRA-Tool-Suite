@@ -159,5 +159,5 @@ def show_status_for_projects(projects):
         print("""
 {dlim}
 # Project: {name:67s} #
-{dlim}""".format(dlim=dlim, name="foobar"))
+{dlim}""".format(dlim=dlim, name=project.name))
         show_status(llvm_folder / project.path)
