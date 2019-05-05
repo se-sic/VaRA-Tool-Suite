@@ -8,7 +8,7 @@ from pathlib import Path
 from varats.settings import CFG
 from varats.vara_manager import (
     checkout_branch, checkout_new_branch, get_current_branch, has_branch,
-    has_remote_branch, branch_has_upstream, fetch_repository,
+    has_remote_branch, branch_has_upstream, fetch_repository, show_status,
     pull_current_branch, push_current_branch, LLVMProjects)
 
 
@@ -146,3 +146,18 @@ def push_projects(projects):
         else:
             push_current_branch(llvm_folder / project.path, 'origin',
                                 branch_name)
+
+
+def show_status_for_projects(projects):
+    """
+    Show the status of all projects.
+    """
+    llvm_folder = Path(str(CFG['llvm_source_dir']))
+
+    dlim = "#" * 80
+    for project in projects:
+        print("""
+{dlim}
+# Project: {name:67s} #
+{dlim}""".format(dlim=dlim, name="foobar"))
+        show_status(llvm_folder / project.path)

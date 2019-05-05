@@ -322,6 +322,14 @@ def main_develop():
         action=enum_action(LLVMProjects),
         help="Projects to work on.")
 
+    # git status
+    status_parser = sub_parsers.add_parser('status')
+    status_parser.add_argument(
+        'projects',
+        nargs='+',
+        action=enum_action(LLVMProjects),
+        help="Projects to work on.")
+
     args = parser.parse_args()
     if args.command == 'new-branch':
         dev.create_new_branch_for_projects(args.branch_name, args.projects)
@@ -338,3 +346,6 @@ def main_develop():
 
     if args.command == 'push':
         dev.push_projects(args.projects)
+
+    if args.command == 'status':
+        dev.show_status_for_projects(args.projects)

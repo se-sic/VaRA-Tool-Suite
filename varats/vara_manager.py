@@ -15,7 +15,7 @@ from enum import Enum
 
 from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject
 
-from plumbum import local, TF, RETCODE
+from plumbum import local, TF
 from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
 from plumbum.commands.processes import ProcessExecutionError
 
@@ -281,6 +281,14 @@ def add_remote(repo_folder, remote, url):
     with local.cwd(repo_folder):
         git("remote", "add", remote, url)
         git("fetch", remote)
+
+
+def show_status(repo_folder):
+    """
+    Show git status.
+    """
+    with local.cwd(repo_folder):
+        git["status"].run_fg()
 
 
 def fetch_remote(remote, repo_folder=""):
