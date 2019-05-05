@@ -133,6 +133,40 @@ paper_config:
 ```
 Next, we can run our experiment with BenchBuild as usual. During experiment execution BenchBuild will load our config and only evaluate the needed revisions.
 
+## VaRA developer tools
+VaRA-TS provides different tools to ease VaRA development.
+
+### vara-develop
+`vara-develop`, short `vd`, is a helper to interact with the different VaRA project repositories when working on VaRA.
+The tool provides commands for showing `git status`, creating `new-branch` or `checkout` existing branches. Furthermore, commands to `pull`/`push` the current branches. It can be used on a set of projects simultaneously.
+A comamnd like:
+```console
+> vd new-branch f-FooBar vara clang llvm
+```
+will create the branch `f-FooBar` on all three repositories.
+
+Showing the current status of the listet projects can be done with:
+```console
+> vd status clang vara
+################################################################################
+# Project: clang                                                               #
+################################################################################
+On branch vara-80-dev
+Your branch is up to date with 'origin/vara-80-dev'.
+
+nothing to commit, working tree clean
+
+################################################################################
+# Project: VaRA                                                                #
+################################################################################
+On branch f-InstrumentationVerifier
+Your branch is up to date with 'origin/f-InstrumentationVerifier'.
+
+nothing to commit, working tree clean
+```
+
+To get a full overview of the tool use `vd -h` and `vd {sub_command} -h`.
+
 ## Extending the tool suite
 VaRA-TS allows the user to extend it with different projects, experiments, and data representations.
 
