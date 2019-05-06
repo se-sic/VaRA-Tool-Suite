@@ -168,6 +168,7 @@ def generate_benchbuild_config(vara_cfg, bb_config_path: str):
                                'varats.projects.c_projects.tmux',
                                'varats.projects.c_projects.vim']
     projects_conf.value[:] += ['varats.projects.cpp_projects.doxygen']
+    projects_conf.value[:] += ['varats.projects.test_projects.basic_tests']
 
     # Experiments for VaRA
     projects_conf = BB_CFG["plugins"]["experiments"]
