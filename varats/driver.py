@@ -330,22 +330,27 @@ def main_develop():
         action=enum_action(LLVMProjects),
         help="Projects to work on.")
 
+    # list dev-branches
+    status_parser = sub_parsers.add_parser(
+        'f-branches', help="List all remote feature branches")
+
     args = parser.parse_args()
     if args.command == 'new-branch':
         dev.create_new_branch_for_projects(args.branch_name, args.projects)
-
-    if args.command == 'checkout':
+    elif args.command == 'checkout':
         if args.remote:
             dev.checkout_remote_branch_for_projects(args.branch_name,
                                                     args.projects)
         else:
             dev.checkout_branch_for_projects(args.branch_name, args.projects)
-
-    if args.command == 'pull':
+    elif args.command == 'pull':
         dev.pull_projects(args.projects)
-
-    if args.command == 'push':
+    elif args.command == 'push':
         dev.push_projects(args.projects)
-
-    if args.command == 'status':
+    elif args.command == 'status':
         dev.show_status_for_projects(args.projects)
+    elif args.command == 'f-branches':
+        dev.show_dev_branches(
+            [LLVMProjects.llvm, LLVMProjects.clang, LLVMProjects.vara])
+    else:
+        parser.print_help()

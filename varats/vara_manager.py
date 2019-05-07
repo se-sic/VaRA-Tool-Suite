@@ -291,15 +291,34 @@ def show_status(repo_folder):
         git["status"].run_fg()
 
 
-def fetch_remote(remote, repo_folder=""):
+def get_branches(repo_folder, extra_args=None) -> str:
+    """
+    Show git branches.
+    """
+    extra_args = [] if extra_args is None else extra_args
+
+    args = ["branch"]
+    args += extra_args
+
+    with local.cwd(repo_folder):
+        return git(args)
+
+
+def fetch_remote(remote, repo_folder="", extra_args=None):
     """
     Fetches the new changes from the remote.
     """
+    extra_args = [] if extra_args is None else extra_args
+
+    args = ["fetch"]
+    args += extra_args
+    args.append(remote)
+
     if repo_folder == '':
-        git("fetch", remote)
+        git(args)
     else:
         with local.cwd(repo_folder):
-            git("fetch", remote)
+            git(args)
 
 
 def init_all_submodules(folder):

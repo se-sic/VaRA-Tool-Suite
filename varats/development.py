@@ -3,13 +3,16 @@ The development module provides different utility function to ease the
 development for VaRA.
 """
 
+from collections import defaultdict
 from pathlib import Path
+import re
 
 from varats.settings import CFG
 from varats.vara_manager import (
     checkout_branch, checkout_new_branch, get_current_branch, has_branch,
-    has_remote_branch, branch_has_upstream, fetch_repository, show_status,
-    pull_current_branch, push_current_branch, LLVMProjects)
+    has_remote_branch, branch_has_upstream, fetch_repository, fetch_remote,
+    show_status, get_branches, pull_current_branch, push_current_branch,
+    LLVMProjects)
 
 
 def __convert_to_vara_branch_naming_schema(branch_name: str):
@@ -161,3 +164,30 @@ def show_status_for_projects(projects):
 # Project: {name:67s} #
 {dlim}""".format(dlim=dlim, name=project.name))
         show_status(llvm_folder / project.path)
+
+
+def show_dev_branches(projects):
+    """
+    Show all dev dev branches.
+    """
+    llvm_folder = Path(str(CFG['llvm_source_dir']))
+
+    found_branches = defaultdict(list)
+    max_branch_chars = 0
+    for project in projects:
+        fetch_remote(
+            "origin", llvm_folder / project.path, extra_args=["--prune"])
+        branches = get_branches(llvm_folder / project.path, extra_args=["-r"])
+        for line in branches.split():
+            match = re.match(r".*(f-.*)", line)
+            if match is not None:
+                branch_name = match.group(1).strip()
+                if len(branch_name) > max_branch_chars:
+                    max_branch_chars = len(branch_name)
+                found_branches[branch_name] += [project.name]
+
+    print("Feature Branches:")
+    for branch_name in found_branches.keys():
+        print(("  {branch_name:" + str(max_branch_chars + 4) +
+               "s} {repos}").format(
+                   branch_name=branch_name, repos=found_branches[branch_name]))
