@@ -138,14 +138,16 @@ VaRA-TS provides different tools to ease VaRA development.
 
 ### vara-develop
 `vara-develop`, short `vd`, is a helper to interact with the different VaRA project repositories when working on VaRA.
-The tool provides commands for showing `git status`, creating `new-branch` or `checkout` existing branches. Furthermore, commands to `pull`/`push` the current branches. It can be used on a set of projects simultaneously.
-A comamnd like:
+The tool provides commands for showing `git status`, creating `new-branch` or `checkout` existing branches.
+Furthermore, commands to `pull`/`push` the current branches and to show currently developed feature branches `f-branches`.
+It can be used on a set of projects simultaneously.
+A command like:
 ```console
 > vd new-branch f-FooBar vara clang llvm
 ```
 will create the branch `f-FooBar` on all three repositories.
 
-Showing the current status of the listet projects can be done with:
+Showing the current status of the listed projects can be done with:
 ```console
 > vd status clang vara
 ################################################################################
