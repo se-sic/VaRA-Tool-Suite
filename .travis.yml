@@ -22,6 +22,7 @@ install:
 
 script:
   - pytest --cov=./ varats tests
+  - coverage run -a 'which vara-buildsetup' -i
   - codecov
 
 branches:
