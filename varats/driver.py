@@ -18,7 +18,7 @@ from varats.gui.buildsetup_window import BuildSetup
 from varats.vara_manager import setup_vara, BuildType
 from varats.tools.commit_map import generate_commit_map, store_commit_map
 from varats.plots.plots import extend_parser_with_graph_args, build_graph
-from varats.utils.cli_util import cli_yn_choice
+#from varats.utils.cli_util import cli_yn_choice
 from varats.paper.case_study import SamplingMethod, generate_case_study,\
     store_case_study
 
@@ -187,10 +187,10 @@ def main_gen_benchbuild_config():
     parser.add_argument("--bb-root",
                         help="Set an alternative BenchBuild root folder.")
     if settings.CFG["config_file"].value is None:
-        if cli_yn_choice("Error! No VaRA config found. Should we create one?"):
-            save_config()
-        else:
-            sys.exit()
+        #if cli_yn_choice("Error! No VaRA config found. Should we create one?"):
+        #    save_config()
+        #else:
+        sys.exit()
 
     args = parser.parse_args()
     if args.bb_root is not None:
