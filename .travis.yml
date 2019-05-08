@@ -16,7 +16,7 @@ addons:
 
 install:
   - pip install .
-  # - pip install -r requirements.txt
+  - pip install -r requirements.txt
   - pip install codecov
   - pip install pytest-cov
 
