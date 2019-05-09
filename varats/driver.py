@@ -17,7 +17,7 @@ from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
 from varats.vara_manager import setup_vara, BuildType
 from varats.tools.commit_map import generate_commit_map, store_commit_map
-from varats.plots.plots import extend_parser_with_graph_args, build_graph
+from varats.plots.plots import extend_parser_with_plot_args, build_plot
 from varats.utils.cli_util import cli_yn_choice
 from varats.paper.case_study import SamplingMethod, generate_case_study,\
     store_case_study
@@ -166,15 +166,21 @@ def main_gen_graph():
     parser.add_argument("-p", "--project", help="Project name")
     parser.add_argument("-c", "--cmap", help="Path to commit map")
     parser.add_argument("-g", "--graph", help="Graph type")
+    parser.add_argument(
+        "-v",
+        "--view",
+        help="Show the plot instead of saving it",
+        action='store_true',
+        default=False)
 
-    extend_parser_with_graph_args(parser)
+    extend_parser_with_plot_args(parser)
 
     args = {
         k: v
         for k, v in vars(parser.parse_args()).items() if v is not None
     }
 
-    build_graph(**args)
+    build_plot(**args)
 
 
 def main_gen_benchbuild_config():
