@@ -2,18 +2,24 @@
 General plots module.
 """
 
-from varats.plots.commit_interactions import gen_interaction_graph
+from varats.plots.commit_interactions import InteractionPlot
 
 
-def extend_parser_with_graph_args(parser):
+def extend_parser_with_plot_args(parser):
     """
     Extend the parser with graph related extra args.
     """
     pass
 
 
-def build_graph(**kwargs):
+def build_plot(**kwargs):
     """
     Build the specified graph.
     """
-    gen_interaction_graph(**kwargs)
+    plot = InteractionPlot(**kwargs)
+    plot.style = "ggplot"
+
+    if kwargs["view"]:
+        plot.show()
+    else:
+        plot.save('png')

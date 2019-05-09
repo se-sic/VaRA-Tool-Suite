@@ -5,8 +5,10 @@ Generate commit interaction graphs.
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import matplotlib.style as style
 import pandas as pd
 
+from varats.plots.plot import Plot
 from varats.data.cache_helper import load_cached_df_or_none, cache_dataframe,\
     GraphCacheType
 from varats.data.commit_report import CommitMap, CommitReport
@@ -87,7 +89,7 @@ def _build_interaction_table(report_files: [str],
 
 
 @check_required_args(["result_folder", "project", "cmap"])
-def gen_interaction_graph(**kwargs):
+def _gen_interaction_graph(**kwargs):
     """
     Generate a plot, showing the amount of interactions between commits and
     interactions between the HEAD commit and all others.
@@ -135,4 +137,34 @@ def gen_interaction_graph(**kwargs):
 
     plt.xlabel("Revisions", **{'size': '14'})
     plt.ylabel("HEAD Interactions", **{'size': '14'})
-    plt.show()
+
+
+class InteractionPlot(Plot):
+    """
+    Plot showing the total amount of commit interactions.
+    """
+
+    def __init__(self, **kwargs):
+        super(InteractionPlot, self).__init__("interaction_graph")
+        self.__saved_extra_args = kwargs
+
+    def plot(self):
+        style.use(self.style)
+        _gen_interaction_graph(**self.__saved_extra_args)
+
+    def show(self):
+        self.plot()
+        plt.show()
+
+    def save(self, filetype='svg'):
+        self.plot()
+
+        result_dir = Path(self.__saved_extra_args["result_folder"])
+        project_name = self.__saved_extra_args["project"]
+
+        plt.savefig(
+            result_dir / (project_name + "_{graph_name}.{filetype}".format(
+                graph_name=self.name, filetype=filetype)),
+            dpi=1200,
+            bbox_inches="tight",
+            format=filetype)
