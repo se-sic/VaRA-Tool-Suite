@@ -15,27 +15,30 @@ class GraphCacheType(Enum):
     """
     Cached dataframes for graphs.
     """
-    CommitInteractionData = "interaction_table.csv"
+    CommitInteractionData = "interaction_table"
 
 
-def __get_data_file_path(data_id):
+def __get_data_file_path(data_id, project_name):
     """
 
     Test:
-    >>> str(__get_data_file_path("foo.txt"))
-    'data_cache/foo.txt'
+    >>> str(__get_data_file_path("foo", "tmux"))
+    'data_cache/foo-tmux.csv'
 
-    >>> isinstance(__get_data_file_path("foo.txt"), Path)
+    >>> isinstance(__get_data_file_path("foo.csv", "tmux"), Path)
     True
 
-    >>> str(__get_data_file_path(GraphCacheType.CommitInteractionData))
-    'data_cache/interaction_table.csv'
+    >>> str(__get_data_file_path(GraphCacheType.CommitInteractionData, "tmux"))
+    'data_cache/interaction_table-tmux.csv'
     """
-    return Path(str(CFG["plots"]["data_cache"])) / (
-        data_id.value if isinstance(data_id, GraphCacheType) else data_id)
+    return Path(str(
+        CFG["plots"]["data_cache"])) / "{plot_name}-{project_name}.csv".format(
+            plot_name=data_id.value
+            if isinstance(data_id, GraphCacheType) else data_id,
+            project_name=project_name)
 
 
-def load_cached_df_or_none(data_id):
+def load_cached_df_or_none(data_id, project_name):
     """
     Load cached dataframe from disk, otherwise return None.
 
@@ -43,14 +46,14 @@ def load_cached_df_or_none(data_id):
         data_id: File name or GraphCacheType
     """
 
-    file_path = __get_data_file_path(data_id)
+    file_path = __get_data_file_path(data_id, project_name)
     if not file_path.exists():
         return None
 
     return pd.read_csv(str(file_path))
 
 
-def cache_dataframe(data_id, dataframe: pd.DataFrame):
+def cache_dataframe(data_id, project_name, dataframe: pd.DataFrame):
     """
     Cache a dataframe by persisting it to disk.
 
@@ -58,5 +61,5 @@ def cache_dataframe(data_id, dataframe: pd.DataFrame):
         data_id: File name or GraphCacheType
         df: pandas dataframe to store
     """
-    file_path = __get_data_file_path(data_id)
+    file_path = __get_data_file_path(data_id, project_name)
     dataframe.to_csv(str(file_path))
