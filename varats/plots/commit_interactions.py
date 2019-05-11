@@ -16,8 +16,8 @@ from varats.jupyterhelper.file import load_commit_report
 from varats.plots.plot_utils import check_required_args
 
 
-def _build_interaction_table(report_files: [str],
-                             commit_map: CommitMap) -> pd.DataFrame:
+def _build_interaction_table(report_files: [str], commit_map: CommitMap,
+                             project_name: str) -> pd.DataFrame:
     """
     Create a table with commit interaction data.
 
@@ -30,7 +30,8 @@ def _build_interaction_table(report_files: [str],
             - HEAD DF Interactions
 
     """
-    cached_df = load_cached_df_or_none(GraphCacheType.CommitInteractionData)
+    cached_df = load_cached_df_or_none(GraphCacheType.CommitInteractionData,
+                                       project_name)
     if cached_df is None:
         cached_df = pd.DataFrame(columns=[
             'head_cm', 'CFInteractions', 'DFInteractions',
@@ -83,7 +84,7 @@ def _build_interaction_table(report_files: [str],
     new_df = pd.concat(
         [cached_df] + new_data_frames, ignore_index=True, sort=False)
 
-    cache_dataframe(GraphCacheType.CommitInteractionData, new_df)
+    cache_dataframe(GraphCacheType.CommitInteractionData, project_name, new_df)
 
     return new_df
 
@@ -105,7 +106,8 @@ def _gen_interaction_graph(**kwargs):
         if file_path.stem.startswith(str(project_name) + "-"):
             reports.append(file_path)
 
-    data_frame = _build_interaction_table(reports, commit_map)
+    data_frame = _build_interaction_table(reports, commit_map,
+                                          str(project_name))
 
     # Interaction plot
     axis = plt.subplot(211)
