@@ -55,7 +55,7 @@ class TraceBinaryCreator(base.Extension):
                                  self.experiment) as _run:
             res.append(_run())
 
-        opt = local["opt"]["-vara-HD", "-vara-trace", "-vara-trace-RTy=high",
+        opt = local["opt"]["-vara-HD", "-vara-trace", "-vara-trace-RTy=High",
                            "-vara-trace-MTy={MType}".format(
                                MType=self.marker_type
                            ), "-S", "-o", "traced.ll", fake_file_name]
@@ -96,7 +96,7 @@ class PrintMarkerInstTest(Experiment):
 
 class PapiMarkerInstTest(Experiment):
     """
-    Instrumnet all highlight regions with papi markers.
+    Instrument all highlight regions with papi markers.
     """
 
     NAME = "PapiMarkerInstTest"
