@@ -4,30 +4,69 @@ from typing import List
 from PyQt5.QtCore import QDateTime, Qt
 
 
-# #################################
-# InteractionFilter Class Hierarchy
-# #################################
-#
-# InteractionFilter
-#   ├── FilterOperator
-#   │     ├── AndOperator
-#   │     ├── OrOperator
-#   │     ├── NotOperator
-#   │     ├── SourceOperator
-#   │     ├── TargetOperator
-#   └── ConcreteInteractionFilter
-#         ├── UnaryInteractionFilter
-#         │     ├── AuthorFilter
-#         │     ├── CommitterFilter
-#         │     ├── AuthorDateMinFilter
-#         │     ├── AuthorDateMaxFilter
-#         │     ├── CommitDateMinFilter
-#         │     └── CommitDateMaxFilter
-#         └── BinaryInteractionFilter
-#               ├── AuthorDateDeltaMinFilter
-#               ├── AuthorDateDeltaMaxFilter
-#               ├── CommitDateDeltaMinFilter
-#               └── CommitDateDeltaMaxFilter
+"""
+This file defines all available (commit interaction) filters.
+When evaluated, a filter returns either KEEP or REMOVE for a given commit
+interaction, depending on wheter the interaction matches the specific filter
+or not. KEEP means that the interaction matches the filters and should be kept.
+REMOVE means the opposite.
+The filters can be arranged in a tree structure.
+The two basic kinds of filters are ConcreteInteractionFilter and FilterOperator.
+
+ConcreteInteractionFilters represent the "actual" commit interaction filters.
+These types of filters cannot have children, they can only appear as leaf-nodes
+in the filter tree.
+They are divided in the two kinds BinaryInteractionFilter and
+UnaryInteractionFilter:
+
+- BinaryInteractionFilters filter commit interactions based on both the source
+  commit and the target commit of an interaction.
+  For instance, the AuthorDateDeltaMinFilter filters out all interactions where
+  the time difference of the source and target commit (of the interaction) is
+  smaller than the specified time duration.
+  This means that in order to evaluate such a filter, both the source and the
+  target commit of an interaction must be known.
+- UnaryInteractionFilters filter commit interactions based on either the source
+  or the target commit of an interaction.
+
+FilterOperators can be used to combine filters or to define the scope of a
+Filter. In the filter tree, they can have one or more children (they must have
+at least one child).
+
+- The SourceOperator and TargetOperator types specify the scope of their child
+  filter (they can have exactly one child).
+  For example, a SourceOperator with a child filter of type AuthorFilter means
+  that a commit interaction is filtered based on the author of the source
+  commit of the interaction.
+- The types AndOperator, OrOperator, and NotOperator represent the basic
+  operators of Boolean algebra. AndOperators and OrOperators can have multiple
+  children, while NotOperators can only have one.
+  As an example, when evaluation an AndOperator, it will return KEEP iff all of
+  its child filters return KEEP, otherwise it will return REMOVE.
+
+The complete class hierarchy of InteractionFilters can be seen below:
+
+InteractionFilter
+  ├── FilterOperator
+  │     ├── AndOperator
+  │     ├── OrOperator
+  │     ├── NotOperator
+  │     ├── SourceOperator
+  │     ├── TargetOperator
+  └── ConcreteInteractionFilter
+        ├── UnaryInteractionFilter
+        │     ├── AuthorFilter
+        │     ├── CommitterFilter
+        │     ├── AuthorDateMinFilter
+        │     ├── AuthorDateMaxFilter
+        │     ├── CommitDateMinFilter
+        │     └── CommitDateMaxFilter
+        └── BinaryInteractionFilter
+              ├── AuthorDateDeltaMinFilter
+              ├── AuthorDateDeltaMaxFilter
+              ├── CommitDateDeltaMinFilter
+              └── CommitDateDeltaMaxFilter
+"""
 class InteractionFilter(yaml.YAMLObject):
     yaml_tag = u'!InteractionFilter'
 
