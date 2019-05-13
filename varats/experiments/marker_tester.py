@@ -78,7 +78,7 @@ class TraceBinaryCreator(base.Extension):
 
 class PrintMarkerInstTest(Experiment):
     """
-    Instrumnet all highlight regions with print markers.
+    Instrument all highlight regions with print markers.
     """
 
     NAME = "PrintMarkerInstTest"
@@ -108,6 +108,24 @@ class PapiMarkerInstTest(Experiment):
                 self,
                 "Papi",
                 extra_ldflags=["-stdlib=libc++", "-lpthread", "-lpapi"])
+
+        project.cflags = ["-fvara-handleRM=High"]
+
+        project_actions = self.default_compiletime_actions(project)
+
+        return project_actions
+
+
+class CheckMarkerInstTest(Experiment):
+    """
+    Instrument all highlight regions with check markers.
+    """
+
+    NAME = "CheckMarkerInstTest"
+
+    def actions_for_project(self, project):
+        project.compiler_extension = compiler.RunCompiler(project, self) \
+                                     << TraceBinaryCreator(project, self, "Check")
 
         project.cflags = ["-fvara-handleRM=High"]
 
