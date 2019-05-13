@@ -92,6 +92,10 @@ class PropertiesEditor(QWidget, Ui_FilterProperties):
                 pass
             if node.name() == 'NotOperator':
                 pass
+            if node.name() == 'SourceOperator':
+                pass
+            if node.name() == 'TargetOperator':
+                pass
             if node.name() == 'AuthorFilter':
                 self._author_filter_editor.setVisible(True)
             if node.name() == 'CommitterFilter':
@@ -381,12 +385,17 @@ class FilterWindow(QMainWindow, Ui_FilterEditor):
         self.uiTree.setModel(self._model)
 
         menu = QMenu()
-        menu.addAction(QIcon(QPixmap(":/math/and-operator.svg")), 'And Operator',
+        menu.addAction(QIcon(QPixmap(":/operators/and-operator.svg")), 'And Operator',
                        self.addAndNode)
-        menu.addAction(QIcon(QPixmap(":/math/or-operator.svg")), 'Or Operator',
+        menu.addAction(QIcon(QPixmap(":/operators/or-operator.svg")), 'Or Operator',
                        self.addOrNode)
-        menu.addAction(QIcon(QPixmap(":/math/not-operator.svg")), 'Not Operator',
+        menu.addAction(QIcon(QPixmap(":/operators/not-operator.svg")), 'Not Operator',
                        self.addNotNode)
+        menu.addSeparator()
+        menu.addAction(QIcon(QPixmap(":/operators/source-operator.svg")), 'Source Operator',
+                       self.addSourceNode)
+        menu.addAction(QIcon(QPixmap(":/operators/target-operator.svg")), 'Target Operator',
+                       self.addTargetNode)
         menu.addSeparator()
         menu.addAction(QIcon(QPixmap(":/breeze/light/im-user.svg")), 'Committer Filter',
                        self.addCommitterFilterNode)
@@ -473,6 +482,20 @@ class FilterWindow(QMainWindow, Ui_FilterEditor):
     def addNotNode(self):
         with self._lock:
             modified = self._model.addNotNode()
+            self.uiTree.selectionModel().clear()
+            if modified:
+                self.setWindowModified(True)
+
+    def addSourceNode(self):
+        with self._lock:
+            modified = self._model.addSourceNode()
+            self.uiTree.selectionModel().clear()
+            if modified:
+                self.setWindowModified(True)
+
+    def addTargetNode(self):
+        with self._lock:
+            modified = self._model.addTargetNode()
             self.uiTree.selectionModel().clear()
             if modified:
                 self.setWindowModified(True)

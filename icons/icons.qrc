@@ -28,9 +28,11 @@
     <file>breeze/light/document-save.svg</file>
     <file>breeze/light/application-exit.svg</file>
     <file>breeze/light/document-open.svg</file>
-    <file>math/and-operator.svg</file>
-    <file>math/or-operator.svg</file>
-    <file>math/not-operator.svg</file>
-    <file>math/xor-operator.svg</file>
+    <file>operators/and-operator.svg</file>
+    <file>operators/or-operator.svg</file>
+    <file>operators/not-operator.svg</file>
+    <file>operators/xor-operator.svg</file>
+    <file>operators/source-operator.svg</file>
+    <file>operators/target-operator.svg</file>
   </qresource>
 </RCC>

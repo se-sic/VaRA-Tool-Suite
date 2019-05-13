@@ -13,6 +13,8 @@ from PyQt5.QtCore import QDateTime, Qt
 #   │     ├── AndOperator
 #   │     ├── OrOperator
 #   │     ├── NotOperator
+#   │     ├── SourceOperator
+#   │     ├── TargetOperator
 #   └── ConcreteInteractionFilter
 #         ├── UnaryInteractionFilter
 #         │     ├── AuthorFilter
@@ -565,7 +567,7 @@ class AndOperator(FilterOperator):
 
     @staticmethod
     def resource():
-        return ":/math/and-operator.svg"
+        return ":/operators/and-operator.svg"
 
 
 class OrOperator(FilterOperator):
@@ -623,7 +625,7 @@ class OrOperator(FilterOperator):
 
     @staticmethod
     def resource():
-        return ":/math/or-operator.svg"
+        return ":/operators/or-operator.svg"
 
 
 class NotOperator(FilterOperator):
@@ -670,5 +672,99 @@ class NotOperator(FilterOperator):
 
     @staticmethod
     def resource():
-        return ":/math/not-operator.svg"
+        return ":/operators/not-operator.svg"
+
+
+class SourceOperator(FilterOperator):
+    yaml_tag = u'!SourceOperator'
+
+    def __init__(self, parent: InteractionFilter = None, comment: str = None,
+                 child: InteractionFilter = None) -> None:
+        super().__init__(parent, comment)
+        self._child = child
+
+    def addChild(self, child: InteractionFilter) -> bool:
+        if self._child is None:
+            self._child = child
+            return True
+        return False
+
+    def insertChild(self, position: int, child: InteractionFilter) -> bool:
+        if self._child is not None or position != 0:
+            return False
+
+        self._child = child
+        child.setParent(self)
+        return True
+
+    def removeChild(self, position: int ) -> bool:
+        if position != 0:
+            return False
+
+        self._child.setParent(None)
+        self._child = None
+        return True
+
+    def child(self, index: int = 0) -> InteractionFilter:
+        if index == 0:
+            return self._child
+
+    def childCount(self) -> int:
+        if self._child is None:
+            return 0
+        return 1
+
+    def parent(self) -> InteractionFilter:
+        return self._parent
+
+    @staticmethod
+    def resource():
+        return ":/operators/source-operator.svg"
+
+
+class TargetOperator(FilterOperator):
+    yaml_tag = u'!TargetOperator'
+
+    def __init__(self, parent: InteractionFilter = None, comment: str = None,
+                 child: InteractionFilter = None) -> None:
+        super().__init__(parent, comment)
+        self._child = child
+
+    def addChild(self, child: InteractionFilter) -> bool:
+        if self._child is None:
+            self._child = child
+            return True
+        return False
+
+    def insertChild(self, position: int, child: InteractionFilter) -> bool:
+        if self._child is not None or position != 0:
+            return False
+
+        self._child = child
+        child.setParent(self)
+        return True
+
+    def removeChild(self, position: int ) -> bool:
+        if position != 0:
+            return False
+
+        self._child.setParent(None)
+        self._child = None
+        return True
+
+    def child(self, index: int = 0) -> InteractionFilter:
+        if index == 0:
+            return self._child
+
+    def childCount(self) -> int:
+        if self._child is None:
+            return 0
+        return 1
+
+    def parent(self) -> InteractionFilter:
+        return self._parent
+
+    @staticmethod
+    def resource():
+        return ":/operators/target-operator.svg"
 

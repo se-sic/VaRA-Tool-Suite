@@ -2,7 +2,7 @@ from PyQt5.QtCore import QModelIndex, QAbstractItemModel, Qt
 from PyQt5.QtGui import QIcon, QPixmap
 
 from varats.data.filtertree_data import (
-    AndOperator, OrOperator, NotOperator,
+    AndOperator, OrOperator, NotOperator, SourceOperator, TargetOperator,
     InteractionFilter, AuthorFilter, CommitterFilter,
     AuthorDateMinFilter, AuthorDateMaxFilter, CommitDateMinFilter, CommitDateMaxFilter,
     AuthorDateDeltaMinFilter, AuthorDateDeltaMaxFilter,
@@ -208,6 +208,14 @@ class FilterTreeModel(QAbstractItemModel):
     def addNotNode(self) -> bool:
         num_children = self.getNode(self._selection).childCount()
         return self.insertRows(NotOperator, num_children, 1, self._selection)
+
+    def addSourceNode(self) -> bool:
+        num_children = self.getNode(self._selection).childCount()
+        return self.insertRows(SourceOperator, num_children, 1, self._selection)
+
+    def addTargetNode(self) -> bool:
+        num_children = self.getNode(self._selection).childCount()
+        return self.insertRows(TargetOperator, num_children, 1, self._selection)
 
     def addCommitterFilterNode(self) -> bool:
         num_children = self.getNode(self._selection).childCount()
