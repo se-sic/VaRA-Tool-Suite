@@ -131,7 +131,7 @@ def _gen_interaction_graph(**kwargs):
     plt.plot('head_cm', 'DFInteractions', data=data_frame, color='red')
 
     # plt.ylabel("Interactions", **{'size': '10'})
-    axis.legend()
+    axis.legend(prop={'size': 4, 'family': 'monospace'})
 
     # Head interaction plot
     axis = plt.subplot(212)
@@ -151,7 +151,7 @@ def _gen_interaction_graph(**kwargs):
 
     plt.xlabel("Revisions", **{'size': '10'})
     # plt.ylabel("HEAD Interactions", **{'size': '10'})
-    axis.legend()
+    axis.legend(prop={'size': 4, 'family': 'monospace'})
 
 
 class InteractionPlot(Plot):
