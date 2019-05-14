@@ -125,7 +125,7 @@ class FunctionGraphEdges():
 
 class CommitReport():
 
-    FILE_NAME_REGEX = re.compile(r"(?P<project_name>.*)-" +
+    FILE_NAME_REGEX = re.compile(r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
                                  "(?P<file_commit_hash>.*)_(?P<UUID>.*)")
 
     def __init__(self, path: str):

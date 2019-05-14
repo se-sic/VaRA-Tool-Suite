@@ -62,9 +62,9 @@ class BenchBuildConfig(unittest.TestCase):
         """
         Test if all projects where added to the benchbuild config.
         """
-        excluded_projects = ["llvm-all.py",
-                             "llvm-min.py",
-                             "llvm.py"]
+        excluded_projects = [
+            "llvm-all.py", "llvm-min.py", "llvm.py", "glibc.py"
+        ]
 
         loaded_plugins = BB_CFG["plugins"]["projects"].value
         self.check_all_files_in_config_list("varats/projects/c_projects/",

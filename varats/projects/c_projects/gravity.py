@@ -1,3 +1,6 @@
+"""
+Project file for gravity.
+"""
 from benchbuild.settings import CFG
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
@@ -7,8 +10,14 @@ from benchbuild.utils.download import with_git
 
 from plumbum import local
 
+from varats.paper.paper_config import project_filter_generator
 
-@with_git("https://github.com/marcobambini/gravity.git", limit=100, refspec="HEAD")
+
+@with_git(
+    "https://github.com/marcobambini/gravity.git",
+    limit=100,
+    refspec="HEAD",
+    version_filter=project_filter_generator("gravity"))
 class Gravity(Project):
     """ Programming language Gravity """
 
@@ -17,6 +26,7 @@ class Gravity(Project):
     DOMAIN = 'UNIX utils'
     VERSION = 'HEAD'
 
+    BIN_NAMES = ['gravity']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
     def run_tests(self, runner):

@@ -1,13 +1,14 @@
 """
 Project file for gzip.
 """
-from plumbum import local
 from benchbuild.settings import CFG
+from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc
+from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
 import benchbuild.project as prj
-from benchbuild.utils.cmd import make
-from benchbuild.utils.download import with_git
+
+from plumbum import local
 
 from varats.paper.paper_config import project_filter_generator
 
@@ -22,9 +23,10 @@ class Gzip(prj.Project):
 
     NAME = 'gzip'
     GROUP = 'c_projects'
-    DOMAIN = 'VCS'
+    DOMAIN = 'compression'
     VERSION = 'HEAD'
 
+    BIN_NAMES = ['gzip']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
     def run_tests(self, runner):

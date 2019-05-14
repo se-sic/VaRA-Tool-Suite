@@ -1,3 +1,8 @@
+"""
+Module for extracting bc files from generated binaries.
+This requires to run the compilation with WLLVM
+"""
+from pathlib import Path
 import attr
 import benchbuild.utils.actions as actions
 
@@ -23,7 +28,7 @@ class Extract(actions.Step):
     DESCRIPTION = "Extract bitcode out of the execution file."
 
     BC_CACHE_FOLDER_TEMPLATE = "{cache_dir}/{project_name}/"
-    BC_FILE_TEMPLATE = "{project_name}-{project_version}.bc"
+    BC_FILE_TEMPLATE = "{project_name}-{binary_name}-{project_version}.bc"
 
     def __call__(self):
         """
@@ -33,17 +38,25 @@ class Extract(actions.Step):
         if not self.obj:
             return
         project = self.obj
-        project_src = local.path(project.builddir) / project.SRC_FILE /\
-            project.name
 
         bc_cache_folder = self.BC_CACHE_FOLDER_TEMPLATE.format(
             cache_dir=str(CFG["vara"]["result"]),
             project_name=str(project.name))
         mkdir("-p", local.path() / bc_cache_folder)
 
-        bc_cache_file = bc_cache_folder + self.BC_FILE_TEMPLATE.format(
-            project_name=str(project.name),
-            project_version=str(project.version))
+        for binary_name in project.BIN_NAMES:
+            bc_cache_file = bc_cache_folder + self.BC_FILE_TEMPLATE.format(
+                project_name=str(project.name),
+                binary_name=str(binary_name),
+                project_version=str(project.version))
 
-        extract_bc(project_src)
-        cp(local.path(project_src) + ".bc", local.path() / bc_cache_file)
+            target_binary = local.path(project.builddir) / project.SRC_FILE /\
+                binary_name
+
+            extract_bc(target_binary)
+
+            if Path(target_binary).exists():
+                cp(target_binary + ".bc", local.path() / bc_cache_file)
+            else:
+                print("Could not find binary '{name}' for extraction.".format(
+                    name=binary_name))
