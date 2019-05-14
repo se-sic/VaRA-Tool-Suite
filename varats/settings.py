@@ -160,13 +160,18 @@ def generate_benchbuild_config(vara_cfg, bb_config_path: str):
     # projects_conf.value[:] = [ x for x in projects_conf.value
     #                           if not x.endswith('gzip')]
     projects_conf.value[:] = []
-    projects_conf.value[:] += ['varats.projects.c_projects.busybox',
-                               'varats.projects.c_projects.git',
-                               'varats.projects.c_projects.glibc',
-                               'varats.projects.c_projects.gravity',
-                               'varats.projects.c_projects.gzip',
-                               'varats.projects.c_projects.tmux',
-                               'varats.projects.c_projects.vim']
+    projects_conf.value[:] += [
+        'varats.projects.c_projects.busybox',  # needs bin names
+        'varats.projects.c_projects.git',  # needs bin names
+        'varats.projects.c_projects.gravity',  # needs bin names
+        'varats.projects.c_projects.gzip',
+        'varats.projects.c_projects.libvpx',  # needs compile
+        'varats.projects.c_projects.lrzip',  # needs bin names  # needs compile
+        'varats.projects.c_projects.tmux',  # needs bin names
+        'varats.projects.c_projects.vim',  # needs bin names
+        'varats.projects.c_projects.x264',  # needs bin names  # needs compile
+        'varats.projects.c_projects.xz',  # needs bin names  # needs compile
+    ]
     projects_conf.value[:] += ['varats.projects.cpp_projects.doxygen']
     projects_conf.value[:] += ['varats.projects.test_projects.basic_tests']
 
@@ -178,9 +183,7 @@ def generate_benchbuild_config(vara_cfg, bb_config_path: str):
         'varats.experiments.marker_tester'
     ]
 
-    BB_CFG["env"] = {
-        "PATH": [str(vara_cfg["llvm_install_dir"]) + "bin/"]
-    }
+    BB_CFG["env"] = {"PATH": [str(vara_cfg["llvm_install_dir"]) + "bin/"]}
 
     # Add VaRA experiment config variables
     BB_CFG["vara"] = {

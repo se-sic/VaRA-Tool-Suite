@@ -33,7 +33,7 @@ class CFRAnalysis(actions.Step):
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
     RESULT_FILE_TEMPLATE = \
-        "{project_name}-{project_version}_{project_uuid}.yaml"
+        "{project_name}-{binary_name}-{project_version}_{project_uuid}.yaml"
 
     def __call__(self):
         """
@@ -59,16 +59,22 @@ class CFRAnalysis(actions.Step):
 
         mkdir("-p", vara_result_folder)
 
-        result_file = self.RESULT_FILE_TEMPLATE.format(
-            project_name=str(project.name),
-            project_version=str(project.version),
-            project_uuid=str(project.run_uuid))
+        for binary_name in project.BIN_NAMES:
+            result_file = self.RESULT_FILE_TEMPLATE.format(
+                project_name=str(project.name),
+                binary_name=binary_name,
+                project_version=str(project.version),
+                project_uuid=str(project.run_uuid))
 
-        run_cmd = opt[
-            "-vara-BD", "-vara-CFR", "-yaml-out-file={res_folder}/{res_file}"
-            .format(res_folder=vara_result_folder, res_file=result_file),
-            bc_cache_folder / project.name + "-" + project.version + ".bc"]
-        run_cmd()
+            run_cmd = opt[
+                "-vara-BD", "-vara-CFR",
+                "-yaml-out-file={res_folder}/{res_file}".
+                format(res_folder=vara_result_folder, res_file=result_file
+                       ), bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
+                           project_name=project.name,
+                           binary_name=binary_name,
+                           project_version=project.version)]
+            run_cmd()
 
 
 class GitBlameAnntotationReport(Experiment):
@@ -97,14 +103,21 @@ class GitBlameAnntotationReport(Experiment):
         project.cflags = ["-fvara-GB"]
 
         analysis_actions = []
-        if not path.exists(local.path(
-                Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                    cache_dir=str(CFG["vara"]["result"]),
-                    project_name=str(project.name)) +
-                Extract.BC_FILE_TEMPLATE.format(
-                    project_name=str(project.name),
-                    project_version=str(project.version)))):
 
+        # Check if all binaries have correspondong BC files
+        all_files_present = True
+        for binary_name in project.BIN_NAMES:
+            all_files_present &= path.exists(
+                local.path(
+                    Extract.BC_CACHE_FOLDER_TEMPLATE.format(
+                        cache_dir=str(CFG["vara"]["result"]),
+                        project_name=str(project.name)) +
+                    Extract.BC_FILE_TEMPLATE.format(
+                        project_name=str(project.name),
+                        binary_name=binary_name,
+                        project_version=str(project.version))))
+
+        if not all_files_present:
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(project))
 

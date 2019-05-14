@@ -1,14 +1,23 @@
-from benchbuild.settings import CFG
-from benchbuild.utils.compiler import cc
-from benchbuild.utils.run import run
+"""
+Project file for vim.
+"""
 from benchbuild.project import Project
+from benchbuild.settings import CFG
 from benchbuild.utils.cmd import make, cp
+from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
+from benchbuild.utils.run import run
 
 from plumbum import local
 
+from varats.paper.paper_config import project_filter_generator
 
-@with_git("https://github.com/vim/vim.git", limit=100, refspec="HEAD")
+
+@with_git(
+    "https://github.com/vim/vim.git",
+    limit=100,
+    refspec="HEAD",
+    version_filter=project_filter_generator("vim"))
 class Vim(Project):
     """ Text processing tool vim """
 
@@ -17,6 +26,7 @@ class Vim(Project):
     DOMAIN = 'editor'
     VERSION = 'HEAD'
 
+    BIN_NAME = ['vim']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
     def run_tests(self, runner):

@@ -1,3 +1,6 @@
+"""
+Project file for busybox.
+"""
 from benchbuild.settings import CFG
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
@@ -7,8 +10,14 @@ from benchbuild.utils.download import with_git
 
 from plumbum import local
 
+from varats.paper.paper_config import project_filter_generator
 
-@with_git("https://github.com/mirror/busybox.git", limit=100, refspec="HEAD")
+
+@with_git(
+    "https://github.com/mirror/busybox.git",
+    limit=100,
+    refspec="HEAD",
+    version_filter=project_filter_generator("busybox"))
 class busybox(Project):
     """ UNIX utility wrapper Busybox """
 
@@ -17,8 +26,8 @@ class busybox(Project):
     DOMAIN = 'UNIX utils'
     VERSION = 'HEAD'
 
+    BIN_NAMES = ['fooo']
     SRC_FILE = NAME + "-{0}".format(VERSION)
-    clang = ""
 
     def run_tests(self, runner):
         pass
@@ -26,7 +35,8 @@ class busybox(Project):
     def compile(self):
         self.download()
 
-        self.clang = cc(self)
+        clang = cc(self)
         with local.cwd(self.SRC_FILE):
-            run(make["defconfig"])
-            run(make["-j", int(CFG["jobs"]), "CC={}".format(str(self.clang))])
+            with local.env(CC=str(clang)):
+                run(make["defconfig"])
+                run(make["-j", int(CFG["jobs"])])

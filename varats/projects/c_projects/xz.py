@@ -1,12 +1,12 @@
 """
-Project file for gravity.
+Project file for xz.
 """
-from benchbuild.settings import CFG
-from benchbuild.utils.compiler import cc
-from benchbuild.utils.run import run
 from benchbuild.project import Project
-from benchbuild.utils.cmd import make, cmake
+from benchbuild.settings import CFG
+from benchbuild.utils.cmd import make, autoreconf
+from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
+from benchbuild.utils.run import run
 
 from plumbum import local
 
@@ -14,16 +14,16 @@ from varats.paper.paper_config import project_filter_generator
 
 
 @with_git(
-    "https://github.com/marcobambini/gravity.git",
+    "https://github.com/xz-mirror/xz.git",
     limit=100,
     refspec="HEAD",
-    version_filter=project_filter_generator("gravity"))
-class Gravity(Project):
-    """ Programming language Gravity """
+    version_filter=project_filter_generator("xz"))
+class Xz(Project):
+    """ Compression and decompression tool xz (fetched by Git) """
 
-    NAME = 'gravity'
+    NAME = 'xz'
     GROUP = 'c_projects'
-    DOMAIN = 'UNIX utils'
+    DOMAIN = 'compression'
     VERSION = 'HEAD'
 
     BIN_NAMES = ['fooo']
@@ -38,5 +38,6 @@ class Gravity(Project):
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
-                cmake("-G", "Unix Makefiles", ".")
+                run(autoreconf["--install"])
+                run(local["./configure"])
             run(make["-j", int(CFG["jobs"])])

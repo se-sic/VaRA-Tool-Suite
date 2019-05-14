@@ -1,12 +1,12 @@
 """
-Project file for gravity.
+Project file for x264.
 """
-from benchbuild.settings import CFG
-from benchbuild.utils.compiler import cc
-from benchbuild.utils.run import run
 from benchbuild.project import Project
-from benchbuild.utils.cmd import make, cmake
+from benchbuild.settings import CFG
+from benchbuild.utils.cmd import make
+from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
+from benchbuild.utils.run import run
 
 from plumbum import local
 
@@ -14,16 +14,16 @@ from varats.paper.paper_config import project_filter_generator
 
 
 @with_git(
-    "https://github.com/marcobambini/gravity.git",
+    "https://code.videolan.org/videolan/x264.git",
     limit=100,
     refspec="HEAD",
-    version_filter=project_filter_generator("gravity"))
-class Gravity(Project):
-    """ Programming language Gravity """
+    version_filter=project_filter_generator("x264"))
+class X264(Project):
+    """ Video encoder x264 (fetched by Git) """
 
-    NAME = 'gravity'
+    NAME = 'x264'
     GROUP = 'c_projects'
-    DOMAIN = 'UNIX utils'
+    DOMAIN = 'encoder'
     VERSION = 'HEAD'
 
     BIN_NAMES = ['fooo']
@@ -38,5 +38,6 @@ class Gravity(Project):
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
-                cmake("-G", "Unix Makefiles", ".")
+                conf = local["./configure"]
+                run(conf["--disable-asm"])
             run(make["-j", int(CFG["jobs"])])

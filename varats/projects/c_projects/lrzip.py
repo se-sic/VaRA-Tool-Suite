@@ -1,12 +1,12 @@
 """
-Project file for gravity.
+Project file for lrzip.
 """
-from benchbuild.settings import CFG
-from benchbuild.utils.compiler import cc
-from benchbuild.utils.run import run
 from benchbuild.project import Project
-from benchbuild.utils.cmd import make, cmake
+from benchbuild.settings import CFG
+from benchbuild.utils.cmd import make
+from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
+from benchbuild.utils.run import run
 
 from plumbum import local
 
@@ -14,16 +14,16 @@ from varats.paper.paper_config import project_filter_generator
 
 
 @with_git(
-    "https://github.com/marcobambini/gravity.git",
+    "https://github.com/ckolivas/lrzip.git",
     limit=100,
     refspec="HEAD",
-    version_filter=project_filter_generator("gravity"))
-class Gravity(Project):
-    """ Programming language Gravity """
+    version_filter=project_filter_generator("lrzip"))
+class Lrzip(Project):
+    """ Compression and decompression tool lrzip (fetched by Git) """
 
-    NAME = 'gravity'
+    NAME = 'lrzip'
     GROUP = 'c_projects'
-    DOMAIN = 'UNIX utils'
+    DOMAIN = 'compression'
     VERSION = 'HEAD'
 
     BIN_NAMES = ['fooo']
@@ -35,8 +35,11 @@ class Gravity(Project):
     def compile(self):
         self.download()
 
+        self.cflags += ["-fPIC"]
+
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
-                cmake("-G", "Unix Makefiles", ".")
+                run(local["./autogen.sh"])
+                run(local["./configure"])
             run(make["-j", int(CFG["jobs"])])
