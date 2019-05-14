@@ -26,7 +26,7 @@ class X264(Project):
     DOMAIN = 'encoder'
     VERSION = 'HEAD'
 
-    BIN_NAMES = ['fooo']
+    BIN_NAMES = ['x264']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
     def run_tests(self, runner):

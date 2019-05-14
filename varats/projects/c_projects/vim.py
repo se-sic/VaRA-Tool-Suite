@@ -26,7 +26,7 @@ class Vim(Project):
     DOMAIN = 'editor'
     VERSION = 'HEAD'
 
-    BIN_NAME = ['vim']
+    BIN_NAMES = ['vim']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
     def run_tests(self, runner):

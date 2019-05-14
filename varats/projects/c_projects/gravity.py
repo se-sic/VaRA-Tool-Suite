@@ -26,7 +26,7 @@ class Gravity(Project):
     DOMAIN = 'UNIX utils'
     VERSION = 'HEAD'
 
-    BIN_NAMES = ['fooo']
+    BIN_NAMES = ['gravity']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
     def run_tests(self, runner):

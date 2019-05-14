@@ -3,7 +3,7 @@ Project file for xz.
 """
 from benchbuild.project import Project
 from benchbuild.settings import CFG
-from benchbuild.utils.cmd import make, autoreconf
+from benchbuild.utils.cmd import make, autoreconf, cp
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
@@ -26,7 +26,7 @@ class Xz(Project):
     DOMAIN = 'compression'
     VERSION = 'HEAD'
 
-    BIN_NAMES = ['fooo']
+    BIN_NAMES = ['xz']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
     def run_tests(self, runner):
@@ -41,3 +41,6 @@ class Xz(Project):
                 run(autoreconf["--install"])
                 run(local["./configure"])
             run(make["-j", int(CFG["jobs"])])
+
+            # Copy hidden binary file to root for extraction
+            cp("src/xz/.libs/xz", ".")
