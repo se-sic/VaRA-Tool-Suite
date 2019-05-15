@@ -112,11 +112,13 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         llvm_src_dir = get_value_or_default(CFG, "llvm_source_dir",
                                             str(os.getcwd()) + "/vara-llvm/")
         self.sourcePath.insert(llvm_src_dir)
+        self._update_source_dir()
         self.sourcePath.editingFinished.connect(self._update_source_dir)
 
         llvm_install_dir = get_value_or_default(CFG, "llvm_install_dir",
                                                 str(os.getcwd()) + "/VaRA/")
         self.installPath.insert(llvm_install_dir)
+        self._update_install_dir()
         self.installPath.editingFinished.connect(self._update_install_dir)
 
         self.initButton.clicked.connect(self._setup_vara)
