@@ -82,6 +82,6 @@ def get_status(case_study, result_file_type, use_color=False):
             return rev_state
 
     for rev_state in case_study.get_revisions_status(result_file_type):
-        status += "    {rev} [{status:7s}]\n".format(
+        status += "    {rev} [{status}]\n".format(
             rev=rev_state[0], status=color_rev_state(rev_state[1]))
     return status

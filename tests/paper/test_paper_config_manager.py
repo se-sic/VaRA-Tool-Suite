@@ -101,13 +101,13 @@ class TestPaperConfigManager(unittest.TestCase):
     7620b81735 [Missing]
     622e9b1d02 [Missing]
     8798d5c4fd [Missing]
-    2e654f9963 [OK     ]
+    2e654f9963 [OK]
     edfad78619 [Missing]
     a3db5806d0 [Missing]
     e75f428c0d [Missing]
     1e7e3769dc [Missing]
     9872ba420c [Missing]
-    b8b25e7f15 [OK     ]
+    b8b25e7f15 [OK]
 """)
         mock_get_processed_revision.assert_called()
 
@@ -148,12 +148,12 @@ class TestPaperConfigManager(unittest.TestCase):
     7620b81735 [Missing]
     622e9b1d02 [Missing]
     8798d5c4fd [Missing]
-    2e654f9963 [OK     ]
+    2e654f9963 [OK]
     edfad78619 [Missing]
     a3db5806d0 [Missing]
     e75f428c0d [Missing]
     1e7e3769dc [Missing]
     9872ba420c [Missing]
-    b8b25e7f15 [OK     ]
+    b8b25e7f15 [OK]
 """)
         mock_get_processed_revision.assert_called()
