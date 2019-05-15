@@ -9,6 +9,8 @@ from enum import Enum
 from numpy import random
 from scipy.stats import halfnorm
 
+from varats.data.revisions import get_proccessed_revisions
+
 
 class HashIDTuple(yaml.YAMLObject):
     """
@@ -125,6 +127,44 @@ class CaseStudy(yaml.YAMLObject):
             return self.has_revision(revision)
 
         return revision_filter
+
+    def get_short_status(self, result_file_type,
+                         processed_revisions=None) -> str:
+        """
+        Return a string representation that describes the current status of
+        the case study.
+        """
+        total_processed_revisions = set(
+            processed_revisions if processed_revisions is not None else
+            get_proccessed_revisions(self.project_name, result_file_type))
+
+        num_pr_for_case_study = 0
+        for rev in self.revisions:
+            if rev[:10] in total_processed_revisions:
+                num_pr_for_case_study += 1
+
+        status = "CS: {project}_{version}: ".format(
+            project=self.project_name, version=self.version)
+        status += "({processed}/{total}) processed".format(
+            processed=num_pr_for_case_study, total=len(self.revisions))
+        return status
+
+    def get_status(self, result_file_type) -> str:
+        """
+        Return a string representation that describes the current status of
+        the case study.
+        """
+        total_processed_revisions = get_proccessed_revisions(
+            self.project_name, result_file_type)
+
+        status = self.get_short_status(result_file_type,
+                                       total_processed_revisions) + "\n"
+        for rev in self.revisions:
+            state = "OK" if rev[:10] in total_processed_revisions \
+                else "Missing"
+            status += "    {rev} [{status:7s}]\n".format(
+                rev=rev[:10], status=state)
+        return status
 
 
 ###############################################################################

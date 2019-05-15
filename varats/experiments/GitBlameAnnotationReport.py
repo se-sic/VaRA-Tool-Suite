@@ -17,10 +17,11 @@ from benchbuild.settings import CFG
 from benchbuild.utils.cmd import opt, mkdir
 import benchbuild.utils.actions as actions
 
+from varats.data.commit_report import CommitReport as CR
+from varats.data.revisions import get_proccessed_revisions
 from varats.experiments.Extract import Extract
 from varats.experiments.Wllvm import RunWLLVM
 from varats.settings import CFG as V_CFG
-from varats.data.commit_report import CommitReport as CR
 
 
 class CFRAnalysis(actions.Step):
@@ -143,21 +144,10 @@ class GitBlameAnntotationReport(Experiment):
             random.shuffle(versions)
 
         if bool(V_CFG["experiment"]["only_missing"]):
-            res_dir = Path("{result_folder}/{project_name}/"
-                           .format(result_folder=V_CFG["result_dir"],
-                                   project_name=str(prj_cls.NAME)))
-
-            processed_version = []
-            if res_dir.exists():
-                for res_file in res_dir.iterdir():
-                    if not str(res_file.stem).startswith(
-                            "{}-".format(prj_cls.NAME)):
-                        continue
-                    match = CR.FILE_NAME_REGEX.search(res_file.stem)
-                    processed_version.append(match.group("file_commit_hash"))
-
-            versions = [vers for vers in versions
-                        if vers not in processed_version]
+            versions = [
+                vers for vers in versions
+                if vers not in get_proccessed_revisions(prj_cls.NAME, CR)
+            ]
             if not versions:
                 print("Could not find any unprocessed versions.")
                 return

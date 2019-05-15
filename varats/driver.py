@@ -21,6 +21,7 @@ from varats.plots.plots import extend_parser_with_plot_args, build_plot
 from varats.utils.cli_util import cli_yn_choice
 from varats.paper.case_study import SamplingMethod, generate_case_study,\
     store_case_study
+import varats.paper.paper_config_manager as PCM
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
@@ -239,6 +240,8 @@ def main_gen_commitmap():
     cs_parser = sub_parsers.add_parser(
         'case-study', help="Generate a case study.")
     cs_parser.add_argument("distribution", action=enum_action(SamplingMethod))
+    # TODO (se-passau/VaRA#410): this needs to be a full path to the paper
+    #                            folder + config
     cs_parser.add_argument("paper_path", help="Path to paper folder.")
     cs_parser.add_argument(
         "--num-rev",
@@ -281,3 +284,36 @@ def main_gen_commitmap():
             else:
                 output_name = args.output + ".cmap"
         store_commit_map(cmap, output_name)
+
+
+def main_casestudy():
+    """
+    Allow easier management of case studies
+    """
+    parser = argparse.ArgumentParser("VaRA case-study manager")
+    sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
+
+    status_parser = sub_parsers.add_parser(
+        'status', help="Show status of current case study")
+    status_parser.add_argument(
+        "--filter-regex",
+        help="Provide a regex to filter the shown case studies",
+        type=str,
+        default=".*")
+    status_parser.add_argument(
+        "--paper_config",
+        help="Use this paper config instead of the configured one",
+        default=None)
+    status_parser.add_argument(
+        "-s",
+        "--short",
+        help="Only print a short summary",
+        action="store_true",
+        default=False)
+
+    args = parser.parse_args()
+    if args.subcommand == 'status':
+        if args.paper_config is not None:
+            CFG['paper_config']['current_config'] = args.paper_config
+
+        PCM.show_status_of_case_studies(args.filter_regex, args.short)

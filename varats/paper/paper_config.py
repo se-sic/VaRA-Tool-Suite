@@ -38,6 +38,15 @@ class PaperConfig():
         """
         return self.__case_studies[cs_name]
 
+    def get_all_case_studies(self):
+        """
+        Returns a full list of all case studies with all different version.
+        """
+        return [
+            case_study for case_study_list in self.__case_studies.values()
+            for case_study in case_study_list
+        ]
+
     def has_case_study(self, cs_name):
         """
         Check if a case study with `cs_name` was loaded.
