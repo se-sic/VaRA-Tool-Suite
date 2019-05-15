@@ -167,6 +167,12 @@ Your branch is up to date with 'origin/f-InstrumentationVerifier'.
 nothing to commit, working tree clean
 ```
 
+The `checkout` tool helps you to checkout the same branch on different projects, if one exists.
+Furthermore, it can easily switch all projects to `vara-dev` or `vara` by just typing:
+```console
+vd checkout vara-dev
+```
+
 To get a full overview of the tool use `vd -h` and `vd {sub_command} -h`.
 
 ## Extending the tool suite
