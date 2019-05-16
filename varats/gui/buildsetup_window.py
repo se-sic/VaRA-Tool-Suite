@@ -112,13 +112,11 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         llvm_src_dir = get_value_or_default(CFG, "llvm_source_dir",
                                             str(os.getcwd()) + "/vara-llvm/")
         self.sourcePath.insert(llvm_src_dir)
-        self._update_source_dir()
         self.sourcePath.editingFinished.connect(self._update_source_dir)
 
         llvm_install_dir = get_value_or_default(CFG, "llvm_install_dir",
                                                 str(os.getcwd()) + "/VaRA/")
         self.installPath.insert(llvm_install_dir)
-        self._update_install_dir()
         self.installPath.editingFinished.connect(self._update_install_dir)
 
         self.initButton.clicked.connect(self._setup_vara)
@@ -141,6 +139,9 @@ class BuildSetup(QWidget, Ui_BuildSetup):
             .connect(self.vara_state_mgr.update_current_branch)
         self.vara_state_mgr.state_signal\
             .status_update.connect(self._update_version)
+
+        self._update_source_dir()
+        self._update_install_dir()
 
         self.thread_pool = QThreadPool()
         self._check_state()
