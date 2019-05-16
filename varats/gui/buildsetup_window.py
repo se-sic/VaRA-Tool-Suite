@@ -140,6 +140,9 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         self.vara_state_mgr.state_signal\
             .status_update.connect(self._update_version)
 
+        self._update_source_dir()
+        self._update_install_dir()
+
         self.thread_pool = QThreadPool()
         self._check_state()
 

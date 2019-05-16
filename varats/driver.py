@@ -10,12 +10,13 @@ from argparse_utils import enum_action
 
 from pathlib import Path
 
+import varats.development as dev
 from varats import settings
 from varats.settings import get_value_or_default,\
     CFG, generate_benchbuild_config, save_config
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
-from varats.vara_manager import setup_vara, BuildType
+from varats.vara_manager import setup_vara, BuildType, LLVMProjects
 from varats.tools.commit_map import generate_commit_map, store_commit_map
 from varats.plots.plots import extend_parser_with_plot_args, build_plot
 from varats.utils.cli_util import cli_yn_choice
@@ -281,3 +282,81 @@ def main_gen_commitmap():
             else:
                 output_name = args.output + ".cmap"
         store_commit_map(cmap, output_name)
+
+
+def main_develop():
+    """
+    Handle and simplify common developer interactions with the project.
+    """
+    parser = argparse.ArgumentParser("Developer helper")
+    sub_parsers = parser.add_subparsers(help="Sub commands", dest="command")
+
+    # new-branch
+    new_branch_parser = sub_parsers.add_parser('new-branch')
+    new_branch_parser.add_argument(
+        'branch_name', type=str, help='Name of the new branch')
+    new_branch_parser.add_argument(
+        'projects',
+        nargs='+',
+        action=enum_action(LLVMProjects),
+        help="Projects to work on.")
+
+    # checkout
+    checkout_parser = sub_parsers.add_parser('checkout')
+    checkout_parser.add_argument(
+        'branch_name', type=str, help='Name of the new branch')
+    checkout_parser.add_argument(
+        'projects',
+        nargs='+',
+        action=enum_action(LLVMProjects),
+        help="Projects to work on.")
+    checkout_parser.add_argument('-r', '--remote', action='store_true')
+
+    # git pull
+    pull_parser = sub_parsers.add_parser('pull')
+    pull_parser.add_argument(
+        'projects',
+        nargs='+',
+        action=enum_action(LLVMProjects),
+        help="Projects to work on.")
+
+    # git push
+    push_parser = sub_parsers.add_parser('push')
+    push_parser.add_argument(
+        'projects',
+        nargs='+',
+        action=enum_action(LLVMProjects),
+        help="Projects to work on.")
+
+    # git status
+    status_parser = sub_parsers.add_parser('status')
+    status_parser.add_argument(
+        'projects',
+        nargs='+',
+        action=enum_action(LLVMProjects),
+        help="Projects to work on.")
+
+    # list dev-branches
+    status_parser = sub_parsers.add_parser(
+        'f-branches', help="List all remote feature branches")
+
+    args = parser.parse_args()
+    if args.command == 'new-branch':
+        dev.create_new_branch_for_projects(args.branch_name, args.projects)
+    elif args.command == 'checkout':
+        if args.remote:
+            dev.checkout_remote_branch_for_projects(args.branch_name,
+                                                    args.projects)
+        else:
+            dev.checkout_branch_for_projects(args.branch_name, args.projects)
+    elif args.command == 'pull':
+        dev.pull_projects(args.projects)
+    elif args.command == 'push':
+        dev.push_projects(args.projects)
+    elif args.command == 'status':
+        dev.show_status_for_projects(args.projects)
+    elif args.command == 'f-branches':
+        dev.show_dev_branches(
+            [LLVMProjects.llvm, LLVMProjects.clang, LLVMProjects.vara])
+    else:
+        parser.print_help()

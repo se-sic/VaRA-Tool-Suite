@@ -20,6 +20,7 @@ class TestLLVMProjects(unittest.TestCase):
 
     def test_vara_projects_iter(self):
         vara_projects_iter = iter(VaRAProjectsIter())
+        self.assertEqual(next(vara_projects_iter), LLVMProjects.llvm)
         self.assertEqual(next(vara_projects_iter), LLVMProjects.clang)
         self.assertEqual(next(vara_projects_iter), LLVMProjects.vara)
         self.assertRaises(StopIteration, next, vara_projects_iter)
