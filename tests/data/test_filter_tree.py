@@ -10,7 +10,7 @@ from PyQt5.QtCore import QDateTime, Qt
 
 from varats.data.filtertree_data import (
     AndOperator, OrOperator, NotOperator, SourceOperator, TargetOperator,
-    InteractionFilter, AuthorFilter, CommitterFilter,
+    AuthorFilter, CommitterFilter,
     AuthorDateMinFilter, AuthorDateMaxFilter, CommitDateMinFilter, CommitDateMaxFilter,
     AuthorDateDeltaMinFilter, AuthorDateDeltaMaxFilter,
     CommitDateDeltaMinFilter, CommitDateDeltaMaxFilter
