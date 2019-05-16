@@ -562,6 +562,7 @@ class AndOperator(FilterOperator):
 
     def addChild(self, child: InteractionFilter) -> bool:
         self._children.append(child)
+        child.setParent(self)
         return True
 
     def insertChild(self, position: int, child: InteractionFilter) -> bool:
@@ -622,6 +623,7 @@ class OrOperator(FilterOperator):
 
     def addChild(self, child: InteractionFilter) -> bool:
         self._children.append(child)
+        child.setParent(self)
         return True
 
     def insertChild(self, position: int, child: InteractionFilter) -> bool:
@@ -654,6 +656,8 @@ class OrOperator(FilterOperator):
         return True
 
     def child(self, index: int) -> InteractionFilter:
+        if index < 0 or index >= len(self._children):
+            return None
         return self._children[index]
 
     def childCount(self) -> int:
@@ -676,10 +680,12 @@ class NotOperator(FilterOperator):
         self._child = child
 
     def addChild(self, child: InteractionFilter) -> bool:
-        if self._child is None:
-            self._child = child
-            return True
-        return False
+        if self._child is not None:
+            return False
+
+        self._child = child
+        child.setParent(self)
+        return True
 
     def insertChild(self, position: int, child: InteractionFilter) -> bool:
         if self._child is not None or position != 0:
@@ -723,10 +729,12 @@ class SourceOperator(FilterOperator):
         self._child = child
 
     def addChild(self, child: InteractionFilter) -> bool:
-        if self._child is None:
-            self._child = child
-            return True
-        return False
+        if self._child is not None:
+            return False
+
+        self._child = child
+        child.setParent(self)
+        return True
 
     def insertChild(self, position: int, child: InteractionFilter) -> bool:
         if self._child is not None or position != 0:
@@ -770,10 +778,12 @@ class TargetOperator(FilterOperator):
         self._child = child
 
     def addChild(self, child: InteractionFilter) -> bool:
-        if self._child is None:
-            self._child = child
-            return True
-        return False
+        if self._child is not None:
+            return False
+
+        self._child = child
+        child.setParent(self)
+        return True
 
     def insertChild(self, position: int, child: InteractionFilter) -> bool:
         if self._child is not None or position != 0:
