@@ -108,7 +108,7 @@ In order to ease the creation of case studies VaRA-TS offers different sampling 
 
 For example, we can generate a new case study for `gzip`, drawing 10 revision from the projects history based on a half-normal distribution, with:
 ```console
-vara-gen-commitmap PATH_TO_REPO case-study half_norm PATH_TO_PAPER_CONF_DIR --num-rev 10
+vara-cs gen PATH_TO_PAPER_CONF_DIR/ PATH_TO_REPO/ half_norm --num-rev 10
 ```
 
 Created case studies should be grouped into folders, e.g., a set of case studies used for a paper.
