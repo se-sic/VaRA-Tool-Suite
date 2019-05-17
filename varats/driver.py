@@ -87,6 +87,12 @@ def build_setup():
 
     parser = argparse.ArgumentParser("Build LLVM environment")
 
+    parser.add_argument(
+        "-c",
+        "--config",
+        action="store_true",
+        default=False,
+        help="Only create a VaRA config file.")
     parser.add_argument("-i", "--init", action="store_true", default=False,
                         help="Initializes VaRA and all components.")
     parser.add_argument("-u", "--update", action="store_true", default=False,
@@ -105,11 +111,16 @@ def build_setup():
 
     args = parser.parse_args()
 
-    build_type = parse_string_to_build_type(args.buildtype)
+    if not (args.config or args.init or args.update or args.build):
+        parser.error(
+            "At least one argument of --config, --init, --update or --build " +
+            "must be given.")
 
-    if not (args.init or args.update or args.build):
-        parser.error("At least one argument of --init, --update or --build " +
-                     "must be given.")
+    if args.config:
+        save_config()
+        return
+
+    build_type = parse_string_to_build_type(args.buildtype)
 
     vara_version = args.version if args.version is not None else CFG['version']
 

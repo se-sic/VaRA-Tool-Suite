@@ -19,11 +19,17 @@ install:
   - pip install codecov
   - pip install pytest-cov
 
+env:
+  - VARA_PAPER_CONFIG_FOLDER=paper_configs/
+  - VARA_PAPER_CONFIG_CURRENT_CONFIG=test
+
 script:
   - pytest --cov=./ varats tests
   - git clone https://git.savannah.gnu.org/git/gzip.git gzip
   - mkdir -p paper_configs/test/
+  - coverage run -a `which vara-buildsetup` -c
   - coverage run -a `which vara-cs` gen paper_configs/test/ gzip/ half_norm
+  - coverage run -a `which vara-cs` status
   - codecov
 
 branches:
