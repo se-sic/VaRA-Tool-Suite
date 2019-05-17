@@ -1,9 +1,3 @@
-import yaml
-
-from typing import List
-from PyQt5.QtCore import QDateTime, Qt
-
-
 """
 This file defines all available (commit interaction) filters.
 When evaluated, a filter returns either KEEP or REMOVE for a given commit
@@ -67,6 +61,13 @@ InteractionFilter
               ├── CommitDateDeltaMinFilter
               └── CommitDateDeltaMaxFilter
 """
+
+import yaml
+
+from typing import List
+from PyQt5.QtCore import QDateTime, Qt
+
+
 class InteractionFilter(yaml.YAMLObject):
     yaml_tag = u'!InteractionFilter'
 
