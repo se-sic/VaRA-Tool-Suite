@@ -23,7 +23,7 @@ script:
   - pytest --cov=./ varats tests
   - git clone https://git.savannah.gnu.org/git/gzip.git gzip
   - mkdir -p paper_configs/test/
-  - coverage run -a `which vara-gen-commitmap` gzip/ case-study half_norm paper_configs/test/
+  - coverage run -a `which vara-cs` paper_configs/test/ gzip/ half_norm
   - codecov
 
 branches:
