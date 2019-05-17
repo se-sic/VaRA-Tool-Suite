@@ -15,7 +15,7 @@ from enum import Enum
 
 from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject
 
-from plumbum import local
+from plumbum import local, TF
 from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
 from plumbum.commands.processes import ProcessExecutionError
 
@@ -70,6 +70,8 @@ class LLVMProjects(Enum):
     """
     Mapping of all LLVM projects to paths.
     """
+    llvm = LLVMProject("llvm", "https://git.llvm.org/git/llvm.git", "upstream",
+                       "")
     clang = LLVMProject("clang", "https://git.llvm.org/git/clang.git",
                         "upstream", "tools/clang")
     vara = LLVMProject("VaRA", "git@github.com:se-passau/VaRA.git", "origin",
@@ -118,7 +120,8 @@ class LLVMProjects(Enum):
         """
         Checks if this a VaRA controled projected.
         """
-        return self is LLVMProjects.clang or self is LLVMProjects.vara
+        return self is LLVMProjects.llvm or self is LLVMProjects.clang or\
+            self is LLVMProjects.vara
 
     def is_extra_project(self) -> bool:
         """
@@ -239,10 +242,8 @@ def setup_vara(init, update, build, llvm_folder, install_prefix, own_libgit,
     else:
         if update:
             if str(CFG["version"]) != str(version):
-                fetch_current_branch(llvm_folder)
-
                 for project in LLVMProjects:
-                    fetch_current_branch(llvm_folder / project.path)
+                    fetch_repository(llvm_folder / project.path)
 
                 version_name = ""
                 version_name += str(version)
@@ -282,15 +283,42 @@ def add_remote(repo_folder, remote, url):
         git("fetch", remote)
 
 
-def fetch_remote(remote, repo_folder=""):
+def show_status(repo_folder):
+    """
+    Show git status.
+    """
+    with local.cwd(repo_folder):
+        git["status"].run_fg()
+
+
+def get_branches(repo_folder, extra_args=None) -> str:
+    """
+    Show git branches.
+    """
+    extra_args = [] if extra_args is None else extra_args
+
+    args = ["branch"]
+    args += extra_args
+
+    with local.cwd(repo_folder):
+        return git(args)
+
+
+def fetch_remote(remote, repo_folder="", extra_args=None):
     """
     Fetches the new changes from the remote.
     """
+    extra_args = [] if extra_args is None else extra_args
+
+    args = ["fetch"]
+    args += extra_args
+    args.append(remote)
+
     if repo_folder == '':
-        git("fetch", remote)
+        git(args)
     else:
         with local.cwd(repo_folder):
-            git("fetch", remote)
+            git(args)
 
 
 def init_all_submodules(folder):
@@ -320,7 +348,28 @@ def pull_current_branch(repo_folder=""):
             git("pull")
 
 
-def fetch_current_branch(repo_folder=""):
+def push_current_branch(repo_folder="", upstream=None, branch_name=None):
+    """
+    Push in changes in a certain branch.
+    """
+    cmd_args = ["push"]
+
+    if upstream is not None:
+        cmd_args.append("--set-upstream")
+        cmd_args.append(upstream)
+        if branch_name is not None:
+            cmd_args.append(branch_name)
+        else:
+            cmd_args.append(get_current_branch(repo_folder))
+
+    if repo_folder == '':
+        git(cmd_args)
+    else:
+        with local.cwd(repo_folder):
+            git(cmd_args)
+
+
+def fetch_repository(repo_folder=""):
     """
     Pull in changes in a certain branch.
     """
@@ -339,12 +388,57 @@ def checkout_branch(repo_folder, branch):
         git("checkout", branch)
 
 
-def checkout_new_branch(repo_folder, branch, remote_branch):
+def checkout_new_branch(repo_folder, branch, remote_branch=None):
     """
     Checks out a new branch in the repository.
     """
     with local.cwd(repo_folder):
-        git("checkout", "-b", branch, remote_branch)
+        args = ["checkout", "-b", branch]
+        if remote_branch is not None:
+            args.append(remote_branch)
+        git(args)
+
+
+def get_current_branch(repo_folder) -> str:
+    """
+    Get the current branch of a repository, e.g., HEAD.
+    """
+    if repo_folder == '':
+        return git("rev-parse", "--abbrev-ref", "HEAD").strip()
+
+    with local.cwd(repo_folder):
+        return git("rev-parse", "--abbrev-ref", "HEAD").strip()
+
+
+def has_branch(repo_folder, branch_name) -> bool:
+    """
+    Checks if a branch exists in the local repository.
+    """
+    with local.cwd(repo_folder):
+        exit_code = git["rev-parse", "--verify", branch_name] & TF
+        return exit_code
+
+
+def has_remote_branch(repo_folder, branch_name, remote) -> bool:
+    """
+    Checks if a remote branch of a repository exists.
+    """
+    with local.cwd(repo_folder):
+        exit_code = (git["ls-remote", "--heads", remote, branch_name]
+                     | grep[branch_name]) & RETCODE
+        return exit_code == 0
+
+
+def branch_has_upstream(repo_folder, branch_name: str,
+                        upstream='origin') -> bool:
+    """
+    Check if a branch has an upstream remote.
+    """
+    with local.cwd(repo_folder):
+        exit_code = (
+            git["rev-parse", "--abbrev-ref", branch_name + "@{upstream}"]
+            | grep[upstream]) & RETCODE
+        return exit_code == 0
 
 
 def get_download_steps():
@@ -355,28 +449,27 @@ def get_download_steps():
     return 6
 
 
-def download_vara(llvm_source_folder, progress_func=lambda x: None,
+def download_vara(llvm_source_folder,
+                  progress_func=lambda x: None,
                   post_out=lambda x: None):
     """
     Downloads VaRA an all other necessary repos from github.
     """
-    dl_folder, llvm_dir = os.path.split(os.path.normpath(llvm_source_folder))
-
     dl_counter = 0
-    progress_func(dl_counter)
-    download_repo(
-        dl_folder,
-        "https://git.llvm.org/git/llvm.git",
-        llvm_dir,
-        remote_name="upstream",
-        post_out=post_out)
-    dl_folder += "/" + llvm_dir + "/"
-    add_remote(dl_folder, "origin", "git@github.com:se-passau/vara-llvm.git")
-    dl_counter += 1
+    dl_folder = Path(os.path.normpath(llvm_source_folder))
 
     for project in LLVMProjects:
         progress_func(dl_counter)
         dl_counter += 1
+        if project is LLVMProjects.llvm:
+            download_repo(
+                dl_folder.parent,
+                project.url,
+                dl_folder.name,
+                remote_name=project.remote,
+                post_out=post_out)
+            add_remote(dl_folder, "origin",
+                       "git@github.com:se-passau/vara-llvm.git")
         if project is LLVMProjects.clang_extra:
             download_repo(
                 dl_folder / project.path.parent,
@@ -395,9 +488,9 @@ def download_vara(llvm_source_folder, progress_func=lambda x: None,
                            "git@github.com:se-passau/vara-clang.git")
 
     progress_func(dl_counter)
-    mkdir(dl_folder + "build/")
-    with local.cwd(dl_folder + "build/"):
-        ln("-s", dl_folder + "tools/VaRA/utils/vara/builds/", "build_cfg")
+    mkdir(dl_folder / "build/")
+    with local.cwd(dl_folder / "build/"):
+        ln("-s", dl_folder / "tools/VaRA/utils/vara/builds/", "build_cfg")
 
 
 def checkout_vara_version(llvm_folder, version, dev):

@@ -27,6 +27,8 @@ setup(name='VaRA-Tool-Suite',
               'vara-gen-commitmap = varats.driver:main_gen_commitmap',
           ],
           "console_scripts": [
+              'vara-develop = varats.driver:main_develop',
+              'vd = varats.driver:main_develop',
               'vara-gen-graph = varats.driver:main_gen_graph',
               'vara-gen-bbconfig = varats.driver:main_gen_benchbuild_config',
               'vara-cs = varats.driver:main_casestudy',
