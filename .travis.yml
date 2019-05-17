@@ -20,8 +20,7 @@ install:
   - pip install pytest-cov
 
 env:
-  - VARA_PAPER_CONFIG_FOLDER=paper_configs/
-  - VARA_PAPER_CONFIG_CURRENT_CONFIG=test
+  - VARA_PAPER_CONFIG_FOLDER=paper_configs/ VARA_PAPER_CONFIG_CURRENT_CONFIG=test
 
 script:
   - pytest --cov=./ varats tests
