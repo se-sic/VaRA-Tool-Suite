@@ -24,7 +24,6 @@ script:
   - git clone https://git.savannah.gnu.org/git/gzip.git gzip
   - mkdir -p paper_configs/test/
   - coverage run -a `which vara-cs` gen paper_configs/test/ gzip/ half_norm
-  - coverage run -a `which vara-cs` status paper_configs/test/
   - codecov
 
 branches:
