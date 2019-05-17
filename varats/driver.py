@@ -232,25 +232,7 @@ def main_gen_commitmap():
         "--end", help="End of the commit range (inclusive)", default="HEAD")
     parser.add_argument(
         "--start", help="Start of the commit range (exclusive)", default=None)
-
-    sub_parsers = parser.add_subparsers(
-        help="File type to generate.", dest="command")
-    cm_parser = sub_parsers.add_parser('cmap', help="Generate a commit map.")
-    cm_parser.add_argument("-o", "--output", help="Output filename")
-
-    cs_parser = sub_parsers.add_parser(
-        'case-study', help="Generate a case study.")
-    cs_parser.add_argument("distribution", action=enum_action(SamplingMethod))
-    # TODO (se-passau/VaRA#410): this needs to be a full path to the paper
-    #                            folder + config
-    cs_parser.add_argument("paper_path", help="Path to paper folder.")
-    cs_parser.add_argument(
-        "--num-rev",
-        type=int,
-        default=10,
-        help="Number of revisions to select.")
-    cs_parser.add_argument(
-        "--version", type=int, default=0, help="Case study version.")
+    parser.add_argument("-o", "--output", help="Output filename")
 
     args = parser.parse_args()
 
@@ -263,28 +245,19 @@ def main_gen_commitmap():
         raise argparse.ArgumentTypeError("Repository path does not exist")
 
     cmap = generate_commit_map(path, args.end, args.start)
-    if args.command == 'case-study':
-        paper_path = Path(args.paper_path)
-        if not paper_path.exists():
-            raise argparse.ArgumentTypeError("Paper path does not exist")
 
-        case_study = generate_case_study(args.distribution, args.num_rev, cmap,
-                                         path.stem.replace("-HEAD", ""),
-                                         args.version)
-        store_case_study(case_study, paper_path)
+    if args.output is None:
+        output_name = "{result_folder}/{project_name}/{file_name}.cmap"\
+            .format(
+                result_folder=CFG["result_dir"],
+                project_name=path.name.replace("-HEAD", ""),
+                file_name=path.name.replace("-HEAD", ""))
     else:
-        if args.output is None:
-            output_name = "{result_folder}/{project_name}/{file_name}.cmap"\
-                .format(
-                    result_folder=CFG["result_dir"],
-                    project_name=path.name.replace("-HEAD", ""),
-                    file_name=path.name.replace("-HEAD", ""))
+        if args.output.endswith(".cmap"):
+            output_name = args.output
         else:
-            if args.output.endswith(".cmap"):
-                output_name = args.output
-            else:
-                output_name = args.output + ".cmap"
-        store_commit_map(cmap, output_name)
+            output_name = args.output + ".cmap"
+    store_commit_map(cmap, output_name)
 
 
 def main_casestudy():
@@ -312,12 +285,47 @@ def main_casestudy():
         action="store_true",
         default=False)
 
+    gen_parser = sub_parsers.add_parser('gen', help="Generate a case study.")
+    gen_parser.add_argument(
+        "paper_config_path",
+        help="Path to paper_config folder (e.g., paper_configs/ase-17)")
+    gen_parser.add_argument("git_path", help="Path to git repository")
+    parser.add_argument(
+        "--end", help="End of the commit range (inclusive)", default="HEAD")
+    parser.add_argument(
+        "--start", help="Start of the commit range (exclusive)", default=None)
+
+    gen_parser.add_argument("distribution", action=enum_action(SamplingMethod))
+    gen_parser.add_argument(
+        "--num-rev",
+        type=int,
+        default=10,
+        help="Number of revisions to select.")
+    gen_parser.add_argument(
+        "-v", "--version", type=int, default=0, help="Case study version.")
+
     args = parser.parse_args()
     if args.subcommand == 'status':
         if args.paper_config is not None:
             CFG['paper_config']['current_config'] = args.paper_config
 
         PCM.show_status_of_case_studies(args.filter_regex, args.short)
+    elif args.subcommand == 'gen':
+        if args.git_path.endswith(".git"):
+            git_path = Path(args.git_path[:-4])
+        else:
+            git_path = Path(args.git_path)
+
+        cmap = generate_commit_map(git_path, args.end, args.start)
+
+        paper_config_path = Path(args.paper_config_path)
+        if not paper_config_path.exists():
+            raise argparse.ArgumentTypeError("Paper path does not exist")
+
+        case_study = generate_case_study(args.distribution, args.num_rev, cmap,
+                                         git_path.stem.replace("-HEAD", ""),
+                                         args.version)
+        store_case_study(case_study, paper_config_path)
 
 
 def main_develop():
