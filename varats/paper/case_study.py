@@ -9,6 +9,8 @@ from enum import Enum
 from numpy import random
 from scipy.stats import halfnorm
 
+from varats.data.revisions import get_proccessed_revisions
+
 
 class HashIDTuple(yaml.YAMLObject):
     """
@@ -125,6 +127,26 @@ class CaseStudy(yaml.YAMLObject):
             return self.has_revision(revision)
 
         return revision_filter
+
+    def processed_revisions(self, result_file_type) -> [str]:
+        """
+        Calculate how many revisions were processed.
+        """
+        total_processed_revisions = set(
+            get_proccessed_revisions(self.project_name, result_file_type))
+
+        return [
+            rev for rev in self.revisions
+            if rev[:10] in total_processed_revisions
+        ]
+
+    def get_revisions_status(self, result_file_type) -> [(str, str)]:
+        """
+        Get status of all revisions.
+        """
+        processed_revisions = self.processed_revisions(result_file_type)
+        return [(rev[:10], "OK" if rev in processed_revisions else "Missing")
+                for rev in self.revisions]
 
 
 ###############################################################################

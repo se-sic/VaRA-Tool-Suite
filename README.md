@@ -133,6 +133,15 @@ paper_config:
 ```
 Next, we can run our experiment with BenchBuild as usual. During experiment execution BenchBuild will load our config and only evaluate the needed revisions.
 
+The current status of a case study can be visualized with `vara-cs status`:
+```console
+> vara-cs status -s
+CS: gzip_0: (0/5) processed
+CS: gzip_1: (2/5) processed
+CS: gzip_2: (5/5) processed
+CS: libvpx_0: (0/5) processed
+```
+
 ## VaRA developer tools
 VaRA-TS provides different tools to ease VaRA development.
 

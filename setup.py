@@ -31,5 +31,6 @@ setup(name='VaRA-Tool-Suite',
               'vd = varats.driver:main_develop',
               'vara-gen-graph = varats.driver:main_gen_graph',
               'vara-gen-bbconfig = varats.driver:main_gen_benchbuild_config',
+              'vara-cs = varats.driver:main_casestudy',
           ]
       })
