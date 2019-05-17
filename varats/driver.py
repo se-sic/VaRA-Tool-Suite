@@ -87,29 +87,60 @@ def build_setup():
 
     parser = argparse.ArgumentParser("Build LLVM environment")
 
-    parser.add_argument("-i", "--init", action="store_true", default=False,
-                        help="Initializes VaRA and all components.")
-    parser.add_argument("-u", "--update", action="store_true", default=False,
-                        help="Updates VaRA and all components.")
-    parser.add_argument("-b", "--build",
-                        help="Builds VaRA and all components.",
-                        action="store_true", default=False)
-    parser.add_argument("--version", default=None, nargs="?",
-                        help="Version to download.")
-    parser.add_argument("--buildtype", default="dev", nargs="?",
-                        help="Build type to use for LLVM and all subpackages.")
-    parser.add_argument("llvmfolder", help="Folder of LLVM. (Optional)",
-                        nargs='?', default=llvm_src_dir)
-    parser.add_argument("installprefix", default=llvm_install_dir, nargs='?',
-                        help="Folder to install LLVM. (Optional)")
+    parser.add_argument(
+        "-c",
+        "--config",
+        action="store_true",
+        default=False,
+        help="Only create a VaRA config file.")
+    parser.add_argument(
+        "-i",
+        "--init",
+        action="store_true",
+        default=False,
+        help="Initializes VaRA and all components.")
+    parser.add_argument(
+        "-u",
+        "--update",
+        action="store_true",
+        default=False,
+        help="Updates VaRA and all components.")
+    parser.add_argument(
+        "-b",
+        "--build",
+        help="Builds VaRA and all components.",
+        action="store_true",
+        default=False)
+    parser.add_argument(
+        "--version", default=None, nargs="?", help="Version to download.")
+    parser.add_argument(
+        "--buildtype",
+        default="dev",
+        nargs="?",
+        help="Build type to use for LLVM and all subpackages.")
+    parser.add_argument(
+        "llvmfolder",
+        help="Folder of LLVM. (Optional)",
+        nargs='?',
+        default=llvm_src_dir)
+    parser.add_argument(
+        "installprefix",
+        default=llvm_install_dir,
+        nargs='?',
+        help="Folder to install LLVM. (Optional)")
 
     args = parser.parse_args()
 
-    build_type = parse_string_to_build_type(args.buildtype)
+    if not (args.config or args.init or args.update or args.build):
+        parser.error(
+            "At least one argument of --config, --init, --update or --build " +
+            "must be given.")
 
-    if not (args.init or args.update or args.build):
-        parser.error("At least one argument of --init, --update or --build " +
-                     "must be given.")
+    if args.config:
+        save_config()
+        return
+
+    build_type = parse_string_to_build_type(args.buildtype)
 
     vara_version = args.version if args.version is not None else CFG['version']
 
