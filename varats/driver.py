@@ -41,11 +41,7 @@ class VaRATSGui:
     def main(self):
         """Setup and Run Qt application"""
         ret = self.app.exec_()
-        print("driver: Shutting down...")
         ProcessManager.shutdown()
-        thread_pool = QThreadPool.globalInstance()
-        thread_count = thread_pool.activeThreadCount()
-        print("driver: thread_count: {}".format(thread_count))
         sys.exit(ret)
 
 

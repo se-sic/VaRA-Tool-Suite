@@ -26,7 +26,6 @@ def run_with_output(pb_cmd, post_out=lambda x: None):
     """
     Run plumbum command and post output lines to function.
     """
-    print("vara_manager: run_with_output() begin")
     try:
         with pb_cmd.bgrun(universal_newlines=True,
                           stdout=sp.PIPE, stderr=sp.STDOUT) as p_gc:
@@ -35,7 +34,6 @@ def run_with_output(pb_cmd, post_out=lambda x: None):
                     post_out(line)
     except ProcessExecutionError:
         post_out("ProcessExecutionError")
-    print("vara_manager: run_with_output() end")
 
 def run_qprocess_with_output(process: QProcess, post_out=lambda x: None):
     output = str(process.readAllStandardOutput().data().decode('utf-8'))
@@ -380,24 +378,18 @@ def build_vara(path_to_llvm: str, install_prefix: str,
     full_path = path_to_llvm + "build/"
     if build_type == BuildType.DEV:
         full_path += "dev/"
-    print("vara_manager: build_vara() - 1")
     if not os.path.exists(full_path):
         init_vara_build(path_to_llvm, build_type, post_out)
 
     with local.cwd(full_path):
-        print("vara_manager: build_vara() - 2")
         verify_build_structure(own_libgit, path_to_llvm, post_out)
-        print("vara_manager: build_vara() - 3")
         set_vara_cmake_variables(own_libgit, install_prefix, post_out)
-        print("vara_manager: build_vara() - 4")
 
         proc = QProcess()
         proc.setProcessChannelMode(QProcess.MergedChannels)
         proc.readyReadStandardOutput.connect(lambda: run_qprocess_with_output(proc, post_out))
         ProcessManager.start_process(proc, "ninja", ["install"])
-        print("vara_manager: build_vara() - 5")
         proc.waitForFinished(-1)
-        print("vara_manager: build_vara() - 6")
 
 
 def set_vara_cmake_variables(own_libgit: bool, install_prefix: str,
@@ -589,41 +581,30 @@ class ProcessManager:
         self.__mutex = RLock()
 
     def __process_finished(self):
-        print("ProcessManager: __process__finished() begin")
         with self.__mutex:
             self.__processes = [x for x in self.__processes if x.state() != QProcess.NotRunning]
-            print("ProcessManager: __process__finished() end")
 
     def __start_process(self, process: QProcess, program: str, args: [str]):
-        print("ProcessManager: __start_process() begin")
         with self.__mutex:
             if self.__has_shutdown:
-                print("ProcessManager has already shutdown.")
                 return
             process.finished.connect(self.__process_finished)
             self.__processes.append(process)
             process.start(program, args)
-            print("ProcessManager: __start_process() end")
 
     def __shutdown(self):
-        print("ProcessManager: __shutdown() begin")
         with self.__mutex:
             self.__has_shutdown = True
-            print("ProcessManager: __shutdown() end")
 
     def __terminate_all_processes(self, block=False):
-        print("ProcessManager: __terminate_all_processes() begin")
         with self.__mutex:
             for process in self.__processes:
                 process.finished.disconnect(self.__process_finished)
                 process.kill()
                 #process.terminate()
                 if block:
-                    print("ProcessManager: Waiting for process to terminate!")
                     process.waitForFinished(-1)
-                    print("ProcessManager: Finished waiting!")
             self.__processes.clear()
-            print("ProcessManager: __terminate_all_processes() end")
 
     def __del__(self):
         with self.__mutex:

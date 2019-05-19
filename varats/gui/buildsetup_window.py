@@ -91,13 +91,11 @@ class BuildWorker(QRunnable):
         """
         Run, build an installs VaRA in a diffrent thread.
         """
-        print("BuildWorker: run() begin")
         vara_manager.build_vara(self.path_to_llvm,
                                 self.install_prefix,
                                 self.build_type,
                                 self._update_text)
         self.signals.finished.emit()
-        print("BuildWorker: run() finished")
 
 
 class BuildSetup(QWidget, Ui_BuildSetup):
