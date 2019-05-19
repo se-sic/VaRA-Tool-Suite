@@ -12,6 +12,7 @@ from varats.settings import CFG, get_value_or_default, save_config
 from varats.gui.views.ui_BuildMenu import Ui_BuildSetup
 from varats import vara_manager
 from varats.vara_manager import ProcessManager
+from varats.utils.exceptions import ProcessTerminatedError
 
 
 class WorkerSignals(QObject):
@@ -51,14 +52,17 @@ class SetupWorker(QRunnable):
         """
         Run, initializes VaRA in a different thread.
         """
-        vara_manager.download_vara(self.path, self._update_progress,
-                                   self._update_text)
+        try:
+            vara_manager.download_vara(self.path, self._update_progress,
+                                    self._update_text)
 
-        self._update_progress(7)
-        vara_manager.checkout_vara_version(self.path, CFG['version'], True)
+            self._update_progress(7)
+            vara_manager.checkout_vara_version(self.path, CFG['version'], True)
 
-        self._update_progress(8)
-        self.signals.finished.emit()
+            self._update_progress(8)
+            self.signals.finished.emit()
+        except ProcessTerminatedError:
+            print("Process was terminated")
 
 
 class BuilderSignals(QObject):

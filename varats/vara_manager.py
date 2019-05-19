@@ -13,6 +13,7 @@ import tempfile
 from enum import Enum
 from threading import RLock
 from varats.settings import save_config, CFG
+from varats.utils.exceptions import ProcessTerminatedError
 
 from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject, QThread, QProcess
 
@@ -40,7 +41,6 @@ def run_qprocess_with_output(process: QProcess, post_out=lambda x: None):
     for line in output.splitlines(True):
         post_out(line)
 
-# TODO (julianbreiteneicher): Return success
 def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
                   post_out=lambda x: None):
     """
@@ -64,6 +64,8 @@ def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
         proc.readyReadStandardOutput.connect(lambda: run_qprocess_with_output(proc, post_out))
         ProcessManager.start_process(proc, "git", args)
         proc.waitForFinished(-1)
+        if proc.exitStatus() != QProcess.NormalExit:
+            raise ProcessTerminatedError()
 
 
 class BuildType(Enum):
