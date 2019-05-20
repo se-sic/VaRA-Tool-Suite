@@ -95,11 +95,14 @@ class BuildWorker(QRunnable):
         """
         Run, build an installs VaRA in a diffrent thread.
         """
-        vara_manager.build_vara(self.path_to_llvm,
-                                self.install_prefix,
-                                self.build_type,
-                                self._update_text)
-        self.signals.finished.emit()
+        try:
+            vara_manager.build_vara(self.path_to_llvm,
+                                    self.install_prefix,
+                                    self.build_type,
+                                    self._update_text)
+            self.signals.finished.emit()
+        except ProcessTerminatedError:
+            print("Process was terminated")
 
 
 class BuildSetup(QWidget, Ui_BuildSetup):

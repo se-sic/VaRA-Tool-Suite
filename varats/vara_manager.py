@@ -9,6 +9,7 @@ import os
 import re
 import subprocess as sp
 import tempfile
+import shutil
 
 from enum import Enum
 from threading import RLock
@@ -355,6 +356,8 @@ def init_vara_build(path_to_llvm, build_type: BuildType,
             proc.readyReadStandardOutput.connect(lambda: run_qprocess_with_output(proc, post_out))
             ProcessManager.start_process(proc, "./build_cfg/build-dev.sh", [])
             proc.waitForFinished(-1)
+            if proc.exitStatus() != QProcess.NormalExit:
+                raise ProcessTerminatedError()
 
 
 def verify_build_structure(own_libgit: bool, path_to_llvm: str,
@@ -381,7 +384,12 @@ def build_vara(path_to_llvm: str, install_prefix: str,
     if build_type == BuildType.DEV:
         full_path += "dev/"
     if not os.path.exists(full_path):
-        init_vara_build(path_to_llvm, build_type, post_out)
+        try:
+            init_vara_build(path_to_llvm, build_type, post_out)
+        except ProcessTerminatedError as e:
+            print("Build dir initialization was terminated. Removing build dir...")
+            shutil.rmtree(full_path)
+            raise e
 
     with local.cwd(full_path):
         verify_build_structure(own_libgit, path_to_llvm, post_out)
@@ -392,6 +400,8 @@ def build_vara(path_to_llvm: str, install_prefix: str,
         proc.readyReadStandardOutput.connect(lambda: run_qprocess_with_output(proc, post_out))
         ProcessManager.start_process(proc, "ninja", ["install"])
         proc.waitForFinished(-1)
+        if proc.exitStatus() != QProcess.NormalExit:
+            raise ProcessTerminatedError()
 
 
 def set_vara_cmake_variables(own_libgit: bool, install_prefix: str,
