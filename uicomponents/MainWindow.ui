@@ -40,7 +40,7 @@
      <x>0</x>
      <y>0</y>
      <width>1024</width>
-     <height>20</height>
+     <height>29</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -55,6 +55,7 @@
      <addaction name="actionSave_Config"/>
     </widget>
     <addaction name="actionVaRA_Setup"/>
+    <addaction name="actionFilter_Editor"/>
     <addaction name="menuConfig"/>
     <addaction name="actionQuit"/>
    </widget>
@@ -130,6 +131,11 @@
   <action name="actionCreate_BenchBuild_Config">
    <property name="text">
     <string>Create BenchBuild Config</string>
+   </property>
+  </action>
+  <action name="actionFilter_Editor">
+   <property name="text">
+    <string>Filter Editor</string>
    </property>
   </action>
  </widget>
