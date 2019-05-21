@@ -363,28 +363,35 @@ def main_casestudy():
         default=[],
         help="Add a list of additional revisions to the case-study")
 
-    args = parser.parse_args()
-    if args.subcommand == 'status':
-        if args.paper_config is not None:
-            CFG['paper_config']['current_config'] = args.paper_config
+    args = {
+        k: v
+        for k, v in vars(parser.parse_args()).items() if v is not None
+    }
 
-        PCM.show_status_of_case_studies(args.filter_regex, args.short)
-    elif args.subcommand == 'gen':
-        if args.git_path.endswith(".git"):
-            git_path = Path(args.git_path[:-4])
+    if args['subcommand'] == 'status':
+        if 'paper_config' in args:
+            CFG['paper_config']['current_config'] = args['paper_config']
+
+        PCM.show_status_of_case_studies(args['filter_regex'], args['short'])
+    elif args['subcommand'] == 'gen':
+        if args['git_path'].endswith(".git"):
+            git_path = Path(args['git_path'][:-4])
         else:
-            git_path = Path(args.git_path)
+            git_path = Path(args['git_path'])
+        args['git_path'] = git_path
 
-        cmap = generate_commit_map(git_path, args.end, args.start)
+        cmap = generate_commit_map(git_path, args['end'],
+                                   args['start'] if 'start' in args else None)
 
-        paper_config_path = Path(args.paper_config_path)
-        if not paper_config_path.exists():
+        args['paper_config_path'] = Path(args['paper_config_path'])
+        if not args['paper_config_path'].exists():
             raise argparse.ArgumentTypeError("Paper path does not exist")
 
-        case_study = generate_case_study(args.distribution, args.num_rev, cmap,
+        case_study = generate_case_study(args['distribution'], args['num_rev'],
+                                         cmap,
                                          git_path.stem.replace("-HEAD", ""),
-                                         args.version, args.add_rev)
-        store_case_study(case_study, paper_config_path)
+                                         args['version'], args['add_rev'])
+        store_case_study(case_study, args['paper_config_path'])
 
 
 def main_develop():
