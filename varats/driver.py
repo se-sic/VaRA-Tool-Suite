@@ -6,9 +6,8 @@ Main drivers for VaRA-TS
 import os
 import sys
 import argparse
-from argparse_utils import enum_action
-
 from pathlib import Path
+from argparse_utils import enum_action
 
 import varats.development as dev
 from varats import settings
@@ -27,7 +26,11 @@ import varats.paper.paper_config_manager as PCM
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtCore import Qt
 
+
 class VaRATSGui:
+    """
+    Start VaRA-TS grafical user interface for graphs.
+    """
 
     def __init__(self):
         if hasattr(Qt, 'AA_EnableHighDpiScaling'):
@@ -41,8 +44,9 @@ class VaRATSGui:
             err = QMessageBox()
             err.setIcon(QMessageBox.Warning)
             err.setWindowTitle("Missing config file.")
-            err.setText("Could not find VaRA config file.\n"
-                        "Should we create a config file in the current folder?")
+            err.setText(
+                "Could not find VaRA config file.\n"
+                "Should we create a config file in the current folder?")
             err.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
             answer = err.exec_()
             if answer == QMessageBox.Yes:
@@ -58,6 +62,9 @@ class VaRATSGui:
 
 
 class VaRATSSetup:
+    """
+    Start VaRA-TS grafical user interface for setting up VaRA.
+    """
 
     def __init__(self):
         if hasattr(Qt, 'AA_EnableHighDpiScaling'):
@@ -69,6 +76,9 @@ class VaRATSSetup:
         self.main_window = BuildSetup()
 
     def main(self):
+        """
+        Start VaRA setup GUI
+        """
         sys.exit(self.app.exec_())
 
 
@@ -81,6 +91,9 @@ def main_graph_view():
 
 
 def update_term(text):
+    """
+    Print/Update terminal text without producing new lines.
+    """
     text = text.replace(os.linesep, ' ')
     _, columns = os.popen('/bin/stty size', 'r').read().split()
     print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r', flush=True)
@@ -344,6 +357,11 @@ def main_casestudy():
         help="Number of revisions to select.")
     gen_parser.add_argument(
         "-v", "--version", type=int, default=0, help="Case study version.")
+    gen_parser.add_argument(
+        "--add-rev",
+        nargs="+",
+        default=[],
+        help="Add a list of additional revisions to the case-study")
 
     args = parser.parse_args()
     if args.subcommand == 'status':
@@ -365,7 +383,7 @@ def main_casestudy():
 
         case_study = generate_case_study(args.distribution, args.num_rev, cmap,
                                          git_path.stem.replace("-HEAD", ""),
-                                         args.version)
+                                         args.version, args.add_rev)
         store_case_study(case_study, paper_config_path)
 
 
