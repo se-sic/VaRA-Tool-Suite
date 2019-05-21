@@ -10,6 +10,7 @@ from numpy import random
 from scipy.stats import halfnorm
 
 from varats.data.revisions import get_proccessed_revisions
+from varats.plots.plot_utils import check_required_args
 
 
 class HashIDTuple(yaml.YAMLObject):
@@ -163,9 +164,10 @@ class SamplingMethod(Enum):
     half_norm = 2
 
 
+@check_required_args(['extra_revs'])
 def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
                         cmap, project_name: str, case_study_version: int,
-                        extra_revisions: [str]) -> CaseStudy:
+                        **kwargs) -> CaseStudy:
     """
     Generate a case study for a given project.
 
@@ -179,7 +181,8 @@ def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
     items = sorted([x for x in cmap.mapping_items()], key=lambda x: x[1])
 
     selected_items = [
-        rev_item for rev_item in items if rev_item[0][:10] in extra_revisions
+        rev_item for rev_item in items
+        if rev_item[0][:10] in kwargs['extra_revs']
     ]
 
     filtered_items = [
