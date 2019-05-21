@@ -363,6 +363,9 @@ def main_casestudy():
         default=[],
         help="Add a list of additional revisions to the case-study")
 
+    ext_parser = sub_parsers.add_parser('ext', help="Extend a case study.")
+    ext_parser.add_argument("stratigy", action=enum_action(SamplingMethod))
+
     args = {
         k: v
         for k, v in vars(parser.parse_args()).items() if v is not None
@@ -391,6 +394,8 @@ def main_casestudy():
             args['distribution'], args['num_rev'], cmap,
             git_path.stem.replace("-HEAD", ""), args['version'], **args)
         store_case_study(case_study, args['paper_config_path'])
+    elif args['subcommand'] == 'ext':
+        pass
 
 
 def main_develop():

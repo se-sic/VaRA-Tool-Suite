@@ -3,8 +3,8 @@ A case study to pin down project settings and the exact set of revisions that
 should be analysed.
 """
 
-import yaml
 from enum import Enum
+import yaml
 
 from numpy import random
 from scipy.stats import halfnorm
@@ -49,6 +49,16 @@ class HashIDTuple(yaml.YAMLObject):
         return "({commit_id}: #{commit_hash})"\
             .format(commit_hash=self.commit_hash,
                     commit_id=self.commit_id)
+
+
+class CSStage(yaml.YAMLObject):
+    """
+    A stage in a case-study, i.e., a collection of revisions. Stages are used
+    to separate revisions into groups.
+    """
+
+    def __init__(self):
+        self.__revisions = []
 
 
 class CaseStudy(yaml.YAMLObject):
@@ -217,3 +227,34 @@ def store_case_study(case_study: CaseStudy, paper_path: str):
         project_name=case_study.project_name, version=case_study.version)
     with open(paper_path / file_name, "w") as cs_file:
         cs_file.write(yaml.dump(case_study))
+
+
+###############################################################################
+# Case study extender
+###############################################################################
+
+
+class ExtenderStrategy(Enum):
+    """
+    Enum for all currently supported extender strategies.
+    """
+
+    simple_add = 1
+
+
+def extend():
+    """
+    TODO: comment
+    """
+
+    """
+    Needs:
+        extender strat
+            -> distribution
+        num revs
+        posible: list of extra revs
+        current case study
+
+        sub case study? other cs so separate changes
+    """
+    pass
