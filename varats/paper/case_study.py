@@ -164,8 +164,8 @@ class SamplingMethod(Enum):
 
 
 def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
-                        cmap, project_name: str,
-                        case_study_version: int) -> CaseStudy:
+                        cmap, project_name: str, case_study_version: int,
+                        extra_revisions: [str]) -> CaseStudy:
     """
     Generate a case study for a given project.
 
@@ -174,20 +174,33 @@ def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
     evaluation.
     """
     case_study = CaseStudy(project_name, case_study_version)
+    # Needs to be sorted so the propability distribution over the length
+    # of the list is the same as the distribution over the commits age history
     items = sorted([x for x in cmap.mapping_items()], key=lambda x: x[1])
+
+    selected_items = [
+        rev_item for rev_item in items if rev_item[0][:10] in extra_revisions
+    ]
+
+    filtered_items = [
+        rev_item for rev_item in items if rev_item not in selected_items
+    ]
 
     if sampling_method == SamplingMethod.half_norm:
         print("Using half-normal distribution")
-        probabilities = halfnorm.rvs(scale=1, size=len(items))
+        probabilities = halfnorm.rvs(scale=1, size=len(filtered_items))
     elif sampling_method == SamplingMethod.uniform:
         print("Using uniform distribution")
-        probabilities = random.uniform(0, 1.0, len(items))
+        probabilities = random.uniform(0, 1.0, len(filtered_items))
 
     probabilities /= probabilities.sum()
-    idxs = sorted(
-        random.choice(len(items), num_samples, p=probabilities), reverse=True)
-    for idx in idxs:
-        item = items[idx]
+    filtered_idxs = random.choice(
+        len(filtered_items), num_samples, p=probabilities)
+
+    for idx in filtered_idxs:
+        selected_items.append(filtered_items[idx])
+
+    for item in sorted(selected_items, key=lambda x: x[1], reverse=True):
         case_study.include_revision(item[0], item[1])
 
     return case_study
