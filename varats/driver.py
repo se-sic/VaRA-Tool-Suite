@@ -358,7 +358,7 @@ def main_casestudy():
     gen_parser.add_argument(
         "-v", "--version", type=int, default=0, help="Case study version.")
     gen_parser.add_argument(
-        "--add-rev",
+        "--extra-revs",
         nargs="+",
         default=[],
         help="Add a list of additional revisions to the case-study")
@@ -387,10 +387,9 @@ def main_casestudy():
         if not args['paper_config_path'].exists():
             raise argparse.ArgumentTypeError("Paper path does not exist")
 
-        case_study = generate_case_study(args['distribution'], args['num_rev'],
-                                         cmap,
-                                         git_path.stem.replace("-HEAD", ""),
-                                         args['version'], args['add_rev'])
+        case_study = generate_case_study(
+            args['distribution'], args['num_rev'], cmap,
+            git_path.stem.replace("-HEAD", ""), args['version'], **args)
         store_case_study(case_study, args['paper_config_path'])
 
 
