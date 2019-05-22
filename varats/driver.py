@@ -338,6 +338,11 @@ def main_casestudy():
         help="Only print a short summary",
         action="store_true",
         default=False)
+    status_parser.add_argument(
+        "--list-revs",
+        help="Print a list of revisions for every stage and every case study",
+        action="store_true",
+        default=False)
 
     gen_parser = sub_parsers.add_parser('gen', help="Generate a case study.")
     gen_parser.add_argument(
@@ -375,7 +380,12 @@ def main_casestudy():
         if 'paper_config' in args:
             CFG['paper_config']['current_config'] = args['paper_config']
 
-        PCM.show_status_of_case_studies(args['filter_regex'], args['short'])
+        if args['short'] and args['list_revs']:
+            parser.error(
+                "At least one argument of: --short, --list-revs can be used.")
+
+        PCM.show_status_of_case_studies(args['filter_regex'], args['short'],
+                                        args['list_revs'])
     elif args['subcommand'] == 'gen':
         if args['git_path'].endswith(".git"):
             git_path = Path(args['git_path'][:-4])

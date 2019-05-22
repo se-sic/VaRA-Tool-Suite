@@ -11,7 +11,8 @@ from varats.settings import CFG
 import varats.paper.paper_config as PC
 
 
-def show_status_of_case_studies(filter_regex: str, short_status: bool):
+def show_status_of_case_studies(filter_regex: str, short_status: bool,
+                                print_rev_list: bool):
     """
     Show the status of all matching case studies.
     """
@@ -28,13 +29,31 @@ def show_status_of_case_studies(filter_regex: str, short_status: bool):
             filter_regex, "{name}_{version}".format(
                 name=case_study.project_name, version=case_study.version))
         if match is not None:
-            if short_status:
+            if print_rev_list:
+                print(get_revision_list(case_study))
+            elif short_status:
                 print(get_short_status(case_study, CommitReport, True))
             else:
                 print(get_status(case_study, CommitReport, True))
 
 
-def get_short_status(case_study, result_file_type, use_color=False):
+def get_revision_list(case_study) -> str:
+    """
+    Returns a string with a list of revsion from the case-study,
+    group by case-study stages.
+    """
+    res_str = "CS: {project}_{version}:\n".format(
+        project=case_study.project_name, version=case_study.version)
+
+    for idx, stage in enumerate(case_study.stages):
+        res_str += "  Stage {idx}\n".format(idx=idx)
+        for rev in stage.revisions:
+            res_str += "    {rev}\n".format(rev=rev)
+
+    return res_str
+
+
+def get_short_status(case_study, result_file_type, use_color=False) -> str:
     """
     Return a string representation that describes the current status of
     the case study.

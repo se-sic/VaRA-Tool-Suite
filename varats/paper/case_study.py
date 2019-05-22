@@ -57,8 +57,35 @@ class CSStage(yaml.YAMLObject):
     to separate revisions into groups.
     """
 
+    yaml_loader = yaml.SafeLoader
+    yaml_tag = u'!CSStage'
+
     def __init__(self):
         self.__revisions = []
+
+    @property
+    def revisions(self):
+        """
+        Project revisions that are part of this case study.
+        """
+        return [x.commit_hash for x in self.__revisions]
+
+    def has_revision(self, revision: str):
+        """
+        Check if a revision is part of this case study.
+        """
+        for cs_revision in self.__revisions:
+            if cs_revision.commit_hash.startswith(revision):
+                return True
+
+        return False
+
+    def add_revision(self, revision: str, commit_id):
+        """
+        Add a new revision to this stage.
+        """
+        if not self.has_revision(revision):
+            self.__revisions.append(HashIDTuple(revision, commit_id))
 
 
 class CaseStudy(yaml.YAMLObject):
@@ -77,7 +104,7 @@ class CaseStudy(yaml.YAMLObject):
     def __init__(self, project_name, version):
         self.__project_name = project_name
         self.__version = version
-        self.__revisions = []
+        self.__stages = []
 
     @property
     def project_name(self):
@@ -99,34 +126,56 @@ class CaseStudy(yaml.YAMLObject):
         """
         Project revisions that are part of this case study.
         """
-        return [x.commit_hash for x in self.__revisions]
+        return [x for stage in self.__stages for x in stage.revisions]
+
+    @property
+    def stages(self):
+        """
+        Get a list with all stages.
+        """
+        # Return new list to forbid modification of the case-study
+        return [stage for stage in self.__stages]
+
+    @property
+    def num_stages(self):
+        """
+        Get nummer of stages.
+        """
+        return len(self.__stages)
 
     def has_revision(self, revision: str):
         """
         Check if a revision is part of this case study.
         """
-        for cs_revision in self.__revisions:
-            if cs_revision.commit_hash.startswith(revision):
+        for stage in self.__stages:
+            if stage.has_revision(revision):
                 return True
 
         return False
 
-    def include_revision(self, revision, commit_id):
+    def include_revision(self, revision, commit_id, stage_num=0):
         """
         Add a revision to this case study.
         """
-        if not self.has_revision(revision):
-            self.__revisions.append(HashIDTuple(revision, commit_id))
+        # Create missing stages
+        while len(self.__stages) <= stage_num:
+            self.__stages.append(CSStage())
 
-    def include_revisions(self, revisions: [(str, int)]):
+        stage = self.__stages[stage_num]
+
+        if not stage.has_revision(revision):
+            stage.add_revision(revision, commit_id)
+
+    def include_revisions(self, revisions: [(str, int, int)]):
         """
         Add multiple revisions to this case study.
 
         Args:
-            revisions: List of tuples with commit_hash and id
+            revisions: List of triples with (commit_hash, id, stage)
+                       to be inserted
         """
         for revision in revisions:
-            self.include_revision(revision[0], revision[1])
+            self.include_revision(revision[0], revision[1], revision[2])
 
     def get_revision_filter(self):
         """
