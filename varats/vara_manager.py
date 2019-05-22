@@ -11,6 +11,7 @@ import subprocess as sp
 import tempfile
 import shutil
 
+from contextlib import contextmanager
 from enum import Enum
 from threading import RLock
 from varats.settings import save_config, CFG
@@ -37,7 +38,7 @@ def run_with_output(pb_cmd, post_out=lambda x: None):
     except ProcessExecutionError:
         post_out("ProcessExecutionError")
 
-def run_qprocess_with_output(process: QProcess, post_out=lambda x: None):
+def run_process_with_output(process: QProcess, post_out=lambda x: None):
     output = str(process.readAllStandardOutput().data().decode('utf-8'))
     for line in output.splitlines(True):
         post_out(line)
@@ -60,13 +61,9 @@ def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
         if repo_name is not None:
             args.append(repo_name)
 
-        proc = QProcess()
-        proc.setProcessChannelMode(QProcess.MergedChannels)
-        proc.readyReadStandardOutput.connect(lambda: run_qprocess_with_output(proc, post_out))
-        ProcessManager.start_process(proc, "git", args)
-        proc.waitForFinished(-1)
-        if proc.exitStatus() != QProcess.NormalExit:
-            raise ProcessTerminatedError()
+        with ProcessManager.create_process("git", args) as proc:
+            proc.setProcessChannelMode(QProcess.MergedChannels)
+            proc.readyReadStandardOutput.connect(lambda: run_process_with_output(proc, post_out))
 
 
 class BuildType(Enum):
@@ -149,95 +146,68 @@ def add_remote(repo_folder, remote, url):
     """
     Adds new remote to the repository.
     """
-    with local.cwd(repo_folder):
-        proc = QProcess()
-        ProcessManager.start_process(proc, "git", ["remote", "add", remote, url])
-        proc.waitForFinished(-1)
+    with ProcessManager.create_process("git", ["remote", "add", remote, url], workdir=repo_folder):
+        pass
 
-        proc = QProcess()
-        ProcessManager.start_process(proc, "git", ["fetch", remote])
-        proc.waitForFinished(-1)
+    with ProcessManager.create_process("git", ["fetch", remote], workdir=repo_folder):
+        pass
 
 
-def fetch_remote(remote, repo_folder=""):
+def fetch_remote(remote, repo_folder=None):
     """
     Fetches the new changes from the remote.
     """
-    proc = QProcess()
-
-    if repo_folder == '':
-        ProcessManager.start_process(proc, "git", ["fetch", remote])
-    else:
-        with local.cwd(repo_folder):
-            ProcessManager.start_process(proc, "git", ["fetch", remote])
-    proc.waitForFinished(-1)
+    with ProcessManager.create_process("git", ["fetch", remote], workdir=repo_folder):
+        pass
 
 
 def init_all_submodules(folder):
     """
     Inits all submodules.
     """
-    proc = QProcess()
-    with local.cwd(folder):
-        ProcessManager.start_process(proc, "git", ["submodule", "init"])
-    proc.waitForFinished(-1)
+    with ProcessManager.create_process("git", ["submodule", "init"], workdir=folder):
+        pass
 
 
 def update_all_submodules(folder):
     """
     Updates all submodules.
     """
-    proc = QProcess()
-    with local.cwd(folder):
-        ProcessManager.start_process(proc, "git", ["submodule", "update"])
-    proc.waitForFinished(-1)
+    with ProcessManager.create_process("git", ["submodule", "update"], workdir=folder):
+        pass
 
 
-def pull_current_branch(repo_folder=""):
+def pull_current_branch(repo_folder=None):
     """
     Pull in changes in a certain branch.
     """
-    proc = QProcess()
-    if repo_folder == '':
-        ProcessManager.start_process(proc, "git", ["pull"])
-    else:
-        with local.cwd(repo_folder):
-            ProcessManager.start_process(proc, "git", ["pull"])
-    proc.waitForFinished(-1)
+    with ProcessManager.create_process("git", ["pull"], workdir=repo_folder):
+        pass
 
 
-def fetch_current_branch(repo_folder=""):
+def fetch_current_branch(repo_folder=None):
     """
     Pull in changes in a certain branch.
     """
-    proc = QProcess()
-    if repo_folder == '':
-        ProcessManager.start_process(proc, "git", ["fetch"])
-    else:
-        with local.cwd(repo_folder):
-            ProcessManager.start_process(proc, "git", ["fetch"])
-    proc.waitForFinished(-1)
-
+    with ProcessManager.create_process("git", ["fetch"], workdir=repo_folder):
+        pass
 
 
 def checkout_branch(repo_folder, branch):
     """
     Checks out a branch in the repository.
     """
-    with local.cwd(repo_folder):
-        proc = QProcess()
-        ProcessManager.start_process(proc, "git", ["checkout", branch])
-        proc.waitForFinished(-1)
+    with ProcessManager.create_process("git", ["checkout", branch], workdir=repo_folder):
+        pass
 
 
 def checkout_new_branch(repo_folder, branch, remote_branch):
     """
     Checks out a new branch in the repository.
     """
-    with local.cwd(repo_folder):
-        proc = QProcess()
-        ProcessManager.start_process(proc, "git", ["checkout", "-b", branch, remote_branch])
-        proc.waitForFinished(-1)
+    with ProcessManager.create_process("git", ["checkout", "-b", branch, remote_branch],
+                                       workdir=repo_folder):
+        pass
 
 
 def get_download_steps():
@@ -333,11 +303,9 @@ def set_cmake_var(var_name, value, post_out=lambda x: None):
     """
     Sets a cmake variable in the current cmake config.
     """
-    proc = QProcess()
-    proc.setProcessChannelMode(QProcess.MergedChannels)
-    proc.readyReadStandardOutput.connect(lambda: run_qprocess_with_output(proc, post_out))
-    ProcessManager.start_process(proc, "cmake", ["-D" + var_name + "=" + value, "."])
-    proc.waitForFinished(-1)
+    with ProcessManager.create_process("cmake", ["-D" + var_name + "=" + value, "."]) as proc:
+        proc.setProcessChannelMode(QProcess.MergedChannels)
+        proc.readyReadStandardOutput.connect(lambda: run_process_with_output(proc, post_out))
 
 
 def init_vara_build(path_to_llvm, build_type: BuildType,
@@ -349,15 +317,10 @@ def init_vara_build(path_to_llvm, build_type: BuildType,
     if not os.path.exists(full_path):
         os.makedirs(full_path)
 
-    with local.cwd(full_path):
-        if build_type == BuildType.DEV:
-            proc = QProcess()
+    if build_type == BuildType.DEV:
+        with ProcessManager.create_process("./build_cfg/build-dev.sh", workdir=full_path) as proc:
             proc.setProcessChannelMode(QProcess.MergedChannels)
-            proc.readyReadStandardOutput.connect(lambda: run_qprocess_with_output(proc, post_out))
-            ProcessManager.start_process(proc, "./build_cfg/build-dev.sh", [])
-            proc.waitForFinished(-1)
-            if proc.exitStatus() != QProcess.NormalExit:
-                raise ProcessTerminatedError()
+            proc.readyReadStandardOutput.connect(lambda: run_process_with_output(proc, post_out))
 
 
 def verify_build_structure(own_libgit: bool, path_to_llvm: str,
@@ -395,13 +358,9 @@ def build_vara(path_to_llvm: str, install_prefix: str,
         verify_build_structure(own_libgit, path_to_llvm, post_out)
         set_vara_cmake_variables(own_libgit, install_prefix, post_out)
 
-        proc = QProcess()
+    with ProcessManager.create_process("ninja", ["install"]) as proc:
         proc.setProcessChannelMode(QProcess.MergedChannels)
-        proc.readyReadStandardOutput.connect(lambda: run_qprocess_with_output(proc, post_out))
-        ProcessManager.start_process(proc, "ninja", ["install"])
-        proc.waitForFinished(-1)
-        if proc.exitStatus() != QProcess.NormalExit:
-            raise ProcessTerminatedError()
+        proc.readyReadStandardOutput.connect(lambda: run_process_with_output(proc, post_out))
 
 
 def set_vara_cmake_variables(own_libgit: bool, install_prefix: str,
@@ -562,13 +521,49 @@ class ProcessManager:
     __instance = None
 
     @staticmethod
+    @contextmanager
+    def create_process(program: str, args: [str] = None, workdir: str = None):
+        """
+        Creates a new process.
+        The does not return immediately. Instead it waits until the process finishes.
+        If the process gets interrupted by the user (e.g. by calling the ProcessManager's
+        shutdown() method), the ProcessTerminatedError exception gets raised.
+
+        Example usage:
+
+        with ProcessManager.create_process(prog, args) as proc:
+            # modify/configure the QProcess object
+        # process is started after the when block is exited
+        """
+        args = [] if args is None else args
+
+        proc = QProcess()
+        yield proc
+
+        if workdir is not None:
+            with local.cwd(workdir):
+                ProcessManager.start_process(proc, program, args)
+        else:
+            ProcessManager.start_process(proc, program, args)
+
+        proc.waitForFinished(-1)
+
+        if proc.exitStatus() != QProcess.NormalExit:
+            raise ProcessTerminatedError()
+
+    @staticmethod
     def getInstance():
         if ProcessManager.__instance == None:
             ProcessManager()
         return ProcessManager.__instance
 
     @staticmethod
-    def start_process(process: QProcess, program: str, args: [str]):
+    def start_process(process: QProcess, program: str, args: [str] = None):
+        """
+        Starts a QProcess object.
+        This method returns immediately and does not wait for the process
+        to finish."""
+        args = [] if args is None else args
         ProcessManager.getInstance().__start_process(process, program, args)
 
     @staticmethod
