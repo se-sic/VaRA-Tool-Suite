@@ -588,7 +588,6 @@ def build_vara(path_to_llvm: Path,
         try:
             init_vara_build(path_to_llvm, build_type, post_out)
         except ProcessTerminatedError as e:
-            print("Build dir initialization was terminated. Removing build dir...")
             shutil.rmtree(full_path)
             raise e
 
