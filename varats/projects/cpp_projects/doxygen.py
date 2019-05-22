@@ -14,7 +14,7 @@ class Doxygen(Project):
     """ Doxygen """
 
     NAME = 'doxygen'
-    GROUP = 'code'
+    GROUP = 'cpp_projects'
     DOMAIN = 'documentation'
     VERSION = 'HEAD'
 

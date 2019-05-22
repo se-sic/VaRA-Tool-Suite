@@ -2,12 +2,15 @@
 Commit map module.
 """
 
+from pathlib import Path
+
 from plumbum import local
-from plumbum.cmd import git
+from plumbum.cmd import git, mkdir
+
+from varats.data.commit_report import CommitMap
 
 
-def generate_commit_map(path: str, output_filename: str, end="HEAD",
-                        start=None):
+def generate_commit_map(path: str, end="HEAD", start=None):
     """
     Generate a commit map for a repository including the commits ]start..end]
     """
@@ -19,10 +22,21 @@ def generate_commit_map(path: str, output_filename: str, end="HEAD",
     search_range += end
 
     with local.cwd(path):
-        out = git("--no-pager", "log", "--pretty=format:'%H'",
-                  search_range)
+        out = git("--no-pager", "log", "--pretty=format:'%H'", search_range)
 
-    with open(output_filename, "w") as c_map:
-        for number, line in enumerate(reversed(out.split('\n'))):
-            line = line[1:-1]
-            c_map.write("{}, {}\n".format(number, line))
+        def format_stream():
+            for number, line in enumerate(reversed(out.split('\n'))):
+                line = line[1:-1]
+                yield "{}, {}\n".format(number, line)
+
+        return CommitMap(format_stream())
+
+
+def store_commit_map(cmap: CommitMap, output_file_path: str):
+    """
+    Store commit map to file.
+    """
+    mkdir("-p", Path(output_file_path).parent)
+
+    with open(output_file_path, "w") as c_map_file:
+        cmap.write_to_file(c_map_file)

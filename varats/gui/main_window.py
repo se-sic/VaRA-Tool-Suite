@@ -12,6 +12,7 @@ from varats.gui.ui_MainWindow import Ui_MainWindow
 from varats.gui.views.example_view import ExampleView
 from varats.gui.views.cr_bar_view import CRBarView
 from varats.gui.buildsetup_window import BuildSetup
+from varats.gui.filtertree_window import FilterWindow
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -23,6 +24,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super(MainWindow, self).__init__()
         self.views = []
         self.bwg = None
+        self.filter_window = None
 
         self.setupUi(self)
         self.actionExampleView.triggered.connect(self._spawn_exampleview)
@@ -30,6 +32,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Signals for menubar
         self.actionVaRA_Setup.triggered.connect(self._spawn_vara_build_setup)
+        self.actionFilter_Editor.triggered.connect(self._spawn_filter_editor)
         self.actionSave_Config.triggered.connect(self._save_config)
         self.actionCreate_BenchBuild_Config.triggered.connect(
             self._create_benchbuild_config)
@@ -56,6 +59,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """
         self.bwg = BuildSetup()
         self.bwg.show()
+
+    def _spawn_filter_editor(self):
+        """
+        Spawn a filter editor window to configure interaction filters.
+        """
+        self.filter_window = FilterWindow()
+        self.filter_window.show()
 
     @staticmethod
     def _save_config():

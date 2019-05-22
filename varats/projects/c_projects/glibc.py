@@ -1,9 +1,13 @@
-from benchbuild.settings import CFG
-from benchbuild.utils.compiler import cc
-from benchbuild.utils.run import run
+"""
+Project file for git.
+"""
 from benchbuild.project import Project
+from benchbuild.settings import CFG
 from benchbuild.utils.cmd import make
+from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
+from benchbuild.utils.run import run
+
 from plumbum import local
 
 
@@ -12,10 +16,11 @@ class Glibc(Project):
     """ Standard GNU C-library """
 
     NAME = 'glibc'
-    GROUP = 'code'
+    GROUP = 'c_projects'
     DOMAIN = 'UNIX utils'
     VERSION = 'HEAD'
 
+    BIN_NAMES = ['fooo']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
     def run_tests(self, runner):

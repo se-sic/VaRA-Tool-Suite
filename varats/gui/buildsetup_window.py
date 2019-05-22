@@ -4,6 +4,8 @@ A module that manages the building of VaRa.
 import os
 import re
 
+from pathlib import Path
+
 from PyQt5.QtWidgets import QWidget, QShortcut
 from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject, QProcess
 from PyQt5.QtGui import QTextCursor, QKeySequence
@@ -96,10 +98,9 @@ class BuildWorker(QRunnable):
         Run, build an installs VaRA in a diffrent thread.
         """
         try:
-            vara_manager.build_vara(self.path_to_llvm,
-                                    self.install_prefix,
-                                    self.build_type,
-                                    self._update_text)
+            vara_manager.build_vara(
+                Path(self.path_to_llvm), self.install_prefix, self.build_type,
+                self._update_text)
             self.signals.finished.emit()
         except ProcessTerminatedError:
             print("Process was terminated")
@@ -146,6 +147,9 @@ class BuildSetup(QWidget, Ui_BuildSetup):
             .connect(self.vara_state_mgr.update_current_branch)
         self.vara_state_mgr.state_signal\
             .status_update.connect(self._update_version)
+
+        self._update_source_dir()
+        self._update_install_dir()
 
         self.thread_pool = QThreadPool()
         self._check_state()

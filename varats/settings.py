@@ -18,7 +18,7 @@ CFG = s.Configuration(
         },
         "version": {
             "desc": "VaRA version.",
-            "default": 70,
+            "default": 80,
         },
         "benchbuild_root": {
             "desc": "Root folder to run BenchBuild in",
@@ -43,6 +43,17 @@ CFG = s.Configuration(
     }
 )
 
+CFG["paper_config"] = {
+    "folder": {
+        "desc": "Folder with paper configs.",
+        "default": None,
+    },
+    "current_config": {
+        "desc": "Paper config file to load.",
+        "default": None,
+    },
+}
+
 CFG["env"] = {
     "default": {},
     "desc": "The environment benchbuild's commands should operate in."
@@ -65,6 +76,28 @@ CFG['db'] = {
     }
 }
 
+CFG['experiment'] = {
+    "only_missing": {
+        "default": False,
+        "desc": "Only run missing version"
+    },
+    "random_order": {
+        "default": False,
+        "desc": "Randomize the order of versions to explore."
+    },
+    "sample_limit": {
+        "default": None,
+        "desc": "Randomize the order of versions to explore."
+    },
+}
+
+CFG['plots'] = {
+    "data_cache": {
+        "default": "data_cache",
+        "desc": "Local data cache to store preprocessed files."
+    },
+}
+
 
 def get_value_or_default(cfg, varname, default):
     """
@@ -82,11 +115,12 @@ def create_missing_folders():
     """
     Create a folders that do not exist but where set in the config.
     """
-    def create_missing_folder_for_cfg(cfg_varname):
+    def create_missing_folder_for_cfg(cfg_varname, local_cfg=CFG):
         """
         Create missing folders for a specific config path.
         """
-        config_node = CFG[cfg_varname]
+
+        config_node = local_cfg[cfg_varname]
         if config_node.has_value and\
                 config_node.value is not None and\
                 not path.isdir(config_node.value):
@@ -94,6 +128,7 @@ def create_missing_folders():
 
     create_missing_folder_for_cfg("benchbuild_root")
     create_missing_folder_for_cfg("result_dir")
+    create_missing_folder_for_cfg("data_cache", CFG["plots"])
 
 
 def save_config():
@@ -125,23 +160,30 @@ def generate_benchbuild_config(vara_cfg, bb_config_path: str):
     # projects_conf.value[:] = [ x for x in projects_conf.value
     #                           if not x.endswith('gzip')]
     projects_conf.value[:] = []
-    projects_conf.value[:] += ['varats.projects.c_projects.busybox',
-                               'varats.projects.c_projects.git',
-                               'varats.projects.c_projects.glibc',
-                               'varats.projects.c_projects.gravity',
-                               'varats.projects.c_projects.gzip',
-                               'varats.projects.c_projects.tmux',
-                               'varats.projects.c_projects.vim']
+    projects_conf.value[:] += [
+        'varats.projects.c_projects.busybox',
+        'varats.projects.c_projects.git',
+        'varats.projects.c_projects.gravity',
+        'varats.projects.c_projects.gzip',
+        'varats.projects.c_projects.libvpx',
+        'varats.projects.c_projects.lrzip',
+        'varats.projects.c_projects.tmux',
+        'varats.projects.c_projects.vim',
+        'varats.projects.c_projects.x264',
+        'varats.projects.c_projects.xz',
+    ]
     projects_conf.value[:] += ['varats.projects.cpp_projects.doxygen']
+    projects_conf.value[:] += ['varats.projects.test_projects.basic_tests']
 
     # Experiments for VaRA
     projects_conf = BB_CFG["plugins"]["experiments"]
     projects_conf.value[:] = []
-    projects_conf.value[:] += ['varats.experiments.GitBlameAnnotationReport']
+    projects_conf.value[:] += [
+        'varats.experiments.GitBlameAnnotationReport',
+        'varats.experiments.marker_tester'
+    ]
 
-    BB_CFG["env"] = {
-        "PATH": [str(vara_cfg["llvm_install_dir"]) + "bin/"]
-    }
+    BB_CFG["env"] = {"PATH": [str(vara_cfg["llvm_install_dir"]) + "bin/"]}
 
     # Add VaRA experiment config variables
     BB_CFG["vara"] = {

@@ -2,12 +2,11 @@
 
 # Form implementation generated from reading ui file 'MainWindow.ui'
 #
-# Created by: PyQt5 UI code generator 5.12.1
+# Created by: PyQt5 UI code generator 5.11.3
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -27,7 +26,7 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.tabWidget, 0, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1024, 20))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1024, 29))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
@@ -60,9 +59,12 @@ class Ui_MainWindow(object):
         self.actionSave_Config.setObjectName("actionSave_Config")
         self.actionCreate_BenchBuild_Config = QtWidgets.QAction(MainWindow)
         self.actionCreate_BenchBuild_Config.setObjectName("actionCreate_BenchBuild_Config")
+        self.actionFilter_Editor = QtWidgets.QAction(MainWindow)
+        self.actionFilter_Editor.setObjectName("actionFilter_Editor")
         self.menuConfig.addAction(self.actionCreate_BenchBuild_Config)
         self.menuConfig.addAction(self.actionSave_Config)
         self.menuFile.addAction(self.actionVaRA_Setup)
+        self.menuFile.addAction(self.actionFilter_Editor)
         self.menuFile.addAction(self.menuConfig.menuAction())
         self.menuFile.addAction(self.actionQuit)
         self.menuView.addAction(self.actionExampleView)
@@ -94,8 +96,7 @@ class Ui_MainWindow(object):
         self.actionVaRA_Setup.setShortcut(_translate("MainWindow", "Ctrl+B"))
         self.actionSave_Config.setText(_translate("MainWindow", "Save VaRA Config"))
         self.actionCreate_BenchBuild_Config.setText(_translate("MainWindow", "Create BenchBuild Config"))
-
-
+        self.actionFilter_Editor.setText(_translate("MainWindow", "Filter Editor"))
 
 
 if __name__ == "__main__":
@@ -106,3 +107,4 @@ if __name__ == "__main__":
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())
+

@@ -24,4 +24,5 @@ def load_commit_map(file_path: str) -> CommitMap:
     Attributes:
         file_path (str): Full path to the file
     """
-    return CommitMap(file_path)
+    with open(file_path, "r") as c_map_file:
+        return CommitMap(c_map_file.readlines())

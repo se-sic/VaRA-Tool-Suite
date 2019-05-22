@@ -121,7 +121,9 @@ class CRBarView(QWidget, Ui_Form):
         elif text == self.optionsTree.OPT_CR_CMAP:
             c_map_path = item.text(1)
             if path.isfile(c_map_path):
-                self.c_map = CommitMap(c_map_path)
+                with open(c_map_path, "r") as c_map_file:
+                    self.c_map = CommitMap(c_map_file.readlines())
+
                 if self.current_report is not None:
                     self.current_report = self.current_report
             else:

@@ -7,6 +7,13 @@
 | vara    | [![Build Status](https://travis-ci.org/se-passau/VaRA-Tool-Suite.svg?branch=vara)](https://travis-ci.org/se-passau/VaRA-Tool-Suite) |
 | vara-dev| [![Build Status](https://travis-ci.org/se-passau/VaRA-Tool-Suite.svg?branch=vara-dev)](https://travis-ci.org/se-passau/VaRA-Tool-Suite) |
 
+## Using VaRA with VaRA-TS
+VaRA is a variability-aware framework to analyze interactions between code regions that convey a semantic meaning for the researcher, e.g., `CommitRegions` represent blocks of code that belongs to the same commit.
+Our tool suite allows the researcher to automatically run analyses provided by VaRA on different software projects.
+For this, we provides different preconfigured experiments and projects.
+Experiments abstract the actions that should be taken when analyzing a project, e.g., build, analyze, generate result graph.
+Projects describe how a software project should be configured and build, e.g., `gzip` provides all necessary information to checkout, configure, and compile the project.
+
 ## Setup Tool Suite
 
 ### Install dependencies
@@ -77,6 +84,108 @@ To upgrade VaRA to a new release, for example, `release_70`, use:
 ```bash
     vara-buildsetup -u --version 70
 ```
+
+## Running experiments and analyzing projects
+VaRA-TS provides different preconfigured experiments and projects.
+In order to execute an experiment on a project we use BenchBuild, an empirical-research toolkit.
+
+### Setup: Configuring BenchBuild
+First, we need to generate a configuration file for BenchBuild, this is done with:
+```console
+vara-gen-bbconfig
+```
+
+### Running BenchBuild experiments
+Second, we run an experiment like `GitBlameAnnotationReport` on provided projects, in this case we use `gzip`.
+```console
+benchbuild -vv run -E GitBlameAnnotationReport gzip
+```
+The generated result files are place in the `vara/results/$PROJECT_NAME` folder and can be further visualized with VaRA-TS graph generators.
+
+### Creating a CaseStudy
+If one wants to analyze a particular set of revisions or wants to reevaluate the same revision over and over again, we can fix the analyzed revisions by creating a `CaseStudy`. First, create a folder, where your config should be saved. Then, create a case study that fixes the revision to be analyzed.
+In order to ease the creation of case studies VaRA-TS offers different sampling methods to choose revisions from the projects history based on a probability distribution.
+
+For example, we can generate a new case study for `gzip`, drawing 10 revision from the projects history based on a half-normal distribution, with:
+```console
+vara-cs gen PATH_TO_PAPER_CONF_DIR/ PATH_TO_REPO/ half_norm --num-rev 10
+```
+
+Created case studies should be grouped into folders, e.g., a set of case studies used for a paper.
+This allows the tool suite to tell BenchBuild which revisions should be analyzed to evaluate a set of case studies for a paper. For example, a setup could look like:
+```console
+paper_configs
+    ├── ase-17
+    │       ├── gzip_0.case_study
+    │       ├── gzip_1.case_study
+    │       └── git_0.case_study
+    └── icse-18
+            ├── gzip_0.case_study
+            └── git_0.case_study
+```
+In this example, we got two paper configs, one for `ase-17` another for `icse-18`. We see different case studies for `gzip` and `git`, notice here that we can create multiple case studies for one project. If we now want to evaluate our set for `icse-18` we set the paper-config folder to the root of our config tree and select the `icse-18` folder as our current config.
+```yaml
+paper_config:
+    current_config:
+        value: icse-18
+    folder:
+        value: /home/foo/vara/paper_configs/
+```
+Next, we can run our experiment with BenchBuild as usual. During experiment execution BenchBuild will load our config and only evaluate the needed revisions.
+
+The current status of a case study can be visualized with `vara-cs status`:
+```console
+> vara-cs status -s
+CS: gzip_0: (0/5) processed
+CS: gzip_1: (2/5) processed
+CS: gzip_2: (5/5) processed
+CS: libvpx_0: (0/5) processed
+```
+
+## VaRA developer tools
+VaRA-TS provides different tools to ease VaRA development.
+
+### vara-develop
+`vara-develop`, short `vd`, is a helper to interact with the different VaRA project repositories when working on VaRA.
+The tool provides commands for showing `git status`, creating `new-branch` or `checkout` existing branches.
+Furthermore, commands to `pull`/`push` the current branches and to show currently developed feature branches `f-branches`.
+It can be used on a set of projects simultaneously.
+A command like:
+```console
+> vd new-branch f-FooBar vara clang llvm
+```
+will create the branch `f-FooBar` on all three repositories.
+
+Showing the current status of the listed projects can be done with:
+```console
+> vd status clang vara
+################################################################################
+# Project: clang                                                               #
+################################################################################
+On branch vara-80-dev
+Your branch is up to date with 'origin/vara-80-dev'.
+
+nothing to commit, working tree clean
+
+################################################################################
+# Project: VaRA                                                                #
+################################################################################
+On branch f-InstrumentationVerifier
+Your branch is up to date with 'origin/f-InstrumentationVerifier'.
+
+nothing to commit, working tree clean
+```
+
+The `checkout` tool helps you to checkout the same branch on different projects, if one exists.
+Furthermore, it can easily switch all projects to `vara-dev` or `vara` by just typing:
+```console
+vd checkout vara-dev
+```
+
+To get a full overview of the tool use `vd -h` and `vd {sub_command} -h`.
+
+## Extending the tool suite
+VaRA-TS allows the user to extend it with different projects, experiments, and data representations.
 
 ### BenchBuild Projects
 `VaRA-TS` defines a set of projects that can be analyzed with `benchbuild`.
