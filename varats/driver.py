@@ -24,6 +24,7 @@ from varats.paper.case_study import SamplingMethod, generate_case_study,\
 import varats.paper.paper_config_manager as PCM
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt5.QtCore import Qt
 
 
 class VaRATSGui:
