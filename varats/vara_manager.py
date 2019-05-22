@@ -170,8 +170,7 @@ class VaRAExtraProjectsIter():
                 return val
 
 
-# TODO: rename to 'run_plumbum_with_output'
-def run_with_output(pb_cmd, post_out=lambda x: None):
+def run_plumbum_with_output(pb_cmd, post_out=lambda x: None):
     """
     Run plumbum command and post output lines to function.
     """
