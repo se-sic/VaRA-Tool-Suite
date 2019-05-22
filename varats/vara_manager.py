@@ -662,16 +662,20 @@ def get_llvm_project_status(llvm_folder: Path, project_folder="") -> GitStatus:
     """
     Retrieve the git status of a llvm project.
     """
-    with local.cwd(llvm_folder / project_folder):
-        fetch_remote('origin')
-        git_status = git['status']
-        stdout = git_status('-sb')
-        for line in stdout.split('\n'):
-            if line.startswith('## vara-' + str(CFG['version']) + '-dev'):
-                match = re.match(r".*\[(.*)\]", line)
-                if match is not None:
-                    return GitStatus(GitState.BEHIND, match.group(1))
-                return GitStatus(GitState.OK)
+    try:
+        with local.cwd(llvm_folder / project_folder):
+            fetch_remote('origin')
+            git_status = git['status']
+            stdout = git_status('-sb')
+            for line in stdout.split('\n'):
+                if line.startswith('## vara-' + str(CFG['version']) + '-dev'):
+                    match = re.match(r".*\[(.*)\]", line)
+                    if match is not None:
+                        return GitStatus(GitState.BEHIND, match.group(1))
+                    return GitStatus(GitState.OK)
+    except ProcessTerminatedError:
+        pass
+
     return GitStatus(GitState.ERROR)
 
 
@@ -679,16 +683,19 @@ def get_vara_status(llvm_folder: Path) -> GitStatus:
     """
     Retrieve the git status of VaRA.
     """
-    with local.cwd(llvm_folder / LLVMProjects.vara.path):
-        fetch_remote('origin')
-        git_status = git['status']
-        stdout = git_status('-sb')
-        for line in stdout.split('\n'):
-            if line.startswith('## vara-dev'):
-                match = re.match(r".*\[(.*)\]", line)
-                if match is not None:
-                    return GitStatus(GitState.BEHIND, match.group(1))
-                return GitStatus(GitState.OK)
+    try:
+        with local.cwd(llvm_folder / LLVMProjects.vara.path):
+            fetch_remote('origin')
+            git_status = git['status']
+            stdout = git_status('-sb')
+            for line in stdout.split('\n'):
+                if line.startswith('## vara-dev'):
+                    match = re.match(r".*\[(.*)\]", line)
+                    if match is not None:
+                        return GitStatus(GitState.BEHIND, match.group(1))
+                    return GitStatus(GitState.OK)
+    except ProcessTerminatedError:
+        pass
 
     return GitStatus(GitState.ERROR)
 
