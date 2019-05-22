@@ -7,13 +7,12 @@ import re
 from pathlib import Path
 
 from PyQt5.QtWidgets import QWidget, QShortcut
-from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject, QProcess
+from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject
 from PyQt5.QtGui import QTextCursor, QKeySequence
 
 from varats.settings import CFG, get_value_or_default, save_config
 from varats.gui.views.ui_BuildMenu import Ui_BuildSetup
 from varats import vara_manager
-from varats.vara_manager import ProcessManager
 from varats.utils.exceptions import ProcessTerminatedError
 
 

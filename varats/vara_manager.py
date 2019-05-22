@@ -17,7 +17,7 @@ from enum import Enum
 from threading import RLock
 from varats.utils.exceptions import ProcessTerminatedError
 
-from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject, QThread, QProcess
+from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject, QProcess
 
 from plumbum import local, TF
 from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
