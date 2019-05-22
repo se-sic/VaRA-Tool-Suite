@@ -595,7 +595,7 @@ def build_vara(path_to_llvm: Path,
         verify_build_structure(own_libgit, path_to_llvm, post_out)
         set_vara_cmake_variables(own_libgit, install_prefix, post_out)
 
-    with ProcessManager.create_process("ninja", ["install"]) as proc:
+    with ProcessManager.create_process("ninja", ["install"], workdir=full_path) as proc:
         proc.setProcessChannelMode(QProcess.MergedChannels)
         proc.readyReadStandardOutput.connect(lambda: run_process_with_output(proc, post_out))
 
