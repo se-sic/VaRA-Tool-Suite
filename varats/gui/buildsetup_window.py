@@ -54,7 +54,7 @@ class SetupWorker(QRunnable):
         """
         try:
             vara_manager.download_vara(self.path, self._update_progress,
-                                    self._update_text)
+                                       self._update_text)
 
             self._update_progress(7)
             vara_manager.checkout_vara_version(self.path, CFG['version'], True)
