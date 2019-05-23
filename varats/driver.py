@@ -349,6 +349,7 @@ def main_casestudy():
         """
         Group common args to provide all args on different sub parsers.
         """
+        sub_parser.add_argument("git_path", help="Path to git repository")
         sub_parser.add_argument(
             "--end",
             help="End of the commit range (inclusive)",
@@ -362,7 +363,6 @@ def main_casestudy():
     gen_parser.add_argument(
         "paper_config_path",
         help="Path to paper_config folder (e.g., paper_configs/ase-17)")
-    gen_parser.add_argument("git_path", help="Path to git repository")
 
     gen_parser.add_argument("distribution", action=enum_action(SamplingMethod))
     gen_parser.add_argument(
@@ -377,14 +377,19 @@ def main_casestudy():
         nargs="+",
         default=[],
         help="Add a list of additional revisions to the case-study")
+    add_common_args(gen_parser)
 
     # Extender
     ext_parser = sub_parsers.add_parser(
         'ext', help="Extend an existing case study.")
     ext_parser.add_argument(
+        "case_study",
+        help="Path to case_study")
+    ext_parser.add_argument(
         "--strategy",
         action=enum_action(ExtenderStrategy),
         help="Extender strategy")
+    add_common_args(ext_parser)
 
     args = {
         k: v
