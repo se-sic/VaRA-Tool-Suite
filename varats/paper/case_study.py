@@ -291,7 +291,8 @@ class ExtenderStrategy(Enum):
     simple_add = 1
 
 
-def extend():
+@check_required_args(['strategy'])
+def extend_case_study(cmap, case_study, **kwargs) -> CaseStudy:
     """
     TODO: comment
     """
@@ -306,4 +307,5 @@ def extend():
 
         sub case study? other cs so separate changes
     """
-    pass
+
+    return None

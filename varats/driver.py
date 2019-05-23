@@ -19,8 +19,9 @@ from varats.vara_manager import setup_vara, BuildType, LLVMProjects
 from varats.tools.commit_map import generate_commit_map, store_commit_map
 from varats.plots.plots import extend_parser_with_plot_args, build_plot
 from varats.utils.cli_util import cli_yn_choice
-from varats.paper.case_study import SamplingMethod, generate_case_study,\
-    store_case_study
+from varats.paper.case_study import (SamplingMethod, ExtenderStrategy,
+                                     extend_case_study, generate_case_study,
+                                     store_case_study)
 import varats.paper.paper_config_manager as PCM
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
@@ -344,15 +345,24 @@ def main_casestudy():
         action="store_true",
         default=False)
 
+    def add_common_args(sub_parser):
+        """
+        Group common args to provide all args on different sub parsers.
+        """
+        sub_parser.add_argument(
+            "--end",
+            help="End of the commit range (inclusive)",
+            default="HEAD")
+        sub_parser.add_argument(
+            "--start",
+            help="Start of the commit range (exclusive)",
+            default=None)
+
     gen_parser = sub_parsers.add_parser('gen', help="Generate a case study.")
     gen_parser.add_argument(
         "paper_config_path",
         help="Path to paper_config folder (e.g., paper_configs/ase-17)")
     gen_parser.add_argument("git_path", help="Path to git repository")
-    parser.add_argument(
-        "--end", help="End of the commit range (inclusive)", default="HEAD")
-    parser.add_argument(
-        "--start", help="Start of the commit range (exclusive)", default=None)
 
     gen_parser.add_argument("distribution", action=enum_action(SamplingMethod))
     gen_parser.add_argument(
@@ -368,8 +378,13 @@ def main_casestudy():
         default=[],
         help="Add a list of additional revisions to the case-study")
 
-    ext_parser = sub_parsers.add_parser('ext', help="Extend a case study.")
-    ext_parser.add_argument("stratigy", action=enum_action(SamplingMethod))
+    # Extender
+    ext_parser = sub_parsers.add_parser(
+        'ext', help="Extend an existing case study.")
+    ext_parser.add_argument(
+        "--strategy",
+        action=enum_action(ExtenderStrategy),
+        help="Extender strategy")
 
     args = {
         k: v
@@ -386,26 +401,29 @@ def main_casestudy():
 
         PCM.show_status_of_case_studies(args['filter_regex'], args['short'],
                                         args['list_revs'])
-    elif args['subcommand'] == 'gen':
+    elif args['subcommand'] == 'gen' or args['subcommand'] == 'ext':
         if args['git_path'].endswith(".git"):
             git_path = Path(args['git_path'][:-4])
         else:
             git_path = Path(args['git_path'])
-        args['git_path'] = git_path
 
         cmap = generate_commit_map(git_path, args['end'],
                                    args['start'] if 'start' in args else None)
 
+        args['git_path'] = git_path.stem.replace("-HEAD", "")
         args['paper_config_path'] = Path(args['paper_config_path'])
         if not args['paper_config_path'].exists():
             raise argparse.ArgumentTypeError("Paper path does not exist")
 
-        case_study = generate_case_study(
-            args['distribution'], args['num_rev'], cmap,
-            git_path.stem.replace("-HEAD", ""), args['version'], **args)
+        if args['subcommand'] == 'ext':
+            current_case_study = None
+            case_study = extend_case_study(cmap, current_case_study, **args)
+        else:
+            case_study = generate_case_study(
+                args['distribution'], args['num_rev'], cmap, args['git_path'],
+                args['version'], **args)
+
         store_case_study(case_study, args['paper_config_path'])
-    elif args['subcommand'] == 'ext':
-        pass
 
 
 def main_develop():
