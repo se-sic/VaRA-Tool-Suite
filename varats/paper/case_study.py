@@ -30,7 +30,7 @@ class HashIDTuple(yaml.YAMLObject):
         self.__commit_id = commit_id
 
     @property
-    def commit_hash(self):
+    def commit_hash(self) -> str:
         """
         A commit hash from the git repository.
         """
@@ -166,7 +166,7 @@ class CaseStudy(yaml.YAMLObject):
         """
         Check if a revision of a specific stage.
         """
-        if len(self.num_stages) <= num_stage:
+        if self.num_stages <= num_stage:
             return False
         return self.__stages[num_stage].has_revision(revision)
 
@@ -387,9 +387,9 @@ def extend_with_distrib_sampling(case_study: CaseStudy, cmap, **kwargs):
     # Needs to be sorted so the propability distribution over the length
     # of the list is the same as the distribution over the commits age history
     revision_list = [
-        rev for rev in sorted([x for x in cmap.mapping_items()],
-                              key=lambda x: x[1])
-        if not case_study.has_revision_in_stage(rev, kwargs['merge_stage'])
+        rev_item for rev_item in sorted([x for x in cmap.mapping_items()],
+                                        key=lambda x: x[1]) if not case_study.
+        has_revision_in_stage(rev_item[0], kwargs['merge_stage'])
     ]
 
     distribution_function = kwargs['distribution'].gen_distribution_function()
