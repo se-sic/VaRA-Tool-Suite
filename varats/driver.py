@@ -19,9 +19,9 @@ from varats.vara_manager import setup_vara, BuildType, LLVMProjects
 from varats.tools.commit_map import generate_commit_map, store_commit_map
 from varats.plots.plots import extend_parser_with_plot_args, build_plot
 from varats.utils.cli_util import cli_yn_choice
-from varats.paper.case_study import (SamplingMethod, ExtenderStrategy,
-                                     extend_case_study, generate_case_study,
-                                     store_case_study)
+from varats.paper.case_study import (
+    SamplingMethod, ExtenderStrategy, extend_case_study, generate_case_study,
+    load_case_study_from_file, store_case_study)
 import varats.paper.paper_config_manager as PCM
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
@@ -358,6 +358,16 @@ def main_casestudy():
             "--start",
             help="Start of the commit range (exclusive)",
             default=None)
+        sub_parser.add_argument(
+            "--extra-revs",
+            nargs="+",
+            default=[],
+            help="Add a list of additional revisions to the case-study")
+        sub_parser.add_argument(
+            "--num-rev",
+            type=int,
+            default=10,
+            help="Number of revisions to select.")
 
     gen_parser = sub_parsers.add_parser('gen', help="Generate a case study.")
     gen_parser.add_argument(
@@ -366,29 +376,22 @@ def main_casestudy():
 
     gen_parser.add_argument("distribution", action=enum_action(SamplingMethod))
     gen_parser.add_argument(
-        "--num-rev",
-        type=int,
-        default=10,
-        help="Number of revisions to select.")
-    gen_parser.add_argument(
         "-v", "--version", type=int, default=0, help="Case study version.")
-    gen_parser.add_argument(
-        "--extra-revs",
-        nargs="+",
-        default=[],
-        help="Add a list of additional revisions to the case-study")
     add_common_args(gen_parser)
 
     # Extender
     ext_parser = sub_parsers.add_parser(
         'ext', help="Extend an existing case study.")
-    ext_parser.add_argument(
-        "case_study",
-        help="Path to case_study")
+    ext_parser.add_argument("case_study_path", help="Path to case_study")
     ext_parser.add_argument(
         "--strategy",
         action=enum_action(ExtenderStrategy),
         help="Extender strategy")
+    ext_parser.add_argument(
+        "--merge-stage",
+        type=int,
+        default=-1,
+        help="Merge the new revision into stage `n`, defaults to last stage")
     add_common_args(ext_parser)
 
     args = {
@@ -416,19 +419,22 @@ def main_casestudy():
                                    args['start'] if 'start' in args else None)
 
         args['git_path'] = git_path.stem.replace("-HEAD", "")
-        args['paper_config_path'] = Path(args['paper_config_path'])
-        if not args['paper_config_path'].exists():
-            raise argparse.ArgumentTypeError("Paper path does not exist")
-
         if args['subcommand'] == 'ext':
-            current_case_study = None
-            case_study = extend_case_study(cmap, current_case_study, **args)
+            case_study = load_case_study_from_file(
+                Path(args['case_study_path']))
+            extend_case_study(case_study, cmap, **args)
+
+            store_case_study(case_study, Path(args['case_study_path']))
         else:
+            args['paper_config_path'] = Path(args['paper_config_path'])
+            if not args['paper_config_path'].exists():
+                raise argparse.ArgumentTypeError("Paper path does not exist")
+
             case_study = generate_case_study(
                 args['distribution'], args['num_rev'], cmap, args['git_path'],
                 args['version'], **args)
 
-        store_case_study(case_study, args['paper_config_path'])
+            store_case_study(case_study, args['paper_config_path'])
 
 
 def main_develop():

@@ -4,6 +4,9 @@ should be analysed.
 """
 
 from enum import Enum
+from pathlib import Path
+import errno
+import os
 import yaml
 
 from numpy import random
@@ -87,6 +90,12 @@ class CSStage(yaml.YAMLObject):
         if not self.has_revision(revision):
             self.__revisions.append(HashIDTuple(revision, commit_id))
 
+    def sort(self, reverse=True):
+        """
+        Sort revisions by commit id.
+        """
+        self.__revisions.sort(key=lambda x: x.commit_id, reverse=reverse)
+
 
 class CaseStudy(yaml.YAMLObject):
     """
@@ -153,7 +162,11 @@ class CaseStudy(yaml.YAMLObject):
 
         return False
 
-    def include_revision(self, revision, commit_id, stage_num=0):
+    def include_revision(self,
+                         revision,
+                         commit_id,
+                         stage_num=0,
+                         sort_revs=True):
         """
         Add a revision to this case study.
         """
@@ -165,17 +178,26 @@ class CaseStudy(yaml.YAMLObject):
 
         if not stage.has_revision(revision):
             stage.add_revision(revision, commit_id)
+            if sort_revs:
+                stage.sort()
 
-    def include_revisions(self, revisions: [(str, int, int)]):
+    def include_revisions(self,
+                          revisions: [(str, int)],
+                          stage_num=0,
+                          sort_revs=True):
         """
         Add multiple revisions to this case study.
 
         Args:
-            revisions: List of triples with (commit_hash, id, stage)
-                       to be inserted
+            stage: The stage to insert the revisions
+            revisions: List of triples with (commit_hash, id) to be inserted
+            sort_revs: True if the stage should be kept sorted
         """
         for revision in revisions:
-            self.include_revision(revision[0], revision[1], revision[2])
+            self.include_revision(revision[0], revision[1], stage_num, False)
+
+        if sort_revs:
+            self.__stages[stage_num].sort()
 
     def get_revision_filter(self):
         """
@@ -207,6 +229,50 @@ class CaseStudy(yaml.YAMLObject):
         processed_revisions = self.processed_revisions(result_file_type)
         return [(rev[:10], "OK" if rev in processed_revisions else "Missing")
                 for rev in self.revisions]
+
+
+def load_case_study_from_file(file_path: Path) -> CaseStudy:
+    """
+    Load a case-study from a file.
+    """
+    if file_path.exists():
+        with open(file_path, "r") as cs_file:
+            return yaml.safe_load(cs_file)
+
+    raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
+                            str(file_path))
+
+
+def store_case_study(case_study: CaseStudy, case_study_location: Path):
+    """
+    Store case study to file in the specified paper_config.
+
+    Args:
+        case_study_location: can be either a path to a paper_config
+                                or a direct path to a `.case_study` file
+    """
+    if case_study_location.suffix == '.case_study':
+        __store_case_study_to_file(case_study, case_study_location)
+    else:
+        __store_case_study_to_paper_config(case_study, case_study_location)
+
+
+def __store_case_study_to_paper_config(case_study: CaseStudy,
+                                       paper_config_path: Path):
+    """
+    Store case study to file in the specified paper_config.
+    """
+    file_name = "{project_name}_{version}.case_study".format(
+        project_name=case_study.project_name, version=case_study.version)
+    __store_case_study_to_file(case_study, paper_config_path / file_name)
+
+
+def __store_case_study_to_file(case_study: CaseStudy, file_path: Path):
+    """
+    Store case study to file.
+    """
+    with open(file_path, "w") as cs_file:
+        cs_file.write(yaml.dump(case_study))
 
 
 ###############################################################################
@@ -262,20 +328,9 @@ def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
     for idx in filtered_idxs:
         selected_items.append(filtered_items[idx])
 
-    for item in sorted(selected_items, key=lambda x: x[1], reverse=True):
-        case_study.include_revision(item[0], item[1])
+    case_study.include_revisions(selected_items, sort_revs=True)
 
     return case_study
-
-
-def store_case_study(case_study: CaseStudy, paper_path: str):
-    """
-    Store case study to file.
-    """
-    file_name = "{project_name}_{version}.case_study".format(
-        project_name=case_study.project_name, version=case_study.version)
-    with open(paper_path / file_name, "w") as cs_file:
-        cs_file.write(yaml.dump(case_study))
 
 
 ###############################################################################
@@ -292,20 +347,38 @@ class ExtenderStrategy(Enum):
 
 
 @check_required_args(['strategy'])
-def extend_case_study(cmap, case_study, **kwargs) -> CaseStudy:
+def extend_case_study(case_study: CaseStudy, cmap, **kwargs) -> CaseStudy:
     """
     TODO: comment
     """
-
     """
     Needs:
         extender strat
             -> distribution
         num revs
-        posible: list of extra revs
-        current case study
-
-        sub case study? other cs so separate changes
+        posible: list of extra revs = extra_revs
+        current case study = case_study
     """
 
-    return None
+    if kwargs['strategy'] is ExtenderStrategy.simple_add:
+        extend_with_extra_revs(case_study, cmap, **kwargs)
+
+    print(case_study)
+
+
+@check_required_args(['extra_revs', 'merge_stage'])
+def extend_with_extra_revs(case_study: CaseStudy, cmap, **kwargs):
+    """
+    Extend a case_study with extra revisions.
+    """
+    extra_revs = kwargs['extra_revs']
+    print(extra_revs)
+    merge_stage = kwargs['merge_stage']
+
+    # If no merge_stage was specified add it to the last
+    if merge_stage == -1:
+        merge_stage = case_study.num_stages - 1
+
+    new_rev_items = []
+
+    case_study.include_revisions(new_rev_items, merge_stage, True)

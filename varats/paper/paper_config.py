@@ -7,7 +7,7 @@ from pathlib import Path
 
 import yaml
 
-import varats.paper.case_study
+from varats.paper.case_study import load_case_study_from_file
 from varats.settings import CFG
 
 
@@ -21,16 +21,14 @@ class PaperConfig():
     def __init__(self, folder_path):
         self.__path = Path(folder_path)
         self.__case_studies = dict()
-        for case_study_file in \
+        for case_study_path in \
                 [x for x in self.__path.iterdir()
                  if x.suffix == ".case_study"]:
-            with open(case_study_file, "r") as cs_file:
-                case_study = yaml.safe_load(cs_file)
-                if case_study.project_name in self.__case_studies.keys():
-                    self.__case_studies[case_study.project_name].append(
-                        case_study)
-                else:
-                    self.__case_studies[case_study.project_name] = [case_study]
+            case_study = load_case_study_from_file(case_study_path)
+            if case_study.project_name in self.__case_studies.keys():
+                self.__case_studies[case_study.project_name].append(case_study)
+            else:
+                self.__case_studies[case_study.project_name] = [case_study]
 
     def get_case_studies(self, cs_name):
         """
