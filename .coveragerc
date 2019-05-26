@@ -1,0 +1,9 @@
+[run]
+source = varats/
+
+[paths]
+source =
+  varats/
+
+[report]
+ignore_errors = True

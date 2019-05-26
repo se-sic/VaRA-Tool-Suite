@@ -31,8 +31,6 @@ script:
   - coverage run --source=varats -a `which vara-buildsetup` -c
   - which coverage
   - coverage report
-  - coverage run -a `which vara-buildsetup` -c
-  - coverage report
 
 after_success:
   - codecov
