@@ -26,9 +26,13 @@ script:
   - mkdir -p paper_configs/test/
   - git clone https://git.savannah.gnu.org/git/gzip.git gzip
   - pytest --cov=./ varats tests
+  - wc -m .coverage
   - coverage run -a `which vara-buildsetup` -c
+  - wc -m .coverage
   - coverage run -a `which vara-cs` gen paper_configs/test/ half_norm gzip/
-  - coverage run -a `which vara-cs` ext paper_configs/test/gzip_0.case_study simple_add gzip/ --extra-revs 0dd8313ea7bce
+  - wc -m .coverage
+  - coverage run -a `which vara-cs` ext paper_configs/test/gzip_0.case_study simple_add gzip/ --extra-revs 0dd8313ea7bce --merge-stage 3
+  - wc -m .coverage
   - coverage run -a `which vara-cs` ext paper_configs/test/gzip_0.case_study distrib_add gzip/ --distribution uniform --num-rev 5
   - coverage run -a `which vara-cs` status
   - codecov
