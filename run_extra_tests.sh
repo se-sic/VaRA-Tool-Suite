@@ -8,7 +8,7 @@ if [ ! -d "gzip" ]; then
   git clone https://git.savannah.gnu.org/git/gzip.git gzip
 fi
 
-COVERAGE='coverage run -a'
+COVERAGE='coverage run -p'
 
 # Smoke tests
 $COVERAGE `which vara-buildsetup` -c

@@ -27,9 +27,8 @@ script:
   - mkdir -p paper_configs/test/
   - git clone https://git.savannah.gnu.org/git/gzip.git gzip
   - pytest --cov=./ varats tests
-  - cp .coverage .coverage_tests
   - ./run_extra_tests.sh
-  - coverage combine -a .coverage_tests
+  - coverage combine -a
   - coverage report
 
 after_success:
