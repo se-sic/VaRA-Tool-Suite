@@ -14,8 +14,6 @@ def generate_commit_map(path: str, end="HEAD", start=None):
     """
     Generate a commit map for a repository including the commits ]start..end]
     """
-    print("Generating commit map for:", path)
-
     search_range = ""
     if start is not None:
         search_range += start + ".."
