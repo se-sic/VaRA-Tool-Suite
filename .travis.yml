@@ -28,7 +28,10 @@ script:
   - git clone https://git.savannah.gnu.org/git/gzip.git gzip
     #- pytest --cov=./ varats tests
   - ./run_extra_tests.sh
+  - coverage run --source=varats -a `which vara-buildsetup` -c
   - which coverage
+  - coverage report
+  - coverage run -a `which vara-buildsetup` -c
   - coverage report
 
 after_success:
