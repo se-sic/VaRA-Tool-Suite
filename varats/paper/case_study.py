@@ -307,7 +307,7 @@ def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
 
     selected_items = [
         rev_item for rev_item in items
-        if rev_item[0][:10] in kwargs['extra_revs']
+        if any(map(rev_item[0].startswith, kwargs['extra_revs']))
     ]
 
     filtered_items = [
