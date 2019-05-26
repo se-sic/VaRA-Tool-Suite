@@ -26,7 +26,7 @@ env:
 script:
   - mkdir -p paper_configs/test/
   - git clone https://git.savannah.gnu.org/git/gzip.git gzip
-  - pytest --cov=./ varats tests
+    #- pytest --cov=./ varats tests
   - ./run_extra_tests.sh
   - coverage report
 
