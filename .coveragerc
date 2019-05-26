@@ -1,5 +1,5 @@
 [run]
-source = varats/
+include = */varats/*
 
 [paths]
 source =
