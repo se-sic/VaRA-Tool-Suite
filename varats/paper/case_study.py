@@ -152,7 +152,7 @@ class CaseStudy(yaml.YAMLObject):
         """
         return len(self.__stages)
 
-    def has_revision(self, revision: str):
+    def has_revision(self, revision: str) -> bool:
         """
         Check if a revision is part of this case study.
         """
@@ -161,6 +161,14 @@ class CaseStudy(yaml.YAMLObject):
                 return True
 
         return False
+
+    def has_revision_in_stage(self, revision: str, num_stage) -> bool:
+        """
+        Check if a revision of a specific stage.
+        """
+        if len(self.num_stages) <= num_stage:
+            return False
+        return self.__stages[num_stage].has_revision(revision)
 
     def include_revision(self,
                          revision,
@@ -276,7 +284,7 @@ def __store_case_study_to_file(case_study: CaseStudy, file_path: Path):
 
 
 ###############################################################################
-# Case study generation
+# Case-study generation
 ###############################################################################
 
 
@@ -287,6 +295,25 @@ class SamplingMethod(Enum):
 
     uniform = 1
     half_norm = 2
+
+    def gen_distribution_function(self):
+        """
+        Generate a distribution function for the specified sampling method.
+        """
+        if self == SamplingMethod.uniform:
+
+            def uniform(num_samples):
+                return random.uniform(0, 1.0, num_samples)
+
+            return uniform
+        if self == SamplingMethod.half_norm:
+
+            def halfnormal(num_samples):
+                return halfnorm.rvs(scale=1, size=num_samples)
+
+            return halfnormal
+
+        raise Exception('Unsupported SamplingMethod')
 
 
 @check_required_args(['extra_revs'])
@@ -301,40 +328,17 @@ def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
     evaluation.
     """
     case_study = CaseStudy(project_name, case_study_version)
-    # Needs to be sorted so the propability distribution over the length
-    # of the list is the same as the distribution over the commits age history
-    items = sorted([x for x in cmap.mapping_items()], key=lambda x: x[1])
 
-    selected_items = [
-        rev_item for rev_item in items
-        if any(map(rev_item[0].startswith, kwargs['extra_revs']))
-    ]
+    if kwargs['extra_revs']:
+        extend_with_extra_revs(case_study, cmap, **kwargs)
 
-    filtered_items = [
-        rev_item for rev_item in items if rev_item not in selected_items
-    ]
-
-    if sampling_method == SamplingMethod.half_norm:
-        print("Using half-normal distribution")
-        probabilities = halfnorm.rvs(scale=1, size=len(filtered_items))
-    elif sampling_method == SamplingMethod.uniform:
-        print("Using uniform distribution")
-        probabilities = random.uniform(0, 1.0, len(filtered_items))
-
-    probabilities /= probabilities.sum()
-    filtered_idxs = random.choice(
-        len(filtered_items), num_samples, p=probabilities)
-
-    for idx in filtered_idxs:
-        selected_items.append(filtered_items[idx])
-
-    case_study.include_revisions(selected_items, sort_revs=True)
+    extend_with_distrib_sampling(case_study, cmap, **kwargs)
 
     return case_study
 
 
 ###############################################################################
-# Case study extender
+# Case-study extender
 ###############################################################################
 
 
@@ -344,26 +348,19 @@ class ExtenderStrategy(Enum):
     """
 
     simple_add = 1
+    distrib_add = 2
 
 
-@check_required_args(['strategy'])
-def extend_case_study(case_study: CaseStudy, cmap, **kwargs) -> CaseStudy:
+def extend_case_study(case_study: CaseStudy, cmap,
+                      ext_strategy: ExtenderStrategy, **kwargs) -> CaseStudy:
     """
-    TODO: comment
-    """
-    """
-    Needs:
-        extender strat
-            -> distribution
-        num revs
-        posible: list of extra revs = extra_revs
-        current case study = case_study
+    Extend a case study with new revisions.
     """
 
-    if kwargs['strategy'] is ExtenderStrategy.simple_add:
+    if ext_strategy is ExtenderStrategy.simple_add:
         extend_with_extra_revs(case_study, cmap, **kwargs)
-
-    print(case_study)
+    elif ext_strategy is ExtenderStrategy.distrib_add:
+        extend_with_distrib_sampling(case_study, cmap, **kwargs)
 
 
 @check_required_args(['extra_revs', 'merge_stage'])
@@ -372,13 +369,51 @@ def extend_with_extra_revs(case_study: CaseStudy, cmap, **kwargs):
     Extend a case_study with extra revisions.
     """
     extra_revs = kwargs['extra_revs']
-    print(extra_revs)
     merge_stage = kwargs['merge_stage']
 
-    # If no merge_stage was specified add it to the last
-    if merge_stage == -1:
-        merge_stage = case_study.num_stages - 1
-
-    new_rev_items = []
+    new_rev_items = [
+        rev_item for rev_item in cmap.mapping_items()
+        if any(map(rev_item[0].startswith, extra_revs))
+    ]
 
     case_study.include_revisions(new_rev_items, merge_stage, True)
+
+
+@check_required_args(['distribution', 'merge_stage', 'num_rev'])
+def extend_with_distrib_sampling(case_study: CaseStudy, cmap, **kwargs):
+    """
+    Extend a case study by sampling `num_rev` new revisions.
+    """
+    # Needs to be sorted so the propability distribution over the length
+    # of the list is the same as the distribution over the commits age history
+    revision_list = [
+        rev for rev in sorted([x for x in cmap.mapping_items()],
+                              key=lambda x: x[1])
+        if not case_study.has_revision_in_stage(rev, kwargs['merge_stage'])
+    ]
+
+    distribution_function = kwargs['distribution'].gen_distribution_function()
+
+    case_study.include_revisions(
+        sample_n_idxs(distribution_function, kwargs['num_rev'], revision_list),
+        kwargs['merge_stage'])
+
+
+def sample_n_idxs(distrib_func, num_samples, list_to_sample: []) -> []:
+    """
+    Args:
+        distrib_func: Distribution function with
+                        f(n) -> [] where len([]) == n probabilities
+        num_samples: number of samples to choose
+        list_to_sample: list to sample from
+
+    Returns:
+        list[] of sampled items
+    """
+    probabilities = distrib_func(len(list_to_sample))
+    probabilities /= probabilities.sum()
+
+    sampled_idxs = random.choice(
+        len(list_to_sample), num_samples, p=probabilities)
+
+    return [list_to_sample[idx] for idx in sampled_idxs]

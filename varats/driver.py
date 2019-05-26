@@ -384,9 +384,11 @@ def main_casestudy():
         'ext', help="Extend an existing case study.")
     ext_parser.add_argument("case_study_path", help="Path to case_study")
     ext_parser.add_argument(
-        "--strategy",
+        "strategy",
         action=enum_action(ExtenderStrategy),
         help="Extender strategy")
+    ext_parser.add_argument(
+        "--distribution", action=enum_action(SamplingMethod))
     ext_parser.add_argument(
         "--merge-stage",
         type=int,
@@ -422,13 +424,21 @@ def main_casestudy():
         if args['subcommand'] == 'ext':
             case_study = load_case_study_from_file(
                 Path(args['case_study_path']))
-            extend_case_study(case_study, cmap, **args)
+
+            # If no merge_stage was specified add it to the last
+            if args['merge_stage'] == -1:
+                args['merge_stage'] = case_study.num_stages - 1
+
+            extend_case_study(case_study, cmap, args['strategy'], **args)
 
             store_case_study(case_study, Path(args['case_study_path']))
         else:
             args['paper_config_path'] = Path(args['paper_config_path'])
             if not args['paper_config_path'].exists():
                 raise argparse.ArgumentTypeError("Paper path does not exist")
+
+            # Specify merge_stage as 0 for creating new case studies
+            args['merge_stage'] = 0
 
             case_study = generate_case_study(
                 args['distribution'], args['num_rev'], cmap, args['git_path'],
