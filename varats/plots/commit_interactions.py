@@ -57,6 +57,8 @@ def _build_interaction_table(report_files: [str], commit_map: CommitMap,
             missing_reports.append(load_commit_report(file_path))
         except KeyError:
             print("KeyError: ", file_path)
+        except StopIteration:
+            print("YAML file was incomplete: ", file_path)
 
     def sorter(report):
         return commit_map.short_time_id(report.head_commit)
