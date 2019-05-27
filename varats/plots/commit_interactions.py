@@ -53,7 +53,12 @@ def _build_interaction_table(report_files: [str], commit_map: CommitMap,
         print(
             "Loading missing file ({num}/{total}): ".format(
                 num=(num + 1), total=total_missing_reports), file_path)
-        missing_reports.append(load_commit_report(file_path))
+        try:
+            missing_reports.append(load_commit_report(file_path))
+        except KeyError:
+            print("KeyError: ", file_path)
+        except StopIteration:
+            print("YAML file was incomplete: ", file_path)
 
     def sorter(report):
         return commit_map.short_time_id(report.head_commit)
@@ -109,11 +114,17 @@ def _gen_interaction_graph(**kwargs):
     data_frame = _build_interaction_table(reports, commit_map,
                                           str(project_name))
 
+    data_frame['head_cm'] = data_frame['head_cm'].apply(
+        lambda x: "{num}-{head}".format(head=x, num=commit_map.short_time_id(x)))
+
+    data_frame.sort_values(by=['head_cm'], inplace=True)
+
     # Interaction plot
     axis = plt.subplot(211)
 
     for y_label in axis.get_yticklabels():
-        y_label.set_fontsize(14)
+        y_label.set_fontsize(8)
+        y_label.set_fontfamily('monospace')
 
     for x_label in axis.get_xticklabels():
         x_label.set_visible(False)
@@ -121,24 +132,28 @@ def _gen_interaction_graph(**kwargs):
     plt.plot('head_cm', 'CFInteractions', data=data_frame, color='blue')
     plt.plot('head_cm', 'DFInteractions', data=data_frame, color='red')
 
-    plt.ylabel("Interactions", **{'size': '14'})
+    # plt.ylabel("Interactions", **{'size': '10'})
+    axis.legend(prop={'size': 4, 'family': 'monospace'})
 
     # Head interaction plot
     axis = plt.subplot(212)
 
     for y_label in axis.get_yticklabels():
-        y_label.set_fontsize(14)
+        y_label.set_fontsize(8)
+        y_label.set_fontfamily('monospace')
 
     for x_label in axis.get_xticklabels():
-        x_label.set_fontsize(14)
+        x_label.set_fontsize(2)
         x_label.set_rotation(270)
+        x_label.set_fontfamily('monospace')
 
     plt.plot('head_cm', 'HEAD CF Interactions', data=data_frame, color='aqua')
     plt.plot(
         'head_cm', 'HEAD DF Interactions', data=data_frame, color='crimson')
 
-    plt.xlabel("Revisions", **{'size': '14'})
-    plt.ylabel("HEAD Interactions", **{'size': '14'})
+    plt.xlabel("Revisions", **{'size': '10'})
+    # plt.ylabel("HEAD Interactions", **{'size': '10'})
+    axis.legend(prop={'size': 4, 'family': 'monospace'})
 
 
 class InteractionPlot(Plot):
