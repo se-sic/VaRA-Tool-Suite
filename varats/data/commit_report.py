@@ -339,9 +339,27 @@ class CommitMap():
         return self.__hash_to_id[c_hash]
 
     def short_time_id(self, c_hash):
+        """
+        Convert a short commit hash to a time id that allows a total order on
+        the commits, based on the c_map, e.g., created from the analyzed git
+        history.
+
+        The first time id is returend where the hash belonging to it starts
+        with the short hash.
+        """
         for key in self.__hash_to_id:
             if key.startswith(c_hash):
                 return self.__hash_to_id[key]
+        raise KeyError
+
+    def c_hash(self, time_id):
+        """
+        Get the hash belonging to the time id.
+        """
+        for c_hash, t_id in self.__hash_to_id.items():
+            if t_id == time_id:
+                return c_hash
+        raise KeyError
 
     def mapping_items(self):
         """

@@ -43,3 +43,15 @@ class Plot():
     @abc.abstractmethod
     def save(self, filetype='svg'):
         """Save the current plot to a file"""
+
+    @abc.abstractmethod
+    def calc_missing_revisions(self, boundary_gradient) -> []:
+        """
+        Calculate a list of revisions that could improve precisions of this
+        plot.
+
+        Args:
+            boundary_gradient: The maximal expected gradient in percent between
+                               two revisions, every thing that exceeds the
+                               boundary should be further analyzed.
+        """

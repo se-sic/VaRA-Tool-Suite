@@ -95,13 +95,16 @@ def _build_interaction_table(report_files: [str], commit_map: CommitMap,
 
 
 @check_required_args(["result_folder", "project", "cmap"])
-def _gen_interaction_graph(**kwargs):
+def _gen_interaction_graph(**kwargs) -> pd.DataFrame:
     """
-    Generate a plot, showing the amount of interactions between commits and
-    interactions between the HEAD commit and all others.
+    Generate a DataFrame, containing the amount of interactions between commits
+    and interactions between the HEAD commit and all others.
     """
-    with open(kwargs["cmap"], "r") as c_map_file:
-        commit_map = CommitMap(c_map_file.readlines())
+    if not isinstance(kwargs['cmap'], CommitMap):
+        with open(kwargs["cmap"], "r") as c_map_file:
+            kwargs['cmap'] = CommitMap(c_map_file.readlines())
+
+    commit_map = kwargs['cmap']
 
     result_dir = Path(kwargs["result_folder"])
     project_name = kwargs["project"]
@@ -115,8 +118,17 @@ def _gen_interaction_graph(**kwargs):
                                           str(project_name))
 
     data_frame['head_cm'] = data_frame['head_cm'].apply(
-        lambda x: "{num}-{head}".format(head=x, num=commit_map.short_time_id(x)))
+        lambda x: "{num}-{head}".format(head=x,
+                                        num=commit_map.short_time_id(x)))
 
+    return data_frame
+
+
+def _plot_interaction_graph(data_frame):
+    """
+    Plot a plot, showing the amount of interactions between commits and
+    interactions between the HEAD commit and all others.
+    """
     data_frame.sort_values(by=['head_cm'], inplace=True)
 
     # Interaction plot
@@ -167,7 +179,8 @@ class InteractionPlot(Plot):
 
     def plot(self):
         style.use(self.style)
-        _gen_interaction_graph(**self.__saved_extra_args)
+        _plot_interaction_graph(
+            _gen_interaction_graph(**self.__saved_extra_args))
 
     def show(self):
         self.plot()
@@ -185,3 +198,59 @@ class InteractionPlot(Plot):
             dpi=1200,
             bbox_inches="tight",
             format=filetype)
+
+    def calc_missing_revisions(self, boundary_gradient) -> set():
+        data_frame = _gen_interaction_graph(**self.__saved_extra_args)
+        data_frame.sort_values(by=['head_cm'], inplace=True)
+        data_frame.reset_index(drop=True, inplace=True)
+
+        def cm_num(head_cm) -> int:
+            return int(head_cm.split('-')[0])
+
+        def head_cm_neighbours(lhs_cm, rhs_cm) -> bool:
+            return cm_num(lhs_cm) + 1 == cm_num(rhs_cm)
+
+        def rev_calc_helper(data_frame):
+            new_revs = set()
+
+            df_iter = data_frame.iterrows()
+            _, last_row = next(df_iter)
+            for _, row in df_iter:
+                gradient = abs(1 - (last_row[1] / float(row[1])))
+                if gradient > boundary_gradient:
+                    lhs_cm = last_row['head_cm']
+                    rhs_cm = row['head_cm']
+
+                    if head_cm_neighbours(lhs_cm, rhs_cm):
+                        print("Found steep gradient between neighbours " +
+                              "{lhs_cm} - {rhs_cm}: {gradient}".format(
+                                  lhs_cm=lhs_cm,
+                                  rhs_cm=rhs_cm,
+                                  gradient=round(gradient, 5)))
+                    else:
+                        print("Unusual gradient between " +
+                              "{lhs_cm} - {rhs_cm}: {gradient}".format(
+                                  lhs_cm=lhs_cm,
+                                  rhs_cm=rhs_cm,
+                                  gradient=round(gradient, 5)))
+                        new_rev_id = round(
+                            (cm_num(lhs_cm) + cm_num(rhs_cm)) / 2.0)
+                        new_rev = self.__saved_extra_args['cmap'].c_hash(
+                            new_rev_id)
+                        print(
+                            "-> Adding {rev} as new revision to the sample set"
+                            .format(rev=new_rev))
+                        new_revs.add(new_rev)
+                    print()
+                last_row = row
+            return new_revs
+
+        print("--- Checking CFInteractions ---")
+        missing_revs = rev_calc_helper(
+            data_frame[['head_cm', 'CFInteractions']])
+
+        print("--- Checking DFInteractions ---")
+        missing_revs.union(
+            rev_calc_helper(data_frame[['head_cm', 'DFInteractions']]))
+
+        return missing_revs
