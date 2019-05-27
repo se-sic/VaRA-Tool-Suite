@@ -15,15 +15,16 @@ import shutil
 from contextlib import contextmanager
 from enum import Enum
 from threading import RLock
-from varats.utils.exceptions import ProcessTerminatedError
 
-from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject, QProcess
+from PyQt5.QtCore import (QRunnable, QThreadPool, pyqtSlot, pyqtSignal,
+                          QObject, QProcess)
 
 from plumbum import local, TF
 from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
 from plumbum.commands.processes import ProcessExecutionError
 
 from varats.settings import save_config, CFG
+from varats.utils.exceptions import ProcessTerminatedError
 
 
 class LLVMProject():
@@ -136,7 +137,8 @@ class LLVMProjects(Enum):
 
 class VaRAProjectsIter():
     """
-    Iterator over vara projects, meaning projects that are modfified to work with VaRA.
+    Iterator over vara projects, meaning projects that are modfified to work
+    with VaRA.
     """
 
     def __init__(self):
@@ -183,10 +185,15 @@ def run_plumbum_with_output(pb_cmd, post_out=lambda x: None):
     except ProcessExecutionError:
         post_out("ProcessExecutionError")
 
+
 def run_process_with_output(process: QProcess, post_out=lambda x: None):
+    """
+    Run a process and forward stdout to a post_out function.
+    """
     output = str(process.readAllStandardOutput().data().decode('utf-8'))
     for line in output.splitlines(True):
         post_out(line)
+
 
 def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
                   post_out=lambda x: None):
@@ -208,7 +215,8 @@ def download_repo(dl_folder, url: str, repo_name=None, remote_name=None,
 
         with ProcessManager.create_process("git", args) as proc:
             proc.setProcessChannelMode(QProcess.MergedChannels)
-            proc.readyReadStandardOutput.connect(lambda: run_process_with_output(proc, post_out))
+            proc.readyReadStandardOutput.connect(
+                lambda: run_process_with_output(proc, post_out))
 
 
 class BuildType(Enum):
@@ -221,8 +229,15 @@ class BuildType(Enum):
     PGO = 4
 
 
-def setup_vara(init, update, build, llvm_folder, install_prefix, own_libgit,
-               version, build_type: BuildType, post_out=lambda x: None):
+def setup_vara(init,
+               update,
+               build,
+               llvm_folder,
+               install_prefix,
+               own_libgit,
+               version,
+               build_type: BuildType,
+               post_out=lambda x: None):
     """
     Sets up VaRA over cli.
     """
@@ -287,11 +302,14 @@ def add_remote(repo_folder, remote, url):
     """
     Adds new remote to the repository.
     """
-    with ProcessManager.create_process("git", ["remote", "add", remote, url], workdir=repo_folder):
+    with ProcessManager.create_process(
+            "git", ["remote", "add", remote, url], workdir=repo_folder):
         pass
 
-    with ProcessManager.create_process("git", ["fetch", remote], workdir=repo_folder):
+    with ProcessManager.create_process(
+            "git", ["fetch", remote], workdir=repo_folder):
         pass
+
 
 def show_status(repo_folder):
     """
@@ -332,7 +350,8 @@ def init_all_submodules(folder):
     """
     Inits all submodules.
     """
-    with ProcessManager.create_process("git", ["submodule", "init"], workdir=folder):
+    with ProcessManager.create_process(
+            "git", ["submodule", "init"], workdir=folder):
         pass
 
 
@@ -340,7 +359,8 @@ def update_all_submodules(folder):
     """
     Updates all submodules.
     """
-    with ProcessManager.create_process("git", ["submodule", "update"], workdir=folder):
+    with ProcessManager.create_process(
+            "git", ["submodule", "update"], workdir=folder):
         pass
 
 
@@ -385,7 +405,8 @@ def checkout_branch(repo_folder, branch):
     """
     Checks out a branch in the repository.
     """
-    with ProcessManager.create_process("git", ["checkout", branch], workdir=repo_folder):
+    with ProcessManager.create_process(
+            "git", ["checkout", branch], workdir=repo_folder):
         pass
 
 
@@ -536,9 +557,11 @@ def set_cmake_var(var_name, value, post_out=lambda x: None):
     """
     Sets a cmake variable in the current cmake config.
     """
-    with ProcessManager.create_process("cmake", ["-D" + var_name + "=" + value, "."]) as proc:
+    with ProcessManager.create_process(
+            "cmake", ["-D" + var_name + "=" + value, "."]) as proc:
         proc.setProcessChannelMode(QProcess.MergedChannels)
-        proc.readyReadStandardOutput.connect(lambda: run_process_with_output(proc, post_out))
+        proc.readyReadStandardOutput.connect(
+            lambda: run_process_with_output(proc, post_out))
 
 
 def init_vara_build(path_to_llvm: Path,
@@ -552,9 +575,11 @@ def init_vara_build(path_to_llvm: Path,
         os.makedirs(full_path)
 
     if build_type == BuildType.DEV:
-        with ProcessManager.create_process("./build_cfg/build-dev.sh", workdir=full_path) as proc:
+        with ProcessManager.create_process(
+                "./build_cfg/build-dev.sh", workdir=full_path) as proc:
             proc.setProcessChannelMode(QProcess.MergedChannels)
-            proc.readyReadStandardOutput.connect(lambda: run_process_with_output(proc, post_out))
+            proc.readyReadStandardOutput.connect(
+                lambda: run_process_with_output(proc, post_out))
 
 
 def verify_build_structure(own_libgit: bool,
@@ -586,17 +611,19 @@ def build_vara(path_to_llvm: Path,
     if not os.path.exists(full_path):
         try:
             init_vara_build(path_to_llvm, build_type, post_out)
-        except ProcessTerminatedError as e:
+        except ProcessTerminatedError as error:
             shutil.rmtree(full_path)
-            raise e
+            raise error
 
     with local.cwd(full_path):
         verify_build_structure(own_libgit, path_to_llvm, post_out)
         set_vara_cmake_variables(own_libgit, install_prefix, post_out)
 
-    with ProcessManager.create_process("ninja", ["install"], workdir=full_path) as proc:
+    with ProcessManager.create_process(
+            "ninja", ["install"], workdir=full_path) as proc:
         proc.setProcessChannelMode(QProcess.MergedChannels)
-        proc.readyReadStandardOutput.connect(lambda: run_process_with_output(proc, post_out))
+        proc.readyReadStandardOutput.connect(
+            lambda: run_process_with_output(proc, post_out))
 
 
 def set_vara_cmake_variables(own_libgit: bool, install_prefix: str,
@@ -832,7 +859,9 @@ class ProcessManager:
 
     def __process_finished(self):
         with self.__mutex:
-            self.__processes = [x for x in self.__processes if x.state() != QProcess.NotRunning]
+            self.__processes = [
+                x for x in self.__processes if x.state() != QProcess.NotRunning
+            ]
 
     def __start_process(self, process: QProcess, program: str, args: [str]):
         with self.__mutex:
