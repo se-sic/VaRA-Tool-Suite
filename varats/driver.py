@@ -15,7 +15,7 @@ from varats.settings import get_value_or_default,\
     CFG, generate_benchbuild_config, save_config
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
-from varats.vara_manager import setup_vara, BuildType, LLVMProjects
+from varats.vara_manager import setup_vara, BuildType, LLVMProjects, ProcessManager
 from varats.tools.commit_map import generate_commit_map, store_commit_map
 from varats.plots.plots import extend_parser_with_plot_args, build_plot
 from varats.utils.cli_util import cli_yn_choice
@@ -58,7 +58,9 @@ class VaRATSGui:
 
     def main(self):
         """Setup and Run Qt application"""
-        sys.exit(self.app.exec_())
+        ret = self.app.exec_()
+        ProcessManager.shutdown()
+        sys.exit(ret)
 
 
 class VaRATSSetup:
