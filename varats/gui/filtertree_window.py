@@ -604,6 +604,7 @@ class FilterWindow(QMainWindow, Ui_FilterEditor):
         try:
             with open(filename[0], 'r') as yaml_file:
                 root_node = yaml.load(yaml_file, Loader=yaml.Loader)
+                root_node.fixParentPointers()
             self._filename = filename[0]
             self._file_basename = os.path.basename(filename[0])
             self._model.reInit(root_node)
