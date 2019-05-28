@@ -179,7 +179,7 @@ class CaseStudy(yaml.YAMLObject):
         Add a revision to this case study.
         """
         # Create missing stages
-        while len(self.__stages) <= stage_num:
+        while self.num_stages <= stage_num:
             self.__stages.append(CSStage())
 
         stage = self.__stages[stage_num]
@@ -204,7 +204,7 @@ class CaseStudy(yaml.YAMLObject):
         for revision in revisions:
             self.include_revision(revision[0], revision[1], stage_num, False)
 
-        if sort_revs:
+        if sort_revs and self.num_stages > 0:
             self.__stages[stage_num].sort()
 
     def get_revision_filter(self):
@@ -349,6 +349,7 @@ class ExtenderStrategy(Enum):
 
     simple_add = 1
     distrib_add = 2
+    smooth_plot = 3
 
 
 def extend_case_study(case_study: CaseStudy, cmap,
@@ -361,6 +362,8 @@ def extend_case_study(case_study: CaseStudy, cmap,
         extend_with_extra_revs(case_study, cmap, **kwargs)
     elif ext_strategy is ExtenderStrategy.distrib_add:
         extend_with_distrib_sampling(case_study, cmap, **kwargs)
+    elif ext_strategy is ExtenderStrategy.smooth_plot:
+        extend_with_smooth_revs(case_study, cmap, **kwargs)
 
 
 @check_required_args(['extra_revs', 'merge_stage'])
@@ -417,3 +420,25 @@ def sample_n_idxs(distrib_func, num_samples, list_to_sample: []) -> []:
         len(list_to_sample), num_samples, p=probabilities)
 
     return [list_to_sample[idx] for idx in sampled_idxs]
+
+
+@check_required_args(['plot_type', 'boundary_gradient'])
+def extend_with_smooth_revs(case_study: CaseStudy, cmap, **kwargs):
+    """
+    Extend a case study with extra revisions that could smooth plot curves.
+    This can remove steep gradients that result from missing certain revisions
+    when sampling.
+    """
+    plot_type = kwargs['plot_type'].type
+
+    kwargs['cmap'] = cmap
+    plot = plot_type(**kwargs)
+    # convert input to float %
+    boundary_gradient = kwargs['boundary_gradient'] / float(100)
+    print("Using boundary gradient: ", boundary_gradient)
+    new_revisions = plot.calc_missing_revisions(boundary_gradient)
+
+    print(new_revisions)
+    case_study.include_revisions([(rev, cmap.time_id(rev))
+                                  for rev in new_revisions],
+                                 kwargs['merge_stage'])

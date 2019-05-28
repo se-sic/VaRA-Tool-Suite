@@ -15,9 +15,11 @@ from varats.settings import get_value_or_default,\
     CFG, generate_benchbuild_config, save_config
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
-from varats.vara_manager import setup_vara, BuildType, LLVMProjects
+from varats.vara_manager import (setup_vara, BuildType, LLVMProjects,
+                                 ProcessManager)
 from varats.tools.commit_map import generate_commit_map, store_commit_map
-from varats.plots.plots import extend_parser_with_plot_args, build_plot
+from varats.plots.plots import (extend_parser_with_plot_args, build_plot,
+                                PlotTypes)
 from varats.utils.cli_util import cli_yn_choice
 from varats.paper.case_study import (
     SamplingMethod, ExtenderStrategy, extend_case_study, generate_case_study,
@@ -59,7 +61,9 @@ class VaRATSGui:
 
     def main(self):
         """Setup and Run Qt application"""
-        sys.exit(self.app.exec_())
+        ret = self.app.exec_()
+        ProcessManager.shutdown()
+        sys.exit(ret)
 
 
 class VaRATSSetup:
@@ -219,10 +223,11 @@ def main_gen_graph():
     """
     parser = argparse.ArgumentParser("VaRA graph generator")
     parser.add_argument(
+        "plot_type", action=enum_action(PlotTypes), help="Plot to generate")
+    parser.add_argument(
         "-r", "--result-folder", help="Folder with result files")
     parser.add_argument("-p", "--project", help="Project name")
     parser.add_argument("-c", "--cmap", help="Path to commit map")
-    parser.add_argument("-g", "--graph", help="Graph type")
     parser.add_argument(
         "-v",
         "--view",
@@ -236,6 +241,12 @@ def main_gen_graph():
         k: v
         for k, v in vars(parser.parse_args()).items() if v is not None
     }
+
+    # Setup default result folder
+    if 'result_folder' not in args:
+        args['result_folder'] = str(CFG['result_dir']) + "/" + args['project']
+        print("Result folder defaults to: {res_folder}".format(
+            res_folder=args['result_folder']))
 
     build_plot(**args)
 
@@ -391,9 +402,22 @@ def main_casestudy():
         "--distribution", action=enum_action(SamplingMethod))
     ext_parser.add_argument(
         "--merge-stage",
-        type=int,
         default=-1,
-        help="Merge the new revision into stage `n`, defaults to last stage")
+        help="Merge the new revision into stage `n`, defaults to last stage. "
+        + "Use '+' to add a new stage.")
+    ext_parser.add_argument(
+        "--boundary-gradient",
+        type=int,
+        default=5,
+        help="Maximal expected gradient in percent between " +
+        "two revisions, e.g., 5 for 5%")
+    ext_parser.add_argument(
+        "--plot-type",
+        action=enum_action(PlotTypes),
+        help="Plot to calculate new revisions from.")
+    ext_parser.add_argument(
+        "--result-folder",
+        help="Maximal expected gradient in percent between two revisions")
     add_common_args(ext_parser)
 
     args = {
@@ -427,7 +451,19 @@ def main_casestudy():
 
             # If no merge_stage was specified add it to the last
             if args['merge_stage'] == -1:
-                args['merge_stage'] = case_study.num_stages - 1
+                args['merge_stage'] = max(case_study.num_stages - 1, 0)
+            # If + was specified we add a new stage
+            if args['merge_stage'] == '+':
+                args['merge_stage'] = case_study.num_stages
+
+            # Setup default result folder
+            if 'result_folder' not in args and args[
+                    'strategy'] is ExtenderStrategy.smooth_plot:
+                args['project'] = case_study.project_name
+                args['result_folder'] = str(
+                    CFG['result_dir']) + "/" + args['project']
+                print("Result folder defaults to: {res_folder}".format(
+                    res_folder=args['result_folder']))
 
             extend_case_study(case_study, cmap, args['strategy'], **args)
 

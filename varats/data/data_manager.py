@@ -45,6 +45,7 @@ class FileBlob(object):
         """The loaded DataClass from the file."""
         return self.__class_object
 
+
 class FileSignal(QObject):
     """
     Emit singlas after the file was loaded.
@@ -86,6 +87,7 @@ class DataManager(object):
 
     def __load_data_class(self, file_path, DataClassTy):\
             # pylint: disable=invalid-name
+
         """
         Load a DataClass of type <DataClassTy> from a file.
         """
@@ -95,14 +97,19 @@ class DataManager(object):
         if key in self.file_map:
             return self.file_map[key].data
 
-        new_blob = FileBlob(key, file_path, DataClassTy(file_path))
+        try:
+            new_blob = FileBlob(key, file_path, DataClassTy(file_path))
+        except Exception as e:
+            self.loader_lock.release()
+            raise e
         self.file_map[key] = new_blob
 
         return new_blob.data
 
     def load_data_class(self, file_path, DataClassTy,
-                        loaded_callback):\
+                        loaded_callback):        \
             # pylint: disable=invalid-name
+
         """
         Load a DataClass of type <DataClassTy> from a file asynchronosly.
         """
@@ -116,6 +123,7 @@ class DataManager(object):
 
     def load_data_class_sync(self, file_path, DataClassTy):\
             # pylint: disable=invalid-name
+
         """
         Load a DataClass of type <DataClassTy> from a file synchronosly.
         """
