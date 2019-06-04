@@ -90,6 +90,7 @@ class InteractionFilter(SecretYamlObject):
 
     def __init__(self, parent: 'InteractionFilter' = None, comment: str = None) -> None:
 
+        self._type = type(self).__name__
         self._parent = parent
         if comment is None:
             self._comment = ""
