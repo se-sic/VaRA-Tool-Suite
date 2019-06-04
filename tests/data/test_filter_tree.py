@@ -16,7 +16,99 @@ from varats.data.filtertree_data import (
     CommitDateDeltaMinFilter, CommitDateDeltaMaxFilter
 )
 
-YAML_DOC_1 = """&id009 !AndOperator
+YAML_DOC_1 = """!AndOperator
+_children:
+- !OrOperator
+  _children:
+  - !SourceOperator
+    _child: !CommitterFilter
+      _comment: ''
+      _committer_email: doe@example.com
+      _committer_name: Jane Doe
+      _parent: null
+      _type: CommitterFilter
+    _comment: ''
+    _parent: null
+    _type: SourceOperator
+  - !SourceOperator
+    _child: !NotOperator
+      _child: !AuthorFilter
+        _author_email: doe@example.com
+        _author_name: Jane Doe
+        _comment: ''
+        _parent: null
+        _type: AuthorFilter
+      _comment: ''
+      _parent: null
+      _type: NotOperator
+    _comment: ''
+    _parent: null
+    _type: SourceOperator
+  - !TargetOperator
+    _child: !AuthorDateMinFilter
+      _author_date_min: '2000-01-01T00:00:00Z'
+      _comment: ''
+      _parent: null
+      _type: AuthorDateMinFilter
+    _comment: ''
+    _parent: null
+    _type: TargetOperator
+  - !TargetOperator
+    _child: !AuthorDateMaxFilter
+      _author_date_max: '2001-01-01T00:00:00Z'
+      _comment: ''
+      _parent: null
+      _type: AuthorDateMaxFilter
+    _comment: ''
+    _parent: null
+    _type: TargetOperator
+  - !TargetOperator
+    _child: !CommitDateMinFilter
+      _comment: ''
+      _commit_date_min: '2002-01-01T00:00:00Z'
+      _parent: null
+      _type: CommitDateMinFilter
+    _comment: ''
+    _parent: null
+    _type: TargetOperator
+  - !TargetOperator
+    _child: !CommitDateMaxFilter
+      _comment: ''
+      _commit_date_max: '2003-01-01T00:00:00Z'
+      _parent: null
+      _type: CommitDateMaxFilter
+    _comment: ''
+    _parent: null
+    _type: TargetOperator
+  - !AuthorDateDeltaMinFilter
+    _author_date_delta_min: P1DT1H
+    _comment: ''
+    _parent: null
+    _type: AuthorDateDeltaMinFilter
+  - !AuthorDateDeltaMaxFilter
+    _author_date_delta_max: P1DT2H
+    _comment: ''
+    _parent: null
+    _type: AuthorDateDeltaMaxFilter
+  - !CommitDateDeltaMinFilter
+    _comment: ''
+    _commit_date_delta_min: P1DT3H
+    _parent: null
+    _type: CommitDateDeltaMinFilter
+  - !CommitDateDeltaMaxFilter
+    _comment: ''
+    _commit_date_delta_max: P1DT4H
+    _parent: null
+    _type: CommitDateDeltaMaxFilter
+  _comment: comment
+  _parent: null
+  _type: OrOperator
+_comment: ''
+_parent: null
+_type: AndOperator
+"""
+
+YAML_DOC_OLD = """&id009 !AndOperator
 _children:
 - &id002 !OrOperator
   _children:
@@ -134,6 +226,7 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.name(), "AuthorFilter")
         self.assertEqual(filter_node.data(0), "AuthorFilter")
+        self.assertEqual(filter_node._type, "AuthorFilter")
 
         filter_node.setData(0, "name_2")
         self.assertEqual(filter_node.name(), "AuthorFilter",
@@ -191,6 +284,7 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.name(), "CommitterFilter")
         self.assertEqual(filter_node.data(0), "CommitterFilter")
+        self.assertEqual(filter_node._type, "CommitterFilter")
 
         filter_node.setData(0, "name_2")
         self.assertEqual(filter_node.name(), "CommitterFilter",
@@ -248,6 +342,7 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.name(), "AuthorDateMinFilter")
         self.assertEqual(filter_node.data(0), "AuthorDateMinFilter")
+        self.assertEqual(filter_node._type, "AuthorDateMinFilter")
 
         filter_node.setData(0, "name_2")
         self.assertEqual(filter_node.name(), "AuthorDateMinFilter",
@@ -300,6 +395,7 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.name(), "AuthorDateMaxFilter")
         self.assertEqual(filter_node.data(0), "AuthorDateMaxFilter")
+        self.assertEqual(filter_node._type, "AuthorDateMaxFilter")
 
         filter_node.setData(0, "name_2")
         self.assertEqual(filter_node.name(), "AuthorDateMaxFilter",
@@ -352,6 +448,7 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.name(), "CommitDateMinFilter")
         self.assertEqual(filter_node.data(0), "CommitDateMinFilter")
+        self.assertEqual(filter_node._type, "CommitDateMinFilter")
 
         filter_node.setData(0, "name_2")
         self.assertEqual(filter_node.name(), "CommitDateMinFilter",
@@ -404,6 +501,7 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.name(), "CommitDateMaxFilter")
         self.assertEqual(filter_node.data(0), "CommitDateMaxFilter")
+        self.assertEqual(filter_node._type, "CommitDateMaxFilter")
 
         filter_node.setData(0, "name_2")
         self.assertEqual(filter_node.name(), "CommitDateMaxFilter",
@@ -456,6 +554,7 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.name(), "AuthorDateDeltaMinFilter")
         self.assertEqual(filter_node.data(0), "AuthorDateDeltaMinFilter")
+        self.assertEqual(filter_node._type, "AuthorDateDeltaMinFilter")
 
         filter_node.setData(0, "name_2")
         self.assertEqual(filter_node.name(), "AuthorDateDeltaMinFilter",
@@ -502,6 +601,7 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.name(), "AuthorDateDeltaMaxFilter")
         self.assertEqual(filter_node.data(0), "AuthorDateDeltaMaxFilter")
+        self.assertEqual(filter_node._type, "AuthorDateDeltaMaxFilter")
 
         filter_node.setData(0, "name_2")
         self.assertEqual(filter_node.name(), "AuthorDateDeltaMaxFilter",
@@ -548,6 +648,7 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.name(), "CommitDateDeltaMinFilter")
         self.assertEqual(filter_node.data(0), "CommitDateDeltaMinFilter")
+        self.assertEqual(filter_node._type, "CommitDateDeltaMinFilter")
 
         filter_node.setData(0, "name_2")
         self.assertEqual(filter_node.name(), "CommitDateDeltaMinFilter",
@@ -594,6 +695,7 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.name(), "CommitDateDeltaMaxFilter")
         self.assertEqual(filter_node.data(0), "CommitDateDeltaMaxFilter")
+        self.assertEqual(filter_node._type, "CommitDateDeltaMaxFilter")
 
         filter_node.setData(0, "name_2")
         self.assertEqual(filter_node.name(), "CommitDateDeltaMaxFilter",
@@ -640,6 +742,7 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.name(), "AndOperator")
         self.assertEqual(filter_node.data(0), "AndOperator")
+        self.assertEqual(filter_node._type, "AndOperator")
 
         filter_node.setData(0, "name_2")
         self.assertEqual(filter_node.name(), "AndOperator",
@@ -711,6 +814,7 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.name(), "OrOperator")
         self.assertEqual(filter_node.data(0), "OrOperator")
+        self.assertEqual(filter_node._type, "OrOperator")
 
         filter_node.setData(0, "name_2")
         self.assertEqual(filter_node.name(), "OrOperator",
@@ -782,6 +886,7 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.name(), "NotOperator")
         self.assertEqual(filter_node.data(0), "NotOperator")
+        self.assertEqual(filter_node._type, "NotOperator")
 
         filter_node.setData(0, "name_2")
         self.assertEqual(filter_node.name(), "NotOperator",
@@ -837,6 +942,7 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.name(), "SourceOperator")
         self.assertEqual(filter_node.data(0), "SourceOperator")
+        self.assertEqual(filter_node._type, "SourceOperator")
 
         filter_node.setData(0, "name_2")
         self.assertEqual(filter_node.name(), "SourceOperator",
@@ -892,6 +998,7 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.name(), "TargetOperator")
         self.assertEqual(filter_node.data(0), "TargetOperator")
+        self.assertEqual(filter_node._type, "TargetOperator")
 
         filter_node.setData(0, "name_2")
         self.assertEqual(filter_node.name(), "TargetOperator",
@@ -952,12 +1059,15 @@ class TestFilterTreeYamlLoad(unittest.TestCase):
     def setUpClass(cls):
         with mock.patch('builtins.open',
                         new=mock.mock_open(read_data=YAML_DOC_1)):
-            cls.root_node = yaml.load(open("path/to/open"), Loader=yaml.Loader)
+            root_node = yaml.load(open("path/to/open"), Loader=yaml.Loader)
+            root_node.fixParentPointers()
+            cls.root_node = root_node
 
     def test_filter_tree_yaml_load(self):
         node0 = self.root_node
 
         self.assertEqual(node0.name(), "AndOperator")
+        self.assertEqual(node0._type, "AndOperator")
         self.assertEqual(node0.comment(), "")
         self.assertIs(node0.parent(), None)
         self.assertEqual(node0.childCount(), 1)
@@ -965,6 +1075,7 @@ class TestFilterTreeYamlLoad(unittest.TestCase):
         node1 = node0.child(0)
 
         self.assertEqual(node1.name(), "OrOperator")
+        self.assertEqual(node1._type, "OrOperator")
         self.assertEqual(node1.comment(), "comment")
         self.assertIs(node1.parent(), node0)
         self.assertEqual(node1.childCount(), 10)
@@ -981,54 +1092,64 @@ class TestFilterTreeYamlLoad(unittest.TestCase):
         node11 = node1.child(9)
 
         self.assertEqual(node2.name(), "SourceOperator")
+        self.assertEqual(node2._type, "SourceOperator")
         self.assertEqual(node2.comment(), "")
         self.assertIs(node2.parent(), node1)
         self.assertEqual(node2.childCount(), 1)
 
         self.assertEqual(node3.name(), "SourceOperator")
+        self.assertEqual(node3._type, "SourceOperator")
         self.assertEqual(node3.comment(), "")
         self.assertIs(node3.parent(), node1)
         self.assertEqual(node3.childCount(), 1)
 
         self.assertEqual(node4.name(), "TargetOperator")
+        self.assertEqual(node4._type, "TargetOperator")
         self.assertEqual(node4.comment(), "")
         self.assertIs(node4.parent(), node1)
         self.assertEqual(node4.childCount(), 1)
 
         self.assertEqual(node5.name(), "TargetOperator")
+        self.assertEqual(node5._type, "TargetOperator")
         self.assertEqual(node5.comment(), "")
         self.assertIs(node5.parent(), node1)
         self.assertEqual(node5.childCount(), 1)
 
         self.assertEqual(node6.name(), "TargetOperator")
+        self.assertEqual(node6._type, "TargetOperator")
         self.assertEqual(node6.comment(), "")
         self.assertIs(node6.parent(), node1)
         self.assertEqual(node6.childCount(), 1)
 
         self.assertEqual(node7.name(), "TargetOperator")
+        self.assertEqual(node7._type, "TargetOperator")
         self.assertEqual(node7.comment(), "")
         self.assertIs(node7.parent(), node1)
         self.assertEqual(node7.childCount(), 1)
 
         self.assertEqual(node8.name(), "AuthorDateDeltaMinFilter")
+        self.assertEqual(node8._type, "AuthorDateDeltaMinFilter")
         self.assertEqual(node8.comment(), "")
         self.assertIs(node8.parent(), node1)
         self.assertEqual(node8.childCount(), 0)
         self.assertEqual(node8.authorDateDeltaMin(), "P1DT1H")
 
         self.assertEqual(node9.name(), "AuthorDateDeltaMaxFilter")
+        self.assertEqual(node9._type, "AuthorDateDeltaMaxFilter")
         self.assertEqual(node9.comment(), "")
         self.assertIs(node9.parent(), node1)
         self.assertEqual(node9.childCount(), 0)
         self.assertEqual(node9.authorDateDeltaMax(), "P1DT2H")
 
         self.assertEqual(node10.name(), "CommitDateDeltaMinFilter")
+        self.assertEqual(node10._type, "CommitDateDeltaMinFilter")
         self.assertEqual(node10.comment(), "")
         self.assertIs(node10.parent(), node1)
         self.assertEqual(node10.childCount(), 0)
         self.assertEqual(node10.commitDateDeltaMin(), "P1DT3H")
 
         self.assertEqual(node11.name(), "CommitDateDeltaMaxFilter")
+        self.assertEqual(node11._type, "CommitDateDeltaMaxFilter")
         self.assertEqual(node11.comment(), "")
         self.assertIs(node11.parent(), node1)
         self.assertEqual(node11.childCount(), 0)
@@ -1042,6 +1163,7 @@ class TestFilterTreeYamlLoad(unittest.TestCase):
         node17 = node7.child(0)
 
         self.assertEqual(node12.name(), "CommitterFilter")
+        self.assertEqual(node12._type, "CommitterFilter")
         self.assertEqual(node12.comment(), "")
         self.assertIs(node12.parent(), node2)
         self.assertEqual(node12.childCount(), 0)
@@ -1049,11 +1171,13 @@ class TestFilterTreeYamlLoad(unittest.TestCase):
         self.assertEqual(node12.committerEmail(), "doe@example.com")
 
         self.assertEqual(node13.name(), "NotOperator")
+        self.assertEqual(node13._type, "NotOperator")
         self.assertEqual(node13.comment(), "")
         self.assertIs(node13.parent(), node3)
         self.assertEqual(node13.childCount(), 1)
 
         self.assertEqual(node14.name(), "AuthorDateMinFilter")
+        self.assertEqual(node14._type, "AuthorDateMinFilter")
         self.assertEqual(node14.comment(), "")
         self.assertIs(node14.parent(), node4)
         self.assertEqual(node14.childCount(), 0)
@@ -1061,6 +1185,7 @@ class TestFilterTreeYamlLoad(unittest.TestCase):
                          "2000-01-01T00:00:00Z")
 
         self.assertEqual(node15.name(), "AuthorDateMaxFilter")
+        self.assertEqual(node15._type, "AuthorDateMaxFilter")
         self.assertEqual(node15.comment(), "")
         self.assertIs(node15.parent(), node5)
         self.assertEqual(node15.childCount(), 0)
@@ -1068,6 +1193,7 @@ class TestFilterTreeYamlLoad(unittest.TestCase):
                          "2001-01-01T00:00:00Z")
 
         self.assertEqual(node16.name(), "CommitDateMinFilter")
+        self.assertEqual(node16._type, "CommitDateMinFilter")
         self.assertEqual(node16.comment(), "")
         self.assertIs(node16.parent(), node6)
         self.assertEqual(node16.childCount(), 0)
@@ -1075,6 +1201,7 @@ class TestFilterTreeYamlLoad(unittest.TestCase):
                          "2002-01-01T00:00:00Z")
 
         self.assertEqual(node17.name(), "CommitDateMaxFilter")
+        self.assertEqual(node17._type, "CommitDateMaxFilter")
         self.assertEqual(node17.comment(), "")
         self.assertIs(node17.parent(), node7)
         self.assertEqual(node17.childCount(), 0)
@@ -1084,6 +1211,7 @@ class TestFilterTreeYamlLoad(unittest.TestCase):
         node18 = node13.child(0)
 
         self.assertEqual(node18.name(), "AuthorFilter")
+        self.assertEqual(node18._type, "AuthorFilter")
         self.assertEqual(node18.comment(), "")
         self.assertIs(node18.parent(), node13)
         self.assertEqual(node18.childCount(), 0)
