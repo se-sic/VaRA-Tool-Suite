@@ -71,13 +71,15 @@ from PyQt5.QtCore import QDateTime, Qt
 
 class SecretYamlObject(yaml.YAMLObject):
     hidden_fields = []
+    removed_fields = []
 
     @classmethod
     def to_yaml(cls, dumper, data):
         new_data = deepcopy(data)
         for item in cls.hidden_fields:
-            #del new_data.__dict__[item]
             new_data.__dict__[item] = None
+        for item in cls.removed_fields:
+            del new_data.__dict__[item]
         return dumper.represent_yaml_object(cls.yaml_tag, new_data, cls,
                                             flow_style=cls.yaml_flow_style)
 
