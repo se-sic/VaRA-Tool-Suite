@@ -4,6 +4,8 @@ by VaRA. The version header specifies the type of the following yaml file and
 the version.
 """
 
+from typing import Dict
+
 
 class WrongYamlFileType(Exception):
     """
@@ -46,6 +48,17 @@ class VersionHeader(object):
         self.__doc_type = yaml_doc['DocType']
         self.__version = int(yaml_doc['Version'])
 
+    @classmethod
+    def from_yaml_doc(cls, yaml_doc: Dict[str, str]) -> 'VersionHeader':
+        """Creates a VersionHeader object from a yaml dict."""
+        return cls(yaml_doc)
+
+    @classmethod
+    def from_version_number(cls, doc_type: str, version: int) -> 'VersionHeader':
+        """Creates a new VersionHeader object from a doc_type string and a version number."""
+        yaml_doc = {'DocType': doc_type, 'Version': version}
+        return cls(yaml_doc)
+
     @property
     def doc_type(self) -> str:
         """Type of the following yaml file."""
@@ -75,3 +88,10 @@ class VersionHeader(object):
         """
         if self.version < version_bound:
             raise WrongYamlFileVersion(version_bound, self.version)
+
+    def get_dict(self):
+        """Returns the version header as a dict."""
+        doc = dict()
+        doc['DocType'] = self.__doc_type
+        doc['Version'] = self.__version
+        return doc

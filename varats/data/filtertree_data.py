@@ -68,6 +68,8 @@ from copy import deepcopy
 from typing import List
 from PyQt5.QtCore import QDateTime, Qt
 
+from varats.data.version_header import VersionHeader
+
 
 class SecretYamlObject(yaml.YAMLObject):
     hidden_fields = []
@@ -187,6 +189,10 @@ class InteractionFilter(SecretYamlObject):
     @staticmethod
     def resource():
         return None
+
+    @staticmethod
+    def getVersionHeader():
+        return VersionHeader.from_version_number("InteractionFilter", 1)
 
 
 class ConcreteInteractionFilter(InteractionFilter):
