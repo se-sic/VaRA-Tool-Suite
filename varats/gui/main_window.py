@@ -32,7 +32,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Signals for menubar
         self.actionVaRA_Setup.triggered.connect(self._spawn_vara_build_setup)
-        self.actionFilter_Editor.triggered.connect(self._spawn_filter_editor)
+        self.actionInteractionFilter_Editor.triggered.connect(self._spawn_filter_editor)
         self.actionSave_Config.triggered.connect(self._save_config)
         self.actionCreate_BenchBuild_Config.triggered.connect(
             self._create_benchbuild_config)
