@@ -55,7 +55,7 @@
      <addaction name="actionSave_Config"/>
     </widget>
     <addaction name="actionVaRA_Setup"/>
-    <addaction name="actionFilter_Editor"/>
+    <addaction name="actionInteractionFilter_Editor"/>
     <addaction name="menuConfig"/>
     <addaction name="actionQuit"/>
    </widget>
@@ -133,9 +133,9 @@
     <string>Create BenchBuild Config</string>
    </property>
   </action>
-  <action name="actionFilter_Editor">
+  <action name="actionInteractionFilter_Editor">
    <property name="text">
-    <string>Filter Editor</string>
+    <string>InteractionFilter Editor</string>
    </property>
   </action>
  </widget>

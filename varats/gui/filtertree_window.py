@@ -21,6 +21,7 @@ from varats.gui.views.ui_CommitDateDeltaMaxFilter import Ui_CommitDateDeltaMaxFi
 from varats.gui import icons_rc # noqa # pylint: disable=unused-import
 from varats.gui.filtertree_model import FilterTreeModel
 from varats.data.filtertree_data import AndOperator
+from varats.data.version_header import VersionHeader
 
 
 def _showTimeDurationHelp() -> None:
@@ -603,7 +604,13 @@ class FilterWindow(QMainWindow, Ui_FilterEditor):
         # TODO (julianbreiteneicher): Warn user (documentation?) that we (have to) use the unsafe loader?
         try:
             with open(filename[0], 'r') as yaml_file:
-                root_node = yaml.load(yaml_file, Loader=yaml.Loader)
+                documents = yaml_file.read().split("---")
+                version_header = VersionHeader(yaml.load(documents[0]))
+                version_header.raise_if_not_type("InteractionFilter")
+                version_header.raise_if_version_is_less_than(1)
+
+                root_node = yaml.load(documents[1], Loader=yaml.Loader)
+                root_node.fixParentPointers()
             self._filename = filename[0]
             self._file_basename = os.path.basename(filename[0])
             self._model.reInit(root_node)
@@ -615,11 +622,14 @@ class FilterWindow(QMainWindow, Ui_FilterEditor):
             msg.setInformativeText(str(e))
             msg.setWindowTitle("Error")
             msg.exec_()
+            raise e
 
     def saveFile(self) -> None:
         if self._filename:
             with open(self._filename, 'w') as yaml_file:
-                yaml.dump(self._model.getRootNode(), yaml_file)
+                root_node = self._model.getRootNode()
+                version_header = root_node.getVersionHeader().get_dict()
+                yaml.dump_all([version_header, root_node], yaml_file)
                 self.setWindowModified(False)
         else:
             self.saveFileAs()
@@ -630,7 +640,9 @@ class FilterWindow(QMainWindow, Ui_FilterEditor):
             return
         try:
             with open(filename[0], 'w') as yaml_file:
-                yaml.dump(self._model.getRootNode(), yaml_file)
+                root_node = self._model.getRootNode()
+                version_header = root_node.getVersionHeader().get_dict()
+                yaml.dump_all([version_header, root_node], yaml_file)
             self._filename = filename[0]
             self._file_basename = os.path.basename(filename[0])
             self.setWindowModified(False)

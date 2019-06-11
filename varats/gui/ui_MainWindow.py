@@ -59,12 +59,12 @@ class Ui_MainWindow(object):
         self.actionSave_Config.setObjectName("actionSave_Config")
         self.actionCreate_BenchBuild_Config = QtWidgets.QAction(MainWindow)
         self.actionCreate_BenchBuild_Config.setObjectName("actionCreate_BenchBuild_Config")
-        self.actionFilter_Editor = QtWidgets.QAction(MainWindow)
-        self.actionFilter_Editor.setObjectName("actionFilter_Editor")
+        self.actionInteractionFilter_Editor = QtWidgets.QAction(MainWindow)
+        self.actionInteractionFilter_Editor.setObjectName("actionInteractionFilter_Editor")
         self.menuConfig.addAction(self.actionCreate_BenchBuild_Config)
         self.menuConfig.addAction(self.actionSave_Config)
         self.menuFile.addAction(self.actionVaRA_Setup)
-        self.menuFile.addAction(self.actionFilter_Editor)
+        self.menuFile.addAction(self.actionInteractionFilter_Editor)
         self.menuFile.addAction(self.menuConfig.menuAction())
         self.menuFile.addAction(self.actionQuit)
         self.menuView.addAction(self.actionExampleView)
@@ -96,7 +96,7 @@ class Ui_MainWindow(object):
         self.actionVaRA_Setup.setShortcut(_translate("MainWindow", "Ctrl+B"))
         self.actionSave_Config.setText(_translate("MainWindow", "Save VaRA Config"))
         self.actionCreate_BenchBuild_Config.setText(_translate("MainWindow", "Create BenchBuild Config"))
-        self.actionFilter_Editor.setText(_translate("MainWindow", "Filter Editor"))
+        self.actionInteractionFilter_Editor.setText(_translate("MainWindow", "InteractionFilter Editor"))
 
 
 if __name__ == "__main__":

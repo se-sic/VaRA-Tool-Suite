@@ -64,15 +64,35 @@ InteractionFilter
 
 import yaml
 
+from copy import deepcopy
 from typing import List
 from PyQt5.QtCore import QDateTime, Qt
 
+from varats.data.version_header import VersionHeader
 
-class InteractionFilter(yaml.YAMLObject):
+
+class SecretYamlObject(yaml.YAMLObject):
+    hidden_fields = []
+    removed_fields = []
+
+    @classmethod
+    def to_yaml(cls, dumper, data):
+        new_data = deepcopy(data)
+        for item in cls.hidden_fields:
+            new_data.__dict__[item] = None
+        for item in cls.removed_fields:
+            del new_data.__dict__[item]
+        return dumper.represent_yaml_object(cls.yaml_tag, new_data, cls,
+                                            flow_style=cls.yaml_flow_style)
+
+
+class InteractionFilter(SecretYamlObject):
+    hidden_fields = ["_parent"]
     yaml_tag = u'!InteractionFilter'
 
     def __init__(self, parent: 'InteractionFilter' = None, comment: str = None) -> None:
 
+        self._type = type(self).__name__
         self._parent = parent
         if comment is None:
             self._comment = ""
@@ -153,9 +173,26 @@ class InteractionFilter(yaml.YAMLObject):
         elif column == 1:
             self.setComment(value)
 
+    def fixParentPointers(self) -> None:
+        """
+        Iterate over the filter tree and set the correct _parent pointers for all nodes.
+        Must be called on the root node of the tree!
+        """
+        for i in range(self.childCount()):
+            self.child(i).__fixParentPointersHelper(self)
+
+    def __fixParentPointersHelper(self, parent: 'InteractionFilter') -> None:
+        self.setParent(parent)
+        for i in range(self.childCount()):
+            self.child(i).__fixParentPointersHelper(self)
+
     @staticmethod
     def resource():
         return None
+
+    @staticmethod
+    def getVersionHeader():
+        return VersionHeader.from_version_number("InteractionFilter", 1)
 
 
 class ConcreteInteractionFilter(InteractionFilter):
@@ -603,9 +640,6 @@ class AndOperator(FilterOperator):
     def childCount(self) -> int:
         return len(self._children)
 
-    def parent(self) -> InteractionFilter:
-        return self._parent
-
     @staticmethod
     def resource():
         return ":/operators/and-operator.svg"
@@ -664,9 +698,6 @@ class OrOperator(FilterOperator):
     def childCount(self) -> int:
         return len(self._children)
 
-    def parent(self) -> InteractionFilter:
-        return self._parent
-
     @staticmethod
     def resource():
         return ":/operators/or-operator.svg"
@@ -712,9 +743,6 @@ class NotOperator(FilterOperator):
         if self._child is None:
             return 0
         return 1
-
-    def parent(self) -> InteractionFilter:
-        return self._parent
 
     @staticmethod
     def resource():
@@ -762,9 +790,6 @@ class SourceOperator(FilterOperator):
             return 0
         return 1
 
-    def parent(self) -> InteractionFilter:
-        return self._parent
-
     @staticmethod
     def resource():
         return ":/operators/source-operator.svg"
@@ -810,9 +835,6 @@ class TargetOperator(FilterOperator):
         if self._child is None:
             return 0
         return 1
-
-    def parent(self) -> InteractionFilter:
-        return self._parent
 
     @staticmethod
     def resource():
