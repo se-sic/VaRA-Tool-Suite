@@ -108,7 +108,7 @@ In order to ease the creation of case studies VaRA-TS offers different sampling 
 
 For example, we can generate a new case study for `gzip`, drawing 10 revision from the projects history based on a half-normal distribution, with:
 ```console
-vara-cs gen PATH_TO_PAPER_CONF_DIR/ PATH_TO_REPO/ half_norm --num-rev 10
+vara-cs gen PATH_TO_PAPER_CONF_DIR/ half_norm PATH_TO_REPO/ --num-rev 10
 ```
 
 Created case studies should be grouped into folders, e.g., a set of case studies used for a paper.
@@ -141,6 +141,24 @@ CS: gzip_1: (2/5) processed
 CS: gzip_2: (5/5) processed
 CS: libvpx_0: (0/5) processed
 ```
+### Extending a CaseStudy
+Case studies group together revisions but sometimes these groups need to be changed or extended, e.g., when we want so sample a few more revisions to gather data for a specific revision range.
+To simplify that, our tool suite provides `vara-cs ext`, a tool for extending and changing case studies.
+
+For example:
+```console
+vara-cs ext paper_configs/ase-17/gzip_0.case_study distrib_add gzip/ --distribution uniform --num-rev 5
+```
+will add 5 new revision, sampled uniformly, to the case study.
+
+In more detail, case studies have different stages that are separated from each other.
+This allows us to for example extend a case study with an specific revision without changing the initial set of revisions, e.g., stage 0.
+
+For example:
+```console
+vara-cs ext paper_configs/ase-17/gzip_0.case_study simple_add gzip/ --extra-revs 0dd8313ea7bce --merge-stage 3
+```
+will add revision `0dd8313ea7bce` to the stage 3 of the gzip case study, allowing us to analyze it and draw different plots, e.g., one containing only stage 0 data and another with all stages included. 
 
 ## VaRA developer tools
 VaRA-TS provides different tools to ease VaRA development.

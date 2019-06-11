@@ -1,0 +1,10 @@
+[run]
+include = */varats/*
+
+[paths]
+source =
+  varats/
+  */site-packages/varats/
+
+[report]
+ignore_errors = True

@@ -15,12 +15,15 @@ from varats.settings import get_value_or_default,\
     CFG, generate_benchbuild_config, save_config
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
-from varats.vara_manager import setup_vara, BuildType, LLVMProjects, ProcessManager
+from varats.vara_manager import (setup_vara, BuildType, LLVMProjects,
+                                 ProcessManager)
 from varats.tools.commit_map import generate_commit_map, store_commit_map
-from varats.plots.plots import extend_parser_with_plot_args, build_plot
+from varats.plots.plots import (extend_parser_with_plot_args, build_plot,
+                                PlotTypes)
 from varats.utils.cli_util import cli_yn_choice
-from varats.paper.case_study import SamplingMethod, generate_case_study,\
-    store_case_study
+from varats.paper.case_study import (
+    SamplingMethod, ExtenderStrategy, extend_case_study, generate_case_study,
+    load_case_study_from_file, store_case_study)
 import varats.paper.paper_config_manager as PCM
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
@@ -220,10 +223,11 @@ def main_gen_graph():
     """
     parser = argparse.ArgumentParser("VaRA graph generator")
     parser.add_argument(
+        "plot_type", action=enum_action(PlotTypes), help="Plot to generate")
+    parser.add_argument(
         "-r", "--result-folder", help="Folder with result files")
     parser.add_argument("-p", "--project", help="Project name")
     parser.add_argument("-c", "--cmap", help="Path to commit map")
-    parser.add_argument("-g", "--graph", help="Graph type")
     parser.add_argument(
         "-v",
         "--view",
@@ -237,6 +241,12 @@ def main_gen_graph():
         k: v
         for k, v in vars(parser.parse_args()).items() if v is not None
     }
+
+    # Setup default result folder
+    if 'result_folder' not in args:
+        args['result_folder'] = str(CFG['result_dir']) + "/" + args['project']
+        print("Result folder defaults to: {res_folder}".format(
+            res_folder=args['result_folder']))
 
     build_plot(**args)
 
@@ -340,59 +350,142 @@ def main_casestudy():
         help="Only print a short summary",
         action="store_true",
         default=False)
+    status_parser.add_argument(
+        "--list-revs",
+        help="Print a list of revisions for every stage and every case study",
+        action="store_true",
+        default=False)
+
+    def add_common_args(sub_parser):
+        """
+        Group common args to provide all args on different sub parsers.
+        """
+        sub_parser.add_argument("git_path", help="Path to git repository")
+        sub_parser.add_argument(
+            "--end",
+            help="End of the commit range (inclusive)",
+            default="HEAD")
+        sub_parser.add_argument(
+            "--start",
+            help="Start of the commit range (exclusive)",
+            default=None)
+        sub_parser.add_argument(
+            "--extra-revs",
+            nargs="+",
+            default=[],
+            help="Add a list of additional revisions to the case-study")
+        sub_parser.add_argument(
+            "--num-rev",
+            type=int,
+            default=10,
+            help="Number of revisions to select.")
 
     gen_parser = sub_parsers.add_parser('gen', help="Generate a case study.")
     gen_parser.add_argument(
         "paper_config_path",
         help="Path to paper_config folder (e.g., paper_configs/ase-17)")
-    gen_parser.add_argument("git_path", help="Path to git repository")
-    parser.add_argument(
-        "--end", help="End of the commit range (inclusive)", default="HEAD")
-    parser.add_argument(
-        "--start", help="Start of the commit range (exclusive)", default=None)
 
     gen_parser.add_argument("distribution", action=enum_action(SamplingMethod))
     gen_parser.add_argument(
-        "--num-rev",
-        type=int,
-        default=10,
-        help="Number of revisions to select.")
-    gen_parser.add_argument(
         "-v", "--version", type=int, default=0, help="Case study version.")
-    gen_parser.add_argument(
-        "--extra-revs",
-        nargs="+",
-        default=[],
-        help="Add a list of additional revisions to the case-study")
+    add_common_args(gen_parser)
+
+    # Extender
+    ext_parser = sub_parsers.add_parser(
+        'ext', help="Extend an existing case study.")
+    ext_parser.add_argument("case_study_path", help="Path to case_study")
+    ext_parser.add_argument(
+        "strategy",
+        action=enum_action(ExtenderStrategy),
+        help="Extender strategy")
+    ext_parser.add_argument(
+        "--distribution", action=enum_action(SamplingMethod))
+    ext_parser.add_argument(
+        "--merge-stage",
+        default=-1,
+        type=int,
+        help="Merge the new revision into stage `n`, defaults to last stage. "
+        + "Use '+' to add a new stage.")
+    ext_parser.add_argument(
+        "--boundary-gradient",
+        type=int,
+        default=5,
+        help="Maximal expected gradient in percent between " +
+        "two revisions, e.g., 5 for 5%%")
+    ext_parser.add_argument(
+        "--plot-type",
+        action=enum_action(PlotTypes),
+        help="Plot to calculate new revisions from.")
+    ext_parser.add_argument(
+        "--result-folder",
+        help="Maximal expected gradient in percent between two revisions")
+    add_common_args(ext_parser)
 
     args = {
         k: v
         for k, v in vars(parser.parse_args()).items() if v is not None
     }
 
+    if 'subcommand' not in args:
+        parser.print_help()
+        return
+
     if args['subcommand'] == 'status':
         if 'paper_config' in args:
             CFG['paper_config']['current_config'] = args['paper_config']
 
-        PCM.show_status_of_case_studies(args['filter_regex'], args['short'])
-    elif args['subcommand'] == 'gen':
+        if args['short'] and args['list_revs']:
+            parser.error(
+                "At least one argument of: --short, --list-revs can be used.")
+
+        PCM.show_status_of_case_studies(args['filter_regex'], args['short'],
+                                        args['list_revs'])
+    elif args['subcommand'] == 'gen' or args['subcommand'] == 'ext':
         if args['git_path'].endswith(".git"):
             git_path = Path(args['git_path'][:-4])
         else:
             git_path = Path(args['git_path'])
-        args['git_path'] = git_path
 
         cmap = generate_commit_map(git_path, args['end'],
                                    args['start'] if 'start' in args else None)
 
-        args['paper_config_path'] = Path(args['paper_config_path'])
-        if not args['paper_config_path'].exists():
-            raise argparse.ArgumentTypeError("Paper path does not exist")
+        args['git_path'] = git_path.stem.replace("-HEAD", "")
+        if args['subcommand'] == 'ext':
+            case_study = load_case_study_from_file(
+                Path(args['case_study_path']))
 
-        case_study = generate_case_study(
-            args['distribution'], args['num_rev'], cmap,
-            git_path.stem.replace("-HEAD", ""), args['version'], **args)
-        store_case_study(case_study, args['paper_config_path'])
+            # If no merge_stage was specified add it to the last
+            if args['merge_stage'] == -1:
+                args['merge_stage'] = max(case_study.num_stages - 1, 0)
+            # If + was specified we add a new stage
+            if args['merge_stage'] == '+':
+                args['merge_stage'] = case_study.num_stages
+
+            # Setup default result folder
+            if 'result_folder' not in args and args[
+                    'strategy'] is ExtenderStrategy.smooth_plot:
+                args['project'] = case_study.project_name
+                args['result_folder'] = str(
+                    CFG['result_dir']) + "/" + args['project']
+                print("Result folder defaults to: {res_folder}".format(
+                    res_folder=args['result_folder']))
+
+            extend_case_study(case_study, cmap, args['strategy'], **args)
+
+            store_case_study(case_study, Path(args['case_study_path']))
+        else:
+            args['paper_config_path'] = Path(args['paper_config_path'])
+            if not args['paper_config_path'].exists():
+                raise argparse.ArgumentTypeError("Paper path does not exist")
+
+            # Specify merge_stage as 0 for creating new case studies
+            args['merge_stage'] = 0
+
+            case_study = generate_case_study(
+                args['distribution'], args['num_rev'], cmap, args['git_path'],
+                args['version'], **args)
+
+            store_case_study(case_study, args['paper_config_path'])
 
 
 def main_develop():

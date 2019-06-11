@@ -11,8 +11,14 @@ import benchbuild.project as prj
 from plumbum import local
 from plumbum.path.utils import delete
 
+from varats.paper.paper_config import project_filter_generator
 
-@with_git("https://github.com/git/git.git", limit=100, refspec="HEAD")
+
+@with_git(
+    "https://github.com/git/git.git",
+    limit=100,
+    refspec="HEAD",
+    version_filter=project_filter_generator("git"))
 class Git(prj.Project):
     """ Git """
 

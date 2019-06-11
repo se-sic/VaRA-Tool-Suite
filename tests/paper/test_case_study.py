@@ -7,37 +7,39 @@ import yaml
 
 YAML_CASE_STUDY = """!CaseStudy
 _CaseStudy__project_name: gzip
-_CaseStudy__revisions:
-- !HashIDTuple
-  _HashIDTuple__commit_hash: 7620b817357d6f14356afd004ace2da426cf8c36
-  _HashIDTuple__commit_id: 494
-- !HashIDTuple
-  _HashIDTuple__commit_hash: 622e9b1d024da1343b83fc47fb1891e1d245add3
-  _HashIDTuple__commit_id: 431
-- !HashIDTuple
-  _HashIDTuple__commit_hash: 8798d5c4fd520dcf91f36ebfa60bc5f3dca550d9
-  _HashIDTuple__commit_id: 421
-- !HashIDTuple
-  _HashIDTuple__commit_hash: 2e654f9963154e5af9d3081fc871d54d783a1270
-  _HashIDTuple__commit_id: 360
-- !HashIDTuple
-  _HashIDTuple__commit_hash: edfad78619d52479e02228a5789a2e98d7b0f9f6
-  _HashIDTuple__commit_id: 307
-- !HashIDTuple
-  _HashIDTuple__commit_hash: a3db5806d012082b9e25cc36d09f19cd736a468f
-  _HashIDTuple__commit_id: 279
-- !HashIDTuple
-  _HashIDTuple__commit_hash: e75f428c0ddc90a7011cfda82a7114a16c537e34
-  _HashIDTuple__commit_id: 190
-- !HashIDTuple
-  _HashIDTuple__commit_hash: 1e7e3769dc4efd55249c475470152acbcf804bb3
-  _HashIDTuple__commit_id: 144
-- !HashIDTuple
-  _HashIDTuple__commit_hash: 9872ba420c99323195e96cafe56ff247c3011ad5
-  _HashIDTuple__commit_id: 56
-- !HashIDTuple
-  _HashIDTuple__commit_hash: b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a
-  _HashIDTuple__commit_id: 41
+_CaseStudy__stages:
+- !CSStage
+  _CSStage__revisions:
+  - !HashIDTuple
+    _HashIDTuple__commit_hash: 7620b817357d6f14356afd004ace2da426cf8c36
+    _HashIDTuple__commit_id: 494
+  - !HashIDTuple
+    _HashIDTuple__commit_hash: 622e9b1d024da1343b83fc47fb1891e1d245add3
+    _HashIDTuple__commit_id: 431
+  - !HashIDTuple
+    _HashIDTuple__commit_hash: 8798d5c4fd520dcf91f36ebfa60bc5f3dca550d9
+    _HashIDTuple__commit_id: 421
+  - !HashIDTuple
+    _HashIDTuple__commit_hash: 2e654f9963154e5af9d3081fc871d54d783a1270
+    _HashIDTuple__commit_id: 360
+  - !HashIDTuple
+    _HashIDTuple__commit_hash: edfad78619d52479e02228a5789a2e98d7b0f9f6
+    _HashIDTuple__commit_id: 307
+  - !HashIDTuple
+    _HashIDTuple__commit_hash: a3db5806d012082b9e25cc36d09f19cd736a468f
+    _HashIDTuple__commit_id: 279
+  - !HashIDTuple
+    _HashIDTuple__commit_hash: e75f428c0ddc90a7011cfda82a7114a16c537e34
+    _HashIDTuple__commit_id: 190
+  - !HashIDTuple
+    _HashIDTuple__commit_hash: 1e7e3769dc4efd55249c475470152acbcf804bb3
+    _HashIDTuple__commit_id: 144
+  - !HashIDTuple
+    _HashIDTuple__commit_hash: 9872ba420c99323195e96cafe56ff247c3011ad5
+    _HashIDTuple__commit_id: 56
+  - !HashIDTuple
+    _HashIDTuple__commit_hash: b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a
+    _HashIDTuple__commit_id: 41
 _CaseStudy__version: 1
 """
 
