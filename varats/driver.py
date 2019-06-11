@@ -403,6 +403,7 @@ def main_casestudy():
     ext_parser.add_argument(
         "--merge-stage",
         default=-1,
+        type=int,
         help="Merge the new revision into stage `n`, defaults to last stage. "
         + "Use '+' to add a new stage.")
     ext_parser.add_argument(
@@ -410,7 +411,7 @@ def main_casestudy():
         type=int,
         default=5,
         help="Maximal expected gradient in percent between " +
-        "two revisions, e.g., 5 for 5%")
+        "two revisions, e.g., 5 for 5%%")
     ext_parser.add_argument(
         "--plot-type",
         action=enum_action(PlotTypes),
@@ -424,6 +425,10 @@ def main_casestudy():
         k: v
         for k, v in vars(parser.parse_args()).items() if v is not None
     }
+
+    if 'subcommand' not in args:
+        parser.print_help()
+        return
 
     if args['subcommand'] == 'status':
         if 'paper_config' in args:
