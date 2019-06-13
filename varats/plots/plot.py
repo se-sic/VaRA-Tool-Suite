@@ -32,6 +32,14 @@ class Plot():
     def style(self, new_style):
         self.__style = new_style
 
+    @staticmethod
+    def supports_stage_separation() -> bool:
+        """
+        True, if the plot supports stage separation, i.e., the plot can be draw
+        separating the different stages in a case study.
+        """
+        return False
+
     @abc.abstractmethod
     def plot(self):
         """Plot the current plot to a file"""

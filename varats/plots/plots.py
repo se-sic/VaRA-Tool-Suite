@@ -27,12 +27,17 @@ def extend_parser_with_plot_args(parser):
     pass
 
 
-@check_required_args(['plot_type', 'view'])
+@check_required_args(['plot_type', 'view', 'sep_stages'])
 def build_plot(**kwargs):
     """
     Build the specified graph.
     """
     plot_type = kwargs['plot_type'].type
+
+    if (kwargs['sep_stages'] and not plot_type.supports_stage_separation()):
+        print("Warning: {plot_type} does not support stage ".format(
+            plot_type=kwargs['plot_type']) +
+              "separation but separation flag '--sep-stages' was set.")
 
     plot = plot_type(**kwargs)
     plot.style = "ggplot"
