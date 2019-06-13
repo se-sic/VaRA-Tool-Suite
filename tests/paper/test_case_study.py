@@ -40,6 +40,11 @@ _CaseStudy__stages:
   - !HashIDTuple
     _HashIDTuple__commit_hash: b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a
     _HashIDTuple__commit_id: 41
+- !CSStage
+  _CSStage__revisions:
+  - !HashIDTuple
+    _HashIDTuple__commit_hash: 7620b817357d6f14356afd004ace2da426cf8c36
+    _HashIDTuple__commit_id: 494
 _CaseStudy__version: 1
 """
 

@@ -135,7 +135,9 @@ class CaseStudy(yaml.YAMLObject):
         """
         Project revisions that are part of this case study.
         """
-        return [x for stage in self.__stages for x in stage.revisions]
+        return list(
+            dict.fromkeys(
+                [x for stage in self.__stages for x in stage.revisions]))
 
     @property
     def stages(self):
