@@ -355,6 +355,11 @@ def main_casestudy():
         help="Print a list of revisions for every stage and every case study",
         action="store_true",
         default=False)
+    status_parser.add_argument(
+        "--ws",
+        help="Print status with stage separation",
+        action="store_true",
+        default=False)
 
     def add_common_args(sub_parser):
         """
@@ -438,8 +443,12 @@ def main_casestudy():
             parser.error(
                 "At least one argument of: --short, --list-revs can be used.")
 
+        if args['short'] and args['ws']:
+            parser.error(
+                "At least one argument of: --short, --ws can be used.")
+
         PCM.show_status_of_case_studies(args['filter_regex'], args['short'],
-                                        args['list_revs'])
+                                        args['list_revs'], args['ws'])
     elif args['subcommand'] == 'gen' or args['subcommand'] == 'ext':
         if args['git_path'].endswith(".git"):
             git_path = Path(args['git_path'][:-4])
