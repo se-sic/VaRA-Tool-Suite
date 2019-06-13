@@ -105,7 +105,7 @@ def _gen_interaction_graph(**kwargs) -> pd.DataFrame:
             kwargs['cmap'] = CommitMap(c_map_file.readlines())
 
     commit_map = kwargs['cmap']
-    case_study = kwargs['plot_case_study']  # can be None
+    case_study = kwargs.get('plot_case_study', None)  # can be None
 
     result_dir = Path(kwargs["result_folder"])
     project_name = kwargs["project"]
