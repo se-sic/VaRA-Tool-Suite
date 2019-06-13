@@ -375,6 +375,11 @@ def main_casestudy():
             default=[],
             help="Add a list of additional revisions to the case-study")
         sub_parser.add_argument(
+            "--revs-per-year",
+            type=int,
+            default=0,
+            help="Add this many revisions per year to the case-study.")
+        sub_parser.add_argument(
             "--num-rev",
             type=int,
             default=10,
@@ -449,7 +454,7 @@ def main_casestudy():
         cmap = generate_commit_map(git_path, args['end'],
                                    args['start'] if 'start' in args else None)
 
-        args['git_path'] = git_path.stem.replace("-HEAD", "")
+        args['project_name'] = git_path.stem.replace("-HEAD", "")
         if args['subcommand'] == 'ext':
             case_study = load_case_study_from_file(
                 Path(args['case_study_path']))
@@ -482,7 +487,7 @@ def main_casestudy():
             args['merge_stage'] = 0
 
             case_study = generate_case_study(
-                args['distribution'], args['num_rev'], cmap, args['git_path'],
+                args['distribution'], args['num_rev'], cmap, args['project_name'],
                 args['version'], **args)
 
             store_case_study(case_study, args['paper_config_path'])
