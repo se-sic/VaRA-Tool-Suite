@@ -101,19 +101,18 @@ def get_status(case_study, result_file_type, sep_stages: bool,
                 rev_state] if rev_state == "OK" else colors.red[rev_state]
         return rev_state
 
-    def print_stage(stage_num):
-        local_status = ""
-        for rev_state in case_study.get_revisions_status(
-                result_file_type, stage_num):
-            local_status += "    {rev} [{status}]\n".format(
-                rev=rev_state[0], status=color_rev_state(rev_state[1]))
-        return local_status
-
     if sep_stages:
         for stage_num in range(0, case_study.num_stages):
             status += "  Stage {idx}\n".format(idx=stage_num)
-            status += print_stage(stage_num)
+            for rev_state in case_study.get_revisions_status(
+                    result_file_type, stage_num):
+                status += "    {rev} [{status}]\n".format(
+                    rev=rev_state[0], status=color_rev_state(rev_state[1]))
     else:
-        status += print_stage(-1)
+        for rev_state in list(
+                dict.fromkeys(
+                    case_study.get_revisions_status(result_file_type))):
+            status += "    {rev} [{status}]\n".format(
+                rev=rev_state[0], status=color_rev_state(rev_state[1]))
 
     return status
