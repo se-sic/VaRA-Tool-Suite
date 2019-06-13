@@ -441,7 +441,7 @@ def main_casestudy():
 
         if args['short'] and args['list_revs']:
             parser.error(
-                "At least one argument of: --short, --list-revs can be used.")
+                "At most one argument of: --short, --list-revs can be used.")
 
         if args['short'] and args['ws']:
             parser.error(
