@@ -445,7 +445,7 @@ def main_casestudy():
 
         if args['short'] and args['ws']:
             parser.error(
-                "At least one argument of: --short, --ws can be used.")
+                "At most one argument of: --short, --ws can be used.")
 
         PCM.show_status_of_case_studies(args['filter_regex'], args['short'],
                                         args['list_revs'], args['ws'])
