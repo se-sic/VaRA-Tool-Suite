@@ -135,7 +135,9 @@ class CaseStudy(yaml.YAMLObject):
         """
         Project revisions that are part of this case study.
         """
-        return [x for stage in self.__stages for x in stage.revisions]
+        return list(
+            dict.fromkeys(
+                [x for stage in self.__stages for x in stage.revisions]))
 
     @property
     def stages(self):
@@ -230,13 +232,23 @@ class CaseStudy(yaml.YAMLObject):
             if rev[:10] in total_processed_revisions
         ]
 
-    def get_revisions_status(self, result_file_type) -> [(str, str)]:
+    def get_revisions_status(self, result_file_type,
+                             stage_num=-1) -> [(str, str)]:
         """
         Get status of all revisions.
         """
         processed_revisions = self.processed_revisions(result_file_type)
-        return [(rev[:10], "OK" if rev in processed_revisions else "Missing")
-                for rev in self.revisions]
+        revisions_status = [(rev[:10],
+                             "OK" if rev in processed_revisions else "Missing")
+                            for rev in self.revisions]
+        if stage_num == -1:
+            return revisions_status
+
+        if stage_num < self.num_stages:
+            stage = self.__stages[stage_num]
+            return [x for x in revisions_status if stage.has_revision(x[0])]
+
+        return []
 
 
 def load_case_study_from_file(file_path: Path) -> CaseStudy:

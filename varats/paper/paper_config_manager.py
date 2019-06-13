@@ -12,7 +12,7 @@ import varats.paper.paper_config as PC
 
 
 def show_status_of_case_studies(filter_regex: str, short_status: bool,
-                                print_rev_list: bool):
+                                print_rev_list: bool, sep_stages: bool):
     """
     Show the status of all matching case studies.
     """
@@ -34,7 +34,7 @@ def show_status_of_case_studies(filter_regex: str, short_status: bool,
             elif short_status:
                 print(get_short_status(case_study, CommitReport, True))
             else:
-                print(get_status(case_study, CommitReport, True))
+                print(get_status(case_study, CommitReport, sep_stages, True))
 
 
 def get_revision_list(case_study) -> str:
@@ -59,13 +59,14 @@ def get_short_status(case_study, result_file_type, use_color=False) -> str:
     the case study.
     """
 
-    processed_revisions = case_study.processed_revisions(result_file_type)
+    processed_revisions = list(
+        dict.fromkeys(case_study.processed_revisions(result_file_type)))
 
     status = "CS: {project}_{version}: ".format(
         project=case_study.project_name, version=case_study.version)
 
     num_p_rev = len(processed_revisions)
-    num_rev = len(case_study.revisions)
+    num_rev = len(set(case_study.revisions))
 
     color = None
     if use_color:
@@ -86,7 +87,8 @@ def get_short_status(case_study, result_file_type, use_color=False) -> str:
     return status
 
 
-def get_status(case_study, result_file_type, use_color=False):
+def get_status(case_study, result_file_type, sep_stages: bool,
+               use_color=False):
     """
     Return a string representation that describes the current status of
     the case study.
@@ -97,10 +99,20 @@ def get_status(case_study, result_file_type, use_color=False):
         if use_color:
             return colors.green[
                 rev_state] if rev_state == "OK" else colors.red[rev_state]
-        else:
-            return rev_state
+        return rev_state
 
-    for rev_state in case_study.get_revisions_status(result_file_type):
-        status += "    {rev} [{status}]\n".format(
-            rev=rev_state[0], status=color_rev_state(rev_state[1]))
+    if sep_stages:
+        for stage_num in range(0, case_study.num_stages):
+            status += "  Stage {idx}\n".format(idx=stage_num)
+            for rev_state in case_study.get_revisions_status(
+                    result_file_type, stage_num):
+                status += "    {rev} [{status}]\n".format(
+                    rev=rev_state[0], status=color_rev_state(rev_state[1]))
+    else:
+        for rev_state in list(
+                dict.fromkeys(
+                    case_study.get_revisions_status(result_file_type))):
+            status += "    {rev} [{status}]\n".format(
+                rev=rev_state[0], status=color_rev_state(rev_state[1]))
+
     return status
