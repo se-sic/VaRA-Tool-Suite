@@ -10,6 +10,7 @@ from os import path
 from pathlib import Path
 
 from plumbum import local
+from plumbum.commands import ProcessExecutionError
 
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import compiler, run, time
@@ -33,8 +34,10 @@ class CFRAnalysis(actions.Step):
     DESCRIPTION = "Analyses the bitcode with CFR of VaRA."
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
-    RESULT_FILE_TEMPLATE = \
+    RESULT_FILE_SUCCESS_TEMPLATE = \
         "{project_name}-{binary_name}-{project_version}_{project_uuid}.yaml"
+    RESULT_FILE_FAILED_TEMPLATE = \
+        "{project_name}-{binary_name}-{project_version}_{project_uuid}.failed"
 
     def __call__(self):
         """
@@ -61,7 +64,13 @@ class CFRAnalysis(actions.Step):
         mkdir("-p", vara_result_folder)
 
         for binary_name in project.BIN_NAMES:
-            result_file = self.RESULT_FILE_TEMPLATE.format(
+            result_file = self.RESULT_FILE_SUCCESS_TEMPLATE.format(
+                project_name=str(project.name),
+                binary_name=binary_name,
+                project_version=str(project.version),
+                project_uuid=str(project.run_uuid))
+
+            result_error_file = self.RESULT_FILE_FAILED_TEMPLATE.format(
                 project_name=str(project.name),
                 binary_name=binary_name,
                 project_version=str(project.version),
@@ -75,7 +84,14 @@ class CFRAnalysis(actions.Step):
                            project_name=project.name,
                            binary_name=binary_name,
                            project_version=project.version)]
-            run_cmd()
+            try:
+                run_cmd()
+            except ProcessExecutionError as ex:
+                error_file = Path("{res_folder}/{res_file}".
+                                  format(res_folder=vara_result_folder, res_file=result_error_file))
+                with open(error_file, 'w') as outfile:
+                    outfile.write(ex.stderr)
+                raise ex
 
 
 class GitBlameAnntotationReport(Experiment):
