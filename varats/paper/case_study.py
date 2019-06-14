@@ -12,7 +12,7 @@ import yaml
 from numpy import random
 from scipy.stats import halfnorm
 
-from varats.data.revisions import get_proccessed_revisions
+from varats.data.revisions import get_proccessed_revisions, get_failed_revisions
 from varats.plots.plot_utils import check_required_args
 
 
@@ -232,14 +232,28 @@ class CaseStudy(yaml.YAMLObject):
             if rev[:10] in total_processed_revisions
         ]
 
+    def failed_revisions(self, result_file_type) -> [str]:
+        """
+        Calculate which revisions failed.
+        """
+        total_failed_revisions = set(
+            get_failed_revisions(self.project_name, result_file_type))
+
+        return [
+            rev for rev in self.revisions
+            if rev[:10] in total_failed_revisions
+        ]
+
     def get_revisions_status(self, result_file_type,
                              stage_num=-1) -> [(str, str)]:
         """
         Get status of all revisions.
         """
         processed_revisions = self.processed_revisions(result_file_type)
+        failed_revisions = self.failed_revisions(result_file_type)
         revisions_status = [(rev[:10],
-                             "OK" if rev in processed_revisions else "Missing")
+                             "OK" if rev in processed_revisions
+                             else "Failed" if rev in failed_revisions else "Missing")
                             for rev in self.revisions]
         if stage_num == -1:
             return revisions_status

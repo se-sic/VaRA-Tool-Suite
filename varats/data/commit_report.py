@@ -125,8 +125,12 @@ class FunctionGraphEdges():
 
 class CommitReport():
 
-    FILE_NAME_REGEX = re.compile(r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
+    FILE_STEM_REGEX = re.compile(r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
                                  "(?P<file_commit_hash>.*)_(?P<UUID>.*)")
+    FILE_NAME_SUCCESS_REGEX = re.compile(r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
+                                 "(?P<file_commit_hash>.*)_(?P<UUID>.*).yaml")
+    FILE_NAME_FAILED_REGEX = re.compile(r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
+                                 "(?P<file_commit_hash>.*)_(?P<UUID>.*).failed")
 
     def __init__(self, path: str):
         with open(path, "r") as stream:
@@ -168,7 +172,7 @@ class CommitReport():
         """
         The current HEAD commit under which this CommitReport was created.
         """
-        match = self.FILE_NAME_REGEX.search(Path(self._path).stem)
+        match = self.FILE_STEM_REGEX.search(Path(self._path).stem)
         return match.group("file_commit_hash")
 
     def calc_max_cf_edges(self):
