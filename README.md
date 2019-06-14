@@ -90,14 +90,15 @@ VaRA-TS provides different preconfigured experiments and projects.
 In order to execute an experiment on a project we use BenchBuild, an empirical-research toolkit.
 
 ### Setup: Configuring BenchBuild
-First, we need to generate a configuration file for BenchBuild, this is done with:
+First, we need to generate a folder with a configuration file for BenchBuild in the vara root directory, this is done with:
 ```console
 vara-gen-bbconfig
 ```
 
 ### Running BenchBuild experiments
-Second, we run an experiment like `GitBlameAnnotationReport` on provided projects, in this case we use `gzip`.
+Second, we change into the benchbuild folder and run an experiment like `GitBlameAnnotationReport` on provided projects, in this case we use `gzip`.
 ```console
+cd $VARA_ROOT/benchbuild
 benchbuild -vv run -E GitBlameAnnotationReport gzip
 ```
 The generated result files are place in the `vara/results/$PROJECT_NAME` folder and can be further visualized with VaRA-TS graph generators.
