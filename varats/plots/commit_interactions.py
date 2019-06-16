@@ -105,6 +105,7 @@ def _gen_interaction_graph(**kwargs) -> pd.DataFrame:
             kwargs['cmap'] = CommitMap(c_map_file.readlines())
 
     commit_map = kwargs['cmap']
+    case_study = kwargs.get('plot_case_study', None)  # can be None
 
     result_dir = Path(kwargs["result_folder"])
     project_name = kwargs["project"]
@@ -112,7 +113,14 @@ def _gen_interaction_graph(**kwargs) -> pd.DataFrame:
     reports = []
     for file_path in result_dir.iterdir():
         if file_path.stem.startswith(str(project_name) + "-"):
-            reports.append(file_path)
+            if case_study is not None:
+                match = CommitReport.FILE_NAME_REGEX.search(
+                    Path(file_path).name)
+                if match and case_study.has_revision(
+                        match.group("file_commit_hash")):
+                    reports.append(file_path)
+            else:
+                reports.append(file_path)
 
     data_frame = _build_interaction_table(reports, commit_map,
                                           str(project_name))
@@ -177,10 +185,27 @@ class InteractionPlot(Plot):
         super(InteractionPlot, self).__init__("interaction_graph")
         self.__saved_extra_args = kwargs
 
+    @staticmethod
+    def supports_stage_separation() -> bool:
+        return False
+
     def plot(self):
         style.use(self.style)
+
+        def cs_filter(data_frame):
+            """
+            Filter out all commit that are not in the case study, if one was
+            selected.
+            """
+            if self.__saved_extra_args['plot_case_study'] is None:
+                return data_frame
+            case_study = self.__saved_extra_args['plot_case_study']
+            return data_frame[data_frame.apply(
+                lambda x: case_study.has_revision(x['head_cm'].split('-')[1]),
+                axis=1)]
+
         _plot_interaction_graph(
-            _gen_interaction_graph(**self.__saved_extra_args))
+            cs_filter(_gen_interaction_graph(**self.__saved_extra_args)))
 
     def show(self):
         self.plot()

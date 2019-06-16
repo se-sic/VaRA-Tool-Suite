@@ -443,6 +443,7 @@ def extend_with_smooth_revs(case_study: CaseStudy, cmap, **kwargs):
     """
     plot_type = kwargs['plot_type'].type
 
+    kwargs['plot_case_study'] = case_study
     kwargs['cmap'] = cmap
     plot = plot_type(**kwargs)
     # convert input to float %

@@ -234,6 +234,12 @@ def main_gen_graph():
         help="Show the plot instead of saving it",
         action='store_true',
         default=False)
+    parser.add_argument("--cs-path", help="Path to case_study", default=None)
+    parser.add_argument(
+        "--sep-stages",
+        help="Separate different stages of case study in the plot.",
+        action='store_true',
+        default=False)
 
     extend_parser_with_plot_args(parser)
 
@@ -247,6 +253,12 @@ def main_gen_graph():
         args['result_folder'] = str(CFG['result_dir']) + "/" + args['project']
         print("Result folder defaults to: {res_folder}".format(
             res_folder=args['result_folder']))
+
+    if 'cs_path' in args:
+        case_study_path = Path(args['cs_path'])
+        args['plot_case_study'] = load_case_study_from_file(case_study_path)
+    else:
+        args['plot_case_study'] = None
 
     build_plot(**args)
 
