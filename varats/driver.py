@@ -17,7 +17,8 @@ from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
 from varats.vara_manager import (setup_vara, BuildType, LLVMProjects,
                                  ProcessManager)
-from varats.tools.commit_map import store_commit_map, get_commit_map
+from varats.tools.commit_map import (store_commit_map, get_commit_map,
+                                     create_lazy_commit_map_loader)
 from varats.plots.plots import (extend_parser_with_plot_args, build_plot,
                                 PlotTypes)
 from varats.utils.cli_util import cli_yn_choice
@@ -227,7 +228,8 @@ def main_gen_graph():
     parser.add_argument(
         "-r", "--result-folder", help="Folder with result files")
     parser.add_argument("-p", "--project", help="Project name")
-    parser.add_argument("-c", "--cmap", help="Path to commit map")
+    parser.add_argument(
+        "-c", "--cmap", help="Path to commit map", default=None, type=Path)
     parser.add_argument(
         "-v",
         "--view",
@@ -247,6 +249,9 @@ def main_gen_graph():
         k: v
         for k, v in vars(parser.parse_args()).items() if v is not None
     }
+
+    args['get_cmap'] = create_lazy_commit_map_loader(args['project'],
+                                                     args.get('cmap', None))
 
     # Setup default result folder
     if 'result_folder' not in args:

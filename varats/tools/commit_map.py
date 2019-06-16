@@ -69,3 +69,22 @@ def get_commit_map(project_name: str,
         return generate_commit_map(project_git_path, end, start)
 
     return load_commit_map_from_path(cmap_path)
+
+
+def create_lazy_commit_map_loader(project,
+                                  cmap_path: Path,
+                                  end="HEAD",
+                                  start=None):
+    """
+    Create a generator function that lazy loads a CommitMap.
+    """
+    lazy_cached_cmap = None
+
+    def get_cmap_lazy():
+        nonlocal lazy_cached_cmap
+        if lazy_cached_cmap is None:
+            lazy_cached_cmap = get_commit_map(project, cmap_path, end, start)
+
+        return lazy_cached_cmap
+
+    return get_cmap_lazy
