@@ -17,7 +17,7 @@ from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
 from varats.vara_manager import (setup_vara, BuildType, LLVMProjects,
                                  ProcessManager)
-from varats.tools.commit_map import generate_commit_map, store_commit_map
+from varats.tools.commit_map import store_commit_map, get_commit_map
 from varats.plots.plots import (extend_parser_with_plot_args, build_plot,
                                 PlotTypes)
 from varats.utils.cli_util import cli_yn_choice
@@ -305,7 +305,8 @@ def main_gen_commitmap():
     Create a commit map for a repository.
     """
     parser = argparse.ArgumentParser("vara-gen-commitmap")
-    parser.add_argument("path", help="Path to git repository")
+    parser.add_argument("project_name", help="Name of the project")
+    parser.add_argument("--path", help="Path to git repository", default=None)
     parser.add_argument(
         "--end", help="End of the commit range (inclusive)", default="HEAD")
     parser.add_argument(
@@ -314,15 +315,17 @@ def main_gen_commitmap():
 
     args = parser.parse_args()
 
-    if args.path.endswith(".git"):
+    if args.path is None:
+        path = None
+    elif args.path.endswith(".git"):
         path = Path(args.path[:-4])
     else:
         path = Path(args.path)
 
-    if not path.exists():
+    if path is not None and not path.exists():
         raise argparse.ArgumentTypeError("Repository path does not exist")
 
-    cmap = generate_commit_map(path, args.end, args.start)
+    cmap = get_commit_map(args.project_name, path, args.end, args.start)
 
     if args.output is None:
         output_name = "{result_folder}/{project_name}/{file_name}.cmap"\
