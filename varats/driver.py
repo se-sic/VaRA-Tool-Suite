@@ -17,7 +17,8 @@ from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
 from varats.vara_manager import (setup_vara, BuildType, LLVMProjects,
                                  ProcessManager)
-from varats.tools.commit_map import generate_commit_map, store_commit_map
+from varats.tools.commit_map import (store_commit_map, get_commit_map,
+                                     create_lazy_commit_map_loader)
 from varats.plots.plots import (extend_parser_with_plot_args, build_plot,
                                 PlotTypes)
 from varats.utils.cli_util import cli_yn_choice
@@ -227,11 +228,18 @@ def main_gen_graph():
     parser.add_argument(
         "-r", "--result-folder", help="Folder with result files")
     parser.add_argument("-p", "--project", help="Project name")
-    parser.add_argument("-c", "--cmap", help="Path to commit map")
+    parser.add_argument(
+        "-c", "--cmap", help="Path to commit map", default=None, type=Path)
     parser.add_argument(
         "-v",
         "--view",
         help="Show the plot instead of saving it",
+        action='store_true',
+        default=False)
+    parser.add_argument("--cs-path", help="Path to case_study", default=None)
+    parser.add_argument(
+        "--sep-stages",
+        help="Separate different stages of case study in the plot.",
         action='store_true',
         default=False)
 
@@ -242,11 +250,20 @@ def main_gen_graph():
         for k, v in vars(parser.parse_args()).items() if v is not None
     }
 
+    args['get_cmap'] = create_lazy_commit_map_loader(args['project'],
+                                                     args.get('cmap', None))
+
     # Setup default result folder
     if 'result_folder' not in args:
         args['result_folder'] = str(CFG['result_dir']) + "/" + args['project']
         print("Result folder defaults to: {res_folder}".format(
             res_folder=args['result_folder']))
+
+    if 'cs_path' in args:
+        case_study_path = Path(args['cs_path'])
+        args['plot_case_study'] = load_case_study_from_file(case_study_path)
+    else:
+        args['plot_case_study'] = None
 
     build_plot(**args)
 
@@ -293,7 +310,8 @@ def main_gen_commitmap():
     Create a commit map for a repository.
     """
     parser = argparse.ArgumentParser("vara-gen-commitmap")
-    parser.add_argument("path", help="Path to git repository")
+    parser.add_argument("project_name", help="Name of the project")
+    parser.add_argument("--path", help="Path to git repository", default=None)
     parser.add_argument(
         "--end", help="End of the commit range (inclusive)", default="HEAD")
     parser.add_argument(
@@ -302,15 +320,17 @@ def main_gen_commitmap():
 
     args = parser.parse_args()
 
-    if args.path.endswith(".git"):
+    if args.path is None:
+        path = None
+    elif args.path.endswith(".git"):
         path = Path(args.path[:-4])
     else:
         path = Path(args.path)
 
-    if not path.exists():
+    if path is not None and not path.exists():
         raise argparse.ArgumentTypeError("Repository path does not exist")
 
-    cmap = generate_commit_map(path, args.end, args.start)
+    cmap = get_commit_map(args.project_name, path, args.end, args.start)
 
     if args.output is None:
         output_name = "{result_folder}/{project_name}/{file_name}.cmap"\
@@ -379,6 +399,11 @@ def main_casestudy():
             nargs="+",
             default=[],
             help="Add a list of additional revisions to the case-study")
+        sub_parser.add_argument(
+            "--revs-per-year",
+            type=int,
+            default=0,
+            help="Add this many revisions per year to the case-study.")
         sub_parser.add_argument(
             "--num-rev",
             type=int,
@@ -458,7 +483,7 @@ def main_casestudy():
         cmap = generate_commit_map(git_path, args['end'],
                                    args['start'] if 'start' in args else None)
 
-        args['git_path'] = git_path.stem.replace("-HEAD", "")
+        args['project_name'] = git_path.stem.replace("-HEAD", "")
         if args['subcommand'] == 'ext':
             case_study = load_case_study_from_file(
                 Path(args['case_study_path']))
@@ -491,8 +516,7 @@ def main_casestudy():
             args['merge_stage'] = 0
 
             case_study = generate_case_study(
-                args['distribution'], args['num_rev'], cmap, args['git_path'],
-                args['version'], **args)
+                args['distribution'], args['num_rev'], cmap, args['version'], **args)
 
             store_case_study(case_study, args['paper_config_path'])
 

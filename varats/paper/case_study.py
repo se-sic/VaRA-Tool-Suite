@@ -3,14 +3,18 @@ A case study to pin down project settings and the exact set of revisions that
 should be analysed.
 """
 
+from collections import defaultdict
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 import errno
 import os
+import random
 import yaml
 
-from numpy import random
 from scipy.stats import halfnorm
+import numpy as np
+import pygit2
 
 from varats.data.revisions import get_proccessed_revisions, get_failed_revisions
 from varats.plots.plot_utils import check_required_args
@@ -329,7 +333,7 @@ class SamplingMethod(Enum):
         if self == SamplingMethod.uniform:
 
             def uniform(num_samples):
-                return random.uniform(0, 1.0, num_samples)
+                return np.random.uniform(0, 1.0, num_samples)
 
             return uniform
         if self == SamplingMethod.half_norm:
@@ -342,9 +346,9 @@ class SamplingMethod(Enum):
         raise Exception('Unsupported SamplingMethod')
 
 
-@check_required_args(['extra_revs'])
+@check_required_args(['extra_revs', 'git_path', 'revs_per_year'])
 def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
-                        cmap, project_name: str, case_study_version: int,
+                        cmap, case_study_version: int, project_name: str,
                         **kwargs) -> CaseStudy:
     """
     Generate a case study for a given project.
@@ -357,6 +361,9 @@ def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
 
     if kwargs['extra_revs']:
         extend_with_extra_revs(case_study, cmap, **kwargs)
+
+    if kwargs['revs_per_year'] > 0:
+        extend_with_revs_per_year(case_study, cmap, **kwargs)
 
     extend_with_distrib_sampling(case_study, cmap, **kwargs)
 
@@ -376,6 +383,7 @@ class ExtenderStrategy(Enum):
     simple_add = 1
     distrib_add = 2
     smooth_plot = 3
+    per_year_add = 4
 
 
 def extend_case_study(case_study: CaseStudy, cmap,
@@ -390,6 +398,8 @@ def extend_case_study(case_study: CaseStudy, cmap,
         extend_with_distrib_sampling(case_study, cmap, **kwargs)
     elif ext_strategy is ExtenderStrategy.smooth_plot:
         extend_with_smooth_revs(case_study, cmap, **kwargs)
+    elif ext_strategy is ExtenderStrategy.per_year_add:
+        extend_with_revs_per_year(case_study, cmap, **kwargs)
 
 
 @check_required_args(['extra_revs', 'merge_stage'])
@@ -406,6 +416,33 @@ def extend_with_extra_revs(case_study: CaseStudy, cmap, **kwargs):
     ]
 
     case_study.include_revisions(new_rev_items, merge_stage, True)
+
+
+@check_required_args(['git_path', 'revs_per_year', 'merge_stage'])
+def extend_with_revs_per_year(case_study: CaseStudy, cmap, **kwargs):
+    """
+    Extend a case_study with n revisions per year.
+    """
+    repo_path = pygit2.discover_repository(kwargs['git_path'])
+    repo = pygit2.Repository(repo_path)
+    last_commit = repo[repo.head.target]
+
+    commits = defaultdict(list) # maps year -> list of commits
+    for commit in repo.walk(last_commit.id, pygit2.GIT_SORT_TIME):
+        commit_date = datetime.utcfromtimestamp(commit.commit_time)
+        commits[commit_date.year].append(str(commit.id))
+
+    new_rev_items = [] # new revisions that get added to to case_study
+    for _, commits_in_year in commits.items():
+        samples = min(len(commits_in_year), kwargs['revs_per_year'])
+        sample_commit_indices = sorted(random.sample(range(len(commits_in_year)), samples))
+
+        for commit_index in sample_commit_indices:
+            commit_hash = commits_in_year[commit_index]
+            time_id = cmap.time_id(commit_hash)
+            new_rev_items.append((commit_hash, time_id))
+
+    case_study.include_revisions(new_rev_items, kwargs['merge_stage'], True)
 
 
 @check_required_args(['distribution', 'merge_stage', 'num_rev'])
@@ -442,7 +479,7 @@ def sample_n_idxs(distrib_func, num_samples, list_to_sample: []) -> []:
     probabilities = distrib_func(len(list_to_sample))
     probabilities /= probabilities.sum()
 
-    sampled_idxs = random.choice(
+    sampled_idxs = np.random.choice(
         len(list_to_sample), num_samples, p=probabilities)
 
     return [list_to_sample[idx] for idx in sampled_idxs]
@@ -457,6 +494,7 @@ def extend_with_smooth_revs(case_study: CaseStudy, cmap, **kwargs):
     """
     plot_type = kwargs['plot_type'].type
 
+    kwargs['plot_case_study'] = case_study
     kwargs['cmap'] = cmap
     plot = plot_type(**kwargs)
     # convert input to float %

@@ -18,6 +18,7 @@ setup(
         "plumbum>=1.6.6",
         "wllvm>=1.1.4",
         "argparse-utils>=1.2.0",
+        "pygit2>=0.28.2",
     ],
     author="Florian Sattler",
     author_email="sattlerf@fim.uni-passau.de",

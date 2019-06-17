@@ -94,17 +94,14 @@ def _build_interaction_table(report_files: [str], commit_map: CommitMap,
     return new_df
 
 
-@check_required_args(["result_folder", "project", "cmap"])
+@check_required_args(["result_folder", "project", "get_cmap"])
 def _gen_interaction_graph(**kwargs) -> pd.DataFrame:
     """
     Generate a DataFrame, containing the amount of interactions between commits
     and interactions between the HEAD commit and all others.
     """
-    if not isinstance(kwargs['cmap'], CommitMap):
-        with open(kwargs["cmap"], "r") as c_map_file:
-            kwargs['cmap'] = CommitMap(c_map_file.readlines())
-
-    commit_map = kwargs['cmap']
+    commit_map = kwargs['get_cmap']()
+    case_study = kwargs.get('plot_case_study', None)  # can be None
 
     result_dir = Path(kwargs["result_folder"])
     project_name = kwargs["project"]
@@ -178,10 +175,27 @@ class InteractionPlot(Plot):
         super(InteractionPlot, self).__init__("interaction_graph")
         self.__saved_extra_args = kwargs
 
+    @staticmethod
+    def supports_stage_separation() -> bool:
+        return False
+
     def plot(self):
         style.use(self.style)
+
+        def cs_filter(data_frame):
+            """
+            Filter out all commit that are not in the case study, if one was
+            selected.
+            """
+            if self.__saved_extra_args['plot_case_study'] is None:
+                return data_frame
+            case_study = self.__saved_extra_args['plot_case_study']
+            return data_frame[data_frame.apply(
+                lambda x: case_study.has_revision(x['head_cm'].split('-')[1]),
+                axis=1)]
+
         _plot_interaction_graph(
-            _gen_interaction_graph(**self.__saved_extra_args))
+            cs_filter(_gen_interaction_graph(**self.__saved_extra_args)))
 
     def show(self):
         self.plot()
