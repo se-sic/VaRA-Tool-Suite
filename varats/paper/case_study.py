@@ -322,7 +322,7 @@ class SamplingMethod(Enum):
 
 @check_required_args(['extra_revs', 'git_path', 'revs_per_year'])
 def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
-                        cmap, proj_name: str, case_study_version: int,
+                        cmap, case_study_version: int, project_name: str,
                         **kwargs) -> CaseStudy:
     """
     Generate a case study for a given project.
@@ -331,7 +331,7 @@ def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
     given project and persists the selected set into a case study for
     evaluation.
     """
-    case_study = CaseStudy(proj_name, case_study_version)
+    case_study = CaseStudy(project_name, case_study_version)
 
     if kwargs['extra_revs']:
         extend_with_extra_revs(case_study, cmap, **kwargs)
