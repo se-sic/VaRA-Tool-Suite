@@ -97,8 +97,12 @@ def get_status(case_study, result_file_type, sep_stages: bool,
 
     def color_rev_state(rev_state):
         if use_color:
-            return colors.green[
-                rev_state] if rev_state == "OK" else colors.red[rev_state]
+            if rev_state == "OK":
+                return colors.green[rev_state]
+            if rev_state == "Failed":
+                return colors.red[rev_state]
+            return colors.orange3[rev_state]
+
         return rev_state
 
     if sep_stages:

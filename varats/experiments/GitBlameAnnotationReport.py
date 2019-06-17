@@ -10,6 +10,7 @@ from os import path
 from pathlib import Path
 
 from plumbum import local
+from plumbum.commands import ProcessExecutionError
 
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import compiler, run, time
@@ -34,7 +35,7 @@ class CFRAnalysis(actions.Step):
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
     RESULT_FILE_TEMPLATE = \
-        "{project_name}-{binary_name}-{project_version}_{project_uuid}.yaml"
+        "{project_name}-{binary_name}-{project_version}_{project_uuid}.{ext}"
 
     def __call__(self):
         """
@@ -65,7 +66,15 @@ class CFRAnalysis(actions.Step):
                 project_name=str(project.name),
                 binary_name=binary_name,
                 project_version=str(project.version),
-                project_uuid=str(project.run_uuid))
+                project_uuid=str(project.run_uuid),
+                ext="yaml")
+
+            result_error_file = self.RESULT_FILE_TEMPLATE.format(
+                project_name=str(project.name),
+                binary_name=binary_name,
+                project_version=str(project.version),
+                project_uuid=str(project.run_uuid),
+                ext="failed")
 
             run_cmd = opt[
                 "-vara-BD", "-vara-CFR",
@@ -75,7 +84,14 @@ class CFRAnalysis(actions.Step):
                            project_name=project.name,
                            binary_name=binary_name,
                            project_version=project.version)]
-            run_cmd()
+            try:
+                run_cmd()
+            except ProcessExecutionError as ex:
+                error_file = Path("{res_folder}/{res_file}".
+                                  format(res_folder=vara_result_folder, res_file=result_error_file))
+                with open(error_file, 'w') as outfile:
+                    outfile.write(ex.stderr)
+                raise ex
 
 
 class GitBlameAnntotationReport(Experiment):
