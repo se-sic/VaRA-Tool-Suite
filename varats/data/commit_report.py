@@ -125,12 +125,9 @@ class FunctionGraphEdges():
 
 class CommitReport():
 
-    FILE_STEM_REGEX = re.compile(r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
-                                 "(?P<file_commit_hash>.*)_(?P<UUID>.*)")
-    FILE_NAME_SUCCESS_REGEX = re.compile(r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
-                                 "(?P<file_commit_hash>.*)_(?P<UUID>.*).yaml")
-    FILE_NAME_FAILED_REGEX = re.compile(r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
-                                 "(?P<file_commit_hash>.*)_(?P<UUID>.*).failed")
+    FILE_NAME_REGEX = re.compile(r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
+                                 r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)" +
+                                 r"(?P<EXT>(\.yaml|\.failed))$")
 
     def __init__(self, path: str):
         with open(path, "r") as stream:
@@ -160,6 +157,21 @@ class CommitReport():
                 f_edge = FunctionGraphEdges(raw_fg_edge)
                 self.graph_info[f_edge.fid] = f_edge
 
+    @staticmethod
+    def is_result_file(file_name: str) -> bool:
+        match = CommitReport.FILE_NAME_REGEX.search(file_name)
+        return match
+
+    @staticmethod
+    def is_result_file_success(file_name: str) -> bool:
+        match = CommitReport.FILE_NAME_REGEX.search(file_name)
+        return match.group("EXT") == ".yaml"
+
+    @staticmethod
+    def is_result_file_failed(file_name: str) -> bool:
+        match = CommitReport.FILE_NAME_REGEX.search(file_name)
+        return match.group("EXT") == ".failed"
+
     @property
     def path(self) -> str:
         """
@@ -172,7 +184,7 @@ class CommitReport():
         """
         The current HEAD commit under which this CommitReport was created.
         """
-        match = self.FILE_STEM_REGEX.search(Path(self._path).stem)
+        match = self.FILE_NAME_REGEX.search(Path(self._path).name)
         return match.group("file_commit_hash")
 
     def calc_max_cf_edges(self):

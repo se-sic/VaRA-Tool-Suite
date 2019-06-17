@@ -34,10 +34,8 @@ class CFRAnalysis(actions.Step):
     DESCRIPTION = "Analyses the bitcode with CFR of VaRA."
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
-    RESULT_FILE_SUCCESS_TEMPLATE = \
-        "{project_name}-{binary_name}-{project_version}_{project_uuid}.yaml"
-    RESULT_FILE_FAILED_TEMPLATE = \
-        "{project_name}-{binary_name}-{project_version}_{project_uuid}.failed"
+    RESULT_FILE_TEMPLATE = \
+        "{project_name}-{binary_name}-{project_version}_{project_uuid}.{ext}"
 
     def __call__(self):
         """
@@ -64,17 +62,19 @@ class CFRAnalysis(actions.Step):
         mkdir("-p", vara_result_folder)
 
         for binary_name in project.BIN_NAMES:
-            result_file = self.RESULT_FILE_SUCCESS_TEMPLATE.format(
+            result_file = self.RESULT_FILE_TEMPLATE.format(
                 project_name=str(project.name),
                 binary_name=binary_name,
                 project_version=str(project.version),
-                project_uuid=str(project.run_uuid))
+                project_uuid=str(project.run_uuid),
+                ext="yaml")
 
-            result_error_file = self.RESULT_FILE_FAILED_TEMPLATE.format(
+            result_error_file = self.RESULT_FILE_TEMPLATE.format(
                 project_name=str(project.name),
                 binary_name=binary_name,
                 project_version=str(project.version),
-                project_uuid=str(project.run_uuid))
+                project_uuid=str(project.run_uuid),
+                ext="failed")
 
             run_cmd = opt[
                 "-vara-BD", "-vara-CFR",

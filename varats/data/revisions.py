@@ -25,7 +25,7 @@ def __get_result_files_dict(project_name: str, result_file_type) -> Dict:
         for res_file in res_dir.iterdir():
             if not str(res_file.stem).startswith("{}-".format(project_name)):
                 continue
-            match = result_file_type.FILE_STEM_REGEX.search(res_file.stem)
+            match = result_file_type.FILE_NAME_REGEX.search(res_file.name)
             if match:
                 result_files[match.group("file_commit_hash")].append(res_file)
 
@@ -46,8 +46,8 @@ def get_proccessed_revisions(project_name: str, result_file_type) -> [str]:
     result_files = __get_result_files_dict(project_name, result_file_type)
     for _, value in result_files.items():
         newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
-        match = result_file_type.FILE_NAME_SUCCESS_REGEX.search(newest_res_file.name)
-        if match:
+        if result_file_type.is_result_file_success(newest_res_file.name):
+            match = result_file_type.FILE_NAME_REGEX.search(newest_res_file.name)
             processed_revisions.append(match.group("file_commit_hash"))
 
     return processed_revisions
@@ -66,8 +66,8 @@ def get_failed_revisions(project_name: str, result_file_type) -> [str]:
     result_files = __get_result_files_dict(project_name, result_file_type)
     for _, value in result_files.items():
         newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
-        match = result_file_type.FILE_NAME_FAILED_REGEX.search(newest_res_file.name)
-        if match:
+        if result_file_type.is_result_file_failed(newest_res_file.name):
+            match = result_file_type.FILE_NAME_REGEX.search(newest_res_file.name)
             failed_revisions.append(match.group("file_commit_hash"))
 
     return failed_revisions

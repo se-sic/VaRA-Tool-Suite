@@ -39,7 +39,7 @@ def _build_interaction_table(report_files: [str], commit_map: CommitMap,
         ])
 
     def report_in_data_frame(report_file, df_col) -> bool:
-        match = CommitReport.FILE_STEM_REGEX.search(Path(report_file).name)
+        match = CommitReport.FILE_NAME_REGEX.search(Path(report_file).name)
         return (match.group("file_commit_hash") == df_col).any()
 
     missing_report_files = [
@@ -112,8 +112,7 @@ def _gen_interaction_graph(**kwargs) -> pd.DataFrame:
     reports = []
     for file_path in result_dir.iterdir():
         if file_path.stem.startswith(str(project_name) + "-"):
-            match = CommitReport.FILE_NAME_SUCCESS_REGEX.search(Path(file_path).name)
-            if match:
+            if CommitReport.is_result_file_success(Path(file_path).name):
                 reports.append(file_path)
 
     data_frame = _build_interaction_table(reports, commit_map,
