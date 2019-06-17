@@ -94,17 +94,13 @@ def _build_interaction_table(report_files: [str], commit_map: CommitMap,
     return new_df
 
 
-@check_required_args(["result_folder", "project", "cmap"])
+@check_required_args(["result_folder", "project", "get_cmap"])
 def _gen_interaction_graph(**kwargs) -> pd.DataFrame:
     """
     Generate a DataFrame, containing the amount of interactions between commits
     and interactions between the HEAD commit and all others.
     """
-    if not isinstance(kwargs['cmap'], CommitMap):
-        with open(kwargs["cmap"], "r") as c_map_file:
-            kwargs['cmap'] = CommitMap(c_map_file.readlines())
-
-    commit_map = kwargs['cmap']
+    commit_map = kwargs['get_cmap']()
     case_study = kwargs.get('plot_case_study', None)  # can be None
 
     result_dir = Path(kwargs["result_folder"])
