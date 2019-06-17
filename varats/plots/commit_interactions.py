@@ -14,6 +14,7 @@ from varats.data.cache_helper import load_cached_df_or_none, cache_dataframe,\
 from varats.data.commit_report import CommitMap, CommitReport
 from varats.jupyterhelper.file import load_commit_report
 from varats.plots.plot_utils import check_required_args
+from varats.data.revisions import get_proccessed_revisions
 
 
 def _build_interaction_table(report_files: [str], commit_map: CommitMap,
@@ -106,11 +107,15 @@ def _gen_interaction_graph(**kwargs) -> pd.DataFrame:
     result_dir = Path(kwargs["result_folder"])
     project_name = kwargs["project"]
 
+    processed_revisions = get_proccessed_revisions(project_name, CommitReport)
+
     reports = []
     for file_path in result_dir.iterdir():
         if file_path.stem.startswith(str(project_name) + "-"):
             if CommitReport.is_result_file_success(Path(file_path).name):
-                reports.append(file_path)
+                commit_hash = CommitReport.get_commit_hash_from_result_file(Path(file_path).name)
+                if commit_hash in processed_revisions:
+                    reports.append(file_path)
 
     data_frame = _build_interaction_table(reports, commit_map,
                                           str(project_name))
