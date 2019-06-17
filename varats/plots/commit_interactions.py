@@ -39,8 +39,8 @@ def _build_interaction_table(report_files: [str], commit_map: CommitMap,
         ])
 
     def report_in_data_frame(report_file, df_col) -> bool:
-        match = CommitReport.FILE_NAME_REGEX.search(Path(report_file).name)
-        return (match.group("file_commit_hash") == df_col).any()
+        commit_hash = CommitReport.get_commit_hash_from_result_file(Path(report_file).name)
+        return (commit_hash == df_col).any()
 
     missing_report_files = [
         report_file for report_file in report_files
