@@ -7,3 +7,4 @@ notebooks/.ipynb_checkpoints/
 Pipfile
 .idea/
 .coverage
+.mypy_cache/
