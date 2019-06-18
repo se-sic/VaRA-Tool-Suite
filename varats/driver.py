@@ -480,10 +480,14 @@ def main_casestudy():
         else:
             git_path = Path(args['git_path'])
 
-        cmap = generate_commit_map(git_path, args['end'],
-                                   args['start'] if 'start' in args else None)
-
         args['project_name'] = git_path.stem.replace("-HEAD", "")
+
+        args['get_cmap'] = create_lazy_commit_map_loader(args['project_name'],
+                                                         args.get('cmap', None),
+                                                         args['end'],
+                                                         args['start'] if 'start' in args else None)
+        cmap = args['get_cmap']()
+
         if args['subcommand'] == 'ext':
             case_study = load_case_study_from_file(
                 Path(args['case_study_path']))
