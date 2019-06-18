@@ -3,10 +3,13 @@ Generate commit interaction graphs.
 """
 
 from pathlib import Path
+import typing as tp
 
 import matplotlib.pyplot as plt
 import matplotlib.style as style
+from matplotlib import cm
 import pandas as pd
+import numpy as np
 
 from varats.plots.plot import Plot
 from varats.data.cache_helper import load_cached_df_or_none, cache_dataframe,\
@@ -15,6 +18,7 @@ from varats.data.commit_report import CommitMap, CommitReport
 from varats.jupyterhelper.file import load_commit_report
 from varats.plots.plot_utils import check_required_args
 from varats.data.revisions import get_proccessed_revisions
+from varats.paper.case_study import CaseStudy
 
 
 def _build_interaction_table(report_files: [str], commit_map: CommitMap,
@@ -40,7 +44,8 @@ def _build_interaction_table(report_files: [str], commit_map: CommitMap,
         ])
 
     def report_in_data_frame(report_file, df_col) -> bool:
-        commit_hash = CommitReport.get_commit_hash_from_result_file(Path(report_file).name)
+        commit_hash = CommitReport.get_commit_hash_from_result_file(
+            Path(report_file).name)
         return (commit_hash == df_col).any()
 
     missing_report_files = [
@@ -131,15 +136,24 @@ def _gen_interaction_graph(**kwargs) -> pd.DataFrame:
     return data_frame
 
 
-def _plot_interaction_graph(data_frame):
+def _plot_interaction_graph(data_frame, stages=None, view_mode=True):
     """
     Plot a plot, showing the amount of interactions between commits and
     interactions between the HEAD commit and all others.
     """
+    plot_cfg = {
+        'linewidth': 2 if view_mode else 1,
+        'legend_size': 8 if view_mode else 4,
+        'xtick_size': 10 if view_mode else 2
+    }
+
+    if stages is None:
+        stages = []
+
     data_frame.sort_values(by=['head_cm'], inplace=True)
 
     # Interaction plot
-    axis = plt.subplot(211)
+    axis = plt.subplot(211)  # 211
 
     for y_label in axis.get_yticklabels():
         y_label.set_fontsize(8)
@@ -148,11 +162,71 @@ def _plot_interaction_graph(data_frame):
     for x_label in axis.get_xticklabels():
         x_label.set_visible(False)
 
-    plt.plot('head_cm', 'CFInteractions', data=data_frame, color='blue')
-    plt.plot('head_cm', 'DFInteractions', data=data_frame, color='red')
+    if stages:
+        # We need to plot all different stages separatly
+        cf_color_iter = iter(
+            reversed(cm.get_cmap('Blues')(np.linspace(0.3, 1, len(stages)))))
+        df_color_iter = iter(
+            reversed(cm.get_cmap('Oranges')(np.linspace(0.3, 1, len(stages)))))
+        stage_num = len(stages)
+
+        for stage in reversed(stages):
+            stage_num -= 1
+
+            filtered_df = data_frame.copy()
+
+            cf_mask = np.isfinite(filtered_df.CFInteractions.values)
+            plt.plot(
+                data_frame.head_cm.values[cf_mask],
+                filtered_df.CFInteractions.values[cf_mask],
+                color=next(cf_color_iter),
+                label="CFInteractions-" + str(stage_num),
+                zorder=stage_num + 1,
+                linewidth=plot_cfg['linewidth'])
+
+            df_mask = np.isfinite(filtered_df.DFInteractions.values)
+            plt.plot(
+                data_frame.head_cm.values[df_mask],
+                filtered_df.DFInteractions.values[df_mask],
+                color=next(df_color_iter),
+                label="DFInteractions-" + str(stage_num),
+                zorder=stage_num + 1)
+
+            def filter_out_stage(data_frame):
+                def cf_removal_helper(row, stage=stage):
+                    if stage.has_revision(row['head_cm'].split('-')[1]):
+                        return np.NaN
+                    return row['CFInteractions']
+
+                data_frame['CFInteractions'] = data_frame.apply(
+                    cf_removal_helper, axis=1)
+
+                def df_removal_helper(row, stage=stage):
+                    if stage.has_revision(row['head_cm'].split('-')[1]):
+                        return np.NaN
+                    return row['DFInteractions']
+
+                data_frame['DFInteractions'] = data_frame.apply(
+                    func=df_removal_helper, axis=1)
+
+            filter_out_stage(data_frame)
+
+    else:
+        plt.plot(
+            'head_cm',
+            'CFInteractions',
+            data=data_frame,
+            color='blue',
+            linewidth=plot_cfg['linewidth'])
+        plt.plot(
+            'head_cm',
+            'DFInteractions',
+            data=data_frame,
+            color='red',
+            linewidth=plot_cfg['linewidth'])
 
     # plt.ylabel("Interactions", **{'size': '10'})
-    axis.legend(prop={'size': 4, 'family': 'monospace'})
+    axis.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
 
     # Head interaction plot
     axis = plt.subplot(212)
@@ -162,17 +236,26 @@ def _plot_interaction_graph(data_frame):
         y_label.set_fontfamily('monospace')
 
     for x_label in axis.get_xticklabels():
-        x_label.set_fontsize(2)
+        x_label.set_fontsize(plot_cfg['xtick_size'])
         x_label.set_rotation(270)
         x_label.set_fontfamily('monospace')
 
-    plt.plot('head_cm', 'HEAD CF Interactions', data=data_frame, color='aqua')
     plt.plot(
-        'head_cm', 'HEAD DF Interactions', data=data_frame, color='crimson')
+        'head_cm',
+        'HEAD CF Interactions',
+        data=data_frame,
+        color='aqua',
+        linewidth=plot_cfg['linewidth'])
+    plt.plot(
+        'head_cm',
+        'HEAD DF Interactions',
+        data=data_frame,
+        color='crimson',
+        linewidth=plot_cfg['linewidth'])
 
     plt.xlabel("Revisions", **{'size': '10'})
     # plt.ylabel("HEAD Interactions", **{'size': '10'})
-    axis.legend(prop={'size': 4, 'family': 'monospace'})
+    axis.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
 
 
 class InteractionPlot(Plot):
@@ -186,44 +269,56 @@ class InteractionPlot(Plot):
 
     @staticmethod
     def supports_stage_separation() -> bool:
-        return False
+        return True
 
-    def plot(self):
+    def plot(self, view_mode):
         style.use(self.style)
 
         def cs_filter(data_frame):
             """
             Filter out all commit that are not in the case study, if one was
-            selected.
+            selected. This allows us to only load file related to the
+            case-study.
             """
             if self.__saved_extra_args['plot_case_study'] is None:
                 return data_frame
-            case_study = self.__saved_extra_args['plot_case_study']
+            case_study: CaseStudy = self.__saved_extra_args['plot_case_study']
             return data_frame[data_frame.apply(
                 lambda x: case_study.has_revision(x['head_cm'].split('-')[1]),
                 axis=1)]
 
+        interaction_plot_df = _gen_interaction_graph(**self.__saved_extra_args)
+
+        if self.__saved_extra_args['sep_stages']:
+            case_study = self.__saved_extra_args.get('plot_case_study', None)
+        else:
+            case_study = None
+
         _plot_interaction_graph(
-            cs_filter(_gen_interaction_graph(**self.__saved_extra_args)))
+            cs_filter(interaction_plot_df),
+            case_study.stages if case_study is not None else None, view_mode)
 
     def show(self):
-        self.plot()
+        self.plot(True)
         plt.show()
 
     def save(self, filetype='svg'):
-        self.plot()
+        self.plot(False)
 
         result_dir = Path(self.__saved_extra_args["result_folder"])
         project_name = self.__saved_extra_args["project"]
 
         plt.savefig(
-            result_dir / (project_name + "_{graph_name}.{filetype}".format(
-                graph_name=self.name, filetype=filetype)),
+            result_dir /
+            (project_name + "_{graph_name}{stages}.{filetype}".format(
+                graph_name=self.name,
+                stages='S' if self.__saved_extra_args['sep_stages'] else '',
+                filetype=filetype)),
             dpi=1200,
             bbox_inches="tight",
             format=filetype)
 
-    def calc_missing_revisions(self, boundary_gradient) -> set():
+    def calc_missing_revisions(self, boundary_gradient) -> tp.Set[str]:
         data_frame = _gen_interaction_graph(**self.__saved_extra_args)
         data_frame.sort_values(by=['head_cm'], inplace=True)
         data_frame.reset_index(drop=True, inplace=True)
