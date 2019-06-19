@@ -480,12 +480,11 @@ def main_casestudy():
         else:
             git_path = Path(args['git_path'])
 
-        args['project_name'] = git_path.stem.replace("-HEAD", "")
+        args['project'] = git_path.stem.replace("-HEAD", "")
 
-        args['get_cmap'] = create_lazy_commit_map_loader(args['project_name'],
-                                                         args.get('cmap', None),
-                                                         args['end'],
-                                                         args['start'] if 'start' in args else None)
+        args['get_cmap'] = create_lazy_commit_map_loader(
+            args['project'], args.get('cmap', None), args['end'],
+            args['start'] if 'start' in args else None)
         cmap = args['get_cmap']()
 
         if args['subcommand'] == 'ext':

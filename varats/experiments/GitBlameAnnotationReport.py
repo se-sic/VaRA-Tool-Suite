@@ -87,8 +87,8 @@ class CFRAnalysis(actions.Step):
             try:
                 run_cmd()
             except ProcessExecutionError as ex:
-                error_file = Path("{res_folder}/{res_file}".
-                                  format(res_folder=vara_result_folder, res_file=result_error_file))
+                error_file = Path("{res_folder}/{res_file}".format(
+                    res_folder=vara_result_folder, res_file=result_error_file))
                 with open(error_file, 'w') as outfile:
                     outfile.write(ex.stderr)
                 raise ex
