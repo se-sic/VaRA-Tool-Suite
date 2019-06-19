@@ -138,12 +138,12 @@ class CommitReport():
             version_header.raise_if_version_is_less_than(3)
 
             raw_infos = next(documents)
-            self.finfos = dict()
+            self.finfos: tp.Dict[str, FunctionInfo] = dict()
             for raw_finfo in raw_infos['function-info']:
                 finfo = FunctionInfo(raw_finfo)
                 self.finfos[finfo.name] = finfo
 
-            self.region_mappings = dict()
+            self.region_mappings: tp.Dict[str, RegionMapping] = dict()
             raw_region_mapping = raw_infos['region-mapping']
             if raw_region_mapping is not None:
                 for raw_r_mapping in raw_region_mapping:
@@ -151,7 +151,7 @@ class CommitReport():
                     self.region_mappings[r_mapping.id] = r_mapping
 
             gedges = next(documents)
-            self.graph_info = dict()
+            self.graph_info: tp.Dict[str, FunctionGraphEdges] = dict()
             # TODO: parse this into a full graph
             for raw_fg_edge in gedges:
                 f_edge = FunctionGraphEdges(raw_fg_edge)
@@ -258,7 +258,7 @@ class CommitReport():
         """
         Total number of found control-flow interactions.
         """
-        cf_map = dict()
+        cf_map: tp.Dict[str, tp.List[int]] = dict()
         self.init_cf_map_with_edges(cf_map)
 
         total_interactions = 0
@@ -271,16 +271,16 @@ class CommitReport():
         The number of control-flow interactions the HEAD commit has with other
         commits.
         """
-        cf_map = dict()
+        cf_map: tp.Dict[str, tp.List[int]] = dict()
         self.init_cf_map_with_edges(cf_map)
         for key in cf_map:
             if key.startswith(self.head_commit):
                 interaction_tuple = cf_map[key]
-                return interaction_tuple
+                return (interaction_tuple[0], interaction_tuple[1])
 
         return (0, 0)
 
-    def init_df_map_with_edges(self, df_map):
+    def init_df_map_with_edges(self, df_map: tp.Dict[str, tp.List[int]]):
         """
         Initialize data-flow map with edges and from/to counters.
         """
@@ -298,7 +298,7 @@ class CommitReport():
         """
         Total number of found data-flow interactions.
         """
-        df_map = dict()
+        df_map: tp.Dict[str, tp.List[int]] = dict()
         self.init_df_map_with_edges(df_map)
 
         total_interactions = 0
@@ -311,12 +311,12 @@ class CommitReport():
         The number of control-flow interactions the HEAD commit has with other
         commits.
         """
-        df_map = dict()
+        df_map: tp.Dict[str, tp.List[int]] = dict()
         self.init_df_map_with_edges(df_map)
         for key in df_map:
             if key.startswith(self.head_commit):
                 interaction_tuple = df_map[key]
-                return interaction_tuple
+                return (interaction_tuple[0], interaction_tuple[1])
 
         return (0, 0)
 
@@ -407,8 +407,10 @@ class CommitMap():
 # Connection Generators
 ###############################################################################
 
+
 def generate_inout_cfg_cf(commit_report: CommitReport,
-                          cr_meta: CommitReportMeta = None) -> pd.DataFrame:
+                          cr_meta: tp.Optional[CommitReportMeta] = None
+                          ) -> pd.DataFrame:
     """
     Generates a pandas dataframe that contains the commit
     region control-flow interaction information.
@@ -445,10 +447,12 @@ def generate_interactions(commit_report: CommitReport,
     nodes = pd.DataFrame(node_rows, columns=['hash', 'id'])
 
     link_rows = []
-    for item in commit_report.graph_info.values():
-        for cf_edge in item.cf_edges:
-            link_rows.append([cf_edge.edge_from, cf_edge.edge_to, 1,
-                              c_map.time_id(cf_edge.edge_from)])
+    for func_g_edge in commit_report.graph_info.values():
+        for cf_edge in func_g_edge.cf_edges:
+            link_rows.append([
+                cf_edge.edge_from, cf_edge.edge_to, 1,
+                c_map.time_id(cf_edge.edge_from)
+            ])
 
     links = pd.DataFrame(link_rows, columns=['source', 'target', 'value',
                                              'src_id'])

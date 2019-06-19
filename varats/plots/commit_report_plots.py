@@ -2,6 +2,7 @@
 Module for different CommitReport plots
 """
 
+import typing as tp
 import seaborn as sns
 
 from PyQt5.QtWidgets import QWidget, QGridLayout, QSizePolicy
@@ -58,7 +59,7 @@ class CRBarPlotWidget(QWidget):
 
 
 def plot_cfg_barplot(fig, commit_report: CommitReport, draw_cf: bool,
-                     cr_meta: CommitReportMeta):
+                     cr_meta: tp.Optional[CommitReportMeta]):
     """
     Generates a bar plot that visualizes the IN/OUT
     control-flow/data-flow edges of regions.

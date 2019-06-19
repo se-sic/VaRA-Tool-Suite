@@ -427,7 +427,8 @@ def extend_with_revs_per_year(case_study: CaseStudy, cmap, **kwargs):
     repo = pygit2.Repository(repo_path)
     last_commit = repo[repo.head.target]
 
-    commits = defaultdict(list) # maps year -> list of commits
+    commits: tp.DefaultDict[int, tp.List[str]] = defaultdict(
+        list)  # maps year -> list of commits
     for commit in repo.walk(last_commit.id, pygit2.GIT_SORT_TIME):
         commit_date = datetime.utcfromtimestamp(commit.commit_time)
         commits[commit_date.year].append(str(commit.id))

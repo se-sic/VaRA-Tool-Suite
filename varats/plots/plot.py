@@ -2,6 +2,7 @@
 Base plot module.
 """
 
+import typing as tp
 import abc
 
 
@@ -53,7 +54,7 @@ class Plot():
         """Save the current plot to a file"""
 
     @abc.abstractmethod
-    def calc_missing_revisions(self, boundary_gradient) -> []:
+    def calc_missing_revisions(self, boundary_gradient) -> tp.Set:
         """
         Calculate a list of revisions that could improve precisions of this
         plot.

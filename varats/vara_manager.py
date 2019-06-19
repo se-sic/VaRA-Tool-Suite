@@ -5,6 +5,7 @@ Setting up the tooling, keeping it up to date,
 and providing necessary information.
 """
 
+import typing as tp
 import os
 import re
 import subprocess as sp
@@ -19,7 +20,7 @@ from threading import RLock
 from PyQt5.QtCore import (QRunnable, QThreadPool, pyqtSlot, pyqtSignal,
                           QObject, QProcess)
 
-from plumbum import local, TF
+from plumbum import local, TF, RETCODE
 from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
 from plumbum.commands.processes import ProcessExecutionError
 
@@ -792,12 +793,16 @@ class ProcessManager:
 
     @staticmethod
     @contextmanager
-    def create_process(program: str, args: [str] = None, workdir: str = None):
+    def create_process(program: str,
+                       args: tp.List[str] = None,
+                       workdir: tp.Optional[tp.Union[str, Path]] = None):
         """
         Creates a new process.
-        The does not return immediately. Instead it waits until the process finishes.
-        If the process gets interrupted by the user (e.g. by calling the ProcessManager's
-        shutdown() method), the ProcessTerminatedError exception gets raised.
+        The does not return immediately. Instead it waits until the process
+        finishes.
+        If the process gets interrupted by the user (e.g. by calling the
+        ProcessManager's shutdown() method), the ProcessTerminatedError
+        exception gets raised.
 
         Example usage:
 
@@ -823,12 +828,14 @@ class ProcessManager:
 
     @staticmethod
     def getInstance():
-        if ProcessManager.__instance == None:
+        if ProcessManager.__instance is None:
             ProcessManager()
         return ProcessManager.__instance
 
     @staticmethod
-    def start_process(process: QProcess, program: str, args: [str] = None):
+    def start_process(process: QProcess,
+                      program: str,
+                      args: tp.Optional[tp.List[str]] = None):
         """
         Starts a QProcess object.
         This method returns immediately and does not wait for the process
@@ -848,7 +855,7 @@ class ProcessManager:
         ProcessManager.getInstance().__terminate_all_processes(block)
 
     def __init__(self):
-        if ProcessManager.__instance != None:
+        if ProcessManager.__instance is not None:
             raise Exception("This class is a singleton!")
         else:
             ProcessManager.__instance = self
@@ -863,7 +870,8 @@ class ProcessManager:
                 x for x in self.__processes if x.state() != QProcess.NotRunning
             ]
 
-    def __start_process(self, process: QProcess, program: str, args: [str]):
+    def __start_process(self, process: QProcess, program: str,
+                        args: tp.List[str]):
         with self.__mutex:
             if self.__has_shutdown:
                 return
@@ -880,7 +888,7 @@ class ProcessManager:
             for process in self.__processes:
                 process.finished.disconnect(self.__process_finished)
                 process.kill()
-                #process.terminate()
+                # process.terminate()
                 if block:
                     process.waitForFinished(-1)
             self.__processes.clear()

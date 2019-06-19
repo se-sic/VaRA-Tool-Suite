@@ -2,6 +2,7 @@
 Generate commit interaction graphs.
 """
 
+import typing as tp
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -17,7 +18,8 @@ from varats.plots.plot_utils import check_required_args
 from varats.data.revisions import get_proccessed_revisions
 
 
-def _build_interaction_table(report_files: [str], commit_map: CommitMap,
+def _build_interaction_table(report_files: tp.List[Path],
+                             commit_map: CommitMap,
                              project_name: str) -> pd.DataFrame:
     """
     Create a table with commit interaction data.
@@ -40,7 +42,8 @@ def _build_interaction_table(report_files: [str], commit_map: CommitMap,
         ])
 
     def report_in_data_frame(report_file, df_col) -> bool:
-        commit_hash = CommitReport.get_commit_hash_from_result_file(Path(report_file).name)
+        commit_hash = CommitReport.get_commit_hash_from_result_file(
+            Path(report_file).name)
         return (commit_hash == df_col).any()
 
     missing_report_files = [
@@ -112,9 +115,9 @@ def _gen_interaction_graph(**kwargs) -> pd.DataFrame:
     reports = []
     for file_path in result_dir.iterdir():
         if file_path.stem.startswith(str(project_name) + "-"):
-            if CommitReport.is_result_file_success(Path(file_path).name):
+            if CommitReport.is_result_file_success(file_path.name):
                 commit_hash = CommitReport.get_commit_hash_from_result_file(
-                    Path(file_path).name)
+                    file_path.name)
 
                 if commit_hash in processed_revisions:
                     if case_study is None or case_study.has_revision(
@@ -223,7 +226,7 @@ class InteractionPlot(Plot):
             bbox_inches="tight",
             format=filetype)
 
-    def calc_missing_revisions(self, boundary_gradient) -> set():
+    def calc_missing_revisions(self, boundary_gradient) -> tp.Set[str]:
         data_frame = _gen_interaction_graph(**self.__saved_extra_args)
         data_frame.sort_values(by=['head_cm'], inplace=True)
         data_frame.reset_index(drop=True, inplace=True)
