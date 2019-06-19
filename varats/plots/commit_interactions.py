@@ -2,6 +2,7 @@
 Generate commit interaction graphs.
 """
 
+import typing as tp
 from pathlib import Path
 import typing as tp
 
@@ -21,7 +22,8 @@ from varats.data.revisions import get_proccessed_revisions
 from varats.paper.case_study import CaseStudy
 
 
-def _build_interaction_table(report_files: [str], commit_map: CommitMap,
+def _build_interaction_table(report_files: tp.List[Path],
+                             commit_map: CommitMap,
                              project_name: str) -> pd.DataFrame:
     """
     Create a table with commit interaction data.
@@ -117,9 +119,9 @@ def _gen_interaction_graph(**kwargs) -> pd.DataFrame:
     reports = []
     for file_path in result_dir.iterdir():
         if file_path.stem.startswith(str(project_name) + "-"):
-            if CommitReport.is_result_file_success(Path(file_path).name):
+            if CommitReport.is_result_file_success(file_path.name):
                 commit_hash = CommitReport.get_commit_hash_from_result_file(
-                    Path(file_path).name)
+                    file_path.name)
 
                 if commit_hash in processed_revisions:
                     if case_study is None or case_study.has_revision(

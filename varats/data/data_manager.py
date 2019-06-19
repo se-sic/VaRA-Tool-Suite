@@ -3,13 +3,14 @@ DataManager module handles the loading, creation, and caching of data classes.
 """
 import hashlib
 import os
+from pathlib import Path
 
 from threading import Lock
 
 from PyQt5.QtCore import QRunnable, QThreadPool, QObject, pyqtSlot, pyqtSignal
 
 
-def sha256_checksum(file_path, block_size=65536):
+def sha256_checksum(file_path: Path, block_size=65536):
     """
     Compute sha256 checksum of file.
     """
@@ -20,7 +21,7 @@ def sha256_checksum(file_path, block_size=65536):
     return sha256.hexdigest()
 
 
-class FileBlob(object):
+class FileBlob():
     """
     A FileBlob is everything that is loaded from a file an converted to a
     VaRA DataClass.
@@ -75,7 +76,7 @@ class FileLoader(QRunnable):
         self.signal.clean.emit()
 
 
-class DataManager(object):
+class DataManager():
     """
     Manages data over the lifetime of the tools suite. The DataManager handles
     file loading, creation of DataClasses and caching of loaded files.
@@ -87,7 +88,6 @@ class DataManager(object):
 
     def __load_data_class(self, file_path, DataClassTy):\
             # pylint: disable=invalid-name
-
         """
         Load a DataClass of type <DataClassTy> from a file.
         """
@@ -106,10 +106,9 @@ class DataManager(object):
 
         return new_blob.data
 
-    def load_data_class(self, file_path, DataClassTy,
-                        loaded_callback):        \
+    def load_data_class(self, file_path: Path, DataClassTy,
+                        loaded_callback):                \
             # pylint: disable=invalid-name
-
         """
         Load a DataClass of type <DataClassTy> from a file asynchronosly.
         """
@@ -121,9 +120,8 @@ class DataManager(object):
         worker.signal.clean.connect(self._release_lock)
         self.thread_pool.start(worker)
 
-    def load_data_class_sync(self, file_path, DataClassTy):\
+    def load_data_class_sync(self, file_path: Path, DataClassTy):\
             # pylint: disable=invalid-name
-
         """
         Load a DataClass of type <DataClassTy> from a file synchronosly.
         """

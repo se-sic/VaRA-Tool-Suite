@@ -119,6 +119,8 @@ def get_paper_config() -> PaperConfig:
     """
     Returns the current paper config or None.
     """
+    if __G_PAPER_CONFIG is None:
+        raise Exception('Paper config was not loaded')
     return __G_PAPER_CONFIG
 
 
