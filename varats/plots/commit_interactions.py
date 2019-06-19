@@ -44,6 +44,12 @@ def _build_interaction_table(report_files: tp.List[Path],
             'head_cm', 'CFInteractions', 'DFInteractions',
             'HEAD CF Interactions', 'HEAD DF Interactions'
         ])
+        cached_df.CFInteractions = cached_df.CFInteractions.astype('int64')
+        cached_df.DFInteractions = cached_df.DFInteractions.astype('int64')
+        cached_df['HEAD CF Interactions'] = cached_df[
+            'HEAD CF Interactions'].astype('int64')
+        cached_df['HEAD DF Interactions'] = cached_df[
+            'HEAD DF Interactions'].astype('int64')
 
     def report_in_data_frame(report_file, df_col) -> bool:
         commit_hash = CommitReport.get_commit_hash_from_result_file(
@@ -175,21 +181,19 @@ def _plot_interaction_graph(data_frame, stages=None, view_mode=True):
         for stage in reversed(stages):
             stage_num -= 1
 
-            filtered_df = data_frame.copy()
-
-            cf_mask = np.isfinite(filtered_df.CFInteractions.values)
+            cf_mask = np.isfinite(data_frame.CFInteractions.values)
             plt.plot(
                 data_frame.head_cm.values[cf_mask],
-                filtered_df.CFInteractions.values[cf_mask],
+                data_frame.CFInteractions.values[cf_mask],
                 color=next(cf_color_iter),
                 label="CFInteractions-" + str(stage_num),
                 zorder=stage_num + 1,
                 linewidth=plot_cfg['linewidth'])
 
-            df_mask = np.isfinite(filtered_df.DFInteractions.values)
+            df_mask = np.isfinite(data_frame.DFInteractions.values)
             plt.plot(
                 data_frame.head_cm.values[df_mask],
-                filtered_df.DFInteractions.values[df_mask],
+                data_frame.DFInteractions.values[df_mask],
                 color=next(df_color_iter),
                 label="DFInteractions-" + str(stage_num),
                 zorder=stage_num + 1,
