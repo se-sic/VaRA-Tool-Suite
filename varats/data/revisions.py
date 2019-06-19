@@ -2,16 +2,17 @@
 Module for handling the state of project revisions in VaRA.
 """
 
+import typing as tp
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict
 
 from varats.settings import CFG
 
 
-def __get_result_files_dict(project_name: str, result_file_type) -> Dict:
+def __get_result_files_dict(project_name: str, result_file_type) -> tp.Dict:
     """
-    Returns a dict that maps the commit_hash to a list of all result files for that commit.
+    Returns a dict that maps the commit_hash to a list of all result files for
+    that commit.
 
     Args:
         project_name: target project
@@ -20,19 +21,22 @@ def __get_result_files_dict(project_name: str, result_file_type) -> Dict:
     res_dir = Path("{result_folder}/{project_name}/".format(
         result_folder=CFG["result_dir"], project_name=project_name))
 
-    result_files = defaultdict(list) # maps commit hash -> list of res files (success or fail)
+    result_files: tp.DefaultDict[str, tp.List] = defaultdict(
+        list)  # maps commit hash -> list of res files (success or fail)
     if res_dir.exists():
         for res_file in res_dir.iterdir():
             if not str(res_file.stem).startswith("{}-".format(project_name)):
                 continue
             if result_file_type.is_result_file(res_file.name):
-                commit_hash = result_file_type.get_commit_hash_from_result_file(res_file.name)
+                commit_hash = result_file_type.get_commit_hash_from_result_file(
+                    res_file.name)
                 result_files[commit_hash].append(res_file)
 
     return result_files
 
 
-def get_proccessed_revisions(project_name: str, result_file_type) -> [str]:
+def get_proccessed_revisions(project_name: str,
+                             result_file_type) -> tp.List[str]:
     """
     Calculates a list of revisions of a project that have already
     been processed successfully.
@@ -47,13 +51,14 @@ def get_proccessed_revisions(project_name: str, result_file_type) -> [str]:
     for _, value in result_files.items():
         newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
         if result_file_type.is_result_file_success(newest_res_file.name):
-            commit_hash = result_file_type.get_commit_hash_from_result_file(newest_res_file.name)
+            commit_hash = result_file_type.get_commit_hash_from_result_file(
+                newest_res_file.name)
             processed_revisions.append(commit_hash)
 
     return processed_revisions
 
 
-def get_failed_revisions(project_name: str, result_file_type) -> [str]:
+def get_failed_revisions(project_name: str, result_file_type) -> tp.List[str]:
     """
     Calculates a list of revisions of a project that have failed.
 
@@ -67,7 +72,8 @@ def get_failed_revisions(project_name: str, result_file_type) -> [str]:
     for _, value in result_files.items():
         newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
         if result_file_type.is_result_file_failed(newest_res_file.name):
-            commit_hash = result_file_type.get_commit_hash_from_result_file(newest_res_file.name)
+            commit_hash = result_file_type.get_commit_hash_from_result_file(
+                newest_res_file.name)
             failed_revisions.append(commit_hash)
 
     return failed_revisions

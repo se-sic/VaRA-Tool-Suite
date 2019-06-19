@@ -3,6 +3,7 @@ A case study to pin down project settings and the exact set of revisions that
 should be analysed.
 """
 
+import typing as tp
 from collections import defaultdict
 from datetime import datetime
 from enum import Enum
@@ -196,7 +197,7 @@ class CaseStudy(yaml.YAMLObject):
                 stage.sort()
 
     def include_revisions(self,
-                          revisions: [(str, int)],
+                          revisions: tp.List[tp.Tuple[str, int]],
                           stage_num=0,
                           sort_revs=True):
         """
@@ -224,7 +225,7 @@ class CaseStudy(yaml.YAMLObject):
 
         return revision_filter
 
-    def processed_revisions(self, result_file_type) -> [str]:
+    def processed_revisions(self, result_file_type) -> tp.List[str]:
         """
         Calculate how many revisions were processed.
         """
@@ -236,7 +237,7 @@ class CaseStudy(yaml.YAMLObject):
             if rev[:10] in total_processed_revisions
         ]
 
-    def failed_revisions(self, result_file_type) -> [str]:
+    def failed_revisions(self, result_file_type) -> tp.List[str]:
         """
         Calculate which revisions failed.
         """
@@ -249,16 +250,17 @@ class CaseStudy(yaml.YAMLObject):
         ]
 
     def get_revisions_status(self, result_file_type,
-                             stage_num=-1) -> [(str, str)]:
+                             stage_num=-1) -> tp.List[tp.Tuple[str, str]]:
         """
         Get status of all revisions.
         """
         processed_revisions = self.processed_revisions(result_file_type)
         failed_revisions = self.failed_revisions(result_file_type)
-        revisions_status = [(rev[:10],
-                             "OK" if rev in processed_revisions
-                             else "Failed" if rev in failed_revisions else "Missing")
-                            for rev in self.revisions]
+        revisions_status = [
+            (rev[:10], "OK" if rev in processed_revisions else
+             "Failed" if rev in failed_revisions else "Missing")
+            for rev in self.revisions
+        ]
         if stage_num == -1:
             return revisions_status
 
@@ -387,7 +389,7 @@ class ExtenderStrategy(Enum):
 
 
 def extend_case_study(case_study: CaseStudy, cmap,
-                      ext_strategy: ExtenderStrategy, **kwargs) -> CaseStudy:
+                      ext_strategy: ExtenderStrategy, **kwargs):
     """
     Extend a case study with new revisions.
     """
@@ -465,7 +467,8 @@ def extend_with_distrib_sampling(case_study: CaseStudy, cmap, **kwargs):
         kwargs['merge_stage'])
 
 
-def sample_n_idxs(distrib_func, num_samples, list_to_sample: []) -> []:
+def sample_n_idxs(distrib_func, num_samples,
+                  list_to_sample: tp.List) -> tp.List:
     """
     Args:
         distrib_func: Distribution function with
@@ -502,7 +505,15 @@ def extend_with_smooth_revs(case_study: CaseStudy, cmap, **kwargs):
     print("Using boundary gradient: ", boundary_gradient)
     new_revisions = plot.calc_missing_revisions(boundary_gradient)
 
-    print(new_revisions)
-    case_study.include_revisions([(rev, cmap.time_id(rev))
-                                  for rev in new_revisions],
-                                 kwargs['merge_stage'])
+    # Remove revision that are already present in another stage.
+    new_revisions = [
+        rev for rev in new_revisions if not case_study.has_revision(rev)
+    ]
+    if new_revisions:
+        print("Found new revisions: ", new_revisions)
+        case_study.include_revisions([(rev, cmap.time_id(rev))
+                                      for rev in new_revisions],
+                                     kwargs['merge_stage'])
+    else:
+        print("No new revisions found that where not already "
+              "present in the case study.")
