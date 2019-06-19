@@ -190,7 +190,8 @@ def _plot_interaction_graph(data_frame, stages=None, view_mode=True):
                 filtered_df.DFInteractions.values[df_mask],
                 color=next(df_color_iter),
                 label="DFInteractions-" + str(stage_num),
-                zorder=stage_num + 1)
+                zorder=stage_num + 1,
+                linewidth=plot_cfg['linewidth'])
 
             def filter_out_stage(data_frame):
                 def cf_removal_helper(row, stage=stage):
