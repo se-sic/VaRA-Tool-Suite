@@ -327,7 +327,6 @@ class SamplingMethod(Enum):
 
     uniform = 1
     half_norm = 2
-    per_year_add = 3
 
     def gen_distribution_function(self):
         """
@@ -362,7 +361,7 @@ def generate_case_study(sampling_method: SamplingMethod, cmap,
     """
     case_study = CaseStudy(project_name, case_study_version)
 
-    if sampling_method is SamplingMethod.per_year_add:
+    if kwargs['revs_per_year'] > 0:
         extend_with_revs_per_year(case_study, cmap, **kwargs)
 
     if (sampling_method is SamplingMethod.half_norm
@@ -468,12 +467,11 @@ def extend_with_distrib_sampling(case_study: CaseStudy, cmap, **kwargs):
     distribution_function = kwargs['distribution'].gen_distribution_function()
 
     case_study.include_revisions(
-        sample_n_idxs(distribution_function, kwargs['num_rev'], revision_list),
+        sample_n(distribution_function, kwargs['num_rev'], revision_list),
         kwargs['merge_stage'])
 
 
-def sample_n_idxs(distrib_func, num_samples,
-                  list_to_sample: tp.List) -> tp.List:
+def sample_n(distrib_func, num_samples, list_to_sample: tp.List) -> tp.List:
     """
     Return a list of n unique samples.
     If the list to sample is smaller than the number of samples the full list
