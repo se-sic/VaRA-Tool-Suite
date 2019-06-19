@@ -42,7 +42,7 @@ class Plot():
         return False
 
     @abc.abstractmethod
-    def plot(self):
+    def plot(self, view_mode):
         """Plot the current plot to a file"""
 
     @abc.abstractmethod

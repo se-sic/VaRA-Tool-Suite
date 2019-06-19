@@ -435,10 +435,11 @@ def extend_with_revs_per_year(case_study: CaseStudy, cmap, **kwargs):
         commit_date = datetime.utcfromtimestamp(commit.commit_time)
         commits[commit_date.year].append(str(commit.id))
 
-    new_rev_items = [] # new revisions that get added to to case_study
+    new_rev_items = []  # new revisions that get added to to case_study
     for _, commits_in_year in commits.items():
         samples = min(len(commits_in_year), kwargs['revs_per_year'])
-        sample_commit_indices = sorted(random.sample(range(len(commits_in_year)), samples))
+        sample_commit_indices = sorted(
+            random.sample(range(len(commits_in_year)), samples))
 
         for commit_index in sample_commit_indices:
             commit_hash = commits_in_year[commit_index]
