@@ -798,8 +798,8 @@ class ProcessManager:
                        workdir: tp.Optional[tp.Union[str, Path]] = None):
         """
         Creates a new process.
-        The does not return immediately. Instead it waits until the process
-        finishes.
+        The method does not return immediately. Instead it waits until the
+        process finishes.
         If the process gets interrupted by the user (e.g. by calling the
         ProcessManager's shutdown() method), the ProcessTerminatedError
         exception gets raised.
