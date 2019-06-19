@@ -327,6 +327,7 @@ class SamplingMethod(Enum):
 
     uniform = 1
     half_norm = 2
+    per_year_add = 3
 
     def gen_distribution_function(self):
         """
@@ -348,9 +349,9 @@ class SamplingMethod(Enum):
         raise Exception('Unsupported SamplingMethod')
 
 
-@check_required_args(['extra_revs', 'git_path', 'revs_per_year'])
-def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
-                        cmap, case_study_version: int, project_name: str,
+@check_required_args(['extra_revs', 'git_path'])
+def generate_case_study(sampling_method: SamplingMethod, cmap,
+                        case_study_version: int, project_name: str,
                         **kwargs) -> CaseStudy:
     """
     Generate a case study for a given project.
@@ -364,10 +365,12 @@ def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
     if kwargs['extra_revs']:
         extend_with_extra_revs(case_study, cmap, **kwargs)
 
-    if kwargs['revs_per_year'] > 0:
+    if sampling_method is SamplingMethod.per_year_add:
         extend_with_revs_per_year(case_study, cmap, **kwargs)
 
-    extend_with_distrib_sampling(case_study, cmap, **kwargs)
+    if (sampling_method is SamplingMethod.half_norm
+            or sampling_method is SamplingMethod.uniform):
+        extend_with_distrib_sampling(case_study, cmap, **kwargs)
 
     return case_study
 
