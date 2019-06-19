@@ -518,8 +518,9 @@ def main_casestudy():
             # Specify merge_stage as 0 for creating new case studies
             args['merge_stage'] = 0
 
-            case_study = generate_case_study(
-                args['distribution'], args['num_rev'], cmap, args['version'], **args)
+            case_study = generate_case_study(args['distribution'], cmap,
+                                             args['version'], args['project'],
+                                             **args)
 
             store_case_study(case_study, args['paper_config_path'])
 

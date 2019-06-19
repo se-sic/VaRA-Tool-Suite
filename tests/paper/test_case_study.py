@@ -5,6 +5,8 @@ Test case study
 import unittest
 import yaml
 
+import varats.paper.case_study as CS
+
 YAML_CASE_STUDY = """!CaseStudy
 _CaseStudy__project_name: gzip
 _CaseStudy__stages:
@@ -107,3 +109,66 @@ class TestCaseStudy(unittest.TestCase):
         self.assertFalse(
             revision_filter("42b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"))
         self.assertFalse(revision_filter("42"))
+
+
+class TestSampling(unittest.TestCase):
+    """
+    Test basic sampling test.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """
+        Setup case study from yaml doc.
+        """
+        cls.base_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+
+    def test_sample_amount(self):
+        """
+        Check if sampling function produces the correct amount of sample.
+        """
+        self.assertEqual(
+            len(
+                CS.sample_n(
+                    CS.SamplingMethod.uniform.gen_distribution_function(), 5,
+                    self.base_list)), 5)
+        self.assertEqual(
+            len(
+                CS.sample_n(
+                    CS.SamplingMethod.uniform.gen_distribution_function(), 1,
+                    self.base_list)), 1)
+        self.assertEqual(
+            len(
+                CS.sample_n(
+                    CS.SamplingMethod.uniform.gen_distribution_function(), 7,
+                    self.base_list)), 7)
+
+    def test_sample_more_than_max_amount(self):
+        """
+        Check if sampling function produces the correct amount of sample if we
+        sample more than in the initial list.
+        """
+        self.assertEqual(
+            len(
+                CS.sample_n(
+                    CS.SamplingMethod.uniform.gen_distribution_function(),
+                    len(self.base_list) + 1, self.base_list)),
+            len(self.base_list))
+
+        self.assertEqual(
+            len(
+                CS.sample_n(
+                    CS.SamplingMethod.uniform.gen_distribution_function(),
+                    len(self.base_list) + 666, self.base_list)),
+            len(self.base_list))
+
+    def test_sample_nothing(self):
+        """
+        Check if sampling function produces the correct amount of sample if we
+        want nothing.
+        """
+        self.assertEqual(
+            len(
+                CS.sample_n(
+                    CS.SamplingMethod.uniform.gen_distribution_function(), 0,
+                    self.base_list)), 0)
