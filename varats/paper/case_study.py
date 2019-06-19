@@ -505,11 +505,15 @@ def extend_with_smooth_revs(case_study: CaseStudy, cmap, **kwargs):
     print("Using boundary gradient: ", boundary_gradient)
     new_revisions = plot.calc_missing_revisions(boundary_gradient)
 
-    print("Found new revisions: ", new_revisions)
     # Remove revision that are already present in another stage.
     new_revisions = [
         rev for rev in new_revisions if not case_study.has_revision(rev)
     ]
-    case_study.include_revisions([(rev, cmap.time_id(rev))
-                                  for rev in new_revisions],
-                                 kwargs['merge_stage'])
+    if new_revisions:
+        print("Found new revisions: ", new_revisions)
+        case_study.include_revisions([(rev, cmap.time_id(rev))
+                                      for rev in new_revisions],
+                                     kwargs['merge_stage'])
+    else:
+        print("No new revisions found that where not already "
+              "present in the case study.")
