@@ -362,15 +362,15 @@ def generate_case_study(sampling_method: SamplingMethod, cmap,
     """
     case_study = CaseStudy(project_name, case_study_version)
 
-    if kwargs['extra_revs']:
-        extend_with_extra_revs(case_study, cmap, **kwargs)
-
     if sampling_method is SamplingMethod.per_year_add:
         extend_with_revs_per_year(case_study, cmap, **kwargs)
 
     if (sampling_method is SamplingMethod.half_norm
             or sampling_method is SamplingMethod.uniform):
         extend_with_distrib_sampling(case_study, cmap, **kwargs)
+
+    if kwargs['extra_revs']:
+        extend_with_extra_revs(case_study, cmap, **kwargs)
 
     return case_study
 
@@ -475,6 +475,10 @@ def extend_with_distrib_sampling(case_study: CaseStudy, cmap, **kwargs):
 def sample_n_idxs(distrib_func, num_samples,
                   list_to_sample: tp.List) -> tp.List:
     """
+    Return a list of n unique samples.
+    If the list to sample is smaller than the number of samples the full list
+    is returned.
+
     Args:
         distrib_func: Distribution function with
                         f(n) -> [] where len([]) == n probabilities
@@ -484,11 +488,14 @@ def sample_n_idxs(distrib_func, num_samples,
     Returns:
         list[] of sampled items
     """
+    if num_samples >= len(list_to_sample):
+        return list_to_sample
+
     probabilities = distrib_func(len(list_to_sample))
     probabilities /= probabilities.sum()
 
     sampled_idxs = np.random.choice(
-        len(list_to_sample), num_samples, p=probabilities)
+        len(list_to_sample), num_samples, replace=False, p=probabilities)
 
     return [list_to_sample[idx] for idx in sampled_idxs]
 
