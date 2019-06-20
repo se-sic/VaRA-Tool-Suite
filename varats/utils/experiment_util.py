@@ -19,11 +19,9 @@ class FunctionPEErrorWrapper():
         self.__handler = handler
 
     def __call__(self, *args, **kwargs):
-        print("\nCalling wrapper\n")
         try:
             return self.__func(*args, **kwargs)
         except ProcessExecutionError as ex:
-            print("\nError handler\n")
             self.__handler(ex)
 
 
