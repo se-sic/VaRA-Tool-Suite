@@ -250,14 +250,20 @@ def main_gen_graph():
         for k, v in vars(parser.parse_args()).items() if v is not None
     }
 
-    args['get_cmap'] = create_lazy_commit_map_loader(args['project'],
-                                                     args.get('cmap', None))
+    if args['plot_type'] is not PlotTypes.paper_config_overview_plot:
+        args['get_cmap'] = create_lazy_commit_map_loader(args['project'],
+                                                        args.get('cmap', None))
+        # Setup default result folder
+        if 'result_folder' not in args:
+            args['result_folder'] = str(CFG['result_dir']) + "/" + args['project']
+            print("Result folder defaults to: {res_folder}".format(
+                res_folder=args['result_folder']))
+    else:
+        if 'result_folder' not in args:
+            args['result_folder'] = str(CFG['result_dir'])
+            print("Result folder defaults to: {res_folder}".format(
+                res_folder=args['result_folder']))
 
-    # Setup default result folder
-    if 'result_folder' not in args:
-        args['result_folder'] = str(CFG['result_dir']) + "/" + args['project']
-        print("Result folder defaults to: {res_folder}".format(
-            res_folder=args['result_folder']))
 
     if 'cs_path' in args:
         case_study_path = Path(args['cs_path'])
