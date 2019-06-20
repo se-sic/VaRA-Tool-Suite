@@ -9,6 +9,7 @@ from pathlib import Path
 import yaml
 import pandas as pd
 
+from varats.data.file_status import FileStatusExtension
 from varats.data.version_header import VersionHeader
 
 
@@ -126,9 +127,13 @@ class FunctionGraphEdges():
 
 class CommitReport():
 
-    __FILE_NAME_REGEX = re.compile(r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
-                                   r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)" +
-                                   r"(?P<EXT>(\.yaml|\.failed))$")
+    __FILE_NAME_REGEX = re.compile(
+        r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
+        r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)" +
+        r"(?P<EXT>(\.yaml|\.failed))$")
+
+    __RESULT_FILE_TEMPLATE = \
+        "{project_name}-{binary_name}-{project_version}_{project_uuid}.{ext}"
 
     def __init__(self, path: str):
         with open(path, "r") as stream:
@@ -167,17 +172,23 @@ class CommitReport():
     @staticmethod
     def is_result_file_success(file_name: str) -> bool:
         """ Check if the passed file name is a (successful) result file. """
-        match = CommitReport.__FILE_NAME_REGEX.search(file_name)
-        if match:
-            return match.group("EXT") == ".yaml"
-        return False
+        return CommitReport.is_result_file_status(file_name,
+                                                  FileStatusExtension.success)
 
     @staticmethod
     def is_result_file_failed(file_name: str) -> bool:
         """ Check if the passed file name is a (failed) result file. """
+        return CommitReport.is_result_file_status(file_name,
+                                                  FileStatusExtension.failure)
+
+    @staticmethod
+    def is_result_file_status(file_name: str,
+                              extension_type: FileStatusExtension) -> bool:
+        """ Check if the passed file name is a (failed) result file. """
         match = CommitReport.__FILE_NAME_REGEX.search(file_name)
         if match:
-            return match.group("EXT") == ".failed"
+            return match.group("EXT") == (
+                "." + CommitReport.__get_file_ext(extension_type))
         return False
 
     @staticmethod
@@ -189,6 +200,32 @@ class CommitReport():
 
         raise ValueError('File {file_name} name was wrongly formated.'.format(
             file_name=file_name))
+
+    @staticmethod
+    def __get_file_ext(extension_type: FileStatusExtension) -> str:
+        if extension_type is FileStatusExtension.success:
+            return "yaml"
+
+        if extension_type is FileStatusExtension.failure:
+            return "failed"
+
+        raise NotImplementedError
+
+    @staticmethod
+    def get_file_name(project_name: str, binary_name: str,
+                      project_version: str, project_uuid: str,
+                      extension_type: FileStatusExtension):
+        """
+        Generates a filename for a commit report
+        """
+        ext = CommitReport.__get_file_ext(extension_type)
+
+        return CommitReport.__RESULT_FILE_TEMPLATE.format(
+            project_name=project_name,
+            binary_name=binary_name,
+            project_version=project_version,
+            project_uuid=project_uuid,
+            ext=ext)
 
     @property
     def path(self) -> str:

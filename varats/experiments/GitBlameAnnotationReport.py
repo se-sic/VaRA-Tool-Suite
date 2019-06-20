@@ -10,7 +10,6 @@ from os import path
 from pathlib import Path
 
 from plumbum import local
-from plumbum.commands import ProcessExecutionError
 
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import compiler, run, time
@@ -19,10 +18,50 @@ from benchbuild.utils.cmd import opt, mkdir
 import benchbuild.utils.actions as actions
 
 from varats.data.commit_report import CommitReport as CR
+from varats.data.file_status import FileStatusExtension as FSE
 from varats.data.revisions import get_proccessed_revisions
 from varats.experiments.Extract import Extract
 from varats.experiments.Wllvm import RunWLLVM
 from varats.settings import CFG as V_CFG
+from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
+                                          FunctionPEErrorWrapper)
+
+
+class CFRErrorHandler():
+    """
+    Error handler for varas commit-flow-report analysis
+    """
+
+    def __init__(self, project, binary_name, result_folder, run_cmd,
+                 timeout_duration):
+        self.__project = project
+        self.__binary_name = binary_name
+        self.__result_folder = result_folder
+        self.__run_cmd = run_cmd
+        self.__timeout_duration = timeout_duration
+
+    def __call__(self, ex):
+        result_error_file = CR.get_file_name(
+            project_name=str(self.__project.name),
+            binary_name=self.__binary_name,
+            project_version=str(self.__project.version),
+            project_uuid=str(self.__project.run_uuid),
+            extension_type=FSE.failure)
+
+        error_file = Path("{res_folder}/{res_file}".format(
+            res_folder=self.__result_folder, res_file=result_error_file))
+        with open(error_file, 'w') as outfile:
+            if ex.retcode == 124:
+                extra_error = """Command:
+{cmd}
+Timeout after: {timeout_duration}
+
+""".format(cmd=str(self.__run_cmd),
+                timeout_duration=str(self.__timeout_duration))
+                outfile.write(extra_error)
+
+            outfile.write(ex.stderr)
+        raise ex
 
 
 class CFRAnalysis(actions.Step):
@@ -34,8 +73,6 @@ class CFRAnalysis(actions.Step):
     DESCRIPTION = "Analyses the bitcode with CFR of VaRA."
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
-    RESULT_FILE_TEMPLATE = \
-        "{project_name}-{binary_name}-{project_version}_{project_uuid}.{ext}"
 
     def __call__(self):
         """
@@ -62,19 +99,12 @@ class CFRAnalysis(actions.Step):
         mkdir("-p", vara_result_folder)
 
         for binary_name in project.BIN_NAMES:
-            result_file = self.RESULT_FILE_TEMPLATE.format(
+            result_file = CR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary_name,
                 project_version=str(project.version),
                 project_uuid=str(project.run_uuid),
-                ext="yaml")
-
-            result_error_file = self.RESULT_FILE_TEMPLATE.format(
-                project_name=str(project.name),
-                binary_name=binary_name,
-                project_version=str(project.version),
-                project_uuid=str(project.run_uuid),
-                ext="failed")
+                extension_type=FSE.success)
 
             run_cmd = opt[
                 "-vara-BD", "-vara-CFR",
@@ -84,23 +114,14 @@ class CFRAnalysis(actions.Step):
                            project_name=project.name,
                            binary_name=binary_name,
                            project_version=project.version)]
-            try:
-                timeout_duration = '8h'
-                from benchbuild.utils.cmd import timeout
-                timeout(timeout_duration, run_cmd)
-            except ProcessExecutionError as ex:
-                error_file = Path("{res_folder}/{res_file}".format(
-                    res_folder=vara_result_folder, res_file=result_error_file))
-                with open(error_file, 'w') as outfile:
-                    if ex.retcode == 124:
-                        extra_error = """Command:
-{cmd}
-Timeout after: {timeout_duration}
 
-""".format(cmd=run_cmd, timeout_duration=timeout_duration)
-                        outfile.write(extra_error)
-                    outfile.write(ex.stderr)
-                raise ex
+            timeout_duration = '8h'
+            from benchbuild.utils.cmd import timeout
+
+            exec_func_with_pe_error_handler(
+                timeout[timeout_duration, run_cmd],
+                CFRErrorHandler(project, binary_name, vara_result_folder,
+                                run_cmd, timeout_duration))
 
 
 class GitBlameAnntotationReport(Experiment):
@@ -123,6 +144,15 @@ class GitBlameAnntotationReport(Experiment):
         project.compiler_extension = compiler.RunCompiler(project, self) \
             << RunWLLVM() \
             << run.WithTimeout()
+
+        # Add own error handler to compile step
+        project.compile = FunctionPEErrorWrapper(
+            project.compile,
+            CFRErrorHandler(
+                project, 'all',
+                CFRAnalysis.RESULT_FOLDER_TEMPLATE.format(
+                    result_dir=str(CFG["vara"]["outfile"]),
+                    project_dir=str(project.name)), None, None))
 
         # This c-flag is provided by VaRA and it suggests to use the git-blame
         # annotation.

@@ -7,6 +7,7 @@ import unittest.mock as mock
 
 import yaml
 
+from varats.data.file_status import FileStatusExtension
 from varats.data.commit_report import FunctionGraphEdges, FunctionInfo,\
     RegionMapping, CommitReport, CommitMap, generate_interactions
 
@@ -230,6 +231,11 @@ class TestCommitReport(unittest.TestCase):
                 'builtins.open', new=mock.mock_open(read_data=file_content)):
             cls.commit_report = CommitReport("fake_file_path")
 
+        cls.success_filename = ("foo-foo-7bb9ef5f8c_"
+                                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be.yaml")
+        cls.fail_filename = ("foo-foo-7bb9ef5f8c_"
+                             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be.failed")
+
     def test_path(self):
         """
         Check if path is set correctly.
@@ -242,6 +248,60 @@ class TestCommitReport(unittest.TestCase):
         """
         self.assertEqual(self.commit_report.calc_max_cf_edges(), 2)
         self.assertEqual(self.commit_report.calc_max_df_edges(), 3)
+
+    def test_is_result_file(self):
+        """Check if the result file matcher works"""
+        self.assertTrue(CommitReport.is_result_file(self.success_filename))
+        self.assertTrue(CommitReport.is_result_file(self.fail_filename))
+        self.assertFalse(
+            CommitReport.is_result_file(
+                self.success_filename.replace("_", "")))
+        self.assertFalse(
+            CommitReport.is_result_file(
+                self.success_filename.replace("-", "")))
+        self.assertFalse(
+            CommitReport.is_result_file(
+                self.success_filename.replace(".", "f")))
+
+    def test_file_status(self):
+        """
+        Check if the correct file status is returned for CommitReport names.
+        """
+        self.assertTrue(
+            CommitReport.is_result_file_success(self.success_filename))
+        self.assertFalse(
+            CommitReport.is_result_file_success(self.fail_filename))
+
+        self.assertTrue(CommitReport.is_result_file_failed(self.fail_filename))
+        self.assertFalse(
+            CommitReport.is_result_file_failed(self.success_filename))
+
+    def test_get_commit(self):
+        """
+        Check if the correct commit hash is returned.
+        """
+        self.assertEqual(
+            CommitReport.get_commit_hash_from_result_file(
+                self.success_filename), "7bb9ef5f8c")
+        self.assertEqual(
+            CommitReport.get_commit_hash_from_result_file(self.fail_filename),
+            "7bb9ef5f8c")
+
+    def test_file_name_creation(self):
+        """
+         Check if file names are created correctly.
+        """
+        self.assertEqual(
+            CommitReport.get_file_name("foo", "foo", "7bb9ef5f8c",
+                                       "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
+                                       FileStatusExtension.success),
+            self.success_filename)
+
+        self.assertEqual(
+            CommitReport.get_file_name("foo", "foo", "7bb9ef5f8c",
+                                       "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
+                                       FileStatusExtension.failure),
+            self.fail_filename)
 
 
 RAW_COMMIT_LOG = """20540be6186c159880dda3a49a5827722c1a0ac9
