@@ -85,11 +85,20 @@ class CFRAnalysis(actions.Step):
                            binary_name=binary_name,
                            project_version=project.version)]
             try:
-                run_cmd()
+                timeout_duration = '8h'
+                from benchbuild.utils.cmd import timeout
+                timeout(timeout_duration, run_cmd)
             except ProcessExecutionError as ex:
                 error_file = Path("{res_folder}/{res_file}".format(
                     res_folder=vara_result_folder, res_file=result_error_file))
                 with open(error_file, 'w') as outfile:
+                    if ex.retcode == 124:
+                        extra_error = """Command:
+{cmd}
+Timeout after: {timeout_duration}
+
+""".format(cmd=run_cmd, timeout_duration=timeout_duration)
+                        outfile.write(extra_error)
                     outfile.write(ex.stderr)
                 raise ex
 
