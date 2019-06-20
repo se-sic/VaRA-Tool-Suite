@@ -18,6 +18,7 @@ class Doxygen(Project):
     DOMAIN = 'documentation'
     VERSION = 'HEAD'
 
+    BIN_NAMES = ['doxygen']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
     def run_tests(self, runner):
