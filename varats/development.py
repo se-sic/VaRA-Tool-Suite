@@ -16,7 +16,7 @@ from varats.vara_manager import (
     LLVMProjects, LLVMProject)
 
 
-def __convert_to_vara_branch_naming_schema(branch_name: str):
+def __convert_to_vara_branch_naming_schema(branch_name: str) -> str:
     """
     Converts a branch_name to the VaRA branch naming schema. Every feature
     branch needs to start with `f-` so certain tools, like the buildbot,
@@ -32,28 +32,32 @@ def __convert_to_vara_branch_naming_schema(branch_name: str):
     return branch_name if branch_name.startswith("f-") else "f-" + branch_name
 
 
-def __quickfix_dev_branches(branch_name: str, project):
+def __quickfix_dev_branches(branch_name: str, project: LLVMProject) -> str:
     """
     Fix vara branches names for checking out master or dev branches.
 
     Test:
     >>> import re
     >>> fixed_branch_name = __quickfix_dev_branches(\
-        'vara-dev', LLVMProjects.llvm)
+        'vara-dev', LLVMProjects.llvm.project)
     >>> re.match(r'vara-\\d+-dev', fixed_branch_name) is not None
     True
 
-    >>> fixed_branch_name = __quickfix_dev_branches('vara', LLVMProjects.clang)
+    >>> fixed_branch_name = __quickfix_dev_branches(\
+        'vara', LLVMProjects.clang.project)
     >>> re.match(r'vara-\\d+', fixed_branch_name) is not None
     True
 
-    >>> __quickfix_dev_branches("f-FooBar", LLVMProjects.clang)
+    >>> __quickfix_dev_branches(\
+        "f-FooBar", LLVMProjects.clang.project)
     'f-FooBar'
 
-    >>> __quickfix_dev_branches("vara-dev", LLVMProjects.vara)
+    >>> __quickfix_dev_branches(\
+        "vara-dev", LLVMProjects.vara.project)
     'vara-dev'
     """
-    if project is LLVMProjects.llvm or project is LLVMProjects.clang:
+    if project is LLVMProjects.get_project_by_name(
+            'llvm') or project is LLVMProjects.get_project_by_name('clang'):
         if branch_name == 'vara-dev':
             return 'vara-{version}-dev'.format(version=str(CFG['version']))
         if branch_name == 'vara':
@@ -62,7 +66,8 @@ def __quickfix_dev_branches(branch_name: str, project):
     return branch_name
 
 
-def create_new_branch_for_projects(branch_name: str, projects):
+def create_new_branch_for_projects(branch_name: str,
+                                   projects: tp.List[LLVMProjects]) -> None:
     """
     Create a new branch on all needed projects.
     """
@@ -80,14 +85,16 @@ def create_new_branch_for_projects(branch_name: str, projects):
             checkout_new_branch(llvm_folder / project.path, branch_name)
 
 
-def checkout_branch_for_projects(branch_name: str, projects):
+def checkout_branch_for_projects(branch_name: str,
+                                 projects: tp.List[LLVMProjects]) -> None:
     """
     Checkout a branch on all projects.
     """
     llvm_folder = Path(str(CFG['llvm_source_dir']))
 
     for project in projects:
-        fixed_branch_name = __quickfix_dev_branches(branch_name, project)
+        fixed_branch_name = __quickfix_dev_branches(branch_name,
+                                                    project.project)
         if has_branch(llvm_folder / project.path, fixed_branch_name):
             checkout_branch(llvm_folder / project.path, fixed_branch_name)
             print(
@@ -98,14 +105,16 @@ def checkout_branch_for_projects(branch_name: str, projects):
                 branch=fixed_branch_name, project=project.name))
 
 
-def checkout_remote_branch_for_projects(branch_name: str, projects):
+def checkout_remote_branch_for_projects(
+        branch_name: str, projects: tp.List[LLVMProjects]) -> None:
     """
     Checkout a remote branch on all projects.
     """
     llvm_folder = Path(str(CFG['llvm_source_dir']))
 
     for project in projects:
-        fixed_branch_name = __quickfix_dev_branches(branch_name, project)
+        fixed_branch_name = __quickfix_dev_branches(branch_name,
+                                                    project.project)
         if has_branch(llvm_folder / project.path, fixed_branch_name):
             print(
                 "Checked out new branch {branch} for project {project}".format(
@@ -167,15 +176,19 @@ def show_status_for_projects(projects: tp.List[LLVMProject]) -> None:
         show_status(llvm_folder / project.path)
 
 
-def show_dev_branches(projects: tp.List[LLVMProject]) -> None:
+def show_dev_branches(
+        projects: tp.List[tp.Union[LLVMProject, LLVMProjects]]) -> None:
     """
     Show all dev dev branches.
     """
     llvm_folder = Path(str(CFG['llvm_source_dir']))
 
-    found_branches = defaultdict(list)
+    found_branches: tp.DefaultDict[str, tp.List[str]] = defaultdict(list)
     max_branch_chars = 0
     for project in projects:
+        if isinstance(project, LLVMProjects):
+            project = project.project
+
         fetch_remote(
             "origin", llvm_folder / project.path, extra_args=["--prune"])
         branches = get_branches(llvm_folder / project.path, extra_args=["-r"])
