@@ -2,6 +2,7 @@
 Commit map module.
 """
 
+import typing as tp
 from pathlib import Path
 
 from plumbum import local
@@ -11,7 +12,9 @@ from varats.data.commit_report import CommitMap
 from varats.utils.project_util import get_local_project_git_path
 
 
-def generate_commit_map(path: Path, end="HEAD", start=None):
+def generate_commit_map(path: Path,
+                        end: str = "HEAD",
+                        start: tp.Optional[str] = None) -> CommitMap:
     """
     Generate a commit map for a repository including the commits ]start..end]
     """
@@ -25,7 +28,7 @@ def generate_commit_map(path: Path, end="HEAD", start=None):
         wanted_out = git("--no-pager", "log", "--pretty=format:'%H'",
                          search_range)
 
-        def format_stream():
+        def format_stream() -> tp.Generator[str, None, None]:
             wanted_cm = set()
             for line in wanted_out.split('\n'):
                 wanted_cm.add(line[1:-1])
@@ -38,7 +41,7 @@ def generate_commit_map(path: Path, end="HEAD", start=None):
         return CommitMap(format_stream())
 
 
-def store_commit_map(cmap: CommitMap, output_file_path: str):
+def store_commit_map(cmap: CommitMap, output_file_path: str) -> None:
     """
     Store commit map to file.
     """
@@ -57,9 +60,9 @@ def load_commit_map_from_path(cmap_path: Path) -> CommitMap:
 
 
 def get_commit_map(project_name: str,
-                   cmap_path: Path = None,
-                   end="HEAD",
-                   start=None) -> CommitMap:
+                   cmap_path: tp.Optional[Path] = None,
+                   end: str = "HEAD",
+                   start: tp.Optional[str] = None) -> CommitMap:
     """
     Get a commit map for a project.
     """
@@ -71,19 +74,21 @@ def get_commit_map(project_name: str,
     return load_commit_map_from_path(cmap_path)
 
 
-def create_lazy_commit_map_loader(project,
-                                  cmap_path: Path,
-                                  end="HEAD",
-                                  start=None):
+def create_lazy_commit_map_loader(
+        project_name: str,
+        cmap_path: Path,
+        end: str = "HEAD",
+        start: tp.Optional[str] = None) -> tp.Callable[[], CommitMap]:
     """
     Create a generator function that lazy loads a CommitMap.
     """
     lazy_cached_cmap = None
 
-    def get_cmap_lazy():
+    def get_cmap_lazy() -> CommitMap:
         nonlocal lazy_cached_cmap
         if lazy_cached_cmap is None:
-            lazy_cached_cmap = get_commit_map(project, cmap_path, end, start)
+            lazy_cached_cmap = get_commit_map(project_name, cmap_path, end,
+                                              start)
 
         return lazy_cached_cmap
 

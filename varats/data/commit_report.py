@@ -358,7 +358,7 @@ class CommitMap():
     Provides a mapping from commit hash to additional informations.
     """
 
-    def __init__(self, stream):
+    def __init__(self, stream) -> None:
         self.__hash_to_id = dict()
         for line in stream:
             slices = line.strip().split(', ')
@@ -401,7 +401,7 @@ class CommitMap():
         """
         return self.__hash_to_id.items()
 
-    def write_to_file(self, target_file):
+    def write_to_file(self, target_file: tp.TextIO) -> None:
         """
         Write commit map to a file.
 
