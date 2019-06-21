@@ -18,7 +18,7 @@ from varats.paper.paper_config import project_filter_generator
     limit=100,
     refspec="HEAD",
     version_filter=project_filter_generator("busybox"))
-class busybox(Project):
+class Busybox(Project):
     """ UNIX utility wrapper Busybox """
 
     NAME = 'busybox'

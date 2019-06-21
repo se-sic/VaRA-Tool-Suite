@@ -17,7 +17,8 @@ from scipy.stats import halfnorm
 import numpy as np
 import pygit2
 
-from varats.data.revisions import get_proccessed_revisions, get_failed_revisions
+from varats.data.revisions import (get_proccessed_revisions,
+                                   get_failed_revisions)
 from varats.plots.plot_utils import check_required_args
 
 

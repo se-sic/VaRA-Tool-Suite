@@ -469,11 +469,11 @@ def main_casestudy():
                 "At most one argument of: --short, --list-revs can be used.")
 
         if args['short'] and args['ws']:
-            parser.error(
-                "At most one argument of: --short, --ws can be used.")
+            parser.error("At most one argument of: --short, --ws can be used.")
 
         PCM.show_status_of_case_studies(args['filter_regex'], args['short'],
                                         args['list_revs'], args['ws'])
+
     elif args['subcommand'] == 'gen' or args['subcommand'] == 'ext':
         if args['git_path'].endswith(".git"):
             git_path = Path(args['git_path'][:-4])
