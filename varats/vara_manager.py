@@ -94,6 +94,16 @@ class LLVMProjects(Enum):
     def __str__(self):
         return str(self.value)
 
+    @staticmethod
+    def get_project_by_name(project_name: str) -> LLVMProject:
+        """
+        Get project by name.
+        """
+        for proj in iter(LLVMProjects):
+            if proj.value.name.lower() == project_name:
+                return proj.value
+        raise LookupError
+
     @property
     def name(self):
         """
@@ -844,7 +854,7 @@ class ProcessManager:
         ProcessManager.getInstance().__start_process(process, program, args)
 
     @staticmethod
-    def shutdown():
+    def shutdown() -> None:
         inst = ProcessManager.getInstance()
         with inst.__mutex:
             inst.__shutdown()

@@ -5,6 +5,7 @@ All settings are stored in a simple dictionary. Each
 setting should be modifiable via environment variable.
 """
 
+import typing as tp
 from os import path, makedirs, getcwd
 
 import benchbuild.utils.settings as s
@@ -99,7 +100,8 @@ CFG['plots'] = {
 }
 
 
-def get_value_or_default(cfg, varname, default):
+def get_value_or_default(cfg: s.Configuration, varname: str,
+                         default: tp.Any) -> tp.Any:
     """
     Checks if the config variable has a value and if it is not None.
     Then the value is returned. Otherwise, the default value is
@@ -131,7 +133,7 @@ def create_missing_folders():
     create_missing_folder_for_cfg("data_cache", CFG["plots"])
 
 
-def save_config():
+def save_config() -> None:
     """
     Persist VaRA config to a yaml file.
     """

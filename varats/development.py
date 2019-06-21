@@ -3,6 +3,7 @@ The development module provides different utility function to ease the
 development for VaRA.
 """
 
+import typing as tp
 from collections import defaultdict
 from pathlib import Path
 import re
@@ -12,7 +13,7 @@ from varats.vara_manager import (
     checkout_branch, checkout_new_branch, get_current_branch, has_branch,
     has_remote_branch, branch_has_upstream, fetch_repository, fetch_remote,
     show_status, get_branches, pull_current_branch, push_current_branch,
-    LLVMProjects)
+    LLVMProjects, LLVMProject)
 
 
 def __convert_to_vara_branch_naming_schema(branch_name: str):
@@ -123,7 +124,7 @@ def checkout_remote_branch_for_projects(branch_name: str, projects):
                   format(branch=fixed_branch_name, project=project.name))
 
 
-def pull_projects(projects):
+def pull_projects(projects: tp.List[LLVMProject]) -> None:
     """
     Pull the current branch of all projects.
     """
@@ -134,7 +135,7 @@ def pull_projects(projects):
         pull_current_branch(llvm_folder / project.path)
 
 
-def push_projects(projects):
+def push_projects(projects: tp.List[LLVMProject]) -> None:
     """
     Push the current branch of all projects.
     """
@@ -151,7 +152,7 @@ def push_projects(projects):
                                 branch_name)
 
 
-def show_status_for_projects(projects):
+def show_status_for_projects(projects: tp.List[LLVMProject]) -> None:
     """
     Show the status of all projects.
     """
@@ -166,7 +167,7 @@ def show_status_for_projects(projects):
         show_status(llvm_folder / project.path)
 
 
-def show_dev_branches(projects):
+def show_dev_branches(projects: tp.List[LLVMProject]) -> None:
     """
     Show all dev dev branches.
     """
