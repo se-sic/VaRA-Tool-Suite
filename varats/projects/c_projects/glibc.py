@@ -10,8 +10,14 @@ from benchbuild.utils.run import run
 
 from plumbum import local
 
+from varats.paper.paper_config import project_filter_generator
 
-@with_git("git://sourceware.org/git/glibc.git", limit=100, refspec="HEAD")
+
+@with_git(
+    "git://sourceware.org/git/glibc.git",
+    limit=100,
+    refspec="HEAD",
+    version_filter=project_filter_generator("glibc"))
 class Glibc(Project):
     """ Standard GNU C-library """
 

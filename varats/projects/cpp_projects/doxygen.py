@@ -8,8 +8,14 @@ from benchbuild.utils.download import with_git
 from plumbum.path.utils import delete
 from plumbum import local
 
+from varats.paper.paper_config import project_filter_generator
 
-@with_git("https://github.com/doxygen/doxygen.git", limit=100, refspec="HEAD")
+
+@with_git(
+    "https://github.com/doxygen/doxygen.git",
+    limit=100,
+    refspec="HEAD",
+    version_filter=project_filter_generator("doxygen"))
 class Doxygen(Project):
     """ Doxygen """
 
