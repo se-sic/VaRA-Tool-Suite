@@ -2,9 +2,10 @@
 VaRA-TS MainWindow
 """
 
+import typing as tp
 from os import path
 
-from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtWidgets import QMainWindow, QWidget
 
 from varats.settings import CFG, save_config, generate_benchbuild_config,\
     create_missing_folders
@@ -22,7 +23,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def __init__(self) -> None:
         super(MainWindow, self).__init__()
-        self.views = []
+        self.views: tp.List[QWidget] = []
         self.bwg = None
         self.filter_window = None
 

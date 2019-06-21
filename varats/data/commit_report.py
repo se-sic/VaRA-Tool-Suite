@@ -359,7 +359,7 @@ class CommitMap():
     """
 
     def __init__(self, stream) -> None:
-        self.__hash_to_id = dict()
+        self.__hash_to_id: tp.Dict[str, int] = dict()
         for line in stream:
             slices = line.strip().split(', ')
             self.__hash_to_id[slices[1]] = int(slices[0])
