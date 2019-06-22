@@ -134,7 +134,7 @@ class PaperConfigOverviewPlot(Plot):
             _gen_overview_plot())
 
     def show(self):
-        self.plot(False)
+        self.plot(True)
         plt.show()
 
     def save(self, filetype='svg'):
@@ -150,4 +150,4 @@ class PaperConfigOverviewPlot(Plot):
             format=filetype)
 
     def calc_missing_revisions(self, boundary_gradient) -> tp.Set:
-        return set()
+        raise NotImplementedError

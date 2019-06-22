@@ -131,10 +131,14 @@ def is_paper_config_loaded() -> bool:
     return __G_PAPER_CONFIG is not None
 
 
-def load_paper_config(config_path):
+def load_paper_config(config_path=None):
     """
     Load a paper config from yaml file.
     """
+    if config_path is None:
+        config_path = (str(CFG["paper_config"]["folder"]) +
+                       "/" + str(CFG["paper_config"]["current_config"]))
+
     global __G_PAPER_CONFIG
     __G_PAPER_CONFIG = PaperConfig(config_path)
 
