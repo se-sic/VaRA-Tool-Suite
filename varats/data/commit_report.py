@@ -135,7 +135,7 @@ class CommitReport():
     __RESULT_FILE_TEMPLATE = \
         "{project_name}-{binary_name}-{project_version}_{project_uuid}.{ext}"
 
-    def __init__(self, path: str):
+    def __init__(self, path: Path) -> None:
         with open(path, "r") as stream:
             self._path = path
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
@@ -228,7 +228,7 @@ class CommitReport():
             ext=ext)
 
     @property
-    def path(self) -> str:
+    def path(self) -> Path:
         """
         Path to CommitReport file.
         """
