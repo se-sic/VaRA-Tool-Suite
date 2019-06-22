@@ -7,9 +7,12 @@ from collections import defaultdict
 from pathlib import Path
 
 from varats.settings import CFG
+from varats.data.report import ReportType
 
 
-def __get_result_files_dict(project_name: str, result_file_type) -> tp.Dict:
+def __get_result_files_dict(
+        project_name: str,
+        result_file_type: tp.Type[ReportType]) -> tp.Dict[str, tp.List[Path]]:
     """
     Returns a dict that maps the commit_hash to a list of all result files for
     that commit.
@@ -21,7 +24,7 @@ def __get_result_files_dict(project_name: str, result_file_type) -> tp.Dict:
     res_dir = Path("{result_folder}/{project_name}/".format(
         result_folder=CFG["result_dir"], project_name=project_name))
 
-    result_files: tp.DefaultDict[str, tp.List] = defaultdict(
+    result_files: tp.DefaultDict[str, tp.List[Path]] = defaultdict(
         list)  # maps commit hash -> list of res files (success or fail)
     if res_dir.exists():
         for res_file in res_dir.iterdir():
@@ -35,8 +38,9 @@ def __get_result_files_dict(project_name: str, result_file_type) -> tp.Dict:
     return result_files
 
 
-def get_proccessed_revisions(project_name: str,
-                             result_file_type) -> tp.List[str]:
+def get_proccessed_revisions(
+        project_name: str,
+        result_file_type: tp.Type[ReportType]) -> tp.List[str]:
     """
     Calculates a list of revisions of a project that have already
     been processed successfully.
@@ -58,7 +62,9 @@ def get_proccessed_revisions(project_name: str,
     return processed_revisions
 
 
-def get_failed_revisions(project_name: str, result_file_type) -> tp.List[str]:
+def get_failed_revisions(
+        project_name: str,
+        result_file_type: tp.Type[ReportType]) -> tp.List[str]:
     """
     Calculates a list of revisions of a project that have failed.
 

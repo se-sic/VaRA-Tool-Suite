@@ -20,7 +20,7 @@ class GraphCacheType(Enum):
 
 
 def __get_data_file_path(data_id: tp.Union[GraphCacheType, str],
-                         project_name: str):
+                         project_name: str) -> Path:
     """
 
     Test:
@@ -56,7 +56,8 @@ def load_cached_df_or_none(data_id: tp.Union[GraphCacheType, str],
     return pd.read_csv(str(file_path))
 
 
-def cache_dataframe(data_id, project_name, dataframe: pd.DataFrame):
+def cache_dataframe(data_id: tp.Union[GraphCacheType], project_name: str,
+                    dataframe: pd.DataFrame) -> None:
     """
     Cache a dataframe by persisting it to disk.
 

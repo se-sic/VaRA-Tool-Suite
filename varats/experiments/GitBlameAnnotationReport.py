@@ -12,6 +12,7 @@ from pathlib import Path
 from plumbum import local
 
 from benchbuild.experiment import Experiment
+from benchbuild.project import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.settings import CFG
 from benchbuild.utils.cmd import opt, mkdir
@@ -32,8 +33,8 @@ class CFRErrorHandler():
     Error handler for varas commit-flow-report analysis
     """
 
-    def __init__(self, project, binary_name, result_folder, run_cmd,
-                 timeout_duration):
+    def __init__(self, project: Project, binary_name: str, result_folder,
+                 run_cmd, timeout_duration) -> None:
         self.__project = project
         self.__binary_name = binary_name
         self.__result_folder = result_folder
