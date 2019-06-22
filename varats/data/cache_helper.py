@@ -3,6 +3,7 @@ Utility functions and class to allow easier caching of pandas dataframe and
 other data.
 """
 
+import typing as tp
 from enum import Enum
 from pathlib import Path
 
@@ -18,7 +19,8 @@ class GraphCacheType(Enum):
     CommitInteractionData = "interaction_table"
 
 
-def __get_data_file_path(data_id, project_name):
+def __get_data_file_path(data_id: tp.Union[GraphCacheType, str],
+                         project_name: str):
     """
 
     Test:
@@ -38,7 +40,8 @@ def __get_data_file_path(data_id, project_name):
             project_name=project_name)
 
 
-def load_cached_df_or_none(data_id, project_name):
+def load_cached_df_or_none(data_id: tp.Union[GraphCacheType, str],
+                           project_name: str) -> tp.Optional[pd.DataFrame]:
     """
     Load cached dataframe from disk, otherwise return None.
 

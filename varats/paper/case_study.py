@@ -116,10 +116,10 @@ class CaseStudy(yaml.YAMLObject):
     yaml_loader = yaml.SafeLoader
     yaml_tag = u'!CaseStudy'
 
-    def __init__(self, project_name, version):
+    def __init__(self, project_name, version) -> None:
         self.__project_name = project_name
         self.__version = version
-        self.__stages = []
+        self.__stages: tp.List[CSStage] = []
 
     @property
     def project_name(self):
@@ -146,7 +146,7 @@ class CaseStudy(yaml.YAMLObject):
                 [x for stage in self.__stages for x in stage.revisions]))
 
     @property
-    def stages(self):
+    def stages(self) -> tp.List[CSStage]:
         """
         Get a list with all stages.
         """
@@ -154,7 +154,7 @@ class CaseStudy(yaml.YAMLObject):
         return [stage for stage in self.__stages]
 
     @property
-    def num_stages(self):
+    def num_stages(self) -> int:
         """
         Get nummer of stages.
         """

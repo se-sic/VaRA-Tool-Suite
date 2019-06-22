@@ -409,7 +409,7 @@ class CommitMap():
         """
         return self.__hash_to_id[c_hash]
 
-    def short_time_id(self, c_hash):
+    def short_time_id(self, c_hash: str) -> int:
         """
         Convert a short commit hash to a time id that allows a total order on
         the commits, based on the c_map, e.g., created from the analyzed git

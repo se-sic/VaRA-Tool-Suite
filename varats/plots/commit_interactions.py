@@ -4,7 +4,6 @@ Generate commit interaction graphs.
 
 import typing as tp
 from pathlib import Path
-import typing as tp
 
 import matplotlib.pyplot as plt
 import matplotlib.style as style
@@ -19,7 +18,7 @@ from varats.data.commit_report import CommitMap, CommitReport
 from varats.jupyterhelper.file import load_commit_report
 from varats.plots.plot_utils import check_required_args
 from varats.data.revisions import get_proccessed_revisions
-from varats.paper.case_study import CaseStudy
+from varats.paper.case_study import CaseStudy, CSStage
 
 
 def _build_interaction_table(report_files: tp.List[Path],
@@ -51,10 +50,10 @@ def _build_interaction_table(report_files: tp.List[Path],
         cached_df['HEAD DF Interactions'] = cached_df[
             'HEAD DF Interactions'].astype('int64')
 
-    def report_in_data_frame(report_file, df_col) -> bool:
+    def report_in_data_frame(report_file: Path, df_col: pd.Series) -> bool:
         commit_hash = CommitReport.get_commit_hash_from_result_file(
             Path(report_file).name)
-        return (commit_hash == df_col).any()
+        return tp.cast(bool, (commit_hash == df_col).any())
 
     missing_report_files = [
         report_file for report_file in report_files
@@ -74,12 +73,12 @@ def _build_interaction_table(report_files: tp.List[Path],
         except StopIteration:
             print("YAML file was incomplete: ", file_path)
 
-    def sorter(report):
+    def sorter(report: CommitReport) -> int:
         return commit_map.short_time_id(report.head_commit)
 
     missing_reports = sorted(missing_reports, key=sorter)
 
-    def create_data_frame_for_report(report) -> pd.DataFrame:
+    def create_data_frame_for_report(report: CommitReport) -> pd.DataFrame:
         cf_head_interactions_raw = report.number_of_head_cf_interactions()
         df_head_interactions_raw = report.number_of_head_df_interactions()
         return pd.DataFrame({
@@ -109,7 +108,7 @@ def _build_interaction_table(report_files: tp.List[Path],
 
 
 @check_required_args(["result_folder", "project", "get_cmap"])
-def _gen_interaction_graph(**kwargs) -> pd.DataFrame:
+def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
     """
     Generate a DataFrame, containing the amount of interactions between commits
     and interactions between the HEAD commit and all others.
@@ -144,7 +143,9 @@ def _gen_interaction_graph(**kwargs) -> pd.DataFrame:
     return data_frame
 
 
-def _plot_interaction_graph(data_frame, stages=None, view_mode=True):
+def _plot_interaction_graph(data_frame: pd.DataFrame,
+                            stages: tp.Optional[tp.List[CSStage]] = None,
+                            view_mode: bool = True) -> None:
     """
     Plot a plot, showing the amount of interactions between commits and
     interactions between the HEAD commit and all others.
@@ -199,8 +200,9 @@ def _plot_interaction_graph(data_frame, stages=None, view_mode=True):
                 zorder=stage_num + 1,
                 linewidth=plot_cfg['linewidth'])
 
-            def filter_out_stage(data_frame):
-                def cf_removal_helper(row, stage=stage):
+            def filter_out_stage(data_frame: pd.DataFrame) -> None:
+                def cf_removal_helper(row: pd.Series, stage: CSStage = stage
+                                      ) -> tp.Union[np.NaN, np.int64]:
                     if stage.has_revision(row['head_cm'].split('-')[1]):
                         return np.NaN
                     return row['CFInteractions']
@@ -208,7 +210,8 @@ def _plot_interaction_graph(data_frame, stages=None, view_mode=True):
                 data_frame['CFInteractions'] = data_frame.apply(
                     cf_removal_helper, axis=1)
 
-                def df_removal_helper(row, stage=stage):
+                def df_removal_helper(row: pd.Series, stage: CSStage = stage
+                                      ) -> tp.Union[np.NaN, np.int64]:
                     if stage.has_revision(row['head_cm'].split('-')[1]):
                         return np.NaN
                     return row['DFInteractions']
@@ -270,7 +273,7 @@ class InteractionPlot(Plot):
     Plot showing the total amount of commit interactions.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: tp.Any) -> None:
         super(InteractionPlot, self).__init__("interaction_graph")
         self.__saved_extra_args = kwargs
 
@@ -278,10 +281,10 @@ class InteractionPlot(Plot):
     def supports_stage_separation() -> bool:
         return True
 
-    def plot(self, view_mode):
+    def plot(self, view_mode: bool) -> None:
         style.use(self.style)
 
-        def cs_filter(data_frame):
+        def cs_filter(data_frame: pd.DataFrame) -> pd.DataFrame:
             """
             Filter out all commit that are not in the case study, if one was
             selected. This allows us to only load file related to the
@@ -305,11 +308,11 @@ class InteractionPlot(Plot):
             cs_filter(interaction_plot_df),
             case_study.stages if case_study is not None else None, view_mode)
 
-    def show(self):
+    def show(self) -> None:
         self.plot(True)
         plt.show()
 
-    def save(self, filetype='svg'):
+    def save(self, filetype: str = 'svg') -> None:
         self.plot(False)
 
         result_dir = Path(self.__saved_extra_args["result_folder"])
@@ -325,19 +328,19 @@ class InteractionPlot(Plot):
             bbox_inches="tight",
             format=filetype)
 
-    def calc_missing_revisions(self, boundary_gradient) -> tp.Set[str]:
+    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         data_frame = _gen_interaction_graph(**self.__saved_extra_args)
         data_frame.sort_values(by=['head_cm'], inplace=True)
         data_frame.reset_index(drop=True, inplace=True)
 
-        def cm_num(head_cm) -> int:
+        def cm_num(head_cm: str) -> int:
             return int(head_cm.split('-')[0])
 
-        def head_cm_neighbours(lhs_cm, rhs_cm) -> bool:
+        def head_cm_neighbours(lhs_cm: str, rhs_cm: str) -> bool:
             return cm_num(lhs_cm) + 1 == cm_num(rhs_cm)
 
-        def rev_calc_helper(data_frame):
-            new_revs = set()
+        def rev_calc_helper(data_frame: pd.DataFrame) -> tp.Set[str]:
+            new_revs: tp.Set[str] = set()
 
             df_iter = data_frame.iterrows()
             _, last_row = next(df_iter)
