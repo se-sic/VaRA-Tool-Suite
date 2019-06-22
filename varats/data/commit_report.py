@@ -506,7 +506,8 @@ def generate_interactions(commit_report: CommitReport,
 
 
 def generate_inout_cfg_df(commit_report: CommitReport,
-                          cr_meta: CommitReportMeta = None) -> pd.DataFrame:
+                          cr_meta: tp.Optional[CommitReportMeta] = None
+                          ) -> pd.DataFrame:
     """
     Generates a pandas dataframe that contains the commit region
     data-flow interaction information.

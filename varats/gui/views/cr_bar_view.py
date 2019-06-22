@@ -148,7 +148,7 @@ class CRBarView(QWidget, Ui_Form):
 
         self._update_report_order()
 
-    def _draw_plots(self):
+    def _draw_plots(self) -> None:
         if self.current_report is None:
             return
         meta = None
@@ -170,7 +170,7 @@ class CRBarView(QWidget, Ui_Form):
                 .commit_reports[self.fileSlider.value()]
             self._draw_plots()
 
-    def enable_cf_plot(self, state: int):
+    def enable_cf_plot(self, state: int) -> None:
         """
         Enable control-flow plot
         """
