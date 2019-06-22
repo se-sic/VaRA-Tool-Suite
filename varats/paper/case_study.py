@@ -335,21 +335,20 @@ class SamplingMethod(Enum):
     uniform = 1
     half_norm = 2
 
-    def gen_distribution_function(
-            self) -> tp.Callable[[int], np.ndarray[float]]:
+    def gen_distribution_function(self) -> tp.Callable[[int], np.ndarray]:
         """
         Generate a distribution function for the specified sampling method.
         """
         if self == SamplingMethod.uniform:
 
-            def uniform(num_samples: int) -> np.ndarray[float]:
+            def uniform(num_samples: int) -> np.ndarray:
                 return tp.cast(tp.List[float],
                                np.random.uniform(0, 1.0, num_samples))
 
             return uniform
         if self == SamplingMethod.half_norm:
 
-            def halfnormal(num_samples: int) -> np.ndarray[float]:
+            def halfnormal(num_samples: int) -> np.ndarray:
                 return tp.cast(tp.List[float],
                                halfnorm.rvs(scale=1, size=num_samples))
 
@@ -485,8 +484,8 @@ def extend_with_distrib_sampling(case_study: CaseStudy, cmap: CommitMap,
         kwargs['merge_stage'])
 
 
-def sample_n(distrib_func: tp.Callable[[int], np.ndarray[float]],
-             num_samples: int, list_to_sample: tp.List[tp.Tuple[str, int]]
+def sample_n(distrib_func: tp.Callable[[int], np.ndarray], num_samples: int,
+             list_to_sample: tp.List[tp.Tuple[str, int]]
              ) -> tp.List[tp.Tuple[str, int]]:
     """
     Return a list of n unique samples.
