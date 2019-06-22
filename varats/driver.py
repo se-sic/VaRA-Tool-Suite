@@ -216,7 +216,7 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
     return BuildType.DEV
 
 
-def main_gen_graph():
+def main_gen_graph() -> None:
     """
     Main function for the graph generator.
 
@@ -268,7 +268,7 @@ def main_gen_graph():
     build_plot(**args)
 
 
-def main_gen_benchbuild_config():
+def main_gen_benchbuild_config() -> None:
     """
     Main function for the benchbuild config creator.
 
@@ -351,7 +351,7 @@ def main_gen_commitmap() -> None:
     store_commit_map(cmap, output_name)
 
 
-def main_casestudy():
+def main_casestudy() -> None:
     """
     Allow easier management of case studies
     """
@@ -386,7 +386,7 @@ def main_casestudy():
         action="store_true",
         default=False)
 
-    def add_common_args(sub_parser):
+    def add_common_args(sub_parser: argparse.ArgumentParser) -> None:
         """
         Group common args to provide all args on different sub parsers.
         """
