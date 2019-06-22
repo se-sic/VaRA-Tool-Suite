@@ -2,7 +2,9 @@
 Module for interacting with paper configs.
 """
 
+import typing as tp
 import re
+from pathlib import Path
 
 from plumbum import colors
 
@@ -13,13 +15,15 @@ import varats.paper.paper_config as PC
 
 
 def show_status_of_case_studies(filter_regex: str, short_status: bool,
-                                print_rev_list: bool, sep_stages: bool):
+                                print_rev_list: bool,
+                                sep_stages: bool) -> None:
     """
     Show the status of all matching case studies.
     """
     PC.load_paper_config(
-        str(CFG["paper_config"]["folder"]) + "/" +
-        str(CFG["paper_config"]["current_config"]))
+        Path(
+            str(CFG["paper_config"]["folder"]) + "/" +
+            str(CFG["paper_config"]["current_config"])))
 
     current_config = PC.get_paper_config()
 
@@ -50,7 +54,7 @@ def show_status_of_case_studies(filter_regex: str, short_status: bool,
                            sep_stages, True))
 
 
-def get_revision_list(case_study) -> str:
+def get_revision_list(case_study: CaseStudy) -> str:
     """
     Returns a string with a list of revsion from the case-study,
     group by case-study stages.
@@ -67,9 +71,9 @@ def get_revision_list(case_study) -> str:
 
 
 def get_short_status(case_study: CaseStudy,
-                     result_file_type,
+                     result_file_type: tp.Type[CommitReport],
                      longest_cs_name: int,
-                     use_color=False) -> str:
+                     use_color: bool = False) -> str:
     """
     Return a string representation that describes the current status of
     the case study.
@@ -110,11 +114,11 @@ def get_short_status(case_study: CaseStudy,
     return status
 
 
-def get_status(case_study,
-               result_file_type,
+def get_status(case_study: CaseStudy,
+               result_file_type: tp.Type[CommitReport],
                longest_cs_name: int,
                sep_stages: bool,
-               use_color=False):
+               use_color: bool = False) -> str:
     """
     Return a string representation that describes the current status of
     the case study.
@@ -122,13 +126,13 @@ def get_status(case_study,
     status = get_short_status(case_study, result_file_type, longest_cs_name,
                               use_color) + "\n"
 
-    def color_rev_state(rev_state):
+    def color_rev_state(rev_state: str) -> str:
         if use_color:
             if rev_state == "OK":
-                return colors.green[rev_state]
+                return tp.cast(str, colors.green[rev_state])
             if rev_state == "Failed":
-                return colors.red[rev_state]
-            return colors.orange3[rev_state]
+                return tp.cast(str, colors.red[rev_state])
+            return tp.cast(str, colors.orange3[rev_state])
 
         return rev_state
 

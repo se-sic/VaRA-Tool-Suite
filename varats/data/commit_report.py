@@ -401,7 +401,7 @@ class CommitMap():
             slices = line.strip().split(', ')
             self.__hash_to_id[slices[1]] = int(slices[0])
 
-    def time_id(self, c_hash):
+    def time_id(self, c_hash: str) -> int:
         """
         Convert a commit hash to a time id that allows a total order on the
         commits, based on the c_map, e.g., created from the analyzed git
@@ -432,7 +432,7 @@ class CommitMap():
                 return c_hash
         raise KeyError
 
-    def mapping_items(self):
+    def mapping_items(self) -> tp.ItemsView[str, int]:
         """
         Get an iterator over the mapping items.
         """

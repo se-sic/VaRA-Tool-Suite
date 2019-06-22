@@ -14,7 +14,6 @@ from PyQt5.QtCore import QRunnable, QThreadPool, QObject, pyqtSlot, pyqtSignal
 from varats.data.commit_report import CommitReport
 
 # Add other loadable Types
-# TODO: remove double CommitReport after adding second type
 LoadableType = tp.TypeVar('LoadableType', CommitReport, CommitReport)
 
 
