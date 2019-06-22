@@ -175,7 +175,7 @@ def build_setup() -> None:
 
     own_libgit2 = bool(CFG["own_libgit2"])
 
-    setup_vara(args.init, args.update, args.build, args.llvmfolder,
+    setup_vara(args.init, args.update, args.build, Path(args.llvmfolder),
                args.installprefix, own_libgit2, vara_version, build_type,
                update_term)
 
