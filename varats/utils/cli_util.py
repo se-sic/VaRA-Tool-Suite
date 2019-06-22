@@ -5,7 +5,7 @@ Command line utilities.
 import typing as tp
 
 
-def cli_yn_choice(question, default='y') -> bool:
+def cli_yn_choice(question: str, default: str = 'y') -> bool:
     """
     Ask the user to make a y/n decision on the cli.
     """
