@@ -110,7 +110,7 @@ class BuildSetup(QWidget, Ui_BuildSetup):
     Window to control the setup and status of the local VaRA installation.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.setupUi(self)
         self.__quit_sc = QShortcut(QKeySequence("Ctrl+Q"), self)

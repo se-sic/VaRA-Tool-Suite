@@ -36,7 +36,7 @@ class VaRATSGui:
     Start VaRA-TS grafical user interface for graphs.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         if hasattr(Qt, 'AA_EnableHighDpiScaling'):
             QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
         if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
@@ -60,7 +60,7 @@ class VaRATSGui:
 
         self.main_window = MainWindow()
 
-    def main(self):
+    def main(self) -> None:
         """Setup and Run Qt application"""
         ret = self.app.exec_()
         ProcessManager.shutdown()
@@ -72,7 +72,7 @@ class VaRATSSetup:
     Start VaRA-TS grafical user interface for setting up VaRA.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         if hasattr(Qt, 'AA_EnableHighDpiScaling'):
             QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
         if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
@@ -81,14 +81,14 @@ class VaRATSSetup:
         self.app = QApplication(sys.argv)
         self.main_window = BuildSetup()
 
-    def main(self):
+    def main(self) -> None:
         """
         Start VaRA setup GUI
         """
         sys.exit(self.app.exec_())
 
 
-def main_graph_view():
+def main_graph_view() -> None:
     """
     Start VaRA-TS driver and run application.
     """
@@ -96,7 +96,7 @@ def main_graph_view():
     driver.main()
 
 
-def update_term(text):
+def update_term(text: str) -> None:
     """
     Print/Update terminal text without producing new lines.
     """
@@ -105,7 +105,7 @@ def update_term(text):
     print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r', flush=True)
 
 
-def build_setup():
+def build_setup() -> None:
     """
     Build VaRA on cli.
     """
@@ -305,7 +305,7 @@ def main_gen_benchbuild_config():
                                "/.benchbuild.yml")
 
 
-def main_gen_commitmap():
+def main_gen_commitmap() -> None:
     """
     Create a commit map for a repository.
     """
@@ -333,11 +333,16 @@ def main_gen_commitmap():
     cmap = get_commit_map(args.project_name, path, args.end, args.start)
 
     if args.output is None:
+        if path is not None:
+            default_name = path.name.replace("-HEAD", "")
+        else:
+            default_name = args.project_name
+
         output_name = "{result_folder}/{project_name}/{file_name}.cmap"\
             .format(
                 result_folder=CFG["result_dir"],
-                project_name=path.name.replace("-HEAD", ""),
-                file_name=path.name.replace("-HEAD", ""))
+                project_name=default_name,
+                file_name=default_name)
     else:
         if args.output.endswith(".cmap"):
             output_name = args.output
@@ -525,7 +530,7 @@ def main_casestudy():
             store_case_study(case_study, args['paper_config_path'])
 
 
-def main_develop():
+def main_develop() -> None:
     """
     Handle and simplify common developer interactions with the project.
     """
@@ -597,7 +602,10 @@ def main_develop():
     elif args.command == 'status':
         dev.show_status_for_projects(args.projects)
     elif args.command == 'f-branches':
-        dev.show_dev_branches(
-            [LLVMProjects.llvm, LLVMProjects.clang, LLVMProjects.vara])
+        dev.show_dev_branches([
+            LLVMProjects.get_project_by_name("llvm"),
+            LLVMProjects.get_project_by_name("clang"),
+            LLVMProjects.get_project_by_name("vara")
+        ])
     else:
         parser.print_help()

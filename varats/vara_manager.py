@@ -94,6 +94,23 @@ class LLVMProjects(Enum):
     def __str__(self):
         return str(self.value)
 
+    @staticmethod
+    def get_project_by_name(project_name: str) -> LLVMProject:
+        """
+        Get project by name.
+        """
+        for proj in iter(LLVMProjects):
+            if proj.value.name.lower() == project_name:
+                return proj.value
+        raise LookupError
+
+    @property
+    def project(self) -> LLVMProject:
+        """
+        The actual project
+        """
+        return self.value
+
     @property
     def name(self):
         """
@@ -312,7 +329,7 @@ def add_remote(repo_folder, remote, url):
         pass
 
 
-def show_status(repo_folder):
+def show_status(repo_folder: Path) -> None:
     """
     Show git status.
     """
@@ -333,7 +350,9 @@ def get_branches(repo_folder, extra_args=None) -> str:
         return git(args)
 
 
-def fetch_remote(remote, repo_folder=None, extra_args=None):
+def fetch_remote(remote: str,
+                 repo_folder: tp.Optional[Path] = None,
+                 extra_args: tp.Optional[tp.List[str]] = None) -> None:
     """
     Fetches the new changes from the remote.
     """
@@ -347,7 +366,7 @@ def fetch_remote(remote, repo_folder=None, extra_args=None):
         pass
 
 
-def init_all_submodules(folder):
+def init_all_submodules(folder: Path) -> None:
     """
     Inits all submodules.
     """
@@ -356,7 +375,7 @@ def init_all_submodules(folder):
         pass
 
 
-def update_all_submodules(folder):
+def update_all_submodules(folder: Path) -> None:
     """
     Updates all submodules.
     """
@@ -365,7 +384,7 @@ def update_all_submodules(folder):
         pass
 
 
-def pull_current_branch(repo_folder=None):
+def pull_current_branch(repo_folder: Path = None) -> None:
     """
     Pull in changes in a certain branch.
     """
@@ -373,7 +392,9 @@ def pull_current_branch(repo_folder=None):
         pass
 
 
-def push_current_branch(repo_folder="", upstream=None, branch_name=None):
+def push_current_branch(repo_folder: tp.Optional[Path] = None,
+                        upstream: str = None,
+                        branch_name: str = None) -> None:
     """
     Push in changes in a certain branch.
     """
@@ -387,14 +408,14 @@ def push_current_branch(repo_folder="", upstream=None, branch_name=None):
         else:
             cmd_args.append(get_current_branch(repo_folder))
 
-    if repo_folder == '':
+    if repo_folder is None or repo_folder == Path(""):
         git(cmd_args)
     else:
         with local.cwd(repo_folder):
             git(cmd_args)
 
 
-def fetch_repository(repo_folder=None):
+def fetch_repository(repo_folder: tp.Optional[Path] = None) -> None:
     """
     Pull in changes in a certain branch.
     """
@@ -402,7 +423,7 @@ def fetch_repository(repo_folder=None):
         pass
 
 
-def checkout_branch(repo_folder, branch):
+def checkout_branch(repo_folder: Path, branch: str) -> None:
     """
     Checks out a branch in the repository.
     """
@@ -411,7 +432,9 @@ def checkout_branch(repo_folder, branch):
         pass
 
 
-def checkout_new_branch(repo_folder, branch, remote_branch=None):
+def checkout_new_branch(repo_folder: Path,
+                        branch: str,
+                        remote_branch: str = None) -> None:
     """
     Checks out a new branch in the repository.
     """
@@ -844,7 +867,7 @@ class ProcessManager:
         ProcessManager.getInstance().__start_process(process, program, args)
 
     @staticmethod
-    def shutdown():
+    def shutdown() -> None:
         inst = ProcessManager.getInstance()
         with inst.__mutex:
             inst.__shutdown()

@@ -2,9 +2,10 @@
 VaRA-TS MainWindow
 """
 
+import typing as tp
 from os import path
 
-from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtWidgets import QMainWindow, QWidget
 
 from varats.settings import CFG, save_config, generate_benchbuild_config,\
     create_missing_folders
@@ -20,9 +21,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     Manages the GUI state and manages the different active views.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super(MainWindow, self).__init__()
-        self.views = []
+        self.views: tp.List[QWidget] = []
         self.bwg = None
         self.filter_window = None
 
@@ -32,7 +33,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Signals for menubar
         self.actionVaRA_Setup.triggered.connect(self._spawn_vara_build_setup)
-        self.actionInteractionFilter_Editor.triggered.connect(self._spawn_filter_editor)
+        self.actionInteractionFilter_Editor.triggered.connect(
+            self._spawn_filter_editor)
         self.actionSave_Config.triggered.connect(self._save_config)
         self.actionCreate_BenchBuild_Config.triggered.connect(
             self._create_benchbuild_config)
