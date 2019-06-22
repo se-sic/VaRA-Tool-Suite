@@ -18,7 +18,7 @@ from varats.paper.paper_config import project_filter_generator
     limit=100,
     refspec="HEAD",
     version_filter=project_filter_generator("vim"))
-class Vim(Project):
+class Vim(Project):  # type: ignore
     """ Text processing tool vim """
 
     NAME = 'vim'
@@ -29,10 +29,10 @@ class Vim(Project):
     BIN_NAMES = ['vim']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
-    def run_tests(self, runner):
+    def run_tests(self, runner: run) -> None:
         pass
 
-    def compile(self):
+    def compile(self) -> None:
         self.download()
 
         clang = cc(self)

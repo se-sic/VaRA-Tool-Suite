@@ -4,8 +4,11 @@ from benchbuild.utils.compiler import cc
 import benchbuild.project as prj
 
 
-@with_wget({"1.0": "https://raw.githubusercontent.com/se-passau/vara-perf-tests/master/examples/fib.c"})
-class Fib(prj.Project):
+@with_wget({
+    "1.0":
+    "https://raw.githubusercontent.com/se-passau/vara-perf-tests/master/examples/fib.c"
+})
+class Fib(prj.Project):  # type: ignore
     """ Fibonacci """
 
     NAME = 'fib'
@@ -14,10 +17,10 @@ class Fib(prj.Project):
 
     SRC_FILE = "fib.c"
 
-    def run_tests(self, experiment):
+    def run_tests(self, runner: run) -> None:
         pass
 
-    def compile(self):
+    def compile(self) -> None:
         self.download()
 
         clang = cc(self)

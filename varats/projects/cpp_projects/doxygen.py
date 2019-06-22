@@ -16,7 +16,7 @@ from varats.paper.paper_config import project_filter_generator
     limit=100,
     refspec="HEAD",
     version_filter=project_filter_generator("doxygen"))
-class Doxygen(Project):
+class Doxygen(Project):  # type: ignore
     """ Doxygen """
 
     NAME = 'doxygen'
@@ -27,10 +27,10 @@ class Doxygen(Project):
     BIN_NAMES = ['doxygen']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
-    def run_tests(self, runner):
+    def run_tests(self, runner: run) -> None:
         pass
 
-    def compile(self):
+    def compile(self) -> None:
         self.download()
 
         clangxx = cxx(self)

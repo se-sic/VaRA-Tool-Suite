@@ -18,7 +18,7 @@ from varats.paper.paper_config import project_filter_generator
     limit=100,
     refspec="HEAD",
     version_filter=project_filter_generator("libvpx"))
-class Libvpx(Project):
+class Libvpx(Project):  # type: ignore
     """ Codec SDK libvpx (fetched by Git) """
 
     NAME = 'libvpx'
@@ -29,10 +29,10 @@ class Libvpx(Project):
     BIN_NAMES = ['vpxdec', 'vpxenc']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
-    def run_tests(self, runner):
+    def run_tests(self, runner: run) -> None:
         pass
 
-    def compile(self):
+    def compile(self) -> None:
         self.download()
 
         self.cflags += ["-fPIC"]

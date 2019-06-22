@@ -13,14 +13,14 @@ class LLVMall(LLVM):
     SRC_FILE = NAME + "-{0}".format(LLVM.VERSION)
     DEV = "-dev"
 
-    def compile(self):
+    def compile(self) -> None:
         self.download()
 
         with local.cwd(self.SRC_FILE):
             self.download_packages()
             LLVM.build(self)
 
-    def download_packages(self):
+    def download_packages(self) -> None:
         with local.cwd("projects"):
             # Compiler-RT
             Git("https://git.llvm.org/git/compiler-rt.git", "compiler-rt",

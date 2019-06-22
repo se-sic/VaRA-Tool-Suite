@@ -18,7 +18,7 @@ from varats.paper.paper_config import project_filter_generator
     limit=100,
     refspec="HEAD",
     version_filter=project_filter_generator("xz"))
-class Xz(Project):
+class Xz(Project):  # type: ignore
     """ Compression and decompression tool xz (fetched by Git) """
 
     NAME = 'xz'
@@ -29,10 +29,10 @@ class Xz(Project):
     BIN_NAMES = ['xz']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
-    def run_tests(self, runner):
+    def run_tests(self, runner: run) -> None:
         pass
 
-    def compile(self):
+    def compile(self) -> None:
         self.download()
 
         clang = cc(self)
