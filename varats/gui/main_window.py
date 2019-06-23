@@ -60,7 +60,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
         Spawn a setup window to configure and build VaRA
         """
         self.bwg = BuildSetup()  # type: ignore
-        assert isinstance(self.bwg, BuildSetup)
+        if not isinstance(self.bwg, BuildSetup):
+            raise AssertionError()
         self.bwg.show()
 
     def _spawn_filter_editor(self) -> None:
@@ -68,7 +69,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
         Spawn a filter editor window to configure interaction filters.
         """
         self.filter_window = FilterWindow()  # type: ignore
-        assert isinstance(self.filter_window, FilterWindow)
+        if not isinstance(self.filter_window, FilterWindow):
+            raise AssertionError()
         self.filter_window.show()
 
     @staticmethod

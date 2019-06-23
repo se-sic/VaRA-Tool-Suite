@@ -21,7 +21,8 @@ class PlotTypes(Enum):
     @property
     def type(self) -> tp.Type[Plot]:
         """ Get python type from plot enum"""
-        assert issubclass(self.value, Plot)
+        if not issubclass(self.value, Plot):
+            raise AssertionError()
         return tp.cast(tp.Type[Plot], self.value)
 
 

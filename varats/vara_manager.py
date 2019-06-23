@@ -109,7 +109,8 @@ class LLVMProjects(Enum):
         """
         The actual project
         """
-        assert isinstance(self.value, LLVMProject)
+        if not isinstance(self.value, LLVMProject):
+            raise AssertionError()
         return self.value
 
     @property
@@ -857,7 +858,8 @@ class ProcessManager():
             ProcessManager()
         if ProcessManager.__instance is None:
             raise Exception("ProcessManager was not initialized")
-        assert isinstance(ProcessManager.__instance, ProcessManager)
+        if not isinstance(ProcessManager.__instance, ProcessManager):
+            raise AssertionError()
         return ProcessManager.__instance
 
     @staticmethod
