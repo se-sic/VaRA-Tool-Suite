@@ -3,7 +3,6 @@ Module for extracting bc files from generated binaries.
 This requires to run the compilation with WLLVM
 """
 from pathlib import Path
-import attr
 from plumbum import local
 
 import benchbuild.utils.actions as actions
@@ -23,7 +22,6 @@ CFG["vara"] = {
 }
 
 
-@attr.s
 class Extract(actions.Step):  # type: ignore
     NAME = "EXTRACT"
     DESCRIPTION = "Extract bitcode out of the execution file."
