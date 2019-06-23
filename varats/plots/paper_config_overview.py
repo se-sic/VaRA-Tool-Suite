@@ -17,7 +17,6 @@ from varats.plots.plot import Plot
 from varats.data.commit_report import CommitReport
 from varats.plots.plot_utils import check_required_args
 import varats.paper.paper_config as PC
-from varats.settings import CFG
 from varats.utils.project_util import get_local_project_git_path
 
 
