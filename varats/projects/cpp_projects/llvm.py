@@ -5,7 +5,7 @@ from benchbuild.utils.run import run
 from plumbum import local, path
 
 
-class LLVM(Project):
+class LLVM(Project):  # type: ignore
     """ LLVM superclass """
 
     NAME = 'llvm'
@@ -14,10 +14,10 @@ class LLVM(Project):
 
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
-    def run_tests(self, runner):
+    def run_tests(self, runner: run) -> None:
         pass
 
-    def build(self):
+    def build(self) -> None:
         path.local.LocalPath.mkdir(local.path("build/dev"))
 
         with local.cwd("build/dev"):

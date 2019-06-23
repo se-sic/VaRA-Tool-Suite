@@ -5,13 +5,18 @@ This class implements the commit-flow report (CFR) analysis of the variability-
 aware region analyzer (VaRA).
 For annotation we use the git-blame data of git.
 """
+
+import typing as tp
 import random
 from os import path
 from pathlib import Path
 
 from plumbum import local
+from plumbum.commands import ProcessExecutionError
+from plumbum.commands.base import BoundCommand
 
 from benchbuild.experiment import Experiment
+from benchbuild.project import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.settings import CFG
 from benchbuild.utils.cmd import opt, mkdir
@@ -20,8 +25,8 @@ import benchbuild.utils.actions as actions
 from varats.data.commit_report import CommitReport as CR
 from varats.data.file_status import FileStatusExtension as FSE
 from varats.data.revisions import get_proccessed_revisions
-from varats.experiments.Extract import Extract
-from varats.experiments.Wllvm import RunWLLVM
+from varats.experiments.extract import Extract
+from varats.experiments.wllvm import RunWLLVM
 from varats.settings import CFG as V_CFG
 from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
                                           FunctionPEErrorWrapper)
@@ -32,15 +37,16 @@ class CFRErrorHandler():
     Error handler for varas commit-flow-report analysis
     """
 
-    def __init__(self, project, binary_name, result_folder, run_cmd,
-                 timeout_duration):
+    def __init__(self, project: Project, binary_name: str, result_folder: str,
+                 run_cmd: tp.Optional[BoundCommand],
+                 timeout_duration: tp.Optional[str]) -> None:
         self.__project = project
         self.__binary_name = binary_name
         self.__result_folder = result_folder
         self.__run_cmd = run_cmd
         self.__timeout_duration = timeout_duration
 
-    def __call__(self, ex):
+    def __call__(self, ex: ProcessExecutionError) -> None:
         result_error_file = CR.get_file_name(
             project_name=str(self.__project.name),
             binary_name=self.__binary_name,
@@ -64,7 +70,7 @@ Timeout after: {timeout_duration}
         raise ex
 
 
-class CFRAnalysis(actions.Step):
+class CFRAnalysis(actions.Step):  # type: ignore
     """
     Analyse a project with VaRA and generate a Commit-Flow Report.
     """
@@ -74,7 +80,10 @@ class CFRAnalysis(actions.Step):
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
-    def __call__(self):
+    def __init__(self, project: Project):
+        super(CFRAnalysis, self).__init__(obj=project, action_fn=self.analyze)
+
+    def analyze(self) -> actions.StepResult:
         """
         This step performs the actual analysis with the correct flags.
         Flags:
@@ -124,7 +133,7 @@ class CFRAnalysis(actions.Step):
                                 run_cmd, timeout_duration))
 
 
-class GitBlameAnntotationReport(Experiment):
+class GitBlameAnntotationReport(Experiment):  # type: ignore
     """
     Generates a commit flow report (CFR) of the project(s) specified in the
     call.
@@ -132,7 +141,7 @@ class GitBlameAnntotationReport(Experiment):
 
     NAME = "GitBlameAnnotationReport"
 
-    def actions_for_project(self, project):
+    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """Returns the specified steps to run the project(s) specified in
         the call in a fixed order."""
 
@@ -183,14 +192,15 @@ class GitBlameAnntotationReport(Experiment):
         return analysis_actions
 
     @staticmethod
-    def __sample_num_versions(versions):
+    def __sample_num_versions(versions: tp.List[str]) -> tp.List[str]:
         sample_size = int(V_CFG["experiment"]["sample_limit"])
         versions = [versions[i] for i in
                     sorted(random.sample(range(len(versions)),
                                          min(sample_size, len(versions))))]
         return versions
 
-    def sample(self, prj_cls, versions):
+    def sample(self, prj_cls: tp.Type[Project],
+               versions: tp.List[str]) -> tp.Generator[str, None, None]:
         """
         Adapt version sampling process if needed, otherwise fallback to default
         implementation.

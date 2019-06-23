@@ -113,11 +113,13 @@ def get_value_or_default(cfg: s.Configuration, varname: str,
     return config_node.value
 
 
-def create_missing_folders():
+def create_missing_folders() -> None:
     """
     Create a folders that do not exist but where set in the config.
     """
-    def create_missing_folder_for_cfg(cfg_varname, local_cfg=CFG):
+
+    def create_missing_folder_for_cfg(
+            cfg_varname: str, local_cfg: s.Configuration = CFG) -> None:
         """
         Create missing folders for a specific config path.
         """
@@ -150,7 +152,8 @@ def save_config() -> None:
     CFG.store(config_file)
 
 
-def generate_benchbuild_config(vara_cfg, bb_config_path: str):
+def generate_benchbuild_config(vara_cfg: s.Configuration,
+                               bb_config_path: str) -> None:
     """
     Generate a configuration file for benchbuild
     """
@@ -181,7 +184,7 @@ def generate_benchbuild_config(vara_cfg, bb_config_path: str):
     projects_conf = BB_CFG["plugins"]["experiments"]
     projects_conf.value[:] = []
     projects_conf.value[:] += [
-        'varats.experiments.GitBlameAnnotationReport',
+        'varats.experiments.git_blame_annotation_report',
         'varats.experiments.marker_tester'
     ]
 
@@ -201,7 +204,8 @@ def generate_benchbuild_config(vara_cfg, bb_config_path: str):
         }
     }
 
-    def replace_bb_cwd_path(cfg_varname, cfg_node=BB_CFG):
+    def replace_bb_cwd_path(cfg_varname: str,
+                            cfg_node: s.Configuration = BB_CFG) -> None:
         cfg_node[cfg_varname] = str(vara_cfg["benchbuild_root"]) +\
             str(cfg_node[cfg_varname])[len(getcwd()):]
 

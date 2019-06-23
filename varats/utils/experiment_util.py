@@ -14,11 +14,12 @@ class FunctionPEErrorWrapper():
         handler: function to handle ProcessExecutionError
     """
 
-    def __init__(self, func, handler):
+    def __init__(self, func: tp.Callable[..., tp.Any],
+                 handler: tp.Callable[[ProcessExecutionError], None]) -> None:
         self.__func = func
         self.__handler = handler
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
         try:
             return self.__func(*args, **kwargs)
         except ProcessExecutionError as ex:
@@ -26,8 +27,8 @@ class FunctionPEErrorWrapper():
 
 
 def exec_func_with_pe_error_handler(
-        func: tp.Callable[[], tp.Any],
-        handler: tp.Callable[[ProcessExecutionError], None]):
+        func: tp.Callable[..., tp.Any],
+        handler: tp.Callable[[ProcessExecutionError], None]) -> None:
     """
     Execute a function call with a ProcessExecutionError handler.
 
