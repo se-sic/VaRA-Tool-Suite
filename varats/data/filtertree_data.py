@@ -65,18 +65,18 @@ InteractionFilter
 import yaml
 
 from copy import deepcopy
-from typing import List
+import typing as tp
 from PyQt5.QtCore import QDateTime, Qt
 
 from varats.data.version_header import VersionHeader
 
 
 class SecretYamlObject(yaml.YAMLObject):
-    hidden_fields = []
-    removed_fields = []
+    hidden_fields: tp.List[str] = []
+    removed_fields: tp.List[str] = []
 
     @classmethod
-    def to_yaml(cls, dumper, data):
+    def to_yaml(cls, dumper: tp.Any, data: tp.Any) -> tp.Any:
         new_data = deepcopy(data)
         for item in cls.hidden_fields:
             new_data.__dict__[item] = None
@@ -92,30 +92,27 @@ class InteractionFilter(SecretYamlObject):
     hidden_fields = ["_parent"]
     yaml_tag = u'!InteractionFilter'
 
-    def __init__(self, parent: 'InteractionFilter' = None,
-                 comment: str = None) -> None:
+    def __init__(self,
+                 parent: tp.Optional['InteractionFilter'] = None,
+                 comment: tp.Optional[str] = None) -> None:
 
         self._type = type(self).__name__
         self._parent = parent
         if comment is None:
-            self._comment = ""
+            self._comment: str = ""
         else:
-            self._comment = comment
+            self._comment: str = comment
 
-    @staticmethod
-    def addChild(child: 'InteractionFilter') -> bool:
+    def addChild(self, child: 'InteractionFilter') -> bool:
         return False
 
-    @staticmethod
-    def insertChild(position: int, child: 'InteractionFilter') -> bool:
+    def insertChild(self, position: int, child: 'InteractionFilter') -> bool:
         return False
 
-    @staticmethod
-    def moveChild(sourceRow: int, destinationRow: int) -> bool:
+    def moveChild(self, sourceRow: int, destinationRow: int) -> bool:
         return False
 
-    @staticmethod
-    def removeChild(position: int) -> bool:
+    def removeChild(self, position: int) -> bool:
         return False
 
     def name(self) -> str:
@@ -127,18 +124,16 @@ class InteractionFilter(SecretYamlObject):
     def setComment(self, comment: str) -> None:
         self._comment = comment
 
-    def parent(self) -> 'InteractionFilter':
+    def parent(self) -> tp.Optional['InteractionFilter']:
         return self._parent
 
-    def setParent(self, parent: 'InteractionFilter') -> None:
+    def setParent(self, parent: tp.Optional['InteractionFilter']) -> None:
         self._parent = parent
 
-    @staticmethod
-    def child(index: int) -> 'InteractionFilter':
+    def child(self, index: int) -> tp.Optional['InteractionFilter']:
         return None
 
-    @staticmethod
-    def childCount() -> int:
+    def childCount(self) -> int:
         return 0
 
     def indexOfChild(self, child: 'InteractionFilter') -> int:
@@ -148,32 +143,38 @@ class InteractionFilter(SecretYamlObject):
                 return i
         raise ValueError("child not found")
 
-    def row(self) -> int:
+    def row(self) -> tp.Optional[int]:
         if self._parent is not None:
             return self._parent.indexOfChild(self)
+        return None
 
     def log(self, prefix: str = "", is_tail: bool = True) -> str:
         output = "" + prefix + ("└── "
                                 if is_tail else "├── ") + self.name() + "\n"
         num_children = self.childCount()
         for i in range(num_children - 1):
-            output += self.child(i).log(
-                prefix + ("    " if is_tail else "│   "), False)
+            child = self.child(i)
+            if child:
+                output += child.log(prefix + ("    " if is_tail else "│   "),
+                                    False)
         if num_children > 0:
-            output += self.child(num_children - 1).log(
-                prefix + ("    " if is_tail else "│   "), True)
+            child = self.child(num_children - 1)
+            if child:
+                output += child.log(prefix + ("    " if is_tail else "│   "),
+                                    True)
         return output
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.log()
 
-    def data(self, column):
+    def data(self, column: int) -> tp.Any:
         if column == 0:
             return self.name()
-        elif column == 1:
+        if column == 1:
             return self.comment()
+        return None
 
-    def setData(self, column, value):
+    def setData(self, column: int, value: tp.Any) -> None:
         if column == 0:
             pass
         elif column == 1:
@@ -185,43 +186,50 @@ class InteractionFilter(SecretYamlObject):
         Must be called on the root node of the tree!
         """
         for i in range(self.childCount()):
-            self.child(i).__fixParentPointersHelper(self)
+            child = self.child(i)
+            if child:
+                child.__fixParentPointersHelper(self)
 
     def __fixParentPointersHelper(self, parent: 'InteractionFilter') -> None:
         self.setParent(parent)
         for i in range(self.childCount()):
-            self.child(i).__fixParentPointersHelper(self)
+            child = self.child(i)
+            if child:
+                child.__fixParentPointersHelper(self)
 
     @staticmethod
-    def resource():
+    def resource() -> tp.Optional[str]:
         return None
 
     @staticmethod
-    def getVersionHeader():
+    def getVersionHeader() -> VersionHeader:
         return VersionHeader.from_version_number("InteractionFilter", 1)
 
 
 class ConcreteInteractionFilter(InteractionFilter):
     yaml_tag = u'!ConcreteInteractionFilter'
 
-    def __init__(self, parent: InteractionFilter = None,
-                 comment: str = None) -> None:
+    def __init__(self,
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None) -> None:
         super().__init__(parent, comment)
 
 
 class UnaryInteractionFilter(ConcreteInteractionFilter):
     yaml_tag = u'!UnaryInteractionFilter'
 
-    def __init__(self, parent: InteractionFilter = None,
-                 comment: str = None) -> None:
+    def __init__(self,
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None) -> None:
         super().__init__(parent, comment)
 
 
 class BinaryInteractionFilter(ConcreteInteractionFilter):
     yaml_tag = u'!BinaryInteractionFilter'
 
-    def __init__(self, parent: InteractionFilter = None,
-                 comment: str = None) -> None:
+    def __init__(self,
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None) -> None:
         super().__init__(parent, comment)
 
 
@@ -229,8 +237,8 @@ class AuthorFilter(UnaryInteractionFilter):
     yaml_tag = u'!AuthorFilter'
 
     def __init__(self,
-                 parent: InteractionFilter = None,
-                 comment: str = None,
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None,
                  author_name: str = "",
                  author_email: str = "") -> None:
         super().__init__(parent, comment)
@@ -249,7 +257,7 @@ class AuthorFilter(UnaryInteractionFilter):
     def setAuthorEmail(self, author_email: str) -> None:
         self._author_email = author_email
 
-    def data(self, column):
+    def data(self, column: int) -> tp.Any:
         val = super().data(column)
 
         if column == 2:
@@ -259,7 +267,7 @@ class AuthorFilter(UnaryInteractionFilter):
 
         return val
 
-    def setData(self, column, value):
+    def setData(self, column: int, value: tp.Any) -> None:
         super().setData(column, value)
 
         if column == 2:
@@ -268,7 +276,7 @@ class AuthorFilter(UnaryInteractionFilter):
             self.setAuthorEmail(value)
 
     @staticmethod
-    def resource():
+    def resource() -> str:
         return ":/breeze/light/im-user.svg"
 
 
@@ -276,8 +284,8 @@ class CommitterFilter(UnaryInteractionFilter):
     yaml_tag = u'!CommitterFilter'
 
     def __init__(self,
-                 parent: InteractionFilter = None,
-                 comment: str = None,
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None,
                  committer_name: str = "",
                  committer_email: str = "") -> None:
         super().__init__(parent, comment)
@@ -296,7 +304,7 @@ class CommitterFilter(UnaryInteractionFilter):
     def setCommitterEmail(self, committer_email: str) -> None:
         self._committer_email = committer_email
 
-    def data(self, column):
+    def data(self, column: int) -> tp.Any:
         val = super().data(column)
 
         if column == 2:
@@ -306,7 +314,7 @@ class CommitterFilter(UnaryInteractionFilter):
 
         return val
 
-    def setData(self, column, value):
+    def setData(self, column: int, value: tp.Any) -> None:
         super().setData(column, value)
 
         if column == 2:
@@ -315,7 +323,7 @@ class CommitterFilter(UnaryInteractionFilter):
             self.setCommitterEmail(value)
 
     @staticmethod
-    def resource():
+    def resource() -> str:
         return ":/breeze/light/im-user.svg"
 
 
@@ -323,9 +331,9 @@ class AuthorDateMinFilter(UnaryInteractionFilter):
     yaml_tag = u'!AuthorDateMinFilter'
 
     def __init__(self,
-                 parent: InteractionFilter = None,
-                 comment: str = None,
-                 author_date_min: str = None) -> None:
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None,
+                 author_date_min: tp.Optional[str] = None) -> None:
         super().__init__(parent, comment)
         if author_date_min:
             self._author_date_min = author_date_min
@@ -338,7 +346,7 @@ class AuthorDateMinFilter(UnaryInteractionFilter):
     def setAuthorDateMin(self, author_date_min: QDateTime) -> None:
         self._author_date_min = author_date_min.toString(Qt.ISODate)
 
-    def data(self, column):
+    def data(self, column: int) -> tp.Any:
         val = super().data(column)
 
         if column == 2:
@@ -346,14 +354,14 @@ class AuthorDateMinFilter(UnaryInteractionFilter):
 
         return val
 
-    def setData(self, column, value):
+    def setData(self, column: int, value: tp.Any) -> None:
         super().setData(column, value)
 
         if column == 2:
             self.setAuthorDateMin(value)
 
     @staticmethod
-    def resource():
+    def resource() -> str:
         return ":/breeze/light/appointment-new.svg"
 
 
@@ -361,9 +369,9 @@ class AuthorDateMaxFilter(UnaryInteractionFilter):
     yaml_tag = u'!AuthorDateMaxFilter'
 
     def __init__(self,
-                 parent: InteractionFilter = None,
-                 comment: str = None,
-                 author_date_max: str = None) -> None:
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None,
+                 author_date_max: tp.Optional[str] = None) -> None:
         super().__init__(parent, comment)
         if author_date_max:
             self._author_date_max = author_date_max
@@ -376,7 +384,7 @@ class AuthorDateMaxFilter(UnaryInteractionFilter):
     def setAuthorDateMax(self, author_date_max: QDateTime) -> None:
         self._author_date_max = author_date_max.toString(Qt.ISODate)
 
-    def data(self, column):
+    def data(self, column: int) -> tp.Any:
         val = super().data(column)
 
         if column == 2:
@@ -384,14 +392,14 @@ class AuthorDateMaxFilter(UnaryInteractionFilter):
 
         return val
 
-    def setData(self, column, value):
+    def setData(self, column: int, value: tp.Any) -> None:
         super().setData(column, value)
 
         if column == 2:
             self.setAuthorDateMax(value)
 
     @staticmethod
-    def resource():
+    def resource() -> str:
         return ":/breeze/light/appointment-new.svg"
 
 
@@ -399,9 +407,9 @@ class CommitDateMinFilter(UnaryInteractionFilter):
     yaml_tag = u'!CommitDateMinFilter'
 
     def __init__(self,
-                 parent: InteractionFilter = None,
-                 comment: str = None,
-                 commit_date_min: str = None) -> None:
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None,
+                 commit_date_min: tp.Optional[str] = None) -> None:
         super().__init__(parent, comment)
         if commit_date_min:
             self._commit_date_min = commit_date_min
@@ -414,7 +422,7 @@ class CommitDateMinFilter(UnaryInteractionFilter):
     def setCommitDateMin(self, commit_date_min: QDateTime) -> None:
         self._commit_date_min = commit_date_min.toString(Qt.ISODate)
 
-    def data(self, column):
+    def data(self, column: int) -> tp.Any:
         val = super().data(column)
 
         if column == 2:
@@ -422,14 +430,14 @@ class CommitDateMinFilter(UnaryInteractionFilter):
 
         return val
 
-    def setData(self, column, value):
+    def setData(self, column: int, value: tp.Any) -> None:
         super().setData(column, value)
 
         if column == 2:
             self.setCommitDateMin(value)
 
     @staticmethod
-    def resource():
+    def resource() -> str:
         return ":/breeze/light/appointment-new.svg"
 
 
@@ -437,9 +445,9 @@ class CommitDateMaxFilter(UnaryInteractionFilter):
     yaml_tag = u'!CommitDateMaxFilter'
 
     def __init__(self,
-                 parent: InteractionFilter = None,
-                 comment: str = None,
-                 commit_date_max: str = None) -> None:
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None,
+                 commit_date_max: tp.Optional[str] = None) -> None:
         super().__init__(parent, comment)
         if commit_date_max:
             self._commit_date_max = commit_date_max
@@ -452,7 +460,7 @@ class CommitDateMaxFilter(UnaryInteractionFilter):
     def setCommitDateMax(self, commit_date_max: QDateTime) -> None:
         self._commit_date_max = commit_date_max.toString(Qt.ISODate)
 
-    def data(self, column):
+    def data(self, column: int) -> tp.Any:
         val = super().data(column)
 
         if column == 2:
@@ -460,14 +468,14 @@ class CommitDateMaxFilter(UnaryInteractionFilter):
 
         return val
 
-    def setData(self, column, value):
+    def setData(self, column: int, value: tp.Any) -> None:
         super().setData(column, value)
 
         if column == 2:
             self.setCommitDateMax(value)
 
     @staticmethod
-    def resource():
+    def resource() -> str:
         return ":/breeze/light/appointment-new.svg"
 
 
@@ -475,19 +483,19 @@ class AuthorDateDeltaMinFilter(BinaryInteractionFilter):
     yaml_tag = u'!AuthorDateDeltaMinFilter'
 
     def __init__(self,
-                 parent: InteractionFilter = None,
-                 comment: str = None,
-                 author_date_delta_min: str = None) -> None:
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None,
+                 author_date_delta_min: tp.Optional[str] = None) -> None:
         super().__init__(parent, comment)
         self._author_date_delta_min = author_date_delta_min
 
-    def authorDateDeltaMin(self) -> str:
+    def authorDateDeltaMin(self) -> tp.Optional[str]:
         return self._author_date_delta_min
 
     def setAuthorDateDeltaMin(self, author_date_delta_min: str) -> None:
         self._author_date_delta_min = author_date_delta_min
 
-    def data(self, column):
+    def data(self, column: int) -> tp.Any:
         val = super().data(column)
 
         if column == 2:
@@ -495,14 +503,14 @@ class AuthorDateDeltaMinFilter(BinaryInteractionFilter):
 
         return val
 
-    def setData(self, column, value):
+    def setData(self, column: int, value: tp.Any) -> None:
         super().setData(column, value)
 
         if column == 2:
             self.setAuthorDateDeltaMin(value)
 
     @staticmethod
-    def resource():
+    def resource() -> str:
         return ":/breeze/light/chronometer.svg"
 
 
@@ -510,19 +518,19 @@ class AuthorDateDeltaMaxFilter(BinaryInteractionFilter):
     yaml_tag = u'!AuthorDateDeltaMaxFilter'
 
     def __init__(self,
-                 parent: InteractionFilter = None,
-                 comment: str = None,
-                 author_date_delta_max: str = None) -> None:
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None,
+                 author_date_delta_max: tp.Optional[str] = None) -> None:
         super().__init__(parent, comment)
         self._author_date_delta_max = author_date_delta_max
 
-    def authorDateDeltaMax(self) -> str:
+    def authorDateDeltaMax(self) -> tp.Optional[str]:
         return self._author_date_delta_max
 
     def setAuthorDateDeltaMax(self, author_date_delta_max: str) -> None:
         self._author_date_delta_max = author_date_delta_max
 
-    def data(self, column):
+    def data(self, column: int) -> tp.Any:
         val = super().data(column)
 
         if column == 2:
@@ -530,14 +538,14 @@ class AuthorDateDeltaMaxFilter(BinaryInteractionFilter):
 
         return val
 
-    def setData(self, column, value):
+    def setData(self, column: int, value: tp.Any) -> None:
         super().setData(column, value)
 
         if column == 2:
             self.setAuthorDateDeltaMax(value)
 
     @staticmethod
-    def resource():
+    def resource() -> str:
         return ":/breeze/light/chronometer.svg"
 
 
@@ -545,19 +553,19 @@ class CommitDateDeltaMinFilter(BinaryInteractionFilter):
     yaml_tag = u'!CommitDateDeltaMinFilter'
 
     def __init__(self,
-                 parent: InteractionFilter = None,
-                 comment: str = None,
-                 commit_date_delta_min: str = None) -> None:
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None,
+                 commit_date_delta_min: tp.Optional[str] = None) -> None:
         super().__init__(parent, comment)
         self._commit_date_delta_min = commit_date_delta_min
 
-    def commitDateDeltaMin(self) -> str:
+    def commitDateDeltaMin(self) -> tp.Optional[str]:
         return self._commit_date_delta_min
 
-    def setCommitDateDeltaMin(self, commit_date_delta_min: str) -> str:
+    def setCommitDateDeltaMin(self, commit_date_delta_min: str) -> None:
         self._commit_date_delta_min = commit_date_delta_min
 
-    def data(self, column):
+    def data(self, column: int) -> tp.Any:
         val = super().data(column)
 
         if column == 2:
@@ -565,14 +573,14 @@ class CommitDateDeltaMinFilter(BinaryInteractionFilter):
 
         return val
 
-    def setData(self, column, value):
+    def setData(self, column: int, value: tp.Any) -> None:
         super().setData(column, value)
 
         if column == 2:
             self.setCommitDateDeltaMin(value)
 
     @staticmethod
-    def resource():
+    def resource() -> str:
         return ":/breeze/light/chronometer.svg"
 
 
@@ -580,19 +588,19 @@ class CommitDateDeltaMaxFilter(BinaryInteractionFilter):
     yaml_tag = u'!CommitDateDeltaMaxFilter'
 
     def __init__(self,
-                 parent: InteractionFilter = None,
-                 comment: str = None,
-                 commit_date_delta_max: str = None) -> None:
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None,
+                 commit_date_delta_max: tp.Optional[str] = None) -> None:
         super().__init__(parent, comment)
         self._commit_date_delta_max = commit_date_delta_max
 
-    def commitDateDeltaMax(self) -> str:
+    def commitDateDeltaMax(self) -> tp.Optional[str]:
         return self._commit_date_delta_max
 
-    def setCommitDateDeltaMax(self, commit_date_delta_max: str) -> str:
+    def setCommitDateDeltaMax(self, commit_date_delta_max: str) -> None:
         self._commit_date_delta_max = commit_date_delta_max
 
-    def data(self, column):
+    def data(self, column: int) -> tp.Any:
         val = super().data(column)
 
         if column == 2:
@@ -600,22 +608,23 @@ class CommitDateDeltaMaxFilter(BinaryInteractionFilter):
 
         return val
 
-    def setData(self, column, value):
+    def setData(self, column: int, value: tp.Any) -> None:
         super().setData(column, value)
 
         if column == 2:
             self.setCommitDateDeltaMax(value)
 
     @staticmethod
-    def resource():
+    def resource() -> str:
         return ":/breeze/light/chronometer.svg"
 
 
 class FilterOperator(InteractionFilter):
     yaml_tag = u'!FilterOperator'
 
-    def __init__(self, parent: InteractionFilter = None,
-                 comment: str = None) -> None:
+    def __init__(self,
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None) -> None:
         super().__init__(parent, comment)
 
 
@@ -623,14 +632,15 @@ class AndOperator(FilterOperator):
     yaml_tag = u'!AndOperator'
 
     def __init__(self,
-                 parent: InteractionFilter = None,
-                 comment: str = None,
-                 children: List[InteractionFilter] = None) -> None:
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None,
+                 children: tp.Optional[tp.List[InteractionFilter]] = None
+                 ) -> None:
         super().__init__(parent, comment)
         if children is None:
-            self._children = []
+            self._children: tp.List[InteractionFilter] = []
         else:
-            self._children = children
+            self._children: tp.List[InteractionFilter] = children
 
     def addChild(self, child: InteractionFilter) -> bool:
         self._children.append(child)
@@ -666,7 +676,7 @@ class AndOperator(FilterOperator):
         child.setParent(None)
         return True
 
-    def child(self, index: int) -> InteractionFilter:
+    def child(self, index: int) -> tp.Optional[InteractionFilter]:
         if index < 0 or index >= len(self._children):
             return None
         return self._children[index]
@@ -675,7 +685,7 @@ class AndOperator(FilterOperator):
         return len(self._children)
 
     @staticmethod
-    def resource():
+    def resource() -> str:
         return ":/operators/and-operator.svg"
 
 
@@ -683,14 +693,15 @@ class OrOperator(FilterOperator):
     yaml_tag = u'!OrOperator'
 
     def __init__(self,
-                 parent: InteractionFilter = None,
-                 comment: str = None,
-                 children: List[InteractionFilter] = None) -> None:
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None,
+                 children: tp.Optional[tp.List[InteractionFilter]] = None
+                 ) -> None:
         super().__init__(parent, comment)
         if children is None:
-            self._children = []
+            self._children: tp.List[InteractionFilter] = []
         else:
-            self._children = children
+            self._children: tp.List[InteractionFilter] = children
 
     def addChild(self, child: InteractionFilter) -> bool:
         self._children.append(child)
@@ -726,7 +737,7 @@ class OrOperator(FilterOperator):
         child.setParent(None)
         return True
 
-    def child(self, index: int) -> InteractionFilter:
+    def child(self, index: int) -> tp.Optional[InteractionFilter]:
         if index < 0 or index >= len(self._children):
             return None
         return self._children[index]
@@ -735,7 +746,7 @@ class OrOperator(FilterOperator):
         return len(self._children)
 
     @staticmethod
-    def resource():
+    def resource() -> str:
         return ":/operators/or-operator.svg"
 
 
@@ -743,9 +754,9 @@ class NotOperator(FilterOperator):
     yaml_tag = u'!NotOperator'
 
     def __init__(self,
-                 parent: InteractionFilter = None,
-                 comment: str = None,
-                 child: InteractionFilter = None) -> None:
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None,
+                 child: tp.Optional[InteractionFilter] = None) -> None:
         super().__init__(parent, comment)
         self._child = child
 
@@ -769,13 +780,15 @@ class NotOperator(FilterOperator):
         if position != 0:
             return False
 
-        self._child.setParent(None)
+        if self._child:
+            self._child.setParent(None)
         self._child = None
         return True
 
-    def child(self, index: int = 0) -> InteractionFilter:
+    def child(self, index: int = 0) -> tp.Optional[InteractionFilter]:
         if index == 0:
             return self._child
+        return None
 
     def childCount(self) -> int:
         if self._child is None:
@@ -783,7 +796,7 @@ class NotOperator(FilterOperator):
         return 1
 
     @staticmethod
-    def resource():
+    def resource() -> str:
         return ":/operators/not-operator.svg"
 
 
@@ -791,9 +804,9 @@ class SourceOperator(FilterOperator):
     yaml_tag = u'!SourceOperator'
 
     def __init__(self,
-                 parent: InteractionFilter = None,
-                 comment: str = None,
-                 child: InteractionFilter = None) -> None:
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None,
+                 child: tp.Optional[InteractionFilter] = None) -> None:
         super().__init__(parent, comment)
         self._child = child
 
@@ -817,13 +830,15 @@ class SourceOperator(FilterOperator):
         if position != 0:
             return False
 
-        self._child.setParent(None)
+        if self._child:
+            self._child.setParent(None)
         self._child = None
         return True
 
-    def child(self, index: int = 0) -> InteractionFilter:
+    def child(self, index: int = 0) -> tp.Optional[InteractionFilter]:
         if index == 0:
             return self._child
+        return None
 
     def childCount(self) -> int:
         if self._child is None:
@@ -831,7 +846,7 @@ class SourceOperator(FilterOperator):
         return 1
 
     @staticmethod
-    def resource():
+    def resource() -> str:
         return ":/operators/source-operator.svg"
 
 
@@ -839,9 +854,9 @@ class TargetOperator(FilterOperator):
     yaml_tag = u'!TargetOperator'
 
     def __init__(self,
-                 parent: InteractionFilter = None,
-                 comment: str = None,
-                 child: InteractionFilter = None) -> None:
+                 parent: tp.Optional[InteractionFilter] = None,
+                 comment: tp.Optional[str] = None,
+                 child: tp.Optional[InteractionFilter] = None) -> None:
         super().__init__(parent, comment)
         self._child = child
 
@@ -865,13 +880,15 @@ class TargetOperator(FilterOperator):
         if position != 0:
             return False
 
-        self._child.setParent(None)
+        if self._child:
+            self._child.setParent(None)
         self._child = None
         return True
 
-    def child(self, index: int = 0) -> InteractionFilter:
+    def child(self, index: int = 0) -> tp.Optional[InteractionFilter]:
         if index == 0:
             return self._child
+        return None
 
     def childCount(self) -> int:
         if self._child is None:
@@ -879,5 +896,5 @@ class TargetOperator(FilterOperator):
         return 1
 
     @staticmethod
-    def resource():
+    def resource() -> str:
         return ":/operators/target-operator.svg"
