@@ -43,7 +43,6 @@ class VersionHeader():
     """
 
     def __init__(self, yaml_doc: tp.Dict[str, tp.Any]) -> None:
-        print(type(yaml_doc))
         if 'DocType' not in yaml_doc or 'Version' not in yaml_doc:
             raise NoVersionHeader()
 
