@@ -17,6 +17,10 @@ def get_project_cls_by_name(project_name: str) -> Project:
     Look up a BenchBuild project by it's name.
     """
     for proj in ProjectRegistry.projects:
+        if proj.endswith('gentoo') or proj.endswith("benchbuild"):
+            # currently we only support vara provided projects
+            continue
+
         if proj.startswith(project_name):
             return ProjectRegistry.projects[proj]
 
