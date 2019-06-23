@@ -322,6 +322,24 @@ def __store_case_study_to_file(case_study: CaseStudy, file_path: Path) -> None:
         cs_file.write(yaml.dump(case_study))
 
 
+def get_result_files_for_case_study(
+        case_study: CaseStudy, result_dir: Path,
+        report_type: tp.Type[ReportType]) -> tp.Set[Path]:
+    """
+    Return all result files that belong to a given case study.
+    """
+    files_to_store: tp.Set[Path] = set()
+    result_dir /= case_study.project_name
+
+    for opt_res_file in result_dir.iterdir():
+        if report_type.is_result_file(opt_res_file.name):
+            if case_study.has_revision(
+                    report_type.get_commit_hash_from_result_file(
+                        opt_res_file.name)):
+                files_to_store.add(opt_res_file)
+
+    return files_to_store
+
 ###############################################################################
 # Case-study generation
 ###############################################################################

@@ -5,11 +5,12 @@ Module for interacting with paper configs.
 import typing as tp
 import re
 from pathlib import Path
+from zipfile import ZipFile
 
 from plumbum import colors
 
 from varats.data.commit_report import CommitReport
-from varats.paper.case_study import CaseStudy
+from varats.paper.case_study import CaseStudy, get_result_files_for_case_study
 from varats.settings import CFG
 import varats.paper.paper_config as PC
 
@@ -151,3 +152,26 @@ def get_status(case_study: CaseStudy,
                 rev=rev_state[0], status=color_rev_state(rev_state[1]))
 
     return status
+
+
+def package_paper_config(output_file: Path) -> None:
+    """
+    Package all files from a paper config into a zip folder.
+    """
+    PC.load_paper_config(
+        Path(
+            str(CFG["paper_config"]["folder"]) + "/" +
+            str(CFG["paper_config"]["current_config"])))
+
+    current_config = PC.get_paper_config()
+    result_dir = Path(str(CFG['result_dir']))
+
+    files_to_store: tp.Set[Path] = set()
+    for case_study in current_config.get_all_case_studies():
+        files_to_store |= get_result_files_for_case_study(
+            case_study, result_dir, CommitReport)
+
+    vara_root = Path(str(CFG['config_file'])).parent
+    with ZipFile(output_file, "w") as pc_zip:
+        for file_path in files_to_store:
+            pc_zip.write(file_path.relative_to(vara_root))

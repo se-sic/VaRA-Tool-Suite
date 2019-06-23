@@ -460,6 +460,10 @@ def main_casestudy() -> None:
         help="Maximal expected gradient in percent between two revisions")
     add_common_args(ext_parser)
 
+    package_parser = sub_parsers.add_parser(
+        'package', help="Case study packaging util")
+    package_parser.add_argument("-o", "--output", help="Output file")
+
     args = {
         k: v
         for k, v in vars(parser.parse_args()).items() if v is not None
@@ -535,6 +539,11 @@ def main_casestudy() -> None:
                                              **args)
 
             store_case_study(case_study, args['paper_config_path'])
+    elif args['subcommand'] == 'package':
+        if args["output"].endswith(".zip"):
+            PCM.package_paper_config(Path(args["output"]))
+        else:
+            parser.error("--output needs to be a zip file path, e.g., foo.zip")
 
 
 def main_develop() -> None:
