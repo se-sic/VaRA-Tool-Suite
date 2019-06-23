@@ -451,7 +451,7 @@ def has_branch(repo_folder: Path, branch_name: str) -> bool:
     """
     with local.cwd(repo_folder):
         exit_code = git["rev-parse", "--verify", branch_name] & TF
-        return tp.cast(bool, exit_code == 0)
+        return tp.cast(bool, exit_code)
 
 
 def has_remote_branch(repo_folder: Path, branch_name: str,
