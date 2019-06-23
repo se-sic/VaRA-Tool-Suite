@@ -96,12 +96,12 @@ class InteractionFilter(SecretYamlObject):
                  parent: tp.Optional['InteractionFilter'] = None,
                  comment: tp.Optional[str] = None) -> None:
 
+        self._comment: str = ""
         self._type = type(self).__name__
         self._parent = parent
-        if comment is None:
-            self._comment: str = ""
-        else:
-            self._comment: str = comment
+
+        if comment is not None:
+            self._comment = comment
 
     def addChild(self, child: 'InteractionFilter') -> bool:
         return False
@@ -637,10 +637,9 @@ class AndOperator(FilterOperator):
                  children: tp.Optional[tp.List[InteractionFilter]] = None
                  ) -> None:
         super().__init__(parent, comment)
-        if children is None:
-            self._children: tp.List[InteractionFilter] = []
-        else:
-            self._children: tp.List[InteractionFilter] = children
+        self._children: tp.List[InteractionFilter] = []
+        if children is not None:
+            self._children = children
 
     def addChild(self, child: InteractionFilter) -> bool:
         self._children.append(child)
@@ -698,10 +697,9 @@ class OrOperator(FilterOperator):
                  children: tp.Optional[tp.List[InteractionFilter]] = None
                  ) -> None:
         super().__init__(parent, comment)
-        if children is None:
-            self._children: tp.List[InteractionFilter] = []
-        else:
-            self._children: tp.List[InteractionFilter] = children
+        self._children: tp.List[InteractionFilter] = []
+        if children is not None:
+            self._children = children
 
     def addChild(self, child: InteractionFilter) -> bool:
         self._children.append(child)
