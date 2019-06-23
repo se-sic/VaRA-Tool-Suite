@@ -22,6 +22,7 @@ from varats.tools.commit_map import (store_commit_map, get_commit_map,
 from varats.plots.plots import (extend_parser_with_plot_args, build_plot,
                                 PlotTypes)
 from varats.utils.cli_util import cli_yn_choice
+from varats.utils.project_util import get_local_project_git_path
 from varats.paper.case_study import (
     SamplingMethod, ExtenderStrategy, extend_case_study, generate_case_study,
     load_case_study_from_file, store_case_study)
@@ -390,7 +391,10 @@ def main_casestudy() -> None:
         """
         Group common args to provide all args on different sub parsers.
         """
-        sub_parser.add_argument("git_path", help="Path to git repository")
+        sub_parser.add_argument(
+            "--git-path", help="Path to git repository", default=None)
+        sub_parser.add_argument(
+            "-p", "--project", help="Project name", default=None)
         sub_parser.add_argument(
             "--end",
             help="End of the commit range (inclusive)",
@@ -480,12 +484,15 @@ def main_casestudy() -> None:
                                         args['list_revs'], args['ws'])
 
     elif args['subcommand'] == 'gen' or args['subcommand'] == 'ext':
-        if args['git_path'].endswith(".git"):
-            git_path = Path(args['git_path'][:-4])
-        else:
-            git_path = Path(args['git_path'])
+        if "project" not in args and "git_path" not in args:
+            parser.error("need --project or --git-path")
+            return
 
-        args['project'] = git_path.stem.replace("-HEAD", "")
+        if "project" in args and "git_path" not in args:
+            args['git_path'] = get_local_project_git_path(args['project'])
+
+        if "git_path" in args and "project" not in args:
+            args['project'] = Path(args['git_path']).stem.replace("-HEAD", "")
 
         args['get_cmap'] = create_lazy_commit_map_loader(
             args['project'], args.get('cmap', None), args['end'],
