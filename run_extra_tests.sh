@@ -2,8 +2,8 @@
 
 # Setup
 
-mkdir -p extra_tests/
-cd extra_tests
+# mkdir -p extra_tests/
+# cd extra_tests
 
 mkdir -p paper_configs/test/
 
