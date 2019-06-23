@@ -7,15 +7,21 @@ For annotation we use the annotation script by Florian Niederhuber, which can
 be accessed via the site-packages folder due to the installation via the
 Package manager pip.
 """
+
+import typing as tp
 import os
 
-from benchbuild.extensions import base, time, run, compiler
+from plumbum import local
+
 from benchbuild.experiment import Experiment
+from benchbuild.extensions import time, run, compiler
+from benchbuild.project import Project
 from benchbuild.settings import CFG
 from benchbuild.utils import actions
 from benchbuild.utils.actions import Step
 from benchbuild.utils.cmd import extract_bc, wllvm, opt, cp
-from plumbum import local
+
+from varats.experiments.wllvm import RunWLLVM
 
 # These two new config parameters are needed to include Niederhuber's prepare-
 # script and to make the folder in which the results of the analyses are
@@ -36,40 +42,24 @@ CFG["vara"] = {
 }
 
 
-class RunWLLVM(base.Extension):
-    """
-    This extension implements the WLLVM compiler.
-
-    This class is an extension that implements the WLLVM compiler with the
-    required flags LLVM_COMPILER=clang and LLVM_OUTPUFILE=<path>. This compiler
-    is used to transfer the complete project into LLVM-IR.
-    """
-
-    def __cal__(self, *args, **kwargs):
-        with local.env(LLVM_COMPILER="clang", LLVM_OUTPUT_FILE="{}".format(
-                        local.path(str(CFG["tmp_dir"])) / "wllvm.log")):
-            res = self.call_next(wllvm, *args, **kwargs)
-        return res
-
-
-class Prepare(Step):
+class Prepare(Step):  # type: ignore
     NAME = "PREPARE"
     DESCRIPTION = "Prepares the analysis by annotating the project with the \
         annotation-script of Florian Niederhuber that is provided through \
         prepare.sh."
 
 
-class Extract(Step):
+class Extract(Step):  # type: ignore
     NAME = "EXTRACT"
     DESCRIPTION = "Extract bitcode out of the execution file."
 
 
-class Analyse(Step):
+class Analyse(Step):  # type: ignore
     NAME = "ANALYSE"
     DESCRIPTION = "Analyses the bitcode with CFR of VaRA."
 
 
-class CommitAnnotationReport(Experiment):
+class CommitAnnotationReport(Experiment):  # type: ignore
     """
     Generates a commit flow report (CFR) of the project(s) specified in the
     call.
@@ -77,7 +67,7 @@ class CommitAnnotationReport(Experiment):
 
     NAME = "CommitAnnotationReport"
 
-    def actions_for_project(self, project):
+    def actions_for_project(self, project: Project) -> tp.List[Step]:
         """Returns the specified steps to run the project(s) specified in
         the call in a fixed order."""
 
@@ -97,7 +87,7 @@ class CommitAnnotationReport(Experiment):
         # Builds the path where the source code of the project is located.
         project_src = project.builddir / project.src_dir
 
-        def evaluate_preparation():
+        def evaluate_preparation() -> None:
             """
             This step annotates the project with the annotation script of
             Florian Niederhuber provided in the prepare-script (prepare.sh).
@@ -115,7 +105,7 @@ class CommitAnnotationReport(Experiment):
                 prepare("-c", str(CFG["env"]["path"][0]), "-t",
                         str(CFG["vara"]["prepare"].value))
 
-        def evaluate_extraction():
+        def evaluate_extraction() -> None:
             """
             This step extracts the bitcode of the executable of the project
             into one file.
@@ -127,7 +117,7 @@ class CommitAnnotationReport(Experiment):
                        str(CFG["vara"]["result"].value)) /
                    project.name + ".bc")
 
-        def evaluate_analysis():
+        def evaluate_analysis() -> None:
             """
             This step performs the actual analysis with the correct flags.
             Flags:

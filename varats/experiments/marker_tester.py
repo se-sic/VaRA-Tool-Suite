@@ -2,44 +2,50 @@
 Instrument the generated binary with print markers to show region entry/exits.
 """
 
+import typing as tp
+
 from plumbum import local
+from plumbum.commands.base import BoundCommand
 
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import base
 from benchbuild.extensions import compiler
+from benchbuild.project import Project
 from benchbuild.utils import run
+from benchbuild.utils.actions import Step
+from benchbuild.utils.settings import Configuration
 
 
-class TraceBinaryCreator(base.Extension):
+class TraceBinaryCreator(base.Extension):  # type: ignore
     """
     Create an additional binary with trace markers.
     """
 
     def __init__(self,
-                 project,
-                 experiment,
-                 marker_type,
-                 *extensions,
-                 extra_ldflags=None,
-                 config=None):
+                 project: Project,
+                 experiment: Experiment,
+                 marker_type: str,
+                 *extensions: tp.List[base.Extension],
+                 extra_ldflags: tp.Optional[tp.List[str]] = None,
+                 config: tp.Optional[Configuration] = None) -> None:
         self.project = project
         self.experiment = experiment
         self.marker_type = marker_type
         if extra_ldflags is None:
-            self.extra_ldflags = []
+            self.extra_ldflags: tp.List[str] = []
         else:
             self.extra_ldflags = extra_ldflags
 
         super(TraceBinaryCreator, self).__init__(*extensions, config=config)
 
     def __call__(self,
-                 command,
-                 *args,
-                 project=None,
-                 rerun_on_error=True,
-                 **kwargs):
+                 command: BoundCommand,
+                 *args: tp.Any,
+                 project: Project = None,
+                 rerun_on_error: bool = True,
+                 **kwargs: tp.Any) -> tp.List[run.RunInfo]:
 
-        res = self.call_next(command, *args, **kwargs)
+        res: tp.List[run.RunInfo] = self.call_next(command, *args, **kwargs)
 
         for arg in args:
             if arg.endswith(".cpp"):
@@ -76,32 +82,33 @@ class TraceBinaryCreator(base.Extension):
         return res
 
 
-class PrintMarkerInstTest(Experiment):
+class PrintMarkerInstTest(Experiment):  # type: ignore
     """
     Instrument all highlight regions with print markers.
     """
 
     NAME = "PrintMarkerInstTest"
 
-    def actions_for_project(self, project):
-        project.compiler_extension = compiler.RunCompiler(project, self) \
-            << TraceBinaryCreator(project, self, "Print")
+    def actions_for_project(self, project: Project) -> tp.List[Step]:
+        project.compiler_extension = compiler.RunCompiler(
+            project, self) << TraceBinaryCreator(project, self, "Print")
 
         project.cflags = ["-fvara-handleRM=High"]
 
-        project_actions = self.default_compiletime_actions(project)
+        project_actions: tp.List[Step] = self.default_compiletime_actions(
+            project)
 
         return project_actions
 
 
-class PapiMarkerInstTest(Experiment):
+class PapiMarkerInstTest(Experiment):  # type: ignore
     """
     Instrument all highlight regions with papi markers.
     """
 
     NAME = "PapiMarkerInstTest"
 
-    def actions_for_project(self, project):
+    def actions_for_project(self, project: Project) -> tp.List[Step]:
         project.compiler_extension = compiler.RunCompiler(
             project, self) << TraceBinaryCreator(
                 project,
@@ -111,24 +118,26 @@ class PapiMarkerInstTest(Experiment):
 
         project.cflags = ["-fvara-handleRM=High"]
 
-        project_actions = self.default_compiletime_actions(project)
+        project_actions: tp.List[Step] = self.default_compiletime_actions(
+            project)
 
         return project_actions
 
 
-class CheckMarkerInstTest(Experiment):
+class CheckMarkerInstTest(Experiment):  # type: ignore
     """
     Instrument all highlight regions with check markers.
     """
 
     NAME = "CheckMarkerInstTest"
 
-    def actions_for_project(self, project):
-        project.compiler_extension = compiler.RunCompiler(project, self) \
-                                     << TraceBinaryCreator(project, self, "Check")
+    def actions_for_project(self, project: Project) -> tp.List[Step]:
+        project.compiler_extension = compiler.RunCompiler(
+            project, self) << TraceBinaryCreator(project, self, "Check")
 
         project.cflags = ["-fvara-handleRM=High"]
 
-        project_actions = self.default_compiletime_actions(project)
+        project_actions: tp.List[Step] = self.default_compiletime_actions(
+            project)
 
         return project_actions
