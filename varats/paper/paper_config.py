@@ -136,7 +136,7 @@ def is_paper_config_loaded() -> bool:
     return __G_PAPER_CONFIG is not None
 
 
-def load_paper_config(config_path: tp.Optional[Path]) -> None:
+def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
     """
     Load a paper config from yaml file.
     """

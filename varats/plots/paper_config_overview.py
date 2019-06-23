@@ -21,21 +21,19 @@ from varats.settings import CFG
 from varats.utils.project_util import get_local_project_git_path
 
 
-def _gen_overview_plot():
+def _gen_overview_plot() -> tp.Dict[str, tp.Any]:
     """
     Generate the data for the PaperConfigOverviewPlot.
     """
-    PC.load_paper_config(
-        str(CFG["paper_config"]["folder"]) + "/" +
-        str(CFG["paper_config"]["current_config"]))
+    PC.load_paper_config()
 
     current_config = PC.get_paper_config()
 
-    projects = OrderedDict()
+    projects: tp.Dict[str, tp.Dict[int, tp.
+                                   List[tp.Tuple[str, bool]]]] = OrderedDict()
 
-    for case_study in sorted(
-            current_config.get_all_case_studies(),
-            key=lambda cs: (cs.project_name, cs.version)):
+    for case_study in sorted(current_config.get_all_case_studies(),
+                             key=lambda cs: (cs.project_name, cs.version)):
         processed_revisions = list(
             dict.fromkeys(case_study.processed_revisions(CommitReport)))
 
@@ -43,7 +41,8 @@ def _gen_overview_plot():
         repo_path = pygit2.discover_repository(str(git_path))
         repo = pygit2.Repository(repo_path)
 
-        revisions = defaultdict(list)
+        revisions: tp.Dict[int, tp.List[tp.Tuple[str, bool]]] = defaultdict(
+            list)
 
         # dict: year -> [ (revision: str, success: bool) ]
         for rev in case_study.revisions:
@@ -64,7 +63,7 @@ def _gen_overview_plot():
     year_range = list(range(min(min_years), max(max_years) + 1))
     project_names = list(projects.keys())
 
-    result = dict()
+    result: tp.Dict[str, tp.Any] = dict()
     result['year_range'] = year_range
     result['project_names'] = project_names
 
@@ -81,7 +80,8 @@ def _gen_overview_plot():
                 num_successful_revs = np.nan
             else:
                 num_revs = len(revs_in_year)
-                num_successful_revs = sum(1 for (rev, success) in revs_in_year if success)
+                num_successful_revs = sum(1 for (rev, success) in revs_in_year
+                                          if success)
 
             revs_successful_per_year.append(num_successful_revs)
             revs_total_per_year.append(num_revs)
@@ -95,7 +95,7 @@ def _gen_overview_plot():
     return result
 
 
-def _plot_overview_graph(results) -> None:
+def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
     """
     Create a plot that shows an overview of all case-studies of a paper-config
     about how many revisions are successful per project/year.
@@ -107,14 +107,20 @@ def _plot_overview_graph(results) -> None:
     year_range = results['year_range']
     project_names = results['project_names']
 
-    labels = (np.asarray(["{0:1.0f}/{1:1.0f}".format(revs_successful, revs_total)
-                          for revs_successful, revs_total
-                          in zip(revs_successful.flatten(), revs_total.flatten())])).reshape(
-                              len(project_names), len(year_range))
+    labels = (np.asarray([
+        "{0:1.0f}/{1:1.0f}".format(revs_successful, revs_total)
+        for revs_successful, revs_total in zip(revs_successful.flatten(),
+                                               revs_total.flatten())
+    ])).reshape(len(project_names), len(year_range))
 
-    sb.heatmap(revs_success_ratio, annot=labels, fmt='', cmap="BrBG",
-               xticklabels=year_range, yticklabels=project_names,
-               vmin=0, vmax=1,
+    sb.heatmap(revs_success_ratio,
+               annot=labels,
+               fmt='',
+               cmap="BrBG",
+               xticklabels=year_range,
+               yticklabels=project_names,
+               vmin=0,
+               vmax=1,
                cbar_kws={'label': 'success ratio'})
 
 
@@ -124,30 +130,29 @@ class PaperConfigOverviewPlot(Plot):
     """
 
     @check_required_args(["result_folder"])
-    def __init__(self, **kwargs):
-        super(PaperConfigOverviewPlot, self).__init__("paper_config_overview_plot")
+    def __init__(self, **kwargs: tp.Any) -> None:
+        super(PaperConfigOverviewPlot,
+              self).__init__("paper_config_overview_plot")
         self.__saved_extra_args = kwargs
 
-    def plot(self, view_mode):
+    def plot(self, view_mode: bool) -> None:
         style.use(self.style)
-        _plot_overview_graph(
-            _gen_overview_plot())
+        _plot_overview_graph(_gen_overview_plot())
 
-    def show(self):
+    def show(self) -> None:
         self.plot(True)
         plt.show()
 
-    def save(self, filetype='svg'):
+    def save(self, filetype: str = 'svg') -> None:
         self.plot(False)
 
         result_dir = Path(self.__saved_extra_args["result_folder"])
 
-        plt.savefig(
-            result_dir / ("{graph_name}.{filetype}".format(
-                graph_name=self.name, filetype=filetype)),
-            dpi=1200,
-            bbox_inches="tight",
-            format=filetype)
+        plt.savefig(result_dir / ("{graph_name}.{filetype}".format(
+            graph_name=self.name, filetype=filetype)),
+                    dpi=1200,
+                    bbox_inches="tight",
+                    format=filetype)
 
-    def calc_missing_revisions(self, boundary_gradient) -> tp.Set:
+    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError
