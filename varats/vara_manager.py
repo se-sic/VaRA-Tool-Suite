@@ -451,7 +451,7 @@ def has_branch(repo_folder: Path, branch_name: str) -> bool:
     """
     with local.cwd(repo_folder):
         exit_code = git["rev-parse", "--verify", branch_name] & TF
-        return tp.cast(bool, exit_code == 0)
+        return tp.cast(bool, exit_code)
 
 
 def has_remote_branch(repo_folder: Path, branch_name: str,
@@ -545,15 +545,15 @@ def checkout_vara_version(llvm_folder: Path, version: int, dev: bool) -> None:
 
     checkout_new_branch(llvm_folder, "vara-" + version_name,
                         "origin/vara-" + version_name)
-    checkout_new_branch(llvm_folder / "/tools/clang/", "vara-" + version_name,
+    checkout_new_branch(llvm_folder / "tools/clang/", "vara-" + version_name,
                         "origin/vara-" + version_name)
     if dev:
-        checkout_branch(llvm_folder / "/tools/VaRA/", "vara-dev")
+        checkout_branch(llvm_folder / "tools/VaRA/", "vara-dev")
 
-    checkout_branch(llvm_folder / "/tools/clang/tools/extra/",
+    checkout_branch(llvm_folder / "tools/clang/tools/extra/",
                     "release_" + str(version))
-    checkout_branch(llvm_folder / "/tools/lld/", "release_" + str(version))
-    checkout_branch(llvm_folder / "/projects/compiler-rt/",
+    checkout_branch(llvm_folder / "tools/lld/", "release_" + str(version))
+    checkout_branch(llvm_folder / "projects/compiler-rt/",
                     "release_" + str(version))
 
 
