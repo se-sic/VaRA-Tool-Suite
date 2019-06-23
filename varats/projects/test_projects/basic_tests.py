@@ -10,7 +10,7 @@ import benchbuild.project as prj
     "https://github.com/se-passau/vara-perf-tests.git",
     limit=1,
     refspec="HEAD")
-class BasicTests(prj.Project):
+class BasicTests(prj.Project):  # type: ignore
     """
     Basic tests:
         Different small test files
@@ -27,13 +27,13 @@ class BasicTests(prj.Project):
         "overlappingRegions.cpp", "returnInRegion.cpp"
     ]
 
-    def compile(self):
+    def run_tests(self, runner: run) -> None:
+        pass
+
+    def compile(self) -> None:
         self.download()
 
         clang = cxx(self)
         with local.cwd(self.SRC_FILE + "/basic-tests"):
             for test_file in self.test_files:
                 run(clang[test_file, "-o", test_file.replace('.cpp', '')])
-
-    def run_tests(self, runner):
-        pass

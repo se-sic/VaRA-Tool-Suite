@@ -13,7 +13,7 @@ class TestLLVMProjects(unittest.TestCase):
     def test_get_vara_values(self):
         vara_project = LLVMProjects.vara
 
-        self.assertEqual(vara_project.name, "VaRA")
+        self.assertEqual(vara_project.project_name, "VaRA")
         self.assertEqual(vara_project.url, "git@github.com:se-passau/VaRA.git")
         self.assertEqual(vara_project.remote, "origin")
         self.assertEqual(vara_project.path, Path("tools/VaRA"))

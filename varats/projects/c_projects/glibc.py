@@ -10,9 +10,15 @@ from benchbuild.utils.run import run
 
 from plumbum import local
 
+from varats.paper.paper_config import project_filter_generator
 
-@with_git("git://sourceware.org/git/glibc.git", limit=100, refspec="HEAD")
-class Glibc(Project):
+
+@with_git(
+    "git://sourceware.org/git/glibc.git",
+    limit=100,
+    refspec="HEAD",
+    version_filter=project_filter_generator("glibc"))
+class Glibc(Project):  # type: ignore
     """ Standard GNU C-library """
 
     NAME = 'glibc'
@@ -23,10 +29,10 @@ class Glibc(Project):
     BIN_NAMES = ['fooo']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
-    def run_tests(self, runner):
+    def run_tests(self, runner: run) -> None:
         pass
 
-    def compile(self):
+    def compile(self) -> None:
         self.download()
 
         clang = cc(self)

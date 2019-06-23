@@ -17,7 +17,7 @@ from varats.paper.paper_config import project_filter_generator
     "https://github.com/tmux/tmux.git",
     refspec="HEAD",
     version_filter=project_filter_generator("tmux"))
-class Tmux(Project):
+class Tmux(Project):  # type: ignore
     """ Terminal multiplexer Tmux """
 
     NAME = 'tmux'
@@ -28,10 +28,10 @@ class Tmux(Project):
     BIN_NAMES = ['tmux']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
-    def run_tests(self, runner):
+    def run_tests(self, runner: run) -> None:
         pass
 
-    def compile(self):
+    def compile(self) -> None:
         self.download()
 
         clang = cc(self)

@@ -2,10 +2,13 @@
 General plots module.
 """
 
+import typing as tp
+import argparse
 from enum import Enum
 
 from varats.plots.commit_interactions import InteractionPlot
 from varats.plots.paper_config_overview import PaperConfigOverviewPlot
+from varats.plots.plot import Plot
 from varats.plots.plot_utils import check_required_args
 
 
@@ -18,11 +21,14 @@ class PlotTypes(Enum):
     paper_config_overview_plot = PaperConfigOverviewPlot
 
     @property
-    def type(self):
-        return self.value
+    def type(self) -> tp.Type[Plot]:
+        """ Get python type from plot enum"""
+        if not issubclass(self.value, Plot):
+            raise AssertionError()
+        return tp.cast(tp.Type[Plot], self.value)
 
 
-def extend_parser_with_plot_args(parser):
+def extend_parser_with_plot_args(parser: argparse.ArgumentParser) -> None:
     """
     Extend the parser with graph related extra args.
     """
@@ -30,7 +36,7 @@ def extend_parser_with_plot_args(parser):
 
 
 @check_required_args(['plot_type', 'view', 'sep_stages'])
-def build_plot(**kwargs):
+def build_plot(**kwargs: tp.Any) -> None:
     """
     Build the specified graph.
     """

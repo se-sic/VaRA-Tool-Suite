@@ -22,6 +22,7 @@ from varats.tools.commit_map import (store_commit_map, get_commit_map,
 from varats.plots.plots import (extend_parser_with_plot_args, build_plot,
                                 PlotTypes)
 from varats.utils.cli_util import cli_yn_choice
+from varats.utils.project_util import get_local_project_git_path
 from varats.paper.case_study import (
     SamplingMethod, ExtenderStrategy, extend_case_study, generate_case_study,
     load_case_study_from_file, store_case_study)
@@ -36,7 +37,7 @@ class VaRATSGui:
     Start VaRA-TS grafical user interface for graphs.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         if hasattr(Qt, 'AA_EnableHighDpiScaling'):
             QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
         if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
@@ -60,7 +61,7 @@ class VaRATSGui:
 
         self.main_window = MainWindow()
 
-    def main(self):
+    def main(self) -> None:
         """Setup and Run Qt application"""
         ret = self.app.exec_()
         ProcessManager.shutdown()
@@ -72,7 +73,7 @@ class VaRATSSetup:
     Start VaRA-TS grafical user interface for setting up VaRA.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         if hasattr(Qt, 'AA_EnableHighDpiScaling'):
             QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
         if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
@@ -81,14 +82,14 @@ class VaRATSSetup:
         self.app = QApplication(sys.argv)
         self.main_window = BuildSetup()
 
-    def main(self):
+    def main(self) -> None:
         """
         Start VaRA setup GUI
         """
         sys.exit(self.app.exec_())
 
 
-def main_graph_view():
+def main_graph_view() -> None:
     """
     Start VaRA-TS driver and run application.
     """
@@ -96,7 +97,7 @@ def main_graph_view():
     driver.main()
 
 
-def update_term(text):
+def update_term(text: str) -> None:
     """
     Print/Update terminal text without producing new lines.
     """
@@ -105,7 +106,7 @@ def update_term(text):
     print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r', flush=True)
 
 
-def build_setup():
+def build_setup() -> None:
     """
     Build VaRA on cli.
     """
@@ -175,7 +176,7 @@ def build_setup():
 
     own_libgit2 = bool(CFG["own_libgit2"])
 
-    setup_vara(args.init, args.update, args.build, args.llvmfolder,
+    setup_vara(args.init, args.update, args.build, Path(args.llvmfolder),
                args.installprefix, own_libgit2, vara_version, build_type,
                update_term)
 
@@ -216,7 +217,7 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
     return BuildType.DEV
 
 
-def main_gen_graph():
+def main_gen_graph() -> None:
     """
     Main function for the graph generator.
 
@@ -274,7 +275,7 @@ def main_gen_graph():
     build_plot(**args)
 
 
-def main_gen_benchbuild_config():
+def main_gen_benchbuild_config() -> None:
     """
     Main function for the benchbuild config creator.
 
@@ -311,7 +312,7 @@ def main_gen_benchbuild_config():
                                "/.benchbuild.yml")
 
 
-def main_gen_commitmap():
+def main_gen_commitmap() -> None:
     """
     Create a commit map for a repository.
     """
@@ -339,11 +340,16 @@ def main_gen_commitmap():
     cmap = get_commit_map(args.project_name, path, args.end, args.start)
 
     if args.output is None:
+        if path is not None:
+            default_name = path.name.replace("-HEAD", "")
+        else:
+            default_name = args.project_name
+
         output_name = "{result_folder}/{project_name}/{file_name}.cmap"\
             .format(
                 result_folder=CFG["result_dir"],
-                project_name=path.name.replace("-HEAD", ""),
-                file_name=path.name.replace("-HEAD", ""))
+                project_name=default_name,
+                file_name=default_name)
     else:
         if args.output.endswith(".cmap"):
             output_name = args.output
@@ -352,7 +358,7 @@ def main_gen_commitmap():
     store_commit_map(cmap, output_name)
 
 
-def main_casestudy():
+def main_casestudy() -> None:
     """
     Allow easier management of case studies
     """
@@ -387,11 +393,14 @@ def main_casestudy():
         action="store_true",
         default=False)
 
-    def add_common_args(sub_parser):
+    def add_common_args(sub_parser: argparse.ArgumentParser) -> None:
         """
         Group common args to provide all args on different sub parsers.
         """
-        sub_parser.add_argument("git_path", help="Path to git repository")
+        sub_parser.add_argument(
+            "--git-path", help="Path to git repository", default=None)
+        sub_parser.add_argument(
+            "-p", "--project", help="Project name", default=None)
         sub_parser.add_argument(
             "--end",
             help="End of the commit range (inclusive)",
@@ -475,18 +484,21 @@ def main_casestudy():
                 "At most one argument of: --short, --list-revs can be used.")
 
         if args['short'] and args['ws']:
-            parser.error(
-                "At most one argument of: --short, --ws can be used.")
+            parser.error("At most one argument of: --short, --ws can be used.")
 
         PCM.show_status_of_case_studies(args['filter_regex'], args['short'],
                                         args['list_revs'], args['ws'])
-    elif args['subcommand'] == 'gen' or args['subcommand'] == 'ext':
-        if args['git_path'].endswith(".git"):
-            git_path = Path(args['git_path'][:-4])
-        else:
-            git_path = Path(args['git_path'])
 
-        args['project'] = git_path.stem.replace("-HEAD", "")
+    elif args['subcommand'] == 'gen' or args['subcommand'] == 'ext':
+        if "project" not in args and "git_path" not in args:
+            parser.error("need --project or --git-path")
+            return
+
+        if "project" in args and "git_path" not in args:
+            args['git_path'] = get_local_project_git_path(args['project'])
+
+        if "git_path" in args and "project" not in args:
+            args['project'] = Path(args['git_path']).stem.replace("-HEAD", "")
 
         args['get_cmap'] = create_lazy_commit_map_loader(
             args['project'], args.get('cmap', None), args['end'],
@@ -524,13 +536,14 @@ def main_casestudy():
             # Specify merge_stage as 0 for creating new case studies
             args['merge_stage'] = 0
 
-            case_study = generate_case_study(
-                args['distribution'], args['num_rev'], cmap, args['version'], **args)
+            case_study = generate_case_study(args['distribution'], cmap,
+                                             args['version'], args['project'],
+                                             **args)
 
             store_case_study(case_study, args['paper_config_path'])
 
 
-def main_develop():
+def main_develop() -> None:
     """
     Handle and simplify common developer interactions with the project.
     """
@@ -602,7 +615,10 @@ def main_develop():
     elif args.command == 'status':
         dev.show_status_for_projects(args.projects)
     elif args.command == 'f-branches':
-        dev.show_dev_branches(
-            [LLVMProjects.llvm, LLVMProjects.clang, LLVMProjects.vara])
+        dev.show_dev_branches([
+            LLVMProjects.get_project_by_name("llvm"),
+            LLVMProjects.get_project_by_name("clang"),
+            LLVMProjects.get_project_by_name("vara")
+        ])
     else:
         parser.print_help()

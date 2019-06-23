@@ -18,7 +18,7 @@ from varats.paper.paper_config import project_filter_generator
     limit=100,
     refspec="HEAD",
     version_filter=project_filter_generator("x264"))
-class X264(Project):
+class X264(Project):  # type: ignore
     """ Video encoder x264 (fetched by Git) """
 
     NAME = 'x264'
@@ -29,10 +29,10 @@ class X264(Project):
     BIN_NAMES = ['x264']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
-    def run_tests(self, runner):
+    def run_tests(self, runner: run) -> None:
         pass
 
-    def compile(self):
+    def compile(self) -> None:
         self.download()
 
         clang = cc(self)

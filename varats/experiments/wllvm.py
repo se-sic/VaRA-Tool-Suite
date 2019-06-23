@@ -7,17 +7,18 @@ to add additional passes/flags, without modifying build files, and later use
 the generated bc files with LLVM.
 """
 
+import typing as tp
 from os import getenv
 
 from plumbum import local
 
 from benchbuild.extensions import base
 from benchbuild.settings import CFG
-from benchbuild.utils.path import list_to_path
-from benchbuild.utils.path import path_to_list
+from benchbuild.utils.compiler import cc
+from benchbuild.utils.path import list_to_path, path_to_list
 
 
-class RunWLLVM(base.Extension):
+class RunWLLVM(base.Extension):  # type: ignore
     """
     This extension implements the WLLVM compiler.
 
@@ -26,8 +27,9 @@ class RunWLLVM(base.Extension):
     is used to transfer the complete project into LLVM-IR.
     """
 
-    def __call__(self, cc, *args, **kwargs):
-        if str(cc).endswith("clang++"):
+    def __call__(self, compiler: cc, *args: tp.Any,
+                 **kwargs: tp.Any) -> tp.Any:
+        if str(compiler).endswith("clang++"):
             wllvm = local["wllvm++"]
         else:
             wllvm = local["wllvm"]

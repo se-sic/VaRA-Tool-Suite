@@ -17,8 +17,11 @@ from scipy.stats import halfnorm
 import numpy as np
 import pygit2
 
-from varats.data.revisions import get_proccessed_revisions, get_failed_revisions
+from varats.data.revisions import (get_proccessed_revisions,
+                                   get_failed_revisions)
 from varats.plots.plot_utils import check_required_args
+from varats.data.commit_report import CommitMap
+from varats.data.report import ReportType
 
 
 class HashIDTuple(yaml.YAMLObject):
@@ -30,7 +33,7 @@ class HashIDTuple(yaml.YAMLObject):
     yaml_loader = yaml.SafeLoader
     yaml_tag = u'!HashIDTuple'
 
-    def __init__(self, commit_hash, commit_id):
+    def __init__(self, commit_hash: str, commit_id: int) -> None:
         self.__commit_hash = commit_hash
         self.__commit_id = commit_id
 
@@ -42,18 +45,18 @@ class HashIDTuple(yaml.YAMLObject):
         return self.__commit_hash
 
     @property
-    def commit_id(self):
+    def commit_id(self) -> int:
         """
         The order ID of the commit hash.
         """
         return self.__commit_id
 
-    def __str(self):
+    def __str(self) -> str:
         return "({commit_id}: #{commit_hash})"\
             .format(commit_hash=self.commit_hash,
                     commit_id=self.commit_id)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "({commit_id}: #{commit_hash})"\
             .format(commit_hash=self.commit_hash,
                     commit_id=self.commit_id)
@@ -68,17 +71,17 @@ class CSStage(yaml.YAMLObject):
     yaml_loader = yaml.SafeLoader
     yaml_tag = u'!CSStage'
 
-    def __init__(self):
-        self.__revisions = []
+    def __init__(self) -> None:
+        self.__revisions: tp.List[HashIDTuple] = []
 
     @property
-    def revisions(self):
+    def revisions(self) -> tp.List[str]:
         """
         Project revisions that are part of this case study.
         """
         return [x.commit_hash for x in self.__revisions]
 
-    def has_revision(self, revision: str):
+    def has_revision(self, revision: str) -> bool:
         """
         Check if a revision is part of this case study.
         """
@@ -88,14 +91,14 @@ class CSStage(yaml.YAMLObject):
 
         return False
 
-    def add_revision(self, revision: str, commit_id):
+    def add_revision(self, revision: str, commit_id: int) -> None:
         """
         Add a new revision to this stage.
         """
         if not self.has_revision(revision):
             self.__revisions.append(HashIDTuple(revision, commit_id))
 
-    def sort(self, reverse=True):
+    def sort(self, reverse: bool = True) -> None:
         """
         Sort revisions by commit id.
         """
@@ -115,13 +118,13 @@ class CaseStudy(yaml.YAMLObject):
     yaml_loader = yaml.SafeLoader
     yaml_tag = u'!CaseStudy'
 
-    def __init__(self, project_name, version):
+    def __init__(self, project_name: str, version: int) -> None:
         self.__project_name = project_name
         self.__version = version
-        self.__stages = []
+        self.__stages: tp.List[CSStage] = []
 
     @property
-    def project_name(self):
+    def project_name(self) -> str:
         """
         Name of the related project.
         !! This name must match the name of the BB project !!
@@ -129,14 +132,14 @@ class CaseStudy(yaml.YAMLObject):
         return self.__project_name
 
     @property
-    def version(self):
+    def version(self) -> int:
         """
         Version ID for this case study.
         """
         return self.__version
 
     @property
-    def revisions(self):
+    def revisions(self) -> tp.List[str]:
         """
         Project revisions that are part of this case study.
         """
@@ -145,7 +148,7 @@ class CaseStudy(yaml.YAMLObject):
                 [x for stage in self.__stages for x in stage.revisions]))
 
     @property
-    def stages(self):
+    def stages(self) -> tp.List[CSStage]:
         """
         Get a list with all stages.
         """
@@ -153,7 +156,7 @@ class CaseStudy(yaml.YAMLObject):
         return [stage for stage in self.__stages]
 
     @property
-    def num_stages(self):
+    def num_stages(self) -> int:
         """
         Get nummer of stages.
         """
@@ -169,7 +172,7 @@ class CaseStudy(yaml.YAMLObject):
 
         return False
 
-    def has_revision_in_stage(self, revision: str, num_stage) -> bool:
+    def has_revision_in_stage(self, revision: str, num_stage: int) -> bool:
         """
         Check if a revision of a specific stage.
         """
@@ -178,10 +181,10 @@ class CaseStudy(yaml.YAMLObject):
         return self.__stages[num_stage].has_revision(revision)
 
     def include_revision(self,
-                         revision,
-                         commit_id,
-                         stage_num=0,
-                         sort_revs=True):
+                         revision: str,
+                         commit_id: int,
+                         stage_num: int = 0,
+                         sort_revs: bool = True) -> None:
         """
         Add a revision to this case study.
         """
@@ -198,8 +201,8 @@ class CaseStudy(yaml.YAMLObject):
 
     def include_revisions(self,
                           revisions: tp.List[tp.Tuple[str, int]],
-                          stage_num=0,
-                          sort_revs=True):
+                          stage_num: int = 0,
+                          sort_revs: bool = True) -> None:
         """
         Add multiple revisions to this case study.
 
@@ -214,18 +217,19 @@ class CaseStudy(yaml.YAMLObject):
         if sort_revs and self.num_stages > 0:
             self.__stages[stage_num].sort()
 
-    def get_revision_filter(self):
+    def get_revision_filter(self) -> tp.Callable[[str], bool]:
         """
         Generate a case study specific revision filter that only allows
         revision that are part of the case study.
         """
 
-        def revision_filter(revision):
+        def revision_filter(revision: str) -> bool:
             return self.has_revision(revision)
 
         return revision_filter
 
-    def processed_revisions(self, result_file_type) -> tp.List[str]:
+    def processed_revisions(
+            self, result_file_type: tp.Type[ReportType]) -> tp.List[str]:
         """
         Calculate how many revisions were processed.
         """
@@ -237,7 +241,8 @@ class CaseStudy(yaml.YAMLObject):
             if rev[:10] in total_processed_revisions
         ]
 
-    def failed_revisions(self, result_file_type) -> tp.List[str]:
+    def failed_revisions(
+            self, result_file_type: tp.Type[ReportType]) -> tp.List[str]:
         """
         Calculate which revisions failed.
         """
@@ -249,8 +254,10 @@ class CaseStudy(yaml.YAMLObject):
             if rev[:10] in total_failed_revisions
         ]
 
-    def get_revisions_status(self, result_file_type,
-                             stage_num=-1) -> tp.List[tp.Tuple[str, str]]:
+    def get_revisions_status(self,
+                             result_file_type: tp.Type[ReportType],
+                             stage_num: int = -1
+                             ) -> tp.List[tp.Tuple[str, str]]:
         """
         Get status of all revisions.
         """
@@ -277,13 +284,13 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
     """
     if file_path.exists():
         with open(file_path, "r") as cs_file:
-            return yaml.safe_load(cs_file)
+            return tp.cast(CaseStudy, yaml.safe_load(cs_file))
 
     raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
                             str(file_path))
 
 
-def store_case_study(case_study: CaseStudy, case_study_location: Path):
+def store_case_study(case_study: CaseStudy, case_study_location: Path) -> None:
     """
     Store case study to file in the specified paper_config.
 
@@ -298,7 +305,7 @@ def store_case_study(case_study: CaseStudy, case_study_location: Path):
 
 
 def __store_case_study_to_paper_config(case_study: CaseStudy,
-                                       paper_config_path: Path):
+                                       paper_config_path: Path) -> None:
     """
     Store case study to file in the specified paper_config.
     """
@@ -307,7 +314,7 @@ def __store_case_study_to_paper_config(case_study: CaseStudy,
     __store_case_study_to_file(case_study, paper_config_path / file_name)
 
 
-def __store_case_study_to_file(case_study: CaseStudy, file_path: Path):
+def __store_case_study_to_file(case_study: CaseStudy, file_path: Path) -> None:
     """
     Store case study to file.
     """
@@ -328,30 +335,32 @@ class SamplingMethod(Enum):
     uniform = 1
     half_norm = 2
 
-    def gen_distribution_function(self):
+    def gen_distribution_function(self) -> tp.Callable[[int], np.ndarray]:
         """
         Generate a distribution function for the specified sampling method.
         """
         if self == SamplingMethod.uniform:
 
-            def uniform(num_samples):
-                return np.random.uniform(0, 1.0, num_samples)
+            def uniform(num_samples: int) -> np.ndarray:
+                return tp.cast(tp.List[float],
+                               np.random.uniform(0, 1.0, num_samples))
 
             return uniform
         if self == SamplingMethod.half_norm:
 
-            def halfnormal(num_samples):
-                return halfnorm.rvs(scale=1, size=num_samples)
+            def halfnormal(num_samples: int) -> np.ndarray:
+                return tp.cast(tp.List[float],
+                               halfnorm.rvs(scale=1, size=num_samples))
 
             return halfnormal
 
         raise Exception('Unsupported SamplingMethod')
 
 
-@check_required_args(['extra_revs', 'git_path', 'revs_per_year'])
-def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
-                        cmap, case_study_version: int, project_name: str,
-                        **kwargs) -> CaseStudy:
+@check_required_args(['extra_revs', 'git_path'])
+def generate_case_study(sampling_method: SamplingMethod, cmap: CommitMap,
+                        case_study_version: int, project_name: str,
+                        **kwargs: tp.Any) -> CaseStudy:
     """
     Generate a case study for a given project.
 
@@ -361,13 +370,15 @@ def generate_case_study(sampling_method: SamplingMethod, num_samples: int,
     """
     case_study = CaseStudy(project_name, case_study_version)
 
-    if kwargs['extra_revs']:
-        extend_with_extra_revs(case_study, cmap, **kwargs)
-
     if kwargs['revs_per_year'] > 0:
         extend_with_revs_per_year(case_study, cmap, **kwargs)
 
-    extend_with_distrib_sampling(case_study, cmap, **kwargs)
+    if (sampling_method is SamplingMethod.half_norm
+            or sampling_method is SamplingMethod.uniform):
+        extend_with_distrib_sampling(case_study, cmap, **kwargs)
+
+    if kwargs['extra_revs']:
+        extend_with_extra_revs(case_study, cmap, **kwargs)
 
     return case_study
 
@@ -388,8 +399,9 @@ class ExtenderStrategy(Enum):
     per_year_add = 4
 
 
-def extend_case_study(case_study: CaseStudy, cmap,
-                      ext_strategy: ExtenderStrategy, **kwargs):
+def extend_case_study(case_study: CaseStudy, cmap: CommitMap,
+                      ext_strategy: ExtenderStrategy,
+                      **kwargs: tp.Any) -> None:
     """
     Extend a case study with new revisions.
     """
@@ -405,7 +417,8 @@ def extend_case_study(case_study: CaseStudy, cmap,
 
 
 @check_required_args(['extra_revs', 'merge_stage'])
-def extend_with_extra_revs(case_study: CaseStudy, cmap, **kwargs):
+def extend_with_extra_revs(case_study: CaseStudy, cmap: CommitMap,
+                           **kwargs: tp.Any) -> None:
     """
     Extend a case_study with extra revisions.
     """
@@ -421,7 +434,8 @@ def extend_with_extra_revs(case_study: CaseStudy, cmap, **kwargs):
 
 
 @check_required_args(['git_path', 'revs_per_year', 'merge_stage'])
-def extend_with_revs_per_year(case_study: CaseStudy, cmap, **kwargs):
+def extend_with_revs_per_year(case_study: CaseStudy, cmap: CommitMap,
+                              **kwargs: tp.Any) -> None:
     """
     Extend a case_study with n revisions per year.
     """
@@ -450,7 +464,8 @@ def extend_with_revs_per_year(case_study: CaseStudy, cmap, **kwargs):
 
 
 @check_required_args(['distribution', 'merge_stage', 'num_rev'])
-def extend_with_distrib_sampling(case_study: CaseStudy, cmap, **kwargs):
+def extend_with_distrib_sampling(case_study: CaseStudy, cmap: CommitMap,
+                                 **kwargs: tp.Any) -> None:
     """
     Extend a case study by sampling `num_rev` new revisions.
     """
@@ -465,13 +480,18 @@ def extend_with_distrib_sampling(case_study: CaseStudy, cmap, **kwargs):
     distribution_function = kwargs['distribution'].gen_distribution_function()
 
     case_study.include_revisions(
-        sample_n_idxs(distribution_function, kwargs['num_rev'], revision_list),
+        sample_n(distribution_function, kwargs['num_rev'], revision_list),
         kwargs['merge_stage'])
 
 
-def sample_n_idxs(distrib_func, num_samples,
-                  list_to_sample: tp.List) -> tp.List:
+def sample_n(distrib_func: tp.Callable[[int], np.ndarray], num_samples: int,
+             list_to_sample: tp.List[tp.Tuple[str, int]]
+             ) -> tp.List[tp.Tuple[str, int]]:
     """
+    Return a list of n unique samples.
+    If the list to sample is smaller than the number of samples the full list
+    is returned.
+
     Args:
         distrib_func: Distribution function with
                         f(n) -> [] where len([]) == n probabilities
@@ -481,17 +501,21 @@ def sample_n_idxs(distrib_func, num_samples,
     Returns:
         list[] of sampled items
     """
+    if num_samples >= len(list_to_sample):
+        return list_to_sample
+
     probabilities = distrib_func(len(list_to_sample))
     probabilities /= probabilities.sum()
 
     sampled_idxs = np.random.choice(
-        len(list_to_sample), num_samples, p=probabilities)
+        len(list_to_sample), num_samples, replace=False, p=probabilities)
 
     return [list_to_sample[idx] for idx in sampled_idxs]
 
 
 @check_required_args(['plot_type', 'boundary_gradient'])
-def extend_with_smooth_revs(case_study: CaseStudy, cmap, **kwargs):
+def extend_with_smooth_revs(case_study: CaseStudy, cmap: CommitMap,
+                            **kwargs: tp.Any) -> None:
     """
     Extend a case study with extra revisions that could smooth plot curves.
     This can remove steep gradients that result from missing certain revisions

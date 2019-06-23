@@ -3,12 +3,12 @@ Module for extracting bc files from generated binaries.
 This requires to run the compilation with WLLVM
 """
 from pathlib import Path
-import attr
-import benchbuild.utils.actions as actions
+from plumbum import local
 
+import benchbuild.utils.actions as actions
 from benchbuild.settings import CFG
 from benchbuild.utils.cmd import extract_bc, cp, mkdir
-from plumbum import local
+from benchbuild.project import Project
 
 CFG["vara"] = {
     "outfile": {
@@ -22,15 +22,17 @@ CFG["vara"] = {
 }
 
 
-@attr.s
-class Extract(actions.Step):
+class Extract(actions.Step):  # type: ignore
     NAME = "EXTRACT"
     DESCRIPTION = "Extract bitcode out of the execution file."
 
     BC_CACHE_FOLDER_TEMPLATE = "{cache_dir}/{project_name}/"
     BC_FILE_TEMPLATE = "{project_name}-{binary_name}-{project_version}.bc"
 
-    def __call__(self):
+    def __init__(self, project: Project) -> None:
+        super(Extract, self).__init__(obj=project, action_fn=self.extract)
+
+    def extract(self) -> actions.StepResult:
         """
         This step extracts the bitcode of the executable of the project
         into one file.

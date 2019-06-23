@@ -1,21 +1,24 @@
 """
 Experiment module for phasa analyses.
 """
+
+import typing as tp
 import os
 
 from plumbum import local
 
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import compiler, run, time
+from benchbuild.project import Project
 from benchbuild.settings import CFG
 from benchbuild.utils.cmd import opt
 import benchbuild.utils.actions as actions
 
-from varats.experiments.Extract import Extract
-from varats.experiments.Wllvm import RunWLLVM
+from varats.experiments.extract import Extract
+from varats.experiments.wllvm import RunWLLVM
 
 
-class DefaultAnalysis(actions.Step):
+class DefaultAnalysis(actions.Step):  # type: ignore
     """
     Analyse a project with Phasar's default analysis.
     """
@@ -26,7 +29,7 @@ class DefaultAnalysis(actions.Step):
     PATH_TO_PHASAR_PASS_LIB = "/home/vulder/git/phasar/build/dev/lib/" +\
         "PhasarPass/libphasar_passd.so"
 
-    def __call__(self):
+    def __call__(self) -> actions.Step:
         """
         This step performs the analysis.
         """
@@ -42,14 +45,14 @@ class DefaultAnalysis(actions.Step):
         run_cmd(project_src/project.name + ".bc")
 
 
-class PhasarDefault(Experiment):
+class PhasarDefault(Experiment):  # type: ignore
     """
     Runs the default Phasar analysis on an project.
     """
 
     NAME = "PhasarDefault"
 
-    def actions_for_project(self, project):
+    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """Returns the specified steps to run the project(s) specified in
         the call in a fixed order."""
 

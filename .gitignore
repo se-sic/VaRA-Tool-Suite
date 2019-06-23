@@ -8,3 +8,4 @@ Pipfile
 .idea/
 .coverage
 .mypy_cache/
+extra_tests/

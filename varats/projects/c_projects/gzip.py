@@ -18,7 +18,7 @@ from varats.paper.paper_config import project_filter_generator
     limit=100,
     refspec="HEAD",
     version_filter=project_filter_generator("gzip"))
-class Gzip(prj.Project):
+class Gzip(prj.Project):  # type: ignore
     """ Compression and decompression tool Gzip (fetched by Git) """
 
     NAME = 'gzip'
@@ -29,10 +29,10 @@ class Gzip(prj.Project):
     BIN_NAMES = ['gzip']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
-    def run_tests(self, runner):
+    def run_tests(self, runner: run) -> None:
         pass
 
-    def compile(self):
+    def compile(self) -> None:
         self.download()
 
         self.cflags += [

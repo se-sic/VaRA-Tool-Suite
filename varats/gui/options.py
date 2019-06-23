@@ -8,7 +8,7 @@ from PyQt5.QtGui import QIntValidator
 from PyQt5.QtCore import Qt
 
 
-class OptionTreeWidget(QTreeWidget):
+class OptionTreeWidget(QTreeWidget):  # type: ignore
     """
     A Widget to manage different user options.
     """
@@ -21,7 +21,7 @@ class OptionTreeWidget(QTreeWidget):
     OPT_SCF = "Show CF graph"
     OPT_SDF = "Show DF graph"
 
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         super(OptionTreeWidget, self).__init__(parent)
         self.headerItem().setText(0, "Options")
         self.headerItem().setText(1, "Value")

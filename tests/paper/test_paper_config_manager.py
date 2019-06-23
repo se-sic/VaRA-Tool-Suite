@@ -32,16 +32,16 @@ class TestPaperConfigManager(unittest.TestCase):
         # Revision not in set
         mock_get_processed_revision.return_value = ['42b25e7f15']
 
-        status = PCM.get_short_status(self.case_study, CommitReport)
-        self.assertEqual(status, 'CS: gzip_1: (0/10) processed')
+        status = PCM.get_short_status(self.case_study, CommitReport, 5)
+        self.assertEqual(status, 'CS: gzip_1: (  0/10) processed [0/10/0]')
         mock_get_processed_revision.assert_called()
 
         # Revision not in set
         mock_get_processed_revision.reset_mock()
         mock_get_processed_revision.return_value = ['b8b25e7f15']
 
-        status = PCM.get_short_status(self.case_study, CommitReport)
-        self.assertEqual(status, 'CS: gzip_1: (1/10) processed')
+        status = PCM.get_short_status(self.case_study, CommitReport, 5)
+        self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [0/9/1]')
         mock_get_processed_revision.assert_called()
 
     @mock.patch('varats.paper.case_study.get_proccessed_revisions')
@@ -55,16 +55,16 @@ class TestPaperConfigManager(unittest.TestCase):
         # Revision not in set
         mock_get_processed_revision.return_value = ['42b25e7f15']
 
-        status = PCM.get_short_status(self.case_study, CommitReport, True)
-        self.assertEqual(status, 'CS: gzip_1: (0/10) processed')
+        status = PCM.get_short_status(self.case_study, CommitReport, 5, True)
+        self.assertEqual(status, 'CS: gzip_1: (  0/10) processed [0/10/0]')
         mock_get_processed_revision.assert_called()
 
         # Revision not in set
         mock_get_processed_revision.reset_mock()
         mock_get_processed_revision.return_value = ['b8b25e7f15']
 
-        status = PCM.get_short_status(self.case_study, CommitReport, True)
-        self.assertEqual(status, 'CS: gzip_1: (1/10) processed')
+        status = PCM.get_short_status(self.case_study, CommitReport, 5, True)
+        self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [0/9/1]')
         mock_get_processed_revision.assert_called()
 
     @mock.patch('varats.paper.case_study.get_proccessed_revisions')
@@ -75,9 +75,9 @@ class TestPaperConfigManager(unittest.TestCase):
         # Revision not in set
         mock_get_processed_revision.return_value = ['42b25e7f15']
 
-        status = PCM.get_status(self.case_study, CommitReport, False)
+        status = PCM.get_status(self.case_study, CommitReport, 5, False)
         self.assertEqual(
-            status, """CS: gzip_1: (0/10) processed
+            status, """CS: gzip_1: (  0/10) processed [0/10/0]
     7620b81735 [Missing]
     622e9b1d02 [Missing]
     8798d5c4fd [Missing]
@@ -95,9 +95,9 @@ class TestPaperConfigManager(unittest.TestCase):
         mock_get_processed_revision.reset_mock()
         mock_get_processed_revision.return_value = ['b8b25e7f15', '2e654f9963']
 
-        status = PCM.get_status(self.case_study, CommitReport, False)
+        status = PCM.get_status(self.case_study, CommitReport, 5, False)
         self.assertEqual(
-            status, """CS: gzip_1: (2/10) processed
+            status, """CS: gzip_1: (  2/10) processed [0/8/2]
     7620b81735 [Missing]
     622e9b1d02 [Missing]
     8798d5c4fd [Missing]
@@ -119,9 +119,9 @@ class TestPaperConfigManager(unittest.TestCase):
         # Revision not in set
         mock_get_processed_revision.return_value = ['42b25e7f15']
 
-        status = PCM.get_status(self.case_study, CommitReport, True)
+        status = PCM.get_status(self.case_study, CommitReport, 5, True)
         self.assertEqual(
-            status, """CS: gzip_1: (0/10) processed
+            status, """CS: gzip_1: (  0/10) processed [0/10/0]
   Stage 0
     7620b81735 [Missing]
     622e9b1d02 [Missing]
@@ -142,9 +142,9 @@ class TestPaperConfigManager(unittest.TestCase):
         mock_get_processed_revision.reset_mock()
         mock_get_processed_revision.return_value = ['b8b25e7f15', '2e654f9963']
 
-        status = PCM.get_status(self.case_study, CommitReport, True)
+        status = PCM.get_status(self.case_study, CommitReport, 5, True)
         self.assertEqual(
-            status, """CS: gzip_1: (2/10) processed
+            status, """CS: gzip_1: (  2/10) processed [0/8/2]
   Stage 0
     7620b81735 [Missing]
     622e9b1d02 [Missing]
@@ -172,9 +172,9 @@ class TestPaperConfigManager(unittest.TestCase):
         # Revision not in set
         mock_get_processed_revision.return_value = ['42b25e7f15']
 
-        status = PCM.get_status(self.case_study, CommitReport, False, True)
+        status = PCM.get_status(self.case_study, CommitReport, 5, False, True)
         self.assertEqual(
-            status, """CS: gzip_1: (0/10) processed
+            status, """CS: gzip_1: (  0/10) processed [0/10/0]
     7620b81735 [Missing]
     622e9b1d02 [Missing]
     8798d5c4fd [Missing]
@@ -192,9 +192,9 @@ class TestPaperConfigManager(unittest.TestCase):
         mock_get_processed_revision.reset_mock()
         mock_get_processed_revision.return_value = ['b8b25e7f15', '2e654f9963']
 
-        status = PCM.get_status(self.case_study, CommitReport, False, True)
+        status = PCM.get_status(self.case_study, CommitReport, 5, False, True)
         self.assertEqual(
-            status, """CS: gzip_1: (2/10) processed
+            status, """CS: gzip_1: (  2/10) processed [0/8/2]
     7620b81735 [Missing]
     622e9b1d02 [Missing]
     8798d5c4fd [Missing]

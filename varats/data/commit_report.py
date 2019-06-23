@@ -9,45 +9,46 @@ from pathlib import Path
 import yaml
 import pandas as pd
 
+from varats.data.file_status import FileStatusExtension
 from varats.data.version_header import VersionHeader
 
 
 class FunctionInfo():
 
-    def __init__(self, raw_yaml):
-        self.__name = raw_yaml['function-name']
-        self.__id = raw_yaml['id']
-        self.__region_id = raw_yaml['region-id']
+    def __init__(self, raw_yaml: tp.Dict[str, tp.Any]) -> None:
+        self.__name = str(raw_yaml['function-name'])
+        self.__id = str(raw_yaml['id'])
+        self.__region_id = str(raw_yaml['region-id'])
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.__name
 
     @property
-    def id(self):
+    def id(self) -> str:
         return self.__id
 
     @property
-    def region_id(self):
+    def region_id(self) -> str:
         return self.__region_id
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "{} ({}): {}".format(self.name, self.id, self.region_id)
 
 
 class RegionMapping():
 
-    def __init__(self, raw_yaml):
-        self.id = raw_yaml['id']
-        self.hash = raw_yaml['hash']
+    def __init__(self, raw_yaml: tp.Dict[str, tp.Any]) -> None:
+        self.id = str(raw_yaml['id'])
+        self.hash = str(raw_yaml['hash'])
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "{} = {}".format(self.id, self.hash)
 
 
 class RegionToFunctionEdge():
 
-    def __init__(self, from_region: str, to_function: str):
+    def __init__(self, from_region: str, to_function: str) -> None:
         self._from = from_region
         self._to = to_function
 
@@ -59,54 +60,53 @@ class RegionToFunctionEdge():
     def function(self) -> str:
         return self._to
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "{} -> {}".format(self._from, self._to)
 
 
 class RegionToRegionEdge():
 
-    def __init__(self, raw_yaml):
-        self._from = raw_yaml['from']
-        self._to = raw_yaml['to']
+    def __init__(self, raw_yaml: tp.Dict[str, tp.Any]) -> None:
+        self._from = str(raw_yaml['from'])
+        self._to = str(raw_yaml['to'])
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "{} -> {}".format(self._from, self._to)
 
     @property
-    def edge_from(self):
+    def edge_from(self) -> str:
         return self._from
 
     @property
-    def edge_to(self):
+    def edge_to(self) -> str:
         return self._to
 
 
 class FunctionGraphEdges():
-
-    def __init__(self, raw_yaml):
+    def __init__(self, raw_yaml: tp.Dict[str, tp.Any]) -> None:
         self.fid = raw_yaml['function-id']
-        self.cg_edges = []
+        self.cg_edges: tp.List[RegionToFunctionEdge] = []
 
         cg_edges = raw_yaml['call-graph-edges']
         if cg_edges is not None:
             for edge in cg_edges:
                 for callee in edge['to-functions']:
-                    self.cg_edges.append(RegionToFunctionEdge(
-                        edge['from-region'], callee))
+                    self.cg_edges.append(
+                        RegionToFunctionEdge(edge['from-region'], callee))
 
-        self.cf_edges = []
+        self.cf_edges: tp.List[RegionToRegionEdge] = []
         cf_edges = raw_yaml['control-flow-edges']
         if cf_edges is not None:
             for edge in cf_edges:
                 self.cf_edges.append(RegionToRegionEdge(edge))
 
-        self.df_relations = []
+        self.df_relations: tp.List[RegionToRegionEdge] = []
         df_edges = raw_yaml['data-flow-relations']
         if df_edges is not None:
             for edge in df_edges:
                 self.df_relations.append(RegionToRegionEdge(edge))
 
-    def __str__(self):
+    def __str__(self) -> str:
         repr_str = "FName: {}:\n\t CG-Edges [".format(self.fid)
         sep = ""
         for cg_edge in self.cg_edges:
@@ -126,11 +126,15 @@ class FunctionGraphEdges():
 
 class CommitReport():
 
-    __FILE_NAME_REGEX = re.compile(r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
-                                   r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)" +
-                                   r"(?P<EXT>(\.yaml|\.failed))$")
+    __FILE_NAME_REGEX = re.compile(
+        r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
+        r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)" +
+        r"(?P<EXT>(\.yaml|\.failed))$")
 
-    def __init__(self, path: str):
+    __RESULT_FILE_TEMPLATE = \
+        "{project_name}-{binary_name}-{project_version}_{project_uuid}.{ext}"
+
+    def __init__(self, path: Path) -> None:
         with open(path, "r") as stream:
             self._path = path
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
@@ -167,17 +171,23 @@ class CommitReport():
     @staticmethod
     def is_result_file_success(file_name: str) -> bool:
         """ Check if the passed file name is a (successful) result file. """
-        match = CommitReport.__FILE_NAME_REGEX.search(file_name)
-        if match:
-            return match.group("EXT") == ".yaml"
-        return False
+        return CommitReport.is_result_file_status(file_name,
+                                                  FileStatusExtension.success)
 
     @staticmethod
     def is_result_file_failed(file_name: str) -> bool:
         """ Check if the passed file name is a (failed) result file. """
+        return CommitReport.is_result_file_status(file_name,
+                                                  FileStatusExtension.failure)
+
+    @staticmethod
+    def is_result_file_status(file_name: str,
+                              extension_type: FileStatusExtension) -> bool:
+        """ Check if the passed file name is a (failed) result file. """
         match = CommitReport.__FILE_NAME_REGEX.search(file_name)
         if match:
-            return match.group("EXT") == ".failed"
+            return match.group("EXT") == (
+                "." + CommitReport.__get_file_ext(extension_type))
         return False
 
     @staticmethod
@@ -190,8 +200,34 @@ class CommitReport():
         raise ValueError('File {file_name} name was wrongly formated.'.format(
             file_name=file_name))
 
+    @staticmethod
+    def __get_file_ext(extension_type: FileStatusExtension) -> str:
+        if extension_type is FileStatusExtension.success:
+            return "yaml"
+
+        if extension_type is FileStatusExtension.failure:
+            return "failed"
+
+        raise NotImplementedError
+
+    @staticmethod
+    def get_file_name(project_name: str, binary_name: str,
+                      project_version: str, project_uuid: str,
+                      extension_type: FileStatusExtension) -> str:
+        """
+        Generates a filename for a commit report
+        """
+        ext = CommitReport.__get_file_ext(extension_type)
+
+        return CommitReport.__RESULT_FILE_TEMPLATE.format(
+            project_name=project_name,
+            binary_name=binary_name,
+            project_version=project_version,
+            project_uuid=project_uuid,
+            ext=ext)
+
     @property
-    def path(self) -> str:
+    def path(self) -> Path:
         """
         Path to CommitReport file.
         """
@@ -205,12 +241,12 @@ class CommitReport():
         return CommitReport.get_commit_hash_from_result_file(
             Path(self._path).name)
 
-    def calc_max_cf_edges(self):
+    def calc_max_cf_edges(self) -> int:
         """
         Calulate the highest amount of control-flow interactions of a single
         commit region.
         """
-        cf_map = dict()
+        cf_map: tp.Dict[str, tp.List[int]] = dict()
         self.init_cf_map_with_edges(cf_map)
 
         total = 0
@@ -219,12 +255,12 @@ class CommitReport():
 
         return total
 
-    def calc_max_df_edges(self):
+    def calc_max_df_edges(self) -> int:
         """
         Calulate the highest amount of data-flow interactions of a single
         commit region.
         """
-        df_map = dict()
+        df_map: tp.Dict[str, tp.List[int]] = dict()
         self.init_df_map_with_edges(df_map)
 
         total = 0
@@ -233,17 +269,18 @@ class CommitReport():
 
         return total
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "FInfo:\n\t{}\nRegionMappings:\n\t{}\n" \
             .format(self.finfos.keys(), self.region_mappings.keys())
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "CR: " + os.path.basename(self.path)
 
-    def __lt__(self, other):
+    def __lt__(self, other: 'CommitReport') -> bool:
         return self.path < other.path
 
-    def init_cf_map_with_edges(self, cf_map):
+    def init_cf_map_with_edges(self,
+                               cf_map: tp.Dict[str, tp.List[int]]) -> None:
         """
         Initialize control-flow map with edges and from/to counters.
         """
@@ -283,7 +320,8 @@ class CommitReport():
 
         return (0, 0)
 
-    def init_df_map_with_edges(self, df_map: tp.Dict[str, tp.List[int]]):
+    def init_df_map_with_edges(self,
+                               df_map: tp.Dict[str, tp.List[int]]) -> None:
         """
         Initialize data-flow map with edges and from/to counters.
         """
@@ -326,13 +364,14 @@ class CommitReport():
 
 class CommitReportMeta():
 
-    def __init__(self):
-        self.finfos = dict()
-        self.region_mappings = dict()
+    def __init__(self) -> None:
+        self.finfos: tp.Dict[str, FunctionInfo] = dict()
+        self.region_mappings: tp.Dict[str, RegionMapping] = dict()
         self.__cf_ylimit = 0
         self.__df_ylimit = 0
 
-    def merge(self, commit_report: CommitReport):
+    def merge(self, commit_report: CommitReport) -> None:
+        """Merge data from commit report into CommitReportMeta"""
         self.finfos.update(commit_report.finfos)
         self.region_mappings.update(commit_report.region_mappings)
         self.__cf_ylimit = max(self.__cf_ylimit,
@@ -341,14 +380,14 @@ class CommitReportMeta():
                                commit_report.calc_max_df_edges())
 
     @property
-    def cf_ylimit(self):
+    def cf_ylimit(self) -> int:
         return self.__cf_ylimit
 
     @property
-    def df_ylimit(self):
+    def df_ylimit(self) -> int:
         return self.__df_ylimit
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "FInfo:\n\t{}\nRegionMappings:\n\t{}\n" \
             .format(self.finfos.keys(), self.region_mappings.keys())
 
@@ -358,13 +397,13 @@ class CommitMap():
     Provides a mapping from commit hash to additional informations.
     """
 
-    def __init__(self, stream):
-        self.__hash_to_id = dict()
+    def __init__(self, stream: tp.Iterable[str]) -> None:
+        self.__hash_to_id: tp.Dict[str, int] = dict()
         for line in stream:
             slices = line.strip().split(', ')
             self.__hash_to_id[slices[1]] = int(slices[0])
 
-    def time_id(self, c_hash):
+    def time_id(self, c_hash: str) -> int:
         """
         Convert a commit hash to a time id that allows a total order on the
         commits, based on the c_map, e.g., created from the analyzed git
@@ -372,7 +411,7 @@ class CommitMap():
         """
         return self.__hash_to_id[c_hash]
 
-    def short_time_id(self, c_hash):
+    def short_time_id(self, c_hash: str) -> int:
         """
         Convert a short commit hash to a time id that allows a total order on
         the commits, based on the c_map, e.g., created from the analyzed git
@@ -386,7 +425,7 @@ class CommitMap():
                 return self.__hash_to_id[key]
         raise KeyError
 
-    def c_hash(self, time_id):
+    def c_hash(self, time_id: int) -> str:
         """
         Get the hash belonging to the time id.
         """
@@ -395,13 +434,13 @@ class CommitMap():
                 return c_hash
         raise KeyError
 
-    def mapping_items(self):
+    def mapping_items(self) -> tp.ItemsView[str, int]:
         """
         Get an iterator over the mapping items.
         """
         return self.__hash_to_id.items()
 
-    def write_to_file(self, target_file):
+    def write_to_file(self, target_file: tp.TextIO) -> None:
         """
         Write commit map to a file.
 
@@ -440,7 +479,11 @@ def generate_inout_cfg_cf(commit_report: CommitReport,
         rows.append([item[0], item[1][0], "From", total])
         rows.append([item[0], item[1][1], "To", total])
 
-    rows.sort(key=lambda row: (row[0], -row[3], -row[1], row[2]))
+    rows.sort(
+        key=
+        lambda row: (row[0], -tp.cast(int, row[3]),
+                     -tp.cast(int, row[1]), row[2])
+    )
 
     return pd.DataFrame(rows, columns=['Region', 'Amount',
                                        'Direction', 'TSort'])
@@ -452,7 +495,7 @@ def generate_interactions(commit_report: CommitReport,
     for item in commit_report.region_mappings.values():
         node_rows.append([item.hash, c_map.time_id(item.hash)])
 
-    node_rows.sort(key=lambda row: int(row[1]), reverse=True)
+    node_rows.sort(key=lambda row: int(tp.cast(int, row[1])), reverse=True)
     nodes = pd.DataFrame(node_rows, columns=['hash', 'id'])
 
     link_rows = []
@@ -469,7 +512,8 @@ def generate_interactions(commit_report: CommitReport,
 
 
 def generate_inout_cfg_df(commit_report: CommitReport,
-                          cr_meta: CommitReportMeta = None) -> pd.DataFrame:
+                          cr_meta: tp.Optional[CommitReportMeta] = None
+                          ) -> pd.DataFrame:
     """
     Generates a pandas dataframe that contains the commit region
     data-flow interaction information.
@@ -489,7 +533,11 @@ def generate_inout_cfg_df(commit_report: CommitReport,
         rows.append([item[0], item[1][0], "From", total])
         rows.append([item[0], item[1][1], "To", total])
 
-    rows.sort(key=lambda row: (row[0], -row[3], -row[1], row[2]))
+    rows.sort(
+        key=
+        lambda row: (row[0], -tp.cast(int, row[3]),
+                     -tp.cast(int, row[1]), row[2])
+    )
 
     return pd.DataFrame(rows, columns=['Region', 'Amount',
                                        'Direction', 'TSort'])
