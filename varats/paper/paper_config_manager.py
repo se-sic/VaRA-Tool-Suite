@@ -159,14 +159,15 @@ def package_paper_config(output_file: Path,
     """
     Package all files from a paper config into a zip folder.
     """
-    PC.load_paper_config(
-        Path(
-            str(CFG["paper_config"]["folder"]) + "/" +
-            str(CFG["paper_config"]["current_config"])))
-
-    current_config = PC.get_paper_config()
+    cs_folder = Path(
+        str(CFG["paper_config"]["folder"]) + "/" +
+        str(CFG["paper_config"]["current_config"]))
     result_dir = Path(str(CFG['result_dir']))
 
+    PC.load_paper_config(cs_folder)
+    current_config = PC.get_paper_config()
+
+    # TODO: only include new
     files_to_store: tp.Set[Path] = set()
     for case_study in current_config.get_all_case_studies():
         match = re.match(
@@ -176,7 +177,17 @@ def package_paper_config(output_file: Path,
             files_to_store |= get_result_files_for_case_study(
                 case_study, result_dir, CommitReport)
 
+    case_study_files_to_include: tp.List[Path] = []
+    for cs_file in cs_folder.iterdir():
+        match = re.match(cs_filter_regex, cs_file.name)
+        if match is not None:
+            print(cs_file)
+            case_study_files_to_include.append(cs_file)
+
     vara_root = Path(str(CFG['config_file'])).parent
     with ZipFile(output_file, "w") as pc_zip:
         for file_path in files_to_store:
             pc_zip.write(file_path.relative_to(vara_root))
+
+        for case_study_file in case_study_files_to_include:
+            pc_zip.write(case_study_file.relative_to(vara_root))
