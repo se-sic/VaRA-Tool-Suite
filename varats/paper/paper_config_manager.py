@@ -155,7 +155,7 @@ def get_status(case_study: CaseStudy,
 
 
 def package_paper_config(output_file: Path,
-                         cs_filter_regex: tp.Pattern) -> None:
+                         cs_filter_regex: tp.Pattern[str]) -> None:
     """
     Package all files from a paper config into a zip folder.
     """
