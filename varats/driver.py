@@ -547,6 +547,12 @@ def main_casestudy() -> None:
             store_case_study(case_study, args['paper_config_path'])
     elif args['subcommand'] == 'package':
         if args["output"].endswith(".zip"):
+            vara_root = Path(str(CFG["config_file"])).parent
+            if Path(os.getcwd()) != vara_root:
+                print("Packaging needs to be called from VaRA root dir,"
+                      " changing dir to {vara_dir}".format(vara_dir=vara_root))
+                os.chdir(vara_root)
+
             import re
             PCM.package_paper_config(
                 Path(args["output"]), re.compile(args['filter_regex']))
