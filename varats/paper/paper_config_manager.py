@@ -154,7 +154,8 @@ def get_status(case_study: CaseStudy,
     return status
 
 
-def package_paper_config(output_file: Path) -> None:
+def package_paper_config(output_file: Path,
+                         cs_filter_regex: tp.Pattern) -> None:
     """
     Package all files from a paper config into a zip folder.
     """
@@ -168,8 +169,12 @@ def package_paper_config(output_file: Path) -> None:
 
     files_to_store: tp.Set[Path] = set()
     for case_study in current_config.get_all_case_studies():
-        files_to_store |= get_result_files_for_case_study(
-            case_study, result_dir, CommitReport)
+        match = re.match(
+            cs_filter_regex, "{name}_{version}".format(
+                name=case_study.project_name, version=case_study.version))
+        if match is not None:
+            files_to_store |= get_result_files_for_case_study(
+                case_study, result_dir, CommitReport)
 
     vara_root = Path(str(CFG['config_file'])).parent
     with ZipFile(output_file, "w") as pc_zip:

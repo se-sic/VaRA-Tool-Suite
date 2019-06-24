@@ -463,6 +463,12 @@ def main_casestudy() -> None:
     package_parser = sub_parsers.add_parser(
         'package', help="Case study packaging util")
     package_parser.add_argument("-o", "--output", help="Output file")
+    package_parser.add_argument(
+        "--filter-regex",
+        help="Provide a regex to only include case "
+        "studies that match the filter.",
+        type=str,
+        default=".*")
 
     args = {
         k: v
@@ -541,7 +547,9 @@ def main_casestudy() -> None:
             store_case_study(case_study, args['paper_config_path'])
     elif args['subcommand'] == 'package':
         if args["output"].endswith(".zip"):
-            PCM.package_paper_config(Path(args["output"]))
+            import re
+            PCM.package_paper_config(
+                Path(args["output"]), re.compile(args['filter_regex']))
         else:
             parser.error("--output needs to be a zip file path, e.g., foo.zip")
 
