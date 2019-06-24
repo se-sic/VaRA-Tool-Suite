@@ -332,6 +332,8 @@ def get_newest_result_files_for_case_study(
     files_to_store: tp.Dict[str, Path] = dict()
 
     result_dir /= case_study.project_name
+    if not result_dir.exists():
+        return []
 
     for opt_res_file in result_dir.iterdir():
         if report_type.is_result_file(opt_res_file.name):
