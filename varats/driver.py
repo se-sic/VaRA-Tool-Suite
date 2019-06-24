@@ -251,10 +251,6 @@ def main_gen_graph() -> None:
         for k, v in vars(parser.parse_args()).items() if v is not None
     }
 
-    if args['plot_type'] is PlotTypes.interaction_plot and 'project' not in args:
-        print("ERROR: interaction_plot requires argument \'project\'")
-        exit(1)
-
     if 'project' in args:
         args['get_cmap'] = create_lazy_commit_map_loader(args['project'],
                                                          args.get('cmap', None))
