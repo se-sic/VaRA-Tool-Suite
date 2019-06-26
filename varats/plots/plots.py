@@ -7,6 +7,7 @@ import argparse
 from enum import Enum
 
 from varats.plots.commit_interactions import InteractionPlot
+from varats.plots.paper_config_overview import PaperConfigOverviewPlot
 from varats.plots.plot import Plot
 from varats.plots.plot_utils import check_required_args
 
@@ -17,6 +18,7 @@ class PlotTypes(Enum):
     """
 
     interaction_plot = InteractionPlot
+    paper_config_overview_plot = PaperConfigOverviewPlot
 
     @property
     def type(self) -> tp.Type[Plot]:
