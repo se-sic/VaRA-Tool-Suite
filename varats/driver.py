@@ -546,7 +546,11 @@ def main_casestudy() -> None:
 
             store_case_study(case_study, args['paper_config_path'])
     elif args['subcommand'] == 'package':
-        if args["output"].endswith(".zip"):
+        output_path = Path(args["output"])
+        if output_path.suffix == '':
+            output_path = Path(str(output_path) + ".zip")
+
+        if output_path.suffix == '.zip':
             vara_root = Path(str(CFG["config_file"])).parent
             if Path(os.getcwd()) != vara_root:
                 print("Packaging needs to be called from VaRA root dir,"
@@ -554,10 +558,13 @@ def main_casestudy() -> None:
                 os.chdir(vara_root)
 
             import re
-            PCM.package_paper_config(
-                Path(args["output"]), re.compile(args['filter_regex']))
+            PCM.package_paper_config(output_path,
+                                     re.compile(args['filter_regex']))
         else:
-            parser.error("--output needs to be a zip file path, e.g., foo.zip")
+            parser.error(
+                "--output has the wrong file type extension. "
+                "Please do not provide any other file type extension than .zip"
+            )
 
 
 def main_develop() -> None:
