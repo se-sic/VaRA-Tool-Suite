@@ -322,6 +322,34 @@ def __store_case_study_to_file(case_study: CaseStudy, file_path: Path) -> None:
         cs_file.write(yaml.dump(case_study))
 
 
+def get_newest_result_files_for_case_study(
+        case_study: CaseStudy, result_dir: Path,
+        report_type: tp.Type[ReportType]) -> tp.List[Path]:
+    """
+    Return all result files that belong to a given case study.
+    For revision with multiple files, the newest file will be selected.
+    """
+    files_to_store: tp.Dict[str, Path] = dict()
+
+    result_dir /= case_study.project_name
+    if not result_dir.exists():
+        return []
+
+    for opt_res_file in result_dir.iterdir():
+        if report_type.is_result_file(opt_res_file.name):
+            commit_hash = report_type.get_commit_hash_from_result_file(
+                opt_res_file.name)
+            if case_study.has_revision(commit_hash):
+                current_file = files_to_store.get(commit_hash, None)
+                if current_file is None:
+                    files_to_store[commit_hash] = opt_res_file
+                else:
+                    if (current_file.stat().st_mtime <
+                            opt_res_file.stat().st_mtime):
+                        files_to_store[commit_hash] = opt_res_file
+
+    return [x for x in files_to_store.values()]
+
 ###############################################################################
 # Case-study generation
 ###############################################################################

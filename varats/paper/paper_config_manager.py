@@ -5,11 +5,13 @@ Module for interacting with paper configs.
 import typing as tp
 import re
 from pathlib import Path
+from zipfile import ZipFile, ZIP_DEFLATED
 
 from plumbum import colors
 
 from varats.data.commit_report import CommitReport
-from varats.paper.case_study import CaseStudy
+from varats.paper.case_study import (CaseStudy,
+                                     get_newest_result_files_for_case_study)
 from varats.settings import CFG
 import varats.paper.paper_config as PC
 
@@ -151,3 +153,42 @@ def get_status(case_study: CaseStudy,
                 rev=rev_state[0], status=color_rev_state(rev_state[1]))
 
     return status
+
+
+def package_paper_config(output_file: Path,
+                         cs_filter_regex: tp.Pattern[str]) -> None:
+    """
+    Package all files from a paper config into a zip folder.
+    """
+    cs_folder = Path(
+        str(CFG["paper_config"]["folder"]) + "/" +
+        str(CFG["paper_config"]["current_config"]))
+    result_dir = Path(str(CFG['result_dir']))
+
+    PC.load_paper_config(cs_folder)
+    current_config = PC.get_paper_config()
+
+    files_to_store: tp.Set[Path] = set()
+    for case_study in current_config.get_all_case_studies():
+        match = re.match(
+            cs_filter_regex, "{name}_{version}".format(
+                name=case_study.project_name, version=case_study.version))
+        if match is not None:
+            files_to_store.update(
+                get_newest_result_files_for_case_study(case_study, result_dir,
+                                                       CommitReport))
+
+    case_study_files_to_include: tp.List[Path] = []
+    for cs_file in cs_folder.iterdir():
+        match = re.match(cs_filter_regex, cs_file.name)
+        if match is not None:
+            case_study_files_to_include.append(cs_file)
+
+    vara_root = Path(str(CFG['config_file'])).parent
+    # TODO(python3.7): add ZipFile(compresslevel=9)
+    with ZipFile(output_file, "w", compression=ZIP_DEFLATED) as pc_zip:
+        for file_path in files_to_store:
+            pc_zip.write(file_path.relative_to(vara_root))
+
+        for case_study_file in case_study_files_to_include:
+            pc_zip.write(case_study_file.relative_to(vara_root))

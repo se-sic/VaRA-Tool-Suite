@@ -462,6 +462,16 @@ def main_casestudy() -> None:
         help="Maximal expected gradient in percent between two revisions")
     add_common_args(ext_parser)
 
+    package_parser = sub_parsers.add_parser(
+        'package', help="Case study packaging util")
+    package_parser.add_argument("-o", "--output", help="Output file")
+    package_parser.add_argument(
+        "--filter-regex",
+        help="Provide a regex to only include case "
+        "studies that match the filter.",
+        type=str,
+        default=".*")
+
     args = {
         k: v
         for k, v in vars(parser.parse_args()).items() if v is not None
@@ -537,6 +547,26 @@ def main_casestudy() -> None:
                                              **args)
 
             store_case_study(case_study, args['paper_config_path'])
+    elif args['subcommand'] == 'package':
+        output_path = Path(args["output"])
+        if output_path.suffix == '':
+            output_path = Path(str(output_path) + ".zip")
+
+        if output_path.suffix == '.zip':
+            vara_root = Path(str(CFG["config_file"])).parent
+            if Path(os.getcwd()) != vara_root:
+                print("Packaging needs to be called from VaRA root dir,"
+                      " changing dir to {vara_dir}".format(vara_dir=vara_root))
+                os.chdir(vara_root)
+
+            import re
+            PCM.package_paper_config(output_path,
+                                     re.compile(args['filter_regex']))
+        else:
+            parser.error(
+                "--output has the wrong file type extension. "
+                "Please do not provide any other file type extension than .zip"
+            )
 
 
 def main_develop() -> None:
