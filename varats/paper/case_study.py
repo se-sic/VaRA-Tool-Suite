@@ -71,8 +71,9 @@ class CSStage(yaml.YAMLObject):
     yaml_loader = yaml.SafeLoader
     yaml_tag = u'!CSStage'
 
-    def __init__(self) -> None:
+    def __init__(self, name: tp.Optional[str] = None) -> None:
         self.__revisions: tp.List[HashIDTuple] = []
+        self.__name: tp.Optional[str] = name
 
     @property
     def revisions(self) -> tp.List[str]:
@@ -80,6 +81,20 @@ class CSStage(yaml.YAMLObject):
         Project revisions that are part of this case study.
         """
         return [x.commit_hash for x in self.__revisions]
+
+    @property
+    def name(self) -> tp.Optional[str]:
+        """
+        Name of the stage.
+        """
+        return self.__name
+
+    @name.setter
+    def name(self, name: str) -> None:
+        """
+        Setter for the name of the stage.
+        """
+        self.__name = name
 
     def has_revision(self, revision: str) -> bool:
         """
@@ -207,8 +222,8 @@ class CaseStudy(yaml.YAMLObject):
         Add multiple revisions to this case study.
 
         Args:
-            stage: The stage to insert the revisions
-            revisions: List of triples with (commit_hash, id) to be inserted
+            revisions: List of tuples with (commit_hash, id) to be inserted
+            stage_num: The stage to insert the revisions
             sort_revs: True if the stage should be kept sorted
         """
         for revision in revisions:
@@ -216,6 +231,17 @@ class CaseStudy(yaml.YAMLObject):
 
         if sort_revs and self.num_stages > 0:
             self.__stages[stage_num].sort()
+
+    def name_stage(self, stage_num: int, name: str) -> None:
+        """
+        Names an already existing stage.
+
+        Args:
+            stage_num: The number of the stage to name
+            name: The new name of the stage
+        """
+        if stage_num < self.num_stages:
+            self.__stages[stage_num].name = name
 
     def get_revision_filter(self) -> tp.Callable[[str], bool]:
         """
@@ -461,7 +487,7 @@ def extend_with_extra_revs(case_study: CaseStudy, cmap: CommitMap,
     case_study.include_revisions(new_rev_items, merge_stage, True)
 
 
-@check_required_args(['git_path', 'revs_per_year', 'merge_stage'])
+@check_required_args(['git_path', 'revs_per_year', 'merge_stage', 'revs_year_sep'])
 def extend_with_revs_per_year(case_study: CaseStudy, cmap: CommitMap,
                               **kwargs: tp.Any) -> None:
     """
@@ -470,6 +496,7 @@ def extend_with_revs_per_year(case_study: CaseStudy, cmap: CommitMap,
     repo_path = pygit2.discover_repository(kwargs['git_path'])
     repo = pygit2.Repository(repo_path)
     last_commit = repo[repo.head.target]
+    revs_year_sep = kwargs['revs_year_sep']
 
     commits: tp.DefaultDict[int, tp.List[str]] = defaultdict(
         list)  # maps year -> list of commits
@@ -478,7 +505,8 @@ def extend_with_revs_per_year(case_study: CaseStudy, cmap: CommitMap,
         commits[commit_date.year].append(str(commit.id))
 
     new_rev_items = []  # new revisions that get added to to case_study
-    for _, commits_in_year in commits.items():
+    num_stage: int = 0
+    for year, commits_in_year in commits.items():
         samples = min(len(commits_in_year), kwargs['revs_per_year'])
         sample_commit_indices = sorted(
             random.sample(range(len(commits_in_year)), samples))
@@ -488,7 +516,14 @@ def extend_with_revs_per_year(case_study: CaseStudy, cmap: CommitMap,
             time_id = cmap.time_id(commit_hash)
             new_rev_items.append((commit_hash, time_id))
 
-    case_study.include_revisions(new_rev_items, kwargs['merge_stage'], True)
+        case_study.include_revisions(
+            new_rev_items,
+            num_stage if revs_year_sep else kwargs['merge_stage'], False)
+        if revs_year_sep:
+            case_study.name_stage(num_stage, str(year))
+
+        num_stage += 1
+        new_rev_items.clear()
 
 
 @check_required_args(['distribution', 'merge_stage', 'num_rev'])
