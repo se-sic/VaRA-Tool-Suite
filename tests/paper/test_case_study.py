@@ -11,6 +11,7 @@ YAML_CASE_STUDY = """!CaseStudy
 _CaseStudy__project_name: gzip
 _CaseStudy__stages:
 - !CSStage
+  _CSStage__name: stage_0
   _CSStage__revisions:
   - !HashIDTuple
     _HashIDTuple__commit_hash: 7620b817357d6f14356afd004ace2da426cf8c36
@@ -43,6 +44,7 @@ _CaseStudy__stages:
     _HashIDTuple__commit_hash: b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a
     _HashIDTuple__commit_id: 41
 - !CSStage
+  _CSStage__name: null
   _CSStage__revisions:
   - !HashIDTuple
     _HashIDTuple__commit_hash: 7620b817357d6f14356afd004ace2da426cf8c36
@@ -74,6 +76,13 @@ class TestCaseStudy(unittest.TestCase):
         Check if all revisions were loaded correctly.
         """
         self.assertEqual(len(self.case_study.revisions), 10)
+
+    def test_stage_name(self):
+        """
+        Check if the name of the stage is loaded correctly.
+        """
+        self.assertEqual(self.case_study.stages[0].name, "stage_0")
+        self.assertEqual(self.case_study.stages[1].name, None)
 
     def test_version(self):
         """
