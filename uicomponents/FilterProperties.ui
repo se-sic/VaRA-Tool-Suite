@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>285</width>
-    <height>196</height>
+    <width>289</width>
+    <height>255</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -30,8 +30,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>273</width>
-        <height>184</height>
+        <width>277</width>
+        <height>243</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -61,6 +61,9 @@
           </item>
           <item>
            <layout class="QHBoxLayout" name="layoutNodeSpec"/>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="layoutNodeWarning"/>
           </item>
           <item>
            <spacer name="verticalSpacer">

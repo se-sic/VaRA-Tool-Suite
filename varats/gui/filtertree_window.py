@@ -8,6 +8,7 @@ from PyQt5.QtGui import QIcon, QPixmap, QCloseEvent
 from varats.gui.views.ui_FilterMain import Ui_FilterEditor
 from varats.gui.views.ui_FilterProperties import Ui_FilterProperties
 from varats.gui.views.ui_FilterNodeProperties import Ui_FilterNodeProperties
+from varats.gui.views.ui_FilterUnaryWarning import Ui_FilterUnaryWarning
 from varats.gui.views.ui_AuthorFilterProperties import Ui_AuthorFilterProperties
 from varats.gui.views.ui_CommitterFilterProperties import Ui_CommitterFilterProperties
 from varats.gui.views.ui_AuthorDateMinFilter import Ui_AuthorDateMinFilter
@@ -20,7 +21,7 @@ from varats.gui.views.ui_CommitDateDeltaMinFilter import Ui_CommitDateDeltaMinFi
 from varats.gui.views.ui_CommitDateDeltaMaxFilter import Ui_CommitDateDeltaMaxFilter
 from varats.gui import icons_rc # noqa # pylint: disable=unused-import
 from varats.gui.filtertree_model import FilterTreeModel
-from varats.data.filtertree_data import AndOperator
+from varats.data.filtertree_data import AndOperator, UnaryInteractionFilter, SourceOperator, TargetOperator
 from varats.data.version_header import VersionHeader
 
 
@@ -56,6 +57,7 @@ class PropertiesEditor(QWidget, Ui_FilterProperties):
         self._model = None
 
         self._node_editor = NodeEditor(self)
+        self._filter_unary_warning = FilterUnaryWarning(self)
         self._author_filter_editor = AuthorFilterEditor(self)
         self._committer_filter_editor = CommitterFilterEditor(self)
         self._author_date_min_filter_editor = AuthorDateMinFilterEditor(self)
@@ -68,6 +70,7 @@ class PropertiesEditor(QWidget, Ui_FilterProperties):
         self._commit_date_delta_max_filter_editor = CommitDateDeltaMaxFilterEditor(self)
 
         self.layoutNode.addWidget(self._node_editor)
+        self.layoutNodeWarning.addWidget(self._filter_unary_warning)
         self.layoutNodeSpec.addWidget(self._author_filter_editor)
         self.layoutNodeSpec.addWidget(self._committer_filter_editor)
         self.layoutNodeSpec.addWidget(self._author_date_min_filter_editor)
@@ -119,7 +122,9 @@ class PropertiesEditor(QWidget, Ui_FilterProperties):
                 self._commit_date_delta_max_filter_editor.setVisible(True)
 
         self._node_editor.setSelection(current)
+
         self._author_filter_editor.setSelection(current)
+        self._filter_unary_warning.setSelection(current)
         self._committer_filter_editor.setSelection(current)
         self._author_date_min_filter_editor.setSelection(current)
         self._author_date_max_filter_editor.setSelection(current)
@@ -134,6 +139,7 @@ class PropertiesEditor(QWidget, Ui_FilterProperties):
         self._model = model
 
         self._node_editor.setModel(model)
+        self._filter_unary_warning.setModel(model)
         self._author_filter_editor.setModel(model)
         self._committer_filter_editor.setModel(model)
         self._author_date_min_filter_editor.setModel(model)
@@ -176,6 +182,27 @@ class NodeEditor(QWidget, Ui_FilterNodeProperties):
         parent = current.parent()
         self._data_mapper.setRootIndex(parent)
         self._data_mapper.setCurrentModelIndex(current)
+
+
+class FilterUnaryWarning(QWidget, Ui_FilterUnaryWarning):
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setupUi(self)
+
+    def setModel(self, model):
+        self._model = model
+        self.uiWarningLabel.hide()
+
+    def setSelection(self, current: QModelIndex) -> None:
+        node = self._model.getNode(current)
+        if issubclass(type(node), UnaryInteractionFilter):
+            if node.hasFilterTypeAsParent(SourceOperator) or node.hasFilterTypeAsParent(TargetOperator):
+                self.uiWarningLabel.hide()
+            else:
+                self.uiWarningLabel.show()
+        else:
+            self.uiWarningLabel.hide()
 
 
 class AuthorFilterEditor(QWidget, Ui_AuthorFilterProperties):
@@ -666,4 +693,3 @@ class FilterWindow(QMainWindow, Ui_FilterEditor):
         msg.setInformativeText(help_text)
         msg.setWindowTitle("Help")
         msg.exec_()
-
