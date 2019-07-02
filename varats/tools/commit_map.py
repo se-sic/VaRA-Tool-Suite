@@ -8,7 +8,7 @@ from pathlib import Path
 from plumbum import local
 from plumbum.cmd import git, mkdir
 
-from varats.data.commit_report import CommitMap
+from varats.data.reports.commit_report import CommitMap
 from varats.utils.project_util import get_local_project_git_path
 
 

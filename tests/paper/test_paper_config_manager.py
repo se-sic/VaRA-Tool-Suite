@@ -6,7 +6,7 @@ import unittest
 import yaml
 import mock
 
-from varats.data.commit_report import CommitReport
+from varats.data.reports.commit_report import CommitReport
 import varats.paper.paper_config_manager as PCM
 
 from test_case_study import YAML_CASE_STUDY

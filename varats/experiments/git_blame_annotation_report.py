@@ -22,8 +22,8 @@ from benchbuild.settings import CFG
 from benchbuild.utils.cmd import opt, mkdir
 import benchbuild.utils.actions as actions
 
-from varats.data.commit_report import CommitReport as CR
-from varats.data.file_status import FileStatusExtension as FSE
+from varats.data.reports.commit_report import CommitReport as CR
+from varats.data.report import FileStatusExtension as FSE
 from varats.data.revisions import get_proccessed_revisions
 from varats.experiments.extract import Extract
 from varats.experiments.wllvm import RunWLLVM
@@ -52,7 +52,7 @@ class CFRErrorHandler():
             binary_name=self.__binary_name,
             project_version=str(self.__project.version),
             project_uuid=str(self.__project.run_uuid),
-            extension_type=FSE.failure)
+            extension_type=FSE.failed)
 
         error_file = Path("{res_folder}/{res_file}".format(
             res_folder=self.__result_folder, res_file=result_error_file))

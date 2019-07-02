@@ -11,7 +11,7 @@ from threading import Lock
 
 from PyQt5.QtCore import QRunnable, QThreadPool, QObject, pyqtSlot, pyqtSignal
 
-from varats.data.commit_report import CommitReport
+from varats.data.reports.commit_report import CommitReport
 
 # Add other loadable Types
 LoadableType = tp.TypeVar('LoadableType', CommitReport, CommitReport)

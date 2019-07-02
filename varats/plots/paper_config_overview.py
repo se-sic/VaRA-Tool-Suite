@@ -14,7 +14,7 @@ import pygit2
 import seaborn as sb
 
 from varats.plots.plot import Plot
-from varats.data.commit_report import CommitReport
+from varats.data.reports.commit_report import CommitReport
 from varats.plots.plot_utils import check_required_args
 import varats.paper.paper_config as PC
 from varats.utils.project_util import get_local_project_git_path

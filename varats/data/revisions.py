@@ -7,12 +7,11 @@ from collections import defaultdict
 from pathlib import Path
 
 from varats.settings import CFG
-from varats.data.report import ReportType
+from varats.data.report import MetaReport
 
 
-def __get_result_files_dict(
-        project_name: str,
-        result_file_type: tp.Type[ReportType]) -> tp.Dict[str, tp.List[Path]]:
+def __get_result_files_dict(project_name: str, result_file_type: MetaReport
+                            ) -> tp.Dict[str, tp.List[Path]]:
     """
     Returns a dict that maps the commit_hash to a list of all result files for
     that commit.
@@ -38,9 +37,8 @@ def __get_result_files_dict(
     return result_files
 
 
-def get_proccessed_revisions(
-        project_name: str,
-        result_file_type: tp.Type[ReportType]) -> tp.List[str]:
+def get_proccessed_revisions(project_name: str,
+                             result_file_type: MetaReport) -> tp.List[str]:
     """
     Calculates a list of revisions of a project that have already
     been processed successfully.
@@ -62,9 +60,8 @@ def get_proccessed_revisions(
     return processed_revisions
 
 
-def get_failed_revisions(
-        project_name: str,
-        result_file_type: tp.Type[ReportType]) -> tp.List[str]:
+def get_failed_revisions(project_name: str,
+                         result_file_type: MetaReport) -> tp.List[str]:
     """
     Calculates a list of revisions of a project that have failed.
 

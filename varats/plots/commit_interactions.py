@@ -14,7 +14,8 @@ import numpy as np
 from varats.plots.plot import Plot
 from varats.data.cache_helper import load_cached_df_or_none, cache_dataframe,\
     GraphCacheType
-from varats.data.commit_report import CommitMap, CommitReport
+from varats.data.reports.commit_report import CommitMap, CommitReport
+from varats.data.report import MetaReport
 from varats.jupyterhelper.file import load_commit_report
 from varats.plots.plot_utils import check_required_args
 from varats.data.revisions import get_proccessed_revisions
@@ -124,7 +125,7 @@ def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
     reports = []
     for file_path in result_dir.iterdir():
         if file_path.stem.startswith(str(project_name) + "-"):
-            if CommitReport.is_result_file_success(file_path.name):
+            if MetaReport.is_result_file_success(file_path.name):
                 commit_hash = CommitReport.get_commit_hash_from_result_file(
                     file_path.name)
 

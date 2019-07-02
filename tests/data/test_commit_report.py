@@ -7,9 +7,10 @@ import unittest.mock as mock
 
 import yaml
 
-from varats.data.file_status import FileStatusExtension
-from varats.data.commit_report import FunctionGraphEdges, FunctionInfo,\
-    RegionMapping, CommitReport, CommitMap, generate_interactions
+from varats.data.report import FileStatusExtension
+from varats.data.reports.commit_report import (
+    FunctionGraphEdges, FunctionInfo, RegionMapping, CommitReport, CommitMap,
+    generate_interactions)
 
 YAML_DOC_1 = """---
 DocType:         CommitReport
@@ -300,7 +301,7 @@ class TestCommitReport(unittest.TestCase):
         self.assertEqual(
             CommitReport.get_file_name("foo", "foo", "7bb9ef5f8c",
                                        "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                                       FileStatusExtension.failure),
+                                       FileStatusExtension.failed),
             self.fail_filename)
 
 

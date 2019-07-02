@@ -9,7 +9,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 
 from plumbum import colors
 
-from varats.data.commit_report import CommitReport
+from varats.data.reports.commit_report import CommitReport
 from varats.paper.case_study import (CaseStudy,
                                      get_newest_result_files_for_case_study)
 from varats.settings import CFG

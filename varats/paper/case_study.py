@@ -20,8 +20,8 @@ import pygit2
 from varats.data.revisions import (get_proccessed_revisions,
                                    get_failed_revisions)
 from varats.plots.plot_utils import check_required_args
-from varats.data.commit_report import CommitMap
-from varats.data.report import ReportType
+from varats.data.reports.commit_report import CommitMap
+from varats.data.report import MetaReport
 
 
 class HashIDTuple(yaml.YAMLObject):
@@ -228,8 +228,8 @@ class CaseStudy(yaml.YAMLObject):
 
         return revision_filter
 
-    def processed_revisions(
-            self, result_file_type: tp.Type[ReportType]) -> tp.List[str]:
+    def processed_revisions(self,
+                            result_file_type: MetaReport) -> tp.List[str]:
         """
         Calculate how many revisions were processed.
         """
@@ -241,8 +241,7 @@ class CaseStudy(yaml.YAMLObject):
             if rev[:10] in total_processed_revisions
         ]
 
-    def failed_revisions(
-            self, result_file_type: tp.Type[ReportType]) -> tp.List[str]:
+    def failed_revisions(self, result_file_type: MetaReport) -> tp.List[str]:
         """
         Calculate which revisions failed.
         """
@@ -255,7 +254,7 @@ class CaseStudy(yaml.YAMLObject):
         ]
 
     def get_revisions_status(self,
-                             result_file_type: tp.Type[ReportType],
+                             result_file_type: MetaReport,
                              stage_num: int = -1
                              ) -> tp.List[tp.Tuple[str, str]]:
         """
@@ -324,7 +323,7 @@ def __store_case_study_to_file(case_study: CaseStudy, file_path: Path) -> None:
 
 def get_newest_result_files_for_case_study(
         case_study: CaseStudy, result_dir: Path,
-        report_type: tp.Type[ReportType]) -> tp.List[Path]:
+        report_type: MetaReport) -> tp.List[Path]:
     """
     Return all result files that belong to a given case study.
     For revision with multiple files, the newest file will be selected.

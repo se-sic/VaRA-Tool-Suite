@@ -11,8 +11,9 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg \
     as FigureCanvas
 
-from varats.data.commit_report import CommitReport, generate_inout_cfg_cf,\
-    generate_inout_cfg_df, CommitReportMeta
+from varats.data.reports.commit_report import (
+    CommitReport, generate_inout_cfg_cf, generate_inout_cfg_df,
+    CommitReportMeta)
 
 
 class CRBarPlotWidget(QWidget):  # type: ignore
