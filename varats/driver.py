@@ -501,7 +501,7 @@ def main_casestudy() -> None:
             return
 
         if "project" in args and "git_path" not in args:
-            args['git_path'] = get_local_project_git_path(args['project'])
+            args['git_path'] = str(get_local_project_git_path(args['project']))
 
         if "git_path" in args and "project" not in args:
             args['project'] = Path(args['git_path']).stem.replace("-HEAD", "")
