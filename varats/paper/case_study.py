@@ -177,6 +177,28 @@ class CaseStudy(yaml.YAMLObject):
         """
         return len(self.__stages)
 
+    def get_stage_by_name(self, stage_name: str) -> tp.Optional[CSStage]:
+        """
+        Get a stage by its name.
+        Since multiple stages can have the same name, the first matching stage is returned.
+        """
+        for stage in self.__stages:
+            if stage.name == stage_name:
+                return stage
+
+        return None
+
+    def get_stage_index_by_name(self, stage_name: str) -> tp.Optional[int]:
+        """
+        Get a stage's index by its name.
+        Since multiple stages can have the same name, the first matching stage is returned.
+        """
+        for i in range(len(self.__stages)):
+            if self.__stages[i].name == stage_name:
+                return i
+
+        return None
+
     def has_revision(self, revision: str) -> bool:
         """
         Check if a revision is part of this case study.
@@ -194,6 +216,29 @@ class CaseStudy(yaml.YAMLObject):
         if self.num_stages <= num_stage:
             return False
         return self.__stages[num_stage].has_revision(revision)
+
+    def shift_stage(self, from_index: int, offset: int) -> None:
+        """
+        Shift a stage in the case-studie's stage list by an offset.
+        Beware that shifts to the left (offset<0) will destroy stages.
+        """
+        assert 0 <= from_index < len(self.__stages)
+        assert from_index + offset >= 0, "Shifting out of bounds"
+
+        if offset > 0:
+            for _ in range(offset):
+                self.__stages.insert(from_index, CSStage())
+
+        if offset < 0:
+            remove_index = from_index + offset
+            for _ in range(abs(offset)):
+                self.__stages.pop(remove_index)
+
+    def insert_empty_stage(self, pos) -> None:
+        """
+        Insert a new stage at the given index, shifting the list elements to the right.
+        """
+        self.__stages.insert(pos, CSStage())
 
     def include_revision(self,
                          revision: str,
@@ -493,6 +538,37 @@ def extend_with_revs_per_year(case_study: CaseStudy, cmap: CommitMap,
     """
     Extend a case_study with n revisions per year.
     """
+    def parse_int_string(string: tp.Optional[str]) -> tp.Optional[int]:
+        if string is None:
+            return None
+
+        try:
+            return int(string)
+        except ValueError:
+            return None
+
+    def get_or_create_stage_for_year(year: int) -> int:
+        stages = case_study.stages
+        num_stages = len(stages)
+
+        for stage_index in range(num_stages):
+            stage_year = parse_int_string(stages[stage_index].name)
+
+            if stage_year is None:
+                continue
+            if stage_year == year:
+                return stage_index
+            if stage_year > year:
+                continue
+            if stage_year < year:
+                case_study.insert_empty_stage(stage_index)
+                case_study.name_stage(stage_index, str(year))
+                return stage_index
+
+        case_study.insert_empty_stage(num_stages)
+        case_study.name_stage(num_stages, str(year))
+        return num_stages
+
     repo_path = pygit2.discover_repository(kwargs['git_path'])
     repo = pygit2.Repository(repo_path)
     last_commit = repo[repo.head.target]
@@ -505,7 +581,6 @@ def extend_with_revs_per_year(case_study: CaseStudy, cmap: CommitMap,
         commits[commit_date.year].append(str(commit.id))
 
     new_rev_items = []  # new revisions that get added to to case_study
-    num_stage: int = 0
     for year, commits_in_year in commits.items():
         samples = min(len(commits_in_year), kwargs['revs_per_year'])
         sample_commit_indices = sorted(
@@ -516,13 +591,12 @@ def extend_with_revs_per_year(case_study: CaseStudy, cmap: CommitMap,
             time_id = cmap.time_id(commit_hash)
             new_rev_items.append((commit_hash, time_id))
 
-        case_study.include_revisions(
-            new_rev_items,
-            num_stage if revs_year_sep else kwargs['merge_stage'], False)
         if revs_year_sep:
-            case_study.name_stage(num_stage, str(year))
+            stage_index = get_or_create_stage_for_year(year)
+        else:
+            stage_index = kwargs['merge_stage']
 
-        num_stage += 1
+        case_study.include_revisions(new_rev_items, stage_index, False)
         new_rev_items.clear()
 
 
