@@ -234,7 +234,7 @@ class CaseStudy(yaml.YAMLObject):
             for _ in range(abs(offset)):
                 self.__stages.pop(remove_index)
 
-    def insert_empty_stage(self, pos) -> None:
+    def insert_empty_stage(self, pos: int) -> None:
         """
         Insert a new stage at the given index, shifting the list elements to the right.
         """
