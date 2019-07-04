@@ -222,8 +222,10 @@ class CaseStudy(yaml.YAMLObject):
         Shift a stage in the case-studie's stage list by an offset.
         Beware that shifts to the left (offset<0) will destroy stages.
         """
-        assert 0 <= from_index < len(self.__stages)
-        assert from_index + offset >= 0, "Shifting out of bounds"
+        if not (0 <= from_index < len(self.__stages)):
+            raise AssertionError("from_index out of bounds")
+        if (from_index + offset) < 0:
+            raise AssertionError("Shifting out of bounds")
 
         if offset > 0:
             for _ in range(offset):
