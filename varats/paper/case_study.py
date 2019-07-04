@@ -596,7 +596,7 @@ def extend_with_revs_per_year(case_study: CaseStudy, cmap: CommitMap,
         else:
             stage_index = kwargs['merge_stage']
 
-        case_study.include_revisions(new_rev_items, stage_index, False)
+        case_study.include_revisions(new_rev_items, stage_index, True)
         new_rev_items.clear()
 
 
