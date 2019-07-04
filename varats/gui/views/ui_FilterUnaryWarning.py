@@ -26,7 +26,7 @@ class Ui_FilterUnaryWarning(object):
     def retranslateUi(self, FilterUnaryWarning):
         _translate = QtCore.QCoreApplication.translate
         FilterUnaryWarning.setWindowTitle(_translate("FilterUnaryWarning", "Form"))
-        self.uiWarningLabel.setText(_translate("FilterUnaryWarning", "<html><head/><body><p><span style=\" font-weight:600;\">Currently this filter applies to source and target, therefore, only interactions where both satisfy the filter are included.</span></p></body></html>"))
+        self.uiWarningLabel.setText(_translate("FilterUnaryWarning", "<html><head/><body><p><span style=\" font-weight:600;\">Currently, this filter applies to source and target, therefore, only interactions where both satisfy the filter are included.</span></p></body></html>"))
 
 
 if __name__ == "__main__":
