@@ -172,7 +172,7 @@ def get_legend(use_color: bool = False) -> str:
             legend_str += file_status.name + "/"
 
     legend_str = legend_str[:-1]
-    legend_str += "]"
+    legend_str += "]\n"
     return legend_str
 
 

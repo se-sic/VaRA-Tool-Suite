@@ -36,7 +36,7 @@ class TestPaperConfigManager(unittest.TestCase):
         ]
 
         status = PCM.get_short_status(self.case_study, CommitReport, 5)
-        self.assertEqual(status, 'CS: gzip_1: (  0/10) processed [0/0/10]')
+        self.assertEqual(status, 'CS: gzip_1: (  0/10) processed [0/0/0/10]')
         mock_get_tagged_revisions.assert_called()
 
         # Revision not in set
@@ -46,7 +46,7 @@ class TestPaperConfigManager(unittest.TestCase):
         ]
 
         status = PCM.get_short_status(self.case_study, CommitReport, 5)
-        self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [1/0/9]')
+        self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [1/0/0/9]')
         mock_get_tagged_revisions.assert_called()
 
     @mock.patch('varats.paper.case_study.get_tagged_revisions')
@@ -63,7 +63,7 @@ class TestPaperConfigManager(unittest.TestCase):
         ]
 
         status = PCM.get_short_status(self.case_study, CommitReport, 5, True)
-        self.assertEqual(status, 'CS: gzip_1: (  0/10) processed [0/0/10]')
+        self.assertEqual(status, 'CS: gzip_1: (  0/10) processed [0/0/0/10]')
         mock_get_tagged_revisions.assert_called()
 
         # Revision not in set
@@ -73,7 +73,7 @@ class TestPaperConfigManager(unittest.TestCase):
         ]
 
         status = PCM.get_short_status(self.case_study, CommitReport, 5, True)
-        self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [1/0/9]')
+        self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [1/0/0/9]')
         mock_get_tagged_revisions.assert_called()
 
     @mock.patch('varats.paper.case_study.get_tagged_revisions')
@@ -88,7 +88,7 @@ class TestPaperConfigManager(unittest.TestCase):
 
         status = PCM.get_status(self.case_study, CommitReport, 5, False)
         self.assertEqual(
-            status, """CS: gzip_1: (  0/10) processed [0/0/10]
+            status, """CS: gzip_1: (  0/10) processed [0/0/0/10]
     7620b81735 [Missing]
     622e9b1d02 [Missing]
     8798d5c4fd [Missing]
@@ -107,12 +107,13 @@ class TestPaperConfigManager(unittest.TestCase):
         mock_get_tagged_revisions.return_value = [
             ('b8b25e7f15', FileStatusExtension.Success),
             ('622e9b1d02', FileStatusExtension.Failed),
+            ('1e7e3769dc', FileStatusExtension.CompileError),
             ('2e654f9963', FileStatusExtension.Success)
         ]
 
         status = PCM.get_status(self.case_study, CommitReport, 5, False)
         self.assertEqual(
-            status, """CS: gzip_1: (  2/10) processed [2/1/7]
+            status, """CS: gzip_1: (  2/10) processed [2/1/1/6]
     7620b81735 [Missing]
     622e9b1d02 [Failed]
     8798d5c4fd [Missing]
@@ -120,7 +121,7 @@ class TestPaperConfigManager(unittest.TestCase):
     edfad78619 [Missing]
     a3db5806d0 [Missing]
     e75f428c0d [Missing]
-    1e7e3769dc [Missing]
+    1e7e3769dc [CompileError]
     9872ba420c [Missing]
     b8b25e7f15 [Success]
 """)
@@ -138,7 +139,7 @@ class TestPaperConfigManager(unittest.TestCase):
 
         status = PCM.get_status(self.case_study, CommitReport, 5, True)
         self.assertEqual(
-            status, """CS: gzip_1: (  0/10) processed [0/0/10]
+            status, """CS: gzip_1: (  0/10) processed [0/0/0/10]
   Stage 0
     7620b81735 [Missing]
     622e9b1d02 [Missing]
@@ -160,12 +161,13 @@ class TestPaperConfigManager(unittest.TestCase):
         mock_get_tagged_revisions.return_value = [
             ('b8b25e7f15', FileStatusExtension.Success),
             ('622e9b1d02', FileStatusExtension.Failed),
+            ('1e7e3769dc', FileStatusExtension.CompileError),
             ('2e654f9963', FileStatusExtension.Success)
         ]
 
         status = PCM.get_status(self.case_study, CommitReport, 5, True)
         self.assertEqual(
-            status, """CS: gzip_1: (  2/10) processed [2/1/7]
+            status, """CS: gzip_1: (  2/10) processed [2/1/1/6]
   Stage 0
     7620b81735 [Missing]
     622e9b1d02 [Failed]
@@ -174,7 +176,7 @@ class TestPaperConfigManager(unittest.TestCase):
     edfad78619 [Missing]
     a3db5806d0 [Missing]
     e75f428c0d [Missing]
-    1e7e3769dc [Missing]
+    1e7e3769dc [CompileError]
     9872ba420c [Missing]
     b8b25e7f15 [Success]
   Stage 1
@@ -197,7 +199,7 @@ class TestPaperConfigManager(unittest.TestCase):
 
         status = PCM.get_status(self.case_study, CommitReport, 5, False, True)
         self.assertEqual(
-            status, """CS: gzip_1: (  0/10) processed [0/0/10]
+            status, """CS: gzip_1: (  0/10) processed [0/0/0/10]
     7620b81735 [Missing]
     622e9b1d02 [Missing]
     8798d5c4fd [Missing]
@@ -216,12 +218,13 @@ class TestPaperConfigManager(unittest.TestCase):
         mock_get_tagged_revisions.return_value = [
             ('b8b25e7f15', FileStatusExtension.Success),
             ('622e9b1d02', FileStatusExtension.Failed),
+            ('1e7e3769dc', FileStatusExtension.CompileError),
             ('2e654f9963', FileStatusExtension.Success)
         ]
 
         status = PCM.get_status(self.case_study, CommitReport, 5, False, True)
         self.assertEqual(
-            status, """CS: gzip_1: (  2/10) processed [2/1/7]
+            status, """CS: gzip_1: (  2/10) processed [2/1/1/6]
     7620b81735 [Missing]
     622e9b1d02 [Failed]
     8798d5c4fd [Missing]
@@ -229,7 +232,7 @@ class TestPaperConfigManager(unittest.TestCase):
     edfad78619 [Missing]
     a3db5806d0 [Missing]
     e75f428c0d [Missing]
-    1e7e3769dc [Missing]
+    1e7e3769dc [CompileError]
     9872ba420c [Missing]
     b8b25e7f15 [Success]
 """)
@@ -244,10 +247,12 @@ class TestPaperConfigManager(unittest.TestCase):
         """
         self.assertEqual(
             PCM.get_legend(True),
-            """CS: project_42: (Success / Total) processed [Success/Failed/Missing]"""
+            """CS: project_42: (Success / Total) processed [Success/Failed/CompileError/Missing]
+"""
         )
 
         self.assertEqual(
             PCM.get_legend(False),
-            """CS: project_42: (Success / Total) processed [Success/Failed/Missing]"""
+            """CS: project_42: (Success / Total) processed [Success/Failed/CompileError/Missing]
+"""
         )

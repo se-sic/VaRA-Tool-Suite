@@ -52,7 +52,7 @@ class CFRErrorHandler():
             binary_name=self.__binary_name,
             project_version=str(self.__project.version),
             project_uuid=str(self.__project.run_uuid),
-            extension_type=FSE.Failed)
+            extension_type=FSE.CompileError)
 
         error_file = Path("{res_folder}/{res_file}".format(
             res_folder=self.__result_folder, res_file=result_error_file))

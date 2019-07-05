@@ -19,7 +19,8 @@ class FileStatusExtension(Enum):
     """
 
     Success = ("yaml", colors.green)
-    Failed = ("failed", colors.red)
+    Failed = ("failed", colors.lightred)
+    CompileError = ("cerror", colors.red)
     Missing = ("###", colors.orange3)
 
     def get_file_ending(self) -> str:
@@ -115,6 +116,12 @@ class MetaReport(type):
         """ Check if the passed file name is a (Failed) result file. """
         return MetaReport.is_result_file_status(file_name,
                                                 FileStatusExtension.Failed)
+
+    @staticmethod
+    def is_result_file_compileerror(file_name: str) -> bool:
+        """ Check if the passed file name is a (Failed) result file. """
+        return MetaReport.is_result_file_status(
+            file_name, FileStatusExtension.CompileError)
 
     @staticmethod
     def is_result_file_missing(file_name: str) -> bool:
