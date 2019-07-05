@@ -416,6 +416,13 @@ def main_casestudy() -> None:
             default=0,
             help="Add this many revisions per year to the case-study.")
         sub_parser.add_argument(
+            "--revs-year-sep",
+            action="store_true",
+            default=False,
+            help=
+            "Separate the revisions in different stages per year (when using \'--revs-per-year\')."
+        )
+        sub_parser.add_argument(
             "--num-rev",
             type=int,
             default=10,
