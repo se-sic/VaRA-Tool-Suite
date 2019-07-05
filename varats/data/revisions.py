@@ -7,7 +7,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from varats.settings import CFG
-from varats.data.report import MetaReport
+from varats.data.report import MetaReport, FileStatusExtension
 
 
 def __get_result_files_dict(project_name: str, result_file_type: MetaReport
@@ -48,11 +48,9 @@ def get_proccessed_revisions(project_name: str,
     processed_revisions = []
 
     result_files = __get_result_files_dict(project_name, result_file_type)
-    for _, value in result_files.items():
+    for commit_hash, value in result_files.items():
         newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
         if result_file_type.is_result_file_success(newest_res_file.name):
-            commit_hash = result_file_type.get_commit_hash_from_result_file(
-                newest_res_file.name)
             processed_revisions.append(commit_hash)
 
     return processed_revisions
@@ -70,11 +68,31 @@ def get_failed_revisions(project_name: str,
     failed_revisions = []
 
     result_files = __get_result_files_dict(project_name, result_file_type)
-    for _, value in result_files.items():
+    for commit_hash, value in result_files.items():
         newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
         if result_file_type.is_result_file_failed(newest_res_file.name):
-            commit_hash = result_file_type.get_commit_hash_from_result_file(
-                newest_res_file.name)
             failed_revisions.append(commit_hash)
 
     return failed_revisions
+
+
+def get_tagged_revisions(project_name: str, result_file_type: MetaReport
+                         ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
+    """
+    Calculates a list of revisions of a project tagged with the file status.
+    If two files exists the newest is considered for detecting the status.
+
+    Args:
+        project_name: target project
+        result_file_type: the type of the result file
+    """
+    revisions = []
+
+    result_files = __get_result_files_dict(project_name, result_file_type)
+    for commit_hash, file_list in result_files.items():
+        newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
+        revisions.append((commit_hash,
+                          result_file_type.get_status_from_result_file(
+                              str(newest_res_file))))
+
+    return revisions

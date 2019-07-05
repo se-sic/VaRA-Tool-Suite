@@ -6,6 +6,9 @@ import typing as tp
 from enum import Enum
 import re
 
+from plumbum import colors
+from plumbum.colorlib.styles import Color
+
 from varats.data import reports as __REPORTS__
 
 
@@ -15,19 +18,34 @@ class FileStatusExtension(Enum):
     Specific report files can map these to their own specific representation.
     """
 
-    success = "yaml"
-    failed = "failed"
+    Success = ("yaml", colors.green)
+    Failed = ("failed", colors.red)
+    Missing = ("###", colors.orange3)
 
     def get_file_ending(self) -> str:
         """
         Returns the corresponding file ending to the status.
         """
-        return str(self.value)
+        return str(self.value[0])
+
+    @property
+    def status_color(self) -> Color:
+        """
+        Returns the corresponding color to the status.
+        """
+        return self.value[1]
+
+    def get_colored_status(self) -> str:
+        """
+        Returns the corresponding file status, colored
+        in the specific status color.
+        """
+        return tp.cast(str, self.status_color[self.name])
 
     @staticmethod
     def get_file_status(file_ending: str) -> 'FileStatusExtension':
         for status in FileStatusExtension:
-            if str(status.value) == file_ending:
+            if str(status.value[0]) == file_ending:
                 return status
         raise ValueError(
             'Unknown file ending {ending}'.format(ending=file_ending))
@@ -80,7 +98,7 @@ class MetaReport(type):
         For example: Report.is_result_file_success("file/path")
         """
         for file_status in FileStatusExtension:
-            method_name = 'is_result_file_' + file_status.name
+            method_name = 'is_result_file_' + file_status.name.lower()
             if not hasattr(cls, method_name):
                 raise NotImplementedError(
                     "Missing file accesser method {method_name}".format(
@@ -88,15 +106,22 @@ class MetaReport(type):
 
     @staticmethod
     def is_result_file_success(file_name: str) -> bool:
-        """ Check if the passed file name is a (successful) result file. """
+        """ Check if the passed file name is a (Success) result file. """
         return MetaReport.is_result_file_status(file_name,
-                                                FileStatusExtension.success)
+                                                FileStatusExtension.Success)
 
     @staticmethod
     def is_result_file_failed(file_name: str) -> bool:
-        """ Check if the passed file name is a (successful) result file. """
+        """ Check if the passed file name is a (Failed) result file. """
         return MetaReport.is_result_file_status(file_name,
-                                                FileStatusExtension.failed)
+                                                FileStatusExtension.Failed)
+
+    @staticmethod
+    def is_result_file_missing(file_name: str) -> bool:
+        """ Check if the passed file name is a (Missing) result file. """
+        # TODO: how should this work?
+        return MetaReport.is_result_file_status(file_name,
+                                                FileStatusExtension.Missing)
 
     def __check_required_vars(cls: tp.Any, name: str,
                               req_vars: tp.List[str]) -> None:
@@ -128,6 +153,16 @@ class MetaReport(type):
         match = MetaReport.__FILE_NAME_REGEX.search(file_name)
         if match:
             return match.group("file_commit_hash")
+
+        raise ValueError('File {file_name} name was wrongly formated.'.format(
+            file_name=file_name))
+
+    @staticmethod
+    def get_status_from_result_file(file_name: str) -> FileStatusExtension:
+        """ Get the FileStatusExtension from a result file name. """
+        match = MetaReport.__FILE_NAME_REGEX.search(file_name)
+        if match:
+            return FileStatusExtension.get_file_status(match.group("EXT"))
 
         raise ValueError('File {file_name} name was wrongly formated.'.format(
             file_name=file_name))

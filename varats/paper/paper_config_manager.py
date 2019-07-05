@@ -4,11 +4,13 @@ Module for interacting with paper configs.
 
 import typing as tp
 import re
+from collections import defaultdict
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from plumbum import colors
 
+from varats.data.report import FileStatusExtension
 from varats.data.reports.commit_report import CommitReport
 from varats.paper.case_study import (CaseStudy,
                                      get_newest_result_files_for_case_study)
@@ -86,32 +88,41 @@ def get_short_status(case_study: CaseStudy,
             longest_cs_name -
             (len(case_study.project_name) + len(str(case_study.version))), ' ')
 
-    num_p_rev = len(set(case_study.processed_revisions(result_file_type)))
-    num_f_rev = len(set(case_study.failed_revisions(result_file_type)))
+    status_occurrences: tp.DefaultDict[FileStatusExtension, int] = defaultdict(
+        int)
+    for tagged_rev in case_study.get_revisions_status(result_file_type):
+        status_occurrences[tagged_rev[1]] += 1
+
     num_rev = len(set(case_study.revisions))
+
+    num_succ_rev = status_occurrences[FileStatusExtension.Success]
 
     color = None
     if use_color:
-        if num_p_rev == num_rev:
+        if num_succ_rev == num_rev:
             color = colors.green
-        elif num_p_rev == 0:
+        elif num_succ_rev == 0:
             color = colors.red
         else:
             color = colors.orange3
 
     if color is not None:
         status += "(" + color["{processed:3}/{total}".format(
-            processed=num_p_rev, total=num_rev)] + ") processed "
-        status += "[" + colors.red[str(num_f_rev)] + "/" + colors.orange3[str(
-            num_rev - (num_f_rev + num_p_rev))] + "/" + colors.green[str(
-                num_p_rev)] + "]"
+            processed=num_succ_rev, total=num_rev)] + ") processed "
     else:
-        status += "({processed:3}/{total}) processed ".format(
-            processed=num_p_rev, total=num_rev)
-        status += "[{fail_rev}/{miss_rev}/{good_rev}]".format(
-            fail_rev=num_f_rev,
-            miss_rev=(num_rev - (num_f_rev + num_p_rev)),
-            good_rev=num_p_rev)
+        status += "(" + "{processed:3}/{total}".format(
+            processed=num_succ_rev, total=num_rev) + ") processed "
+
+    status += "["
+    for file_status in FileStatusExtension:
+        if use_color:
+            status += file_status.status_color[str(
+                status_occurrences[file_status])] + "/"
+        else:
+            status += str(status_occurrences[file_status]) + "/"
+
+    status = status[:-1]
+    status += "]"
 
     return status
 
@@ -128,29 +139,21 @@ def get_status(case_study: CaseStudy,
     status = get_short_status(case_study, result_file_type, longest_cs_name,
                               use_color) + "\n"
 
-    def color_rev_state(rev_state: str) -> str:
-        if use_color:
-            if rev_state == "OK":
-                return tp.cast(str, colors.green[rev_state])
-            if rev_state == "Failed":
-                return tp.cast(str, colors.red[rev_state])
-            return tp.cast(str, colors.orange3[rev_state])
-
-        return rev_state
-
     if sep_stages:
         for stage_num in range(0, case_study.num_stages):
             status += "  Stage {idx}\n".format(idx=stage_num)
-            for rev_state in case_study.get_revisions_status(
+            for tagged_rev_state in case_study.get_revisions_status(
                     result_file_type, stage_num):
                 status += "    {rev} [{status}]\n".format(
-                    rev=rev_state[0], status=color_rev_state(rev_state[1]))
+                    rev=tagged_rev_state[0],
+                    status=tagged_rev_state[1].get_colored_status())
     else:
-        for rev_state in list(
+        for tagged_rev_state in list(
                 dict.fromkeys(
                     case_study.get_revisions_status(result_file_type))):
             status += "    {rev} [{status}]\n".format(
-                rev=rev_state[0], status=color_rev_state(rev_state[1]))
+                rev=tagged_rev_state[0],
+                status=tagged_rev_state[1].get_colored_status())
 
     return status
 

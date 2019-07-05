@@ -18,10 +18,10 @@ import numpy as np
 import pygit2
 
 from varats.data.revisions import (get_proccessed_revisions,
-                                   get_failed_revisions)
+                                   get_failed_revisions, get_tagged_revisions)
 from varats.plots.plot_utils import check_required_args
 from varats.data.reports.commit_report import CommitMap
-from varats.data.report import MetaReport
+from varats.data.report import MetaReport, FileStatusExtension
 
 
 class HashIDTuple(yaml.YAMLObject):
@@ -256,23 +256,35 @@ class CaseStudy(yaml.YAMLObject):
     def get_revisions_status(self,
                              result_file_type: MetaReport,
                              stage_num: int = -1
-                             ) -> tp.List[tp.Tuple[str, str]]:
+                             ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
         """
         Get status of all revisions.
         """
-        processed_revisions = self.processed_revisions(result_file_type)
-        failed_revisions = self.failed_revisions(result_file_type)
-        revisions_status = [
-            (rev[:10], "OK" if rev in processed_revisions else
-             "Failed" if rev in failed_revisions else "Missing")
-            for rev in self.revisions
-        ]
+        tagged_revisions = get_tagged_revisions(self.project_name,
+                                                result_file_type)
+
+        def filtered_tagged_revs(
+                rev_provider: tp.Iterable
+        ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
+            filtered_revisions = []
+            for rev in rev_provider:
+                found = False
+                for tagged_rev in tagged_revisions:
+                    if rev[:10] == tagged_rev[0][:10]:
+                        filtered_revisions.append(tagged_rev)
+                        found = True
+                        break
+                if not found:
+                    filtered_revisions.append((rev[:10],
+                                               FileStatusExtension.Missing))
+            return filtered_revisions
+
         if stage_num == -1:
-            return revisions_status
+            return filtered_tagged_revs(self.revisions)
 
         if stage_num < self.num_stages:
             stage = self.__stages[stage_num]
-            return [x for x in revisions_status if stage.has_revision(x[0])]
+            return filtered_tagged_revs(stage.revisions)
 
         return []
 

@@ -6,6 +6,7 @@ import unittest
 import yaml
 import mock
 
+from varats.data.report import FileStatusExtension
 from varats.data.reports.commit_report import CommitReport
 import varats.paper.paper_config_manager as PCM
 
@@ -24,28 +25,32 @@ class TestPaperConfigManager(unittest.TestCase):
         """
         cls.case_study = yaml.safe_load(YAML_CASE_STUDY)
 
-    @mock.patch('varats.paper.case_study.get_proccessed_revisions')
-    def test_short_status(self, mock_get_processed_revision):
+    @mock.patch('varats.paper.case_study.get_tagged_revisions')
+    def test_short_status(self, mock_get_tagged_revisions):
         """
         Check if the case study can show a short status.
         """
         # Revision not in set
-        mock_get_processed_revision.return_value = ['42b25e7f15']
+        mock_get_tagged_revisions.return_value = [
+            ('42b25e7f15', FileStatusExtension.Success)
+        ]
 
         status = PCM.get_short_status(self.case_study, CommitReport, 5)
-        self.assertEqual(status, 'CS: gzip_1: (  0/10) processed [0/10/0]')
-        mock_get_processed_revision.assert_called()
+        self.assertEqual(status, 'CS: gzip_1: (  0/10) processed [0/0/10]')
+        mock_get_tagged_revisions.assert_called()
 
         # Revision not in set
-        mock_get_processed_revision.reset_mock()
-        mock_get_processed_revision.return_value = ['b8b25e7f15']
+        mock_get_tagged_revisions.reset_mock()
+        mock_get_tagged_revisions.return_value = [
+            ('b8b25e7f15', FileStatusExtension.Success)
+        ]
 
         status = PCM.get_short_status(self.case_study, CommitReport, 5)
-        self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [0/9/1]')
-        mock_get_processed_revision.assert_called()
+        self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [1/0/9]')
+        mock_get_tagged_revisions.assert_called()
 
-    @mock.patch('varats.paper.case_study.get_proccessed_revisions')
-    def test_short_status_color(self, mock_get_processed_revision):
+    @mock.patch('varats.paper.case_study.get_tagged_revisions')
+    def test_short_status_color(self, mock_get_tagged_revisions):
         """
         Check if the case study can show a short status.
 
@@ -53,31 +58,37 @@ class TestPaperConfigManager(unittest.TestCase):
         not if the colors are present.
         """
         # Revision not in set
-        mock_get_processed_revision.return_value = ['42b25e7f15']
+        mock_get_tagged_revisions.return_value = [
+            ('42b25e7f15', FileStatusExtension.Success)
+        ]
 
         status = PCM.get_short_status(self.case_study, CommitReport, 5, True)
-        self.assertEqual(status, 'CS: gzip_1: (  0/10) processed [0/10/0]')
-        mock_get_processed_revision.assert_called()
+        self.assertEqual(status, 'CS: gzip_1: (  0/10) processed [0/0/10]')
+        mock_get_tagged_revisions.assert_called()
 
         # Revision not in set
-        mock_get_processed_revision.reset_mock()
-        mock_get_processed_revision.return_value = ['b8b25e7f15']
+        mock_get_tagged_revisions.reset_mock()
+        mock_get_tagged_revisions.return_value = [
+            ('b8b25e7f15', FileStatusExtension.Success)
+        ]
 
         status = PCM.get_short_status(self.case_study, CommitReport, 5, True)
-        self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [0/9/1]')
-        mock_get_processed_revision.assert_called()
+        self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [1/0/9]')
+        mock_get_tagged_revisions.assert_called()
 
-    @mock.patch('varats.paper.case_study.get_proccessed_revisions')
-    def test_status(self, mock_get_processed_revision):
+    @mock.patch('varats.paper.case_study.get_tagged_revisions')
+    def test_status(self, mock_get_tagged_revisions):
         """
         Check if the case study can show a short status.
         """
         # Revision not in set
-        mock_get_processed_revision.return_value = ['42b25e7f15']
+        mock_get_tagged_revisions.return_value = [
+            ('42b25e7f15', FileStatusExtension.Success)
+        ]
 
         status = PCM.get_status(self.case_study, CommitReport, 5, False)
         self.assertEqual(
-            status, """CS: gzip_1: (  0/10) processed [0/10/0]
+            status, """CS: gzip_1: (  0/10) processed [0/0/10]
     7620b81735 [Missing]
     622e9b1d02 [Missing]
     8798d5c4fd [Missing]
@@ -89,39 +100,45 @@ class TestPaperConfigManager(unittest.TestCase):
     9872ba420c [Missing]
     b8b25e7f15 [Missing]
 """)
-        mock_get_processed_revision.assert_called()
+        mock_get_tagged_revisions.assert_called()
 
         # Revision not in set
-        mock_get_processed_revision.reset_mock()
-        mock_get_processed_revision.return_value = ['b8b25e7f15', '2e654f9963']
+        mock_get_tagged_revisions.reset_mock()
+        mock_get_tagged_revisions.return_value = [
+            ('b8b25e7f15', FileStatusExtension.Success),
+            ('622e9b1d02', FileStatusExtension.Failed),
+            ('2e654f9963', FileStatusExtension.Success)
+        ]
 
         status = PCM.get_status(self.case_study, CommitReport, 5, False)
         self.assertEqual(
-            status, """CS: gzip_1: (  2/10) processed [0/8/2]
+            status, """CS: gzip_1: (  2/10) processed [2/1/7]
     7620b81735 [Missing]
-    622e9b1d02 [Missing]
+    622e9b1d02 [Failed]
     8798d5c4fd [Missing]
-    2e654f9963 [OK]
+    2e654f9963 [Success]
     edfad78619 [Missing]
     a3db5806d0 [Missing]
     e75f428c0d [Missing]
     1e7e3769dc [Missing]
     9872ba420c [Missing]
-    b8b25e7f15 [OK]
+    b8b25e7f15 [Success]
 """)
-        mock_get_processed_revision.assert_called()
+        mock_get_tagged_revisions.assert_called()
 
-    @mock.patch('varats.paper.case_study.get_proccessed_revisions')
-    def test_status_with_stages(self, mock_get_processed_revision):
+    @mock.patch('varats.paper.case_study.get_tagged_revisions')
+    def test_status_with_stages(self, mock_get_tagged_revisions):
         """
         Check if the case study can show a short status.
         """
         # Revision not in set
-        mock_get_processed_revision.return_value = ['42b25e7f15']
+        mock_get_tagged_revisions.return_value = [
+            ('42b25e7f15', FileStatusExtension.Success)
+        ]
 
         status = PCM.get_status(self.case_study, CommitReport, 5, True)
         self.assertEqual(
-            status, """CS: gzip_1: (  0/10) processed [0/10/0]
+            status, """CS: gzip_1: (  0/10) processed [0/0/10]
   Stage 0
     7620b81735 [Missing]
     622e9b1d02 [Missing]
@@ -136,33 +153,37 @@ class TestPaperConfigManager(unittest.TestCase):
   Stage 1
     7620b81735 [Missing]
 """)
-        mock_get_processed_revision.assert_called()
+        mock_get_tagged_revisions.assert_called()
 
         # Revision not in set
-        mock_get_processed_revision.reset_mock()
-        mock_get_processed_revision.return_value = ['b8b25e7f15', '2e654f9963']
+        mock_get_tagged_revisions.reset_mock()
+        mock_get_tagged_revisions.return_value = [
+            ('b8b25e7f15', FileStatusExtension.Success),
+            ('622e9b1d02', FileStatusExtension.Failed),
+            ('2e654f9963', FileStatusExtension.Success)
+        ]
 
         status = PCM.get_status(self.case_study, CommitReport, 5, True)
         self.assertEqual(
-            status, """CS: gzip_1: (  2/10) processed [0/8/2]
+            status, """CS: gzip_1: (  2/10) processed [2/1/7]
   Stage 0
     7620b81735 [Missing]
-    622e9b1d02 [Missing]
+    622e9b1d02 [Failed]
     8798d5c4fd [Missing]
-    2e654f9963 [OK]
+    2e654f9963 [Success]
     edfad78619 [Missing]
     a3db5806d0 [Missing]
     e75f428c0d [Missing]
     1e7e3769dc [Missing]
     9872ba420c [Missing]
-    b8b25e7f15 [OK]
+    b8b25e7f15 [Success]
   Stage 1
     7620b81735 [Missing]
 """)
-        mock_get_processed_revision.assert_called()
+        mock_get_tagged_revisions.assert_called()
 
-    @mock.patch('varats.paper.case_study.get_proccessed_revisions')
-    def test_status_color(self, mock_get_processed_revision):
+    @mock.patch('varats.paper.case_study.get_tagged_revisions')
+    def test_status_color(self, mock_get_tagged_revisions):
         """
         Check if the case study can show a short status.
 
@@ -170,11 +191,13 @@ class TestPaperConfigManager(unittest.TestCase):
         not if the colors are present.
         """
         # Revision not in set
-        mock_get_processed_revision.return_value = ['42b25e7f15']
+        mock_get_tagged_revisions.return_value = [
+            ('42b25e7f15', FileStatusExtension.Success)
+        ]
 
         status = PCM.get_status(self.case_study, CommitReport, 5, False, True)
         self.assertEqual(
-            status, """CS: gzip_1: (  0/10) processed [0/10/0]
+            status, """CS: gzip_1: (  0/10) processed [0/0/10]
     7620b81735 [Missing]
     622e9b1d02 [Missing]
     8798d5c4fd [Missing]
@@ -186,24 +209,28 @@ class TestPaperConfigManager(unittest.TestCase):
     9872ba420c [Missing]
     b8b25e7f15 [Missing]
 """)
-        mock_get_processed_revision.assert_called()
+        mock_get_tagged_revisions.assert_called()
 
         # Revision not in set
-        mock_get_processed_revision.reset_mock()
-        mock_get_processed_revision.return_value = ['b8b25e7f15', '2e654f9963']
+        mock_get_tagged_revisions.reset_mock()
+        mock_get_tagged_revisions.return_value = [
+            ('b8b25e7f15', FileStatusExtension.Success),
+            ('622e9b1d02', FileStatusExtension.Failed),
+            ('2e654f9963', FileStatusExtension.Success)
+        ]
 
         status = PCM.get_status(self.case_study, CommitReport, 5, False, True)
         self.assertEqual(
-            status, """CS: gzip_1: (  2/10) processed [0/8/2]
+            status, """CS: gzip_1: (  2/10) processed [2/1/7]
     7620b81735 [Missing]
-    622e9b1d02 [Missing]
+    622e9b1d02 [Failed]
     8798d5c4fd [Missing]
-    2e654f9963 [OK]
+    2e654f9963 [Success]
     edfad78619 [Missing]
     a3db5806d0 [Missing]
     e75f428c0d [Missing]
     1e7e3769dc [Missing]
     9872ba420c [Missing]
-    b8b25e7f15 [OK]
+    b8b25e7f15 [Success]
 """)
-        mock_get_processed_revision.assert_called()
+        mock_get_tagged_revisions.assert_called()
