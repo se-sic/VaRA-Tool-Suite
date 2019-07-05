@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_FilterProperties(object):
     def setupUi(self, FilterProperties):
         FilterProperties.setObjectName("FilterProperties")
-        FilterProperties.resize(285, 196)
+        FilterProperties.resize(289, 255)
         self.verticalLayout = QtWidgets.QVBoxLayout(FilterProperties)
         self.verticalLayout.setObjectName("verticalLayout")
         self.scrollArea = QtWidgets.QScrollArea(FilterProperties)
@@ -20,7 +20,7 @@ class Ui_FilterProperties(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 273, 184))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 277, 243))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
@@ -36,6 +36,9 @@ class Ui_FilterProperties(object):
         self.layoutNodeSpec = QtWidgets.QHBoxLayout()
         self.layoutNodeSpec.setObjectName("layoutNodeSpec")
         self.verticalLayout_2.addLayout(self.layoutNodeSpec)
+        self.layoutNodeWarning = QtWidgets.QHBoxLayout()
+        self.layoutNodeWarning.setObjectName("layoutNodeWarning")
+        self.verticalLayout_2.addLayout(self.layoutNodeWarning)
         spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout_2.addItem(spacerItem)
         self.verticalLayout_3.addWidget(self.uiFilterProperties)
