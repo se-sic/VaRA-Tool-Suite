@@ -52,12 +52,14 @@ class MetaReport(type):
     REPORT_TYPES: tp.Dict[str, 'MetaReport'] = dict()
 
     __FILE_NAME_REGEX = re.compile(
+        r"(?P<project_shorthand>.*)-" +
         r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
         r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)\." +
         FileStatusExtension.get_regex_grp() + "$")
 
-    __RESULT_FILE_TEMPLATE = \
-        "{project_name}-{binary_name}-{project_version}_{project_uuid}.{ext}"
+    __RESULT_FILE_TEMPLATE = (
+        "{shorthand}-" + "{project_name}-" + "{binary_name}-" +
+        "{project_version}_" + "{project_uuid}." + "{ext}")
 
     def __init__(cls: tp.Any, name: str, bases: tp.Tuple[tp.Any],
                  attrs: tp.Dict[str, tp.Any]) -> None:
@@ -131,8 +133,9 @@ class MetaReport(type):
             file_name=file_name))
 
     @staticmethod
-    def get_file_name(project_name: str, binary_name: str,
-                      project_version: str, project_uuid: str,
+    def get_file_name(report_shorthand: str, project_name: str,
+                      binary_name: str, project_version: str,
+                      project_uuid: str,
                       extension_type: FileStatusExtension) -> str:
         """
         Generates a filename for a commit report
@@ -140,6 +143,7 @@ class MetaReport(type):
         ext = FileStatusExtension.get_file_ending(extension_type)
 
         return MetaReport.__RESULT_FILE_TEMPLATE.format(
+            shorthand=report_shorthand,
             project_name=project_name,
             binary_name=binary_name,
             project_version=project_version,

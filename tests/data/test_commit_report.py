@@ -232,9 +232,9 @@ class TestCommitReport(unittest.TestCase):
                 'builtins.open', new=mock.mock_open(read_data=file_content)):
             cls.commit_report = CommitReport("fake_file_path")
 
-        cls.success_filename = ("foo-foo-7bb9ef5f8c_"
+        cls.success_filename = ("CR-foo-foo-7bb9ef5f8c_"
                                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be.yaml")
-        cls.fail_filename = ("foo-foo-7bb9ef5f8c_"
+        cls.fail_filename = ("CR-foo-foo-7bb9ef5f8c_"
                              "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be.failed")
 
     def test_path(self):

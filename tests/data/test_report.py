@@ -17,9 +17,9 @@ class TestMetaReport(unittest.TestCase):
         """
         Setup file and CommitReport
         """
-        cls.success_filename = ("foo-foo-7bb9ef5f8c_"
+        cls.success_filename = ("CR-foo-foo-7bb9ef5f8c_"
                                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be.yaml")
-        cls.fail_filename = ("foo-foo-7bb9ef5f8c_"
+        cls.fail_filename = ("XX-foo-foo-7bb9ef5f8c_"
                              "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be.failed")
 
     def test_is_result_file(self):
@@ -60,14 +60,15 @@ class TestMetaReport(unittest.TestCase):
         """
          Check if file names are created correctly.
         """
+        # TODO: replate CR with empty test report
         self.assertEqual(
-            MetaReport.get_file_name("foo", "foo", "7bb9ef5f8c",
+            MetaReport.get_file_name("CR", "foo", "foo", "7bb9ef5f8c",
                                      "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
                                      FileStatusExtension.success),
             self.success_filename)
 
         self.assertEqual(
-            MetaReport.get_file_name("foo", "foo", "7bb9ef5f8c",
+            MetaReport.get_file_name("XX", "foo", "foo", "7bb9ef5f8c",
                                      "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
                                      FileStatusExtension.failed),
             self.fail_filename)

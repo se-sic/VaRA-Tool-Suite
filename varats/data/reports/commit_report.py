@@ -9,7 +9,7 @@ from pathlib import Path
 import yaml
 import pandas as pd
 
-from varats.data.report import BaseReport
+from varats.data.report import BaseReport, FileStatusExtension
 from varats.data.version_header import VersionHeader
 
 
@@ -167,6 +167,17 @@ class CommitReport(BaseReport):
         """
         return CommitReport.get_commit_hash_from_result_file(
             Path(self._path).name)
+
+    @staticmethod
+    def get_file_name(project_name: str, binary_name: str,
+                      project_version: str, project_uuid: str,
+                      extension_type: FileStatusExtension) -> str:
+        """
+        Generates a filename for a commit report
+        """
+        return BaseReport.get_file_name(CommitReport.SHORTHAND, project_name,
+                                        binary_name, project_version,
+                                        project_uuid, extension_type)
 
     def calc_max_cf_edges(self) -> int:
         """

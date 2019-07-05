@@ -27,8 +27,6 @@ def __get_result_files_dict(project_name: str, result_file_type: MetaReport
         list)  # maps commit hash -> list of res files (success or fail)
     if res_dir.exists():
         for res_file in res_dir.iterdir():
-            if not str(res_file.stem).startswith("{}-".format(project_name)):
-                continue
             if result_file_type.is_result_file(res_file.name):
                 commit_hash = result_file_type.get_commit_hash_from_result_file(
                     res_file.name)
