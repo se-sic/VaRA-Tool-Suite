@@ -264,7 +264,7 @@ class CaseStudy(yaml.YAMLObject):
                                                 result_file_type)
 
         def filtered_tagged_revs(
-                rev_provider: tp.Iterable
+                rev_provider: tp.Iterable[str]
         ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
             filtered_revisions = []
             for rev in rev_provider:

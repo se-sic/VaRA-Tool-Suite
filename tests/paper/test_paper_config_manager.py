@@ -234,3 +234,20 @@ class TestPaperConfigManager(unittest.TestCase):
     b8b25e7f15 [Success]
 """)
         mock_get_tagged_revisions.assert_called()
+
+    def test_legend(self):
+        """
+        Check if the paper manager produces the correct legend.
+
+        Currently this only checks if the output is correctly generated but
+        not if the colors are present.
+        """
+        self.assertEqual(
+            PCM.get_legend(True),
+            """CS: project_42: (Success / Total) processed [Success/Failed/Missing]"""
+        )
+
+        self.assertEqual(
+            PCM.get_legend(False),
+            """CS: project_42: (Success / Total) processed [Success/Failed/Missing]"""
+        )

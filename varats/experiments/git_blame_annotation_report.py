@@ -52,7 +52,7 @@ class CFRErrorHandler():
             binary_name=self.__binary_name,
             project_version=str(self.__project.version),
             project_uuid=str(self.__project.run_uuid),
-            extension_type=FSE.failed)
+            extension_type=FSE.Failed)
 
         error_file = Path("{res_folder}/{res_file}".format(
             res_folder=self.__result_folder, res_file=result_error_file))
@@ -113,7 +113,7 @@ class CFRAnalysis(actions.Step):  # type: ignore
                 binary_name=binary_name,
                 project_version=str(project.version),
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.success)
+                extension_type=FSE.Success)
 
             run_cmd = opt[
                 "-vara-BD", "-vara-CFR",

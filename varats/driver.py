@@ -388,6 +388,11 @@ def main_casestudy() -> None:
         help="Print status with stage separation",
         action="store_true",
         default=False)
+    status_parser.add_argument(
+        "--legend",
+        help="Print status with legend",
+        action="store_true",
+        default=False)
 
     def add_common_args(sub_parser: argparse.ArgumentParser) -> None:
         """
@@ -493,7 +498,8 @@ def main_casestudy() -> None:
             parser.error("At most one argument of: --short, --ws can be used.")
 
         PCM.show_status_of_case_studies(args['filter_regex'], args['short'],
-                                        args['list_revs'], args['ws'])
+                                        args['list_revs'], args['ws'],
+                                        args['legend'])
 
     elif args['subcommand'] == 'gen' or args['subcommand'] == 'ext':
         if "project" not in args and "git_path" not in args:

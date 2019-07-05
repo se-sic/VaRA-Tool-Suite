@@ -19,8 +19,8 @@ import varats.paper.paper_config as PC
 
 
 def show_status_of_case_studies(filter_regex: str, short_status: bool,
-                                print_rev_list: bool,
-                                sep_stages: bool) -> None:
+                                print_rev_list: bool, sep_stages: bool,
+                                print_legend: bool) -> None:
     """
     Show the status of all matching case studies.
     """
@@ -44,6 +44,9 @@ def show_status_of_case_studies(filter_regex: str, short_status: bool,
             longest_cs_name = max(
                 longest_cs_name,
                 len(case_study.project_name) + len(str(case_study.version)))
+
+    if print_legend:
+        print(get_legend(True))
 
     for case_study in output_case_studies:
         if print_rev_list:
@@ -156,6 +159,21 @@ def get_status(case_study: CaseStudy,
                 status=tagged_rev_state[1].get_colored_status())
 
     return status
+
+
+def get_legend(use_color: bool = False) -> str:
+    """ Return a formated legend that explains all status numbers. """
+    legend_str = "CS: project_42: (Success / Total) processed ["
+
+    for file_status in FileStatusExtension:
+        if use_color:
+            legend_str += file_status.status_color[file_status.name] + "/"
+        else:
+            legend_str += file_status.name + "/"
+
+    legend_str = legend_str[:-1]
+    legend_str += "]"
+    return legend_str
 
 
 def package_paper_config(output_file: Path,
