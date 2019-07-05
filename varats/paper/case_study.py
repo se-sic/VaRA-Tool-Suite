@@ -236,11 +236,14 @@ class CaseStudy(yaml.YAMLObject):
             for _ in range(abs(offset)):
                 self.__stages.pop(remove_index)
 
-    def insert_empty_stage(self, pos: int) -> None:
+    def insert_empty_stage(self, pos: int) -> CSStage:
         """
         Insert a new stage at the given index, shifting the list elements to the right.
+        The newly created stage is returned.
         """
-        self.__stages.insert(pos, CSStage())
+        new_stage = CSStage()
+        self.__stages.insert(pos, new_stage)
+        return new_stage
 
     def include_revision(self,
                          revision: str,
