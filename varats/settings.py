@@ -223,5 +223,5 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
     BB_CFG.store(bb_config_path)
 
 
-s.setup_config(CFG, ['.vara.yaml', '.vara.yml'])
+s.setup_config(CFG, ['.vara.yaml', '.vara.yml'], "VARA_CONFIG_FILE")
 s.update_env(CFG)
