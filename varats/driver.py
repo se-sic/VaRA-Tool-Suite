@@ -429,6 +429,13 @@ def main_casestudy() -> None:
             default=0,
             help="Add this many revisions per year to the case-study.")
         sub_parser.add_argument(
+            "--revs-year-sep",
+            action="store_true",
+            default=False,
+            help=
+            "Separate the revisions in different stages per year (when using \'--revs-per-year\')."
+        )
+        sub_parser.add_argument(
             "--num-rev",
             type=int,
             default=10,
@@ -515,7 +522,7 @@ def main_casestudy() -> None:
             return
 
         if "project" in args and "git_path" not in args:
-            args['git_path'] = get_local_project_git_path(args['project'])
+            args['git_path'] = str(get_local_project_git_path(args['project']))
 
         if "git_path" in args and "project" not in args:
             args['project'] = Path(args['git_path']).stem.replace("-HEAD", "")

@@ -142,7 +142,7 @@ class TestPaperConfigManager(unittest.TestCase):
         status = PCM.get_status(self.case_study, CommitReport, 5, True)
         self.assertEqual(
             status, """CS: gzip_1: (  0/10) processed [0/0/0/10]
-  Stage 0
+  Stage 0 (stage_0)
     7620b81735 [Missing]
     622e9b1d02 [Missing]
     8798d5c4fd [Missing]
@@ -170,7 +170,7 @@ class TestPaperConfigManager(unittest.TestCase):
         status = PCM.get_status(self.case_study, CommitReport, 5, True)
         self.assertEqual(
             status, """CS: gzip_1: (  2/10) processed [2/1/1/6]
-  Stage 0
+  Stage 0 (stage_0)
     7620b81735 [Missing]
     622e9b1d02 [Failed]
     8798d5c4fd [Missing]

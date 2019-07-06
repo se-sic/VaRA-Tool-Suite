@@ -183,8 +183,12 @@ def get_status(
                               use_color, total_status_occurrences) + "\n"
 
     if sep_stages:
+        stages = case_study.stages
         for stage_num in range(0, case_study.num_stages):
-            status += "  Stage {idx}\n".format(idx=stage_num)
+            status += "  Stage {idx}".format(idx=stage_num)
+            if stage_name:
+                status += " ({})".format(stage_name)
+            status += "\n"
             for tagged_rev_state in case_study.get_revisions_status(
                     result_file_type, stage_num):
                 status += "    {rev} [{status}]\n".format(

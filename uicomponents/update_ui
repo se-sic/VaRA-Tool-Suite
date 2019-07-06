@@ -11,6 +11,7 @@ pyuic5 -x BuildMenu.ui -o ${scriptpath}/../varats/gui/views/ui_BuildMenu.py
 pyuic5 --import-from varats.gui -x FilterMain.ui -o ${scriptpath}/../varats/gui/views/ui_FilterMain.py
 pyuic5 -x FilterProperties.ui -o ${scriptpath}/../varats/gui/views/ui_FilterProperties.py
 pyuic5 -x FilterNodeProperties.ui -o ${scriptpath}/../varats/gui/views/ui_FilterNodeProperties.py
+pyuic5 -x FilterUnaryWarning.ui -o ${scriptpath}/../varats/gui/views/ui_FilterUnaryWarning.py
 pyuic5 -x AuthorFilterProperties.ui -o ${scriptpath}/../varats/gui/views/ui_AuthorFilterProperties.py
 pyuic5 -x CommitterFilterProperties.ui -o ${scriptpath}/../varats/gui/views/ui_CommitterFilterProperties.py
 pyuic5 -x AuthorDateMinFilter.ui -o ${scriptpath}/../varats/gui/views/ui_AuthorDateMinFilter.py

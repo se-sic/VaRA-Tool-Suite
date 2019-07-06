@@ -197,6 +197,18 @@ class InteractionFilter(SecretYamlObject):
             if child:
                 child.__fixParentPointersHelper(self)
 
+    def hasFilterTypeAsParent(self, parent_type: tp.Any) -> bool:
+        """
+        Checks if there is a node of type parent_type on the path from the current node to the root.
+        """
+        parent = self.parent()
+        while parent is not None:
+            if isinstance(parent, parent_type):
+                return True
+            parent = parent.parent()
+
+        return False
+
     @staticmethod
     def resource() -> tp.Optional[str]:
         return None
