@@ -2,6 +2,8 @@
 Test paper config manager
 """
 
+import typing as tp
+from collections import defaultdict
 import unittest
 import yaml
 import mock
@@ -256,3 +258,66 @@ class TestPaperConfigManager(unittest.TestCase):
             """CS: project_42: (Success / Total) processed [Success/Failed/CompileError/Missing]
 """
         )
+
+    @mock.patch('varats.paper.case_study.get_tagged_revisions')
+    def test_total_status_color(self, mock_get_tagged_revisions):
+        """
+        Check if the total status is correctly generated.
+        """
+        total_status_occurrences: tp.DefaultDict[FileStatusExtension, tp.
+                                                 Set[str]] = defaultdict(set)
+        # Revision not in set
+        mock_get_tagged_revisions.return_value = [
+            ('42b25e7f15', FileStatusExtension.Success)
+        ]
+
+        PCM.get_status(self.case_study, CommitReport, 5, False, True,
+                       total_status_occurrences)
+        status = PCM.get_total_status(total_status_occurrences, 15, True)
+        self.assertEqual(
+            status,
+            """--------------------------------------------------------------------------------
+Total:         (  0/10) processed [0/0/0/10]""")
+
+        mock_get_tagged_revisions.assert_called()
+
+        # Revision not in set
+        mock_get_tagged_revisions.reset_mock()
+        mock_get_tagged_revisions.return_value = [
+            ('b8b25e7f15', FileStatusExtension.Success),
+            ('622e9b1d02', FileStatusExtension.Failed),
+            ('1e7e3769dc', FileStatusExtension.CompileError),
+            ('2e654f9963', FileStatusExtension.Success)
+        ]
+
+        PCM.get_status(self.case_study, CommitReport, 5, False, True,
+                       total_status_occurrences)
+        status = PCM.get_total_status(total_status_occurrences, 15, True)
+        self.assertEqual(
+            status,
+            """--------------------------------------------------------------------------------
+Total:         (  2/14) processed [2/1/1/10]""")
+
+        mock_get_tagged_revisions.assert_called()
+
+        # Care: The second block is duplicated to check if we prevent
+        # adding the same revisions twice
+
+        # Revision not in set
+        mock_get_tagged_revisions.reset_mock()
+        mock_get_tagged_revisions.return_value = [
+            ('b8b25e7f15', FileStatusExtension.Success),
+            ('622e9b1d02', FileStatusExtension.Failed),
+            ('1e7e3769dc', FileStatusExtension.CompileError),
+            ('2e654f9963', FileStatusExtension.Success)
+        ]
+
+        PCM.get_status(self.case_study, CommitReport, 5, False, True,
+                       total_status_occurrences)
+        status = PCM.get_total_status(total_status_occurrences, 15, True)
+        self.assertEqual(
+            status,
+            """--------------------------------------------------------------------------------
+Total:         (  2/14) processed [2/1/1/10]""")
+
+        mock_get_tagged_revisions.assert_called()

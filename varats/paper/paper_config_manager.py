@@ -49,6 +49,8 @@ def show_status_of_case_studies(report_name: str, filter_regex: str,
         print(get_legend(True))
 
     report_type = MetaReport.REPORT_TYPES[report_name]
+    total_status_occurrences: tp.DefaultDict[FileStatusExtension, tp.
+                                             Set[str]] = defaultdict(set)
 
     for case_study in output_case_studies:
         if print_rev_list:
@@ -56,11 +58,13 @@ def show_status_of_case_studies(report_name: str, filter_regex: str,
         elif short_status:
             print(
                 get_short_status(case_study, report_type, longest_cs_name,
-                                 True))
+                                 True, total_status_occurrences))
         else:
             print(
                 get_status(case_study, report_type, longest_cs_name,
-                           sep_stages, True))
+                           sep_stages, True, total_status_occurrences))
+
+    print(get_total_status(total_status_occurrences, longest_cs_name, True))
 
 
 def get_revision_list(case_study: CaseStudy) -> str:
@@ -79,28 +83,16 @@ def get_revision_list(case_study: CaseStudy) -> str:
     return res_str
 
 
-def get_short_status(case_study: CaseStudy,
-                     result_file_type: MetaReport,
-                     longest_cs_name: int,
-                     use_color: bool = False) -> str:
+def get_occurrences(
+        status_occurrences: tp.DefaultDict[FileStatusExtension, tp.Set[str]],
+        use_color: bool = False) -> str:
     """
-    Return a string representation that describes the current status of
-    the case study.
+    Returns a string with all status occurrences.
     """
-    status = "CS: {project}_{version}: ".format(
-        project=case_study.project_name,
-        version=case_study.version) + "".ljust(
-            longest_cs_name -
-            (len(case_study.project_name) + len(str(case_study.version))), ' ')
+    status = ""
 
-    status_occurrences: tp.DefaultDict[FileStatusExtension, int] = defaultdict(
-        int)
-    for tagged_rev in case_study.get_revisions_status(result_file_type):
-        status_occurrences[tagged_rev[1]] += 1
-
-    num_rev = len(set(case_study.revisions))
-
-    num_succ_rev = status_occurrences[FileStatusExtension.Success]
+    num_succ_rev = len(status_occurrences[FileStatusExtension.Success])
+    num_rev = sum(map(len, status_occurrences.values()))
 
     color = None
     if use_color:
@@ -122,27 +114,73 @@ def get_short_status(case_study: CaseStudy,
     for file_status in FileStatusExtension:
         if use_color:
             status += file_status.status_color[str(
-                status_occurrences[file_status])] + "/"
+                len(status_occurrences[file_status]))] + "/"
         else:
-            status += str(status_occurrences[file_status]) + "/"
+            status += str(len(status_occurrences[file_status])) + "/"
 
     status = status[:-1]
     status += "]"
-
     return status
 
 
-def get_status(case_study: CaseStudy,
-               result_file_type: MetaReport,
-               longest_cs_name: int,
-               sep_stages: bool,
-               use_color: bool = False) -> str:
+def get_total_status(total_status_occurrences: tp.
+                     DefaultDict[FileStatusExtension, tp.Set[str]],
+                     longest_cs_name: int,
+                     use_color: bool = False) -> str:
+    """
+    Returns a status string showing the total mount of occurrences.
+    """
+    status = "-" * 80
+    status += "\n"
+    status += "Total: ".ljust(longest_cs_name, ' ')
+    status += get_occurrences(total_status_occurrences, use_color)
+    return status
+
+
+def get_short_status(
+        case_study: CaseStudy,
+        result_file_type: MetaReport,
+        longest_cs_name: int,
+        use_color: bool = False,
+        total_status_occurrences: tp.Optional[
+            tp.DefaultDict[FileStatusExtension, tp.Set[str]]] = None) -> str:
+    """
+    Return a string representation that describes the current status of
+    the case study.
+    """
+    status = "CS: {project}_{version}: ".format(
+        project=case_study.project_name,
+        version=case_study.version) + "".ljust(
+            longest_cs_name -
+            (len(case_study.project_name) + len(str(case_study.version))), ' ')
+
+    status_occurrences: tp.DefaultDict[FileStatusExtension, tp.
+                                       Set[str]] = defaultdict(set)
+    for tagged_rev in case_study.get_revisions_status(result_file_type):
+        status_occurrences[tagged_rev[1]].add(tagged_rev[0])
+
+    if total_status_occurrences is not None:
+        for file_status, rev_set in status_occurrences.items():
+            total_status_occurrences[file_status].update(rev_set)
+
+    status += get_occurrences(status_occurrences, use_color)
+    return status
+
+
+def get_status(
+        case_study: CaseStudy,
+        result_file_type: MetaReport,
+        longest_cs_name: int,
+        sep_stages: bool,
+        use_color: bool = False,
+        total_status_occurrences: tp.Optional[
+            tp.DefaultDict[FileStatusExtension, tp.Set[str]]] = None) -> str:
     """
     Return a string representation that describes the current status of
     the case study.
     """
     status = get_short_status(case_study, result_file_type, longest_cs_name,
-                              use_color) + "\n"
+                              use_color, total_status_occurrences) + "\n"
 
     if sep_stages:
         for stage_num in range(0, case_study.num_stages):
