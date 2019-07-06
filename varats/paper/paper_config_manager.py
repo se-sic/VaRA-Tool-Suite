@@ -186,6 +186,7 @@ def get_status(
         stages = case_study.stages
         for stage_num in range(0, case_study.num_stages):
             status += "  Stage {idx}".format(idx=stage_num)
+            stage_name = stages[stage_num].name
             if stage_name:
                 status += " ({})".format(stage_name)
             status += "\n"
