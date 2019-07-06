@@ -10,7 +10,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 
 from plumbum import colors
 
-from varats.data.report import FileStatusExtension
+from varats.data.report import FileStatusExtension, MetaReport
 from varats.data.reports.commit_report import CommitReport
 from varats.paper.case_study import (CaseStudy,
                                      get_newest_result_files_for_case_study)
@@ -18,9 +18,9 @@ from varats.settings import CFG
 import varats.paper.paper_config as PC
 
 
-def show_status_of_case_studies(filter_regex: str, short_status: bool,
-                                print_rev_list: bool, sep_stages: bool,
-                                print_legend: bool) -> None:
+def show_status_of_case_studies(report_name: str, filter_regex: str,
+                                short_status: bool, print_rev_list: bool,
+                                sep_stages: bool, print_legend: bool) -> None:
     """
     Show the status of all matching case studies.
     """
@@ -48,16 +48,18 @@ def show_status_of_case_studies(filter_regex: str, short_status: bool,
     if print_legend:
         print(get_legend(True))
 
+    report_type = MetaReport.REPORT_TYPES[report_name]
+
     for case_study in output_case_studies:
         if print_rev_list:
             print(get_revision_list(case_study))
         elif short_status:
             print(
-                get_short_status(case_study, CommitReport, longest_cs_name,
+                get_short_status(case_study, report_type, longest_cs_name,
                                  True))
         else:
             print(
-                get_status(case_study, CommitReport, longest_cs_name,
+                get_status(case_study, report_type, longest_cs_name,
                            sep_stages, True))
 
 
@@ -78,7 +80,7 @@ def get_revision_list(case_study: CaseStudy) -> str:
 
 
 def get_short_status(case_study: CaseStudy,
-                     result_file_type: tp.Type[CommitReport],
+                     result_file_type: MetaReport,
                      longest_cs_name: int,
                      use_color: bool = False) -> str:
     """
@@ -131,7 +133,7 @@ def get_short_status(case_study: CaseStudy,
 
 
 def get_status(case_study: CaseStudy,
-               result_file_type: tp.Type[CommitReport],
+               result_file_type: MetaReport,
                longest_cs_name: int,
                sep_stages: bool,
                use_color: bool = False) -> str:

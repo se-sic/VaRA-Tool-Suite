@@ -91,8 +91,9 @@ def get_tagged_revisions(project_name: str, result_file_type: MetaReport
     result_files = __get_result_files_dict(project_name, result_file_type)
     for commit_hash, file_list in result_files.items():
         newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
-        revisions.append((commit_hash,
-                          result_file_type.get_status_from_result_file(
-                              str(newest_res_file))))
+        if result_file_type.is_correct_report_type(str(newest_res_file.name)):
+            revisions.append((commit_hash,
+                              result_file_type.get_status_from_result_file(
+                                  str(newest_res_file))))
 
     return revisions

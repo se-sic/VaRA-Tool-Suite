@@ -5,6 +5,7 @@ Test VaRA report.
 import unittest
 
 from varats.data.report import FileStatusExtension, MetaReport
+from varats.data.reports.empty_report import EmptyReport
 
 
 class TestMetaReport(unittest.TestCase):
@@ -17,7 +18,7 @@ class TestMetaReport(unittest.TestCase):
         """
         Setup file and CommitReport
         """
-        cls.success_filename = ("CR-foo-foo-7bb9ef5f8c_"
+        cls.success_filename = ("EMPTY-foo-foo-7bb9ef5f8c_"
                                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be.yaml")
         cls.fail_filename = ("XX-foo-foo-7bb9ef5f8c_"
                              "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be.failed")
@@ -60,15 +61,14 @@ class TestMetaReport(unittest.TestCase):
         """
          Check if file names are created correctly.
         """
-        # TODO: replate CR with empty test report
         self.assertEqual(
-            MetaReport.get_file_name("CR", "foo", "foo", "7bb9ef5f8c",
-                                     "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                                     FileStatusExtension.Success),
+            EmptyReport.get_file_name("EMPTY", "foo", "foo", "7bb9ef5f8c",
+                                      "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
+                                      FileStatusExtension.Success),
             self.success_filename)
 
         self.assertEqual(
-            MetaReport.get_file_name("XX", "foo", "foo", "7bb9ef5f8c",
-                                     "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                                     FileStatusExtension.Failed),
+            EmptyReport.get_file_name("XX", "foo", "foo", "7bb9ef5f8c",
+                                      "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
+                                      FileStatusExtension.Failed),
             self.fail_filename)

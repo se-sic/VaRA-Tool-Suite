@@ -30,6 +30,7 @@ from varats.experiments.wllvm import RunWLLVM
 from varats.settings import CFG as V_CFG
 from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
                                           FunctionPEErrorWrapper)
+from varats.utils.experiment_util import VaRAVersionExperiment
 
 
 class CFRErrorHandler():
@@ -133,13 +134,15 @@ class CFRAnalysis(actions.Step):  # type: ignore
                                 run_cmd, timeout_duration))
 
 
-class GitBlameAnntotationReport(Experiment):  # type: ignore
+class GitBlameAnntotationReport(VaRAVersionExperiment):
     """
     Generates a commit flow report (CFR) of the project(s) specified in the
     call.
     """
 
     NAME = "GitBlameAnnotationReport"
+
+    REPORT_TYPE = CR
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """Returns the specified steps to run the project(s) specified in
@@ -190,44 +193,3 @@ class GitBlameAnntotationReport(Experiment):  # type: ignore
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
-
-    @staticmethod
-    def __sample_num_versions(versions: tp.List[str]) -> tp.List[str]:
-        sample_size = int(V_CFG["experiment"]["sample_limit"])
-        versions = [versions[i] for i in
-                    sorted(random.sample(range(len(versions)),
-                                         min(sample_size, len(versions))))]
-        return versions
-
-    def sample(self, prj_cls: tp.Type[Project],
-               versions: tp.List[str]) -> tp.Generator[str, None, None]:
-        """
-        Adapt version sampling process if needed, otherwise fallback to default
-        implementation.
-        """
-        if bool(V_CFG["experiment"]["random_order"]):
-            random.shuffle(versions)
-
-        if bool(V_CFG["experiment"]["only_missing"]):
-            versions = [
-                vers for vers in versions
-                if vers not in get_proccessed_revisions(prj_cls.NAME, CR)
-            ]
-            if not versions:
-                print("Could not find any unprocessed versions.")
-                return
-
-            if V_CFG["experiment"]["sample_limit"].value is not None:
-                versions = self.__sample_num_versions(versions)
-
-            head, *tail = versions
-            yield head
-            if bool(CFG["versions"]["full"]):
-                for version in tail:
-                    yield version
-        else:
-            if V_CFG["experiment"]["sample_limit"].value is not None:
-                versions = self.__sample_num_versions(versions)
-
-            for val in Experiment.sample(self, prj_cls, versions):
-                yield val

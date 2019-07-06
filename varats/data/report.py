@@ -87,7 +87,6 @@ class MetaReport(type):
 
         if name != 'BaseReport':
             MetaReport.__check_required_vars(cls, name, ["SHORTHAND"])
-            # print("meta init called with ", cls, name, bases, attrs)
             if name not in cls.REPORT_TYPES:
                 cls.REPORT_TYPES[name] = cls
 
@@ -191,6 +190,14 @@ class MetaReport(type):
             project_version=project_version,
             project_uuid=project_uuid,
             ext=ext)
+
+    def is_correct_report_type(cls, file_name: str) -> bool:
+        """ Check if the passed file belongs to this report type. """
+        match = MetaReport.__FILE_NAME_REGEX.search(file_name)
+        if match:
+            return match.group("project_shorthand") == str(
+                getattr(cls, "SHORTHAND"))
+        return False
 
 
 class BaseReport(metaclass=MetaReport):
