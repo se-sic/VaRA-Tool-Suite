@@ -3,15 +3,12 @@ Implements the an empty experiment that just compiles the project.
 """
 
 import typing as tp
-import random
 
 import benchbuild.utils.actions as actions
 from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
 from benchbuild.settings import CFG
 from benchbuild.utils.cmd import mkdir, touch
-from varats.settings import CFG as V_CFG
-from benchbuild.experiment import Experiment
 
 from varats.experiments.wllvm import RunWLLVM
 from varats.utils.experiment_util import (

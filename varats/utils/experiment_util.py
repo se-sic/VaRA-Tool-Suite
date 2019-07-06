@@ -12,9 +12,7 @@ from plumbum.commands.base import BoundCommand
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
 from benchbuild.settings import CFG
-from benchbuild.extensions.base import Extension
 
-from varats.data.report import FileStatusExtension as FSE
 from varats.data.revisions import get_proccessed_revisions
 from varats.settings import CFG as V_CFG
 
