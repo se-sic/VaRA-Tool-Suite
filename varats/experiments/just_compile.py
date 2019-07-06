@@ -14,14 +14,11 @@ from varats.settings import CFG as V_CFG
 from benchbuild.experiment import Experiment
 
 from varats.experiments.wllvm import RunWLLVM
-from varats.utils.experiment_util import VaRAVersionExperiment
-from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
-                                          FunctionPEErrorWrapper)
-from varats.data.reports.empty_report import EmptyReport
+from varats.utils.experiment_util import (
+    exec_func_with_pe_error_handler, FunctionPEErrorWrapper, PEErrorHandler,
+    VaRAVersionExperiment)
 from varats.data.report import FileStatusExtension as FSE
-from varats.data.revisions import get_proccessed_revisions
-
-from varats.experiments.git_blame_annotation_report import CFRErrorHandler
+from varats.data.reports.empty_report import EmptyReport
 
 
 class EmptyAnalysis(actions.Step):  # type: ignore
@@ -57,7 +54,6 @@ class EmptyAnalysis(actions.Step):  # type: ignore
 
         for binary_name in project.BIN_NAMES:
             result_file = EmptyReport.get_file_name(
-                report_shorthand=EmptyReport.SHORTHAND,
                 project_name=str(project.name),
                 binary_name=binary_name,
                 project_version=str(project.version),
@@ -69,8 +65,14 @@ class EmptyAnalysis(actions.Step):  # type: ignore
 
             exec_func_with_pe_error_handler(
                 run_cmd,
-                CFRErrorHandler(project, binary_name, vara_result_folder,
-                                run_cmd, None))
+                PEErrorHandler(
+                    vara_result_folder,
+                    EmptyReport.get_file_name(
+                        project_name=str(project.name),
+                        binary_name="all",
+                        project_version=str(project.version),
+                        project_uuid=str(project.run_uuid),
+                        extension_type=FSE.Failed), run_cmd))
 
 
 class JustCompileReport(VaRAVersionExperiment):
@@ -97,12 +99,16 @@ class JustCompileReport(VaRAVersionExperiment):
 
         project.compile = FunctionPEErrorWrapper(
             project.compile,
-            # TODO: refactor ErrorHandler
-            CFRErrorHandler(
-                project, 'all',
+            PEErrorHandler(
                 EmptyAnalysis.RESULT_FOLDER_TEMPLATE.format(
                     result_dir=str(CFG["vara"]["outfile"]),
-                    project_dir=str(project.name)), None, None))
+                    project_dir=str(project.name)),
+                EmptyReport.get_file_name(
+                    project_name=str(project.name),
+                    binary_name="all",
+                    project_version=str(project.version),
+                    project_uuid=str(project.run_uuid),
+                    extension_type=FSE.CompileError)))
 
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))

@@ -20,7 +20,7 @@ class TestMetaReport(unittest.TestCase):
         """
         cls.success_filename = ("EMPTY-foo-foo-7bb9ef5f8c_"
                                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be.yaml")
-        cls.fail_filename = ("XX-foo-foo-7bb9ef5f8c_"
+        cls.fail_filename = ("EMPTY-foo-foo-7bb9ef5f8c_"
                              "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be.failed")
 
     def test_is_result_file(self):
@@ -62,13 +62,13 @@ class TestMetaReport(unittest.TestCase):
          Check if file names are created correctly.
         """
         self.assertEqual(
-            EmptyReport.get_file_name("EMPTY", "foo", "foo", "7bb9ef5f8c",
+            EmptyReport.get_file_name("foo", "foo", "7bb9ef5f8c",
                                       "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
                                       FileStatusExtension.Success),
             self.success_filename)
 
         self.assertEqual(
-            EmptyReport.get_file_name("XX", "foo", "foo", "7bb9ef5f8c",
+            EmptyReport.get_file_name("foo", "foo", "7bb9ef5f8c",
                                       "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
                                       FileStatusExtension.Failed),
             self.fail_filename)
