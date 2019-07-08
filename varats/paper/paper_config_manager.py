@@ -4,21 +4,23 @@ Module for interacting with paper configs.
 
 import typing as tp
 import re
+from collections import defaultdict
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from plumbum import colors
 
-from varats.data.commit_report import CommitReport
+from varats.data.report import FileStatusExtension, MetaReport
+from varats.data.reports.commit_report import CommitReport
 from varats.paper.case_study import (CaseStudy,
                                      get_newest_result_files_for_case_study)
 from varats.settings import CFG
 import varats.paper.paper_config as PC
 
 
-def show_status_of_case_studies(filter_regex: str, short_status: bool,
-                                print_rev_list: bool,
-                                sep_stages: bool) -> None:
+def show_status_of_case_studies(report_name: str, filter_regex: str,
+                                short_status: bool, print_rev_list: bool,
+                                sep_stages: bool, print_legend: bool) -> None:
     """
     Show the status of all matching case studies.
     """
@@ -43,17 +45,26 @@ def show_status_of_case_studies(filter_regex: str, short_status: bool,
                 longest_cs_name,
                 len(case_study.project_name) + len(str(case_study.version)))
 
+    if print_legend:
+        print(get_legend(True))
+
+    report_type = MetaReport.REPORT_TYPES[report_name]
+    total_status_occurrences: tp.DefaultDict[FileStatusExtension, tp.
+                                             Set[str]] = defaultdict(set)
+
     for case_study in output_case_studies:
         if print_rev_list:
             print(get_revision_list(case_study))
         elif short_status:
             print(
-                get_short_status(case_study, CommitReport, longest_cs_name,
-                                 True))
+                get_short_status(case_study, report_type, longest_cs_name,
+                                 True, total_status_occurrences))
         else:
             print(
-                get_status(case_study, CommitReport, longest_cs_name,
-                           sep_stages, True))
+                get_status(case_study, report_type, longest_cs_name,
+                           sep_stages, True, total_status_occurrences))
+
+    print(get_total_status(total_status_occurrences, longest_cs_name, True))
 
 
 def get_revision_list(case_study: CaseStudy) -> str:
@@ -72,10 +83,67 @@ def get_revision_list(case_study: CaseStudy) -> str:
     return res_str
 
 
-def get_short_status(case_study: CaseStudy,
-                     result_file_type: tp.Type[CommitReport],
+def get_occurrences(
+        status_occurrences: tp.DefaultDict[FileStatusExtension, tp.Set[str]],
+        use_color: bool = False) -> str:
+    """
+    Returns a string with all status occurrences.
+    """
+    status = ""
+
+    num_succ_rev = len(status_occurrences[FileStatusExtension.Success])
+    num_rev = sum(map(len, status_occurrences.values()))
+
+    color = None
+    if use_color:
+        if num_succ_rev == num_rev:
+            color = colors.green
+        elif num_succ_rev == 0:
+            color = colors.red
+        else:
+            color = colors.orange3
+
+    if color is not None:
+        status += "(" + color["{processed:3}/{total}".format(
+            processed=num_succ_rev, total=num_rev)] + ") processed "
+    else:
+        status += "(" + "{processed:3}/{total}".format(
+            processed=num_succ_rev, total=num_rev) + ") processed "
+
+    status += "["
+    for file_status in FileStatusExtension:
+        if use_color:
+            status += file_status.status_color[str(
+                len(status_occurrences[file_status]))] + "/"
+        else:
+            status += str(len(status_occurrences[file_status])) + "/"
+
+    status = status[:-1]
+    status += "]"
+    return status
+
+
+def get_total_status(total_status_occurrences: tp.
+                     DefaultDict[FileStatusExtension, tp.Set[str]],
                      longest_cs_name: int,
                      use_color: bool = False) -> str:
+    """
+    Returns a status string showing the total mount of occurrences.
+    """
+    status = "-" * 80
+    status += "\n"
+    status += "Total: ".ljust(longest_cs_name, ' ')
+    status += get_occurrences(total_status_occurrences, use_color)
+    return status
+
+
+def get_short_status(
+        case_study: CaseStudy,
+        result_file_type: MetaReport,
+        longest_cs_name: int,
+        use_color: bool = False,
+        total_status_occurrences: tp.Optional[
+            tp.DefaultDict[FileStatusExtension, tp.Set[str]]] = None) -> str:
     """
     Return a string representation that describes the current status of
     the case study.
@@ -86,57 +154,33 @@ def get_short_status(case_study: CaseStudy,
             longest_cs_name -
             (len(case_study.project_name) + len(str(case_study.version))), ' ')
 
-    num_p_rev = len(set(case_study.processed_revisions(result_file_type)))
-    num_f_rev = len(set(case_study.failed_revisions(result_file_type)))
-    num_rev = len(set(case_study.revisions))
+    status_occurrences: tp.DefaultDict[FileStatusExtension, tp.
+                                       Set[str]] = defaultdict(set)
+    for tagged_rev in case_study.get_revisions_status(result_file_type):
+        status_occurrences[tagged_rev[1]].add(tagged_rev[0])
 
-    color = None
-    if use_color:
-        if num_p_rev == num_rev:
-            color = colors.green
-        elif num_p_rev == 0:
-            color = colors.red
-        else:
-            color = colors.orange3
+    if total_status_occurrences is not None:
+        for file_status, rev_set in status_occurrences.items():
+            total_status_occurrences[file_status].update(rev_set)
 
-    if color is not None:
-        status += "(" + color["{processed:3}/{total}".format(
-            processed=num_p_rev, total=num_rev)] + ") processed "
-        status += "[" + colors.red[str(num_f_rev)] + "/" + colors.orange3[str(
-            num_rev - (num_f_rev + num_p_rev))] + "/" + colors.green[str(
-                num_p_rev)] + "]"
-    else:
-        status += "({processed:3}/{total}) processed ".format(
-            processed=num_p_rev, total=num_rev)
-        status += "[{fail_rev}/{miss_rev}/{good_rev}]".format(
-            fail_rev=num_f_rev,
-            miss_rev=(num_rev - (num_f_rev + num_p_rev)),
-            good_rev=num_p_rev)
-
+    status += get_occurrences(status_occurrences, use_color)
     return status
 
 
-def get_status(case_study: CaseStudy,
-               result_file_type: tp.Type[CommitReport],
-               longest_cs_name: int,
-               sep_stages: bool,
-               use_color: bool = False) -> str:
+def get_status(
+        case_study: CaseStudy,
+        result_file_type: MetaReport,
+        longest_cs_name: int,
+        sep_stages: bool,
+        use_color: bool = False,
+        total_status_occurrences: tp.Optional[
+            tp.DefaultDict[FileStatusExtension, tp.Set[str]]] = None) -> str:
     """
     Return a string representation that describes the current status of
     the case study.
     """
     status = get_short_status(case_study, result_file_type, longest_cs_name,
-                              use_color) + "\n"
-
-    def color_rev_state(rev_state: str) -> str:
-        if use_color:
-            if rev_state == "OK":
-                return tp.cast(str, colors.green[rev_state])
-            if rev_state == "Failed":
-                return tp.cast(str, colors.red[rev_state])
-            return tp.cast(str, colors.orange3[rev_state])
-
-        return rev_state
+                              use_color, total_status_occurrences) + "\n"
 
     if sep_stages:
         stages = case_study.stages
@@ -146,18 +190,35 @@ def get_status(case_study: CaseStudy,
             if stage_name:
                 status += " ({})".format(stage_name)
             status += "\n"
-            for rev_state in case_study.get_revisions_status(
+            for tagged_rev_state in case_study.get_revisions_status(
                     result_file_type, stage_num):
                 status += "    {rev} [{status}]\n".format(
-                    rev=rev_state[0], status=color_rev_state(rev_state[1]))
+                    rev=tagged_rev_state[0],
+                    status=tagged_rev_state[1].get_colored_status())
     else:
-        for rev_state in list(
+        for tagged_rev_state in list(
                 dict.fromkeys(
                     case_study.get_revisions_status(result_file_type))):
             status += "    {rev} [{status}]\n".format(
-                rev=rev_state[0], status=color_rev_state(rev_state[1]))
+                rev=tagged_rev_state[0],
+                status=tagged_rev_state[1].get_colored_status())
 
     return status
+
+
+def get_legend(use_color: bool = False) -> str:
+    """ Return a formated legend that explains all status numbers. """
+    legend_str = "CS: project_42: (Success / Total) processed ["
+
+    for file_status in FileStatusExtension:
+        if use_color:
+            legend_str += file_status.status_color[file_status.name] + "/"
+        else:
+            legend_str += file_status.name + "/"
+
+    legend_str = legend_str[:-1]
+    legend_str += "]\n"
+    return legend_str
 
 
 def package_paper_config(output_file: Path,

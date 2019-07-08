@@ -9,12 +9,11 @@ from pathlib import Path
 import yaml
 import pandas as pd
 
-from varats.data.file_status import FileStatusExtension
+from varats.data.report import BaseReport, FileStatusExtension
 from varats.data.version_header import VersionHeader
 
 
 class FunctionInfo():
-
     def __init__(self, raw_yaml: tp.Dict[str, tp.Any]) -> None:
         self.__name = str(raw_yaml['function-name'])
         self.__id = str(raw_yaml['id'])
@@ -37,7 +36,6 @@ class FunctionInfo():
 
 
 class RegionMapping():
-
     def __init__(self, raw_yaml: tp.Dict[str, tp.Any]) -> None:
         self.id = str(raw_yaml['id'])
         self.hash = str(raw_yaml['hash'])
@@ -47,7 +45,6 @@ class RegionMapping():
 
 
 class RegionToFunctionEdge():
-
     def __init__(self, from_region: str, to_function: str) -> None:
         self._from = from_region
         self._to = to_function
@@ -65,7 +62,6 @@ class RegionToFunctionEdge():
 
 
 class RegionToRegionEdge():
-
     def __init__(self, raw_yaml: tp.Dict[str, tp.Any]) -> None:
         self._from = str(raw_yaml['from'])
         self._to = str(raw_yaml['to'])
@@ -124,17 +120,12 @@ class FunctionGraphEdges():
         return repr_str
 
 
-class CommitReport():
+class CommitReport(BaseReport):
 
-    __FILE_NAME_REGEX = re.compile(
-        r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
-        r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)" +
-        r"(?P<EXT>(\.yaml|\.failed))$")
-
-    __RESULT_FILE_TEMPLATE = \
-        "{project_name}-{binary_name}-{project_version}_{project_uuid}.{ext}"
+    SHORTHAND = "CR"
 
     def __init__(self, path: Path) -> None:
+        super(CommitReport, self).__init__()
         with open(path, "r") as stream:
             self._path = path
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
@@ -162,70 +153,6 @@ class CommitReport():
                 f_edge = FunctionGraphEdges(raw_fg_edge)
                 self.graph_info[f_edge.fid] = f_edge
 
-    @staticmethod
-    def is_result_file(file_name: str) -> bool:
-        """ Check if the passed file name is a result file. """
-        match = CommitReport.__FILE_NAME_REGEX.search(file_name)
-        return match is not None
-
-    @staticmethod
-    def is_result_file_success(file_name: str) -> bool:
-        """ Check if the passed file name is a (successful) result file. """
-        return CommitReport.is_result_file_status(file_name,
-                                                  FileStatusExtension.success)
-
-    @staticmethod
-    def is_result_file_failed(file_name: str) -> bool:
-        """ Check if the passed file name is a (failed) result file. """
-        return CommitReport.is_result_file_status(file_name,
-                                                  FileStatusExtension.failure)
-
-    @staticmethod
-    def is_result_file_status(file_name: str,
-                              extension_type: FileStatusExtension) -> bool:
-        """ Check if the passed file name is a (failed) result file. """
-        match = CommitReport.__FILE_NAME_REGEX.search(file_name)
-        if match:
-            return match.group("EXT") == (
-                "." + CommitReport.__get_file_ext(extension_type))
-        return False
-
-    @staticmethod
-    def get_commit_hash_from_result_file(file_name: str) -> str:
-        """ Get the commit hash from a result file name. """
-        match = CommitReport.__FILE_NAME_REGEX.search(file_name)
-        if match:
-            return match.group("file_commit_hash")
-
-        raise ValueError('File {file_name} name was wrongly formated.'.format(
-            file_name=file_name))
-
-    @staticmethod
-    def __get_file_ext(extension_type: FileStatusExtension) -> str:
-        if extension_type is FileStatusExtension.success:
-            return "yaml"
-
-        if extension_type is FileStatusExtension.failure:
-            return "failed"
-
-        raise NotImplementedError
-
-    @staticmethod
-    def get_file_name(project_name: str, binary_name: str,
-                      project_version: str, project_uuid: str,
-                      extension_type: FileStatusExtension) -> str:
-        """
-        Generates a filename for a commit report
-        """
-        ext = CommitReport.__get_file_ext(extension_type)
-
-        return CommitReport.__RESULT_FILE_TEMPLATE.format(
-            project_name=project_name,
-            binary_name=binary_name,
-            project_version=project_version,
-            project_uuid=project_uuid,
-            ext=ext)
-
     @property
     def path(self) -> Path:
         """
@@ -240,6 +167,17 @@ class CommitReport():
         """
         return CommitReport.get_commit_hash_from_result_file(
             Path(self._path).name)
+
+    @staticmethod
+    def get_file_name(project_name: str, binary_name: str,
+                      project_version: str, project_uuid: str,
+                      extension_type: FileStatusExtension) -> str:
+        """
+        Generates a filename for a commit report
+        """
+        return BaseReport.get_file_name(CommitReport.SHORTHAND, project_name,
+                                        binary_name, project_version,
+                                        project_uuid, extension_type)
 
     def calc_max_cf_edges(self) -> int:
         """
@@ -363,7 +301,6 @@ class CommitReport():
 
 
 class CommitReportMeta():
-
     def __init__(self) -> None:
         self.finfos: tp.Dict[str, FunctionInfo] = dict()
         self.region_mappings: tp.Dict[str, RegionMapping] = dict()
@@ -481,12 +418,11 @@ def generate_inout_cfg_cf(commit_report: CommitReport,
 
     rows.sort(
         key=
-        lambda row: (row[0], -tp.cast(int, row[3]),
-                     -tp.cast(int, row[1]), row[2])
+        lambda row: (row[0], -tp.cast(int, row[3]), -tp.cast(int, row[1]), row[2])
     )
 
-    return pd.DataFrame(rows, columns=['Region', 'Amount',
-                                       'Direction', 'TSort'])
+    return pd.DataFrame(
+        rows, columns=['Region', 'Amount', 'Direction', 'TSort'])
 
 
 def generate_interactions(commit_report: CommitReport,
@@ -506,8 +442,8 @@ def generate_interactions(commit_report: CommitReport,
                 c_map.time_id(cf_edge.edge_from)
             ])
 
-    links = pd.DataFrame(link_rows, columns=['source', 'target', 'value',
-                                             'src_id'])
+    links = pd.DataFrame(
+        link_rows, columns=['source', 'target', 'value', 'src_id'])
     return (nodes, links)
 
 
@@ -535,9 +471,8 @@ def generate_inout_cfg_df(commit_report: CommitReport,
 
     rows.sort(
         key=
-        lambda row: (row[0], -tp.cast(int, row[3]),
-                     -tp.cast(int, row[1]), row[2])
+        lambda row: (row[0], -tp.cast(int, row[3]), -tp.cast(int, row[1]), row[2])
     )
 
-    return pd.DataFrame(rows, columns=['Region', 'Amount',
-                                       'Direction', 'TSort'])
+    return pd.DataFrame(
+        rows, columns=['Region', 'Amount', 'Direction', 'TSort'])

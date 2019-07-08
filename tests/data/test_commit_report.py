@@ -7,9 +7,10 @@ import unittest.mock as mock
 
 import yaml
 
-from varats.data.file_status import FileStatusExtension
-from varats.data.commit_report import FunctionGraphEdges, FunctionInfo,\
-    RegionMapping, CommitReport, CommitMap, generate_interactions
+from varats.data.report import FileStatusExtension
+from varats.data.reports.commit_report import (
+    FunctionGraphEdges, FunctionInfo, RegionMapping, CommitReport, CommitMap,
+    generate_interactions)
 
 YAML_DOC_1 = """---
 DocType:         CommitReport
@@ -231,9 +232,9 @@ class TestCommitReport(unittest.TestCase):
                 'builtins.open', new=mock.mock_open(read_data=file_content)):
             cls.commit_report = CommitReport("fake_file_path")
 
-        cls.success_filename = ("foo-foo-7bb9ef5f8c_"
+        cls.success_filename = ("CR-foo-foo-7bb9ef5f8c_"
                                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be.yaml")
-        cls.fail_filename = ("foo-foo-7bb9ef5f8c_"
+        cls.fail_filename = ("CR-foo-foo-7bb9ef5f8c_"
                              "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be.failed")
 
     def test_path(self):
@@ -294,13 +295,13 @@ class TestCommitReport(unittest.TestCase):
         self.assertEqual(
             CommitReport.get_file_name("foo", "foo", "7bb9ef5f8c",
                                        "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                                       FileStatusExtension.success),
+                                       FileStatusExtension.Success),
             self.success_filename)
 
         self.assertEqual(
             CommitReport.get_file_name("foo", "foo", "7bb9ef5f8c",
                                        "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                                       FileStatusExtension.failure),
+                                       FileStatusExtension.Failed),
             self.fail_filename)
 
 

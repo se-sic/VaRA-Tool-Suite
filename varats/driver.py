@@ -27,6 +27,7 @@ from varats.paper.case_study import (
     SamplingMethod, ExtenderStrategy, extend_case_study, generate_case_study,
     load_case_study_from_file, store_case_study)
 import varats.paper.paper_config_manager as PCM
+from varats.data.report import MetaReport
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtCore import Qt
@@ -364,6 +365,13 @@ def main_casestudy() -> None:
     status_parser = sub_parsers.add_parser(
         'status', help="Show status of current case study")
     status_parser.add_argument(
+        "report_name",
+        help=("Provide a report name to "
+              "select which files are considered for the status"),
+        choices=MetaReport.REPORT_TYPES.keys(),
+        type=str,
+        default=".*")
+    status_parser.add_argument(
         "--filter-regex",
         help="Provide a regex to filter the shown case studies",
         type=str,
@@ -386,6 +394,11 @@ def main_casestudy() -> None:
     status_parser.add_argument(
         "--ws",
         help="Print status with stage separation",
+        action="store_true",
+        default=False)
+    status_parser.add_argument(
+        "--legend",
+        help="Print status with legend",
         action="store_true",
         default=False)
 
@@ -499,8 +512,9 @@ def main_casestudy() -> None:
         if args['short'] and args['ws']:
             parser.error("At most one argument of: --short, --ws can be used.")
 
-        PCM.show_status_of_case_studies(args['filter_regex'], args['short'],
-                                        args['list_revs'], args['ws'])
+        PCM.show_status_of_case_studies(
+            args['report_name'], args['filter_regex'], args['short'],
+            args['list_revs'], args['ws'], args['legend'])
 
     elif args['subcommand'] == 'gen' or args['subcommand'] == 'ext':
         if "project" not in args and "git_path" not in args:

@@ -18,10 +18,10 @@ import numpy as np
 import pygit2
 
 from varats.data.revisions import (get_proccessed_revisions,
-                                   get_failed_revisions)
+                                   get_failed_revisions, get_tagged_revisions)
 from varats.plots.plot_utils import check_required_args
-from varats.data.commit_report import CommitMap
-from varats.data.report import ReportType
+from varats.data.reports.commit_report import CommitMap
+from varats.data.report import MetaReport, FileStatusExtension
 
 
 class HashIDTuple(yaml.YAMLObject):
@@ -304,8 +304,8 @@ class CaseStudy(yaml.YAMLObject):
 
         return revision_filter
 
-    def processed_revisions(
-            self, result_file_type: tp.Type[ReportType]) -> tp.List[str]:
+    def processed_revisions(self,
+                            result_file_type: MetaReport) -> tp.List[str]:
         """
         Calculate how many revisions were processed.
         """
@@ -317,8 +317,7 @@ class CaseStudy(yaml.YAMLObject):
             if rev[:10] in total_processed_revisions
         ]
 
-    def failed_revisions(
-            self, result_file_type: tp.Type[ReportType]) -> tp.List[str]:
+    def failed_revisions(self, result_file_type: MetaReport) -> tp.List[str]:
         """
         Calculate which revisions failed.
         """
@@ -331,25 +330,37 @@ class CaseStudy(yaml.YAMLObject):
         ]
 
     def get_revisions_status(self,
-                             result_file_type: tp.Type[ReportType],
+                             result_file_type: MetaReport,
                              stage_num: int = -1
-                             ) -> tp.List[tp.Tuple[str, str]]:
+                             ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
         """
         Get status of all revisions.
         """
-        processed_revisions = self.processed_revisions(result_file_type)
-        failed_revisions = self.failed_revisions(result_file_type)
-        revisions_status = [
-            (rev[:10], "OK" if rev in processed_revisions else
-             "Failed" if rev in failed_revisions else "Missing")
-            for rev in self.revisions
-        ]
+        tagged_revisions = get_tagged_revisions(self.project_name,
+                                                result_file_type)
+
+        def filtered_tagged_revs(
+                rev_provider: tp.Iterable[str]
+        ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
+            filtered_revisions = []
+            for rev in rev_provider:
+                found = False
+                for tagged_rev in tagged_revisions:
+                    if rev[:10] == tagged_rev[0][:10]:
+                        filtered_revisions.append(tagged_rev)
+                        found = True
+                        break
+                if not found:
+                    filtered_revisions.append((rev[:10],
+                                               FileStatusExtension.Missing))
+            return filtered_revisions
+
         if stage_num == -1:
-            return revisions_status
+            return filtered_tagged_revs(self.revisions)
 
         if stage_num < self.num_stages:
             stage = self.__stages[stage_num]
-            return [x for x in revisions_status if stage.has_revision(x[0])]
+            return filtered_tagged_revs(stage.revisions)
 
         return []
 
@@ -400,7 +411,7 @@ def __store_case_study_to_file(case_study: CaseStudy, file_path: Path) -> None:
 
 def get_newest_result_files_for_case_study(
         case_study: CaseStudy, result_dir: Path,
-        report_type: tp.Type[ReportType]) -> tp.List[Path]:
+        report_type: MetaReport) -> tp.List[Path]:
     """
     Return all result files that belong to a given case study.
     For revision with multiple files, the newest file will be selected.

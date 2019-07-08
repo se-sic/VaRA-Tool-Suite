@@ -9,7 +9,8 @@ from PyQt5.QtCore import Qt, QTimer
 
 from varats.gui.views.ui_CRBarView import Ui_Form
 from varats.data.data_manager import VDM
-from varats.data.commit_report import CommitReport, CommitReportMeta, CommitMap
+from varats.data.reports.commit_report import (CommitReport, CommitReportMeta,
+                                               CommitMap)
 from varats.gui.options import OptionTreeWidget
 
 
