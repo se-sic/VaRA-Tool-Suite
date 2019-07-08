@@ -125,7 +125,6 @@ class MetaReport(type):
     @staticmethod
     def is_result_file_missing(file_name: str) -> bool:
         """ Check if the passed file name is a (Missing) result file. """
-        # TODO: how should this work?
         return MetaReport.is_result_file_status(file_name,
                                                 FileStatusExtension.Missing)
 
