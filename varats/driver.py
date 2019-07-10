@@ -176,10 +176,11 @@ def build_setup() -> None:
     vara_version = args.version if args.version is not None else CFG['version']
 
     own_libgit2 = bool(CFG["own_libgit2"])
+    include_phasar = bool(CFG["include_phasar"])
 
     setup_vara(args.init, args.update, args.build, Path(args.llvmfolder),
-               args.installprefix, own_libgit2, vara_version, build_type,
-               update_term)
+               args.installprefix, own_libgit2, include_phasar, vara_version,
+               build_type, update_term)
 
 
 def parse_string_to_build_type(build_type: str) -> BuildType:
