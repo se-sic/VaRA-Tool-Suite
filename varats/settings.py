@@ -41,8 +41,11 @@ CFG = s.Configuration(
             "default": True,
             "desc": "Build own libgit2",
         },
-    }
-)
+        "include_phasar": {
+            "default": True,
+            "desc": "Include Phasar for static analysis",
+        },
+    })
 
 CFG["paper_config"] = {
     "folder": {

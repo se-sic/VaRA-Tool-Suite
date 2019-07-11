@@ -90,6 +90,9 @@ class LLVMProjects(Enum):
                               "upstream", "projects/compiler-rt")
     lld = LLVMProject("lld", "https://git.llvm.org/git/lld.git", "upstream",
                       "tools/lld")
+    phasar = LLVMProject(
+        "phasar", "https://github.com/secure-software-engineering/phasar.git",
+        "origin", "tools/phasar")
 
     def __str__(self) -> str:
         return str(self.value)
@@ -246,6 +249,7 @@ def setup_vara(init: bool,
                llvm_folder: Path,
                install_prefix: str,
                own_libgit: bool,
+               include_phasar: bool,
                version: int,
                build_type: BuildType,
                post_out: tp.Callable[[str], None] = lambda x: None) -> None:
@@ -261,11 +265,15 @@ def setup_vara(init: bool,
             print("LLVM was already checked out in '%s'.", llvm_folder)
         else:
             download_vara(llvm_folder, post_out=post_out)
-            checkout_vara_version(llvm_folder, version,
+            checkout_vara_version(llvm_folder, include_phasar, version,
                                   build_type == BuildType.DEV)
             if own_libgit:
                 init_all_submodules(llvm_folder / LLVMProjects.vara.path)
                 update_all_submodules(llvm_folder / LLVMProjects.vara.path)
+
+            if include_phasar:
+                init_all_submodules(llvm_folder / LLVMProjects.phasar.path)
+                update_all_submodules(llvm_folder / LLVMProjects.phasar.path)
 
     if not os.path.exists(llvm_folder):
         print("LLVM was not initialized. Please initialize LLVM with VaRA, " +
@@ -299,6 +307,10 @@ def setup_vara(init: bool,
             pull_current_branch(llvm_folder / LLVMProjects.vara.path)
             if own_libgit:
                 update_all_submodules(llvm_folder / LLVMProjects.vara.path)
+
+            if include_phasar:
+                pull_current_branch(llvm_folder / LLVMProjects.phasar.path)
+                update_all_submodules(llvm_folder / LLVMProjects.phasar.path)
 
         if build:
             build_vara(
@@ -532,7 +544,8 @@ def download_vara(llvm_source_folder: Path,
         ln("-s", dl_folder / "tools/VaRA/utils/vara/builds/", "build_cfg")
 
 
-def checkout_vara_version(llvm_folder: Path, version: int, dev: bool) -> None:
+def checkout_vara_version(llvm_folder: Path, include_phasar: bool,
+                          version: int, dev: bool) -> None:
     """
     Checks out all related repositories to match the VaRA version number.
 
@@ -555,6 +568,8 @@ def checkout_vara_version(llvm_folder: Path, version: int, dev: bool) -> None:
     checkout_branch(llvm_folder / "tools/lld/", "release_" + str(version))
     checkout_branch(llvm_folder / "projects/compiler-rt/",
                     "release_" + str(version))
+    if include_phasar:
+        checkout_branch(llvm_folder / LLVMProjects.phasar.path, "development")
 
 
 def get_cmake_var(var_name: str) -> bool:
@@ -602,6 +617,7 @@ def init_vara_build(
 
 def verify_build_structure(
         own_libgit: bool,
+        include_phasar: bool,
         path_to_llvm: Path,
         post_out: tp.Callable[[str], None] = lambda x: None) -> None:
     """
@@ -615,6 +631,10 @@ def verify_build_structure(
         init_all_submodules(path_to_llvm / LLVMProjects.vara.path)
         update_all_submodules(path_to_llvm / LLVMProjects.vara.path)
 
+    if include_phasar:
+        init_all_submodules(path_to_llvm / LLVMProjects.phasar.path)
+        update_all_submodules(path_to_llvm / LLVMProjects.phasar.path)
+
 
 def build_vara(path_to_llvm: Path,
                install_prefix: str,
@@ -624,6 +644,7 @@ def build_vara(path_to_llvm: Path,
     Builds a VaRA configuration
     """
     own_libgit = bool(CFG["own_libgit2"])
+    include_phasar = bool(CFG["include_phasar"])
     full_path = path_to_llvm / "build/"
     if build_type == BuildType.DEV:
         full_path /= "dev/"
@@ -635,8 +656,10 @@ def build_vara(path_to_llvm: Path,
             raise error
 
     with local.cwd(full_path):
-        verify_build_structure(own_libgit, path_to_llvm, post_out)
-        set_vara_cmake_variables(own_libgit, install_prefix, post_out)
+        verify_build_structure(own_libgit, include_phasar, path_to_llvm,
+                               post_out)
+        set_vara_cmake_variables(own_libgit, include_phasar, install_prefix,
+                                 post_out)
 
     with ProcessManager.create_process(
             "ninja", ["install"], workdir=full_path) as proc:
@@ -647,6 +670,7 @@ def build_vara(path_to_llvm: Path,
 
 def set_vara_cmake_variables(
         own_libgit: bool,
+        include_phasar: bool,
         install_prefix: str,
         post_out: tp.Callable[[str], None] = lambda x: None) -> None:
     """
@@ -656,6 +680,13 @@ def set_vara_cmake_variables(
         set_cmake_var("VARA_BUILD_LIBGIT", "ON", post_out)
     else:
         set_cmake_var("VARA_BUILD_LIBGIT", "OFF", post_out)
+
+    if include_phasar:
+        set_cmake_var("LLVM_PHASAR_BUILD", "ON", post_out)
+        set_cmake_var("LLVM_ENABLE_RTTI", "ON", post_out)
+        set_cmake_var("LLVM_ENABLE_EH", "ON", post_out)
+    else:
+        set_cmake_var("LLVM_PHASAR_BUILD", "OFF", post_out)
 
     set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix, post_out)
 

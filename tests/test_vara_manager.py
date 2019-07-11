@@ -32,4 +32,5 @@ class TestLLVMProjects(unittest.TestCase):
         self.assertEqual(
             next(vara_extra_projects_iter), LLVMProjects.compiler_rt)
         self.assertEqual(next(vara_extra_projects_iter), LLVMProjects.lld)
+        self.assertEqual(next(vara_extra_projects_iter), LLVMProjects.phasar)
         self.assertRaises(StopIteration, next, vara_extra_projects_iter)
