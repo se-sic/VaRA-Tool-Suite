@@ -2,6 +2,7 @@
 Utility module for BenchBuild experiments.
 """
 
+import os
 import typing as tp
 import random
 from pathlib import Path
@@ -67,6 +68,8 @@ class PEErrorHandler():
     def __call__(self, ex: ProcessExecutionError) -> None:
         error_file = Path("{res_folder}/{res_file}".format(
             res_folder=self.__result_folder, res_file=self.__error_file_name))
+        if not os.path.exists(self.__result_folder):
+            os.makedirs(self.__result_folder, exist_ok=True)
         with open(error_file, 'w') as outfile:
             if ex.retcode == 124:
                 extra_error = """Command:
