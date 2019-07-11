@@ -17,6 +17,7 @@ from varats.paper.paper_config import project_filter_generator
     "https://github.com/ckolivas/lrzip.git",
     limit=100,
     refspec="HEAD",
+    shallow_clone=False,
     version_filter=project_filter_generator("lrzip"))
 class Lrzip(Project):  # type: ignore
     """ Compression and decompression tool lrzip (fetched by Git) """

@@ -17,6 +17,7 @@ from varats.paper.paper_config import project_filter_generator
     "https://code.videolan.org/videolan/x264.git",
     limit=100,
     refspec="HEAD",
+    shallow_clone=False,
     version_filter=project_filter_generator("x264"))
 class X264(Project):  # type: ignore
     """ Video encoder x264 (fetched by Git) """
