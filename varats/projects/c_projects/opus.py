@@ -3,7 +3,7 @@ Project file for opus.
 """
 from benchbuild.project import Project
 from benchbuild.settings import CFG
-from benchbuild.utils.cmd import make
+from benchbuild.utils.cmd import make, cp
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
@@ -28,7 +28,7 @@ class Opus(Project):  # type: ignore
     DOMAIN = 'codec'
     VERSION = 'HEAD'
 
-    BIN_NAMES = ['opus_compare']
+    BIN_NAMES = ['opus_demo_binary']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
     def run_tests(self, runner: run) -> None:
@@ -45,3 +45,5 @@ class Opus(Project):  # type: ignore
                 run(local["./autogen.sh"])
                 run(local["./configure"])
             run(make["-j", int(CFG["jobs"])])
+
+            cp(".libs/opus_demo", "opus_demo_binary")
