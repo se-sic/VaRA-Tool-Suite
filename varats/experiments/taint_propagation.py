@@ -5,12 +5,16 @@ This class implements the full commit taint flow analysis (MTFA) graph generatio
 aware region analyzer (VaRA).
 """
 
+import typing as tp
+import random
 from os import path
+from pathlib import Path
 
 from plumbum import local
 
 import benchbuild.utils.actions as actions
 from benchbuild.settings import CFG
+from benchbuild.project import Project
 from benchbuild.utils.cmd import opt, mkdir, timeout
 from benchbuild.extensions import compiler, run, time
 
@@ -27,7 +31,7 @@ from varats.utils.experiment_util import (
 
 class MTFAGraphGeneration(actions.Step):
     """
-    Analyse a cpp file and generate a graph of the taint analysis.
+    Analyse a project with VaRA and generate a graph of the taint analysis.
     """
 
     NAME = "MTFAGraphGeneration"
