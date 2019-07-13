@@ -183,6 +183,7 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
     ]
     projects_conf.value[:] += ['varats.projects.cpp_projects.doxygen']
     projects_conf.value[:] += ['varats.projects.test_projects.basic_tests']
+    projects_conf.value[:] += ['varats.projects.test_projects.taint_tests']
 
     # Experiments for VaRA
     projects_conf = BB_CFG["plugins"]["experiments"]
@@ -191,7 +192,7 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
         'varats.experiments.git_blame_annotation_report',
         'varats.experiments.marker_tester',
         'varats.experiments.just_compile',
-        'varats.experiments.taint_propagation'
+        #'varats.experiments.taint_propagation'
     ]
 
     # Slurm Cluster Configuration
