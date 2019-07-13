@@ -192,6 +192,10 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
         'varats.experiments.just_compile'
     ]
 
+    # Slurm Cluster Configuration
+    BB_CFG["slurm"]["account"] = "anywhere"
+    BB_CFG["slurm"]["partition"] = "anywhere"
+
     BB_CFG["env"] = {"PATH": [str(vara_cfg["llvm_install_dir"]) + "bin/"]}
 
     # Add VaRA experiment config variables
