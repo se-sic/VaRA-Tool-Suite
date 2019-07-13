@@ -58,6 +58,14 @@ class BenchBuildConfig(unittest.TestCase):
         self.assertTrue(BB_CFG["vara"].__contains__("outfile"))
         self.assertTrue(BB_CFG["vara"].__contains__("result"))
 
+    def test_if_slurm_config_was_added(self):
+        """
+        Test if all the benchbuild slurm config was created.
+        """
+
+        self.assertTrue(BB_CFG["slurm"].__contains__("account"))
+        self.assertTrue(BB_CFG["slurm"].__contains__("partition"))
+
     def test_if_projects_where_added(self):
         """
         Test if all projects where added to the benchbuild config.
