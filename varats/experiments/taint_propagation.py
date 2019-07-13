@@ -14,7 +14,8 @@ from benchbuild.settings import CFG
 from benchbuild.utils.cmd import opt, mkdir, timeout
 from benchbuild.extensions import compiler, run, time
 
-from varats.data.reports.commit_report import CommitReport as CR
+# TODO replace empty report with own taint report
+from varats.data.reports.empty_report import EmptyReport as ER
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.revisions import get_proccessed_revisions
 from varats.experiments.extract import Extract
@@ -62,7 +63,7 @@ class MTFAGraphGeneration(actions.Step):
         mkdir("-p", vara_result_folder)
 
         for binary_name in project.BIN_NAMES:
-            result_file = CR.get_file_name(
+            result_file = ER.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary_name,
                 project_version=str(project.version),
@@ -84,8 +85,7 @@ class MTFAGraphGeneration(actions.Step):
                 timeout[timeout_duration, run_cmd],
                 PEErrorHandler(
                     vara_result_folder,
-                    # TODO replace commit report with own taint report
-                    CR.get_file_name(
+                    ER.get_file_name(
                         project_name=str(project.name),
                         binary_name=binary_name,
                         project_version=str(project.version),
@@ -95,13 +95,13 @@ class MTFAGraphGeneration(actions.Step):
 
 class TaintPropagationExample(VaRAVersionExperiment):
     """
-    Generates a commit flow report (CFR) of the project(s) specified in the
+    Generates a taint flow analysis (MTFA) of the project(s) specified in the
     call.
     """
 
     NAME = "TaintPropagationExample"
 
-    REPORT_TYPE = TR
+    REPORT_TYPE = ER
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """Returns the specified steps to run the project(s) specified in
@@ -116,8 +116,6 @@ class TaintPropagationExample(VaRAVersionExperiment):
             << RunWLLVM() \
             << run.WithTimeout()
 
-        # TODO turn cpp files into projects
-
         # Add own error handler to compile step
         project.compile = FunctionPEErrorWrapper(
             project.compile,
@@ -125,8 +123,7 @@ class TaintPropagationExample(VaRAVersionExperiment):
                 MTFAGraphGeneration.RESULT_FOLDER_TEMPLATE.format(
                     result_dir=str(CFG["vara"]["outfile"]),
                     project_dir=str(project.name)),
-                # TODO replace commit report with own taint report
-                CR.get_file_name(
+                ER.get_file_name(
                     project_name=str(project.name),
                     binary_name="all",
                     project_version=str(project.version),
@@ -136,7 +133,7 @@ class TaintPropagationExample(VaRAVersionExperiment):
 
         analysis_actions = []
 
-        # Check if all binaries have correspondong BC files
+        # Check if all binaries have corresponding BC files
         all_files_present = True
         for binary_name in project.BIN_NAMES:
             all_files_present &= path.exists(
@@ -144,7 +141,6 @@ class TaintPropagationExample(VaRAVersionExperiment):
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
                         cache_dir=str(CFG["vara"]["result"]),
                         project_name=str(project.name)) +
-                    # TODO replace commit report with own taint report
                     Extract.BC_FILE_TEMPLATE.format(
                         project_name=str(project.name),
                         binary_name=binary_name,
