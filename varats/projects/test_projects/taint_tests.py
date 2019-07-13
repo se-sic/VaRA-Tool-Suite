@@ -35,4 +35,6 @@ class TaintTests(prj.Project):  # type: ignore
         clang = cxx(self)
         with local.cwd(self.SRC_FILE + "/taint-tests"):
             for test_file in self.test_files:
-                run(clang[test_file, "-o", test_file.replace('.cpp', '')])
+                run(clang[test_file,
+                          "-w -fvara-handleRM=Commit -S -emit-llvm -o",
+                          test_file.replace('.cpp', '.ll')])

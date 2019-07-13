@@ -9,6 +9,7 @@ import typing as tp
 import random
 from os import path
 from pathlib import Path
+from os import path
 
 from plumbum import local
 
@@ -75,8 +76,9 @@ class MTFAGraphGeneration(actions.Step):
                 extension_type=FSE.Success)
 
             run_cmd = opt[
-                "-print-MTFA",
-                "-yaml-out-file={res_folder}/{res_file}".
+                "-print-MTFA", "-S"
+                "-o {res_folder}/{res_file}".
+                # TODO fix file path to ll files
                 format(res_folder=vara_result_folder, res_file=result_file
                        ), bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
                            project_name=project.name,
