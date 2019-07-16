@@ -17,7 +17,6 @@ from varats.paper.paper_config import project_filter_generator
     "https://github.com/mirror/busybox.git",
     limit=100,
     refspec="HEAD",
-    shallow_clone=False,
     version_filter=project_filter_generator("busybox"))
 class Busybox(Project):  # type: ignore
     """ UNIX utility wrapper Busybox """

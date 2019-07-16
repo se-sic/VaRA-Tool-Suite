@@ -17,7 +17,6 @@ from varats.paper.paper_config import project_filter_generator
     "https://github.com/webmproject/libvpx.git",
     limit=100,
     refspec="HEAD",
-    shallow_clone=False,
     version_filter=project_filter_generator("libvpx"))
 class Libvpx(Project):  # type: ignore
     """ Codec SDK libvpx (fetched by Git) """

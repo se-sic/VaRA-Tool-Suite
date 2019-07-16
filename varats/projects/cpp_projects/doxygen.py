@@ -15,7 +15,6 @@ from varats.paper.paper_config import project_filter_generator
     "https://github.com/doxygen/doxygen.git",
     limit=100,
     refspec="HEAD",
-    shallow_clone=False,
     version_filter=project_filter_generator("doxygen"))
 class Doxygen(Project):  # type: ignore
     """ Doxygen """
