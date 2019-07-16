@@ -16,7 +16,6 @@ from varats.paper.paper_config import project_filter_generator
 @with_git(
     "https://github.com/tmux/tmux.git",
     refspec="HEAD",
-    shallow_clone=False,
     version_filter=project_filter_generator("tmux"))
 class Tmux(Project):  # type: ignore
     """ Terminal multiplexer Tmux """

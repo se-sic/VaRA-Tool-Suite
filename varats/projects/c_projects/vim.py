@@ -17,7 +17,6 @@ from varats.paper.paper_config import project_filter_generator
     "https://github.com/vim/vim.git",
     limit=100,
     refspec="HEAD",
-    shallow_clone=False,
     version_filter=project_filter_generator("vim"))
 class Vim(Project):  # type: ignore
     """ Text processing tool vim """
