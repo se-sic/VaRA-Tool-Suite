@@ -9,7 +9,7 @@ import benchbuild.project as prj
 @with_git(
     "https://github.com/se-passau/vara-perf-tests.git",
     limit=1,
-    refspec="HEAD")
+    refspec="origin/f-taintTests")
 class TaintTests(prj.Project):  # type: ignore
     """
     Taint tests:
@@ -22,8 +22,13 @@ class TaintTests(prj.Project):  # type: ignore
 
     SRC_FILE = "vara-perf-tests"
 
-    test_files = [
-        "arrayTaintPropagation.cpp", "controlFlowDependency.cpp"
+    BIN_NAMES = [
+        "arrayTaintPropagation", "pointerTaintPropagation1", "returnValueMapping2",
+        "byValueArgPassing", "pointerTaintPropagation2", "switchFallthrough",
+        "coeceredReturnValuePassing", "pointerTaintPropagation3", "unionTaintPropagation",
+        "coercedArgPassing", "regularArgPassing", "variableLengthArgForwarding",
+        "controlFlowDependency", "regularReturnValuePassing", "variableLengthArgPassing",
+        "operatorTaintPropagation", "returnValueMapping1"
     ]
 
     def run_tests(self, runner: run) -> None:
@@ -34,7 +39,5 @@ class TaintTests(prj.Project):  # type: ignore
 
         clang = cxx(self)
         with local.cwd(self.SRC_FILE + "/taint-tests"):
-            for test_file in self.test_files:
-                run(clang[test_file,
-                          "-w -fvara-handleRM=Commit -S -emit-llvm -o",
-                          test_file.replace('.cpp', '.ll')])
+            for binary in self.BIN_NAMES:
+                run(clang[binary + ".cpp", "-o", binary])
