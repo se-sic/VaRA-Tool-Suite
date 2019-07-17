@@ -22,14 +22,28 @@ class TaintTests(prj.Project):  # type: ignore
 
     SRC_FILE = "vara-perf-tests"
 
-    BIN_NAMES = [
-        "arrayTaintPropagation", "pointerTaintPropagation1", "returnValueMapping2",
-        "byValueArgPassing", "pointerTaintPropagation2", "switchFallthrough",
-        "coeceredReturnValuePassing", "pointerTaintPropagation3", "unionTaintPropagation",
-        "coercedArgPassing", "regularArgPassing", "variableLengthArgForwarding",
-        "controlFlowDependency", "regularReturnValuePassing", "variableLengthArgPassing",
-        "operatorTaintPropagation", "returnValueMapping1"
+    CPP_FILES = [
+        "arrayTaintPropagation.cpp",
+        "byValueArgPassing.cpp",
+        "coeceredReturnValuePassing.cpp",
+        "coercedArgPassing.cpp",
+        "controlFlowDependency.cpp",
+        "operatorTaintPropagation.cpp",
+        "pointerTaintPropagation1.cpp",
+        "pointerTaintPropagation2.cpp",
+        "pointerTaintPropagation3.cpp",
+        "regularArgPassing.cpp",
+        "regularReturnValuePassing.cpp",
+        "returnValueMapping1.cpp",
+        "returnValueMapping2.cpp",
+        "switchFallthrough.cpp",
+        "unionTaintPropagation.cpp",
+        "variableLengthArgForwarding.cpp",
+        "variableLengthArgPassing.cpp"
     ]
+
+    BIN_NAMES = map(lambda file_name: 'taint-tests/' + \
+        file_name.replace('.cpp', ''), CPP_FILES)
 
     def run_tests(self, runner: run) -> None:
         pass
@@ -39,5 +53,5 @@ class TaintTests(prj.Project):  # type: ignore
 
         clang = cxx(self)
         with local.cwd(self.SRC_FILE + "/taint-tests"):
-            for binary in self.BIN_NAMES:
-                run(clang[binary + ".cpp", "-o", binary])
+            for file in self.CPP_FILES:
+                run(clang[file, "-o", file.replace('.cpp','')])
