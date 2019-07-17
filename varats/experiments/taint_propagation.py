@@ -23,6 +23,7 @@ from benchbuild.extensions import compiler, run, time
 from varats.data.reports.empty_report import EmptyReport as ER
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.revisions import get_proccessed_revisions
+from varats.experiments.disassemble import Disassemble
 from varats.experiments.extract import Extract
 from varats.experiments.wllvm import RunWLLVM
 from varats.settings import CFG as V_CFG
@@ -37,11 +38,12 @@ class MTFAGraphGeneration(actions.Step):
 
     NAME = "MTFAGraphGeneration"
     DESCRIPTION = "Analyses the bitcode with MTFA of VaRA."
-    
+
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
     def __init__(self, project: Project):
-        super(MTFAGraphGeneration, self).__init__(obj=project, action_fn=self.analyze)
+        super(MTFAGraphGeneration, self).__init__(obj=project,
+                                                  action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
         """
@@ -76,9 +78,8 @@ class MTFAGraphGeneration(actions.Step):
                 extension_type=FSE.Success)
 
             run_cmd = opt[
-                "-print-MTFA", "-S"
-                "-o {res_folder}/{res_file}".
-                # TODO fix file path to ll files
+                "-vara-CD", "-print-Full-MTFA", "-S",
+                "-o", "{res_folder}/{res_file}".
                 format(res_folder=vara_result_folder, res_file=result_file
                        ), bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
                            project_name=project.name,
@@ -99,13 +100,13 @@ class MTFAGraphGeneration(actions.Step):
                         extension_type=FSE.Failed), run_cmd, timeout_duration))
 
 
-class TaintPropagationExample(VaRAVersionExperiment):
+class TaintPropagation(VaRAVersionExperiment):
     """
     Generates a taint flow analysis (MTFA) of the project(s) specified in the
     call.
     """
 
-    NAME = "TaintPropagationExample"
+    NAME = "TaintPropagation"
 
     REPORT_TYPE = ER
 
@@ -137,26 +138,14 @@ class TaintPropagationExample(VaRAVersionExperiment):
                     extension_type=FSE.CompileError),
             ))
 
+        project.cflags = ["-fvara-handleRM=Commit"]
+
         analysis_actions = []
 
-        # Check if all binaries have corresponding BC files
-        all_files_present = True
-        for binary_name in project.BIN_NAMES:
-            all_files_present &= path.exists(
-                local.path(
-                    Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                        cache_dir=str(CFG["vara"]["result"]),
-                        project_name=str(project.name)) +
-                    Extract.BC_FILE_TEMPLATE.format(
-                        project_name=str(project.name),
-                        binary_name=binary_name,
-                        project_version=str(project.version))))
+        analysis_actions.append(actions.Compile(project))
+        analysis_actions.append(Disassemble(project))
 
-        if not all_files_present:
-            analysis_actions.append(actions.Compile(project))
-            analysis_actions.append(Extract(project))
-
-        analysis_actions.append(MTFAGraphGeneration(project))
-        analysis_actions.append(actions.Clean(project))
+        #analysis_actions.append(MTFAGraphGeneration(project))
+        #analysis_actions.append(actions.Clean(project))
 
         return analysis_actions

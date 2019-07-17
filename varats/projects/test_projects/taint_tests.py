@@ -42,8 +42,8 @@ class TaintTests(prj.Project):  # type: ignore
         "variableLengthArgPassing.cpp"
     ]
 
-    BIN_NAMES = map(lambda file_name: 'taint-tests/' + \
-        file_name.replace('.cpp', ''), CPP_FILES)
+    BIN_NAMES =  [file_name.replace('.cpp', '') \
+        for file_name in CPP_FILES]
 
     def run_tests(self, runner: run) -> None:
         pass
