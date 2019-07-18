@@ -8,7 +8,7 @@ import subprocess
 
 import benchbuild.utils.actions as actions
 from benchbuild.settings import CFG
-from benchbuild.utils.cmd import extract_bc, cp, mkdir
+from benchbuild.utils.cmd import extract_bc, cp, mkdir, llvm_dis
 from benchbuild.utils.run import run
 from benchbuild.project import Project
 
@@ -59,8 +59,7 @@ class Disassemble(actions.Step):  # type: ignore
             target_bc = target_bc_dir + '/.' + binary_name + '.o.bc'
 
             if Path(target_bc).exists():
-                # TODO call llvm-dis on target_bc in ll_target_folder
-                pass
+                llvm_dis(target_bc, '-o', ll_file)
             else:
                 print("Could not find bitcode of binary '{name}' for disassembling.".format(
                     name=binary_name))
