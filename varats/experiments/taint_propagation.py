@@ -31,6 +31,7 @@ from varats.utils.experiment_util import (
     exec_func_with_pe_error_handler, FunctionPEErrorWrapper,
     VaRAVersionExperiment, PEErrorHandler)
 
+
 class MTFAGraphGeneration(actions.Step):
     """
     Analyse a project with VaRA and generate a graph of the taint analysis.
@@ -77,27 +78,32 @@ class MTFAGraphGeneration(actions.Step):
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success)
 
-            run_cmd = opt[
-                "-vara-CD", "-print-Full-MTFA", "-S",
-                "-o", "{res_folder}/{res_file}".
-                format(res_folder=vara_result_folder, res_file=result_file
-                       ), bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
-                           project_name=project.name,
-                           binary_name=binary_name,
-                           project_version=project.version)]
+        # TODO change the call to print-Full-MTFA once Issue #452 is fixed
+        run_cmd = opt[
+            "-vara-CD", "-view-Full-MTFA", "-S",
+            "{ll_target_folder}/{ll_file}".
+            format(ll_target_folder=Disassemble.LL_TARGET_FOLDER_TEMPLATE.format(
+                project_builddir=str(project.builddir),
+                project_src=str(project.SRC_FILE),
+                project_name=str(project.name)),
+                ll_file=Disassemble.LL_FILE_TEMPLATE.
+                format(binary_name=str(binary_name))),
+            "-o", "{res_folder}/{res_file}".
+            format(res_folder=vara_result_folder, res_file=result_file
+                   )]
 
-            timeout_duration = '8h'
+        timeout_duration = '8h'
 
-            exec_func_with_pe_error_handler(
-                timeout[timeout_duration, run_cmd],
-                PEErrorHandler(
-                    vara_result_folder,
-                    ER.get_file_name(
-                        project_name=str(project.name),
-                        binary_name=binary_name,
-                        project_version=str(project.version),
-                        project_uuid=str(project.run_uuid),
-                        extension_type=FSE.Failed), run_cmd, timeout_duration))
+        exec_func_with_pe_error_handler(
+            timeout[timeout_duration, run_cmd],
+            PEErrorHandler(
+                vara_result_folder,
+                ER.get_file_name(
+                    project_name=str(project.name),
+                    binary_name=binary_name,
+                    project_version=str(project.version),
+                    project_uuid=str(project.run_uuid),
+                    extension_type=FSE.Failed), run_cmd, timeout_duration))
 
 
 class TaintPropagation(VaRAVersionExperiment):
@@ -145,7 +151,7 @@ class TaintPropagation(VaRAVersionExperiment):
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(Disassemble(project))
 
-        #analysis_actions.append(MTFAGraphGeneration(project))
-        #analysis_actions.append(actions.Clean(project))
+        # analysis_actions.append(MTFAGraphGeneration(project))
+        # analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
