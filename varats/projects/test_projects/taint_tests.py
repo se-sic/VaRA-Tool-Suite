@@ -1,3 +1,6 @@
+"""
+Compile a collection of representing examples for the taint analysis.
+"""
 from plumbum import local
 
 from benchbuild.utils.run import run
@@ -17,10 +20,11 @@ class TaintTests(prj.Project):  # type: ignore
     """
 
     NAME = 'taint-tests'
-    DOMAIN = 'testing'
     GROUP = 'test_projects'
+    DOMAIN = 'testing'
+    VERSION = 'HEAD'
 
-    SRC_FILE = "vara-perf-tests"
+    SRC_FILE = NAME + "-{0}".format(VERSION)
 
     CPP_FILES = [
         "arrayTaintPropagation.cpp",
@@ -42,8 +46,8 @@ class TaintTests(prj.Project):  # type: ignore
         "variableLengthArgPassing.cpp"
     ]
 
-    BIN_NAMES =  [file_name.replace('.cpp', '') \
-        for file_name in CPP_FILES]
+    BIN_NAMES = [file_name.replace('.cpp', '')
+                 for file_name in CPP_FILES]
 
     def run_tests(self, runner: run) -> None:
         pass
@@ -52,6 +56,7 @@ class TaintTests(prj.Project):  # type: ignore
         self.download()
 
         clang = cxx(self)
-        with local.cwd(self.SRC_FILE + "/taint-tests"):
+        with local.cwd(self.SRC_FILE):
             for file in self.CPP_FILES:
-                run(clang[file, "-o", file.replace('.cpp','')])
+                run(clang["{name}/{file}".format(name=self.NAME, file=file),
+                          "-o", file.replace('.cpp', '')])

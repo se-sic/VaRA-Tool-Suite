@@ -1,15 +1,11 @@
 """
 Execute showcase cpp examples with vara to analyse taints.
 
-This class implements the full commit taint flow analysis (MTFA) graph generation of the variability-
-aware region analyzer (VaRA).
+This class implements the full commit taint flow analysis (MTFA) graph
+generation of the variability-aware region analyzer (VaRA).
 """
 
 import typing as tp
-from os import path
-
-from plumbum import local
-from plumbum import colors
 
 from benchbuild.extensions import compiler, run, time
 from benchbuild.settings import CFG
@@ -55,14 +51,22 @@ class MTFAGraphGeneration(actions.Step):
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
-        # TODO fix for gzip, gravity and co
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
             result_dir=str(CFG["vara"]["outfile"]),
             project_dir=str(project.name))
 
+        ll_target_folder = Disassemble.LL_TARGET_FOLDER_TEMPLATE.format(
+            project_builddir=str(project.builddir),
+            project_src=str(project.SRC_FILE),
+            project_name=str(project.name))
+
         mkdir("-p", vara_result_folder)
 
         for binary_name in project.BIN_NAMES:
+
+            ll_target_file = Disassemble.LL_FILE_TEMPLATE.format(
+                binary_name=str(binary_name))
+
             result_file = ER.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary_name,
@@ -71,14 +75,10 @@ class MTFAGraphGeneration(actions.Step):
                 extension_type=FSE.Success)
 
             run_cmd = opt[
-                "-vara-CD", "-print-Full-MTFA", "-S",
-                "{ll_target_folder}/{ll_file}".
-                format(ll_target_folder=Disassemble.LL_TARGET_FOLDER_TEMPLATE.format(
-                    project_builddir=str(project.builddir),
-                    project_src=str(project.SRC_FILE),
-                    project_name=str(project.name)),
-                    ll_file=Disassemble.LL_FILE_TEMPLATE.
-                    format(binary_name=str(binary_name))),
+                "-vara-CD", "-print-Full-MTFA",
+                "-S", "{ll_folder}/{ll_file}".
+                format(ll_folder=ll_target_folder,
+                       ll_file=ll_target_file),
                 "-o", "{res_folder}/{res_file}".
                 format(res_folder=vara_result_folder,
                        res_file=result_file).replace('.yaml', '.ll')]
@@ -140,6 +140,8 @@ class TaintPropagation(VaRAVersionExperiment):
         analysis_actions = []
 
         analysis_actions.append(actions.Compile(project))
+        # TODO first call extract, then disassemble the generated bc files
+        # analysis_actions.append(Extract(project))
         analysis_actions.append(Disassemble(project))
 
         analysis_actions.append(MTFAGraphGeneration(project))
