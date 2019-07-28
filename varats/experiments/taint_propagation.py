@@ -78,9 +78,8 @@ class MTFAGraphGeneration(actions.Step):
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success)
 
-        # TODO change the call to print-Full-MTFA once Issue #452 is fixed
         run_cmd = opt[
-            "-vara-CD", "-view-Full-MTFA", "-S",
+            "-vara-CD", "-print-Full-MTFA", "-S",
             "{ll_target_folder}/{ll_file}".
             format(ll_target_folder=Disassemble.LL_TARGET_FOLDER_TEMPLATE.format(
                 project_builddir=str(project.builddir),
@@ -151,7 +150,7 @@ class TaintPropagation(VaRAVersionExperiment):
         analysis_actions.append(actions.Compile(project))
         analysis_actions.append(Disassemble(project))
 
-        # analysis_actions.append(MTFAGraphGeneration(project))
+        analysis_actions.append(MTFAGraphGeneration(project))
         # analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
