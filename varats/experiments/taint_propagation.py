@@ -6,20 +6,17 @@ aware region analyzer (VaRA).
 """
 
 import typing as tp
-import random
-from os import path
-from pathlib import Path
 from os import path
 
 from plumbum import local
+from plumbum import colors
 
-import benchbuild.utils.actions as actions
+from benchbuild.extensions import compiler, run, time
 from benchbuild.settings import CFG
 from benchbuild.project import Project
+import benchbuild.utils.actions as actions
 from benchbuild.utils.cmd import opt, mkdir, timeout
-from benchbuild.extensions import compiler, run, time
 
-# TODO replace empty report with own taint report
 from varats.data.reports.empty_report import EmptyReport as ER
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.revisions import get_proccessed_revisions
