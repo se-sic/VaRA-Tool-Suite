@@ -19,11 +19,9 @@ from benchbuild.utils.cmd import opt, mkdir, timeout
 
 from varats.data.reports.empty_report import EmptyReport as ER
 from varats.data.report import FileStatusExtension as FSE
-from varats.data.revisions import get_proccessed_revisions
 from varats.experiments.disassemble import Disassemble
 from varats.experiments.extract import Extract
 from varats.experiments.wllvm import RunWLLVM
-from varats.settings import CFG as V_CFG
 from varats.utils.experiment_util import (
     exec_func_with_pe_error_handler, FunctionPEErrorWrapper,
     VaRAVersionExperiment, PEErrorHandler)
@@ -47,20 +45,17 @@ class MTFAGraphGeneration(actions.Step):
         """
         This step performs the actual analysis with the correct flags.
         Flags:
-            -print-MTFA: to run a taint flow analysis
-            -yaml-out-file=<path>: specify the path to store the results
+            -print-Full-MTFA: to run a taint flow analysis
         """
+
         if not self.obj:
             return
         project = self.obj
 
-        bc_cache_folder = local.path(Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-            cache_dir=str(CFG["vara"]["result"]),
-            project_name=str(project.name)))
-
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
+        # TODO fix for gzip, gravity and co
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
             result_dir=str(CFG["vara"]["outfile"]),
             project_dir=str(project.name))
@@ -75,31 +70,31 @@ class MTFAGraphGeneration(actions.Step):
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success)
 
-        run_cmd = opt[
-            "-vara-CD", "-print-Full-MTFA", "-S",
-            "{ll_target_folder}/{ll_file}".
-            format(ll_target_folder=Disassemble.LL_TARGET_FOLDER_TEMPLATE.format(
-                project_builddir=str(project.builddir),
-                project_src=str(project.SRC_FILE),
-                project_name=str(project.name)),
-                ll_file=Disassemble.LL_FILE_TEMPLATE.
-                format(binary_name=str(binary_name))),
-            "-o", "{res_folder}/{res_file}".
-            format(res_folder=vara_result_folder, res_file=result_file
-                   )]
+            run_cmd = opt[
+                "-vara-CD", "-print-Full-MTFA", "-S",
+                "{ll_target_folder}/{ll_file}".
+                format(ll_target_folder=Disassemble.LL_TARGET_FOLDER_TEMPLATE.format(
+                    project_builddir=str(project.builddir),
+                    project_src=str(project.SRC_FILE),
+                    project_name=str(project.name)),
+                    ll_file=Disassemble.LL_FILE_TEMPLATE.
+                    format(binary_name=str(binary_name))),
+                "-o", "{res_folder}/{res_file}".
+                format(res_folder=vara_result_folder,
+                       res_file=result_file).replace('.yaml', '.ll')]
 
-        timeout_duration = '8h'
+            timeout_duration = '8h'
 
-        exec_func_with_pe_error_handler(
-            timeout[timeout_duration, run_cmd],
-            PEErrorHandler(
-                vara_result_folder,
-                ER.get_file_name(
-                    project_name=str(project.name),
-                    binary_name=binary_name,
-                    project_version=str(project.version),
-                    project_uuid=str(project.run_uuid),
-                    extension_type=FSE.Failed), run_cmd, timeout_duration))
+            exec_func_with_pe_error_handler(
+                timeout[timeout_duration, run_cmd],
+                PEErrorHandler(
+                    vara_result_folder,
+                    ER.get_file_name(
+                        project_name=str(project.name),
+                        binary_name=binary_name,
+                        project_version=str(project.version),
+                        project_uuid=str(project.run_uuid),
+                        extension_type=FSE.Failed), run_cmd, timeout_duration))
 
 
 class TaintPropagation(VaRAVersionExperiment):
@@ -148,6 +143,6 @@ class TaintPropagation(VaRAVersionExperiment):
         analysis_actions.append(Disassemble(project))
 
         analysis_actions.append(MTFAGraphGeneration(project))
-        # analysis_actions.append(actions.Clean(project))
+        analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
