@@ -10,6 +10,8 @@ from benchbuild.settings import CFG
 from benchbuild.utils.cmd import mkdir, llvm_dis
 from benchbuild.project import Project
 
+from varats.experiments.extract import Extract
+
 CFG["vara"] = {
     "outfile": {
         "default": "",
@@ -23,11 +25,15 @@ CFG["vara"] = {
 
 
 class Disassemble(actions.Step):  # type: ignore
+    """
+    Step in an experiment to generate llvm intermediate representation out of
+    bitcode previously generated in the experiment.
+    """
     NAME = "DISASSEMBLE"
     DESCRIPTION = "Disassembles a bitcode file to intermediate representation."
 
-    LL_TARGET_FOLDER_TEMPLATE = "{project_builddir}/{project_src}"
-    LL_FILE_TEMPLATE = "{binary_name}.ll"
+    CACHE_DIR_TEMPLATE = "{cache_dir}/{project_name}/"
+    LL_FILE_TEMPLATE = "{project_name}-{binary_name}-{project_version}.ll"
 
     def __init__(self, project: Project) -> None:
         super(Disassemble, self).__init__(
@@ -42,18 +48,21 @@ class Disassemble(actions.Step):  # type: ignore
             return
         project = self.obj
 
-        ll_target_folder = self.LL_TARGET_FOLDER_TEMPLATE.format(
-            project_builddir=str(project.builddir),
-            project_src=str(project.SRC_FILE))
-
-        mkdir("-p", local.path() / ll_target_folder)
+        cache_dir = self.CACHE_DIR_TEMPLATE.format(
+            cache_dir=str(CFG["vara"]["result"]),
+            project_name=str(project.name))
+        mkdir("-p", local.path() / cache_dir)
 
         for binary_name in project.BIN_NAMES:
-            ll_file = local.path() / ll_target_folder /\
-                self.LL_FILE_TEMPLATE.format(binary_name=str(binary_name))
+            ll_file = cache_dir + self.LL_FILE_TEMPLATE.format(
+                project_name=str(project.name),
+                binary_name=str(binary_name),
+                project_version=str(project.version))
 
-            target_bc = '{bc_dir}/.{binary}.o.bc'.format(
-                bc_dir=str(ll_target_folder), binary=str(binary_name))
+            target_bc = cache_dir + Extract.BC_FILE_TEMPLATE.format(
+                project_name=str(project.name),
+                binary_name=str(binary_name),
+                project_version=str(project.version))
 
             if Path(target_bc).exists():
                 llvm_dis(target_bc, '-o', ll_file)
