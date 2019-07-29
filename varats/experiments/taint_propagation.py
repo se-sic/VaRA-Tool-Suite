@@ -18,7 +18,6 @@ from benchbuild.utils.cmd import opt, mkdir, timeout
 
 from varats.data.reports.empty_report import EmptyReport as ER
 from varats.data.report import FileStatusExtension as FSE
-from varats.experiments.disassemble import Disassemble
 from varats.experiments.extract import Extract
 from varats.experiments.wllvm import RunWLLVM
 from varats.utils.experiment_util import (
