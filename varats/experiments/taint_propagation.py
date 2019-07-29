@@ -6,6 +6,9 @@ generation of the variability-aware region analyzer (VaRA).
 """
 
 import typing as tp
+from os import path
+
+from plumbum import local
 
 from benchbuild.extensions import compiler, run, time
 from benchbuild.settings import CFG
@@ -55,9 +58,8 @@ class MTFAGraphGeneration(actions.Step):
             result_dir=str(CFG["vara"]["outfile"]),
             project_dir=str(project.name))
 
-        ll_target_folder = Disassemble.LL_TARGET_FOLDER_TEMPLATE.format(
-            project_builddir=str(project.builddir),
-            project_src=str(project.SRC_FILE),
+        ll_target_folder = Disassemble.CACHE_DIR_TEMPLATE.format(
+            cache_dir=str(CFG["vara"]["result"]),
             project_name=str(project.name))
 
         mkdir("-p", vara_result_folder)
@@ -65,7 +67,9 @@ class MTFAGraphGeneration(actions.Step):
         for binary_name in project.BIN_NAMES:
 
             ll_target_file = Disassemble.LL_FILE_TEMPLATE.format(
-                binary_name=str(binary_name))
+                project_name=str(project.name),
+                binary_name=str(binary_name),
+                project_version=str(project.version))
 
             result_file = ER.get_file_name(
                 project_name=str(project.name),
@@ -74,6 +78,7 @@ class MTFAGraphGeneration(actions.Step):
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success)
 
+            # Currently only prints the generated ll file into an empty yaml
             run_cmd = opt[
                 "-vara-CD", "-print-Full-MTFA",
                 "-S", "{ll_folder}/{ll_file}".
@@ -139,10 +144,38 @@ class TaintPropagation(VaRAVersionExperiment):
 
         analysis_actions = []
 
-        analysis_actions.append(actions.Compile(project))
-        # TODO first call extract, then disassemble the generated bc files
-        # analysis_actions.append(Extract(project))
-        analysis_actions.append(Disassemble(project))
+        # Not run all steps if cached results exist
+        all_ll_files_present = True
+        for binary_name in project.BIN_NAMES:
+            all_ll_files_present &= path.exists(
+                local.path(
+                    Disassemble.CACHE_DIR_TEMPLATE.format(
+                        cache_dir=str(CFG["vara"]["result"]),
+                        project_name=str(project.name)) +
+                    Disassemble.LL_FILE_TEMPLATE.format(
+                        project_name=str(project.name),
+                        binary_name=binary_name,
+                        project_version=str(project.version))))
+
+        if not all_ll_files_present:
+            all_bc_files_present = True
+            for binary_name in project.BIN_NAMES:
+                all_bc_files_present &= path.exists(
+                    local.path(
+                        Extract.BC_CACHE_FOLDER_TEMPLATE.format(
+                            cache_dir=str(CFG["vara"]["result"]),
+                            project_name=str(project.name)) +
+                        Extract.BC_FILE_TEMPLATE.format(
+                            project_name=str(project.name),
+                            binary_name=binary_name,
+                            project_version=str(project.version))))
+
+            if not all_bc_files_present:
+                analysis_actions.append(actions.Compile(project))
+                analysis_actions.append(Extract(project))
+                analysis_actions.append(Disassemble(project))
+            else:
+                analysis_actions.append(Disassemble(project))
 
         analysis_actions.append(MTFAGraphGeneration(project))
         analysis_actions.append(actions.Clean(project))
