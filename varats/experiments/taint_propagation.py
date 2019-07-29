@@ -58,7 +58,7 @@ class MTFAGraphGeneration(actions.Step):
             result_dir=str(CFG["vara"]["outfile"]),
             project_dir=str(project.name))
 
-        ll_target_folder = Disassemble.CACHE_DIR_TEMPLATE.format(
+        bc_cache_dir = Extract.BC_CACHE_FOLDER_TEMPLATE.format(
             cache_dir=str(CFG["vara"]["result"]),
             project_name=str(project.name))
 
@@ -66,7 +66,7 @@ class MTFAGraphGeneration(actions.Step):
 
         for binary_name in project.BIN_NAMES:
 
-            ll_target_file = Disassemble.LL_FILE_TEMPLATE.format(
+            bc_target_file = Extract.BC_FILE_TEMPLATE.format(
                 project_name=str(project.name),
                 binary_name=str(binary_name),
                 project_version=str(project.version))
@@ -81,12 +81,12 @@ class MTFAGraphGeneration(actions.Step):
             # Currently only prints the generated ll file into an empty yaml
             run_cmd = opt[
                 "-vara-CD", "-print-Full-MTFA",
-                "-S", "{ll_folder}/{ll_file}".
-                format(ll_folder=ll_target_folder,
-                       ll_file=ll_target_file),
+                "-S", "{cache_folder}/{bc_file}".
+                format(cache_folder=bc_cache_dir,
+                       bc_file=bc_target_file),
                 "-o", "{res_folder}/{res_file}".
                 format(res_folder=vara_result_folder,
-                       res_file=result_file).replace('.yaml', '.ll')]
+                       res_file=result_file)]
 
             timeout_duration = '8h'
 
@@ -145,37 +145,21 @@ class TaintPropagation(VaRAVersionExperiment):
         analysis_actions = []
 
         # Not run all steps if cached results exist
-        all_ll_files_present = True
+        all_bc_files_present = True
         for binary_name in project.BIN_NAMES:
-            all_ll_files_present &= path.exists(
+            all_bc_files_present &= path.exists(
                 local.path(
-                    Disassemble.CACHE_DIR_TEMPLATE.format(
+                    Extract.BC_CACHE_FOLDER_TEMPLATE.format(
                         cache_dir=str(CFG["vara"]["result"]),
                         project_name=str(project.name)) +
-                    Disassemble.LL_FILE_TEMPLATE.format(
+                    Extract.BC_FILE_TEMPLATE.format(
                         project_name=str(project.name),
                         binary_name=binary_name,
                         project_version=str(project.version))))
 
-        if not all_ll_files_present:
-            all_bc_files_present = True
-            for binary_name in project.BIN_NAMES:
-                all_bc_files_present &= path.exists(
-                    local.path(
-                        Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                            cache_dir=str(CFG["vara"]["result"]),
-                            project_name=str(project.name)) +
-                        Extract.BC_FILE_TEMPLATE.format(
-                            project_name=str(project.name),
-                            binary_name=binary_name,
-                            project_version=str(project.version))))
-
-            if not all_bc_files_present:
-                analysis_actions.append(actions.Compile(project))
-                analysis_actions.append(Extract(project))
-                analysis_actions.append(Disassemble(project))
-            else:
-                analysis_actions.append(Disassemble(project))
+        if not all_bc_files_present:
+            analysis_actions.append(actions.Compile(project))
+            analysis_actions.append(Extract(project))
 
         analysis_actions.append(MTFAGraphGeneration(project))
         analysis_actions.append(actions.Clean(project))
