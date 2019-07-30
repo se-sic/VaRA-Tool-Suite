@@ -49,7 +49,8 @@ class FileStatusExtension(Enum):
             if str(status.value[0]) == status_extension:
                 return status
         raise ValueError(
-            'Unknown file ending {status_ext}'.format(status_ext=status_extension))
+            'Unknown file ending {status_ext}'.format(
+                status_ext=status_extension))
 
     @staticmethod
     def get_regex_grp() -> str:

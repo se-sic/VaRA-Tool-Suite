@@ -233,9 +233,11 @@ class TestCommitReport(unittest.TestCase):
             cls.commit_report = CommitReport("fake_file_path")
 
         cls.success_filename = ("CR-foo-foo-7bb9ef5f8c_"
-                                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be.yaml")
+                                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
+                                "success.yaml")
         cls.fail_filename = ("CR-foo-foo-7bb9ef5f8c_"
-                             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be.failed")
+                             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be"
+                             "_failed.yaml")
 
     def test_path(self):
         """
