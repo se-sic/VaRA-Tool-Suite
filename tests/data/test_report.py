@@ -19,9 +19,9 @@ class TestMetaReport(unittest.TestCase):
         Setup file and CommitReport
         """
         cls.success_filename = ("EMPTY-foo-foo-7bb9ef5f8c_"
-                                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be.yaml")
+                                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_success")
         cls.fail_filename = ("EMPTY-foo-foo-7bb9ef5f8c_"
-                             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be.failed")
+                             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_failed")
 
     def test_is_result_file(self):
         """Check if the result file matcher works"""
@@ -31,7 +31,7 @@ class TestMetaReport(unittest.TestCase):
             MetaReport.is_result_file(self.success_filename.replace("_", "")))
         self.assertFalse(
             MetaReport.is_result_file(self.success_filename.replace("-", "")))
-        self.assertFalse(
+        self.assertTrue(
             MetaReport.is_result_file(self.success_filename.replace(".", "f")))
 
     def test_file_status(self):
