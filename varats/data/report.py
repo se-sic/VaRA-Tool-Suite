@@ -75,7 +75,7 @@ class MetaReport(type):
         r"(?P<project_shorthand>.*)-" +
         r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
         r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)_" +
-        FileStatusExtension.get_regex_grp() + r"(?P<file_ext>)" + "$")
+        FileStatusExtension.get_regex_grp() + r"?(?P<file_ext>\..*)?" + "$")
 
     __RESULT_FILE_TEMPLATE = (
         "{shorthand}-" + "{project_name}-" + "{binary_name}-" +
@@ -150,7 +150,7 @@ class MetaReport(type):
         """ Check if the passed file name is a (failed) result file. """
         match = MetaReport.__FILE_NAME_REGEX.search(file_name)
         if match:
-            return match.group("STATUS_EXT") == (
+            return match.group("status_ext") == (
                 FileStatusExtension.get_status_extension(extension_type))
         return False
 
