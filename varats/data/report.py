@@ -44,12 +44,12 @@ class FileStatusExtension(Enum):
         return tp.cast(str, self.status_color[self.name])
 
     @staticmethod
-    def get_file_status(file_ending: str) -> 'FileStatusExtension':
+    def get_file_status(status_extension: str) -> 'FileStatusExtension':
         for status in FileStatusExtension:
-            if str(status.value[0]) == file_ending:
+            if str(status.value[0]) == status_extension:
                 return status
         raise ValueError(
-            'Unknown file ending {ending}'.format(ending=file_ending))
+            'Unknown file ending {status_ext}'.format(status_ext=status_extension))
 
     @staticmethod
     def get_regex_grp() -> str:
@@ -59,8 +59,9 @@ class FileStatusExtension(Enum):
         regex_grp = r"(?P<status_ext>("
         for status in FileStatusExtension:
             regex_grp += r"{status_ext}".format(
-                status_ext=status.get_status_extension())
+                status_ext=status.get_status_extension()) + '|'
 
+        # Remove the '|' at the end
         regex_grp = regex_grp[:-1]
         regex_grp += "))"
         return regex_grp
@@ -149,7 +150,7 @@ class MetaReport(type):
         """ Check if the passed file name is a (failed) result file. """
         match = MetaReport.__FILE_NAME_REGEX.search(file_name)
         if match:
-            return match.group("EXT") == (
+            return match.group("STATUS_EXT") == (
                 FileStatusExtension.get_status_extension(extension_type))
         return False
 
