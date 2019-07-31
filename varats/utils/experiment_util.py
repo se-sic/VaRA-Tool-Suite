@@ -80,7 +80,11 @@ Timeout after: {timeout_duration}
                 timeout_duration=str(self.__timeout_duration))
                 outfile.write(extra_error)
 
+            outfile.write("Output of STDERR (Standard Error):\n")
             outfile.write(ex.stderr)
+
+            outfile.write("Output of STDOUT (Standard Output):\n")
+            outfile.write(ex.stdout)
         raise ex
 
 
