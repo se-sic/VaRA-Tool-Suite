@@ -19,6 +19,7 @@ class FileStatusExtension(Enum):
     """
 
     Success = ("yaml", colors.green)
+    SuccWithTime = ("time", colors.green)
     Failed = ("failed", colors.lightred)
     CompileError = ("cerror", colors.red)
     Missing = ("###", colors.orange3)
@@ -109,6 +110,12 @@ class MetaReport(type):
         """ Check if the passed file name is a (Success) result file. """
         return MetaReport.is_result_file_status(file_name,
                                                 FileStatusExtension.Success)
+
+    @staticmethod
+    def is_result_file_succwithtime(file_name: str) -> bool:
+        """ Check if the passed file name is a (SuccWithTime) result file. """
+        return MetaReport.is_result_file_status(file_name,
+                                                FileStatusExtension.SuccWithTime)
 
     @staticmethod
     def is_result_file_failed(file_name: str) -> bool:

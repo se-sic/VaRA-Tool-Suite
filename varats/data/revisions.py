@@ -7,6 +7,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from varats.settings import CFG
+from varats.data.report import FileStatusExtension as FSE
 from varats.data.report import MetaReport, FileStatusExtension
 
 
@@ -49,6 +50,7 @@ def get_proccessed_revisions(project_name: str,
 
     result_files = __get_result_files_dict(project_name, result_file_type)
     for commit_hash, value in result_files.items():
+        value = [a for a in value if a.suffix != "." + FSE.get_file_ending(FSE.SuccWithTime)]
         newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
         if result_file_type.is_result_file_success(newest_res_file.name):
             processed_revisions.append(commit_hash)
@@ -69,6 +71,7 @@ def get_failed_revisions(project_name: str,
 
     result_files = __get_result_files_dict(project_name, result_file_type)
     for commit_hash, value in result_files.items():
+        value = [a for a in value if a.suffix != "." + FSE.get_file_ending(FSE.SuccWithTime)]
         newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
         if result_file_type.is_result_file_failed(newest_res_file.name):
             failed_revisions.append(commit_hash)
@@ -90,6 +93,10 @@ def get_tagged_revisions(project_name: str, result_file_type: MetaReport
 
     result_files = __get_result_files_dict(project_name, result_file_type)
     for commit_hash, file_list in result_files.items():
+        file_list = [
+            a for a in file_list
+            if a.suffix != "." + FSE.get_file_ending(FSE.SuccWithTime)
+        ]
         newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
         if result_file_type.is_correct_report_type(str(newest_res_file.name)):
             revisions.append((commit_hash,
