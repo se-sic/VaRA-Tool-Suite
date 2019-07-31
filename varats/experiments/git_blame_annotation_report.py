@@ -94,12 +94,10 @@ class CFRAnalysis(actions.Step):  # type: ignore
                 project_version=str(project.version),
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Time)
-            #from benchbuild.utils.cmd import timeout
             from benchbuild.utils.cmd import time as sys_time
 
             exec_func_with_pe_error_handler(
                 sys_time["-p", "-o", time_file_path, "timeout", timeout_duration, run_cmd],
-                #timeout[timeout_duration, run_cmd],
                 PEErrorHandler(
                     vara_result_folder,
                     CR.get_file_name(
