@@ -80,6 +80,7 @@ class CFRAnalysis(actions.Step):  # type: ignore
 
             run_cmd = opt[
                 "-vara-BD", "-vara-CFR",
+                "-vara-init-commits",
                 "-yaml-out-file={res_folder}/{res_file}".
                 format(res_folder=vara_result_folder, res_file=result_file
                        ), bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
