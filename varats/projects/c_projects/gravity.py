@@ -15,7 +15,7 @@ from varats.paper.paper_config import project_filter_generator
 
 @with_git(
     "https://github.com/marcobambini/gravity.git",
-    limit=100,
+    limit=200,
     refspec="HEAD",
     version_filter=project_filter_generator("gravity"))
 class Gravity(Project):  # type: ignore

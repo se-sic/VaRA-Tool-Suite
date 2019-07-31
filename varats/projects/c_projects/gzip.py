@@ -15,7 +15,7 @@ from varats.paper.paper_config import project_filter_generator
 
 @with_git(
     "https://git.savannah.gnu.org/git/gzip.git",
-    limit=100,
+    limit=200,
     refspec="HEAD",
     version_filter=project_filter_generator("gzip"))
 class Gzip(prj.Project):  # type: ignore
