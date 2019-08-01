@@ -94,7 +94,7 @@ class CFRAnalysis(actions.Step):  # type: ignore
                 binary_name=binary_name,
                 project_version=str(project.version),
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.Time)
+                extension_type=FSE.SuccWithTime)
             from benchbuild.utils.cmd import time as sys_time
 
             exec_func_with_pe_error_handler(
