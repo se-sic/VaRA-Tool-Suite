@@ -124,7 +124,7 @@ def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
 
     reports = []
     for file_path in result_dir.iterdir():
-        if file_path.stem.startswith(str(project_name) + "-"):
+        if file_path.stem.startswith("CR-" + str(project_name) + "-"):
             if MetaReport.is_result_file_success(file_path.name):
                 commit_hash = CommitReport.get_commit_hash_from_result_file(
                     file_path.name)
