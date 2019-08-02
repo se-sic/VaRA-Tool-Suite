@@ -51,9 +51,10 @@ def get_proccessed_revisions(project_name: str,
     result_files = __get_result_files_dict(project_name, result_file_type)
     for commit_hash, value in result_files.items():
         value = [a for a in value if a.suffix != "." + FSE.get_file_ending(FSE.SuccWithTime)]
-        newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
-        if result_file_type.is_result_file_success(newest_res_file.name):
-            processed_revisions.append(commit_hash)
+        if value:
+            newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
+            if result_file_type.is_result_file_success(newest_res_file.name):
+                processed_revisions.append(commit_hash)
 
     return processed_revisions
 
@@ -72,9 +73,10 @@ def get_failed_revisions(project_name: str,
     result_files = __get_result_files_dict(project_name, result_file_type)
     for commit_hash, value in result_files.items():
         value = [a for a in value if a.suffix != "." + FSE.get_file_ending(FSE.SuccWithTime)]
-        newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
-        if result_file_type.is_result_file_failed(newest_res_file.name):
-            failed_revisions.append(commit_hash)
+        if value:
+            newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
+            if result_file_type.is_result_file_failed(newest_res_file.name):
+                failed_revisions.append(commit_hash)
 
     return failed_revisions
 
@@ -97,10 +99,11 @@ def get_tagged_revisions(project_name: str, result_file_type: MetaReport
             a for a in file_list
             if a.suffix != "." + FSE.get_file_ending(FSE.SuccWithTime)
         ]
-        newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
-        if result_file_type.is_correct_report_type(str(newest_res_file.name)):
-            revisions.append((commit_hash,
-                              result_file_type.get_status_from_result_file(
-                                  str(newest_res_file))))
+        if file_list:
+            newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
+            if result_file_type.is_correct_report_type(str(newest_res_file.name)):
+                revisions.append((commit_hash,
+                                  result_file_type.get_status_from_result_file(
+                                      str(newest_res_file))))
 
     return revisions
