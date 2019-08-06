@@ -1,6 +1,5 @@
 """
-Execute showcase cpp examples with VaRA and Phasar to compare their taint
-analyses.
+Execute showcase cpp examples with vara to analyse taints.
 
 This class implements the full commit taint flow analysis (MTFA) graph
 generation of the variability-aware region analyzer (VaRA) and Phasar.
