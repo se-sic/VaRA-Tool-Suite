@@ -16,7 +16,7 @@ from benchbuild.project import Project
 import benchbuild.utils.actions as actions
 from benchbuild.utils.cmd import opt, mkdir, timeout
 
-from varats.data.reports.empty_report import EmptyReport as ER
+from varats.data.reports.taint_report import TaintReport as TR
 from varats.data.report import FileStatusExtension as FSE
 from varats.experiments.extract import Extract
 from varats.experiments.wllvm import RunWLLVM
@@ -70,14 +70,13 @@ class MTFAGraphGeneration(actions.Step):
                 binary_name=str(binary_name),
                 project_version=str(project.version))
 
-            result_file = ER.get_file_name(
+            result_file = TR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary_name,
                 project_version=str(project.version),
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success)
 
-            # Currently only prints the generated ll file into an empty yaml
             run_cmd = opt[
                 "-vara-CD", "-print-Full-MTFA",
                 "-S", "{cache_folder}/{bc_file}".
@@ -93,7 +92,7 @@ class MTFAGraphGeneration(actions.Step):
                 timeout[timeout_duration, run_cmd],
                 PEErrorHandler(
                     vara_result_folder,
-                    ER.get_file_name(
+                    TR.get_file_name(
                         project_name=str(project.name),
                         binary_name=binary_name,
                         project_version=str(project.version),
@@ -109,7 +108,7 @@ class TaintPropagation(VaRAVersionExperiment):
 
     NAME = "TaintPropagation"
 
-    REPORT_TYPE = ER
+    REPORT_TYPE = TR
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """Returns the specified steps to run the project(s) specified in
@@ -131,7 +130,7 @@ class TaintPropagation(VaRAVersionExperiment):
                 MTFAGraphGeneration.RESULT_FOLDER_TEMPLATE.format(
                     result_dir=str(CFG["vara"]["outfile"]),
                     project_dir=str(project.name)),
-                ER.get_file_name(
+                TR.get_file_name(
                     project_name=str(project.name),
                     binary_name="all",
                     project_version=str(project.version),

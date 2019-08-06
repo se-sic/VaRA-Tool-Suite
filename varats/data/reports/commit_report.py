@@ -181,7 +181,7 @@ class CommitReport(BaseReport):
 
     def calc_max_cf_edges(self) -> int:
         """
-        Calulate the highest amount of control-flow interactions of a single
+        Calculate the highest amount of control-flow interactions of a single
         commit region.
         """
         cf_map: tp.Dict[str, tp.List[int]] = dict()
@@ -195,7 +195,7 @@ class CommitReport(BaseReport):
 
     def calc_max_df_edges(self) -> int:
         """
-        Calulate the highest amount of data-flow interactions of a single
+        Calculate the highest amount of data-flow interactions of a single
         commit region.
         """
         df_map: tp.Dict[str, tp.List[int]] = dict()
@@ -331,7 +331,7 @@ class CommitReportMeta():
 
 class CommitMap():
     """
-    Provides a mapping from commit hash to additional informations.
+    Provides a mapping from commit hash to additional information.
     """
 
     def __init__(self, stream: tp.Iterable[str]) -> None:
