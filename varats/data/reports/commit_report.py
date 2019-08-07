@@ -300,6 +300,186 @@ class CommitReport(BaseReport):
         return (0, 0)
 
 
+class FilteredCommitReport(CommitReport):
+
+    SHORTHAND = "FCR"
+
+    def __init__(self, path: Path) -> None:
+        super(FilteredCommitReport, self).__init__()
+        with open(path, "r") as stream:
+            self._path = path
+            documents = yaml.load_all(stream, Loader=yaml.CLoader)
+            version_header = VersionHeader(next(documents))
+            version_header.raise_if_not_type("CommitReport")
+            version_header.raise_if_version_is_less_than(3)
+
+            raw_infos = next(documents)
+            self.finfos: tp.Dict[str, FunctionInfo] = dict()
+            for raw_finfo in raw_infos['function-info']:
+                finfo = FunctionInfo(raw_finfo)
+                self.finfos[finfo.name] = finfo
+
+            self.region_mappings: tp.Dict[str, RegionMapping] = dict()
+            raw_region_mapping = raw_infos['region-mapping']
+            if raw_region_mapping is not None:
+                for raw_r_mapping in raw_region_mapping:
+                    r_mapping = RegionMapping(raw_r_mapping)
+                    self.region_mappings[r_mapping.id] = r_mapping
+
+            gedges = next(documents)
+            self.graph_info: tp.Dict[str, FunctionGraphEdges] = dict()
+            # TODO: parse this into a full graph
+            for raw_fg_edge in gedges:
+                f_edge = FunctionGraphEdges(raw_fg_edge)
+                self.graph_info[f_edge.fid] = f_edge
+
+    @property
+    def path(self) -> Path:
+        """
+        Path to CommitReport file.
+        """
+        return self._path
+
+    @property
+    def head_commit(self) -> str:
+        """
+        The current HEAD commit under which this CommitReport was created.
+        """
+        return FilteredCommitReport.get_commit_hash_from_result_file(
+            Path(self._path).name)
+
+    @staticmethod
+    def get_file_name(project_name: str, binary_name: str,
+                      project_version: str, project_uuid: str,
+                      extension_type: FileStatusExtension) -> str:
+        """
+        Generates a filename for a commit report
+        """
+        return BaseReport.get_file_name(FilteredCommitReport.SHORTHAND, project_name,
+                                        binary_name, project_version,
+                                        project_uuid, extension_type)
+
+    def calc_max_cf_edges(self) -> int:
+        """
+        Calulate the highest amount of control-flow interactions of a single
+        commit region.
+        """
+        cf_map: tp.Dict[str, tp.List[int]] = dict()
+        self.init_cf_map_with_edges(cf_map)
+
+        total = 0
+        for from_to_pair in cf_map.values():
+            total = max(max(from_to_pair[0], from_to_pair[1]), total)
+
+        return total
+
+    def calc_max_df_edges(self) -> int:
+        """
+        Calulate the highest amount of data-flow interactions of a single
+        commit region.
+        """
+        df_map: tp.Dict[str, tp.List[int]] = dict()
+        self.init_df_map_with_edges(df_map)
+
+        total = 0
+        for from_to_pair in df_map.values():
+            total = max(max(from_to_pair[0], from_to_pair[1]), total)
+
+        return total
+
+    def __str__(self) -> str:
+        return "FInfo:\n\t{}\nRegionMappings:\n\t{}\n" \
+            .format(self.finfos.keys(), self.region_mappings.keys())
+
+    def __repr__(self) -> str:
+        return "CR: " + os.path.basename(self.path)
+
+    def __lt__(self, other: 'FilteredCommitReport') -> bool:
+        return self.path < other.path
+
+    def init_cf_map_with_edges(self,
+                               cf_map: tp.Dict[str, tp.List[int]]) -> None:
+        """
+        Initialize control-flow map with edges and from/to counters.
+        """
+        # if any information is missing add all from the original
+        # report to avoid errors.
+        for reg_mapping in self.region_mappings.values():
+            cf_map[reg_mapping.id] = [0, 0]
+
+        for func_g_edge in self.graph_info.values():
+            for cf_edge in func_g_edge.cf_edges:
+                cf_map[cf_edge.edge_from][0] += 1
+                cf_map[cf_edge.edge_to][1] += 1
+
+    def number_of_cf_interactions(self) -> int:
+        """
+        Total number of found control-flow interactions.
+        """
+        cf_map: tp.Dict[str, tp.List[int]] = dict()
+        self.init_cf_map_with_edges(cf_map)
+
+        total_interactions = 0
+        for interaction_tuple in cf_map.values():
+            total_interactions += interaction_tuple[0]
+        return total_interactions
+
+    def number_of_head_cf_interactions(self) -> tp.Tuple[int, int]:
+        """
+        The number of control-flow interactions the HEAD commit has with other
+        commits.
+        """
+        cf_map: tp.Dict[str, tp.List[int]] = dict()
+        self.init_cf_map_with_edges(cf_map)
+        for key in cf_map:
+            if key.startswith(self.head_commit):
+                interaction_tuple = cf_map[key]
+                return (interaction_tuple[0], interaction_tuple[1])
+
+        return (0, 0)
+
+    def init_df_map_with_edges(self,
+                               df_map: tp.Dict[str, tp.List[int]]) -> None:
+        """
+        Initialize data-flow map with edges and from/to counters.
+        """
+        # if any information is missing add all from the original report
+        # to avoid errors.
+        for reg_mapping in self.region_mappings.values():
+            df_map[reg_mapping.id] = [0, 0]
+
+        for func_g_edge in self.graph_info.values():
+            for df_edge in func_g_edge.df_relations:
+                df_map[df_edge.edge_from][0] += 1
+                df_map[df_edge.edge_to][1] += 1
+
+    def number_of_df_interactions(self) -> int:
+        """
+        Total number of found data-flow interactions.
+        """
+        df_map: tp.Dict[str, tp.List[int]] = dict()
+        self.init_df_map_with_edges(df_map)
+
+        total_interactions = 0
+        for interaction_tuple in df_map.values():
+            total_interactions += interaction_tuple[0]
+        return total_interactions
+
+    def number_of_head_df_interactions(self) -> tp.Tuple[int, int]:
+        """
+        The number of control-flow interactions the HEAD commit has with other
+        commits.
+        """
+        df_map: tp.Dict[str, tp.List[int]] = dict()
+        self.init_df_map_with_edges(df_map)
+        for key in df_map:
+            if key.startswith(self.head_commit):
+                interaction_tuple = df_map[key]
+                return (interaction_tuple[0], interaction_tuple[1])
+
+        return (0, 0)
+
+
 class CommitReportMeta():
     def __init__(self) -> None:
         self.finfos: tp.Dict[str, FunctionInfo] = dict()

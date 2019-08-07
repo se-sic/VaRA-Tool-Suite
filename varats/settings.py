@@ -189,6 +189,7 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
     projects_conf.value[:] = []
     projects_conf.value[:] += [
         'varats.experiments.git_blame_annotation_report',
+        'varats.experiments.git_blame_filtered_annotation_report',
         'varats.experiments.marker_tester',
         'varats.experiments.just_compile'
     ]
