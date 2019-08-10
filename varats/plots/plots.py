@@ -7,6 +7,10 @@ import argparse
 from enum import Enum
 
 from varats.plots.commit_interactions import InteractionPlot
+from varats.plots.commit_interactions_filtered_time_comp import InteractionPlotTimeComp
+from varats.plots.commit_interactions_filtered_size_comp import InteractionPlotSizeComp
+from varats.plots.commit_interactions_filtered_cf_comp import InteractionPlotCfComp
+from varats.plots.commit_interactions_filtered_df_comp import InteractionPlotDfComp
 from varats.plots.paper_config_overview import PaperConfigOverviewPlot
 from varats.plots.plot import Plot
 from varats.plots.plot_utils import check_required_args
@@ -18,6 +22,10 @@ class PlotTypes(Enum):
     """
 
     interaction_plot = InteractionPlot
+    interaction_plot_time_comp = InteractionPlotTimeComp
+    interaction_plot_size_comp = InteractionPlotSizeComp
+    interaction_plot_cf_comp = InteractionPlotCfComp
+    interaction_plot_df_comp = InteractionPlotDfComp
     paper_config_overview_plot = PaperConfigOverviewPlot
 
     @property

@@ -6,7 +6,7 @@ with varas file handling APIs.
 from pathlib import Path
 
 from varats.data.data_manager import VDM
-from varats.data.reports.commit_report import CommitReport, CommitMap
+from varats.data.reports.commit_report import CommitReport, FilteredCommitReport, CommitMap
 
 
 def load_commit_report(file_path: Path) -> CommitReport:
@@ -17,6 +17,16 @@ def load_commit_report(file_path: Path) -> CommitReport:
         file_path (Path): Full path to the file
     """
     return VDM.load_data_class_sync(file_path, CommitReport)
+
+
+def load_filtered_commit_report(file_path: Path) -> FilteredCommitReport:
+    """
+    Load a CommitReport from a file.
+
+    Attributes:
+        file_path (Path): Full path to the file
+    """
+    return VDM.load_data_class_sync(file_path, FilteredCommitReport)
 
 
 def load_commit_map(file_path: str) -> CommitMap:

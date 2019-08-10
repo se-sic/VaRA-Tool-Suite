@@ -128,6 +128,7 @@ class CommitReport(BaseReport):
         super(CommitReport, self).__init__()
         with open(path, "r") as stream:
             self._path = path
+            self._report_size = os.path.getsize(path)
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
             version_header = VersionHeader(next(documents))
             version_header.raise_if_not_type("CommitReport")
@@ -152,6 +153,15 @@ class CommitReport(BaseReport):
             for raw_fg_edge in gedges:
                 f_edge = FunctionGraphEdges(raw_fg_edge)
                 self.graph_info[f_edge.fid] = f_edge
+
+        time_file_path = path.with_suffix(
+            "." + FileStatusExtension.SuccWithTime.get_file_ending())
+        if os.path.isfile(time_file_path):
+            with open(time_file_path, "r") as f:
+                lines = [line.rstrip('\n').split()[1] for line in f]
+                self._time_real = float(lines[0])
+                self._time_user = float(lines[1])
+                self._time_sys = float(lines[2])
 
     @property
     def path(self) -> Path:
@@ -178,6 +188,30 @@ class CommitReport(BaseReport):
         return BaseReport.get_file_name(CommitReport.SHORTHAND, project_name,
                                         binary_name, project_version,
                                         project_uuid, extension_type)
+
+    def size(self) -> int:
+        """
+        Size of the Report file.
+        """
+        return self._report_size
+
+    def time_real(self) -> float:
+        """
+        Real time of the experiment run time.
+        """
+        return self._time_real
+
+    def time_user(self) -> float:
+        """
+        User time of the experiment run time.
+        """
+        return self._time_user
+
+    def time_sys(self) -> float:
+        """
+        Sys time of the experiment run time.
+        """
+        return self._time_sys
 
     def calc_max_cf_edges(self) -> int:
         """
@@ -300,7 +334,7 @@ class CommitReport(BaseReport):
         return (0, 0)
 
 
-class FilteredCommitReport(CommitReport):
+class FilteredCommitReport(BaseReport):
 
     SHORTHAND = "FCR"
 
@@ -308,6 +342,7 @@ class FilteredCommitReport(CommitReport):
         super(FilteredCommitReport, self).__init__()
         with open(path, "r") as stream:
             self._path = path
+            self._report_size = os.path.getsize(path)
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
             version_header = VersionHeader(next(documents))
             version_header.raise_if_not_type("CommitReport")
@@ -333,6 +368,15 @@ class FilteredCommitReport(CommitReport):
                 f_edge = FunctionGraphEdges(raw_fg_edge)
                 self.graph_info[f_edge.fid] = f_edge
 
+        time_file_path = path.with_suffix(
+            "." + FileStatusExtension.SuccWithTime.get_file_ending())
+        if os.path.isfile(time_file_path):
+            with open(time_file_path, "r") as f:
+                lines = [line.rstrip('\n').split()[1] for line in f]
+                self._time_real = float(lines[0])
+                self._time_user = float(lines[1])
+                self._time_sys = float(lines[2])
+
     @property
     def path(self) -> Path:
         """
@@ -355,9 +399,34 @@ class FilteredCommitReport(CommitReport):
         """
         Generates a filename for a commit report
         """
-        return BaseReport.get_file_name(FilteredCommitReport.SHORTHAND, project_name,
-                                        binary_name, project_version,
-                                        project_uuid, extension_type)
+        return BaseReport.get_file_name(FilteredCommitReport.SHORTHAND,
+                                        project_name, binary_name,
+                                        project_version, project_uuid,
+                                        extension_type)
+
+    def size(self) -> int:
+        """
+        Size of the Report file.
+        """
+        return self._report_size
+
+    def time_real(self) -> float:
+        """
+        Real time of the experiment run time.
+        """
+        return self._time_real
+
+    def time_user(self) -> float:
+        """
+        User time of the experiment run time.
+        """
+        return self._time_user
+
+    def time_sys(self) -> float:
+        """
+        Sys time of the experiment run time.
+        """
+        return self._time_sys
 
     def calc_max_cf_edges(self) -> int:
         """
@@ -513,7 +582,6 @@ class CommitMap():
     """
     Provides a mapping from commit hash to additional informations.
     """
-
     def __init__(self, stream: tp.Iterable[str]) -> None:
         self.__hash_to_id: tp.Dict[str, int] = dict()
         for line in stream:
@@ -596,13 +664,11 @@ def generate_inout_cfg_cf(commit_report: CommitReport,
         rows.append([item[0], item[1][0], "From", total])
         rows.append([item[0], item[1][1], "To", total])
 
-    rows.sort(
-        key=
-        lambda row: (row[0], -tp.cast(int, row[3]), -tp.cast(int, row[1]), row[2])
-    )
+    rows.sort(key=lambda row:
+              (row[0], -tp.cast(int, row[3]), -tp.cast(int, row[1]), row[2]))
 
-    return pd.DataFrame(
-        rows, columns=['Region', 'Amount', 'Direction', 'TSort'])
+    return pd.DataFrame(rows,
+                        columns=['Region', 'Amount', 'Direction', 'TSort'])
 
 
 def generate_interactions(commit_report: CommitReport,
@@ -622,8 +688,8 @@ def generate_interactions(commit_report: CommitReport,
                 c_map.time_id(cf_edge.edge_from)
             ])
 
-    links = pd.DataFrame(
-        link_rows, columns=['source', 'target', 'value', 'src_id'])
+    links = pd.DataFrame(link_rows,
+                         columns=['source', 'target', 'value', 'src_id'])
     return (nodes, links)
 
 
@@ -649,10 +715,8 @@ def generate_inout_cfg_df(commit_report: CommitReport,
         rows.append([item[0], item[1][0], "From", total])
         rows.append([item[0], item[1][1], "To", total])
 
-    rows.sort(
-        key=
-        lambda row: (row[0], -tp.cast(int, row[3]), -tp.cast(int, row[1]), row[2])
-    )
+    rows.sort(key=lambda row:
+              (row[0], -tp.cast(int, row[3]), -tp.cast(int, row[1]), row[2]))
 
-    return pd.DataFrame(
-        rows, columns=['Region', 'Amount', 'Direction', 'TSort'])
+    return pd.DataFrame(rows,
+                        columns=['Region', 'Amount', 'Direction', 'TSort'])
