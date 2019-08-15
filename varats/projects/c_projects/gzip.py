@@ -13,12 +13,11 @@ from plumbum import local
 from varats.paper.paper_config import project_filter_generator
 
 
-@with_git(
-    "https://git.savannah.gnu.org/git/gzip.git",
-    limit=200,
-    refspec="HEAD",
-    shallow_clone=False,
-    version_filter=project_filter_generator("gzip"))
+@with_git("https://git.savannah.gnu.org/git/gzip.git",
+          limit=200,
+          refspec="HEAD",
+          shallow_clone=False,
+          version_filter=project_filter_generator("gzip"))
 class Gzip(prj.Project):  # type: ignore
     """ Compression and decompression tool Gzip (fetched by Git) """
 
@@ -44,6 +43,7 @@ class Gzip(prj.Project):  # type: ignore
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
-                run(local["./bootstrap"])
+                run(local["./bootstrap",
+                          "--gnulib-srcdir=/scratch/breitenj/tmp/gnulib"])
                 run(local["./configure"])
             run(make["-j", int(CFG["jobs"])])
