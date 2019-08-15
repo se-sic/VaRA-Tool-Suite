@@ -43,7 +43,7 @@ class Gzip(prj.Project):  # type: ignore
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
-                run(local["./bootstrap",
-                          "--gnulib-srcdir=/scratch/breitenj/tmp/gnulib"])
+                bootstrap = local["./bootstrap"]
+                run(bootstrap["--gnulib-srcdir=/scratch/breitenj/tmp/gnulib"])
                 run(local["./configure"])
             run(make["-j", int(CFG["jobs"])])
