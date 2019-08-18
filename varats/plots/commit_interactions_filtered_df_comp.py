@@ -185,7 +185,7 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
     """
     plot_cfg = {
         'linewidth': 2 if view_mode else 1,
-        'legend_size': 8 if view_mode else 4,
+        'legend_size': 8 if view_mode else 10,
         'xtick_size': 10 if view_mode else 2
     }
 
