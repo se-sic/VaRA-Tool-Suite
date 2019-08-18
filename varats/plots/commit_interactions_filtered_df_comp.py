@@ -215,8 +215,8 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
              color='red',
              linewidth=plot_cfg['linewidth'])
 
-    # plt.ylabel("Interactions", **{'size': '10'})
-    axis.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
+    plt.ylabel("Interactions", **{'size': '10'})
+    plt.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
 
     # Head interaction plot
     axis = plt.subplot(212)
@@ -242,8 +242,8 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
              linewidth=plot_cfg['linewidth'])
 
     plt.xlabel("Revisions", **{'size': '10'})
-    # plt.ylabel("HEAD Interactions", **{'size': '10'})
-    axis.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
+    plt.ylabel("HEAD Interactions", **{'size': '10'})
+    plt.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
 
 
 class InteractionPlotDfComp(Plot):

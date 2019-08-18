@@ -194,7 +194,7 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
 
     plt.xlabel("Revisions", **{'size': '10'})
     plt.ylabel("Result Size (MiB)", **{'size': '10'})
-    axis.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
+    plt.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
     axis.set_ylim(bottom=0)
 
 
