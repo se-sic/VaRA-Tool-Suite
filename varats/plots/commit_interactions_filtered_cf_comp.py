@@ -24,6 +24,7 @@ from varats.paper.case_study import CaseStudy, CSStage
 
 def _build_interaction_table(report_files: tp.List[Path],
                              report_files_filtered: tp.List[Path],
+                             report_files_baseline_filtered: tp.List[Path],
                              commit_map: CommitMap,
                              project_name: str) -> pd.DataFrame:
     """
@@ -38,64 +39,10 @@ def _build_interaction_table(report_files: tp.List[Path],
             - HEAD DF Interactions
 
     """
-
-    #cached_df = load_cached_df_or_none(GraphCacheType.CommitInteractionData,
-    #                                   project_name)
-    #cached_df_filtered = load_cached_df_or_none(
-    #    GraphCacheType.FilteredCommitInteractionData, project_name)
-
-    #if cached_df is None:
-    #    cached_df = pd.DataFrame(columns=[
-    #        'head_cm', 'CFInteractions', 'DFInteractions',
-    #        'HEAD CF Interactions', 'HEAD DF Interactions'
-    #    ])
-    #    cached_df.CFInteractions = cached_df.CFInteractions.astype('int64')
-    #    cached_df.DFInteractions = cached_df.DFInteractions.astype('int64')
-    #    cached_df['HEAD CF Interactions'] = cached_df[
-    #        'HEAD CF Interactions'].astype('int64')
-    #    cached_df['HEAD DF Interactions'] = cached_df[
-    #        'HEAD DF Interactions'].astype('int64')
-
-    #if cached_df_filtered is None:
-    #    cached_df_filtered = pd.DataFrame(columns=[
-    #        'head_cm', 'CFInteractions', 'DFInteractions',
-    #        'HEAD CF Interactions', 'HEAD DF Interactions'
-    #    ])
-    #    cached_df_filtered.CFInteractions = cached_df_filtered.CFInteractions.astype(
-    #        'int64')
-    #    cached_df_filtered.DFInteractions = cached_df_filtered.DFInteractions.astype(
-    #        'int64')
-    #    cached_df_filtered['HEAD CF Interactions'] = cached_df_filtered[
-    #        'HEAD CF Interactions'].astype('int64')
-    #    cached_df_filtered['HEAD DF Interactions'] = cached_df_filtered[
-    #        'HEAD DF Interactions'].astype('int64')
-
     def report_in_data_frame(report_file: Path, df_col: pd.Series) -> bool:
         commit_hash = CommitReport.get_commit_hash_from_result_file(
             Path(report_file).name)
         return tp.cast(bool, (commit_hash == df_col).any())
-
-    #missing_report_files = [
-    #    report_file for report_file in report_files
-    #    if not report_in_data_frame(report_file, cached_df['head_cm'])
-    #]
-    #missing_filtered_report_files = [
-    #    report_file for report_file in report_files_filtered
-    #    if not report_in_data_frame(report_file, cached_df['head_cm'])
-    #]
-
-    #missing_reports = []
-    #total_missing_reports = len(missing_report_files)
-    #for num, file_path in enumerate(missing_report_files):
-    #    print(
-    #        "Loading missing file ({num}/{total}): ".format(
-    #            num=(num + 1), total=total_missing_reports), file_path)
-    #    try:
-    #        missing_reports.append(load_commit_report(file_path))
-    #    except KeyError:
-    #        print("KeyError: ", file_path)
-    #    except StopIteration:
-    #        print("YAML file was incomplete: ", file_path)
 
     new_reports = []
     total_reports = len(report_files)
@@ -124,44 +71,74 @@ def _build_interaction_table(report_files: tp.List[Path],
         except StopIteration:
             print("YAML file was incomplete: ", file_path)
 
+    new_baseline_filtered_reports = []
+    total_baseline_filtered_reports = len(report_files_baseline_filtered)
+    for num, file_path in enumerate(report_files_baseline_filtered):
+        print(
+            "Loading file ({num}/{total}): ".format(
+                num=(num + 1), total=total_baseline_filtered_reports),
+            file_path)
+        try:
+            new_baseline_filtered_reports.append(
+                load_filtered_commit_report(file_path))
+        except KeyError:
+            print("KeyError: ", file_path)
+        except StopIteration:
+            print("YAML file was incomplete: ", file_path)
+
     def sorter(report: tp.Any) -> int:
         return commit_map.short_time_id(report.head_commit)
 
     new_reports = sorted(new_reports, key=sorter)
     new_filtered_reports = sorted(new_filtered_reports, key=sorter)
 
-    def create_data_frame_for_report(report: CommitReport,
-                                     filtered_report: FilteredCommitReport
-                                     ) -> pd.DataFrame:
+    def create_data_frame_for_report(
+            report: CommitReport, filtered_report: FilteredCommitReport,
+            baseline_filtered_report: FilteredCommitReport) -> pd.DataFrame:
         cf_head_interactions_raw = report.number_of_head_cf_interactions()
         filtered_cf_head_interactions_raw = filtered_report.number_of_head_cf_interactions(
+        )
+        baseline_filtered_cf_head_interactions_raw = baseline_filtered_report.number_of_head_cf_interactions(
         )
 
         unfiltered_cf_interactions = report.number_of_cf_interactions()
         filtered_cf_interactions = filtered_report.number_of_cf_interactions()
+        baseline_filtered_cf_interactions = baseline_filtered_report.number_of_cf_interactions(
+        )
 
         unfiltered_head_cf_interactions = cf_head_interactions_raw[
             0] + cf_head_interactions_raw[1]
         filtered_head_cf_interactions = filtered_cf_head_interactions_raw[
             0] + filtered_cf_head_interactions_raw[1]
+        baseline_filtered_head_cf_interactions = baseline_filtered_cf_head_interactions_raw[
+            0] + baseline_filtered_cf_head_interactions_raw[1]
 
         return pd.DataFrame(
             {
                 'head_cm':
                 report.head_commit,
-                'CFInteractions':
+                'Unfiltered':
                 unfiltered_cf_interactions,
-                'HEAD CF Interactions':
+                'HEAD Unfiltered':
                 unfiltered_head_cf_interactions,
-                'Filtered CFInteractions':
+                'Filtered':
                 filtered_cf_interactions,
-                'Filtered HEAD CF Interactions':
+                'HEAD Filtered':
                 filtered_head_cf_interactions,
+                'Baseline':
+                baseline_filtered_cf_interactions,
+                'HEAD Baseline':
+                baseline_filtered_head_cf_interactions,
                 'Interaction Reduction':
                 (unfiltered_cf_interactions - filtered_cf_interactions),
                 'HEAD Interaction Reduction':
                 (unfiltered_head_cf_interactions -
                  filtered_head_cf_interactions),
+                'Baseline Interaction Reduction':
+                (unfiltered_cf_interactions - baseline_filtered_cf_interactions),
+                'Baseline HEAD Interaction Reduction':
+                (unfiltered_head_cf_interactions -
+                 baseline_filtered_head_cf_interactions),
                 'Rel. Interaction Reduction.':
                 ((unfiltered_cf_interactions - filtered_cf_interactions) /
                  unfiltered_cf_interactions)
@@ -170,13 +147,24 @@ def _build_interaction_table(report_files: tp.List[Path],
                 ((unfiltered_head_cf_interactions -
                   filtered_head_cf_interactions) /
                  unfiltered_head_cf_interactions)
+                if unfiltered_head_cf_interactions else 0,
+                'Rel. Baseline Interaction Reduction.':
+                ((unfiltered_cf_interactions - baseline_filtered_cf_interactions) /
+                 unfiltered_cf_interactions)
+                if unfiltered_cf_interactions else 0,
+                'Rel. Baseline HEAD Interaction Reduction.':
+                ((unfiltered_head_cf_interactions -
+                  baseline_filtered_head_cf_interactions) /
+                 unfiltered_head_cf_interactions)
                 if unfiltered_head_cf_interactions else 0
             },
             index=[0])
 
     data_frames = [
-        create_data_frame_for_report(report, filtered_report)
-        for report, filtered_report in zip(new_reports, new_filtered_reports)
+        create_data_frame_for_report(report, filtered_report,
+                                     baseline_filtered_report)
+        for report, filtered_report, baseline_filtered_report in zip(
+            new_reports, new_filtered_reports, new_baseline_filtered_reports)
     ]
 
     new_df = pd.concat(data_frames, ignore_index=True, sort=False)
@@ -200,6 +188,7 @@ def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
 
     reports = []
     reports_filtered = []
+    reports_baseline_filtered = []
     for file_path in result_dir.iterdir():
         if file_path.stem.startswith("CR-" + str(project_name) + "-"):
             if MetaReport.is_result_file_success(file_path.name):
@@ -219,8 +208,18 @@ def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
                     if case_study is None or case_study.has_revision(
                             commit_hash):
                         reports_filtered.append(file_path)
+        if file_path.stem.startswith("BFCR-" + str(project_name) + "-"):
+            if MetaReport.is_result_file_success(file_path.name):
+                commit_hash = FilteredCommitReport.get_commit_hash_from_result_file(
+                    file_path.name)
+
+                if commit_hash in processed_revisions:
+                    if case_study is None or case_study.has_revision(
+                            commit_hash):
+                        reports_baseline_filtered.append(file_path)
 
     data_frame = _build_interaction_table(reports, reports_filtered,
+                                          reports_baseline_filtered,
                                           commit_map, str(project_name))
 
     data_frame['head_cm'] = data_frame['head_cm'].apply(
@@ -259,17 +258,22 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
         x_label.set_visible(False)
 
     plt.plot('head_cm',
-             'CFInteractions',
+             'Unfiltered',
              data=data_frame,
              color='blue',
              linewidth=plot_cfg['linewidth'])
     plt.plot('head_cm',
-             'Filtered CFInteractions',
+             'Baseline',
+             data=data_frame,
+             color='black',
+             linewidth=plot_cfg['linewidth'])
+    plt.plot('head_cm',
+             'Filtered',
              data=data_frame,
              color='red',
              linewidth=plot_cfg['linewidth'])
 
-    plt.ylabel("Interactions", **{'size': '12'})
+    plt.ylabel("CF Interactions", **{'size': '12'})
     plt.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
 
     # Head interaction plot
@@ -285,18 +289,23 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
         x_label.set_fontfamily('monospace')
 
     plt.plot('head_cm',
-             'HEAD CF Interactions',
+             'HEAD Unfiltered',
              data=data_frame,
-             color='aqua',
+             color='blue',
              linewidth=plot_cfg['linewidth'])
     plt.plot('head_cm',
-             'Filtered HEAD CF Interactions',
+             'HEAD Baseline',
              data=data_frame,
-             color='crimson',
+             color='black',
+             linewidth=plot_cfg['linewidth'])
+    plt.plot('head_cm',
+             'HEAD Filtered',
+             data=data_frame,
+             color='red',
              linewidth=plot_cfg['linewidth'])
 
     plt.xlabel("Revisions", **{'size': '12'})
-    plt.ylabel("HEAD Interactions", **{'size': '12'})
+    plt.ylabel("HEAD CF Interactions", **{'size': '12'})
     plt.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
 
 

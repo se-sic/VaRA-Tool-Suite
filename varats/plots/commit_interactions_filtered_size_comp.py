@@ -24,6 +24,7 @@ from varats.paper.case_study import CaseStudy, CSStage
 
 def _build_interaction_table(report_files: tp.List[Path],
                              report_files_filtered: tp.List[Path],
+                             report_files_baseline_filtered: tp.List[Path],
                              commit_map: CommitMap,
                              project_name: str) -> pd.DataFrame:
     """
@@ -70,35 +71,62 @@ def _build_interaction_table(report_files: tp.List[Path],
         except StopIteration:
             print("YAML file was incomplete: ", file_path)
 
+    new_baseline_filtered_reports = []
+    total_baseline_filtered_reports = len(report_files_baseline_filtered)
+    for num, file_path in enumerate(report_files_baseline_filtered):
+        print(
+            "Loading file ({num}/{total}): ".format(
+                num=(num + 1), total=total_baseline_filtered_reports), file_path)
+        try:
+            new_baseline_filtered_reports.append(
+                load_filtered_commit_report(file_path))
+        except KeyError:
+            print("KeyError: ", file_path)
+        except StopIteration:
+            print("YAML file was incomplete: ", file_path)
+
     def sorter(report: tp.Any) -> int:
         return commit_map.short_time_id(report.head_commit)
 
     new_reports = sorted(new_reports, key=sorter)
     new_filtered_reports = sorted(new_filtered_reports, key=sorter)
+    new_baseline_filtered_reports = sorted(new_baseline_filtered_reports,
+                                           key=sorter)
 
-    def create_data_frame_for_report(report: CommitReport,
-                                     filtered_report: FilteredCommitReport
-                                     ) -> pd.DataFrame:
+    def create_data_frame_for_report(
+            report: CommitReport, filtered_report: FilteredCommitReport,
+            baseline_filtered_report: FilteredCommitReport) -> pd.DataFrame:
         unfiltered_size = report.size() / 1024.0 / 1024.0
         filtered_size = filtered_report.size() / 1024.0 / 1024.0
+        baseline_filtered_size = baseline_filtered_report.size(
+        ) / 1024.0 / 1024.0
         return pd.DataFrame(
             {
                 'head_cm':
                 report.head_commit,
-                'Unfiltered Result Size':
+                'Unfiltered':
                 unfiltered_size,
-                'Filtered Result Size':
+                'Filtered':
                 filtered_size,
+                'Baseline':
+                baseline_filtered_size,
                 'Size Reduction': (unfiltered_size - filtered_size),
                 'Rel. Size Reduction.':
-                ((unfiltered_size - filtered_size) / unfiltered_size)
-                if unfiltered_size else 0
+                ((unfiltered_size - filtered_size) /
+                 unfiltered_size) if unfiltered_size else 0,
+                'Baseline Size Reduction':
+                (unfiltered_size - baseline_filtered_size),
+                'Rel. Baseline Size Reduction.':
+                ((unfiltered_size - baseline_filtered_size) /
+                 unfiltered_size) if unfiltered_size else 0
             },
             index=[0])
 
     data_frames = [
-        create_data_frame_for_report(report, filtered_report)
-        for report, filtered_report in zip(new_reports, new_filtered_reports)
+        create_data_frame_for_report(report, filtered_report,
+                                     baseline_filtered_report)
+        for report, filtered_report, baseline_filtered_report in zip(
+            new_reports, new_filtered_reports, new_baseline_filtered_reports)
     ]
 
     new_df = pd.concat(data_frames, ignore_index=True, sort=False)
@@ -122,6 +150,7 @@ def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
 
     reports = []
     reports_filtered = []
+    reports_baseline_filtered = []
     for file_path in result_dir.iterdir():
         if file_path.stem.startswith("CR-" + str(project_name) + "-"):
             if MetaReport.is_result_file_success(file_path.name):
@@ -141,8 +170,18 @@ def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
                     if case_study is None or case_study.has_revision(
                             commit_hash):
                         reports_filtered.append(file_path)
+        if file_path.stem.startswith("BFCR-" + str(project_name) + "-"):
+            if MetaReport.is_result_file_success(file_path.name):
+                commit_hash = FilteredCommitReport.get_commit_hash_from_result_file(
+                    file_path.name)
+
+                if commit_hash in processed_revisions:
+                    if case_study is None or case_study.has_revision(
+                            commit_hash):
+                        reports_baseline_filtered.append(file_path)
 
     data_frame = _build_interaction_table(reports, reports_filtered,
+                                          reports_baseline_filtered,
                                           commit_map, str(project_name))
 
     data_frame['head_cm'] = data_frame['head_cm'].apply(
@@ -182,12 +221,17 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
         x_label.set_fontfamily('monospace')
 
     plt.plot('head_cm',
-             'Unfiltered Result Size',
+             'Unfiltered',
              data=data_frame,
              color='blue',
              linewidth=plot_cfg['linewidth'])
     plt.plot('head_cm',
-             'Filtered Result Size',
+             'Baseline',
+             data=data_frame,
+             color='black',
+             linewidth=plot_cfg['linewidth'])
+    plt.plot('head_cm',
+             'Filtered',
              data=data_frame,
              color='red',
              linewidth=plot_cfg['linewidth'])

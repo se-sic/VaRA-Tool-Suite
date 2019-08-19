@@ -24,6 +24,7 @@ from varats.paper.case_study import CaseStudy, CSStage
 
 def _build_interaction_table(report_files: tp.List[Path],
                              report_files_filtered: tp.List[Path],
+                             report_files_baseline_filtered: tp.List[Path],
                              commit_map: CommitMap,
                              project_name: str) -> pd.DataFrame:
     """
@@ -70,44 +71,75 @@ def _build_interaction_table(report_files: tp.List[Path],
         except StopIteration:
             print("YAML file was incomplete: ", file_path)
 
+    new_baseline_filtered_reports = []
+    total_baseline_filtered_reports = len(report_files_baseline_filtered)
+    for num, file_path in enumerate(report_files_baseline_filtered):
+        print(
+            "Loading file ({num}/{total}): ".format(
+                num=(num + 1), total=total_baseline_filtered_reports),
+            file_path)
+        try:
+            new_baseline_filtered_reports.append(
+                load_filtered_commit_report(file_path))
+        except KeyError:
+            print("KeyError: ", file_path)
+        except StopIteration:
+            print("YAML file was incomplete: ", file_path)
+
     def sorter(report: tp.Any) -> int:
         return commit_map.short_time_id(report.head_commit)
 
     new_reports = sorted(new_reports, key=sorter)
     new_filtered_reports = sorted(new_filtered_reports, key=sorter)
 
-    def create_data_frame_for_report(report: CommitReport,
-                                     filtered_report: FilteredCommitReport
-                                     ) -> pd.DataFrame:
+    def create_data_frame_for_report(
+            report: CommitReport, filtered_report: FilteredCommitReport,
+            baseline_filtered_report: FilteredCommitReport) -> pd.DataFrame:
         df_head_interactions_raw = report.number_of_head_df_interactions()
         filtered_df_head_interactions_raw = filtered_report.number_of_head_df_interactions(
+        )
+        baseline_filtered_df_head_interactions_raw = baseline_filtered_report.number_of_head_df_interactions(
         )
 
         unfiltered_df_interactions = report.number_of_df_interactions()
         filtered_df_interactions = filtered_report.number_of_df_interactions()
+        baseline_filtered_df_interactions = baseline_filtered_report.number_of_df_interactions(
+        )
 
         unfiltered_head_df_interactions = df_head_interactions_raw[
             0] + df_head_interactions_raw[1]
         filtered_head_df_interactions = filtered_df_head_interactions_raw[
             0] + filtered_df_head_interactions_raw[1]
+        baseline_filtered_head_df_interactions = baseline_filtered_df_head_interactions_raw[
+            0] + baseline_filtered_df_head_interactions_raw[1]
 
         return pd.DataFrame(
             {
                 'head_cm':
                 report.head_commit,
-                'DFInteractions':
+                'Unfiltered':
                 unfiltered_df_interactions,
-                'HEAD DF Interactions':
+                'HEAD Unfiltered':
                 unfiltered_head_df_interactions,
-                'Filtered DFInteractions':
+                'Filtered':
                 filtered_df_interactions,
-                'Filtered HEAD DF Interactions':
+                'HEAD Filtered':
                 filtered_head_df_interactions,
+                'Baseline':
+                baseline_filtered_df_interactions,
+                'HEAD Baseline':
+                baseline_filtered_head_df_interactions,
                 'Interaction Reduction':
                 (unfiltered_df_interactions - filtered_df_interactions),
                 'HEAD Interaction Reduction':
                 (unfiltered_head_df_interactions -
                  filtered_head_df_interactions),
+                'Baseline Interaction Reduction':
+                (unfiltered_df_interactions -
+                 baseline_filtered_df_interactions),
+                'Baseline HEAD Interaction Reduction':
+                (unfiltered_head_df_interactions -
+                 baseline_filtered_head_df_interactions),
                 'Rel. Interaction Reduction.':
                 ((unfiltered_df_interactions - filtered_df_interactions) /
                  unfiltered_df_interactions)
@@ -116,13 +148,25 @@ def _build_interaction_table(report_files: tp.List[Path],
                 ((unfiltered_head_df_interactions -
                   filtered_head_df_interactions) /
                  unfiltered_head_df_interactions)
+                if unfiltered_head_df_interactions else 0,
+                'Rel. Baseline Interaction Reduction.':
+                ((unfiltered_df_interactions -
+                  baseline_filtered_df_interactions) /
+                 unfiltered_df_interactions)
+                if unfiltered_df_interactions else 0,
+                'Rel. Baseline HEAD Interaction Reduction.':
+                ((unfiltered_head_df_interactions -
+                  baseline_filtered_head_df_interactions) /
+                 unfiltered_head_df_interactions)
                 if unfiltered_head_df_interactions else 0
             },
             index=[0])
 
     data_frames = [
-        create_data_frame_for_report(report, filtered_report)
-        for report, filtered_report in zip(new_reports, new_filtered_reports)
+        create_data_frame_for_report(report, filtered_report,
+                                     baseline_filtered_report)
+        for report, filtered_report, baseline_filtered_report in zip(
+            new_reports, new_filtered_reports, new_baseline_filtered_reports)
     ]
 
     new_df = pd.concat(data_frames, ignore_index=True, sort=False)
@@ -146,6 +190,7 @@ def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
 
     reports = []
     reports_filtered = []
+    reports_baseline_filtered = []
     for file_path in result_dir.iterdir():
         if file_path.stem.startswith("CR-" + str(project_name) + "-"):
             if MetaReport.is_result_file_success(file_path.name):
@@ -165,8 +210,18 @@ def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
                     if case_study is None or case_study.has_revision(
                             commit_hash):
                         reports_filtered.append(file_path)
+        if file_path.stem.startswith("BFCR-" + str(project_name) + "-"):
+            if MetaReport.is_result_file_success(file_path.name):
+                commit_hash = FilteredCommitReport.get_commit_hash_from_result_file(
+                    file_path.name)
+
+                if commit_hash in processed_revisions:
+                    if case_study is None or case_study.has_revision(
+                            commit_hash):
+                        reports_baseline_filtered.append(file_path)
 
     data_frame = _build_interaction_table(reports, reports_filtered,
+                                          reports_baseline_filtered,
                                           commit_map, str(project_name))
 
     data_frame['head_cm'] = data_frame['head_cm'].apply(
@@ -205,17 +260,22 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
         x_label.set_visible(False)
 
     plt.plot('head_cm',
-             'DFInteractions',
+             'Unfiltered',
              data=data_frame,
              color='blue',
              linewidth=plot_cfg['linewidth'])
     plt.plot('head_cm',
-             'Filtered DFInteractions',
+             'Baseline',
+             data=data_frame,
+             color='black',
+             linewidth=plot_cfg['linewidth'])
+    plt.plot('head_cm',
+             'Filtered',
              data=data_frame,
              color='red',
              linewidth=plot_cfg['linewidth'])
 
-    plt.ylabel("Interactions", **{'size': '12'})
+    plt.ylabel("DF Interactions", **{'size': '12'})
     plt.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
 
     # Head interaction plot
@@ -231,18 +291,23 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
         x_label.set_fontfamily('monospace')
 
     plt.plot('head_cm',
-             'HEAD DF Interactions',
+             'HEAD Unfiltered',
              data=data_frame,
-             color='aqua',
+             color='blue',
              linewidth=plot_cfg['linewidth'])
     plt.plot('head_cm',
-             'Filtered HEAD DF Interactions',
+             'HEAD Baseline',
              data=data_frame,
-             color='crimson',
+             color='black',
+             linewidth=plot_cfg['linewidth'])
+    plt.plot('head_cm',
+             'HEAD Filtered',
+             data=data_frame,
+             color='red',
              linewidth=plot_cfg['linewidth'])
 
     plt.xlabel("Revisions", **{'size': '12'})
-    plt.ylabel("HEAD Interactions", **{'size': '12'})
+    plt.ylabel("HEAD DF Interactions", **{'size': '12'})
     plt.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
 
 
