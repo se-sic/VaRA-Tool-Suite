@@ -160,8 +160,8 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
     interactions between the HEAD commit and all others.
     """
     plot_cfg = {
-        'linewidth': 2 if view_mode else 1,
-        'legend_size': 8 if view_mode else 10,
+        'linewidth': 2 if view_mode else 2,
+        'legend_size': 8 if view_mode else 12,
         'xtick_size': 10 if view_mode else 2
     }
 
@@ -192,8 +192,8 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
              color='red',
              linewidth=plot_cfg['linewidth'])
 
-    plt.xlabel("Revisions", **{'size': '10'})
-    plt.ylabel("Result Size (MiB)", **{'size': '10'})
+    plt.xlabel("Revisions", **{'size': '12'})
+    plt.ylabel("Result Size (MiB)", **{'size': '12'})
     plt.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
     axis.set_ylim(bottom=0)
 
