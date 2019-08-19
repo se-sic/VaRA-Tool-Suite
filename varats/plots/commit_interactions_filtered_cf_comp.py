@@ -135,7 +135,8 @@ def _build_interaction_table(report_files: tp.List[Path],
                 (unfiltered_head_cf_interactions -
                  filtered_head_cf_interactions),
                 'Baseline Interaction Reduction':
-                (unfiltered_cf_interactions - baseline_filtered_cf_interactions),
+                (unfiltered_cf_interactions -
+                 baseline_filtered_cf_interactions),
                 'Baseline HEAD Interaction Reduction':
                 (unfiltered_head_cf_interactions -
                  baseline_filtered_head_cf_interactions),
@@ -149,7 +150,8 @@ def _build_interaction_table(report_files: tp.List[Path],
                  unfiltered_head_cf_interactions)
                 if unfiltered_head_cf_interactions else 0,
                 'Rel. Baseline Interaction Reduction.':
-                ((unfiltered_cf_interactions - baseline_filtered_cf_interactions) /
+                ((unfiltered_cf_interactions -
+                  baseline_filtered_cf_interactions) /
                  unfiltered_cf_interactions)
                 if unfiltered_cf_interactions else 0,
                 'Rel. Baseline HEAD Interaction Reduction.':
@@ -245,7 +247,9 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
     if stages is None:
         stages = []
 
-    data_frame.sort_values(by=['head_cm'], inplace=True)
+    data_frame['cm_idx'] = data_frame['head_cm'].apply(
+        lambda x: int(x.split('-')[0]))
+    data_frame.sort_values(by=['cm_idx'], inplace=True)
 
     # Interaction plot
     axis = plt.subplot(211)  # 211

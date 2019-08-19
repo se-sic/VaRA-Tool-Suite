@@ -247,7 +247,9 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
     if stages is None:
         stages = []
 
-    data_frame.sort_values(by=['head_cm'], inplace=True)
+    data_frame['cm_idx'] = data_frame['head_cm'].apply(
+        lambda x: int(x.split('-')[0]))
+    data_frame.sort_values(by=['cm_idx'], inplace=True)
 
     # Interaction plot
     axis = plt.subplot(211)  # 211
