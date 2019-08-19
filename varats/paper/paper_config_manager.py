@@ -24,10 +24,7 @@ def show_status_of_case_studies(report_name: str, filter_regex: str,
     """
     Show the status of all matching case studies.
     """
-    PC.load_paper_config(
-        Path(
-            str(CFG["paper_config"]["folder"]) + "/" +
-            str(CFG["paper_config"]["current_config"])))
+    PC.load_paper_config()
 
     current_config = PC.get_paper_config()
 
