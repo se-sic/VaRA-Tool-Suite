@@ -31,8 +31,6 @@ class TestMetaReport(unittest.TestCase):
             MetaReport.is_result_file(self.success_filename.replace("_", "")))
         self.assertFalse(
             MetaReport.is_result_file(self.success_filename.replace("-", "")))
-        self.assertTrue(
-            MetaReport.is_result_file(self.success_filename.replace(".", "f")))
 
     def test_file_status(self):
         """
