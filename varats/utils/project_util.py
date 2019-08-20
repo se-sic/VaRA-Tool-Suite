@@ -9,6 +9,9 @@ from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.download import Git
 from benchbuild.utils.settings import setup_config
 
+from plumbum import local
+from plumbum.cmd import rm
+
 from varats.settings import CFG
 
 
@@ -41,6 +44,10 @@ def get_local_project_git_path(project_name: str) -> Path:
 
     if not project_git_path.exists():
         project_cls = get_project_cls_by_name(project_name)
-        Git(project_cls.repository, project_cls.SRC_FILE, shallow_clone=False)
+        with local.cwd("/tmp"):
+            Git(project_cls.repository,
+                project_cls.SRC_FILE,
+                shallow_clone=False)
+            rm("-rf", project_cls.SRC_FILE)
 
     return project_git_path
