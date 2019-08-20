@@ -3,6 +3,7 @@ Utility module for BenchBuild project handling.
 """
 
 from pathlib import Path
+import tempfile
 
 from benchbuild.project import ProjectRegistry, Project
 from benchbuild.settings import CFG as BB_CFG
@@ -44,10 +45,11 @@ def get_local_project_git_path(project_name: str) -> Path:
 
     if not project_git_path.exists():
         project_cls = get_project_cls_by_name(project_name)
-        with local.cwd("/tmp"):
-            Git(project_cls.repository,
-                project_cls.SRC_FILE,
-                shallow_clone=False)
-            rm("-rf", project_cls.SRC_FILE)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with local.cwd(tmpdir):
+                Git(project_cls.repository,
+                    project_cls.SRC_FILE,
+                    shallow_clone=False)
 
     return project_git_path
