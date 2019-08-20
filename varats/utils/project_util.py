@@ -5,13 +5,12 @@ Utility module for BenchBuild project handling.
 from pathlib import Path
 import tempfile
 
+from plumbum import local
+
 from benchbuild.project import ProjectRegistry, Project
 from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.download import Git
 from benchbuild.utils.settings import setup_config
-
-from plumbum import local
-from plumbum.cmd import rm
 
 from varats.settings import CFG
 
