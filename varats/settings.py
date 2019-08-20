@@ -82,7 +82,7 @@ CFG['db'] = {
 
 CFG['experiment'] = {
     "only_missing": {
-        "default": False,
+        "default": True,
         "desc": "Only run missing version"
     },
     "random_order": {
