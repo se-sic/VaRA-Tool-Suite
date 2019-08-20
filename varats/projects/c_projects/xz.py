@@ -36,6 +36,8 @@ class Xz(Project):  # type: ignore
     def compile(self) -> None:
         self.download()
 
+        self.cflags += ["-fPIC"]
+
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
