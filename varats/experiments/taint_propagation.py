@@ -16,7 +16,7 @@ from benchbuild.project import Project
 import benchbuild.utils.actions as actions
 from benchbuild.utils.cmd import opt, mkdir, timeout
 
-from varats.data.reports.taint_report import TaintReport as TR
+from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.data.report import FileStatusExtension as FSE
 from varats.experiments.extract import Extract
 from varats.experiments.wllvm import RunWLLVM
@@ -25,18 +25,18 @@ from varats.utils.experiment_util import (
     VaRAVersionExperiment, PEErrorHandler)
 
 
-class MTFAGraphGeneration(actions.Step):
+class MTFAGeneration(actions.Step):
     """
-    Analyse a project with VaRA and generate a graph of the taint analysis.
+    Analyse a project with VaRA and generate the output of the taint analysis.
     """
 
-    NAME = "MTFAGraphGeneration"
+    NAME = "MTFAGeneration"
     DESCRIPTION = "Analyses the bitcode with MTFA of VaRA."
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
     def __init__(self, project: Project):
-        super(MTFAGraphGeneration, self).__init__(obj=project,
+        super(MTFAGeneration, self).__init__(obj=project,
                                                   action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
@@ -50,10 +50,8 @@ class MTFAGraphGeneration(actions.Step):
             return
         project = self.obj
 
-        # Add to the user-defined path for saving the results of the
-        # analysis also the name and the unique id of the project of every
-        # run.
-        vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
+        # change output to tmp dir, where the cpp files are from
+        tmp_project_folder = self.RESULT_FOLDER_TEMPLATE.format(
             result_dir=str(CFG["vara"]["outfile"]),
             project_dir=str(project.name))
 
@@ -61,7 +59,7 @@ class MTFAGraphGeneration(actions.Step):
             cache_dir=str(CFG["vara"]["result"]),
             project_name=str(project.name))
 
-        mkdir("-p", vara_result_folder)
+        mkdir("-p", tmp_project_folder)
 
         for binary_name in project.BIN_NAMES:
 
@@ -70,29 +68,36 @@ class MTFAGraphGeneration(actions.Step):
                 binary_name=str(binary_name),
                 project_version=str(project.version))
 
-            result_file = TR.get_file_name(
+            result_file = TPR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary_name,
                 project_version=str(project.version),
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success)
 
-            run_cmd = opt[
-                "-vara-CD", "-print-Full-MTFA",
-                "-S", "{cache_folder}/{bc_file}".
-                format(cache_folder=bc_cache_dir,
+            run_cmd = opt["-vara-CD", "-print-Full-MTFA",
+                          "{cache_folder}/{bc_file}"
+                          .format(cache_folder=bc_cache_dir,
                        bc_file=bc_target_file),
-                "-o", "{res_folder}/{res_file}".
-                format(res_folder=vara_result_folder,
-                       res_file=result_file)]
+                          "-o", "/dev/null"]
 
             timeout_duration = '8h'
 
             exec_func_with_pe_error_handler(
-                timeout[timeout_duration, run_cmd],
+                timeout[timeout_duration, run_cmd]
+                > "{res_folder}/{res_file}".format(
+                    res_folder=tmp_project_folder,
+                    res_file=result_file),
                 PEErrorHandler(
-                    vara_result_folder,
-                    TR.get_file_name(
+                    tmp_project_folder,
+                    TPR.get_file_name(
+                        project_name=str(project.name),
+                        binary_name=binary_name,
+                        project_version=str(project.version),
+                        project_uuid=str(project.run_uuid),
+                        extension_type=FSE.Failed),
+                    run_cmd, timeout_duration))
+
                         project_name=str(project.name),
                         binary_name=binary_name,
                         project_version=str(project.version),
@@ -108,7 +113,7 @@ class TaintPropagation(VaRAVersionExperiment):
 
     NAME = "TaintPropagation"
 
-    REPORT_TYPE = TR
+    REPORT_TYPE = TPR
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """Returns the specified steps to run the project(s) specified in
@@ -127,10 +132,10 @@ class TaintPropagation(VaRAVersionExperiment):
         project.compile = FunctionPEErrorWrapper(
             project.compile,
             PEErrorHandler(
-                MTFAGraphGeneration.RESULT_FOLDER_TEMPLATE.format(
+                MTFAGeneration.RESULT_FOLDER_TEMPLATE.format(
                     result_dir=str(CFG["vara"]["outfile"]),
                     project_dir=str(project.name)),
-                TR.get_file_name(
+                TPR.get_file_name(
                     project_name=str(project.name),
                     binary_name="all",
                     project_version=str(project.version),
@@ -159,7 +164,7 @@ class TaintPropagation(VaRAVersionExperiment):
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(project))
 
-        analysis_actions.append(MTFAGraphGeneration(project))
+        analysis_actions.append(MTFAGeneration(project))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
