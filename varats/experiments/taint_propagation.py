@@ -21,8 +21,7 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.settings import CFG
 from benchbuild.project import Project
 import benchbuild.utils.actions as actions
-from benchbuild.utils.cmd import opt, mkdir, timeout
-
+from benchbuild.utils.cmd import opt, mkdir, timeout, FileCheck
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.data.report import FileStatusExtension as FSE
 from varats.experiments.extract import Extract
@@ -42,9 +41,12 @@ class MTFAGeneration(actions.Step):
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
+    FILE_CHECK_DIR = "{project_builddir}/{project_src}"
+    FILE_CHECK_EXPECTED = "{binary_name}.fc"
+
     def __init__(self, project: Project):
         super(MTFAGeneration, self).__init__(obj=project,
-                                                  action_fn=self.analyze)
+                                             action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
         """
@@ -57,8 +59,7 @@ class MTFAGeneration(actions.Step):
             return
         project = self.obj
 
-        # change output to tmp dir, where the cpp files are from
-        tmp_project_folder = self.RESULT_FOLDER_TEMPLATE.format(
+        vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
             result_dir=str(CFG["vara"]["outfile"]),
             project_dir=str(project.name))
 
@@ -66,7 +67,7 @@ class MTFAGeneration(actions.Step):
             cache_dir=str(CFG["vara"]["result"]),
             project_name=str(project.name))
 
-        mkdir("-p", tmp_project_folder)
+        mkdir("-p", vara_result_folder)
 
         for binary_name in project.BIN_NAMES:
 
@@ -74,6 +75,19 @@ class MTFAGeneration(actions.Step):
                 project_name=str(project.name),
                 binary_name=str(binary_name),
                 project_version=str(project.version))
+
+
+
+            # TODO fix path and proper filecheck call
+            # tmp_dir_for_file_check = self.FILE_CHECK_DIR.format(
+            #         project_builddir=str(project.builddir),
+            #         project_src=str(project.SRC_FILE))
+
+            # file_check_expected = self.FILE_CHECK_EXPECTED.format(
+            #         binary_name=str(binary_name))
+            #
+            # file_check_cmd = FileCheck["{fc_dir}/{fc_exp_file}".format(
+            #     fc_dir=tmp_dir_for_file_check, fc_exp_file=file_check_expected)]
 
             result_file = TPR.get_file_name(
                 project_name=str(project.name),
@@ -85,18 +99,20 @@ class MTFAGeneration(actions.Step):
             run_cmd = opt["-vara-CD", "-print-Full-MTFA",
                           "{cache_folder}/{bc_file}"
                           .format(cache_folder=bc_cache_dir,
-                       bc_file=bc_target_file),
+                                  bc_file=bc_target_file),
                           "-o", "/dev/null"]
 
             timeout_duration = '8h'
 
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration, run_cmd]
+                # Use as soon as the filecheck files exist
+                # | file_check_cmd
                 > "{res_folder}/{res_file}".format(
-                    res_folder=tmp_project_folder,
+                    res_folder=vara_result_folder,
                     res_file=result_file),
                 PEErrorHandler(
-                    tmp_project_folder,
+                    vara_result_folder,
                     TPR.get_file_name(
                         project_name=str(project.name),
                         binary_name=binary_name,
@@ -104,12 +120,6 @@ class MTFAGeneration(actions.Step):
                         project_uuid=str(project.run_uuid),
                         extension_type=FSE.Failed),
                     run_cmd, timeout_duration))
-
-                        project_name=str(project.name),
-                        binary_name=binary_name,
-                        project_version=str(project.version),
-                        project_uuid=str(project.run_uuid),
-                        extension_type=FSE.Failed), run_cmd, timeout_duration))
 
 
 class TaintPropagation(VaRAVersionExperiment):
