@@ -5,9 +5,9 @@ analyses.
 This class implements the full commit taint flow analysis (MTFA) graph
 generation of the variability-aware region analyzer (VaRA) and Phasar.
 We run the analyses on exemplary cpp files. Then we compare the results of both
-analyses to the expected results via LLVM filecheck.
+analyses to the expected results via LLVM FileCheck.
 Both the cpp examples and the filecheck files validating the results can be
-found in the https://github.com/se-passau/vara-perf-tests.git Repository.
+found in the https://github.com/se-passau/vara-perf-tests repository.
 The results of each filecheck get written into a special TaintPropagationReport,
 which lists, what examples produced the correct result and which ones failed.
 """
@@ -21,7 +21,7 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.settings import CFG
 from benchbuild.project import Project
 import benchbuild.utils.actions as actions
-from benchbuild.utils.cmd import opt, mkdir, timeout, FileCheck
+from benchbuild.utils.cmd import opt, mkdir, timeout #, FileCheck
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.data.report import FileStatusExtension as FSE
 from varats.experiments.extract import Extract
@@ -42,7 +42,7 @@ class MTFAGeneration(actions.Step):
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
     FILE_CHECK_DIR = "{project_builddir}/{project_src}"
-    FILE_CHECK_EXPECTED = "{binary_name}.fc"
+    FILE_CHECK_EXPECTED = "{binary_name}.txt"
 
     def __init__(self, project: Project):
         super(MTFAGeneration, self).__init__(obj=project,
@@ -76,19 +76,6 @@ class MTFAGeneration(actions.Step):
                 binary_name=str(binary_name),
                 project_version=str(project.version))
 
-
-
-            # TODO fix path and proper filecheck call
-            # tmp_dir_for_file_check = self.FILE_CHECK_DIR.format(
-            #         project_builddir=str(project.builddir),
-            #         project_src=str(project.SRC_FILE))
-
-            # file_check_expected = self.FILE_CHECK_EXPECTED.format(
-            #         binary_name=str(binary_name))
-            #
-            # file_check_cmd = FileCheck["{fc_dir}/{fc_exp_file}".format(
-            #     fc_dir=tmp_dir_for_file_check, fc_exp_file=file_check_expected)]
-
             result_file = TPR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary_name,
@@ -101,6 +88,17 @@ class MTFAGeneration(actions.Step):
                           .format(cache_folder=bc_cache_dir,
                                   bc_file=bc_target_file),
                           "-o", "/dev/null"]
+
+            # TODO fix path and proper filecheck call
+            # tmp_dir_for_file_check = self.FILE_CHECK_DIR.format(
+            #         project_builddir=str(project.builddir),
+            #         project_src=str(project.SRC_FILE))
+
+            # file_check_expected = self.FILE_CHECK_EXPECTED.format(
+            #         binary_name=str(binary_name))
+            #
+            # file_check_cmd = FileCheck["{fc_dir}/{fc_exp_file}".format(
+            #     fc_dir=tmp_dir_for_file_check, fc_exp_file=file_check_expected)]
 
             timeout_duration = '8h'
 
