@@ -32,22 +32,25 @@ from varats.utils.experiment_util import (
     VaRAVersionExperiment, PEErrorHandler)
 
 
-class MTFAGeneration(actions.Step):
+class VaraMTFACheck(actions.Step):
     """
     Analyse a project with VaRA and generate the output of the taint analysis.
     """
 
-    NAME = "MTFAGeneration"
-    DESCRIPTION = "Generate a full MTFA on the exemplary taint test files."
+    NAME = "VaraMTFACheck"
+    DESCRIPTION = "Generate a full MTFA on the exemplary taint test files and "\
+        + "compare them against the expected result."
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
     MTFA_OUTPUT_DIR = "{project_builddir}/{project_src}/{project_name}"
     MTFA_RESULT_FILE = "{binary_name}.mtfa"
 
+    FILE_CHECK_EXPECTED = "{project_name}-{binary_name}-{project_version}.txt"
+
     def __init__(self, project: Project):
-        super(MTFAGeneration, self).__init__(obj=project,
-                                             action_fn=self.analyze)
+        super(VaRAMTFACheck, self).__init__(obj=project,
+                                            action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
         """
@@ -95,72 +98,13 @@ class MTFAGeneration(actions.Step):
                                        bc_file=bc_target_file),
                                "-o", "/dev/null"]
 
-            mtfa_output_file = self.MTFA_RESULT_FILE.format(
-                binary_name=binary_name)
+            file_check_expected = self.FILE_CHECK_EXPECTED.format(
+                project_name=str(project.name),
+                binary_name=str(binary_name),
+                project_version=str(project.version))
 
-            # Run the MTFA command with custom error handler and timeout
-            # TODO currently produces empty yaml file if successful
-            exec_func_with_pe_error_handler(
-                timeout[timeout_duration, vara_run_cmd]
-                > "{perf_dir}/{mtfa_output_file}".format(
-                    perf_dir=perf_dir,
-                    mtfa_output_file=mtfa_output_file),
-                PEErrorHandler(vara_result_folder,
-                               TPR.get_file_name(
-                                   project_name=str(project.name),
-                                   binary_name=binary_name,
-                                   project_version=str(project.version),
-                                   project_uuid=str(project.run_uuid),
-                                   extension_type=FSE.Failed),
-                               vara_run_cmd,
-                               timeout_duration))
-
-
-class FileCheckMTFA(actions.Step):
-    """
-    Run LLVM's FileCheck on the generated result of the analyses.
-    """
-
-    NAME = "FileCheckMTFA"
-    DESCRIPTION = "Check the output of the MTFA with LLVM's FileCheck."
-
-    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
-
-    MTFA_OUTPUT_DIR = "{project_builddir}/{project_src}/{project_name}"
-    MTFA_RESULT_FILE = "{binary_name}.mtfa"
-
-    FILE_CHECK_EXPECTED = "{project_name}-{binary_name}-{project_version}.txt"
-
-    def __init__(self, project: Project):
-        super(FileCheckMTFA, self).__init__(
-            obj=project, action_fn=self.analyze)
-
-    def analyze(self) -> actions.StepResult:
-        """
-        This step performs the comparison of the expected and the actual
-        analysis results.
-        """
-
-        if not self.obj:
-            return
-        project = self.obj
-
-        # Define the output directory
-        vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(CFG["vara"]["outfile"]),
-            project_dir=str(project.name))
-
-        # Put together the path to the mtfa outputs
-        mtfa_dir = self.MTFA_OUTPUT_DIR.format(
-            project_builddir=str(project.builddir),
-            project_src=str(project.SRC_FILE),
-            project_name=str(project.NAME))
-
-        cache_dir = Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-            cache_dir=str(CFG["vara"]["result"]),
-            project_name=str(project.name))
-
-        for binary_name in project.BIN_NAMES:
+            file_check_cmd = FileCheck["{fc_dir}{fc_exp_file}".format(
+                fc_dir=bc_cache_dir, fc_exp_file=file_check_expected)]
 
             # Define output report file
             result_file = TPR.get_file_name(
@@ -170,26 +114,11 @@ class FileCheckMTFA(actions.Step):
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success)
 
-            file_check_expected = self.FILE_CHECK_EXPECTED.format(
-                project_name=str(project.name),
-                binary_name=str(binary_name),
-                project_version=str(project.version))
-
-            mtfa_result_file = self.MTFA_RESULT_FILE.format(
-                binary_name=str(binary_name))
-
-            cat_cmd = cat["{tmp_dir}/{mtfa_file}".format(
-                tmp_dir=mtfa_dir, mtfa_file=mtfa_result_file)]
-
-            file_check_cmd = FileCheck["{fc_dir}{fc_exp_file}".format(
-                fc_dir=cache_dir, fc_exp_file=file_check_expected)]
-
-            # Cat the MTFA result, pipe it into FileCheck with the expected
-            # result and redirect the result into the report with custom
-            # error handling
-            # TODO do not exit, if FileCheck fails
+            # Run the MTFA command with custom error handler and timeout
+            # TODO currently produces empty yaml file if successful
             exec_func_with_pe_error_handler(
-                cat_cmd | file_check_cmd > "{res_folder}/{res_file}".format(
+                timeout[timeout_duration, vara_run_cmd] | file_check_cmd
+                > "{res_folder}/{res_file}".format(
                     res_folder=vara_result_folder, res_file=result_file),
                 PEErrorHandler(vara_result_folder,
                                TPR.get_file_name(
@@ -198,7 +127,8 @@ class FileCheckMTFA(actions.Step):
                                    project_version=str(project.version),
                                    project_uuid=str(project.run_uuid),
                                    extension_type=FSE.Failed),
-                               file_check_cmd))
+                               vara_run_cmd,
+                               timeout_duration))
 
 
 class FileCheckExpected(actions.Step):  # type: ignore
@@ -240,9 +170,7 @@ class FileCheckExpected(actions.Step):  # type: ignore
                 project_src=str(project.SRC_FILE),
                 project_name=str(project.name))
 
-            target_file = self.EXPECTED_FC_FILE.format(
-                binary_name=binary_name
-            )
+            target_file = self.EXPECTED_FC_FILE.format(binary_name=binary_name)
 
             target = "{dir}/{file}".format(dir=target_dir, file=target_file)
 
@@ -250,7 +178,8 @@ class FileCheckExpected(actions.Step):  # type: ignore
                 cp(target, local.path() / fc_cache_file)
             else:
                 print("Could not find expected filecheck " +
-                "'{name}.txt' for caching.".format(name=binary_name))
+                      "'{name}.txt' for caching.".format(name=binary_name))
+                # raise?
 
 
 class TaintPropagation(VaRAVersionExperiment):
@@ -327,8 +256,7 @@ class TaintPropagation(VaRAVersionExperiment):
             analysis_actions.append(Extract(project))
             analysis_actions.append(FileCheckExpected(project))
 
-        analysis_actions.append(MTFAGeneration(project))
-        analysis_actions.append(FileCheckMTFA(project))
+        analysis_actions.append(VaraMTFACheck(project))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
