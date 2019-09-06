@@ -22,7 +22,7 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.settings import CFG
 from benchbuild.project import Project
 import benchbuild.utils.actions as actions
-from benchbuild.utils.cmd import opt, mkdir, cat, timeout, FileCheck
+from benchbuild.utils.cmd import opt, cp, mkdir, cat, timeout, FileCheck
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.data.report import FileStatusExtension as FSE
 from varats.experiments.extract import Extract
@@ -99,6 +99,7 @@ class MTFAGeneration(actions.Step):
                 binary_name=binary_name)
 
             # Run the MTFA command with custom error handler and timeout
+            # TODO currently produces empty yaml file if successful
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration, vara_run_cmd]
                 > "{perf_dir}/{mtfa_output_file}".format(
@@ -125,9 +126,10 @@ class FileCheckMTFA(actions.Step):
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
-    FILE_CHECK_DIR = "{project_builddir}/{project_src}/{project_name}"
-    FILE_CHECK_EXPECTED = "{binary_name}.txt"
+    MTFA_OUTPUT_DIR = "{project_builddir}/{project_src}/{project_name}"
     MTFA_RESULT_FILE = "{binary_name}.mtfa"
+
+    FILE_CHECK_EXPECTED = "{project_name}-{binary_name}-{project_version}.txt"
 
     def __init__(self, project: Project):
         super(FileCheckMTFA, self).__init__(
@@ -148,11 +150,15 @@ class FileCheckMTFA(actions.Step):
             result_dir=str(CFG["vara"]["outfile"]),
             project_dir=str(project.name))
 
-        # Put together the path to the filecheck files
-        file_check_dir = self.FILE_CHECK_DIR.format(
+        # Put together the path to the mtfa outputs
+        mtfa_dir = self.MTFA_OUTPUT_DIR.format(
             project_builddir=str(project.builddir),
             project_src=str(project.SRC_FILE),
             project_name=str(project.NAME))
+
+        cache_dir = Extract.BC_CACHE_FOLDER_TEMPLATE.format(
+            cache_dir=str(CFG["vara"]["result"]),
+            project_name=str(project.name))
 
         for binary_name in project.BIN_NAMES:
 
@@ -164,22 +170,24 @@ class FileCheckMTFA(actions.Step):
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success)
 
-            # TODO perf dir with the txts was already cleaned
             file_check_expected = self.FILE_CHECK_EXPECTED.format(
-                binary_name=str(binary_name))
+                project_name=str(project.name),
+                binary_name=str(binary_name),
+                project_version=str(project.version))
 
             mtfa_result_file = self.MTFA_RESULT_FILE.format(
                 binary_name=str(binary_name))
 
             cat_cmd = cat["{tmp_dir}/{mtfa_file}".format(
-                tmp_dir=file_check_dir, mtfa_file=mtfa_result_file)]
+                tmp_dir=mtfa_dir, mtfa_file=mtfa_result_file)]
 
-            file_check_cmd = FileCheck["{fc_dir}/{fc_exp_file}".format(
-                fc_dir=file_check_dir, fc_exp_file=file_check_expected)]
+            file_check_cmd = FileCheck["{fc_dir}{fc_exp_file}".format(
+                fc_dir=cache_dir, fc_exp_file=file_check_expected)]
 
             # Cat the MTFA result, pipe it into FileCheck with the expected
             # result and redirect the result into the report with custom
             # error handling
+            # TODO do not exit, if FileCheck fails
             exec_func_with_pe_error_handler(
                 cat_cmd | file_check_cmd > "{res_folder}/{res_file}".format(
                     res_folder=vara_result_folder, res_file=result_file),
@@ -191,6 +199,58 @@ class FileCheckMTFA(actions.Step):
                                    project_uuid=str(project.run_uuid),
                                    extension_type=FSE.Failed),
                                file_check_cmd))
+
+
+class FileCheckExpected(actions.Step):  # type: ignore
+    NAME = "EXPECT"
+    DESCRIPTION = "Extract bitcode out of the execution file."
+
+    CACHE_FOLDER_TEMPLATE = "{cache_dir}/{project_name}/"
+    FC_CACHE_TEMPLATE = "{project_name}-{binary_name}-{project_version}.txt"
+
+    FC_FILE_SOURCE_DIR = "{project_builddir}/{project_src}/{project_name}"
+    EXPECTED_FC_FILE = "{binary_name}.txt"
+
+    def __init__(self, project: Project) -> None:
+        super(FileCheckExpected, self).__init__(obj=project,
+                                                action_fn=self.storeExpected)
+
+    def storeExpected(self) -> actions.StepResult:
+        """
+        This step caches the txt files with the expected filecheck results
+        for the project.
+        """
+        if not self.obj:
+            return
+        project = self.obj
+
+        cache_folder = self.CACHE_FOLDER_TEMPLATE.format(
+            cache_dir=str(CFG["vara"]["result"]),
+            project_name=str(project.name))
+        mkdir("-p", local.path() / cache_folder)
+
+        for binary_name in project.BIN_NAMES:
+            fc_cache_file = cache_folder + self.FC_CACHE_TEMPLATE.format(
+                project_name=str(project.name),
+                binary_name=str(binary_name),
+                project_version=str(project.version))
+
+            target_dir = self.FC_FILE_SOURCE_DIR.format(
+                project_builddir=str(project.builddir),
+                project_src=str(project.SRC_FILE),
+                project_name=str(project.name))
+
+            target_file = self.EXPECTED_FC_FILE.format(
+                binary_name=binary_name
+            )
+
+            target = "{dir}/{file}".format(dir=target_dir, file=target_file)
+
+            if path.exists(target):
+                cp(target, local.path() / fc_cache_file)
+            else:
+                print("Could not find expected filecheck " +
+                "'{name}.txt' for caching.".format(name=binary_name))
 
 
 class TaintPropagation(VaRAVersionExperiment):
@@ -237,9 +297,9 @@ class TaintPropagation(VaRAVersionExperiment):
         analysis_actions = []
 
         # Not run all steps if cached results exist
-        all_bc_files_present = True
+        all_cache_files_present = True
         for binary_name in project.BIN_NAMES:
-            all_bc_files_present &= path.exists(
+            all_cache_files_present &= path.exists(
                 local.path(
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
                         cache_dir=str(CFG["vara"]["result"]),
@@ -249,9 +309,23 @@ class TaintPropagation(VaRAVersionExperiment):
                         binary_name=binary_name,
                         project_version=str(project.version))))
 
-        if not all_bc_files_present:
+            all_cache_files_present &= path.exists(
+                local.path(
+                    FileCheckExpected.CACHE_FOLDER_TEMPLATE.format(
+                        cache_dir=str(CFG["vara"]["result"]),
+                        project_name=str(project.name)) +
+                    FileCheckExpected.FC_CACHE_TEMPLATE.format(
+                        project_name=str(project.name),
+                        binary_name=binary_name,
+                        project_version=str(project.version))))
+
+            if not all_cache_files_present:
+                break
+
+        if not all_cache_files_present:
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(project))
+            analysis_actions.append(FileCheckExpected(project))
 
         analysis_actions.append(MTFAGeneration(project))
         analysis_actions.append(FileCheckMTFA(project))
