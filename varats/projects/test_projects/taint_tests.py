@@ -24,7 +24,7 @@ class TaintTests(prj.Project):  # type: ignore
     DOMAIN = 'testing'
     VERSION = 'HEAD'
 
-    SRC_FILE = NAME + "-{0}".format(VERSION)
+    SRC_FILE = "vara-perf-tests"
 
     CPP_FILES = [
         "arrayTaintPropagation.cpp",
