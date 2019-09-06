@@ -8,8 +8,9 @@ We run the analyses on exemplary cpp files. Then we compare the results of both
 analyses to the expected results via LLVM FileCheck.
 Both the cpp examples and the filecheck files validating the results can be
 found in the https://github.com/se-passau/vara-perf-tests repository.
-The results of each filecheck get written into a special TaintPropagationReport,
-which lists, what examples produced the correct result and which ones failed.
+The results of each filecheck get written into a special TaintPropagation-
+Report, which lists, what examples produced the correct result and which ones
+failed.
 """
 
 import typing as tp
@@ -21,7 +22,7 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.settings import CFG
 from benchbuild.project import Project
 import benchbuild.utils.actions as actions
-from benchbuild.utils.cmd import opt, mkdir, timeout #, FileCheck
+from benchbuild.utils.cmd import opt, mkdir, cat, timeout, FileCheck
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.data.report import FileStatusExtension as FSE
 from varats.experiments.extract import Extract
@@ -37,12 +38,12 @@ class MTFAGeneration(actions.Step):
     """
 
     NAME = "MTFAGeneration"
-    DESCRIPTION = "Analyses the bitcode with MTFA of VaRA."
+    DESCRIPTION = "Generate a full MTFA on the exemplary taint test files."
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
-    FILE_CHECK_DIR = "{project_builddir}/{project_src}"
-    FILE_CHECK_EXPECTED = "{binary_name}.txt"
+    MTFA_OUTPUT_DIR = "{project_builddir}/{project_src}/{project_name}"
+    MTFA_RESULT_FILE = "{binary_name}.mtfa"
 
     def __init__(self, project: Project):
         super(MTFAGeneration, self).__init__(obj=project,
@@ -59,23 +60,103 @@ class MTFAGeneration(actions.Step):
             return
         project = self.obj
 
-        vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(CFG["vara"]["outfile"]),
-            project_dir=str(project.name))
-
+        # Set up cache directory for bitcode files
         bc_cache_dir = Extract.BC_CACHE_FOLDER_TEMPLATE.format(
             cache_dir=str(CFG["vara"]["result"]),
             project_name=str(project.name))
 
+        # Define the output directory
+        vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
+            result_dir=str(CFG["vara"]["outfile"]),
+            project_dir=str(project.name))
         mkdir("-p", vara_result_folder)
+
+        # Set up temporary work directory for the experiment
+        perf_dir = self.MTFA_OUTPUT_DIR.format(
+            project_builddir=str(project.builddir),
+            project_src=str(project.SRC_FILE),
+            project_name=str(project.NAME))
+        mkdir("-p", perf_dir)
+
+        timeout_duration = '8h'
 
         for binary_name in project.BIN_NAMES:
 
+            # Combine the input bitcode file's name
             bc_target_file = Extract.BC_FILE_TEMPLATE.format(
                 project_name=str(project.name),
                 binary_name=str(binary_name),
                 project_version=str(project.version))
 
+            # Put together the path to the bc file and the opt command of vara
+            vara_run_cmd = opt["-vara-CD", "-print-Full-MTFA",
+                               "{cache_folder}/{bc_file}"
+                               .format(cache_folder=bc_cache_dir,
+                                       bc_file=bc_target_file),
+                               "-o", "/dev/null"]
+
+            mtfa_output_file = self.MTFA_RESULT_FILE.format(
+                binary_name=binary_name)
+
+            # Run the MTFA command with custom error handler and timeout
+            exec_func_with_pe_error_handler(
+                timeout[timeout_duration, vara_run_cmd]
+                > "{perf_dir}/{mtfa_output_file}".format(
+                    perf_dir=perf_dir,
+                    mtfa_output_file=mtfa_output_file),
+                PEErrorHandler(vara_result_folder,
+                               TPR.get_file_name(
+                                   project_name=str(project.name),
+                                   binary_name=binary_name,
+                                   project_version=str(project.version),
+                                   project_uuid=str(project.run_uuid),
+                                   extension_type=FSE.Failed),
+                               vara_run_cmd,
+                               timeout_duration))
+
+
+class FileCheckMTFA(actions.Step):
+    """
+    Run LLVM's FileCheck on the generated result of the analyses.
+    """
+
+    NAME = "FileCheckMTFA"
+    DESCRIPTION = "Check the output of the MTFA with LLVM's FileCheck."
+
+    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
+
+    FILE_CHECK_DIR = "{project_builddir}/{project_src}/{project_name}"
+    FILE_CHECK_EXPECTED = "{binary_name}.txt"
+    MTFA_RESULT_FILE = "{binary_name}.mtfa"
+
+    def __init__(self, project: Project):
+        super(FileCheckMTFA, self).__init__(
+            obj=project, action_fn=self.analyze)
+
+    def analyze(self) -> actions.StepResult:
+        """
+        This step performs the comparison of the expected and the actual
+        analysis results.
+        """
+
+        if not self.obj:
+            return
+        project = self.obj
+
+        # Define the output directory
+        vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
+            result_dir=str(CFG["vara"]["outfile"]),
+            project_dir=str(project.name))
+
+        # Put together the path to the filecheck files
+        file_check_dir = self.FILE_CHECK_DIR.format(
+            project_builddir=str(project.builddir),
+            project_src=str(project.SRC_FILE),
+            project_name=str(project.NAME))
+
+        for binary_name in project.BIN_NAMES:
+
+            # Define output report file
             result_file = TPR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary_name,
@@ -83,41 +164,33 @@ class MTFAGeneration(actions.Step):
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success)
 
-            run_cmd = opt["-vara-CD", "-print-Full-MTFA",
-                          "{cache_folder}/{bc_file}"
-                          .format(cache_folder=bc_cache_dir,
-                                  bc_file=bc_target_file),
-                          "-o", "/dev/null"]
+            # TODO perf dir with the txts was already cleaned
+            file_check_expected = self.FILE_CHECK_EXPECTED.format(
+                binary_name=str(binary_name))
 
-            # TODO fix path and proper filecheck call
-            # tmp_dir_for_file_check = self.FILE_CHECK_DIR.format(
-            #         project_builddir=str(project.builddir),
-            #         project_src=str(project.SRC_FILE))
+            mtfa_result_file = self.MTFA_RESULT_FILE.format(
+                binary_name=str(binary_name))
 
-            # file_check_expected = self.FILE_CHECK_EXPECTED.format(
-            #         binary_name=str(binary_name))
-            #
-            # file_check_cmd = FileCheck["{fc_dir}/{fc_exp_file}".format(
-            #     fc_dir=tmp_dir_for_file_check, fc_exp_file=file_check_expected)]
+            cat_cmd = cat["{tmp_dir}/{mtfa_file}".format(
+                tmp_dir=file_check_dir, mtfa_file=mtfa_result_file)]
 
-            timeout_duration = '8h'
+            file_check_cmd = FileCheck["{fc_dir}/{fc_exp_file}".format(
+                fc_dir=file_check_dir, fc_exp_file=file_check_expected)]
 
+            # Cat the MTFA result, pipe it into FileCheck with the expected
+            # result and redirect the result into the report with custom
+            # error handling
             exec_func_with_pe_error_handler(
-                timeout[timeout_duration, run_cmd]
-                # Use as soon as the filecheck files exist
-                # | file_check_cmd
-                > "{res_folder}/{res_file}".format(
-                    res_folder=vara_result_folder,
-                    res_file=result_file),
-                PEErrorHandler(
-                    vara_result_folder,
-                    TPR.get_file_name(
-                        project_name=str(project.name),
-                        binary_name=binary_name,
-                        project_version=str(project.version),
-                        project_uuid=str(project.run_uuid),
-                        extension_type=FSE.Failed),
-                    run_cmd, timeout_duration))
+                cat_cmd | file_check_cmd > "{res_folder}/{res_file}".format(
+                    res_folder=vara_result_folder, res_file=result_file),
+                PEErrorHandler(vara_result_folder,
+                               TPR.get_file_name(
+                                   project_name=str(project.name),
+                                   binary_name=binary_name,
+                                   project_version=str(project.version),
+                                   project_uuid=str(project.run_uuid),
+                                   extension_type=FSE.Failed),
+                               file_check_cmd))
 
 
 class TaintPropagation(VaRAVersionExperiment):
@@ -131,8 +204,10 @@ class TaintPropagation(VaRAVersionExperiment):
     REPORT_TYPE = TPR
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
-        """Returns the specified steps to run the project(s) specified in
-        the call in a fixed order."""
+        """
+        Returns the specified steps to run the project(s) specified in
+        the call in a fixed order.
+        """
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
@@ -155,8 +230,7 @@ class TaintPropagation(VaRAVersionExperiment):
                     binary_name="all",
                     project_version=str(project.version),
                     project_uuid=str(project.run_uuid),
-                    extension_type=FSE.CompileError),
-            ))
+                    extension_type=FSE.CompileError)))
 
         project.cflags = ["-fvara-handleRM=Commit"]
 
@@ -180,6 +254,7 @@ class TaintPropagation(VaRAVersionExperiment):
             analysis_actions.append(Extract(project))
 
         analysis_actions.append(MTFAGeneration(project))
+        analysis_actions.append(FileCheckMTFA(project))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
