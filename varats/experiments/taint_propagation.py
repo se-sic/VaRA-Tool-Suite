@@ -49,13 +49,14 @@ class VaraMTFACheck(actions.Step):
     FILE_CHECK_EXPECTED = "{project_name}-{binary_name}-{project_version}.txt"
 
     def __init__(self, project: Project):
-        super(VaRAMTFACheck, self).__init__(obj=project,
+        super(VaraMTFACheck, self).__init__(obj=project,
                                             action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
         """
         This step performs the actual analysis with the correct flags.
         Flags:
+            -vara-CD:         activate VaRA's commit detection
             -print-Full-MTFA: to run a taint flow analysis
         """
 
@@ -211,7 +212,7 @@ class TaintPropagation(VaRAVersionExperiment):
         project.compile = FunctionPEErrorWrapper(
             project.compile,
             PEErrorHandler(
-                MTFAGeneration.RESULT_FOLDER_TEMPLATE.format(
+                VaraMTFACheck.RESULT_FOLDER_TEMPLATE.format(
                     result_dir=str(CFG["vara"]["outfile"]),
                     project_dir=str(project.name)),
                 TPR.get_file_name(
