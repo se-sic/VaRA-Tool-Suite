@@ -22,7 +22,7 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.settings import CFG
 from benchbuild.project import Project
 import benchbuild.utils.actions as actions
-from benchbuild.utils.cmd import opt, cp, mkdir, cat, timeout, FileCheck
+from benchbuild.utils.cmd import opt, cp, mkdir, timeout, FileCheck
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.data.report import FileStatusExtension as FSE
 from varats.experiments.extract import Extract
@@ -38,8 +38,8 @@ class VaraMTFACheck(actions.Step):
     """
 
     NAME = "VaraMTFACheck"
-    DESCRIPTION = "Generate a full MTFA on the exemplary taint test files and "\
-        + "compare them against the expected result."
+    DESCRIPTION = "Generate a full MTFA on the exemplary taint test files and"\
+        + " compare them against the expected result."
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
@@ -49,8 +49,8 @@ class VaraMTFACheck(actions.Step):
     FILE_CHECK_EXPECTED = "{project_name}-{binary_name}-{project_version}.txt"
 
     def __init__(self, project: Project):
-        super(VaraMTFACheck, self).__init__(obj=project,
-                                            action_fn=self.analyze)
+        super(VaraMTFACheck, self).__init__(
+            obj=project, action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
         """
@@ -133,6 +133,11 @@ class VaraMTFACheck(actions.Step):
 
 
 class FileCheckExpected(actions.Step):  # type: ignore
+    """
+    Store the expected filecheck results of a project in the bc cache directory
+    and rename the txt files to a unique name matching the run.
+    """
+
     NAME = "EXPECT"
     DESCRIPTION = "Extract bitcode out of the execution file."
 
@@ -144,9 +149,9 @@ class FileCheckExpected(actions.Step):  # type: ignore
 
     def __init__(self, project: Project) -> None:
         super(FileCheckExpected, self).__init__(obj=project,
-                                                action_fn=self.storeExpected)
+                                                action_fn=self.store_expected)
 
-    def storeExpected(self) -> actions.StepResult:
+    def store_expected(self) -> actions.StepResult:
         """
         This step caches the txt files with the expected filecheck results
         for the project.
