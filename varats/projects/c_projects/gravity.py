@@ -17,6 +17,7 @@ from varats.paper.paper_config import project_filter_generator
     "https://github.com/marcobambini/gravity.git",
     limit=100,
     refspec="HEAD",
+    shallow_clone=False,
     version_filter=project_filter_generator("gravity"))
 class Gravity(Project):  # type: ignore
     """ Programming language Gravity """

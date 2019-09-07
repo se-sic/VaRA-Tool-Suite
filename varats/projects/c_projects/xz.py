@@ -17,6 +17,7 @@ from varats.paper.paper_config import project_filter_generator
     "https://github.com/xz-mirror/xz.git",
     limit=100,
     refspec="HEAD",
+    shallow_clone=False,
     version_filter=project_filter_generator("xz"))
 class Xz(Project):  # type: ignore
     """ Compression and decompression tool xz (fetched by Git) """
