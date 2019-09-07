@@ -75,13 +75,6 @@ class VaraMTFACheck(actions.Step):
             project_dir=str(project.name))
         mkdir("-p", vara_result_folder)
 
-        # Set up temporary work directory for the experiment
-        perf_dir = self.MTFA_OUTPUT_DIR.format(
-            project_builddir=str(project.builddir),
-            project_src=str(project.SRC_FILE),
-            project_name=str(project.NAME))
-        mkdir("-p", perf_dir)
-
         timeout_duration = '8h'
 
         for binary_name in project.BIN_NAMES:
@@ -116,20 +109,23 @@ class VaraMTFACheck(actions.Step):
                 extension_type=FSE.Success)
 
             # Run the MTFA command with custom error handler and timeout
-            # TODO currently produces empty yaml file if successful
-            exec_func_with_pe_error_handler(
-                timeout[timeout_duration, vara_run_cmd] | file_check_cmd
-                > "{res_folder}/{res_file}".format(
-                    res_folder=vara_result_folder, res_file=result_file),
-                PEErrorHandler(vara_result_folder,
-                               TPR.get_file_name(
-                                   project_name=str(project.name),
-                                   binary_name=binary_name,
-                                   project_version=str(project.version),
-                                   project_uuid=str(project.run_uuid),
-                                   extension_type=FSE.Failed),
-                               vara_run_cmd,
-                               timeout_duration))
+            try:
+                exec_func_with_pe_error_handler(
+                    timeout[timeout_duration, vara_run_cmd] | file_check_cmd
+                    > "{res_folder}/{res_file}".format(
+                        res_folder=vara_result_folder, res_file=result_file),
+                    PEErrorHandler(vara_result_folder,
+                                   TPR.get_file_name(
+                                       project_name=str(project.name),
+                                       binary_name=binary_name,
+                                       project_version=str(project.version),
+                                       project_uuid=str(project.run_uuid),
+                                       extension_type=FSE.Failed),
+                                   vara_run_cmd,
+                                   timeout_duration))
+            # Do not exit run after an error, just pipe the error in the file
+            except:
+                pass
 
 
 class FileCheckExpected(actions.Step):  # type: ignore
@@ -185,7 +181,6 @@ class FileCheckExpected(actions.Step):  # type: ignore
             else:
                 print("Could not find expected filecheck " +
                       "'{name}.txt' for caching.".format(name=binary_name))
-                # raise?
 
 
 class TaintPropagation(VaRAVersionExperiment):
