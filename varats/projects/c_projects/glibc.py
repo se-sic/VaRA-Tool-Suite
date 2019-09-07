@@ -17,6 +17,7 @@ from varats.paper.paper_config import project_filter_generator
     "git://sourceware.org/git/glibc.git",
     limit=100,
     refspec="HEAD",
+    shallow_clone=False,
     version_filter=project_filter_generator("glibc"))
 class Glibc(Project):  # type: ignore
     """ Standard GNU C-library """
