@@ -141,6 +141,11 @@ def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
     Load a paper config from yaml file.
     """
     if config_path is None:
+        if CFG["paper_config"]["folder"].value is None or CFG["paper_config"][
+                "current_config"].value is None:
+            raise Exception(
+                "No paper config was set in VaRA config file {}".format(
+                    CFG['config_file']))
         config_path = Path(
             str(CFG["paper_config"]["folder"]) + "/" +
             str(CFG["paper_config"]["current_config"]))

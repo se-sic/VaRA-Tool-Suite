@@ -41,8 +41,11 @@ CFG = s.Configuration(
             "default": True,
             "desc": "Build own libgit2",
         },
-    }
-)
+        "include_phasar": {
+            "default": True,
+            "desc": "Include Phasar for static analysis",
+        },
+    })
 
 CFG["paper_config"] = {
     "folder": {
@@ -79,7 +82,7 @@ CFG['db'] = {
 
 CFG['experiment'] = {
     "only_missing": {
-        "default": False,
+        "default": True,
         "desc": "Only run missing version"
     },
     "random_order": {
@@ -172,6 +175,7 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
         'varats.projects.c_projects.gzip',
         'varats.projects.c_projects.libvpx',
         'varats.projects.c_projects.lrzip',
+        'varats.projects.c_projects.opus',
         'varats.projects.c_projects.tmux',
         'varats.projects.c_projects.vim',
         'varats.projects.c_projects.x264',
@@ -188,6 +192,10 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
         'varats.experiments.marker_tester',
         'varats.experiments.just_compile'
     ]
+
+    # Slurm Cluster Configuration
+    BB_CFG["slurm"]["account"] = "anywhere"
+    BB_CFG["slurm"]["partition"] = "anywhere"
 
     BB_CFG["env"] = {"PATH": [str(vara_cfg["llvm_install_dir"]) + "bin/"]}
 

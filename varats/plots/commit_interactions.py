@@ -124,7 +124,7 @@ def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
 
     reports = []
     for file_path in result_dir.iterdir():
-        if file_path.stem.startswith(str(project_name) + "-"):
+        if file_path.stem.startswith("CR-" + str(project_name) + "-"):
             if MetaReport.is_result_file_success(file_path.name):
                 commit_hash = CommitReport.get_commit_hash_from_result_file(
                     file_path.name)
@@ -160,7 +160,9 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
     if stages is None:
         stages = []
 
-    data_frame.sort_values(by=['head_cm'], inplace=True)
+    data_frame['cm_idx'] = data_frame['head_cm'].apply(
+        lambda x: int(x.split('-')[0]))
+    data_frame.sort_values(by=['cm_idx'], inplace=True)
 
     # Interaction plot
     axis = plt.subplot(211)  # 211
