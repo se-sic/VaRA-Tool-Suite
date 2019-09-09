@@ -6,6 +6,10 @@ from varats.data.report import BaseReport, FileStatusExtension
 
 
 class EmptyReport(BaseReport):
+    """
+    An empty report for testing.
+    Nothing gets printed into the report and the result file has no file type.
+    """
 
     SHORTHAND = "EMPTY"
 
@@ -14,7 +18,7 @@ class EmptyReport(BaseReport):
                       project_version: str, project_uuid: str,
                       extension_type: FileStatusExtension) -> str:
         """
-        Generates a filename for a commit report
+        Generates a filename for a commit report without any file ending.
         """
         return BaseReport.get_file_name(EmptyReport.SHORTHAND, project_name,
                                         binary_name, project_version,
