@@ -18,12 +18,12 @@ class FileStatusExtension(Enum):
     Specific report files can map these to their own specific representation.
     """
 
-    Success = ("yaml", colors.green)
+    Success = ("success", colors.green)
     Failed = ("failed", colors.lightred)
     CompileError = ("cerror", colors.red)
     Missing = ("###", colors.orange3)
 
-    def get_file_ending(self) -> str:
+    def get_status_extension(self) -> str:
         """
         Returns the corresponding file ending to the status.
         """
@@ -44,23 +44,25 @@ class FileStatusExtension(Enum):
         return tp.cast(str, self.status_color[self.name])
 
     @staticmethod
-    def get_file_status(file_ending: str) -> 'FileStatusExtension':
+    def get_file_status(status_extension: str) -> 'FileStatusExtension':
         for status in FileStatusExtension:
-            if str(status.value[0]) == file_ending:
+            if str(status.value[0]) == status_extension:
                 return status
         raise ValueError(
-            'Unknown file ending {ending}'.format(ending=file_ending))
+            'Unknown file ending {status_ext}'.format(
+                status_ext=status_extension))
 
     @staticmethod
     def get_regex_grp() -> str:
         """
         Returns a regex group that can match all file stati.
         """
-        regex_grp = r"(?P<EXT>("
+        regex_grp = r"(?P<status_ext>("
         for status in FileStatusExtension:
-            regex_grp += r"{file_ending}|".format(
-                file_ending=status.get_file_ending())
+            regex_grp += r"{status_ext}".format(
+                status_ext=status.get_status_extension()) + '|'
 
+        # Remove the '|' at the end
         regex_grp = regex_grp[:-1]
         regex_grp += "))"
         return regex_grp
@@ -73,12 +75,13 @@ class MetaReport(type):
     __FILE_NAME_REGEX = re.compile(
         r"(?P<project_shorthand>.*)-" +
         r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
-        r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)\." +
-        FileStatusExtension.get_regex_grp() + "$")
+        r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)_" +
+        FileStatusExtension.get_regex_grp() + r"?(?P<file_ext>\..*)?" + "$")
 
     __RESULT_FILE_TEMPLATE = (
         "{shorthand}-" + "{project_name}-" + "{binary_name}-" +
-        "{project_version}_" + "{project_uuid}." + "{ext}")
+        "{project_version}_" + "{project_uuid}_" + "{status_ext}" +
+        "{file_ext}")
 
     def __init__(cls: tp.Any, name: str, bases: tp.Tuple[tp.Any],
                  attrs: tp.Dict[str, tp.Any]) -> None:
@@ -148,8 +151,8 @@ class MetaReport(type):
         """ Check if the passed file name is a (failed) result file. """
         match = MetaReport.__FILE_NAME_REGEX.search(file_name)
         if match:
-            return match.group("EXT") == (
-                FileStatusExtension.get_file_ending(extension_type))
+            return match.group("status_ext") == (
+                FileStatusExtension.get_status_extension(extension_type))
         return False
 
     @staticmethod
@@ -167,20 +170,28 @@ class MetaReport(type):
         """ Get the FileStatusExtension from a result file name. """
         match = MetaReport.__FILE_NAME_REGEX.search(file_name)
         if match:
-            return FileStatusExtension.get_file_status(match.group("EXT"))
+            return FileStatusExtension.get_file_status(
+                match.group("status_ext"))
 
         raise ValueError('File {file_name} name was wrongly formated.'.format(
             file_name=file_name))
 
     @staticmethod
-    def get_file_name(report_shorthand: str, project_name: str,
-                      binary_name: str, project_version: str,
+    def get_file_name(report_shorthand: str,
+                      project_name: str,
+                      binary_name: str,
+                      project_version: str,
                       project_uuid: str,
-                      extension_type: FileStatusExtension) -> str:
+                      extension_type: FileStatusExtension,
+                      file_ext: str = "") -> str:
         """
         Generates a filename for a commit report
         """
-        ext = FileStatusExtension.get_file_ending(extension_type)
+        status_ext = FileStatusExtension.get_status_extension(extension_type)
+
+        # Add the missing '.' if none was given by the report
+        if file_ext and not file_ext.startswith("."):
+            file_ext = "." + file_ext
 
         return MetaReport.__RESULT_FILE_TEMPLATE.format(
             shorthand=report_shorthand,
@@ -188,7 +199,8 @@ class MetaReport(type):
             binary_name=binary_name,
             project_version=project_version,
             project_uuid=project_uuid,
-            ext=ext)
+            status_ext=status_ext,
+            file_ext=file_ext)
 
     def is_correct_report_type(cls, file_name: str) -> bool:
         """ Check if the passed file belongs to this report type. """
