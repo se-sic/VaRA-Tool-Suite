@@ -170,7 +170,8 @@ class MetaReport(type):
         """ Get the FileStatusExtension from a result file name. """
         match = MetaReport.__FILE_NAME_REGEX.search(file_name)
         if match:
-            return FileStatusExtension.get_file_status(match.group("EXT"))
+            return FileStatusExtension.get_file_status(
+                match.group("status_ext"))
 
         raise ValueError('File {file_name} name was wrongly formated.'.format(
             file_name=file_name))
