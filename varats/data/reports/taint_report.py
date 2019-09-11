@@ -15,6 +15,8 @@ class TaintPropagationReport(BaseReport):
     """
 
     SHORTHAND = "TAINT"
+    FILE_TYPE = "txt"
+
 
     def __init__(self, path: Path) -> None:
         pass
@@ -29,14 +31,15 @@ class TaintPropagationReport(BaseReport):
     @staticmethod
     def get_file_name(project_name: str, binary_name: str,
                       project_version: str, project_uuid: str,
-                      extension_type: FileStatusExtension) -> str:
+                      extension_type: FileStatusExtension,
+                      file_ext: str = "") -> str:
         """
         Generates a filename for a taint report.
         """
         return BaseReport.get_file_name(TaintPropagationReport.SHORTHAND,
                                         project_name, binary_name,
                                         project_version, project_uuid,
-                                        extension_type)
+                                        extension_type, file_ext)
 
     def __repr__(self) -> str:
         return "TPR: " + os.path.basename(self.path)
