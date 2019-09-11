@@ -108,6 +108,7 @@ class VaraMTFACheck(actions.Step):
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success)
 
+            # TODO leeres .yaml wird auch fuer gescheiterte runs angelegt
             # Run the MTFA command with custom error handler and timeout
             try:
                 exec_func_with_pe_error_handler(
@@ -120,7 +121,8 @@ class VaraMTFACheck(actions.Step):
                                        binary_name=binary_name,
                                        project_version=str(project.version),
                                        project_uuid=str(project.run_uuid),
-                                       extension_type=FSE.Failed),
+                                       extension_type=FSE.Failed,
+                                       file_ext=TPR.FILE_TYPE),
                                    vara_run_cmd,
                                    timeout_duration))
             # Do not exit run after an error, just pipe the error in the file
