@@ -4,7 +4,7 @@ from plumbum import local
 from varats.projects.cpp_projects.llvm import LLVM
 
 
-@with_git("https://git.llvm.org/git/llvm.git", limit=100, refspec="HEAD")
+@with_git("https://git.llvm.org/git/llvm.git", limit=200, refspec="HEAD")
 class LLVMmin(LLVM):
     """ LLVM with LLD linker and Extra Clang tools """
 
