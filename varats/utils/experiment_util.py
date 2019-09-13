@@ -20,32 +20,32 @@ from varats.settings import CFG as V_CFG
 
 class FunctionPEErrorWrapper():
     """
-    Wrap a function call with a ProcessExecutionError handler.
+    Wrap a function call with an exception handler.
 
     Args:
-        handler: function to handle ProcessExecutionError
+        handler: function to handle exception
     """
 
     def __init__(self, func: tp.Callable[..., tp.Any],
-                 handler: tp.Callable[[ProcessExecutionError], None]) -> None:
+                 handler: tp.Callable[[Exception], None]) -> None:
         self.__func = func
         self.__handler = handler
 
     def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
         try:
             return self.__func(*args, **kwargs)
-        except ProcessExecutionError as ex:
+        except Exception as ex:
             self.__handler(ex)
 
 
 def exec_func_with_pe_error_handler(
         func: tp.Callable[..., tp.Any],
-        handler: tp.Callable[[ProcessExecutionError], None]) -> None:
+        handler: tp.Callable[[Exception], None]) -> None:
     """
-    Execute a function call with a ProcessExecutionError handler.
+    Execute a function call with an exception handler.
 
     Args:
-        handler: function to handle ProcessExecutionError
+        handler: function to handle exception
     """
     FunctionPEErrorWrapper(func, handler)()
 
@@ -65,26 +65,26 @@ class PEErrorHandler():
         self.__run_cmd = run_cmd
         self.__timeout_duration = timeout_duration
 
-    def __call__(self, ex: ProcessExecutionError) -> None:
+    def __call__(self, ex: Exception) -> None:
         error_file = Path("{res_folder}/{res_file}".format(
             res_folder=self.__result_folder, res_file=self.__error_file_name))
         if not os.path.exists(self.__result_folder):
             os.makedirs(self.__result_folder, exist_ok=True)
         with open(error_file, 'w') as outfile:
-            if ex.retcode == 124:
-                extra_error = """Command:
+            if isinstance(ex, ProcessExecutionError):
+                if ex.retcode == 124:
+                    extra_error = """Command:
 {cmd}
 Timeout after: {timeout_duration}
 
 """.format(cmd=str(self.__run_cmd),
                 timeout_duration=str(self.__timeout_duration))
-                outfile.write(extra_error)
+                    outfile.write(extra_error)
+                    outfile.flush()
 
-            outfile.write("Output of STDERR (Standard Error):\n")
-            outfile.write(ex.stderr)
+            outfile.write("Exception:\n")
+            outfile.write(str(ex))
 
-            outfile.write("Output of STDOUT (Standard Output):\n")
-            outfile.write(ex.stdout)
         raise ex
 
 
