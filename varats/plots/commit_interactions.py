@@ -18,7 +18,7 @@ from varats.data.reports.commit_report import CommitMap, CommitReport
 from varats.data.report import MetaReport
 from varats.jupyterhelper.file import load_commit_report
 from varats.plots.plot_utils import check_required_args
-from varats.data.revisions import get_proccessed_revisions
+from varats.data.revisions import get_processed_revisions
 from varats.paper.case_study import CaseStudy, CSStage
 
 
@@ -120,7 +120,7 @@ def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
     result_dir = Path(kwargs["result_folder"])
     project_name = kwargs["project"]
 
-    processed_revisions = get_proccessed_revisions(project_name, CommitReport)
+    processed_revisions = get_processed_revisions(project_name, CommitReport)
 
     reports = []
     for file_path in result_dir.iterdir():

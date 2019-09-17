@@ -24,7 +24,7 @@ import benchbuild.utils.actions as actions
 
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.data.report import FileStatusExtension as FSE
-from varats.data.revisions import get_proccessed_revisions
+from varats.data.revisions import get_processed_revisions
 from varats.experiments.extract import Extract
 from varats.experiments.wllvm import RunWLLVM
 from varats.settings import CFG as V_CFG
