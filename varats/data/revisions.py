@@ -35,8 +35,8 @@ def __get_result_files_dict(project_name: str, result_file_type: MetaReport
     return result_files
 
 
-def get_proccessed_revisions(project_name: str,
-                             result_file_type: MetaReport) -> tp.List[str]:
+def get_processed_revisions(project_name: str,
+                            result_file_type: MetaReport) -> tp.List[str]:
     """
     Calculates a list of revisions of a project that have already
     been processed successfully.
