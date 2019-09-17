@@ -17,7 +17,7 @@ from scipy.stats import halfnorm
 import numpy as np
 import pygit2
 
-from varats.data.revisions import (get_proccessed_revisions,
+from varats.data.revisions import (get_processed_revisions,
                                    get_failed_revisions, get_tagged_revisions)
 from varats.plots.plot_utils import check_required_args
 from varats.data.reports.commit_report import CommitMap
@@ -310,7 +310,7 @@ class CaseStudy(yaml.YAMLObject):
         Calculate how many revisions were processed.
         """
         total_processed_revisions = set(
-            get_proccessed_revisions(self.project_name, result_file_type))
+            get_processed_revisions(self.project_name, result_file_type))
 
         return [
             rev for rev in self.revisions
