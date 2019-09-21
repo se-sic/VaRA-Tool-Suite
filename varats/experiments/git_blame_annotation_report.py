@@ -43,8 +43,11 @@ class CFRAnalysis(actions.Step):  # type: ignore
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
-    def __init__(self, project: Project):
+    INTERACTION_FILTER_TEMPLATE = "InteractionFilter-{experiment}-{project}.yaml"
+
+    def __init__(self, project: Project, interaction_filter_experiment_name: str = None):
         super(CFRAnalysis, self).__init__(obj=project, action_fn=self.analyze)
+        self.__interaction_filter_experiment_name = interaction_filter_experiment_name
 
     def analyze(self) -> actions.StepResult:
         """
@@ -56,6 +59,20 @@ class CFRAnalysis(actions.Step):  # type: ignore
         if not self.obj:
             return
         project = self.obj
+
+        if self.__interaction_filter_experiment_name is None:
+            interaction_filter_file = Path(
+                self.INTERACTION_FILTER_TEMPLATE.format(
+                    experiment="GitBlameAnnotationReport",
+                    project=str(project.name)))
+        else:
+            interaction_filter_file = Path(
+                self.INTERACTION_FILTER_TEMPLATE.format(
+                    experiment=self.__interaction_filter_experiment_name,
+                    project=str(project.name)))
+            if not interaction_filter_file.is_file():
+                raise Exception("Could not load interaction filter file \"" +
+                                str(interaction_filter_file) + "\"")
 
         bc_cache_folder = local.path(Extract.BC_CACHE_FOLDER_TEMPLATE.format(
             cache_dir=str(CFG["vara"]["result"]),
@@ -78,15 +95,22 @@ class CFRAnalysis(actions.Step):  # type: ignore
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success)
 
-            run_cmd = opt[
-                "-vara-BD", "-vara-CFR",
-                "-vara-init-commits",
-                "-yaml-out-file={res_folder}/{res_file}".
-                format(res_folder=vara_result_folder, res_file=result_file
-                       ), bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
-                           project_name=project.name,
-                           binary_name=binary_name,
-                           project_version=project.version)]
+            opt_params = [
+                "-vara-BD", "-vara-CFR", "-vara-init-commits",
+                "-yaml-out-file={res_folder}/{res_file}".format(
+                    res_folder=vara_result_folder, res_file=result_file)]
+
+            if interaction_filter_file.is_file():
+                opt_params.append("-vara-cf-interaction-filter={}".format(
+                    str(interaction_filter_file)))
+
+            opt_params.append(bc_cache_folder /
+                              Extract.BC_FILE_TEMPLATE.format(
+                                  project_name=project.name,
+                                  binary_name=binary_name,
+                                  project_version=project.version))
+
+            run_cmd = opt.__getitem__(opt_params)
 
             timeout_duration = '8h'
             from benchbuild.utils.cmd import timeout
