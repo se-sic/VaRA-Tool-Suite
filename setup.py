@@ -12,7 +12,7 @@ setup(
         "PyQt5>=5.10.0",
         "PyYAML>=3.12",
         "seaborn>=0.8.0",
-        "matplotlib>=2.2.0",
+        "matplotlib==3.1.0",
         "pandas>=0.22.0",
         "benchbuild>=4.0.1",
         "plumbum>=1.6.6",
