@@ -17,7 +17,7 @@ class EmptyReport(BaseReport):
     def get_file_name(project_name: str, binary_name: str,
                       project_version: str, project_uuid: str,
                       extension_type: FileStatusExtension,
-                      file_ext=".txt") -> str:
+                      file_ext: str = ".txt") -> str:
         """
         Generates a filename for a commit report without any file ending.
         """
