@@ -45,7 +45,9 @@ class CFRAnalysis(actions.Step):  # type: ignore
 
     INTERACTION_FILTER_TEMPLATE = "InteractionFilter-{experiment}-{project}.yaml"
 
-    def __init__(self, project: Project, interaction_filter_experiment_name: str = None):
+    def __init__(self,
+                 project: Project,
+                 interaction_filter_experiment_name: tp.Optional[str] = None):
         super(CFRAnalysis, self).__init__(obj=project, action_fn=self.analyze)
         self.__interaction_filter_experiment_name = interaction_filter_experiment_name
 
