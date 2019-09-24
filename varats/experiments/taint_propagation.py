@@ -64,12 +64,12 @@ class VaraMTFACheck(actions.Step):
             return
         project = self.obj
 
-        # Set up cache directory for bitcode files
+        # Set up cache directory for bitcode files.
         bc_cache_dir = Extract.BC_CACHE_FOLDER_TEMPLATE.format(
             cache_dir=str(CFG["vara"]["result"]),
             project_name=str(project.name))
 
-        # Define the output directory
+        # Define the output directory.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
             result_dir=str(CFG["vara"]["outfile"]),
             project_dir=str(project.name))
@@ -79,28 +79,13 @@ class VaraMTFACheck(actions.Step):
 
         for binary_name in project.BIN_NAMES:
 
-            # Combine the input bitcode file's name
+            # Combine the input bitcode file's name.
             bc_target_file = Extract.BC_FILE_TEMPLATE.format(
                 project_name=str(project.name),
                 binary_name=str(binary_name),
                 project_version=str(project.version))
 
-            # Put together the path to the bc file and the opt command of vara
-            vara_run_cmd = opt["-vara-CD", "-print-Full-MTFA",
-                               "{cache_folder}/{bc_file}"
-                               .format(cache_folder=bc_cache_dir,
-                                       bc_file=bc_target_file),
-                               "-o", "/dev/null"]
-
-            file_check_expected = self.FILE_CHECK_EXPECTED.format(
-                project_name=str(project.name),
-                binary_name=str(binary_name),
-                project_version=str(project.version))
-
-            file_check_cmd = FileCheck["{fc_dir}{fc_exp_file}".format(
-                fc_dir=bc_cache_dir, fc_exp_file=file_check_expected)]
-
-            # Define output report file
+            # Define empty success file.
             result_file = TPR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary_name,
@@ -108,26 +93,47 @@ class VaraMTFACheck(actions.Step):
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success)
 
-            # TODO leeres .yaml wird auch fuer gescheiterte runs angelegt
-            # Run the MTFA command with custom error handler and timeout
+            # Define output file name of failed runs.
+            error_file = TPR.get_file_name(
+                project_name=str(project.name),
+                binary_name=binary_name,
+                project_version=str(project.version),
+                project_uuid=str(project.run_uuid),
+                extension_type=FSE.Failed,
+                file_ext=TPR.FILE_TYPE)
+
+            # The file name of the text file with the expected filecheck regex.
+            file_check_expected = self.FILE_CHECK_EXPECTED.format(
+                project_name=str(project.name),
+                binary_name=str(binary_name),
+                project_version=str(project.version))
+
+            # Put together the path to the bc file and the opt command of vara.
+            vara_run_cmd = opt["-vara-CD", "-print-Full-MTFA",
+                               "{cache_folder}/{bc_file}"
+                               .format(cache_folder=bc_cache_dir,
+                                       bc_file=bc_target_file),
+                               "-o", "/dev/null"]
+
+            file_check_cmd = FileCheck["{fc_dir}{fc_exp_file}".format(
+                fc_dir=bc_cache_dir, fc_exp_file=file_check_expected)]
+
+            # TODO gets turned into one opt cmd with too many args by plumbum
+            cmd_chain = (vara_run_cmd | file_check_cmd) \
+                    > "{res_folder}/{res_file}".format(
+                    res_folder=vara_result_folder,
+                    res_file=result_file)
+
+            # Run the MTFA command with custom error handler and timeout.
             try:
                 exec_func_with_pe_error_handler(
-                    timeout[timeout_duration, vara_run_cmd] | file_check_cmd
-                    > "{res_folder}/{res_file}".format(
-                        res_folder=vara_result_folder, res_file=result_file),
+                    timeout[timeout_duration, cmd_chain],
                     PEErrorHandler(vara_result_folder,
-                                   TPR.get_file_name(
-                                       project_name=str(project.name),
-                                       binary_name=binary_name,
-                                       project_version=str(project.version),
-                                       project_uuid=str(project.run_uuid),
-                                       extension_type=FSE.Failed,
-                                       file_ext=TPR.FILE_TYPE),
-                                   vara_run_cmd,
+                                   error_file,
                                    timeout_duration))
-            # Do not exit run after an error, just pipe the error in the file
+            # Exit the loop iteration after an error, but not stop the program.
             except:
-                pass
+                continue
 
 
 class FileCheckExpected(actions.Step):  # type: ignore
@@ -210,7 +216,7 @@ class TaintPropagation(VaRAVersionExperiment):
             << RunWLLVM() \
             << run.WithTimeout()
 
-        # Add own error handler to compile step
+        # Add own error handler to compile step.
         project.compile = FunctionPEErrorWrapper(
             project.compile,
             PEErrorHandler(
@@ -228,7 +234,7 @@ class TaintPropagation(VaRAVersionExperiment):
 
         analysis_actions = []
 
-        # Not run all steps if cached results exist
+        # Not run all steps if cached results exist.
         all_cache_files_present = True
         for binary_name in project.BIN_NAMES:
             all_cache_files_present &= path.exists(

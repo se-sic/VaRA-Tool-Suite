@@ -104,7 +104,7 @@ class CFRAnalysis(actions.Step):  # type: ignore
                         file_ext=".txt"), run_cmd, timeout_duration))
 
 
-class GitBlameAnntotationReport(VaRAVersionExperiment):
+class GitBlameAnnotationReport(VaRAVersionExperiment):
     """
     Generates a commit flow report (CFR) of the project(s) specified in the
     call.
@@ -127,7 +127,7 @@ class GitBlameAnntotationReport(VaRAVersionExperiment):
             << RunWLLVM() \
             << run.WithTimeout()
 
-        # Add own error handler to compile step
+        # Add own error handler to compile step.
         project.compile = FunctionPEErrorWrapper(
             project.compile,
             PEErrorHandler(
