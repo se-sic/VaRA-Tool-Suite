@@ -112,12 +112,32 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
                                                revs_total.flatten())
     ])).reshape(len(project_names), len(year_range))
 
+    # Note: See the following URL for this size calculation:
+    # https://stackoverflow.com/questions/51144934/how-to-increase-the-cell-size-for-annotation-in-seaborn-heatmap
+
+    fontsize_pt = 12
+    dpi = 1200
+
+    # comput the matrix height in points and inches
+    matrix_height_pt = fontsize_pt * len(project_names) * 40
+    matrix_height_in = matrix_height_pt / dpi
+
+    # compute the required figure height
+    top_margin = 0.05
+    bottom_margin = 0.10
+    figure_height = matrix_height_in / (1 - top_margin - bottom_margin)
+
+    # build the figure instance with the desired height
+    plt.subplots(figsize=(18, figure_height),
+                 gridspec_kw=dict(top=(1 - top_margin), bottom=bottom_margin))
+
     sb.heatmap(revs_success_ratio,
                annot=labels,
                fmt='',
                cmap="BrBG",
                xticklabels=year_range,
                yticklabels=project_names,
+               linewidths=.5,
                vmin=0,
                vmax=1,
                cbar_kws={'label': 'success ratio'})
@@ -150,7 +170,6 @@ class PaperConfigOverviewPlot(Plot):
         plt.savefig(result_dir / ("{graph_name}.{filetype}".format(
             graph_name=self.name, filetype=filetype)),
                     dpi=1200,
-                    bbox_inches="tight",
                     format=filetype)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
