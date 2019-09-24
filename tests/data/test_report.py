@@ -19,9 +19,11 @@ class TestMetaReport(unittest.TestCase):
         Setup file and CommitReport
         """
         cls.success_filename = ("EMPTY-foo-foo-7bb9ef5f8c_"
-                                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_success")
+                                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
+                                "success.txt")
         cls.fail_filename = ("EMPTY-foo-foo-7bb9ef5f8c_"
-                             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_failed")
+                             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
+                             "failed.txt")
 
     def test_is_result_file(self):
         """Check if the result file matcher works"""

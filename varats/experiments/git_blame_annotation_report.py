@@ -100,7 +100,8 @@ class CFRAnalysis(actions.Step):  # type: ignore
                         binary_name=binary_name,
                         project_version=str(project.version),
                         project_uuid=str(project.run_uuid),
-                        extension_type=FSE.Failed), run_cmd, timeout_duration))
+                        extension_type=FSE.Failed,
+                        file_ext=".txt"), run_cmd, timeout_duration))
 
 
 class GitBlameAnntotationReport(VaRAVersionExperiment):
@@ -138,7 +139,8 @@ class GitBlameAnntotationReport(VaRAVersionExperiment):
                     binary_name="all",
                     project_version=str(project.version),
                     project_uuid=str(project.run_uuid),
-                    extension_type=FSE.CompileError),
+                    extension_type=FSE.CompileError,
+                    file_ext=".txt"),
             ))
 
         # This c-flag is provided by VaRA and it suggests to use the git-blame
@@ -147,7 +149,7 @@ class GitBlameAnntotationReport(VaRAVersionExperiment):
 
         analysis_actions = []
 
-        # Check if all binaries have correspondong BC files
+        # Check if all binaries have corresponding BC files
         all_files_present = True
         for binary_name in project.BIN_NAMES:
             all_files_present &= path.exists(
