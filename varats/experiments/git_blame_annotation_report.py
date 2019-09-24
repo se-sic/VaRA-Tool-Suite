@@ -103,7 +103,7 @@ class CFRAnalysis(actions.Step):  # type: ignore
                         extension_type=FSE.Failed), run_cmd, timeout_duration))
 
 
-class GitBlameAnntotationReport(VaRAVersionExperiment):
+class GitBlameAnnotationReport(VaRAVersionExperiment):
     """
     Generates a commit flow report (CFR) of the project(s) specified in the
     call.
@@ -126,7 +126,7 @@ class GitBlameAnntotationReport(VaRAVersionExperiment):
             << RunWLLVM() \
             << run.WithTimeout()
 
-        # Add own error handler to compile step
+        # Add own error handler to compile step.
         project.compile = FunctionPEErrorWrapper(
             project.compile,
             PEErrorHandler(
@@ -147,7 +147,7 @@ class GitBlameAnntotationReport(VaRAVersionExperiment):
 
         analysis_actions = []
 
-        # Check if all binaries have correspondong BC files
+        # Check if all binaries have corresponding BC files
         all_files_present = True
         for binary_name in project.BIN_NAMES:
             all_files_present &= path.exists(
