@@ -100,7 +100,8 @@ class CFRAnalysis(actions.Step):  # type: ignore
                         binary_name=binary_name,
                         project_version=str(project.version),
                         project_uuid=str(project.run_uuid),
-                        extension_type=FSE.Failed), run_cmd, timeout_duration))
+                        extension_type=FSE.Failed,
+                        file_ext=".txt"), run_cmd, timeout_duration))
 
 
 class GitBlameAnnotationReport(VaRAVersionExperiment):
@@ -138,7 +139,8 @@ class GitBlameAnnotationReport(VaRAVersionExperiment):
                     binary_name="all",
                     project_version=str(project.version),
                     project_uuid=str(project.run_uuid),
-                    extension_type=FSE.CompileError),
+                    extension_type=FSE.CompileError,
+                    file_ext=".txt"),
             ))
 
         # This c-flag is provided by VaRA and it suggests to use the git-blame
