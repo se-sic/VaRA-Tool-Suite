@@ -16,13 +16,13 @@ failed.
 import typing as tp
 from os import path
 
-from plumbum import local
+from plumbum import local, ProcessExecutionError
 
 from benchbuild.extensions import compiler, run, time
 from benchbuild.settings import CFG
 from benchbuild.project import Project
 import benchbuild.utils.actions as actions
-from benchbuild.utils.cmd import opt, cp, mkdir, timeout, FileCheck
+from benchbuild.utils.cmd import opt, cp, mkdir, timeout, FileCheck, rm
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.data.report import FileStatusExtension as FSE
 from varats.experiments.extract import Extract
@@ -118,22 +118,22 @@ class VaraMTFACheck(actions.Step):
             file_check_cmd = FileCheck["{fc_dir}{fc_exp_file}".format(
                 fc_dir=bc_cache_dir, fc_exp_file=file_check_expected)]
 
-            # TODO gets turned into one opt cmd with too many args by plumbum
-            cmd_chain = (vara_run_cmd | file_check_cmd) \
-                    > "{res_folder}/{res_file}".format(
-                    res_folder=vara_result_folder,
-                    res_file=result_file)
+            cmd_chain = timeout[timeout_duration, vara_run_cmd] \
+                | file_check_cmd > "{res_folder}/{res_file}".format(
+                res_folder=vara_result_folder,
+                res_file=result_file)
 
             # Run the MTFA command with custom error handler and timeout.
             try:
                 exec_func_with_pe_error_handler(
-                    timeout[timeout_duration, cmd_chain],
-                    PEErrorHandler(vara_result_folder,
-                                   error_file,
-                                   timeout_duration))
-            # Exit the loop iteration after an error, but not stop the program.
-            except:
-                continue
+                    cmd_chain,
+                    PEErrorHandler(vara_result_folder, error_file,
+                                   cmd_chain, timeout_duration))
+            # Remove the success file on error in the filecheck.
+            except ProcessExecutionError:
+                rm("{res_folder}/{res_file}".format(
+                    res_folder=vara_result_folder,
+                    res_file=result_file))
 
 
 class FileCheckExpected(actions.Step):  # type: ignore
