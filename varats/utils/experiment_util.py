@@ -59,13 +59,22 @@ class PEErrorHandler():
                  result_folder: str,
                  error_file_name: str,
                  run_cmd: tp.Optional[BoundCommand] = None,
-                 timeout_duration: tp.Optional[str] = None):
+                 timeout_duration: tp.Optional[str] = None,
+                 delete_files: tp.Optional[tp.List[Path]] = None):
         self.__result_folder = result_folder
         self.__error_file_name = error_file_name
         self.__run_cmd = run_cmd
         self.__timeout_duration = timeout_duration
+        self.__delete_files = delete_files
 
     def __call__(self, ex: Exception) -> None:
+        if self.__delete_files is not None:
+            for delete_file in self.__delete_files:
+                try:
+                    delete_file.unlink()
+                except FileNotFoundError:
+                    pass
+
         error_file = Path("{res_folder}/{res_file}".format(
             res_folder=self.__result_folder, res_file=self.__error_file_name))
         if not os.path.exists(self.__result_folder):

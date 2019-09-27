@@ -6,6 +6,7 @@ import unittest
 
 from varats.data.report import FileStatusExtension, MetaReport
 from varats.data.reports.empty_report import EmptyReport
+from varats.data.reports.commit_report import CommitReport as CR
 
 
 class TestMetaReport(unittest.TestCase):
@@ -22,6 +23,8 @@ class TestMetaReport(unittest.TestCase):
                                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_success")
         cls.fail_filename = ("EMPTY-foo-foo-7bb9ef5f8c_"
                              "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_failed")
+        cls.supplementary_filename = ("CR-SUPPL-foo-foo-7bb9ef5f8c_"
+                                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_test.txt")
 
     def test_is_result_file(self):
         """Check if the result file matcher works"""
@@ -30,7 +33,18 @@ class TestMetaReport(unittest.TestCase):
         self.assertFalse(
             MetaReport.is_result_file(self.success_filename.replace("_", "")))
         self.assertFalse(
-            MetaReport.is_result_file(self.success_filename.replace("-", "")))
+            MetaReport.is_result_file(self.fail_filename.replace("-", "")))
+
+    def test_is_supplementary_result_file(self):
+        """Check if the supplementary result file matcher works"""
+        self.assertTrue(
+            MetaReport.is_result_file_supplementary(
+                self.supplementary_filename))
+        self.assertFalse(
+            MetaReport.is_result_file_supplementary(
+                self.supplementary_filename.replace("_", "")))
+        self.assertFalse(MetaReport.is_result_file(
+            self.supplementary_filename))
 
     def test_file_status(self):
         """
@@ -55,6 +69,22 @@ class TestMetaReport(unittest.TestCase):
             MetaReport.get_commit_hash_from_result_file(self.fail_filename),
             "7bb9ef5f8c")
 
+    def test_get_commit_supplementary(self):
+        """
+        Check if the correct commit hash is returned.
+        """
+        self.assertEqual(
+            MetaReport.get_commit_hash_from_supplementary_result_file(
+                self.supplementary_filename), "7bb9ef5f8c")
+
+    def test_get_info_type_supplementary(self):
+        """
+        Check if the correct info_type is returned.
+        """
+        self.assertEqual(
+            MetaReport.get_info_type_from_supplementary_result_file(
+                self.supplementary_filename), "test")
+
     def test_file_name_creation(self):
         """
          Check if file names are created correctly.
@@ -70,3 +100,13 @@ class TestMetaReport(unittest.TestCase):
                                       "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
                                       FileStatusExtension.Failed),
             self.fail_filename)
+
+    def test_supplementary_file_name_creation(self):
+        """
+         Check if file names are created correctly.
+        """
+        self.assertEqual(
+            CR.get_supplementary_file_name(
+                "foo", "foo", "7bb9ef5f8c",
+                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be", "test", "txt"),
+            self.supplementary_filename)

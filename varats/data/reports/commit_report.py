@@ -181,6 +181,17 @@ class CommitReport(BaseReport):
                                         project_uuid, extension_type,
                                         CommitReport.FILE_TYPE)
 
+    @staticmethod
+    def get_supplementary_file_name(project_name: str, binary_name: str,
+                                    project_version: str, project_uuid: str,
+                                    info_type: str, file_ext: str) -> str:
+        """
+        Generates a filename for a commit report supplementary file.
+        """
+        return BaseReport.get_supplementary_file_name(
+            CommitReport.SHORTHAND, project_name, binary_name, project_version,
+            project_uuid, info_type, file_ext)
+
     def calc_max_cf_edges(self) -> int:
         """
         Calulate the highest amount of control-flow interactions of a single
