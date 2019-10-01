@@ -683,10 +683,12 @@ def set_vara_cmake_variables(
 
     if include_phasar:
         set_cmake_var("LLVM_PHASAR_BUILD", "ON", post_out)
+        set_cmake_var("LLVM_TOOL_PHASAR_BUILD", "ON", post_out)
         set_cmake_var("LLVM_ENABLE_RTTI", "ON", post_out)
         set_cmake_var("LLVM_ENABLE_EH", "ON", post_out)
     else:
         set_cmake_var("LLVM_PHASAR_BUILD", "OFF", post_out)
+        set_cmake_var("LLVM_TOOL_PHASAR_BUILD", "OFF", post_out)
 
     set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix, post_out)
 
