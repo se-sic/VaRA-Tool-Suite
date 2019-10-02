@@ -102,7 +102,9 @@ def update_term(text: str) -> None:
     """
     Print/Update terminal text without producing new lines.
     """
-    text = text.replace(os.linesep, ' ')
+    text = text.replace(os.linesep, '').strip()
+    if not text:
+        return
     _, columns = os.popen('/bin/stty size', 'r').read().split()
     print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r', flush=True)
 
