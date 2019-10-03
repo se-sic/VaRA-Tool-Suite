@@ -678,6 +678,10 @@ def set_vara_cmake_variables(
     """
     if own_libgit:
         set_cmake_var("VARA_BUILD_LIBGIT", "ON", post_out)
+        set_cmake_var("USE_HTTPS", "OFF", post_out)
+        set_cmake_var("USE_SSH", "OFF", post_out)
+        set_cmake_var("USE_EXT_HTTP_PARSER", "OFF", post_out)
+        set_cmake_var("BUILD_CLAR", "OFF", post_out)
     else:
         set_cmake_var("VARA_BUILD_LIBGIT", "OFF", post_out)
 
