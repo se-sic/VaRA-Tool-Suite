@@ -22,8 +22,13 @@ For ubuntu, you can use the following command to install them (your system has t
 have at least `python3.6`):
 
 ```bash
-sudo apt install python3-dev python3-tk python3-psutil psutils ninja-build python3-pip libpapi-dev
+sudo apt install python3-dev python3-tk python3-psutil psutils ninja-build python3-pip autoconf cmake ruby curl time
 sudo apt install python3-venv # If you want to install VaRA-TS in a python virtualenv
+```
+
+Additional packages are required to build VaRA from source.
+```bash
+sudo apt install libsqlite3-dev libcurl4-openssl-dev libboost-all-dev libpapi-dev
 ```
 
 ### Install VaRA-TS

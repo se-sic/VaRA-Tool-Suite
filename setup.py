@@ -25,15 +25,15 @@ setup(
     entry_points={
         "gui_scripts": [
             'vara-graphview = varats.driver:main_graph_view',
-            'vara-buildsetup = varats.driver:build_setup',
             'vara-gen-commitmap = varats.driver:main_gen_commitmap',
         ],
         "console_scripts": [
-            'vara-develop = varats.driver:main_develop',
-            'vd = varats.driver:main_develop',
-            'vara-gen-graph = varats.driver:main_gen_graph',
-            'vara-gen-bbconfig = varats.driver:main_gen_benchbuild_config',
+            'vara-buildsetup = varats.driver:build_setup',
             'vara-cs = varats.driver:main_casestudy',
+            'vara-develop = varats.driver:main_develop',
+            'vara-gen-bbconfig = varats.driver:main_gen_benchbuild_config',
+            'vara-gen-graph = varats.driver:main_gen_graph',
+            'vd = varats.driver:main_develop',
         ]
     },
     python_requires='>=3.6')
