@@ -17,9 +17,10 @@ class TaintPropagationReport(BaseReport):
     SHORTHAND = "TAINT"
     FILE_TYPE = "txt"
 
-
     def __init__(self, path: Path) -> None:
-        pass
+        super(TaintPropagationReport, self).__init__()
+        with open(path, "r") as stream:
+                self._path = path
 
     @property
     def path(self) -> Path:

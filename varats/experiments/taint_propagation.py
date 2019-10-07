@@ -32,7 +32,7 @@ from varats.utils.experiment_util import (
     VaRAVersionExperiment, PEErrorHandler)
 
 
-class VaraMTFACheck(actions.Step):
+class VaraMTFACheck(actions.Step): # type: ignore
     """
     Analyse a project with VaRA and generate the output of the taint analysis.
     """
