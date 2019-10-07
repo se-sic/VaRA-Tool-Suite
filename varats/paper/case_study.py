@@ -20,6 +20,7 @@ import pygit2
 from varats.data.revisions import (get_processed_revisions,
                                    get_failed_revisions, get_tagged_revisions)
 from varats.plots.plot_utils import check_required_args
+from varats.data.version_header import VersionHeader
 from varats.data.reports.commit_report import CommitMap
 from varats.data.report import MetaReport, FileStatusExtension
 
@@ -30,7 +31,6 @@ class HashIDTuple(yaml.YAMLObject):
     the first commit in the repository.
     """
 
-    yaml_loader = yaml.SafeLoader
     yaml_tag = u'!HashIDTuple'
 
     def __init__(self, commit_hash: str, commit_id: int) -> None:
@@ -68,11 +68,11 @@ class CSStage(yaml.YAMLObject):
     to separate revisions into groups.
     """
 
-    yaml_loader = yaml.SafeLoader
     yaml_tag = u'!CSStage'
 
-    def __init__(self, name: tp.Optional[str] = None) -> None:
-        self.__revisions: tp.List[HashIDTuple] = []
+    def __init__(self, name: tp.Optional[str] = None,
+                 revisions: tp.List[HashIDTuple] = []) -> None:
+        self.__revisions: tp.List[HashIDTuple] = revisions
         self.__name: tp.Optional[str] = name
 
     @property
@@ -130,13 +130,13 @@ class CaseStudy(yaml.YAMLObject):
      - a set of revisions
     """
 
-    yaml_loader = yaml.SafeLoader
     yaml_tag = u'!CaseStudy'
 
-    def __init__(self, project_name: str, version: int) -> None:
+    def __init__(self, project_name: str, version: int,
+                 stages: tp.List[CSStage] = []) -> None:
         self.__project_name = project_name
         self.__version = version
-        self.__stages: tp.List[CSStage] = []
+        self.__stages = stages
 
     @property
     def project_name(self) -> str:
@@ -371,7 +371,24 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
     """
     if file_path.exists():
         with open(file_path, "r") as cs_file:
-            return tp.cast(CaseStudy, yaml.safe_load(cs_file))
+            documents = yaml.load_all(cs_file, Loader=yaml.CLoader)
+            version_header = VersionHeader(next(documents))
+            version_header.raise_if_not_type("CaseStudy")
+            version_header.raise_if_version_is_less_than(1)
+
+            raw_case_study = next(documents)
+            stages: tp.List[CSStage] = []
+            for raw_stage in raw_case_study['CSStage']:
+                hash_id_tuples: tp.List[HashIDTuple] = []
+                for raw_hash_id_tuple in raw_stage['HashIDTuple']:
+                    hash_id_tuples.append(
+                        HashIDTuple(raw_hash_id_tuple['commit_hash'],
+                                    raw_hash_id_tuple['commit_id']))
+                stages.append(CSStage(raw_stage['name'], hash_id_tuples))
+
+            return CaseStudy(raw_case_study['name'],
+                             raw_case_study['version'],
+                             stages)
 
     raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
                             str(file_path))
