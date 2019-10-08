@@ -139,9 +139,6 @@ class CaseStudy():
      - name of the related benchbuild.project
      - a set of revisions
     """
-
-    yaml_tag = u'!CaseStudy'
-
     def __init__(self,
                  project_name: str,
                  version: int,
