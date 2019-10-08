@@ -25,14 +25,11 @@ from varats.data.reports.commit_report import CommitMap
 from varats.data.report import MetaReport, FileStatusExtension
 
 
-class HashIDTuple(yaml.YAMLObject):
+class HashIDTuple():
     """
     Combining a commit hash with a unique and ordered id, starting with 0 for
     the first commit in the repository.
     """
-
-    yaml_tag = u'!HashIDTuple'
-
     def __init__(self, commit_hash: str, commit_id: int) -> None:
         self.__commit_hash = commit_hash
         self.__commit_id = commit_id
@@ -51,6 +48,9 @@ class HashIDTuple(yaml.YAMLObject):
         """
         return self.__commit_id
 
+    def get_dict(self) -> tp.Dict[str, tp.Union[str, int]]:
+        return dict(commit_hash=self.commit_hash, commit_id=self.commit_id)
+
     def __str(self) -> str:
         return "({commit_id}: #{commit_hash})"\
             .format(commit_hash=self.commit_hash,
@@ -62,15 +62,13 @@ class HashIDTuple(yaml.YAMLObject):
                     commit_id=self.commit_id)
 
 
-class CSStage(yaml.YAMLObject):
+class CSStage():
     """
     A stage in a case-study, i.e., a collection of revisions. Stages are used
     to separate revisions into groups.
     """
-
-    yaml_tag = u'!CSStage'
-
-    def __init__(self, name: tp.Optional[str] = None,
+    def __init__(self,
+                 name: tp.Optional[str] = None,
                  revisions: tp.List[HashIDTuple] = []) -> None:
         self.__revisions: tp.List[HashIDTuple] = revisions
         self.__name: tp.Optional[str] = name
@@ -119,8 +117,20 @@ class CSStage(yaml.YAMLObject):
         """
         self.__revisions.sort(key=lambda x: x.commit_id, reverse=reverse)
 
+    def get_dict(self) -> tp.Dict[
+        str, tp.Union[str, tp.List[tp.Dict[str, tp.Union[str, int]]]]]:
 
-class CaseStudy(yaml.YAMLObject):
+        stage_dict: tp.Dict[str, tp.Union[
+            str, tp.List[tp.Dict[str, tp.Union[str, int]]]]] = dict()
+        if self.name is not None:
+            stage_dict['project_name'] = self.name
+        revision_list = [revision.get_dict() for revision in self.__revisions]
+        if len(revision_list) > 0:
+            stage_dict['revisions'] = revision_list
+        return stage_dict
+
+
+class CaseStudy():
     """
     A case study persists a set of configuration values for a project to allow
     easy reevaluation.
@@ -132,7 +142,9 @@ class CaseStudy(yaml.YAMLObject):
 
     yaml_tag = u'!CaseStudy'
 
-    def __init__(self, project_name: str, version: int,
+    def __init__(self,
+                 project_name: str,
+                 version: int,
                  stages: tp.List[CSStage] = []) -> None:
         self.__project_name = project_name
         self.__version = version
@@ -364,6 +376,13 @@ class CaseStudy(yaml.YAMLObject):
 
         return []
 
+    def get_dict(self) -> tp.Dict[str, tp.Union[str, int, tp.List[tp.Dict[
+        str, tp.Union[str, tp.List[tp.Dict[str, tp.Union[str, int]]]]]]]]:
+
+        return dict(project_name=self.project_name,
+                    version=self.version,
+                    stages=[stage.get_dict() for stage in self.stages])
+
 
 def load_case_study_from_file(file_path: Path) -> CaseStudy:
     """
@@ -423,7 +442,10 @@ def __store_case_study_to_file(case_study: CaseStudy, file_path: Path) -> None:
     Store case study to file.
     """
     with open(file_path, "w") as cs_file:
-        cs_file.write(yaml.dump(case_study))
+        version_header: VersionHeader = \
+            VersionHeader.from_version_number('CaseStudy', 1)
+
+        cs_file.write(yaml.dump_all([version_header, case_study.get_dict()]))
 
 
 def get_newest_result_files_for_case_study(
