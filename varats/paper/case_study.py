@@ -400,7 +400,8 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
                     hash_id_tuples.append(
                         HashIDTuple(raw_hash_id_tuple['commit_hash'],
                                     raw_hash_id_tuple['commit_id']))
-                stages.append(CSStage(raw_stage['name'], hash_id_tuples))
+                stages.append(
+                    CSStage(raw_stage.get('name') or None, hash_id_tuples))
 
             return CaseStudy(raw_case_study['project_name'],
                              raw_case_study['version'],
