@@ -442,7 +442,8 @@ def __store_case_study_to_file(case_study: CaseStudy, file_path: Path) -> None:
         version_header: VersionHeader = \
             VersionHeader.from_version_number('CaseStudy', 1)
 
-        cs_file.write(yaml.dump_all([version_header, case_study.get_dict()]))
+        cs_file.write(
+            yaml.dump_all([version_header.get_dict(), case_study.get_dict()]))
 
 
 def get_newest_result_files_for_case_study(
