@@ -123,7 +123,7 @@ class CSStage():
         stage_dict: tp.Dict[str, tp.Union[
             str, tp.List[tp.Dict[str, tp.Union[str, int]]]]] = dict()
         if self.name is not None:
-            stage_dict['project_name'] = self.name
+            stage_dict['name'] = self.name
         revision_list = [revision.get_dict() for revision in self.__revisions]
         if len(revision_list) > 0:
             stage_dict['revisions'] = revision_list
