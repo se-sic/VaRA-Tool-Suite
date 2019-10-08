@@ -5,6 +5,9 @@ Test paper config manager
 import typing as tp
 from collections import defaultdict
 import unittest
+from pathlib import Path
+from tempfile import NamedTemporaryFile
+
 import yaml
 import mock
 
@@ -12,6 +15,7 @@ from varats.data.report import FileStatusExtension
 from varats.data.reports.commit_report import CommitReport
 import varats.paper.paper_config_manager as PCM
 
+from varats.paper.case_study import load_case_study_from_file
 from test_case_study import YAML_CASE_STUDY
 
 
@@ -25,7 +29,10 @@ class TestPaperConfigManager(unittest.TestCase):
         """
         Setup case study from yaml doc.
         """
-        cls.case_study = yaml.safe_load(YAML_CASE_STUDY)
+        with NamedTemporaryFile('w') as yaml_file:
+            yaml_file.write(YAML_CASE_STUDY)
+            yaml_file.seek(0)
+            cls.case_study = load_case_study_from_file(Path(yaml_file.name))
 
     @mock.patch('varats.paper.case_study.get_tagged_revisions')
     def test_short_status(self, mock_get_tagged_revisions):
