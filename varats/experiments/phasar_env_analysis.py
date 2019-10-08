@@ -18,7 +18,7 @@ from benchbuild.project import Project
 from benchbuild.experiment import Experiment
 import benchbuild.utils.actions as actions
 from benchbuild.utils.cmd import phasar, mkdir, timeout
-from varats.data.reports.phasar_report import PhasarReport as PHR
+from varats.data.reports.env_trace_report import EnvTraceReport as ENVR
 from varats.data.report import FileStatusExtension as FSE
 from varats.experiments.extract import Extract
 from varats.experiments.wllvm import RunWLLVM
@@ -71,7 +71,6 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
         timeout_duration = '8h'
 
         for binary_name in project.BIN_NAMES:
-
             # Combine the input bitcode file's name.
             bc_target_file = Extract.BC_FILE_TEMPLATE.format(
                 project_name=str(project.name),
@@ -79,7 +78,7 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
                 project_version=str(project.version))
 
             # Define result file.
-            result_file = PHR.get_file_name(
+            result_file = ENVR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary_name,
                 project_version=str(project.version),
@@ -87,7 +86,7 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
                 extension_type=FSE.Success)
 
             # Define output file name of failed runs.
-            error_file = PHR.get_file_name(
+            error_file = ENVR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary_name,
                 project_version=str(project.version),
@@ -111,7 +110,7 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
                                phasar_run_cmd, timeout_duration))
 
 
-class PhasarEnvironmentTracing(Experiment):
+class PhasarEnvironmentTracing(Experiment):  # type: ignore
     """
     Generates a inter-procedural data flow analysis (IDFS) on a project's
     binaries and traces environment variables.
@@ -119,7 +118,7 @@ class PhasarEnvironmentTracing(Experiment):
 
     NAME = "PhasarEnvironmentTracing"
 
-    REPORT_TYPE = PHR
+    REPORT_TYPE = ENVR
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """
@@ -143,7 +142,7 @@ class PhasarEnvironmentTracing(Experiment):
                 PhasarEnvIFDS.RESULT_FOLDER_TEMPLATE.format(
                     result_dir=str(CFG["vara"]["outfile"]),
                     project_dir=str(project.name)),
-                PHR.get_file_name(
+                ENVR.get_file_name(
                     project_name=str(project.name),
                     binary_name="all",
                     project_version=str(project.version),

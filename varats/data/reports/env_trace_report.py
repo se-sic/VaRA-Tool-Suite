@@ -5,12 +5,12 @@ Report that simply takes the output of an phasar analysis.
 from varats.data.report import BaseReport, FileStatusExtension
 
 
-class PhasarReport(BaseReport):
+class EnvTraceReport(BaseReport):
     """
     The phasar report produces json files with the output for each file.
     """
 
-    SHORTHAND = "PHASAR"
+    SHORTHAND = "ENV-TRACE"
     FILETYPE = "json"
 
     @staticmethod
@@ -21,7 +21,7 @@ class PhasarReport(BaseReport):
         """
         Generates a filename for a dataflow analysis with json file type.
         """
-        return BaseReport.get_file_name(PhasarReport.SHORTHAND, project_name,
+        return BaseReport.get_file_name(EnvTraceReport.SHORTHAND, project_name,
                                         binary_name, project_version,
                                         project_uuid, extension_type,
                                         file_ext)
