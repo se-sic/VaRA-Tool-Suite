@@ -1,3 +1,12 @@
+"""
+Execute showcase cpp examples with Phasar's tracing of environment variables.
+This class implements the environment tracing data flow analysis of Phasar.
+We run the analysis on exemplary cpp files. The cpp examples can be
+found in the https://github.com/se-passau/vara-perf-tests repository.
+The results of each analysis get written into a PhasarReport, which lists, what
+examples produced a valid json result and which ones failed.
+"""
+
 import typing as tp
 from os import path
 
@@ -25,8 +34,8 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
     """
 
     NAME = "PhasarEnvIFDS"
-    DESCRIPTION = "Calls the environment tracing analysis of phasar and stores"
-    + " the results in a json file."
+    DESCRIPTION = "Calls the environment tracing analysis of phasar and "\
+        + "stores the results in a json file."
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
@@ -88,7 +97,7 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
 
             # Put together the run command
             phasar_run_cmd = phasar["-D", "IFDS_EnvironmentVariableTracing",
-                                    "{cache_folder}/{bc_file}"
+                                    "-m", "{cache_folder}/{bc_file}"
                                     .format(cache_folder=bc_cache_dir,
                                             bc_file=bc_target_file),
                                     "-O", "{res_folder}/{res_file}".format(
