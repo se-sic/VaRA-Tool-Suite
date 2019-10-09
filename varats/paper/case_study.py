@@ -49,6 +49,9 @@ class HashIDTuple():
         return self.__commit_id
 
     def get_dict(self) -> tp.Dict[str, tp.Union[str, int]]:
+        """
+        Get a dict representation of this commit and id.
+        """
         return dict(commit_hash=self.commit_hash, commit_id=self.commit_id)
 
     def __str(self) -> str:
@@ -69,9 +72,10 @@ class CSStage():
     """
     def __init__(self,
                  name: tp.Optional[str] = None,
-                 revisions: tp.List[HashIDTuple] = []) -> None:
-        self.__revisions: tp.List[HashIDTuple] = revisions
+                 revisions: tp.Optional[tp.List[HashIDTuple]] = None) -> None:
         self.__name: tp.Optional[str] = name
+        self.__revisions: tp.List[
+            HashIDTuple] = revisions if revisions is not None else []
 
     @property
     def revisions(self) -> tp.List[str]:
@@ -117,15 +121,20 @@ class CSStage():
         """
         self.__revisions.sort(key=lambda x: x.commit_id, reverse=reverse)
 
-    def get_dict(self) -> tp.Dict[
-        str, tp.Union[str, tp.List[tp.Dict[str, tp.Union[str, int]]]]]:
-
-        stage_dict: tp.Dict[str, tp.Union[
-            str, tp.List[tp.Dict[str, tp.Union[str, int]]]]] = dict()
+    def get_dict(
+            self
+    ) -> tp.Dict[str, tp.Union[str, tp.List[tp.Dict[str, tp.
+                                                    Union[str, int]]]]]:
+        """
+        Get a dict representation of this stage.
+        """
+        stage_dict: tp.Dict[
+            str, tp.Union[str, tp.List[tp.Dict[str, tp.
+                                               Union[str, int]]]]] = dict()
         if self.name is not None:
             stage_dict['name'] = self.name
         revision_list = [revision.get_dict() for revision in self.__revisions]
-        if len(revision_list) > 0:
+        if revision_list:
             stage_dict['revisions'] = revision_list
         return stage_dict
 
@@ -142,10 +151,10 @@ class CaseStudy():
     def __init__(self,
                  project_name: str,
                  version: int,
-                 stages: tp.List[CSStage] = []) -> None:
+                 stages: tp.Optional[tp.List[CSStage]] = None) -> None:
         self.__project_name = project_name
         self.__version = version
-        self.__stages = stages
+        self.__stages = stages if stages is not None else []
 
     @property
     def project_name(self) -> str:
@@ -373,9 +382,12 @@ class CaseStudy():
 
         return []
 
-    def get_dict(self) -> tp.Dict[str, tp.Union[str, int, tp.List[tp.Dict[
-        str, tp.Union[str, tp.List[tp.Dict[str, tp.Union[str, int]]]]]]]]:
-
+    def get_dict(self) -> tp.Dict[str, tp.Union[str, int, tp.List[
+            tp.Dict[str, tp.Union[str, tp.List[tp.Dict[str, tp.
+                                                       Union[str, int]]]]]]]]:
+        """
+        Get a dict representation of this case study.
+        """
         return dict(project_name=self.project_name,
                     version=self.version,
                     stages=[stage.get_dict() for stage in self.stages])
@@ -404,8 +416,7 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
                     CSStage(raw_stage.get('name') or None, hash_id_tuples))
 
             return CaseStudy(raw_case_study['project_name'],
-                             raw_case_study['version'],
-                             stages)
+                             raw_case_study['version'], stages)
 
     raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
                             str(file_path))
