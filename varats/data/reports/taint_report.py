@@ -14,20 +14,19 @@ class TaintPropagationReport(BaseReport):
     in a readable manner.
     """
 
-    SHORTHAND = "TAINT"
+    SHORTHAND = "TPR"
     FILE_TYPE = "txt"
 
     def __init__(self, path: Path) -> None:
         super(TaintPropagationReport, self).__init__()
-        with open(path, "r") as stream:
-                self._path = path
+        self.__path = path
 
     @property
     def path(self) -> Path:
         """
         Path to TaintPropagationReport file.
         """
-        return self._path
+        return self.__path
 
     @staticmethod
     def get_file_name(project_name: str, binary_name: str,
@@ -43,7 +42,7 @@ class TaintPropagationReport(BaseReport):
                                         extension_type, file_ext)
 
     def __repr__(self) -> str:
-        return "TPR: " + os.path.basename(self.path)
+        return self.SHORTHAND + ":" + os.path.basename(self.path)
 
     def __lt__(self, other: 'TaintPropagationReport') -> bool:
         return self.path < other.path
