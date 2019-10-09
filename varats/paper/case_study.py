@@ -134,8 +134,7 @@ class CSStage():
         if self.name is not None:
             stage_dict['name'] = self.name
         revision_list = [revision.get_dict() for revision in self.__revisions]
-        if revision_list:
-            stage_dict['revisions'] = revision_list
+        stage_dict['revisions'] = revision_list
         return stage_dict
 
 
