@@ -154,6 +154,7 @@ def get_supplementary_result_files(project_name: str,
         project_name (str): target project
         result_file_type (MetaReport): the type of the result file
         revision (str): The revision for which the result files should be returned.
+        suppl_info_type (str): Only include result files of the specified type
 
     Returns:
         [(Path, str, str)]: List of tuples of result file path, revision,
