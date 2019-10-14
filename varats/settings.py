@@ -193,6 +193,7 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
         'varats.experiments.marker_tester',
         'varats.experiments.just_compile',
         'varats.experiments.taint_propagation'
+        'varats.experiments.phasar_env_analysis'
     ]
 
     # Slurm Cluster Configuration
