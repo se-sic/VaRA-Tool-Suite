@@ -1,11 +1,11 @@
 """
-Execute showcase cpp examples with VaRA and Phasar to compare their taint
-analyses.
+Execute showcase cpp examples with VaRA to compare the taint analysis to other
+statically analysis frameworks.
 
 This class implements the full commit taint flow analysis (MTFA) graph
-generation of the variability-aware region analyzer (VaRA) and Phasar.
-We run the analyses on exemplary cpp files. Then we compare the results of both
-analyses to the expected results via LLVM FileCheck.
+generation of the variability-aware region analyzer (VaRA).
+We run the analyses on exemplary cpp files. Then we compare the results of the
+analysis to the expected results via LLVM FileCheck.
 Both the cpp examples and the filecheck files validating the results can be
 found in the https://github.com/se-passau/vara-perf-tests repository.
 The results of each filecheck get written into a special TaintPropagation-
@@ -137,13 +137,13 @@ class VaraMTFACheck(actions.Step):  # type: ignore
                     res_file=result_file))
 
 
-class TaintPropagation(VaRAVersionExperiment):
+class VaRATaintPropagation(VaRAVersionExperiment):
     """
     Generates a taint flow analysis (MTFA) of the project(s) specified in the
     call.
     """
 
-    NAME = "TaintPropagation"
+    NAME = "VaRATaintPropagation"
 
     REPORT_TYPE = TPR
 
