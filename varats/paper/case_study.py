@@ -344,7 +344,10 @@ class CaseStudy():
                          revision: str,
                          commit_id: int,
                          stage_num: int = 0,
-                         sort_revs: bool = True) -> None:
+                         sort_revs: bool = True,
+                         extender_strategy: tp.Optional[ExtenderStrategy] = None,
+                         sampling_method: tp.Optional[SamplingMethod] = None
+                         ) -> None:
         """
         Add a revision to this case study.
         """
@@ -359,10 +362,18 @@ class CaseStudy():
             if sort_revs:
                 stage.sort()
 
+        if extender_strategy is not None:
+            stage.extender_strategy = extender_strategy
+        if sampling_method is not None:
+            stage.sampling_method = sampling_method
+
     def include_revisions(self,
                           revisions: tp.List[tp.Tuple[str, int]],
                           stage_num: int = 0,
-                          sort_revs: bool = True) -> None:
+                          sort_revs: bool = True,
+                          extender_strategy: tp.Optional[ExtenderStrategy] = None,
+                          sampling_method: tp.Optional[SamplingMethod] = None
+                          ) -> None:
         """
         Add multiple revisions to this case study.
 
@@ -370,9 +381,12 @@ class CaseStudy():
             revisions: List of tuples with (commit_hash, id) to be inserted
             stage_num: The stage to insert the revisions
             sort_revs: True if the stage should be kept sorted
+            extender_strategy: The extender strategy used to acquire the revisions
+            sampling_method: The sampling method used to acquire the revisions
         """
         for revision in revisions:
-            self.include_revision(revision[0], revision[1], stage_num, False)
+            self.include_revision(revision[0], revision[1], stage_num, False,
+                                  extender_strategy, sampling_method)
 
         if sort_revs and self.num_stages > 0:
             self.__stages[stage_num].sort()
@@ -635,7 +649,8 @@ def extend_with_extra_revs(case_study: CaseStudy, cmap: CommitMap,
         if any(map(rev_item[0].startswith, extra_revs))
     ]
 
-    case_study.include_revisions(new_rev_items, merge_stage, True)
+    case_study.include_revisions(new_rev_items, merge_stage, True,
+                                 ExtenderStrategy.simple_add)
 
 
 @check_required_args(['git_path', 'revs_per_year', 'merge_stage', 'revs_year_sep'])
@@ -702,7 +717,8 @@ def extend_with_revs_per_year(case_study: CaseStudy, cmap: CommitMap,
         else:
             stage_index = kwargs['merge_stage']
 
-        case_study.include_revisions(new_rev_items, stage_index, True)
+        case_study.include_revisions(new_rev_items, stage_index, True,
+                                     ExtenderStrategy.per_year_add)
         new_rev_items.clear()
 
 
@@ -724,7 +740,10 @@ def extend_with_distrib_sampling(case_study: CaseStudy, cmap: CommitMap,
 
     case_study.include_revisions(
         sample_n(distribution_function, kwargs['num_rev'], revision_list),
-        kwargs['merge_stage'])
+        kwargs['merge_stage'],
+        extender_strategy=ExtenderStrategy.distrib_add,
+        sampling_method=kwargs['distribution']
+    )
 
 
 def sample_n(distrib_func: tp.Callable[[int], np.ndarray], num_samples: int,
@@ -782,7 +801,8 @@ def extend_with_smooth_revs(case_study: CaseStudy, cmap: CommitMap,
         print("Found new revisions: ", new_revisions)
         case_study.include_revisions([(rev, cmap.time_id(rev))
                                       for rev in new_revisions],
-                                     kwargs['merge_stage'])
+                                     kwargs['merge_stage'],
+                                     extender_strategy=ExtenderStrategy.smooth_plot)
     else:
         print("No new revisions found that where not already "
               "present in the case study.")
