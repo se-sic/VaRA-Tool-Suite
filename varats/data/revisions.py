@@ -136,3 +136,36 @@ def get_tagged_revisions(project_name: str, result_file_type: MetaReport
                                   str(newest_res_file))))
 
     return revisions
+
+
+def get_supplementary_result_files(project_name: str,
+                                   result_file_type: MetaReport,
+                                   revision: tp.Optional[str] = None,
+                                   suppl_info_type: tp.Optional[str] = None
+                                   ) -> tp.List[tp.Tuple[Path, str, str]]:
+    """
+    Returns the current supplementary result files for a given project and
+    report type.
+    If a specific revision is specified then only the result files for the
+    passed revision are returned, otherwise all files for all available
+    revisions are returned.
+    Args:
+        project_name (str): target project
+        result_file_type (MetaReport): the type of the result file
+        revision (str): The revision for which the result files should be returned.
+        suppl_info_type (str): Only include result files of the specified type
+    Returns:
+        [(Path, str, str)]: List of tuples of result file path, revision,
+                            and supplementary result file type
+    """
+    result_files = __get_supplementary_result_files_dict(
+        project_name, result_file_type, revision)
+
+    result = []
+
+    for (commit_hash, info_type), file_list in result_files.items():
+        if (suppl_info_type is None) or (info_type == suppl_info_type):
+            newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
+            result.append((newest_res_file, commit_hash, info_type))
+
+    return result

@@ -6,6 +6,7 @@ import unittest
 
 from varats.data.report import FileStatusExtension, MetaReport
 from varats.data.reports.empty_report import EmptyReport
+from varats.data.reports.commit_report import CommitReport as CR
 
 
 class TestMetaReport(unittest.TestCase):
