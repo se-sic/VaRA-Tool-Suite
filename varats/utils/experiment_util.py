@@ -14,7 +14,7 @@ from benchbuild.experiment import Experiment
 from benchbuild.project import Project
 from benchbuild.settings import CFG
 
-from varats.data.revisions import get_proccessed_revisions
+from varats.data.revisions import get_processed_revisions
 from varats.settings import CFG as V_CFG
 
 
@@ -87,7 +87,7 @@ class PEErrorHandler():
 Timeout after: {timeout_duration}
 
 """.format(cmd=str(self.__run_cmd),
-                timeout_duration=str(self.__timeout_duration))
+                    timeout_duration=str(self.__timeout_duration))
                     outfile.write(extra_error)
                     outfile.flush()
 
@@ -122,7 +122,7 @@ class VaRAVersionExperiment(Experiment):  # type: ignore
                 raise TypeError("Sub class does not implement REPORT_TYPE.")
             versions = [
                 vers for vers in versions
-                if vers not in get_proccessed_revisions(
+                if vers not in get_processed_revisions(
                     prj_cls.NAME, getattr(self, 'REPORT_TYPE'))
             ]
             if not versions:

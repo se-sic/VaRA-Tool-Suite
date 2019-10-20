@@ -158,6 +158,32 @@ class LLVMProjects(Enum):
         return not self.is_vara_project()
 
 
+def convert_to_llvmprojects_enum(projects_names: tp.List[str]
+                                 ) -> tp.List[LLVMProject]:
+    """
+    Converts a list of strings into a list of LLVMProject.
+    """
+    enum_list = []
+    for project_enum in LLVMProjects:
+        if project_enum.name in projects_names:
+            enum_list.append(project_enum.project)
+            projects_names.remove(project_enum.name)
+
+    if projects_names:
+        for project_name in projects_names:
+            print("Warning: {} is not a supported project name".format(
+                project_name))
+
+    return enum_list
+
+
+def generate_full_list_of_llvmprojects() -> tp.List[LLVMProject]:
+    """
+    Generates a list of all LLVM projects.
+    """
+    return [project_enum.project for project_enum in LLVMProjects]
+
+
 class VaRAProjectsIter():
     """
     Iterator over vara projects, meaning projects that are modfified to work
@@ -175,6 +201,13 @@ class VaRAProjectsIter():
             val = next(self.__llvm_project_iter)
             if val.is_vara_project():
                 return val
+
+
+def generate_vara_list_of_llvmprojects() -> tp.List[LLVMProject]:
+    """
+    Generates a list of all VaRA llvm projects.
+    """
+    return [project_enum.project for project_enum in VaRAProjectsIter()]
 
 
 class VaRAExtraProjectsIter():
@@ -678,15 +711,21 @@ def set_vara_cmake_variables(
     """
     if own_libgit:
         set_cmake_var("VARA_BUILD_LIBGIT", "ON", post_out)
+        set_cmake_var("USE_HTTPS", "OFF", post_out)
+        set_cmake_var("USE_SSH", "OFF", post_out)
+        set_cmake_var("USE_EXT_HTTP_PARSER", "OFF", post_out)
+        set_cmake_var("BUILD_CLAR", "OFF", post_out)
     else:
         set_cmake_var("VARA_BUILD_LIBGIT", "OFF", post_out)
 
     if include_phasar:
         set_cmake_var("LLVM_PHASAR_BUILD", "ON", post_out)
+        set_cmake_var("LLVM_TOOL_PHASAR_BUILD", "ON", post_out)
         set_cmake_var("LLVM_ENABLE_RTTI", "ON", post_out)
         set_cmake_var("LLVM_ENABLE_EH", "ON", post_out)
     else:
         set_cmake_var("LLVM_PHASAR_BUILD", "OFF", post_out)
+        set_cmake_var("LLVM_TOOL_PHASAR_BUILD", "OFF", post_out)
 
     set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix, post_out)
 

@@ -16,6 +16,9 @@ from varats.settings import get_value_or_default,\
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
 from varats.vara_manager import (setup_vara, BuildType, LLVMProjects,
+                                 convert_to_llvmprojects_enum,
+                                 generate_full_list_of_llvmprojects,
+                                 generate_vara_list_of_llvmprojects,
                                  ProcessManager)
 from varats.tools.commit_map import (store_commit_map, get_commit_map,
                                      create_lazy_commit_map_loader)
@@ -102,7 +105,9 @@ def update_term(text: str) -> None:
     """
     Print/Update terminal text without producing new lines.
     """
-    text = text.replace(os.linesep, ' ')
+    text = text.replace(os.linesep, '').strip()
+    if not text:
+        return
     _, columns = os.popen('/bin/stty size', 'r').read().split()
     print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r', flush=True)
 
@@ -639,13 +644,14 @@ def main_develop() -> None:
     status_parser = sub_parsers.add_parser('status')
     status_parser.add_argument(
         'projects',
-        nargs='+',
-        action=enum_action(LLVMProjects),
-        help="Projects to work on.")
+        nargs='*',
+        action='store',
+        default=None,
+        help="Projects to work on. Or all/all-vara for all projects.")
 
     # list dev-branches
-    status_parser = sub_parsers.add_parser(
-        'f-branches', help="List all remote feature branches")
+    sub_parsers.add_parser('f-branches',
+                           help="List all remote feature branches")
 
     args = parser.parse_args()
     if args.command == 'new-branch':
@@ -661,7 +667,13 @@ def main_develop() -> None:
     elif args.command == 'push':
         dev.push_projects(args.projects)
     elif args.command == 'status':
-        dev.show_status_for_projects(args.projects)
+        if "all" in args.projects:
+            project_list = generate_full_list_of_llvmprojects()
+        elif "all-vara" in args.projects:
+            project_list = generate_vara_list_of_llvmprojects()
+        else:
+            project_list = convert_to_llvmprojects_enum(args.projects)
+        dev.show_status_for_projects(project_list)
     elif args.command == 'f-branches':
         dev.show_dev_branches([
             LLVMProjects.get_project_by_name("llvm"),

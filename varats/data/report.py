@@ -222,7 +222,7 @@ class MetaReport(type):
                       project_version: str,
                       project_uuid: str,
                       extension_type: FileStatusExtension,
-                      file_ext: str = "") -> str:
+                      file_ext: str = ".txt") -> str:
         """
         Generates a filename for a commit report
         """

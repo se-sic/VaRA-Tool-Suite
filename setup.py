@@ -12,7 +12,7 @@ setup(
         "PyQt5>=5.10.0",
         "PyYAML>=3.12",
         "seaborn>=0.8.0",
-        "matplotlib>=2.2.0",
+        "matplotlib==3.1.0",
         "pandas>=0.22.0",
         "benchbuild>=4.0.1",
         "plumbum>=1.6.6",
@@ -25,15 +25,15 @@ setup(
     entry_points={
         "gui_scripts": [
             'vara-graphview = varats.driver:main_graph_view',
-            'vara-buildsetup = varats.driver:build_setup',
             'vara-gen-commitmap = varats.driver:main_gen_commitmap',
         ],
         "console_scripts": [
-            'vara-develop = varats.driver:main_develop',
-            'vd = varats.driver:main_develop',
-            'vara-gen-graph = varats.driver:main_gen_graph',
-            'vara-gen-bbconfig = varats.driver:main_gen_benchbuild_config',
+            'vara-buildsetup = varats.driver:build_setup',
             'vara-cs = varats.driver:main_casestudy',
+            'vara-develop = varats.driver:main_develop',
+            'vara-gen-bbconfig = varats.driver:main_gen_benchbuild_config',
+            'vara-gen-graph = varats.driver:main_gen_graph',
+            'vd = varats.driver:main_develop',
         ]
     },
     python_requires='>=3.6')

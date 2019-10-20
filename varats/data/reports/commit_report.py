@@ -171,7 +171,8 @@ class CommitReport(BaseReport):
     @staticmethod
     def get_file_name(project_name: str, binary_name: str,
                       project_version: str, project_uuid: str,
-                      extension_type: FileStatusExtension) -> str:
+                      extension_type: FileStatusExtension,
+                      file_ext: str = "yaml") -> str:
         """
         Generates a filename for a commit report with 'yaml'
         as file extension.
@@ -179,7 +180,7 @@ class CommitReport(BaseReport):
         return BaseReport.get_file_name(CommitReport.SHORTHAND, project_name,
                                         binary_name, project_version,
                                         project_uuid, extension_type,
-                                        CommitReport.FILE_TYPE)
+                                        file_ext)
 
     @staticmethod
     def get_supplementary_file_name(project_name: str, binary_name: str,
@@ -194,7 +195,7 @@ class CommitReport(BaseReport):
 
     def calc_max_cf_edges(self) -> int:
         """
-        Calulate the highest amount of control-flow interactions of a single
+        Calculate the highest amount of control-flow interactions of a single
         commit region.
         """
         cf_map: tp.Dict[str, tp.List[int]] = dict()
@@ -208,7 +209,7 @@ class CommitReport(BaseReport):
 
     def calc_max_df_edges(self) -> int:
         """
-        Calulate the highest amount of data-flow interactions of a single
+        Calculate the highest amount of data-flow interactions of a single
         commit region.
         """
         df_map: tp.Dict[str, tp.List[int]] = dict()
@@ -430,8 +431,8 @@ def generate_inout_cfg_cf(commit_report: CommitReport,
         rows.append([item[0], item[1][1], "To", total])
 
     rows.sort(
-        key=
-        lambda row: (row[0], -tp.cast(int, row[3]), -tp.cast(int, row[1]), row[2])
+        key=lambda row: (row[0], -tp.cast(int, row[3]), -
+                         tp.cast(int, row[1]), row[2])
     )
 
     return pd.DataFrame(
@@ -483,8 +484,8 @@ def generate_inout_cfg_df(commit_report: CommitReport,
         rows.append([item[0], item[1][1], "To", total])
 
     rows.sort(
-        key=
-        lambda row: (row[0], -tp.cast(int, row[3]), -tp.cast(int, row[1]), row[2])
+        key=lambda row: (row[0], -tp.cast(int, row[3]), -
+                         tp.cast(int, row[1]), row[2])
     )
 
     return pd.DataFrame(
