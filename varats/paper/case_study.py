@@ -25,6 +25,48 @@ from varats.data.reports.commit_report import CommitMap
 from varats.data.report import MetaReport, FileStatusExtension
 
 
+class ExtenderStrategy(Enum):
+    """
+    Enum for all currently supported extender strategies.
+    """
+
+    mixed = -1
+    simple_add = 1
+    distrib_add = 2
+    smooth_plot = 3
+    per_year_add = 4
+
+
+class SamplingMethod(Enum):
+    """
+    Enum for all currently supported sampling methods.
+    """
+
+    uniform = 1
+    half_norm = 2
+
+    def gen_distribution_function(self) -> tp.Callable[[int], np.ndarray]:
+        """
+        Generate a distribution function for the specified sampling method.
+        """
+        if self == SamplingMethod.uniform:
+
+            def uniform(num_samples: int) -> np.ndarray:
+                return tp.cast(tp.List[float],
+                               np.random.uniform(0, 1.0, num_samples))
+
+            return uniform
+        if self == SamplingMethod.half_norm:
+
+            def halfnormal(num_samples: int) -> np.ndarray:
+                return tp.cast(tp.List[float],
+                               halfnorm.rvs(scale=1, size=num_samples))
+
+            return halfnormal
+
+        raise Exception('Unsupported SamplingMethod')
+
+
 class HashIDTuple():
     """
     Combining a commit hash with a unique and ordered id, starting with 0 for
@@ -72,8 +114,13 @@ class CSStage():
     """
     def __init__(self,
                  name: tp.Optional[str] = None,
+                 extender_strategy: tp.Optional[ExtenderStrategy] = None,
+                 sampling_method: tp.Optional[SamplingMethod] = None,
                  revisions: tp.Optional[tp.List[HashIDTuple]] = None) -> None:
         self.__name: tp.Optional[str] = name
+        self.__extender_strategy: tp.Optional[ExtenderStrategy] = \
+            extender_strategy
+        self.__sampling_method: tp.Optional[SamplingMethod] = sampling_method
         self.__revisions: tp.List[
             HashIDTuple] = revisions if revisions is not None else []
 
@@ -97,6 +144,34 @@ class CSStage():
         Setter for the name of the stage.
         """
         self.__name = name
+
+    @property
+    def extender_strategy(self) -> tp.Optional[ExtenderStrategy]:
+        """
+        The extender strategy used to create this stage.
+        """
+        return self.__extender_strategy
+
+    @extender_strategy.setter
+    def extender_strategy(self, extender_strategy: ExtenderStrategy) -> None:
+        """
+        Setter for the extender strategy of the stage.
+        """
+        self.__extender_strategy = extender_strategy
+
+    @property
+    def sampling_method(self) -> tp.Optional[SamplingMethod]:
+        """
+        The sampling method used for this stage.
+        """
+        return self.__sampling_method
+
+    @sampling_method.setter
+    def sampling_method(self, sampling_method: SamplingMethod) -> None:
+        """
+        Setter for the sampling method of the stage.
+        """
+        self.__sampling_method = sampling_method
 
     def has_revision(self, revision: str) -> bool:
         """
@@ -133,6 +208,10 @@ class CSStage():
                                                Union[str, int]]]]] = dict()
         if self.name is not None:
             stage_dict['name'] = self.name
+        if self.extender_strategy is not None:
+            stage_dict['extender_strategy'] = self.extender_strategy.name
+        if self.sampling_method is not None:
+            stage_dict['sampling_method'] = self.sampling_method.name
         revision_list = [revision.get_dict() for revision in self.__revisions]
         stage_dict['revisions'] = revision_list
         return stage_dict
@@ -281,10 +360,13 @@ class CaseStudy():
             if sort_revs:
                 stage.sort()
 
-    def include_revisions(self,
-                          revisions: tp.List[tp.Tuple[str, int]],
-                          stage_num: int = 0,
-                          sort_revs: bool = True) -> None:
+    def include_revisions(
+            self,
+            revisions: tp.List[tp.Tuple[str, int]],
+            stage_num: int = 0,
+            sort_revs: bool = True,
+            extender_strategy: tp.Optional[ExtenderStrategy] = None,
+            sampling_method: tp.Optional[SamplingMethod] = None) -> None:
         """
         Add multiple revisions to this case study.
 
@@ -292,12 +374,30 @@ class CaseStudy():
             revisions: List of tuples with (commit_hash, id) to be inserted
             stage_num: The stage to insert the revisions
             sort_revs: True if the stage should be kept sorted
+            extender_strategy: The extender strategy used to acquire the revisions
+            sampling_method: The sampling method used to acquire the revisions
         """
         for revision in revisions:
             self.include_revision(revision[0], revision[1], stage_num, False)
 
+        stage = self.__stages[stage_num]
+
         if sort_revs and self.num_stages > 0:
             self.__stages[stage_num].sort()
+
+        if extender_strategy is not None:
+            # if different strategies are used on the same stage,
+            # the result is 'mixed'.
+            # Also if sampled multiple times with a distribution.
+            if (stage.extender_strategy is not None and
+                (stage.extender_strategy is not extender_strategy
+                 or stage.extender_strategy is ExtenderStrategy.distrib_add)):
+                stage.extender_strategy = ExtenderStrategy.mixed
+                stage.sampling_method = None
+            else:
+                stage.extender_strategy = extender_strategy
+                if sampling_method is not None:
+                    stage.sampling_method = sampling_method
 
     def name_stage(self, stage_num: int, name: str) -> None:
         """
@@ -411,8 +511,15 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
                     hash_id_tuples.append(
                         HashIDTuple(raw_hash_id_tuple['commit_hash'],
                                     raw_hash_id_tuple['commit_id']))
+                extender_strategy = raw_stage.get('extender_strategy') or None
+                sampling_method = raw_stage.get('sampling_method') or None
                 stages.append(
-                    CSStage(raw_stage.get('name') or None, hash_id_tuples))
+                    CSStage(
+                        raw_stage.get('name') or None,
+                        ExtenderStrategy[extender_strategy]
+                        if extender_strategy is not None else None,
+                        SamplingMethod[sampling_method] if
+                        sampling_method is not None else None, hash_id_tuples))
 
             return CaseStudy(raw_case_study['project_name'],
                              raw_case_study['version'], stages)
@@ -489,37 +596,6 @@ def get_newest_result_files_for_case_study(
 # Case-study generation
 ###############################################################################
 
-
-class SamplingMethod(Enum):
-    """
-    Enum for all currently supported sampling methods.
-    """
-
-    uniform = 1
-    half_norm = 2
-
-    def gen_distribution_function(self) -> tp.Callable[[int], np.ndarray]:
-        """
-        Generate a distribution function for the specified sampling method.
-        """
-        if self == SamplingMethod.uniform:
-
-            def uniform(num_samples: int) -> np.ndarray:
-                return tp.cast(tp.List[float],
-                               np.random.uniform(0, 1.0, num_samples))
-
-            return uniform
-        if self == SamplingMethod.half_norm:
-
-            def halfnormal(num_samples: int) -> np.ndarray:
-                return tp.cast(tp.List[float],
-                               halfnorm.rvs(scale=1, size=num_samples))
-
-            return halfnormal
-
-        raise Exception('Unsupported SamplingMethod')
-
-
 @check_required_args(['extra_revs', 'git_path'])
 def generate_case_study(sampling_method: SamplingMethod, cmap: CommitMap,
                         case_study_version: int, project_name: str,
@@ -549,18 +625,6 @@ def generate_case_study(sampling_method: SamplingMethod, cmap: CommitMap,
 ###############################################################################
 # Case-study extender
 ###############################################################################
-
-
-class ExtenderStrategy(Enum):
-    """
-    Enum for all currently supported extender strategies.
-    """
-
-    simple_add = 1
-    distrib_add = 2
-    smooth_plot = 3
-    per_year_add = 4
-
 
 def extend_case_study(case_study: CaseStudy, cmap: CommitMap,
                       ext_strategy: ExtenderStrategy,
@@ -593,7 +657,8 @@ def extend_with_extra_revs(case_study: CaseStudy, cmap: CommitMap,
         if any(map(rev_item[0].startswith, extra_revs))
     ]
 
-    case_study.include_revisions(new_rev_items, merge_stage, True)
+    case_study.include_revisions(new_rev_items, merge_stage, True,
+                                 ExtenderStrategy.simple_add)
 
 
 @check_required_args(['git_path', 'revs_per_year', 'merge_stage', 'revs_year_sep'])
@@ -660,7 +725,8 @@ def extend_with_revs_per_year(case_study: CaseStudy, cmap: CommitMap,
         else:
             stage_index = kwargs['merge_stage']
 
-        case_study.include_revisions(new_rev_items, stage_index, True)
+        case_study.include_revisions(new_rev_items, stage_index, True,
+                                     ExtenderStrategy.per_year_add)
         new_rev_items.clear()
 
 
@@ -682,7 +748,9 @@ def extend_with_distrib_sampling(case_study: CaseStudy, cmap: CommitMap,
 
     case_study.include_revisions(
         sample_n(distribution_function, kwargs['num_rev'], revision_list),
-        kwargs['merge_stage'])
+        kwargs['merge_stage'],
+        extender_strategy=ExtenderStrategy.distrib_add,
+        sampling_method=kwargs['distribution'])
 
 
 def sample_n(distrib_func: tp.Callable[[int], np.ndarray], num_samples: int,
@@ -738,9 +806,10 @@ def extend_with_smooth_revs(case_study: CaseStudy, cmap: CommitMap,
     ]
     if new_revisions:
         print("Found new revisions: ", new_revisions)
-        case_study.include_revisions([(rev, cmap.time_id(rev))
-                                      for rev in new_revisions],
-                                     kwargs['merge_stage'])
+        case_study.include_revisions(
+            [(rev, cmap.time_id(rev)) for rev in new_revisions],
+            kwargs['merge_stage'],
+            extender_strategy=ExtenderStrategy.smooth_plot)
     else:
         print("No new revisions found that where not already "
               "present in the case study.")
