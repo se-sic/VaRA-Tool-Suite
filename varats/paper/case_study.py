@@ -30,6 +30,7 @@ class ExtenderStrategy(Enum):
     Enum for all currently supported extender strategies.
     """
 
+    mixed = -1
     simple_add = 1
     distrib_add = 2
     smooth_plot = 3
@@ -340,14 +341,8 @@ class CaseStudy():
         self.__stages.insert(pos, new_stage)
         return new_stage
 
-    def include_revision(self,
-                         revision: str,
-                         commit_id: int,
-                         stage_num: int = 0,
-                         sort_revs: bool = True,
-                         extender_strategy: tp.Optional[ExtenderStrategy] = None,
-                         sampling_method: tp.Optional[SamplingMethod] = None
-                         ) -> None:
+    def include_revision(self, revision: str, commit_id: int,
+                         stage_num: int = 0, sort_revs: bool = True) -> None:
         """
         Add a revision to this case study.
         """
@@ -362,16 +357,12 @@ class CaseStudy():
             if sort_revs:
                 stage.sort()
 
-        if extender_strategy is not None:
-            stage.extender_strategy = extender_strategy
-        if sampling_method is not None:
-            stage.sampling_method = sampling_method
-
     def include_revisions(self,
                           revisions: tp.List[tp.Tuple[str, int]],
                           stage_num: int = 0,
                           sort_revs: bool = True,
-                          extender_strategy: tp.Optional[ExtenderStrategy] = None,
+                          extender_strategy: tp.Optional[
+                              ExtenderStrategy] = None,
                           sampling_method: tp.Optional[SamplingMethod] = None
                           ) -> None:
         """
@@ -385,11 +376,21 @@ class CaseStudy():
             sampling_method: The sampling method used to acquire the revisions
         """
         for revision in revisions:
-            self.include_revision(revision[0], revision[1], stage_num, False,
-                                  extender_strategy, sampling_method)
+            self.include_revision(revision[0], revision[1], stage_num, False)
+
+        stage = self.__stages[stage_num]
 
         if sort_revs and self.num_stages > 0:
             self.__stages[stage_num].sort()
+
+        if extender_strategy is not None:
+            if stage.extender_strategy is not None:
+                stage.extender_strategy = ExtenderStrategy.mixed
+                stage.sampling_method = None
+            else:
+                stage.extender_strategy = extender_strategy
+                if sampling_method is not None:
+                    stage.sampling_method = sampling_method
 
     def name_stage(self, stage_num: int, name: str) -> None:
         """
