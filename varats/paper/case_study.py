@@ -341,8 +341,11 @@ class CaseStudy():
         self.__stages.insert(pos, new_stage)
         return new_stage
 
-    def include_revision(self, revision: str, commit_id: int,
-                         stage_num: int = 0, sort_revs: bool = True) -> None:
+    def include_revision(self,
+                         revision: str,
+                         commit_id: int,
+                         stage_num: int = 0,
+                         sort_revs: bool = True) -> None:
         """
         Add a revision to this case study.
         """
@@ -357,14 +360,13 @@ class CaseStudy():
             if sort_revs:
                 stage.sort()
 
-    def include_revisions(self,
-                          revisions: tp.List[tp.Tuple[str, int]],
-                          stage_num: int = 0,
-                          sort_revs: bool = True,
-                          extender_strategy: tp.Optional[
-                              ExtenderStrategy] = None,
-                          sampling_method: tp.Optional[SamplingMethod] = None
-                          ) -> None:
+    def include_revisions(
+            self,
+            revisions: tp.List[tp.Tuple[str, int]],
+            stage_num: int = 0,
+            sort_revs: bool = True,
+            extender_strategy: tp.Optional[ExtenderStrategy] = None,
+            sampling_method: tp.Optional[SamplingMethod] = None) -> None:
         """
         Add multiple revisions to this case study.
 
@@ -387,10 +389,9 @@ class CaseStudy():
             # if different strategies are used on the same stage,
             # the result is 'mixed'.
             # Also if sampled multiple times with a distribution.
-            if (stage.extender_strategy is not None
-                and (stage.extender_strategy is not extender_strategy
-                     or stage.extender_strategy is ExtenderStrategy.distrib_add)
-            ):
+            if (stage.extender_strategy is not None and
+                (stage.extender_strategy is not extender_strategy
+                 or stage.extender_strategy is ExtenderStrategy.distrib_add)):
                 stage.extender_strategy = ExtenderStrategy.mixed
                 stage.sampling_method = None
             else:
@@ -513,12 +514,12 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
                 extender_strategy = raw_stage.get('extender_strategy') or None
                 sampling_method = raw_stage.get('sampling_method') or None
                 stages.append(
-                    CSStage(raw_stage.get('name') or None,
-                            ExtenderStrategy[
-                                extender_strategy] if extender_strategy is not None else None,
-                            SamplingMethod[
-                                sampling_method] if sampling_method is not None else None,
-                            hash_id_tuples))
+                    CSStage(
+                        raw_stage.get('name') or None,
+                        ExtenderStrategy[extender_strategy]
+                        if extender_strategy is not None else None,
+                        SamplingMethod[sampling_method] if
+                        sampling_method is not None else None, hash_id_tuples))
 
             return CaseStudy(raw_case_study['project_name'],
                              raw_case_study['version'], stages)
@@ -749,8 +750,7 @@ def extend_with_distrib_sampling(case_study: CaseStudy, cmap: CommitMap,
         sample_n(distribution_function, kwargs['num_rev'], revision_list),
         kwargs['merge_stage'],
         extender_strategy=ExtenderStrategy.distrib_add,
-        sampling_method=kwargs['distribution']
-    )
+        sampling_method=kwargs['distribution'])
 
 
 def sample_n(distrib_func: tp.Callable[[int], np.ndarray], num_samples: int,
@@ -806,10 +806,10 @@ def extend_with_smooth_revs(case_study: CaseStudy, cmap: CommitMap,
     ]
     if new_revisions:
         print("Found new revisions: ", new_revisions)
-        case_study.include_revisions([(rev, cmap.time_id(rev))
-                                      for rev in new_revisions],
-                                     kwargs['merge_stage'],
-                                     extender_strategy=ExtenderStrategy.smooth_plot)
+        case_study.include_revisions(
+            [(rev, cmap.time_id(rev)) for rev in new_revisions],
+            kwargs['merge_stage'],
+            extender_strategy=ExtenderStrategy.smooth_plot)
     else:
         print("No new revisions found that where not already "
               "present in the case study.")
