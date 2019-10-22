@@ -4,13 +4,11 @@ statically analysis frameworks.
 
 This class implements the full commit taint flow analysis (MTFA) graph
 generation of the variability-aware region analyzer (VaRA).
-We run the analyses on exemplary cpp files. Then we compare the results of the
-analysis to the expected results via LLVM FileCheck.
-Both the cpp examples and the filecheck files validating the results can be
-found in the https://github.com/se-passau/vara-perf-tests repository.
-The results of each filecheck get written into a special TaintPropagation-
-Report, which lists, what examples produced the correct result and which ones
-failed.
+We run the analyses on exemplary cpp files. 
+The cpp examples can be found in the
+https://github.com/se-passau/vara-perf-tests repository.
+The output LLVM IR files with annotated meta data are written into the result
+files for each executed binary.
 """
 
 import typing as tp
@@ -34,17 +32,14 @@ from varats.utils.experiment_util import (
 
 class VaraMTFACheck(actions.Step):  # type: ignore
     """
-    Analyse a project with VaRA and generate the output of the taint analysis.
+    Analyse a project with VaRA and generate the output of the
+    taint flow analysis.
     """
 
     NAME = "VaraMTFACheck"
-    DESCRIPTION = "Generate a full MTFA on the exemplary taint test files and"\
-        + " compare them against the expected result."
+    DESCRIPTION = "Generate a full MTFA on the exemplary taint test files."
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
-
-    FC_FILE_SOURCE_DIR = "{project_builddir}/{project_src}/{project_name}"
-    EXPECTED_FC_FILE = "{binary_name}.txt"
 
     def __init__(self, project: Project):
         super(VaraMTFACheck, self).__init__(
@@ -88,7 +83,8 @@ class VaraMTFACheck(actions.Step):  # type: ignore
                 binary_name=binary_name,
                 project_version=str(project.version),
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.Success)
+                extension_type=FSE.Success,
+                file_ext=".ll")
 
             # Define output file name of failed runs
             error_file = TPR.get_file_name(
@@ -99,16 +95,6 @@ class VaraMTFACheck(actions.Step):  # type: ignore
                 extension_type=FSE.Failed,
                 file_ext=TPR.FILE_TYPE)
 
-            # The temporary directory the project is stored under
-            tmp_repo_dir = self.FC_FILE_SOURCE_DIR.format(
-                project_builddir=str(project.builddir),
-                project_src=str(project.SRC_FILE),
-                project_name=str(project.name))
-
-            # The file name of the text file with the expected filecheck regex
-            expected_file = self.EXPECTED_FC_FILE.format(
-                binary_name=binary_name)
-
             # Put together the path to the bc file and the opt command of vara
             vara_run_cmd = opt["-vara-CD", "-print-Full-MTFA",
                                "{cache_folder}/{bc_file}"
@@ -116,25 +102,14 @@ class VaraMTFACheck(actions.Step):  # type: ignore
                                        bc_file=bc_target_file),
                                "-o", "/dev/null"]
 
-            file_check_cmd = FileCheck["{fc_dir}{fc_exp_file}".format(
-                fc_dir=tmp_repo_dir, fc_exp_file=expected_file)]
-
-            cmd_chain = timeout[timeout_duration, vara_run_cmd] \
-                | file_check_cmd > "{res_folder}/{res_file}".format(
-                    res_folder=vara_result_folder,
-                    res_file=result_file)
-
             # Run the MTFA command with custom error handler and timeout
-            try:
-                exec_func_with_pe_error_handler(
-                    cmd_chain,
-                    PEErrorHandler(vara_result_folder, error_file,
-                                   cmd_chain, timeout_duration))
-            # Remove the success file on error in the filecheck.
-            except ProcessExecutionError:
-                rm("{res_folder}/{res_file}".format(
+            exec_func_with_pe_error_handler(
+                timeout[timeout_duration, vara_run_cmd]
+                > "{res_folder}/{res_file}".format(
                     res_folder=vara_result_folder,
-                    res_file=result_file))
+                    res_file=result_file),
+                PEErrorHandler(vara_result_folder, error_file,
+                               vara_run_cmd, timeout_duration))
 
 
 class VaRATaintPropagation(VaRAVersionExperiment):
