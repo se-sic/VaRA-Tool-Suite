@@ -103,13 +103,19 @@ class VaraMTFACheck(actions.Step):  # type: ignore
                                "-o", "/dev/null"]
 
             # Run the MTFA command with custom error handler and timeout
-            exec_func_with_pe_error_handler(
-                timeout[timeout_duration, vara_run_cmd]
-                > "{res_folder}/{res_file}".format(
+            try:
+                exec_func_with_pe_error_handler(
+                    timeout[timeout_duration, vara_run_cmd]
+                    > "{res_folder}/{res_file}".format(
+                        res_folder=vara_result_folder,
+                        res_file=result_file),
+                    PEErrorHandler(vara_result_folder, error_file,
+                                   vara_run_cmd, timeout_duration))
+            except ProcessExecutionError:
+                # remove success file on failures
+                rm("{res_folder}/{res_file}".format(
                     res_folder=vara_result_folder,
-                    res_file=result_file),
-                PEErrorHandler(vara_result_folder, error_file,
-                               vara_run_cmd, timeout_duration))
+                    res_file=result_file))
 
 
 class VaRATaintPropagation(VaRAVersionExperiment):
