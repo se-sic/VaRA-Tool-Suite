@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='VaRA-Tool-Suite',
-    version="8.0.0",
+    version="9.0.0",
     url='https://github.com/se-passau/VaRA-Tool-Suite',
     packages=find_packages(
         exclude=["extern", "benchbuild", "icons", "results", "uicomponents"]),
