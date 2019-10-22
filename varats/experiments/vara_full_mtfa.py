@@ -4,7 +4,7 @@ statically analysis frameworks.
 
 This class implements the full commit taint flow analysis (MTFA) graph
 generation of the variability-aware region analyzer (VaRA).
-We run the analyses on exemplary cpp files. 
+We run the analyses on exemplary cpp files.
 The cpp examples can be found in the
 https://github.com/se-passau/vara-perf-tests repository.
 The output LLVM IR files with annotated meta data are written into the result
@@ -20,7 +20,7 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.settings import CFG
 from benchbuild.project import Project
 import benchbuild.utils.actions as actions
-from benchbuild.utils.cmd import opt, mkdir, timeout, FileCheck, rm
+from benchbuild.utils.cmd import opt, mkdir, timeout, rm
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.data.report import FileStatusExtension as FSE
 from varats.experiments.extract import Extract
@@ -103,19 +103,13 @@ class VaraMTFACheck(actions.Step):  # type: ignore
                                "-o", "/dev/null"]
 
             # Run the MTFA command with custom error handler and timeout
-            try:
-                exec_func_with_pe_error_handler(
-                    timeout[timeout_duration, vara_run_cmd]
-                    > "{res_folder}/{res_file}".format(
-                        res_folder=vara_result_folder,
-                        res_file=result_file),
-                    PEErrorHandler(vara_result_folder, error_file,
-                                   vara_run_cmd, timeout_duration))
-            except ProcessExecutionError:
-                # remove success file on failures
-                rm("{res_folder}/{res_file}".format(
+            exec_func_with_pe_error_handler(
+                timeout[timeout_duration, vara_run_cmd]
+                > "{res_folder}/{res_file}".format(
                     res_folder=vara_result_folder,
-                    res_file=result_file))
+                    res_file=result_file),
+                PEErrorHandler(vara_result_folder, error_file,
+                               vara_run_cmd, timeout_duration))
 
 
 class VaRATaintPropagation(VaRAVersionExperiment):
