@@ -384,7 +384,13 @@ class CaseStudy():
             self.__stages[stage_num].sort()
 
         if extender_strategy is not None:
-            if stage.extender_strategy is not None:
+            # if different strategies are used on the same stage,
+            # the result is 'mixed'.
+            # Also if sampled multiple times with a distribution.
+            if (stage.extender_strategy is not None
+                and (stage.extender_strategy is not extender_strategy
+                     or stage.extender_strategy is ExtenderStrategy.distrib_add)
+            ):
                 stage.extender_strategy = ExtenderStrategy.mixed
                 stage.sampling_method = None
             else:
