@@ -6,6 +6,7 @@ Main drivers for VaRA-TS
 import os
 import sys
 import argparse
+import typing as tp
 from pathlib import Path
 from argparse_utils import enum_action
 
@@ -654,25 +655,27 @@ def main_develop() -> None:
                            help="List all remote feature branches")
 
     args = parser.parse_args()
+    project_list: tp.List[LLVMProjects]
+    if "all" in args.projects:
+        project_list = generate_full_list_of_llvmprojects()
+    elif "all-vara" in args.projects:
+        project_list = generate_vara_list_of_llvmprojects()
+    else:
+        project_list = convert_to_llvmprojects_enum(args.projects)
+
     if args.command == 'new-branch':
-        dev.create_new_branch_for_projects(args.branch_name, args.projects)
+        dev.create_new_branch_for_projects(args.branch_name, project_list)
     elif args.command == 'checkout':
         if args.remote:
             dev.checkout_remote_branch_for_projects(args.branch_name,
-                                                    args.projects)
+                                                    project_list)
         else:
-            dev.checkout_branch_for_projects(args.branch_name, args.projects)
+            dev.checkout_branch_for_projects(args.branch_name, project_list)
     elif args.command == 'pull':
-        dev.pull_projects(args.projects)
+        dev.pull_projects(project_list)
     elif args.command == 'push':
-        dev.push_projects(args.projects)
+        dev.push_projects(project_list)
     elif args.command == 'status':
-        if "all" in args.projects:
-            project_list = generate_full_list_of_llvmprojects()
-        elif "all-vara" in args.projects:
-            project_list = generate_vara_list_of_llvmprojects()
-        else:
-            project_list = convert_to_llvmprojects_enum(args.projects)
         dev.show_status_for_projects(project_list)
     elif args.command == 'f-branches':
         dev.show_dev_branches([

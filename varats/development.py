@@ -133,25 +133,25 @@ def checkout_remote_branch_for_projects(
                   format(branch=fixed_branch_name, project=project.name))
 
 
-def pull_projects(projects: tp.List[LLVMProject]) -> None:
+def pull_projects(projects: tp.List[LLVMProjects]) -> None:
     """
     Pull the current branch of all projects.
     """
     llvm_folder = Path(str(CFG['llvm_source_dir']))
 
     for project in projects:
-        print("Pulling {project}".format(project=project.name))
+        print("Pulling {project}".format(project=project.project_name))
         pull_current_branch(llvm_folder / project.path)
 
 
-def push_projects(projects: tp.List[LLVMProject]) -> None:
+def push_projects(projects: tp.List[LLVMProjects]) -> None:
     """
     Push the current branch of all projects.
     """
     llvm_folder = Path(str(CFG['llvm_source_dir']))
 
     for project in projects:
-        print("Pushing {project}".format(project=project.name))
+        print("Pushing {project}".format(project=project.project_name))
 
         branch_name = get_current_branch(llvm_folder / project.path)
         if branch_has_upstream(llvm_folder / project.path, branch_name):
@@ -161,7 +161,7 @@ def push_projects(projects: tp.List[LLVMProject]) -> None:
                                 branch_name)
 
 
-def show_status_for_projects(projects: tp.List[LLVMProject]) -> None:
+def show_status_for_projects(projects: tp.List[LLVMProjects]) -> None:
     """
     Show the status of all projects.
     """
@@ -172,7 +172,7 @@ def show_status_for_projects(projects: tp.List[LLVMProject]) -> None:
         print("""
 {dlim}
 # Project: {name:67s} #
-{dlim}""".format(dlim=dlim, name=project.name))
+{dlim}""".format(dlim=dlim, name=project.project_name))
         show_status(llvm_folder / project.path)
 
 

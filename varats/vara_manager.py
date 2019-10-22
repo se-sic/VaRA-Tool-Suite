@@ -159,14 +159,14 @@ class LLVMProjects(Enum):
 
 
 def convert_to_llvmprojects_enum(projects_names: tp.List[str]
-                                 ) -> tp.List[LLVMProject]:
+                                 ) -> tp.List[LLVMProjects]:
     """
     Converts a list of strings into a list of LLVMProject.
     """
     enum_list = []
     for project_enum in LLVMProjects:
         if project_enum.name in projects_names:
-            enum_list.append(project_enum.project)
+            enum_list.append(project_enum)
             projects_names.remove(project_enum.name)
 
     if projects_names:
@@ -177,11 +177,11 @@ def convert_to_llvmprojects_enum(projects_names: tp.List[str]
     return enum_list
 
 
-def generate_full_list_of_llvmprojects() -> tp.List[LLVMProject]:
+def generate_full_list_of_llvmprojects() -> tp.List[LLVMProjects]:
     """
     Generates a list of all LLVM projects.
     """
-    return [project_enum.project for project_enum in LLVMProjects]
+    return [project_enum for project_enum in LLVMProjects]
 
 
 class VaRAProjectsIter():
@@ -203,11 +203,11 @@ class VaRAProjectsIter():
                 return val
 
 
-def generate_vara_list_of_llvmprojects() -> tp.List[LLVMProject]:
+def generate_vara_list_of_llvmprojects() -> tp.List[LLVMProjects]:
     """
     Generates a list of all VaRA llvm projects.
     """
-    return [project_enum.project for project_enum in VaRAProjectsIter()]
+    return [project_enum for project_enum in VaRAProjectsIter()]
 
 
 class VaRAExtraProjectsIter():
