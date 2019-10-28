@@ -35,6 +35,7 @@ class ExtenderStrategy(Enum):
     distrib_add = 2
     smooth_plot = 3
     per_year_add = 4
+    release_add = 5
 
 
 class SamplingMethod(Enum):
@@ -65,6 +66,21 @@ class SamplingMethod(Enum):
             return halfnormal
 
         raise Exception('Unsupported SamplingMethod')
+
+
+class ReleaseType(Enum):
+    major = 1
+    minor = 2
+    patch = 3
+
+
+class ReleaseProvider():
+    """
+    Interface needed by the release extender.
+    Projects that want to use that extender need to implement this interface.
+    """
+    def get_release_revisions(self, release_type: ReleaseType) -> tp.List[str]:
+        pass
 
 
 class HashIDTuple():
@@ -813,3 +829,17 @@ def extend_with_smooth_revs(case_study: CaseStudy, cmap: CommitMap,
     else:
         print("No new revisions found that where not already "
               "present in the case study.")
+
+
+@check_required_args(['project', 'rev_type', 'merge_stage'])
+def extend_with_release_revs(case_study, cmap, **kwargs) -> None:
+    project = kwargs['project']
+    if not isinstance(project, ReleaseProvider):
+        print("Project must implement 'ReleaseProvider' to use 'release_add'.")
+        return None
+
+    release_revisions: tp.List[str] = project.get_release_revisions(
+        kwargs['rev_type'])
+    case_study.include_revisions([(rev, cmap.time_id(rev))
+                                  for rev in release_revisions],
+                                 kwargs['merge_stage'])
