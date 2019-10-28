@@ -171,7 +171,6 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
                     project_uuid=str(project.run_uuid),
                     extension_type=FSE.CompileError)))
 
-        project.cflags = []
         analysis_actions = []
 
         # Not run all steps if cached results exist
