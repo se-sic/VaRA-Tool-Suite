@@ -56,7 +56,7 @@ class Gzip(prj.Project, ReleaseProvider):  # type: ignore
     @classmethod
     def get_release_revisions(cls, release_type: ReleaseType) -> tp.List[str]:
         major_release_regex = "^v[0-9]+\\.[0-9]+$"
-        minor_release_regex = "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+        minor_release_regex = "^v[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
 
         tagged_commits = get_tagged_commits(cls.NAME)
         if release_type == ReleaseType.major:
