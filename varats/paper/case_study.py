@@ -2,7 +2,7 @@
 A case study to pin down project settings and the exact set of revisions that
 should be analysed.
 """
-
+import abc
 import typing as tp
 from collections import defaultdict
 from datetime import datetime
@@ -12,10 +12,12 @@ import errno
 import os
 import random
 import yaml
+from benchbuild.project import Project
 
 from scipy.stats import halfnorm
 import numpy as np
 import pygit2
+from varats.utils.project_util import get_project_cls_by_name
 
 from varats.data.revisions import (get_processed_revisions,
                                    get_failed_revisions, get_tagged_revisions)
@@ -90,8 +92,11 @@ class ReleaseProvider():
     Interface needed by the release extender.
     Projects that want to use that extender need to implement this interface.
     """
-    def get_release_revisions(self, release_type: ReleaseType) -> tp.List[str]:
-        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def get_release_revisions(cls, release_type: ReleaseType) -> tp.List[str]:
+        """Get a set of all release revisions for a project"""
 
 
 class HashIDTuple():
@@ -567,10 +572,10 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
                         raw_stage.get('name') or None,
                         ExtenderStrategy[extender_strategy]
                         if extender_strategy is not None else None,
-                        SamplingMethod[sampling_method] if
-                        sampling_method is not None else None,
-                        ReleaseType[release_type] if
-                        release_type is not None else None, hash_id_tuples))
+                        SamplingMethod[sampling_method]
+                        if sampling_method is not None else None,
+                        ReleaseType[release_type]
+                        if release_type is not None else None, hash_id_tuples))
 
             return CaseStudy(raw_case_study['project_name'],
                              raw_case_study['version'], stages)
@@ -692,6 +697,8 @@ def extend_case_study(case_study: CaseStudy, cmap: CommitMap,
         extend_with_smooth_revs(case_study, cmap, **kwargs)
     elif ext_strategy is ExtenderStrategy.per_year_add:
         extend_with_revs_per_year(case_study, cmap, **kwargs)
+    elif ext_strategy is ExtenderStrategy.release_add:
+        extend_with_release_revs(case_study, cmap, **kwargs)
 
 
 @check_required_args(['extra_revs', 'merge_stage'])
@@ -866,15 +873,17 @@ def extend_with_smooth_revs(case_study: CaseStudy, cmap: CommitMap,
               "present in the case study.")
 
 
-@check_required_args(['project', 'rev_type', 'merge_stage'])
+@check_required_args(['project', 'release_type', 'merge_stage'])
 def extend_with_release_revs(case_study, cmap, **kwargs) -> None:
-    project = kwargs['project']
-    if not isinstance(project, ReleaseProvider):
-        print("Project must implement 'ReleaseProvider' to use 'release_add'.")
-        return None
-
+    """
+    Extend a case study with revisions marked as a release.
+    This extender relies on the project to determine appropriate revisions.
+    """
+    project: Project = get_project_cls_by_name(kwargs['project'])
     release_revisions: tp.List[str] = project.get_release_revisions(
-        kwargs['rev_type'])
+        kwargs['release_type'])
     case_study.include_revisions([(rev, cmap.time_id(rev))
                                   for rev in release_revisions],
-                                 kwargs['merge_stage'])
+                                 kwargs['merge_stage'],
+                                 extender_strategy=ExtenderStrategy.release_add,
+                                 release_type=kwargs['release_type'])
