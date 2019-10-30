@@ -874,7 +874,8 @@ def extend_with_smooth_revs(case_study: CaseStudy, cmap: CommitMap,
 
 
 @check_required_args(['project', 'release_type', 'merge_stage'])
-def extend_with_release_revs(case_study, cmap, **kwargs) -> None:
+def extend_with_release_revs(case_study: CaseStudy, cmap: CommitMap,
+                             **kwargs: tp.Any) -> None:
     """
     Extend a case study with revisions marked as a release.
     This extender relies on the project to determine appropriate revisions.
