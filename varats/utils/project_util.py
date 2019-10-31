@@ -3,12 +3,14 @@ Utility module for BenchBuild project handling.
 """
 
 from pathlib import Path
+import typing as tp
 import tempfile
 
 from plumbum import local
 
 from benchbuild.project import ProjectRegistry, Project
 from benchbuild.settings import CFG as BB_CFG
+from benchbuild.utils.cmd import git
 from benchbuild.utils.download import Git
 from benchbuild.utils.settings import setup_config
 
@@ -52,3 +54,13 @@ def get_local_project_git_path(project_name: str) -> Path:
                     shallow_clone=False)
 
     return project_git_path
+
+
+def get_all_revisions_between(a: str, b: str) -> tp.List[str]:
+    """
+    Returns a list of all revisions between two commits a and b, 
+    where a comes before b.
+    It is assumed that the current working directory is the git repository. 
+    """
+    return git("log", "--pretty=%H", "--ancestry-path",
+               "{}^..{}".format(a, b)).strip().split()
