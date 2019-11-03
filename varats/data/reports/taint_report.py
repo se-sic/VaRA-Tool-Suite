@@ -42,7 +42,7 @@ class TaintPropagationReport(BaseReport):
                                         extension_type, file_ext)
 
     def __repr__(self) -> str:
-        return self.SHORTHAND + ":" + os.path.basename(self.path)
+        return self.SHORTHAND + ": " + os.path.basename(self.path)
 
     def __lt__(self, other: 'TaintPropagationReport') -> bool:
         return self.path < other.path
