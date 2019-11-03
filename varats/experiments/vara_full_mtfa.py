@@ -119,7 +119,6 @@ class VaRATaintPropagation(VaRAVersionExperiment):
     """
 
     NAME = "VaRATaintPropagation"
-
     REPORT_TYPE = TPR
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
