@@ -33,6 +33,9 @@ check_err
 $COVERAGE $(which vara-cs) ext paper_configs/test/gzip_0.case_study -p gzip distrib_add --distribution uniform --num-rev 5 #gzip/
 check_err
 
+$COVERAGE $(which vara-cs) ext paper_configs/test/gzip_0.case_study -p gzip release_add --release-type major --merge-stage 4 #gzip/
+check_err
+
 $COVERAGE $(which vara-cs) status EmptyReport
 check_err
 

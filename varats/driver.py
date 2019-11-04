@@ -27,9 +27,10 @@ from varats.plots.plots import (extend_parser_with_plot_args, build_plot,
                                 PlotTypes)
 from varats.utils.cli_util import cli_yn_choice
 from varats.utils.project_util import get_local_project_git_path
-from varats.paper.case_study import (
-    SamplingMethod, ExtenderStrategy, extend_case_study, generate_case_study,
-    load_case_study_from_file, store_case_study)
+from varats.paper.case_study import (SamplingMethod, ExtenderStrategy,
+                                     extend_case_study, generate_case_study,
+                                     load_case_study_from_file,
+                                     store_case_study, ReleaseType)
 import varats.paper.paper_config_manager as PCM
 from varats.data.report import MetaReport
 
@@ -477,6 +478,8 @@ def main_casestudy() -> None:
         help="Extender strategy")
     ext_parser.add_argument(
         "--distribution", action=enum_action(SamplingMethod))
+    ext_parser.add_argument(
+        "--release-type", action=enum_action(ReleaseType))
     ext_parser.add_argument(
         "--merge-stage",
         default=-1,
