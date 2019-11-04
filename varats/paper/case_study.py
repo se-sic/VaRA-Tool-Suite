@@ -11,14 +11,14 @@ from pathlib import Path
 import errno
 import os
 import random
+
 import yaml
 from benchbuild.project import Project
-
 from scipy.stats import halfnorm
 import numpy as np
 import pygit2
-from varats.utils.project_util import get_project_cls_by_name
 
+from varats.utils.project_util import get_project_cls_by_name
 from varats.data.revisions import (get_processed_revisions,
                                    get_failed_revisions, get_tagged_revisions)
 from varats.plots.plot_utils import check_required_args
@@ -71,6 +71,14 @@ class SamplingMethod(Enum):
 
 
 class ReleaseType(Enum):
+    """
+    A ReleaseType referes to one of the three parts of the semantic versioning
+    specification.
+
+    It is assumed that a major release is also a minor release and that a minor
+    release is also a patch release.
+    """
+
     major = 1
     minor = 2
     patch = 3
@@ -83,8 +91,7 @@ class ReleaseType(Enum):
         """
         if other is None:
             return self
-        else:
-            return self if self.value >= other.value else other
+        return self if self.value >= other.value else other
 
 
 class ReleaseProvider():
@@ -883,8 +890,8 @@ def extend_with_release_revs(case_study: CaseStudy, cmap: CommitMap,
     project: Project = get_project_cls_by_name(kwargs['project'])
     release_revisions: tp.List[str] = project.get_release_revisions(
         kwargs['release_type'])
-    case_study.include_revisions([(rev, cmap.time_id(rev))
-                                  for rev in release_revisions],
-                                 kwargs['merge_stage'],
-                                 extender_strategy=ExtenderStrategy.release_add,
-                                 release_type=kwargs['release_type'])
+    case_study.include_revisions(
+        [(rev, cmap.time_id(rev)) for rev in release_revisions],
+        kwargs['merge_stage'],
+        extender_strategy=ExtenderStrategy.release_add,
+        release_type=kwargs['release_type'])

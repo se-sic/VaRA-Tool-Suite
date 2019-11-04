@@ -5,7 +5,6 @@ Utility module for BenchBuild project handling.
 from pathlib import Path
 import typing as tp
 import tempfile
-from typing import List, Tuple
 
 from plumbum import local
 
@@ -68,7 +67,7 @@ def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
         ref_list: tp.List[str] = git("show-ref", "--tags",
                                      "--dereference").strip().split("\n")
         ref_list = [ref for ref in ref_list if ref.endswith("^{}")]
-        refs: List[Tuple[str, str]] = [
+        refs: tp.List[tp.Tuple[str, str]] = [
             (ref_split[0], ref_split[1][10:-3])
             for ref_split in [ref.strip().split() for ref in ref_list]
         ]

@@ -2,6 +2,7 @@
 Project file for gzip.
 """
 import re
+import typing as tp
 
 from benchbuild.settings import CFG
 from benchbuild.utils.cmd import make
@@ -11,7 +12,6 @@ from benchbuild.utils.run import run
 import benchbuild.project as prj
 
 from plumbum import local
-import typing as tp
 
 from varats.paper.case_study import ReleaseType, ReleaseProvider
 from varats.paper.paper_config import project_filter_generator
