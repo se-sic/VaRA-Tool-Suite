@@ -58,9 +58,12 @@ def get_local_project_git_path(project_name: str) -> Path:
 
 def get_all_revisions_between(a: str, b: str) -> tp.List[str]:
     """
-    Returns a list of all revisions between two commits a and b, 
+    Returns a list of all revisions between two commits a and b (inclusive),
     where a comes before b.
-    It is assumed that the current working directory is the git repository. 
+    It is assumed that the current working directory is the git repository.
     """
-    return git("log", "--pretty=%H", "--ancestry-path",
-               "{}^..{}".format(a, b)).strip().split()
+    result = [a]
+    result.extend(
+        git("log", "--pretty=%H", "--ancestry-path",
+            "{}..{}".format(a, b)).strip().split())
+    return result
