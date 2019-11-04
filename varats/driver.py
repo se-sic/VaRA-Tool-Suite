@@ -102,15 +102,24 @@ def main_graph_view() -> None:
     driver.main()
 
 
-def update_term(text: str) -> None:
+def update_term(text: str, enable_inline: bool = False) -> None:
     """
-    Print/Update terminal text without producing new lines.
+    Print/Update terminal text with/without producing new lines.
+
+    Args:
+        text: output text that should be printed
+        enable_inline: print lines without new lines
     """
     text = text.replace(os.linesep, '').strip()
     if not text:
         return
-    _, columns = os.popen('/bin/stty size', 'r').read().split()
-    print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r', flush=True)
+    if enable_inline:
+        _, columns = os.popen('/bin/stty size', 'r').read().split()
+        print(text,
+              end=(int(columns) - len(text) - 1) * ' ' + '\r',
+              flush=True)
+    else:
+        print(text)
 
 
 def build_setup() -> None:
