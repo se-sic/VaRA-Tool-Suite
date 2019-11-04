@@ -22,6 +22,7 @@ class FileStatusExtension(Enum):
     Failed = ("failed", colors.lightred)
     CompileError = ("cerror", colors.red)
     Missing = ("###", colors.orange3)
+    Blocked = ("blocked", colors.blue)
 
     def get_status_extension(self) -> str:
         """
@@ -141,6 +142,12 @@ class MetaReport(type):
         """ Check if the passed file name is a (Missing) result file. """
         return MetaReport.is_result_file_status(file_name,
                                                 FileStatusExtension.Missing)
+
+    @staticmethod
+    def is_result_file_blocked(file_name: str) -> bool:
+        """ Check if the passed file name is a (Missing) result file. """
+        return MetaReport.is_result_file_status(file_name,
+                                                FileStatusExtension.Blocked)
 
     def __check_required_vars(cls: tp.Any, name: str,
                               req_vars: tp.List[str]) -> None:
