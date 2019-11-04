@@ -2,7 +2,7 @@
 A case study to pin down project settings and the exact set of revisions that
 should be analysed.
 """
-
+import abc
 import typing as tp
 from collections import defaultdict
 from datetime import datetime
@@ -11,12 +11,14 @@ from pathlib import Path
 import errno
 import os
 import random
-import yaml
 
+import yaml
+from benchbuild.project import Project
 from scipy.stats import halfnorm
 import numpy as np
 import pygit2
 
+from varats.utils.project_util import get_project_cls_by_name
 from varats.data.revisions import (get_processed_revisions,
                                    get_failed_revisions, get_tagged_revisions)
 from varats.plots.plot_utils import check_required_args
@@ -35,6 +37,7 @@ class ExtenderStrategy(Enum):
     distrib_add = 2
     smooth_plot = 3
     per_year_add = 4
+    release_add = 5
 
 
 class SamplingMethod(Enum):
@@ -65,6 +68,42 @@ class SamplingMethod(Enum):
             return halfnormal
 
         raise Exception('Unsupported SamplingMethod')
+
+
+class ReleaseType(Enum):
+    """
+    A ReleaseType referes to one of the three parts of the semantic versioning
+    specification.
+
+    It is assumed that a major release is also a minor release and that a minor
+    release is also a patch release.
+    """
+
+    major = 1
+    minor = 2
+    patch = 3
+
+    def merge(self, other: tp.Optional["ReleaseType"]) -> "ReleaseType":
+        """
+        Merges two release type.
+        It is assumed that minor releases include major releases
+        and patch releases include minor releases.
+        """
+        if other is None:
+            return self
+        return self if self.value >= other.value else other
+
+
+class ReleaseProvider():
+    """
+    Interface needed by the release extender.
+    Projects that want to use that extender need to implement this interface.
+    """
+
+    @classmethod
+    @abc.abstractmethod
+    def get_release_revisions(cls, release_type: ReleaseType) -> tp.List[str]:
+        """Get a set of all release revisions for a project"""
 
 
 class HashIDTuple():
@@ -116,11 +155,13 @@ class CSStage():
                  name: tp.Optional[str] = None,
                  extender_strategy: tp.Optional[ExtenderStrategy] = None,
                  sampling_method: tp.Optional[SamplingMethod] = None,
+                 release_type: tp.Optional[ReleaseType] = None,
                  revisions: tp.Optional[tp.List[HashIDTuple]] = None) -> None:
         self.__name: tp.Optional[str] = name
         self.__extender_strategy: tp.Optional[ExtenderStrategy] = \
             extender_strategy
         self.__sampling_method: tp.Optional[SamplingMethod] = sampling_method
+        self.__release_type: tp.Optional[ReleaseType] = release_type
         self.__revisions: tp.List[
             HashIDTuple] = revisions if revisions is not None else []
 
@@ -173,6 +214,20 @@ class CSStage():
         """
         self.__sampling_method = sampling_method
 
+    @property
+    def release_type(self) -> tp.Optional[ReleaseType]:
+        """
+        The sampling method used for this stage.
+        """
+        return self.__release_type
+
+    @release_type.setter
+    def release_type(self, release_type: ReleaseType) -> None:
+        """
+        Setter for the sampling method of the stage.
+        """
+        self.__release_type = release_type
+
     def has_revision(self, revision: str) -> bool:
         """
         Check if a revision is part of this case study.
@@ -212,6 +267,8 @@ class CSStage():
             stage_dict['extender_strategy'] = self.extender_strategy.name
         if self.sampling_method is not None:
             stage_dict['sampling_method'] = self.sampling_method.name
+        if self.release_type is not None:
+            stage_dict['release_type'] = self.release_type.name
         revision_list = [revision.get_dict() for revision in self.__revisions]
         stage_dict['revisions'] = revision_list
         return stage_dict
@@ -366,7 +423,8 @@ class CaseStudy():
             stage_num: int = 0,
             sort_revs: bool = True,
             extender_strategy: tp.Optional[ExtenderStrategy] = None,
-            sampling_method: tp.Optional[SamplingMethod] = None) -> None:
+            sampling_method: tp.Optional[SamplingMethod] = None,
+            release_type: tp.Optional[ReleaseType] = None) -> None:
         """
         Add multiple revisions to this case study.
 
@@ -398,6 +456,8 @@ class CaseStudy():
                 stage.extender_strategy = extender_strategy
                 if sampling_method is not None:
                     stage.sampling_method = sampling_method
+                if release_type is not None:
+                    stage.release_type = release_type.merge(stage.release_type)
 
     def name_stage(self, stage_num: int, name: str) -> None:
         """
@@ -513,13 +573,16 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
                                     raw_hash_id_tuple['commit_id']))
                 extender_strategy = raw_stage.get('extender_strategy') or None
                 sampling_method = raw_stage.get('sampling_method') or None
+                release_type = raw_stage.get('release_type') or None
                 stages.append(
                     CSStage(
                         raw_stage.get('name') or None,
                         ExtenderStrategy[extender_strategy]
                         if extender_strategy is not None else None,
-                        SamplingMethod[sampling_method] if
-                        sampling_method is not None else None, hash_id_tuples))
+                        SamplingMethod[sampling_method]
+                        if sampling_method is not None else None,
+                        ReleaseType[release_type]
+                        if release_type is not None else None, hash_id_tuples))
 
             return CaseStudy(raw_case_study['project_name'],
                              raw_case_study['version'], stages)
@@ -641,6 +704,8 @@ def extend_case_study(case_study: CaseStudy, cmap: CommitMap,
         extend_with_smooth_revs(case_study, cmap, **kwargs)
     elif ext_strategy is ExtenderStrategy.per_year_add:
         extend_with_revs_per_year(case_study, cmap, **kwargs)
+    elif ext_strategy is ExtenderStrategy.release_add:
+        extend_with_release_revs(case_study, cmap, **kwargs)
 
 
 @check_required_args(['extra_revs', 'merge_stage'])
@@ -813,3 +878,20 @@ def extend_with_smooth_revs(case_study: CaseStudy, cmap: CommitMap,
     else:
         print("No new revisions found that where not already "
               "present in the case study.")
+
+
+@check_required_args(['project', 'release_type', 'merge_stage'])
+def extend_with_release_revs(case_study: CaseStudy, cmap: CommitMap,
+                             **kwargs: tp.Any) -> None:
+    """
+    Extend a case study with revisions marked as a release.
+    This extender relies on the project to determine appropriate revisions.
+    """
+    project: Project = get_project_cls_by_name(kwargs['project'])
+    release_revisions: tp.List[str] = project.get_release_revisions(
+        kwargs['release_type'])
+    case_study.include_revisions(
+        [(rev, cmap.time_id(rev)) for rev in release_revisions],
+        kwargs['merge_stage'],
+        extender_strategy=ExtenderStrategy.release_add,
+        release_type=kwargs['release_type'])
