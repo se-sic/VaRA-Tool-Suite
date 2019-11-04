@@ -1,6 +1,8 @@
 """
 Project file for gravity.
 """
+import typing as tp
+
 from benchbuild.settings import CFG
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
@@ -12,6 +14,8 @@ from plumbum import local
 
 from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import get_all_revisions_between
+from varats.utils.project_util import BlockedRevisionChecker, \
+    BlockedRevisionCheckerDelegate
 
 
 @with_git(
@@ -20,7 +24,7 @@ from varats.utils.project_util import get_all_revisions_between
     refspec="HEAD",
     shallow_clone=False,
     version_filter=project_filter_generator("gravity"))
-class Gravity(Project):  # type: ignore
+class Gravity(Project, BlockedRevisionChecker):  # type: ignore
     """ Programming language Gravity """
 
     NAME = 'gravity'
@@ -30,6 +34,11 @@ class Gravity(Project):  # type: ignore
 
     BIN_NAMES = ['gravity']
     SRC_FILE = NAME + "-{0}".format(VERSION)
+
+    __blocked_revision_checker_delegate = BlockedRevisionCheckerDelegate(NAME)
+    __blocked_revision_checker_delegate.block_revisions(
+        "0b8e0e047fc3d5e18ead3221ad54920f1ad0eedc",
+        "8f417752dd14deea64249b5d32b6138ebc877fa9", "nothing to build")
 
     def run_tests(self, runner: run) -> None:
         pass
@@ -63,3 +72,7 @@ class Gravity(Project):  # type: ignore
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
                 run(make["-j", int(CFG["jobs"])])
+
+    @classmethod
+    def is_blocked_revision(cls, id: str) -> tp.Tuple[bool, tp.Optional[str]]:
+        return cls.__blocked_revision_checker_delegate.is_blocked_revision(id)
