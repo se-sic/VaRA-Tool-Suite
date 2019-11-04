@@ -165,8 +165,8 @@ class BlockedRevisionCheckerDelegate():
             for b_entry in self.__blacklist_entries:
                 for b_item in b_entry:
                     if id == b_item:
-                        return False, b_entry.reason
-        return True, None
+                        return True, b_entry.reason
+        return False, None
 
     def block_revision(self, id: str, reason: tp.Optional[str] = None) -> None:
         """
