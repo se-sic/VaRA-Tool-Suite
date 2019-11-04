@@ -1,7 +1,7 @@
 """
 Utility module for BenchBuild project handling.
 """
-
+import abc
 from pathlib import Path
 import typing as tp
 import tempfile
@@ -64,3 +64,102 @@ def get_all_revisions_between(a: str, b: str) -> tp.List[str]:
     """
     return git("log", "--pretty=%H", "--ancestry-path",
                "{}^..{}".format(a, b)).strip().split()
+
+
+class BlockedRevision():
+    """
+    A revision marked as blocked due to some `reason`.
+    """
+
+    def __init__(self, id: str, reason: tp.Optional[str] = None):
+        self.__id = id
+        self.__reason = reason
+
+    @property
+    def reason(self):
+        return self.__reason
+
+    def __iter__(self):
+        return [self.__id].__iter__()
+
+
+class BlockedRevisionRange():
+    """
+    A range of revisions marked as blocked due to some `reason`.
+    """
+
+    def __init__(self,
+                 id_start: str,
+                 id_end: str,
+                 reason: tp.Optional[str] = None):
+        self.__id_start = id_start
+        self.__id_end = id_end
+        self.__reason = reason
+        # cache for commit hashes
+        self.__revision_list: tp.Optional[tp.List[str]] = None
+
+    @property
+    def reason(self):
+        return self.__reason
+
+    def __iter__(self):
+        if self.__revision_list is None:
+            self.__revision_list = get_all_revisions_between(
+                self.__id_start, self.__id_end)
+
+        return self.__revision_list.__iter__()
+
+
+class BlockedRevisionChecker():
+    """
+    Interface for blacklisting/blocking revisions from a project.
+    Implementors should delegate to an instance of
+    `BlockedRevisionCheckerDelegate`.
+    """
+
+    @classmethod
+    @abc.abstractmethod
+    def is_blocked_revision(cls, id: str) -> tp.Tuple[bool, tp.Optional[str]]:
+        """
+        Checks whether a revision is blocked or not. Also returns the 
+        reason for the block if available.
+        """
+
+
+class BlockedRevisionCheckerDelegate():
+    """
+    Delegate for the
+    """
+
+    def __init__(self, project_name: str) -> None:
+        self.__project_name = project_name
+        self.__project_path = get_local_project_git_path(project_name)
+
+        self.__blacklist_entries: tp.List[
+            tp.Union[BlockedRevision, BlockedRevisionRange]] = []
+
+    def is_blocked_revision(self, id: str) -> tp.Tuple[bool, tp.Optional[str]]:
+        # cd to repo because of potential git lookups
+        with local.cwd(self.__project_path):
+            for b_entry in self.__blacklist_entries:
+                for b_item in b_entry:
+                    if id == b_item:
+                        return False, b_entry.reason
+        return True, None
+
+    def block_revision(self, id: str, reason: tp.Optional[str] = None) -> None:
+        """
+        Blacklist a single revision.
+        """
+        self.__blacklist_entries.append(BlockedRevision(id, reason))
+
+    def block_revisions(self,
+                        id_start: str,
+                        id_end: str,
+                        reason: tp.Optional[str] = None) -> None:
+        """
+        Blacklist all revisions between commit `id_start` (older)
+        and `id_end` (newer).
+        """
+        self.__blacklist_entries.append(
+            BlockedRevisionRange(id_start, id_end, reason))
