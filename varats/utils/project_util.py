@@ -164,7 +164,7 @@ class BlockedRevisionCheckerDelegate():
         with local.cwd(self.__project_path):
             for b_entry in self.__blacklist_entries:
                 for b_item in b_entry:
-                    if id == b_item:
+                    if b_item.startswith(id):
                         return True, b_entry.reason
         return False, None
 
