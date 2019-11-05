@@ -129,7 +129,7 @@ class BlameReport(BaseReport):
         """
         return self.__path
 
-    def get_blame_result_function_entry(self, mangled_function_name
+    def get_blame_result_function_entry(self, mangled_function_name: str
                                         ) -> BlameResultFunctionEntry:
         """
         Get the result entry for a specific function.
