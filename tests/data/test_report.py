@@ -53,12 +53,14 @@ class TestMetaReport(unittest.TestCase):
         Check if the correct file status is returned for MetaReport names.
         """
         self.assertTrue(
-            MetaReport.is_result_file_success(self.success_filename))
-        self.assertFalse(MetaReport.is_result_file_success(self.fail_filename))
-
-        self.assertTrue(MetaReport.is_result_file_failed(self.fail_filename))
+            MetaReport.result_file_has_status_success(self.success_filename))
         self.assertFalse(
-            MetaReport.is_result_file_failed(self.success_filename))
+            MetaReport.result_file_has_status_success(self.fail_filename))
+
+        self.assertTrue(
+            MetaReport.result_file_has_status_failed(self.fail_filename))
+        self.assertFalse(
+            MetaReport.result_file_has_status_failed(self.success_filename))
 
     def test_get_commit(self):
         """

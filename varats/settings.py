@@ -194,7 +194,8 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
         'varats.experiments.just_compile',
         'varats.experiments.vara_full_mtfa',
         'varats.experiments.vara_fc_taint_analysis',
-        'varats.experiments.phasar_env_analysis'
+        'varats.experiments.phasar_env_analysis',
+        'varats.experiments.blame_report_experiment'
     ]
 
     # Slurm Cluster Configuration
