@@ -667,13 +667,14 @@ def main_develop() -> None:
                            help="List all remote feature branches")
 
     args = parser.parse_args()
-    project_list: tp.List[LLVMProjects]
-    if "all" in args.projects:
-        project_list = generate_full_list_of_llvmprojects()
-    elif "all-vara" in args.projects:
-        project_list = generate_vara_list_of_llvmprojects()
-    else:
-        project_list = convert_to_llvmprojects_enum(args.projects)
+    project_list: tp.List[LLVMProjects] = []
+    if hasattr(args, "projects"):
+        if "all" in args.projects:
+            project_list = generate_full_list_of_llvmprojects()
+        elif "all-vara" in args.projects:
+            project_list = generate_vara_list_of_llvmprojects()
+        else:
+            project_list = convert_to_llvmprojects_enum(args.projects)
 
     if args.command == 'new-branch':
         dev.create_new_branch_for_projects(args.branch_name, project_list)
