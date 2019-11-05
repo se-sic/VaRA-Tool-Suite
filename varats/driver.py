@@ -622,8 +622,9 @@ def main_develop() -> None:
         'branch_name', type=str, help='Name of the new branch')
     new_branch_parser.add_argument(
         'projects',
-        nargs='+',
-        action=enum_action(LLVMProjects),
+        nargs='*',
+        action='store',
+        default=None,
         help="Projects to work on.")
 
     # checkout
@@ -632,8 +633,9 @@ def main_develop() -> None:
         'branch_name', type=str, help='Name of the new branch')
     checkout_parser.add_argument(
         'projects',
-        nargs='+',
-        action=enum_action(LLVMProjects),
+        nargs='*',
+        action='store',
+        default=None,
         help="Projects to work on.")
     checkout_parser.add_argument('-r', '--remote', action='store_true')
 
@@ -641,16 +643,18 @@ def main_develop() -> None:
     pull_parser = sub_parsers.add_parser('pull')
     pull_parser.add_argument(
         'projects',
-        nargs='+',
-        action=enum_action(LLVMProjects),
+        nargs='*',
+        action='store',
+        default=None,
         help="Projects to work on.")
 
     # git push
     push_parser = sub_parsers.add_parser('push')
     push_parser.add_argument(
         'projects',
-        nargs='+',
-        action=enum_action(LLVMProjects),
+        nargs='*',
+        action='store',
+        default=None,
         help="Projects to work on.")
 
     # git status
@@ -667,13 +671,14 @@ def main_develop() -> None:
                            help="List all remote feature branches")
 
     args = parser.parse_args()
-    project_list: tp.List[LLVMProjects]
-    if "all" in args.projects:
-        project_list = generate_full_list_of_llvmprojects()
-    elif "all-vara" in args.projects:
-        project_list = generate_vara_list_of_llvmprojects()
-    else:
-        project_list = convert_to_llvmprojects_enum(args.projects)
+    project_list: tp.List[LLVMProjects] = []
+    if hasattr(args, "projects"):
+        if "all" in args.projects:
+            project_list = generate_full_list_of_llvmprojects()
+        elif "all-vara" in args.projects:
+            project_list = generate_vara_list_of_llvmprojects()
+        else:
+            project_list = convert_to_llvmprojects_enum(args.projects)
 
     if args.command == 'new-branch':
         dev.create_new_branch_for_projects(args.branch_name, project_list)
