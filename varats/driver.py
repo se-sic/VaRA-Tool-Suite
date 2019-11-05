@@ -622,8 +622,9 @@ def main_develop() -> None:
         'branch_name', type=str, help='Name of the new branch')
     new_branch_parser.add_argument(
         'projects',
-        nargs='+',
-        action=enum_action(LLVMProjects),
+        nargs='*',
+        action='store',
+        default=None,
         help="Projects to work on.")
 
     # checkout
@@ -632,8 +633,9 @@ def main_develop() -> None:
         'branch_name', type=str, help='Name of the new branch')
     checkout_parser.add_argument(
         'projects',
-        nargs='+',
-        action=enum_action(LLVMProjects),
+        nargs='*',
+        action='store',
+        default=None,
         help="Projects to work on.")
     checkout_parser.add_argument('-r', '--remote', action='store_true')
 
@@ -641,16 +643,18 @@ def main_develop() -> None:
     pull_parser = sub_parsers.add_parser('pull')
     pull_parser.add_argument(
         'projects',
-        nargs='+',
-        action=enum_action(LLVMProjects),
+        nargs='*',
+        action='store',
+        default=None,
         help="Projects to work on.")
 
     # git push
     push_parser = sub_parsers.add_parser('push')
     push_parser.add_argument(
         'projects',
-        nargs='+',
-        action=enum_action(LLVMProjects),
+        nargs='*',
+        action='store',
+        default=None,
         help="Projects to work on.")
 
     # git status
