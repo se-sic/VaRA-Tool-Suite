@@ -345,7 +345,7 @@ class CommitReportMeta():
 
 class CommitMap():
     """
-    Provides a mapping from commit hash to additional informations.
+    Provides a mapping from commit hash to additional information.
     """
 
     def __init__(self, stream: tp.Iterable[str]) -> None:
