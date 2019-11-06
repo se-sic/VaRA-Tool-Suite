@@ -11,7 +11,7 @@ import yaml
 from varats.data.reports.blame_report import (BlameReport,
                                               BlameResultFunctionEntry,
                                               BlameInstInteractions,
-                                              generate_degree_tuple)
+                                              generate_degree_tuples)
 
 YAML_DOC_1 = """---
 DocType:         BlameReport
@@ -209,6 +209,6 @@ class TestBlameReportHelperFunctions(unittest.TestCase):
         """
         Test if degree tuple generation works.
         """
-        degree_tuples = generate_degree_tuple(self.report)
+        degree_tuples = generate_degree_tuples(self.report)
         self.assertEqual(degree_tuples[0], (1, 22))
         self.assertEqual(degree_tuples[1], (2, 5))
