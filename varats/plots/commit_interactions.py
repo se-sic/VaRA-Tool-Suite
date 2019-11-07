@@ -12,8 +12,8 @@ import pandas as pd
 import numpy as np
 
 from varats.plots.plot import Plot
-from varats.data.cache_helper import load_cached_df_or_none, cache_dataframe,\
-    GraphCacheType
+from varats.data.cache_helper import (GraphCacheType,
+                                      build_cached_report_table)
 from varats.data.reports.commit_report import CommitMap, CommitReport
 from varats.data.report import MetaReport
 from varats.jupyterhelper.file import load_commit_report
@@ -37,75 +37,41 @@ def _build_interaction_table(report_files: tp.List[Path],
             - HEAD DF Interactions
 
     """
-    cached_df = load_cached_df_or_none(GraphCacheType.CommitInteractionData,
-                                       project_name)
-    if cached_df is None:
-        cached_df = pd.DataFrame(columns=[
+    def create_dataframe_layout() -> pd.DataFrame:
+        df_layout = pd.DataFrame(columns=[
             'head_cm', 'CFInteractions', 'DFInteractions',
             'HEAD CF Interactions', 'HEAD DF Interactions'
         ])
-        cached_df.CFInteractions = cached_df.CFInteractions.astype('int64')
-        cached_df.DFInteractions = cached_df.DFInteractions.astype('int64')
-        cached_df['HEAD CF Interactions'] = cached_df[
+        df_layout.CFInteractions = df_layout.CFInteractions.astype('int64')
+        df_layout.DFInteractions = df_layout.DFInteractions.astype('int64')
+        df_layout['HEAD CF Interactions'] = df_layout[
             'HEAD CF Interactions'].astype('int64')
-        cached_df['HEAD DF Interactions'] = cached_df[
+        df_layout['HEAD DF Interactions'] = df_layout[
             'HEAD DF Interactions'].astype('int64')
-
-    def report_in_data_frame(report_file: Path, df_col: pd.Series) -> bool:
-        commit_hash = CommitReport.get_commit_hash_from_result_file(
-            Path(report_file).name)
-        return tp.cast(bool, (commit_hash == df_col).any())
-
-    missing_report_files = [
-        report_file for report_file in report_files
-        if not report_in_data_frame(report_file, cached_df['head_cm'])
-    ]
-
-    missing_reports = []
-    total_missing_reports = len(missing_report_files)
-    for num, file_path in enumerate(missing_report_files):
-        print(
-            "Loading missing file ({num}/{total}): ".format(
-                num=(num + 1), total=total_missing_reports), file_path)
-        try:
-            missing_reports.append(load_commit_report(file_path))
-        except KeyError:
-            print("KeyError: ", file_path)
-        except StopIteration:
-            print("YAML file was incomplete: ", file_path)
-
-    def sorter(report: CommitReport) -> int:
-        return commit_map.short_time_id(report.head_commit)
-
-    missing_reports = sorted(missing_reports, key=sorter)
+        return df_layout
 
     def create_data_frame_for_report(report: CommitReport) -> pd.DataFrame:
         cf_head_interactions_raw = report.number_of_head_cf_interactions()
         df_head_interactions_raw = report.number_of_head_df_interactions()
-        return pd.DataFrame({
-            'head_cm':
-            report.head_commit,
-            'CFInteractions':
-            report.number_of_cf_interactions(),
-            'DFInteractions':
-            report.number_of_df_interactions(),
-            'HEAD CF Interactions':
-            cf_head_interactions_raw[0] + cf_head_interactions_raw[1],
-            'HEAD DF Interactions':
-            df_head_interactions_raw[0] + df_head_interactions_raw[1]
-        },
-                            index=[0])
+        return pd.DataFrame(
+            {
+                'head_cm':
+                report.head_commit,
+                'CFInteractions':
+                report.number_of_cf_interactions(),
+                'DFInteractions':
+                report.number_of_df_interactions(),
+                'HEAD CF Interactions':
+                cf_head_interactions_raw[0] + cf_head_interactions_raw[1],
+                'HEAD DF Interactions':
+                df_head_interactions_raw[0] + df_head_interactions_raw[1]
+            },
+            index=[0])
 
-    new_data_frames = [
-        create_data_frame_for_report(report) for report in missing_reports
-    ]
-
-    new_df = pd.concat(
-        [cached_df] + new_data_frames, ignore_index=True, sort=False)
-
-    cache_dataframe(GraphCacheType.CommitInteractionData, project_name, new_df)
-
-    return new_df
+    return build_cached_report_table(GraphCacheType.CommitInteractionData,
+                                     project_name, create_dataframe_layout,
+                                     create_data_frame_for_report,
+                                     load_commit_report, report_files)
 
 
 @check_required_args(["result_folder", "project", "get_cmap"])
