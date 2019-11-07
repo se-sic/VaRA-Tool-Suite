@@ -56,6 +56,24 @@ def get_local_project_git_path(project_name: str) -> Path:
     return project_git_path
 
 
+def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
+    """
+    Get a list of all tagged commits along with their respective tags.
+    """
+    repo_loc = get_local_project_git_path(project_name)
+    with local.cwd(repo_loc):
+        # --dereference resolves tag IDs into commits
+        # These lines are indicated by the suffix '^{}' (see man git-show-ref)
+        ref_list: tp.List[str] = git("show-ref", "--tags",
+                                     "--dereference").strip().split("\n")
+        ref_list = [ref for ref in ref_list if ref.endswith("^{}")]
+        refs: tp.List[tp.Tuple[str, str]] = [
+            (ref_split[0], ref_split[1][10:-3])
+            for ref_split in [ref.strip().split() for ref in ref_list]
+        ]
+        return refs
+
+
 def get_all_revisions_between(a: str, b: str) -> tp.List[str]:
     """
     Returns a list of all revisions between two commits a and b (inclusive),
