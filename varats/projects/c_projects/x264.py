@@ -3,12 +3,13 @@ Project file for x264.
 """
 from benchbuild.project import Project
 from benchbuild.settings import CFG
-from benchbuild.utils.cmd import make
+from benchbuild.utils.cmd import make, git
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
 
 from plumbum import local
+from varats.utils.project_util import get_all_revisions_between
 
 from varats.paper.paper_config import project_filter_generator
 
@@ -35,6 +36,15 @@ class X264(Project):  # type: ignore
 
     def compile(self) -> None:
         self.download()
+
+        with local.cwd(self.SRC_FILE):
+            version_id = git("rev-parse", "HEAD").strip()
+            old_revisions = get_all_revisions_between(
+                "5dc0aae2f900064d1f58579929a2285ab289a436",
+                "290de9638e5364c37316010ac648a6c959f6dd26")
+
+        if version_id in old_revisions:
+            self.cflags += ["-fPIC"]
 
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
