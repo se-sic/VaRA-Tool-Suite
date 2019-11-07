@@ -123,10 +123,12 @@ def checkout_remote_branch_for_projects(
         fetch_repository(llvm_folder / project.path)
         if has_remote_branch(llvm_folder / project.path, fixed_branch_name,
                              'origin'):
-            checkout_new_branch(llvm_folder / project.path, fixed_branch_name)
+            checkout_new_branch(llvm_folder / project.path, fixed_branch_name,
+                                'origin/' + fixed_branch_name)
             print(
-                "Checked out new branch {branch} for project {project}".format(
-                    branch=fixed_branch_name, project=project.name))
+                "Checked out new branch {branch} (tracking origin/{branch}) "
+                "for project {project}"
+                .format(branch=fixed_branch_name, project=project.name))
         else:
             print("No branch {branch} on remote origin for project {project}".
                   format(branch=fixed_branch_name, project=project.name))
