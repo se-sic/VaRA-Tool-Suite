@@ -97,9 +97,8 @@ def checkout_branch_for_projects(branch_name: str,
                                                     project.project)
         if has_branch(llvm_folder / project.path, fixed_branch_name):
             checkout_branch(llvm_folder / project.path, fixed_branch_name)
-            print(
-                "Checked out new branch {branch} for project {project}".format(
-                    branch=fixed_branch_name, project=project.name))
+            print("Checked out existing branch {branch} for project {project}".
+                  format(branch=fixed_branch_name, project=project.name))
         else:
             print("No branch {branch} for project {project}".format(
                 branch=fixed_branch_name, project=project.name))
@@ -116,9 +115,9 @@ def checkout_remote_branch_for_projects(
         fixed_branch_name = __quickfix_dev_branches(branch_name,
                                                     project.project)
         if has_branch(llvm_folder / project.path, fixed_branch_name):
-            print(
-                "Checked out new branch {branch} for project {project}".format(
-                    branch=fixed_branch_name, project=project.name))
+            checkout_branch(llvm_folder / project.path, fixed_branch_name)
+            print("Checked out existing branch {branch} for project {project}".
+                  format(branch=fixed_branch_name, project=project.name))
             continue
 
         fetch_repository(llvm_folder / project.path)
