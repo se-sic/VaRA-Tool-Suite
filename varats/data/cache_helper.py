@@ -21,6 +21,7 @@ class GraphCacheType(Enum):
     Cached dataframes for graphs.
     """
     CommitInteractionData = "interaction_table"
+    BlameInteractionDegreeData = "b_interaction_degree_table"
 
 
 def __get_data_file_path(data_id: tp.Union[GraphCacheType, str],

@@ -11,6 +11,7 @@ import matplotlib.style as style
 import pandas as pd
 import numpy as np
 
+from varats.data.cache_helper import build_cached_report_table, GraphCacheType
 from varats.jupyterhelper.file import load_blame_report
 from varats.plots.plot import Plot
 from varats.data.revisions import get_processed_revisions
@@ -21,29 +22,13 @@ from varats.plots.plot_utils import check_required_args
 
 def _build_interaction_table(report_files: tp.List[Path],
                              project_name: str) -> pd.DataFrame:
-    # TODO: maybe caching ?
-    cached_df = None
-    if cached_df is None:
-        cached_df = pd.DataFrame(columns=[
-            'revision', 'degree', 'amount', 'fraction'
-        ])
-        cached_df.degree = cached_df.degree.astype('int64')
-        cached_df.amount = cached_df.amount.astype('int64')
-        cached_df.fraction = cached_df.fraction.astype('int64')
-
-    reports = []
-    # TODO: refactor?
-    total_missing_reports = len(report_files)
-    for num, file_path in enumerate(report_files):
-        print(
-            "Loading missing file ({num}/{total}): ".format(
-                num=(num + 1), total=total_missing_reports), file_path)
-        try:
-            reports.append(load_blame_report(file_path))
-        except KeyError:
-            print("KeyError: ", file_path)
-        except StopIteration:
-            print("YAML file was incomplete: ", file_path)
+    def create_dataframe_layout() -> pd.DataFrame:
+        df_layout = pd.DataFrame(
+            columns=['revision', 'degree', 'amount', 'fraction'])
+        df_layout.degree = df_layout.degree.astype('int64')
+        df_layout.amount = df_layout.amount.astype('int64')
+        df_layout.fraction = df_layout.fraction.astype('int64')
+        return df_layout
 
     def create_data_frame_for_report(report: BlameReport) -> pd.DataFrame:
         # TODO: rename
@@ -51,26 +36,19 @@ def _build_interaction_table(report_files: tp.List[Path],
 
         degrees, amounts = map(list, zip(*list_of_degree_accurences))
         total = sum(amounts)
-        return pd.DataFrame({
-            'revision':
-            [report.head_commit] * len(degrees),
-            'degree':
-            degrees,
-            'amount':
-            amounts,
-            'fraction':
-            np.divide(amounts, total),
-        },
-                            index=range(0, len(degrees)))
+        return pd.DataFrame(
+            {
+                'revision': [report.head_commit] * len(degrees),
+                'degree': degrees,
+                'amount': amounts,
+                'fraction': np.divide(amounts, total),
+            },
+            index=range(0, len(degrees)))
 
-    new_data_frames = [
-        create_data_frame_for_report(report) for report in reports
-    ]
-
-    new_df = pd.concat(
-        [cached_df] + new_data_frames, ignore_index=True, sort=False)
-
-    return new_df
+    return build_cached_report_table(GraphCacheType.BlameInteractionDegreeData,
+                                     project_name, create_dataframe_layout,
+                                     create_data_frame_for_report,
+                                     load_blame_report, report_files)
 
 
 @check_required_args(["result_folder", "project", 'get_cmap'])
