@@ -51,14 +51,14 @@ class Gravity(Project):  # type: ignore
             print("MAKE")
             self.__compile_make()
 
-    def __compile_cmake(self):
+    def __compile_cmake(self) -> None:
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
                 cmake("-G", "Unix Makefiles", ".")
             run(make["-j", int(CFG["jobs"])])
 
-    def __compile_make(self):
+    def __compile_make(self) -> None:
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
