@@ -18,7 +18,8 @@ from varats.data.reports.commit_report import CommitReport
 from varats.jupyterhelper.file import load_commit_report
 from varats.plots.plot_utils import check_required_args
 from varats.data.revisions import get_processed_revisions_files
-from varats.paper.case_study import CaseStudy, CSStage
+from varats.paper.case_study import (CaseStudy, CSStage,
+                                     get_case_study_file_name_filter)
 
 
 def _build_interaction_table(report_files: tp.List[Path],
@@ -84,21 +85,9 @@ def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
     result_dir = Path(kwargs["result_folder"])
     project_name = kwargs["project"]
 
-    def cs_filter(file_name: str) -> bool:
-        """
-        Filter files that are not in the case study.
-
-        Returns True if a case_study is set and the commit_hash of the file
-        is not part of this case_study, otherwise, False.
-        """
-        if case_study is None:
-            return False
-
-        commit_hash = CommitReport.get_commit_hash_from_result_file(file_name)
-        return not case_study.has_revision(commit_hash)
-
-    report_files = get_processed_revisions_files(project_name, result_dir,
-                                                 CommitReport, cs_filter)
+    report_files = get_processed_revisions_files(
+        project_name, result_dir, CommitReport,
+        get_case_study_file_name_filter(case_study))
 
     data_frame = _build_interaction_table(report_files, str(project_name))
 

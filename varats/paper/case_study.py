@@ -655,6 +655,25 @@ def get_newest_result_files_for_case_study(
 
     return [x for x in files_to_store.values()]
 
+
+def get_case_study_file_name_filter(case_study: CaseStudy
+                                    ) -> tp.Callable[[str], bool]:
+    """Generate a file_name filter for a case_study"""
+    def cs_filter(file_name: str) -> bool:
+        """
+        Filter files that are not in the case study.
+
+        Returns True if a case_study is set and the commit_hash of the file
+        is not part of this case_study, otherwise, False.
+        """
+        if case_study is None:
+            return False
+
+        commit_hash = MetaReport.get_commit_hash_from_result_file(file_name)
+        return not case_study.has_revision(commit_hash)
+
+    return cs_filter
+
 ###############################################################################
 # Case-study generation
 ###############################################################################
