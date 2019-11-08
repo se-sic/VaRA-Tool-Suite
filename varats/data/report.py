@@ -110,68 +110,69 @@ class MetaReport(type):
         Check if all static accessor methods like `is_result_file_*` for every
         FileStatusExtension enum exist.
 
-        For example: Report.is_result_file_success("file/path")
+        For example: Report.result_file_has_status_success("file/path")
         """
         for file_status in FileStatusExtension:
-            method_name = 'is_result_file_' + file_status.name.lower()
+            method_name = 'result_file_has_status_' + file_status.name.lower()
             if not hasattr(cls, method_name):
                 raise NotImplementedError(
                     "Missing file accesser method {method_name}".format(
                         method_name=method_name))
 
-    @staticmethod
-    def is_result_file_success(file_name: str) -> bool:
-        """ Check if the passed file name is a (Success) result file. """
-        return MetaReport.is_result_file_status(file_name,
-                                                FileStatusExtension.Success)
-
-    @staticmethod
-    def is_result_file_failed(file_name: str) -> bool:
-        """ Check if the passed file name is a (Failed) result file. """
-        return MetaReport.is_result_file_status(file_name,
-                                                FileStatusExtension.Failed)
-
-    @staticmethod
-    def is_result_file_compileerror(file_name: str) -> bool:
-        """ Check if the passed file name is a (Failed) result file. """
-        return MetaReport.is_result_file_status(
-            file_name, FileStatusExtension.CompileError)
-
-    @staticmethod
-    def is_result_file_missing(file_name: str) -> bool:
-        """ Check if the passed file name is a (Missing) result file. """
-        return MetaReport.is_result_file_status(file_name,
-                                                FileStatusExtension.Missing)
-
-    @staticmethod
-    def is_result_file_blocked(file_name: str) -> bool:
-        """ Check if the passed file name is a (Missing) result file. """
-        return MetaReport.is_result_file_status(file_name,
-                                                FileStatusExtension.Blocked)
-
     def __check_required_vars(cls: tp.Any, name: str,
                               req_vars: tp.List[str]) -> None:
         for var in req_vars:
             if not hasattr(cls, var):
-                raise NameError(("{class_name} does not define "
-                                 "a static variable {var_name}.").format(
-                                     class_name=name, var_name=var))
+                raise NameError(
+                    ("{class_name} does not define "
+                     "a static variable {var_name}.").format(class_name=name,
+                                                             var_name=var))
 
     @staticmethod
-    def is_result_file(file_name: str) -> bool:
-        """ Check if the passed file name is a result file. """
-        match = MetaReport.__RESULT_FILE_REGEX.search(file_name)
-        return match is not None
+    def result_file_has_status_success(file_name: str) -> bool:
+        """ Check if the passed file name is a (Success) result file. """
+        return MetaReport.result_file_has_status(file_name,
+                                                 FileStatusExtension.Success)
 
     @staticmethod
-    def is_result_file_status(file_name: str,
-                              extension_type: FileStatusExtension) -> bool:
+    def result_file_has_status_failed(file_name: str) -> bool:
+        """ Check if the passed file name is a (Failed) result file. """
+        return MetaReport.result_file_has_status(file_name,
+                                                 FileStatusExtension.Failed)
+
+    @staticmethod
+    def result_file_has_status_compileerror(file_name: str) -> bool:
+        """ Check if the passed file name is a (Failed) result file. """
+        return MetaReport.result_file_has_status(
+            file_name, FileStatusExtension.CompileError)
+
+    @staticmethod
+    def result_file_has_status_missing(file_name: str) -> bool:
+        """ Check if the passed file name is a (Missing) result file. """
+        return MetaReport.result_file_has_status(file_name,
+                                                 FileStatusExtension.Missing)
+
+    @staticmethod
+    def result_file_has_status_blocked(file_name: str) -> bool:
+        """ Check if the passed file name is a (Missing) result file. """
+        return MetaReport.result_file_has_status(file_name,
+                                                FileStatusExtension.Blocked)
+
+    @staticmethod
+    def result_file_has_status(file_name: str,
+                               extension_type: FileStatusExtension) -> bool:
         """ Check if the passed file name is a (failed) result file. """
         match = MetaReport.__RESULT_FILE_REGEX.search(file_name)
         if match:
             return match.group("status_ext") == (
                 FileStatusExtension.get_status_extension(extension_type))
         return False
+
+    @staticmethod
+    def is_result_file(file_name: str) -> bool:
+        """ Check if the passed file name is a result file. """
+        match = MetaReport.__RESULT_FILE_REGEX.search(file_name)
+        return match is not None
 
     @staticmethod
     def is_result_file_supplementary(file_name: str) -> bool:
