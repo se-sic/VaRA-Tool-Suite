@@ -5,6 +5,7 @@ Utility module for BenchBuild experiments.
 import os
 import typing as tp
 import random
+import traceback
 from pathlib import Path
 
 from plumbum.commands import ProcessExecutionError
@@ -92,7 +93,9 @@ Timeout after: {timeout_duration}
                     outfile.flush()
 
             outfile.write("Exception:\n")
-            outfile.write(str(ex))
+            outfile.write(str(ex) + "\n")
+            outfile.write("Traceback:\n")
+            traceback.print_exc(file=outfile)
 
         raise ex
 
