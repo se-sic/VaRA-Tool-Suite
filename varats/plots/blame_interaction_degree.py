@@ -95,8 +95,8 @@ class BlameInteractionDegree(Plot):
 
     def plot(self, view_mode: bool) -> None:
         plot_cfg = {
-            'linewidth': 2 if view_mode else 1,
-            'legend_size': 8 if view_mode else 4,
+            'linewidth': 1 if view_mode else 0.25,
+            'legend_size': 8 if view_mode else 2,
             'xtick_size': 10 if view_mode else 2
         }
 
@@ -136,9 +136,6 @@ class BlameInteractionDegree(Plot):
             ['fraction'] for x in degree_levels
         ]
 
-        # color_map = cm.get_cmap('plasma')
-        # color_map = cm.get_cmap('hot')
-        # color_map = cm.get_cmap('YlOrRd')
         color_map = cm.get_cmap('gist_stern')
 
         _, axis = plt.subplots()
@@ -151,9 +148,22 @@ class BlameInteractionDegree(Plot):
                                    0, 1,
                                    len(np.unique(
                                        interaction_plot_df['degree']))))),
-                       labels=sorted(np.unique(interaction_plot_df['degree'])))
+                       labels=sorted(np.unique(interaction_plot_df['degree'])),
+                       linewidth=plot_cfg['linewidth'])
 
-        axis.legend(title='Interaction degrees', loc='upper left')
+        legend = axis.legend(title='Interaction degrees',
+                             loc='upper left',
+                             prop={
+                                 'size': plot_cfg['legend_size'],
+                                 'family': 'monospace'
+                             })
+        plt.setp(legend.get_title(),
+                 fontsize=plot_cfg['legend_size'],
+                 family='monospace')
+
+        for y_label in axis.get_yticklabels():
+            y_label.set_fontsize(8)
+            y_label.set_fontfamily('monospace')
 
         for x_label in axis.get_xticklabels():
             x_label.set_fontsize(plot_cfg['xtick_size'])
