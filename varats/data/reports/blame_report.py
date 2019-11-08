@@ -12,7 +12,9 @@ from varats.data.version_header import VersionHeader
 
 class BlameInstInteractions():
     """
-    An interaction of between other commits an a base.
+    An interaction between a base commit, attached to an instruction, and
+    other commits. For the blame analysis, these commits stem from data flows
+    into the instruction.
     """
     def __init__(self, raw_inst_entry: tp.Dict[str, tp.Any]) -> None:
         self.__base_hash = str(raw_inst_entry['base-hash'])

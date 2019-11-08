@@ -1,8 +1,8 @@
 """
 Implements the blame report experiment.
 
-The experiment generates analyses a project and generates a BlameReports with
-VaRA.
+The experiment analyses a project with VaRAs blame analysis and generates a
+BlameReports.
 """
 
 import typing as tp
@@ -44,8 +44,8 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         """
         This step performs the actual analysis with the correct flags.
         Flags:
-            -vara-CFR: to run a commit flow report
-            -yaml-out-file=<path>: specify the path to store the results
+            -vara-BR: to run a commit flow report
+            -yaml-report-outfile=<path>: specify the path to store the results
         """
         if not self.obj:
             return

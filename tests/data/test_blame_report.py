@@ -144,7 +144,7 @@ class TestResultFunctionEntry(unittest.TestCase):
 
 class TestBlameReport(unittest.TestCase):
     """
-    Test if a blame report is correctly reconstruction from yaml.
+    Test if a blame report is correctly reconstructed from yaml.
     """
     @classmethod
     def setUpClass(cls):
