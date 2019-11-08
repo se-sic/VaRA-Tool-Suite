@@ -35,8 +35,9 @@ class Gravity(Project, BlockedRevisionChecker):  # type: ignore
     BIN_NAMES = ['gravity']
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
-    __blocked_revision_checker_delegate = BlockedRevisionCheckerDelegate(NAME)
-    __blocked_revision_checker_delegate.block_revisions(
+    # Mark early revisions that do not contain any code as blocked
+    BlockedRevisionChecker.initialize_for_project(NAME)
+    BlockedRevisionChecker.block_revisions(
         "0b8e0e047fc3d5e18ead3221ad54920f1ad0eedc",
         "8f417752dd14deea64249b5d32b6138ebc877fa9", "nothing to build")
 
@@ -72,7 +73,3 @@ class Gravity(Project, BlockedRevisionChecker):  # type: ignore
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
                 run(make["-j", int(CFG["jobs"])])
-
-    @classmethod
-    def is_blocked_revision(cls, id: str) -> tp.Tuple[bool, tp.Optional[str]]:
-        return cls.__blocked_revision_checker_delegate.is_blocked_revision(id)

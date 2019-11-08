@@ -131,22 +131,6 @@ class BlockedRevisionRange():
         return self.__revision_list.__iter__()
 
 
-class BlockedRevisionChecker():
-    """
-    Interface for blacklisting/blocking revisions from a project.
-    Implementors should delegate to an instance of
-    `BlockedRevisionCheckerDelegate`.
-    """
-
-    @classmethod
-    @abc.abstractmethod
-    def is_blocked_revision(cls, id: str) -> tp.Tuple[bool, tp.Optional[str]]:
-        """
-        Checks whether a revision is blocked or not. Also returns the
-        reason for the block if available.
-        """
-
-
 class BlockedRevisionCheckerDelegate():
     """
     Delegate for the
@@ -169,9 +153,6 @@ class BlockedRevisionCheckerDelegate():
         return False, None
 
     def block_revision(self, id: str, reason: tp.Optional[str] = None) -> None:
-        """
-        Blacklist a single revision.
-        """
         self.__blacklist_entries.append(BlockedRevision(id, reason))
 
     def block_revisions(self,
@@ -184,3 +165,60 @@ class BlockedRevisionCheckerDelegate():
         """
         self.__blacklist_entries.append(
             BlockedRevisionRange(id_start, id_end, reason))
+
+
+class BlockedRevisionChecker():
+    """
+    Interface for blacklisting/blocking revisions from a project.
+
+    Implementors must initialize the delegate with a call to 
+    `initialize_for_project()` before revisions can be blacklisted.
+    This is necessary because we need to know which project we are dealing
+    with in order to compute revision ranges.
+    """
+
+    __blocked_revision_checker_delegate: tp.Optional[
+        BlockedRevisionCheckerDelegate] = None
+
+    @classmethod
+    def initialize_for_project(cls, project: str):
+        """
+        Initializes the revision checker delegate.
+        
+        This needs to be called before revisions can be blocked.
+        """
+        cls.__blocked_revision_checker_delegate = \
+            BlockedRevisionCheckerDelegate(project)
+
+    @classmethod
+    def block_revision(cls, id: str, reason: tp.Optional[str] = None) -> None:
+        """
+        Blacklist a single revision.
+        """
+        if cls.__blocked_revision_checker_delegate is None:
+            return
+        cls.__blocked_revision_checker_delegate.block_revision(id, reason)
+
+    @classmethod
+    def block_revisions(cls,
+                        id_start: str,
+                        id_end: str,
+                        reason: tp.Optional[str] = None) -> None:
+        """
+        Blacklist all revisions between commit `id_start` (older)
+        and `id_end` (newer).
+        """
+        if cls.__blocked_revision_checker_delegate is None:
+            return
+        cls.__blocked_revision_checker_delegate.block_revisions(
+            id_start, id_end, reason)
+
+    @classmethod
+    def is_blocked_revision(cls, id: str) -> tp.Tuple[bool, tp.Optional[str]]:
+        """
+        Checks whether a revision is blocked or not. Also returns the
+        reason for the block if available.
+        """
+        if cls.__blocked_revision_checker_delegate is None:
+            return False, None
+        return cls.__blocked_revision_checker_delegate.is_blocked_revision(id)
