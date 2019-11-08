@@ -112,7 +112,7 @@ class CFRAnalysis(actions.Step):  # type: ignore
                                   binary_name=binary_name,
                                   project_version=project.version))
 
-            run_cmd = opt(*opt_params)
+            run_cmd = opt[opt_params]
 
             timeout_duration = '8h'
             from benchbuild.utils.cmd import timeout
