@@ -28,7 +28,24 @@ class Coreutils(prj.Project):  # type: ignore
     DOMAIN = 'utils'
     VERSION = 'HEAD'
     # Names of the individual coreutil binaries
-    BIN_NAMES = ['uniq', 'dircolors', 'numfmt', 'b2sum', 'mv', 'fold', 'dir', 'mkfifo', 'vdir', 'sha512sum', 'unexpand', 'join', 'nproc', 'ptx', 'printf', 'ginstall', 'du', 'printenv', 'dcgen', 'groups', 'sync', 'ln', 'shuf', 'false', 'mkdir', 'chmod', 'link', 'cat', 'pwd', 'chown', 'head', 'sleep', 'fmt', 'getlimits', 'test', 'paste', 'comm', 'mknod', 'kill', 'sha384sum', 'sort', 'sum', 'sha224sum', 'expand', 'basenc', 'truncate', 'dd', 'tail', 'df', 'tee', 'tsort', 'yes', 'sha1sum', '.deps', 'rm', 'make-prime-list', 'logname', 'pathchk', 'whoami', 'wc', 'basename', 'nohup', 'libstdbuf.so', 'chroot', 'users', 'csplit', 'stdbuf', 'hostid', 'readlink', 'timeout', 'base64', 'id', 'nl', 'stat', 'cp', 'shred', 'who', 'tr', 'echo', 'date', 'split', 'seq', 'md5sum', 'env', 'expr', '[', 'true', 'chcon', 'chgrp', 'mktemp', 'unlink', 'uname', 'pinky', 'stty', 'rmdir', 'ls', 'runcon', 'nice', 'blake2', 'blake2/.deps', 'tty', 'factor', 'tac', 'realpath', 'pr', 'sha256sum', 'du-tests', 'cksum', 'touch', 'cut', 'od', 'base32', 'uptime', 'dirname']
+    BIN_NAMES = [
+        'uniq', 'dircolors', 'numfmt', 'b2sum', 'mv', 'fold', 'dir', 'mkfifo',
+        'vdir', 'sha512sum', 'unexpand', 'join', 'nproc', 'ptx', 'printf',
+        'ginstall', 'du', 'printenv', 'dcgen', 'groups', 'sync', 'ln', 'shuf',
+        'false', 'mkdir', 'chmod', 'link', 'cat', 'pwd', 'chown', 'head',
+        'sleep', 'fmt', 'getlimits', 'test', 'paste', 'comm', 'mknod', 'kill',
+        'sha384sum', 'sort', 'sum', 'sha224sum', 'expand', 'basenc',
+        'truncate', 'dd', 'tail', 'df', 'tee', 'tsort', 'yes', 'sha1sum',
+        '.deps', 'rm', 'make-prime-list', 'logname', 'pathchk', 'whoami', 'wc',
+        'basename', 'nohup', 'libstdbuf.so', 'chroot', 'users', 'csplit',
+        'stdbuf', 'hostid', 'readlink', 'timeout', 'base64', 'id', 'nl',
+        'stat', 'cp', 'shred', 'who', 'tr', 'echo', 'date', 'split', 'seq',
+        'md5sum', 'env', 'expr', '[', 'true', 'chcon', 'chgrp', 'mktemp',
+        'unlink', 'uname', 'pinky', 'stty', 'rmdir', 'ls', 'runcon', 'nice',
+        'blake2', 'blake2/.deps', 'tty', 'factor', 'tac', 'realpath', 'pr',
+        'sha256sum', 'du-tests', 'cksum', 'touch', 'cut', 'od', 'base32',
+        'uptime', 'dirname'
+    ]
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
     def run_tests(self, runner: run) -> None:
