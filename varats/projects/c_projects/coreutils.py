@@ -32,20 +32,16 @@ class Coreutils(prj.Project):  # type: ignore
     SRC_FILE = NAME + "-{0}".format(VERSION)
 
     def run_tests(self, runner: run) -> None:
-        pass
-        # actual command is: $ make check
-        # with local.cwd(self.SRC_FILE):
-            # with local.env(CC=str(clang)):
-                # run(make["-j", int(CFG["jobs"]), "check"])
+        with local.cwd(self.SRC_FILE):
+            run(make["-j", int(CFG["jobs"]), "check"])
 
     def compile(self) -> None:
         self.download()
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
-            print("path: " + local.cwd.as_uri)
             git("submodule", "init")
             git("submodule", "update")
             with local.env(CC=str(clang)):
                 run(local["./bootstrap"])
-                run(local["./configure --disable-gcc-warnings"])
+                run(local["./configure"]["--disable-gcc-warnings"])
             run(make["-j", int(CFG["jobs"])])
