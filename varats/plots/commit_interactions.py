@@ -15,10 +15,9 @@ from varats.plots.plot import Plot
 from varats.data.cache_helper import (GraphCacheType,
                                       build_cached_report_table)
 from varats.data.reports.commit_report import CommitReport
-from varats.data.report import MetaReport
 from varats.jupyterhelper.file import load_commit_report
 from varats.plots.plot_utils import check_required_args
-from varats.data.revisions import get_processed_revisions
+from varats.data.revisions import get_processed_revisions_files
 from varats.paper.case_study import CaseStudy, CSStage
 
 
@@ -85,21 +84,23 @@ def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
     result_dir = Path(kwargs["result_folder"])
     project_name = kwargs["project"]
 
-    processed_revisions = get_processed_revisions(project_name, CommitReport)
+    def cs_filter(file_name: str) -> bool:
+        """
+        Filter files that are not in the case study.
 
-    reports = []
-    for file_path in result_dir.iterdir():
-        if file_path.stem.startswith("CR-" + str(project_name) + "-"):
-            if MetaReport.result_file_has_status_success(file_path.name):
-                commit_hash = CommitReport.get_commit_hash_from_result_file(
-                    file_path.name)
+        Returns True if a case_study is set and the commit_hash of the file
+        is not part of this case_study, otherwise, False.
+        """
+        if case_study is None:
+            return False
 
-                if commit_hash in processed_revisions:
-                    if case_study is None or case_study.has_revision(
-                            commit_hash):
-                        reports.append(file_path)
+        commit_hash = CommitReport.get_commit_hash_from_result_file(file_name)
+        return not case_study.has_revision(commit_hash)
 
-    data_frame = _build_interaction_table(reports, str(project_name))
+    report_files = get_processed_revisions_files(project_name, result_dir,
+                                                 CommitReport, cs_filter)
+
+    data_frame = _build_interaction_table(report_files, str(project_name))
 
     data_frame['head_cm'] = data_frame['head_cm'].apply(
         lambda x: "{num}-{head}".format(head=x,

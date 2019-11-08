@@ -100,6 +100,39 @@ def get_processed_revisions(project_name: str,
     return processed_revisions
 
 
+def get_processed_revisions_files(
+        project_name: str,
+        result_dir: Path,
+        result_file_type: MetaReport,
+        file_name_filter: tp.Optional[tp.Callable[[str], bool]] = None
+) -> tp.List[Path]:
+    """
+    Returns a list of file paths to correctly processed revision files.
+
+    Args:
+        project_name: target project
+        result_dir: folder to look for result files
+        result_file_type: the type of the result file
+        file_name_filter: optional filter to exclude certaint files,
+                            returns true; if the file_name should not be
+                            checked
+    """
+    processed_revisions_paths = []
+    processed_revisions = get_processed_revisions(project_name,
+                                                  result_file_type)
+    for file_path in result_dir.iterdir():
+        if result_file_type.is_correct_report_type(file_path.name):
+            if file_name_filter is not None:
+                if file_name_filter(file_path.name):
+                    continue
+            if result_file_type.result_file_has_status_success(file_path.name):
+                commit_hash = result_file_type.get_commit_hash_from_result_file(
+                    file_path.name)
+                if commit_hash in processed_revisions:
+                    processed_revisions_paths.append(file_path)
+    return processed_revisions_paths
+
+
 def get_failed_revisions(project_name: str,
                          result_file_type: MetaReport) -> tp.List[str]:
     """

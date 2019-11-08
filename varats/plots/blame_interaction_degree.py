@@ -14,10 +14,11 @@ import numpy as np
 from varats.data.cache_helper import build_cached_report_table, GraphCacheType
 from varats.jupyterhelper.file import load_blame_report
 from varats.plots.plot import Plot
-from varats.data.revisions import get_processed_revisions
+from varats.data.revisions import get_processed_revisions_files
 from varats.data.reports.blame_report import (BlameReport,
                                               generate_degree_tuples)
 from varats.plots.plot_utils import check_required_args
+from varats.paper.case_study import CaseStudy
 
 
 def _build_interaction_table(report_files: tp.List[Path],
@@ -31,10 +32,9 @@ def _build_interaction_table(report_files: tp.List[Path],
         return df_layout
 
     def create_data_frame_for_report(report: BlameReport) -> pd.DataFrame:
-        # TODO: rename
-        list_of_degree_accurences = generate_degree_tuples(report)
+        list_of_degree_occurences = generate_degree_tuples(report)
 
-        degrees, amounts = map(list, zip(*list_of_degree_accurences))
+        degrees, amounts = map(list, zip(*list_of_degree_occurences))
         total = sum(amounts)
         return pd.DataFrame(
             {
@@ -53,25 +53,26 @@ def _build_interaction_table(report_files: tp.List[Path],
 
 @check_required_args(["result_folder", "project", 'get_cmap'])
 def _gen_blame_interaction_data(**kwargs: tp.Any) -> pd.DataFrame:
-    # TODO: add case-study filter
     commit_map = kwargs['get_cmap']()
+    case_study = kwargs.get('plot_case_study', None)  # can be None
     result_dir = Path(kwargs["result_folder"])
     project_name = kwargs["project"]
 
-    processed_revisions = get_processed_revisions(project_name, BlameReport)
-    print(processed_revisions)
+    def cs_filter(file_name: str) -> bool:
+        """
+        Filter files that are not in the case study.
 
-    # get proccessed files TODO: refactor out
-    report_files = []
-    for file_path in result_dir.iterdir():
-        if BlameReport.is_correct_report_type(
-                file_path.name) and BlameReport.result_file_has_status_success(
-                    file_path.name):
-            commit_hash = BlameReport.get_commit_hash_from_result_file(
-                file_path.name)
-            if commit_hash in processed_revisions:
-                # TODO: case study checking
-                report_files.append(file_path)
+        Returns True if a case_study is set and the commit_hash of the file
+        is not part of this case_study, otherwise, False.
+        """
+        if case_study is None:
+            return False
+
+        commit_hash = BlameReport.get_commit_hash_from_result_file(file_name)
+        return not case_study.has_revision(commit_hash)
+
+    report_files = get_processed_revisions_files(project_name, result_dir,
+                                                 BlameReport, cs_filter)
 
     data_frame = _build_interaction_table(report_files,
                                           str(project_name))
@@ -101,7 +102,21 @@ class BlameInteractionDegree(Plot):
 
         style.use(self.style)
 
-        interaction_plot_df = _gen_blame_interaction_data(**self.plot_kwargs)
+        def cs_filter(data_frame: pd.DataFrame) -> pd.DataFrame:
+            """
+            Filter out all commit that are not in the case study, if one was
+            selected. This allows us to only load file related to the
+            case-study.
+            """
+            if self.plot_kwargs['plot_case_study'] is None:
+                return data_frame
+            case_study: CaseStudy = self.plot_kwargs['plot_case_study']
+            return data_frame[data_frame.apply(
+                lambda x: case_study.has_revision(x['revision'].split('-')[1]),
+                axis=1)]
+
+        interaction_plot_df = cs_filter(
+            _gen_blame_interaction_data(**self.plot_kwargs))
 
         interaction_plot_df['cm_idx'] = interaction_plot_df['revision'].apply(
             lambda x: int(x.split('-')[0]))
