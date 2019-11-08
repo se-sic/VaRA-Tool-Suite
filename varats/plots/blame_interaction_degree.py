@@ -89,8 +89,8 @@ class BlameInteractionDegree(Plot):
     """
 
     def __init__(self, **kwargs: tp.Any):
-        super(BlameInteractionDegree, self).__init__('b_interaction_degree')
-        self.__saved_extra_args = kwargs
+        super(BlameInteractionDegree, self).__init__('b_interaction_degree',
+                                                     **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         plot_cfg = {
@@ -101,8 +101,7 @@ class BlameInteractionDegree(Plot):
 
         style.use(self.style)
 
-        interaction_plot_df = _gen_blame_interaction_data(
-            **self.__saved_extra_args)
+        interaction_plot_df = _gen_blame_interaction_data(**self.plot_kwargs)
 
         interaction_plot_df['cm_idx'] = interaction_plot_df['revision'].apply(
             lambda x: int(x.split('-')[0]))
@@ -149,23 +148,6 @@ class BlameInteractionDegree(Plot):
     def show(self) -> None:
         self.plot(True)
         plt.show()
-
-    def save(self, filetype: str = 'svg') -> None:
-        # TODO: provide default implementation
-        self.plot(False)
-
-        result_dir = Path(self.__saved_extra_args["result_folder"])
-        project_name = self.__saved_extra_args["project"]
-
-        plt.savefig(
-            result_dir /
-            (project_name + "_{graph_name}{stages}.{filetype}".format(
-                graph_name=self.name,
-                stages='S' if self.__saved_extra_args['sep_stages'] else '',
-                filetype=filetype)),
-            dpi=1200,
-            bbox_inches="tight",
-            format=filetype)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return set()
