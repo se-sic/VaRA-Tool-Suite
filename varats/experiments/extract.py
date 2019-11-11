@@ -46,19 +46,14 @@ class Extract(actions.Step):  # type: ignore
             project_name=str(project.name))
         mkdir("-p", local.path() / bc_cache_folder)
 
-        for binary_name in project.BIN_NAMES:
+        for binary in project.binaries:
             bc_cache_file = bc_cache_folder + self.BC_FILE_TEMPLATE.format(
                 project_name=str(project.name),
-                binary_name=str(binary_name),
+                binary_name=str(binary.name),
                 project_version=str(project.version))
 
-            target_binary = local.path(project.builddir) / project.SRC_FILE /\
-                binary_name
+            target_binary = Path(project.builddir) / project.SRC_FILE /\
+                binary
 
             extract_bc(target_binary)
-
-            if Path(target_binary).exists():
-                cp(target_binary + ".bc", local.path() / bc_cache_file)
-            else:
-                print("Could not find binary '{name}' for extraction.".format(
-                    name=binary_name))
+            cp(str(target_binary) + ".bc", local.path() / bc_cache_file)

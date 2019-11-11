@@ -49,10 +49,10 @@ class EmptyAnalysis(actions.Step):  # type: ignore
 
         mkdir("-p", vara_result_folder)
 
-        for binary_name in project.BIN_NAMES:
+        for binary in project.binaries:
             result_file = EmptyReport.get_file_name(
                 project_name=str(project.name),
-                binary_name=binary_name,
+                binary_name=binary.name,
                 project_version=str(project.version),
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success)
