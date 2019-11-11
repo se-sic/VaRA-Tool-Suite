@@ -93,7 +93,7 @@ class BlameInteractionDegree(Plot):
         def cs_filter(data_frame: pd.DataFrame) -> pd.DataFrame:
             """
             Filter out all commits that are not in the case study, if one was
-            selected. This allows us to only load file related to the
+            selected. This allows us to only load files related to the
             case-study.
             """
             if self.plot_kwargs['plot_case_study'] is None:
