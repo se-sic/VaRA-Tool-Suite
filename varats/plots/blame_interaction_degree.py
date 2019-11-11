@@ -34,7 +34,7 @@ def _build_interaction_table(report_files: tp.List[Path],
     def create_data_frame_for_report(report: BlameReport) -> pd.DataFrame:
         list_of_degree_occurrences = generate_degree_tuples(report)
 
-        degrees, amounts = map(list, zip(*list_of_degree_occurences))
+        degrees, amounts = map(list, zip(*list_of_degree_occurrences))
         total = sum(amounts)
         return pd.DataFrame(
             {
