@@ -113,7 +113,7 @@ def get_processed_revisions_files(
         project_name: target project
         result_dir: folder to look for result files
         result_file_type: the type of the result file
-        file_name_filter: optional filter to exclude certaint files,
+        file_name_filter: optional filter to exclude certain files,
                             returns true; if the file_name should not be
                             checked
     """
