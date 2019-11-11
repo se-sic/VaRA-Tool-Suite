@@ -92,12 +92,15 @@ class BlockedRevision():
     A revision marked as blocked due to some `reason`.
     """
 
-    def __init__(self, id: str, reason: tp.Optional[str] = None):
-        self.__id = id
+    def __init__(self, rev_id: str, reason: tp.Optional[str] = None):
+        self.__id = rev_id
         self.__reason = reason
 
     @property
     def reason(self):
+        """
+        The reason why this revision is blocked.
+        """
         return self.__reason
 
     def __iter__(self):
@@ -121,6 +124,9 @@ class BlockedRevisionRange():
 
     @property
     def reason(self):
+        """
+        The reason why this revision range is blocked.
+        """
         return self.__reason
 
     def __iter__(self):
@@ -131,94 +137,38 @@ class BlockedRevisionRange():
         return self.__revision_list.__iter__()
 
 
-class BlockedRevisionCheckerDelegate():
+def block_revisions(
+        blocks: tp.List[tp.Union[BlockedRevision, BlockedRevisionRange]]):
     """
-    Delegate for the
-    """
+    Decorator for project classes for blacklisting/blocking revisions.
 
-    def __init__(self, project_name: str) -> None:
-        self.__project_name = project_name
-        self.__project_path = get_local_project_git_path(project_name)
+    This adds a new static method `is_blocked_revision` that checks
+    whether a given revision id is marked as blocked.
 
-        self.__blacklist_entries: tp.List[
-            tp.Union[BlockedRevision, BlockedRevisionRange]] = []
-
-    def is_blocked_revision(self, id: str) -> tp.Tuple[bool, tp.Optional[str]]:
-        # cd to repo because of potential git lookups
-        with local.cwd(self.__project_path):
-            for b_entry in self.__blacklist_entries:
-                for b_item in b_entry:
-                    if b_item.startswith(id):
-                        return True, b_entry.reason
-        return False, None
-
-    def block_revision(self, id: str, reason: tp.Optional[str] = None) -> None:
-        self.__blacklist_entries.append(BlockedRevision(id, reason))
-
-    def block_revisions(self,
-                        id_start: str,
-                        id_end: str,
-                        reason: tp.Optional[str] = None) -> None:
-        """
-        Blacklist all revisions between commit `id_start` (older)
-        and `id_end` (newer).
-        """
-        self.__blacklist_entries.append(
-            BlockedRevisionRange(id_start, id_end, reason))
-
-
-class BlockedRevisionChecker():
-    """
-    Interface for blacklisting/blocking revisions from a project.
-
-    Implementors must initialize the delegate with a call to 
-    `initialize_for_project()` before revisions can be blacklisted.
-    This is necessary because we need to know which project we are dealing
-    with in order to compute revision ranges.
+    Args:
+        blocks: A list of `BlockedRevision`s and `BlockedRevisionRange`s.
     """
 
-    __blocked_revision_checker_delegate: tp.Optional[
-        BlockedRevisionCheckerDelegate] = None
+    def revision_blocker_decorator(cls):
+        cls.__project_path = get_local_project_git_path(cls.NAME)
+        cls.__blacklist_entries = blocks
 
-    @classmethod
-    def initialize_for_project(cls, project: str):
-        """
-        Initializes the revision checker delegate.
-        
-        This needs to be called before revisions can be blocked.
-        """
-        cls.__blocked_revision_checker_delegate = \
-            BlockedRevisionCheckerDelegate(project)
-
-    @classmethod
-    def block_revision(cls, id: str, reason: tp.Optional[str] = None) -> None:
-        """
-        Blacklist a single revision.
-        """
-        if cls.__blocked_revision_checker_delegate is None:
-            return
-        cls.__blocked_revision_checker_delegate.block_revision(id, reason)
-
-    @classmethod
-    def block_revisions(cls,
-                        id_start: str,
-                        id_end: str,
-                        reason: tp.Optional[str] = None) -> None:
-        """
-        Blacklist all revisions between commit `id_start` (older)
-        and `id_end` (newer).
-        """
-        if cls.__blocked_revision_checker_delegate is None:
-            return
-        cls.__blocked_revision_checker_delegate.block_revisions(
-            id_start, id_end, reason)
-
-    @classmethod
-    def is_blocked_revision(cls, id: str) -> tp.Tuple[bool, tp.Optional[str]]:
-        """
-        Checks whether a revision is blocked or not. Also returns the
-        reason for the block if available.
-        """
-        if cls.__blocked_revision_checker_delegate is None:
+        @staticmethod
+        def is_blocked_revision_impl(
+                rev_id: str) -> tp.Tuple[bool, tp.Optional[str]]:
+            """
+            Checks whether a revision is blocked or not. Also returns the
+            reason for the block if available.
+            """
+            # cd to repo because of potential git lookups
+            with local.cwd(cls.__project_path):
+                for b_entry in cls.__blacklist_entries:
+                    for b_item in b_entry:
+                        if b_item.startswith(rev_id):
+                            return True, b_entry.reason
             return False, None
-        return cls.__blocked_revision_checker_delegate.is_blocked_revision(id)
+
+        cls.is_blocked_revision = is_blocked_revision_impl
+        return cls
+
+    return revision_blocker_decorator
