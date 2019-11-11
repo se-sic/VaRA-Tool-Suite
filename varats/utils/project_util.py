@@ -1,7 +1,6 @@
 """
 Utility module for BenchBuild project handling.
 """
-import abc
 from pathlib import Path
 import typing as tp
 import tempfile
@@ -150,8 +149,6 @@ def block_revisions(
     """
 
     def revision_blocker_decorator(cls):
-        cls.__project_path = get_local_project_git_path(cls.NAME)
-        cls.__blacklist_entries = blocks
 
         @staticmethod
         def is_blocked_revision_impl(
@@ -161,8 +158,8 @@ def block_revisions(
             reason for the block if available.
             """
             # cd to repo because of potential git lookups
-            with local.cwd(cls.__project_path):
-                for b_entry in cls.__blacklist_entries:
+            with local.cwd(get_local_project_git_path(cls.NAME)):
+                for b_entry in blocks:
                     for b_item in b_entry:
                         if b_item.startswith(rev_id):
                             return True, b_entry.reason

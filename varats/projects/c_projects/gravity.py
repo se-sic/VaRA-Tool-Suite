@@ -1,8 +1,6 @@
 """
 Project file for gravity.
 """
-import typing as tp
-
 from benchbuild.settings import CFG
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
