@@ -6,7 +6,6 @@ from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
-from benchbuild.utils.cmd import git
 import benchbuild.project as prj
 
 from plumbum import local
