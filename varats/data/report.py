@@ -156,7 +156,7 @@ class MetaReport(type):
     def result_file_has_status_blocked(file_name: str) -> bool:
         """ Check if the passed file name is a (Missing) result file. """
         return MetaReport.result_file_has_status(file_name,
-                                                FileStatusExtension.Blocked)
+                                                 FileStatusExtension.Blocked)
 
     @staticmethod
     def result_file_has_status(file_name: str,
