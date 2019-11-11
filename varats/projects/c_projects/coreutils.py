@@ -2,7 +2,7 @@
 Project file for the GNU coreutils.
 """
 from benchbuild.settings import CFG
-from benchbuild.utils.cmd import make
+from benchbuild.utils.cmd import make, git, mv
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
