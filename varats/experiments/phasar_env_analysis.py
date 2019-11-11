@@ -72,29 +72,29 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
 
         timeout_duration = '8h'
 
-        for binary_name in project.BIN_NAMES:
+        for binary in project.binaries:
             # Combine the input bitcode file's name
             bc_target_file = Extract.BC_FILE_TEMPLATE.format(
                 project_name=str(project.name),
-                binary_name=str(binary_name),
+                binary_name=str(binary.name),
                 project_version=str(project.version))
 
             # Define result file.
             result_file = ENVR.get_file_name(
                 project_name=str(project.name),
-                binary_name=binary_name,
+                binary_name=binary.name,
                 project_version=str(project.version),
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success)
 
             # Define output file name of failed runs
-            error_file = ENVR.get_file_name(
-                project_name=str(project.name),
-                binary_name=binary_name,
-                project_version=str(project.version),
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.Failed,
-                file_ext=".txt")
+            error_file = ENVR.get_file_name(project_name=str(project.name),
+                                            binary_name=binary.name,
+                                            project_version=str(
+                                                project.version),
+                                            project_uuid=str(project.run_uuid),
+                                            extension_type=FSE.Failed,
+                                            file_ext=".txt")
 
             # Put together the run command
             phasar_run_cmd = phasar["-D", "IFDS_EnvironmentVariableTracing",
@@ -175,7 +175,7 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
 
         # Not run all steps if cached results exist
         all_cache_files_present = True
-        for binary_name in project.BIN_NAMES:
+        for binary in project.binaries:
             all_cache_files_present &= path.exists(
                 local.path(
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
@@ -183,7 +183,7 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
                         project_name=str(project.name)) +
                     Extract.BC_FILE_TEMPLATE.format(
                         project_name=str(project.name),
-                        binary_name=binary_name,
+                        binary_name=binary.name,
                         project_version=str(project.version))))
 
             if not all_cache_files_present:

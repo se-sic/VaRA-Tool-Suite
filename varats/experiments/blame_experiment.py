@@ -58,14 +58,14 @@ def generate_basic_blame_experiment_actions(project: Project
 
     # Check if all binaries have corresponding BC files
     all_files_present = True
-    for binary_name in project.BIN_NAMES:
+    for binary in project.binaries:
         all_files_present &= path.exists(
             local.path(
                 Extract.BC_CACHE_FOLDER_TEMPLATE.format(
                     cache_dir=str(CFG["vara"]["result"]),
                     project_name=str(project.name)) +
                 Extract.BC_FILE_TEMPLATE.format(project_name=str(project.name),
-                                                binary_name=binary_name,
+                                                binary_name=binary.name,
                                                 project_version=str(
                                                     project.version))))
 

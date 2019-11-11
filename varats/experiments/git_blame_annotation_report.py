@@ -7,15 +7,11 @@ For annotation we use the git-blame data of git.
 """
 
 import typing as tp
-import random
 from os import path
 from pathlib import Path
 
 from plumbum import local
-from plumbum.commands import ProcessExecutionError
-from plumbum.commands.base import BoundCommand
 
-from benchbuild.experiment import Experiment
 from benchbuild.project import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.settings import CFG
@@ -24,13 +20,12 @@ import benchbuild.utils.actions as actions
 
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.data.report import FileStatusExtension as FSE
-from varats.data.revisions import get_processed_revisions
 from varats.experiments.extract import Extract
 from varats.experiments.wllvm import RunWLLVM
-from varats.settings import CFG as V_CFG
-from varats.utils.experiment_util import (
-    exec_func_with_pe_error_handler, FunctionPEErrorWrapper,
-    VaRAVersionExperiment, PEErrorHandler)
+from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
+                                          FunctionPEErrorWrapper,
+                                          VaRAVersionExperiment,
+                                          PEErrorHandler)
 
 
 class CFRAnalysis(actions.Step):  # type: ignore
@@ -89,13 +84,13 @@ class CFRAnalysis(actions.Step):  # type: ignore
 
         mkdir("-p", vara_result_folder)
 
-        for binary_name in project.BIN_NAMES:
-            result_file = CR.get_file_name(
-                project_name=str(project.name),
-                binary_name=binary_name,
-                project_version=str(project.version),
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.Success)
+        for binary in project.binaries:
+            result_file = CR.get_file_name(project_name=str(project.name),
+                                           binary_name=binary.name,
+                                           project_version=str(
+                                               project.version),
+                                           project_uuid=str(project.run_uuid),
+                                           extension_type=FSE.Success)
 
             opt_params = [
                 "-vara-BD", "-vara-CFR", "-vara-init-commits",
@@ -109,7 +104,7 @@ class CFRAnalysis(actions.Step):  # type: ignore
             opt_params.append(bc_cache_folder /
                               Extract.BC_FILE_TEMPLATE.format(
                                   project_name=project.name,
-                                  binary_name=binary_name,
+                                  binary_name=binary.name,
                                   project_version=project.version))
 
             run_cmd = opt[opt_params]
@@ -121,13 +116,13 @@ class CFRAnalysis(actions.Step):  # type: ignore
                 timeout[timeout_duration, run_cmd],
                 PEErrorHandler(
                     vara_result_folder,
-                    CR.get_file_name(
-                        project_name=str(project.name),
-                        binary_name=binary_name,
-                        project_version=str(project.version),
-                        project_uuid=str(project.run_uuid),
-                        extension_type=FSE.Failed,
-                        file_ext=".txt"), run_cmd, timeout_duration))
+                    CR.get_file_name(project_name=str(project.name),
+                                     binary_name=binary.name,
+                                     project_version=str(project.version),
+                                     project_uuid=str(project.run_uuid),
+                                     extension_type=FSE.Failed,
+                                     file_ext=".txt"), run_cmd,
+                    timeout_duration))
 
 
 class GitBlameAnnotationReport(VaRAVersionExperiment):
@@ -177,7 +172,7 @@ class GitBlameAnnotationReport(VaRAVersionExperiment):
 
         # Check if all binaries have corresponding BC files
         all_files_present = True
-        for binary_name in project.BIN_NAMES:
+        for binary in project.binaries:
             all_files_present &= path.exists(
                 local.path(
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
@@ -185,7 +180,7 @@ class GitBlameAnnotationReport(VaRAVersionExperiment):
                         project_name=str(project.name)) +
                     Extract.BC_FILE_TEMPLATE.format(
                         project_name=str(project.name),
-                        binary_name=binary_name,
+                        binary_name=binary.name,
                         project_version=str(project.version))))
 
         if not all_files_present:
