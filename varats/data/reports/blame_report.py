@@ -177,7 +177,7 @@ class BlameReport(BaseReport):
 
 def generate_degree_tuples(report: BlameReport) -> tp.List[tp.Tuple[int, int]]:
     """
-    Generates a list of tuples(degree, amount) where degree is the interaction
+    Generates a list of tuples (degree, amount) where degree is the interaction
     degree of a blame interaction, e.g., the number of incoming interactions,
     and amount is the number of times an interaction with this degree was
     found in the report.
