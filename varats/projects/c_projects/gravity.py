@@ -45,10 +45,8 @@ class Gravity(Project):  # type: ignore
                 "46133fb47d6da1f0dec27ae23db1d633bc72e9e3", "master")
 
         if version_id in cmake_revisions:
-            print("CMAKE")
             self.__compile_cmake()
         else:
-            print("MAKE")
             self.__compile_make()
 
     def __compile_cmake(self) -> None:

@@ -42,7 +42,8 @@ class Xz(Project):  # type: ignore
         with local.cwd(self.SRC_FILE):
             version_id = git("rev-parse", "HEAD").strip()
             cmake_revisions = get_all_revisions_between(
-                "5d018dc03549c1ee4958364712fb0c94e1bf2741", "fda4724d8114fccfa31c1839c15479f350c2fb4c")
+                "5d018dc03549c1ee4958364712fb0c94e1bf2741",
+                "fda4724d8114fccfa31c1839c15479f350c2fb4c")
 
         self.cflags += ["-fPIC"]
 

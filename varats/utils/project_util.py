@@ -74,7 +74,7 @@ def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
         return refs
 
 
-def get_all_revisions_between(a: str, b: str) -> tp.List[str]:
+def get_all_revisions_between(c_start: str, c_end: str) -> tp.List[str]:
     """
     Returns a list of all revisions between two commits a and b (inclusive),
     where a comes before b.
