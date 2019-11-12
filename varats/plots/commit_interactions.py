@@ -81,12 +81,10 @@ def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
     """
     commit_map = kwargs['get_cmap']()
     case_study = kwargs.get('plot_case_study', None)  # can be None
-
-    result_dir = Path(kwargs["result_folder"])
     project_name = kwargs["project"]
 
     report_files = get_processed_revisions_files(
-        project_name, result_dir, CommitReport,
+        project_name, CommitReport,
         get_case_study_file_name_filter(case_study))
 
     data_frame = _build_interaction_table(report_files, str(project_name))
