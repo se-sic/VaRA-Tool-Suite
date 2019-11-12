@@ -438,6 +438,10 @@ class CaseStudy():
         for revision in revisions:
             self.include_revision(revision[0], revision[1], stage_num, False)
 
+        if len(self.__stages) <= stage_num:
+            for idx in range(len(self.__stages), stage_num + 1):
+                self.insert_empty_stage(idx)
+
         stage = self.__stages[stage_num]
 
         if sort_revs and self.num_stages > 0:
