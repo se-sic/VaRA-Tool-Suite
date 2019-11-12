@@ -93,9 +93,10 @@ class TestPaperConfigManager(unittest.TestCase):
             ('42b25e7f15', FileStatusExtension.Success)
         ]
 
-        status = PCM.get_status(self.case_study, CommitReport, 5, False)
+        status = PCM.get_status(self.case_study, CommitReport, 5, False, False)
         self.assertEqual(
             status, """CS: gzip_1: (  0/10) processed [0/0/0/10/0]
+    b8b25e7f15 [Missing]
     7620b81735 [Missing]
     622e9b1d02 [Missing]
     8798d5c4fd [Missing]
@@ -105,7 +106,6 @@ class TestPaperConfigManager(unittest.TestCase):
     e75f428c0d [Missing]
     1e7e3769dc [Missing]
     9872ba420c [Missing]
-    b8b25e7f15 [Missing]
 """)
         mock_get_tagged_revisions.assert_called()
 
@@ -117,7 +117,31 @@ class TestPaperConfigManager(unittest.TestCase):
             ('2e654f9963', FileStatusExtension.Blocked)
         ]
 
-        status = PCM.get_status(self.case_study, CommitReport, 5, False)
+        status = PCM.get_status(self.case_study, CommitReport, 5, False, False)
+        self.assertEqual(
+            status, """CS: gzip_1: (  1/10) processed [1/1/1/6/1]
+    b8b25e7f15 [Success]
+    7620b81735 [Missing]
+    622e9b1d02 [Failed]
+    8798d5c4fd [Missing]
+    2e654f9963 [Blocked]
+    edfad78619 [Missing]
+    a3db5806d0 [Missing]
+    e75f428c0d [Missing]
+    1e7e3769dc [CompileError]
+    9872ba420c [Missing]
+""")
+        mock_get_tagged_revisions.assert_called()
+
+        mock_get_tagged_revisions.reset_mock()
+        mock_get_tagged_revisions.return_value = [
+            ('b8b25e7f15', FileStatusExtension.Success),
+            ('622e9b1d02', FileStatusExtension.Failed),
+            ('1e7e3769dc', FileStatusExtension.CompileError),
+            ('2e654f9963', FileStatusExtension.Blocked)
+        ]
+
+        status = PCM.get_status(self.case_study, CommitReport, 5, False, True)
         self.assertEqual(
             status, """CS: gzip_1: (  1/10) processed [1/1/1/6/1]
     7620b81735 [Missing]
@@ -143,10 +167,11 @@ class TestPaperConfigManager(unittest.TestCase):
             ('42b25e7f15', FileStatusExtension.Success)
         ]
 
-        status = PCM.get_status(self.case_study, CommitReport, 5, True)
+        status = PCM.get_status(self.case_study, CommitReport, 5, True, False)
         self.assertEqual(
             status, """CS: gzip_1: (  0/10) processed [0/0/0/10/0]
   Stage 0 (stage_0)
+    b8b25e7f15 [Missing]
     7620b81735 [Missing]
     622e9b1d02 [Missing]
     8798d5c4fd [Missing]
@@ -156,7 +181,6 @@ class TestPaperConfigManager(unittest.TestCase):
     e75f428c0d [Missing]
     1e7e3769dc [Missing]
     9872ba420c [Missing]
-    b8b25e7f15 [Missing]
   Stage 1
     7620b81735 [Missing]
 """)
@@ -170,7 +194,34 @@ class TestPaperConfigManager(unittest.TestCase):
             ('2e654f9963', FileStatusExtension.Blocked)
         ]
 
-        status = PCM.get_status(self.case_study, CommitReport, 5, True)
+        status = PCM.get_status(self.case_study, CommitReport, 5, True, False)
+        self.assertEqual(
+            status, """CS: gzip_1: (  1/10) processed [1/1/1/6/1]
+  Stage 0 (stage_0)
+    b8b25e7f15 [Success]
+    7620b81735 [Missing]
+    622e9b1d02 [Failed]
+    8798d5c4fd [Missing]
+    2e654f9963 [Blocked]
+    edfad78619 [Missing]
+    a3db5806d0 [Missing]
+    e75f428c0d [Missing]
+    1e7e3769dc [CompileError]
+    9872ba420c [Missing]
+  Stage 1
+    7620b81735 [Missing]
+""")
+        mock_get_tagged_revisions.assert_called()
+
+        mock_get_tagged_revisions.reset_mock()
+        mock_get_tagged_revisions.return_value = [
+            ('b8b25e7f15', FileStatusExtension.Success),
+            ('622e9b1d02', FileStatusExtension.Failed),
+            ('1e7e3769dc', FileStatusExtension.CompileError),
+            ('2e654f9963', FileStatusExtension.Blocked)
+        ]
+
+        status = PCM.get_status(self.case_study, CommitReport, 5, True, True)
         self.assertEqual(
             status, """CS: gzip_1: (  1/10) processed [1/1/1/6/1]
   Stage 0 (stage_0)
@@ -202,9 +253,10 @@ class TestPaperConfigManager(unittest.TestCase):
             ('42b25e7f15', FileStatusExtension.Success)
         ]
 
-        status = PCM.get_status(self.case_study, CommitReport, 5, False, True)
+        status = PCM.get_status(self.case_study, CommitReport, 5, False, False)
         self.assertEqual(
             status, """CS: gzip_1: (  0/10) processed [0/0/0/10/0]
+    b8b25e7f15 [Missing]
     7620b81735 [Missing]
     622e9b1d02 [Missing]
     8798d5c4fd [Missing]
@@ -214,7 +266,6 @@ class TestPaperConfigManager(unittest.TestCase):
     e75f428c0d [Missing]
     1e7e3769dc [Missing]
     9872ba420c [Missing]
-    b8b25e7f15 [Missing]
 """)
         mock_get_tagged_revisions.assert_called()
 
@@ -226,9 +277,10 @@ class TestPaperConfigManager(unittest.TestCase):
             ('2e654f9963', FileStatusExtension.Blocked)
         ]
 
-        status = PCM.get_status(self.case_study, CommitReport, 5, False, True)
+        status = PCM.get_status(self.case_study, CommitReport, 5, False, False)
         self.assertEqual(
             status, """CS: gzip_1: (  1/10) processed [1/1/1/6/1]
+    b8b25e7f15 [Success]
     7620b81735 [Missing]
     622e9b1d02 [Failed]
     8798d5c4fd [Missing]
@@ -238,7 +290,6 @@ class TestPaperConfigManager(unittest.TestCase):
     e75f428c0d [Missing]
     1e7e3769dc [CompileError]
     9872ba420c [Missing]
-    b8b25e7f15 [Success]
 """)
         mock_get_tagged_revisions.assert_called()
 
@@ -273,7 +324,7 @@ class TestPaperConfigManager(unittest.TestCase):
             ('42b25e7f15', FileStatusExtension.Success)
         ]
 
-        PCM.get_status(self.case_study, CommitReport, 5, False, True,
+        PCM.get_status(self.case_study, CommitReport, 5, False, False, True,
                        total_status_occurrences)
         status = PCM.get_total_status(total_status_occurrences, 15, True)
         self.assertEqual(
@@ -291,7 +342,7 @@ Total:         (  0/10) processed [0/0/0/10/0]""")
             ('2e654f9963', FileStatusExtension.Blocked)
         ]
 
-        PCM.get_status(self.case_study, CommitReport, 5, False, True,
+        PCM.get_status(self.case_study, CommitReport, 5, False, False, True,
                        total_status_occurrences)
         status = PCM.get_total_status(total_status_occurrences, 15, True)
         self.assertEqual(
@@ -312,7 +363,7 @@ Total:         (  1/14) processed [1/1/1/10/1]""")
             ('2e654f9963', FileStatusExtension.Blocked)
         ]
 
-        PCM.get_status(self.case_study, CommitReport, 5, False, True,
+        PCM.get_status(self.case_study, CommitReport, 5, False, False, True,
                        total_status_occurrences)
         status = PCM.get_total_status(total_status_occurrences, 15, True)
         self.assertEqual(
