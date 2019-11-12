@@ -4,6 +4,7 @@ Module for BlameReport, a collection of blame interactions.
 
 import typing as tp
 from pathlib import Path
+from collections import defaultdict
 import yaml
 
 from varats.data.report import BaseReport, FileStatusExtension
@@ -139,6 +140,13 @@ class BlameReport(BaseReport):
         return self.__function_entries[mangled_function_name]
 
     @property
+    def function_entries(self) -> tp.ValuesView[BlameResultFunctionEntry]:
+        """
+        Iterate over all function entries.
+        """
+        return self.__function_entries.values()
+
+    @property
     def head_commit(self) -> str:
         """
         The current HEAD commit under which this CommitReport was created.
@@ -165,3 +173,20 @@ class BlameReport(BaseReport):
         for function in self.__function_entries.values():
             str_representation += str(function) + "\n"
         return str_representation
+
+
+def generate_degree_tuples(report: BlameReport) -> tp.List[tp.Tuple[int, int]]:
+    """
+    Generates a list of tuples (degree, amount) where degree is the interaction
+    degree of a blame interaction, e.g., the number of incoming interactions,
+    and amount is the number of times an interaction with this degree was
+    found in the report.
+    """
+    degree_dict: tp.DefaultDict[int, int] = defaultdict(int)
+
+    for func_entry in report.function_entries:
+        for interaction in func_entry.interactions:
+            degree = len(interaction.interacting_hashes)
+            degree_dict[degree] += interaction.amount
+
+    return [(k, v) for k, v in degree_dict.items()]

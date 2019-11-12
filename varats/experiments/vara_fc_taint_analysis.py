@@ -64,12 +64,11 @@ class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
 
         timeout_duration = '3h'
 
-        for binary_name in project.BIN_NAMES:
-
+        for binary in project.binaries:
             # get the file name of the JSON Output
             old_result_file = TPR.get_file_name(
                 project_name=str(project.name),
-                binary_name=binary_name,
+                binary_name=binary.name,
                 project_version=str(project.version),
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success,
@@ -78,7 +77,7 @@ class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
             # Define output file name of failed runs
             error_file = "vara-" + TPR.get_file_name(
                 project_name=str(project.name),
-                binary_name=binary_name,
+                binary_name=binary.name,
                 project_version=str(project.version),
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Failed,
@@ -86,12 +85,12 @@ class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
 
             # The file name of the text file with the expected filecheck regex
             expected_file = self.EXPECTED_FC_FILE.format(
-                binary_name=binary_name)
+                binary_name=binary.name)
 
             # write new result into a taint propagation report
             result_file = "vara-" + TPR.get_file_name(
                 project_name=str(project.name),
-                binary_name=binary_name,
+                binary_name=binary.name,
                 project_version=str(project.version),
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success)

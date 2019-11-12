@@ -10,7 +10,8 @@ import yaml
 
 from varats.data.reports.blame_report import (BlameReport,
                                               BlameResultFunctionEntry,
-                                              BlameInstInteractions)
+                                              BlameInstInteractions,
+                                              generate_degree_tuples)
 
 YAML_DOC_1 = """---
 DocType:         BlameReport
@@ -178,3 +179,36 @@ class TestBlameReport(unittest.TestCase):
         self.assertEqual(func_entry_2.name, '_Z7doStuffii')
         self.assertEqual(func_entry_2.demangled_name, 'doStuff(int, int)')
         self.assertNotEqual(func_entry_2.name, 'bool_exec')
+
+    def test_iter_function_entries(self):
+        """
+        Test if we can iterate over all function entries.
+        """
+        func_entry_iter = iter(self.report.function_entries)
+        self.assertEqual(
+            next(func_entry_iter).name, 'adjust_assignment_expression')
+        self.assertEqual(next(func_entry_iter).name, 'bool_exec')
+        self.assertEqual(next(func_entry_iter).name, '_Z7doStuffii')
+
+
+class TestBlameReportHelperFunctions(unittest.TestCase):
+    """
+    Test if a blame report is correctly reconstruction from yaml.
+    """
+    @classmethod
+    def setUpClass(cls):
+        """
+        Load and parse function infos from yaml file.
+        """
+        with mock.patch("builtins.open",
+                        new=mock.mock_open(read_data=YAML_DOC_1 + YAML_DOC_2)):
+            loaded_report = BlameReport(Path('fake_file_path'))
+            cls.report = loaded_report
+
+    def test_generate_degree_tuple(self):
+        """
+        Test if degree tuple generation works.
+        """
+        degree_tuples = generate_degree_tuples(self.report)
+        self.assertEqual(degree_tuples[0], (1, 22))
+        self.assertEqual(degree_tuples[1], (2, 5))
