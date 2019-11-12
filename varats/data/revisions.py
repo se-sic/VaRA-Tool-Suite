@@ -6,6 +6,7 @@ import typing as tp
 from collections import defaultdict
 from pathlib import Path
 
+from varats.utils.project_util import get_project_cls_by_name
 from varats.settings import CFG
 from varats.data.report import MetaReport, FileStatusExtension
 
@@ -157,8 +158,13 @@ def get_tagged_revisions(project_name: str, result_file_type: MetaReport
     """
     revisions = []
 
+    project_cls = get_project_cls_by_name(project_name)
     result_files = __get_result_files_dict(project_name, result_file_type)
     for commit_hash, file_list in result_files.items():
+        if hasattr(project_cls, "is_blocked_revision"
+                   ) and project_cls.is_blocked_revision(commit_hash)[0]:
+            revisions.append((commit_hash, FileStatusExtension.Blocked))
+            continue
         newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
         if result_file_type.is_correct_report_type(str(newest_res_file.name)):
             revisions.append((commit_hash,

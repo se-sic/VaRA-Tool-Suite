@@ -15,7 +15,9 @@ from plumbum import local
 
 from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import (get_all_revisions_between,
-                                       wrap_paths_to_binaries)
+                                       wrap_paths_to_binaries,
+                                       block_revisions,
+                                       BlockedRevisionRange)
 
 
 @with_git(
@@ -23,6 +25,11 @@ from varats.utils.project_util import (get_all_revisions_between,
     refspec="HEAD",
     shallow_clone=False,
     version_filter=project_filter_generator("gravity"))
+@block_revisions([
+    BlockedRevisionRange("0b8e0e047fc3d5e18ead3221ad54920f1ad0eedc",
+                         "8f417752dd14deea64249b5d32b6138ebc877fa9",
+                         "nothing to build")
+])
 class Gravity(Project):  # type: ignore
     """ Programming language Gravity """
 

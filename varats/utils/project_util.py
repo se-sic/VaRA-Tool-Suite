@@ -99,3 +99,86 @@ def wrap_paths_to_binaries(binaries: tp.List[str]) -> tp.List[Path]:
     """
     return [Path(x) for x in binaries]
 
+
+class BlockedRevision():
+    """
+    A revision marked as blocked due to some `reason`.
+    """
+
+    def __init__(self, rev_id: str, reason: tp.Optional[str] = None):
+        self.__id = rev_id
+        self.__reason = reason
+
+    @property
+    def reason(self) -> tp.Optional[str]:
+        """
+        The reason why this revision is blocked.
+        """
+        return self.__reason
+
+    def __iter__(self) -> tp.Iterator[str]:
+        return [self.__id].__iter__()
+
+
+class BlockedRevisionRange():
+    """
+    A range of revisions marked as blocked due to some `reason`.
+    """
+
+    def __init__(self,
+                 id_start: str,
+                 id_end: str,
+                 reason: tp.Optional[str] = None):
+        self.__id_start = id_start
+        self.__id_end = id_end
+        self.__reason = reason
+        # cache for commit hashes
+        self.__revision_list: tp.Optional[tp.List[str]] = None
+
+    @property
+    def reason(self) -> tp.Optional[str]:
+        """
+        The reason why this revision range is blocked.
+        """
+        return self.__reason
+
+    def __iter__(self) -> tp.Iterator[str]:
+        if self.__revision_list is None:
+            self.__revision_list = get_all_revisions_between(
+                self.__id_start, self.__id_end)
+
+        return self.__revision_list.__iter__()
+
+
+def block_revisions(
+        blocks: tp.List[tp.Union[BlockedRevision, BlockedRevisionRange]]
+) -> tp.Any:
+    """
+    Decorator for project classes for blacklisting/blocking revisions.
+
+    This adds a new static method `is_blocked_revision` that checks
+    whether a given revision id is marked as blocked.
+
+    Args:
+        blocks: A list of `BlockedRevision`s and `BlockedRevisionRange`s.
+    """
+
+    def revision_blocker_decorator(cls: tp.Any) -> tp.Any:
+        def is_blocked_revision_impl(
+                rev_id: str) -> tp.Tuple[bool, tp.Optional[str]]:
+            """
+            Checks whether a revision is blocked or not. Also returns the
+            reason for the block if available.
+            """
+            # cd to repo because of potential git lookups
+            with local.cwd(get_local_project_git_path(cls.NAME)):
+                for b_entry in blocks:
+                    for b_item in b_entry:
+                        if b_item.startswith(rev_id):
+                            return True, b_entry.reason
+            return False, None
+
+        cls.is_blocked_revision = is_blocked_revision_impl
+        return cls
+
+    return revision_blocker_decorator
