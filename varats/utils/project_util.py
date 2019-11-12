@@ -110,13 +110,13 @@ class BlockedRevision():
         self.__reason = reason
 
     @property
-    def reason(self):
+    def reason(self) -> tp.Optional[str]:
         """
         The reason why this revision is blocked.
         """
         return self.__reason
 
-    def __iter__(self):
+    def __iter__(self) -> tp.Iterator[str]:
         return [self.__id].__iter__()
 
 
@@ -136,13 +136,13 @@ class BlockedRevisionRange():
         self.__revision_list: tp.Optional[tp.List[str]] = None
 
     @property
-    def reason(self):
+    def reason(self) -> tp.Optional[str]:
         """
         The reason why this revision range is blocked.
         """
         return self.__reason
 
-    def __iter__(self):
+    def __iter__(self) -> tp.Iterator[str]:
         if self.__revision_list is None:
             self.__revision_list = get_all_revisions_between(
                 self.__id_start, self.__id_end)
@@ -151,7 +151,8 @@ class BlockedRevisionRange():
 
 
 def block_revisions(
-        blocks: tp.List[tp.Union[BlockedRevision, BlockedRevisionRange]]):
+        blocks: tp.List[tp.Union[BlockedRevision, BlockedRevisionRange]]
+) -> tp.Any:
     """
     Decorator for project classes for blacklisting/blocking revisions.
 
@@ -162,9 +163,7 @@ def block_revisions(
         blocks: A list of `BlockedRevision`s and `BlockedRevisionRange`s.
     """
 
-    def revision_blocker_decorator(cls):
-
-        @staticmethod
+    def revision_blocker_decorator(cls: tp.Any) -> tp.Any:
         def is_blocked_revision_impl(
                 rev_id: str) -> tp.Tuple[bool, tp.Optional[str]]:
             """
