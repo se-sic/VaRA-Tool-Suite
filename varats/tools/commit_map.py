@@ -76,7 +76,7 @@ def get_commit_map(project_name: str,
 
 def create_lazy_commit_map_loader(
         project_name: str,
-        cmap_path: Path,
+        cmap_path: tp.Optional[Path] = None,
         end: str = "HEAD",
         start: tp.Optional[str] = None) -> tp.Callable[[], CommitMap]:
     """
