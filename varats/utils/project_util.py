@@ -85,3 +85,17 @@ def get_all_revisions_between(c_start: str, c_end: str) -> tp.List[str]:
         git("log", "--pretty=%H", "--ancestry-path",
             "{}..{}".format(c_start, c_end)).strip().split())
     return result
+
+
+def wrap_paths_to_binaries(binaries: tp.List[str]) -> tp.List[Path]:
+    """
+    Generates a wrapper for project binaries.
+
+    >>> wrap_paths_to_binaries(["src/foo"])
+    [PosixPath('src/foo')]
+
+    >>> wrap_paths_to_binaries(["src/foo", "src/bar"])
+    [PosixPath('src/foo'), PosixPath('src/bar')]
+    """
+    return [Path(x) for x in binaries]
+
