@@ -72,3 +72,16 @@ def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
             for ref_split in [ref.strip().split() for ref in ref_list]
         ]
         return refs
+
+
+def wrap_paths_to_binaries(binaries: tp.List[str]) -> tp.List[Path]:
+    """
+    Generates a wrapper for project binaries.
+
+    >>> wrap_paths_to_binaries(["src/foo"])
+    [PosixPath('src/foo')]
+
+    >>> wrap_paths_to_binaries(["src/foo", "src/bar"])
+    [PosixPath('src/foo'), PosixPath('src/bar')]
+    """
+    return [Path(x) for x in binaries]
