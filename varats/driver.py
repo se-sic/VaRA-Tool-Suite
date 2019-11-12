@@ -160,11 +160,11 @@ def build_setup() -> None:
         default=False)
     parser.add_argument(
         "--version", default=None, nargs="?", help="Version to download.")
-    parser.add_argument(
-        "--buildtype",
-        default="dev",
-        nargs="?",
-        help="Build type to use for LLVM and all subpackages.")
+    parser.add_argument("--buildtype",
+                        default="dev",
+                        choices=['dev', 'opt', 'pgo', 'dbg', 'dev-san'],
+                        nargs="?",
+                        help="Build type to use for LLVM and all subpackages.")
     parser.add_argument(
         "llvmfolder",
         help="Folder of LLVM. (Optional)",
@@ -221,6 +221,9 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
 
     >>> parse_string_to_build_type("OPT")
     <BuildType.OPT: 3>
+
+    >>> parse_string_to_build_type("DEV-SAN")
+    <BuildType.DEV_SAN: 5>
     """
     build_type = build_type.upper()
     if build_type == "DBG":
@@ -231,6 +234,8 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
         return BuildType.OPT
     if build_type == "PGO":
         return BuildType.PGO
+    if build_type == "DEV-SAN":
+        return BuildType.DEV_SAN
 
     return BuildType.DEV
 
