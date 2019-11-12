@@ -261,6 +261,11 @@ def main_gen_graph() -> None:
         help="Separate different stages of case study in the plot.",
         action='store_true',
         default=False)
+    parser.add_argument(
+        "--report-type",
+        help="The report type to generate the plot for."
+             "Plots may ignore this option.",
+        default="EmptyReport")
 
     extend_parser_with_plot_args(parser)
 

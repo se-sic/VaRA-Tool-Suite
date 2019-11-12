@@ -13,20 +13,26 @@ import numpy as np
 import pygit2
 import seaborn as sb
 
+from varats.data.report import MetaReport
+from varats.data.reports.empty_report import EmptyReport
 from varats.plots.plot import Plot
-from varats.data.reports.commit_report import CommitReport
 from varats.plots.plot_utils import check_required_args
 import varats.paper.paper_config as PC
 from varats.utils.project_util import get_local_project_git_path
 
 
-def _gen_overview_plot() -> tp.Dict[str, tp.Any]:
+def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
     """
     Generate the data for the PaperConfigOverviewPlot.
     """
     PC.load_paper_config()
 
     current_config = PC.get_paper_config()
+    if 'report_type' in kwargs:
+        result_file_type: MetaReport = MetaReport.REPORT_TYPES[
+            kwargs['report_type']]
+    else:
+        result_file_type = EmptyReport
 
     projects: tp.Dict[str, tp.Dict[int, tp.
                                    List[tp.Tuple[str, bool]]]] = OrderedDict()
@@ -34,7 +40,7 @@ def _gen_overview_plot() -> tp.Dict[str, tp.Any]:
     for case_study in sorted(current_config.get_all_case_studies(),
                              key=lambda cs: (cs.project_name, cs.version)):
         processed_revisions = list(
-            dict.fromkeys(case_study.processed_revisions(CommitReport)))
+            dict.fromkeys(case_study.processed_revisions(result_file_type)))
 
         git_path = get_local_project_git_path(case_study.project_name)
         repo_path = pygit2.discover_repository(str(git_path))
@@ -156,7 +162,7 @@ class PaperConfigOverviewPlot(Plot):
 
     def plot(self, view_mode: bool) -> None:
         style.use(self.style)
-        _plot_overview_graph(_gen_overview_plot())
+        _plot_overview_graph(_gen_overview_plot(**self.__saved_extra_args))
 
     def show(self) -> None:
         self.plot(True)
