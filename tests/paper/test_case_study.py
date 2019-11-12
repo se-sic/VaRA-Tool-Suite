@@ -17,8 +17,6 @@ version: 1
 stages:
 - name: stage_0
   revisions:
-  - commit_hash: b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a
-    commit_id: 41
   - commit_hash: 7620b817357d6f14356afd004ace2da426cf8c36
     commit_id: 494
   - commit_hash: 622e9b1d024da1343b83fc47fb1891e1d245add3
@@ -37,6 +35,8 @@ stages:
     commit_id: 144
   - commit_hash: 9872ba420c99323195e96cafe56ff247c3011ad5
     commit_id: 56
+  - commit_hash: b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a
+    commit_id: 41
 - name: null
   revisions:
   - commit_hash: 7620b817357d6f14356afd004ace2da426cf8c36
