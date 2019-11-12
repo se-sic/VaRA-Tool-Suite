@@ -12,9 +12,10 @@ from threading import Lock
 from PyQt5.QtCore import QRunnable, QThreadPool, QObject, pyqtSlot, pyqtSignal
 
 from varats.data.reports.commit_report import CommitReport
+from varats.data.reports.blame_report import BlameReport
 
 # Add other loadable Types
-LoadableType = tp.TypeVar('LoadableType', CommitReport, CommitReport)
+LoadableType = tp.Union[CommitReport, BlameReport]
 
 
 def sha256_checksum(file_path: Path, block_size: int = 65536) -> str:

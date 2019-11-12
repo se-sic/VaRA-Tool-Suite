@@ -8,13 +8,16 @@ from benchbuild.settings import CFG
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
 from benchbuild.project import Project
-from benchbuild.utils.cmd import make, cmake
+from benchbuild.utils.cmd import make, cmake, git
 from benchbuild.utils.download import with_git
 
 from plumbum import local
 
 from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import wrap_paths_to_binaries
+from varats.utils.project_util import (get_all_revisions_between,
+                                       wrap_paths_to_binaries,
+                                       block_revisions,
+                                       BlockedRevisionRange)
 
 
 @with_git(
@@ -22,6 +25,11 @@ from varats.utils.project_util import wrap_paths_to_binaries
     refspec="HEAD",
     shallow_clone=False,
     version_filter=project_filter_generator("gravity"))
+@block_revisions([
+    BlockedRevisionRange("0b8e0e047fc3d5e18ead3221ad54920f1ad0eedc",
+                         "8f417752dd14deea64249b5d32b6138ebc877fa9",
+                         "nothing to build")
+])
 class Gravity(Project):  # type: ignore
     """ Programming language Gravity """
 
@@ -43,8 +51,27 @@ class Gravity(Project):  # type: ignore
     def compile(self) -> None:
         self.download()
 
+        # commit 46133fb47d6da1f0dec27ae23db1d633bc72e9e3 introduced
+        # cmake as build system
+        with local.cwd(self.SRC_FILE):
+            version_id = git("rev-parse", "HEAD").strip()
+            cmake_revisions = get_all_revisions_between(
+                "46133fb47d6da1f0dec27ae23db1d633bc72e9e3", "master")
+
+        if version_id in cmake_revisions:
+            self.__compile_cmake()
+        else:
+            self.__compile_make()
+
+    def __compile_cmake(self) -> None:
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
                 cmake("-G", "Unix Makefiles", ".")
             run(make["-j", int(CFG["jobs"])])
+
+    def __compile_make(self) -> None:
+        clang = cc(self)
+        with local.cwd(self.SRC_FILE):
+            with local.env(CC=str(clang)):
+                run(make["-j", int(CFG["jobs"])])

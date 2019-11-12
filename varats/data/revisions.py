@@ -6,6 +6,7 @@ import typing as tp
 from collections import defaultdict
 from pathlib import Path
 
+from varats.utils.project_util import get_project_cls_by_name
 from varats.settings import CFG
 from varats.data.report import MetaReport, FileStatusExtension
 
@@ -78,6 +79,36 @@ def __get_supplementary_result_files_dict(
     return result_files
 
 
+def get_processed_revisions_files(
+        project_name: str,
+        result_file_type: MetaReport,
+        file_name_filter: tp.Optional[tp.Callable[[str], bool]] = None
+) -> tp.List[Path]:
+    """
+    Returns a list of file paths to correctly processed revision files.
+
+    Args:
+        project_name: target project
+        result_file_type: the type of the result file
+        file_name_filter: optional filter to exclude certain files,
+                            returns true; if the file_name should not be
+                            checked
+    """
+    processed_revisions_paths = []
+
+    result_files = __get_result_files_dict(project_name, result_file_type)
+    for value in result_files.values():
+        newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
+        if file_name_filter is not None:
+            if file_name_filter(newest_res_file.name):
+                continue
+        if result_file_type.result_file_has_status_success(
+                newest_res_file.name):
+            processed_revisions_paths.append(newest_res_file)
+
+    return processed_revisions_paths
+
+
 def get_processed_revisions(project_name: str,
                             result_file_type: MetaReport) -> tp.List[str]:
     """
@@ -88,16 +119,10 @@ def get_processed_revisions(project_name: str,
         project_name: target project
         result_file_type: the type of the result file
     """
-    processed_revisions = []
-
-    result_files = __get_result_files_dict(project_name, result_file_type)
-    for commit_hash, value in result_files.items():
-        newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
-        if result_file_type.result_file_has_status_success(
-                newest_res_file.name):
-            processed_revisions.append(commit_hash)
-
-    return processed_revisions
+    return [
+        result_file_type.get_commit_hash_from_result_file(x.name)
+        for x in get_processed_revisions_files(project_name, result_file_type)
+    ]
 
 
 def get_failed_revisions(project_name: str,
@@ -133,8 +158,13 @@ def get_tagged_revisions(project_name: str, result_file_type: MetaReport
     """
     revisions = []
 
+    project_cls = get_project_cls_by_name(project_name)
     result_files = __get_result_files_dict(project_name, result_file_type)
     for commit_hash, file_list in result_files.items():
+        if hasattr(project_cls, "is_blocked_revision"
+                   ) and project_cls.is_blocked_revision(commit_hash)[0]:
+            revisions.append((commit_hash, FileStatusExtension.Blocked))
+            continue
         newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
         if result_file_type.is_correct_report_type(str(newest_res_file.name)):
             revisions.append((commit_hash,
