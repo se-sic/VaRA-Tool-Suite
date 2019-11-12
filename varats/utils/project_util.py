@@ -74,6 +74,19 @@ def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
         return refs
 
 
+def get_all_revisions_between(c_start: str, c_end: str) -> tp.List[str]:
+    """
+    Returns a list of all revisions between two commits c_start and c_end (inclusive),
+    where c_start comes before c_end.
+    It is assumed that the current working directory is the git repository.
+    """
+    result = [c_start]
+    result.extend(
+        git("log", "--pretty=%H", "--ancestry-path",
+            "{}..{}".format(c_start, c_end)).strip().split())
+    return result
+
+
 def wrap_paths_to_binaries(binaries: tp.List[str]) -> tp.List[Path]:
     """
     Generates a wrapper for project binaries.
@@ -85,3 +98,4 @@ def wrap_paths_to_binaries(binaries: tp.List[str]) -> tp.List[Path]:
     [PosixPath('src/foo'), PosixPath('src/bar')]
     """
     return [Path(x) for x in binaries]
+
