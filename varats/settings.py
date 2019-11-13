@@ -170,6 +170,7 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
     projects_conf.value[:] = []
     projects_conf.value[:] += [
         'varats.projects.c_projects.busybox',
+        'varats.projects.c_projects.coreutils',
         'varats.projects.c_projects.git',
         'varats.projects.c_projects.gravity',
         'varats.projects.c_projects.gzip',
