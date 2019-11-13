@@ -65,9 +65,9 @@ class BlameReportGeneration(actions.Step):  # type: ignore
 
         mkdir("-p", vara_result_folder)
 
-        for binary_name in project.BIN_NAMES:
+        for binary in project.binaries:
             result_file = BR.get_file_name(project_name=str(project.name),
-                                           binary_name=binary_name,
+                                           binary_name=binary.name,
                                            project_version=str(
                                                project.version),
                                            project_uuid=str(project.run_uuid),
@@ -82,7 +82,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
             opt_params.append(bc_cache_folder /
                               Extract.BC_FILE_TEMPLATE.format(
                                   project_name=project.name,
-                                  binary_name=binary_name,
+                                  binary_name=binary.name,
                                   project_version=project.version))
 
             run_cmd = opt[opt_params]
@@ -95,7 +95,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                 PEErrorHandler(
                     vara_result_folder,
                     BR.get_file_name(project_name=str(project.name),
-                                     binary_name=binary_name,
+                                     binary_name=binary.name,
                                      project_version=str(project.version),
                                      project_uuid=str(project.run_uuid),
                                      extension_type=FSE.Failed,

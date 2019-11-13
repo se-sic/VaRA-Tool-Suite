@@ -9,6 +9,7 @@ from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from plumbum import colors
+from varats.tools.commit_map import create_lazy_commit_map_loader
 
 from varats.data.report import FileStatusExtension, MetaReport
 from varats.data.reports.commit_report import CommitReport
@@ -18,9 +19,9 @@ from varats.settings import CFG
 import varats.paper.paper_config as PC
 
 
-def show_status_of_case_studies(report_name: str, filter_regex: str,
-                                short_status: bool, print_rev_list: bool,
-                                sep_stages: bool, print_legend: bool) -> None:
+def show_status_of_case_studies(
+        report_name: str, filter_regex: str, short_status: bool, sort: bool,
+        print_rev_list: bool, sep_stages: bool, print_legend: bool) -> None:
     """
     Show the status of all matching case studies.
     """
@@ -59,7 +60,7 @@ def show_status_of_case_studies(report_name: str, filter_regex: str,
         else:
             print(
                 get_status(case_study, report_type, longest_cs_name,
-                           sep_stages, True, total_status_occurrences))
+                           sep_stages, sort, True, total_status_occurrences))
 
     print(get_total_status(total_status_occurrences, longest_cs_name, True))
 
@@ -169,6 +170,7 @@ def get_status(
         result_file_type: MetaReport,
         longest_cs_name: int,
         sep_stages: bool,
+        sort: bool,
         use_color: bool = False,
         total_status_occurrences: tp.Optional[
             tp.DefaultDict[FileStatusExtension, tp.Set[str]]] = None) -> str:
@@ -179,6 +181,12 @@ def get_status(
     status = get_short_status(case_study, result_file_type, longest_cs_name,
                               use_color, total_status_occurrences) + "\n"
 
+    if sort:
+        cmap = create_lazy_commit_map_loader(case_study.project_name)()
+
+    def rev_time(rev: tp.Tuple[str, FileStatusExtension]) -> int:
+        return cmap.short_time_id(rev[0])
+
     if sep_stages:
         stages = case_study.stages
         for stage_num in range(0, case_study.num_stages):
@@ -187,15 +195,20 @@ def get_status(
             if stage_name:
                 status += " ({})".format(stage_name)
             status += "\n"
-            for tagged_rev_state in case_study.get_revisions_status(
-                    result_file_type, stage_num):
+            tagged_revs = case_study.get_revisions_status(
+                result_file_type, stage_num)
+            if sort:
+                tagged_revs = sorted(tagged_revs, key=rev_time, reverse=True)
+            for tagged_rev_state in tagged_revs:
                 status += "    {rev} [{status}]\n".format(
                     rev=tagged_rev_state[0],
                     status=tagged_rev_state[1].get_colored_status())
     else:
-        for tagged_rev_state in list(
-                dict.fromkeys(
-                    case_study.get_revisions_status(result_file_type))):
+        tagged_revs = list(
+            dict.fromkeys(case_study.get_revisions_status(result_file_type)))
+        if sort:
+            tagged_revs = sorted(tagged_revs, key=rev_time, reverse=True)
+        for tagged_rev_state in tagged_revs:
             status += "    {rev} [{status}]\n".format(
                 rev=tagged_rev_state[0],
                 status=tagged_rev_state[1].get_colored_status())

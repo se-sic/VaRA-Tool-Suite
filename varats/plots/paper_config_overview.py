@@ -157,8 +157,7 @@ class PaperConfigOverviewPlot(Plot):
     @check_required_args(["result_folder"])
     def __init__(self, **kwargs: tp.Any) -> None:
         super(PaperConfigOverviewPlot,
-              self).__init__("paper_config_overview_plot")
-        self.__saved_extra_args = kwargs
+              self).__init__("paper_config_overview_plot", **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         style.use(self.style)
@@ -171,7 +170,7 @@ class PaperConfigOverviewPlot(Plot):
     def save(self, filetype: str = 'svg') -> None:
         self.plot(False)
 
-        result_dir = Path(self.__saved_extra_args["result_folder"])
+        result_dir = Path(self.plot_kwargs["result_folder"])
 
         plt.savefig(result_dir / ("{graph_name}.{filetype}".format(
             graph_name=self.name, filetype=filetype)),
