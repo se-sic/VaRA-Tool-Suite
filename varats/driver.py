@@ -414,6 +414,11 @@ def main_casestudy() -> None:
         action="store_true",
         default=False)
     status_parser.add_argument(
+        "--sorted",
+        help="Sort the revisions in the order they are printed by git log.",
+        action="store_true",
+        default=False)
+    status_parser.add_argument(
         "--legend",
         help="Print status with legend",
         action="store_true",
@@ -533,7 +538,7 @@ def main_casestudy() -> None:
 
         PCM.show_status_of_case_studies(
             args['report_name'], args['filter_regex'], args['short'],
-            args['list_revs'], args['ws'], args['legend'])
+            args['sorted'], args['list_revs'], args['ws'], args['legend'])
 
     elif args['subcommand'] == 'gen' or args['subcommand'] == 'ext':
         if "project" not in args and "git_path" not in args:
