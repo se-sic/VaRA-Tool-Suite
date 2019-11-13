@@ -715,6 +715,9 @@ def build_vara(path_to_llvm: Path,
         verify_build_structure(own_libgit, include_phasar, path_to_llvm,
                                post_out)
 
+        set_vara_cmake_variables(own_libgit, include_phasar, install_prefix,
+                                 post_out)
+
     with ProcessManager.create_process(
             "ninja", ["install"], workdir=full_path) as proc:
         proc.setProcessChannelMode(QProcess.MergedChannels)
@@ -730,24 +733,6 @@ def set_vara_cmake_variables(
     """
     Set all wanted/needed cmake flags.
     """
-    if own_libgit:
-        set_cmake_var("VARA_BUILD_LIBGIT", "ON", post_out)
-        set_cmake_var("USE_HTTPS", "OFF", post_out)
-        set_cmake_var("USE_SSH", "OFF", post_out)
-        set_cmake_var("USE_EXT_HTTP_PARSER", "OFF", post_out)
-        set_cmake_var("BUILD_CLAR", "OFF", post_out)
-    else:
-        set_cmake_var("VARA_BUILD_LIBGIT", "OFF", post_out)
-
-    if include_phasar:
-        set_cmake_var("LLVM_PHASAR_BUILD", "ON", post_out)
-        set_cmake_var("LLVM_TOOL_PHASAR_BUILD", "ON", post_out)
-        set_cmake_var("LLVM_ENABLE_RTTI", "ON", post_out)
-        set_cmake_var("LLVM_ENABLE_EH", "ON", post_out)
-    else:
-        set_cmake_var("LLVM_PHASAR_BUILD", "OFF", post_out)
-        set_cmake_var("LLVM_TOOL_PHASAR_BUILD", "OFF", post_out)
-
     set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix, post_out)
 
 
