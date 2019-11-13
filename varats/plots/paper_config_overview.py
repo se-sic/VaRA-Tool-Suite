@@ -9,9 +9,12 @@ import typing as tp
 
 import matplotlib.pyplot as plt
 import matplotlib.style as style
+import pandas as pd
 import numpy as np
 import pygit2
 import seaborn as sb
+
+from varats.data.reports.commit_report import CommitMap
 
 from varats.data.report import MetaReport
 from varats.data.reports.empty_report import EmptyReport
@@ -19,6 +22,35 @@ from varats.plots.plot import Plot
 from varats.plots.plot_utils import check_required_args
 import varats.paper.paper_config as PC
 from varats.utils.project_util import get_local_project_git_path
+
+
+@check_required_args(["cmap", "project"])
+def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
+    PC.load_paper_config()
+    current_config = PC.get_paper_config()
+    if 'report_type' in kwargs:
+        result_file_type: MetaReport = MetaReport.REPORT_TYPES[
+            kwargs['report_type']]
+    else:
+        result_file_type = EmptyReport
+    project = kwargs['project']
+    cmap: CommitMap = kwargs['cmap']
+    # load data
+    revisions_list: tp.List[pd.DataFrame] = []
+    for case_study in current_config.get_case_studies(project):
+        processed_revisions = list(
+            dict.fromkeys(
+                case_study.processed_revisions(result_file_type)))
+
+        # dict: revision: str -> success: bool
+        for rev in case_study.revisions:
+            time_id = cmap.time_id(rev)
+            success = rev in processed_revisions
+            frame = pd.DataFrame({"commit_hash": rev, "commit_id": time_id,
+                                  "status": success}, index=[0])
+            revisions_list.append(frame)
+    revisions = pd.concat(revisions_list, ignore_index=True, sort=False)
+    return revisions
 
 
 def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
@@ -161,7 +193,7 @@ class PaperConfigOverviewPlot(Plot):
 
     def plot(self, view_mode: bool) -> None:
         style.use(self.style)
-        _plot_overview_graph(_gen_overview_plot(**self.__saved_extra_args))
+        _plot_overview_graph(_gen_overview_plot(**self.plot_kwargs))
 
     def show(self) -> None:
         self.plot(True)
@@ -178,4 +210,45 @@ class PaperConfigOverviewPlot(Plot):
                     format=filetype)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
-        raise NotImplementedError
+        revisions = _gen_overview_plot_for_project(**self.plot_kwargs)
+        revisions.sort_values(by=['commit_id'], inplace=True)
+        cmap: CommitMap = self.plot_kwargs['cmap']
+
+        def head_cm_neighbours(lhs_cm: str, rhs_cm: str) -> bool:
+            return cmap.time_id(lhs_cm) + 1 == cmap.time_id(rhs_cm)
+
+        new_revs: tp.Set[str] = set()
+
+        df_iter = revisions.iterrows()
+        _, last_row = next(df_iter)
+        for _, row in df_iter:
+            if last_row["status"] != row["status"]:
+                lhs_cm = last_row["commit_hash"]
+                rhs_cm = row["commit_hash"]
+
+                if head_cm_neighbours(lhs_cm, rhs_cm):
+                    print("Found boundary between neighbours " +
+                          "{lhs_cm} - {rhs_cm}".format(
+                              lhs_cm=lhs_cm,
+                              rhs_cm=rhs_cm))
+                    print(
+                        "Investigate: git -C {git_path} diff {lhs} {rhs}".
+                            format(
+                            git_path=Path(
+                                self.plot_kwargs['git_path']),
+                            lhs=lhs_cm,
+                            rhs=rhs_cm))
+                else:
+                    print("Boundary between " +
+                          "{lhs_cm} - {rhs_cm}".format(
+                              lhs_cm=lhs_cm,
+                              rhs_cm=rhs_cm))
+                    new_rev_id = round(
+                        (cmap.time_id(lhs_cm) + cmap.time_id(rhs_cm)) / 2.0)
+                    new_rev = cmap.c_hash(new_rev_id)
+                    print(
+                        "-> Adding {rev} as new revision to the sample set"
+                            .format(rev=new_rev))
+                    new_revs.add(new_rev)
+            last_row = row
+        return new_revs
