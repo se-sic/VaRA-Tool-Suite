@@ -163,6 +163,9 @@ def convert_to_llvmprojects_enum(projects_names: tp.List[str]
     """
     Converts a list of strings into a list of LLVMProject.
     """
+    # Normalize vara naming
+    projects_names = ["vara" if x == "VaRA" else x for x in projects_names]
+
     enum_list = []
     for project_enum in LLVMProjects:
         if project_enum.name in projects_names:
