@@ -142,11 +142,13 @@ class BlockedRevisionRange():
         """
         return self.__reason
 
+    def init_cache(self) -> None:
+        self.__revision_list = get_all_revisions_between(
+            self.__id_start, self.__id_end)
+
     def __iter__(self) -> tp.Iterator[str]:
         if self.__revision_list is None:
-            self.__revision_list = get_all_revisions_between(
-                self.__id_start, self.__id_end)
-
+            raise AssertionError
         return self.__revision_list.__iter__()
 
 
@@ -155,6 +157,9 @@ def block_revisions(
 ) -> tp.Any:
     """
     Decorator for project classes for blacklisting/blocking revisions.
+
+    ATTENTION: This decorator depends on things introduced by the
+    @with_git decorator and therefore must be used above that decorator.
 
     This adds a new static method `is_blocked_revision` that checks
     whether a given revision id is marked as blocked.
@@ -170,14 +175,17 @@ def block_revisions(
             Checks whether a revision is blocked or not. Also returns the
             reason for the block if available.
             """
-            # cd to repo because of potential git lookups
-            with local.cwd(get_local_project_git_path(cls.NAME)):
-                for b_entry in blocks:
-                    for b_item in b_entry:
-                        if b_item.startswith(rev_id):
-                            return True, b_entry.reason
+            for b_entry in blocks:
+                for b_item in b_entry:
+                    if b_item.startswith(rev_id):
+                        return True, b_entry.reason
             return False, None
 
+        # trigger caching for BlockedRevisionRanges
+        with local.cwd(get_local_project_git_path(cls.NAME)):
+            for block in blocks:
+                if isinstance(block, BlockedRevisionRange):
+                    block.init_cache()
         cls.is_blocked_revision = is_blocked_revision_impl
         return cls
 
