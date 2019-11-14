@@ -68,6 +68,27 @@ class FileStatusExtension(Enum):
         regex_grp += "))"
         return regex_grp
 
+    @staticmethod
+    def get_file_status_from_str(status_name: str) -> 'FileStatusExtension':
+        """
+        Map names of file status to enum values.
+
+        Test:
+        >>> FileStatusExtension.get_file_status_from_str('success')
+        <FileStatusExtension.Success: ('success', <ANSIStyle: Green>)>
+
+        >>> FileStatusExtension.get_file_status_from_str('###')
+        <FileStatusExtension.Missing: ('###', <ANSIStyle: Full: Orange3>)>
+
+        >>> FileStatusExtension.get_file_status_from_str('CompileError')
+        <FileStatusExtension.CompileError: ('cerror', <ANSIStyle: Red>)>
+        """
+        for fs_enum in FileStatusExtension:
+            if status_name in (fs_enum.name, fs_enum.value[0]):
+                return fs_enum
+
+        raise ValueError('Unknown file status extension name')
+
 
 class MetaReport(type):
 
