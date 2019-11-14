@@ -157,6 +157,9 @@ def block_revisions(
     """
     Decorator for project classes for blacklisting/blocking revisions.
 
+    ATTENTION: This decorator depends on things introduced by the
+    @with_git decorator and therefore must be used above that decorator.
+
     This adds a new static method `is_blocked_revision` that checks
     whether a given revision id is marked as blocked.
 
