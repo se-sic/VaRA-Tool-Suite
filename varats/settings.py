@@ -39,11 +39,11 @@ CFG = s.Configuration(
         },
         "own_libgit2": {
             "default": True,
-            "desc": "Build own libgit2",
+            "desc": "Build own libgit2 [Deprecated]",
         },
         "include_phasar": {
             "default": True,
-            "desc": "Include Phasar for static analysis",
+            "desc": "Include Phasar for static analysis [Deprecated]",
         },
     })
 
