@@ -507,6 +507,10 @@ def main_casestudy() -> None:
         action=enum_action(PlotTypes),
         help="Plot to calculate new revisions from.")
     ext_parser.add_argument(
+        "--report-type",
+        help="Passed to the plot given via --plot-type.",
+        default="EmptyReport")
+    ext_parser.add_argument(
         "--result-folder",
         help="Maximal expected gradient in percent between two revisions")
     add_common_args(ext_parser)
