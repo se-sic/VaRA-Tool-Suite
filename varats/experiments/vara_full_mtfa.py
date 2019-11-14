@@ -25,9 +25,9 @@ from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.data.report import FileStatusExtension as FSE
 from varats.experiments.extract import Extract
 from varats.experiments.wllvm import RunWLLVM
-from varats.utils.experiment_util import (
-    exec_func_with_pe_error_handler, FunctionPEErrorWrapper,
-    VaRAVersionExperiment, PEErrorHandler)
+from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
+                                          FunctionPEErrorWrapper,
+                                          VersionExperiment, PEErrorHandler)
 
 
 class VaraMTFACheck(actions.Step):  # type: ignore
@@ -112,7 +112,7 @@ class VaraMTFACheck(actions.Step):  # type: ignore
                                vara_run_cmd, timeout_duration))
 
 
-class VaRATaintPropagation(VaRAVersionExperiment):
+class VaRATaintPropagation(VersionExperiment):
     """
     Generates a taint flow analysis (MTFA) of the project(s) specified in the
     call.

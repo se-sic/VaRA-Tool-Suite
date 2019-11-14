@@ -16,7 +16,7 @@ from varats.data.report import FileStatusExtension
 from tests.test_helper import EmptyProject
 
 
-class MockExperiment(EU.VaRAVersionExperiment):
+class MockExperiment(EU.VersionExperiment):
     NAME = "GitBlameAnnotationReport"
     REPORT_TYPE = CR
 
@@ -24,7 +24,7 @@ class MockExperiment(EU.VaRAVersionExperiment):
         return []
 
 
-class TestVaRAVersionExperiment(unittest.TestCase):
+class TestVersionExperiment(unittest.TestCase):
     """
     Test VersionExperiments sampling behaviour.
     """

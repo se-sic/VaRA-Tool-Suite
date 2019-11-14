@@ -24,8 +24,7 @@ from varats.experiments.extract import Extract
 from varats.experiments.wllvm import RunWLLVM
 from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
                                           FunctionPEErrorWrapper,
-                                          VaRAVersionExperiment,
-                                          PEErrorHandler)
+                                          VersionExperiment, PEErrorHandler)
 
 
 class CFRAnalysis(actions.Step):  # type: ignore
@@ -125,7 +124,7 @@ class CFRAnalysis(actions.Step):  # type: ignore
                     timeout_duration))
 
 
-class GitBlameAnnotationReport(VaRAVersionExperiment):
+class GitBlameAnnotationReport(VersionExperiment):
     """
     Generates a commit flow report (CFR) of the project(s) specified in the
     call.
