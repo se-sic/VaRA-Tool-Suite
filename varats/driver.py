@@ -638,6 +638,10 @@ def main_develop() -> None:
         'projects',
         nargs='*',
         action='store',
+        choices=[
+            'all', 'all-vara', 'vara',
+            *[x.project_name for x in generate_full_list_of_llvmprojects()]
+        ],
         default=None,
         help="Projects to work on.")
 
@@ -650,6 +654,10 @@ def main_develop() -> None:
         nargs='*',
         action='store',
         default=None,
+        choices=[
+            'all', 'all-vara', 'vara',
+            *[x.project_name for x in generate_full_list_of_llvmprojects()]
+        ],
         help="Projects to work on.")
     checkout_parser.add_argument('-r', '--remote', action='store_true')
 
@@ -659,6 +667,10 @@ def main_develop() -> None:
         'projects',
         nargs='*',
         action='store',
+        choices=[
+            'all', 'all-vara', 'vara',
+            *[x.project_name for x in generate_full_list_of_llvmprojects()]
+        ],
         default=None,
         help="Projects to work on.")
 
@@ -668,6 +680,10 @@ def main_develop() -> None:
         'projects',
         nargs='*',
         action='store',
+        choices=[
+            'all', 'all-vara', 'vara',
+            *[x.project_name for x in generate_full_list_of_llvmprojects()]
+        ],
         default=None,
         help="Projects to work on.")
 
@@ -677,6 +693,10 @@ def main_develop() -> None:
         'projects',
         nargs='*',
         action='store',
+        choices=[
+            'all', 'all-vara', 'vara',
+            *[x.project_name for x in generate_full_list_of_llvmprojects()]
+        ],
         default=None,
         help="Projects to work on. Or all/all-vara for all projects.")
 
