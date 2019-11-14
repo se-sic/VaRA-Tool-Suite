@@ -142,11 +142,12 @@ class BlockedRevisionRange():
         """
         return self.__reason
 
-    def init_cache(self):
+    def init_cache(self) -> None:
         self.__revision_list = get_all_revisions_between(
             self.__id_start, self.__id_end)
 
     def __iter__(self) -> tp.Iterator[str]:
+        assert self.__revision_list is not None
         return self.__revision_list.__iter__()
 
 
