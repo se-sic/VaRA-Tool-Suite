@@ -26,7 +26,7 @@ class MockExperiment(EU.VaRAVersionExperiment):
 
 class TestVaRAVersionExperiment(unittest.TestCase):
     """
-    Test if a blame inst interactions are correctly reconstruction from yaml.
+    Test VersionExperiments sampling behaviour.
     """
     @classmethod
     def setUpClass(cls):
@@ -140,7 +140,7 @@ class TestVaRAVersionExperiment(unittest.TestCase):
     @mock.patch('varats.utils.experiment_util.get_tagged_revisions')
     def test_only_blacklisting_one(self, mock_get_tagged_revisions):
         """
-        Test if we can whitelist file status
+        Test if we can blacklist file status
         """
         EU.CFG["versions"]["full"] = True
         # Revision not in set
@@ -168,7 +168,7 @@ class TestVaRAVersionExperiment(unittest.TestCase):
     @mock.patch('varats.utils.experiment_util.get_tagged_revisions')
     def test_only_blacklisting_many(self, mock_get_tagged_revisions):
         """
-        Test if we can whitelist file status
+        Test if we can blacklist file status
         """
         EU.CFG["versions"]["full"] = True
         # Revision not in set
@@ -196,7 +196,7 @@ class TestVaRAVersionExperiment(unittest.TestCase):
     @mock.patch('varats.utils.experiment_util.get_tagged_revisions')
     def test_white_overwrite_blacklisting(self, mock_get_tagged_revisions):
         """
-        Test if we can whitelist file status
+        Test if whitelist overwrites blacklist
         """
         EU.CFG["versions"]["full"] = True
         # Revision not in set

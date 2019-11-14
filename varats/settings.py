@@ -89,7 +89,7 @@ CFG['experiment'] = {
         "This option is replaced by file_status_blacklist = [Success]"
     },
     "file_status_blacklist": {
-        "default": [],
+        "default": [Success, Blocked],
         "desc":
         "Do not include revision with these file status for benchbuild "
         "processing"
