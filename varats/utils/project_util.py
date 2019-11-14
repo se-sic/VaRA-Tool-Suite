@@ -147,7 +147,8 @@ class BlockedRevisionRange():
             self.__id_start, self.__id_end)
 
     def __iter__(self) -> tp.Iterator[str]:
-        assert self.__revision_list is not None
+        if self.__revision_list is None:
+            raise AssertionError
         return self.__revision_list.__iter__()
 
 
