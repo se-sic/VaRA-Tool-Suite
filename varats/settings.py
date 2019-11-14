@@ -82,8 +82,23 @@ CFG['db'] = {
 
 CFG['experiment'] = {
     "only_missing": {
-        "default": True,
-        "desc": "Only run missing version"
+        "default":
+        True,
+        "desc":
+        "Only run missing version [Deprecated]"
+        "This option is replaced by file_status_blacklist = [Success]"
+    },
+    "file_status_blacklist": {
+        "default": [],
+        "desc":
+        "Do not include revision with these file status for benchbuild "
+        "processing"
+    },
+    "file_status_whitelist": {
+        "default": [],
+        "desc":
+        "Only include revision with these file status for benchbuild "
+        "processing"
     },
     "random_order": {
         "default": False,
