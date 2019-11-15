@@ -32,7 +32,7 @@ setup(
             'vara-cs = varats.driver:main_casestudy',
             'vara-develop = varats.driver:main_develop',
             'vara-gen-bbconfig = varats.driver:main_gen_benchbuild_config',
-            'vara-gen-graph = varats.driver:main_gen_graph',
+            'vara-plot = varats.driver:main_plot',
             'vd = varats.driver:main_develop',
         ]
     },
