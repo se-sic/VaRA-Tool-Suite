@@ -19,7 +19,7 @@ from varats.data.reports.commit_report import CommitMap
 from varats.data.report import MetaReport
 from varats.data.reports.empty_report import EmptyReport
 from varats.plots.plot import Plot
-from varats.plots.plot_utils import check_required_args
+from varats.plots.plot_utils import check_required_args, find_missing_revisions
 import varats.paper.paper_config as PC
 from varats.utils.project_util import get_local_project_git_path
 
@@ -217,38 +217,15 @@ class PaperConfigOverviewPlot(Plot):
         def head_cm_neighbours(lhs_cm: str, rhs_cm: str) -> bool:
             return cmap.time_id(lhs_cm) + 1 == cmap.time_id(rhs_cm)
 
-        new_revs: tp.Set[str] = set()
+        def should_insert_revision(last_row: tp.Any,
+                                   row: tp.Any) -> tp.Tuple[bool, float]:
+            return last_row["status"] != row["status"], 1.0
 
-        df_iter = revisions.iterrows()
-        _, last_row = next(df_iter)
-        for _, row in df_iter:
-            if last_row["status"] != row["status"]:
-                lhs_cm = last_row["commit_hash"]
-                rhs_cm = row["commit_hash"]
+        def get_commit_hash(row: tp.Any) -> str:
+            return str(row["commit_hash"])
 
-                if head_cm_neighbours(lhs_cm, rhs_cm):
-                    print("Found boundary between neighbours " +
-                          "{lhs_cm} - {rhs_cm}".format(
-                              lhs_cm=lhs_cm,
-                              rhs_cm=rhs_cm))
-                    print(
-                        "Investigate: git -C {git_path} diff {lhs} {rhs}".
-                            format(
-                            git_path=Path(
-                                self.plot_kwargs['git_path']),
-                            lhs=lhs_cm,
-                            rhs=rhs_cm))
-                else:
-                    print("Boundary between " +
-                          "{lhs_cm} - {rhs_cm}".format(
-                              lhs_cm=lhs_cm,
-                              rhs_cm=rhs_cm))
-                    new_rev_id = round(
-                        (cmap.time_id(lhs_cm) + cmap.time_id(rhs_cm)) / 2.0)
-                    new_rev = cmap.c_hash(new_rev_id)
-                    print(
-                        "-> Adding {rev} as new revision to the sample set"
-                            .format(rev=new_rev))
-                    new_revs.add(new_rev)
-            last_row = row
-        return new_revs
+        return find_missing_revisions(revisions.iterrows(),
+                                      Path(self.plot_kwargs['git_path']), cmap,
+                                      should_insert_revision,
+                                      get_commit_hash,
+                                      head_cm_neighbours)
