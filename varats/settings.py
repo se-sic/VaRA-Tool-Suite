@@ -205,7 +205,7 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
     projects_conf = BB_CFG["plugins"]["experiments"]
     projects_conf.value[:] = []
     projects_conf.value[:] += [
-        'varats.experiments.git_blame_annotation_report',
+        'varats.experiments.commit_report_experiment',
         'varats.experiments.marker_tester',
         'varats.experiments.just_compile',
         'varats.experiments.vara_full_mtfa',
