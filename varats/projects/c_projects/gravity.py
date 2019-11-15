@@ -20,16 +20,16 @@ from varats.utils.project_util import (get_all_revisions_between,
                                        BlockedRevisionRange)
 
 
-@with_git(
-    "https://github.com/marcobambini/gravity.git",
-    refspec="HEAD",
-    shallow_clone=False,
-    version_filter=project_filter_generator("gravity"))
 @block_revisions([
     BlockedRevisionRange("0b8e0e047fc3d5e18ead3221ad54920f1ad0eedc",
                          "8f417752dd14deea64249b5d32b6138ebc877fa9",
                          "nothing to build")
 ])
+@with_git(
+    "https://github.com/marcobambini/gravity.git",
+    refspec="HEAD",
+    shallow_clone=False,
+    version_filter=project_filter_generator("gravity"))
 class Gravity(Project):  # type: ignore
     """ Programming language Gravity """
 

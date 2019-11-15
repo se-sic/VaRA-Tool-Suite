@@ -277,6 +277,25 @@ class BuildType(Enum):
     DEV = 2
     OPT = 3
     PGO = 4
+    DEV_SAN = 5
+
+    def __str__(self) -> str:
+        if self == BuildType.DBG:
+            return "dbg"
+        if self == BuildType.DEV:
+            return "dev"
+        if self == BuildType.OPT:
+            return "opt"
+        if self == BuildType.PGO:
+            return "PGO"
+        if self == BuildType.DEV_SAN:
+            return "dev-san"
+
+        raise AssertionError("Unknown build type")
+
+    def build_folder(self) -> Path:
+        """Get build type specific buildfolder"""
+        return Path(str(self))
 
 
 def setup_vara(init: bool,
@@ -296,13 +315,15 @@ def setup_vara(init: bool,
     CFG["llvm_install_dir"] = install_prefix
     save_config()
 
+    use_dev_branches = True
+
     if init:
         if os.path.exists(llvm_folder):
             print("LLVM was already checked out in '%s'.", llvm_folder)
         else:
             download_vara(llvm_folder, post_out=post_out)
             checkout_vara_version(llvm_folder, include_phasar, version,
-                                  build_type == BuildType.DEV)
+                                  use_dev_branches)
             if own_libgit:
                 init_all_submodules(llvm_folder / LLVMProjects.vara.path)
                 update_all_submodules(llvm_folder / LLVMProjects.vara.path)
@@ -322,12 +343,12 @@ def setup_vara(init: bool,
 
                 version_name = ""
                 version_name += str(version)
-                if build_type == BuildType.DEV:
+                if use_dev_branches:
                     version_name += "-dev"
                 checkout_branch(llvm_folder, "vara-" + version_name)
                 checkout_branch(llvm_folder / LLVMProjects.clang.path,
                                 "vara-" + version_name)
-                if build_type == BuildType.DEV:
+                if use_dev_branches:
                     checkout_branch(llvm_folder / LLVMProjects.vara.path,
                                     "vara-dev")
 
@@ -643,12 +664,14 @@ def init_vara_build(
     if not os.path.exists(full_path):
         os.makedirs(full_path)
 
-    if build_type == BuildType.DEV:
-        with ProcessManager.create_process(
-                "./build_cfg/build-dev.sh", workdir=full_path) as proc:
-            proc.setProcessChannelMode(QProcess.MergedChannels)
-            proc.readyReadStandardOutput.connect(
-                lambda: run_process_with_output(proc, post_out))
+    build_script = "./build_cfg/build-{build_type}.sh".format(
+        build_type=str(build_type))
+
+    with ProcessManager.create_process(build_script,
+                                       workdir=full_path) as proc:
+        proc.setProcessChannelMode(QProcess.MergedChannels)
+        proc.readyReadStandardOutput.connect(
+            lambda: run_process_with_output(proc, post_out))
 
 
 def verify_build_structure(
@@ -682,8 +705,8 @@ def build_vara(path_to_llvm: Path,
     own_libgit = bool(CFG["own_libgit2"])
     include_phasar = bool(CFG["include_phasar"])
     full_path = path_to_llvm / "build/"
-    if build_type == BuildType.DEV:
-        full_path /= "dev/"
+    full_path /= build_type.build_folder()
+
     if not os.path.exists(full_path):
         try:
             init_vara_build(path_to_llvm, build_type, post_out)
@@ -694,6 +717,7 @@ def build_vara(path_to_llvm: Path,
     with local.cwd(full_path):
         verify_build_structure(own_libgit, include_phasar, path_to_llvm,
                                post_out)
+
         set_vara_cmake_variables(own_libgit, include_phasar, install_prefix,
                                  post_out)
 
@@ -712,24 +736,6 @@ def set_vara_cmake_variables(
     """
     Set all wanted/needed cmake flags.
     """
-    if own_libgit:
-        set_cmake_var("VARA_BUILD_LIBGIT", "ON", post_out)
-        set_cmake_var("USE_HTTPS", "OFF", post_out)
-        set_cmake_var("USE_SSH", "OFF", post_out)
-        set_cmake_var("USE_EXT_HTTP_PARSER", "OFF", post_out)
-        set_cmake_var("BUILD_CLAR", "OFF", post_out)
-    else:
-        set_cmake_var("VARA_BUILD_LIBGIT", "OFF", post_out)
-
-    if include_phasar:
-        set_cmake_var("LLVM_PHASAR_BUILD", "ON", post_out)
-        set_cmake_var("LLVM_TOOL_PHASAR_BUILD", "ON", post_out)
-        set_cmake_var("LLVM_ENABLE_RTTI", "ON", post_out)
-        set_cmake_var("LLVM_ENABLE_EH", "ON", post_out)
-    else:
-        set_cmake_var("LLVM_PHASAR_BUILD", "OFF", post_out)
-        set_cmake_var("LLVM_TOOL_PHASAR_BUILD", "OFF", post_out)
-
     set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix, post_out)
 
 
