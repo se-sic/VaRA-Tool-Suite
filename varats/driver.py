@@ -240,13 +240,13 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
     return BuildType.DEV
 
 
-def main_gen_graph() -> None:
+def main_plot() -> None:
     """
     Main function for the graph generator.
 
-    `vara-gen-graph`
+    `vara-plot`
     """
-    parser = argparse.ArgumentParser("VaRA graph generator")
+    parser = argparse.ArgumentParser("VaRA plot generator")
     parser.add_argument(
         "plot_type", action=enum_action(PlotTypes), help="Plot to generate")
     parser.add_argument(
