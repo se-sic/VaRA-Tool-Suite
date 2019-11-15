@@ -27,13 +27,13 @@ from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
                                           VersionExperiment, PEErrorHandler)
 
 
-class CFRAnalysis(actions.Step):  # type: ignore
+class CRAnalysis(actions.Step):  # type: ignore
     """
-    Analyse a project with VaRA and generate a Commit-Flow Report.
+    Analyse a project with VaRA and generate a Commit Report.
     """
 
-    NAME = "CFRAnalysis"
-    DESCRIPTION = "Analyses the bitcode with CFR of VaRA."
+    NAME = "CRAnalysis"
+    DESCRIPTION = "Analyses the bitcode with CR of VaRA."
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
@@ -42,15 +42,15 @@ class CFRAnalysis(actions.Step):  # type: ignore
     def __init__(self,
                  project: Project,
                  interaction_filter_experiment_name: tp.Optional[str] = None):
-        super(CFRAnalysis, self).__init__(obj=project, action_fn=self.analyze)
+        super(CRAnalysis, self).__init__(obj=project, action_fn=self.analyze)
         self.__interaction_filter_experiment_name = interaction_filter_experiment_name
 
     def analyze(self) -> actions.StepResult:
         """
         This step performs the actual analysis with the correct flags.
         Flags:
-            -vara-CFR: to run a commit flow report
-            -yaml-out-file=<path>: specify the path to store the results
+            -vara-CR: to run a commit flow report
+            -vara-report-outfile=<path>: specify the path to store the results
         """
         if not self.obj:
             return
@@ -59,7 +59,7 @@ class CFRAnalysis(actions.Step):  # type: ignore
         if self.__interaction_filter_experiment_name is None:
             interaction_filter_file = Path(
                 self.INTERACTION_FILTER_TEMPLATE.format(
-                    experiment="GitBlameAnnotationReport",
+                    experiment="CommitReportExperiment",
                     project=str(project.name)))
         else:
             interaction_filter_file = Path(
@@ -92,9 +92,10 @@ class CFRAnalysis(actions.Step):  # type: ignore
                                            extension_type=FSE.Success)
 
             opt_params = [
-                "-vara-BD", "-vara-CFR", "-vara-init-commits",
-                "-yaml-out-file={res_folder}/{res_file}".format(
-                    res_folder=vara_result_folder, res_file=result_file)]
+                "-vara-BD", "-vara-CR", "-vara-init-commits",
+                "-vara-report-outfile={res_folder}/{res_file}".format(
+                    res_folder=vara_result_folder, res_file=result_file)
+            ]
 
             if interaction_filter_file.is_file():
                 opt_params.append("-vara-cf-interaction-filter={}".format(
@@ -124,14 +125,13 @@ class CFRAnalysis(actions.Step):  # type: ignore
                     timeout_duration))
 
 
-class GitBlameAnnotationReport(VersionExperiment):
+class CommitReportExperiment(VersionExperiment):
     """
     Generates a commit flow report (CFR) of the project(s) specified in the
     call.
     """
 
-    NAME = "GitBlameAnnotationReport"
-
+    NAME = "GenerateCommitReport"
     REPORT_TYPE = CR
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
@@ -151,16 +151,15 @@ class GitBlameAnnotationReport(VersionExperiment):
         project.compile = FunctionPEErrorWrapper(
             project.compile,
             PEErrorHandler(
-                CFRAnalysis.RESULT_FOLDER_TEMPLATE.format(
+                CRAnalysis.RESULT_FOLDER_TEMPLATE.format(
                     result_dir=str(CFG["vara"]["outfile"]),
                     project_dir=str(project.name)),
-                CR.get_file_name(
-                    project_name=str(project.name),
-                    binary_name="all",
-                    project_version=str(project.version),
-                    project_uuid=str(project.run_uuid),
-                    extension_type=FSE.CompileError,
-                    file_ext=".txt"),
+                CR.get_file_name(project_name=str(project.name),
+                                 binary_name="all",
+                                 project_version=str(project.version),
+                                 project_uuid=str(project.run_uuid),
+                                 extension_type=FSE.CompileError,
+                                 file_ext=".txt"),
             ))
 
         # This c-flag is provided by VaRA and it suggests to use the git-blame
@@ -186,7 +185,7 @@ class GitBlameAnnotationReport(VersionExperiment):
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(project))
 
-        analysis_actions.append(CFRAnalysis(project))
+        analysis_actions.append(CRAnalysis(project))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions

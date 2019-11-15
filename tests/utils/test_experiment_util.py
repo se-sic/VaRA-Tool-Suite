@@ -17,7 +17,7 @@ from tests.test_helper import EmptyProject
 
 
 class MockExperiment(EU.VersionExperiment):
-    NAME = "GitBlameAnnotationReport"
+    NAME = "CommitReportExperiment"
     REPORT_TYPE = CR
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
