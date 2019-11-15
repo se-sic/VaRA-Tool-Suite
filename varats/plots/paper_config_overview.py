@@ -15,7 +15,6 @@ import pygit2
 import seaborn as sb
 
 from varats.data.reports.commit_report import CommitMap
-
 from varats.data.report import MetaReport
 from varats.data.reports.empty_report import EmptyReport
 from varats.plots.plot import Plot
@@ -39,15 +38,19 @@ def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
     revisions_list: tp.List[pd.DataFrame] = []
     for case_study in current_config.get_case_studies(project):
         processed_revisions = list(
-            dict.fromkeys(
-                case_study.processed_revisions(result_file_type)))
+            dict.fromkeys(case_study.processed_revisions(result_file_type)))
 
         # dict: revision: str -> success: bool
         for rev in case_study.revisions:
             time_id = cmap.time_id(rev)
             success = rev in processed_revisions
-            frame = pd.DataFrame({"commit_hash": rev, "commit_id": time_id,
-                                  "status": success}, index=[0])
+            frame = pd.DataFrame(
+                {
+                    "commit_hash": rev,
+                    "commit_id": time_id,
+                    "status": success
+                },
+                index=[0])
             revisions_list.append(frame)
     revisions = pd.concat(revisions_list, ignore_index=True, sort=False)
     return revisions
@@ -185,7 +188,6 @@ class PaperConfigOverviewPlot(Plot):
     """
     Plot showing an overview of all case-studies.
     """
-
     @check_required_args(["result_folder"])
     def __init__(self, **kwargs: tp.Any) -> None:
         super(PaperConfigOverviewPlot,
@@ -226,6 +228,5 @@ class PaperConfigOverviewPlot(Plot):
 
         return find_missing_revisions(revisions.iterrows(),
                                       Path(self.plot_kwargs['git_path']), cmap,
-                                      should_insert_revision,
-                                      get_commit_hash,
+                                      should_insert_revision, get_commit_hash,
                                       head_cm_neighbours)
