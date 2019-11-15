@@ -19,8 +19,7 @@ import varats.experiments.blame_experiment as BE
 from varats.data.reports.blame_report import BlameReport as BR
 from varats.data.report import FileStatusExtension as FSE
 from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
-                                          VaRAVersionExperiment,
-                                          PEErrorHandler)
+                                          VersionExperiment, PEErrorHandler)
 
 
 class BlameReportGeneration(actions.Step):  # type: ignore
@@ -103,7 +102,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                     timeout_duration))
 
 
-class BlameReportExperiment(VaRAVersionExperiment):
+class BlameReportExperiment(VersionExperiment):
     """
     Generates a commit flow report (CFR) of the project(s) specified in the
     call.

@@ -11,9 +11,9 @@ from benchbuild.settings import CFG
 from benchbuild.utils.cmd import mkdir, touch
 
 from varats.experiments.wllvm import RunWLLVM
-from varats.utils.experiment_util import (
-    exec_func_with_pe_error_handler, FunctionPEErrorWrapper, PEErrorHandler,
-    VaRAVersionExperiment)
+from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
+                                          FunctionPEErrorWrapper,
+                                          PEErrorHandler, VersionExperiment)
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.empty_report import EmptyReport
 
@@ -72,7 +72,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
                         extension_type=FSE.Failed), run_cmd))
 
 
-class JustCompileReport(VaRAVersionExperiment):
+class JustCompileReport(VersionExperiment):
     """
     Generates empty report file.
     """

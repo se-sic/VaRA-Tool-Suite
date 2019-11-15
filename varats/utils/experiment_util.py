@@ -103,7 +103,7 @@ Timeout after: {timeout_duration}
         raise ex
 
 
-class VaRAVersionExperiment(Experiment):  # type: ignore
+class VersionExperiment(Experiment):  # type: ignore
     """
     Base class for experiments that want to analyze different project
     revisions.
