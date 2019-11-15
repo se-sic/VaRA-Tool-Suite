@@ -127,7 +127,7 @@ class CRAnalysis(actions.Step):  # type: ignore
 
 class CommitReportExperiment(VersionExperiment):
     """
-    Generates a commit flow report (CFR) of the project(s) specified in the
+    Generates a commit report (CR) of the project(s) specified in the
     call.
     """
 

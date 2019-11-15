@@ -101,7 +101,7 @@ vara-gen-bbconfig
 ```
 
 ### Running BenchBuild experiments
-Second, we change into the benchbuild folder and run an experiment like `CommitReportExperiment` on provided projects, in this case we use `gzip`.
+Second, we change into the benchbuild folder and run an experiment that generates `CommitReports` for provided projects, in this case we use `gzip`.
 ```console
 cd $VARA_ROOT/benchbuild
 benchbuild -vv run -E GenerateCommitReport gzip
