@@ -18,7 +18,7 @@ from benchbuild.utils.actions import Step
 from benchbuild.settings import CFG
 
 from varats.data.revisions import get_tagged_revisions
-from varats.data.report import FileStatusExtension, BaseReport, MetaReport
+from varats.data.report import FileStatusExtension, BaseReport
 from varats.settings import CFG as V_CFG
 
 
