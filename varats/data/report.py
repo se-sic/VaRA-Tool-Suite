@@ -3,8 +3,9 @@ Report module.
 """
 
 import typing as tp
-from enum import Enum
 import re
+from enum import Enum
+from abc import abstractmethod
 
 from plumbum import colors
 from plumbum.colorlib.styles import Color
@@ -49,9 +50,8 @@ class FileStatusExtension(Enum):
         for status in FileStatusExtension:
             if str(status.value[0]) == status_extension:
                 return status
-        raise ValueError(
-            'Unknown file ending {status_ext}'.format(
-                status_ext=status_extension))
+        raise ValueError('Unknown file ending {status_ext}'.format(
+            status_ext=status_extension))
 
     @staticmethod
     def get_regex_grp() -> str:
@@ -100,10 +100,10 @@ class MetaReport(type):
         r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)_" +
         FileStatusExtension.get_regex_grp() + r"?(?P<file_ext>\..*)?" + "$")
 
-    __RESULT_FILE_TEMPLATE = (
-        "{shorthand}-" + "{project_name}-" + "{binary_name}-" +
-        "{project_version}_" + "{project_uuid}_" + "{status_ext}" +
-        "{file_ext}")
+    __RESULT_FILE_TEMPLATE = ("{shorthand}-" + "{project_name}-" +
+                              "{binary_name}-" + "{project_version}_" +
+                              "{project_uuid}_" + "{status_ext}" +
+                              "{file_ext}")
 
     __SUPPLEMENTARY_RESULT_FILE_REGEX = re.compile(
         r"(?P<project_shorthand>.*)-" + r"SUPPL-" +
@@ -111,10 +111,12 @@ class MetaReport(type):
         r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)_" +
         r"(?P<info_type>[^\.]*)" + r"?(?P<file_ext>\..*)?" + "$")
 
-    __SUPPLEMENTARY_RESULT_FILE_TEMPLATE = (
-        "{shorthand}-" + "SUPPL-" + "{project_name}-" + "{binary_name}-" +
-        "{project_version}_" + "{project_uuid}_" + "{info_type}" +
-        "{file_ext}")
+    __SUPPLEMENTARY_RESULT_FILE_TEMPLATE = ("{shorthand}-" + "SUPPL-" +
+                                            "{project_name}-" +
+                                            "{binary_name}-" +
+                                            "{project_version}_" +
+                                            "{project_uuid}_" + "{info_type}" +
+                                            "{file_ext}")
 
     def __init__(cls: tp.Any, name: str, bases: tp.Tuple[tp.Any],
                  attrs: tp.Dict[str, tp.Any]) -> None:
@@ -304,7 +306,17 @@ class MetaReport(type):
 
 
 class BaseReport(metaclass=MetaReport):
-    pass
+    @staticmethod
+    @abstractmethod
+    def get_file_name(project_name: str,
+                      binary_name: str,
+                      project_version: str,
+                      project_uuid: str,
+                      extension_type: FileStatusExtension,
+                      file_ext: str = ".txt") -> str:
+        """
+        Generates a filename for a commit report
+        """
 
 
 # Discover and initialize all Reports

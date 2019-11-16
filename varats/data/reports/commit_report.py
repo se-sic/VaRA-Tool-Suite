@@ -8,7 +8,7 @@ from pathlib import Path
 import yaml
 import pandas as pd
 
-from varats.data.report import BaseReport, FileStatusExtension
+from varats.data.report import BaseReport, MetaReport, FileStatusExtension
 from varats.data.version_header import VersionHeader
 
 
@@ -169,18 +169,19 @@ class CommitReport(BaseReport):
             Path(self._path).name)
 
     @staticmethod
-    def get_file_name(project_name: str, binary_name: str,
-                      project_version: str, project_uuid: str,
+    def get_file_name(project_name: str,
+                      binary_name: str,
+                      project_version: str,
+                      project_uuid: str,
                       extension_type: FileStatusExtension,
                       file_ext: str = "yaml") -> str:
         """
         Generates a filename for a commit report with 'yaml'
         as file extension.
         """
-        return BaseReport.get_file_name(CommitReport.SHORTHAND, project_name,
+        return MetaReport.get_file_name(CommitReport.SHORTHAND, project_name,
                                         binary_name, project_version,
-                                        project_uuid, extension_type,
-                                        file_ext)
+                                        project_uuid, extension_type, file_ext)
 
     @staticmethod
     def get_supplementary_file_name(project_name: str, binary_name: str,
@@ -347,7 +348,6 @@ class CommitMap():
     """
     Provides a mapping from commit hash to additional information.
     """
-
     def __init__(self, stream: tp.Iterable[str]) -> None:
         self.__hash_to_id: tp.Dict[str, int] = dict()
         for line in stream:
@@ -430,13 +430,11 @@ def generate_inout_cfg_cf(commit_report: CommitReport,
         rows.append([item[0], item[1][0], "From", total])
         rows.append([item[0], item[1][1], "To", total])
 
-    rows.sort(
-        key=lambda row: (row[0], -tp.cast(int, row[3]), -
-                         tp.cast(int, row[1]), row[2])
-    )
+    rows.sort(key=lambda row:
+              (row[0], -tp.cast(int, row[3]), -tp.cast(int, row[1]), row[2]))
 
-    return pd.DataFrame(
-        rows, columns=['Region', 'Amount', 'Direction', 'TSort'])
+    return pd.DataFrame(rows,
+                        columns=['Region', 'Amount', 'Direction', 'TSort'])
 
 
 def generate_interactions(commit_report: CommitReport,
@@ -456,8 +454,8 @@ def generate_interactions(commit_report: CommitReport,
                 c_map.time_id(cf_edge.edge_from)
             ])
 
-    links = pd.DataFrame(
-        link_rows, columns=['source', 'target', 'value', 'src_id'])
+    links = pd.DataFrame(link_rows,
+                         columns=['source', 'target', 'value', 'src_id'])
     return (nodes, links)
 
 
@@ -483,10 +481,8 @@ def generate_inout_cfg_df(commit_report: CommitReport,
         rows.append([item[0], item[1][0], "From", total])
         rows.append([item[0], item[1][1], "To", total])
 
-    rows.sort(
-        key=lambda row: (row[0], -tp.cast(int, row[3]), -
-                         tp.cast(int, row[1]), row[2])
-    )
+    rows.sort(key=lambda row:
+              (row[0], -tp.cast(int, row[3]), -tp.cast(int, row[1]), row[2]))
 
-    return pd.DataFrame(
-        rows, columns=['Region', 'Amount', 'Direction', 'TSort'])
+    return pd.DataFrame(rows,
+                        columns=['Region', 'Amount', 'Direction', 'TSort'])

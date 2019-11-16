@@ -7,7 +7,7 @@ from pathlib import Path
 from collections import defaultdict
 import yaml
 
-from varats.data.report import BaseReport, FileStatusExtension
+from varats.data.report import BaseReport, MetaReport, FileStatusExtension
 from varats.data.version_header import VersionHeader
 
 
@@ -164,7 +164,7 @@ class BlameReport(BaseReport):
         Generates a filename for a commit report with 'yaml'
         as file extension.
         """
-        return BaseReport.get_file_name(BlameReport.SHORTHAND, project_name,
+        return MetaReport.get_file_name(BlameReport.SHORTHAND, project_name,
                                         binary_name, project_version,
                                         project_uuid, extension_type, file_ext)
 
