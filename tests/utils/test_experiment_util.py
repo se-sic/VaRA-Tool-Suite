@@ -61,6 +61,18 @@ class TestVersionExperiment(unittest.TestCase):
         EU.CFG["versions"]["full"] = False
         self.rev_list = ['rev1', 'rev2', 'rev3', 'rev4', 'rev5']
 
+    @staticmethod
+    def generate_get_tagged_revisions_output(
+    ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
+        """
+        Generate get_tagged_revisions output for mocking.
+        """
+        return [('rev1', FileStatusExtension.Success),
+                ('rev2', FileStatusExtension.Blocked),
+                ('rev3', FileStatusExtension.CompileError),
+                ('rev4', FileStatusExtension.Failed),
+                ('rev5', FileStatusExtension.Missing)]
+
     def test_sample_limit(self):
         """
         Test if base_hash is loaded correctly.
@@ -90,13 +102,8 @@ class TestVersionExperiment(unittest.TestCase):
         """
         EU.CFG["versions"]["full"] = True
         # Revision not in set
-        mock_get_tagged_revisions.return_value = [
-            ('rev1', FileStatusExtension.Success),
-            ('rev2', FileStatusExtension.Blocked),
-            ('rev3', FileStatusExtension.CompileError),
-            ('rev4', FileStatusExtension.Failed),
-            ('rev5', FileStatusExtension.Missing)
-        ]
+        mock_get_tagged_revisions.return_value = \
+            self.generate_get_tagged_revisions_output()
 
         EU.V_CFG["experiment"]["file_status_whitelist"] = ['success']
 
@@ -115,13 +122,8 @@ class TestVersionExperiment(unittest.TestCase):
         """
         EU.CFG["versions"]["full"] = True
         # Revision not in set
-        mock_get_tagged_revisions.return_value = [
-            ('rev1', FileStatusExtension.Success),
-            ('rev2', FileStatusExtension.Blocked),
-            ('rev3', FileStatusExtension.CompileError),
-            ('rev4', FileStatusExtension.Failed),
-            ('rev5', FileStatusExtension.Missing)
-        ]
+        mock_get_tagged_revisions.return_value = \
+            self.generate_get_tagged_revisions_output()
 
         EU.V_CFG["experiment"]["file_status_whitelist"] = [
             'success', 'Failed', 'Missing'
@@ -144,13 +146,8 @@ class TestVersionExperiment(unittest.TestCase):
         """
         EU.CFG["versions"]["full"] = True
         # Revision not in set
-        mock_get_tagged_revisions.return_value = [
-            ('rev1', FileStatusExtension.Success),
-            ('rev2', FileStatusExtension.Blocked),
-            ('rev3', FileStatusExtension.CompileError),
-            ('rev4', FileStatusExtension.Failed),
-            ('rev5', FileStatusExtension.Missing)
-        ]
+        mock_get_tagged_revisions.return_value = \
+            self.generate_get_tagged_revisions_output()
 
         EU.V_CFG["experiment"]["file_status_blacklist"] = ['success']
 
@@ -172,13 +169,8 @@ class TestVersionExperiment(unittest.TestCase):
         """
         EU.CFG["versions"]["full"] = True
         # Revision not in set
-        mock_get_tagged_revisions.return_value = [
-            ('rev1', FileStatusExtension.Success),
-            ('rev2', FileStatusExtension.Blocked),
-            ('rev3', FileStatusExtension.CompileError),
-            ('rev4', FileStatusExtension.Failed),
-            ('rev5', FileStatusExtension.Missing)
-        ]
+        mock_get_tagged_revisions.return_value = \
+            self.generate_get_tagged_revisions_output()
 
         EU.V_CFG["experiment"]["file_status_blacklist"] = [
             'success', 'Failed', 'Blocked'
@@ -200,13 +192,8 @@ class TestVersionExperiment(unittest.TestCase):
         """
         EU.CFG["versions"]["full"] = True
         # Revision not in set
-        mock_get_tagged_revisions.return_value = [
-            ('rev1', FileStatusExtension.Success),
-            ('rev2', FileStatusExtension.Blocked),
-            ('rev3', FileStatusExtension.CompileError),
-            ('rev4', FileStatusExtension.Failed),
-            ('rev5', FileStatusExtension.Missing)
-        ]
+        mock_get_tagged_revisions.return_value = \
+            self.generate_get_tagged_revisions_output()
 
         EU.V_CFG["experiment"]["file_status_blacklist"] = ['Failed']
         EU.V_CFG["experiment"]["file_status_whitelist"] = ['Failed']
