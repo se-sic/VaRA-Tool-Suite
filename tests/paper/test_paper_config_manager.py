@@ -8,7 +8,6 @@ import unittest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-import yaml
 import mock
 
 from tests.paper.test_case_study import mocked_create_lazy_commit_map_loader
@@ -24,7 +23,6 @@ class TestPaperConfigManager(unittest.TestCase):
     """
     Test basic PaperConfigManager functionality.
     """
-
     @classmethod
     def setUpClass(cls):
         """

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from benchbuild.project import Project
 from benchbuild.settings import CFG
-from benchbuild.utils.cmd import make, cp
+from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
@@ -17,11 +17,10 @@ from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
 
 
-@with_git(
-    "https://github.com/vim/vim.git",
-    refspec="HEAD",
-    shallow_clone=False,
-    version_filter=project_filter_generator("vim"))
+@with_git("https://github.com/vim/vim.git",
+          refspec="HEAD",
+          shallow_clone=False,
+          version_filter=project_filter_generator("vim"))
 class Vim(Project):  # type: ignore
     """ Text processing tool vim """
 

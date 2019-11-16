@@ -19,7 +19,7 @@ from benchbuild.project import Project
 from benchbuild.settings import CFG
 from benchbuild.utils import actions
 from benchbuild.utils.actions import Step
-from benchbuild.utils.cmd import extract_bc, wllvm, opt, cp
+from benchbuild.utils.cmd import extract_bc, opt, cp
 
 from varats.experiments.wllvm import RunWLLVM
 
@@ -112,10 +112,10 @@ class CommitAnnotationReport(Experiment):  # type: ignore
             """
             with local.cwd(project_src / "out"):
                 extract_bc(project.name)
-                cp(local.path(project_src / "out" / project.name + ".bc"),
-                   local.path(
-                       str(CFG["vara"]["result"].value)) /
-                   project.name + ".bc")
+                cp(
+                    local.path(project_src / "out" / project.name + ".bc"),
+                    local.path(str(CFG["vara"]["result"].value)) / project.name
+                    + ".bc")
 
         def evaluate_analysis() -> None:
             """
@@ -132,13 +132,14 @@ class CommitAnnotationReport(Experiment):  # type: ignore
             outfile = "-yaml-out-file={}".format(
                 CFG["vara"]["outfile"].value) + "/" + str(
                     project.name) + "-" + str(project.run_uuid) + ".yaml"
-            run_cmd = opt[
-                "-vara-CD", "-vara-CFR", outfile, project_src / project.name + ".bc"]
+            run_cmd = opt["-vara-CD", "-vara-CFR", outfile, project_src /
+                          project.name + ".bc"]
             run_cmd()
 
         analysis_actions = []
-        if not os.path.exists(local.path(
-                str(CFG["vara"]["result"].value)) / project.name + ".bc"):
+        if not os.path.exists(
+                local.path(str(CFG["vara"]["result"].value)) / project.name +
+                ".bc"):
             analysis_actions.append(Prepare(self, evaluate_preparation))
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(self, evaluate_extraction))
