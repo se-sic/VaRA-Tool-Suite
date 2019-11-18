@@ -117,16 +117,8 @@ class BlameReportExperiment(VersionExperiment):
         the call in a fixed order."""
 
         BE.setup_basic_blame_experiment(
-            self, project,
-            BlameReportGeneration.RESULT_FOLDER_TEMPLATE.format(
-                result_dir=str(CFG["vara"]["outfile"]),
-                project_dir=str(project.name)),
-            BR.get_file_name(project_name=str(project.name),
-                             binary_name="all",
-                             project_version=str(project.version),
-                             project_uuid=str(project.run_uuid),
-                             extension_type=FSE.CompileError,
-                             file_ext=".txt"))
+            self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE)
+
         analysis_actions = BE.generate_basic_blame_experiment_actions(project)
 
         analysis_actions.append(BlameReportGeneration(project))

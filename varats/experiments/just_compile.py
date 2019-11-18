@@ -12,8 +12,8 @@ from benchbuild.utils.cmd import mkdir, touch
 
 from varats.experiments.wllvm import RunWLLVM
 from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
-                                          FunctionPEErrorWrapper,
-                                          PEErrorHandler, VersionExperiment)
+                                          PEErrorHandler, VersionExperiment,
+                                          get_default_compile_error_wrapped)
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.empty_report import EmptyReport
 
@@ -29,8 +29,8 @@ class EmptyAnalysis(actions.Step):  # type: ignore
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
     def __init__(self, project: Project):
-        super(EmptyAnalysis, self).__init__(
-            obj=project, action_fn=self.analyze)
+        super(EmptyAnalysis, self).__init__(obj=project,
+                                            action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
         """
@@ -94,18 +94,8 @@ class JustCompileReport(VersionExperiment):
             << RunWLLVM() \
             << run.WithTimeout()
 
-        project.compile = FunctionPEErrorWrapper(
-            project.compile,
-            PEErrorHandler(
-                EmptyAnalysis.RESULT_FOLDER_TEMPLATE.format(
-                    result_dir=str(CFG["vara"]["outfile"]),
-                    project_dir=str(project.name)),
-                EmptyReport.get_file_name(
-                    project_name=str(project.name),
-                    binary_name="all",
-                    project_version=str(project.version),
-                    project_uuid=str(project.run_uuid),
-                    extension_type=FSE.CompileError)))
+        project.compile = get_default_compile_error_wrapped(
+            project, EmptyReport, EmptyAnalysis.RESULT_FOLDER_TEMPLATE)
 
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))

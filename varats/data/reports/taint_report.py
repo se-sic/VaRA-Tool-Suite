@@ -5,7 +5,7 @@ Module for all reports generated for taint flow analyses."
 import os
 from pathlib import Path
 
-from varats.data.report import BaseReport, FileStatusExtension
+from varats.data.report import BaseReport, MetaReport, FileStatusExtension
 
 
 class TaintPropagationReport(BaseReport):
@@ -29,14 +29,16 @@ class TaintPropagationReport(BaseReport):
         return self.__path
 
     @staticmethod
-    def get_file_name(project_name: str, binary_name: str,
-                      project_version: str, project_uuid: str,
+    def get_file_name(project_name: str,
+                      binary_name: str,
+                      project_version: str,
+                      project_uuid: str,
                       extension_type: FileStatusExtension,
                       file_ext: str = "") -> str:
         """
         Generates a filename for a taint report.
         """
-        return BaseReport.get_file_name(TaintPropagationReport.SHORTHAND,
+        return MetaReport.get_file_name(TaintPropagationReport.SHORTHAND,
                                         project_name, binary_name,
                                         project_version, project_uuid,
                                         extension_type, file_ext)
