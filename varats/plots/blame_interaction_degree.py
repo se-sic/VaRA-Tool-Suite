@@ -17,8 +17,9 @@ from varats.data.cache_helper import build_cached_report_table, GraphCacheType
 from varats.jupyterhelper.file import load_blame_report
 from varats.plots.plot import Plot
 from varats.data.revisions import get_processed_revisions_files
-from varats.data.reports.blame_report import (
-    BlameReport, generate_degree_tuples, generate_author_degree_tuples)
+from varats.data.reports.blame_report import (BlameReport,
+                                              generate_degree_tuples,
+                                              generate_author_degree_tuples)
 from varats.plots.plot_utils import check_required_args
 from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
 
@@ -52,19 +53,19 @@ def _build_interaction_table(report_files: tp.List[Path],
 
         return pd.DataFrame(
             {
-                'revision':
-                [report.head_commit] * len(degrees + author_degrees),
+                'revision': [report.head_commit] *
+                            len(degrees + author_degrees),
                 'degree_type': [_DegreeType.interaction.value] * len(degrees) +
-                [_DegreeType.author.value] * len(author_degrees),
+                               [_DegreeType.author.value] * len(author_degrees),
                 'degree':
-                degrees + author_degrees,
+                    degrees + author_degrees,
                 'amount':
-                amounts + author_amounts,
+                    amounts + author_amounts,
                 'fraction':
-                np.concatenate([
-                    np.divide(amounts, total),
-                    np.divide(author_amounts, author_total)
-                ]),
+                    np.concatenate([
+                        np.divide(amounts, total),
+                        np.divide(author_amounts, author_total)
+                    ]),
             },
             index=range(0, len(degrees + author_degrees)))
 
@@ -86,8 +87,8 @@ def _gen_blame_interaction_data(**kwargs: tp.Any) -> pd.DataFrame:
     data_frame = _build_interaction_table(report_files, str(project_name))
 
     data_frame['revision'] = data_frame['revision'].apply(
-        lambda x: "{num}-{head}".format(head=x,
-                                        num=commit_map.short_time_id(x)))
+        lambda x: "{num}-{head}".format(head=x, num=commit_map.short_time_id(x)
+                                       ))
 
     return data_frame
 
@@ -138,9 +139,8 @@ class BlameDegree(Plot):
         interaction_plot_df = interaction_plot_df.set_index(
             ['revision', 'degree'])
         interaction_plot_df = interaction_plot_df.reindex(
-            pd.MultiIndex.from_product(
-                interaction_plot_df.index.levels,
-                names=interaction_plot_df.index.names),
+            pd.MultiIndex.from_product(interaction_plot_df.index.levels,
+                                       names=interaction_plot_df.index.names),
             fill_value=0).reset_index()
 
         interaction_plot_df['cm_idx'] = interaction_plot_df['revision'].apply(
@@ -149,38 +149,35 @@ class BlameDegree(Plot):
         interaction_plot_df.sort_values(by=['cm_idx'], inplace=True)
 
         sub_df_list = [
-            interaction_plot_df.loc[interaction_plot_df['degree'] == x][
-                'fraction'] for x in degree_levels
+            interaction_plot_df.loc[interaction_plot_df['degree'] == x]
+            ['fraction'] for x in degree_levels
         ]
 
         color_map = cm.get_cmap('gist_stern')
 
         _, axis = plt.subplots()
-        axis.stackplot(
-            sorted(
-                np.unique(interaction_plot_df['revision']),
-                key=lambda x: int(x.split('-')[0])),
-            sub_df_list,
-            edgecolor='black',
-            colors=reversed(
-                color_map(
-                    np.linspace(0, 1,
-                                len(np.unique(
-                                    interaction_plot_df['degree']))))),
-            labels=sorted(np.unique(interaction_plot_df['degree'])),
-            linewidth=plot_cfg['linewidth'])
+        axis.stackplot(sorted(np.unique(interaction_plot_df['revision']),
+                              key=lambda x: int(x.split('-')[0])),
+                       sub_df_list,
+                       edgecolor='black',
+                       colors=reversed(
+                           color_map(
+                               np.linspace(
+                                   0, 1,
+                                   len(np.unique(
+                                       interaction_plot_df['degree']))))),
+                       labels=sorted(np.unique(interaction_plot_df['degree'])),
+                       linewidth=plot_cfg['linewidth'])
 
-        legend = axis.legend(
-            title='Interaction degrees',
-            loc='upper left',
-            prop={
-                'size': plot_cfg['legend_size'],
-                'family': 'monospace'
-            })
-        plt.setp(
-            legend.get_title(),
-            fontsize=plot_cfg['legend_size'],
-            family='monospace')
+        legend = axis.legend(title='Interaction degrees',
+                             loc='upper left',
+                             prop={
+                                 'size': plot_cfg['legend_size'],
+                                 'family': 'monospace'
+                             })
+        plt.setp(legend.get_title(),
+                 fontsize=plot_cfg['legend_size'],
+                 family='monospace')
 
         for y_label in axis.get_yticklabels():
             y_label.set_fontsize(8)
