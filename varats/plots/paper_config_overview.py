@@ -9,24 +9,65 @@ import typing as tp
 
 import matplotlib.pyplot as plt
 import matplotlib.style as style
+import pandas as pd
 import numpy as np
 import pygit2
 import seaborn as sb
 
+from varats.data.reports.commit_report import CommitMap
+from varats.data.report import MetaReport
+from varats.data.reports.empty_report import EmptyReport
 from varats.plots.plot import Plot
-from varats.data.reports.commit_report import CommitReport
-from varats.plots.plot_utils import check_required_args
+from varats.plots.plot_utils import check_required_args, find_missing_revisions
 import varats.paper.paper_config as PC
 from varats.utils.project_util import get_local_project_git_path
 
 
-def _gen_overview_plot() -> tp.Dict[str, tp.Any]:
+@check_required_args(["cmap", "project"])
+def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
+    PC.load_paper_config()
+    current_config = PC.get_paper_config()
+    if 'report_type' in kwargs:
+        result_file_type: MetaReport = MetaReport.REPORT_TYPES[
+            kwargs['report_type']]
+    else:
+        result_file_type = EmptyReport
+    project = kwargs['project']
+    cmap: CommitMap = kwargs['cmap']
+    # load data
+    revisions_list: tp.List[pd.DataFrame] = []
+    for case_study in current_config.get_case_studies(project):
+        processed_revisions = list(
+            dict.fromkeys(case_study.processed_revisions(result_file_type)))
+
+        # dict: revision: str -> success: bool
+        for rev in case_study.revisions:
+            time_id = cmap.time_id(rev)
+            success = rev in processed_revisions
+            frame = pd.DataFrame(
+                {
+                    "commit_hash": rev,
+                    "commit_id": time_id,
+                    "status": success
+                },
+                index=[0])
+            revisions_list.append(frame)
+    revisions = pd.concat(revisions_list, ignore_index=True, sort=False)
+    return revisions
+
+
+def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
     """
     Generate the data for the PaperConfigOverviewPlot.
     """
     PC.load_paper_config()
 
     current_config = PC.get_paper_config()
+    if 'report_type' in kwargs:
+        result_file_type: MetaReport = MetaReport.REPORT_TYPES[
+            kwargs['report_type']]
+    else:
+        result_file_type = EmptyReport
 
     projects: tp.Dict[str, tp.Dict[int, tp.
                                    List[tp.Tuple[str, bool]]]] = OrderedDict()
@@ -34,7 +75,7 @@ def _gen_overview_plot() -> tp.Dict[str, tp.Any]:
     for case_study in sorted(current_config.get_all_case_studies(),
                              key=lambda cs: (cs.project_name, cs.version)):
         processed_revisions = list(
-            dict.fromkeys(case_study.processed_revisions(CommitReport)))
+            dict.fromkeys(case_study.processed_revisions(result_file_type)))
 
         git_path = get_local_project_git_path(case_study.project_name)
         repo_path = pygit2.discover_repository(str(git_path))
@@ -147,7 +188,6 @@ class PaperConfigOverviewPlot(Plot):
     """
     Plot showing an overview of all case-studies.
     """
-
     @check_required_args(["result_folder"])
     def __init__(self, **kwargs: tp.Any) -> None:
         super(PaperConfigOverviewPlot,
@@ -155,7 +195,7 @@ class PaperConfigOverviewPlot(Plot):
 
     def plot(self, view_mode: bool) -> None:
         style.use(self.style)
-        _plot_overview_graph(_gen_overview_plot())
+        _plot_overview_graph(_gen_overview_plot(**self.plot_kwargs))
 
     def show(self) -> None:
         self.plot(True)
@@ -172,4 +212,21 @@ class PaperConfigOverviewPlot(Plot):
                     format=filetype)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
-        raise NotImplementedError
+        revisions = _gen_overview_plot_for_project(**self.plot_kwargs)
+        revisions.sort_values(by=['commit_id'], inplace=True)
+        cmap: CommitMap = self.plot_kwargs['cmap']
+
+        def head_cm_neighbours(lhs_cm: str, rhs_cm: str) -> bool:
+            return cmap.time_id(lhs_cm) + 1 == cmap.time_id(rhs_cm)
+
+        def should_insert_revision(last_row: tp.Any,
+                                   row: tp.Any) -> tp.Tuple[bool, float]:
+            return last_row["status"] != row["status"], 1.0
+
+        def get_commit_hash(row: tp.Any) -> str:
+            return str(row["commit_hash"])
+
+        return find_missing_revisions(revisions.iterrows(),
+                                      Path(self.plot_kwargs['git_path']), cmap,
+                                      should_insert_revision, get_commit_hash,
+                                      head_cm_neighbours)

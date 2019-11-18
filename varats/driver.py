@@ -266,6 +266,11 @@ def main_plot() -> None:
         help="Separate different stages of case study in the plot.",
         action='store_true',
         default=False)
+    parser.add_argument(
+        "--report-type",
+        help="The report type to generate the plot for."
+             "Plots may ignore this option.",
+        default="EmptyReport")
 
     extend_parser_with_plot_args(parser)
 
@@ -506,6 +511,10 @@ def main_casestudy() -> None:
         "--plot-type",
         action=enum_action(PlotTypes),
         help="Plot to calculate new revisions from.")
+    ext_parser.add_argument(
+        "--report-type",
+        help="Passed to the plot given via --plot-type.",
+        default="EmptyReport")
     ext_parser.add_argument(
         "--result-folder",
         help="Maximal expected gradient in percent between two revisions")
