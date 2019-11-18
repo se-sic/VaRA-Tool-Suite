@@ -30,10 +30,10 @@ class _DegreeType(Enum):
 
 def _build_interaction_table(report_files: tp.List[Path],
                              project_name: str) -> pd.DataFrame:
+
     def create_dataframe_layout() -> pd.DataFrame:
-        df_layout = pd.DataFrame(columns=[
-            'revision', 'degree_type', 'degree', 'amount', 'fraction'
-        ])
+        df_layout = pd.DataFrame(
+            columns=['revision', 'degree_type', 'degree', 'amount', 'fraction'])
         df_layout.degree = df_layout.degree.astype('int64')
         df_layout.amount = df_layout.amount.astype('int64')
         df_layout.fraction = df_layout.fraction.astype('int64')
