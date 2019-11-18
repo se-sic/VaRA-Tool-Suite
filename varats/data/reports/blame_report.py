@@ -200,8 +200,8 @@ def generate_author_degree_tuples(
         project_name: str,
 ) -> tp.List[tp.Tuple[int, int]]:
     """
-    Generates a list of tuples (author_degree, amount) where author_degree is
-    number of unique authors for all blame interaction, e.g., the number unique
+    Generates a list of tuples (author_degree, amount) where author_degree is the
+    number of unique authors for all blame interaction, e.g., the number of unique
     authors of incoming interactions, and amount is the number of times an
     interaction with this degree was found in the report.
     """
