@@ -655,7 +655,6 @@ def main_develop() -> None:
             *[x.project_name for x in generate_full_list_of_llvmprojects()]
         ],
         help="Projects to work on.")
-    checkout_parser.add_argument('-r', '--remote', action='store_true')
 
     # git pull
     pull_parser = sub_parsers.add_parser('pull')
@@ -713,11 +712,7 @@ def main_develop() -> None:
     if args.command == 'new-branch':
         dev.create_new_branch_for_projects(args.branch_name, project_list)
     elif args.command == 'checkout':
-        if args.remote:
-            dev.checkout_remote_branch_for_projects(args.branch_name,
-                                                    project_list)
-        else:
-            dev.checkout_branch_for_projects(args.branch_name, project_list)
+        dev.checkout_remote_branch_for_projects(args.branch_name, project_list)
     elif args.command == 'pull':
         dev.pull_projects(project_list)
     elif args.command == 'push':
