@@ -202,16 +202,30 @@ def generate_author_degree_tuples(
         project_name: str,
 ) -> tp.List[tp.Tuple[int, int]]:
     """
-    Generates a list of tuples (author_degree, amount) where author_degree is the
-    number of unique authors for all blame interaction, e.g., the number of unique
-    authors of incoming interactions, and amount is the number of times an
-    interaction with this degree was found in the report.
+    Generates a list of tuples (author_degree, amount) where author_degree is
+    the number of unique authors for all blame interaction, e.g., the number of
+    unique authors of incoming interactions, and amount is the number of times
+    an interaction with this degree was found in the report.
     """
 
     def translate_to_authors(hash_list: tp.List[str],
                              get_commit: tp.Callable[[str], pygit2.Commit]
                             ) -> tp.List[str]:
-        return [get_commit(c_hash).author.name for c_hash in hash_list]
+        author_list = []
+        for c_hash in hash_list:
+            commit = get_commit(c_hash)
+            if commit is None:
+                if c_hash == "0000000000000000000000000000000000000000":
+                    print("Project {project} was analyzed with uncommited ".
+                          format(project=project_name) +
+                          "changes, ignoring changes in analysis.")
+                else:
+                    raise LookupError(
+                        "Could not find commit {commit} in {project}".format(
+                            commit=c_hash, project=project_name))
+            else:
+                author_list.append(commit.author.name)
+        return author_list
 
     degree_dict: tp.DefaultDict[int, int] = defaultdict(int)
     cache_dict: tp.Dict[str, pygit2.Commit] = {}
