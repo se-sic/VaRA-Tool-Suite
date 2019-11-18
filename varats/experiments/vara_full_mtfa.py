@@ -14,13 +14,13 @@ files for each executed binary.
 import typing as tp
 from os import path
 
-from plumbum import local, ProcessExecutionError
+from plumbum import local
 
 from benchbuild.extensions import compiler, run, time
 from benchbuild.settings import CFG
 from benchbuild.project import Project
 import benchbuild.utils.actions as actions
-from benchbuild.utils.cmd import opt, mkdir, timeout, rm
+from benchbuild.utils.cmd import opt, mkdir, timeout
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.data.report import FileStatusExtension as FSE
 from varats.experiments.extract import Extract
@@ -42,8 +42,8 @@ class VaraMTFACheck(actions.Step):  # type: ignore
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
     def __init__(self, project: Project):
-        super(VaraMTFACheck, self).__init__(
-            obj=project, action_fn=self.analyze)
+        super(VaraMTFACheck, self).__init__(obj=project,
+                                            action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
         """
@@ -96,20 +96,18 @@ class VaraMTFACheck(actions.Step):  # type: ignore
                                            file_ext=TPR.FILE_TYPE)
 
             # Put together the path to the bc file and the opt command of vara
-            vara_run_cmd = opt["-vara-CD", "-print-Full-MTFA",
-                               "{cache_folder}/{bc_file}"
-                               .format(cache_folder=bc_cache_dir,
-                                       bc_file=bc_target_file),
-                               "-o", "/dev/null"]
+            vara_run_cmd = opt[
+                "-vara-CD", "-print-Full-MTFA", "{cache_folder}/{bc_file}".
+                format(cache_folder=bc_cache_dir, bc_file=bc_target_file
+                       ), "-o", "/dev/null"]
 
             # Run the MTFA command with custom error handler and timeout
             exec_func_with_pe_error_handler(
-                timeout[timeout_duration, vara_run_cmd]
-                > "{res_folder}/{res_file}".format(
-                    res_folder=vara_result_folder,
-                    res_file=result_file),
-                PEErrorHandler(vara_result_folder, error_file,
-                               vara_run_cmd, timeout_duration))
+                timeout[timeout_duration, vara_run_cmd] >
+                "{res_folder}/{res_file}".format(res_folder=vara_result_folder,
+                                                 res_file=result_file),
+                PEErrorHandler(vara_result_folder, error_file, vara_run_cmd,
+                               timeout_duration))
 
 
 class VaRATaintPropagation(VersionExperiment):
@@ -143,12 +141,11 @@ class VaRATaintPropagation(VersionExperiment):
                 VaraMTFACheck.RESULT_FOLDER_TEMPLATE.format(
                     result_dir=str(CFG["vara"]["outfile"]),
                     project_dir=str(project.name)),
-                TPR.get_file_name(
-                    project_name=str(project.name),
-                    binary_name="all",
-                    project_version=str(project.version),
-                    project_uuid=str(project.run_uuid),
-                    extension_type=FSE.CompileError)))
+                TPR.get_file_name(project_name=str(project.name),
+                                  binary_name="all",
+                                  project_version=str(project.version),
+                                  project_uuid=str(project.run_uuid),
+                                  extension_type=FSE.CompileError)))
 
         project.cflags = ["-fvara-handleRM=Commit"]
 
