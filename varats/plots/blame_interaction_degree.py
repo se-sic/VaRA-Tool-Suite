@@ -17,9 +17,8 @@ from varats.data.cache_helper import build_cached_report_table, GraphCacheType
 from varats.jupyterhelper.file import load_blame_report
 from varats.plots.plot import Plot
 from varats.data.revisions import get_processed_revisions_files
-from varats.data.reports.blame_report import (BlameReport,
-                                              generate_degree_tuples,
-                                              generate_author_degree_tuples)
+from varats.data.reports.blame_report import (
+    BlameReport, generate_degree_tuples, generate_author_degree_tuples)
 from varats.plots.plot_utils import check_required_args
 from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
 
@@ -97,12 +96,15 @@ class BlameDegree(Plot):
     """
     Base plot for blame degree plots.
     """
+
     @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file"""
+
     @abc.abstractmethod
     def show(self) -> None:
         """Show the current plot"""
+
     def _degree_plot(self, view_mode: bool, degree_type: _DegreeType) -> None:
         plot_cfg = {
             'linewidth': 1 if view_mode else 0.25,
@@ -136,8 +138,9 @@ class BlameDegree(Plot):
         interaction_plot_df = interaction_plot_df.set_index(
             ['revision', 'degree'])
         interaction_plot_df = interaction_plot_df.reindex(
-            pd.MultiIndex.from_product(interaction_plot_df.index.levels,
-                                       names=interaction_plot_df.index.names),
+            pd.MultiIndex.from_product(
+                interaction_plot_df.index.levels,
+                names=interaction_plot_df.index.names),
             fill_value=0).reset_index()
 
         interaction_plot_df['cm_idx'] = interaction_plot_df['revision'].apply(
@@ -146,35 +149,38 @@ class BlameDegree(Plot):
         interaction_plot_df.sort_values(by=['cm_idx'], inplace=True)
 
         sub_df_list = [
-            interaction_plot_df.loc[interaction_plot_df['degree'] == x]
-            ['fraction'] for x in degree_levels
+            interaction_plot_df.loc[interaction_plot_df['degree'] == x][
+                'fraction'] for x in degree_levels
         ]
 
         color_map = cm.get_cmap('gist_stern')
 
         _, axis = plt.subplots()
-        axis.stackplot(sorted(np.unique(interaction_plot_df['revision']),
-                              key=lambda x: int(x.split('-')[0])),
-                       sub_df_list,
-                       edgecolor='black',
-                       colors=reversed(
-                           color_map(
-                               np.linspace(
-                                   0, 1,
-                                   len(np.unique(
-                                       interaction_plot_df['degree']))))),
-                       labels=sorted(np.unique(interaction_plot_df['degree'])),
-                       linewidth=plot_cfg['linewidth'])
+        axis.stackplot(
+            sorted(
+                np.unique(interaction_plot_df['revision']),
+                key=lambda x: int(x.split('-')[0])),
+            sub_df_list,
+            edgecolor='black',
+            colors=reversed(
+                color_map(
+                    np.linspace(0, 1,
+                                len(np.unique(
+                                    interaction_plot_df['degree']))))),
+            labels=sorted(np.unique(interaction_plot_df['degree'])),
+            linewidth=plot_cfg['linewidth'])
 
-        legend = axis.legend(title='Interaction degrees',
-                             loc='upper left',
-                             prop={
-                                 'size': plot_cfg['legend_size'],
-                                 'family': 'monospace'
-                             })
-        plt.setp(legend.get_title(),
-                 fontsize=plot_cfg['legend_size'],
-                 family='monospace')
+        legend = axis.legend(
+            title='Interaction degrees',
+            loc='upper left',
+            prop={
+                'size': plot_cfg['legend_size'],
+                'family': 'monospace'
+            })
+        plt.setp(
+            legend.get_title(),
+            fontsize=plot_cfg['legend_size'],
+            family='monospace')
 
         for y_label in axis.get_yticklabels():
             y_label.set_fontsize(8)
@@ -190,6 +196,7 @@ class BlameInteractionDegree(BlameDegree):
     """
     Plotting the degree of blame interactions.
     """
+
     def __init__(self, **kwargs: tp.Any):
         super(BlameInteractionDegree, self).__init__('b_interaction_degree',
                                                      **kwargs)
@@ -209,6 +216,7 @@ class BlameAuthorDegree(BlameDegree):
     """
     Plotting the degree of authors for all blame interactions.
     """
+
     def __init__(self, **kwargs: tp.Any):
         super(BlameAuthorDegree, self).__init__('b_author_degree', **kwargs)
 
