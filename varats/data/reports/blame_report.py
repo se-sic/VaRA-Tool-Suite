@@ -7,8 +7,11 @@ from pathlib import Path
 from collections import defaultdict
 import yaml
 
+import pygit2
+
 from varats.data.report import BaseReport, MetaReport, FileStatusExtension
 from varats.data.version_header import VersionHeader
+from varats.utils.project_util import get_local_project_git_path
 
 
 class BlameInstInteractions():
@@ -17,6 +20,7 @@ class BlameInstInteractions():
     other commits. For the blame analysis, these commits stem from data flows
     into the instruction.
     """
+
     def __init__(self, raw_inst_entry: tp.Dict[str, tp.Any]) -> None:
         self.__base_hash = str(raw_inst_entry['base-hash'])
         self.__interacting_hashes: tp.List[str] = []
@@ -60,6 +64,7 @@ class BlameResultFunctionEntry():
     """
     Collection of all interactions for a specific function.
     """
+
     def __init__(self, name: str,
                  raw_function_entry: tp.Dict[str, tp.Any]) -> None:
         self.__name = name
@@ -115,8 +120,8 @@ class BlameReport(BaseReport):
             version_header.raise_if_not_type("BlameReport")
             version_header.raise_if_version_is_less_than(1)
 
-            self.__function_entries: tp.Dict[
-                str, BlameResultFunctionEntry] = dict()
+            self.__function_entries: tp.Dict[str,
+                                             BlameResultFunctionEntry] = dict()
             raw_blame_report = next(documents)
             for raw_func_entry in raw_blame_report['result-map']:
                 new_function_entry = BlameResultFunctionEntry(
@@ -133,7 +138,7 @@ class BlameReport(BaseReport):
         return self.__path
 
     def get_blame_result_function_entry(self, mangled_function_name: str
-                                        ) -> BlameResultFunctionEntry:
+                                       ) -> BlameResultFunctionEntry:
         """
         Get the result entry for a specific function.
         """
@@ -187,6 +192,47 @@ def generate_degree_tuples(report: BlameReport) -> tp.List[tp.Tuple[int, int]]:
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
             degree = len(interaction.interacting_hashes)
+            degree_dict[degree] += interaction.amount
+
+    return [(k, v) for k, v in degree_dict.items()]
+
+
+def generate_author_degree_tuples(
+        report: BlameReport,
+        project_name: str,
+) -> tp.List[tp.Tuple[int, int]]:
+    """
+    Generates a list of tuples (author_degree, amount) where author_degree is the
+    number of unique authors for all blame interaction, e.g., the number of unique
+    authors of incoming interactions, and amount is the number of times an
+    interaction with this degree was found in the report.
+    """
+
+    def translate_to_authors(hash_list: tp.List[str],
+                             get_commit: tp.Callable[[str], pygit2.Commit]
+                            ) -> tp.List[str]:
+        return [get_commit(c_hash).author.name for c_hash in hash_list]
+
+    degree_dict: tp.DefaultDict[int, int] = defaultdict(int)
+    cache_dict: tp.Dict[str, pygit2.Commit] = {}
+
+    git_path = get_local_project_git_path(project_name)
+    repo_path = pygit2.discover_repository(str(git_path))
+    repo = pygit2.Repository(repo_path)
+
+    def get_commit(c_hash: str) -> pygit2.Commit:
+        if c_hash in cache_dict:
+            return cache_dict[c_hash]
+
+        commit = repo.get(c_hash)
+        cache_dict[c_hash] = commit
+        return commit
+
+    for func_entry in report.function_entries:
+        for interaction in func_entry.interactions:
+            author_list = translate_to_authors(interaction.interacting_hashes,
+                                               get_commit)
+            degree = len(set(author_list))
             degree_dict[degree] += interaction.amount
 
     return [(k, v) for k, v in degree_dict.items()]

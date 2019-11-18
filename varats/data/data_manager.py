@@ -26,6 +26,7 @@ def sha256_checksum(file_path: Path, block_size: int = 65536) -> str:
     with open(file_path, "rb") as file_h:
         for block in iter(lambda: file_h.read(block_size), b''):
             sha256.update(block)
+    sha256.update(bytes(file_path.name, 'utf-8'))
     return sha256.hexdigest()
 
 
@@ -64,15 +65,14 @@ class FileSignal(QObject):  # type: ignore
     clean = pyqtSignal()
 
 
-class FileLoader(QRunnable):   # type: ignore
+class FileLoader(QRunnable):  # type: ignore
     """
     Manages concurrent file loading.
     """
 
-    def __init__(
-            self,
-            func: tp.Callable[[Path, tp.Type[LoadableType]], LoadableType],
-            file_path: Path, class_type: tp.Type[LoadableType]) -> None:
+    def __init__(self,
+                 func: tp.Callable[[Path, tp.Type[LoadableType]], LoadableType],
+                 file_path: Path, class_type: tp.Type[LoadableType]) -> None:
         super(FileLoader, self).__init__()
         self.func = func
         self.file_path = file_path
@@ -121,9 +121,10 @@ class DataManager():
 
         return new_blob.data
 
-    def load_data_class(
-            self, file_path: Path, DataClassTy: tp.Type[LoadableType],
-            loaded_callback: tp.Callable[[LoadableType], None]) -> None:
+    def load_data_class(self, file_path: Path,
+                        DataClassTy: tp.Type[LoadableType],
+                        loaded_callback: tp.Callable[[LoadableType], None]
+                       ) -> None:
         # pylint: disable=invalid-name
         """
         Load a DataClass of type <DataClassTy> from a file asynchronosly.
@@ -136,9 +137,9 @@ class DataManager():
         worker.signal.clean.connect(self._release_lock)
         self.thread_pool.start(worker)
 
-    def load_data_class_sync(
-            self, file_path: Path,
-            DataClassTy: tp.Type[LoadableType]) -> LoadableType:
+    def load_data_class_sync(self, file_path: Path,
+                             DataClassTy: tp.Type[LoadableType]
+                            ) -> LoadableType:
         # pylint: disable=invalid-name
         """
         Load a DataClass of type <DataClassTy> from a file synchronosly.

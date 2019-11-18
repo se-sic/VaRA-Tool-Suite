@@ -3,7 +3,9 @@ Generate plots for the degree of blame interactions.
 """
 
 import typing as tp
+import abc
 from pathlib import Path
+from enum import Enum
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -16,16 +18,23 @@ from varats.jupyterhelper.file import load_blame_report
 from varats.plots.plot import Plot
 from varats.data.revisions import get_processed_revisions_files
 from varats.data.reports.blame_report import (BlameReport,
-                                              generate_degree_tuples)
+                                              generate_degree_tuples,
+                                              generate_author_degree_tuples)
 from varats.plots.plot_utils import check_required_args
 from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
 
 
+class _DegreeType(Enum):
+    interaction = "interaction"
+    author = "author"
+
+
 def _build_interaction_table(report_files: tp.List[Path],
                              project_name: str) -> pd.DataFrame:
+
     def create_dataframe_layout() -> pd.DataFrame:
         df_layout = pd.DataFrame(
-            columns=['revision', 'degree', 'amount', 'fraction'])
+            columns=['revision', 'degree_type', 'degree', 'amount', 'fraction'])
         df_layout.degree = df_layout.degree.astype('int64')
         df_layout.amount = df_layout.amount.astype('int64')
         df_layout.fraction = df_layout.fraction.astype('int64')
@@ -33,17 +42,32 @@ def _build_interaction_table(report_files: tp.List[Path],
 
     def create_data_frame_for_report(report: BlameReport) -> pd.DataFrame:
         list_of_degree_occurrences = generate_degree_tuples(report)
-
         degrees, amounts = map(list, zip(*list_of_degree_occurrences))
         total = sum(amounts)
+
+        list_of_author_degree_occurrences = generate_author_degree_tuples(
+            report, project_name)
+        author_degrees, author_amounts = map(
+            list, zip(*list_of_author_degree_occurrences))
+        author_total = sum(author_amounts)
+
         return pd.DataFrame(
             {
-                'revision': [report.head_commit] * len(degrees),
-                'degree': degrees,
-                'amount': amounts,
-                'fraction': np.divide(amounts, total),
+                'revision': [report.head_commit] *
+                            len(degrees + author_degrees),
+                'degree_type': [_DegreeType.interaction.value] * len(degrees) +
+                               [_DegreeType.author.value] * len(author_degrees),
+                'degree':
+                    degrees + author_degrees,
+                'amount':
+                    amounts + author_amounts,
+                'fraction':
+                    np.concatenate([
+                        np.divide(amounts, total),
+                        np.divide(author_amounts, author_total)
+                    ]),
             },
-            index=range(0, len(degrees)))
+            index=range(0, len(degrees + author_degrees)))
 
     return build_cached_report_table(GraphCacheType.BlameInteractionDegreeData,
                                      project_name, create_dataframe_layout,
@@ -60,26 +84,29 @@ def _gen_blame_interaction_data(**kwargs: tp.Any) -> pd.DataFrame:
     report_files = get_processed_revisions_files(
         project_name, BlameReport, get_case_study_file_name_filter(case_study))
 
-    data_frame = _build_interaction_table(report_files,
-                                          str(project_name))
+    data_frame = _build_interaction_table(report_files, str(project_name))
 
     data_frame['revision'] = data_frame['revision'].apply(
-        lambda x: "{num}-{head}".format(head=x,
-                                        num=commit_map.short_time_id(x)))
+        lambda x: "{num}-{head}".format(head=x, num=commit_map.short_time_id(x)
+                                       ))
 
     return data_frame
 
 
-class BlameInteractionDegree(Plot):
+class BlameDegree(Plot):
     """
-    Plotting the degree of blame interactions.
+    Base plot for blame degree plots.
     """
 
-    def __init__(self, **kwargs: tp.Any):
-        super(BlameInteractionDegree, self).__init__('b_interaction_degree',
-                                                     **kwargs)
-
+    @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
+        """Plot the current plot to a file"""
+
+    @abc.abstractmethod
+    def show(self) -> None:
+        """Show the current plot"""
+
+    def _degree_plot(self, view_mode: bool, degree_type: _DegreeType) -> None:
         plot_cfg = {
             'linewidth': 1 if view_mode else 0.25,
             'legend_size': 8 if view_mode else 2,
@@ -103,10 +130,9 @@ class BlameInteractionDegree(Plot):
 
         interaction_plot_df = cs_filter(
             _gen_blame_interaction_data(**self.plot_kwargs))
-
-        interaction_plot_df['cm_idx'] = interaction_plot_df['revision'].apply(
-            lambda x: int(x.split('-')[0]))
-        interaction_plot_df.sort_values(by=['cm_idx'], inplace=True)
+        # Reduce data frame to rows that match the degree type
+        interaction_plot_df = interaction_plot_df[
+            interaction_plot_df.degree_type == degree_type.value]
 
         degree_levels = sorted(np.unique(interaction_plot_df['degree']))
 
@@ -117,6 +143,11 @@ class BlameInteractionDegree(Plot):
                                        names=interaction_plot_df.index.names),
             fill_value=0).reset_index()
 
+        interaction_plot_df['cm_idx'] = interaction_plot_df['revision'].apply(
+            lambda x: int(x.split('-')[0]))
+        interaction_plot_df.cm_idx.astype(int)
+        interaction_plot_df.sort_values(by=['cm_idx'], inplace=True)
+
         sub_df_list = [
             interaction_plot_df.loc[interaction_plot_df['degree'] == x]
             ['fraction'] for x in degree_levels
@@ -125,7 +156,8 @@ class BlameInteractionDegree(Plot):
         color_map = cm.get_cmap('gist_stern')
 
         _, axis = plt.subplots()
-        axis.stackplot(np.unique(interaction_plot_df['revision']),
+        axis.stackplot(sorted(np.unique(interaction_plot_df['revision']),
+                              key=lambda x: int(x.split('-')[0])),
                        sub_df_list,
                        edgecolor='black',
                        colors=reversed(
@@ -156,9 +188,41 @@ class BlameInteractionDegree(Plot):
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
+
+class BlameInteractionDegree(BlameDegree):
+    """
+    Plotting the degree of blame interactions.
+    """
+
+    def __init__(self, **kwargs: tp.Any):
+        super(BlameInteractionDegree, self).__init__('b_interaction_degree',
+                                                     **kwargs)
+
+    def plot(self, view_mode: bool) -> None:
+        self._degree_plot(view_mode, _DegreeType.interaction)
+
     def show(self) -> None:
         self.plot(True)
         plt.show()
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
-        return set()
+        raise NotImplementedError
+
+
+class BlameAuthorDegree(BlameDegree):
+    """
+    Plotting the degree of authors for all blame interactions.
+    """
+
+    def __init__(self, **kwargs: tp.Any):
+        super(BlameAuthorDegree, self).__init__('b_author_degree', **kwargs)
+
+    def plot(self, view_mode: bool) -> None:
+        self._degree_plot(view_mode, _DegreeType.author)
+
+    def show(self) -> None:
+        self.plot(True)
+        plt.show()
+
+    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+        raise NotImplementedError
