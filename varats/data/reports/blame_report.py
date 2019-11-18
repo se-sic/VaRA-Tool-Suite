@@ -20,6 +20,7 @@ class BlameInstInteractions():
     other commits. For the blame analysis, these commits stem from data flows
     into the instruction.
     """
+
     def __init__(self, raw_inst_entry: tp.Dict[str, tp.Any]) -> None:
         self.__base_hash = str(raw_inst_entry['base-hash'])
         self.__interacting_hashes: tp.List[str] = []
@@ -63,6 +64,7 @@ class BlameResultFunctionEntry():
     """
     Collection of all interactions for a specific function.
     """
+
     def __init__(self, name: str,
                  raw_function_entry: tp.Dict[str, tp.Any]) -> None:
         self.__name = name
@@ -118,8 +120,8 @@ class BlameReport(BaseReport):
             version_header.raise_if_not_type("BlameReport")
             version_header.raise_if_version_is_less_than(1)
 
-            self.__function_entries: tp.Dict[
-                str, BlameResultFunctionEntry] = dict()
+            self.__function_entries: tp.Dict[str,
+                                             BlameResultFunctionEntry] = dict()
             raw_blame_report = next(documents)
             for raw_func_entry in raw_blame_report['result-map']:
                 new_function_entry = BlameResultFunctionEntry(
@@ -136,7 +138,7 @@ class BlameReport(BaseReport):
         return self.__path
 
     def get_blame_result_function_entry(self, mangled_function_name: str
-                                        ) -> BlameResultFunctionEntry:
+                                       ) -> BlameResultFunctionEntry:
         """
         Get the result entry for a specific function.
         """
@@ -205,9 +207,10 @@ def generate_author_degree_tuples(
     authors of incoming interactions, and amount is the number of times an
     interaction with this degree was found in the report.
     """
+
     def translate_to_authors(hash_list: tp.List[str],
                              get_commit: tp.Callable[[str], pygit2.Commit]
-                             ) -> tp.List[str]:
+                            ) -> tp.List[str]:
         return [get_commit(c_hash).author.name for c_hash in hash_list]
 
     degree_dict: tp.DefaultDict[int, int] = defaultdict(int)
