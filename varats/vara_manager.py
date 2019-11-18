@@ -8,8 +8,6 @@ and providing necessary information.
 import typing as tp
 import os
 import re
-import subprocess as sp
-import tempfile
 from pathlib import Path
 import shutil
 
@@ -22,7 +20,6 @@ from PyQt5.QtCore import (QRunnable, QThreadPool, pyqtSlot, pyqtSignal,
 
 from plumbum import local, TF, RETCODE
 from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
-from plumbum.commands.processes import ProcessExecutionError
 
 from varats.settings import save_config, CFG
 from varats.utils.exceptions import ProcessTerminatedError
@@ -32,7 +29,6 @@ class LLVMProject():
     """
     A sub project of LLVM.
     """
-
     def __init__(self, name: str, URL: str, remote: str, sub_path: str):
         self.__name = name
         self.__url = URL
@@ -68,8 +64,10 @@ class LLVMProject():
         return self.__sub_path
 
     def __str__(self) -> str:
-        return "{name} [{url}:{remote}] {folder}".format(
-            name=self.name, url=self.url, remote=self.remote, folder=self.path)
+        return "{name} [{url}:{remote}] {folder}".format(name=self.name,
+                                                         url=self.url,
+                                                         remote=self.remote,
+                                                         folder=self.path)
 
 
 class LLVMProjects(Enum):
@@ -192,7 +190,6 @@ class VaRAProjectsIter():
     Iterator over vara projects, meaning projects that are modfified to work
     with VaRA.
     """
-
     def __init__(self) -> None:
         self.__llvm_project_iter = iter(LLVMProjects)
 
@@ -217,7 +214,6 @@ class VaRAExtraProjectsIter():
     """
     Iterator over all additional projects without VaRAs own mofified projects.
     """
-
     def __init__(self) -> None:
         self.__llvm_project_iter = iter(LLVMProjects)
 
@@ -370,19 +366,18 @@ def setup_vara(init: bool,
                 update_all_submodules(llvm_folder / LLVMProjects.phasar.path)
 
         if build:
-            build_vara(
-                llvm_folder,
-                install_prefix=install_prefix,
-                build_type=build_type,
-                post_out=post_out)
+            build_vara(llvm_folder,
+                       install_prefix=install_prefix,
+                       build_type=build_type,
+                       post_out=post_out)
 
 
 def add_remote(repo_folder: Path, remote: str, url: str) -> None:
     """
     Adds new remote to the repository.
     """
-    with ProcessManager.create_process(
-            "git", ["remote", "add", remote, url], workdir=repo_folder):
+    with ProcessManager.create_process("git", ["remote", "add", remote, url],
+                                       workdir=repo_folder):
         pass
 
 
@@ -428,8 +423,8 @@ def init_all_submodules(folder: Path) -> None:
     """
     Inits all submodules.
     """
-    with ProcessManager.create_process(
-            "git", ["submodule", "init"], workdir=folder):
+    with ProcessManager.create_process("git", ["submodule", "init"],
+                                       workdir=folder):
         pass
 
 
@@ -437,8 +432,8 @@ def update_all_submodules(folder: Path) -> None:
     """
     Updates all submodules.
     """
-    with ProcessManager.create_process(
-            "git", ["submodule", "update"], workdir=folder):
+    with ProcessManager.create_process("git", ["submodule", "update"],
+                                       workdir=folder):
         pass
 
 
@@ -485,8 +480,8 @@ def checkout_branch(repo_folder: Path, branch: str) -> None:
     """
     Checks out a branch in the repository.
     """
-    with ProcessManager.create_process(
-            "git", ["checkout", branch], workdir=repo_folder):
+    with ProcessManager.create_process("git", ["checkout", branch],
+                                       workdir=repo_folder):
         pass
 
 
@@ -568,28 +563,25 @@ def download_vara(llvm_source_folder: Path,
         progress_func(dl_counter)
         dl_counter += 1
         if project is LLVMProjects.llvm:
-            download_repo(
-                dl_folder.parent,
-                project.url,
-                dl_folder.name,
-                remote_name=project.remote,
-                post_out=post_out)
+            download_repo(dl_folder.parent,
+                          project.url,
+                          dl_folder.name,
+                          remote_name=project.remote,
+                          post_out=post_out)
             add_remote(dl_folder, "origin",
                        "git@github.com:se-passau/vara-llvm.git")
             fetch_remote("origin", dl_folder)
         if project is LLVMProjects.clang_extra:
-            download_repo(
-                dl_folder / project.path.parent,
-                project.url,
-                "extra",
-                remote_name=project.remote,
-                post_out=post_out)
+            download_repo(dl_folder / project.path.parent,
+                          project.url,
+                          "extra",
+                          remote_name=project.remote,
+                          post_out=post_out)
         else:
-            download_repo(
-                dl_folder / project.path.parent,
-                project.url,
-                remote_name=project.remote,
-                post_out=post_out)
+            download_repo(dl_folder / project.path.parent,
+                          project.url,
+                          remote_name=project.remote,
+                          post_out=post_out)
             if project is LLVMProjects.clang:
                 add_remote(dl_folder / project.path, "origin",
                            "git@github.com:se-passau/vara-clang.git")
@@ -653,10 +645,10 @@ def set_cmake_var(var_name: str,
             lambda: run_process_with_output(proc, post_out))
 
 
-def init_vara_build(
-        path_to_llvm: Path,
-        build_type: BuildType,
-        post_out: tp.Callable[[str], None] = lambda x: None) -> None:
+def init_vara_build(path_to_llvm: Path,
+                    build_type: BuildType,
+                    post_out: tp.Callable[[str], None] = lambda x: None
+                    ) -> None:
     """
     Initialize a VaRA build config.
     """
@@ -674,11 +666,11 @@ def init_vara_build(
             lambda: run_process_with_output(proc, post_out))
 
 
-def verify_build_structure(
-        own_libgit: bool,
-        include_phasar: bool,
-        path_to_llvm: Path,
-        post_out: tp.Callable[[str], None] = lambda x: None) -> None:
+def verify_build_structure(own_libgit: bool,
+                           include_phasar: bool,
+                           path_to_llvm: Path,
+                           post_out: tp.Callable[[str], None] = lambda x: None
+                           ) -> None:
     """
     Verify the build strucutre of VaRA:
         - ensure status of submodules
@@ -721,8 +713,8 @@ def build_vara(path_to_llvm: Path,
         set_vara_cmake_variables(own_libgit, include_phasar, install_prefix,
                                  post_out)
 
-    with ProcessManager.create_process(
-            "ninja", ["install"], workdir=full_path) as proc:
+    with ProcessManager.create_process("ninja", ["install"],
+                                       workdir=full_path) as proc:
         proc.setProcessChannelMode(QProcess.MergedChannels)
         proc.readyReadStandardOutput.connect(
             lambda: run_process_with_output(proc, post_out))
@@ -757,7 +749,6 @@ class GitStatus():
     """
     Represents the current update status of a git repository.
     """
-
     def __init__(self, state: GitState, msg: str = "") -> None:
         self.__state = state
         self.__msg = msg
@@ -850,7 +841,6 @@ class GitStateChecker(QRunnable):  # type: ignore
     """
     GitStateChecker to fetch and verify the git status.
     """
-
     def __init__(self, state_signal: GitStateSignals,
                  path_to_llvm: Path) -> None:
         super(GitStateChecker, self).__init__()
@@ -874,7 +864,6 @@ class PullWorker(QRunnable):  # type: ignore
     """
     QtWorker to update repositories.
     """
-
     def __init__(self, llvm_folder: Path) -> None:
         super(PullWorker, self).__init__()
         self.llvm_folder = llvm_folder
@@ -1012,7 +1001,6 @@ class ProcessManager():
 class VaRAStateManager():
     """
     """
-
     def __init__(self, llvm_folder: Path) -> None:
         # TODO path propertie needs check
         self.llvm_folder = llvm_folder

@@ -85,25 +85,6 @@ def create_new_branch_for_projects(branch_name: str,
             checkout_new_branch(llvm_folder / project.path, branch_name)
 
 
-def checkout_branch_for_projects(branch_name: str,
-                                 projects: tp.List[LLVMProjects]) -> None:
-    """
-    Checkout a branch on all projects.
-    """
-    llvm_folder = Path(str(CFG['llvm_source_dir']))
-
-    for project in projects:
-        fixed_branch_name = __quickfix_dev_branches(branch_name,
-                                                    project.project)
-        if has_branch(llvm_folder / project.path, fixed_branch_name):
-            checkout_branch(llvm_folder / project.path, fixed_branch_name)
-            print("Checked out existing branch {branch} for project {project}".
-                  format(branch=fixed_branch_name, project=project.name))
-        else:
-            print("No branch {branch} for project {project}".format(
-                branch=fixed_branch_name, project=project.name))
-
-
 def checkout_remote_branch_for_projects(
         branch_name: str, projects: tp.List[LLVMProjects]) -> None:
     """

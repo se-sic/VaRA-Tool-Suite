@@ -18,7 +18,7 @@ from benchbuild.utils.actions import Step
 from benchbuild.settings import CFG
 
 from varats.data.revisions import get_tagged_revisions
-from varats.data.report import FileStatusExtension
+from varats.data.report import FileStatusExtension, BaseReport
 from varats.settings import CFG as V_CFG
 
 
@@ -29,7 +29,6 @@ class FunctionPEErrorWrapper():
     Args:
         handler: function to handle exception
     """
-
     def __init__(self, func: tp.Callable[..., tp.Any],
                  handler: tp.Callable[[Exception], None]) -> None:
         self.__func = func
@@ -42,9 +41,9 @@ class FunctionPEErrorWrapper():
             self.__handler(ex)
 
 
-def exec_func_with_pe_error_handler(
-        func: tp.Callable[..., tp.Any],
-        handler: tp.Callable[[Exception], None]) -> None:
+def exec_func_with_pe_error_handler(func: tp.Callable[..., tp.Any],
+                                    handler: tp.Callable[[Exception], None]
+                                    ) -> None:
     """
     Execute a function call with an exception handler.
 
@@ -58,7 +57,6 @@ class PEErrorHandler():
     """
     Error handler for process execution errors
     """
-
     def __init__(self,
                  result_folder: str,
                  error_file_name: str,
@@ -103,6 +101,28 @@ Timeout after: {timeout_duration}
         raise ex
 
 
+def get_default_compile_error_wrapped(project: Project,
+                                      report_type: tp.Type[BaseReport],
+                                      result_folder_template: str
+                                      ) -> FunctionPEErrorWrapper:
+    """
+    Setup the default project compile function with an error handler.
+    """
+    return FunctionPEErrorWrapper(
+        project.compile,
+        PEErrorHandler(
+            result_folder_template.format(result_dir=str(
+                CFG["vara"]["outfile"]),
+                                          project_dir=str(project.name)),
+            report_type.get_file_name(
+                project_name=str(project.name),
+                binary_name="all",
+                project_version=str(project.version),
+                project_uuid=str(project.run_uuid),
+                extension_type=FileStatusExtension.CompileError,
+                file_ext=".txt")))
+
+
 class VersionExperiment(Experiment):  # type: ignore
     """
     Base class for experiments that want to analyze different project
@@ -111,7 +131,6 @@ class VersionExperiment(Experiment):  # type: ignore
     @abstractmethod
     def actions_for_project(self, project: Project) -> tp.List[Step]:
         """Get the actions a project wants to run."""
-
     @staticmethod
     def _sample_num_versions(versions: tp.List[str]) -> tp.List[str]:
         if V_CFG["experiment"]["sample_limit"].value is None:
@@ -120,8 +139,8 @@ class VersionExperiment(Experiment):  # type: ignore
         sample_size = int(V_CFG["experiment"]["sample_limit"])
         versions = [
             versions[i] for i in sorted(
-                random.sample(
-                    range(len(versions)), min(sample_size, len(versions))))
+                random.sample(range(len(versions)),
+                              min(sample_size, len(versions))))
         ]
         return versions
 

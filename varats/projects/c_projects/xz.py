@@ -6,7 +6,7 @@ from pathlib import Path
 
 from benchbuild.project import Project
 from benchbuild.settings import CFG
-from benchbuild.utils.cmd import make, autoreconf, cp, git
+from benchbuild.utils.cmd import make, autoreconf, git
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
@@ -18,11 +18,10 @@ from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
 
 
-@with_git(
-    "https://github.com/xz-mirror/xz.git",
-    refspec="HEAD",
-    shallow_clone=False,
-    version_filter=project_filter_generator("xz"))
+@with_git("https://github.com/xz-mirror/xz.git",
+          refspec="HEAD",
+          shallow_clone=False,
+          version_filter=project_filter_generator("xz"))
 class Xz(Project):  # type: ignore
     """ Compression and decompression tool xz (fetched by Git) """
 

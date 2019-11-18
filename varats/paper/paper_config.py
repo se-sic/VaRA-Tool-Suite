@@ -6,8 +6,6 @@ automatically.
 import typing as tp
 from pathlib import Path
 
-import yaml
-
 from varats.paper.case_study import (load_case_study_from_file,
                                      store_case_study, CaseStudy)
 from varats.settings import CFG
@@ -19,7 +17,6 @@ class PaperConfig():
 
     The paper config allows easy reevaluation of a set of case studies.
     """
-
     def __init__(self, folder_path: Path) -> None:
         self.__path = Path(folder_path)
         self.__case_studies: tp.Dict[str, tp.List[CaseStudy]] = dict()

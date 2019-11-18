@@ -23,8 +23,8 @@ from varats.data.report import FileStatusExtension as FSE
 from varats.experiments.extract import Extract
 from varats.experiments.wllvm import RunWLLVM
 from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
-                                          FunctionPEErrorWrapper,
-                                          VersionExperiment, PEErrorHandler)
+                                          VersionExperiment, PEErrorHandler,
+                                          get_default_compile_error_wrapped)
 
 
 class CRAnalysis(actions.Step):  # type: ignore
@@ -70,9 +70,10 @@ class CRAnalysis(actions.Step):  # type: ignore
                 raise Exception("Could not load interaction filter file \"" +
                                 str(interaction_filter_file) + "\"")
 
-        bc_cache_folder = local.path(Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-            cache_dir=str(CFG["vara"]["result"]),
-            project_name=str(project.name)))
+        bc_cache_folder = local.path(
+            Extract.BC_CACHE_FOLDER_TEMPLATE.format(
+                cache_dir=str(CFG["vara"]["result"]),
+                project_name=str(project.name)))
 
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
@@ -148,19 +149,8 @@ class CommitReportExperiment(VersionExperiment):
             << run.WithTimeout()
 
         # Add own error handler to compile step.
-        project.compile = FunctionPEErrorWrapper(
-            project.compile,
-            PEErrorHandler(
-                CRAnalysis.RESULT_FOLDER_TEMPLATE.format(
-                    result_dir=str(CFG["vara"]["outfile"]),
-                    project_dir=str(project.name)),
-                CR.get_file_name(project_name=str(project.name),
-                                 binary_name="all",
-                                 project_version=str(project.version),
-                                 project_uuid=str(project.run_uuid),
-                                 extension_type=FSE.CompileError,
-                                 file_ext=".txt"),
-            ))
+        project.compile = get_default_compile_error_wrapped(
+            project, CR, CRAnalysis.RESULT_FOLDER_TEMPLATE)
 
         # This c-flag is provided by VaRA and it suggests to use the git-blame
         # annotation.
