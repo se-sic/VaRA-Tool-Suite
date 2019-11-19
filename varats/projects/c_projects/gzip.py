@@ -16,9 +16,17 @@ from plumbum import local
 
 from varats.paper.case_study import ReleaseType, ReleaseProvider
 from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import get_tagged_commits, wrap_paths_to_binaries
+from varats.utils.project_util import get_tagged_commits, \
+    wrap_paths_to_binaries, BlockedRevisionRange, block_revisions
 
 
+@block_revisions([
+    # TODO: se-passau/VaRA#383
+    # see e.g. https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=915151
+    BlockedRevisionRange("6ef28aeb035af20818578b1a1bc537f797c27029",
+                         "203e40cc4558a80998d05eb74b373a51e796ca8b",
+                         "Needs glibc < 2.28")
+])
 @with_git(
     "https://git.savannah.gnu.org/git/gzip.git",
     refspec="HEAD",
