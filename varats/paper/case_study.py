@@ -111,6 +111,7 @@ class HashIDTuple():
     Combining a commit hash with a unique and ordered id, starting with 0 for
     the first commit in the repository.
     """
+
     def __init__(self, commit_hash: str, commit_id: int) -> None:
         self.__commit_hash = commit_hash
         self.__commit_id = commit_id
@@ -151,6 +152,7 @@ class CSStage():
     A stage in a case-study, i.e., a collection of revisions. Stages are used
     to separate revisions into groups.
     """
+
     def __init__(self,
                  name: tp.Optional[str] = None,
                  extender_strategy: tp.Optional[ExtenderStrategy] = None,
@@ -253,8 +255,7 @@ class CSStage():
 
     def get_dict(
             self
-    ) -> tp.Dict[str, tp.Union[str, tp.List[tp.Dict[str, tp.
-                                                    Union[str, int]]]]]:
+    ) -> tp.Dict[str, tp.Union[str, tp.List[tp.Dict[str, tp.Union[str, int]]]]]:
         """
         Get a dict representation of this stage.
         """
@@ -283,6 +284,7 @@ class CaseStudy():
      - name of the related benchbuild.project
      - a set of revisions
     """
+
     def __init__(self,
                  project_name: str,
                  version: int,
@@ -452,8 +454,8 @@ class CaseStudy():
             # the result is 'mixed'.
             # Also if sampled multiple times with a distribution.
             if (stage.extender_strategy is not None and
-                (stage.extender_strategy is not extender_strategy
-                 or stage.extender_strategy is ExtenderStrategy.distrib_add)):
+                (stage.extender_strategy is not extender_strategy or
+                 stage.extender_strategy is ExtenderStrategy.distrib_add)):
                 stage.extender_strategy = ExtenderStrategy.mixed
                 stage.sampling_method = None
             else:
@@ -485,8 +487,7 @@ class CaseStudy():
 
         return revision_filter
 
-    def processed_revisions(self,
-                            result_file_type: MetaReport) -> tp.List[str]:
+    def processed_revisions(self, result_file_type: MetaReport) -> tp.List[str]:
         """
         Calculate how many revisions were processed.
         """
@@ -506,14 +507,13 @@ class CaseStudy():
             get_failed_revisions(self.project_name, result_file_type))
 
         return [
-            rev for rev in self.revisions
-            if rev[:10] in total_failed_revisions
+            rev for rev in self.revisions if rev[:10] in total_failed_revisions
         ]
 
     def get_revisions_status(self,
                              result_file_type: MetaReport,
                              stage_num: int = -1
-                             ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
+                            ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
         """
         Get status of all revisions.
         """
@@ -532,8 +532,8 @@ class CaseStudy():
                         found = True
                         break
                 if not found:
-                    filtered_revisions.append((rev[:10],
-                                               FileStatusExtension.Missing))
+                    filtered_revisions.append(
+                        (rev[:10], FileStatusExtension.Missing))
             return filtered_revisions
 
         if stage_num == -1:
@@ -628,15 +628,17 @@ def __store_case_study_to_file(case_study: CaseStudy, file_path: Path) -> None:
             VersionHeader.from_version_number('CaseStudy', 1)
 
         cs_file.write(
-            yaml.dump_all([version_header.get_dict(), case_study.get_dict()]))
+            yaml.dump_all([version_header.get_dict(),
+                           case_study.get_dict()]))
 
 
-def get_newest_result_files_for_case_study(
-        case_study: CaseStudy, result_dir: Path,
-        report_type: MetaReport) -> tp.List[Path]:
+def get_newest_result_files_for_case_study(case_study: CaseStudy,
+                                           result_dir: Path,
+                                           report_type: MetaReport
+                                          ) -> tp.List[Path]:
     """
-    Return all result files that belong to a given case study.
-    For revision with multiple files, the newest file will be selected.
+    Return all result files of a specific type that belong to a given case
+    study. For revision with multiple files, the newest file will be selected.
     """
     files_to_store: tp.Dict[str, Path] = dict()
 
@@ -645,7 +647,7 @@ def get_newest_result_files_for_case_study(
         return []
 
     for opt_res_file in result_dir.iterdir():
-        if report_type.is_result_file(opt_res_file.name):
+        if report_type.is_correct_report_type(opt_res_file.name):
             commit_hash = report_type.get_commit_hash_from_result_file(
                 opt_res_file.name)
             if case_study.has_revision(commit_hash):
@@ -661,8 +663,9 @@ def get_newest_result_files_for_case_study(
 
 
 def get_case_study_file_name_filter(case_study: CaseStudy
-                                    ) -> tp.Callable[[str], bool]:
+                                   ) -> tp.Callable[[str], bool]:
     """Generate a file_name filter for a case_study"""
+
     def cs_filter(file_name: str) -> bool:
         """
         Filter files that are not in the case study.
@@ -678,9 +681,11 @@ def get_case_study_file_name_filter(case_study: CaseStudy
 
     return cs_filter
 
+
 ###############################################################################
 # Case-study generation
 ###############################################################################
+
 
 @check_required_args(['extra_revs', 'git_path'])
 def generate_case_study(sampling_method: SamplingMethod, cmap: CommitMap,
@@ -698,8 +703,8 @@ def generate_case_study(sampling_method: SamplingMethod, cmap: CommitMap,
     if kwargs['revs_per_year'] > 0:
         extend_with_revs_per_year(case_study, cmap, **kwargs)
 
-    if (sampling_method is SamplingMethod.half_norm
-            or sampling_method is SamplingMethod.uniform):
+    if (sampling_method is SamplingMethod.half_norm or
+            sampling_method is SamplingMethod.uniform):
         extend_with_distrib_sampling(case_study, cmap, **kwargs)
 
     if kwargs['extra_revs']:
@@ -712,9 +717,9 @@ def generate_case_study(sampling_method: SamplingMethod, cmap: CommitMap,
 # Case-study extender
 ###############################################################################
 
+
 def extend_case_study(case_study: CaseStudy, cmap: CommitMap,
-                      ext_strategy: ExtenderStrategy,
-                      **kwargs: tp.Any) -> None:
+                      ext_strategy: ExtenderStrategy, **kwargs: tp.Any) -> None:
     """
     Extend a case study with new revisions.
     """
@@ -749,12 +754,14 @@ def extend_with_extra_revs(case_study: CaseStudy, cmap: CommitMap,
                                  ExtenderStrategy.simple_add)
 
 
-@check_required_args(['git_path', 'revs_per_year', 'merge_stage', 'revs_year_sep'])
+@check_required_args(
+    ['git_path', 'revs_per_year', 'merge_stage', 'revs_year_sep'])
 def extend_with_revs_per_year(case_study: CaseStudy, cmap: CommitMap,
                               **kwargs: tp.Any) -> None:
     """
     Extend a case_study with n revisions per year.
     """
+
     def parse_int_string(string: tp.Optional[str]) -> tp.Optional[int]:
         if string is None:
             return None
@@ -828,22 +835,22 @@ def extend_with_distrib_sampling(case_study: CaseStudy, cmap: CommitMap,
     # of the list is the same as the distribution over the commits age history
     revision_list = [
         rev_item for rev_item in sorted([x for x in cmap.mapping_items()],
-                                        key=lambda x: x[1]) if not case_study.
-        has_revision_in_stage(rev_item[0], kwargs['merge_stage'])
+                                        key=lambda x: x[1]) if
+        not case_study.has_revision_in_stage(rev_item[0], kwargs['merge_stage'])
     ]
 
     distribution_function = kwargs['distribution'].gen_distribution_function()
 
-    case_study.include_revisions(
-        sample_n(distribution_function, kwargs['num_rev'], revision_list),
-        kwargs['merge_stage'],
-        extender_strategy=ExtenderStrategy.distrib_add,
-        sampling_method=kwargs['distribution'])
+    case_study.include_revisions(sample_n(distribution_function,
+                                          kwargs['num_rev'], revision_list),
+                                 kwargs['merge_stage'],
+                                 extender_strategy=ExtenderStrategy.distrib_add,
+                                 sampling_method=kwargs['distribution'])
 
 
 def sample_n(distrib_func: tp.Callable[[int], np.ndarray], num_samples: int,
              list_to_sample: tp.List[tp.Tuple[str, int]]
-             ) -> tp.List[tp.Tuple[str, int]]:
+            ) -> tp.List[tp.Tuple[str, int]]:
     """
     Return a list of n unique samples.
     If the list to sample is smaller than the number of samples the full list
@@ -864,8 +871,10 @@ def sample_n(distrib_func: tp.Callable[[int], np.ndarray], num_samples: int,
     probabilities = distrib_func(len(list_to_sample))
     probabilities /= probabilities.sum()
 
-    sampled_idxs = np.random.choice(
-        len(list_to_sample), num_samples, replace=False, p=probabilities)
+    sampled_idxs = np.random.choice(len(list_to_sample),
+                                    num_samples,
+                                    replace=False,
+                                    p=probabilities)
 
     return [list_to_sample[idx] for idx in sampled_idxs]
 
