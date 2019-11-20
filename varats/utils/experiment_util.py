@@ -95,8 +95,6 @@ Timeout after: {timeout_duration}
                     outfile.write(extra_error)
                     outfile.flush()
 
-            outfile.write("-----\nException:\n")
-            outfile.write(str(ex) + "\n")
             outfile.write("-----\nTraceback:\n")
             traceback.print_exc(file=outfile)
 
