@@ -15,7 +15,7 @@ import numpy as np
 
 from varats.data.cache_helper import build_cached_report_table, GraphCacheType
 from varats.jupyterhelper.file import load_blame_report
-from varats.plots.plot import Plot
+from varats.plots.plot import Plot, PlotDataEmpty
 from varats.data.revisions import get_processed_revisions_files
 from varats.data.reports.blame_report import (BlameReport,
                                               generate_degree_tuples,
@@ -130,6 +130,9 @@ class BlameDegree(Plot):
 
         interaction_plot_df = cs_filter(
             _gen_blame_interaction_data(**self.plot_kwargs))
+        if interaction_plot_df.empty:
+            raise PlotDataEmpty
+
         # Reduce data frame to rows that match the degree type
         interaction_plot_df = interaction_plot_df[
             interaction_plot_df.degree_type == degree_type.value]

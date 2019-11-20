@@ -17,6 +17,7 @@ class PaperConfig():
 
     The paper config allows easy reevaluation of a set of case studies.
     """
+
     def __init__(self, folder_path: Path) -> None:
         self.__path = Path(folder_path)
         self.__case_studies: tp.Dict[str, tp.List[CaseStudy]] = dict()
@@ -28,6 +29,13 @@ class PaperConfig():
                 self.__case_studies[case_study.project_name].append(case_study)
             else:
                 self.__case_studies[case_study.project_name] = [case_study]
+
+    @property
+    def path(self) -> Path:
+        """
+        Path to the paper config folder
+        """
+        return self.__path
 
     def get_case_studies(self, cs_name: str) -> tp.List[CaseStudy]:
         """
@@ -117,9 +125,10 @@ def project_filter_generator(project_name: str) -> tp.Callable[[str], bool]:
     return get_paper_config().get_filter_for_case_study(project_name)
 
 
-def get_paper_config() -> PaperConfig:
+def get_loaded_paper_config() -> PaperConfig:
     """
-    Returns the current paper config or None.
+    Returns the current paper config, this requires  aconfig to be loaded
+    before.
     """
     if __G_PAPER_CONFIG is None:
         raise Exception('Paper config was not loaded')
@@ -149,6 +158,15 @@ def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
 
     global __G_PAPER_CONFIG
     __G_PAPER_CONFIG = PaperConfig(config_path)
+
+
+def get_paper_config() -> PaperConfig:
+    """
+    Returns the current paper config and loads it if needed.
+    """
+    if __G_PAPER_CONFIG is None:
+        load_paper_config()
+    return get_loaded_paper_config()
 
 
 __G_PAPER_CONFIG = None

@@ -25,8 +25,8 @@ from varats.utils.project_util import get_local_project_git_path
 
 @check_required_args(["cmap", "project"])
 def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
-    PC.load_paper_config()
     current_config = PC.get_paper_config()
+
     if 'report_type' in kwargs:
         result_file_type: MetaReport = MetaReport.REPORT_TYPES[
             kwargs['report_type']]
@@ -60,9 +60,8 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
     """
     Generate the data for the PaperConfigOverviewPlot.
     """
-    PC.load_paper_config()
-
     current_config = PC.get_paper_config()
+
     if 'report_type' in kwargs:
         result_file_type: MetaReport = MetaReport.REPORT_TYPES[
             kwargs['report_type']]
@@ -120,8 +119,8 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
                 num_successful_revs = np.nan
             else:
                 num_revs = len(revs_in_year)
-                num_successful_revs = sum(1 for (rev, success) in revs_in_year
-                                          if success)
+                num_successful_revs = sum(
+                    1 for (rev, success) in revs_in_year if success)
 
             revs_successful_per_year.append(num_successful_revs)
             revs_total_per_year.append(num_revs)
@@ -188,6 +187,7 @@ class PaperConfigOverviewPlot(Plot):
     """
     Plot showing an overview of all case-studies.
     """
+
     @check_required_args(["result_folder"])
     def __init__(self, **kwargs: tp.Any) -> None:
         super(PaperConfigOverviewPlot,

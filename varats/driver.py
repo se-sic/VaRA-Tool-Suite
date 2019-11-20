@@ -25,6 +25,7 @@ from varats.tools.commit_map import (store_commit_map, get_commit_map,
                                      create_lazy_commit_map_loader)
 from varats.plots.plots import (extend_parser_with_plot_args, build_plot,
                                 PlotTypes)
+from varats.plots.plot import PlotDataEmpty
 from varats.utils.cli_util import cli_yn_choice
 from varats.utils.project_util import get_local_project_git_path
 from varats.paper.case_study import (SamplingMethod, ExtenderStrategy,
@@ -32,6 +33,7 @@ from varats.paper.case_study import (SamplingMethod, ExtenderStrategy,
                                      load_case_study_from_file,
                                      store_case_study, ReleaseType)
 import varats.paper.paper_config_manager as PCM
+from varats.paper.paper_config import get_paper_config
 from varats.data.report import MetaReport
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
@@ -259,6 +261,11 @@ def main_plot() -> None:
                         default=False)
     parser.add_argument("--cs-path", help="Path to case_study", default=None)
     parser.add_argument(
+        "--paper-config",
+        help="Generate plots for all case studies in the current paper config",
+        action='store_true',
+        default=False)
+    parser.add_argument(
         "--sep-stages",
         help="Separate different stages of case study in the plot.",
         action='store_true',
@@ -272,9 +279,6 @@ def main_plot() -> None:
 
     args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
 
-    if 'project' in args:
-        args['get_cmap'] = create_lazy_commit_map_loader(
-            args['project'], args.get('cmap', None))
     # Setup default result folder
     if 'result_folder' not in args:
         args['result_folder'] = str(CFG['result_dir'])
@@ -283,13 +287,31 @@ def main_plot() -> None:
         print("Result folder defaults to: {res_folder}".format(
             res_folder=args['result_folder']))
 
-    if 'cs_path' in args:
-        case_study_path = Path(args['cs_path'])
-        args['plot_case_study'] = load_case_study_from_file(case_study_path)
-    else:
-        args['plot_case_study'] = None
+    if args['paper_config']:
+        paper_config = get_paper_config()
+        for case_study in paper_config.get_all_case_studies():
+            project_name = case_study.project_name
+            args['project'] = project_name
+            args['get_cmap'] = create_lazy_commit_map_loader(
+                project_name, args.get('cmap', None))
 
-    build_plot(**args)
+            args['plot_case_study'] = case_study
+            try:
+                build_plot(**args)
+            except PlotDataEmpty:
+                print("Could not build plot for {} there was no data".format(
+                    project_name))
+    else:
+        if 'project' in args:
+            args['get_cmap'] = create_lazy_commit_map_loader(
+                args['project'], args.get('cmap', None))
+        if 'cs_path' in args:
+            case_study_path = Path(args['cs_path'])
+            args['plot_case_study'] = load_case_study_from_file(case_study_path)
+        else:
+            args['plot_case_study'] = None
+
+        build_plot(**args)
 
 
 def main_gen_benchbuild_config() -> None:
