@@ -21,7 +21,7 @@ from varats.utils.project_util import get_tagged_commits, \
 
 
 @block_revisions([
-    # TODO: se-passau/VaRA#537
+    # TODO (se-passau/VaRA#537): glibc > 2.27
     # see e.g. https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=915151
     BlockedRevisionRange("6ef28aeb035af20818578b1a1bc537f797c27029",
                          "203e40cc4558a80998d05eb74b373a51e796ca8b",
