@@ -29,6 +29,7 @@ class FunctionPEErrorWrapper():
     Args:
         handler: function to handle exception
     """
+
     def __init__(self, func: tp.Callable[..., tp.Any],
                  handler: tp.Callable[[Exception], None]) -> None:
         self.__func = func
@@ -43,7 +44,7 @@ class FunctionPEErrorWrapper():
 
 def exec_func_with_pe_error_handler(func: tp.Callable[..., tp.Any],
                                     handler: tp.Callable[[Exception], None]
-                                    ) -> None:
+                                   ) -> None:
     """
     Execute a function call with an exception handler.
 
@@ -57,6 +58,7 @@ class PEErrorHandler():
     """
     Error handler for process execution errors
     """
+
     def __init__(self,
                  result_folder: str,
                  error_file_name: str,
@@ -93,9 +95,7 @@ Timeout after: {timeout_duration}
                     outfile.write(extra_error)
                     outfile.flush()
 
-            outfile.write("Exception:\n")
-            outfile.write(str(ex) + "\n")
-            outfile.write("Traceback:\n")
+            outfile.write("-----\nTraceback:\n")
             traceback.print_exc(file=outfile)
 
         raise ex
@@ -104,7 +104,7 @@ Timeout after: {timeout_duration}
 def get_default_compile_error_wrapped(project: Project,
                                       report_type: tp.Type[BaseReport],
                                       result_folder_template: str
-                                      ) -> FunctionPEErrorWrapper:
+                                     ) -> FunctionPEErrorWrapper:
     """
     Setup the default project compile function with an error handler.
     """
@@ -128,9 +128,11 @@ class VersionExperiment(Experiment):  # type: ignore
     Base class for experiments that want to analyze different project
     revisions.
     """
+
     @abstractmethod
     def actions_for_project(self, project: Project) -> tp.List[Step]:
         """Get the actions a project wants to run."""
+
     @staticmethod
     def _sample_num_versions(versions: tp.List[str]) -> tp.List[str]:
         if V_CFG["experiment"]["sample_limit"].value is None:
@@ -147,7 +149,7 @@ class VersionExperiment(Experiment):  # type: ignore
     def sample(self,
                prj_cls: tp.Type[Project],
                versions: tp.Optional[tp.List[str]] = None
-               ) -> tp.Generator[str, None, None]:
+              ) -> tp.Generator[str, None, None]:
         """
         Adapt version sampling process if needed, otherwise fallback to default
         implementation.
@@ -162,9 +164,8 @@ class VersionExperiment(Experiment):  # type: ignore
         fs_whitelist = V_CFG["experiment"]["file_status_whitelist"].value
 
         if fs_blacklist or fs_whitelist:
-            fs_good = {x
-                       for x in FileStatusExtension
-                       } if not fs_whitelist else set()
+            fs_good = {x for x in FileStatusExtension
+                      } if not fs_whitelist else set()
 
             fs_good -= {
                 FileStatusExtension.get_file_status_from_str(x)
