@@ -65,10 +65,8 @@ CFG["env"] = {
 
 CFG['db'] = {
     "connect_string": {
-        "desc":
-        "sqlalchemy connect string",
-        "default":
-        "sqlite://"
+        "desc": "sqlalchemy connect string",
+        "default": "sqlite://"
     },
     "rollback": {
         "desc": "Rollback all operations after benchbuild completes.",
@@ -82,23 +80,19 @@ CFG['db'] = {
 
 CFG['experiment'] = {
     "only_missing": {
-        "default":
-        True,
-        "desc":
-        "Only run missing version [Deprecated]"
-        "This option is replaced by file_status_blacklist = [Success]"
+        "default": True,
+        "desc": "Only run missing version [Deprecated]"
+                "This option is replaced by file_status_blacklist = [Success]"
     },
     "file_status_blacklist": {
         "default": ['Success', 'Blocked'],
-        "desc":
-        "Do not include revision with these file status for benchbuild "
-        "processing"
+        "desc": "Do not include revision with these file status for benchbuild "
+                "processing"
     },
     "file_status_whitelist": {
         "default": [],
-        "desc":
-        "Only include revision with these file status for benchbuild "
-        "processing"
+        "desc": "Only include revision with these file status for benchbuild "
+                "processing"
     },
     "random_order": {
         "default": False,
@@ -136,8 +130,8 @@ def create_missing_folders() -> None:
     Create a folders that do not exist but where set in the config.
     """
 
-    def create_missing_folder_for_cfg(
-            cfg_varname: str, local_cfg: s.Configuration = CFG) -> None:
+    def create_missing_folder_for_cfg(cfg_varname: str,
+                                      local_cfg: s.Configuration = CFG) -> None:
         """
         Create missing folders for a specific config path.
         """
@@ -192,6 +186,7 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
         'varats.projects.c_projects.libvpx',
         'varats.projects.c_projects.lrzip',
         'varats.projects.c_projects.opus',
+        'varats.projects.c_projects.openssl',
         'varats.projects.c_projects.tmux',
         'varats.projects.c_projects.vim',
         'varats.projects.c_projects.x264',
@@ -206,8 +201,7 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
     projects_conf.value[:] = []
     projects_conf.value[:] += [
         'varats.experiments.commit_report_experiment',
-        'varats.experiments.marker_tester',
-        'varats.experiments.just_compile',
+        'varats.experiments.marker_tester', 'varats.experiments.just_compile',
         'varats.experiments.vara_full_mtfa',
         'varats.experiments.vara_fc_taint_analysis',
         'varats.experiments.phasar_env_analysis',
