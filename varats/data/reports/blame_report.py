@@ -11,7 +11,7 @@ import pygit2
 
 from varats.data.report import BaseReport, MetaReport, FileStatusExtension
 from varats.data.version_header import VersionHeader
-from varats.utils.project_util import get_local_project_git_path
+from varats.utils.project_util import get_local_project_git
 
 
 class BlameInstInteractions():
@@ -230,9 +230,7 @@ def generate_author_degree_tuples(
     degree_dict: tp.DefaultDict[int, int] = defaultdict(int)
     cache_dict: tp.Dict[str, pygit2.Commit] = {}
 
-    git_path = get_local_project_git_path(project_name)
-    repo_path = pygit2.discover_repository(str(git_path))
-    repo = pygit2.Repository(repo_path)
+    repo = get_local_project_git(project_name)
 
     def get_commit(c_hash: str) -> pygit2.Commit:
         if c_hash in cache_dict:
@@ -250,3 +248,5 @@ def generate_author_degree_tuples(
             degree_dict[degree] += interaction.amount
 
     return [(k, v) for k, v in degree_dict.items()]
+
+
