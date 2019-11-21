@@ -2,7 +2,7 @@
 A case study to pin down project settings and the exact set of revisions that
 should be analysed.
 """
-
+import abc
 import typing as tp
 from collections import defaultdict
 from datetime import datetime
@@ -11,27 +11,106 @@ from pathlib import Path
 import errno
 import os
 import random
-import yaml
 
+import yaml
+from benchbuild.project import Project
 from scipy.stats import halfnorm
 import numpy as np
 import pygit2
 
-from varats.data.revisions import (get_proccessed_revisions,
+from varats.utils.project_util import get_project_cls_by_name
+from varats.data.revisions import (get_processed_revisions,
                                    get_failed_revisions, get_tagged_revisions)
 from varats.plots.plot_utils import check_required_args
+from varats.data.version_header import VersionHeader
 from varats.data.reports.commit_report import CommitMap
 from varats.data.report import MetaReport, FileStatusExtension
 
 
-class HashIDTuple(yaml.YAMLObject):
+class ExtenderStrategy(Enum):
+    """
+    Enum for all currently supported extender strategies.
+    """
+
+    mixed = -1
+    simple_add = 1
+    distrib_add = 2
+    smooth_plot = 3
+    per_year_add = 4
+    release_add = 5
+
+
+class SamplingMethod(Enum):
+    """
+    Enum for all currently supported sampling methods.
+    """
+
+    uniform = 1
+    half_norm = 2
+
+    def gen_distribution_function(self) -> tp.Callable[[int], np.ndarray]:
+        """
+        Generate a distribution function for the specified sampling method.
+        """
+        if self == SamplingMethod.uniform:
+
+            def uniform(num_samples: int) -> np.ndarray:
+                return tp.cast(tp.List[float],
+                               np.random.uniform(0, 1.0, num_samples))
+
+            return uniform
+        if self == SamplingMethod.half_norm:
+
+            def halfnormal(num_samples: int) -> np.ndarray:
+                return tp.cast(tp.List[float],
+                               halfnorm.rvs(scale=1, size=num_samples))
+
+            return halfnormal
+
+        raise Exception('Unsupported SamplingMethod')
+
+
+class ReleaseType(Enum):
+    """
+    A ReleaseType referes to one of the three parts of the semantic versioning
+    specification.
+
+    It is assumed that a major release is also a minor release and that a minor
+    release is also a patch release.
+    """
+
+    major = 1
+    minor = 2
+    patch = 3
+
+    def merge(self, other: tp.Optional["ReleaseType"]) -> "ReleaseType":
+        """
+        Merges two release type.
+        It is assumed that minor releases include major releases
+        and patch releases include minor releases.
+        """
+        if other is None:
+            return self
+        return self if self.value >= other.value else other
+
+
+class ReleaseProvider():
+    """
+    Interface needed by the release extender.
+    Projects that want to use that extender need to implement this interface.
+    """
+
+    @classmethod
+    @abc.abstractmethod
+    def get_release_revisions(cls, release_type: ReleaseType) -> tp.List[str]:
+        """Get a set of all release revisions for a project"""
+
+
+class HashIDTuple():
     """
     Combining a commit hash with a unique and ordered id, starting with 0 for
     the first commit in the repository.
     """
-
-    yaml_loader = yaml.SafeLoader
-    yaml_tag = u'!HashIDTuple'
 
     def __init__(self, commit_hash: str, commit_id: int) -> None:
         self.__commit_hash = commit_hash
@@ -51,6 +130,12 @@ class HashIDTuple(yaml.YAMLObject):
         """
         return self.__commit_id
 
+    def get_dict(self) -> tp.Dict[str, tp.Union[str, int]]:
+        """
+        Get a dict representation of this commit and id.
+        """
+        return dict(commit_hash=self.commit_hash, commit_id=self.commit_id)
+
     def __str(self) -> str:
         return "({commit_id}: #{commit_hash})"\
             .format(commit_hash=self.commit_hash,
@@ -62,18 +147,25 @@ class HashIDTuple(yaml.YAMLObject):
                     commit_id=self.commit_id)
 
 
-class CSStage(yaml.YAMLObject):
+class CSStage():
     """
     A stage in a case-study, i.e., a collection of revisions. Stages are used
     to separate revisions into groups.
     """
 
-    yaml_loader = yaml.SafeLoader
-    yaml_tag = u'!CSStage'
-
-    def __init__(self, name: tp.Optional[str] = None) -> None:
-        self.__revisions: tp.List[HashIDTuple] = []
+    def __init__(self,
+                 name: tp.Optional[str] = None,
+                 extender_strategy: tp.Optional[ExtenderStrategy] = None,
+                 sampling_method: tp.Optional[SamplingMethod] = None,
+                 release_type: tp.Optional[ReleaseType] = None,
+                 revisions: tp.Optional[tp.List[HashIDTuple]] = None) -> None:
         self.__name: tp.Optional[str] = name
+        self.__extender_strategy: tp.Optional[ExtenderStrategy] = \
+            extender_strategy
+        self.__sampling_method: tp.Optional[SamplingMethod] = sampling_method
+        self.__release_type: tp.Optional[ReleaseType] = release_type
+        self.__revisions: tp.List[
+            HashIDTuple] = revisions if revisions is not None else []
 
     @property
     def revisions(self) -> tp.List[str]:
@@ -95,6 +187,48 @@ class CSStage(yaml.YAMLObject):
         Setter for the name of the stage.
         """
         self.__name = name
+
+    @property
+    def extender_strategy(self) -> tp.Optional[ExtenderStrategy]:
+        """
+        The extender strategy used to create this stage.
+        """
+        return self.__extender_strategy
+
+    @extender_strategy.setter
+    def extender_strategy(self, extender_strategy: ExtenderStrategy) -> None:
+        """
+        Setter for the extender strategy of the stage.
+        """
+        self.__extender_strategy = extender_strategy
+
+    @property
+    def sampling_method(self) -> tp.Optional[SamplingMethod]:
+        """
+        The sampling method used for this stage.
+        """
+        return self.__sampling_method
+
+    @sampling_method.setter
+    def sampling_method(self, sampling_method: SamplingMethod) -> None:
+        """
+        Setter for the sampling method of the stage.
+        """
+        self.__sampling_method = sampling_method
+
+    @property
+    def release_type(self) -> tp.Optional[ReleaseType]:
+        """
+        The sampling method used for this stage.
+        """
+        return self.__release_type
+
+    @release_type.setter
+    def release_type(self, release_type: ReleaseType) -> None:
+        """
+        Setter for the sampling method of the stage.
+        """
+        self.__release_type = release_type
 
     def has_revision(self, revision: str) -> bool:
         """
@@ -119,8 +253,29 @@ class CSStage(yaml.YAMLObject):
         """
         self.__revisions.sort(key=lambda x: x.commit_id, reverse=reverse)
 
+    def get_dict(
+            self
+    ) -> tp.Dict[str, tp.Union[str, tp.List[tp.Dict[str, tp.Union[str, int]]]]]:
+        """
+        Get a dict representation of this stage.
+        """
+        stage_dict: tp.Dict[
+            str, tp.Union[str, tp.List[tp.Dict[str, tp.
+                                               Union[str, int]]]]] = dict()
+        if self.name is not None:
+            stage_dict['name'] = self.name
+        if self.extender_strategy is not None:
+            stage_dict['extender_strategy'] = self.extender_strategy.name
+        if self.sampling_method is not None:
+            stage_dict['sampling_method'] = self.sampling_method.name
+        if self.release_type is not None:
+            stage_dict['release_type'] = self.release_type.name
+        revision_list = [revision.get_dict() for revision in self.__revisions]
+        stage_dict['revisions'] = revision_list
+        return stage_dict
 
-class CaseStudy(yaml.YAMLObject):
+
+class CaseStudy():
     """
     A case study persists a set of configuration values for a project to allow
     easy reevaluation.
@@ -130,13 +285,13 @@ class CaseStudy(yaml.YAMLObject):
      - a set of revisions
     """
 
-    yaml_loader = yaml.SafeLoader
-    yaml_tag = u'!CaseStudy'
-
-    def __init__(self, project_name: str, version: int) -> None:
+    def __init__(self,
+                 project_name: str,
+                 version: int,
+                 stages: tp.Optional[tp.List[CSStage]] = None) -> None:
         self.__project_name = project_name
         self.__version = version
-        self.__stages: tp.List[CSStage] = []
+        self.__stages = stages if stages is not None else []
 
     @property
     def project_name(self) -> str:
@@ -264,10 +419,14 @@ class CaseStudy(yaml.YAMLObject):
             if sort_revs:
                 stage.sort()
 
-    def include_revisions(self,
-                          revisions: tp.List[tp.Tuple[str, int]],
-                          stage_num: int = 0,
-                          sort_revs: bool = True) -> None:
+    def include_revisions(
+            self,
+            revisions: tp.List[tp.Tuple[str, int]],
+            stage_num: int = 0,
+            sort_revs: bool = True,
+            extender_strategy: tp.Optional[ExtenderStrategy] = None,
+            sampling_method: tp.Optional[SamplingMethod] = None,
+            release_type: tp.Optional[ReleaseType] = None) -> None:
         """
         Add multiple revisions to this case study.
 
@@ -275,12 +434,36 @@ class CaseStudy(yaml.YAMLObject):
             revisions: List of tuples with (commit_hash, id) to be inserted
             stage_num: The stage to insert the revisions
             sort_revs: True if the stage should be kept sorted
+            extender_strategy: The extender strategy used to acquire the revisions
+            sampling_method: The sampling method used to acquire the revisions
         """
         for revision in revisions:
             self.include_revision(revision[0], revision[1], stage_num, False)
 
+        if len(self.__stages) <= stage_num:
+            for idx in range(len(self.__stages), stage_num + 1):
+                self.insert_empty_stage(idx)
+
+        stage = self.__stages[stage_num]
+
         if sort_revs and self.num_stages > 0:
             self.__stages[stage_num].sort()
+
+        if extender_strategy is not None:
+            # if different strategies are used on the same stage,
+            # the result is 'mixed'.
+            # Also if sampled multiple times with a distribution.
+            if (stage.extender_strategy is not None and
+                (stage.extender_strategy is not extender_strategy or
+                 stage.extender_strategy is ExtenderStrategy.distrib_add)):
+                stage.extender_strategy = ExtenderStrategy.mixed
+                stage.sampling_method = None
+            else:
+                stage.extender_strategy = extender_strategy
+                if sampling_method is not None:
+                    stage.sampling_method = sampling_method
+                if release_type is not None:
+                    stage.release_type = release_type.merge(stage.release_type)
 
     def name_stage(self, stage_num: int, name: str) -> None:
         """
@@ -304,13 +487,12 @@ class CaseStudy(yaml.YAMLObject):
 
         return revision_filter
 
-    def processed_revisions(self,
-                            result_file_type: MetaReport) -> tp.List[str]:
+    def processed_revisions(self, result_file_type: MetaReport) -> tp.List[str]:
         """
         Calculate how many revisions were processed.
         """
         total_processed_revisions = set(
-            get_proccessed_revisions(self.project_name, result_file_type))
+            get_processed_revisions(self.project_name, result_file_type))
 
         return [
             rev for rev in self.revisions
@@ -325,14 +507,13 @@ class CaseStudy(yaml.YAMLObject):
             get_failed_revisions(self.project_name, result_file_type))
 
         return [
-            rev for rev in self.revisions
-            if rev[:10] in total_failed_revisions
+            rev for rev in self.revisions if rev[:10] in total_failed_revisions
         ]
 
     def get_revisions_status(self,
                              result_file_type: MetaReport,
                              stage_num: int = -1
-                             ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
+                            ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
         """
         Get status of all revisions.
         """
@@ -351,8 +532,8 @@ class CaseStudy(yaml.YAMLObject):
                         found = True
                         break
                 if not found:
-                    filtered_revisions.append((rev[:10],
-                                               FileStatusExtension.Missing))
+                    filtered_revisions.append(
+                        (rev[:10], FileStatusExtension.Missing))
             return filtered_revisions
 
         if stage_num == -1:
@@ -364,6 +545,16 @@ class CaseStudy(yaml.YAMLObject):
 
         return []
 
+    def get_dict(self) -> tp.Dict[str, tp.Union[str, int, tp.List[
+            tp.Dict[str, tp.Union[str, tp.List[tp.Dict[str, tp.
+                                                       Union[str, int]]]]]]]]:
+        """
+        Get a dict representation of this case study.
+        """
+        return dict(project_name=self.project_name,
+                    version=self.version,
+                    stages=[stage.get_dict() for stage in self.stages])
+
 
 def load_case_study_from_file(file_path: Path) -> CaseStudy:
     """
@@ -371,7 +562,34 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
     """
     if file_path.exists():
         with open(file_path, "r") as cs_file:
-            return tp.cast(CaseStudy, yaml.safe_load(cs_file))
+            documents = yaml.load_all(cs_file, Loader=yaml.CLoader)
+            version_header = VersionHeader(next(documents))
+            version_header.raise_if_not_type("CaseStudy")
+            version_header.raise_if_version_is_less_than(1)
+
+            raw_case_study = next(documents)
+            stages: tp.List[CSStage] = []
+            for raw_stage in raw_case_study['stages']:
+                hash_id_tuples: tp.List[HashIDTuple] = []
+                for raw_hash_id_tuple in raw_stage['revisions']:
+                    hash_id_tuples.append(
+                        HashIDTuple(raw_hash_id_tuple['commit_hash'],
+                                    raw_hash_id_tuple['commit_id']))
+                extender_strategy = raw_stage.get('extender_strategy') or None
+                sampling_method = raw_stage.get('sampling_method') or None
+                release_type = raw_stage.get('release_type') or None
+                stages.append(
+                    CSStage(
+                        raw_stage.get('name') or None,
+                        ExtenderStrategy[extender_strategy]
+                        if extender_strategy is not None else None,
+                        SamplingMethod[sampling_method]
+                        if sampling_method is not None else None,
+                        ReleaseType[release_type]
+                        if release_type is not None else None, hash_id_tuples))
+
+            return CaseStudy(raw_case_study['project_name'],
+                             raw_case_study['version'], stages)
 
     raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
                             str(file_path))
@@ -406,15 +624,21 @@ def __store_case_study_to_file(case_study: CaseStudy, file_path: Path) -> None:
     Store case study to file.
     """
     with open(file_path, "w") as cs_file:
-        cs_file.write(yaml.dump(case_study))
+        version_header: VersionHeader = \
+            VersionHeader.from_version_number('CaseStudy', 1)
+
+        cs_file.write(
+            yaml.dump_all([version_header.get_dict(),
+                           case_study.get_dict()]))
 
 
-def get_newest_result_files_for_case_study(
-        case_study: CaseStudy, result_dir: Path,
-        report_type: MetaReport) -> tp.List[Path]:
+def get_newest_result_files_for_case_study(case_study: CaseStudy,
+                                           result_dir: Path,
+                                           report_type: MetaReport
+                                          ) -> tp.List[Path]:
     """
-    Return all result files that belong to a given case study.
-    For revision with multiple files, the newest file will be selected.
+    Return all result files of a specific type that belong to a given case
+    study. For revision with multiple files, the newest file will be selected.
     """
     files_to_store: tp.Dict[str, Path] = dict()
 
@@ -423,7 +647,7 @@ def get_newest_result_files_for_case_study(
         return []
 
     for opt_res_file in result_dir.iterdir():
-        if report_type.is_result_file(opt_res_file.name):
+        if report_type.is_correct_report_type(opt_res_file.name):
             commit_hash = report_type.get_commit_hash_from_result_file(
                 opt_res_file.name)
             if case_study.has_revision(commit_hash):
@@ -437,39 +661,30 @@ def get_newest_result_files_for_case_study(
 
     return [x for x in files_to_store.values()]
 
+
+def get_case_study_file_name_filter(case_study: CaseStudy
+                                   ) -> tp.Callable[[str], bool]:
+    """Generate a file_name filter for a case_study"""
+
+    def cs_filter(file_name: str) -> bool:
+        """
+        Filter files that are not in the case study.
+
+        Returns True if a case_study is set and the commit_hash of the file
+        is not part of this case_study, otherwise, False.
+        """
+        if case_study is None:
+            return False
+
+        commit_hash = MetaReport.get_commit_hash_from_result_file(file_name)
+        return not case_study.has_revision(commit_hash)
+
+    return cs_filter
+
+
 ###############################################################################
 # Case-study generation
 ###############################################################################
-
-
-class SamplingMethod(Enum):
-    """
-    Enum for all currently supported sampling methods.
-    """
-
-    uniform = 1
-    half_norm = 2
-
-    def gen_distribution_function(self) -> tp.Callable[[int], np.ndarray]:
-        """
-        Generate a distribution function for the specified sampling method.
-        """
-        if self == SamplingMethod.uniform:
-
-            def uniform(num_samples: int) -> np.ndarray:
-                return tp.cast(tp.List[float],
-                               np.random.uniform(0, 1.0, num_samples))
-
-            return uniform
-        if self == SamplingMethod.half_norm:
-
-            def halfnormal(num_samples: int) -> np.ndarray:
-                return tp.cast(tp.List[float],
-                               halfnorm.rvs(scale=1, size=num_samples))
-
-            return halfnormal
-
-        raise Exception('Unsupported SamplingMethod')
 
 
 @check_required_args(['extra_revs', 'git_path'])
@@ -488,8 +703,8 @@ def generate_case_study(sampling_method: SamplingMethod, cmap: CommitMap,
     if kwargs['revs_per_year'] > 0:
         extend_with_revs_per_year(case_study, cmap, **kwargs)
 
-    if (sampling_method is SamplingMethod.half_norm
-            or sampling_method is SamplingMethod.uniform):
+    if (sampling_method is SamplingMethod.half_norm or
+            sampling_method is SamplingMethod.uniform):
         extend_with_distrib_sampling(case_study, cmap, **kwargs)
 
     if kwargs['extra_revs']:
@@ -503,20 +718,8 @@ def generate_case_study(sampling_method: SamplingMethod, cmap: CommitMap,
 ###############################################################################
 
 
-class ExtenderStrategy(Enum):
-    """
-    Enum for all currently supported extender strategies.
-    """
-
-    simple_add = 1
-    distrib_add = 2
-    smooth_plot = 3
-    per_year_add = 4
-
-
 def extend_case_study(case_study: CaseStudy, cmap: CommitMap,
-                      ext_strategy: ExtenderStrategy,
-                      **kwargs: tp.Any) -> None:
+                      ext_strategy: ExtenderStrategy, **kwargs: tp.Any) -> None:
     """
     Extend a case study with new revisions.
     """
@@ -529,6 +732,8 @@ def extend_case_study(case_study: CaseStudy, cmap: CommitMap,
         extend_with_smooth_revs(case_study, cmap, **kwargs)
     elif ext_strategy is ExtenderStrategy.per_year_add:
         extend_with_revs_per_year(case_study, cmap, **kwargs)
+    elif ext_strategy is ExtenderStrategy.release_add:
+        extend_with_release_revs(case_study, cmap, **kwargs)
 
 
 @check_required_args(['extra_revs', 'merge_stage'])
@@ -545,15 +750,18 @@ def extend_with_extra_revs(case_study: CaseStudy, cmap: CommitMap,
         if any(map(rev_item[0].startswith, extra_revs))
     ]
 
-    case_study.include_revisions(new_rev_items, merge_stage, True)
+    case_study.include_revisions(new_rev_items, merge_stage, True,
+                                 ExtenderStrategy.simple_add)
 
 
-@check_required_args(['git_path', 'revs_per_year', 'merge_stage', 'revs_year_sep'])
+@check_required_args(
+    ['git_path', 'revs_per_year', 'merge_stage', 'revs_year_sep'])
 def extend_with_revs_per_year(case_study: CaseStudy, cmap: CommitMap,
                               **kwargs: tp.Any) -> None:
     """
     Extend a case_study with n revisions per year.
     """
+
     def parse_int_string(string: tp.Optional[str]) -> tp.Optional[int]:
         if string is None:
             return None
@@ -612,7 +820,8 @@ def extend_with_revs_per_year(case_study: CaseStudy, cmap: CommitMap,
         else:
             stage_index = kwargs['merge_stage']
 
-        case_study.include_revisions(new_rev_items, stage_index, True)
+        case_study.include_revisions(new_rev_items, stage_index, True,
+                                     ExtenderStrategy.per_year_add)
         new_rev_items.clear()
 
 
@@ -626,20 +835,22 @@ def extend_with_distrib_sampling(case_study: CaseStudy, cmap: CommitMap,
     # of the list is the same as the distribution over the commits age history
     revision_list = [
         rev_item for rev_item in sorted([x for x in cmap.mapping_items()],
-                                        key=lambda x: x[1]) if not case_study.
-        has_revision_in_stage(rev_item[0], kwargs['merge_stage'])
+                                        key=lambda x: x[1]) if
+        not case_study.has_revision_in_stage(rev_item[0], kwargs['merge_stage'])
     ]
 
     distribution_function = kwargs['distribution'].gen_distribution_function()
 
-    case_study.include_revisions(
-        sample_n(distribution_function, kwargs['num_rev'], revision_list),
-        kwargs['merge_stage'])
+    case_study.include_revisions(sample_n(distribution_function,
+                                          kwargs['num_rev'], revision_list),
+                                 kwargs['merge_stage'],
+                                 extender_strategy=ExtenderStrategy.distrib_add,
+                                 sampling_method=kwargs['distribution'])
 
 
 def sample_n(distrib_func: tp.Callable[[int], np.ndarray], num_samples: int,
              list_to_sample: tp.List[tp.Tuple[str, int]]
-             ) -> tp.List[tp.Tuple[str, int]]:
+            ) -> tp.List[tp.Tuple[str, int]]:
     """
     Return a list of n unique samples.
     If the list to sample is smaller than the number of samples the full list
@@ -660,8 +871,10 @@ def sample_n(distrib_func: tp.Callable[[int], np.ndarray], num_samples: int,
     probabilities = distrib_func(len(list_to_sample))
     probabilities /= probabilities.sum()
 
-    sampled_idxs = np.random.choice(
-        len(list_to_sample), num_samples, replace=False, p=probabilities)
+    sampled_idxs = np.random.choice(len(list_to_sample),
+                                    num_samples,
+                                    replace=False,
+                                    p=probabilities)
 
     return [list_to_sample[idx] for idx in sampled_idxs]
 
@@ -690,9 +903,27 @@ def extend_with_smooth_revs(case_study: CaseStudy, cmap: CommitMap,
     ]
     if new_revisions:
         print("Found new revisions: ", new_revisions)
-        case_study.include_revisions([(rev, cmap.time_id(rev))
-                                      for rev in new_revisions],
-                                     kwargs['merge_stage'])
+        case_study.include_revisions(
+            [(rev, cmap.time_id(rev)) for rev in new_revisions],
+            kwargs['merge_stage'],
+            extender_strategy=ExtenderStrategy.smooth_plot)
     else:
         print("No new revisions found that where not already "
               "present in the case study.")
+
+
+@check_required_args(['project', 'release_type', 'merge_stage'])
+def extend_with_release_revs(case_study: CaseStudy, cmap: CommitMap,
+                             **kwargs: tp.Any) -> None:
+    """
+    Extend a case study with revisions marked as a release.
+    This extender relies on the project to determine appropriate revisions.
+    """
+    project: Project = get_project_cls_by_name(kwargs['project'])
+    release_revisions: tp.List[str] = project.get_release_revisions(
+        kwargs['release_type'])
+    case_study.include_revisions(
+        [(rev, cmap.time_id(rev)) for rev in release_revisions],
+        kwargs['merge_stage'],
+        extender_strategy=ExtenderStrategy.release_add,
+        release_type=kwargs['release_type'])

@@ -6,6 +6,7 @@ Main drivers for VaRA-TS
 import os
 import sys
 import argparse
+import typing as tp
 from pathlib import Path
 from argparse_utils import enum_action
 
@@ -16,17 +17,23 @@ from varats.settings import get_value_or_default,\
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
 from varats.vara_manager import (setup_vara, BuildType, LLVMProjects,
+                                 convert_to_llvmprojects_enum,
+                                 generate_full_list_of_llvmprojects,
+                                 generate_vara_list_of_llvmprojects,
                                  ProcessManager)
 from varats.tools.commit_map import (store_commit_map, get_commit_map,
                                      create_lazy_commit_map_loader)
 from varats.plots.plots import (extend_parser_with_plot_args, build_plot,
                                 PlotTypes)
+from varats.plots.plot import PlotDataEmpty
 from varats.utils.cli_util import cli_yn_choice
 from varats.utils.project_util import get_local_project_git_path
-from varats.paper.case_study import (
-    SamplingMethod, ExtenderStrategy, extend_case_study, generate_case_study,
-    load_case_study_from_file, store_case_study)
+from varats.paper.case_study import (SamplingMethod, ExtenderStrategy,
+                                     extend_case_study, generate_case_study,
+                                     load_case_study_from_file,
+                                     store_case_study, ReleaseType)
 import varats.paper.paper_config_manager as PCM
+from varats.paper.paper_config import get_paper_config
 from varats.data.report import MetaReport
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
@@ -50,9 +57,8 @@ class VaRATSGui:
             err = QMessageBox()
             err.setIcon(QMessageBox.Warning)
             err.setWindowTitle("Missing config file.")
-            err.setText(
-                "Could not find VaRA config file.\n"
-                "Should we create a config file in the current folder?")
+            err.setText("Could not find VaRA config file.\n"
+                        "Should we create a config file in the current folder?")
             err.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
             answer = err.exec_()
             if answer == QMessageBox.Yes:
@@ -98,13 +104,22 @@ def main_graph_view() -> None:
     driver.main()
 
 
-def update_term(text: str) -> None:
+def update_term(text: str, enable_inline: bool = False) -> None:
     """
-    Print/Update terminal text without producing new lines.
+    Print/Update terminal text with/without producing new lines.
+
+    Args:
+        text: output text that should be printed
+        enable_inline: print lines without new lines
     """
-    text = text.replace(os.linesep, ' ')
-    _, columns = os.popen('/bin/stty size', 'r').read().split()
-    print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r', flush=True)
+    text = text.replace(os.linesep, '').strip()
+    if not text:
+        return
+    if enable_inline:
+        _, columns = os.popen('/bin/stty size', 'r').read().split()
+        print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r', flush=True)
+    else:
+        print(text)
 
 
 def build_setup() -> None:
@@ -118,47 +133,43 @@ def build_setup() -> None:
 
     parser = argparse.ArgumentParser("Build LLVM environment")
 
-    parser.add_argument(
-        "-c",
-        "--config",
-        action="store_true",
-        default=False,
-        help="Only create a VaRA config file.")
-    parser.add_argument(
-        "-i",
-        "--init",
-        action="store_true",
-        default=False,
-        help="Initializes VaRA and all components.")
-    parser.add_argument(
-        "-u",
-        "--update",
-        action="store_true",
-        default=False,
-        help="Updates VaRA and all components.")
-    parser.add_argument(
-        "-b",
-        "--build",
-        help="Builds VaRA and all components.",
-        action="store_true",
-        default=False)
-    parser.add_argument(
-        "--version", default=None, nargs="?", help="Version to download.")
-    parser.add_argument(
-        "--buildtype",
-        default="dev",
-        nargs="?",
-        help="Build type to use for LLVM and all subpackages.")
-    parser.add_argument(
-        "llvmfolder",
-        help="Folder of LLVM. (Optional)",
-        nargs='?',
-        default=llvm_src_dir)
-    parser.add_argument(
-        "installprefix",
-        default=llvm_install_dir,
-        nargs='?',
-        help="Folder to install LLVM. (Optional)")
+    parser.add_argument("-c",
+                        "--config",
+                        action="store_true",
+                        default=False,
+                        help="Only create a VaRA config file.")
+    parser.add_argument("-i",
+                        "--init",
+                        action="store_true",
+                        default=False,
+                        help="Initializes VaRA and all components.")
+    parser.add_argument("-u",
+                        "--update",
+                        action="store_true",
+                        default=False,
+                        help="Updates VaRA and all components.")
+    parser.add_argument("-b",
+                        "--build",
+                        help="Builds VaRA and all components.",
+                        action="store_true",
+                        default=False)
+    parser.add_argument("--version",
+                        default=None,
+                        nargs="?",
+                        help="Version to download.")
+    parser.add_argument("--buildtype",
+                        default="dev",
+                        choices=['dev', 'opt', 'pgo', 'dbg', 'dev-san'],
+                        nargs="?",
+                        help="Build type to use for LLVM and all subpackages.")
+    parser.add_argument("llvmfolder",
+                        help="Folder of LLVM. (Optional)",
+                        nargs='?',
+                        default=llvm_src_dir)
+    parser.add_argument("installprefix",
+                        default=llvm_install_dir,
+                        nargs='?',
+                        help="Folder to install LLVM. (Optional)")
 
     args = parser.parse_args()
 
@@ -205,6 +216,9 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
 
     >>> parse_string_to_build_type("OPT")
     <BuildType.OPT: 3>
+
+    >>> parse_string_to_build_type("DEV-SAN")
+    <BuildType.DEV_SAN: 5>
     """
     build_type = build_type.upper()
     if build_type == "DBG":
@@ -215,47 +229,56 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
         return BuildType.OPT
     if build_type == "PGO":
         return BuildType.PGO
+    if build_type == "DEV-SAN":
+        return BuildType.DEV_SAN
 
     return BuildType.DEV
 
 
-def main_gen_graph() -> None:
+def main_plot() -> None:
     """
     Main function for the graph generator.
 
-    `vara-gen-graph`
+    `vara-plot`
     """
-    parser = argparse.ArgumentParser("VaRA graph generator")
-    parser.add_argument(
-        "plot_type", action=enum_action(PlotTypes), help="Plot to generate")
-    parser.add_argument(
-        "-r", "--result-folder", help="Folder with result files")
+    parser = argparse.ArgumentParser("VaRA plot generator")
+    parser.add_argument("plot_type",
+                        action=enum_action(PlotTypes),
+                        help="Plot to generate")
+    parser.add_argument("-r",
+                        "--result-folder",
+                        help="Folder with result files")
     parser.add_argument("-p", "--project", help="Project name")
+    parser.add_argument("-c",
+                        "--cmap",
+                        help="Path to commit map",
+                        default=None,
+                        type=Path)
+    parser.add_argument("-v",
+                        "--view",
+                        help="Show the plot instead of saving it",
+                        action='store_true',
+                        default=False)
+    parser.add_argument("--cs-path", help="Path to case_study", default=None)
     parser.add_argument(
-        "-c", "--cmap", help="Path to commit map", default=None, type=Path)
-    parser.add_argument(
-        "-v",
-        "--view",
-        help="Show the plot instead of saving it",
+        "--paper-config",
+        help="Generate plots for all case studies in the current paper config",
         action='store_true',
         default=False)
-    parser.add_argument("--cs-path", help="Path to case_study", default=None)
     parser.add_argument(
         "--sep-stages",
         help="Separate different stages of case study in the plot.",
         action='store_true',
         default=False)
+    parser.add_argument("--report-type",
+                        help="The report type to generate the plot for."
+                        "Plots may ignore this option.",
+                        default="EmptyReport")
 
     extend_parser_with_plot_args(parser)
 
-    args = {
-        k: v
-        for k, v in vars(parser.parse_args()).items() if v is not None
-    }
+    args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
 
-    if 'project' in args:
-        args['get_cmap'] = create_lazy_commit_map_loader(args['project'],
-                                                         args.get('cmap', None))
     # Setup default result folder
     if 'result_folder' not in args:
         args['result_folder'] = str(CFG['result_dir'])
@@ -264,13 +287,31 @@ def main_gen_graph() -> None:
         print("Result folder defaults to: {res_folder}".format(
             res_folder=args['result_folder']))
 
-    if 'cs_path' in args:
-        case_study_path = Path(args['cs_path'])
-        args['plot_case_study'] = load_case_study_from_file(case_study_path)
-    else:
-        args['plot_case_study'] = None
+    if args['paper_config']:
+        paper_config = get_paper_config()
+        for case_study in paper_config.get_all_case_studies():
+            project_name = case_study.project_name
+            args['project'] = project_name
+            args['get_cmap'] = create_lazy_commit_map_loader(
+                project_name, args.get('cmap', None))
 
-    build_plot(**args)
+            args['plot_case_study'] = case_study
+            try:
+                build_plot(**args)
+            except PlotDataEmpty:
+                print("Could not build plot for {} there was no data".format(
+                    project_name))
+    else:
+        if 'project' in args:
+            args['get_cmap'] = create_lazy_commit_map_loader(
+                args['project'], args.get('cmap', None))
+        if 'cs_path' in args:
+            case_study_path = Path(args['cs_path'])
+            args['plot_case_study'] = load_case_study_from_file(case_study_path)
+        else:
+            args['plot_case_study'] = None
+
+        build_plot(**args)
 
 
 def main_gen_benchbuild_config() -> None:
@@ -306,8 +347,8 @@ def main_gen_benchbuild_config() -> None:
         print("Setting BB path to: ", CFG["benchbuild_root"])
         save_config()
 
-    generate_benchbuild_config(CFG, str(CFG["benchbuild_root"]) +
-                               "/.benchbuild.yml")
+    generate_benchbuild_config(CFG,
+                               str(CFG["benchbuild_root"]) + "/.benchbuild.yml")
 
 
 def main_gen_commitmap() -> None:
@@ -317,10 +358,12 @@ def main_gen_commitmap() -> None:
     parser = argparse.ArgumentParser("vara-gen-commitmap")
     parser.add_argument("project_name", help="Name of the project")
     parser.add_argument("--path", help="Path to git repository", default=None)
-    parser.add_argument(
-        "--end", help="End of the commit range (inclusive)", default="HEAD")
-    parser.add_argument(
-        "--start", help="Start of the commit range (exclusive)", default=None)
+    parser.add_argument("--end",
+                        help="End of the commit range (inclusive)",
+                        default="HEAD")
+    parser.add_argument("--start",
+                        help="Start of the commit range (exclusive)",
+                        default=None)
     parser.add_argument("-o", "--output", help="Output filename")
 
     args = parser.parse_args()
@@ -381,44 +424,47 @@ def main_casestudy() -> None:
         "--paper_config",
         help="Use this paper config instead of the configured one",
         default=None)
-    status_parser.add_argument(
-        "-s",
-        "--short",
-        help="Only print a short summary",
-        action="store_true",
-        default=False)
+    status_parser.add_argument("-s",
+                               "--short",
+                               help="Only print a short summary",
+                               action="store_true",
+                               default=False)
     status_parser.add_argument(
         "--list-revs",
         help="Print a list of revisions for every stage and every case study",
         action="store_true",
         default=False)
+    status_parser.add_argument("--ws",
+                               help="Print status with stage separation",
+                               action="store_true",
+                               default=False)
     status_parser.add_argument(
-        "--ws",
-        help="Print status with stage separation",
+        "--sorted",
+        help="Sort the revisions in the order they are printed by git log.",
         action="store_true",
         default=False)
-    status_parser.add_argument(
-        "--legend",
-        help="Print status with legend",
-        action="store_true",
-        default=False)
+    status_parser.add_argument("--legend",
+                               help="Print status with legend",
+                               action="store_true",
+                               default=False)
 
     def add_common_args(sub_parser: argparse.ArgumentParser) -> None:
         """
         Group common args to provide all args on different sub parsers.
         """
-        sub_parser.add_argument(
-            "--git-path", help="Path to git repository", default=None)
-        sub_parser.add_argument(
-            "-p", "--project", help="Project name", default=None)
-        sub_parser.add_argument(
-            "--end",
-            help="End of the commit range (inclusive)",
-            default="HEAD")
-        sub_parser.add_argument(
-            "--start",
-            help="Start of the commit range (exclusive)",
-            default=None)
+        sub_parser.add_argument("--git-path",
+                                help="Path to git repository",
+                                default=None)
+        sub_parser.add_argument("-p",
+                                "--project",
+                                help="Project name",
+                                default=None)
+        sub_parser.add_argument("--end",
+                                help="End of the commit range (inclusive)",
+                                default="HEAD")
+        sub_parser.add_argument("--start",
+                                help="Start of the commit range (exclusive)",
+                                default=None)
         sub_parser.add_argument(
             "--extra-revs",
             nargs="+",
@@ -436,11 +482,10 @@ def main_casestudy() -> None:
             help=
             "Separate the revisions in different stages per year (when using \'--revs-per-year\')."
         )
-        sub_parser.add_argument(
-            "--num-rev",
-            type=int,
-            default=10,
-            help="Number of revisions to select.")
+        sub_parser.add_argument("--num-rev",
+                                type=int,
+                                default=10,
+                                help="Number of revisions to select.")
 
     gen_parser = sub_parsers.add_parser('gen', help="Generate a case study.")
     gen_parser.add_argument(
@@ -448,55 +493,64 @@ def main_casestudy() -> None:
         help="Path to paper_config folder (e.g., paper_configs/ase-17)")
 
     gen_parser.add_argument("distribution", action=enum_action(SamplingMethod))
-    gen_parser.add_argument(
-        "-v", "--version", type=int, default=0, help="Case study version.")
+    gen_parser.add_argument("-v",
+                            "--version",
+                            type=int,
+                            default=0,
+                            help="Case study version.")
     add_common_args(gen_parser)
 
     # Extender
-    ext_parser = sub_parsers.add_parser(
-        'ext', help="Extend an existing case study.")
+    ext_parser = sub_parsers.add_parser('ext',
+                                        help="Extend an existing case study.")
     ext_parser.add_argument("case_study_path", help="Path to case_study")
-    ext_parser.add_argument(
-        "strategy",
-        action=enum_action(ExtenderStrategy),
-        help="Extender strategy")
-    ext_parser.add_argument(
-        "--distribution", action=enum_action(SamplingMethod))
+    ext_parser.add_argument("strategy",
+                            action=enum_action(ExtenderStrategy),
+                            help="Extender strategy")
+    ext_parser.add_argument("--distribution",
+                            action=enum_action(SamplingMethod))
+    ext_parser.add_argument("--release-type", action=enum_action(ReleaseType))
     ext_parser.add_argument(
         "--merge-stage",
         default=-1,
         type=int,
-        help="Merge the new revision into stage `n`, defaults to last stage. "
-        + "Use '+' to add a new stage.")
+        help="Merge the new revision into stage `n`, defaults to last stage. " +
+        "Use '+' to add a new stage.")
     ext_parser.add_argument(
         "--boundary-gradient",
         type=int,
         default=5,
         help="Maximal expected gradient in percent between " +
         "two revisions, e.g., 5 for 5%%")
-    ext_parser.add_argument(
-        "--plot-type",
-        action=enum_action(PlotTypes),
-        help="Plot to calculate new revisions from.")
+    ext_parser.add_argument("--plot-type",
+                            action=enum_action(PlotTypes),
+                            help="Plot to calculate new revisions from.")
+    ext_parser.add_argument("--report-type",
+                            help="Passed to the plot given via --plot-type.",
+                            default="EmptyReport")
     ext_parser.add_argument(
         "--result-folder",
         help="Maximal expected gradient in percent between two revisions")
     add_common_args(ext_parser)
 
-    package_parser = sub_parsers.add_parser(
-        'package', help="Case study packaging util")
+    package_parser = sub_parsers.add_parser('package',
+                                            help="Case study packaging util")
     package_parser.add_argument("-o", "--output", help="Output file")
+    package_parser.add_argument("--filter-regex",
+                                help="Provide a regex to only include case "
+                                "studies that match the filter.",
+                                type=str,
+                                default=".*")
     package_parser.add_argument(
-        "--filter-regex",
-        help="Provide a regex to only include case "
-        "studies that match the filter.",
+        "--report_names",
+        help=("Provide a report name to "
+              "select which files are considered for the status"),
+        choices=MetaReport.REPORT_TYPES.keys(),
         type=str,
-        default=".*")
+        nargs="*",
+        default=[])
 
-    args = {
-        k: v
-        for k, v in vars(parser.parse_args()).items() if v is not None
-    }
+    args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
 
     if 'subcommand' not in args:
         parser.print_help()
@@ -513,9 +567,10 @@ def main_casestudy() -> None:
         if args['short'] and args['ws']:
             parser.error("At most one argument of: --short, --ws can be used.")
 
-        PCM.show_status_of_case_studies(
-            args['report_name'], args['filter_regex'], args['short'],
-            args['list_revs'], args['ws'], args['legend'])
+        PCM.show_status_of_case_studies(args['report_name'],
+                                        args['filter_regex'], args['short'],
+                                        args['sorted'], args['list_revs'],
+                                        args['ws'], args['legend'])
 
     elif args['subcommand'] == 'gen' or args['subcommand'] == 'ext':
         if "project" not in args and "git_path" not in args:
@@ -534,8 +589,8 @@ def main_casestudy() -> None:
         cmap = args['get_cmap']()
 
         if args['subcommand'] == 'ext':
-            case_study = load_case_study_from_file(
-                Path(args['case_study_path']))
+            case_study = load_case_study_from_file(Path(
+                args['case_study_path']))
 
             # If no merge_stage was specified add it to the last
             if args['merge_stage'] == -1:
@@ -583,12 +638,12 @@ def main_casestudy() -> None:
 
             import re
             PCM.package_paper_config(output_path,
-                                     re.compile(args['filter_regex']))
+                                     re.compile(args['filter_regex']),
+                                     args['report_names'])
         else:
             parser.error(
                 "--output has the wrong file type extension. "
-                "Please do not provide any other file type extension than .zip"
-            )
+                "Please do not provide any other file type extension than .zip")
 
 
 def main_develop() -> None:
@@ -600,68 +655,99 @@ def main_develop() -> None:
 
     # new-branch
     new_branch_parser = sub_parsers.add_parser('new-branch')
-    new_branch_parser.add_argument(
-        'branch_name', type=str, help='Name of the new branch')
+    new_branch_parser.add_argument('branch_name',
+                                   type=str,
+                                   help='Name of the new branch')
     new_branch_parser.add_argument(
         'projects',
-        nargs='+',
-        action=enum_action(LLVMProjects),
+        nargs='*',
+        action='store',
+        choices=[
+            'all', 'all-vara', 'vara',
+            *[x.project_name for x in generate_full_list_of_llvmprojects()]
+        ],
+        default=None,
         help="Projects to work on.")
 
     # checkout
     checkout_parser = sub_parsers.add_parser('checkout')
-    checkout_parser.add_argument(
-        'branch_name', type=str, help='Name of the new branch')
+    checkout_parser.add_argument('branch_name',
+                                 type=str,
+                                 help='Name of the new branch')
     checkout_parser.add_argument(
         'projects',
-        nargs='+',
-        action=enum_action(LLVMProjects),
+        nargs='*',
+        action='store',
+        default=None,
+        choices=[
+            'all', 'all-vara', 'vara',
+            *[x.project_name for x in generate_full_list_of_llvmprojects()]
+        ],
         help="Projects to work on.")
-    checkout_parser.add_argument('-r', '--remote', action='store_true')
 
     # git pull
     pull_parser = sub_parsers.add_parser('pull')
     pull_parser.add_argument(
         'projects',
-        nargs='+',
-        action=enum_action(LLVMProjects),
+        nargs='*',
+        action='store',
+        choices=[
+            'all', 'all-vara', 'vara',
+            *[x.project_name for x in generate_full_list_of_llvmprojects()]
+        ],
+        default=None,
         help="Projects to work on.")
 
     # git push
     push_parser = sub_parsers.add_parser('push')
     push_parser.add_argument(
         'projects',
-        nargs='+',
-        action=enum_action(LLVMProjects),
+        nargs='*',
+        action='store',
+        choices=[
+            'all', 'all-vara', 'vara',
+            *[x.project_name for x in generate_full_list_of_llvmprojects()]
+        ],
+        default=None,
         help="Projects to work on.")
 
     # git status
     status_parser = sub_parsers.add_parser('status')
     status_parser.add_argument(
         'projects',
-        nargs='+',
-        action=enum_action(LLVMProjects),
-        help="Projects to work on.")
+        nargs='*',
+        action='store',
+        choices=[
+            'all', 'all-vara', 'vara',
+            *[x.project_name for x in generate_full_list_of_llvmprojects()]
+        ],
+        default=None,
+        help="Projects to work on. Or all/all-vara for all projects.")
 
     # list dev-branches
-    status_parser = sub_parsers.add_parser(
-        'f-branches', help="List all remote feature branches")
+    sub_parsers.add_parser('f-branches',
+                           help="List all remote feature branches")
 
     args = parser.parse_args()
-    if args.command == 'new-branch':
-        dev.create_new_branch_for_projects(args.branch_name, args.projects)
-    elif args.command == 'checkout':
-        if args.remote:
-            dev.checkout_remote_branch_for_projects(args.branch_name,
-                                                    args.projects)
+    project_list: tp.List[LLVMProjects] = []
+    if hasattr(args, "projects"):
+        if "all" in args.projects:
+            project_list = generate_full_list_of_llvmprojects()
+        elif "all-vara" in args.projects:
+            project_list = generate_vara_list_of_llvmprojects()
         else:
-            dev.checkout_branch_for_projects(args.branch_name, args.projects)
+            project_list = convert_to_llvmprojects_enum(args.projects)
+
+    if args.command == 'new-branch':
+        dev.create_new_branch_for_projects(args.branch_name, project_list)
+    elif args.command == 'checkout':
+        dev.checkout_remote_branch_for_projects(args.branch_name, project_list)
     elif args.command == 'pull':
-        dev.pull_projects(args.projects)
+        dev.pull_projects(project_list)
     elif args.command == 'push':
-        dev.push_projects(args.projects)
+        dev.push_projects(project_list)
     elif args.command == 'status':
-        dev.show_status_for_projects(args.projects)
+        dev.show_status_for_projects(project_list)
     elif args.command == 'f-branches':
         dev.show_dev_branches([
             LLVMProjects.get_project_by_name("llvm"),

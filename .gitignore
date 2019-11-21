@@ -9,3 +9,4 @@ Pipfile
 .coverage
 .mypy_cache/
 extra_tests/
+.vscode/settings.json

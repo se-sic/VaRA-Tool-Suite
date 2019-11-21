@@ -9,6 +9,7 @@ from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from plumbum import colors
+from varats.tools.commit_map import create_lazy_commit_map_loader
 
 from varats.data.report import FileStatusExtension, MetaReport
 from varats.data.reports.commit_report import CommitReport
@@ -19,23 +20,22 @@ import varats.paper.paper_config as PC
 
 
 def show_status_of_case_studies(report_name: str, filter_regex: str,
-                                short_status: bool, print_rev_list: bool,
-                                sep_stages: bool, print_legend: bool) -> None:
+                                short_status: bool, sort: bool,
+                                print_rev_list: bool, sep_stages: bool,
+                                print_legend: bool) -> None:
     """
     Show the status of all matching case studies.
     """
-    PC.load_paper_config()
-
     current_config = PC.get_paper_config()
 
     longest_cs_name = 0
     output_case_studies = []
-    for case_study in sorted(
-            current_config.get_all_case_studies(),
-            key=lambda cs: (cs.project_name, cs.version)):
+    for case_study in sorted(current_config.get_all_case_studies(),
+                             key=lambda cs: (cs.project_name, cs.version)):
         match = re.match(
-            filter_regex, "{name}_{version}".format(
-                name=case_study.project_name, version=case_study.version))
+            filter_regex,
+            "{name}_{version}".format(name=case_study.project_name,
+                                      version=case_study.version))
         if match is not None:
             output_case_studies.append(case_study)
             longest_cs_name = max(
@@ -54,12 +54,12 @@ def show_status_of_case_studies(report_name: str, filter_regex: str,
             print(get_revision_list(case_study))
         elif short_status:
             print(
-                get_short_status(case_study, report_type, longest_cs_name,
-                                 True, total_status_occurrences))
+                get_short_status(case_study, report_type, longest_cs_name, True,
+                                 total_status_occurrences))
         else:
             print(
-                get_status(case_study, report_type, longest_cs_name,
-                           sep_stages, True, total_status_occurrences))
+                get_status(case_study, report_type, longest_cs_name, sep_stages,
+                           sort, True, total_status_occurrences))
 
     print(get_total_status(total_status_occurrences, longest_cs_name, True))
 
@@ -146,8 +146,7 @@ def get_short_status(
     the case study.
     """
     status = "CS: {project}_{version}: ".format(
-        project=case_study.project_name,
-        version=case_study.version) + "".ljust(
+        project=case_study.project_name, version=case_study.version) + "".ljust(
             longest_cs_name -
             (len(case_study.project_name) + len(str(case_study.version))), ' ')
 
@@ -164,20 +163,27 @@ def get_short_status(
     return status
 
 
-def get_status(
-        case_study: CaseStudy,
-        result_file_type: MetaReport,
-        longest_cs_name: int,
-        sep_stages: bool,
-        use_color: bool = False,
-        total_status_occurrences: tp.Optional[
-            tp.DefaultDict[FileStatusExtension, tp.Set[str]]] = None) -> str:
+def get_status(case_study: CaseStudy,
+               result_file_type: MetaReport,
+               longest_cs_name: int,
+               sep_stages: bool,
+               sort: bool,
+               use_color: bool = False,
+               total_status_occurrences: tp.Optional[
+                   tp.DefaultDict[FileStatusExtension, tp.Set[str]]] = None
+              ) -> str:
     """
     Return a string representation that describes the current status of
     the case study.
     """
     status = get_short_status(case_study, result_file_type, longest_cs_name,
                               use_color, total_status_occurrences) + "\n"
+
+    if sort:
+        cmap = create_lazy_commit_map_loader(case_study.project_name)()
+
+    def rev_time(rev: tp.Tuple[str, FileStatusExtension]) -> int:
+        return cmap.short_time_id(rev[0])
 
     if sep_stages:
         stages = case_study.stages
@@ -187,15 +193,20 @@ def get_status(
             if stage_name:
                 status += " ({})".format(stage_name)
             status += "\n"
-            for tagged_rev_state in case_study.get_revisions_status(
-                    result_file_type, stage_num):
+            tagged_revs = case_study.get_revisions_status(
+                result_file_type, stage_num)
+            if sort:
+                tagged_revs = sorted(tagged_revs, key=rev_time, reverse=True)
+            for tagged_rev_state in tagged_revs:
                 status += "    {rev} [{status}]\n".format(
                     rev=tagged_rev_state[0],
                     status=tagged_rev_state[1].get_colored_status())
     else:
-        for tagged_rev_state in list(
-                dict.fromkeys(
-                    case_study.get_revisions_status(result_file_type))):
+        tagged_revs = list(
+            dict.fromkeys(case_study.get_revisions_status(result_file_type)))
+        if sort:
+            tagged_revs = sorted(tagged_revs, key=rev_time, reverse=True)
+        for tagged_rev_state in tagged_revs:
             status += "    {rev} [{status}]\n".format(
                 rev=tagged_rev_state[0],
                 status=tagged_rev_state[1].get_colored_status())
@@ -218,31 +229,31 @@ def get_legend(use_color: bool = False) -> str:
     return legend_str
 
 
-def package_paper_config(output_file: Path,
-                         cs_filter_regex: tp.Pattern[str]) -> None:
+def package_paper_config(output_file: Path, cs_filter_regex: tp.Pattern[str],
+                         report_names: tp.List[str]) -> None:
     """
     Package all files from a paper config into a zip folder.
     """
-    cs_folder = Path(
-        str(CFG["paper_config"]["folder"]) + "/" +
-        str(CFG["paper_config"]["current_config"]))
-    result_dir = Path(str(CFG['result_dir']))
-
-    PC.load_paper_config(cs_folder)
     current_config = PC.get_paper_config()
+    result_dir = Path(str(CFG['result_dir']))
+    report_types = [
+        MetaReport.REPORT_TYPES[report_name] for report_name in report_names
+    ] if report_names else [x for x in MetaReport.REPORT_TYPES.values()]
 
     files_to_store: tp.Set[Path] = set()
     for case_study in current_config.get_all_case_studies():
         match = re.match(
-            cs_filter_regex, "{name}_{version}".format(
-                name=case_study.project_name, version=case_study.version))
+            cs_filter_regex,
+            "{name}_{version}".format(name=case_study.project_name,
+                                      version=case_study.version))
         if match is not None:
-            files_to_store.update(
-                get_newest_result_files_for_case_study(case_study, result_dir,
-                                                       CommitReport))
+            for report_type in report_types:
+                files_to_store.update(
+                    get_newest_result_files_for_case_study(
+                        case_study, result_dir, report_type))
 
     case_study_files_to_include: tp.List[Path] = []
-    for cs_file in cs_folder.iterdir():
+    for cs_file in current_config.path.iterdir():
         match = re.match(cs_filter_regex, cs_file.name)
         if match is not None:
             case_study_files_to_include.append(cs_file)

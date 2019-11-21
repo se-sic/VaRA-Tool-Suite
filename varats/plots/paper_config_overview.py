@@ -9,24 +9,63 @@ import typing as tp
 
 import matplotlib.pyplot as plt
 import matplotlib.style as style
+import pandas as pd
 import numpy as np
-import pygit2
 import seaborn as sb
 
+from varats.data.reports.commit_report import CommitMap
+from varats.data.report import MetaReport
+from varats.data.reports.empty_report import EmptyReport
 from varats.plots.plot import Plot
-from varats.data.reports.commit_report import CommitReport
-from varats.plots.plot_utils import check_required_args
+from varats.plots.plot_utils import check_required_args, find_missing_revisions
 import varats.paper.paper_config as PC
-from varats.utils.project_util import get_local_project_git_path
+from varats.utils.project_util import get_local_project_git
 
 
-def _gen_overview_plot() -> tp.Dict[str, tp.Any]:
+@check_required_args(["cmap", "project"])
+def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
+    current_config = PC.get_paper_config()
+
+    if 'report_type' in kwargs:
+        result_file_type: MetaReport = MetaReport.REPORT_TYPES[
+            kwargs['report_type']]
+    else:
+        result_file_type = EmptyReport
+    project = kwargs['project']
+    cmap: CommitMap = kwargs['cmap']
+    # load data
+    revisions_list: tp.List[pd.DataFrame] = []
+    for case_study in current_config.get_case_studies(project):
+        processed_revisions = list(
+            dict.fromkeys(case_study.processed_revisions(result_file_type)))
+
+        # dict: revision: str -> success: bool
+        for rev in case_study.revisions:
+            time_id = cmap.time_id(rev)
+            success = rev in processed_revisions
+            frame = pd.DataFrame(
+                {
+                    "commit_hash": rev,
+                    "commit_id": time_id,
+                    "status": success
+                },
+                index=[0])
+            revisions_list.append(frame)
+    revisions = pd.concat(revisions_list, ignore_index=True, sort=False)
+    return revisions
+
+
+def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
     """
     Generate the data for the PaperConfigOverviewPlot.
     """
-    PC.load_paper_config()
-
     current_config = PC.get_paper_config()
+
+    if 'report_type' in kwargs:
+        result_file_type: MetaReport = MetaReport.REPORT_TYPES[
+            kwargs['report_type']]
+    else:
+        result_file_type = EmptyReport
 
     projects: tp.Dict[str, tp.Dict[int, tp.
                                    List[tp.Tuple[str, bool]]]] = OrderedDict()
@@ -34,12 +73,8 @@ def _gen_overview_plot() -> tp.Dict[str, tp.Any]:
     for case_study in sorted(current_config.get_all_case_studies(),
                              key=lambda cs: (cs.project_name, cs.version)):
         processed_revisions = list(
-            dict.fromkeys(case_study.processed_revisions(CommitReport)))
-
-        git_path = get_local_project_git_path(case_study.project_name)
-        repo_path = pygit2.discover_repository(str(git_path))
-        repo = pygit2.Repository(repo_path)
-
+            dict.fromkeys(case_study.processed_revisions(result_file_type)))
+        repo = get_local_project_git(case_study.project_name)
         revisions: tp.Dict[int, tp.List[tp.Tuple[str, bool]]] = defaultdict(
             list)
 
@@ -79,8 +114,8 @@ def _gen_overview_plot() -> tp.Dict[str, tp.Any]:
                 num_successful_revs = np.nan
             else:
                 num_revs = len(revs_in_year)
-                num_successful_revs = sum(1 for (rev, success) in revs_in_year
-                                          if success)
+                num_successful_revs = sum(
+                    1 for (rev, success) in revs_in_year if success)
 
             revs_successful_per_year.append(num_successful_revs)
             revs_total_per_year.append(num_revs)
@@ -112,12 +147,32 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
                                                revs_total.flatten())
     ])).reshape(len(project_names), len(year_range))
 
+    # Note: See the following URL for this size calculation:
+    # https://stackoverflow.com/questions/51144934/how-to-increase-the-cell-size-for-annotation-in-seaborn-heatmap
+
+    fontsize_pt = 12
+    dpi = 1200
+
+    # comput the matrix height in points and inches
+    matrix_height_pt = fontsize_pt * len(project_names) * 40
+    matrix_height_in = matrix_height_pt / dpi
+
+    # compute the required figure height
+    top_margin = 0.05
+    bottom_margin = 0.10
+    figure_height = matrix_height_in / (1 - top_margin - bottom_margin)
+
+    # build the figure instance with the desired height
+    plt.subplots(figsize=(18, figure_height),
+                 gridspec_kw=dict(top=(1 - top_margin), bottom=bottom_margin))
+
     sb.heatmap(revs_success_ratio,
                annot=labels,
                fmt='',
                cmap="BrBG",
                xticklabels=year_range,
                yticklabels=project_names,
+               linewidths=.5,
                vmin=0,
                vmax=1,
                cbar_kws={'label': 'success ratio'})
@@ -131,12 +186,11 @@ class PaperConfigOverviewPlot(Plot):
     @check_required_args(["result_folder"])
     def __init__(self, **kwargs: tp.Any) -> None:
         super(PaperConfigOverviewPlot,
-              self).__init__("paper_config_overview_plot")
-        self.__saved_extra_args = kwargs
+              self).__init__("paper_config_overview_plot", **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         style.use(self.style)
-        _plot_overview_graph(_gen_overview_plot())
+        _plot_overview_graph(_gen_overview_plot(**self.plot_kwargs))
 
     def show(self) -> None:
         self.plot(True)
@@ -145,13 +199,29 @@ class PaperConfigOverviewPlot(Plot):
     def save(self, filetype: str = 'svg') -> None:
         self.plot(False)
 
-        result_dir = Path(self.__saved_extra_args["result_folder"])
+        result_dir = Path(self.plot_kwargs["result_folder"])
 
         plt.savefig(result_dir / ("{graph_name}.{filetype}".format(
             graph_name=self.name, filetype=filetype)),
                     dpi=1200,
-                    bbox_inches="tight",
                     format=filetype)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
-        raise NotImplementedError
+        revisions = _gen_overview_plot_for_project(**self.plot_kwargs)
+        revisions.sort_values(by=['commit_id'], inplace=True)
+        cmap: CommitMap = self.plot_kwargs['cmap']
+
+        def head_cm_neighbours(lhs_cm: str, rhs_cm: str) -> bool:
+            return cmap.time_id(lhs_cm) + 1 == cmap.time_id(rhs_cm)
+
+        def should_insert_revision(last_row: tp.Any,
+                                   row: tp.Any) -> tp.Tuple[bool, float]:
+            return last_row["status"] != row["status"], 1.0
+
+        def get_commit_hash(row: tp.Any) -> str:
+            return str(row["commit_hash"])
+
+        return find_missing_revisions(revisions.iterrows(),
+                                      Path(self.plot_kwargs['git_path']), cmap,
+                                      should_insert_revision, get_commit_hash,
+                                      head_cm_neighbours)

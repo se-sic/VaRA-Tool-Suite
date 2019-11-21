@@ -86,11 +86,10 @@ class BenchBuildConfig(unittest.TestCase):
         """
         Test if all projects where added to the benchbuild config.
         """
-        excluded_experiments = ["wllvm.py",
-                                "phasar.py",
-                                "region_instrumentation.py",
-                                "commit_annotation_report.py",
-                                "extract.py"]
+        excluded_experiments = [
+            "wllvm.py", "phasar.py", "region_instrumentation.py",
+            "commit_annotation_report.py", "blame_experiment.py", "extract.py"
+        ]
 
         loaded_plugins = BB_CFG["plugins"]["experiments"].value
         self.check_all_files_in_config_list("varats/experiments/",

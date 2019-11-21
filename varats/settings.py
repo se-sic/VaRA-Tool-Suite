@@ -19,7 +19,7 @@ CFG = s.Configuration(
         },
         "version": {
             "desc": "VaRA version.",
-            "default": 80,
+            "default": 90,
         },
         "benchbuild_root": {
             "desc": "Root folder to run BenchBuild in",
@@ -39,11 +39,11 @@ CFG = s.Configuration(
         },
         "own_libgit2": {
             "default": True,
-            "desc": "Build own libgit2",
+            "desc": "Build own libgit2 [Deprecated]",
         },
         "include_phasar": {
             "default": True,
-            "desc": "Include Phasar for static analysis",
+            "desc": "Include Phasar for static analysis [Deprecated]",
         },
     })
 
@@ -82,8 +82,23 @@ CFG['db'] = {
 
 CFG['experiment'] = {
     "only_missing": {
-        "default": True,
-        "desc": "Only run missing version"
+        "default":
+        True,
+        "desc":
+        "Only run missing version [Deprecated]"
+        "This option is replaced by file_status_blacklist = [Success]"
+    },
+    "file_status_blacklist": {
+        "default": ['Success', 'Blocked'],
+        "desc":
+        "Do not include revision with these file status for benchbuild "
+        "processing"
+    },
+    "file_status_whitelist": {
+        "default": [],
+        "desc":
+        "Only include revision with these file status for benchbuild "
+        "processing"
     },
     "random_order": {
         "default": False,
@@ -170,6 +185,7 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
     projects_conf.value[:] = []
     projects_conf.value[:] += [
         'varats.projects.c_projects.busybox',
+        'varats.projects.c_projects.coreutils',
         'varats.projects.c_projects.git',
         'varats.projects.c_projects.gravity',
         'varats.projects.c_projects.gzip',
@@ -183,14 +199,19 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
     ]
     projects_conf.value[:] += ['varats.projects.cpp_projects.doxygen']
     projects_conf.value[:] += ['varats.projects.test_projects.basic_tests']
+    projects_conf.value[:] += ['varats.projects.test_projects.taint_tests']
 
     # Experiments for VaRA
     projects_conf = BB_CFG["plugins"]["experiments"]
     projects_conf.value[:] = []
     projects_conf.value[:] += [
-        'varats.experiments.git_blame_annotation_report',
+        'varats.experiments.commit_report_experiment',
         'varats.experiments.marker_tester',
-        'varats.experiments.just_compile'
+        'varats.experiments.just_compile',
+        'varats.experiments.vara_full_mtfa',
+        'varats.experiments.vara_fc_taint_analysis',
+        'varats.experiments.phasar_env_analysis',
+        'varats.experiments.blame_report_experiment'
     ]
 
     # Slurm Cluster Configuration

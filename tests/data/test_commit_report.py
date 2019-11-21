@@ -233,9 +233,11 @@ class TestCommitReport(unittest.TestCase):
             cls.commit_report = CommitReport("fake_file_path")
 
         cls.success_filename = ("CR-foo-foo-7bb9ef5f8c_"
-                                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be.yaml")
+                                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
+                                "success.yaml")
         cls.fail_filename = ("CR-foo-foo-7bb9ef5f8c_"
-                             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be.failed")
+                             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be"
+                             "_failed.txt")
 
     def test_path(self):
         """
@@ -269,13 +271,14 @@ class TestCommitReport(unittest.TestCase):
         Check if the correct file status is returned for CommitReport names.
         """
         self.assertTrue(
-            CommitReport.is_result_file_success(self.success_filename))
+            CommitReport.result_file_has_status_success(self.success_filename))
         self.assertFalse(
-            CommitReport.is_result_file_success(self.fail_filename))
+            CommitReport.result_file_has_status_success(self.fail_filename))
 
-        self.assertTrue(CommitReport.is_result_file_failed(self.fail_filename))
+        self.assertTrue(
+            CommitReport.result_file_has_status_failed(self.fail_filename))
         self.assertFalse(
-            CommitReport.is_result_file_failed(self.success_filename))
+            CommitReport.result_file_has_status_failed(self.success_filename))
 
     def test_get_commit(self):
         """
@@ -301,7 +304,7 @@ class TestCommitReport(unittest.TestCase):
         self.assertEqual(
             CommitReport.get_file_name("foo", "foo", "7bb9ef5f8c",
                                        "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                                       FileStatusExtension.Failed),
+                                       FileStatusExtension.Failed, ".txt"),
             self.fail_filename)
 
 

@@ -29,7 +29,6 @@ class SetupWorker(QRunnable):
     """
     Setup worker to handle the setup of VaRA.
     """
-
     def __init__(self, path):
         super(SetupWorker, self).__init__()
         self.path = path
@@ -58,7 +57,8 @@ class SetupWorker(QRunnable):
                                        self._update_text)
 
             self._update_progress(7)
-            vara_manager.checkout_vara_version(self.path, CFG['version'], True)
+            vara_manager.checkout_vara_version(self.path, True, CFG['version'],
+                                               True)
 
             self._update_progress(8)
             self.signals.finished.emit()
@@ -79,7 +79,6 @@ class BuildWorker(QRunnable):
     """
     BuildWorker to build an install VaRA.
     """
-
     def __init__(self, path_to_llvm, install_prefix,
                  build_type: vara_manager.BuildType):
         super(BuildWorker, self).__init__()
@@ -97,9 +96,9 @@ class BuildWorker(QRunnable):
         Run, build an installs VaRA in a diffrent thread.
         """
         try:
-            vara_manager.build_vara(
-                Path(self.path_to_llvm), self.install_prefix, self.build_type,
-                self._update_text)
+            vara_manager.build_vara(Path(self.path_to_llvm),
+                                    self.install_prefix, self.build_type,
+                                    self._update_text)
             self.signals.finished.emit()
         except ProcessTerminatedError:
             print("Process was terminated")
@@ -109,7 +108,6 @@ class BuildSetup(QWidget, Ui_BuildSetup):
     """
     Window to control the setup and status of the local VaRA installation.
     """
-
     def __init__(self) -> None:
         super().__init__()
         self.setupUi(self)
