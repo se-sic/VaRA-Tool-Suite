@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import matplotlib.style as style
 import pandas as pd
 import numpy as np
-import pygit2
 import seaborn as sb
 
 from varats.data.reports.commit_report import CommitMap
@@ -20,7 +19,7 @@ from varats.data.reports.empty_report import EmptyReport
 from varats.plots.plot import Plot
 from varats.plots.plot_utils import check_required_args, find_missing_revisions
 import varats.paper.paper_config as PC
-from varats.utils.project_util import get_local_project_git_path
+from varats.utils.project_util import get_local_project_git
 
 
 @check_required_args(["cmap", "project"])
@@ -75,11 +74,7 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
                              key=lambda cs: (cs.project_name, cs.version)):
         processed_revisions = list(
             dict.fromkeys(case_study.processed_revisions(result_file_type)))
-
-        git_path = get_local_project_git_path(case_study.project_name)
-        repo_path = pygit2.discover_repository(str(git_path))
-        repo = pygit2.Repository(repo_path)
-
+        repo = get_local_project_git(case_study.project_name)
         revisions: tp.Dict[int, tp.List[tp.Tuple[str, bool]]] = defaultdict(
             list)
 
