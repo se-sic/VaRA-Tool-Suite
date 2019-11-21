@@ -15,7 +15,7 @@ import numpy as np
 
 from varats.data.cache_helper import build_cached_report_table, GraphCacheType
 from varats.jupyterhelper.file import load_blame_report
-from varats.plots.plot import Plot
+from varats.plots.plot import Plot, PlotDataEmpty
 from varats.data.revisions import get_processed_revisions_files
 from varats.data.reports.blame_report import (BlameReport,
                                               generate_degree_tuples,
@@ -128,8 +128,12 @@ class BlameDegree(Plot):
                 lambda x: case_study.has_revision(x['revision'].split('-')[1]),
                 axis=1)]
 
-        interaction_plot_df = cs_filter(
-            _gen_blame_interaction_data(**self.plot_kwargs))
+        interaction_plot_df = _gen_blame_interaction_data(**self.plot_kwargs)
+        if interaction_plot_df.empty:
+            raise PlotDataEmpty
+
+        interaction_plot_df = cs_filter(interaction_plot_df)
+
         # Reduce data frame to rows that match the degree type
         interaction_plot_df = interaction_plot_df[
             interaction_plot_df.degree_type == degree_type.value]
@@ -155,7 +159,9 @@ class BlameDegree(Plot):
 
         color_map = cm.get_cmap('gist_stern')
 
-        _, axis = plt.subplots()
+        fig, axis = plt.subplots()
+        fig.suptitle('Project {}'.format(self.plot_kwargs["project"]),
+                     fontsize=8)
         axis.stackplot(sorted(np.unique(interaction_plot_df['revision']),
                               key=lambda x: int(x.split('-')[0])),
                        sub_df_list,

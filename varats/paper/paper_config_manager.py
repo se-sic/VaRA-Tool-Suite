@@ -26,8 +26,6 @@ def show_status_of_case_studies(report_name: str, filter_regex: str,
     """
     Show the status of all matching case studies.
     """
-    PC.load_paper_config()
-
     current_config = PC.get_paper_config()
 
     longest_cs_name = 0
@@ -236,16 +234,11 @@ def package_paper_config(output_file: Path, cs_filter_regex: tp.Pattern[str],
     """
     Package all files from a paper config into a zip folder.
     """
-    cs_folder = Path(
-        str(CFG["paper_config"]["folder"]) + "/" +
-        str(CFG["paper_config"]["current_config"]))
+    current_config = PC.get_paper_config()
     result_dir = Path(str(CFG['result_dir']))
     report_types = [
         MetaReport.REPORT_TYPES[report_name] for report_name in report_names
     ] if report_names else [x for x in MetaReport.REPORT_TYPES.values()]
-
-    PC.load_paper_config(cs_folder)
-    current_config = PC.get_paper_config()
 
     files_to_store: tp.Set[Path] = set()
     for case_study in current_config.get_all_case_studies():
@@ -260,7 +253,7 @@ def package_paper_config(output_file: Path, cs_filter_regex: tp.Pattern[str],
                         case_study, result_dir, report_type))
 
     case_study_files_to_include: tp.List[Path] = []
-    for cs_file in cs_folder.iterdir():
+    for cs_file in current_config.path.iterdir():
         match = re.match(cs_filter_regex, cs_file.name)
         if match is not None:
             case_study_files_to_include.append(cs_file)
