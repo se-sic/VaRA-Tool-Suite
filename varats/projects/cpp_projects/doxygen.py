@@ -15,8 +15,8 @@ from plumbum.path.utils import delete
 from plumbum import local
 
 from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import wrap_paths_to_binaries, block_revisions, \
-    BugAndFixPair
+from varats.utils.project_util import (wrap_paths_to_binaries, block_revisions,
+    BugAndFixPair)
 
 
 @block_revisions([
