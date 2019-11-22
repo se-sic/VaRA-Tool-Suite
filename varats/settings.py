@@ -37,6 +37,10 @@ CFG = s.Configuration(
             "desc": "Result folder for collected results",
             "default": None,
         },
+        "plot_dir": {
+            "desc": "Folder for generated plots",
+            "default": None,
+        },
         "own_libgit2": {
             "default": True,
             "desc": "Build own libgit2 [Deprecated]",
@@ -163,8 +167,9 @@ def save_config() -> None:
         config_file = str(CFG["config_file"])
     CFG["config_file"] = path.abspath(config_file)
     if CFG["result_dir"].value is None:
-        CFG["result_dir"] = path.dirname(str(CFG["config_file"])) +\
-            "/results"
+        CFG["result_dir"] = path.dirname(str(CFG["config_file"])) + "/results"
+    if CFG["plot_dir"].value is None:
+        CFG["plot_dir"] = path.dirname(str(CFG["config_file"])) + "/plots"
 
     create_missing_folders()
     CFG.store(config_file)

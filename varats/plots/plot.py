@@ -88,10 +88,10 @@ class Plot():
         """Save the current plot to a file"""
         self.plot(False)
 
-        result_dir = Path(self.plot_kwargs["result_folder"])
+        plot_dir = Path(self.plot_kwargs["plot_dir"])
         project_name = self.plot_kwargs["project"]
 
-        plt.savefig(result_dir /
+        plt.savefig(plot_dir /
                     (project_name + "_{graph_name}{stages}.{filetype}".format(
                         graph_name=self.name,
                         stages='S' if self.plot_kwargs['sep_stages'] else '',

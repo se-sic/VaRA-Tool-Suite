@@ -286,7 +286,7 @@ def main_plot() -> None:
             args['result_folder'] += "/" + args['project']
         print("Result folder defaults to: {res_folder}".format(
             res_folder=args['result_folder']))
-
+    # TODO: adapt to plot folder
     if args['paper_config']:
         paper_config = get_paper_config()
         for case_study in paper_config.get_all_case_studies():
