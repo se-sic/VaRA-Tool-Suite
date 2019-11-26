@@ -75,7 +75,7 @@ def _build_interaction_table(report_files: tp.List[Path],
                                      load_blame_report, report_files)
 
 
-@check_required_args(["result_folder", "project", 'get_cmap'])
+@check_required_args(["project", 'get_cmap'])
 def _gen_blame_interaction_data(**kwargs: tp.Any) -> pd.DataFrame:
     commit_map = kwargs['get_cmap']()
     case_study = kwargs.get('plot_case_study', None)  # can be None

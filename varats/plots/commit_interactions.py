@@ -12,8 +12,7 @@ import pandas as pd
 import numpy as np
 
 from varats.plots.plot import Plot
-from varats.data.cache_helper import (GraphCacheType,
-                                      build_cached_report_table)
+from varats.data.cache_helper import (GraphCacheType, build_cached_report_table)
 from varats.data.reports.commit_report import CommitReport
 from varats.jupyterhelper.file import load_commit_report
 from varats.plots.plot_utils import check_required_args
@@ -36,6 +35,7 @@ def _build_interaction_table(report_files: tp.List[Path],
             - HEAD DF Interactions
 
     """
+
     def create_dataframe_layout() -> pd.DataFrame:
         df_layout = pd.DataFrame(columns=[
             'head_cm', 'CFInteractions', 'DFInteractions',
@@ -55,15 +55,15 @@ def _build_interaction_table(report_files: tp.List[Path],
         return pd.DataFrame(
             {
                 'head_cm':
-                report.head_commit,
+                    report.head_commit,
                 'CFInteractions':
-                report.number_of_cf_interactions(),
+                    report.number_of_cf_interactions(),
                 'DFInteractions':
-                report.number_of_df_interactions(),
+                    report.number_of_df_interactions(),
                 'HEAD CF Interactions':
-                cf_head_interactions_raw[0] + cf_head_interactions_raw[1],
+                    cf_head_interactions_raw[0] + cf_head_interactions_raw[1],
                 'HEAD DF Interactions':
-                df_head_interactions_raw[0] + df_head_interactions_raw[1]
+                    df_head_interactions_raw[0] + df_head_interactions_raw[1]
             },
             index=[0])
 
@@ -73,7 +73,7 @@ def _build_interaction_table(report_files: tp.List[Path],
                                      load_commit_report, report_files)
 
 
-@check_required_args(["result_folder", "project", "get_cmap"])
+@check_required_args(["project", "get_cmap"])
 def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
     """
     Generate a DataFrame, containing the amount of interactions between commits
@@ -84,14 +84,13 @@ def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
     project_name = kwargs["project"]
 
     report_files = get_processed_revisions_files(
-        project_name, CommitReport,
-        get_case_study_file_name_filter(case_study))
+        project_name, CommitReport, get_case_study_file_name_filter(case_study))
 
     data_frame = _build_interaction_table(report_files, str(project_name))
 
     data_frame['head_cm'] = data_frame['head_cm'].apply(
-        lambda x: "{num}-{head}".format(head=x,
-                                        num=commit_map.short_time_id(x)))
+        lambda x: "{num}-{head}".format(head=x, num=commit_map.short_time_id(x)
+                                       ))
 
     return data_frame
 
@@ -138,26 +137,25 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
             stage_num -= 1
 
             cf_mask = np.isfinite(data_frame.CFInteractions.values)
-            plt.plot(
-                data_frame.head_cm.values[cf_mask],
-                data_frame.CFInteractions.values[cf_mask],
-                color=next(cf_color_iter),
-                label="CFInteractions-" + str(stage_num),
-                zorder=stage_num + 1,
-                linewidth=plot_cfg['linewidth'])
+            plt.plot(data_frame.head_cm.values[cf_mask],
+                     data_frame.CFInteractions.values[cf_mask],
+                     color=next(cf_color_iter),
+                     label="CFInteractions-" + str(stage_num),
+                     zorder=stage_num + 1,
+                     linewidth=plot_cfg['linewidth'])
 
             df_mask = np.isfinite(data_frame.DFInteractions.values)
-            plt.plot(
-                data_frame.head_cm.values[df_mask],
-                data_frame.DFInteractions.values[df_mask],
-                color=next(df_color_iter),
-                label="DFInteractions-" + str(stage_num),
-                zorder=stage_num + 1,
-                linewidth=plot_cfg['linewidth'])
+            plt.plot(data_frame.head_cm.values[df_mask],
+                     data_frame.DFInteractions.values[df_mask],
+                     color=next(df_color_iter),
+                     label="DFInteractions-" + str(stage_num),
+                     zorder=stage_num + 1,
+                     linewidth=plot_cfg['linewidth'])
 
             def filter_out_stage(data_frame: pd.DataFrame) -> None:
+
                 def cf_removal_helper(row: pd.Series, stage: CSStage = stage
-                                      ) -> tp.Union[np.int64]:
+                                     ) -> tp.Union[np.int64]:
                     if stage.has_revision(row['head_cm'].split('-')[1]):
                         return np.NaN
                     return row['CFInteractions']
@@ -166,7 +164,7 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
                     cf_removal_helper, axis=1)
 
                 def df_removal_helper(row: pd.Series, stage: CSStage = stage
-                                      ) -> tp.Union[np.int64]:
+                                     ) -> tp.Union[np.int64]:
                     if stage.has_revision(row['head_cm'].split('-')[1]):
                         return np.NaN
                     return row['DFInteractions']
@@ -177,18 +175,16 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
             filter_out_stage(data_frame)
 
     else:
-        plt.plot(
-            'head_cm',
-            'CFInteractions',
-            data=data_frame,
-            color='blue',
-            linewidth=plot_cfg['linewidth'])
-        plt.plot(
-            'head_cm',
-            'DFInteractions',
-            data=data_frame,
-            color='red',
-            linewidth=plot_cfg['linewidth'])
+        plt.plot('head_cm',
+                 'CFInteractions',
+                 data=data_frame,
+                 color='blue',
+                 linewidth=plot_cfg['linewidth'])
+        plt.plot('head_cm',
+                 'DFInteractions',
+                 data=data_frame,
+                 color='red',
+                 linewidth=plot_cfg['linewidth'])
 
     # plt.ylabel("Interactions", **{'size': '10'})
     axis.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
@@ -205,18 +201,16 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
         x_label.set_rotation(270)
         x_label.set_fontfamily('monospace')
 
-    plt.plot(
-        'head_cm',
-        'HEAD CF Interactions',
-        data=data_frame,
-        color='aqua',
-        linewidth=plot_cfg['linewidth'])
-    plt.plot(
-        'head_cm',
-        'HEAD DF Interactions',
-        data=data_frame,
-        color='crimson',
-        linewidth=plot_cfg['linewidth'])
+    plt.plot('head_cm',
+             'HEAD CF Interactions',
+             data=data_frame,
+             color='aqua',
+             linewidth=plot_cfg['linewidth'])
+    plt.plot('head_cm',
+             'HEAD DF Interactions',
+             data=data_frame,
+             color='crimson',
+             linewidth=plot_cfg['linewidth'])
 
     plt.xlabel("Revisions", **{'size': '10'})
     # plt.ylabel("HEAD Interactions", **{'size': '10'})
@@ -294,11 +288,11 @@ class InteractionPlot(Plot):
                                   lhs_cm=lhs_cm,
                                   rhs_cm=rhs_cm,
                                   gradient=round(gradient, 5)))
-                        print(
-                            "Investigate: git -C {git_path} diff {lhs} {rhs}".
-                            format(git_path=Path(self.plot_kwargs['git_path']),
-                                   lhs=lhs_cm.split('-')[1],
-                                   rhs=rhs_cm.split('-')[1]))
+                        print("Investigate: git -C {git_path} diff {lhs} {rhs}".
+                              format(git_path=Path(
+                                  self.plot_kwargs['git_path']),
+                                     lhs=lhs_cm.split('-')[1],
+                                     rhs=rhs_cm.split('-')[1]))
                     else:
                         print("Unusual gradient between " +
                               "{lhs_cm} - {rhs_cm}: {gradient}".format(
@@ -309,16 +303,16 @@ class InteractionPlot(Plot):
                             (cm_num(lhs_cm) + cm_num(rhs_cm)) / 2.0)
                         new_rev = self.plot_kwargs['cmap'].c_hash(new_rev_id)
                         print(
-                            "-> Adding {rev} as new revision to the sample set"
-                            .format(rev=new_rev))
+                            "-> Adding {rev} as new revision to the sample set".
+                            format(rev=new_rev))
                         new_revs.add(new_rev)
                     print()
                 last_row = row
             return new_revs
 
         print("--- Checking CFInteractions ---")
-        missing_revs = rev_calc_helper(
-            data_frame[['head_cm', 'CFInteractions']])
+        missing_revs = rev_calc_helper(data_frame[['head_cm',
+                                                   'CFInteractions']])
 
         print("--- Checking DFInteractions ---")
         missing_revs.union(
