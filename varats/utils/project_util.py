@@ -329,7 +329,7 @@ def block_revisions(blocks: tp.List[AbstractRevisionBlocker]) -> tp.Any:
                         return True, b_entry.reason
             return False, None
 
-        cls.__initialized = False
+        cls.__blocked_revisions_initialized = False
         cls.is_blocked_revision = is_blocked_revision_impl
         return cls
 
