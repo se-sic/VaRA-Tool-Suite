@@ -316,16 +316,20 @@ def block_revisions(blocks: tp.List[AbstractRevisionBlocker]) -> tp.Any:
             Checks whether a revision is blocked or not. Also returns the
             reason for the block if available.
             """
+            # trigger caching for BlockedRevisionRanges
+            if not cls.__initialized:
+                cls.__initialized = True
+                with local.cwd(get_local_project_git_path(cls.NAME)):
+                    for block in blocks:
+                        block.init_cache(cls.NAME)
+
             for b_entry in blocks:
                 for b_item in b_entry:
                     if b_item.startswith(rev_id):
                         return True, b_entry.reason
             return False, None
 
-        # trigger caching for BlockedRevisionRanges
-        with local.cwd(get_local_project_git_path(cls.NAME)):
-            for block in blocks:
-                block.init_cache(cls.NAME)
+        cls.__blocked_revisions_initialized = False
         cls.is_blocked_revision = is_blocked_revision_impl
         return cls
 
