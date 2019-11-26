@@ -129,7 +129,9 @@ class BlameDegree(Plot):
                 axis=1)]
 
         interaction_plot_df = _gen_blame_interaction_data(**self.plot_kwargs)
-        if interaction_plot_df.empty:
+        if interaction_plot_df.empty or len(
+                np.unique(interaction_plot_df['revision'])) == 1:
+            # Plot can only be build with more than one data point
             raise PlotDataEmpty
 
         interaction_plot_df = cs_filter(interaction_plot_df)
