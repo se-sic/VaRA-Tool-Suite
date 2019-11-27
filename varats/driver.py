@@ -246,7 +246,7 @@ def main_plot() -> None:
                         action=enum_action(PlotTypes),
                         help="Plot to generate")
     parser.add_argument("-r",
-                        "--result-folder",
+                        "--result-output",
                         help="Folder with result files")
     parser.add_argument("-p", "--project", help="Project name")
     parser.add_argument("-c",
@@ -280,12 +280,18 @@ def main_plot() -> None:
     args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
 
     # Setup default result folder
-    if 'result_folder' not in args:
-        args['result_folder'] = str(CFG['result_dir'])
-        if 'project' in args:
-            args['result_folder'] += "/" + args['project']
-        print("Result folder defaults to: {res_folder}".format(
-            res_folder=args['result_folder']))
+    if 'result_output' not in args:
+        args['plot_dir'] = str(CFG['plots']['plot_dir'])
+    else:
+        args['plot_dir'] = args['result_output']
+        del args['result_output']  # clear parameter
+
+    if not Path(args['plot_dir']).exists():
+        print("Could not find output dir {plot_dir}".format(
+            plot_dir=args['plot_dir']))
+        return
+    else:
+        print("Writing plots to: {plot_dir}".format(plot_dir=args['plot_dir']))
 
     if args['paper_config']:
         paper_config = get_paper_config()

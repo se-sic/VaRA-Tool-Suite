@@ -183,7 +183,6 @@ class PaperConfigOverviewPlot(Plot):
     Plot showing an overview of all case-studies.
     """
 
-    @check_required_args(["result_folder"])
     def __init__(self, **kwargs: tp.Any) -> None:
         super(PaperConfigOverviewPlot,
               self).__init__("paper_config_overview_plot", **kwargs)
@@ -199,7 +198,7 @@ class PaperConfigOverviewPlot(Plot):
     def save(self, filetype: str = 'svg') -> None:
         self.plot(False)
 
-        result_dir = Path(self.plot_kwargs["result_folder"])
+        result_dir = Path(self.plot_kwargs["plot_dir"])
 
         plt.savefig(result_dir / ("{graph_name}.{filetype}".format(
             graph_name=self.name, filetype=filetype)),

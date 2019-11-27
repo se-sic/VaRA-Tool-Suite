@@ -75,7 +75,7 @@ def _build_interaction_table(report_files: tp.List[Path],
                                      load_blame_report, report_files)
 
 
-@check_required_args(["result_folder", "project", 'get_cmap'])
+@check_required_args(["project", 'get_cmap'])
 def _gen_blame_interaction_data(**kwargs: tp.Any) -> pd.DataFrame:
     commit_map = kwargs['get_cmap']()
     case_study = kwargs.get('plot_case_study', None)  # can be None
@@ -129,7 +129,9 @@ class BlameDegree(Plot):
                 axis=1)]
 
         interaction_plot_df = _gen_blame_interaction_data(**self.plot_kwargs)
-        if interaction_plot_df.empty:
+        if interaction_plot_df.empty or len(
+                np.unique(interaction_plot_df['revision'])) == 1:
+            # Plot can only be build with more than one data point
             raise PlotDataEmpty
 
         interaction_plot_df = cs_filter(interaction_plot_df)
