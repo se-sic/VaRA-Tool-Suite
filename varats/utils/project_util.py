@@ -258,10 +258,8 @@ class BugAndFixPair(AbstractRevisionBlocker):
                     for parent in current_commit.parents:
                         if blocked[parent] & CommitState.FIXED:
                             blocked[current_commit] |= CommitState.FIXED
-                            break
                         if blocked[parent] & CommitState.BUGGY:
                             blocked[current_commit] |= CommitState.BUGGY
-                            break
 
             return [
                 commit for commit in blocked
