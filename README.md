@@ -28,7 +28,7 @@ sudo apt install python3-venv # If you want to install VaRA-TS in a python virtu
 
 Additional packages are required to build VaRA from source.
 ```bash
-sudo apt install libsqlite3-dev libcurl4-openssl-dev libboost-all-dev libpapi-dev
+sudo apt install libsqlite3-dev libcurl4-openssl-dev libboost-all-dev libpapi-dev googletest
 ```
 
 ### Install VaRA-TS
