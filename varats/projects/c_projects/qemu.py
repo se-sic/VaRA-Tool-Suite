@@ -8,16 +8,13 @@ from benchbuild.settings import CFG
 from benchbuild.utils.compiler import cc, cxx
 from benchbuild.utils.run import run
 from benchbuild.project import Project
-from benchbuild.utils.cmd import make, cmake, git
+from benchbuild.utils.cmd import make
 from benchbuild.utils.download import with_git
 
 from plumbum import local
 
 from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import (get_all_revisions_between,
-                                       wrap_paths_to_binaries, block_revisions,
-                                       BlockedRevisionRange, BugAndFixPair,
-                                       BlockedRevision)
+from varats.utils.project_util import wrap_paths_to_binaries
 
 
 @with_git("https://github.com/qemu/qemu.git",
