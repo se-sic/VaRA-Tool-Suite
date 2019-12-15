@@ -136,7 +136,7 @@ class BlameDegree(Plot):
     def _degree_plot(self,
                      view_mode: bool,
                      degree_type: _DegreeType,
-                     extra_plot_cfg: tp.Dict[str, tp.Any] = {}) -> None:
+                     extra_plot_cfg: tp.Dict[str, tp.Any] = None) -> None:
         plot_cfg = {
             'linewidth': 1 if view_mode else 0.25,
             'legend_size': 8 if view_mode else 2,
@@ -145,7 +145,8 @@ class BlameDegree(Plot):
             'legend_title': 'MISSING legend_title',
             'fig_title': 'MISSING figure title',
         }
-        plot_cfg.update(extra_plot_cfg)
+        if extra_plot_cfg is not None:
+            plot_cfg.update(extra_plot_cfg)
 
         style.use(self.style)
 
