@@ -136,7 +136,8 @@ class BlameDegree(Plot):
     def _degree_plot(self,
                      view_mode: bool,
                      degree_type: _DegreeType,
-                     extra_plot_cfg: tp.Dict[str, tp.Any] = None) -> None:
+                     extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None
+                    ) -> None:
         plot_cfg = {
             'linewidth': 1 if view_mode else 0.25,
             'legend_size': 8 if view_mode else 2,
