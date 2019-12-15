@@ -216,7 +216,7 @@ def generate_author_degree_tuples(
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            author_list = map_commits(lambda c: c.author.name,
+            author_list = map_commits(lambda c: tp.cast(str, c.author.name),
                                       interaction.interacting_hashes,
                                       commit_lookup)
 
@@ -228,7 +228,7 @@ def generate_author_degree_tuples(
 
 def generate_time_delta_distribution_tuples(
         report: BlameReport, project_name: str, bucket_size: int,
-        aggregate_function: tp.Callable[[tp.List[tp.Union[int, float]]], tp.
+        aggregate_function: tp.Callable[[tp.Sequence[tp.Union[int, float]]], tp.
                                         Union[int, float]]
 ) -> tp.List[tp.Tuple[int, int]]:
     degree_dict: tp.DefaultDict[int, int] = defaultdict(int)

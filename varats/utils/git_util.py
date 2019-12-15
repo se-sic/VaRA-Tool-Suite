@@ -33,8 +33,13 @@ def create_commit_lookup_helper(project_name: str
     return get_commit
 
 
-def map_commits(func: tp.Callable[[pygit2.Commit], tp.Any],
-                c_hash_list: tp.Iterable[str], commit_lookup):
+MC_RET = tp.TypeVar("MC_RET")
+
+
+def map_commits(func: tp.Callable[[pygit2.Commit], MC_RET],
+                c_hash_list: tp.Iterable[str],
+                commit_lookup: tp.Callable[[str], pygit2.Commit]
+               ) -> tp.Sequence[MC_RET]:
     # Skip 0000 hashes that we added to mark uncommited files
     return [
         func(commit_lookup(c_hash))

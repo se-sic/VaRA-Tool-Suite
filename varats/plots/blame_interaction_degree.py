@@ -196,7 +196,7 @@ class BlameDegree(Plot):
         color_map = cm.get_cmap('gist_stern')
 
         fig, axis = plt.subplots()
-        fig.suptitle(plot_cfg['fig_title'] +
+        fig.suptitle(str(plot_cfg['fig_title']) +
                      ' - Project {}'.format(self.plot_kwargs["project"]),
                      fontsize=8)
         axis.stackplot(
@@ -209,8 +209,10 @@ class BlameDegree(Plot):
                     np.linspace(0, 1,
                                 len(np.unique(
                                     interaction_plot_df['degree']))))),
-            labels=map(plot_cfg['lable_modif'],
-                       sorted(np.unique(interaction_plot_df['degree']))),
+            # TODO (se-passau/VaRA#545): remove cast with plot config rework
+            labels=map(
+                tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
+                sorted(np.unique(interaction_plot_df['degree']))),
             linewidth=plot_cfg['linewidth'])
 
         legend = axis.legend(title=plot_cfg['legend_title'],
