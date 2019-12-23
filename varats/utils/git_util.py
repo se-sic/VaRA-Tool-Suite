@@ -40,7 +40,7 @@ def map_commits(func: tp.Callable[[pygit2.Commit], MC_RET],
                 c_hash_list: tp.Iterable[str],
                 commit_lookup: tp.Callable[[str], pygit2.Commit]
                ) -> tp.Sequence[MC_RET]:
-    # Skip 0000 hashes that we added to mark uncommited files
+    # Skip 0000 hashes that we added to mark uncommitted files
     return [
         func(commit_lookup(c_hash))
         for c_hash in c_hash_list

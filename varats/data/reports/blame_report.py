@@ -13,7 +13,6 @@ import pygit2
 
 from varats.data.report import BaseReport, MetaReport, FileStatusExtension
 from varats.data.version_header import VersionHeader
-from varats.utils.project_util import get_local_project_git
 from varats.utils.git_util import create_commit_lookup_helper, map_commits
 
 
