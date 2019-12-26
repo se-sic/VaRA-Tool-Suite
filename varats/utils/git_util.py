@@ -88,7 +88,6 @@ def __calc_code_churn_range_impl(repo_path: str,
             stdout = git(base_params, revision_range)
         else:
             stdout = git(base_params)
-        print(stdout)
         for match in GIT_LOG_MATCHER.finditer(stdout):
             commit_hash = match.group('hash')
             files_changed_m = match.group('files')
@@ -145,7 +144,7 @@ def calc_repo_code_churn(repo: pygit2.Repository
     return calc_code_churn_range(repo)
 
 
-def __print_calc_repo_code_churn(repo: pygit2.Repository):
+def __print_calc_repo_code_churn(repo: pygit2.Repository) -> None:
     """
     Prints calc repo code churn data like git log would do.
 
