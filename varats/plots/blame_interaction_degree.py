@@ -17,16 +17,22 @@ from varats.data.cache_helper import build_cached_report_table, GraphCacheType
 from varats.jupyterhelper.file import load_blame_report
 from varats.plots.plot import Plot, PlotDataEmpty
 from varats.data.revisions import get_processed_revisions_files
-from varats.data.reports.blame_report import (BlameReport,
-                                              generate_degree_tuples,
-                                              generate_author_degree_tuples)
+from varats.data.reports.blame_report import (
+    BlameReport, generate_degree_tuples, generate_author_degree_tuples,
+    generate_max_time_distribution_tuples,
+    generate_avg_time_distribution_tuples)
 from varats.plots.plot_utils import check_required_args
 from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
+
+MAX_TIME_BUCKET_SIZE = 42
+AVG_TIME_BUCKET_SIZE = 42
 
 
 class _DegreeType(Enum):
     interaction = "interaction"
     author = "author"
+    max_time = "max_time"
+    avg_time = "avg_time"
 
 
 def _build_interaction_table(report_files: tp.List[Path],
@@ -51,23 +57,44 @@ def _build_interaction_table(report_files: tp.List[Path],
             list, zip(*list_of_author_degree_occurrences))
         author_total = sum(author_amounts)
 
+        list_of_max_time_deltas = generate_max_time_distribution_tuples(
+            report, project_name, MAX_TIME_BUCKET_SIZE)
+        max_time_buckets, max_time_amounts = map(list,
+                                                 zip(*list_of_max_time_deltas))
+        total_max_time_amounts = sum(max_time_amounts)
+
+        list_of_avg_time_deltas = generate_avg_time_distribution_tuples(
+            report, project_name, AVG_TIME_BUCKET_SIZE)
+        avg_time_buckets, avg_time_amounts = map(list,
+                                                 zip(*list_of_avg_time_deltas))
+        total_avg_time_amounts = sum(avg_time_amounts)
+
+        amount_of_entries = len(degrees + author_degrees + max_time_buckets +
+                                avg_time_buckets)
+
         return pd.DataFrame(
             {
-                'revision': [report.head_commit] *
-                            len(degrees + author_degrees),
-                'degree_type': [_DegreeType.interaction.value] * len(degrees) +
-                               [_DegreeType.author.value] * len(author_degrees),
+                'revision': [report.head_commit] * amount_of_entries,
+                'degree_type':
+                    [_DegreeType.interaction.value] * len(degrees) +
+                    [_DegreeType.author.value] * len(author_degrees) +
+                    [_DegreeType.max_time.value] * len(max_time_buckets) +
+                    [_DegreeType.avg_time.value] * len(avg_time_buckets),
                 'degree':
-                    degrees + author_degrees,
+                    degrees + author_degrees + max_time_buckets +
+                    avg_time_buckets,
                 'amount':
-                    amounts + author_amounts,
+                    amounts + author_amounts + max_time_amounts +
+                    avg_time_amounts,
                 'fraction':
                     np.concatenate([
                         np.divide(amounts, total),
-                        np.divide(author_amounts, author_total)
+                        np.divide(author_amounts, author_total),
+                        np.divide(max_time_amounts, total_max_time_amounts),
+                        np.divide(avg_time_amounts, total_avg_time_amounts)
                     ]),
             },
-            index=range(0, len(degrees + author_degrees)))
+            index=range(0, amount_of_entries))
 
     return build_cached_report_table(GraphCacheType.BlameInteractionDegreeData,
                                      project_name, create_dataframe_layout,
@@ -106,12 +133,21 @@ class BlameDegree(Plot):
     def show(self) -> None:
         """Show the current plot"""
 
-    def _degree_plot(self, view_mode: bool, degree_type: _DegreeType) -> None:
+    def _degree_plot(self,
+                     view_mode: bool,
+                     degree_type: _DegreeType,
+                     extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None
+                    ) -> None:
         plot_cfg = {
             'linewidth': 1 if view_mode else 0.25,
             'legend_size': 8 if view_mode else 2,
-            'xtick_size': 10 if view_mode else 2
+            'xtick_size': 10 if view_mode else 2,
+            'lable_modif': lambda x: x,
+            'legend_title': 'MISSING legend_title',
+            'fig_title': 'MISSING figure title',
         }
+        if extra_plot_cfg is not None:
+            plot_cfg.update(extra_plot_cfg)
 
         style.use(self.style)
 
@@ -162,22 +198,26 @@ class BlameDegree(Plot):
         color_map = cm.get_cmap('gist_stern')
 
         fig, axis = plt.subplots()
-        fig.suptitle('Project {}'.format(self.plot_kwargs["project"]),
+        fig.suptitle(str(plot_cfg['fig_title']) +
+                     ' - Project {}'.format(self.plot_kwargs["project"]),
                      fontsize=8)
-        axis.stackplot(sorted(np.unique(interaction_plot_df['revision']),
-                              key=lambda x: int(x.split('-')[0])),
-                       sub_df_list,
-                       edgecolor='black',
-                       colors=reversed(
-                           color_map(
-                               np.linspace(
-                                   0, 1,
-                                   len(np.unique(
-                                       interaction_plot_df['degree']))))),
-                       labels=sorted(np.unique(interaction_plot_df['degree'])),
-                       linewidth=plot_cfg['linewidth'])
+        axis.stackplot(
+            sorted(np.unique(interaction_plot_df['revision']),
+                   key=lambda x: int(x.split('-')[0])),
+            sub_df_list,
+            edgecolor='black',
+            colors=reversed(
+                color_map(
+                    np.linspace(0, 1,
+                                len(np.unique(
+                                    interaction_plot_df['degree']))))),
+            # TODO (se-passau/VaRA#545): remove cast with plot config rework
+            labels=map(
+                tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
+                sorted(np.unique(interaction_plot_df['degree']))),
+            linewidth=plot_cfg['linewidth'])
 
-        legend = axis.legend(title='Interaction degrees',
+        legend = axis.legend(title=plot_cfg['legend_title'],
                              loc='upper left',
                              prop={
                                  'size': plot_cfg['legend_size'],
@@ -207,7 +247,11 @@ class BlameInteractionDegree(BlameDegree):
                                                      **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        self._degree_plot(view_mode, _DegreeType.interaction)
+        extra_plot_cfg = {
+            'legend_title': 'Interaction degrees',
+            'fig_title': 'Blame interactions'
+        }
+        self._degree_plot(view_mode, _DegreeType.interaction, extra_plot_cfg)
 
     def show(self) -> None:
         self.plot(True)
@@ -226,7 +270,71 @@ class BlameAuthorDegree(BlameDegree):
         super(BlameAuthorDegree, self).__init__('b_author_degree', **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        self._degree_plot(view_mode, _DegreeType.author)
+        extra_plot_cfg = {
+            'legend_title': 'Author interaction degrees',
+            'fig_title': 'Author blame interactions'
+        }
+        self._degree_plot(view_mode, _DegreeType.author, extra_plot_cfg)
+
+    def show(self) -> None:
+        self.plot(True)
+        plt.show()
+
+    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+        raise NotImplementedError
+
+
+class BlameMaxTimeDistribution(BlameDegree):
+    """
+    Plotting the degree of max times differences for all blame interactions.
+    """
+
+    def __init__(self, **kwargs: tp.Any):
+        super(BlameMaxTimeDistribution, self).__init__('b_maxtime_distribution',
+                                                       **kwargs)
+
+    def plot(self, view_mode: bool) -> None:
+        extra_plot_cfg = {
+            'lable_modif':
+                lambda x: "{start}-{end}".format(
+                    start=x * AVG_TIME_BUCKET_SIZE,
+                    end=((x + 1) * AVG_TIME_BUCKET_SIZE) - 1),
+            'legend_title':
+                'max CommitTimeDelta',
+            'fig_title':
+                'Max time distribution'
+        }
+        self._degree_plot(view_mode, _DegreeType.max_time, extra_plot_cfg)
+
+    def show(self) -> None:
+        self.plot(True)
+        plt.show()
+
+    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+        raise NotImplementedError
+
+
+class BlameAvgTimeDistribution(BlameDegree):
+    """
+    Plotting the degree of avg times differences for all blame interactions.
+    """
+
+    def __init__(self, **kwargs: tp.Any):
+        super(BlameAvgTimeDistribution, self).__init__('b_avgtime_distribution',
+                                                       **kwargs)
+
+    def plot(self, view_mode: bool) -> None:
+        extra_plot_cfg = {
+            'lable_modif':
+                lambda x: "{start}-{end}".format(
+                    start=x * AVG_TIME_BUCKET_SIZE,
+                    end=((x + 1) * AVG_TIME_BUCKET_SIZE) - 1),
+            'legend_title':
+                'avg CommitTimeDelta',
+            'fig_title':
+                'Average time distribution'
+        }
+        self._degree_plot(view_mode, _DegreeType.avg_time, extra_plot_cfg)
 
     def show(self) -> None:
         self.plot(True)

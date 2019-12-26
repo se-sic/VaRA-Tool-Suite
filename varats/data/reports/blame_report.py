@@ -6,12 +6,14 @@ import typing as tp
 from pathlib import Path
 from collections import defaultdict
 import yaml
+from datetime import datetime
+import numpy as np
 
 import pygit2
 
 from varats.data.report import BaseReport, MetaReport, FileStatusExtension
 from varats.data.version_header import VersionHeader
-from varats.utils.project_util import get_local_project_git
+from varats.utils.git_util import create_commit_lookup_helper, map_commits
 
 
 class BlameInstInteractions():
@@ -208,45 +210,62 @@ def generate_author_degree_tuples(
     an interaction with this degree was found in the report.
     """
 
-    def translate_to_authors(hash_list: tp.List[str],
-                             get_commit: tp.Callable[[str], pygit2.Commit]
-                            ) -> tp.List[str]:
-        author_list = []
-        for c_hash in hash_list:
-            commit = get_commit(c_hash)
-            if commit is None:
-                if c_hash == "0000000000000000000000000000000000000000":
-                    print("Project {project} was analyzed with uncommited ".
-                          format(project=project_name) +
-                          "changes, ignoring changes in analysis.")
-                else:
-                    raise LookupError(
-                        "Could not find commit {commit} in {project}".format(
-                            commit=c_hash, project=project_name))
-            else:
-                author_list.append(commit.author.name)
-        return author_list
-
     degree_dict: tp.DefaultDict[int, int] = defaultdict(int)
-    cache_dict: tp.Dict[str, pygit2.Commit] = {}
-
-    repo = get_local_project_git(project_name)
-
-    def get_commit(c_hash: str) -> pygit2.Commit:
-        if c_hash in cache_dict:
-            return cache_dict[c_hash]
-
-        commit = repo.get(c_hash)
-        cache_dict[c_hash] = commit
-        return commit
+    commit_lookup = create_commit_lookup_helper(project_name)
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            author_list = translate_to_authors(interaction.interacting_hashes,
-                                               get_commit)
+            author_list = map_commits(lambda c: tp.cast(str, c.author.name),
+                                      interaction.interacting_hashes,
+                                      commit_lookup)
+
             degree = len(set(author_list))
             degree_dict[degree] += interaction.amount
 
     return [(k, v) for k, v in degree_dict.items()]
 
 
+def generate_time_delta_distribution_tuples(
+        report: BlameReport, project_name: str, bucket_size: int,
+        aggregate_function: tp.Callable[[tp.Sequence[tp.Union[int, float]]], tp.
+                                        Union[int, float]]
+) -> tp.List[tp.Tuple[int, int]]:
+    degree_dict: tp.DefaultDict[int, int] = defaultdict(int)
+    commit_lookup = create_commit_lookup_helper(project_name)
+
+    for func_entry in report.function_entries:
+        for interaction in func_entry.interactions:
+            if (interaction.base_hash ==
+                    "0000000000000000000000000000000000000000"):
+                continue
+
+            base_commit = commit_lookup(interaction.base_hash)
+            base_c_time = datetime.utcfromtimestamp(base_commit.commit_time)
+
+            def translate_to_time_deltas2(commit: pygit2.Commit) -> int:
+                other_c_time = datetime.utcfromtimestamp(commit.commit_time)
+                return abs((base_c_time - other_c_time).days)
+
+            author_list = map_commits(translate_to_time_deltas2,
+                                      interaction.interacting_hashes,
+                                      commit_lookup)
+
+            degree = aggregate_function(author_list) if author_list else 0
+            bucket = round(degree / bucket_size)
+            degree_dict[bucket] += interaction.amount
+
+    return [(k, v) for k, v in degree_dict.items()]
+
+
+def generate_avg_time_distribution_tuples(report: BlameReport,
+                                          project_name: str, bucket_size: int
+                                         ) -> tp.List[tp.Tuple[int, int]]:
+    return generate_time_delta_distribution_tuples(report, project_name,
+                                                   bucket_size, np.average)
+
+
+def generate_max_time_distribution_tuples(report: BlameReport,
+                                          project_name: str, bucket_size: int
+                                         ) -> tp.List[tp.Tuple[int, int]]:
+    return generate_time_delta_distribution_tuples(report, project_name,
+                                                   bucket_size, max)

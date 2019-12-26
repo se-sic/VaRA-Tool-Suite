@@ -17,8 +17,8 @@ def __check_required_args_impl(required_args: tp.List[str],
     for arg in required_args:
         if arg not in kwargs:
             raise AssertionError(
-                "Argument {} was not specified but is required for this graph."
-                .format(arg))
+                "Argument {} was not specified but is required for this graph.".
+                format(arg))
 
 
 def check_required_args(
@@ -27,8 +27,10 @@ def check_required_args(
     """
     Check if all required graph args are passed by the user.
     """
+
     def decorator_pp(func: tp.Callable[..., tp.Any]
-                     ) -> tp.Callable[..., tp.Any]:
+                    ) -> tp.Callable[..., tp.Any]:
+
         @functools.wraps(func)
         def wrapper_func(*args: tp.Any, **kwargs: tp.Any) -> tp.Any:
             __check_required_args_impl(required_args, kwargs)
@@ -39,13 +41,12 @@ def check_required_args(
     return decorator_pp
 
 
-def find_missing_revisions(data: tp.Generator[tp.Any, None, None],
-                           git_path: Path, cmap: CommitMap,
-                           should_insert_revision: tp.
-                           Callable[[tp.Any, tp.Any], tp.Tuple[bool, float]],
-                           to_commit_hash: tp.Callable[[tp.Any], str],
-                           are_neighbours: tp.Callable[[str, str], bool]
-                           ) -> tp.Set[str]:
+def find_missing_revisions(
+        data: tp.Generator[tp.Any, None, None], git_path: Path, cmap: CommitMap,
+        should_insert_revision: tp.Callable[[tp.Any, tp.Any], tp.
+                                            Tuple[bool, float]],
+        to_commit_hash: tp.Callable[[tp.Any], str],
+        are_neighbours: tp.Callable[[str, str], bool]) -> tp.Set[str]:
     """
     Calculate a set of revisions that could be missing because the changes
     between certain points are to steep.
