@@ -25,8 +25,8 @@ from varats.plots.plot_utils import check_required_args
 from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
 from varats.plots.repository_churn import draw_code_churn
 
-MAX_TIME_BUCKET_SIZE = 42
-AVG_TIME_BUCKET_SIZE = 42
+MAX_TIME_BUCKET_SIZE = 1
+AVG_TIME_BUCKET_SIZE = 1
 
 
 class _DegreeType(Enum):
@@ -145,7 +145,9 @@ class BlameDegree(Plot):
             'xtick_size': 10 if view_mode else 2,
             'lable_modif': lambda x: x,
             'legend_title': 'MISSING legend_title',
+            'legend_visible': True,
             'fig_title': 'MISSING figure title',
+            'edgecolor': 'black',
         }
         if extra_plot_cfg is not None:
             plot_cfg.update(extra_plot_cfg)
@@ -220,7 +222,7 @@ class BlameDegree(Plot):
         main_axis.stackplot(
             uniq_revisions,
             sub_df_list,
-            edgecolor='black',
+            edgecolor=plot_cfg['edgecolor'],
             colors=reversed(
                 color_map(
                     np.linspace(0, 1,
@@ -241,12 +243,10 @@ class BlameDegree(Plot):
         plt.setp(legend.get_title(),
                  fontsize=plot_cfg['legend_size'],
                  family='monospace')
+        legend.set_visible(plot_cfg['legend_visible'])
 
         # draw churn subplot
         if with_churn:
-            # for rev in uniq_revisions[::1]:
-            #     main_axis.axvline(rev, color='0.90', linewidth=1)
-
             revs = [
                 x
                 for x in map(lambda x: tp.cast(object,
@@ -255,7 +255,6 @@ class BlameDegree(Plot):
             draw_code_churn(churn_axis, self.plot_kwargs['project'],
                             self.plot_kwargs['get_cmap'](),
                             lambda x: x[:10] in revs)
-            churn_axis.set_yscale('symlog')
 
         for y_label in x_axis.get_yticklabels():
             y_label.set_fontsize(8)
@@ -325,14 +324,9 @@ class BlameMaxTimeDistribution(BlameDegree):
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
-            'lable_modif':
-                lambda x: "{start}-{end}".format(
-                    start=x * AVG_TIME_BUCKET_SIZE,
-                    end=((x + 1) * AVG_TIME_BUCKET_SIZE) - 1),
-            'legend_title':
-                'max CommitTimeDelta',
-            'fig_title':
-                'Max time distribution'
+            'legend_visible': False,
+            'fig_title': 'Max time distribution',
+            'edgecolor': None,
         }
         self._degree_plot(view_mode, _DegreeType.max_time, extra_plot_cfg)
 
@@ -355,14 +349,9 @@ class BlameAvgTimeDistribution(BlameDegree):
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
-            'lable_modif':
-                lambda x: "{start}-{end}".format(
-                    start=x * AVG_TIME_BUCKET_SIZE,
-                    end=((x + 1) * AVG_TIME_BUCKET_SIZE) - 1),
-            'legend_title':
-                'avg CommitTimeDelta',
-            'fig_title':
-                'Average time distribution'
+            'legend_visible': False,
+            'fig_title': 'Average time distribution',
+            'edgecolor': None,
         }
         self._degree_plot(view_mode, _DegreeType.avg_time, extra_plot_cfg)
 

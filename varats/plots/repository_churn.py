@@ -56,7 +56,6 @@ def draw_code_churn(axis: axes.SubplotBase,
     """
     code_churn = _build_repo_churn_table(project_name, commit_map)
 
-    # code_churn = cs_selector(code_churn)
     code_churn = code_churn[code_churn.apply(
         lambda x: revision_selector(x['revision']), axis=1)]
 
@@ -96,7 +95,6 @@ class RepoChurnPlot(Plot):
         draw_code_churn(
             axis, self.plot_kwargs['project'], self.plot_kwargs['get_cmap'](),
             case_study.has_revision if case_study else lambda x: True)
-        axis.set_yscale('symlog')
 
         for x_label in axis.get_xticklabels():
             x_label.set_fontsize(plot_cfg['xtick_size'])
