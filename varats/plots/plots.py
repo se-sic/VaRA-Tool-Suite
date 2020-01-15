@@ -12,6 +12,7 @@ from varats.plots.blame_interaction_degree import (BlameInteractionDegree,
                                                    BlameAuthorDegree,
                                                    BlameMaxTimeDistribution,
                                                    BlameAvgTimeDistribution)
+from varats.plots.repository_churn import RepoChurnPlot
 from varats.plots.plot import Plot
 from varats.plots.plot_utils import check_required_args
 
@@ -27,6 +28,7 @@ class PlotTypes(Enum):
     b_author_degree = BlameAuthorDegree
     b_maxtime_distribution = BlameMaxTimeDistribution
     b_avgtime_distribution = BlameAvgTimeDistribution
+    repo_churn = RepoChurnPlot
 
     @property
     def type(self) -> tp.Type[Plot]:
