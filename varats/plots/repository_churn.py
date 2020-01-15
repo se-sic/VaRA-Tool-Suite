@@ -41,6 +41,10 @@ def _build_repo_churn_table(project_name: str,
     return pd.concat([create_dataframe_layout(), churn_data])
 
 
+CODE_CHURN_INSERTION_LIMIT = 1500
+CODE_CHURN_DELETION_LIMIT = 1500
+
+
 def draw_code_churn(axis: axes.SubplotBase,
                     project_name: str,
                     commit_map: CommitMap,
@@ -63,12 +67,21 @@ def draw_code_churn(axis: axes.SubplotBase,
 
     revisions = code_churn.rev_id.astype(str) + '-' + code_churn.revision.map(
         lambda x: x[:10])
+    clipped_insertions = [
+        x if x < CODE_CHURN_INSERTION_LIMIT else 1.3 *
+        CODE_CHURN_INSERTION_LIMIT for x in code_churn.insertions
+    ]
+    clipped_deletions = [
+        -x if x < CODE_CHURN_DELETION_LIMIT else -1.3 *
+        CODE_CHURN_DELETION_LIMIT for x in code_churn.deletions
+    ]
 
-    axis.fill_between(revisions, code_churn.insertions, 0, facecolor='green')
+    axis.set_ylim(-CODE_CHURN_DELETION_LIMIT, CODE_CHURN_INSERTION_LIMIT)
+    axis.fill_between(revisions, clipped_insertions, 0, facecolor='green')
     axis.fill_between(
         revisions,
         # we need a - here to visualize deletions as negative additions
-        -code_churn.deletions,
+        clipped_deletions,
         0,
         facecolor='red')
 
