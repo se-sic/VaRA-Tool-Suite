@@ -141,7 +141,7 @@ class CRBarView(QWidget, Ui_Form):
             self.commit_report_merged_meta.merge(commit_report)
             self._adjust_slider()
 
-        if self.loading_files is 0:
+        if self.loading_files == 0:
             self.statusLabel.setText("")
         else:
             self.statusLabel.setText("Loading files... " +

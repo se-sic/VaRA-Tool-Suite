@@ -318,7 +318,7 @@ def setup_vara(init: bool,
 
     if init:
         if os.path.exists(llvm_folder):
-            print("LLVM was already checked out in '%s'.", llvm_folder)
+            print(f"LLVM was already checked out in '{llvm_folder}'.")
         else:
             download_vara(llvm_folder, post_out=post_out)
             checkout_vara_version(llvm_folder, include_phasar, version,
