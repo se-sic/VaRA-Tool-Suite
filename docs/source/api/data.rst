@@ -31,7 +31,7 @@ Report module
     :show-inheritance:
 
 Data handling utilities
-----------------------
+-----------------------
 
 Module: cache_helper
 ....................
