@@ -10,3 +10,4 @@ Pipfile
 .mypy_cache/
 extra_tests/
 .vscode/settings.json
+docs/build

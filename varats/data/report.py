@@ -1,5 +1,6 @@
 """
-Report module.
+The Report module implements basic report functionalities and provides a
+minimal interface to implement report: BaseReport.
 """
 
 import typing as tp
@@ -102,8 +103,7 @@ class MetaReport(type):
 
     __RESULT_FILE_TEMPLATE = ("{shorthand}-" + "{project_name}-" +
                               "{binary_name}-" + "{project_version}_" +
-                              "{project_uuid}_" + "{status_ext}" +
-                              "{file_ext}")
+                              "{project_uuid}_" + "{status_ext}" + "{file_ext}")
 
     __SUPPLEMENTARY_RESULT_FILE_REGEX = re.compile(
         r"(?P<project_shorthand>.*)-" + r"SUPPL-" +
@@ -111,12 +111,9 @@ class MetaReport(type):
         r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)_" +
         r"(?P<info_type>[^\.]*)" + r"?(?P<file_ext>\..*)?" + "$")
 
-    __SUPPLEMENTARY_RESULT_FILE_TEMPLATE = ("{shorthand}-" + "SUPPL-" +
-                                            "{project_name}-" +
-                                            "{binary_name}-" +
-                                            "{project_version}_" +
-                                            "{project_uuid}_" + "{info_type}" +
-                                            "{file_ext}")
+    __SUPPLEMENTARY_RESULT_FILE_TEMPLATE = (
+        "{shorthand}-" + "SUPPL-" + "{project_name}-" + "{binary_name}-" +
+        "{project_version}_" + "{project_uuid}_" + "{info_type}" + "{file_ext}")
 
     def __init__(cls: tp.Any, name: str, bases: tp.Tuple[tp.Any],
                  attrs: tp.Dict[str, tp.Any]) -> None:
@@ -306,6 +303,7 @@ class MetaReport(type):
 
 
 class BaseReport(metaclass=MetaReport):
+
     @staticmethod
     @abstractmethod
     def get_file_name(project_name: str,
