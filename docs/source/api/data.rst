@@ -30,7 +30,7 @@ Report module
     :undoc-members:
     :show-inheritance:
 
-Data handling utilitis
+Data handling utilities
 ----------------------
 
 Module: cache_helper
