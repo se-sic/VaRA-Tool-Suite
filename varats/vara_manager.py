@@ -100,6 +100,9 @@ class LLVMProjects(Enum):
     def get_project_by_name(project_name: str) -> LLVMProject:
         """
         Get project by name.
+
+        Args:
+            project_name: project name
         """
         for proj in iter(LLVMProjects):
             if proj.project_name.lower() == project_name:
@@ -161,6 +164,9 @@ def convert_to_llvmprojects_enum(projects_names: tp.List[str]
                                 ) -> tp.List[LLVMProjects]:
     """
     Converts a list of strings into a list of LLVMProject.
+
+    Args:
+        projects_names: name of the projects to look up
     """
     # Normalize vara naming
     projects_names = ["vara" if x == "VaRA" else x for x in projects_names]
@@ -904,6 +910,7 @@ class ProcessManager():
 
         with ProcessManager.create_process(prog, args) as proc:
             # modify/configure the QProcess object
+
         # process is started after the when block is exited
         """
         args = [] if args is None else args

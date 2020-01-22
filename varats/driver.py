@@ -198,6 +198,9 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
     """
     Convert a string into a BuildType
 
+    Args:
+        build_type: VaRA build configuration
+
     Test:
     >>> parse_string_to_build_type("DBG")
     <BuildType.DBG: 1>
