@@ -20,7 +20,7 @@ setup(name='VaRA-Tool-Suite',
           "pygit2>=0.28.2",
       ],
       author="Florian Sattler",
-      author_email="sattlerf@fim.uni-passau.de",
+      author_email="sattlerf@cs.uni-saarland.de",
       entry_points={
           "gui_scripts": [
               'vara-graphview = varats.driver:main_graph_view',
