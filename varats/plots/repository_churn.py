@@ -45,25 +45,31 @@ CODE_CHURN_INSERTION_LIMIT = 1500
 CODE_CHURN_DELETION_LIMIT = 1500
 
 
-def draw_code_churn(axis: axes.SubplotBase,
-                    project_name: str,
-                    commit_map: CommitMap,
-                    revision_selector: tp.Callable[[str], bool] = lambda x: True
-                   ) -> None:
+def draw_code_churn(
+        axis: axes.SubplotBase,
+        project_name: str,
+        commit_map: CommitMap,
+        revision_selector: tp.Callable[[str], bool] = lambda x: True,
+        sort_df: tp.Callable[[pd.DataFrame], pd.DataFrame] = lambda data: data.
+        sort_values(by=['rev_id'])) -> None:
     """
     Draws a churn plot onto an axis, showing insertions with green and
     deletions with red.
 
     Args:
+        axis: axis to plot on
+        project_name: name of the project to plot churn for
+        commit_map: CommitMap for the given project(by project_name)
         revision_selector: takes a revision string and returns True if this rev
                            should be included
+        sort_df: function that returns a sorted data frame to plot
     """
     code_churn = _build_repo_churn_table(project_name, commit_map)
 
     code_churn = code_churn[code_churn.apply(
         lambda x: revision_selector(x['revision']), axis=1)]
 
-    code_churn.sort_values(by=['rev_id'], inplace=True)
+    code_churn = sort_df(code_churn)
 
     revisions = code_churn.rev_id.astype(str) + '-' + code_churn.revision.map(
         lambda x: x[:10])
