@@ -1,5 +1,7 @@
 """
 Generate plots to visualize code churn of a software repository.
+
+For code churn, we only consider changes in source files.
 """
 import typing as tp
 
