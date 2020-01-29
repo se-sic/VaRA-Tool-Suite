@@ -31,14 +31,15 @@ class BlameInstInteractions():
         self.__amount = int(raw_inst_entry['amount'])
 
     @property
-    def base_hash(self) -> str:
+    def base_hash(self) -> str:  # TODO: rename to base_commit
         """
         Base hash of the analyzed instruction.
         """
         return self.__base_hash
 
     @property
-    def interacting_hashes(self) -> tp.List[str]:
+    def interacting_hashes(
+            self) -> tp.List[str]:  # TODO: rename to interacting_commits
         """
         List of hashes that interact with the base.
         """
@@ -269,3 +270,41 @@ def generate_max_time_distribution_tuples(report: BlameReport,
                                          ) -> tp.List[tp.Tuple[int, int]]:
     return generate_time_delta_distribution_tuples(report, project_name,
                                                    bucket_size, max)
+
+
+def generate_in_head_interactions(report: BlameReport
+                                 ) -> tp.List[BlameInstInteractions]:
+    """
+    Generate a list of interactions where the base_hash of the interaction is
+    the same as the HEAD of the report.
+
+    Args:
+        report: BlameReport to get the interactions from
+    """
+    head_interactions = []
+    for func_entry in report.function_entries:
+        for interaction in func_entry.interactions:
+            if interaction.base_hash.startswith(report.head_commit):
+                head_interactions.append(interaction)
+                continue
+
+    return head_interactions
+
+
+def generate_out_head_interactions(report: BlameReport
+                                  ) -> tp.List[BlameInstInteractions]:
+    """
+    Generate a list of interactions where one of the interacting hashes is the
+    same as the HEAD of the report.
+
+    Args:
+        report: BlameReport to get the interactions from
+    """
+    head_interactions = []
+    for func_entry in report.function_entries:
+        for interaction in func_entry.interactions:
+            for interacting_commit in interaction.interacting_hashes:
+                if interacting_commit.startswith(report.head_commit):
+                    head_interactions.append(interaction)
+                    break
+    return head_interactions

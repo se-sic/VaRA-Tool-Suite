@@ -66,7 +66,7 @@ def __calc_code_churn_range_impl(repo_path: str,
     Calculates all churn values for the commits in the specified range [start..end]
     If no range is supplied, the churn values of all commits are calculated.
 
-    git log --pretty=format:'%H' --date=short --shortstat
+    git log --pretty=format:'%H' --date=short --shortstat -- ':*.[c|h]'
     """
 
     churn_values: tp.Dict[str, tp.Tuple[int, int, int]] = {}
@@ -82,7 +82,8 @@ def __calc_code_churn_range_impl(repo_path: str,
 
     with local.cwd(repo_path):
         base_params = [
-            "log", "--pretty=format:'%H'", "--date=short", "--shortstat", "-l0"
+            "log", "--pretty=format:'%H'", "--date=short", "--shortstat", "-l0",
+            "--", ":*.[c|h]"
         ]
         if revision_range:
             stdout = git(base_params, revision_range)
@@ -119,6 +120,8 @@ def calc_code_churn_range(
     """
     Calculates all churn values for the commits in the specified range [start..end]
     If no range is supplied, the churn values of all commits are calculated.
+
+    For code churn, we only consider changes in source files.
     """
     return __calc_code_churn_range_impl(
         repo.path if isinstance(repo, pygit2.Repository) else repo,
@@ -131,6 +134,8 @@ def calc_commit_code_churn(repo: pygit2.Repository,
                            commit: pygit2.Commit) -> tp.Tuple[int, int, int]:
     """
     Calculates churn of a specific commit.
+
+    For code churn, we only consider changes in source files.
     """
     return calc_code_churn_range(repo, commit, commit)[str(commit.id)]
 
@@ -140,6 +145,7 @@ def calc_repo_code_churn(repo: pygit2.Repository
     """
     Calculates code churn for a repository.
 
+    For code churn, we only consider changes in source files.
     """
     return calc_code_churn_range(repo)
 
@@ -148,14 +154,19 @@ def __print_calc_repo_code_churn(repo: pygit2.Repository) -> None:
     """
     Prints calc repo code churn data like git log would do.
 
-    git log --pretty=format:'%H' --date=short --shortstat
+    git log --pretty=format:'%H' --date=short --shortstat -- ':*.[c|h]'
     """
     churn_map = calc_repo_code_churn(repo)
     for commit in repo.walk(repo.head.target, pygit2.GIT_SORT_TIME):
         commit_hash = str(commit.id)
         print(commit_hash)
 
-        churn = churn_map[commit_hash]
+        try:
+            churn = churn_map[commit_hash]
+        except KeyError:
+            # ignore commits that are not related to code changes
+            continue
+
         if churn[0] == 1:
             changed_files = " 1 file changed"
         else:
