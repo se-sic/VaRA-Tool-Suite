@@ -87,7 +87,7 @@ def _transform_to_lorenz_values(data: pd.Series) -> pd.Series:
 def draw_interaction_lorenz_curve(axis: axes.SubplotBase, data: pd.DataFrame,
                                   consider_in_interactions: bool,
                                   consider_out_interactions: bool,
-                                  plot_cfg) -> None:
+                                  plot_cfg: tp.Dict[str, tp.Any]) -> None:
     """
     Draws a lorenz_curve onto the given axis.
 
@@ -114,7 +114,7 @@ def draw_interaction_lorenz_curve(axis: axes.SubplotBase, data: pd.DataFrame,
 
 
 def draw_perfect_lorenz_curve(axis: axes.SubplotBase, data: pd.DataFrame,
-                              plot_cfg) -> None:
+                              plot_cfg: tp.Dict[str, tp.Any]) -> None:
     """
     Draws a perfect lorenz curve onto the given axis, i.e., a straight line
     from the point of origin to the right upper corner.
@@ -143,8 +143,9 @@ def _gen_blame_head_interaction_data(**kwargs: tp.Any) -> pd.DataFrame:
     return data_frame
 
 
-def draw_interaction_code_churn(axis, data, project_name: str,
-                                commit_map: CommitMap):
+def draw_interaction_code_churn(axis: axes.SubplotBase, data: pd.DataFrame,
+                                project_name: str,
+                                commit_map: CommitMap) -> None:
     """
     Helper function to draw parts of the code churn that are related to our
     data.
@@ -264,7 +265,7 @@ class BlameLorenzCurve(Plot):
         raise NotImplementedError
 
 
-def gini(lorenz_values):
+def gini(lorenz_values: pd.Series) -> pd.Series:
     """
     Calculates the gini coefficient:  half of the relative mean absolute
     difference between the lorenz values
@@ -277,9 +278,11 @@ def gini(lorenz_values):
         np.mean(lorenz_values))
 
 
-def draw_gini_churn_over_time(axis, blame_data: pd.DataFrame, project_name: str,
-                              commit_map: CommitMap, consider_insertions: bool,
-                              consider_deletions: bool, plot_cfg) -> None:
+def draw_gini_churn_over_time(axis: axes.SubplotBase, blame_data: pd.DataFrame,
+                              project_name: str, commit_map: CommitMap,
+                              consider_insertions: bool,
+                              consider_deletions: bool,
+                              plot_cfg: tp.Dict[str, tp.Any]) -> None:
     """
     Draws the gini of the churn distribution over time.
 
@@ -349,10 +352,10 @@ def draw_gini_churn_over_time(axis, blame_data: pd.DataFrame, project_name: str,
               color='orange')
 
 
-def draw_gini_blame_over_time(axis, blame_data: pd.DataFrame,
+def draw_gini_blame_over_time(axis: axes.SubplotBase, blame_data: pd.DataFrame,
                               consider_in_interactions: bool,
                               consider_out_interactions: bool,
-                              plot_cfg) -> None:
+                              plot_cfg: tp.Dict[str, tp.Any]) -> None:
     """
     Draws the gini of the blame interactions over time.
 
