@@ -271,7 +271,7 @@ def gini(lorenz_values: pd.Series) -> pd.Series:
     difference between the lorenz values
 
     Args:
-        lorenz_values: the scaled prefix sum of a values range, in ordered
+        lorenz_values: the scaled prefix sum of an ordered values range
     """
     return 0.5 * (
         (np.abs(np.subtract.outer(lorenz_values, lorenz_values)).mean()) /
@@ -357,7 +357,7 @@ def draw_gini_blame_over_time(axis: axes.SubplotBase, blame_data: pd.DataFrame,
                               consider_out_interactions: bool,
                               plot_cfg: tp.Dict[str, tp.Any]) -> None:
     """
-    Draws the gini of the blame interactions over time.
+    Draws the gini coefficients of the blame interactions over time.
 
     Args:
         axis: axis to draw to

@@ -306,5 +306,5 @@ def generate_out_head_interactions(report: BlameReport
             for interacting_commit in interaction.interacting_hashes:
                 if interacting_commit.startswith(report.head_commit):
                     head_interactions.append(interaction)
-                    continue
+                    break
     return head_interactions
