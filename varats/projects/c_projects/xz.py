@@ -12,12 +12,21 @@ from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
 
 from plumbum import local
-from varats.utils.project_util import get_all_revisions_between
+from varats.utils.project_util import (get_all_revisions_between,
+                                       block_revisions, BugAndFixPair)
 
 from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
 
 
+@block_revisions([
+    BugAndFixPair("cf49f42a6bd40143f54a6b10d6e605599e958c0b",
+                  "4c7ad179c78f97f68ad548cb40a9dfa6871655ae",
+                  "missing file api/lzma/easy.h"),
+    BugAndFixPair("335fe260a81f61ec99ff5940df733b4c50aedb7c",
+                  "24e0406c0fb7494d2037dec033686faf1bf67068",
+                  "use of undeclared LZMA_THREADS_MAX"),
+])
 @with_git("https://github.com/xz-mirror/xz.git",
           refspec="HEAD",
           shallow_clone=False,
@@ -43,11 +52,12 @@ class Xz(Project):  # type: ignore
     def compile(self) -> None:
         self.download()
 
-        # commit 46133fb47d6da1f0dec27ae23db1d633bc72e9e3 introduced
-        # cmake as build system
+        # dynamic linking is off by default until
+        # commit f9907503f882a745dce9d84c2968f6c175ba966a
+        # (fda4724 is its parent)
         with local.cwd(self.SRC_FILE):
             version_id = git("rev-parse", "HEAD").strip()
-            cmake_revisions = get_all_revisions_between(
+            revisions_wo_dynamic_linking = get_all_revisions_between(
                 "5d018dc03549c1ee4958364712fb0c94e1bf2741",
                 "fda4724d8114fccfa31c1839c15479f350c2fb4c")
 
@@ -58,7 +68,7 @@ class Xz(Project):  # type: ignore
             with local.env(CC=str(clang)):
                 run(autoreconf["--install"])
 
-                if version_id in cmake_revisions:
+                if version_id in revisions_wo_dynamic_linking:
                     run(local["./configure"]["--enable-dynamic=yes"])
                 else:
                     run(local["./configure"])
