@@ -12,8 +12,8 @@ from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
 
 from plumbum import local
-from varats.utils.project_util import get_all_revisions_between, \
-    block_revisions, BugAndFixPair
+from varats.utils.project_util import (get_all_revisions_between,
+                                       block_revisions, BugAndFixPair)
 
 from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
