@@ -14,7 +14,7 @@ from varats.data.reports.commit_report import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plots.plot import Plot
 from varats.utils.project_util import get_local_project_git
-from varats.utils.git_util import calc_repo_code_churn
+from varats.utils.git_util import calc_repo_code_churn, ChurnConfig
 
 
 def build_repo_churn_table(project_name: str,
@@ -42,7 +42,9 @@ def build_repo_churn_table(project_name: str,
         return df_layout
 
     repo = get_local_project_git(project_name)
-    code_churn = calc_repo_code_churn(repo)
+    # By default we only look at c-style code files
+    code_churn = calc_repo_code_churn(
+        repo, ChurnConfig.create_c_style_languages_config())
     churn_data = pd.DataFrame({
         "revision": [x for x in code_churn],
         "rev_id": [commit_map.time_id(x) for x in code_churn],
