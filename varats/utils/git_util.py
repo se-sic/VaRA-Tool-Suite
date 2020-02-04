@@ -126,7 +126,7 @@ class ChurnConfig():
         """Disable `language` in the config."""
         self.__enabled_languages.remove(language)
 
-    def get_extensions_repr(self, sep=", ") -> str:
+    def get_extensions_repr(self, sep: str = ", ") -> str:
         """
         Returns a string that containts all file extensions from all enabled
         languages
