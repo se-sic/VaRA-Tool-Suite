@@ -23,7 +23,7 @@ from varats.data.reports.blame_report import (BlameReport,
 from varats.plots.repository_churn import (draw_code_churn,
                                            build_repo_churn_table)
 from varats.utils.project_util import get_local_project_git
-from varats.utils.git_util import calc_repo_code_churn
+from varats.utils.git_util import calc_repo_code_churn, ChurnConfig
 from varats.plots.plot import Plot
 
 
@@ -185,7 +185,10 @@ def filter_non_code_changes(blame_data: pd.DataFrame,
         filtered data frame without rows related to non code changes
     """
     repo = get_local_project_git(project_name)
-    code_related_changes = [x[:10] for x in calc_repo_code_churn(repo)]
+    code_related_changes = [
+        x[:10] for x in calc_repo_code_churn(
+            repo, ChurnConfig.create_c_style_languages_config())
+    ]
     return blame_data[blame_data.apply(
         lambda x: x['revision'][:10] in code_related_changes, axis=1)]
 
