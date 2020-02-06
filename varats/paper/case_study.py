@@ -899,9 +899,9 @@ def extend_with_smooth_revs(case_study: CaseStudy, cmap: CommitMap,
     new_revisions = plot.calc_missing_revisions(boundary_gradient)
 
     # Remove revision that are already present in another stage.
-    new_revisions = [
+    new_revisions = set([
         rev for rev in new_revisions if not case_study.has_revision(rev)
-    ]
+    ])
     if new_revisions:
         print("Found new revisions: ", new_revisions)
         case_study.include_revisions(

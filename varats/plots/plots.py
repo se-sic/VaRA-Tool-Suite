@@ -49,7 +49,7 @@ class PlotRegistry(type):
         plot_cls = PlotRegistry.plots[plot]
         if not issubclass(plot_cls, Plot):
             raise AssertionError()
-        return tp.cast(tp.Type[Plot], plot_cls)
+        return plot_cls
 
 
 def extend_parser_with_plot_args(parser: argparse.ArgumentParser) -> None:
