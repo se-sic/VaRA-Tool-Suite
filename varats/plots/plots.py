@@ -2,6 +2,7 @@
 General plots module.
 """
 import re
+import sys
 import typing as tp
 import argparse
 
@@ -46,6 +47,13 @@ class PlotRegistry(type):
         Returns: The class implementing the plot.
         """
         from varats.plots.plot import Plot
+        if plot not in PlotRegistry.plots:
+            sys.exit(
+                f"Unknown plot '{plot}'.\n" +
+                "The following plots are available:\n  " + "\n  ".join(
+                    [key for key in PlotRegistry.plots.keys() if key != "plot"])
+            )
+
         plot_cls = PlotRegistry.plots[plot]
         if not issubclass(plot_cls, Plot):
             raise AssertionError()
