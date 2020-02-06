@@ -183,6 +183,8 @@ class PaperConfigOverviewPlot(Plot):
     Plot showing an overview of all case-studies.
     """
 
+    NAME = 'paper_config_overview_plot'
+
     def __init__(self, **kwargs: tp.Any) -> None:
         super(PaperConfigOverviewPlot,
               self).__init__("paper_config_overview_plot", **kwargs)

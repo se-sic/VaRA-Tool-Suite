@@ -195,6 +195,8 @@ class BlameLorenzCurve(Plot):
     Plots the lorenz curve for IN/OUT interactions for a given project.
     """
 
+    NAME = 'b_lorenz_curve'
+
     def __init__(self, **kwargs: tp.Any) -> None:
         super(BlameLorenzCurve, self).__init__("b_lorenz_curve", **kwargs)
 
@@ -404,6 +406,8 @@ class BlameGiniOverTime(Plot):
     Plots the gini coefficient over time for a project.
     This shows how the distribution of the interactions/churn changes of time.
     """
+
+    NAME = 'b_gini_overtime'
 
     def __init__(self, **kwargs: tp.Any) -> None:
         super(BlameGiniOverTime, self).__init__("b_gini_overtime", **kwargs)

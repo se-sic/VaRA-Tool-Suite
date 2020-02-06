@@ -1,45 +1,55 @@
 """
 General plots module.
 """
-
+import re
 import typing as tp
 import argparse
-from enum import Enum
 
-from varats.plots.commit_interactions import InteractionPlot
-from varats.plots.paper_config_overview import PaperConfigOverviewPlot
-from varats.plots.blame_interaction_degree import (BlameInteractionDegree,
-                                                   BlameAuthorDegree,
-                                                   BlameMaxTimeDistribution,
-                                                   BlameAvgTimeDistribution)
-from varats.plots.blame_lorenz_curve import (BlameLorenzCurve,
-                                             BlameGiniOverTime)
-from varats.plots.repository_churn import RepoChurnPlot
-from varats.plots.plot import Plot
+# avoid circular import
+# see https://www.stefaanlippens.net/circular-imports-type-hints-python.html
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from varats.plots.plot import Plot
 from varats.plots.plot_utils import check_required_args
 
 
-class PlotTypes(Enum):
+class PlotRegistry(type):
     """
-    Enum of all supported plot types.
+    Registry for all supported plots.
     """
 
-    interaction_plot = InteractionPlot
-    paper_config_overview_plot = PaperConfigOverviewPlot
-    b_interaction_degree = BlameInteractionDegree
-    b_author_degree = BlameAuthorDegree
-    b_maxtime_distribution = BlameMaxTimeDistribution
-    b_avgtime_distribution = BlameAvgTimeDistribution
-    repo_churn = RepoChurnPlot
-    b_lorenz_curve = BlameLorenzCurve
-    b_gini_overtime = BlameGiniOverTime
+    to_snake_case_pattern = re.compile(r'(?<!^)(?=[A-Z])')
 
-    @property
-    def type(self) -> tp.Type[Plot]:
-        """ Get python type from plot enum"""
-        if not issubclass(self.value, Plot):
+    plots: tp.Dict[str, tp.Type[tp.Any]] = {}
+
+    def __init__(cls, name: str, bases: tp.Tuple[tp.Any],
+                 attrs: tp.Dict[tp.Any, tp.Any]):
+        super(PlotRegistry, cls).__init__(name, bases, attrs)
+        if hasattr(cls, 'NAME'):
+            key = getattr(cls, 'NAME')
+        else:
+            key = PlotRegistry.to_snake_case_pattern.sub('_', name).lower()
+        PlotRegistry.plots[key] = cls
+
+    @staticmethod
+    def get_class_for_plot_type(plot: str) -> tp.Type['Plot']:
+        """
+        Get the class for plot from the plot registry.
+
+        Test:
+        >>> PlotRegistry.get_class_for_plot_type('paper_config_overview_plot')
+        <class 'varats.plots.paper_config_overview.PaperConfigOverviewPlot'>
+
+        Args:
+            plot: The name of the plot.
+
+        Returns: The class implementing the plot.
+        """
+        from varats.plots.plot import Plot
+        plot_cls = PlotRegistry.plots[plot]
+        if not issubclass(plot_cls, Plot):
             raise AssertionError()
-        return tp.cast(tp.Type[Plot], self.value)
+        return tp.cast(tp.Type[Plot], plot_cls)
 
 
 def extend_parser_with_plot_args(parser: argparse.ArgumentParser) -> None:
@@ -54,7 +64,7 @@ def build_plot(**kwargs: tp.Any) -> None:
     """
     Build the specified graph.
     """
-    plot_type = kwargs['plot_type'].type
+    plot_type = PlotRegistry.get_class_for_plot_type(kwargs['plot_type'])
 
     if (kwargs['sep_stages'] and not plot_type.supports_stage_separation()):
         print("Warning: {plot_type} does not support stage ".format(

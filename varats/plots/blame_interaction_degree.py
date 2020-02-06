@@ -271,6 +271,8 @@ class BlameInteractionDegree(BlameDegree):
     Plotting the degree of blame interactions.
     """
 
+    NAME = 'b_interaction_degree'
+
     def __init__(self, **kwargs: tp.Any):
         super(BlameInteractionDegree, self).__init__('b_interaction_degree',
                                                      **kwargs)
@@ -295,6 +297,8 @@ class BlameAuthorDegree(BlameDegree):
     Plotting the degree of authors for all blame interactions.
     """
 
+    NAME = 'b_author_degree'
+
     def __init__(self, **kwargs: tp.Any):
         super(BlameAuthorDegree, self).__init__('b_author_degree', **kwargs)
 
@@ -317,6 +321,8 @@ class BlameMaxTimeDistribution(BlameDegree):
     """
     Plotting the degree of max times differences for all blame interactions.
     """
+
+    NAME = 'b_maxtime_distribution'
 
     def __init__(self, **kwargs: tp.Any):
         super(BlameMaxTimeDistribution, self).__init__('b_maxtime_distribution',
@@ -342,6 +348,8 @@ class BlameAvgTimeDistribution(BlameDegree):
     """
     Plotting the degree of avg times differences for all blame interactions.
     """
+
+    NAME = 'b_avgtime_distribution'
 
     def __init__(self, **kwargs: tp.Any):
         super(BlameAvgTimeDistribution, self).__init__('b_avgtime_distribution',
