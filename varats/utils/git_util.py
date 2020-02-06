@@ -77,7 +77,7 @@ class ChurnConfig():
     @property
     def include_everything(self) -> bool:
         """
-        Checks if all file extensions are valid.
+        Checks if all files should be considered in the code churn.
 
         Returns:
             True, if no specific language is enabled
