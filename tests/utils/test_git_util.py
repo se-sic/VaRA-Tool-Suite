@@ -1,9 +1,7 @@
 """
 Test VaRA git utilities
 """
-import typing as tp
 import unittest
-import unittest.mock as mock
 
 from varats.utils.git_util import ChurnConfig
 

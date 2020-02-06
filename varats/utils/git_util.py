@@ -41,7 +41,7 @@ class ChurnConfig():
     @staticmethod
     def create_c_language_config() -> 'ChurnConfig':
         """
-        Create a config that only allows C related files, e.g., headers and 
+        Create a config that only allows C related files, e.g., headers and
         source files.
         """
         config = ChurnConfig()
