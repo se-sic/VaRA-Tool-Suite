@@ -14,7 +14,7 @@ import numpy as np
 import seaborn as sb
 
 from varats.data.reports.commit_report import CommitMap
-from varats.data.report import MetaReport
+from varats.data.report import MetaReport, FileStatusExtension
 from varats.data.reports.empty_report import EmptyReport
 from varats.plots.plot import Plot
 from varats.plots.plot_utils import check_required_args, find_missing_revisions
@@ -36,18 +36,15 @@ def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
     # load data
     revisions_list: tp.List[pd.DataFrame] = []
     for case_study in current_config.get_case_studies(project):
-        processed_revisions = list(
-            dict.fromkeys(case_study.processed_revisions(result_file_type)))
+        processed_revisions = case_study.get_revisions_status(result_file_type)
 
-        # dict: revision: str -> success: bool
-        for rev in case_study.revisions:
+        for rev, status in processed_revisions:
             time_id = cmap.time_id(rev)
-            success = rev in processed_revisions
             frame = pd.DataFrame(
                 {
                     "commit_hash": rev,
                     "commit_id": time_id,
-                    "status": success
+                    "status": status
                 },
                 index=[0])
             revisions_list.append(frame)
@@ -67,23 +64,23 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
     else:
         result_file_type = EmptyReport
 
-    projects: tp.Dict[str, tp.Dict[int, tp.
-                                   List[tp.Tuple[str, bool]]]] = OrderedDict()
+    projects: tp.Dict[
+        str, tp.Dict[int, tp.
+                     List[tp.Tuple[str, FileStatusExtension]]]] = OrderedDict()
 
     for case_study in sorted(current_config.get_all_case_studies(),
                              key=lambda cs: (cs.project_name, cs.version)):
-        processed_revisions = list(
-            dict.fromkeys(case_study.processed_revisions(result_file_type)))
-        repo = get_local_project_git(case_study.project_name)
-        revisions: tp.Dict[int, tp.List[tp.Tuple[str, bool]]] = defaultdict(
-            list)
+        processed_revisions = case_study.get_revisions_status(result_file_type)
 
-        # dict: year -> [ (revision: str, success: bool) ]
-        for rev in case_study.revisions:
+        repo = get_local_project_git(case_study.project_name)
+        revisions: tp.Dict[int, tp.List[
+            tp.Tuple[str, FileStatusExtension]]] = defaultdict(list)
+
+        # dict: year -> [ (revision: str, status: FileStatusExtension) ]
+        for rev, status in processed_revisions:
             commit = repo.get(rev)
             commit_date = datetime.utcfromtimestamp(commit.commit_time)
-            success = rev in processed_revisions
-            revisions[commit_date.year].append((rev, success))
+            revisions[commit_date.year].append((rev, status))
 
         projects[case_study.project_name] = revisions
 
@@ -102,28 +99,38 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
     result['project_names'] = project_names
 
     revs_successful = []
+    revs_blocked = []
     revs_total = []
 
     for _, revisions in projects.items():
         revs_successful_per_year = []
+        revs_blocked_per_year = []
         revs_total_per_year = []
         for year in year_range:
             revs_in_year = revisions[year]
             if not revs_in_year:
                 num_revs = np.nan
                 num_successful_revs = np.nan
+                num_blocked_revs = np.nan
             else:
                 num_revs = len(revs_in_year)
                 num_successful_revs = sum(
-                    1 for (rev, success) in revs_in_year if success)
+                    1 for (rev, success) in revs_in_year
+                    if success == FileStatusExtension.Success)
+                num_blocked_revs = sum(
+                    1 for (rev, success) in revs_in_year
+                    if success == FileStatusExtension.Blocked)
 
             revs_successful_per_year.append(num_successful_revs)
+            revs_blocked_per_year.append(num_blocked_revs)
             revs_total_per_year.append(num_revs)
 
         revs_successful.append(revs_successful_per_year)
+        revs_blocked.append(revs_blocked_per_year)
         revs_total.append(revs_total_per_year)
 
     result['revs_successful'] = revs_successful
+    result['revs_blocked'] = revs_blocked
     result['revs_total'] = revs_total
 
     return result
@@ -135,6 +142,7 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
     about how many revisions are successful per project/year.
     """
     revs_successful = np.asarray(results['revs_successful'])
+    revs_blocked = np.asarray(results['revs_blocked'])
     revs_total = np.asarray(results['revs_total'])
     revs_success_ratio = revs_successful / revs_total
 
@@ -142,9 +150,11 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
     project_names = results['project_names']
 
     labels = (np.asarray([
-        "{0:1.0f}/{1:1.0f}".format(revs_successful, revs_total)
-        for revs_successful, revs_total in zip(revs_successful.flatten(),
-                                               revs_total.flatten())
+        "{0:1.0f}/{1:1.0f}\n{2:1.0f}".format(revs_successful, revs_blocked,
+                                             revs_total)
+        for revs_successful, revs_blocked, revs_total in zip(
+            revs_successful.flatten(), revs_blocked.flatten(),
+            revs_total.flatten())
     ])).reshape(len(project_names), len(year_range))
 
     # Note: See the following URL for this size calculation:
@@ -153,7 +163,7 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
     fontsize_pt = 12
     dpi = 1200
 
-    # comput the matrix height in points and inches
+    # compute the matrix height in points and inches
     matrix_height_pt = fontsize_pt * len(project_names) * 40
     matrix_height_in = matrix_height_pt / dpi
 
@@ -169,13 +179,14 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
     sb.heatmap(revs_success_ratio,
                annot=labels,
                fmt='',
-               cmap="BrBG",
+               cmap="RdYlGn",
                xticklabels=year_range,
                yticklabels=project_names,
                linewidths=.5,
                vmin=0,
                vmax=1,
-               cbar_kws={'label': 'success ratio'})
+               cbar_kws={'label': 'success ratio'},
+               square=True)
 
 
 class PaperConfigOverviewPlot(Plot):
