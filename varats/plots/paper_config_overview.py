@@ -150,8 +150,7 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
     project_names = results['project_names']
 
     labels = (np.asarray([
-        "{0:1.0f}/{1:1.0f}\n{2:1.0f}".format(revs_successful, revs_blocked,
-                                             revs_total)
+        f"{revs_successful:1.0f}/{revs_blocked:1.0f}\n{revs_total:1.0f}"
         for revs_successful, revs_blocked, revs_total in zip(
             revs_successful.flatten(), revs_blocked.flatten(),
             revs_total.flatten())
