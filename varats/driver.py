@@ -23,7 +23,8 @@ from varats.vara_manager import (setup_vara, BuildType, LLVMProjects,
                                  ProcessManager)
 from varats.tools.commit_map import (store_commit_map, get_commit_map,
                                      create_lazy_commit_map_loader)
-from varats.plots.plots import (extend_parser_with_plot_args, build_plot)
+from varats.plots.plots import (extend_parser_with_plot_args, build_plot,
+                                PlotRegistry)
 from varats.plots.plot import PlotDataEmpty
 from varats.utils.cli_util import cli_yn_choice
 from varats.utils.project_util import get_local_project_git_path
@@ -245,7 +246,8 @@ def main_plot() -> None:
     """
     parser = argparse.ArgumentParser("VaRA plot generator")
     parser.add_argument("plot_type",
-                        help="Plot to generate")
+                        help="Plot to generate." +
+                        PlotRegistry.get_plot_types_help_string())
     parser.add_argument("-r",
                         "--result-output",
                         help="Folder with result files")

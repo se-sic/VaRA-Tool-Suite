@@ -33,6 +33,11 @@ class PlotRegistry(type):
         PlotRegistry.plots[key] = cls
 
     @staticmethod
+    def get_plot_types_help_string() -> str:
+        return "The following plots are available:\n  " + "\n  ".join(
+            [key for key in PlotRegistry.plots.keys() if key != "plot"])
+
+    @staticmethod
     def get_class_for_plot_type(plot: str) -> tp.Type['Plot']:
         """
         Get the class for plot from the plot registry.
@@ -48,11 +53,8 @@ class PlotRegistry(type):
         """
         from varats.plots.plot import Plot
         if plot not in PlotRegistry.plots:
-            sys.exit(
-                f"Unknown plot '{plot}'.\n" +
-                "The following plots are available:\n  " + "\n  ".join(
-                    [key for key in PlotRegistry.plots.keys() if key != "plot"])
-            )
+            sys.exit(f"Unknown plot '{plot}'.\n" +
+                     PlotRegistry.get_plot_types_help_string())
 
         plot_cls = PlotRegistry.plots[plot]
         if not issubclass(plot_cls, Plot):
