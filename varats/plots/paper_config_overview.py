@@ -173,13 +173,12 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
     failed_color = np.asarray((0.8862745098039215, 0.2901960784313726, 0.2))
 
     def to_color(n_success: float, n_blocked: float,
-                 n_total: float) -> tp.Tuple[float, float, float]:
+                 n_total: float) -> np.ndarray:
         f_success = n_success / float(n_total)
         f_blocked = n_blocked / float(n_total)
         f_failed = 1.0 - f_success - f_blocked
         return (f_success * success_color + f_blocked * blocked_color +
                 f_failed * failed_color)
-        # return (1.0, 0.0, 0.0)
 
     colors = [
         to_color(revs_successful, revs_blocked, revs_total)
@@ -225,7 +224,6 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
         vmin=0,
         vmax=1,
         cbar=False,
-        # cbar_kws={'label': 'success ratio'},
         square=True)
 
     legend_entries = [
