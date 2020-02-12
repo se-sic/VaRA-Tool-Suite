@@ -23,7 +23,7 @@ from varats.data.reports.blame_report import (BlameReport,
 from varats.plots.repository_churn import (draw_code_churn,
                                            build_repo_churn_table)
 from varats.utils.project_util import get_local_project_git
-from varats.utils.git_util import calc_repo_code_churn
+from varats.utils.git_util import calc_repo_code_churn, ChurnConfig
 from varats.plots.plot import Plot
 
 
@@ -185,7 +185,10 @@ def filter_non_code_changes(blame_data: pd.DataFrame,
         filtered data frame without rows related to non code changes
     """
     repo = get_local_project_git(project_name)
-    code_related_changes = [x[:10] for x in calc_repo_code_churn(repo)]
+    code_related_changes = [
+        x[:10] for x in calc_repo_code_churn(
+            repo, ChurnConfig.create_c_style_languages_config())
+    ]
     return blame_data[blame_data.apply(
         lambda x: x['revision'][:10] in code_related_changes, axis=1)]
 
@@ -194,6 +197,8 @@ class BlameLorenzCurve(Plot):
     """
     Plots the lorenz curve for IN/OUT interactions for a given project.
     """
+
+    NAME = 'b_lorenz_curve'
 
     def __init__(self, **kwargs: tp.Any) -> None:
         super(BlameLorenzCurve, self).__init__("b_lorenz_curve", **kwargs)
@@ -404,6 +409,8 @@ class BlameGiniOverTime(Plot):
     Plots the gini coefficient over time for a project.
     This shows how the distribution of the interactions/churn changes of time.
     """
+
+    NAME = 'b_gini_overtime'
 
     def __init__(self, **kwargs: tp.Any) -> None:
         super(BlameGiniOverTime, self).__init__("b_gini_overtime", **kwargs)

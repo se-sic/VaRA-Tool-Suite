@@ -18,6 +18,7 @@ from scipy.stats import halfnorm
 import numpy as np
 import pygit2
 
+from varats.plots.plots import PlotRegistry
 from varats.utils.project_util import get_project_cls_by_name
 from varats.data.revisions import (get_processed_revisions,
                                    get_failed_revisions, get_tagged_revisions)
@@ -887,7 +888,7 @@ def extend_with_smooth_revs(case_study: CaseStudy, cmap: CommitMap,
     This can remove steep gradients that result from missing certain revisions
     when sampling.
     """
-    plot_type = kwargs['plot_type'].type
+    plot_type = PlotRegistry.get_class_for_plot_type(kwargs['plot_type'])
 
     kwargs['plot_case_study'] = case_study
     kwargs['cmap'] = cmap
@@ -898,9 +899,9 @@ def extend_with_smooth_revs(case_study: CaseStudy, cmap: CommitMap,
     new_revisions = plot.calc_missing_revisions(boundary_gradient)
 
     # Remove revision that are already present in another stage.
-    new_revisions = [
+    new_revisions = {
         rev for rev in new_revisions if not case_study.has_revision(rev)
-    ]
+    }
     if new_revisions:
         print("Found new revisions: ", new_revisions)
         case_study.include_revisions(
