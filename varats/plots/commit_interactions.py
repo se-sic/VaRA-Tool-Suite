@@ -222,6 +222,8 @@ class InteractionPlot(Plot):
     Plot showing the total amount of commit interactions.
     """
 
+    NAME = 'interaction_graph'
+
     def __init__(self, **kwargs: tp.Any) -> None:
         super(InteractionPlot, self).__init__("interaction_graph", **kwargs)
 
