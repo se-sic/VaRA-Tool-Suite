@@ -199,7 +199,7 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
     # Note: See the following URL for this size calculation:
     # https://stackoverflow.com/questions/51144934/how-to-increase-the-cell-size-for-annotation-in-seaborn-heatmap
 
-    #TODO: refactor dpi into plot_config. see se-passau/VaRA#545.
+    #TODO (se-passau/VaRA#545): refactor dpi into plot_config. see.
     fontsize_pt = 12
     dpi = 1200
 
