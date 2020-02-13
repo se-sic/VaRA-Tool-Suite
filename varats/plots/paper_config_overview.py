@@ -263,7 +263,7 @@ class PaperConfigOverviewPlot(Plot):
 
         result_dir = Path(self.plot_kwargs["plot_dir"])
 
-        # TODO: refactor dpi into plot_config. see se-passau/VaRA#545.
+        # TODO (se-passau/VaRA#545): refactor dpi into plot_config. see.
         plt.savefig(result_dir / ("{graph_name}.{filetype}".format(
             graph_name=self.name, filetype=filetype)),
                     dpi=1200,
