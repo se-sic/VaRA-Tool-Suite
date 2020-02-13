@@ -115,12 +115,14 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
                 num_blocked_revs = np.nan
             else:
                 num_revs = len(revs_in_year)
-                num_successful_revs = sum(
-                    1 for (rev, success) in revs_in_year
-                    if success == FileStatusExtension.Success)
-                num_blocked_revs = sum(
-                    1 for (rev, success) in revs_in_year
-                    if success == FileStatusExtension.Blocked)
+                num_successful_revs = len([
+                    rev for (rev, status) in revs_in_year
+                    if status == FileStatusExtension.Success
+                ])
+                num_blocked_revs = len([
+                    rev for (rev, status) in revs_in_year
+                    if status == FileStatusExtension.Blocked
+                ])
 
             revs_successful_per_year.append(num_successful_revs)
             revs_blocked_per_year.append(num_blocked_revs)
@@ -213,25 +215,25 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
     plt.subplots(figsize=(18, figure_height),
                  gridspec_kw=dict(top=(1 - top_margin), bottom=bottom_margin))
 
-    ax = sb.heatmap(
-        revs_success_ratio,
-        annot=labels,
-        fmt='',
-        cmap=colors,
-        xticklabels=results['year_range'],
-        yticklabels=results['project_names'],
-        linewidths=.5,
-        vmin=0,
-        vmax=1,
-        cbar=False,
-        square=True)
+    ax = sb.heatmap(revs_success_ratio,
+                    annot=labels,
+                    fmt='',
+                    cmap=colors,
+                    xticklabels=results['year_range'],
+                    yticklabels=results['project_names'],
+                    linewidths=.5,
+                    vmin=0,
+                    vmax=1,
+                    cbar=False,
+                    square=True)
 
     legend_entries = [
         Patch(facecolor=success_color),
         Patch(facecolor=blocked_color),
         Patch(facecolor=failed_color),
     ]
-    ax.legend(legend_entries, ['Success (top left)', 'Blocked (top right)', 'Failed (bottom)'],
+    ax.legend(legend_entries,
+              ['Success (top left)', 'Blocked (top right)', 'Failed (bottom)'],
               loc='upper left',
               bbox_to_anchor=(1, 1))
 
