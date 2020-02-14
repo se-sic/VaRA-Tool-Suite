@@ -31,7 +31,7 @@ def load_yaml(file_path: Path) -> tp.Iterator[tp.Any]:
     """
     if file_path.exists():
         with open(file_path, "r") as yaml_file:
-            return yaml.load_all(yaml_file, Loader=yaml.CLoader)
+            return list(yaml.load_all(yaml_file, Loader=yaml.CLoader)).__iter__()
 
     raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
                             str(file_path))

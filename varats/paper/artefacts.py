@@ -53,7 +53,7 @@ class Artefact(ABC):
         """
         The output path of this artefact.
         """
-        return Path(CFG['plots']['plot_dir']) / self.__output_path
+        return Path(str(CFG['plots']['plot_dir'])) / self.__output_path
 
     def get_dict(self) -> tp.Dict[str, str]:
         """
@@ -65,7 +65,7 @@ class Artefact(ABC):
         Returns: A dict representation of this artefact.
         """
         return {
-            'artefact_type': self.artefact_type.value,
+            'artefact_type': self.artefact_type.name,
             'name': self.name,
             'output_path': str(self.output_path)
         }
@@ -94,7 +94,7 @@ class PlotArtefact(Artefact):
                  name: str,
                  output_path: Path,
                  plot_type: str,
-                 file_format: str = 'png',
+                 file_format: str,
                  **kwargs: tp.Any) -> None:
         super().__init__(ArtefactType.plot, name, output_path)
         self.__plot_type = plot_type
@@ -132,13 +132,13 @@ class PlotArtefact(Artefact):
 
     def get_dict(self) -> tp.Dict[str, str]:
         artefact_dict = super().get_dict()
-        artefact_dict['plot_type'] = self.plot_type
-        artefact_dict['file_format'] = self.file_format
+        artefact_dict['plot_type'] = self.__plot_type
+        artefact_dict['file_format'] = self.__file_format
         artefact_dict = {**self.plot_kwargs, **artefact_dict}
         return artefact_dict
 
     def generate_artefact(self) -> None:
-        plot = self.plot_type_class(self.plot_kwargs)
+        plot = self.plot_type_class(**self.plot_kwargs)
         plot.style = "ggplot"
         plot.save(self.file_format)
 
@@ -153,7 +153,7 @@ class Artefacts:
     """
 
     def __init__(self, artefacts: tp.Iterable[Artefact]) -> None:
-        self.__artefacts = artefacts
+        self.__artefacts = list(artefacts)
 
     @property
     def artefacts(self) -> tp.Iterable[Artefact]:
@@ -161,6 +161,15 @@ class Artefacts:
         An iterator of the artefacts in this collection.
         """
         return self.__artefacts
+
+    def add_artefact(self, artefact: Artefact) -> None:
+        """
+        Add an artefact to this collection of artefacts.
+
+        Args:
+            artefact: The artefact to add.
+        """
+        self.__artefacts.append(artefact)
 
     def __iter__(self) -> tp.Iterator[Artefact]:
         return self.__artefacts.__iter__()
@@ -173,7 +182,14 @@ class Artefacts:
             artefacts=[artefact.get_dict() for artefact in self.artefacts])
 
 
-# TODO: similar to case study -> refactor
+def create_artefact(artefact_type: 'ArtefactType', name: str, output_path: Path,
+                    **kwargs: tp.Any) -> Artefact:
+    if artefact_type is ArtefactType.plot:
+        plot_type = kwargs.pop('plot_type')
+        file_format = kwargs.pop('file_format', 'png')
+        return PlotArtefact(name, output_path, plot_type, file_format, **kwargs)
+
+
 def load_artefacts_from_file(file_path: Path) -> Artefacts:
     """
     Load an artefacts file.
@@ -193,12 +209,8 @@ def load_artefacts_from_file(file_path: Path) -> Artefacts:
         name = raw_artefact.pop('name')
         output_path = raw_artefact.pop('output_path')
         artefact_type = ArtefactType[raw_artefact.pop('artefact_type')]
-        if artefact_type is ArtefactType.plot:
-            plot_type = raw_artefact.pop('plot_type')
-            artefacts.append(
-                PlotArtefact(name, output_path, plot_type, raw_artefact))
-        # else:
-        #     raise  #TODO
+        artefacts.append(
+            create_artefact(artefact_type, name, output_path, **raw_artefact))
 
     return Artefacts(artefacts)
 

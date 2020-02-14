@@ -12,6 +12,8 @@ from argparse_utils import enum_action
 
 import varats.development as dev
 from varats import settings
+from varats.paper.artefacts import ArtefactType, create_artefact, \
+    store_artefacts
 from varats.settings import get_value_or_default,\
     CFG, generate_benchbuild_config, save_config
 from varats.gui.main_window import MainWindow
@@ -343,16 +345,16 @@ def main_gen_benchbuild_config() -> None:
         if os.path.isabs(str(args.bb_root)):
             bb_root_path = str(args.bb_root)
         else:
-            bb_root_path = os.path.dirname(str(CFG["config_file"])) +\
-                "/" + str(args.bb_root)
+            bb_root_path = os.path.dirname(str(CFG["config_file"])) + \
+                           "/" + str(args.bb_root)
 
         print("Setting BB path to: ", bb_root_path)
         CFG["benchbuild_root"] = bb_root_path
         save_config()
 
     if CFG["benchbuild_root"].value is None:
-        CFG["benchbuild_root"] = os.path.dirname(str(CFG["config_file"]))\
-                                                 + "/benchbuild"
+        CFG["benchbuild_root"] = os.path.dirname(str(CFG["config_file"])) \
+                                 + "/benchbuild"
         print("Setting BB path to: ", CFG["benchbuild_root"])
         save_config()
 
@@ -395,17 +397,81 @@ def main_gen_commitmap() -> None:
         else:
             default_name = args.project_name
 
-        output_name = "{result_folder}/{project_name}/{file_name}.cmap"\
+        output_name = "{result_folder}/{project_name}/{file_name}.cmap" \
             .format(
-                result_folder=CFG["result_dir"],
-                project_name=default_name,
-                file_name=default_name)
+            result_folder=CFG["result_dir"],
+            project_name=default_name,
+            file_name=default_name)
     else:
         if args.output.endswith(".cmap"):
             output_name = args.output
         else:
             output_name = args.output + ".cmap"
     store_commit_map(cmap, output_name)
+
+
+def main_artefacts() -> None:
+    """
+    Main function for working with artefacts.
+
+    `vara-art`
+    """
+    parser = argparse.ArgumentParser("VaRA artefact manager")
+    sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
+
+    sub_parsers.add_parser(
+        'generate',
+        help="Generate artefacts. By default, all artefacts are"
+        "generated")
+    add_parser = sub_parsers.add_parser(
+        'add', help="Add a new artefact to the current paper config")
+    add_parser.add_argument("artefact_type",
+                            help="The type of the new artefact",
+                            choices=ArtefactType,
+                            action=enum_action(ArtefactType))
+    add_parser.add_argument("name",
+                            help="The name for the new artefact",
+                            type=str)
+    add_parser.add_argument(
+        "--output_path",
+        help=("The output file for the new artefact. "
+              "This is relative to `artefacts_dir` in the current `.vara.yml`"),
+        type=str,
+        default=".")
+    add_parser.add_argument("extra_args",
+                            metavar="KEY=VALUE",
+                            nargs=argparse.REMAINDER,
+                            help="Provide additional arguments "
+                            "that will be passed to the class that generates"
+                            "the artefact. (do not put spaces "
+                            "before or after the = sign). "
+                            "If a value contains spaces, you should define "
+                            'it with double quotes: foo="bar baz".')
+
+    args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
+
+    if 'subcommand' not in args:
+        parser.print_help()
+        return
+
+    extra_args = {
+        e[0]: e[1] for e in [arg.split("=") for arg in args['extra_args']]
+    }
+
+    if args['subcommand'] == 'generate':
+        for artefact in get_paper_config().get_all_artefacts():
+            artefact.generate_artefact()
+    elif args['subcommand'] == 'add':
+        paper_config = get_paper_config()
+
+        artefact = create_artefact(args['artefact_type'], args['name'],
+                                   args['output_path'], **extra_args)
+        paper_config.add_artefact(artefact)
+        store_artefacts(paper_config.artefacts, paper_config.path)
+
+
+if __name__ == '__main__':
+    main_artefacts()
 
 
 def main_casestudy() -> None:

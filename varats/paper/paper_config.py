@@ -6,6 +6,8 @@ automatically.
 import typing as tp
 from pathlib import Path
 
+from varats.paper.artefacts import Artefacts, load_artefacts_from_file, \
+    store_artefacts, Artefact
 from varats.paper.case_study import (load_case_study_from_file,
                                      store_case_study, CaseStudy)
 from varats.settings import CFG
@@ -29,6 +31,11 @@ class PaperConfig():
                 self.__case_studies[case_study.project_name].append(case_study)
             else:
                 self.__case_studies[case_study.project_name] = [case_study]
+        if (self.__path / 'artefacts.yaml').exists():
+            self.__artefacts = load_artefacts_from_file(self.__path /
+                                                        'artefacts.yaml')
+        else:
+            self.__artefacts = Artefacts([])
 
     @property
     def path(self) -> Path:
@@ -36,6 +43,13 @@ class PaperConfig():
         Path to the paper config folder
         """
         return self.__path
+
+    @property
+    def artefacts(self) -> Artefacts:
+        """
+        The artefacts of this paper config.
+        """
+        return self.__artefacts
 
     def get_case_studies(self, cs_name: str) -> tp.List[CaseStudy]:
         """
@@ -51,6 +65,15 @@ class PaperConfig():
             case_study for case_study_list in self.__case_studies.values()
             for case_study in case_study_list
         ]
+
+    def get_all_artefacts(self) -> tp.Iterable[Artefact]:
+        """
+        Returns an iterable of the artefacts of this paper config.
+        """
+        if self.__artefacts:
+            return self.__artefacts
+        else:
+            return []
 
     def has_case_study(self, cs_name: str) -> bool:
         """
@@ -86,8 +109,19 @@ class PaperConfig():
     def add_case_study(self, case_study: CaseStudy) -> None:
         """
         Add a new case study to this paper config.
+
+        Args: The case study to add.
         """
         self.__case_studies[case_study.project_name] += [case_study]
+
+    def add_artefact(self, artefact: Artefact) -> None:
+        """
+        Add a new artefact to this paper config.
+
+        Args:
+            artefact: The artefact to add.
+        """
+        self.__artefacts.add_artefact(artefact)
 
     def store(self) -> None:
         """
@@ -95,9 +129,9 @@ class PaperConfig():
         """
         for case_study_list in self.__case_studies.values():
             for case_study in case_study_list:
-                store_case_study(
-                    case_study,
-                    self.__path / str(case_study.project_name + ".case_study"))
+                store_case_study(case_study, self.__path)
+        if self.__artefacts:
+            store_artefacts(self.__artefacts, self.__path)
 
     def __str__(self) -> str:
         string = "Loaded case studies:\n"
