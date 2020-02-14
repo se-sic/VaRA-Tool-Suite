@@ -470,10 +470,6 @@ def main_artefacts() -> None:
         store_artefacts(paper_config.artefacts, paper_config.path)
 
 
-if __name__ == '__main__':
-    main_artefacts()
-
-
 def main_casestudy() -> None:
     """
     Allow easier management of case studies
