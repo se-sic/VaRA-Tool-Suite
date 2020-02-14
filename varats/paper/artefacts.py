@@ -2,19 +2,16 @@
 Artifacts (e.g., plots) that can be generated for a paper config.
 """
 import abc
-import errno
-import os
 import typing as tp
 from abc import ABC
 from enum import Enum
 from pathlib import Path
 
-import yaml
-
 from varats.data.version_header import VersionHeader
 from varats.plots.plot import Plot
 from varats.plots.plots import PlotRegistry
 from varats.settings import CFG
+from varats.utils.yaml_util import store_as_yaml, load_yaml
 
 
 class Artefact(ABC):
@@ -185,32 +182,25 @@ def load_artefacts_from_file(file_path: Path) -> Artefacts:
         file_path: The path to the artefacts file.
 
     """
-    if file_path.exists():
-        with open(file_path, "r") as cs_file:
-            documents = yaml.load_all(cs_file, Loader=yaml.CLoader)
-            # TODO: refactor check_version_header()
-            version_header = VersionHeader(next(documents))
-            version_header.raise_if_not_type("Artefacts")
-            version_header.raise_if_version_is_less_than(1)
+    documents = load_yaml(file_path)
+    version_header = VersionHeader(next(documents))
+    version_header.raise_if_not_type("Artefacts")
+    version_header.raise_if_version_is_less_than(1)
 
-            raw_artefacts = next(documents)
-            artefacts: tp.List[Artefact] = []
-            for raw_artefact in raw_artefacts.pop('artefacts'):
-                name = raw_artefact.pop('name')
-                output_path = raw_artefact.pop('output_path')
-                artefact_type = ArtefactType[raw_artefact.pop('artefact_type')]
-                if artefact_type is ArtefactType.plot:
-                    plot_type = raw_artefact.pop('plot_type')
-                    artefacts.append(
-                        PlotArtefact(name, output_path, plot_type,
-                                     raw_artefact))
-                # else:
-                #     raise  #TODO
+    raw_artefacts = next(documents)
+    artefacts: tp.List[Artefact] = []
+    for raw_artefact in raw_artefacts.pop('artefacts'):
+        name = raw_artefact.pop('name')
+        output_path = raw_artefact.pop('output_path')
+        artefact_type = ArtefactType[raw_artefact.pop('artefact_type')]
+        if artefact_type is ArtefactType.plot:
+            plot_type = raw_artefact.pop('plot_type')
+            artefacts.append(
+                PlotArtefact(name, output_path, plot_type, raw_artefact))
+        # else:
+        #     raise  #TODO
 
-            return Artefacts(artefacts)
-
-    raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
-                            str(file_path))
+    return Artefacts(artefacts)
 
 
 def store_artefacts(artefacts: Artefacts, artefacts_location: Path) -> None:
@@ -233,12 +223,8 @@ def store_artefacts(artefacts: Artefacts, artefacts_location: Path) -> None:
 # TODO: almost same as for case study -> refactor exporter
 def __store_artefacts_to_file(artefacts: Artefacts, file_path: Path) -> None:
     """
-    Store case study to file.
+    Store artefacts to file.
     """
-    with open(file_path, "w") as artefacts_file:
-        version_header: VersionHeader = VersionHeader.from_version_number(
-            'Artefacts', 1)
-
-        artefacts_file.write(
-            yaml.dump_all([version_header.get_dict(),
-                           artefacts.get_dict()]))
+    store_as_yaml(
+        file_path,
+        [VersionHeader.from_version_number('Artefacts', 1), artefacts])

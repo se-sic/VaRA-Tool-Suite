@@ -1,0 +1,37 @@
+import errno
+import os
+import typing as tp
+from pathlib import Path
+
+import yaml
+
+
+def store_as_yaml(file_path: Path, objects: tp.Iterable[tp.Any]) -> None:
+    """
+    Store objects in a yaml file.
+    
+    The objects that should be stored must implement a function get_dict()
+    that returns a dict representation of the object.
+    
+    Args:
+        file_path: The file to store the objects in.
+        objects: The objects to store.
+    """
+    with open(file_path, "w") as artefacts_file:
+        artefacts_file.write(yaml.dump_all([obj.get_dict() for obj in objects]))
+
+
+def load_yaml(file_path: Path) -> tp.Iterator[tp.Any]:
+    """
+    Load a yaml file.
+    Args:
+        file_path: The file to load.
+
+    Returns: A representation of the loaded yaml file.
+    """
+    if file_path.exists():
+        with open(file_path, "r") as yaml_file:
+            return yaml.load_all(yaml_file, Loader=yaml.CLoader)
+
+    raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
+                            str(file_path))

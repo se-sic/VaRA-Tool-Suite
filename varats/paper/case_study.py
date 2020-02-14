@@ -8,11 +8,8 @@ from collections import defaultdict
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-import errno
-import os
 import random
 
-import yaml
 from benchbuild.project import Project
 from scipy.stats import halfnorm
 import numpy as np
@@ -26,6 +23,7 @@ from varats.plots.plot_utils import check_required_args
 from varats.data.version_header import VersionHeader
 from varats.data.reports.commit_report import CommitMap
 from varats.data.report import MetaReport, FileStatusExtension
+from varats.utils.yaml_util import store_as_yaml, load_yaml
 
 
 class ExtenderStrategy(Enum):
@@ -561,39 +559,34 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
     """
     Load a case-study from a file.
     """
-    if file_path.exists():
-        with open(file_path, "r") as cs_file:
-            documents = yaml.load_all(cs_file, Loader=yaml.CLoader)
-            version_header = VersionHeader(next(documents))
-            version_header.raise_if_not_type("CaseStudy")
-            version_header.raise_if_version_is_less_than(1)
+    documents = load_yaml(file_path)
+    version_header = VersionHeader(next(documents))
+    version_header.raise_if_not_type("CaseStudy")
+    version_header.raise_if_version_is_less_than(1)
 
-            raw_case_study = next(documents)
-            stages: tp.List[CSStage] = []
-            for raw_stage in raw_case_study['stages']:
-                hash_id_tuples: tp.List[HashIDTuple] = []
-                for raw_hash_id_tuple in raw_stage['revisions']:
-                    hash_id_tuples.append(
-                        HashIDTuple(raw_hash_id_tuple['commit_hash'],
-                                    raw_hash_id_tuple['commit_id']))
-                extender_strategy = raw_stage.get('extender_strategy') or None
-                sampling_method = raw_stage.get('sampling_method') or None
-                release_type = raw_stage.get('release_type') or None
-                stages.append(
-                    CSStage(
-                        raw_stage.get('name') or None,
-                        ExtenderStrategy[extender_strategy]
-                        if extender_strategy is not None else None,
-                        SamplingMethod[sampling_method]
-                        if sampling_method is not None else None,
-                        ReleaseType[release_type]
-                        if release_type is not None else None, hash_id_tuples))
+    raw_case_study = next(documents)
+    stages: tp.List[CSStage] = []
+    for raw_stage in raw_case_study['stages']:
+        hash_id_tuples: tp.List[HashIDTuple] = []
+        for raw_hash_id_tuple in raw_stage['revisions']:
+            hash_id_tuples.append(
+                HashIDTuple(raw_hash_id_tuple['commit_hash'],
+                            raw_hash_id_tuple['commit_id']))
+            extender_strategy = raw_stage.get('extender_strategy') or None
+            sampling_method = raw_stage.get('sampling_method') or None
+            release_type = raw_stage.get('release_type') or None
+            stages.append(
+                CSStage(
+                    raw_stage.get('name') or None,
+                    ExtenderStrategy[extender_strategy]
+                    if extender_strategy is not None else None,
+                    SamplingMethod[sampling_method]
+                    if sampling_method is not None else None,
+                    ReleaseType[release_type]
+                    if release_type is not None else None, hash_id_tuples))
 
-            return CaseStudy(raw_case_study['project_name'],
-                             raw_case_study['version'], stages)
-
-    raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
-                            str(file_path))
+    return CaseStudy(raw_case_study['project_name'], raw_case_study['version'],
+                     stages)
 
 
 def store_case_study(case_study: CaseStudy, case_study_location: Path) -> None:
@@ -607,30 +600,18 @@ def store_case_study(case_study: CaseStudy, case_study_location: Path) -> None:
     if case_study_location.suffix == '.case_study':
         __store_case_study_to_file(case_study, case_study_location)
     else:
-        __store_case_study_to_paper_config(case_study, case_study_location)
-
-
-def __store_case_study_to_paper_config(case_study: CaseStudy,
-                                       paper_config_path: Path) -> None:
-    """
-    Store case study to file in the specified paper_config.
-    """
-    file_name = "{project_name}_{version}.case_study".format(
-        project_name=case_study.project_name, version=case_study.version)
-    __store_case_study_to_file(case_study, paper_config_path / file_name)
+        file_name = "{project_name}_{version}.case_study".format(
+            project_name=case_study.project_name, version=case_study.version)
+        __store_case_study_to_file(case_study, case_study_location / file_name)
 
 
 def __store_case_study_to_file(case_study: CaseStudy, file_path: Path) -> None:
     """
     Store case study to file.
     """
-    with open(file_path, "w") as cs_file:
-        version_header: VersionHeader = \
-            VersionHeader.from_version_number('CaseStudy', 1)
-
-        cs_file.write(
-            yaml.dump_all([version_header.get_dict(),
-                           case_study.get_dict()]))
+    store_as_yaml(
+        file_path,
+        [VersionHeader.from_version_number('CaseStudy', 1), case_study])
 
 
 def get_newest_result_files_for_case_study(case_study: CaseStudy,
