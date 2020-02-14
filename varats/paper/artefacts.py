@@ -153,14 +153,14 @@ class Artefacts:
     """
 
     def __init__(self, artefacts: tp.Iterable[Artefact]) -> None:
-        self.__artefacts = list(artefacts)
+        self.__artefacts = {artefact.name: artefact for artefact in artefacts}
 
     @property
     def artefacts(self) -> tp.Iterable[Artefact]:
         """
         An iterator of the artefacts in this collection.
         """
-        return self.__artefacts
+        return self.__artefacts.values()
 
     def add_artefact(self, artefact: Artefact) -> None:
         """
@@ -169,10 +169,10 @@ class Artefacts:
         Args:
             artefact: The artefact to add.
         """
-        self.__artefacts.append(artefact)
+        self.__artefacts[artefact.name] = artefact
 
     def __iter__(self) -> tp.Iterator[Artefact]:
-        return self.__artefacts.__iter__()
+        return self.__artefacts.values().__iter__()
 
     def get_dict(self) -> tp.Dict[str, tp.List[tp.Dict[str, str]]]:
         """
