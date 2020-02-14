@@ -53,7 +53,7 @@ class Artefact(ABC):
         """
         The output path of this artefact.
         """
-        return CFG['plots']['plot_dir'] / self.__output_path
+        return Path(CFG['plots']['plot_dir']) / self.__output_path
 
     def get_dict(self) -> tp.Dict[str, str]:
         """
@@ -94,7 +94,7 @@ class PlotArtefact(Artefact):
                  name: str,
                  output_path: Path,
                  plot_type: str,
-                 file_format='png',
+                 file_format: str = 'png',
                  **kwargs: tp.Any) -> None:
         super().__init__(ArtefactType.plot, name, output_path)
         self.__plot_type = plot_type
@@ -165,7 +165,7 @@ class Artefacts:
     def __iter__(self) -> tp.Iterator[Artefact]:
         return self.__artefacts.__iter__()
 
-    def get_dict(self):
+    def get_dict(self) -> tp.Dict[str, tp.List[tp.Dict[str, str]]]:
         """
         Construct a dict from these artefacts for easy export to yaml.
         """
