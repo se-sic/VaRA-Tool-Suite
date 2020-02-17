@@ -22,7 +22,7 @@ try:
 except DistributionNotFound:
     pass
 
-project = 'VaRA-Tool-Suite'
+project = 'VaRA'
 copyright = '2020, Florian Sattler'
 author = 'Florian Sattler'
 
