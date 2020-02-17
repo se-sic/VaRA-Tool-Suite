@@ -558,6 +558,11 @@ class CaseStudy():
 def load_case_study_from_file(file_path: Path) -> CaseStudy:
     """
     Load a case-study from a file.
+
+    Args:
+        file_path: path to the case study file
+
+    Returns: initialized case study
     """
     documents = load_yaml(file_path)
     version_header = VersionHeader(next(documents))

@@ -19,13 +19,13 @@ class Artefact(ABC):
     An `Artefact` is a file that can be generated from the results produced
     by a paper config.
     Examples for artefacts are plots or result tables.
-    
+
     Args:
-        artefact_type: The type of this artefact. 
+        artefact_type: The type of this artefact.
         name: The name of the artefact.
-        output_path: The path where the file this artefact produces will be 
+        output_path: The path where the file this artefact produces will be
                      stored.
-        
+
     """
 
     def __init__(self, artefact_type: 'ArtefactType', name: str,
@@ -37,7 +37,7 @@ class Artefact(ABC):
     @property
     def artefact_type(self) -> 'ArtefactType':
         """
-        The type of this artefact. 
+        The type of this artefact.
         """
         return self.__artefact_type
 
@@ -80,23 +80,19 @@ class Artefact(ABC):
 class PlotArtefact(Artefact):
     """
     An artefact defining a plot.
-    
+
     Args:
         name: The name of the artefact.
-        output_path: The path where the file this artefact produces will be 
+        output_path: The path where the file this artefact produces will be
                      stored.
         plot_type: The type of plot that will be generated.
         file_format: The file format of the generated plot.
         kwargs: Additional arguments that will be passed to the plot class.
     """
 
-    def __init__(self,
-                 name: str,
-                 output_path: Path,
-                 plot_type: str,
-                 file_format: str,
-                 **kwargs: tp.Any) -> None:
-        super().__init__(ArtefactType.plot, name, output_path)
+    def __init__(self, name: str, output_path: Path, plot_type: str,
+                 file_format: str, **kwargs: tp.Any) -> None:
+        super(PlotArtefact, self).__init__(ArtefactType.plot, name, output_path)
         self.__plot_type = plot_type
         self.__plot_type_class = PlotRegistry.get_class_for_plot_type(plot_type)
         self.__file_format = file_format
@@ -188,6 +184,9 @@ def create_artefact(artefact_type: 'ArtefactType', name: str, output_path: Path,
         plot_type = kwargs.pop('plot_type')
         file_format = kwargs.pop('file_format', 'png')
         return PlotArtefact(name, output_path, plot_type, file_format, **kwargs)
+
+    # TODO : what happens here?
+    raise NotImplementedError
 
 
 def load_artefacts_from_file(file_path: Path) -> Artefacts:

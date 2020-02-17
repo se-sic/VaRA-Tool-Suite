@@ -12,10 +12,10 @@ from argparse_utils import enum_action
 
 import varats.development as dev
 from varats import settings
-from varats.paper.artefacts import ArtefactType, create_artefact, \
-    store_artefacts
-from varats.settings import get_value_or_default,\
-    CFG, generate_benchbuild_config, save_config
+from varats.paper.artefacts import (ArtefactType, create_artefact,
+                                    store_artefacts)
+from varats.settings import (get_value_or_default, CFG,
+                             generate_benchbuild_config, save_config)
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
 from varats.vara_manager import (setup_vara, BuildType, LLVMProjects,

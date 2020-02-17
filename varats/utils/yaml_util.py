@@ -9,10 +9,10 @@ import yaml
 def store_as_yaml(file_path: Path, objects: tp.Iterable[tp.Any]) -> None:
     """
     Store objects in a yaml file.
-    
+
     The objects that should be stored must implement a function get_dict()
     that returns a dict representation of the object.
-    
+
     Args:
         file_path: The file to store the objects in.
         objects: The objects to store.
@@ -31,7 +31,8 @@ def load_yaml(file_path: Path) -> tp.Iterator[tp.Any]:
     """
     if file_path.exists():
         with open(file_path, "r") as yaml_file:
-            return list(yaml.load_all(yaml_file, Loader=yaml.CLoader)).__iter__()
+            return list(yaml.load_all(yaml_file,
+                                      Loader=yaml.CLoader)).__iter__()
 
     raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
                             str(file_path))
