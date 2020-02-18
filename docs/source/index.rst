@@ -21,6 +21,8 @@ VaRA-TS API Reference
    :caption: Contents:
 
    vara-ts-api/data
+   vara-ts-api/experiments
+   vara-ts-api/paper
 
 VaRA Docs
 =========
