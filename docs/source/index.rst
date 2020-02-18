@@ -28,6 +28,7 @@ VaRA Docs
    :maxdepth: 2
    :caption: Contents:
 
+   vara/setup
    vara/debugging
 
 VaRA API Reference
