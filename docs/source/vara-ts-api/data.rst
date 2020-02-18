@@ -16,7 +16,7 @@ Furthermore, report implementers have the option to customize the filename even 
 As a simple example and help to implement your own report, take a look at the :ref:`EmptyReport`.
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
     :caption: List of provided report classes
 
     data_reports/empty_report
