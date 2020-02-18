@@ -62,7 +62,7 @@ class Plot(metaclass=PlotRegistry):
         Access the kwargs passed to the initial plot.
 
         Test:
-        >>> p = Plot('test', **{'foo': 'bar', 'baz': 'bazzer'})
+        >>> p = Plot('test', foo='bar', baz='bazzer')
         >>> p.plot_kwargs['foo']
         'bar'
         >>> p.plot_kwargs['baz']
