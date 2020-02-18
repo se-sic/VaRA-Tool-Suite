@@ -23,6 +23,10 @@ VaRA-TS API Reference
    vara-ts-api/data
    vara-ts-api/experiments
    vara-ts-api/paper
+   vara-ts-api/plots
+   vara-ts-api/projects
+   vara-ts-api/tools
+   vara-ts-api/utils.rst
 
 VaRA Docs
 =========

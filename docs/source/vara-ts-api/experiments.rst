@@ -32,6 +32,7 @@ Experiment utilities module
 ...........................
 
 .. automodule:: varats.utils.experiment_util
+    :noindex:
     :members:
     :undoc-members:
     :show-inheritance:
