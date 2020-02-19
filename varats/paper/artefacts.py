@@ -1,5 +1,11 @@
 """
-Artifacts (e.g., plots) that can be generated for a paper config.
+This module allows to attach :class:`artefact definitions<Artefact>`
+to a :class:`paper config<varats.paper.paper_config>`.
+This way, the artefacts, like :class:`plots<PlotArtefact>` or result tables,
+can be generated from result files automatically.
+
+Typically, a paper config has a file ``artefacts.yaml`` that manages artefact
+definitions.
 """
 import abc
 import typing as tp
@@ -16,16 +22,15 @@ from varats.utils.yaml_util import store_as_yaml, load_yaml
 
 class Artefact(ABC):
     """
-    An `Artefact` is a file that can be generated from the results produced
-    by a paper config.
-    Examples for artefacts are plots or result tables.
+    An ``Artefact`` contains all information that is necessary to generate
+    a certain artefact.
+    Subclasses of this class specify concrete artefact types,
+    like :class:`plots<PlotArtefact>`, that require additional attributes.
 
     Args:
-        artefact_type: The type of this artefact.
-        name: The name of the artefact.
-        output_path: The path where the file this artefact produces will be
-                     stored.
-
+        artefact_type: The :class:`type<ArtefactType>` of this artefact.
+        name: The name of this artefact.
+        output_path: The output path for this artefact.
     """
 
     def __init__(self, artefact_type: 'ArtefactType', name: str,
@@ -37,21 +42,27 @@ class Artefact(ABC):
     @property
     def artefact_type(self) -> 'ArtefactType':
         """
-        The type of this artefact.
+        The :class:`type<ArtefactType>` of this artefact.
         """
         return self.__artefact_type
 
     @property
     def name(self) -> str:
         """
-        The name of this artefact
+        The name of this artefact.
+
+        This uniquely identifies an artefact in an
+        :class:`Artefacts` collection.
         """
         return self.__name
 
     @property
     def output_path(self) -> Path:
         """
-        The output path of this artefact.
+        The output path for this artefact.
+
+        The output path is relative to the directory specified as ``plot_dir``
+        in the current vara config.
         """
         return Path(str(CFG['plots']['plot_dir'])) / self.__output_path
 
@@ -59,13 +70,14 @@ class Artefact(ABC):
         """
         Construct a dict from this artefact for easy export to yaml.
 
-        Subclasses should first call this function on `super()` and
+        Subclasses should first call this function on ``super()`` and then
         extend the returned dict with their own properties.
 
         Returns: A dict representation of this artefact.
         """
         return {
             'artefact_type': self.artefact_type.name,
+            'artefact_type_version': self.artefact_type.value[1],
             'name': self.name,
             'output_path': str(self.output_path)
         }
@@ -79,13 +91,15 @@ class Artefact(ABC):
 
 class PlotArtefact(Artefact):
     """
-    An artefact defining a plot.
+    An artefact defining a :class:`plot<varats.plots.plot.Plot>`.
 
     Args:
-        name: The name of the artefact.
-        output_path: The path where the file this artefact produces will be
+        name: The name of this artefact.
+        output_path: The path where the plot this artefact produces will be
                      stored.
-        plot_type: The type of plot that will be generated.
+        plot_type: The
+                    :attr:`type of plot<varats.plots.plots.PlotRegistry.plots>`
+                    that will be generated.
         file_format: The file format of the generated plot.
         kwargs: Additional arguments that will be passed to the plot class.
     """
@@ -101,14 +115,15 @@ class PlotArtefact(Artefact):
     @property
     def plot_type(self) -> str:
         """
-        The type of plot that will be generated.
+        The :attr:`type of plot<varats.plots.plots.PlotRegistry.plots>` that
+        will be generated.
         """
         return self.__plot_type
 
     @property
     def plot_type_class(self) -> tp.Type[Plot]:
         """
-        The class associated with plot_type.
+        The class associated with :func:`plot_type`.
         """
         return self.__plot_type_class
 
@@ -134,18 +149,30 @@ class PlotArtefact(Artefact):
         return artefact_dict
 
     def generate_artefact(self) -> None:
+        """
+        Generate the specified plot.
+        """
         plot = self.plot_type_class(**self.plot_kwargs)
         plot.style = "ggplot"
         plot.save(self.file_format)
 
 
 class ArtefactType(Enum):
+    """
+    Enum for the different artefact types.
+
+    The name is used in the ``artefacts.yaml`` to identify what kind of artefact
+    is described.
+    The values are tuples ``(artefact_class, version)`` consisting of the class
+    responsible for that kind of artefact and a version number to allow
+    evolution of artefacts.
+    """
     plot = (PlotArtefact, 1)
 
 
 class Artefacts:
     """
-    A collection of `Artefact`s.
+    A collection of :class:`Artefact`\ s.
     """
 
     def __init__(self, artefacts: tp.Iterable[Artefact]) -> None:
@@ -154,13 +181,13 @@ class Artefacts:
     @property
     def artefacts(self) -> tp.Iterable[Artefact]:
         """
-        An iterator of the artefacts in this collection.
+        An iterator of the :class:`Artefact`\ s in this collection.
         """
         return self.__artefacts.values()
 
     def add_artefact(self, artefact: Artefact) -> None:
         """
-        Add an artefact to this collection of artefacts.
+        Add an :class:`Artefact` to this collection.
 
         Args:
             artefact: The artefact to add.
@@ -180,6 +207,18 @@ class Artefacts:
 
 def create_artefact(artefact_type: 'ArtefactType', name: str, output_path: Path,
                     **kwargs: tp.Any) -> Artefact:
+    """
+    Create a new :class:`Artefact` from the provided parameters.
+
+    Args:
+        artefact_type: The :class:`type<ArtefactType>` for the artefact.
+        name: The name of the artefact.
+        output_path: The output path for the artefact.
+        **kwargs: Additional arguments that are passed to the class selected by
+                  ``artefact_type``.
+
+    Returns: The created artefact.
+    """
     if artefact_type is ArtefactType.plot:
         plot_type = kwargs.pop('plot_type')
         file_format = kwargs.pop('file_format', 'png')
@@ -195,6 +234,7 @@ def load_artefacts_from_file(file_path: Path) -> Artefacts:
     Args:
         file_path: The path to the artefacts file.
 
+    Returns: The artefacts created from the given file.
     """
     documents = load_yaml(file_path)
     version_header = VersionHeader(next(documents))

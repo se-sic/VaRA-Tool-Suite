@@ -12,6 +12,7 @@ Paper and case study modules
 ----------------------------
 * :ref:`Module: paper_config`
 * :ref:`Module: case_study`
+* :ref:`Module: artefacts`
 * :ref:`Module: paper_config_manager`
 
 Module: paper_config
@@ -28,6 +29,16 @@ Module: case_study
 ..................
 
 .. automodule:: varats.paper.case_study
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+-----
+
+Module: artefacts
+..................
+
+.. automodule:: varats.paper.artefacts
     :members:
     :undoc-members:
     :show-inheritance:
