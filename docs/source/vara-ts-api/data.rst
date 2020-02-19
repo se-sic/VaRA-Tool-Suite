@@ -5,7 +5,7 @@ Data handling
 * :ref:`data handling utilities`
 
 Reports
------------
+-------
 
 VaRA-TS manages experiment result data in the form of reports.
 The report file contains all generated data during the experiment and the report class gives the user a interface to interact with the data.
@@ -16,7 +16,7 @@ Furthermore, report implementers have the option to customize the filename even 
 As a simple example and help to implement your own report, take a look at the :ref:`EmptyReport`.
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
     :caption: List of provided report classes
 
     data_reports/empty_report
@@ -30,6 +30,8 @@ Report module
     :undoc-members:
     :show-inheritance:
 
+-----
+
 Data handling utilities
 -----------------------
 
@@ -41,6 +43,18 @@ Module: cache_helper
     :undoc-members:
     :show-inheritance:
 
+-----
+
+Module: data_manager
+......................
+
+.. automodule:: varats.data.data_manager
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+-----
+
 Module: version_header
 ......................
 
@@ -48,4 +62,3 @@ Module: version_header
     :members:
     :undoc-members:
     :show-inheritance:
-
