@@ -185,8 +185,7 @@ def create_artefact(artefact_type: 'ArtefactType', name: str, output_path: Path,
         file_format = kwargs.pop('file_format', 'png')
         return PlotArtefact(name, output_path, plot_type, file_format, **kwargs)
 
-    # TODO : what happens here?
-    raise NotImplementedError
+    raise AssertionError("Missing create for artefact type ", artefact_type)
 
 
 def load_artefacts_from_file(file_path: Path) -> Artefacts:
@@ -231,7 +230,6 @@ def store_artefacts(artefacts: Artefacts, artefacts_location: Path) -> None:
                                   artefacts_location / 'artefacts.yaml')
 
 
-# TODO: almost same as for case study -> refactor exporter
 def __store_artefacts_to_file(artefacts: Artefacts, file_path: Path) -> None:
     """
     Store artefacts to file.

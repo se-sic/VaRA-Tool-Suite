@@ -2,8 +2,8 @@ import argparse
 
 from argparse_utils import enum_action
 
-from varats.paper.artefacts import ArtefactType, create_artefact, \
-    store_artefacts
+from varats.paper.artefacts import (ArtefactType, create_artefact,
+                                    store_artefacts)
 from varats.paper.paper_config import get_paper_config
 
 
