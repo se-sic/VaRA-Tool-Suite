@@ -8,6 +8,17 @@ Tools overview
 * :ref:`vara-plot`
 
 vara-plot
-*********
+.........
 
 TODO: add example
+
+
+vara-cs
+.......
+TODO: add example
+
+vara-cs ext
+***********
+
+vara-cs status
+**************
