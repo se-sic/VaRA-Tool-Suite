@@ -140,7 +140,7 @@ class PlotArtefact(Artefact):
 
 
 class ArtefactType(Enum):
-    plot = PlotArtefact
+    plot = (PlotArtefact, 1)
 
 
 class Artefacts:
@@ -207,6 +207,11 @@ def load_artefacts_from_file(file_path: Path) -> Artefacts:
         name = raw_artefact.pop('name')
         output_path = raw_artefact.pop('output_path')
         artefact_type = ArtefactType[raw_artefact.pop('artefact_type')]
+        artefact_type_version = ArtefactType[raw_artefact.pop(
+            'artefact_type_version')]
+        if artefact_type_version < artefact_type.value[1]:
+            print(f"WARNING: artefact {name} uses an old version of artefact "
+                  f"type {artefact_type.name}.")
         artefacts.append(
             create_artefact(artefact_type, name, output_path, **raw_artefact))
 
