@@ -16,6 +16,7 @@ addons:
 install:
   - pip install .
   - pip install -r requirements.txt
+  - pip install -r docs/requirements.txt
   - pip install codecov
   - pip install pytest-cov
   - pip install coverage
@@ -32,6 +33,7 @@ script:
   - coverage combine -a
   - coverage report
   - mypy --strict varats
+  - cd docs/ && make html
 
 after_success:
   - codecov
