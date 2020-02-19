@@ -52,7 +52,8 @@ def main() -> None:
         return
 
     extra_args = {
-        e[0]: e[1] for e in [arg.split("=") for arg in args['extra_args']]
+        e[0].replace('-', '_'): e[1]
+        for e in [arg.split("=") for arg in args['extra_args']]
     }
 
     if args['subcommand'] == 'generate':
