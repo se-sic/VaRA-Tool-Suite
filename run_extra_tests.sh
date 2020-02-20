@@ -42,7 +42,13 @@ check_err
 $COVERAGE $(which vara-art) add plot overview report_type=EmptyReport plot_type=paper_config_overview_plot
 check_err
 
-$COVERAGE $(which vara-art) generate
+$COVERAGE $(which vara-art) generate --only overview
+check_err
+
+$COVERAGE $(which vara-art) list
+check_err
+
+$COVERAGE $(which vara-art) show overview
 check_err
 
 #rm -rf extra_tests/
