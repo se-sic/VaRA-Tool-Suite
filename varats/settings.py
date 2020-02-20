@@ -115,6 +115,12 @@ CFG['plots'] = {
     },
 }
 
+CFG['artefacts'] = {
+    "artefacts_dir": {
+        "desc": "Folder for generated artefacts",
+        "default": None,
+    },
+}
 
 def get_value_or_default(cfg: s.Configuration, varname: str,
                          default: tp.Any) -> tp.Any:

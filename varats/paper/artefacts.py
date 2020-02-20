@@ -61,10 +61,10 @@ class Artefact(ABC):
         """
         The output path for this artefact.
 
-        The output path is relative to the directory specified as ``plot_dir``
-        in the current vara config.
+        The output path is relative to the directory specified as
+        ``artefacts.artefacts_dir`` in the current vara config.
         """
-        return Path(str(CFG['plots']['plot_dir'])) / self.__output_path
+        return Path(str(CFG['artefacts']['artefacts_dir'])) / self.__output_path
 
     def get_dict(self) -> tp.Dict[str, str]:
         """
@@ -188,6 +188,8 @@ class Artefacts:
     def add_artefact(self, artefact: Artefact) -> None:
         """
         Add an :class:`Artefact` to this collection.
+
+        If there already exists an artefact with the same name it is overridden.
 
         Args:
             artefact: The artefact to add.
