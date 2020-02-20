@@ -1,5 +1,7 @@
 """
-Module for interacting with paper configs.
+Module for interacting and managing paper configs and case studies, e.g.,
+this modules provides functionality to visualize the status of case studies
+or to package a whole paper config into a zip folder.
 """
 
 import typing as tp
@@ -24,7 +26,17 @@ def show_status_of_case_studies(report_name: str, filter_regex: str,
                                 print_rev_list: bool, sep_stages: bool,
                                 print_legend: bool) -> None:
     """
-    Show the status of all matching case studies.
+    Prints the status of all matching case studies to the console.
+
+    Args:
+        report_name: name of the report whose files will be considered
+        filter_regex: applied to a ``name_version`` string for filtering the
+                      amount of case studies to be shown
+        short_status: print only a short version of the status information
+        sort: sort the output order of the case studies
+        print_rev_list: print a list of revisions for every case study
+        sep_stages: print each stage separeted
+        print_legend: print a legend for the different types
     """
     current_config = PC.get_paper_config()
 
@@ -68,6 +80,12 @@ def get_revision_list(case_study: CaseStudy) -> str:
     """
     Returns a string with a list of revsion from the case-study,
     group by case-study stages.
+
+    Args:
+        case_study: to print revisions for
+
+    Returns:
+        formated string that lists all revisions
     """
     res_str = "CS: {project}_{version}:\n".format(
         project=case_study.project_name, version=case_study.version)
@@ -84,7 +102,15 @@ def get_occurrences(
         status_occurrences: tp.DefaultDict[FileStatusExtension, tp.Set[str]],
         use_color: bool = False) -> str:
     """
-    Returns a string with all status occurrences.
+    Returns a string with all status occurrences of a case study.
+
+    Args:
+        status_occurrences: mapping from all occured status to a set of
+                            revisions
+        use_color: add color escape sequences for highlighting
+
+    Returns:
+        a string with all status occurrences of a case study
     """
     status = ""
 
@@ -125,7 +151,16 @@ def get_total_status(total_status_occurrences: tp.
                      longest_cs_name: int,
                      use_color: bool = False) -> str:
     """
-    Returns a status string showing the total mount of occurrences.
+    Returns a status string showing the total amount of occurrences.
+
+    Args:
+        total_status_occurrences: mapping from all occured status to a set of
+                                  all revisions (total amount of revisions)
+        longest_cs_name: amount of chars that should be considered for
+        use_color: add color escape sequences for highlighting
+
+    Returns:
+        a string with all status occurrences of all case studies
     """
     status = "-" * 80
     status += "\n"
@@ -142,8 +177,20 @@ def get_short_status(
         total_status_occurrences: tp.Optional[
             tp.DefaultDict[FileStatusExtension, tp.Set[str]]] = None) -> str:
     """
-    Return a string representation that describes the current status of
+    Return a short string representation that describes the current status of
     the case study.
+
+    Args:
+        case_study: to print
+        result_file_type: report type to print
+        longest_cs_name: amount of chars that should be considered for
+                         offsetting to allow case study name alignment
+        use_color: add color escape sequences for highlighting
+        total_status_occurrences: mapping from all occured status to a set of
+                                  all revisions (total amount of revisions)
+
+    Returns:
+        a short string representation of a case study
     """
     status = "CS: {project}_{version}: ".format(
         project=case_study.project_name, version=case_study.version) + "".ljust(
@@ -175,6 +222,19 @@ def get_status(case_study: CaseStudy,
     """
     Return a string representation that describes the current status of
     the case study.
+
+    Args:
+        case_study: to print the status for
+        result_file_type: report type to print
+        longest_cs_name: amount of chars that should be considered for
+        sep_stages: print each stage separeted
+        sort: sort the output order of the case studies
+        use_color: add color escape sequences for highlighting
+        total_status_occurrences: mapping from all occured status to a set of
+                                  all revisions (total amount of revisions)
+
+    Returns:
+        a full string representation of all case studies
     """
     status = get_short_status(case_study, result_file_type, longest_cs_name,
                               use_color, total_status_occurrences) + "\n"
@@ -215,7 +275,16 @@ def get_status(case_study: CaseStudy,
 
 
 def get_legend(use_color: bool = False) -> str:
-    """ Return a formated legend that explains all status numbers. """
+    """
+    Builds up a complete legend that explains all status numbers and their
+    colors.
+
+    Args:
+        use_color: add color escape sequences for highlighting
+
+    Returns:
+        a legend to explain different status
+    """
     legend_str = "CS: project_42: (Success / Total) processed ["
 
     for file_status in FileStatusExtension:
@@ -233,6 +302,12 @@ def package_paper_config(output_file: Path, cs_filter_regex: tp.Pattern[str],
                          report_names: tp.List[str]) -> None:
     """
     Package all files from a paper config into a zip folder.
+
+    Args:
+        output_file: file to write to
+        cs_filter_regex: applied to a ``name_version`` string for filtering the
+                         case studies to be included in the zip archive
+        report_names: list of report names that should be added
     """
     current_config = PC.get_paper_config()
     result_dir = Path(str(CFG['result_dir']))
