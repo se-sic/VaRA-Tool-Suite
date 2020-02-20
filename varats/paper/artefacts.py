@@ -76,10 +76,10 @@ class Artefact(ABC):
         Returns: A dict representation of this artefact.
         """
         return {
-            'artefact_type': self.artefact_type.name,
-            'artefact_type_version': self.artefact_type.value[1],
-            'name': self.name,
-            'output_path': str(self.output_path)
+            'artefact_type': self.__artefact_type.name,
+            'artefact_type_version': self.__artefact_type.value[1],
+            'name': self.__name,
+            'output_path': str(self.__output_path)
         }
 
     @abc.abstractmethod
@@ -145,7 +145,7 @@ class PlotArtefact(Artefact):
         artefact_dict = super().get_dict()
         artefact_dict['plot_type'] = self.__plot_type
         artefact_dict['file_format'] = self.__file_format
-        artefact_dict = {**self.plot_kwargs, **artefact_dict}
+        artefact_dict = {**self.__plot_kwargs, **artefact_dict}
         return artefact_dict
 
     def generate_artefact(self) -> None:
