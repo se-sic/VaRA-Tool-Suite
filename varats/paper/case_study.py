@@ -54,7 +54,7 @@ class SamplingMethod(Enum):
         Generate a distribution function for the specified sampling method.
 
         Returns:
-            a callable that allows the caller to draw 'n' numbers
+            a callable that allows the caller to draw ``n`` numbers
             according to the selected distribution
         """
         if self == SamplingMethod.uniform:
@@ -243,7 +243,7 @@ class CSStage():
             revision: project revision to check
 
         Returns:
-            True, in case the revision is part of the case study
+            ``True``, in case the revision is part of the case study, ``False`` otherwise.
         """
         for cs_revision in self.__revisions:
             if cs_revision.commit_hash.startswith(revision):
@@ -357,7 +357,7 @@ class CaseStudy():
             stage_name: name of the stage to lookup
 
         Returns:
-            the stage, corresponding with the 'stage_name', or None
+            the stage, corresponding with the 'stage_name', or ``None``
         """
         for stage in self.__stages:
             if stage.name == stage_name:
@@ -374,7 +374,7 @@ class CaseStudy():
             stage_name: name of the stage to lookup
 
         Returns:
-            the stage index, corresponding with the 'stage_name', or None
+            the stage index, corresponding with the 'stage_name', or ``None``
         """
         for i in range(len(self.__stages)):
             if self.__stages[i].name == stage_name:
@@ -387,7 +387,7 @@ class CaseStudy():
         Check if a revision is part of this case study.
 
         Returns:
-            True, if the revision was found in one of the stages
+            ``True``, if the revision was found in one of the stages, ``False`` otherwise
         """
         for stage in self.__stages:
             if stage.has_revision(revision):
@@ -400,7 +400,7 @@ class CaseStudy():
         Checks if a revision is in a specific stage.
 
         Returns:
-            True, if the revision was found in the specified stage
+            ``True``, if the revision was found in the specified stage, ``False`` otherwise
         """
         if self.num_stages <= num_stage:
             return False
@@ -734,7 +734,7 @@ def get_case_study_file_name_filter(case_study: CaseStudy
     user to check if a file name is related to this case study.
 
     Returns:
-        a filter function that returns True in cases where a revision of file
+        a filter function that returns ``True`` in cases where a revision of file
         belongs to this case study
     """
 
@@ -743,8 +743,8 @@ def get_case_study_file_name_filter(case_study: CaseStudy
         Filter files that are not in the case study.
 
         Returns:
-            True if a case_study is set and the commit_hash of the file
-            is not part of this case_study, otherwise, False.
+            ``True`` if a case_study is set and the commit_hash of the file
+            is not part of this case_study, otherwise, ``False``.
         """
         if case_study is None:
             return False
@@ -853,7 +853,7 @@ def extend_with_extra_revs(case_study: CaseStudy, cmap: CommitMap,
 def extend_with_revs_per_year(case_study: CaseStudy, cmap: CommitMap,
                               **kwargs: tp.Any) -> None:
     """
-    Extend a case_study with 'n' revisions per year, specifed by the caller
+    Extend a case_study with ``n`` revisions per year, specifed by the caller
     with kwargs['revs_per_year'].
 
     Args:
