@@ -185,6 +185,18 @@ class Artefacts:
         """
         return self.__artefacts.values()
 
+    def get_artefact(self, name: str) -> tp.Optional[Artefact]:
+        """
+        Lookup an artefact by its name.
+
+        Args:
+            name: The name of the artefact to retrieve.
+
+        Returns:
+            The artefact with the name ``name`` if available, else ``None``.
+        """
+        return self.__artefacts.get(name)
+
     def add_artefact(self, artefact: Artefact) -> None:
         """
         Add an :class:`Artefact` to this collection.
