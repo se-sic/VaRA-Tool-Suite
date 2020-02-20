@@ -2,7 +2,6 @@
 Test case study
 """
 import unittest
-import typing as tp
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
