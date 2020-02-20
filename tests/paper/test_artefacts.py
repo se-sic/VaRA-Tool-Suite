@@ -59,8 +59,9 @@ class TestArtefacts(unittest.TestCase):
         """
         Check if artefact output_path is loaded correctly.
         """
-        self.assertEqual(self.artefact.output_path,
-                         Path(str(CFG['plots']['plot_dir'])) / 'some/path')
+        self.assertEqual(
+            self.artefact.output_path,
+            Path(str(CFG['artefacts']['artefacts_dir'])) / 'some/path')
 
     def test_artefact_to_dict(self):
         """
