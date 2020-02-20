@@ -11,7 +11,8 @@ Tools overview
 vara-art
 *********
 
-This tool manages the :ref:`Artefacts<Module: artefacts>` of a paper config.
+This tool manages the :ref:`Artefacts<Module: artefacts>` of a
+:ref:`paper config<How to use paper configs>`.
 
 .. program-output:: vara-art -h
 
@@ -20,17 +21,34 @@ The subcommand ``vara-art add`` adds a new artefact to the current paper config.
 .. program-output:: vara-art add -h
 
 For example, an artefact that will generate a ``paper_config_overview_plot``
-for the current paper config (see :ref:`plots<Module: plots>`) can be added via:
+(see :ref:`plots<Module: plots>`) for the current paper config can be added
+via::
 
-.. code-block:: bash
+    vara-art add plot "overview plot" report_type=EmptyReport plot_type=paper_config_overview_plot
 
-    vara-art add plot overview2 report_type=EmptyReport plot_type=paper_config_overview_plot
+Note the double qoutes around the artefact name. They are only needed if the
+name contains spaces other characters with special meaning.
 
-To generate all artefacts of the current paper-config, use
-
-.. code-block:: bash
+To generate all artefacts of the current paper-config, use::
 
     vara-art generate
+
+If you only want to generate some specific artefacts, you can specify their
+names with the ``--only`` parameter::
+
+    vara-art generate --only "overview plot"
+
+You can list all artefacts of the current paper config with::
+
+    vara-art list
+
+To show details for one or more artefacts, use::
+
+    vara-art show "overview plot"
+
+You can give multiple artefact names to ``vara-art show`` to see details for
+multiple artefacts at once.
+
 
 vara-plot
 *********
