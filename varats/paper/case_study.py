@@ -577,18 +577,18 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
             hash_id_tuples.append(
                 HashIDTuple(raw_hash_id_tuple['commit_hash'],
                             raw_hash_id_tuple['commit_id']))
-            extender_strategy = raw_stage.get('extender_strategy') or None
-            sampling_method = raw_stage.get('sampling_method') or None
-            release_type = raw_stage.get('release_type') or None
-            stages.append(
-                CSStage(
-                    raw_stage.get('name') or None,
-                    ExtenderStrategy[extender_strategy]
-                    if extender_strategy is not None else None,
-                    SamplingMethod[sampling_method]
-                    if sampling_method is not None else None,
-                    ReleaseType[release_type]
-                    if release_type is not None else None, hash_id_tuples))
+        extender_strategy = raw_stage.get('extender_strategy') or None
+        sampling_method = raw_stage.get('sampling_method') or None
+        release_type = raw_stage.get('release_type') or None
+        stages.append(
+            CSStage(
+                raw_stage.get('name') or None,
+                ExtenderStrategy[extender_strategy]
+                if extender_strategy is not None else None,
+                SamplingMethod[sampling_method]
+                if sampling_method is not None else None,
+                ReleaseType[release_type]
+                if release_type is not None else None, hash_id_tuples))
 
     return CaseStudy(raw_case_study['project_name'], raw_case_study['version'],
                      stages)
