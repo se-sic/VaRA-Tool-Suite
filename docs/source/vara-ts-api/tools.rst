@@ -51,6 +51,17 @@ multiple artefacts at once.
 
 
 vara-plot
-*********
+.........
 
 TODO: add example
+
+
+vara-cs
+.......
+TODO: add example
+
+vara-cs ext
+***********
+
+vara-cs status
+**************

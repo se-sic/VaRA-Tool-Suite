@@ -299,11 +299,11 @@ def block_revisions(blocks: tp.List[AbstractRevisionBlocker]) -> tp.Any:
     ATTENTION: This decorator depends on things introduced by the
     @with_git decorator and therefore must be used above that decorator.
 
-    This adds a new static method 'is_blocked_revision' that checks
+    This adds a new static method ``is_blocked_revision`` that checks
     whether a given revision id is marked as blocked.
 
     Args:
-        blocks: A list of 'BlockedRevision's and 'BlockedRevisionRange's.
+        blocks: A list of ``BlockedRevision``'s and ``BlockedRevisionRange``'s.
     """
 
     def revision_blocker_decorator(cls: tp.Any) -> tp.Any:
