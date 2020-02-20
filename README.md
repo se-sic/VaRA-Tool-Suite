@@ -109,8 +109,8 @@ benchbuild -vv run -E GenerateCommitReport gzip
 The generated result files are place in the `vara/results/$PROJECT_NAME` folder and can be further visualized with VaRA-TS graph generators.
 
 ### Using CaseStudy and paper configs
-Reproducing results for different projects and experiments is important, to help with reproducing results, VaRA-TS pro the concept of a `CaseStudy` and paper configs. Each case study specifies which revision of a project needs to be analyzed. Paper configs then group together a set of case studies that belong to the same paper, allowing the user to precisly specify which revisions of what project need to be analyzed to regenerate the results for a specific paper.
-For more information visit our [docs](https://vara.readthedocs.io/en/vara-dev/vara-ts-api/paper.html#paper-and-case-study-handling)
+Reproducing results for different projects and experiments is important. To help with reproducing results, VaRA-TS proposes the concept of a `CaseStudy` and paper configs. Each case study specifies which revision of a project needs to be analyzed. Paper configs then group together a set of case studies that belong to the same paper, allowing the user to precisly specify which revisions of what project need to be analyzed to regenerate the results for a specific paper.
+For more information visit our [documentation](https://vara.readthedocs.io/en/vara-dev/vara-ts-api/paper.html#paper-and-case-study-handling).
 
 ## VaRA developer tools
 VaRA-TS provides different tools to ease VaRA development.

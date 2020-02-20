@@ -5,7 +5,7 @@ Paper and case study handling
 
 How to use case studies
 -----------------------
-If one wants to analyze a particular set of revisions or wants to reevaluate the same revision over and over again, we can fix the analyzed revisions by creating a :class:`CaseStudy`. First, create a folder, where your config should be saved. Then, create a case study that fixes the revision to be analyzed. In order to ease the creation of case studies VaRA-TS offers different sampling methods to choose revisions from the projects history based on a probability distribution.
+If one wants to analyze a particular set of revisions or wants to re-evaluate the same revision over and over again, we can fixate the revisions we are interested in by creating a :class:`CaseStudy`. First, create a folder, where your config should be saved. Then, create a case study that specifies the revision to be analyzed. In order to ease the creation of case studies the tool suite offers different sampling methods to choose revisions from the projects history based on a probability distribution.
 
 For example, we can generate a new case study for ``gzip``, drawing 10 revision from the projects history based on a half-normal distribution, with::
 
@@ -16,15 +16,15 @@ For more information see :ref:`How to use paper configs`.
 
 Extending case studies
 ......................
-Case studies group together revisions but sometimes these groups need to be changed or extended, e.g., when we want so sample a few more revisions to gather data for a specific revision range. To simplify that, our tool suite provides :ref:`vara-cs ext`, a tool for extending and changing case studies.
+Case studies group together revisions but sometimes these groups need to be changed or extended, e.g., when we want to sample a few more revisions to gather data for a specific revision range. To simplify that, our tool suite provides :ref:`vara-cs ext`, a tool for extending and changing case studies.
 
 For example::
 
     vara-cs ext paper_configs/ase-17/gzip_0.case_study distrib_add gzip/ --distribution uniform --num-rev 5
 
-will add 5 new revision, sampled uniformly, to the case study.
+will add 5 new revision, sampled uniformly from all revisions, to the case study.
 
-In more detail, case studies have different stages that are separated from each other. This allows us to for example extend a case study with an specific revision without changing the initial set of revisions, e.g., stage 0.
+In more detail, case studies have different stages that are separated from each other. This allows us, for example, to extend a case study with a specific revision without changing the initial set of revisions, e.g., stage 0.
 
 For example::
 
@@ -56,7 +56,7 @@ In this example, we got two paper configs, one for ``ase-17`` another for ``icse
     folder:
         value: /home/foo/vara/paper_configs/
 
-Next, we can run our experiment with BenchBuild as usual. During experiment execution BenchBuild will load our config and only evaluate the needed revisions.
+Next, we can run our experiment with BenchBuild as usual. During experiment execution, BenchBuild will load our config and only evaluate the needed revisions.
 
 The current status of a case study can be visualized with :ref:`vara-cs status`::
 
