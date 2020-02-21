@@ -1,7 +1,7 @@
 """
 The PaperConfig pins down a specific set of case studies, one or more for each
-project, where each encaspulate a fixed set of revision to evaluate. This
-allows users to specify which revisions of what project have been analyzed.
+project, where each encaspulates a fixed set of revision to evaluate. This
+allows users to specify which revisions of what project have to be analyzed.
 Furthermore, it allows other users to reproduce the exact same set of projects
 and revisions, either with the old experiment automatically or with a new
 experiment to compare the results.
@@ -17,7 +17,7 @@ from varats.settings import CFG
 
 class PaperConfig():
     """
-    Paper config, a specify set of case studies, e.g.,  for a publication.
+    Paper config, a specific set of case studies, e.g.,  for a publication.
 
     The paper config allows easy reevaluation of a set of case studies.
 
@@ -83,9 +83,9 @@ class PaperConfig():
     def get_filter_for_case_study(self,
                                   cs_name: str) -> tp.Callable[[str], bool]:
         """
-        Return case study specific revision filter. If a one case study
-        includes a revision it the filter function will return ``True``.
-        This can be used to automatically filter out revision that are not
+        Return a case study specific revision filter. If one case study
+        includes a revision the filter function will return ``True``.
+        This can be used to automatically filter out revisions that are not
         part of a case study, loaded by this paper config.
 
         Args:
@@ -122,7 +122,7 @@ class PaperConfig():
 
     def store(self) -> None:
         """
-        Persist the current state of the paper config, saving all case studies
+        Persist the current state of the paper config saving all case studies
         to their corresponding files in the paper config path.
         """
         for case_study_list in self.__case_studies.values():
@@ -170,7 +170,7 @@ def get_loaded_paper_config() -> PaperConfig:
     loaded before use.
 
     Returns:
-        current active paper config
+        currently active paper config
     """
     if __G_PAPER_CONFIG is None:
         raise Exception('Paper config was not loaded')
@@ -189,8 +189,8 @@ def is_paper_config_loaded() -> bool:
 
 def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
     """
-    Loads a paper config from yaml file, initializes the paper config and sets
-    it to the current active paper config. If no config path is provided, the
+    Loads a paper config from a yaml file, initializes the paper config and sets
+    it to the currently active paper config. If no config path is provided, the
     paper config set in the vara settings yaml is loaded.
 
     Note:
@@ -219,7 +219,7 @@ def get_paper_config() -> PaperConfig:
     active paper config.
 
     Returns:
-        current paper config
+        currently active paper config
     """
     if __G_PAPER_CONFIG is None:
         load_paper_config()

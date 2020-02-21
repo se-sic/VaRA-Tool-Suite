@@ -1,10 +1,10 @@
 Paper and case study handling
 =============================
 
-Whenever we desing experiments that look at specific revision of a project, we run into the problem that to reevaluate our experiment data we need to preserve the set of revision.
-Exactly for this problem the tool suite provides case studies, to preserve the information about which revision of a project was analyzed.
-In addition, to fully preserve also the set of project that were analyzed we designed paper configs, as a collection of different case studies.
-Furthermore, we can use paper configs and case studies not only to reevaluate our own experiment but we also allow others to reproduce our data or design their own experiment, based on our project and revision selection.
+Whenever we desing experiments that look at specific revisions of a project, we run into the problem that to re-evaluate our experiment data, we need to preserve the set of revisions.
+Exactly for this problem, the tool suite provides case studies that preserve the information about which revision of a project was analyzed.
+In addition, to fully preserve also the set of projects that were analyzed, we designed paper configs as a collection of different case studies.
+Furthermore, we can use paper configs and case studies not only to re-evaluate our own experiment, but we also allow others to reproduce our data or design their own experiment based on our project and revision selection.
 
 How to use case studies
 -----------------------
@@ -49,16 +49,16 @@ How to use paper configs
 ------------------------
 
 Paper configs are used to group different case studies together.
-Take, for example, the case where one wants to analyze different projects, gzip and git, for the evaluation of a paper that get's submitted to `ase-17`.
-First, one creates different case studies for each project, selecting the different revision that should be analyzed.
-Second, all case studies related to the evaluation for `ase-17` are grouped into a folded -- the paper config -- to related them to the paper.
-Next, we can now desgin and run our experiment for `ase-17` on all revisions added through case studies in the paper config and generate our experiment results.
+Take, for example, the case where one wants to analyze the projects, gzip and git, for the evaluation of a paper that get's submitted to `ase-17`.
+First, one creates different case studies for each project selecting the different revisions that should be analyzed.
+Second, all case studies related to the evaluation for `ase-17` are grouped into a folder -- the paper config -- to relate them to the paper.
+Now we can design and run our experiment for `ase-17` on all revisions added through case studies in the paper config and generate our experiment results.
 
 The paper config now allows us to reproduce all the results for our paper with a single call to the tool suite.
 Furthermore, this is also helpfull for other researchers that are now able to reproduce our results.
 
 In more detail, our specified paper config allows the tool suite to tell BenchBuild which revisions should be analyzed to evaluate a set of case studies.
-For example, a setup could look like::
+For example, a setup could look like this::
 
     paper_configs
         ├── ase-17
@@ -71,7 +71,7 @@ For example, a setup could look like::
 
 In this example, we got two paper configs, one for ``ase-17`` another for ``icse-18``.
 We see different case studies for ``gzip`` and ``git``, notice here that we can create multiple case studies for one project.
-If we now want to evaluate our set for ``icse-18`` we set the paper-config folder to the root of our config tree and select the ``icse-18`` folder as our current config, like this::
+If we now want to evaluate our set for ``icse-18`` we set the paper-config folder to the root of our config tree and select the ``icse-18`` folder as our current config in the settings file ``.vara.yaml``, like this::
 
     paper_config:
     current_config:
@@ -81,7 +81,7 @@ If we now want to evaluate our set for ``icse-18`` we set the paper-config folde
 
 Next, we can run our experiment with BenchBuild as usual. During experiment execution, BenchBuild will load our config and only evaluate the needed revisions.
 
-The current status of all case study, belonging to the current paper config, can be visualized with :ref:`vara-cs status`::
+The current status of all case studies belonging to the current paper config, can be visualized with :ref:`vara-cs status`::
 
     >>> vara-cs status -s
     CS: gzip_0: (0/5) processed
