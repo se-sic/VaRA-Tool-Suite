@@ -1,6 +1,10 @@
 """
-The PaperConfig pins down a specific set of case studies that can be reproduced
-automatically.
+The PaperConfig pins down a specific set of case studies, one or more for each
+project, where each encaspulate a fixed set of revision to evaluate. This
+allows users to specify which revisions of what project have been analyzed.
+Furthermore, it allows other users to reproduce the exact same set of projects
+and revisions, either with the old experiment automatically or with a new
+experiment to compare the results.
 """
 
 import typing as tp
@@ -13,9 +17,12 @@ from varats.settings import CFG
 
 class PaperConfig():
     """
-    Paper config to specify a set of case studies for a publication.
+    Paper config, a specify set of case studies, e.g.,  for a publication.
 
     The paper config allows easy reevaluation of a set of case studies.
+
+    Args:
+        folder_path: path to the paper config folder
     """
 
     def __init__(self, folder_path: Path) -> None:
@@ -39,13 +46,22 @@ class PaperConfig():
 
     def get_case_studies(self, cs_name: str) -> tp.List[CaseStudy]:
         """
-        Return case studies with project name `cs_name`.
+        Lookup all case studies with a given name.
+
+        Args:
+            cs_name: name of the case study
+
+        Returns:
+            case studies with project name `cs_name`.
         """
         return self.__case_studies[cs_name]
 
     def get_all_case_studies(self) -> tp.List[CaseStudy]:
         """
-        Returns a full list of all case studies with all different version.
+        Generate a list of all case studies in the paper config.
+
+        Returns:
+            full list of all case studies with all different version.
         """
         return [
             case_study for case_study_list in self.__case_studies.values()
@@ -54,18 +70,30 @@ class PaperConfig():
 
     def has_case_study(self, cs_name: str) -> bool:
         """
-        Check if a case study with `cs_name` was loaded.
+        Checks if a case study with `cs_name` was loaded.
+
+        Args:
+            cs_name: name of the case study
+
+        Returns:
+            ``True``, if a case study with ``cs_name`` was loaded
         """
         return cs_name in self.__case_studies.keys()
 
     def get_filter_for_case_study(self,
                                   cs_name: str) -> tp.Callable[[str], bool]:
         """
-        Return case study specific revision filter.
-        If a one case study includes a revision it should be considered.
+        Return case study specific revision filter. If a one case study
+        includes a revision it the filter function will return ``True``.
+        This can be used to automatically filter out revision that are not
+        part of a case study, loaded by this paper config.
 
-        Returns: True if a revision should be considered, False if it should
-                 be filtered.
+        Args:
+            cs_name: name of the case study
+
+        Returns:
+            a filter function that checks if a given revision is part of a
+            case study with name ``cs_name`` and returns ``True`` if it was
         """
         if self.has_case_study(cs_name):
             rev_filters = [
@@ -86,12 +114,16 @@ class PaperConfig():
     def add_case_study(self, case_study: CaseStudy) -> None:
         """
         Add a new case study to this paper config.
+
+        Args:
+            case_study: to be added
         """
         self.__case_studies[case_study.project_name] += [case_study]
 
     def store(self) -> None:
         """
-        Persist the current state of the paper config.
+        Persist the current state of the paper config, saving all case studies
+        to their corresponding files in the paper config path.
         """
         for case_study_list in self.__case_studies.values():
             for case_study in case_study_list:
@@ -112,6 +144,13 @@ def project_filter_generator(project_name: str) -> tp.Callable[[str], bool]:
     Generate project specific revision filters.
     - if no paper config is loaded, we allow all revisions
     - otherwise the paper config generates a specific revision filter
+
+    Args:
+        project_name: corresponding project name
+
+    Returns:
+        a filter function that returns ``True`` if a revision of the specified
+        project is included in one of the related case studies.
     """
     if CFG["paper_config"]["current_config"].value is None:
         return lambda x: True
@@ -127,8 +166,11 @@ def project_filter_generator(project_name: str) -> tp.Callable[[str], bool]:
 
 def get_loaded_paper_config() -> PaperConfig:
     """
-    Returns the current paper config, this requires  aconfig to be loaded
-    before.
+    Returns the currently active paper config, this requires a config to be
+    loaded before use.
+
+    Returns:
+        current active paper config
     """
     if __G_PAPER_CONFIG is None:
         raise Exception('Paper config was not loaded')
@@ -138,13 +180,24 @@ def get_loaded_paper_config() -> PaperConfig:
 def is_paper_config_loaded() -> bool:
     """
     Check if a currently a paper config is loaded.
+
+    Returns:
+        ``True``, if a paper config has been loaded
     """
     return __G_PAPER_CONFIG is not None
 
 
 def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
     """
-    Load a paper config from yaml file.
+    Loads a paper config from yaml file, initializes the paper config and sets
+    it to the current active paper config. If no config path is provided, the
+    paper config set in the vara settings yaml is loaded.
+
+    Note:
+        Only one paper config can be active at a time
+
+    Args:
+        config_path: path to a paper config folder
     """
     if config_path is None:
         if CFG["paper_config"]["folder"].value is None or CFG["paper_config"][
@@ -162,7 +215,11 @@ def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
 
 def get_paper_config() -> PaperConfig:
     """
-    Returns the current paper config and loads it if needed.
+    Returns the current paper config and loads one if there is currenlty no
+    active paper config.
+
+    Returns:
+        current paper config
     """
     if __G_PAPER_CONFIG is None:
         load_paper_config()
