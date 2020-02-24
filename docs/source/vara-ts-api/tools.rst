@@ -29,6 +29,8 @@ via::
 Note the double qoutes around the artefact name. They are only needed if the
 name contains spaces other characters with special meaning.
 
+.. _vara-art-generate:
+
 To generate all artefacts of the current paper-config, use::
 
     vara-art generate

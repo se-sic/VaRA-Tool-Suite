@@ -66,6 +66,19 @@ The current status of a case study can be visualized with :ref:`vara-cs status`:
     CS: gzip_2: (5/5) processed
     CS: libvpx_0: (0/5) processed
 
+
+Artefacts
+.........
+
+The :ref:`artefacts module<Module: artefacts>` provides an easy way to attach
+descriptions of artefacts, like plots or result tables, to a paper config.
+This way, reproducing the exact same plots for a paper config over and over
+again becomes as easy as invoking :ref:`a single command<vara-art-generate>`.
+
+For more information about how to create and manage artefacts, refer to the
+documentation of the :ref:`vara-art` tool.
+
+
 Paper and case study modules
 ----------------------------
 * :ref:`Module: paper_config`
