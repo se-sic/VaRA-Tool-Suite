@@ -26,8 +26,10 @@ via::
 
     vara-art add plot "overview plot" report_type=EmptyReport plot_type=paper_config_overview_plot
 
-Note the double qoutes around the artefact name. They are only needed if the
-name contains spaces other characters with special meaning.
+.. note::
+
+    The double quotes around the artefact name are only needed if the name
+    contains spaces or other characters with special meaning.
 
 .. _vara-art-generate:
 
