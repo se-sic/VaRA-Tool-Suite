@@ -18,9 +18,8 @@ from benchbuild.utils.cmd import rm, echo, FileCheck
 from varats.experiments.vara_full_mtfa import VaRATaintPropagation
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.data.report import FileStatusExtension as FSE
-from varats.utils.experiment_util import (
-    exec_func_with_pe_error_handler,
-    PEErrorHandler)
+from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
+                                          PEErrorHandler)
 
 
 class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
@@ -38,8 +37,8 @@ class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
     EXPECTED_FC_FILE = "{binary_name}.txt"
 
     def __init__(self, project: Project):
-        super(ParseAndValidateVaRAOutput, self).__init__(
-            obj=project, action_fn=self.filecheck)
+        super(ParseAndValidateVaRAOutput,
+              self).__init__(obj=project, action_fn=self.filecheck)
 
     def filecheck(self) -> actions.StepResult:
         """
@@ -109,8 +108,7 @@ class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
 
             # remove the no longer needed llvm ir files
             rm("{res_folder}/{old_res_file}".format(
-                res_folder=result_folder,
-                old_res_file=old_result_file))
+                res_folder=result_folder, old_res_file=old_result_file))
 
             # validate the result with filecheck
             array_string = ""
@@ -120,21 +118,19 @@ class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
             file_check_cmd = FileCheck["{fc_dir}/{fc_exp_file}".format(
                 fc_dir=tmp_repo_dir, fc_exp_file=expected_file)]
 
-            cmd_chain = (echo[array_string] | file_check_cmd
-                         > "{res_folder}/{res_file}".format(
-                             res_folder=result_folder,
-                             res_file=result_file))
+            cmd_chain = (echo[array_string] | file_check_cmd >
+                         "{res_folder}/{res_file}".format(
+                             res_folder=result_folder, res_file=result_file))
 
             try:
                 exec_func_with_pe_error_handler(
                     cmd_chain,
-                    PEErrorHandler(result_folder, error_file,
-                                   cmd_chain, timeout_duration))
+                    PEErrorHandler(result_folder, error_file, cmd_chain,
+                                   timeout_duration))
             # remove the success file on error in the filecheck.
             except ProcessExecutionError:
-                rm("{res_folder}/{res_file}".format(
-                    res_folder=result_folder,
-                    res_file=result_file))
+                rm("{res_folder}/{res_file}".format(res_folder=result_folder,
+                                                    res_file=result_file))
 
 
 class VaRAFileCheckTaintPropagation(VaRATaintPropagation):

@@ -6,7 +6,8 @@ import benchbuild.project as prj
 
 @with_wget({
     "1.0":
-    "https://raw.githubusercontent.com/se-passau/vara-perf-tests/master/examples/gcd.c"
+        "https://raw.githubusercontent.com/se-passau/" +
+        "vara-perf-tests/master/examples/gcd.c"
 })
 class Gcd(prj.Project):  # type: ignore
     """ GCD """

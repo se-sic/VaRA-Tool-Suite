@@ -122,6 +122,7 @@ CFG['artefacts'] = {
     },
 }
 
+
 def get_value_or_default(cfg: s.Configuration, varname: str,
                          default: tp.Any) -> tp.Any:
     """

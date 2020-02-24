@@ -62,10 +62,10 @@ InteractionFilter
               └── CommitDateDeltaMaxFilter
 """
 
+import typing as tp
+from copy import deepcopy
 import yaml
 
-from copy import deepcopy
-import typing as tp
 from PyQt5.QtCore import QDateTime, Qt
 
 from varats.data.version_header import VersionHeader
@@ -182,8 +182,11 @@ class InteractionFilter(SecretYamlObject):
 
     def fixParentPointers(self) -> None:
         """
-        Iterate over the filter tree and set the correct _parent pointers for all nodes.
-        Must be called on the root node of the tree!
+        Iterate over the filter tree and set the correct _parent pointers for
+        all nodes.
+
+        Note:
+            Must be called on the root node of the tree!
         """
         for i in range(self.childCount()):
             child = self.child(i)
@@ -199,7 +202,8 @@ class InteractionFilter(SecretYamlObject):
 
     def hasFilterTypeAsParent(self, parent_type: tp.Any) -> bool:
         """
-        Checks if there is a node of type parent_type on the path from the current node to the root.
+        Checks if there is a node of type parent_type on the path from the
+        current node to the root.
         """
         parent = self.parent()
         while parent is not None:
@@ -647,7 +651,7 @@ class AndOperator(FilterOperator):
                  parent: tp.Optional[InteractionFilter] = None,
                  comment: tp.Optional[str] = None,
                  children: tp.Optional[tp.List[InteractionFilter]] = None
-                 ) -> None:
+                ) -> None:
         super().__init__(parent, comment)
         self._children: tp.List[InteractionFilter] = []
         if children is not None:
@@ -668,8 +672,8 @@ class AndOperator(FilterOperator):
 
     def moveChild(self, sourceRow: int, destinationRow: int) -> bool:
         num_children = len(self._children)
-        if (sourceRow < 0 or sourceRow > num_children or destinationRow < 0
-                or destinationRow > num_children):
+        if (sourceRow < 0 or sourceRow > num_children or destinationRow < 0 or
+                destinationRow > num_children):
             return False
 
         if destinationRow > sourceRow:
@@ -707,7 +711,7 @@ class OrOperator(FilterOperator):
                  parent: tp.Optional[InteractionFilter] = None,
                  comment: tp.Optional[str] = None,
                  children: tp.Optional[tp.List[InteractionFilter]] = None
-                 ) -> None:
+                ) -> None:
         super().__init__(parent, comment)
         self._children: tp.List[InteractionFilter] = []
         if children is not None:
@@ -728,8 +732,8 @@ class OrOperator(FilterOperator):
 
     def moveChild(self, sourceRow: int, destinationRow: int) -> bool:
         num_children = len(self._children)
-        if (sourceRow < 0 or sourceRow > num_children or destinationRow < 0
-                or destinationRow > num_children):
+        if (sourceRow < 0 or sourceRow > num_children or destinationRow < 0 or
+                destinationRow > num_children):
             return False
 
         if destinationRow > sourceRow:

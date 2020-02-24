@@ -290,11 +290,11 @@ class InteractionPlot(Plot):
                                   lhs_cm=lhs_cm,
                                   rhs_cm=rhs_cm,
                                   gradient=round(gradient, 5)))
-                        print("Investigate: git -C {git_path} diff {lhs} {rhs}".
-                              format(git_path=Path(
-                                  self.plot_kwargs['git_path']),
-                                     lhs=lhs_cm.split('-')[1],
-                                     rhs=rhs_cm.split('-')[1]))
+                        git_path = Path(self.plot_kwargs['git_path'])
+                        lhs = lhs_cm.split('-')[1]
+                        rhs = rhs_cm.split('-')[1]
+                        print(
+                            f"Investigate: git -C {git_path} diff {lhs} {rhs}")
                     else:
                         print("Unusual gradient between " +
                               "{lhs_cm} - {rhs_cm}: {gradient}".format(

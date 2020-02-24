@@ -16,7 +16,7 @@ from plumbum import local
 
 from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import (wrap_paths_to_binaries, block_revisions,
-    BugAndFixPair)
+                                       BugAndFixPair)
 
 
 @block_revisions([

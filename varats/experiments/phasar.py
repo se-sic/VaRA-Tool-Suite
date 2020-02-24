@@ -39,10 +39,10 @@ class DefaultAnalysis(actions.Step):  # type: ignore
 
         project_src = local.path(str(CFG["vara"]["result"]))
 
-        run_cmd = opt["-load", self.PATH_TO_PHASAR_PASS_LIB,
-                      "-phasar", "--entry-points", "main"]
+        run_cmd = opt["-load", self.PATH_TO_PHASAR_PASS_LIB, "-phasar",
+                      "--entry-points", "main"]
 
-        run_cmd(project_src/project.name + ".bc")
+        run_cmd(project_src / project.name + ".bc")
 
 
 class PhasarDefault(Experiment):  # type: ignore
@@ -66,8 +66,9 @@ class PhasarDefault(Experiment):  # type: ignore
             << run.WithTimeout()
 
         analysis_actions = []
-        if not os.path.exists(local.path(
-                str(CFG["vara"]["result"].value)) / project.name + ".bc"):
+        if not os.path.exists(
+                local.path(str(CFG["vara"]["result"].value)) / project.name +
+                ".bc"):
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(project))
 

@@ -19,7 +19,7 @@ from PyQt5.QtCore import (QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject,
                           QProcess)
 
 from plumbum import local, TF, RETCODE
-from plumbum.cmd import git, mkdir, ln, ninja, grep, cmake
+from plumbum.cmd import git, mkdir, ln, grep, cmake
 
 from varats.settings import save_config, CFG
 from varats.utils.exceptions import ProcessTerminatedError

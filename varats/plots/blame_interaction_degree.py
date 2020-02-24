@@ -247,11 +247,9 @@ class BlameDegree(Plot):
 
         # draw churn subplot
         if with_churn:
-            revs = [
-                x
-                for x in map(lambda x: tp.cast(object,
-                                               x.split('-')[1]), uniq_revisions)
-            ]
+            revs = list(
+                map(lambda x: tp.cast(object,
+                                      x.split('-')[1]), uniq_revisions))
             draw_code_churn(churn_axis, self.plot_kwargs['project'],
                             self.plot_kwargs['get_cmap'](),
                             lambda x: x[:10] in revs)
