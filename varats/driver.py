@@ -12,8 +12,8 @@ from argparse_utils import enum_action
 
 import varats.development as dev
 from varats import settings
-from varats.settings import get_value_or_default,\
-    CFG, generate_benchbuild_config, save_config
+from varats.settings import (get_value_or_default, CFG,
+                             generate_benchbuild_config, save_config)
 from varats.gui.main_window import MainWindow
 from varats.gui.buildsetup_window import BuildSetup
 from varats.vara_manager import (setup_vara, BuildType, LLVMProjects,
@@ -343,16 +343,16 @@ def main_gen_benchbuild_config() -> None:
         if os.path.isabs(str(args.bb_root)):
             bb_root_path = str(args.bb_root)
         else:
-            bb_root_path = os.path.dirname(str(CFG["config_file"])) +\
-                "/" + str(args.bb_root)
+            bb_root_path = os.path.dirname(str(CFG["config_file"])) + \
+                           "/" + str(args.bb_root)
 
         print("Setting BB path to: ", bb_root_path)
         CFG["benchbuild_root"] = bb_root_path
         save_config()
 
     if CFG["benchbuild_root"].value is None:
-        CFG["benchbuild_root"] = os.path.dirname(str(CFG["config_file"]))\
-                                                 + "/benchbuild"
+        CFG["benchbuild_root"] = os.path.dirname(str(CFG["config_file"])) \
+                                 + "/benchbuild"
         print("Setting BB path to: ", CFG["benchbuild_root"])
         save_config()
 
@@ -395,11 +395,11 @@ def main_gen_commitmap() -> None:
         else:
             default_name = args.project_name
 
-        output_name = "{result_folder}/{project_name}/{file_name}.cmap"\
+        output_name = "{result_folder}/{project_name}/{file_name}.cmap" \
             .format(
-                result_folder=CFG["result_dir"],
-                project_name=default_name,
-                file_name=default_name)
+            result_folder=CFG["result_dir"],
+            project_name=default_name,
+            file_name=default_name)
     else:
         if args.output.endswith(".cmap"):
             output_name = args.output

@@ -87,4 +87,4 @@ def build_plot(**kwargs: tp.Any) -> None:
     if kwargs["view"]:
         plot.show()
     else:
-        plot.save('png')
+        plot.save(filetype='png')

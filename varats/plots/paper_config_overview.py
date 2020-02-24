@@ -258,13 +258,17 @@ class PaperConfigOverviewPlot(Plot):
         self.plot(True)
         plt.show()
 
-    def save(self, filetype: str = 'svg') -> None:
+    def save(self, path: tp.Optional[Path] = None,
+             filetype: str = 'svg') -> None:
         self.plot(False)
 
-        result_dir = Path(self.plot_kwargs["plot_dir"])
+        if path is None:
+            plot_dir = Path(self.plot_kwargs["plot_dir"])
+        else:
+            plot_dir = path
 
         # TODO (se-passau/VaRA#545): refactor dpi into plot_config. see.
-        plt.savefig(result_dir / ("{graph_name}.{filetype}".format(
+        plt.savefig(plot_dir / ("{graph_name}.{filetype}".format(
             graph_name=self.name, filetype=filetype)),
                     dpi=1200,
                     format=filetype)

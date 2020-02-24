@@ -28,6 +28,7 @@ setup(name='VaRA-Tool-Suite',
           ],
           "console_scripts": [
               'vara-buildsetup = varats.driver:build_setup',
+              'vara-art = varats.tools.driver_artefacts:main',
               'vara-cs = varats.driver:main_casestudy',
               'vara-develop = varats.driver:main_develop',
               'vara-gen-bbconfig = varats.driver:main_gen_benchbuild_config',

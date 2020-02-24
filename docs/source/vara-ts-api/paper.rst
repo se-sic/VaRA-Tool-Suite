@@ -89,10 +89,24 @@ The current status of all case studies belonging to the current paper config, ca
     CS: gzip_2: (5/5) processed
     CS: libvpx_0: (0/5) processed
 
+
+Artefacts
+.........
+
+The :ref:`artefacts module<Module: artefacts>` provides an easy way to attach
+descriptions of artefacts, like plots or result tables, to a paper config.
+This way, reproducing the exact same plots for a paper config over and over
+again becomes as easy as invoking :ref:`a single command<vara-art-generate>`.
+
+For more information about how to create and manage artefacts, refer to the
+documentation of the :ref:`vara-art` tool.
+
+
 Paper and case study modules
 ----------------------------
 * :ref:`Module: paper_config`
 * :ref:`Module: case_study`
+* :ref:`Module: artefacts`
 * :ref:`Module: paper_config_manager`
 
 Module: paper_config
@@ -109,6 +123,16 @@ Module: case_study
 ..................
 
 .. automodule:: varats.paper.case_study
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+-----
+
+Module: artefacts
+..................
+
+.. automodule:: varats.paper.artefacts
     :members:
     :undoc-members:
     :show-inheritance:
