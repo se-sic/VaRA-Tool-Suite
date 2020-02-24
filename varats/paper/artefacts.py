@@ -153,6 +153,7 @@ class PlotArtefact(Artefact):
         """
         Generate the specified plot.
         """
+        # pylint: disable=not-callable
         plot = self.plot_type_class(**self.plot_kwargs)
         plot.style = "ggplot"
         plot.save(self.output_path, self.file_format)
