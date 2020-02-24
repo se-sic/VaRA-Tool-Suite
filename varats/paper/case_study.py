@@ -655,15 +655,16 @@ def store_case_study(case_study: CaseStudy, case_study_location: Path) -> None:
     Store case study to file in the specified paper_config.
 
     Args:
+        case_study: the case study to store
         case_study_location: can be either a path to a paper_config
-                                or a direct path to a `.case_study` file
+                             or a direct path to a `.case_study` file
     """
-    if case_study_location.suffix == '.case_study':
-        __store_case_study_to_file(case_study, case_study_location)
-    else:
+    if case_study_location.suffix != '.case_study':
         file_name = "{project_name}_{version}.case_study".format(
             project_name=case_study.project_name, version=case_study.version)
-        __store_case_study_to_file(case_study, case_study_location / file_name)
+        case_study_location /= file_name
+
+    __store_case_study_to_file(case_study, case_study_location)
 
 
 def __store_case_study_to_file(case_study: CaseStudy, file_path: Path) -> None:
