@@ -73,7 +73,7 @@ class Artefact(ABC):
         Subclasses should first call this function on ``super()`` and then
         extend the returned dict with their own properties.
 
-        Returns: 
+        Returns:
             A dict representation of this artefact.
         """
         return {
