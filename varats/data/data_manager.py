@@ -1,9 +1,9 @@
 """
-DataManager module handles the loading, creation, and caching of data classes.
+The DataManager module handles the loading, creation, and caching of data classes.
 With the DataManager in the background, we can load files from multiple
-location within the tools suite, without loading the same file twice.
+locations within the tools suite, without loading the same file twice.
 In addition, this speeds up reloading of files, for example, in interactive
-plots, as in jupyther notebooks, where we sometimes re-execute triggers
+plots, like in jupyter notebooks, where we sometimes re-execute triggers
 a file load.
 """
 
@@ -108,7 +108,7 @@ class FileLoader(QRunnable):  # type: ignore
 
 class DataManager():
     """
-    Manages data over the lifetime of the tools suite. The DataManager handles
+    Manages data over the lifetime of the tool suite. The DataManager handles
     the concurrent file loading, creation of DataClasses and caching of
     loaded files.
     """
