@@ -110,7 +110,8 @@ class PaperConfig():
         """
         Add a new case study to this paper config.
 
-        Args: The case study to add.
+        Args:
+            case_study: the case study to add.
         """
         self.__case_studies[case_study.project_name] += [case_study]
 
@@ -119,7 +120,7 @@ class PaperConfig():
         Add a new artefact to this paper config.
 
         Args:
-            artefact: The artefact to add.
+            artefact: the artefact to add
         """
         self.__artefacts.add_artefact(artefact)
 

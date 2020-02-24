@@ -171,7 +171,7 @@ class ArtefactType(Enum):
 
 
 class Artefacts:
-    """
+    r"""
     A collection of :class:`Artefact`\ s.
     """
 
@@ -180,7 +180,7 @@ class Artefacts:
 
     @property
     def artefacts(self) -> tp.Iterable[Artefact]:
-        """
+        r"""
         An iterator of the :class:`Artefact`\ s in this collection.
         """
         return self.__artefacts.values()
