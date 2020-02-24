@@ -1,22 +1,29 @@
 Paper and case study handling
 =============================
 
-`TODO (se-passau/VaRA#573) <https://github.com/se-passau/VaRA/issues/573>`_: write docs
+Whenever we desing experiments that look at specific revisions of a project, we run into the problem that to re-evaluate our experiment data, we need to preserve the set of revisions.
+Exactly for this problem, the tool suite provides case studies that preserve the information about which revision of a project was analyzed.
+In addition, to fully preserve also the set of projects that were analyzed, we designed paper configs as a collection of different case studies.
+Furthermore, we can use paper configs and case studies not only to re-evaluate our own experiment, but we also allow others to reproduce our data or design their own experiment based on our project and revision selection.
 
 How to use case studies
 -----------------------
-If one wants to analyze a particular set of revisions or wants to re-evaluate the same revision over and over again, we can fixate the revisions we are interested in by creating a :class:`CaseStudy`. First, create a folder, where your config should be saved. Then, create a case study that specifies the revision to be analyzed. In order to ease the creation of case studies the tool suite offers different sampling methods to choose revisions from the projects history based on a probability distribution.
+If one wants to analyze a particular set of revisions or wants to re-evaluate the same revision over and over again, we can fixate the revisions we are interested in by creating a :class:`CaseStudy`.
+First, create a folder, where your config should be saved.
+Then, create a case study that specifies the revision to be analyzed.
+In order to ease the creation of case studies the tool suite offers different sampling methods to choose revisions from the projects history based on a probability distribution.
 
-For example, we can generate a new case study for ``gzip``, drawing 10 revision from the projects history based on a half-normal distribution, with::
+For example, we can generate a new case study for the project ``gzip``, drawing 10 revision from the projects history based on a half-normal distribution, with::
 
     vara-cs gen PATH_TO_PAPER_CONF_DIR/ half_norm PATH_TO_REPO/ --num-rev 10
 
-Created case studies should be grouped into folders, e.g., a set of case studies used for a paper, called paper config.
+To easy handling of multiple projects, created case studies should be grouped into folders, e.g., a set of case studies used for a paper, called paper config.
 For more information see :ref:`How to use paper configs`.
 
 Extending case studies
 ......................
-Case studies group together revisions but sometimes these groups need to be changed or extended, e.g., when we want to sample a few more revisions to gather data for a specific revision range. To simplify that, our tool suite provides :ref:`vara-cs ext`, a tool for extending and changing case studies.
+Case studies group together revisions but sometimes these groups need to be changed or extended, e.g., when we want to sample a few more revisions to gather data for a specific revision range.
+To simplify that, our tool suite provides :ref:`vara-cs ext`, a tool for extending and changing case studies.
 
 For example::
 
@@ -24,7 +31,13 @@ For example::
 
 will add 5 new revision, sampled uniformly from all revisions, to the case study.
 
-In more detail, case studies have different stages that are separated from each other. This allows us, for example, to extend a case study with a specific revision without changing the initial set of revisions, e.g., stage 0.
+.. warning::
+
+    The specified distribution only relates to the newly added revisions but does not include revisions previously added.
+    If one wants to draw all revision according to the same distribution a new case study has to be created.
+
+In more detail, case studies have different stages that are separated from each other.
+This allows us, for example, to extend a case study with a specific revision without changing the initial set of revisions, e.g., stage 0.
 
 For example::
 
@@ -34,10 +47,18 @@ will add revision ``0dd8313ea7bce`` to the stage 3 of the gzip case study, allow
 
 How to use paper configs
 ------------------------
-`TODO (se-passau/VaRA#573) <https://github.com/se-passau/VaRA/issues/573>`_: write docs
 
+Paper configs are used to group different case studies together.
+Take, for example, the case where one wants to analyze the projects, gzip and git, for the evaluation of a paper that get's submitted to `ase-17`.
+First, one creates different case studies for each project selecting the different revisions that should be analyzed.
+Second, all case studies related to the evaluation for `ase-17` are grouped into a folder -- the paper config -- to relate them to the paper.
+Now we can design and run our experiment for `ase-17` on all revisions added through case studies in the paper config and generate our experiment results.
 
-This allows the tool suite to tell BenchBuild which revisions should be analyzed to evaluate a set of case studies for a paper. For example, a setup could look like::
+The paper config now allows us to reproduce all the results for our paper with a single call to the tool suite.
+Furthermore, this is also helpfull for other researchers that are now able to reproduce our results.
+
+In more detail, our specified paper config allows the tool suite to tell BenchBuild which revisions should be analyzed to evaluate a set of case studies.
+For example, a setup could look like this::
 
     paper_configs
         ├── ase-17
@@ -48,7 +69,9 @@ This allows the tool suite to tell BenchBuild which revisions should be analyzed
                 ├── gzip_0.case_study
                 └── git_0.case_study
 
-In this example, we got two paper configs, one for ``ase-17`` another for ``icse-18``. We see different case studies for ``gzip`` and ``git``, notice here that we can create multiple case studies for one project. If we now want to evaluate our set for ``icse-18`` we set the paper-config folder to the root of our config tree and select the ``icse-18`` folder as our current config, like this::
+In this example, we got two paper configs, one for ``ase-17`` another for ``icse-18``.
+We see different case studies for ``gzip`` and ``git``, notice here that we can create multiple case studies for one project.
+If we now want to evaluate our set for ``icse-18`` we set the paper-config folder to the root of our config tree and select the ``icse-18`` folder as our current config in the settings file ``.vara.yaml``, like this::
 
     paper_config:
     current_config:
@@ -58,7 +81,7 @@ In this example, we got two paper configs, one for ``ase-17`` another for ``icse
 
 Next, we can run our experiment with BenchBuild as usual. During experiment execution, BenchBuild will load our config and only evaluate the needed revisions.
 
-The current status of a case study can be visualized with :ref:`vara-cs status`::
+The current status of all case studies belonging to the current paper config, can be visualized with :ref:`vara-cs status`::
 
     >>> vara-cs status -s
     CS: gzip_0: (0/5) processed
