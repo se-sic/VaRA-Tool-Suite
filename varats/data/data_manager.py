@@ -1,5 +1,10 @@
 """
 DataManager module handles the loading, creation, and caching of data classes.
+With the DataManager in the background, we can load files from multiple
+location within the tools suite, without loading the same file twice.
+In addition, this speeds up reloading of files, for example, in interactive
+plots, as in jupyther notebooks, where we sometimes re-execute triggers
+a file load.
 """
 
 import typing as tp
@@ -21,6 +26,13 @@ LoadableType = tp.Union[CommitReport, BlameReport]
 def sha256_checksum(file_path: Path, block_size: int = 65536) -> str:
     """
     Compute sha256 checksum of file.
+
+    Args:
+        file_path: path to the file
+        block_size: amount of bytes read per cycle
+
+    Returns:
+        sha256 hash of the file
     """
     sha256 = hashlib.sha256()
     with open(file_path, "rb") as file_h:
@@ -32,8 +44,13 @@ def sha256_checksum(file_path: Path, block_size: int = 65536) -> str:
 
 class FileBlob():
     """
-    A FileBlob is everything that is loaded from a file an converted to a
-    VaRA DataClass.
+    A FileBlob is a keyed data blob for everything that is loadable from a
+    file and can be converted to a VaRA DataClass.
+
+    Args:
+        key: identifier for the file
+        file_path: path to the file
+        data: a blob of data in memory
     """
 
     def __init__(self, key: str, file_path: Path, data: LoadableType) -> None:
@@ -67,7 +84,7 @@ class FileSignal(QObject):  # type: ignore
 
 class FileLoader(QRunnable):  # type: ignore
     """
-    Manages concurrent file loading.
+    Manages concurrent file loading in the background of the application.
     """
 
     def __init__(self,
@@ -92,7 +109,8 @@ class FileLoader(QRunnable):  # type: ignore
 class DataManager():
     """
     Manages data over the lifetime of the tools suite. The DataManager handles
-    file loading, creation of DataClasses and caching of loaded files.
+    the concurrent file loading, creation of DataClasses and caching of
+    loaded files.
     """
 
     def __init__(self) -> None:
@@ -128,6 +146,11 @@ class DataManager():
         # pylint: disable=invalid-name
         """
         Load a DataClass of type <DataClassTy> from a file asynchronosly.
+
+        Args:
+            file_path: to the file
+            DataClassTy: type of the report class to be loaded
+            loaded_callback: that gets called after loading has finished
         """
         if not os.path.isfile(file_path):
             raise FileNotFoundError
@@ -143,6 +166,13 @@ class DataManager():
         # pylint: disable=invalid-name
         """
         Load a DataClass of type <DataClassTy> from a file synchronosly.
+
+        Args:
+            file_path: to the file
+            DataClassTy: type of the report class to be loaded
+
+        Returns:
+            the loaded report file
         """
         if not os.path.isfile(file_path):
             raise FileNotFoundError
