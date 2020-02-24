@@ -73,7 +73,8 @@ class Artefact(ABC):
         Subclasses should first call this function on ``super()`` and then
         extend the returned dict with their own properties.
 
-        Returns: A dict representation of this artefact.
+        Returns: 
+            A dict representation of this artefact.
         """
         return {
             'artefact_type': self.__artefact_type.name,
@@ -95,13 +96,13 @@ class PlotArtefact(Artefact):
 
     Args:
         name: The name of this artefact.
-        output_path: The path where the plot this artefact produces will be
-                     stored.
-        plot_type: The
+        output_path: the path where the plot this artefact produces will be
+                     stored
+        plot_type: the
                     :attr:`type of plot<varats.plots.plots.PlotRegistry.plots>`
-                    that will be generated.
-        file_format: The file format of the generated plot.
-        kwargs: Additional arguments that will be passed to the plot class.
+                    that will be generated
+        file_format: the file format of the generated plot
+        kwargs: additional arguments that will be passed to the plot class
     """
 
     def __init__(self, name: str, output_path: Path, plot_type: str,
@@ -190,10 +191,10 @@ class Artefacts:
         Lookup an artefact by its name.
 
         Args:
-            name: The name of the artefact to retrieve.
+            name: the name of the artefact to retrieve
 
         Returns:
-            The artefact with the name ``name`` if available, else ``None``.
+            the artefact with the name ``name`` if available, else ``None``
         """
         return self.__artefacts.get(name)
 
@@ -204,7 +205,7 @@ class Artefacts:
         If there already exists an artefact with the same name it is overridden.
 
         Args:
-            artefact: The artefact to add.
+            artefact: the artefact to add
         """
         self.__artefacts[artefact.name] = artefact
 
@@ -225,13 +226,14 @@ def create_artefact(artefact_type: 'ArtefactType', name: str, output_path: Path,
     Create a new :class:`Artefact` from the provided parameters.
 
     Args:
-        artefact_type: The :class:`type<ArtefactType>` for the artefact.
-        name: The name of the artefact.
-        output_path: The output path for the artefact.
-        **kwargs: Additional arguments that are passed to the class selected by
-                  ``artefact_type``.
+        artefact_type: the :class:`type<ArtefactType>` for the artefact
+        name: the name of the artefact
+        output_path: the output path for the artefact
+        **kwargs: additional arguments that are passed to the class selected by
+                  ``artefact_type``
 
-    Returns: The created artefact.
+    Returns:
+        the created artefact
     """
     if artefact_type is ArtefactType.plot:
         plot_type = kwargs.pop('plot_type')
@@ -246,9 +248,10 @@ def load_artefacts_from_file(file_path: Path) -> Artefacts:
     Load an artefacts file.
 
     Args:
-        file_path: The path to the artefacts file.
+        file_path: the path to the artefacts file
 
-    Returns: The artefacts created from the given file.
+    Returns:
+        the artefacts created from the given file
     """
     documents = load_yaml(file_path)
     version_header = VersionHeader(next(documents))
@@ -276,8 +279,8 @@ def store_artefacts(artefacts: Artefacts, artefacts_location: Path) -> None:
     Store artefacts to file in the specified paper_config.
 
     Args:
-        artefacts: The artefacts to store.
-        artefacts_location: The location for the artefacts file.
+        artefacts: the artefacts to store
+        artefacts_location: the location for the artefacts file.
                             Can be either a path to a paper_config
                             or a direct path to an `artefacts.yaml` file.
     """

@@ -87,8 +87,9 @@ class PaperConfig():
         Return case study specific revision filter.
         If a one case study includes a revision it should be considered.
 
-        Returns: True if a revision should be considered, False if it should
-                 be filtered.
+        Returns:
+            ``True`` if a revision should be considered, ``False`` if it should
+             be filtered
         """
         if self.has_case_study(cs_name):
             rev_filters = [
@@ -111,7 +112,7 @@ class PaperConfig():
         Add a new case study to this paper config.
 
         Args:
-            case_study: the case study to add.
+            case_study: the case study to add
         """
         self.__case_studies[case_study.project_name] += [case_study]
 
