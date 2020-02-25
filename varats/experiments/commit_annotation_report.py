@@ -54,7 +54,7 @@ class Prepare(Step):  # type: ignore
 
 class Extract(Step):  # type: ignore
     """
-    Extract step to extract a llvm bitcode file(.bc) from the project.
+    Extract step to extract a llvm bitcode file (.bc) from the project.
     """
     NAME = "EXTRACT"
     DESCRIPTION = "Extract bitcode out of the execution file."
