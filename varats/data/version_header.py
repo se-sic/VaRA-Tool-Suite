@@ -13,8 +13,8 @@ class WrongYamlFileType(Exception):
     """
 
     def __init__(self, expected_type: str, actual_type: str) -> None:
-        super().__init__("Expected FileType: '{}' but got '{}'".format(
-            expected_type, actual_type))
+        super().__init__(
+            f"Expected FileType: '{expected_type}' but got '{actual_type}'")
 
 
 class WrongYamlFileVersion(Exception):
@@ -23,9 +23,8 @@ class WrongYamlFileVersion(Exception):
     """
 
     def __init__(self, expected_version: int, actual_version: int):
-        super().__init__(
-            "Expected minimal version: '{}' but got version '{}'".format(
-                expected_version, actual_version))
+        super().__init__(f"Expected minimal version: '{expected_version}' " +
+                         f"but got version '{actual_version}'")
 
 
 class NoVersionHeader(Exception):
@@ -51,15 +50,24 @@ class VersionHeader():
 
     @classmethod
     def from_yaml_doc(cls, yaml_doc: tp.Dict[str, tp.Any]) -> 'VersionHeader':
-        """Creates a VersionHeader object from a yaml dict."""
+        """
+        Creates a VersionHeader object from a yaml dict.
+
+        Args:
+            yaml_doc: version header yaml document
+        """
         return cls(yaml_doc)
 
     @classmethod
     def from_version_number(cls, doc_type: str,
                             version: int) -> 'VersionHeader':
         """
-        Creates a new VersionHeader object from a doc_type string and a
+        Creates a new VersionHeader object from a ``doc_type`` string and a
         version number.
+
+        Args:
+            doc_type: type of the document that should follow the version header
+            version: the current version number
         """
         yaml_doc = {'DocType': doc_type, 'Version': version}
         return cls(yaml_doc)
@@ -70,13 +78,21 @@ class VersionHeader():
         return self.__doc_type
 
     def is_type(self, type_name: str) -> bool:
-        """Checks if the type of the following yaml file is type_name."""
+        """
+        Checks if the type of the following yaml file is ``type_name``.
+
+        Args:
+            type_name: of the possible following yaml document
+        """
         return type_name == self.doc_type
 
     def raise_if_not_type(self, type_name: str) -> None:
         """
         Checks if the type of the following yaml file is type_name,
         otherwise, raises an exception.
+
+        Args:
+            type_name: of the possible following yaml document
         """
         if not self.is_type(type_name):
             raise WrongYamlFileType(type_name, self.doc_type)
@@ -90,6 +106,9 @@ class VersionHeader():
         """
         Checks if the current version is equal or bigger that version_bound,
         otherwise, raises an exception.
+
+        Args:
+            version_bound: minimal version that is expected
         """
         if self.version < version_bound:
             raise WrongYamlFileVersion(version_bound, self.version)
