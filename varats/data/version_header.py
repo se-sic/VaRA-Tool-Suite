@@ -62,7 +62,7 @@ class VersionHeader():
     def from_version_number(cls, doc_type: str,
                             version: int) -> 'VersionHeader':
         """
-        Creates a new VersionHeader object from a doc_type string and a
+        Creates a new VersionHeader object from a ``doc_type`` string and a
         version number.
 
         Args:
@@ -79,7 +79,7 @@ class VersionHeader():
 
     def is_type(self, type_name: str) -> bool:
         """
-        Checks if the type of the following yaml file is type_name.
+        Checks if the type of the following yaml file is ``type_name``.
 
         Args:
             type_name: of the possible following yaml document
