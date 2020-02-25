@@ -166,8 +166,7 @@ class VersionExperiment(Experiment):  # type: ignore
         fs_whitelist = V_CFG["experiment"]["file_status_whitelist"].value
 
         if fs_blacklist or fs_whitelist:
-            fs_good = {x for x in FileStatusExtension
-                      } if not fs_whitelist else set()
+            fs_good = set(FileStatusExtension) if not fs_whitelist else set()
 
             fs_good -= {
                 FileStatusExtension.get_file_status_from_str(x)

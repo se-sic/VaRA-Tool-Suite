@@ -5,8 +5,8 @@ Module for BlameReport, a collection of blame interactions.
 import typing as tp
 from pathlib import Path
 from collections import defaultdict
-import yaml
 from datetime import datetime
+import yaml
 import numpy as np
 
 import pygit2
@@ -197,7 +197,7 @@ def generate_degree_tuples(report: BlameReport) -> tp.List[tp.Tuple[int, int]]:
             degree = len(interaction.interacting_hashes)
             degree_dict[degree] += interaction.amount
 
-    return [(k, v) for k, v in degree_dict.items()]
+    return list(degree_dict.items())
 
 
 def generate_author_degree_tuples(
@@ -223,7 +223,7 @@ def generate_author_degree_tuples(
             degree = len(set(author_list))
             degree_dict[degree] += interaction.amount
 
-    return [(k, v) for k, v in degree_dict.items()]
+    return list(degree_dict.items())
 
 
 def generate_time_delta_distribution_tuples(
@@ -231,6 +231,23 @@ def generate_time_delta_distribution_tuples(
         aggregate_function: tp.Callable[[tp.Sequence[tp.Union[int, float]]], tp.
                                         Union[int, float]]
 ) -> tp.List[tp.Tuple[int, int]]:
+    """
+    Generates a list of tuples that represent the distribution of time delta
+    interactions. The first value in the tuple represents the degree of the time
+    delta, bucketed according to ``bucket_size``. The second value is the time
+    delta, aggregated over all interacting commits by the
+    passed ``aggregate_function``.
+
+    Args:
+        report: to analyze
+        project_name: name of the project
+        bucket_size: size of a time bucket in days
+        aggregate_function: to aggregate the delta values of all
+                            interacting commits
+
+    Returns:
+        list of (degree, amount) tuples
+    """
     degree_dict: tp.DefaultDict[int, int] = defaultdict(int)
     commit_lookup = create_commit_lookup_helper(project_name)
 
@@ -255,7 +272,7 @@ def generate_time_delta_distribution_tuples(
             bucket = round(degree / bucket_size)
             degree_dict[bucket] += interaction.amount
 
-    return [(k, v) for k, v in degree_dict.items()]
+    return list(degree_dict.items())
 
 
 def generate_avg_time_distribution_tuples(report: BlameReport,

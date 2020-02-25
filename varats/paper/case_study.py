@@ -927,8 +927,9 @@ def extend_with_distrib_sampling(case_study: CaseStudy, cmap: CommitMap,
     # Needs to be sorted so the propability distribution over the length
     # of the list is the same as the distribution over the commits age history
     revision_list = [
-        rev_item for rev_item in sorted([x for x in cmap.mapping_items()],
-                                        key=lambda x: x[1]) if
+        rev_item
+        for rev_item in sorted(list(cmap.mapping_items()), key=lambda x: x[1])
+        if
         not case_study.has_revision_in_stage(rev_item[0], kwargs['merge_stage'])
     ]
 

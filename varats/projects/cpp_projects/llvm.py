@@ -1,3 +1,6 @@
+"""
+LLVM project module that adds the llvm framework as a project to evaluate.
+"""
 from benchbuild.project import Project
 from benchbuild.utils.cmd import cmake
 from benchbuild.utils.compiler import cxx
@@ -23,7 +26,7 @@ class LLVM(Project):  # type: ignore
         with local.cwd("build/dev"):
             with local.env(CXXFLAGS="-O2 -g -fno-omit-frame-pointer",
                            CXX=str(cxx(self))):
-                run(cmake("-G", "Ninja",
-                          "-DLLVM_ENABLE_ASSERTIONS=ON",
+                run(
+                    cmake("-G", "Ninja", "-DLLVM_ENABLE_ASSERTIONS=ON",
                           "-DBUILD_SHARED_LIBS=ON",
                           "-DLLVM_TARGETS_TO_BUILD=X86", "../.."))

@@ -189,7 +189,7 @@ def generate_full_list_of_llvmprojects() -> tp.List[LLVMProjects]:
     """
     Generates a list of all LLVM projects.
     """
-    return [project_enum for project_enum in LLVMProjects]
+    return list(LLVMProjects)
 
 
 class VaRAProjectsIter():
@@ -215,7 +215,7 @@ def generate_vara_list_of_llvmprojects() -> tp.List[LLVMProjects]:
     """
     Generates a list of all VaRA llvm projects.
     """
-    return [project_enum for project_enum in VaRAProjectsIter()]
+    return list(VaRAProjectsIter())
 
 
 class VaRAExtraProjectsIter():
@@ -966,8 +966,8 @@ class ProcessManager():
     def __init__(self) -> None:
         if ProcessManager.__instance is not None:
             raise Exception("This class is a singleton!")
-        else:
-            ProcessManager.__instance = self
+
+        ProcessManager.__instance = self
 
         self.__has_shutdown = False
         self.__processes: tp.List[QProcess] = []

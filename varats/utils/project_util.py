@@ -135,7 +135,6 @@ class AbstractRevisionBlocker(abc.ABC):
         Subclasses relying on complex functionality for determining their set
         of blocked revisions can use this method to initialize a cache.
         """
-        pass
 
 
 class BlockedRevision(AbstractRevisionBlocker):

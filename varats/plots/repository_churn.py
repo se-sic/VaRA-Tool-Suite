@@ -46,7 +46,7 @@ def build_repo_churn_table(project_name: str,
     code_churn = calc_repo_code_churn(
         repo, ChurnConfig.create_c_style_languages_config())
     churn_data = pd.DataFrame({
-        "revision": [x for x in code_churn],
+        "revision": list(code_churn),
         "rev_id": [commit_map.time_id(x) for x in code_churn],
         "insertions": [x[1] for x in code_churn.values()],
         "deletions": [x[2] for x in code_churn.values()],
