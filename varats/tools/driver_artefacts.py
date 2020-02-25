@@ -1,3 +1,7 @@
+"""
+Driver module for `vara-art`. This module handles command-line parsing and maps
+the commands to tool suite internal functionality.
+"""
 import argparse
 import textwrap
 import typing as tp

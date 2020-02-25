@@ -1,3 +1,6 @@
+"""
+Small test project to run basic vara tests
+"""
 from plumbum import local
 
 from benchbuild.utils.run import run
@@ -6,10 +9,9 @@ from benchbuild.utils.download import with_git
 import benchbuild.project as prj
 
 
-@with_git(
-    "https://github.com/se-passau/vara-perf-tests.git",
-    limit=1,
-    refspec="HEAD")
+@with_git("https://github.com/se-passau/vara-perf-tests.git",
+          limit=1,
+          refspec="HEAD")
 class BasicTests(prj.Project):  # type: ignore
     """
     Basic tests:

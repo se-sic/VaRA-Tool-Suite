@@ -1,3 +1,6 @@
+"""
+Minimal perf example project.
+"""
 from benchbuild.utils.download import with_wget
 from benchbuild.utils.run import run
 from benchbuild.utils.compiler import cc

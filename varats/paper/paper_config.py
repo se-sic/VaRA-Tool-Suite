@@ -88,8 +88,7 @@ class PaperConfig():
         """
         if self.__artefacts:
             return self.__artefacts
-        else:
-            return []
+        return []
 
     def has_case_study(self, cs_name: str) -> bool:
         """

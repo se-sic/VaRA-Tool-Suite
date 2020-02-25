@@ -43,6 +43,9 @@ CFG["vara"] = {
 
 
 class Prepare(Step):  # type: ignore
+    """
+    Benchbuild prepare step to setup projects for later analysis.
+    """
     NAME = "PREPARE"
     DESCRIPTION = "Prepares the analysis by annotating the project with the \
         annotation-script of Florian Niederhuber that is provided through \
@@ -50,11 +53,17 @@ class Prepare(Step):  # type: ignore
 
 
 class Extract(Step):  # type: ignore
+    """
+    Extract step to extract a llvm bitcode file(.bc) from the project.
+    """
     NAME = "EXTRACT"
     DESCRIPTION = "Extract bitcode out of the execution file."
 
 
 class Analyse(Step):  # type: ignore
+    """
+    Analysis step to run vara's commit annotation report pass.
+    """
     NAME = "ANALYSE"
     DESCRIPTION = "Analyses the bitcode with CFR of VaRA."
 

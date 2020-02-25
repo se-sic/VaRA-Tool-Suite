@@ -312,7 +312,7 @@ def package_paper_config(output_file: Path, cs_filter_regex: tp.Pattern[str],
     result_dir = Path(str(CFG['result_dir']))
     report_types = [
         MetaReport.REPORT_TYPES[report_name] for report_name in report_names
-    ] if report_names else [x for x in MetaReport.REPORT_TYPES.values()]
+    ] if report_names else list(MetaReport.REPORT_TYPES.values())
 
     files_to_store: tp.Set[Path] = set()
     for case_study in current_config.get_all_case_studies():

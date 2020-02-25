@@ -1,3 +1,6 @@
+"""
+Experiment that adds tracing markers for highlight regions.
+"""
 import typing as tp
 
 from benchbuild.experiment import Experiment
