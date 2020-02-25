@@ -241,7 +241,8 @@ class CSStage():
             revision: project revision to check
 
         Returns:
-            ``True``, in case the revision is part of the case study, ``False`` otherwise.
+            ``True``, in case the revision is part of the case study,
+            ``False`` otherwise.
         """
         for cs_revision in self.__revisions:
             if cs_revision.commit_hash.startswith(revision):
@@ -337,7 +338,7 @@ class CaseStudy():
         Get a list with all stages.
         """
         # Return new list to forbid modification of the case-study
-        return [stage for stage in self.__stages]
+        return list(self.__stages)
 
     @property
     def num_stages(self) -> int:
@@ -349,7 +350,8 @@ class CaseStudy():
     def get_stage_by_name(self, stage_name: str) -> tp.Optional[CSStage]:
         """
         Get a stage by its name.
-        Since multiple stages can have the same name, the first matching stage is returned.
+        Since multiple stages can have the same name, the first matching stage
+        is returned.
 
         Args:
             stage_name: name of the stage to lookup
@@ -366,7 +368,8 @@ class CaseStudy():
     def get_stage_index_by_name(self, stage_name: str) -> tp.Optional[int]:
         """
         Get a stage's index by its name.
-        Since multiple stages can have the same name, the first matching stage is returned.
+        Since multiple stages can have the same name, the first matching stage
+        is returned.
 
         Args:
             stage_name: name of the stage to lookup
@@ -385,7 +388,8 @@ class CaseStudy():
         Check if a revision is part of this case study.
 
         Returns:
-            ``True``, if the revision was found in one of the stages, ``False`` otherwise
+            ``True``, if the revision was found in one of the stages,
+            ``False`` otherwise
         """
         for stage in self.__stages:
             if stage.has_revision(revision):
@@ -398,7 +402,8 @@ class CaseStudy():
         Checks if a revision is in a specific stage.
 
         Returns:
-            ``True``, if the revision was found in the specified stage, ``False`` otherwise
+            ``True``, if the revision was found in the specified stage,
+            ``False`` otherwise
         """
         if self.num_stages <= num_stage:
             return False
@@ -429,7 +434,8 @@ class CaseStudy():
 
     def insert_empty_stage(self, pos: int) -> CSStage:
         """
-        Insert a new stage at the given index, shifting the list elements to the right.
+        Insert a new stage at the given index, shifting the list elements
+        to the right.
         The newly created stage is returned.
 
         Args:
@@ -479,7 +485,8 @@ class CaseStudy():
             revisions: List of tuples with (commit_hash, id) to be inserted
             stage_num: The stage to insert the revisions
             sort_revs: True if the stage should be kept sorted
-            extender_strategy: The extender strategy used to acquire the revisions
+            extender_strategy: The extender strategy used to acquire the
+                               revisions
             sampling_method: The sampling method used to acquire the revisions
         """
         for revision in revisions:
@@ -643,8 +650,8 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
                 if extender_strategy is not None else None,
                 SamplingMethod[sampling_method]
                 if sampling_method is not None else None,
-                ReleaseType[release_type]
-                if release_type is not None else None, hash_id_tuples))
+                ReleaseType[release_type] if release_type is not None else None,
+                hash_id_tuples))
 
     return CaseStudy(raw_case_study['project_name'], raw_case_study['version'],
                      stages)
@@ -706,7 +713,7 @@ def get_newest_result_files_for_case_study(case_study: CaseStudy,
                             opt_res_file.stat().st_mtime):
                         files_to_store[commit_hash] = opt_res_file
 
-    return [x for x in files_to_store.values()]
+    return list(files_to_store.values())
 
 
 def get_case_study_file_name_filter(case_study: CaseStudy
@@ -716,8 +723,8 @@ def get_case_study_file_name_filter(case_study: CaseStudy
     user to check if a file name is related to this case study.
 
     Returns:
-        a filter function that returns ``True`` in cases where a revision of file
-        belongs to this case study
+        a filter function that returns ``True`` in cases where a revision of
+        file belongs to this case study
     """
 
     def cs_filter(file_name: str) -> bool:

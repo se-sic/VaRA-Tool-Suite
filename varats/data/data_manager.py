@@ -1,6 +1,6 @@
 """
-The DataManager module handles the loading, creation, and caching of data classes.
-With the DataManager in the background, we can load files from multiple
+The DataManager module handles the loading, creation, and caching of data
+classes. With the DataManager in the background, we can load files from multiple
 locations within the tools suite, without loading the same file twice.
 In addition, this speeds up reloading of files, for example, in interactive
 plots, like in jupyter notebooks, where we sometimes re-execute triggers

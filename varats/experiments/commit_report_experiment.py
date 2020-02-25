@@ -37,13 +37,15 @@ class CRAnalysis(actions.Step):  # type: ignore
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
-    INTERACTION_FILTER_TEMPLATE = "InteractionFilter-{experiment}-{project}.yaml"
+    INTERACTION_FILTER_TEMPLATE = \
+        "InteractionFilter-{experiment}-{project}.yaml"
 
     def __init__(self,
                  project: Project,
                  interaction_filter_experiment_name: tp.Optional[str] = None):
         super(CRAnalysis, self).__init__(obj=project, action_fn=self.analyze)
-        self.__interaction_filter_experiment_name = interaction_filter_experiment_name
+        self.__interaction_filter_experiment_name = \
+            interaction_filter_experiment_name
 
     def analyze(self) -> actions.StepResult:
         """
@@ -87,8 +89,7 @@ class CRAnalysis(actions.Step):  # type: ignore
         for binary in project.binaries:
             result_file = CR.get_file_name(project_name=str(project.name),
                                            binary_name=binary.name,
-                                           project_version=str(
-                                               project.version),
+                                           project_version=str(project.version),
                                            project_uuid=str(project.run_uuid),
                                            extension_type=FSE.Success)
 
@@ -102,11 +103,10 @@ class CRAnalysis(actions.Step):  # type: ignore
                 opt_params.append("-vara-cf-interaction-filter={}".format(
                     str(interaction_filter_file)))
 
-            opt_params.append(bc_cache_folder /
-                              Extract.BC_FILE_TEMPLATE.format(
-                                  project_name=project.name,
-                                  binary_name=binary.name,
-                                  project_version=project.version))
+            opt_params.append(bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
+                project_name=project.name,
+                binary_name=binary.name,
+                project_version=project.version))
 
             run_cmd = opt[opt_params]
 

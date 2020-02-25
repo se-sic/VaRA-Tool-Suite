@@ -54,7 +54,8 @@ def __get_supplementary_result_files_dict(
     Args:
         project_name: target project
         result_file_type: the type of the result file
-        revision (str): The revision for which the result files should be returned.
+        revision (str): The revision for which the result files should
+                        be returned.
 
     Returns:
         Dict that maps (commit_hash, info_type) to list of result files
@@ -69,10 +70,12 @@ def __get_supplementary_result_files_dict(
     if res_dir.exists():
         for res_file in res_dir.iterdir():
             if result_file_type.is_result_file_supplementary(res_file.name):
-                commit_hash = result_file_type.get_commit_hash_from_supplementary_result_file(
-                    res_file.name)
-                info_type = result_file_type.get_info_type_from_supplementary_result_file(
-                    res_file.name)
+                commit_hash = result_file_type.\
+                    get_commit_hash_from_supplementary_result_file(
+                        res_file.name)
+                info_type = result_file_type.\
+                    get_info_type_from_supplementary_result_file(
+                        res_file.name)
                 if revision is None or commit_hash == revision:
                     result_files[(commit_hash, info_type)].append(res_file)
 
@@ -184,11 +187,14 @@ def get_supplementary_result_files(project_name: str,
     If a specific revision is specified then only the result files for the
     passed revision are returned, otherwise all files for all available
     revisions are returned.
+
     Args:
         project_name (str): target project
         result_file_type (MetaReport): the type of the result file
-        revision (str): The revision for which the result files should be returned.
+        revision (str): The revision for which the result files should
+                        be returned.
         suppl_info_type (str): Only include result files of the specified type
+
     Returns:
         [(Path, str, str)]: List of tuples of result file path, revision,
                             and supplementary result file type

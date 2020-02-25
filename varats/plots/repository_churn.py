@@ -114,7 +114,6 @@ class RepoChurnPlot(Plot):
 
     NAME = 'repo_churn'
 
-
     def __init__(self, **kwargs: tp.Any) -> None:
         super(RepoChurnPlot, self).__init__("repo_churn", **kwargs)
 

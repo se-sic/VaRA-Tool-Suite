@@ -200,8 +200,9 @@ def __calc_code_churn_range_impl(repo_path: str,
                                  end_range: tp.Optional[str] = None
                                 ) -> tp.Dict[str, tp.Tuple[int, int, int]]:
     """
-    Calculates all churn values for the commits in the specified range [start..end]
-    If no range is supplied, the churn values of all commits are calculated.
+    Calculates all churn values for the commits in the specified
+    range [start..end]. If no range is supplied, the churn values of all
+    commits are calculated.
 
     git log --pretty=format:'%H' --date=short --shortstat -- ':*.[enabled_exts]'
 
@@ -258,8 +259,9 @@ def calc_code_churn_range(
         end_range: tp.Optional[tp.Union[pygit2.Commit, str]] = None
 ) -> tp.Dict[str, tp.Tuple[int, int, int]]:
     """
-    Calculates all churn values for the commits in the specified range [start..end]
-    If no range is supplied, the churn values of all commits are calculated.
+    Calculates all churn values for the commits in the specified
+    range [start..end]. If no range is supplied, the churn values of all
+    commits are calculated.
 
     Args:
         repo: git repository

@@ -57,7 +57,10 @@ class VersionHeader():
     @classmethod
     def from_version_number(cls, doc_type: str,
                             version: int) -> 'VersionHeader':
-        """Creates a new VersionHeader object from a doc_type string and a version number."""
+        """
+        Creates a new VersionHeader object from a doc_type string and a
+        version number.
+        """
         yaml_doc = {'DocType': doc_type, 'Version': version}
         return cls(yaml_doc)
 

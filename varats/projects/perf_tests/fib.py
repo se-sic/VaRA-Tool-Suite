@@ -6,7 +6,8 @@ import benchbuild.project as prj
 
 @with_wget({
     "1.0":
-    "https://raw.githubusercontent.com/se-passau/vara-perf-tests/master/examples/fib.c"
+        "https://raw.githubusercontent.com/se-passau/" +
+        "vara-perf-tests/master/examples/fib.c"
 })
 class Fib(prj.Project):  # type: ignore
     """ Fibonacci """
