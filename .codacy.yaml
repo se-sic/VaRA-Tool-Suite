@@ -1,5 +1,6 @@
 ---
 exclude_paths:
+  - 'varats/gui/*'                    # QT gui
   - 'varats/gui/ui_*'                 # QT gui
   - 'varats/gui/views/ui_*'           # QT gui
   - 'tests/data/test_filter_tree.py'  # QT gui testing code
