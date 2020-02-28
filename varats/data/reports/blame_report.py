@@ -278,6 +278,20 @@ def generate_time_delta_distribution_tuples(
 def generate_avg_time_distribution_tuples(report: BlameReport,
                                           project_name: str, bucket_size: int
                                          ) -> tp.List[tp.Tuple[int, int]]:
+    """
+    Generates a list of tuples that represent the distribution of average time
+    delta interactions. The first value in the tuple represents the degree of
+    the time delta, bucketed according to ``bucket_size``. The second value is
+    the time delta, averaged over all interacting commits.
+
+    Args:
+        report: to analyze
+        project_name: name of the project
+        bucket_size: size of a time bucket in days
+
+    Returns:
+        list of (degree, avg_time) tuples
+    """
     return generate_time_delta_distribution_tuples(report, project_name,
                                                    bucket_size, np.average)
 
@@ -285,6 +299,21 @@ def generate_avg_time_distribution_tuples(report: BlameReport,
 def generate_max_time_distribution_tuples(report: BlameReport,
                                           project_name: str, bucket_size: int
                                          ) -> tp.List[tp.Tuple[int, int]]:
+    """
+    Generates a list of tuples that represent the distribution of maximal time
+    delta interactions. The first value in the tuple represents the degree of
+    the time delta, bucketed according to ``bucket_size``. The second value is
+    the max time delta, i.e., the maximal time distance between the base commit
+    and one of the all interacting commits.
+
+    Args:
+        report: to analyze
+        project_name: name of the project
+        bucket_size: size of a time bucket in days
+
+    Returns:
+        list of (degree, max_time) tuples
+    """
     return generate_time_delta_distribution_tuples(report, project_name,
                                                    bucket_size, max)
 

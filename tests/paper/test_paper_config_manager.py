@@ -23,6 +23,7 @@ class TestPaperConfigManager(unittest.TestCase):
     """
     Test basic PaperConfigManager functionality.
     """
+
     @classmethod
     def setUpClass(cls):
         """
@@ -39,18 +40,16 @@ class TestPaperConfigManager(unittest.TestCase):
         Check if the case study can show a short status.
         """
         # Revision not in set
-        mock_get_tagged_revisions.return_value = [
-            ('42b25e7f15', FileStatusExtension.Success)
-        ]
+        mock_get_tagged_revisions.return_value = [('42b25e7f15',
+                                                   FileStatusExtension.Success)]
 
         status = PCM.get_short_status(self.case_study, CommitReport, 5)
         self.assertEqual(status, 'CS: gzip_1: (  0/10) processed [0/0/0/10/0]')
         mock_get_tagged_revisions.assert_called()
 
         mock_get_tagged_revisions.reset_mock()
-        mock_get_tagged_revisions.return_value = [
-            ('b8b25e7f15', FileStatusExtension.Success)
-        ]
+        mock_get_tagged_revisions.return_value = [('b8b25e7f15',
+                                                   FileStatusExtension.Success)]
 
         status = PCM.get_short_status(self.case_study, CommitReport, 5)
         self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [1/0/0/9/0]')
@@ -65,18 +64,16 @@ class TestPaperConfigManager(unittest.TestCase):
         not if the colors are present.
         """
         # Revision not in set
-        mock_get_tagged_revisions.return_value = [
-            ('42b25e7f15', FileStatusExtension.Success)
-        ]
+        mock_get_tagged_revisions.return_value = [('42b25e7f15',
+                                                   FileStatusExtension.Success)]
 
         status = PCM.get_short_status(self.case_study, CommitReport, 5, True)
         self.assertEqual(status, 'CS: gzip_1: (  0/10) processed [0/0/0/10/0]')
         mock_get_tagged_revisions.assert_called()
 
         mock_get_tagged_revisions.reset_mock()
-        mock_get_tagged_revisions.return_value = [
-            ('b8b25e7f15', FileStatusExtension.Success)
-        ]
+        mock_get_tagged_revisions.return_value = [('b8b25e7f15',
+                                                   FileStatusExtension.Success)]
 
         status = PCM.get_short_status(self.case_study, CommitReport, 5, True)
         self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [1/0/0/9/0]')
@@ -91,9 +88,8 @@ class TestPaperConfigManager(unittest.TestCase):
         Check if the case study can show a short status.
         """
         # Revision not in set
-        mock_get_tagged_revisions.return_value = [
-            ('42b25e7f15', FileStatusExtension.Success)
-        ]
+        mock_get_tagged_revisions.return_value = [('42b25e7f15',
+                                                   FileStatusExtension.Success)]
 
         status = PCM.get_status(self.case_study, CommitReport, 5, False, False)
         self.assertEqual(
@@ -169,9 +165,8 @@ class TestPaperConfigManager(unittest.TestCase):
         Check if the case study can show a short status.
         """
         # Revision not in set
-        mock_get_tagged_revisions.return_value = [
-            ('42b25e7f15', FileStatusExtension.Success)
-        ]
+        mock_get_tagged_revisions.return_value = [('42b25e7f15',
+                                                   FileStatusExtension.Success)]
 
         status = PCM.get_status(self.case_study, CommitReport, 5, True, False)
         self.assertEqual(
@@ -255,9 +250,8 @@ class TestPaperConfigManager(unittest.TestCase):
         not if the colors are present.
         """
         # Revision not in set
-        mock_get_tagged_revisions.return_value = [
-            ('42b25e7f15', FileStatusExtension.Success)
-        ]
+        mock_get_tagged_revisions.return_value = [('42b25e7f15',
+                                                   FileStatusExtension.Success)]
 
         status = PCM.get_status(self.case_study, CommitReport, 5, False, False,
                                 True)
@@ -308,6 +302,7 @@ class TestPaperConfigManager(unittest.TestCase):
         Currently this only checks if the output is correctly generated but
         not if the colors are present.
         """
+        # pylint: disable=line-too-long
         self.assertEqual(
             PCM.get_legend(True),
             """CS: project_42: (Success / Total) processed [Success/Failed/CompileError/Missing/Blocked]
@@ -326,9 +321,8 @@ class TestPaperConfigManager(unittest.TestCase):
         total_status_occurrences: tp.DefaultDict[FileStatusExtension, tp.
                                                  Set[str]] = defaultdict(set)
         # Revision not in set
-        mock_get_tagged_revisions.return_value = [
-            ('42b25e7f15', FileStatusExtension.Success)
-        ]
+        mock_get_tagged_revisions.return_value = [('42b25e7f15',
+                                                   FileStatusExtension.Success)]
 
         PCM.get_status(self.case_study, CommitReport, 5, False, False, True,
                        total_status_occurrences)
