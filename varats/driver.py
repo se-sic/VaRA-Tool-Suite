@@ -293,8 +293,8 @@ def main_plot() -> None:
         print("Could not find output dir {plot_dir}".format(
             plot_dir=args['plot_dir']))
         return
-    else:
-        print("Writing plots to: {plot_dir}".format(plot_dir=args['plot_dir']))
+
+    print("Writing plots to: {plot_dir}".format(plot_dir=args['plot_dir']))
 
     if args['paper_config']:
         paper_config = get_paper_config()
