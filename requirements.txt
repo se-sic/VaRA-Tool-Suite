@@ -1,3 +1,13 @@
 jupyter>=1.0.0
 pygit2>=0.27.2
 mock>=2.0.0
+PyQt5>=5.10.0,<5.14.0
+PyYAML>=3.12
+seaborn>=0.8.0
+matplotlib>=3.1.2
+pandas>=0.22.0
+benchbuild>=4.0.1
+plumbum>=1.6.6
+wllvm>=1.1.4
+argparse-utils>=1.2.0
+pygit2>=0.28.2
