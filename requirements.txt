@@ -1,5 +1,4 @@
 jupyter>=1.0.0
-pygit2>=0.27.2
 mock>=2.0.0
 PyQt5>=5.10.0,<5.14.0
 PyYAML>=3.12
