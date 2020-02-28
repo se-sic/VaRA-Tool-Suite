@@ -38,7 +38,7 @@ class FunctionPEErrorWrapper():
     def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
         try:
             return self.__func(*args, **kwargs)
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=broad-except
             self.__handler(ex)
 
 

@@ -240,7 +240,7 @@ def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
             str(CFG["paper_config"]["folder"]) + "/" +
             str(CFG["paper_config"]["current_config"]))
 
-    global __G_PAPER_CONFIG
+    global __G_PAPER_CONFIG  # pylint: disable=global-statement
     __G_PAPER_CONFIG = PaperConfig(config_path)
 
 

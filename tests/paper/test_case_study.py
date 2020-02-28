@@ -58,11 +58,23 @@ e75f428c0ddc90a7011cfda82a7114a16c537e34
 b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"""
 
 
-def mocked_create_lazy_commit_map_loader(project_name: str,
-                                         cmap_path: tp.Optional[Path] = None,
-                                         end: str = "HEAD",
-                                         start: tp.Optional[str] = None):
+def mocked_create_lazy_commit_map_loader(
+        project_name: str,  # pylint: disable=unused-argument
+        cmap_path: tp.Optional[Path] = None,  # pylint: disable=unused-argument
+        end: str = "HEAD",  # pylint: disable=unused-argument
+        start: tp.Optional[str] = None):  # pylint: disable=unused-argument
+    """
+    Mock function to replace a lazy commit map loader callback.
+
+    Args:
+        project_name: name of the project
+        cmap_path: path to commit map file
+        end: commit to end loading, e.g, HEAD
+        start: commit from which to start loading
+    """
+
     def get_test_case_study_cmap() -> CommitMap:
+
         def format_stream():
             for number, line in enumerate(reversed(GIT_LOG_OUT.split('\n'))):
                 yield "{}, {}\n".format(number, line)

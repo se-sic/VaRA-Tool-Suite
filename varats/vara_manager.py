@@ -672,15 +672,16 @@ def init_vara_build(path_to_llvm: Path,
             lambda: run_process_with_output(proc, post_out))
 
 
-def verify_build_structure(own_libgit: bool,
-                           include_phasar: bool,
-                           path_to_llvm: Path,
-                           post_out: tp.Callable[[str], None] = lambda x: None
-                          ) -> None:
+def verify_build_structure(own_libgit: bool, include_phasar: bool,
+                           path_to_llvm: Path) -> None:
     """
     Verify the build strucutre of VaRA:
         - ensure status of submodules
         - update submodules
+
+    Args:
+        own_libgit: ``True``, if own libgit should be self build
+        include_phasar: ``True``, if phasar should be included in build
     """
     if (not get_cmake_var("VARA_BUILD_LIBGIT") or not os.path.exists(
             path_to_llvm / "/tools/VaRA/external/libgit2/CMakeLists.txt")) \
@@ -713,11 +714,9 @@ def build_vara(path_to_llvm: Path,
             raise error
 
     with local.cwd(full_path):
-        verify_build_structure(own_libgit, include_phasar, path_to_llvm,
-                               post_out)
+        verify_build_structure(own_libgit, include_phasar, path_to_llvm)
 
-        set_vara_cmake_variables(own_libgit, include_phasar, install_prefix,
-                                 post_out)
+        set_vara_cmake_variables(install_prefix, post_out)
 
     with ProcessManager.create_process("ninja", ["install"],
                                        workdir=full_path) as proc:
@@ -726,9 +725,7 @@ def build_vara(path_to_llvm: Path,
             lambda: run_process_with_output(proc, post_out))
 
 
-def set_vara_cmake_variables(own_libgit: bool,
-                             include_phasar: bool,
-                             install_prefix: str,
+def set_vara_cmake_variables(install_prefix: str,
                              post_out: tp.Callable[[str], None] = lambda x: None
                             ) -> None:
     """
@@ -1013,7 +1010,9 @@ class VaRAStateManager():
     """
 
     def __init__(self, llvm_folder: Path) -> None:
-        # TODO path propertie needs check
+        if not llvm_folder.exists():
+            raise ValueError("llvm_folder path did not exist!")
+
         self.llvm_folder = llvm_folder
         self.state_signal = GitStateSignals()
 

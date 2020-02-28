@@ -84,6 +84,7 @@ class TestPaperConfigManager(unittest.TestCase):
         side_effect=mocked_create_lazy_commit_map_loader)
     @mock.patch('varats.paper.case_study.get_tagged_revisions')
     def test_status(self, mock_get_tagged_revisions, mock_cmap_loader):
+        # pylint: disable=unused-argument
         """
         Check if the case study can show a short status.
         """
@@ -161,6 +162,7 @@ class TestPaperConfigManager(unittest.TestCase):
     @mock.patch('varats.paper.case_study.get_tagged_revisions')
     def test_status_with_stages(self, mock_get_tagged_revisions,
                                 mock_cmap_loader):
+        # pylint: disable=unused-argument
         """
         Check if the case study can show a short status.
         """
