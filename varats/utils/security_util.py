@@ -18,8 +18,8 @@ from packaging.version import parse as version_parse
 import requests_cache
 
 
-# Cache all requests to limit external requests
-requests_cache.install_cache('security_cache', expire_after=86400)
+# Cache all requests to limit external requests for a month
+requests_cache.install_cache('security_cache', expire_after=2629800)
 
 
 class CVE:
