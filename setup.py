@@ -34,6 +34,7 @@ setup(name='VaRA-Tool-Suite',
               'vara-gen-bbconfig = varats.driver:main_gen_benchbuild_config',
               'vara-plot = varats.driver:main_plot',
               'vd = varats.driver:main_develop',
+              'vara-sec = varats.driver:main_security',
           ]
       },
       python_requires='>=3.6')

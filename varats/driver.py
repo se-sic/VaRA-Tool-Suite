@@ -6,12 +6,17 @@ Main drivers for VaRA-TS
 import os
 import sys
 import argparse
+import re
 import typing as tp
 from pathlib import Path
 from argparse_utils import enum_action
 
+from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt5.QtCore import Qt
+
 import varats.development as dev
 from varats import settings
+import varats.security as sec
 from varats.settings import (get_value_or_default, CFG,
                              generate_benchbuild_config, save_config)
 from varats.gui.main_window import MainWindow
@@ -35,9 +40,6 @@ from varats.paper.case_study import (SamplingMethod, ExtenderStrategy,
 import varats.paper.paper_config_manager as PCM
 from varats.paper.paper_config import get_paper_config
 from varats.data.report import MetaReport
-
-from PyQt5.QtWidgets import QApplication, QMessageBox
-from PyQt5.QtCore import Qt
 
 
 class VaRATSGui:
@@ -644,7 +646,6 @@ def main_casestudy() -> None:
                       " changing dir to {vara_dir}".format(vara_dir=vara_root))
                 os.chdir(vara_root)
 
-            import re
             PCM.package_paper_config(output_path,
                                      re.compile(args['filter_regex']),
                                      args['report_names'])
@@ -764,3 +765,27 @@ def main_develop() -> None:
         ])
     else:
         parser.print_help()
+
+
+def main_security() -> None:
+    """
+    Handle and simplify common security interactions with the project.
+    """
+    parser = argparse.ArgumentParser("Security helper")
+    sub_parsers = parser.add_subparsers(help="List CVE's for a project", dest="command")
+
+    # List cve'S
+    cve_parser = sub_parsers.add_parser('list-cve')
+    cve_parser.add_argument('vendor',
+                            type=str,
+                            help='Name of the product vendor')
+    cve_parser.add_argument('product',
+                            type=str,
+                            help='Name of the product')
+
+    args = parser.parse_args()
+    if args.command == 'list-cve':
+        sec.list_cve_for_projects(vendor=args.vendor, product=args.product)
+    else:
+        parser.print_help()
+
