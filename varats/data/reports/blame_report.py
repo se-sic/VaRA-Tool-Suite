@@ -7,9 +7,8 @@ from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
 import yaml
-import numpy as np
-
 import pygit2
+import numpy as np
 
 from varats.data.report import BaseReport, MetaReport, FileStatusExtension
 from varats.data.version_header import VersionHeader

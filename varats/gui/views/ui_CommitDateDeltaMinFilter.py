@@ -6,7 +6,9 @@
 #
 # WARNING! All changes made in this file will be lost!
 
+import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_CommitDateDeltaMinFilter(object):
     def setupUi(self, CommitDateDeltaMinFilter):
@@ -48,14 +50,11 @@ class Ui_CommitDateDeltaMinFilter(object):
         self.label.setText(_translate("CommitDateDeltaMinFilter", "CommitDateDelta Minumum"))
         self.uiHelp.setToolTip(_translate("CommitDateDeltaMinFilter", "Help"))
 
-from varats.gui import icons_rc
 
 if __name__ == "__main__":
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     CommitDateDeltaMinFilter = QtWidgets.QWidget()
     ui = Ui_CommitDateDeltaMinFilter()
     ui.setupUi(CommitDateDeltaMinFilter)
     CommitDateDeltaMinFilter.show()
     sys.exit(app.exec_())
-

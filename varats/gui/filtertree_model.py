@@ -120,7 +120,7 @@ class FilterTreeModel(QAbstractItemModel):
 
         return self._root_node
 
-    def insertRows(self, node_type, position: int , rows: int,
+    def insertRows(self, node_type, position: int, rows: int,
                    parent: QModelIndex = QModelIndex()) -> bool:
         """
         :param parent: QModelIndex
@@ -278,4 +278,3 @@ class FilterTreeModel(QAbstractItemModel):
     def removeNode(self) -> bool:
         selection = self._selection
         return self.removeRows(selection.row(), 1, selection.parent())
-

@@ -10,9 +10,9 @@ import typing as tp
 import matplotlib.pyplot as plt
 import matplotlib.style as style
 import pandas as pd
-import numpy as np
 import seaborn as sb
 from matplotlib.patches import Patch
+import numpy as np
 
 from varats.data.reports.commit_report import CommitMap
 from varats.data.report import MetaReport, FileStatusExtension

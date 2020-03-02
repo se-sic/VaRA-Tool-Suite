@@ -6,7 +6,9 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+import sys
+from PyQt5 import QtCore, QtWidgets
+
 
 class Ui_CommitDateMaxFilter(object):
     def setupUi(self, CommitDateMaxFilter):
@@ -40,11 +42,9 @@ class Ui_CommitDateMaxFilter(object):
 
 
 if __name__ == "__main__":
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     CommitDateMaxFilter = QtWidgets.QWidget()
     ui = Ui_CommitDateMaxFilter()
     ui.setupUi(CommitDateMaxFilter)
     CommitDateMaxFilter.show()
     sys.exit(app.exec_())
-

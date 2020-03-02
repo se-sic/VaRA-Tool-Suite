@@ -9,15 +9,12 @@ For annotation we use the git-blame data of git.
 import typing as tp
 from os import path
 from pathlib import Path
-
 from plumbum import local
-
 from benchbuild.project import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.settings import CFG
-from benchbuild.utils.cmd import opt, mkdir
+from benchbuild.utils.cmd import opt, mkdir, timeout
 import benchbuild.utils.actions as actions
-
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.data.report import FileStatusExtension as FSE
 from varats.experiments.extract import Extract
@@ -111,7 +108,6 @@ class CRAnalysis(actions.Step):  # type: ignore
             run_cmd = opt[opt_params]
 
             timeout_duration = '8h'
-            from benchbuild.utils.cmd import timeout
 
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration, run_cmd],

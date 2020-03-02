@@ -6,7 +6,8 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+import sys
+from PyQt5 import QtCore, QtWidgets
 
 
 class Ui_BuildSetup(object):
@@ -139,10 +140,7 @@ class Ui_BuildSetup(object):
         self.checkOpt.setText(_translate("BuildSetup", "Opt"))
 
 
-
-
 if __name__ == "__main__":
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     BuildSetup = QtWidgets.QWidget()
     ui = Ui_BuildSetup()

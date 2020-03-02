@@ -6,7 +6,9 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+import sys
+from PyQt5 import QtCore, QtWidgets
+
 
 class Ui_AuthorFilterProperties(object):
     def setupUi(self, AuthorFilterProperties):
@@ -49,11 +51,9 @@ class Ui_AuthorFilterProperties(object):
 
 
 if __name__ == "__main__":
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     AuthorFilterProperties = QtWidgets.QWidget()
     ui = Ui_AuthorFilterProperties()
     ui.setupUi(AuthorFilterProperties)
     AuthorFilterProperties.show()
     sys.exit(app.exec_())
-

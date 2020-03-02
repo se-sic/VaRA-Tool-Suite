@@ -6,7 +6,11 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+import sys
+from PyQt5 import QtCore, QtWidgets
+from varats.gui.info import InfoTreeWidget
+from varats.gui.options import OptionTreeWidget
+from varats.plots.commit_report_plots import CRBarPlotWidget
 
 
 class Ui_Form(object):
@@ -105,13 +109,7 @@ class Ui_Form(object):
         self.playButton.setText(_translate("Form", ">"))
 
 
-from varats.gui.info import InfoTreeWidget
-from varats.gui.options import OptionTreeWidget
-from varats.plots.commit_report_plots import CRBarPlotWidget
-
-
 if __name__ == "__main__":
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     Form = QtWidgets.QWidget()
     ui = Ui_Form()

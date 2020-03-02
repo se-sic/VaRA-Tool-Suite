@@ -6,7 +6,9 @@
 #
 # WARNING! All changes made in this file will be lost!
 
+import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_CommitDateDeltaMaxFilter(object):
     def setupUi(self, CommitDateDeltaMaxFilter):
@@ -48,14 +50,10 @@ class Ui_CommitDateDeltaMaxFilter(object):
         self.label.setText(_translate("CommitDateDeltaMaxFilter", "CommitDateDelta Maximum"))
         self.uiHelp.setToolTip(_translate("CommitDateDeltaMaxFilter", "Help"))
 
-from varats.gui import icons_rc
-
 if __name__ == "__main__":
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     CommitDateDeltaMaxFilter = QtWidgets.QWidget()
     ui = Ui_CommitDateDeltaMaxFilter()
     ui.setupUi(CommitDateDeltaMaxFilter)
     CommitDateDeltaMaxFilter.show()
     sys.exit(app.exec_())
-

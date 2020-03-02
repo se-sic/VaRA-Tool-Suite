@@ -139,8 +139,7 @@ class ChurnConfig():
         """
         concat_str = ""
         tmp_sep = ""
-        for ext in sorted(
-            {ext for lang in self.enabled_languages for ext in lang.value}):
+        for ext in sorted({ext for lang in self.enabled_languages for ext in lang.value}):
             concat_str += tmp_sep
             tmp_sep = sep
             concat_str += ext

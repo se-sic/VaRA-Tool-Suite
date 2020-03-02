@@ -6,7 +6,9 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+import sys
+from PyQt5 import QtCore, QtWidgets
+
 
 class Ui_FilterUnaryWarning(object):
     def setupUi(self, FilterUnaryWarning):
@@ -30,11 +32,9 @@ class Ui_FilterUnaryWarning(object):
 
 
 if __name__ == "__main__":
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     FilterUnaryWarning = QtWidgets.QWidget()
     ui = Ui_FilterUnaryWarning()
     ui.setupUi(FilterUnaryWarning)
     FilterUnaryWarning.show()
     sys.exit(app.exec_())
-

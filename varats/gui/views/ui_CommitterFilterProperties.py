@@ -6,7 +6,9 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+import sys
+from PyQt5 import QtCore, QtWidgets
+
 
 class Ui_CommitterFilterProperties(object):
     def setupUi(self, CommitterFilterProperties):
@@ -49,11 +51,9 @@ class Ui_CommitterFilterProperties(object):
 
 
 if __name__ == "__main__":
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     CommitterFilterProperties = QtWidgets.QWidget()
     ui = Ui_CommitterFilterProperties()
     ui.setupUi(CommitterFilterProperties)
     CommitterFilterProperties.show()
     sys.exit(app.exec_())
-

@@ -6,7 +6,9 @@
 #
 # WARNING! All changes made in this file will be lost!
 
+import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_AuthorDateDeltaMaxFilter(object):
     def setupUi(self, AuthorDateDeltaMaxFilter):
@@ -48,14 +50,11 @@ class Ui_AuthorDateDeltaMaxFilter(object):
         self.label.setText(_translate("AuthorDateDeltaMaxFilter", "AuthorDateDelta Maximum"))
         self.uiHelp.setToolTip(_translate("AuthorDateDeltaMaxFilter", "Help"))
 
-from varats.gui import icons_rc
 
 if __name__ == "__main__":
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     AuthorDateDeltaMaxFilter = QtWidgets.QWidget()
     ui = Ui_AuthorDateDeltaMaxFilter()
     ui.setupUi(AuthorDateDeltaMaxFilter)
     AuthorDateDeltaMaxFilter.show()
     sys.exit(app.exec_())
-
