@@ -30,7 +30,6 @@ class CVE:
     def __init__(self,
                  cve_id: str,
                  score: float,
-                 modified: datetime,
                  published: datetime,
                  vector: frozenset,
                  references: frozenset,
@@ -38,7 +37,6 @@ class CVE:
                  vulnerable_versions: frozenset) -> None:
         self.__cve_id = cve_id
         self.__score = score
-        self.__modified = modified
         self.__published = published
         self.__vector = vector
         self.__references = references
@@ -54,11 +52,6 @@ class CVE:
     def score(self) -> float:
         """ Return the score of this CVE. """
         return self.__score
-
-    @property
-    def modified(self) -> datetime:
-        """ Return the date when this CVE was modified. """
-        return self.__modified
 
     @property
     def published(self) -> datetime:
@@ -114,7 +107,6 @@ class CVE:
                 cve_list.add(CVE(
                     cve_id=entry.get('id'),
                     score=entry.get('cvss'),
-                    modified=datetime.strptime(entry.get('Modified'), '%Y-%m-%dT%H:%M:%S'),
                     published=datetime.strptime(entry.get('Published'), '%Y-%m-%dT%H:%M:%S'),
                     vector=entry.get('cvss-vector', "").split('/'),
                     references=entry.get('references'),
@@ -154,7 +146,6 @@ class CVE:
         return CVE(
             cve_id=cve_data.get('id'),
             score=cve_data.get('cvss'),
-            modified=datetime.strptime(cve_data.get('Modified'), '%Y-%m-%dT%H:%M:%S'),
             published=datetime.strptime(cve_data.get('Published'), '%Y-%m-%dT%H:%M:%S'),
             vector=cve_data.get('cvss-vector', "").split('/'),
             references=cve_data.get('references'),
