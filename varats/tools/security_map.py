@@ -33,7 +33,7 @@ from plumbum.cmd import git
 from varats.utils.security_util import CVE, CWE, CWE_LIST
 
 
-def __n_grams(text: str, filter_reg: str = r'[^a-zA-Z]') -> tp.Set[str]:
+def __n_grams(text: str, filter_reg: str = r'[^a-zA-Z0-9]', filter_len: int = 3) -> tp.Set[str]:
     """
     Divide some text into n-grams.
     :param text: Any text.
@@ -42,11 +42,12 @@ def __n_grams(text: str, filter_reg: str = r'[^a-zA-Z]') -> tp.Set[str]:
     """
     results = set()
     filter_reg = re.compile(filter_reg)
-    for word in text.split(' '):
+    for word in text.split():
         if filter_reg:
             word = filter_reg.sub('', word)
         word = word.strip()
-        results.add(word)
+        if filter_len <= len(word):
+            results.add(word)
     return results
 
 
