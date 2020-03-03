@@ -30,7 +30,7 @@ import re
 from packaging.version import parse as parse_version
 from plumbum import local
 from plumbum.cmd import git
-from varats.utils.security_util import CVE, find_cwe, CWE_LIST
+from varats.utils.security_util import CVE, CWE, CWE_LIST
 
 
 def __n_grams(text: str, filter_reg: str = r'[^a-zA-Z]') -> tp.Set[str]:
@@ -74,7 +74,7 @@ def __collect_via_commit_mgs(commits: tp.List[str]) -> dict:
             cwe_list, cwe_data = re.findall(r'CWE-[\d\-]+\d', message, re.IGNORECASE), []
             for cwe in cwe_list:
                 try:
-                    cwe_data.append(find_cwe(cwe))
+                    cwe_data.append(CWE.find_cwe(cwe_id=cwe))
                 except ValueError as error_msg:
                     print(error_msg)
             # Check commit message if it contains any name or description from the CWE entries

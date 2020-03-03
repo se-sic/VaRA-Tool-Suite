@@ -13,13 +13,10 @@ import csv
 import zipfile
 import io
 import time
+import typing as tp
 import requests
-from packaging.version import parse as version_parse
+from packaging.version import Version, parse as version_parse
 import requests_cache
-
-
-# Cache all requests to limit external requests for a month
-requests_cache.install_cache('security_cache', expire_after=2629800)
 
 
 class CVE:
@@ -31,10 +28,10 @@ class CVE:
                  cve_id: str,
                  score: float,
                  published: datetime,
-                 vector: frozenset,
-                 references: frozenset,
+                 vector: tp.FrozenSet(str),
+                 references: tp.FrozenSet(str),
                  summary: str,
-                 vulnerable_versions: frozenset) -> None:
+                 vulnerable_versions: tp.FrozenSet(Version)) -> None:
         self.__cve_id = cve_id
         self.__score = score
         self.__published = published
@@ -59,12 +56,12 @@ class CVE:
         return self.__published
 
     @property
-    def vector(self) -> frozenset:
+    def vector(self) -> tp.FrozenSet(str):
         """ Return the CVE vector. """
         return self.__vector
 
     @property
-    def references(self) -> frozenset:
+    def references(self) -> tp.FrozenSet(str):
         """ Return a set of external references/urls. """
         return self.__references
 
@@ -74,7 +71,7 @@ class CVE:
         return self.__summary
 
     @property
-    def vulnerable_versions(self) -> frozenset:
+    def vulnerable_versions(self) -> tp.FrozenSet(Version):
         """ Return set of vulnerable version numbers. """
         return self.__vulnerable_versions
 
@@ -85,7 +82,7 @@ class CVE:
         return self.__str__()
 
     @staticmethod
-    def find_all_cve(vendor: str, product: str) -> frozenset:
+    def find_all_cve(vendor: str, product: str) -> tp.FrozenSet(CVE):
         """
         Find all CVE's for a given vendor and product combination.
         :param vendor: Vendor to search for.
@@ -123,7 +120,7 @@ class CVE:
         return frozenset(cve_list)
 
     @staticmethod
-    def find_cve(cve_id: str):
+    def find_cve(cve_id: str) -> CVE:
         """
         Find a CVE by its ID (CVE-YYYY-XXXXX).
         :param cve_id: CVE id to search for.
@@ -192,7 +189,7 @@ class CWE:
         return self.__str__()
 
     @staticmethod
-    def find_all_cwe() -> frozenset:
+    def find_all_cwe() -> tp.FrozenSet(CWE):
         """
         Create a set of all CWE's.
         :return: Set of CWE objects.
@@ -219,20 +216,24 @@ class CWE:
 
         return frozenset(cwe_list)
 
+    @staticmethod
+    def find_cwe(cwe_id: str = None, cwe_name: str = None, cwe_description: str = None) -> CWE:
+        """
+        Find a CWE by its attributes (ID (CWE-XXX), name, description).
+        :param cwe_id: CWE to search for.
+        :return: CWE if one is found, otherwise raise a ValueError.
+        """
+        for cwe in CWE_LIST:
+            if cwe.cwe_id == cwe_id or \
+               cwe.cwe_name == cwe_name or \
+               cwe.cwe_description == cwe_description:
+                return cwe
 
-def find_cwe(cwe_id: str) -> CWE:
-    """
-    Find a CWE by its ID (CWE-XXX).
-    :param cwe_id: CWE to search for.
-    :return: CWE if one is found, otherwise raise a ValueError.
-    """
+        raise ValueError(f'Could not find this CWE: {cwe_id}!')
 
-    for cwe in CWE_LIST:
-        if cwe.cwe_id == cwe_id:
-            return cwe
 
-    raise ValueError(f'Could not find this CWE: {cwe_id}!')
-
+# Cache all requests to limit external requests for a month
+requests_cache.install_cache('security_cache', expire_after=2629800)
 
 # Since this list is static it might as well be declared here so it is ready to use
 CWE_LIST = CWE.find_all_cwe()
