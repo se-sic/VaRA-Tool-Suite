@@ -2,17 +2,22 @@
 # -*- coding: UTF-8 -*-
 """
 Map commits with resolved CVE's and CWE's based on multiple strategies.
-Example Call:
-    generate_security_commit_map(path=Path('/home/vara/vim'), vendor='vim', product='vim')
+Example Calls:
+    generate_security_commit_map(
+        path=Path('/home/vara/repos/vim'),
+        vendor='vim',
+        product='vim'
+    )
+    generate_security_commit_map(
+        path=Path('/home/vara/repos/tensorflow'),
+        vendor='google',
+        product='tensorflow'
+    )
+Example Output:
     {
         799: {
             'commit': '76b92b2830841fd4e05006cc3cad1d8f0bc8101b',
             'cve': [CVE-2008-3432],
-            'cwe': []
-        },
-        7859: {
-            'commit': '5a73e0ca54c77e067c3b12ea6f35e3e8681e8cf8',
-            'cve': [CVE-2017-17087],
             'cwe': []
         },
         [..]
@@ -26,6 +31,23 @@ from packaging.version import parse as parse_version
 from plumbum import local
 from plumbum.cmd import git
 from varats.utils.security_util import CVE, find_cwe, CWE_LIST
+
+
+def __n_grams(text: str, filter_reg: str = r'[^a-zA-Z]') -> tp.Set[str]:
+    """
+    Divide some text into n-grams.
+    :param text: Any text.
+    :param filter_reg: Regular expression to filter out special chars (Default: non-letters).
+    :return: Set of strings.
+    """
+    results = set()
+    filter_reg = re.compile(filter_reg)
+    for word in text.split(' '):
+        if filter_reg:
+            word = filter_reg.sub('', word)
+        word = word.strip()
+        results.add(word)
+    return results
 
 
 def __collect_via_commit_mgs(commits: tp.List[str]) -> dict:
@@ -58,6 +80,12 @@ def __collect_via_commit_mgs(commits: tp.List[str]) -> dict:
             # Check commit message if it contains any name or description from the CWE entries
             for cwe in CWE_LIST:
                 if cwe.name in message or cwe.description in message:
+                    cwe_data.append(cwe)
+            # Compare commit messages with CWE list using n-grams
+            message_parts = __n_grams(text=message)
+            for cwe in CWE_LIST:
+                if not __n_grams(text=cwe.name) ^ message_parts or \
+                   not __n_grams(text=cwe.description) ^ message_parts:
                     cwe_data.append(cwe)
 
             results[number] = {'commit': commit, 'cve': cve_data, 'cwe': cwe_data}
@@ -139,8 +167,8 @@ def __merge_results(result_list: tp.List[dict]) -> dict:
     """
     Merge a list of results into one dictionary.
     :param commits: List of result dictionaries.
-    :return: Dictionary with line number as key and commit hash, a list of CVE's
-             and a list of CWE's as values.
+    :return: Dictionary with line number as key and commit hash, a list of unique CVE's
+             and a list of unique CWE's as values.
     """
     results = {}
 
@@ -179,11 +207,22 @@ def generate_security_commit_map(path: Path,
         commits = git("--no-pager", "log", "--pretty=format:'%H %d %s'", search_range)
         wanted_out = [x[1:-1] for x in commits.split('\n')]
 
-        cve_list = CVE.find_all_cve(vendor, product)
+        cve_list = CVE.find_all_cve(
+            vendor=vendor,
+            product=product
+        )
         results = __merge_results([
-            __collect_via_commit_mgs(wanted_out),
-            __collect_via_version(wanted_out, cve_list),
-            __collect_via_references(wanted_out, cve_list, vendor, product)
+            __collect_via_commit_mgs(commits=wanted_out),
+            __collect_via_version(
+                commits=wanted_out,
+                cve_list=cve_list
+            ),
+            __collect_via_references(
+                commits=wanted_out,
+                cve_list=cve_list,
+                vendor=vendor,
+                product=product
+            )
         ])
 
         return results
