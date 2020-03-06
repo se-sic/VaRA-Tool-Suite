@@ -7,7 +7,8 @@ Test the security utilities eg CVE, CWE stuff.
 from datetime import datetime
 import unittest
 import typing as tp
-from varats.utils.security_util import CVE, CWE, CWE_LIST
+from varats.utils.security_util import CVE, CWE, CWE_LIST, \
+    find_cve, find_all_cve, find_cwe, find_all_cwe
 
 
 class TestSecurity(unittest.TestCase):
@@ -20,7 +21,7 @@ class TestSecurity(unittest.TestCase):
         Check if the Heartbleed's CVE-2014-0160 can be properly retrieved and parsed.
         @https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-2601
         """
-        cve: CVE = CVE.find_cve('CVE-2014-0160')
+        cve: CVE = find_cve('CVE-2014-0160')
 
         reference_data: dict = {
             'cve_id': 'CVE-2014-0160',
@@ -39,7 +40,7 @@ class TestSecurity(unittest.TestCase):
         Get all OpenSSL CVE's and check if the Heartbleed CVE-2014-0160 is contained.
         @https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-2601
         """
-        cve_list: tp.FrozenSet[CVE] = CVE.find_all_cve('openssl', 'openssl')
+        cve_list: tp.FrozenSet[CVE] = find_all_cve('openssl', 'openssl')
         self.assertTrue(len(cve_list) != 0)
 
         reference_data: dict = {
@@ -69,28 +70,28 @@ class TestSecurity(unittest.TestCase):
         reference_data: dict = {
             'cwe_id': 'CWE-478',
             'name': 'Missing Default Case in Switch Statement',
-            'description': 'The code does not have a default case in a switch statement, ' \
-                'which might lead to complex logical errors and resultant weaknesses.'
+            'description': 'The code does not have a default case in a switch statement, '
+                           'which might lead to complex logical errors and resultant weaknesses. '
         }
 
-        self.assertTrue(CWE.find_cwe(cwe_id=reference_data['cwe_id']))
-        self.assertTrue(CWE.find_cwe(cwe_name=reference_data['name']))
-        self.assertTrue(CWE.find_cwe(cwe_description=reference_data['description']))
+        self.assertTrue(find_cwe(cwe_id=reference_data['cwe_id']))
+        self.assertTrue(find_cwe(cwe_name=reference_data['name']))
+        self.assertTrue(find_cwe(cwe_description=reference_data['description']))
 
     def test_find_all_cwe(self):
         """
         Find a CWE which should be in the list
         @https://cwe.mitre.org/data/definitions/478.html
         """
-        cwe_list: tp.FrozenSet[CWE] = CWE.find_all_cwe()
+        cwe_list: tp.FrozenSet[CWE] = find_all_cwe()
         self.assertTrue(len(cwe_list) != 0)
         print(cwe_list)
 
         reference_data: dict = {
             'cwe_id': 'CWE-478',
             'name': 'Missing Default Case in Switch Statement',
-            'description': 'The code does not have a default case in a switch statement, ' \
-                'which might lead to complex logical errors and resultant weaknesses.'
+            'description': 'The code does not have a default case in a switch statement, '
+                           'which might lead to complex logical errors and resultant weaknesses. '
         }
 
         found: bool = False
