@@ -64,14 +64,15 @@ def __collect_via_commit_mgs(commits: tp.List[str]) -> dict:
         line_parts = line.split(' ')
         commit, message = line_parts[0], ' '.join(line_parts[1:])
         if 'CVE-' in message or 'CWE-' in message:
-            # Check commit message for "CVE-XXX"
-            cve_list, cve_data = re.findall(r'CVE-[\d\-]+\d', message, re.IGNORECASE), []
+            # Check commit message for "CVE-XXXX-XXXXXXXX"
+            # Includes old CVE format with just 4 numbers at the end as well as the new one with 8
+            cve_list, cve_data = re.findall(r'CVE-\d{4}-\d{4,8}', message, re.IGNORECASE), []
             for cve in cve_list:
                 try:
                     cve_data.append(CVE.find_cve(cve))
                 except ValueError as error_msg:
                     print(error_msg)
-            # Check commit message for "CWE-XXX"
+            # Check commit message for "CWE-XXXX"
             cwe_list, cwe_data = re.findall(r'CWE-[\d\-]+\d', message, re.IGNORECASE), []
             for cwe in cwe_list:
                 try:

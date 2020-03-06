@@ -11,6 +11,6 @@ Pipfile
 extra_tests/
 .vscode/settings.json
 docs/build
-security_cache.sqlite
+requests_cache.sqlite
 env
 venv

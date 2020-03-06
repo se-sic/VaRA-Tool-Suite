@@ -10,6 +10,7 @@ from varats.utils.security_util import CVE
 def list_cve_for_projects(vendor: str, product: str) -> None:
     """
     List all CVE's for the given vendor/product combination.
+    Call via vara-sec list-cve <vendor> <product>.
     """
     print(f"Listing CVE's for {vendor}/{product}:")
     try:

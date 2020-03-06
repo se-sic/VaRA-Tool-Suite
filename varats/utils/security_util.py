@@ -22,6 +22,7 @@ import requests_cache
 class CVE:
     """
     CVE representation with the major fields. Mainly a data object to store everything.
+    Uses the API at @https://cve.circl.lu/api/search/ to find entries.
     """
 
     def __init__(self,
@@ -32,13 +33,13 @@ class CVE:
                  references: tp.FrozenSet[str],
                  summary: str,
                  vulnerable_versions: tp.FrozenSet[Version]) -> None:
-        self.__cve_id = cve_id
-        self.__score = score
-        self.__published = published
-        self.__vector = vector
-        self.__references = references
-        self.__summary = summary
-        self.__vulnerable_versions = vulnerable_versions
+        self.__cve_id: str = cve_id
+        self.__score: float = score
+        self.__published: datetime = published
+        self.__vector: tp.FrozenSet[str] = vector
+        self.__references: tp.FrozenSet[str] = references
+        self.__summary: str = summary
+        self.__vulnerable_versions: tp.FrozenSet[Version] = vulnerable_versions
 
     @property
     def cve_id(self) -> str:
@@ -81,8 +82,17 @@ class CVE:
     def __repr__(self) -> str:
         return self.__str__()
 
+    def __eq__(self, other):
+        if not isinstance(other, CVE):
+            return NotImplemented
+
+        return self.cve_id == other.cve_id
+
+    def __hash__(self):
+        return hash(self.cve_id)
+
     @staticmethod
-    def find_all_cve(vendor: str, product: str) -> tp.FrozenSet:
+    def find_all_cve(vendor: str, product: str) -> frozenset:
         """
         Find all CVE's for a given vendor and product combination.
         :param vendor: Vendor to search for.
@@ -92,13 +102,13 @@ class CVE:
         if not vendor or not product:
             raise ValueError('Missing a vendor or product to search CVE\'s for!')
         response = requests.get(f'https://cve.circl.lu/api/search/{vendor}/{product}')
-        while response.status_code == 429:
+        while response.status_code == 429: # Sometimes the rate limit is hit so keep repeating
             time.sleep(3)
             response = requests.get(f'https://cve.circl.lu/api/search/{vendor}/{product}')
         if response.status_code != 200:
             raise ValueError(f'Could not retrieve CVE information (Code: {response.status_code})!')
 
-        cve_list = set()
+        cve_list: set = set()
         for entry in response.json()['results']:
             try:
                 cve_list.add(CVE(
@@ -129,13 +139,13 @@ class CVE:
         if not cve_id:
             raise ValueError('Missing a CVE ID!')
         response = requests.get(f'https://cve.circl.lu/api/cve/{cve_id}')
-        while response.status_code == 429:
+        while response.status_code == 429: # Sometimes the rate limit is hit so keep repeating
             time.sleep(3)
             response = requests.get(f'https://cve.circl.lu/api/cve/{cve_id}')
         if response.status_code != 200:
             raise ValueError(f'Could not retrieve CVE information (Code: {response.status_code})!')
 
-        cve_data = response.json()
+        cve_data: dict = response.json()
         if not cve_data:
             raise ValueError(
                 f'Could not find CVE information for {cve_id}, maybe it is a wrong number?'
@@ -163,9 +173,9 @@ class CWE:
                  cwe_id: str,
                  name: str,
                  description: str) -> None:
-        self.__cwe_id = cwe_id
-        self.__name = name
-        self.__description = description
+        self.__cwe_id: str = cwe_id
+        self.__name: str = name
+        self.__description: str = description
 
     @property
     def cwe_id(self) -> str:
@@ -188,31 +198,51 @@ class CWE:
     def __repr__(self) -> str:
         return self.__str__()
 
+    def __eq__(self, other):
+        if not isinstance(other, CWE):
+            return NotImplemented
+
+        return self.cwe_id == other.cwe_id
+
+    def __hash__(self):
+        return hash(self.cwe_id)
+
     @staticmethod
-    def find_all_cwe() -> tp.FrozenSet:
+    def find_all_cwe() -> frozenset:
         """
-        Create a set of all CWE's.
+        Create a set of all CWE's. The set with CWE numbers is downloaded from
+        @https://cwe.mitre.org/data/downloads.html.
         :return: Set of CWE objects.
         """
-        response = requests.get('https://cwe.mitre.org/data/csv/699.csv.zip')
-        while response.status_code == 429:
-            time.sleep(3)
-            response = requests.get('https://cwe.mitre.org/data/csv/699.csv.zip')
-        if response.status_code != 200:
-            raise ValueError(f'Could not retrieve CVE information (Code: {response.status_code})!')
+        source_urls: frozenset = frozenset([
+            'https://cwe.mitre.org/data/csv/699.csv.zip',
+            'https://cwe.mitre.org/data/csv/1194.csv.zip',
+            'https://cwe.mitre.org/data/csv/1000.csv.zip'
+        ])
 
-        cwe_list = set()
+        cwe_list: set = set()
 
-        zip_file = zipfile.ZipFile(io.BytesIO(response.content))
-        with zip_file.open(zip_file.namelist()[0], 'r') as csv_file:
-            reader = csv.DictReader(io.TextIOWrapper(csv_file), delimiter=',', quotechar='"')
-            for entry in reader:
-                cwe_id = entry.get('CWE-ID')
-                cwe_list.add(CWE(
-                    cwe_id=f'CWE-{cwe_id}',
-                    name=entry.get('Name'),
-                    description=entry.get('Description')
-                ))
+        # Download each zip file, extract it and parse its entries
+        for source_url in source_urls:
+            response = requests.get(source_url)
+            while response.status_code == 429: # Sometimes the rate limit is hit so keep repeating
+                time.sleep(3)
+                response = requests.get(source_url)
+            if response.status_code != 200:
+                raise ValueError(
+                    f'Could not retrieve CVE information (Code: {response.status_code})!'
+                )
+
+            zip_file = zipfile.ZipFile(io.BytesIO(response.content))
+            with zip_file.open(zip_file.namelist()[0], 'r') as csv_file:
+                reader = csv.DictReader(io.TextIOWrapper(csv_file), delimiter=',', quotechar='"')
+                for entry in reader:
+                    cwe_id = entry.get('CWE-ID')
+                    cwe_list.add(CWE(
+                        cwe_id=f'CWE-{cwe_id}',
+                        name=entry.get('Name'),
+                        description=entry.get('Description')
+                    ))
 
         return frozenset(cwe_list)
 
@@ -225,15 +255,15 @@ class CWE:
         """
         for cwe in CWE_LIST:
             if cwe.cwe_id == cwe_id or \
-               cwe.cwe_name == cwe_name or \
-               cwe.cwe_description == cwe_description:
+               cwe.name == cwe_name or \
+               cwe.description == cwe_description:
                 return cwe
 
         raise ValueError(f'Could not find this CWE: {cwe_id}!')
 
 
-# Cache all requests to limit external requests for a month
-requests_cache.install_cache('security_cache', expire_after=2629800)
+# Cache all requests to limit external requests for a week
+requests_cache.install_cache('requests_cache', expire_after=604800)
 
 # Since this list is static it might as well be declared here so it is ready to use
-CWE_LIST = CWE.find_all_cwe()
+CWE_LIST: tp.FrozenSet[CWE] = CWE.find_all_cwe()
