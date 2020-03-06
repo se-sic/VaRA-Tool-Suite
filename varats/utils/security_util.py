@@ -203,7 +203,7 @@ def find_cve(cve_id: str) -> CVE:
         references=cve_data.get('references', None),
         summary=cve_data.get('summary', None),
         vulnerable_versions=frozenset([
-            version_parse(x.replace(':*', '').split(':')[-1])
+            version_parse(x['title'].replace(':*', '').split(':')[-1])
             for x in cve_data.get('vulnerable_configuration', None)
         ])
     )
@@ -257,11 +257,11 @@ def find_cwe(cwe_id: str = '', cwe_name: str = '', cwe_description: str = '') ->
     :return: CWE if one is found, otherwise raise a ValueError.
     """
     for cwe in CWE_LIST:
-        if cwe.cwe_id == cwe_id or \
-           cwe.name == cwe_name or \
-           cwe.description == cwe_description:
+        if (cwe_id and cwe.cwe_id == cwe_id) or \
+           (cwe_name and cwe.name == cwe_name) or \
+           (cwe_description and cwe.description == cwe_description):
             return cwe
-    raise ValueError('Could not find CWE!')
+    raise ValueError(f'Could not find CWE ({cwe_id}, {cwe_name}, {cwe_description})!')
 
 
 # Cache all requests to limit external requests for a week

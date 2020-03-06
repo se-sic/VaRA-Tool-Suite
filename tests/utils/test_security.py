@@ -27,7 +27,7 @@ class TestSecurity(unittest.TestCase):
             'cve_id': 'CVE-2014-0160',
             'score': 5.0,
             'published': datetime.strptime('2014-04-07 22:55:00', '%Y-%m-%d %H:%M:%S'),
-            'vector': ['AV:N', 'AC:L', 'Au:N', 'C:P', 'I:N', 'A:N']
+            'vector': frozenset(['AV:N', 'AC:L', 'Au:N', 'C:P', 'I:N', 'A:N'])
         }
 
         self.assertTrue(cve.cve_id == reference_data['cve_id'])
@@ -71,7 +71,7 @@ class TestSecurity(unittest.TestCase):
             'cwe_id': 'CWE-478',
             'name': 'Missing Default Case in Switch Statement',
             'description': 'The code does not have a default case in a switch statement, '
-                           'which might lead to complex logical errors and resultant weaknesses. '
+                           'which might lead to complex logical errors and resultant weaknesses.'
         }
 
         self.assertTrue(find_cwe(cwe_id=reference_data['cwe_id']))
@@ -91,7 +91,7 @@ class TestSecurity(unittest.TestCase):
             'cwe_id': 'CWE-478',
             'name': 'Missing Default Case in Switch Statement',
             'description': 'The code does not have a default case in a switch statement, '
-                           'which might lead to complex logical errors and resultant weaknesses. '
+                           'which might lead to complex logical errors and resultant weaknesses.'
         }
 
         found: bool = False
