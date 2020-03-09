@@ -13,3 +13,4 @@ pygit2>=0.28.2
 packaging>=20.1
 requests>=2.23.0
 requests_cache>=0.5.2
+tabulate>=0.8.6

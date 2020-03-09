@@ -17,6 +17,7 @@ import typing as tp
 import requests
 from packaging.version import Version, parse as version_parse, LegacyVersion
 import requests_cache  # type: ignore
+from tabulate import tabulate
 
 
 class CVE:
@@ -77,8 +78,23 @@ class CVE:
         """ Return set of vulnerable version numbers. """
         return self.__vulnerable_versions
 
+    @property
+    def url(self) -> str:
+        """ Return the URL to the Mitre entry. """
+        return f"https://cve.mitre.org/cgi-bin/cvename.cgi?name={self.cve_id}"
+
     def __str__(self) -> str:
-        return self.__cve_id
+        return tabulate(
+            [
+                ["ID", self.cve_id],
+                ["Score", self.score],
+                ["Published", self.published],
+                ["Vector", '/'.join(self.vector)],
+                ["URL", self.url],
+                ["Summary", self.summary[:128]],
+            ],
+            tablefmt="grid"
+        )
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -121,8 +137,22 @@ class CWE:
         """ Return the description. """
         return self.__description
 
+    @property
+    def url(self) -> str:
+        """ Return the URL to the Mitre entry. """
+        id_num = self.cwe_id.split('-')[1]
+        return f'https://cwe.mitre.org/data/definitions/{id_num}.html'
+
     def __str__(self) -> str:
-        return self.__cwe_id
+        return tabulate(
+            [
+                ["ID", self.cwe_id],
+                ["Name", self.name[:128]],
+                ["URL", self.url],
+                ["Description", self.description[:128]],
+            ],
+            tablefmt="grid"
+        )
 
     def __repr__(self) -> str:
         return self.__str__()

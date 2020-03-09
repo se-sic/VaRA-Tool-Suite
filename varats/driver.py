@@ -399,9 +399,10 @@ def main_gen_commitmap() -> None:
 
         output_name = "{result_folder}/{project_name}/{file_name}.cmap" \
             .format(
-            result_folder=CFG["result_dir"],
-            project_name=default_name,
-            file_name=default_name)
+                result_folder=CFG["result_dir"],
+                project_name=default_name,
+                file_name=default_name
+            )
     else:
         if args.output.endswith(".cmap"):
             output_name = args.output
@@ -772,7 +773,7 @@ def main_security() -> None:
     Handle and simplify common security interactions with the project.
     """
     parser = argparse.ArgumentParser("Security helper")
-    sub_parsers = parser.add_subparsers(help="List CVE's for a project", dest="command")
+    sub_parsers = parser.add_subparsers(help="CVE/CWE relevant information", dest="command")
 
     # List cve'S
     cve_parser = sub_parsers.add_parser('list-cve')
@@ -782,10 +783,24 @@ def main_security() -> None:
     cve_parser.add_argument('product',
                             type=str,
                             help='Name of the product')
+    cve_parser.add_argument("--verbose",
+                            help="Print verbose data",
+                            action="store_true",
+                            default=False)
+
+    info_parser = sub_parsers.add_parser('info')
+    info_parser.add_argument('id',
+                             type=str,
+                             help='ID of the CWE or CVE')
+    info_parser.add_argument("--verbose",
+                             help="Print verbose data",
+                             action="store_true",
+                             default=False)
 
     args = parser.parse_args()
     if args.command == 'list-cve':
-        sec.list_cve_for_projects(vendor=args.vendor, product=args.product)
+        sec.list_cve_for_projects(vendor=args.vendor, product=args.product, verbose=args.verbose)
+    elif args.command == 'info':
+        sec.info(search=args.id, verbose=args.verbose)
     else:
         parser.print_help()
-
