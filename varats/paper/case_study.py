@@ -418,7 +418,7 @@ class CaseStudy():
             from_index: index of the first stage to shift
             offset: amount to stages should be shifted
         """
-        if not (0 <= from_index < len(self.__stages)):
+        if not 0 <= from_index < len(self.__stages):
             raise AssertionError("from_index out of bounds")
         if (from_index + offset) < 0:
             raise AssertionError("Shifting out of bounds")
@@ -505,9 +505,9 @@ class CaseStudy():
             # if different strategies are used on the same stage,
             # the result is 'mixed'.
             # Also if sampled multiple times with a distribution.
-            if (stage.extender_strategy is not None and
-                (stage.extender_strategy is not extender_strategy or
-                 stage.extender_strategy is ExtenderStrategy.distrib_add)):
+            if (stage.extender_strategy is not None and \
+               (stage.extender_strategy is not extender_strategy or \
+               stage.extender_strategy is ExtenderStrategy.distrib_add)):
                 stage.extender_strategy = ExtenderStrategy.mixed
                 stage.sampling_method = None
             else:
