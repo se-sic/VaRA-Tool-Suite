@@ -11,8 +11,9 @@ from varats.settings import CFG
 from varats.data.report import MetaReport, FileStatusExtension
 
 
-def __get_result_files_dict(project_name: str, result_file_type: MetaReport
-                           ) -> tp.Dict[str, tp.List[Path]]:
+def __get_result_files_dict(
+        project_name: str,
+        result_file_type: MetaReport) -> tp.Dict[str, tp.List[Path]]:
     """
     Returns a dict that maps the commit_hash to a list of all result files, of
     type result_file_type, for that commit.
@@ -41,9 +42,9 @@ def __get_result_files_dict(project_name: str, result_file_type: MetaReport
 
 
 def __get_supplementary_result_files_dict(
-        project_name: str,
-        result_file_type: MetaReport,
-        revision: tp.Optional[str] = None,
+    project_name: str,
+    result_file_type: MetaReport,
+    revision: tp.Optional[str] = None,
 ) -> tp.Dict[tp.Tuple[str, str], tp.List[Path]]:
     """
     Returns a dict that maps the commit_hash and the info_type to a list
@@ -63,8 +64,8 @@ def __get_supplementary_result_files_dict(
     res_dir = Path("{result_folder}/{project_name}/".format(
         result_folder=CFG["result_dir"], project_name=project_name))
 
-    result_files: tp.DefaultDict[
-        tp.Tuple[str, str], tp.List[Path]] = defaultdict(
+    result_files: tp.DefaultDict[tp.Tuple[
+        str, str], tp.List[Path]] = defaultdict(
             list)  # maps (commit_hash, suppl._file_type) -> list of res files
 
     if res_dir.exists():
@@ -83,9 +84,9 @@ def __get_supplementary_result_files_dict(
 
 
 def get_processed_revisions_files(
-        project_name: str,
-        result_file_type: MetaReport,
-        file_name_filter: tp.Optional[tp.Callable[[str], bool]] = None
+    project_name: str,
+    result_file_type: MetaReport,
+    file_name_filter: tp.Optional[tp.Callable[[str], bool]] = None
 ) -> tp.List[Path]:
     """
     Returns a list of file paths to correctly processed revision files.
@@ -148,8 +149,11 @@ def get_failed_revisions(project_name: str,
     return failed_revisions
 
 
-def get_tagged_revisions(project_name: str, result_file_type: MetaReport
-                        ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
+def get_tagged_revisions(
+    project_name: str,
+    result_file_type: MetaReport,
+    tag_blocked: bool = True
+) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
     """
     Calculates a list of revisions of a project tagged with the file status.
     If two files exists the newest is considered for detecting the status.
@@ -157,30 +161,34 @@ def get_tagged_revisions(project_name: str, result_file_type: MetaReport
     Args:
         project_name: target project
         result_file_type: the type of the result file
+        tag_blocked: whether to tag blocked revisions as blocked
     """
     revisions = []
 
     project_cls = get_project_cls_by_name(project_name)
     result_files = __get_result_files_dict(project_name, result_file_type)
     for commit_hash, file_list in result_files.items():
-        if hasattr(project_cls, "is_blocked_revision"
-                  ) and project_cls.is_blocked_revision(commit_hash)[0]:
+        if tag_blocked and hasattr(
+                project_cls, "is_blocked_revision"
+        ) and project_cls.is_blocked_revision(commit_hash)[0]:
             revisions.append((commit_hash, FileStatusExtension.Blocked))
-            continue
-        newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
-        if result_file_type.is_correct_report_type(str(newest_res_file.name)):
-            revisions.append((commit_hash,
-                              result_file_type.get_status_from_result_file(
-                                  str(newest_res_file))))
+        else:
+            newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
+            if result_file_type.is_correct_report_type(str(
+                    newest_res_file.name)):
+                revisions.append((commit_hash,
+                                  result_file_type.get_status_from_result_file(
+                                      str(newest_res_file))))
 
     return revisions
 
 
-def get_supplementary_result_files(project_name: str,
-                                   result_file_type: MetaReport,
-                                   revision: tp.Optional[str] = None,
-                                   suppl_info_type: tp.Optional[str] = None
-                                  ) -> tp.List[tp.Tuple[Path, str, str]]:
+def get_supplementary_result_files(
+    project_name: str,
+    result_file_type: MetaReport,
+    revision: tp.Optional[str] = None,
+    suppl_info_type: tp.Optional[str] = None
+) -> tp.List[tp.Tuple[Path, str, str]]:
     """
     Returns the current supplementary result files for a given project and
     report type.

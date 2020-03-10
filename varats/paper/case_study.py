@@ -268,14 +268,16 @@ class CSStage():
         self.__revisions.sort(key=lambda x: x.commit_id, reverse=reverse)
 
     def get_dict(
-            self
+        self
     ) -> tp.Dict[str, tp.Union[str, tp.List[tp.Dict[str, tp.Union[str, int]]]]]:
         """
         Get a dict representation of this stage.
         """
-        stage_dict: tp.Dict[
-            str, tp.Union[str, tp.List[tp.Dict[str, tp.
-                                               Union[str, int]]]]] = dict()
+        stage_dict: tp.Dict[str,
+                            tp.Union[str,
+                                     tp.List[tp.Dict[str,
+                                                     tp.Union[str,
+                                                              int]]]]] = dict()
         if self.name is not None:
             stage_dict['name'] = self.name
         if self.extender_strategy is not None:
@@ -571,10 +573,12 @@ class CaseStudy():
             rev for rev in self.revisions if rev[:10] in total_failed_revisions
         ]
 
-    def get_revisions_status(self,
-                             result_file_type: MetaReport,
-                             stage_num: int = -1
-                            ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
+    def get_revisions_status(
+        self,
+        result_file_type: MetaReport,
+        stage_num: int = -1,
+        tag_blocked: bool = True
+    ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
         """
         Computes the file status for all revisions in this case study.
 
@@ -582,10 +586,10 @@ class CaseStudy():
             a list of (revision, status) tuples
         """
         tagged_revisions = get_tagged_revisions(self.project_name,
-                                                result_file_type)
+                                                result_file_type, tag_blocked)
 
         def filtered_tagged_revs(
-                rev_provider: tp.Iterable[str]
+            rev_provider: tp.Iterable[str]
         ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
             filtered_revisions = []
             for rev in rev_provider:
@@ -609,9 +613,10 @@ class CaseStudy():
 
         return []
 
-    def get_dict(self) -> tp.Dict[str, tp.Union[str, int, tp.List[
-            tp.Dict[str, tp.Union[str, tp.List[tp.Dict[str, tp.
-                                                       Union[str, int]]]]]]]]:
+    def get_dict(
+        self
+    ) -> tp.Dict[str, tp.Union[str, int, tp.List[tp.Dict[str, tp.Union[
+            str, tp.List[tp.Dict[str, tp.Union[str, int]]]]]]]]:
         """
         Get a dict representation of this case study.
         """
@@ -683,10 +688,9 @@ def __store_case_study_to_file(case_study: CaseStudy, file_path: Path) -> None:
         [VersionHeader.from_version_number('CaseStudy', 1), case_study])
 
 
-def get_newest_result_files_for_case_study(case_study: CaseStudy,
-                                           result_dir: Path,
-                                           report_type: MetaReport
-                                          ) -> tp.List[Path]:
+def get_newest_result_files_for_case_study(
+        case_study: CaseStudy, result_dir: Path,
+        report_type: MetaReport) -> tp.List[Path]:
     """
     Return all result files of a specific type that belong to a given case
     study. For revision with multiple files, the newest file will be selected.
@@ -716,8 +720,8 @@ def get_newest_result_files_for_case_study(case_study: CaseStudy,
     return list(files_to_store.values())
 
 
-def get_case_study_file_name_filter(case_study: CaseStudy
-                                   ) -> tp.Callable[[str], bool]:
+def get_case_study_file_name_filter(
+        case_study: CaseStudy) -> tp.Callable[[str], bool]:
     """
     Generate a case study specific file-name filter function that allows the
     user to check if a file name is related to this case study.
@@ -942,9 +946,10 @@ def extend_with_distrib_sampling(case_study: CaseStudy, cmap: CommitMap,
                                  sampling_method=kwargs['distribution'])
 
 
-def sample_n(distrib_func: tp.Callable[[int], np.ndarray], num_samples: int,
-             list_to_sample: tp.List[tp.Tuple[str, int]]
-            ) -> tp.List[tp.Tuple[str, int]]:
+def sample_n(
+    distrib_func: tp.Callable[[int], np.ndarray], num_samples: int,
+    list_to_sample: tp.List[tp.Tuple[str, int]]
+) -> tp.List[tp.Tuple[str, int]]:
     """
     Return a list of n unique samples.
     If the list to sample is smaller than the number of samples the full list
