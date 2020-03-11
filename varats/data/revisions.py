@@ -177,6 +177,8 @@ def __get_tag_for_revision(revision: str,
         if result_file_type.is_correct_report_type(str(newest_res_file.name)):
             return result_file_type.get_status_from_result_file(
                 str(newest_res_file))
+        else:
+            return FileStatusExtension.Missing
 
 
 def get_tagged_revisions(

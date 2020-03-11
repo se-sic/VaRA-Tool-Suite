@@ -24,9 +24,9 @@ background_color = (0.4666666666666667, 0.4666666666666667, 0.4666666666666667)
 
 
 @check_required_args(["plot_case_study", "project", "get_cmap"])
-def _gen_overview_data(mark_blocked: bool = True,
+def _gen_overview_data(tag_blocked: bool,
                        **kwargs: tp.Any) -> tp.Dict[str, tp.List[int]]:
-    case_study: CaseStudy = kwargs.get('plot_case_study')  # can be None
+    case_study: CaseStudy = kwargs["plot_case_study"]
     project_name = kwargs["project"]
     commit_map: CommitMap = kwargs["get_cmap"]()
     project = get_project_cls_by_name(project_name)
@@ -37,7 +37,7 @@ def _gen_overview_data(mark_blocked: bool = True,
     else:
         result_file_type = EmptyReport
 
-    positions = {
+    positions: tp.Dict[str, tp.List[int]] = {
         "background": [],
         "blocked": [],
         "blocked_all": [],
@@ -55,7 +55,7 @@ def _gen_overview_data(mark_blocked: bool = True,
                 positions["blocked_all"].append(index)
 
     processed_revisions = case_study.get_revisions_status(
-        result_file_type, tag_blocked=mark_blocked)
+        result_file_type, tag_blocked=tag_blocked)
     for rev, status in processed_revisions:
         index = commit_map.short_time_id(rev)
         if status is FileStatusExtension.Success:
@@ -90,9 +90,8 @@ class PaperConfigOverviewPlot(Plot):
         style.use(self.style)
 
         commit_map: CommitMap = self.plot_kwargs["get_cmap"]()
-
-        show_blocked = True
-        show_all_blocked = True
+        show_blocked: bool = self.plot_kwargs.get("show_blocked", True)
+        show_all_blocked: bool = self.plot_kwargs.get("show_all_blocked", False)
 
         data = _gen_overview_data(show_blocked, **self.plot_kwargs)
 
@@ -105,43 +104,30 @@ class PaperConfigOverviewPlot(Plot):
         linewidth = (fig_width /
                      len(commit_map.mapping_items())) / dot_to_inch * line_width
 
-        # axis.eventplot(data["background"],
-        #                linewidths=linewidth,
-        #                # lineoffsets=0,
-        #                colors=background_color)
-        axis.eventplot(
-            data["success"],
-            linewidths=linewidth,
-            # lineoffsets=1,
-            colors=success_color)
-        axis.eventplot(
-            data["failed"],
-            linewidths=linewidth,
-            # lineoffsets=2,
-            colors=failed_color)
-        axis.eventplot(
-            data["missing"],
-            linewidths=linewidth,
-            # lineoffsets=3,
-            colors=missing_color)
-        axis.eventplot(
-            data["compile_error"],
-            linewidths=linewidth,
-            # lineoffsets=4,
-            colors=compile_error_color)
+        axis.eventplot(data["background"],
+                       linewidths=linewidth,
+                       colors=background_color)
+        axis.eventplot(data["success"],
+                       linewidths=linewidth,
+                       colors=success_color)
+        axis.eventplot(data["failed"],
+                       linewidths=linewidth,
+                       colors=failed_color)
+        axis.eventplot(data["missing"],
+                       linewidths=linewidth,
+                       colors=missing_color)
+        axis.eventplot(data["compile_error"],
+                       linewidths=linewidth,
+                       colors=compile_error_color)
 
         if show_all_blocked:
-            axis.eventplot(
-                data["blocked_all"],
-                linewidths=linewidth,
-                # lineoffsets=5,
-                colors=blocked_color)
+            axis.eventplot(data["blocked_all"],
+                           linewidths=linewidth,
+                           colors=blocked_color)
         else:
-            axis.eventplot(
-                data["blocked"],
-                linewidths=linewidth,
-                # lineoffsets=5,
-                colors=blocked_color)
+            axis.eventplot(data["blocked"],
+                           linewidths=linewidth,
+                           colors=blocked_color)
 
         axis.set_axis_off()
 
