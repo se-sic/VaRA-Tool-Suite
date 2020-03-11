@@ -18,7 +18,8 @@ import pygit2
 from varats.plots.plots import PlotRegistry
 from varats.utils.project_util import get_project_cls_by_name
 from varats.data.revisions import (get_processed_revisions,
-                                   get_failed_revisions, get_tagged_revisions)
+                                   get_failed_revisions, get_tagged_revisions,
+                                   get_tagged_revision)
 from varats.plots.plot_utils import check_required_args
 from varats.data.version_header import VersionHeader
 from varats.data.reports.commit_report import CommitMap
@@ -612,6 +613,23 @@ class CaseStudy():
             return filtered_tagged_revs(stage.revisions)
 
         return []
+
+    def get_revision_status(
+            self,
+            revision: str,
+            result_file_type: MetaReport,
+    ) -> FileStatusExtension:
+        """
+        Computes the file status for the given revision in this case study.
+
+        Returns:
+            a list of (revision, status) tuples
+        """
+        if not self.has_revision(revision):
+            raise ValueError(f"Case study has no revision {revision}")
+
+        return get_tagged_revision(revision, self.project_name,
+                                   result_file_type)
 
     def get_dict(
         self
