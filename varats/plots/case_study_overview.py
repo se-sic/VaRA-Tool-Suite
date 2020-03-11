@@ -15,12 +15,12 @@ from varats.plots.plot import Plot
 from varats.plots.plot_utils import check_required_args
 from varats.utils.project_util import get_project_cls_by_name
 
-success_color = (0.5568627450980392, 0.7294117647058823, 0.25882352941176473)
-blocked_color = (0.20392156862745098, 0.5411764705882353, 0.7411764705882353)
-failed_color = (0.8862745098039215, 0.2901960784313726, 0.2)
-compile_error_color = (0.8862745098039215, 0.2901960784313726, 0.2)
-missing_color = (0.984313725490196, 0.7568627450980392, 0.3686274509803922)
-background_color = (0.4666666666666667, 0.4666666666666667, 0.4666666666666667)
+SUCCESS_COLOR = (0.5568627450980392, 0.7294117647058823, 0.25882352941176473)
+BLOCKED_COLOR = (0.20392156862745098, 0.5411764705882353, 0.7411764705882353)
+FAILED_COLOR = (0.8862745098039215, 0.2901960784313726, 0.2)
+COMPILE_ERROR_COLOR = (0.8862745098039215, 0.2901960784313726, 0.2)
+MISSING_COLOR = (0.984313725490196, 0.7568627450980392, 0.3686274509803922)
+BACKGROUND_COLOR = (0.4666666666666667, 0.4666666666666667, 0.4666666666666667)
 
 
 @check_required_args(["plot_case_study", "project", "get_cmap"])
@@ -99,35 +99,35 @@ class PaperConfigOverviewPlot(Plot):
         dot_to_inch = 0.01389
         line_width = 0.75
 
-        fig, axis = plt.subplots(1, 1, figsize=(fig_width, 1))
+        _, axis = plt.subplots(1, 1, figsize=(fig_width, 1))
 
         linewidth = (fig_width /
                      len(commit_map.mapping_items())) / dot_to_inch * line_width
 
         axis.eventplot(data["background"],
                        linewidths=linewidth,
-                       colors=background_color)
+                       colors=BACKGROUND_COLOR)
         axis.eventplot(data["success"],
                        linewidths=linewidth,
-                       colors=success_color)
+                       colors=SUCCESS_COLOR)
         axis.eventplot(data["failed"],
                        linewidths=linewidth,
-                       colors=failed_color)
+                       colors=FAILED_COLOR)
         axis.eventplot(data["missing"],
                        linewidths=linewidth,
-                       colors=missing_color)
+                       colors=MISSING_COLOR)
         axis.eventplot(data["compile_error"],
                        linewidths=linewidth,
-                       colors=compile_error_color)
+                       colors=COMPILE_ERROR_COLOR)
 
         if show_all_blocked:
             axis.eventplot(data["blocked_all"],
                            linewidths=linewidth,
-                           colors=blocked_color)
+                           colors=BLOCKED_COLOR)
         else:
             axis.eventplot(data["blocked"],
                            linewidths=linewidth,
-                           colors=blocked_color)
+                           colors=BLOCKED_COLOR)
 
         axis.set_axis_off()
 

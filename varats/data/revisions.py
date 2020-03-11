@@ -172,13 +172,13 @@ def __get_tag_for_revision(revision: str,
             project_cls, "is_blocked_revision"
     ) and project_cls.is_blocked_revision(revision)[0]:
         return FileStatusExtension.Blocked
-    else:
-        newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
-        if result_file_type.is_correct_report_type(str(newest_res_file.name)):
-            return result_file_type.get_status_from_result_file(
-                str(newest_res_file))
-        else:
-            return FileStatusExtension.Missing
+
+    newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
+    if result_file_type.is_correct_report_type(str(newest_res_file.name)):
+        return result_file_type.get_status_from_result_file(
+            str(newest_res_file))
+
+    return FileStatusExtension.Missing
 
 
 def get_tagged_revisions(

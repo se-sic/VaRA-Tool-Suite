@@ -4,7 +4,6 @@ General plots module.
 import re
 import sys
 import typing as tp
-import argparse
 
 # avoid circular import
 # see https://www.stefaanlippens.net/circular-imports-type-hints-python.html
