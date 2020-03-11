@@ -68,12 +68,6 @@ class PlotRegistry(type):
         return plot_cls
 
 
-def extend_parser_with_plot_args(parser: argparse.ArgumentParser) -> None:
-    """
-    Extend the parser with graph related extra args.
-    """
-
-
 @check_required_args(['plot_type', 'view', 'sep_stages'])
 def build_plot(**kwargs: tp.Any) -> None:
     """
