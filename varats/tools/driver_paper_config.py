@@ -24,15 +24,17 @@ def main() -> None:
     create_parser = sub_parsers.add_parser('create',
                                            help="Create a new paper config.")
     create_parser.add_argument("paper_config",
-                               help="Path to the new paper config.",
+                               help="Path to the new paper config. Relative "
+                               "paths are interpreted relative to the current "
+                               "`paper_config/folder`.",
                                type=str)
 
     # vara-pc set
-    set_parser = sub_parsers.add_parser('set',
-                                        help="Set the current paper config.")
+    set_parser = sub_parsers.add_parser('select',
+                                        help="Select the current paper config.")
     set_parser.add_argument("paper_config",
-                            help="Path paper config to set as the current one."
-                            "Relative paths are interpreted relative to "
+                            help="Path paper config to select as the current "
+                            "one. Relative paths are interpreted relative to "
                             "the current `paper_config/folder`.",
                             type=str)
 
@@ -44,7 +46,7 @@ def main() -> None:
 
     if args['subcommand'] == 'create':
         __pc_create(args)
-    elif args['subcommand'] == 'set':
+    elif args['subcommand'] == 'select':
         __pc_set(args)
 
 
