@@ -4,6 +4,8 @@ Driver module for `vara-pc`.
 This module provides a command line interface for creating and managing paper
 configs.
 """
+
+import typing as tp
 import argparse
 from pathlib import Path
 
@@ -50,7 +52,7 @@ def main() -> None:
         __pc_set(args)
 
 
-def __pc_create(args):
+def __pc_create(args: tp.Dict[str, tp.Any]) -> None:
     pc_path = Path(args['paper_config'])
 
     if not pc_path.is_absolute():
@@ -74,7 +76,7 @@ def __pc_create(args):
     save_config()
 
 
-def __pc_set(args):
+def __pc_set(args: tp.Dict[str, tp.Any]) -> None:
     pc_path = Path(args['paper_config'])
 
     if not pc_path.is_absolute():
