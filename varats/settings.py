@@ -138,7 +138,7 @@ def get_value_or_default(cfg: s.Configuration, varname: str,
 
 def create_missing_folders() -> None:
     """
-    Create a folders that do not exist but where set in the config.
+    Create folders that do not exist but were set in the config.
     """
 
     def create_missing_folder_for_cfg(cfg_varname: str,
@@ -157,6 +157,7 @@ def create_missing_folders() -> None:
     create_missing_folder_for_cfg("result_dir")
     create_missing_folder_for_cfg("data_cache", CFG["plots"])
     create_missing_folder_for_cfg("plot_dir", CFG["plots"])
+    create_missing_folder_for_cfg("artefacts_dir", CFG["artefacts"])
 
 
 def save_config() -> None:
