@@ -24,6 +24,12 @@ check_err
 $COVERAGE $(which vara-gen-bbconfig)
 check_err
 
+$COVERAGE $(which vara-pc) create test
+check_err
+
+$COVERAGE $(which vara-pc) select test
+check_err
+
 $COVERAGE $(which vara-cs) gen paper_configs/test/ -p gzip half_norm # benchbuild/tmp/gzip-HEAD #gzip/
 check_err
 
