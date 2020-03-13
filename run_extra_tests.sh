@@ -5,7 +5,7 @@
 # mkdir -p extra_tests/
 # cd extra_tests
 
-mkdir -p paper_configs/test/
+mkdir -p paper_configs/
 
 function check_err {
   local retVal=$?
