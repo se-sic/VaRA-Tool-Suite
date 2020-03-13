@@ -126,7 +126,7 @@ class DataManager():
 
         key = sha256_checksum(file_path)
         if key in self.file_map:
-            return self.file_map[key].data
+            return tp.cast(LoadableType, self.file_map[key].data)
 
         try:
             new_blob = FileBlob(key, file_path, DataClassTy(file_path))
@@ -135,7 +135,7 @@ class DataManager():
             raise e
         self.file_map[key] = new_blob
 
-        return new_blob.data
+        return tp.cast(LoadableType, new_blob.data)
 
     def load_data_class(
             self, file_path: Path, DataClassTy: tp.Type[LoadableType],
