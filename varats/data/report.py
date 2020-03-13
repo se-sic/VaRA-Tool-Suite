@@ -7,6 +7,7 @@ import typing as tp
 import re
 from enum import Enum
 from abc import abstractmethod
+from pathlib import Path
 
 from plumbum import colors
 from plumbum.colorlib.styles import Color
@@ -304,6 +305,9 @@ class MetaReport(type):
 
 class BaseReport(metaclass=MetaReport):
 
+    def __init__(self, path: Path) -> None:
+        self.__path = path
+
     @staticmethod
     @abstractmethod
     def get_file_name(project_name: str,
@@ -315,6 +319,13 @@ class BaseReport(metaclass=MetaReport):
         """
         Generates a filename for a commit report
         """
+
+    @property
+    def path(self) -> Path:
+        """
+        Path to the report file.
+        """
+        return self.__path
 
 
 # Discover and initialize all Reports

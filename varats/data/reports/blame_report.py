@@ -68,8 +68,8 @@ class BlameResultFunctionEntry():
     Collection of all interactions for a specific function.
     """
 
-    def __init__(self, name: str,
-                 raw_function_entry: tp.Dict[str, tp.Any]) -> None:
+    def __init__(self, name: str, raw_function_entry: tp.Dict[str,
+                                                              tp.Any]) -> None:
         self.__name = name
         self.__demangled_name = str(raw_function_entry['demangled-name'])
         self.__inst_list: tp.List[BlameInstInteractions] = []
@@ -115,7 +115,7 @@ class BlameReport(BaseReport):
     FILE_TYPE = "yaml"
 
     def __init__(self, path: Path) -> None:
-        super(BlameReport, self).__init__()
+        super(BlameReport, self).__init__(path)
         self.__path = path
         with open(path, 'r') as stream:
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
@@ -133,15 +133,8 @@ class BlameReport(BaseReport):
                 self.__function_entries[
                     new_function_entry.name] = new_function_entry
 
-    @property
-    def path(self) -> Path:
-        """
-        Path to the report file.
-        """
-        return self.__path
-
-    def get_blame_result_function_entry(self, mangled_function_name: str
-                                       ) -> BlameResultFunctionEntry:
+    def get_blame_result_function_entry(
+            self, mangled_function_name: str) -> BlameResultFunctionEntry:
         """
         Get the result entry for a specific function.
         """
@@ -227,9 +220,9 @@ def generate_author_degree_tuples(
 
 
 def generate_time_delta_distribution_tuples(
-        report: BlameReport, project_name: str, bucket_size: int,
-        aggregate_function: tp.Callable[[tp.Sequence[tp.Union[int, float]]], tp.
-                                        Union[int, float]]
+    report: BlameReport, project_name: str, bucket_size: int,
+    aggregate_function: tp.Callable[[tp.Sequence[tp.Union[int, float]]],
+                                    tp.Union[int, float]]
 ) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples that represent the distribution of time delta
@@ -275,9 +268,9 @@ def generate_time_delta_distribution_tuples(
     return list(degree_dict.items())
 
 
-def generate_avg_time_distribution_tuples(report: BlameReport,
-                                          project_name: str, bucket_size: int
-                                         ) -> tp.List[tp.Tuple[int, int]]:
+def generate_avg_time_distribution_tuples(
+        report: BlameReport, project_name: str,
+        bucket_size: int) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples that represent the distribution of average time
     delta interactions. The first value in the tuple represents the degree of
@@ -296,9 +289,9 @@ def generate_avg_time_distribution_tuples(report: BlameReport,
                                                    bucket_size, np.average)
 
 
-def generate_max_time_distribution_tuples(report: BlameReport,
-                                          project_name: str, bucket_size: int
-                                         ) -> tp.List[tp.Tuple[int, int]]:
+def generate_max_time_distribution_tuples(
+        report: BlameReport, project_name: str,
+        bucket_size: int) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples that represent the distribution of maximal time
     delta interactions. The first value in the tuple represents the degree of
@@ -318,8 +311,8 @@ def generate_max_time_distribution_tuples(report: BlameReport,
                                                    bucket_size, max)
 
 
-def generate_in_head_interactions(report: BlameReport
-                                 ) -> tp.List[BlameInstInteractions]:
+def generate_in_head_interactions(
+        report: BlameReport) -> tp.List[BlameInstInteractions]:
     """
     Generate a list of interactions where the base_hash of the interaction is
     the same as the HEAD of the report.
@@ -337,8 +330,8 @@ def generate_in_head_interactions(report: BlameReport
     return head_interactions
 
 
-def generate_out_head_interactions(report: BlameReport
-                                  ) -> tp.List[BlameInstInteractions]:
+def generate_out_head_interactions(
+        report: BlameReport) -> tp.List[BlameInstInteractions]:
     """
     Generate a list of interactions where one of the interacting hashes is the
     same as the HEAD of the report.
