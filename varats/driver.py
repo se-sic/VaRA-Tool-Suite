@@ -23,8 +23,7 @@ from varats.vara_manager import (setup_vara, BuildType, LLVMProjects,
                                  ProcessManager)
 from varats.tools.commit_map import (store_commit_map, get_commit_map,
                                      create_lazy_commit_map_loader)
-from varats.plots.plots import (extend_parser_with_plot_args, build_plot,
-                                PlotRegistry)
+from varats.plots.plots import (build_plot, PlotRegistry)
 from varats.plots.plot import PlotDataEmpty
 from varats.utils.cli_util import cli_yn_choice
 from varats.utils.project_util import get_local_project_git_path
@@ -277,10 +276,24 @@ def main_plot() -> None:
                         help="The report type to generate the plot for."
                         "Plots may ignore this option.",
                         default="EmptyReport")
-
-    extend_parser_with_plot_args(parser)
+    parser.add_argument(
+        "extra_args",
+        metavar="KEY=VALUE",
+        nargs=argparse.REMAINDER,
+        help=("Provide additional arguments that will be passed to the plot "
+              "class. (do not put spaces before or after the '=' sign). "
+              "If a value contains spaces, you should define it "
+              'with double quotes: foo="bar baz".'))
 
     args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
+
+    if 'extra_args' in args.keys():
+        extra_args = {
+            e[0].replace('-', '_'): e[1]
+            for e in [arg.split("=") for arg in args['extra_args']]
+        }
+    else:
+        extra_args = {}
 
     # Setup default result folder
     if 'result_output' not in args:
@@ -306,7 +319,7 @@ def main_plot() -> None:
 
             args['plot_case_study'] = case_study
             try:
-                build_plot(**args)
+                build_plot(**args, **extra_args)
             except PlotDataEmpty:
                 print("Could not build plot for {} there was no data".format(
                     project_name))
@@ -320,7 +333,7 @@ def main_plot() -> None:
         else:
             args['plot_case_study'] = None
 
-        build_plot(**args)
+        build_plot(**args, **extra_args)
 
 
 def main_gen_benchbuild_config() -> None:
