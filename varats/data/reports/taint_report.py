@@ -18,15 +18,7 @@ class TaintPropagationReport(BaseReport):
     FILE_TYPE = "txt"
 
     def __init__(self, path: Path) -> None:
-        super(TaintPropagationReport, self).__init__()
-        self.__path = path
-
-    @property
-    def path(self) -> Path:
-        """
-        Path to TaintPropagationReport file.
-        """
-        return self.__path
+        super(TaintPropagationReport, self).__init__(path)
 
     @staticmethod
     def get_file_name(project_name: str,
@@ -44,7 +36,7 @@ class TaintPropagationReport(BaseReport):
                                         extension_type, file_ext)
 
     def __repr__(self) -> str:
-        return self.SHORTHAND + ": " + os.path.basename(self.path)
+        return self.SHORTHAND + ": " + self.path.name
 
     def __lt__(self, other: 'TaintPropagationReport') -> bool:
         return self.path < other.path
