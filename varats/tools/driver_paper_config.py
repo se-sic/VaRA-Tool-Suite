@@ -69,8 +69,10 @@ def __pc_create(args: tp.Dict[str, tp.Any]) -> None:
 
     folder = pc_path.parent
     current_config = pc_path.name
+
     print(f"Creating new paper config {current_config} at location {folder}.")
     pc_path.mkdir(parents=True)
+
     CFG["paper_config"]["folder"] = str(folder)
     CFG["paper_config"]["current_config"] = str(current_config)
     save_config()
@@ -88,6 +90,7 @@ def __pc_set(args: tp.Dict[str, tp.Any]) -> None:
 
     folder = pc_path.parent
     current_config = pc_path.name
+
     print(f"Current paper config is now {current_config} at location {folder}.")
     CFG["paper_config"]["folder"] = str(folder)
     CFG["paper_config"]["current_config"] = str(current_config)
