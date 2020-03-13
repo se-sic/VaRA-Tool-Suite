@@ -4,7 +4,6 @@ General plots module.
 import re
 import sys
 import typing as tp
-import argparse
 
 # avoid circular import
 # see https://www.stefaanlippens.net/circular-imports-type-hints-python.html
@@ -66,12 +65,6 @@ class PlotRegistry(type):
         if not issubclass(plot_cls, Plot):
             raise AssertionError()
         return plot_cls
-
-
-def extend_parser_with_plot_args(parser: argparse.ArgumentParser) -> None:
-    """
-    Extend the parser with graph related extra args.
-    """
 
 
 @check_required_args(['plot_type', 'view', 'sep_stages'])
