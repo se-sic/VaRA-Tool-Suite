@@ -21,9 +21,6 @@ install:
   - pip install coverage
   - pip install mypy
 
-env:
-  - VARA_PAPER_CONFIG_FOLDER=paper_configs/ VARA_PAPER_CONFIG_CURRENT_CONFIG=test
-
 script:
   - mkdir -p paper_configs/test/
   - git clone https://git.savannah.gnu.org/git/gzip.git gzip

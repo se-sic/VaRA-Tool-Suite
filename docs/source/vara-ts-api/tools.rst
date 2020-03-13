@@ -5,8 +5,26 @@ Tools
 
 Tools overview
 --------------
+* :ref:`vara-pc`
 * :ref:`vara-art`
 * :ref:`vara-plot`
+
+vara-pc
+*******
+
+This tool can be used to easily create and select
+:ref:`paper configs<How to use paper configs>` from the command line:
+
+.. program-output:: vara-pc -h
+
+You can create a new paper config with the subcommand `vara-pc create`.
+
+.. program-output:: vara-pc create -h
+
+The subcommand `vara-pc select` selects the current paper config.
+
+.. program-output:: vara-pc select -h
+
 
 vara-art
 *********
