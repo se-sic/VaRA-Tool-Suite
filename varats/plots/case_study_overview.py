@@ -3,6 +3,7 @@ Generate plots that show a detailed overview of the state of one case-studiy.
 """
 
 import typing as tp
+from distutils.util import strtobool
 
 import matplotlib.pyplot as plt
 import matplotlib.style as style
@@ -90,8 +91,10 @@ class PaperConfigOverviewPlot(Plot):
         style.use(self.style)
 
         commit_map: CommitMap = self.plot_kwargs["get_cmap"]()
-        show_blocked: bool = self.plot_kwargs.get("show_blocked", True)
-        show_all_blocked: bool = self.plot_kwargs.get("show_all_blocked", False)
+        show_blocked: bool = strtobool(
+            self.plot_kwargs.get("show_blocked", "True"))
+        show_all_blocked: bool = strtobool(
+            self.plot_kwargs.get("show_all_blocked", "False"))
 
         data = _gen_overview_data(show_blocked, **self.plot_kwargs)
 

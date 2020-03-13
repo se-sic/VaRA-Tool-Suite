@@ -196,7 +196,6 @@ def get_tagged_revisions(
         tag_blocked: whether to tag blocked revisions as blocked
     """
     revisions = []
-
     project_cls = get_project_cls_by_name(project_name)
     result_files = __get_result_files_dict(project_name, result_file_type)
     for commit_hash, file_list in result_files.items():
