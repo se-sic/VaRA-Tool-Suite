@@ -75,4 +75,4 @@ add_module_names = True
 
 # -- Extension configuration -------------------------------------------------
 
-autodoc_mock_imports = ["plumbum", "benchbuild"]
+autodoc_mock_imports = ["plumbum.local", "benchbuild.utils"]
