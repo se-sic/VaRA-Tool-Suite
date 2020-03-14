@@ -31,15 +31,15 @@ class BlameInstInteractions():
         self.__amount = int(raw_inst_entry['amount'])
 
     @property
-    def base_hash(self) -> str:  # TODO: rename to base_commit
+    def base_commit(self) -> str:
         """
         Base hash of the analyzed instruction.
         """
         return self.__base_hash
 
     @property
-    def interacting_hashes(
-            self) -> tp.List[str]:  # TODO: rename to interacting_commits
+    def interacting_commits(
+            self) -> tp.List[str]:
         """
         List of hashes that interact with the base.
         """
@@ -54,9 +54,9 @@ class BlameInstInteractions():
 
     def __str__(self) -> str:
         str_representation = "{base_hash} <-(# {amount:4})- [".format(
-            base_hash=self.base_hash, amount=self.amount)
+            base_hash=self.base_commit, amount=self.amount)
         sep = ""
-        for interacting_hash in self.interacting_hashes:
+        for interacting_hash in self.interacting_commits:
             str_representation += sep + interacting_hash
             sep = ", "
         str_representation += "]\n"
@@ -187,7 +187,7 @@ def generate_degree_tuples(report: BlameReport) -> tp.List[tp.Tuple[int, int]]:
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            degree = len(interaction.interacting_hashes)
+            degree = len(interaction.interacting_commits)
             degree_dict[degree] += interaction.amount
 
     return list(degree_dict.items())
@@ -210,7 +210,7 @@ def generate_author_degree_tuples(
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
             author_list = map_commits(lambda c: tp.cast(str, c.author.name),
-                                      interaction.interacting_hashes,
+                                      interaction.interacting_commits,
                                       commit_lookup)
 
             degree = len(set(author_list))
@@ -246,11 +246,11 @@ def generate_time_delta_distribution_tuples(
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            if (interaction.base_hash ==
+            if (interaction.base_commit ==
                     "0000000000000000000000000000000000000000"):
                 continue
 
-            base_commit = commit_lookup(interaction.base_hash)
+            base_commit = commit_lookup(interaction.base_commit)
             base_c_time = datetime.utcfromtimestamp(base_commit.commit_time)
 
             def translate_to_time_deltas2(commit: pygit2.Commit) -> int:
@@ -258,7 +258,7 @@ def generate_time_delta_distribution_tuples(
                 return abs((base_c_time - other_c_time).days)
 
             author_list = map_commits(translate_to_time_deltas2,
-                                      interaction.interacting_hashes,
+                                      interaction.interacting_commits,
                                       commit_lookup)
 
             degree = aggregate_function(author_list) if author_list else 0
@@ -323,7 +323,7 @@ def generate_in_head_interactions(
     head_interactions = []
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            if interaction.base_hash.startswith(report.head_commit):
+            if interaction.base_commit.startswith(report.head_commit):
                 head_interactions.append(interaction)
                 continue
 
@@ -342,7 +342,7 @@ def generate_out_head_interactions(
     head_interactions = []
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            for interacting_commit in interaction.interacting_hashes:
+            for interacting_commit in interaction.interacting_commits:
                 if interacting_commit.startswith(report.head_commit):
                     head_interactions.append(interaction)
                     break

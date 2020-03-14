@@ -83,7 +83,7 @@ def plot_cfg_barplot(fig: plt.Figure, commit_report: tp.Optional[CommitReport],
             ylimit = cr_meta.df_ylimit
 
     if data.empty:
-        # TODO: add logging
+        # TODO(se-passau/VaRA#589): add logging
         print("Error: CommitReport has no CF interactions")
         return
 
