@@ -314,8 +314,8 @@ def block_revisions(blocks: tp.List[AbstractRevisionBlocker]) -> tp.Any:
             reason for the block if available.
             """
             # trigger caching for BlockedRevisionRanges
-            if not cls.__blocked_revisions_initialized:
-                cls.__blocked_revisions_initialized = True
+            if not cls.blocked_revisions_initialized:
+                cls.blocked_revisions_initialized = True
                 with local.cwd(get_local_project_git_path(cls.NAME)):
                     for block in blocks:
                         block.init_cache(cls.NAME)
@@ -326,7 +326,7 @@ def block_revisions(blocks: tp.List[AbstractRevisionBlocker]) -> tp.Any:
                         return True, b_entry.reason
             return False, None
 
-        cls.__blocked_revisions_initialized = False
+        cls.blocked_revisions_initialized = False
         cls.is_blocked_revision = is_blocked_revision_impl
         return cls
 

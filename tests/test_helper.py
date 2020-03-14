@@ -17,5 +17,8 @@ class EmptyProject(Project):
     def configure(self):
         pass
 
-    def download(self):
+    def download(self, version=None):
+        pass
+
+    def compile(self):
         pass

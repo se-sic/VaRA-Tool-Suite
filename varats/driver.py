@@ -10,6 +10,9 @@ import typing as tp
 from pathlib import Path
 from argparse_utils import enum_action
 
+from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt5.QtCore import Qt
+
 import varats.development as dev
 from varats import settings
 from varats.settings import (get_value_or_default, CFG,
@@ -34,9 +37,6 @@ from varats.paper.case_study import (SamplingMethod, ExtenderStrategy,
 import varats.paper.paper_config_manager as PCM
 from varats.paper.paper_config import get_paper_config
 from varats.data.report import MetaReport
-
-from PyQt5.QtWidgets import QApplication, QMessageBox
-from PyQt5.QtCore import Qt
 
 
 class VaRATSGui:

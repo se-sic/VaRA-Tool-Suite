@@ -928,7 +928,7 @@ class ProcessManager():
             raise ProcessTerminatedError()
 
     @staticmethod
-    def getInstance() -> 'ProcessManager':
+    def get_instance() -> 'ProcessManager':
         """Get access to the ProcessManager"""
         if ProcessManager.__instance is None:
             ProcessManager()
@@ -947,11 +947,11 @@ class ProcessManager():
         This method returns immediately and does not wait for the process
         to finish."""
         args = [] if args is None else args
-        ProcessManager.getInstance().__start_process(process, program, args)
+        ProcessManager.get_instance().__start_process(process, program, args)
 
     @staticmethod
     def shutdown() -> None:
-        inst = ProcessManager.getInstance()
+        inst = ProcessManager.get_instance()
         with inst.__mutex:
             inst.__shutdown()
             inst.__terminate_all_processes(block=False)
@@ -959,7 +959,7 @@ class ProcessManager():
     @staticmethod
     def terminate_all_processes(block: bool = False) -> None:
         """Terminates all running processes tracked by the ProcessManager."""
-        ProcessManager.getInstance().__terminate_all_processes(block)
+        ProcessManager.get_instance().__terminate_all_processes(block)
 
     def __init__(self) -> None:
         if ProcessManager.__instance is not None:

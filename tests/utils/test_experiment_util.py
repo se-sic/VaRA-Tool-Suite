@@ -87,7 +87,8 @@ class TestVersionExperiment(unittest.TestCase):
 
     def test_without_versions(self):
         """
-        Test if we get the correct revision if no VaRA modifications are enabled.
+        Test if we get the correct revision if no VaRA modifications are
+        enabled.
         """
         prj = EmptyProject(self.vers_expr)
         sample_gen = self.vers_expr.sample(prj, self.rev_list)

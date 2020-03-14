@@ -3,7 +3,6 @@ This module provides different jupyther helpers to allow easier interaction
 with varas file handling APIs.
 """
 
-import typing as tp
 from pathlib import Path
 
 from varats.data.data_manager import VDM
