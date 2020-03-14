@@ -33,6 +33,7 @@ This tool manages the :ref:`Artefacts<Module: artefacts>` of a
 :ref:`paper config<How to use paper configs>`.
 
 .. program-output:: vara-art -h
+    :nostderr:
 
 The subcommand ``vara-art add`` adds a new artefact to the current paper config.
 
