@@ -32,11 +32,11 @@ vara-art
 This tool manages the :ref:`Artefacts<Module: artefacts>` of a
 :ref:`paper config<How to use paper configs>`.
 
-.. program-output:: vara-art -h 2>&1 | grep -v " cannot be found/. Import failed/."
+.. program-output:: vara-art -h 2>&1 | grep -v " cannot be found. Import failed."
 
 The subcommand ``vara-art add`` adds a new artefact to the current paper config.
 
-.. program-output:: vara-art add -h 2>&1 | grep -v " cannot be found/. Import failed/."
+.. program-output:: vara-art add -h 2>&1 | grep -v " cannot be found. Import failed."
 
 For example, an artefact that will generate a ``paper_config_overview_plot``
 (see :ref:`plots<Module: plots>`) for the current paper config can be added
