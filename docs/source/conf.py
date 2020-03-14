@@ -72,3 +72,10 @@ pygments_style = 'sphinx'
 autodoc_member_order = "bysource"
 add_function_parentheses = True
 add_module_names = True
+
+# -- Prevent import warnings -------------------------------------------------
+
+import logging
+import benchbuild.utils
+
+benchbuild.utils.LOG.setLevel(logging.ERROR)
