@@ -16,7 +16,7 @@ from varats.data.reports.commit_report import (
     CommitReportMeta)
 
 
-class CRBarPlotWidget(QWidget):  # type: ignore
+class CRBarPlotWidget(QWidget):
     """
     Bar plotting widget for CommitReports
     """

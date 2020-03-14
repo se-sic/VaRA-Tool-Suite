@@ -58,7 +58,8 @@ class VaRATSGui:
             err.setWindowTitle("Missing config file.")
             err.setText("Could not find VaRA config file.\n"
                         "Should we create a config file in the current folder?")
-            err.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+
+            err.setStandardButtons(tp.cast(QMessageBox.StandardButtons, QMessageBox.Yes | QMessageBox.No))
             answer = err.exec_()
             if answer == QMessageBox.Yes:
                 settings.save_config()
@@ -502,7 +503,8 @@ def main_casestudy() -> None:
             action="store_true",
             default=False,
             help=
-            "Separate the revisions in different stages per year (when using \'--revs-per-year\')."
+            "Separate the revisions in different stages per year "
+            "(when using \'--revs-per-year\')."
         )
         sub_parser.add_argument("--num-rev",
                                 type=int,
