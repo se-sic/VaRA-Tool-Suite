@@ -72,3 +72,7 @@ pygments_style = 'sphinx'
 autodoc_member_order = "bysource"
 add_function_parentheses = True
 add_module_names = True
+
+# -- Extension configuration -------------------------------------------------
+
+autodoc_mock_imports = ["plumbum"]
