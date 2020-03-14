@@ -170,6 +170,9 @@ class PaperConfig():
         return string
 
 
+__G_PAPER_CONFIG: tp.Optional[PaperConfig] = None
+
+
 def project_filter_generator(project_name: str) -> tp.Callable[[str], bool]:
     """
     Generate project specific revision filters.
@@ -255,6 +258,3 @@ def get_paper_config() -> PaperConfig:
     if __G_PAPER_CONFIG is None:
         load_paper_config()
     return get_loaded_paper_config()
-
-
-__G_PAPER_CONFIG = None

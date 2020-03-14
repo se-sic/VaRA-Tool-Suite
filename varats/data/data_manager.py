@@ -72,7 +72,7 @@ class FileBlob():
         return self.__class_object
 
 
-class FileSignal(QObject):  # type: ignore
+class FileSignal(QObject):
     """
     Emit singlas after the file was loaded.
     """
@@ -80,7 +80,7 @@ class FileSignal(QObject):  # type: ignore
     clean = pyqtSignal()
 
 
-class FileLoader(QRunnable):  # type: ignore
+class FileLoader(QRunnable):
     """
     Manages concurrent file loading in the background of the application.
     """
@@ -94,7 +94,7 @@ class FileLoader(QRunnable):  # type: ignore
         self.class_type = class_type
         self.signal = FileSignal()
 
-    @pyqtSlot()  # type: ignore
+    @pyqtSlot()
     def run(self) -> None:
         """
         Run the file loading method.

@@ -827,21 +827,21 @@ def get_vara_status(llvm_folder: Path) -> GitStatus:
 ###############################################################################
 
 
-class GitStateSignals(QObject):  # type: ignore
+class GitStateSignals(QObject):
     """
     GitStateSignals to send state update to the GUI.
     """
     status_update = pyqtSignal(object, object, object)
 
 
-class CheckStateSignal(QObject):  # type: ignore
+class CheckStateSignal(QObject):
     """
     This signal is emited when the state could have changed.
     """
     possible_state_change = pyqtSignal()
 
 
-class GitStateChecker(QRunnable):  # type: ignore
+class GitStateChecker(QRunnable):
     """
     GitStateChecker to fetch and verify the git status.
     """
@@ -852,7 +852,7 @@ class GitStateChecker(QRunnable):  # type: ignore
         self.path_to_llvm = path_to_llvm
         self.signals = state_signal
 
-    @pyqtSlot()  # type: ignore
+    @pyqtSlot()
     def run(self) -> None:
         """
         Retrieve status updates for llvm,clang, and VaRA
@@ -865,7 +865,7 @@ class GitStateChecker(QRunnable):  # type: ignore
         self.signals.status_update.emit(llvm_status, clang_status, vara_status)
 
 
-class PullWorker(QRunnable):  # type: ignore
+class PullWorker(QRunnable):
     """
     QtWorker to update repositories.
     """
@@ -875,7 +875,7 @@ class PullWorker(QRunnable):  # type: ignore
         self.llvm_folder = llvm_folder
         self.check_state = CheckStateSignal()
 
-    @pyqtSlot()  # type: ignore
+    @pyqtSlot()
     def run(self) -> None:
         """
         Pull changes and update the current branch.
@@ -887,7 +887,7 @@ class PullWorker(QRunnable):  # type: ignore
 
 
 class ProcessManager():
-    __instance = None
+    __instance: tp.Optional['ProcessManager'] = None
 
     @staticmethod
     @contextmanager
