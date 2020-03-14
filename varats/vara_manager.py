@@ -887,7 +887,7 @@ class PullWorker(QRunnable):  # type: ignore
 
 
 class ProcessManager():
-    __instance = None
+    __instance: tp.Optional['ProcessManager'] = None
 
     @staticmethod
     @contextmanager

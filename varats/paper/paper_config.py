@@ -257,4 +257,4 @@ def get_paper_config() -> PaperConfig:
     return get_loaded_paper_config()
 
 
-__G_PAPER_CONFIG = None
+__G_PAPER_CONFIG: tp.Optional[PaperConfig] = None
