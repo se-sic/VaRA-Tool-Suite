@@ -16,14 +16,17 @@ This tool can be used to easily create and select
 :ref:`paper configs<How to use paper configs>` from the command line:
 
 .. program-output:: vara-pc -h
+    :nostderr:
 
 You can create a new paper config with the subcommand `vara-pc create`.
 
 .. program-output:: vara-pc create -h
+    :nostderr:
 
 The subcommand `vara-pc select` selects the current paper config.
 
 .. program-output:: vara-pc select -h
+    :nostderr:
 
 
 vara-art
@@ -38,6 +41,7 @@ This tool manages the :ref:`Artefacts<Module: artefacts>` of a
 The subcommand ``vara-art add`` adds a new artefact to the current paper config.
 
 .. program-output:: vara-art add -h
+    :nostderr:
 
 For example, an artefact that will generate a ``paper_config_overview_plot``
 (see :ref:`plots<Module: plots>`) for the current paper config can be added
