@@ -2,8 +2,11 @@
 Driver module for `vara-cs`.
 """
 
-import argparse
+import logging
 import os
+import re
+import typing as tp
+from argparse import ArgumentParser, ArgumentTypeError
 from pathlib import Path
 
 from argparse_utils import enum_action
@@ -18,14 +21,17 @@ from varats.settings import CFG
 from varats.tools.commit_map import create_lazy_commit_map_loader
 from varats.utils.project_util import get_local_project_git_path
 
+LOG = logging.getLogger(__name__)
+
 
 def main() -> None:
     """
     Allow easier management of case studies
     """
-    parser = argparse.ArgumentParser("VaRA case-study manager")
+    parser = ArgumentParser("VaRA case-study manager")
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
 
+    # vara-cs status
     status_parser = sub_parsers.add_parser(
         'status', help="Show status of current case study")
     status_parser.add_argument(
@@ -68,7 +74,7 @@ def main() -> None:
                                action="store_true",
                                default=False)
 
-    def add_common_args(sub_parser: argparse.ArgumentParser) -> None:
+    def add_common_args(sub_parser: ArgumentParser) -> None:
         """
         Group common args to provide all args on different sub parsers.
         """
@@ -106,6 +112,7 @@ def main() -> None:
                                 default=10,
                                 help="Number of revisions to select.")
 
+    # vara-cs gen
     gen_parser = sub_parsers.add_parser('gen', help="Generate a case study.")
     gen_parser.add_argument(
         "paper_config_path",
@@ -119,7 +126,7 @@ def main() -> None:
                             help="Case study version.")
     add_common_args(gen_parser)
 
-    # Extender
+    # vara-cs ext
     ext_parser = sub_parsers.add_parser('ext',
                                         help="Extend an existing case study.")
     ext_parser.add_argument("case_study_path", help="Path to case_study")
@@ -151,6 +158,7 @@ def main() -> None:
         help="Maximal expected gradient in percent between two revisions")
     add_common_args(ext_parser)
 
+    # vara-cs package
     package_parser = sub_parsers.add_parser('package',
                                             help="Case study packaging util")
     package_parser.add_argument("-o", "--output", help="Output file")
@@ -175,93 +183,99 @@ def main() -> None:
         return
 
     if args['subcommand'] == 'status':
-        if 'paper_config' in args:
-            CFG['paper_config']['current_config'] = args['paper_config']
-
-        if args['short'] and args['list_revs']:
-            parser.error(
-                "At most one argument of: --short, --list-revs can be used.")
-
-        if args['short'] and args['ws']:
-            parser.error("At most one argument of: --short, --ws can be used.")
-
-        PCM.show_status_of_case_studies(args['report_name'],
-                                        args['filter_regex'], args['short'],
-                                        args['sorted'], args['list_revs'],
-                                        args['ws'], args['legend'])
-
+        __casestudy_status(args, parser)
     elif args['subcommand'] == 'gen' or args['subcommand'] == 'ext':
-        if "project" not in args and "git_path" not in args:
-            parser.error("need --project or --git-path")
-            return
-
-        if "project" in args and "git_path" not in args:
-            args['git_path'] = str(get_local_project_git_path(args['project']))
-
-        if "git_path" in args and "project" not in args:
-            args['project'] = Path(args['git_path']).stem.replace("-HEAD", "")
-
-        args['get_cmap'] = create_lazy_commit_map_loader(
-            args['project'], args.get('cmap', None), args['end'],
-            args['start'] if 'start' in args else None)
-        cmap = args['get_cmap']()
-
-        if args['subcommand'] == 'ext':
-            case_study = load_case_study_from_file(Path(
-                args['case_study_path']))
-
-            # If no merge_stage was specified add it to the last
-            if args['merge_stage'] == -1:
-                args['merge_stage'] = max(case_study.num_stages - 1, 0)
-            # If + was specified we add a new stage
-            if args['merge_stage'] == '+':
-                args['merge_stage'] = case_study.num_stages
-
-            # Setup default result folder
-            if 'result_folder' not in args and args[
-                    'strategy'] is ExtenderStrategy.smooth_plot:
-                args['project'] = case_study.project_name
-                args['result_folder'] = str(
-                    CFG['result_dir']) + "/" + args['project']
-                print("Result folder defaults to: {res_folder}".format(
-                    res_folder=args['result_folder']))
-
-            extend_case_study(case_study, cmap, args['strategy'], **args)
-
-            store_case_study(case_study, Path(args['case_study_path']))
-        else:
-            args['paper_config_path'] = Path(args['paper_config_path'])
-            if not args['paper_config_path'].exists():
-                raise argparse.ArgumentTypeError("Paper path does not exist")
-
-            # Specify merge_stage as 0 for creating new case studies
-            args['merge_stage'] = 0
-
-            case_study = generate_case_study(args['distribution'], cmap,
-                                             args['version'], args['project'],
-                                             **args)
-
-            store_case_study(case_study, args['paper_config_path'])
+        __casestudy_create_or_extend(args, parser)
     elif args['subcommand'] == 'package':
-        output_path = Path(args["output"])
-        if output_path.suffix == '':
-            output_path = Path(str(output_path) + ".zip")
+        __casestudy_package(args, parser)
 
-        if output_path.suffix == '.zip':
-            vara_root = Path(str(CFG["config_file"])).parent
-            if Path(os.getcwd()) != vara_root:
-                print("Packaging needs to be called from VaRA root dir,"
-                      " changing dir to {vara_dir}".format(vara_dir=vara_root))
-                os.chdir(vara_root)
 
-            import re
-            PCM.package_paper_config(output_path,
-                                     re.compile(args['filter_regex']),
-                                     args['report_names'])
-        else:
-            parser.error(
-                "--output has the wrong file type extension. "
-                "Please do not provide any other file type extension than .zip")
+def __casestudy_status(args: tp.Dict[str, tp.Any],
+                       parser: ArgumentParser) -> None:
+    if 'paper_config' in args:
+        CFG['paper_config']['current_config'] = args['paper_config']
+    if args['short'] and args['list_revs']:
+        parser.error(
+            "At most one argument of: --short, --list-revs can be used.")
+    if args['short'] and args['ws']:
+        parser.error("At most one argument of: --short, --ws can be used.")
+    PCM.show_status_of_case_studies(args['report_name'], args['filter_regex'],
+                                    args['short'], args['sorted'],
+                                    args['list_revs'], args['ws'],
+                                    args['legend'])
+
+
+def __casestudy_create_or_extend(args: tp.Dict[str, tp.Any],
+                                 parser: ArgumentParser) -> None:
+    if "project" not in args and "git_path" not in args:
+        parser.error("need --project or --git-path")
+        return
+
+    if "project" in args and "git_path" not in args:
+        args['git_path'] = str(get_local_project_git_path(args['project']))
+
+    if "git_path" in args and "project" not in args:
+        args['project'] = Path(args['git_path']).stem.replace("-HEAD", "")
+
+    args['get_cmap'] = create_lazy_commit_map_loader(
+        args['project'], args.get('cmap', None), args['end'],
+        args['start'] if 'start' in args else None)
+    cmap = args['get_cmap']()
+
+    if args['subcommand'] == 'ext':
+        case_study = load_case_study_from_file(Path(args['case_study_path']))
+
+        # If no merge_stage was specified add it to the last
+        if args['merge_stage'] == -1:
+            args['merge_stage'] = max(case_study.num_stages - 1, 0)
+        # If + was specified we add a new stage
+        if args['merge_stage'] == '+':
+            args['merge_stage'] = case_study.num_stages
+
+        # Setup default result folder
+        if 'result_folder' not in args and args[
+                'strategy'] is ExtenderStrategy.smooth_plot:
+            args['project'] = case_study.project_name
+            args['result_folder'] = str(
+                CFG['result_dir']) + "/" + args['project']
+            LOG.info(f"Result folder defaults to: {args['result_folder']}")
+
+        extend_case_study(case_study, cmap, args['strategy'], **args)
+
+        store_case_study(case_study, Path(args['case_study_path']))
+    else:
+        args['paper_config_path'] = Path(args['paper_config_path'])
+        if not args['paper_config_path'].exists():
+            raise ArgumentTypeError("Paper path does not exist")
+
+        # Specify merge_stage as 0 for creating new case studies
+        args['merge_stage'] = 0
+
+        case_study = generate_case_study(args['distribution'], cmap,
+                                         args['version'], args['project'],
+                                         **args)
+
+        store_case_study(case_study, args['paper_config_path'])
+
+
+def __casestudy_package(args: tp.Dict[str, tp.Any],
+                        parser: ArgumentParser) -> None:
+    output_path = Path(args["output"])
+    if output_path.suffix == '':
+        output_path = Path(str(output_path) + ".zip")
+    if output_path.suffix == '.zip':
+        vara_root = Path(str(CFG["config_file"])).parent
+        if Path(os.getcwd()) != vara_root:
+            LOG.info(f"Packaging needs to be called from VaRA root dir, "
+                     f"changing dir to {vara_root}")
+            os.chdir(vara_root)
+
+        PCM.package_paper_config(output_path, re.compile(args['filter_regex']),
+                                 args['report_names'])
+    else:
+        parser.error(
+            "--output has the wrong file type extension. "
+            "Please do not provide any other file type extension than .zip")
 
 
 if __name__ == '__main__':
