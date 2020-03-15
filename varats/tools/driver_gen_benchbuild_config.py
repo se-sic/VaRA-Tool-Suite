@@ -3,12 +3,15 @@ Driver module for `vara-gen-bbconfig`.
 """
 
 import argparse
+import logging
 import os
 import sys
 
 from varats import settings
 from varats.settings import save_config, CFG, generate_benchbuild_config
 from varats.utils.cli_util import cli_yn_choice
+
+LOG = logging.getLogger(__name__)
 
 
 def main() -> None:
@@ -34,14 +37,14 @@ def main() -> None:
             bb_root_path = os.path.dirname(str(CFG["config_file"])) + \
                            "/" + str(args.bb_root)
 
-        print("Setting BB path to: ", bb_root_path)
+        LOG.info(f"Setting BB path to: {bb_root_path}")
         CFG["benchbuild_root"] = bb_root_path
         save_config()
 
     if CFG["benchbuild_root"].value is None:
         CFG["benchbuild_root"] = os.path.dirname(str(CFG["config_file"])) \
                                  + "/benchbuild"
-        print("Setting BB path to: ", CFG["benchbuild_root"])
+        LOG.info(f"Setting BB path to: {CFG['benchbuild_root']}")
         save_config()
 
     generate_benchbuild_config(CFG,
