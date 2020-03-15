@@ -1,0 +1,2 @@
+vara-gen-commitmap
+==================
