@@ -1,4 +1,7 @@
 vara-plot
 =========
 
-TODO: add example
+This tool is used to generate :ref:`plots`.
+
+.. program-output:: vara-plot -h
+    :nostderr:
