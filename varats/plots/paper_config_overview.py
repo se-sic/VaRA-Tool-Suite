@@ -22,6 +22,13 @@ from varats.plots.plot_utils import check_required_args, find_missing_revisions
 import varats.paper.paper_config as PC
 from varats.utils.project_util import get_local_project_git
 
+# colors taken from seaborn's default palette
+SUCCESS_COLOR = np.asarray(
+    (0.5568627450980392, 0.7294117647058823, 0.25882352941176473))
+BLOCKED_COLOR = np.asarray(
+    (0.20392156862745098, 0.5411764705882353, 0.7411764705882353))
+FAILED_COLOR = np.asarray((0.8862745098039215, 0.2901960784313726, 0.2))
+
 
 @check_required_args(["cmap", "project"])
 def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
@@ -53,6 +60,31 @@ def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
     return revisions
 
 
+def _load_projects_ordered_by_year(
+    current_config: PC.PaperConfig, result_file_type: MetaReport
+) -> tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[str, FileStatusExtension]]]]:
+    projects: tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[
+        str, FileStatusExtension]]]] = OrderedDict()
+
+    for case_study in sorted(current_config.get_all_case_studies(),
+                             key=lambda cs: (cs.project_name, cs.version)):
+        processed_revisions = case_study.get_revisions_status(result_file_type)
+
+        repo = get_local_project_git(case_study.project_name)
+        revisions: tp.Dict[int, tp.List[tp.Tuple[
+            str, FileStatusExtension]]] = defaultdict(list)
+
+        # dict: year -> [ (revision: str, status: FileStatusExtension) ]
+        for rev, status in processed_revisions:
+            commit = repo.get(rev)
+            commit_date = datetime.utcfromtimestamp(commit.commit_time)
+            revisions[commit_date.year].append((rev, status))
+
+        projects[case_study.project_name] = revisions
+
+    return projects
+
+
 def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
     """
     Generate the data for the PaperConfigOverviewPlot.
@@ -65,25 +97,7 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
     else:
         result_file_type = EmptyReport
 
-    projects: tp.Dict[
-        str, tp.Dict[int, tp.
-                     List[tp.Tuple[str, FileStatusExtension]]]] = OrderedDict()
-
-    for case_study in sorted(current_config.get_all_case_studies(),
-                             key=lambda cs: (cs.project_name, cs.version)):
-        processed_revisions = case_study.get_revisions_status(result_file_type)
-
-        repo = get_local_project_git(case_study.project_name)
-        revisions: tp.Dict[int, tp.List[
-            tp.Tuple[str, FileStatusExtension]]] = defaultdict(list)
-
-        # dict: year -> [ (revision: str, status: FileStatusExtension) ]
-        for rev, status in processed_revisions:
-            commit = repo.get(rev)
-            commit_date = datetime.utcfromtimestamp(commit.commit_time)
-            revisions[commit_date.year].append((rev, status))
-
-        projects[case_study.project_name] = revisions
+    projects = _load_projects_ordered_by_year(current_config, result_file_type)
 
     min_years = []
     max_years = []
@@ -99,9 +113,9 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
     result['year_range'] = year_range
     result['project_names'] = project_names
 
-    revs_successful = []
-    revs_blocked = []
-    revs_total = []
+    result['revs_successful'] = []
+    result['revs_blocked'] = []
+    result['revs_total'] = []
 
     for _, revisions in projects.items():
         revs_successful_per_year = []
@@ -128,13 +142,9 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
             revs_blocked_per_year.append(num_blocked_revs)
             revs_total_per_year.append(num_revs)
 
-        revs_successful.append(revs_successful_per_year)
-        revs_blocked.append(revs_blocked_per_year)
-        revs_total.append(revs_total_per_year)
-
-    result['revs_successful'] = revs_successful
-    result['revs_blocked'] = revs_blocked
-    result['revs_total'] = revs_total
+        result['revs_successful'].append(revs_successful_per_year)
+        result['revs_blocked'].append(revs_blocked_per_year)
+        result['revs_total'].append(revs_total_per_year)
 
     return result
 
@@ -167,20 +177,13 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
     revs_success_ratio = revs_success_ratio / len(revs_success_ratio)
     revs_success_ratio = revs_success_ratio.reshape(num_projects, num_years)
 
-    # colors taken from seaborn's default palette
-    success_color = np.asarray(
-        (0.5568627450980392, 0.7294117647058823, 0.25882352941176473))
-    blocked_color = np.asarray(
-        (0.20392156862745098, 0.5411764705882353, 0.7411764705882353))
-    failed_color = np.asarray((0.8862745098039215, 0.2901960784313726, 0.2))
-
     def to_color(n_success: float, n_blocked: float,
                  n_total: float) -> np.ndarray:
         f_success = n_success / float(n_total)
         f_blocked = n_blocked / float(n_total)
         f_failed = 1.0 - f_success - f_blocked
-        return (f_success * success_color + f_blocked * blocked_color +
-                f_failed * failed_color)
+        return (f_success * SUCCESS_COLOR + f_blocked * BLOCKED_COLOR +
+                f_failed * FAILED_COLOR)
 
     colors = [
         to_color(revs_successful, revs_blocked, revs_total)
@@ -229,9 +232,9 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
                     square=True)
 
     legend_entries = [
-        Patch(facecolor=success_color),
-        Patch(facecolor=blocked_color),
-        Patch(facecolor=failed_color),
+        Patch(facecolor=SUCCESS_COLOR),
+        Patch(facecolor=BLOCKED_COLOR),
+        Patch(facecolor=FAILED_COLOR),
     ]
     ax.legend(legend_entries,
               ['Success (top left)', 'Blocked (top right)', 'Failed (bottom)'],
@@ -258,7 +261,8 @@ class PaperConfigOverviewPlot(Plot):
         self.plot(True)
         plt.show()
 
-    def save(self, path: tp.Optional[Path] = None,
+    def save(self,
+             path: tp.Optional[Path] = None,
              filetype: str = 'svg') -> None:
         self.plot(False)
 

@@ -2,9 +2,6 @@
 Module for all reports generated for taint flow analyses."
 """
 
-import os
-from pathlib import Path
-
 from varats.data.report import BaseReport, MetaReport, FileStatusExtension
 
 
@@ -16,9 +13,6 @@ class TaintPropagationReport(BaseReport):
 
     SHORTHAND = "TPR"
     FILE_TYPE = "txt"
-
-    def __init__(self, path: Path) -> None:
-        super(TaintPropagationReport, self).__init__(path)
 
     @staticmethod
     def get_file_name(project_name: str,

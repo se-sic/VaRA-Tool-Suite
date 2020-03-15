@@ -38,8 +38,7 @@ class BlameInstInteractions():
         return self.__base_hash
 
     @property
-    def interacting_commits(
-            self) -> tp.List[str]:
+    def interacting_commits(self) -> tp.List[str]:
         """
         List of hashes that interact with the base.
         """
@@ -56,8 +55,8 @@ class BlameInstInteractions():
         str_representation = "{base_hash} <-(# {amount:4})- [".format(
             base_hash=self.base_commit, amount=self.amount)
         sep = ""
-        for interacting_hash in self.interacting_commits:
-            str_representation += sep + interacting_hash
+        for interacting_commit in self.interacting_commits:
+            str_representation += sep + interacting_commit
             sep = ", "
         str_representation += "]\n"
         return str_representation
@@ -253,9 +252,11 @@ def generate_time_delta_distribution_tuples(
             base_commit = commit_lookup(interaction.base_commit)
             base_c_time = datetime.utcfromtimestamp(base_commit.commit_time)
 
-            def translate_to_time_deltas2(commit: pygit2.Commit) -> int:
+            def translate_to_time_deltas2(
+                    commit: pygit2.Commit,
+                    base_time: datetime = base_c_time) -> int:
                 other_c_time = datetime.utcfromtimestamp(commit.commit_time)
-                return abs((base_c_time - other_c_time).days)
+                return abs((base_time - other_c_time).days)
 
             author_list = map_commits(translate_to_time_deltas2,
                                       interaction.interacting_commits,

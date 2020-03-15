@@ -903,8 +903,7 @@ def extend_with_revs_per_year(case_study: CaseStudy, cmap: CommitMap,
         case_study.name_stage(num_stages, str(year))
         return num_stages
 
-    repo_path = pygit2.discover_repository(kwargs['git_path'])
-    repo = pygit2.Repository(repo_path)
+    repo = pygit2.Repository(pygit2.discover_repository(kwargs['git_path']))
     last_commit = repo[repo.head.target]
     revs_year_sep = kwargs['revs_year_sep']
 

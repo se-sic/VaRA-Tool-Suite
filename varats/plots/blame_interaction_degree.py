@@ -121,6 +121,58 @@ def _gen_blame_interaction_data(**kwargs: tp.Any) -> pd.DataFrame:
     return data_frame
 
 
+def _filter_data_frame(
+        degree_type: _DegreeType, interaction_plot_df: pd.DataFrame,
+        kwargs: tp.Any) -> tp.Tuple[tp.List[str], tp.List[pd.Series]]:
+    """
+    Reduce data frame to rows that match the degree type
+    """
+
+    # TODO (se-passau/VaRA#550): refactor cs_filter into helper function
+    def cs_filter(data_frame: pd.DataFrame) -> pd.DataFrame:
+        """
+        Filter out all commits that are not in the case study, if one was
+        selected. This allows us to only load files related to the
+        case-study.
+        """
+        if kwargs['plot_case_study'] is None or data_frame.empty:
+            return data_frame
+        case_study: CaseStudy = kwargs['plot_case_study']
+        return data_frame[data_frame.apply(
+            lambda x: case_study.has_revision(x['revision'].split('-')[1]),
+            axis=1)]
+
+    interaction_plot_df = cs_filter(interaction_plot_df)
+
+    if interaction_plot_df.empty or len(
+            np.unique(interaction_plot_df['revision'])) == 1:
+        # Plot can only be build with more than one data point
+        raise PlotDataEmpty
+
+    interaction_plot_df = interaction_plot_df[interaction_plot_df.degree_type ==
+                                              degree_type.value]
+    degree_levels = sorted(np.unique(interaction_plot_df['degree']))
+    interaction_plot_df = interaction_plot_df.set_index(['revision', 'degree'])
+    interaction_plot_df = interaction_plot_df.reindex(
+        pd.MultiIndex.from_product(interaction_plot_df.index.levels,
+                                   names=interaction_plot_df.index.names),
+        fill_value=0).reset_index()
+    interaction_plot_df['cm_idx'] = interaction_plot_df['revision'].apply(
+        lambda x: int(x.split('-')[0]))
+    interaction_plot_df.cm_idx.astype(int)
+    interaction_plot_df.sort_values(by=['cm_idx'], inplace=True)
+
+    sub_df_list = [
+        interaction_plot_df.loc[interaction_plot_df['degree'] == x]['fraction']
+        for x in degree_levels
+    ]
+
+    unique_revisions = sorted(np.unique(interaction_plot_df['revision']),
+                              key=lambda x: int(x.split('-')[0]))
+
+    return unique_revisions, sub_df_list
+
+
 class BlameDegree(Plot):
     """
     Base plot for blame degree plots.
@@ -154,50 +206,9 @@ class BlameDegree(Plot):
 
         style.use(self.style)
 
-        # TODO (se-passau/VaRA#550): refactor cs_filter into helper function
-        def cs_filter(data_frame: pd.DataFrame) -> pd.DataFrame:
-            """
-            Filter out all commits that are not in the case study, if one was
-            selected. This allows us to only load files related to the
-            case-study.
-            """
-            if self.plot_kwargs['plot_case_study'] is None or data_frame.empty:
-                return data_frame
-            case_study: CaseStudy = self.plot_kwargs['plot_case_study']
-            return data_frame[data_frame.apply(
-                lambda x: case_study.has_revision(x['revision'].split('-')[1]),
-                axis=1)]
-
         interaction_plot_df = _gen_blame_interaction_data(**self.plot_kwargs)
-        interaction_plot_df = cs_filter(interaction_plot_df)
-
-        if interaction_plot_df.empty or len(
-                np.unique(interaction_plot_df['revision'])) == 1:
-            # Plot can only be build with more than one data point
-            raise PlotDataEmpty
-
-        # Reduce data frame to rows that match the degree type
-        interaction_plot_df = interaction_plot_df[
-            interaction_plot_df.degree_type == degree_type.value]
-
-        degree_levels = sorted(np.unique(interaction_plot_df['degree']))
-
-        interaction_plot_df = interaction_plot_df.set_index(
-            ['revision', 'degree'])
-        interaction_plot_df = interaction_plot_df.reindex(
-            pd.MultiIndex.from_product(interaction_plot_df.index.levels,
-                                       names=interaction_plot_df.index.names),
-            fill_value=0).reset_index()
-
-        interaction_plot_df['cm_idx'] = interaction_plot_df['revision'].apply(
-            lambda x: int(x.split('-')[0]))
-        interaction_plot_df.cm_idx.astype(int)
-        interaction_plot_df.sort_values(by=['cm_idx'], inplace=True)
-
-        sub_df_list = [
-            interaction_plot_df.loc[interaction_plot_df['degree'] == x]
-            ['fraction'] for x in degree_levels
-        ]
+        unique_revisions, sub_df_list = _filter_data_frame(
+            degree_type, interaction_plot_df, self.plot_kwargs)
 
         color_map = cm.get_cmap('gist_stern')
 
@@ -217,10 +228,9 @@ class BlameDegree(Plot):
         fig.suptitle(str(plot_cfg['fig_title']) +
                      ' - Project {}'.format(self.plot_kwargs["project"]),
                      fontsize=8)
-        uniq_revisions = sorted(np.unique(interaction_plot_df['revision']),
-                                key=lambda x: int(x.split('-')[0]))
+
         main_axis.stackplot(
-            uniq_revisions,
+            unique_revisions,
             sub_df_list,
             edgecolor=plot_cfg['edgecolor'],
             colors=reversed(
@@ -249,7 +259,7 @@ class BlameDegree(Plot):
         if with_churn:
             revs = list(
                 map(lambda x: tp.cast(object,
-                                      x.split('-')[1]), uniq_revisions))
+                                      x.split('-')[1]), unique_revisions))
             draw_code_churn(churn_axis, self.plot_kwargs['project'],
                             self.plot_kwargs['get_cmap'](),
                             lambda x: x[:10] in revs)
