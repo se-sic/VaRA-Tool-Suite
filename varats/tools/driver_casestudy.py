@@ -28,7 +28,7 @@ def main() -> None:
     """
     Allow easier management of case studies
     """
-    parser = ArgumentParser("VaRA case-study manager")
+    parser = argparse.ArgumentParser("vara-cs")
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
 
     # vara-cs status

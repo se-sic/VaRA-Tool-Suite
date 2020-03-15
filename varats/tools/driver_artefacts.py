@@ -20,7 +20,7 @@ def main() -> None:
 
     `vara-art`
     """
-    parser = argparse.ArgumentParser("VaRA artefact manager")
+    parser = argparse.ArgumentParser("vara-art")
 
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
 

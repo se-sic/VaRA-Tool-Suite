@@ -107,7 +107,7 @@ def main() -> None:
     llvm_install_dir = get_value_or_default(CFG, "llvm_install_dir",
                                             str(os.getcwd()) + "/VaRA/")
 
-    parser = argparse.ArgumentParser("Build LLVM environment")
+    parser = argparse.ArgumentParser("vara-buildsetup")
 
     parser.add_argument("-c",
                         "--config",

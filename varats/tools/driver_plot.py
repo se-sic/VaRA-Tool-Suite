@@ -23,7 +23,7 @@ def main() -> None:
 
     `vara-plot`
     """
-    parser = argparse.ArgumentParser("VaRA plot generator")
+    parser = argparse.ArgumentParser("vara-plot")
     parser.add_argument("plot_type",
                         help="Plot to generate." +
                         PlotRegistry.get_plot_types_help_string())
