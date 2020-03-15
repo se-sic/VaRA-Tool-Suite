@@ -3,6 +3,8 @@ Driver module for `vara-plot`.
 """
 
 import argparse
+import logging
+import typing as tp
 from pathlib import Path
 
 from varats.paper.case_study import load_case_study_from_file
@@ -11,6 +13,8 @@ from varats.plots.plot import PlotDataEmpty
 from varats.plots.plots import PlotRegistry, build_plot
 from varats.settings import CFG
 from varats.tools.commit_map import create_lazy_commit_map_loader
+
+LOG = logging.getLogger(__name__)
 
 
 def main() -> None:
@@ -63,6 +67,10 @@ def main() -> None:
 
     args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
 
+    __plot(args)
+
+
+def __plot(args: tp.Dict[str, tp.Any]) -> None:
     if 'extra_args' in args.keys():
         extra_args = {
             e[0].replace('-', '_'): e[1]
@@ -79,11 +87,10 @@ def main() -> None:
         del args['result_output']  # clear parameter
 
     if not Path(args['plot_dir']).exists():
-        print("Could not find output dir {plot_dir}".format(
-            plot_dir=args['plot_dir']))
+        LOG.error(f"Could not find output dir {args['plot_dir']}")
         return
 
-    print("Writing plots to: {plot_dir}".format(plot_dir=args['plot_dir']))
+    LOG.info(f"Writing plots to: {args['plot_dir']}")
 
     if args['paper_config']:
         paper_config = get_paper_config()
@@ -92,13 +99,12 @@ def main() -> None:
             args['project'] = project_name
             args['get_cmap'] = create_lazy_commit_map_loader(
                 project_name, args.get('cmap', None))
-
             args['plot_case_study'] = case_study
             try:
                 build_plot(**args, **extra_args)
             except PlotDataEmpty:
-                print("Could not build plot for {} there was no data".format(
-                    project_name))
+                LOG.error(f"Could not build plot for {project_name}: "
+                          f"There was no data.")
     else:
         if 'project' in args:
             args['get_cmap'] = create_lazy_commit_map_loader(
