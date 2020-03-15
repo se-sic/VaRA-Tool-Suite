@@ -18,7 +18,7 @@ def main() -> None:
 
     `vara-pc`
     """
-    parser = argparse.ArgumentParser("VaRA paper config manager")
+    parser = argparse.ArgumentParser("vara-pc")
 
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
 

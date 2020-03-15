@@ -17,7 +17,7 @@ def main() -> None:
 
     `vara-gen-bbconfig`
     """
-    parser = argparse.ArgumentParser("Benchbuild config generator.")
+    parser = argparse.ArgumentParser("vara-gen-bbconfig")
     parser.add_argument("--bb-root",
                         help="Set an alternative BenchBuild root folder.")
     if settings.CFG["config_file"].value is None:

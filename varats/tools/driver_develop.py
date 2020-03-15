@@ -17,7 +17,7 @@ def main() -> None:
     """
     Handle and simplify common developer interactions with the project.
     """
-    parser = argparse.ArgumentParser("Developer helper")
+    parser = argparse.ArgumentParser("vara-develop")
     sub_parsers = parser.add_subparsers(help="Sub commands", dest="command")
 
     # new-branch
