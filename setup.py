@@ -24,18 +24,18 @@ setup(name='VaRA-Tool-Suite',
       author_email="sattlerf@cs.uni-saarland.de",
       entry_points={
           "gui_scripts": [
-              'vara-graphview = varats.driver:main_graph_view',
-              'vara-gen-commitmap = varats.driver:main_gen_commitmap',
+              'vara-graphview = varats.tools.driver_graph_view:main',
           ],
           "console_scripts": [
-              'vara-buildsetup = varats.driver:build_setup',
-              'vara-pc = varats.tools.driver_paper_config:main',
               'vara-art = varats.tools.driver_artefacts:main',
-              'vara-cs = varats.driver:main_casestudy',
-              'vara-develop = varats.driver:main_develop',
-              'vara-gen-bbconfig = varats.driver:main_gen_benchbuild_config',
-              'vara-plot = varats.driver:main_plot',
-              'vd = varats.driver:main_develop',
+              'vara-buildsetup = varats.tools.driver_build_setup:main',
+              'vara-cs = varats.tools.driver_casestudy:main',
+              'vara-develop = varats.tools.driver_develop:main',
+              'vd = varats.tools.driver_develop:main',
+              'vara-gen-bbconfig = varats.tools.driver_gen_benchbuild_config:main',
+              'vara-gen-commitmap = varats.tools.driver_gen_commitmap:main',
+              'vara-pc = varats.tools.driver_paper_config:main',
+              'vara-plot = varats.tools.driver_plot:main',
           ]
       },
       python_requires='>=3.6')
