@@ -947,19 +947,19 @@ class ProcessManager():
         This method returns immediately and does not wait for the process
         to finish."""
         args = [] if args is None else args
-        ProcessManager.get_instance().__start_process(process, program, args)
+        ProcessManager.get_instance()._start_process(process, program, args)
 
     @staticmethod
     def shutdown() -> None:
         inst = ProcessManager.get_instance()
         with inst.__mutex:
-            inst.__shutdown()
-            inst.__terminate_all_processes(block=False)
+            inst._shutdown()
+            inst._terminate_all_processes(block=False)
 
     @staticmethod
     def terminate_all_processes(block: bool = False) -> None:
         """Terminates all running processes tracked by the ProcessManager."""
-        ProcessManager.get_instance().__terminate_all_processes(block)
+        ProcessManager.get_instance()._terminate_all_processes(block)
 
     def __init__(self) -> None:
         if ProcessManager.__instance is not None:
@@ -971,29 +971,29 @@ class ProcessManager():
         self.__processes: tp.List[QProcess] = []
         self.__mutex = RLock()
 
-    def __process_finished(self) -> None:
+    def _process_finished(self) -> None:
         with self.__mutex:
             self.__processes = [
                 x for x in self.__processes if x.state() != QProcess.NotRunning
             ]
 
-    def __start_process(self, process: QProcess, program: str,
-                        args: tp.List[str]) -> None:
+    def _start_process(self, process: QProcess, program: str,
+                       args: tp.List[str]) -> None:
         with self.__mutex:
             if self.__has_shutdown:
                 return
-            process.finished.connect(self.__process_finished)
+            process.finished.connect(self._process_finished)
             self.__processes.append(process)
             process.start(program, args)
 
-    def __shutdown(self) -> None:
+    def _shutdown(self) -> None:
         with self.__mutex:
             self.__has_shutdown = True
 
-    def __terminate_all_processes(self, block: bool = False) -> None:
+    def _terminate_all_processes(self, block: bool = False) -> None:
         with self.__mutex:
             for process in self.__processes:
-                process.finished.disconnect(self.__process_finished)
+                process.finished.disconnect(self._process_finished)
                 process.kill()
                 # process.terminate()
                 if block:
@@ -1002,8 +1002,8 @@ class ProcessManager():
 
     def __del__(self) -> None:
         with self.__mutex:
-            self.__shutdown()
-            self.__terminate_all_processes(block=False)
+            self._shutdown()
+            self._terminate_all_processes(block=False)
 
 
 class VaRAStateManager():
