@@ -20,13 +20,15 @@ def main() -> None:
     parser = argparse.ArgumentParser("vara-gen-bbconfig")
     parser.add_argument("--bb-root",
                         help="Set an alternative BenchBuild root folder.")
+
+    args = parser.parse_args()
+
     if settings.CFG["config_file"].value is None:
         if cli_yn_choice("Error! No VaRA config found. Should we create one?"):
             save_config()
         else:
             sys.exit()
 
-    args = parser.parse_args()
     if args.bb_root is not None:
         if os.path.isabs(str(args.bb_root)):
             bb_root_path = str(args.bb_root)
