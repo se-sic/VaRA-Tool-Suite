@@ -37,14 +37,14 @@ def main() -> None:
             bb_root_path = os.path.dirname(str(CFG["config_file"])) + \
                            "/" + str(args.bb_root)
 
-        LOG.info("Setting BB path to: ", bb_root_path)
+        LOG.info(f"Setting BB path to: {bb_root_path}")
         CFG["benchbuild_root"] = bb_root_path
         save_config()
 
     if CFG["benchbuild_root"].value is None:
         CFG["benchbuild_root"] = os.path.dirname(str(CFG["config_file"])) \
                                  + "/benchbuild"
-        LOG.info("Setting BB path to: ", CFG["benchbuild_root"])
+        LOG.info(f"Setting BB path to: {CFG['benchbuild_root']}")
         save_config()
 
     generate_benchbuild_config(CFG,
