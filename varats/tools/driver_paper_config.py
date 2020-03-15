@@ -4,12 +4,14 @@ Driver module for `vara-pc`.
 This module provides a command line interface for creating and managing paper
 configs.
 """
-
+import logging
 import typing as tp
 import argparse
 from pathlib import Path
 
 from varats.settings import CFG, save_config
+
+LOG = logging.getLogger(__name__)
 
 
 def main() -> None:
@@ -64,13 +66,15 @@ def __pc_create(args: tp.Dict[str, tp.Any]) -> None:
             pc_path = Path(current_folder) / pc_path
 
     if pc_path.exists():
-        print(f"Cannot create paper config at: {pc_path} "
-              "(Path already exists).")
+        LOG.error(f"Cannot create paper config at: {pc_path} "
+                  "(Path already exists).")
+        return
 
     folder = pc_path.parent
     current_config = pc_path.name
 
-    print(f"Creating new paper config {current_config} at location {folder}.")
+    LOG.info(
+        f"Creating new paper config {current_config} at location {folder}.")
     pc_path.mkdir(parents=True)
 
     CFG["paper_config"]["folder"] = str(folder)
@@ -85,13 +89,15 @@ def __pc_set(args: tp.Dict[str, tp.Any]) -> None:
         pc_path = Path(CFG["paper_config"]["folder"].value) / pc_path
 
     if not (pc_path.exists() and pc_path.is_dir()):
-        print(f"Not a paper config: {pc_path} "
-              "(Path does not exist or is no directory).")
+        LOG.error(f"Not a paper config: {pc_path} "
+                  "(Path does not exist or is no directory).")
+        return
 
     folder = pc_path.parent
     current_config = pc_path.name
 
-    print(f"Current paper config is now {current_config} at location {folder}.")
+    LOG.info(
+        f"Current paper config is now {current_config} at location {folder}.")
     CFG["paper_config"]["folder"] = str(folder)
     CFG["paper_config"]["current_config"] = str(current_config)
     save_config()
