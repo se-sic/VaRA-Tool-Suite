@@ -123,8 +123,8 @@ class CommitAnnotationReport(Experiment):  # type: ignore
                 extract_bc(project.name)
                 cp(
                     local.path(project_src / "out" / project.name + ".bc"),
-                    local.path(str(BB_CFG["varats"]["result"].value)) / project.name
-                    + ".bc")
+                    local.path(str(BB_CFG["varats"]["result"].value)) /
+                    project.name + ".bc")
 
         def evaluate_analysis() -> None:
             """
@@ -141,14 +141,14 @@ class CommitAnnotationReport(Experiment):  # type: ignore
             outfile = "-yaml-out-file={}".format(
                 BB_CFG["varats"]["outfile"].value) + "/" + str(
                     project.name) + "-" + str(project.run_uuid) + ".yaml"
-            run_cmd = opt["-vara-CD", "-vara-CFR", outfile, project_src /
-                          project.name + ".bc"]
+            run_cmd = opt["-vara-CD", "-vara-CFR", outfile,
+                          project_src / project.name + ".bc"]
             run_cmd()
 
         analysis_actions = []
         if not os.path.exists(
-                local.path(str(BB_CFG["varats"]["result"].value)) / project.name +
-                ".bc"):
+                local.path(str(BB_CFG["varats"]["result"].value)) /
+                project.name + ".bc"):
             analysis_actions.append(Prepare(self, evaluate_preparation))
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(self, evaluate_extraction))
