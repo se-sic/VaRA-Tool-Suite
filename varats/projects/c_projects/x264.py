@@ -5,7 +5,7 @@ import typing as tp
 from pathlib import Path
 
 from benchbuild.project import Project
-from benchbuild.settings import CFG
+from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import make, git
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
@@ -58,4 +58,4 @@ class X264(Project):  # type: ignore
             with local.env(CC=str(clang)):
                 conf = local["./configure"]
                 run(conf["--disable-asm"])
-            run(make["-j", int(CFG["jobs"])])
+            run(make["-j", int(BB_CFG["jobs"])])

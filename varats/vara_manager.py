@@ -316,8 +316,8 @@ def setup_vara(init: bool,
     """
     Sets up VaRA over cli.
     """
-    CFG["llvm_source_dir"] = str(llvm_folder)
-    CFG["llvm_install_dir"] = install_prefix
+    CFG["vara"]["llvm_source_dir"] = str(llvm_folder)
+    CFG["vara"]["llvm_install_dir"] = install_prefix
     save_config()
 
     use_dev_branches = True
@@ -342,7 +342,7 @@ def setup_vara(init: bool,
               "for example, with 'vara-buildsetup -i'.")
     else:
         if update:
-            if str(CFG["version"]) != str(version):
+            if str(CFG["vara"]["version"]) != str(version):
                 for project in LLVMProjects:
                     fetch_repository(llvm_folder / project.path)
 
@@ -361,7 +361,7 @@ def setup_vara(init: bool,
                     checkout_branch(llvm_folder / project.path,
                                     "release_" + str(version))
 
-                CFG["version"] = int(version)
+                CFG["vara"]["version"] = int(version)
                 save_config()
 
             pull_current_branch(llvm_folder)
@@ -701,8 +701,8 @@ def build_vara(path_to_llvm: Path,
     """
     Builds a VaRA configuration
     """
-    own_libgit = bool(CFG["own_libgit2"])
-    include_phasar = bool(CFG["include_phasar"])
+    own_libgit = bool(CFG["vara"]["own_libgit2"])
+    include_phasar = bool(CFG["vara"]["include_phasar"])
     full_path = path_to_llvm / "build/"
     full_path /= build_type.build_folder()
 

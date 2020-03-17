@@ -10,7 +10,7 @@ from plumbum import local
 from benchbuild.project import Project
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import compiler, run, time
-from benchbuild.settings import CFG
+from benchbuild.settings import CFG as BB_CFG
 import benchbuild.utils.actions as actions
 
 from varats.experiments.extract import Extract
@@ -62,7 +62,7 @@ def generate_basic_blame_experiment_actions(project: Project
         all_files_present &= path.exists(
             local.path(
                 Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                    cache_dir=str(CFG["vara"]["result"]),
+                    cache_dir=str(BB_CFG["varats"]["result"]),
                     project_name=str(project.name)) +
                 Extract.BC_FILE_TEMPLATE.format(project_name=str(project.name),
                                                 binary_name=binary.name,

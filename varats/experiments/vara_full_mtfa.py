@@ -17,7 +17,7 @@ from os import path
 from plumbum import local
 
 from benchbuild.extensions import compiler, run, time
-from benchbuild.settings import CFG
+from benchbuild.settings import CFG as BB_CFG
 from benchbuild.project import Project
 import benchbuild.utils.actions as actions
 from benchbuild.utils.cmd import opt, mkdir, timeout
@@ -59,12 +59,12 @@ class VaraMTFACheck(actions.Step):  # type: ignore
 
         # Set up cache directory for bitcode files
         bc_cache_dir = Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-            cache_dir=str(CFG["vara"]["result"]),
+            cache_dir=str(BB_CFG["varats"]["result"]),
             project_name=str(project.name))
 
         # Define the output directory.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(CFG["vara"]["outfile"]),
+            result_dir=str(BB_CFG["varats"]["outfile"]),
             project_dir=str(project.name))
         mkdir("-p", vara_result_folder)
 
@@ -139,7 +139,7 @@ class VaRATaintPropagation(VersionExperiment):
             project.compile,
             PEErrorHandler(
                 VaraMTFACheck.RESULT_FOLDER_TEMPLATE.format(
-                    result_dir=str(CFG["vara"]["outfile"]),
+                    result_dir=str(BB_CFG["varats"]["outfile"]),
                     project_dir=str(project.name)),
                 TPR.get_file_name(project_name=str(project.name),
                                   binary_name="all",
@@ -157,7 +157,7 @@ class VaRATaintPropagation(VersionExperiment):
             all_cache_files_present &= path.exists(
                 local.path(
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                        cache_dir=str(CFG["vara"]["result"]),
+                        cache_dir=str(BB_CFG["varats"]["result"]),
                         project_name=str(project.name)) +
                     Extract.BC_FILE_TEMPLATE.format(
                         project_name=str(project.name),

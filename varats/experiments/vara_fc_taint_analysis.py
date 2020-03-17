@@ -12,7 +12,7 @@ from typing import List
 from plumbum import ProcessExecutionError
 
 import benchbuild.utils.actions as actions
-from benchbuild.settings import CFG
+from benchbuild.settings import CFG as BB_CFG
 from benchbuild.project import Project
 from benchbuild.utils.cmd import rm, echo, FileCheck
 from varats.experiments.vara_full_mtfa import VaRATaintPropagation
@@ -52,12 +52,12 @@ class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
 
         # Define the output directory.
         result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(CFG["vara"]["outfile"]),
+            result_dir=str(BB_CFG["varats"]["outfile"]),
             project_dir=str(project.name))
 
         # The temporary directory the project is stored under
         tmp_repo_dir = self.FC_FILE_SOURCE_DIR.format(
-            tmp_dir=str(CFG["tmp_dir"]),
+            tmp_dir=str(BB_CFG["tmp_dir"]),
             project_src=str(project.SRC_FILE),
             project_name=str(project.name))
 

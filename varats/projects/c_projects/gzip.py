@@ -5,7 +5,7 @@ import typing as tp
 from pathlib import Path
 import re
 
-from benchbuild.settings import CFG
+from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
@@ -63,7 +63,7 @@ class Gzip(prj.Project, ReleaseProvider):  # type: ignore
             with local.env(CC=str(clang)):
                 run(local["./bootstrap"])
                 run(local["./configure"])
-            run(make["-j", int(CFG["jobs"])])
+            run(make["-j", int(BB_CFG["jobs"])])
 
     @classmethod
     def get_release_revisions(cls, release_type: ReleaseType) -> tp.List[str]:

@@ -11,41 +11,44 @@ from os import path, makedirs, getcwd
 import benchbuild.utils.settings as s
 
 CFG = s.Configuration(
-    "vara",
+    "varats",
     node={
         "config_file": {
             "desc": "Config file path of varats. Not guaranteed to exist.",
             "default": None,
         },
-        "version": {
-            "desc": "VaRA version.",
-            "default": 90,
-        },
         "benchbuild_root": {
             "desc": "Root folder to run BenchBuild in",
-            "default": None,
-        },
-        "llvm_source_dir": {
-            "desc": "LLVM source dir",
-            "default": None,
-        },
-        "llvm_install_dir": {
-            "desc": "Install dir for LLVM and VaRA",
             "default": None,
         },
         "result_dir": {
             "desc": "Result folder for collected results",
             "default": None,
         },
-        "own_libgit2": {
-            "default": True,
-            "desc": "Build own libgit2 [Deprecated]",
-        },
-        "include_phasar": {
-            "default": True,
-            "desc": "Include Phasar for static analysis [Deprecated]",
-        },
     })
+
+CFG["vara"] = {
+    "version": {
+        "desc": "VaRA version.",
+        "default": 90,
+    },
+    "llvm_source_dir": {
+        "desc": "LLVM source dir",
+        "default": None,
+    },
+    "llvm_install_dir": {
+        "desc": "Install dir for LLVM and VaRA",
+        "default": None,
+    },
+    "own_libgit2": {
+        "default": True,
+        "desc": "Build own libgit2 [Deprecated]",
+    },
+    "include_phasar": {
+        "default": True,
+        "desc": "Include Phasar for static analysis [Deprecated]",
+    },
+}
 
 CFG["paper_config"] = {
     "folder": {
@@ -165,7 +168,7 @@ def save_config() -> None:
     Persist VaRA config to a yaml file.
     """
     if CFG["config_file"].value is None:
-        config_file = ".vara.yaml"
+        config_file = ".varats.yaml"
     else:
         config_file = str(CFG["config_file"])
     CFG["config_file"] = path.abspath(config_file)
@@ -179,7 +182,7 @@ def save_config() -> None:
     CFG.store(config_file)
 
 
-def generate_benchbuild_config(vara_cfg: s.Configuration,
+def generate_benchbuild_config(varats_cfg: s.Configuration,
                                bb_config_path: str) -> None:
     """
     Generate a configuration file for benchbuild
@@ -228,14 +231,16 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
     BB_CFG["slurm"]["account"] = "anywhere"
     BB_CFG["slurm"]["partition"] = "anywhere"
 
-    BB_CFG["env"] = {"PATH": [str(vara_cfg["llvm_install_dir"]) + "bin/"]}
+    BB_CFG["env"] = {
+        "PATH": [str(varats_cfg["vara"]["llvm_install_dir"]) + "bin/"]
+    }
 
     # Add VaRA experiment config variables
-    BB_CFG["vara"] = {
+    BB_CFG["varats"] = {
         "outfile": {
             "default": "",
             "desc": "Path to store results of VaRA CFR analysis.",
-            "value": str(vara_cfg["result_dir"])
+            "value": str(varats_cfg["result_dir"])
         },
         "result": {
             "default": "",
@@ -246,7 +251,7 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
 
     def replace_bb_cwd_path(cfg_varname: str,
                             cfg_node: s.Configuration = BB_CFG) -> None:
-        cfg_node[cfg_varname] = str(vara_cfg["benchbuild_root"]) +\
+        cfg_node[cfg_varname] = str(varats_cfg["benchbuild_root"]) +\
             str(cfg_node[cfg_varname])[len(getcwd()):]
 
     replace_bb_cwd_path("build_dir")
@@ -255,13 +260,13 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
     replace_bb_cwd_path("node_dir", BB_CFG["slurm"])
 
     # Create caching folder for .bc files
-    BC_cache_path = str(vara_cfg["benchbuild_root"])
-    BC_cache_path += "/" + str(BB_CFG["vara"]["result"])
+    BC_cache_path = str(varats_cfg["benchbuild_root"])
+    BC_cache_path += "/" + str(BB_CFG["varats"]["result"])
     if not path.isdir(BC_cache_path):
         makedirs(BC_cache_path)
 
     BB_CFG.store(bb_config_path)
 
 
-s.setup_config(CFG, ['.vara.yaml', '.vara.yml'], "VARA_CONFIG_FILE")
+s.setup_config(CFG, ['.varats.yaml', '.varats.yml'], "VARATS_CONFIG_FILE")
 s.update_env(CFG)

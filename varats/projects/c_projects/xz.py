@@ -5,7 +5,7 @@ import typing as tp
 from pathlib import Path
 
 from benchbuild.project import Project
-from benchbuild.settings import CFG
+from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import make, autoreconf, git
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
@@ -72,4 +72,4 @@ class Xz(Project):  # type: ignore
                     run(local["./configure"]["--enable-dynamic=yes"])
                 else:
                     run(local["./configure"])
-            run(make["-j", int(CFG["jobs"])])
+            run(make["-j", int(BB_CFG["jobs"])])
