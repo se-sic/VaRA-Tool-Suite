@@ -10,7 +10,7 @@ import typing as tp
 from plumbum import local
 
 from benchbuild.project import Project
-from benchbuild.settings import CFG
+from benchbuild.settings import CFG as BB_CFG
 import benchbuild.utils.actions as actions
 from benchbuild.utils.cmd import opt, mkdir
 
@@ -52,14 +52,14 @@ class BlameReportGeneration(actions.Step):  # type: ignore
 
         bc_cache_folder = local.path(
             Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                cache_dir=str(CFG["vara"]["result"]),
+                cache_dir=str(BB_CFG["varats"]["result"]),
                 project_name=str(project.name)))
 
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(CFG["vara"]["outfile"]),
+            result_dir=str(BB_CFG["varats"]["outfile"]),
             project_dir=str(project.name))
 
         mkdir("-p", vara_result_folder)

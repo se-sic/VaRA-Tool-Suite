@@ -14,7 +14,7 @@ import resource
 from plumbum import local
 
 from benchbuild.extensions import compiler, run, time
-from benchbuild.settings import CFG
+from benchbuild.settings import CFG as BB_CFG
 from benchbuild.project import Project
 from benchbuild.experiment import Experiment
 import benchbuild.utils.actions as actions
@@ -60,12 +60,12 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
 
         # Set up cache directory for bitcode files.
         bc_cache_dir = Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-            cache_dir=str(CFG["vara"]["result"]),
+            cache_dir=str(BB_CFG["varats"]["result"]),
             project_name=str(project.name))
 
         # Define the output directory.
         result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(CFG["vara"]["outfile"]),
+            result_dir=str(BB_CFG["varats"]["outfile"]),
             project_dir=str(project.name))
 
         mkdir("-p", result_folder)
@@ -162,7 +162,7 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
             project.compile,
             PEErrorHandler(
                 PhasarEnvIFDS.RESULT_FOLDER_TEMPLATE.format(
-                    result_dir=str(CFG["vara"]["outfile"]),
+                    result_dir=str(BB_CFG["varats"]["outfile"]),
                     project_dir=str(project.name)),
                 ENVR.get_file_name(
                     project_name=str(project.name),
@@ -179,7 +179,7 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
             all_cache_files_present &= path.exists(
                 local.path(
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                        cache_dir=str(CFG["vara"]["result"]),
+                        cache_dir=str(BB_CFG["varats"]["result"]),
                         project_name=str(project.name)) +
                     Extract.BC_FILE_TEMPLATE.format(
                         project_name=str(project.name),

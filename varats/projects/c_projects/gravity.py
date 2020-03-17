@@ -4,7 +4,7 @@ Project file for gravity.
 import typing as tp
 from pathlib import Path
 
-from benchbuild.settings import CFG
+from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.run import run
 from benchbuild.project import Project
@@ -82,10 +82,10 @@ class Gravity(Project):  # type: ignore
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
                 cmake("-G", "Unix Makefiles", ".")
-            run(make["-j", int(CFG["jobs"])])
+            run(make["-j", int(BB_CFG["jobs"])])
 
     def __compile_make(self) -> None:
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
-                run(make["-j", int(CFG["jobs"])])
+                run(make["-j", int(BB_CFG["jobs"])])

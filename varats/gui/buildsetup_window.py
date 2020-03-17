@@ -114,12 +114,12 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         self.__quit_sc = QShortcut(QKeySequence("Ctrl+Q"), self)
         self.__quit_sc.activated.connect(self.close)
 
-        llvm_src_dir = get_value_or_default(CFG, "llvm_source_dir",
+        llvm_src_dir = get_value_or_default(CFG["vara"], "llvm_source_dir",
                                             str(os.getcwd()) + "/vara-llvm/")
         self.sourcePath.insert(llvm_src_dir)
         self.sourcePath.editingFinished.connect(self._update_source_dir)
 
-        llvm_install_dir = get_value_or_default(CFG, "llvm_install_dir",
+        llvm_install_dir = get_value_or_default(CFG["vara"], "llvm_install_dir",
                                                 str(os.getcwd()) + "/VaRA/")
         self.installPath.insert(llvm_install_dir)
         self.installPath.editingFinished.connect(self._update_install_dir)
@@ -273,12 +273,12 @@ class BuildSetup(QWidget, Ui_BuildSetup):
             self.varaStatus.setStyleSheet("QLabel { color : orange; }")
 
     def _update_source_dir(self):
-        CFG["llvm_source_dir"] = self.__get_llvm_source_path()
+        CFG["vara"]["llvm_source_dir"] = self.__get_llvm_source_path()
         save_config()
         self._check_state()
 
     def _update_install_dir(self):
-        CFG["llvm_install_dir"] = self.__get_install_path()
+        CFG["vara"]["llvm_install_dir"] = self.__get_install_path()
         save_config()
 
     def __get_llvm_source_path(self):

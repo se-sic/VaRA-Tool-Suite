@@ -15,7 +15,7 @@ from plumbum.commands.base import BoundCommand
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
 from benchbuild.utils.actions import Step
-from benchbuild.settings import CFG
+from benchbuild.settings import CFG as BB_CFG
 
 from varats.data.revisions import get_tagged_revisions
 from varats.data.report import FileStatusExtension, BaseReport
@@ -109,7 +109,7 @@ def get_default_compile_error_wrapped(project: Project,
     """
     Setup the default project compile function with an error handler.
     """
-    result_dir = str(CFG["vara"]["outfile"])
+    result_dir = str(BB_CFG["varats"]["outfile"])
     result_folder = result_folder_template.format(result_dir=result_dir,
                                                   project_dir=str(project.name))
     return FunctionPEErrorWrapper(
@@ -192,7 +192,7 @@ class VersionExperiment(Experiment):  # type: ignore
 
             head, *tail = self._sample_num_versions(versions)
             yield head
-            if bool(CFG["versions"]["full"]):
+            if bool(BB_CFG["versions"]["full"]):
                 for version in tail:
                     yield version
         else:

@@ -102,9 +102,9 @@ def main() -> None:
     """
     Build VaRA on cli.
     """
-    llvm_src_dir = get_value_or_default(CFG, "llvm_source_dir",
+    llvm_src_dir = get_value_or_default(CFG["vara"], "llvm_source_dir",
                                         str(os.getcwd()) + "/vara-llvm/")
-    llvm_install_dir = get_value_or_default(CFG, "llvm_install_dir",
+    llvm_install_dir = get_value_or_default(CFG["vara"], "llvm_install_dir",
                                             str(os.getcwd()) + "/VaRA/")
 
     parser = argparse.ArgumentParser("vara-buildsetup")
@@ -162,8 +162,8 @@ def main() -> None:
 
     vara_version = args.version if args.version is not None else CFG['version']
 
-    own_libgit2 = bool(CFG["own_libgit2"])
-    include_phasar = bool(CFG["include_phasar"])
+    own_libgit2 = bool(CFG["vara"]["own_libgit2"])
+    include_phasar = bool(CFG["vara"]["include_phasar"])
 
     setup_vara(args.init, args.update, args.build, Path(args.llvmfolder),
                args.installprefix, own_libgit2, include_phasar, vara_version,

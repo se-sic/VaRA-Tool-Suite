@@ -55,8 +55,8 @@ class BenchBuildConfig(unittest.TestCase):
         Test if all the benchbuild config was created with all expected nodes.
         """
 
-        self.assertTrue(BB_CFG["vara"].__contains__("outfile"))
-        self.assertTrue(BB_CFG["vara"].__contains__("result"))
+        self.assertTrue(BB_CFG["varats"].__contains__("outfile"))
+        self.assertTrue(BB_CFG["varats"].__contains__("result"))
 
     def test_if_slurm_config_was_added(self):
         """

@@ -4,7 +4,7 @@ Project file for the GNU coreutils.
 import typing as tp
 from pathlib import Path
 
-from benchbuild.settings import CFG
+from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import make, git
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
@@ -153,7 +153,7 @@ class Coreutils(prj.Project):  # type: ignore
 
     def run_tests(self, runner: run) -> None:
         with local.cwd(self.SRC_FILE):
-            run(make["-j", int(CFG["jobs"]), "check"])
+            run(make["-j", int(BB_CFG["jobs"]), "check"])
 
     def compile(self) -> None:
         self.download()
@@ -165,7 +165,7 @@ class Coreutils(prj.Project):  # type: ignore
                 run(local["./bootstrap"])
                 run(local["./configure"]["--disable-gcc-warnings"])
 
-            run(make["-j", int(CFG["jobs"])])
+            run(make["-j", int(BB_CFG["jobs"])])
             for binary in self.binaries:
                 if not Path("{binary}".format(binary=binary)).exists():
                     print("Shit is fucked up ", binary)
