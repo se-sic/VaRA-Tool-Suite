@@ -5,6 +5,7 @@ Driver module for `vara-buildsetup`.
 import argparse
 import os
 import sys
+import logging
 from pathlib import Path
 
 from PyQt5.QtCore import Qt
@@ -13,6 +14,7 @@ from PyQt5.QtWidgets import QApplication
 from varats.gui.buildsetup_window import BuildSetup
 from varats.settings import get_value_or_default, CFG, save_config
 from varats.vara_manager import setup_vara, BuildType
+from varats.tools.research_tools.vara import VaRA
 
 
 class VaRATSSetup:
@@ -103,9 +105,9 @@ def main() -> None:
     Build VaRA on cli.
     """
     llvm_src_dir = get_value_or_default(CFG["vara"], "llvm_source_dir",
-                                        str(os.getcwd()) + "/vara-llvm/")
+                                        str(os.getcwd()) + "/tools_src/")
     llvm_install_dir = get_value_or_default(CFG["vara"], "llvm_install_dir",
-                                            str(os.getcwd()) + "/VaRA/")
+                                            str(os.getcwd()) + "/tools/VaRA/")
 
     parser = argparse.ArgumentParser("vara-buildsetup")
 
@@ -129,15 +131,12 @@ def main() -> None:
                         help="Builds VaRA and all components.",
                         action="store_true",
                         default=False)
-    parser.add_argument("--version",
-                        default=None,
-                        nargs="?",
-                        help="Version to download.")
-    parser.add_argument("--buildtype",
-                        default="dev",
-                        choices=['dev', 'opt', 'pgo', 'dbg', 'dev-san'],
-                        nargs="?",
-                        help="Build type to use for LLVM and all subpackages.")
+    parser.add_argument(
+        "--buildtype",
+        default="dev",
+        choices=['dev', 'opt', 'pgo', 'dbg', 'dev-san'],
+        nargs="?",
+        help="Build type to use for the tool build configuration.")
     parser.add_argument("llvmfolder",
                         help="Folder of LLVM. (Optional)",
                         nargs='?',
@@ -146,6 +145,10 @@ def main() -> None:
                         default=llvm_install_dir,
                         nargs='?',
                         help="Folder to install LLVM. (Optional)")
+    parser.add_argument("--version",
+                        default=None,
+                        nargs="?",
+                        help="Version to download.")
 
     args = parser.parse_args()
 
@@ -158,16 +161,48 @@ def main() -> None:
         save_config()
         return
 
-    build_type = parse_string_to_build_type(args.buildtype)
-
-    vara_version = args.version if args.version is not None else CFG['version']
+    # vara_version = args.version if args.version is not None else CFG["vara"][
+    #     'version']
 
     own_libgit2 = bool(CFG["vara"]["own_libgit2"])
-    include_phasar = bool(CFG["vara"]["include_phasar"])
+    include_phasar = bool(CFG["vara"]["with_phasar"])
 
-    setup_vara(args.init, args.update, args.build, Path(args.llvmfolder),
-               args.installprefix, own_libgit2, include_phasar, vara_version,
-               build_type, update_term)
+    log_level = os.environ.get('LOGLEVEL', "WARNING").upper()
+    print(log_level)
+    logging.basicConfig(level=log_level)
+
+    #setup_vara(args.init, args.update, args.build, Path(args.llvmfolder),
+    #           args.installprefix, own_libgit2, include_phasar, vara_version,
+    #           build_type, update_term)
+
+    # TODO: add tool selector
+    tool = VaRA(Path(args.llvmfolder))
+
+    if args.init:
+        __build_setup_init(tool, args)
+    if args.update:
+        tool.upgrade()
+    if args.build:
+        __build_setup_build(tool, args)
+
+
+def __build_setup_init(tool, args):
+    # TODO: handle version and other param setup
+    # TODO: adapt parser with research tool subparser
+
+    src_folder = Path(args.llvmfolder)
+    install_prefix = Path(args.installprefix)
+    if not src_folder.exists():
+        src_folder.mkdir(parents=True)
+    if not install_prefix.exists():
+        install_prefix.mkdir(parents=True)
+    tool.setup(src_folder, install_prefix=install_prefix)
+
+
+def __build_setup_build(tool, args):
+    # TODO: extra function needed?
+    build_type = parse_string_to_build_type(args.buildtype)
+    tool.build(build_type)
 
 
 if __name__ == '__main__':

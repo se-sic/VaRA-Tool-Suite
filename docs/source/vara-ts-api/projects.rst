@@ -27,7 +27,7 @@ template for your own project::
     from pathlib import Path
 
     from benchbuild.project import Project
-    from benchbuild.settings import CFG
+    from benchbuild.settings import BB_CFG
     # benchbuild.utils.cmd imports work like plumbum.cmd imports
     from benchbuild.utils.cmd import make
     from benchbuild.utils.compiler import cc
@@ -75,7 +75,7 @@ template for your own project::
             clang = cc(self)
             with local.cwd(self.SRC_FILE):
                 with local.env(CC=str(clang)):
-                    run(make["-j", int(CFG["jobs"])])
+                    run(make["-j", int(BB_CFG["jobs"])])
 
 
 .. note::

@@ -30,7 +30,7 @@ CFG = s.Configuration(
 CFG["vara"] = {
     "version": {
         "desc": "VaRA version.",
-        "default": 90,
+        "default": 100,
     },
     "llvm_source_dir": {
         "desc": "LLVM source dir",
@@ -44,9 +44,13 @@ CFG["vara"] = {
         "default": True,
         "desc": "Build own libgit2 [Deprecated]",
     },
-    "include_phasar": {
-        "default": True,
+    "with_phasar": {
+        "default": False,
         "desc": "Include Phasar for static analysis [Deprecated]",
+    },
+    "developer_version": {
+        "desc": "Setup VaRA as development build.",
+        "default": True,
     },
 }
 
