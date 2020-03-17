@@ -80,7 +80,7 @@ template for your own project::
 
 .. note::
 
-    Some projects chang their build system at some point in time. In such
+    Some projects change their build system at some point in time. In such
     cases, you could check which version you are currently compiling and
     dispatch the build process to a more specific build function.
     For an example, have a look at the real
@@ -136,13 +136,15 @@ Each revision blocker has an additional optional argument for tracking the
 reason for this block.
 This helps not only when reasoning about the validity of experiments, but it
 also makes it easier to see whether a block can be fixed in the future
-(e.g. missing dependencies could be resolved by a containerized execution
+(e.g., missing dependencies could be resolved by a containerized execution
 environment).
 
 
 List of supported projects
 --------------------------
 
+C - Projects
+^^^^^^^^^^^^
 .. autoclass:: varats.projects.c_projects.busybox.Busybox
 .. autoclass:: varats.projects.c_projects.coreutils.Coreutils
 .. autoclass:: varats.projects.c_projects.git.Git
@@ -157,4 +159,7 @@ List of supported projects
 .. autoclass:: varats.projects.c_projects.vim.Vim
 .. autoclass:: varats.projects.c_projects.x264.X264
 .. autoclass:: varats.projects.c_projects.xz.Xz
+
+C++ - Projects
+^^^^^^^^^^^^^^
 .. autoclass:: varats.projects.cpp_projects.doxygen.Doxygen
