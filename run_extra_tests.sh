@@ -25,6 +25,9 @@ check_err
 $COVERAGE $(which vara-gen-bbconfig)
 check_err
 
+$COVERAGE $(which vara-config) set artefacts/artefacts_dir=artefacts
+check_err
+
 $COVERAGE $(which vara-pc) create test_extra
 check_err
 
