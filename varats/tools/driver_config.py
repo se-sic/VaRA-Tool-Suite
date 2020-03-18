@@ -43,8 +43,8 @@ def main() -> None:
     show_parser.add_argument(
         "config_options",
         nargs="*",
-        help="The config options to show. Show the whole config if no options "
-        "are given.",
+        help="The config options to show. You can also show whole sub-configs."
+        "Show the complete config if no options are given.",
         type=str)
 
     args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
@@ -76,12 +76,12 @@ def __dump_config_to_string(config: Configuration) -> str:
     selfcopy = copy.deepcopy(config)
     selfcopy.filter_exports()
 
-    return str(yaml.dump(
-        selfcopy.node,
-        width=80,
-        indent=4,
-        default_flow_style=False,
-        Dumper=ConfigDumper))
+    return str(
+        yaml.dump(selfcopy.node,
+                  width=80,
+                  indent=4,
+                  default_flow_style=False,
+                  Dumper=ConfigDumper))
 
 
 def __config_set(args: tp.Dict[str, tp.Any]) -> None:
@@ -107,7 +107,8 @@ def __config_show(args: tp.Dict[str, tp.Any]) -> None:
     else:
         options = args["config_options"]
         for option in options:
-            value = __dump_config_to_string(__get_config_for_path(option.split("/")))
+            value = __dump_config_to_string(
+                __get_config_for_path(option.split("/")))
             print(f"{option}:\n{textwrap.indent(value, '    ')}")
 
 
