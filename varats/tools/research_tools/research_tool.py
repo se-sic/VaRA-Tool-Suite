@@ -66,7 +66,8 @@ class SubProject():
             cb_base_dir: base directory for the ``CodeBase``
         """
         LOG.info(f"Cloning {self.name} into {cb_base_dir}")
-        # TODO: add check if folder exists and throw exception
+        if (cb_base_dir / self.path).exists():
+            raise RuntimeError  # TODO: add folder already present exception
         download_repo(cb_base_dir / self.path.parent, self.url, self.path.name,
                       self.remote, print)
 
@@ -100,6 +101,12 @@ class SubProject():
 
 
 class CodeBase():
+    """
+    A ``CodeBase`` depicts the layout of a project, specifying where the a
+    research tool lives and how different sub projects should be cloned. In
+    addition, it allows access to the sub projects, e.g., for checkout or other
+    repository manipulations.
+    """
 
     def __init__(self, base_dir: Path, sub_projects: tp.List[SubProject]):
         self.__sub_projects = sub_projects
@@ -129,45 +136,46 @@ class CodeBase():
         Args:
             cb_base_dir: new base dir of the code base
         """
-        self.__base_dir = cb_base_dir  # TODO: maybe remove and only depend on init param
+        self.__base_dir = cb_base_dir
         for sub_project in self.__sub_projects:
             sub_project.clone(self.base_dir)
 
 
 """
-    Project -> VaRA, SPLConquerer, ...
-
+    TODO: remove later
     ResearchTool | Project
-        - CodeBase -> sub projects // layout of repos
-            * sub projects iterator ?
         ? repo interactions
             * status accessors
-
-    BuildType
-
-    ? StateManager
 
     ? good generalizations over different projects
         * show status
         * allow repo interactions
 """
 
+SpecificCodeBase = tp.TypeVar("SpecificCodeBase", bound=CodeBase)
 
-class ResearchTool():
+
+class ResearchTool(tp.Generic[SpecificCodeBase]):
     """
     ResearchTool is an abstract base class for specifying research tools that
     are setup by VaRA-TS and usable through the tool suites experiments and
     tools.
     """
 
-    def __init__(self, supported_build_types: tp.List[BuildType],
-                 code_base: CodeBase) -> None:
+    def __init__(self, tool_name: str,
+                 supported_build_types: tp.List[BuildType],
+                 code_base: SpecificCodeBase) -> None:
+        self.__name = tool_name
         self.__supported_build_types = supported_build_types
         self.__code_base = code_base
 
     @property
-    def code_base(self) -> CodeBase:
+    def code_base(self) -> SpecificCodeBase:
         return self.__code_base
+
+    @property
+    def name(self) -> str:
+        return self.__name
 
     def is_build_type_supported(self, build_type: BuildType) -> bool:
         return build_type in self.__supported_build_types
@@ -175,11 +183,13 @@ class ResearchTool():
     @abc.abstractmethod
     def setup(self, source_folder: Path, **kwargs) -> None:
         """
-        TODO:
-        - setup instructions
-            * download
-            * checkout different versions
-            * folder layout
+        Setup a research tool with it's code base. This method sets up all
+        relevant config variables, downloads repositories via the ``CodeBase``,
+        checkouts the correct branches and prepares the research tool to be
+        build.
+
+        Args:
+            source_folder: location to store the code base in
         """
 
     @abc.abstractmethod
@@ -189,18 +199,13 @@ class ResearchTool():
         """
 
     @abc.abstractmethod
-    def build(self, build_type: BuildType) -> None:
+    def build(self, build_type: BuildType, install_location: Path) -> None:
         """
-        TODO:
-        - build instructions
-            * build_type
-        """
-
-    @abc.abstractmethod
-    def install(self, install_location: Path) -> None:
-        """
-        Install the research tool into the given install_location.
+        Build/Compile the research tool in the specified ``build_type`` and
+        install it to the specified ``install_location``.
 
         Args:
-            install_location: a valid path to an existing folder
+            build_type: which type of build should be used, e.g., debug,
+                        development or release
+            install_location: location to install the research tool into
         """

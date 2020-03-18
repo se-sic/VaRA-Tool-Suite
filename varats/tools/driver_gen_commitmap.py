@@ -7,12 +7,14 @@ from pathlib import Path
 
 from varats.settings import CFG
 from varats.tools.commit_map import get_commit_map, store_commit_map
+from varats.utils.cli_util import initialize_logger_config
 
 
 def main() -> None:
     """
     Create a commit map for a repository.
     """
+    initialize_logger_config()
     parser = argparse.ArgumentParser("vara-gen-commitmap")
     parser.add_argument("project_name", help="Name of the project")
     parser.add_argument("--path", help="Path to git repository", default=None)

@@ -2,10 +2,10 @@
 Driver module for `vara-buildsetup`.
 """
 
+import typing as tp
 import argparse
 import os
 import sys
-import logging
 from pathlib import Path
 
 from PyQt5.QtCore import Qt
@@ -13,8 +13,10 @@ from PyQt5.QtWidgets import QApplication
 
 from varats.gui.buildsetup_window import BuildSetup
 from varats.settings import get_value_or_default, CFG, save_config
-from varats.vara_manager import setup_vara, BuildType
+from varats.vara_manager import BuildType
 from varats.tools.research_tools.vara import VaRA
+from varats.utils.cli_util import initialize_logger_config
+from varats.tools.research_tools.research_tool import ResearchTool
 
 
 class VaRATSSetup:
@@ -104,11 +106,10 @@ def main() -> None:
     """
     Build VaRA on cli.
     """
+    initialize_logger_config()
+    # TODO: generalize
     llvm_src_dir = get_value_or_default(CFG["vara"], "llvm_source_dir",
                                         str(os.getcwd()) + "/tools_src/")
-    llvm_install_dir = get_value_or_default(CFG["vara"], "llvm_install_dir",
-                                            str(os.getcwd()) + "/tools/VaRA/")
-
     parser = argparse.ArgumentParser("vara-buildsetup")
 
     parser.add_argument("-c",
@@ -137,12 +138,15 @@ def main() -> None:
         choices=['dev', 'opt', 'pgo', 'dbg', 'dev-san'],
         nargs="?",
         help="Build type to use for the tool build configuration.")
-    parser.add_argument("llvmfolder",
-                        help="Folder of LLVM. (Optional)",
+    parser.add_argument("researchtool",
+                        help="The research tool one wants to setup",
+                        choices=["VaRA", "vara"])
+    parser.add_argument("sourcelocation",
+                        help="Folder to store tool sources. (Optional)",
                         nargs='?',
                         default=llvm_src_dir)
     parser.add_argument("installprefix",
-                        default=llvm_install_dir,
+                        default=None,
                         nargs='?',
                         help="Folder to install LLVM. (Optional)")
     parser.add_argument("--version",
@@ -161,48 +165,47 @@ def main() -> None:
         save_config()
         return
 
-    # vara_version = args.version if args.version is not None else CFG["vara"][
-    #     'version']
+    # setup_vara(args.init, args.update, args.build, Path(args.llvmfolder),
+    #            args.installprefix, own_libgit2, include_phasar, vara_version,
+    #            build_type, update_term)
+    # return
 
-    own_libgit2 = bool(CFG["vara"]["own_libgit2"])
-    include_phasar = bool(CFG["vara"]["with_phasar"])
-
-    log_level = os.environ.get('LOGLEVEL', "WARNING").upper()
-    print(log_level)
-    logging.basicConfig(level=log_level)
-
-    #setup_vara(args.init, args.update, args.build, Path(args.llvmfolder),
-    #           args.installprefix, own_libgit2, include_phasar, vara_version,
-    #           build_type, update_term)
-
-    # TODO: add tool selector
-    tool = VaRA(Path(args.llvmfolder))
+    if args.researchtool == "VaRA" or args.researchtool == "vara":
+        tool = VaRA(Path(args.sourcelocation))
 
     if args.init:
-        __build_setup_init(tool, args)
+        __build_setup_init(tool, args.sourcelocation, args.version)
     if args.update:
         tool.upgrade()
     if args.build:
-        __build_setup_build(tool, args)
+        build_type = parse_string_to_build_type(args.buildtype)
+        tool.build(build_type, __get_install_prefix(tool, args))
 
 
-def __build_setup_init(tool, args):
-    # TODO: handle version and other param setup
-    # TODO: adapt parser with research tool subparser
-
-    src_folder = Path(args.llvmfolder)
-    install_prefix = Path(args.installprefix)
+def __build_setup_init(tool: ResearchTool, source_location, version):
+    src_folder = Path(source_location)
     if not src_folder.exists():
         src_folder.mkdir(parents=True)
+
+    # TODO: finish work on args
+
+    tool.setup(src_folder,
+               install_prefix=__get_install_prefix(tool, args),
+               version=version)
+
+
+def __get_install_prefix(tool: ResearchTool,
+                         args: tp.Dict[str, tp.Any]) -> Path:
+    if args['installprefix'] is None:
+        install_prefix = get_value_or_default(
+            CFG["vara"], "llvm_install_dir",
+            str(os.getcwd()) + f"/tools/{tool.name}/")
+    else:
+        install_prefix = Path(args['installprefix'])
+
     if not install_prefix.exists():
         install_prefix.mkdir(parents=True)
-    tool.setup(src_folder, install_prefix=install_prefix)
-
-
-def __build_setup_build(tool, args):
-    # TODO: extra function needed?
-    build_type = parse_string_to_build_type(args.buildtype)
-    tool.build(build_type)
+    return install_prefix
 
 
 if __name__ == '__main__':

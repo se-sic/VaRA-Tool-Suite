@@ -1,5 +1,6 @@
 """
-TODO: module docs
+Module for the research tool VaRA that describes the VaRA code base layout and
+how to configure and setup VaRA.
 """
 import typing as tp
 import os
@@ -23,6 +24,10 @@ LOG = logging.getLogger(__name__)
 
 
 class VaRACodeBase(CodeBase):
+    """
+    Layout of the VaRA code base: setting up vara-llvm-project fork, VaRA, and
+    optinaly phasar, for static analysis.
+    """
 
     def __init__(self, base_dir: Path) -> None:
         sub_projects = [
@@ -81,35 +86,61 @@ class VaRACodeBase(CodeBase):
                 self.base_dir, "development")
 
 
-class VaRA(ResearchTool):
+class VaRA(ResearchTool[VaRACodeBase]):
+    """
+    Research tool implementation for VaRA.
+    Find the main repo online on github: https://github.com/se-passau/VaRA
+    """
 
     def __init__(self, base_dir: Path) -> None:
-        super().__init__([BuildType.DEV], VaRACodeBase(base_dir))
-
-    @property
-    def vara_code_base(self) -> VaRACodeBase:  # TODO: ask sebi about typing
-        if isinstance(self.code_base, VaRACodeBase):
-            return self.code_base
-        raise TypeError
+        super().__init__("VaRA", [BuildType.DEV], VaRACodeBase(base_dir))
 
     def setup(self, source_folder: Path, **kwargs) -> None:
-        LOG.info(f"Setting up VaRA at {source_folder}")
+        """
+        Setup the research tool VaRA with it's code base. This method sets up
+        all relevant config variables, downloads repositories via the
+        ``CodeBase``, checkouts the correct branches and prepares the research
+        tool to be build.
+
+        Args:
+            source_folder: location to store the code base in
+            **kwargs:
+                      * version
+                      * install_prefix
+        """
         CFG["vara"]["llvm_source_dir"] = str(source_folder)
         CFG["vara"]["llvm_install_dir"] = str(kwargs["install_prefix"])
+        version = kwargs["version"]
+        if version:
+            CFG["vara"]["version"] = int(version)
+        else:
+            version = CFG["vara"]["version"].value
+
+        LOG.info(f"Setting up VaRA at {source_folder}")
         save_config()
 
-        version = CFG["vara"]["version"].value
         use_dev_branches = CFG["vara"]["developer_version"].value
 
         self.code_base.clone(source_folder)
-        self.vara_code_base.setup_vara_remotes()
-        self.vara_code_base.checkout_vara_version(version, use_dev_branches)
-        self.vara_code_base.setup_build_link()
+        self.code_base.setup_vara_remotes()
+        self.code_base.checkout_vara_version(version, use_dev_branches)
+        self.code_base.setup_build_link()
 
-    def update(self) -> None:
-        pass
+    def upgrade(self) -> None:
+        """
+        Upgrade the research tool to a newer version.
+        """
+        raise NotImplementedError
 
-    def build(self, build_type: BuildType) -> None:
+    def build(self, build_type: BuildType, install_location: Path) -> None:
+        """
+        Build/Compile VaRA in the specified ``build_type``. This method leaves
+        VaRA in a finished state, i.e., being ready to be installed.
+
+        Args:
+            build_type: which type of build should be used, e.g., debug,
+                        development or release
+        """
         full_path = self.code_base.base_dir / "vara-llvm-project" / "build/"
         if not self.is_build_type_supported(build_type):
             LOG.critical(
@@ -137,8 +168,8 @@ class VaRA(ResearchTool):
 
         # Set install prefix in cmake
         with local.cwd(full_path):
-            set_vara_cmake_variables(CFG["vara"]["llvm_install_dir"].value,
-                                     print)
+            CFG["vara"]["llvm_install_dir"] = str(install_location)
+            set_vara_cmake_variables(str(install_location), print)
 
         # Compile llvm + VaRA
         with ProcessManager.create_process("ninja", ["install"],

@@ -20,6 +20,7 @@ from varats.paper.case_study import (SamplingMethod, ExtenderStrategy,
 from varats.settings import CFG
 from varats.tools.commit_map import create_lazy_commit_map_loader
 from varats.utils.project_util import get_local_project_git_path
+from varats.utils.cli_util import initialize_logger_config
 
 LOG = logging.getLogger(__name__)
 
@@ -28,6 +29,7 @@ def main() -> None:
     """
     Allow easier management of case studies
     """
+    initialize_logger_config()
     parser = ArgumentParser("vara-cs")
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
 
