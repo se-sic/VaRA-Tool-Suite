@@ -93,10 +93,10 @@ def __config_set(args: tp.Dict[str, tp.Any]) -> None:
     else:
         config_values = {}
 
-    for k, v in config_values.items():
-        option_path = k.split("/")
+    for option, value in config_values.items():
+        option_path = option.split("/")
         config = __get_config_for_path(option_path[:-1])
-        config[option_path[-1]] = v
+        config[option_path[-1]] = value
 
     save_config()
 
