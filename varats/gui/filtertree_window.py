@@ -1,6 +1,6 @@
+import yaml
 import os
 from threading import Lock
-import yaml
 from PyQt5.QtWidgets import QWidget, QMainWindow, QMessageBox, QDataWidgetMapper, QMenu, QFileDialog
 from PyQt5.QtCore import QModelIndex
 from PyQt5.QtGui import QIcon, QPixmap, QCloseEvent

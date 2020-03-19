@@ -7,7 +7,6 @@ import typing as tp
 from collections import defaultdict
 from pathlib import Path
 import re
-import warnings
 
 from varats.settings import CFG
 from varats.vara_manager import (
@@ -77,6 +76,7 @@ def create_new_branch_for_projects(branch_name: str,
 
     for project in projects:
         if project.is_extra_project():
+            import warnings
             warnings.warn("vara-develop can only create branches for VaRA " +
                           "related projects not extra LLVMProjects.")
             continue

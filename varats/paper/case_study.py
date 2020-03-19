@@ -11,9 +11,9 @@ from pathlib import Path
 import random
 
 from benchbuild.project import Project
-import pygit2
 from scipy.stats import halfnorm
 import numpy as np
+import pygit2
 
 from varats.plots.plots import PlotRegistry
 from varats.utils.project_util import get_project_cls_by_name

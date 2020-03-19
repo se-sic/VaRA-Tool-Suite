@@ -6,9 +6,7 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-import sys
-from PyQt5 import QtCore, QtWidgets
-
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 class Ui_FilterNodeProperties(object):
     def setupUi(self, FilterNodeProperties):
@@ -52,9 +50,11 @@ class Ui_FilterNodeProperties(object):
 
 
 if __name__ == "__main__":
+    import sys
     app = QtWidgets.QApplication(sys.argv)
     FilterNodeProperties = QtWidgets.QWidget()
     ui = Ui_FilterNodeProperties()
     ui.setupUi(FilterNodeProperties)
     FilterNodeProperties.show()
     sys.exit(app.exec_())
+

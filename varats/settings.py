@@ -9,7 +9,6 @@ import typing as tp
 from os import path, makedirs, getcwd
 
 import benchbuild.utils.settings as s
-from benchbuild.settings import CFG as BB_CFG
 
 CFG = s.Configuration(
     "vara",
@@ -184,6 +183,7 @@ def generate_benchbuild_config(vara_cfg: s.Configuration,
     """
     Generate a configuration file for benchbuild
     """
+    from benchbuild.settings import CFG as BB_CFG
 
     # Projects for VaRA
     projects_conf = BB_CFG["plugins"]["projects"]

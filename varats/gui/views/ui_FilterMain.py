@@ -6,10 +6,7 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
-from varats.gui.deselectable_tree_view import DeselectableQTreeView
-
 
 class Ui_FilterEditor(object):
     def setupUi(self, FilterEditor):
@@ -182,11 +179,15 @@ class Ui_FilterEditor(object):
         self.uiActionHelp.setText(_translate("FilterEditor", "&Help"))
         self.uiActionHelp.setToolTip(_translate("FilterEditor", "Help"))
 
+from varats.gui.deselectable_tree_view import DeselectableQTreeView
+from varats.gui import icons_rc
 
 if __name__ == "__main__":
+    import sys
     app = QtWidgets.QApplication(sys.argv)
     FilterEditor = QtWidgets.QMainWindow()
     ui = Ui_FilterEditor()
     ui.setupUi(FilterEditor)
     FilterEditor.show()
     sys.exit(app.exec_())
+

@@ -12,7 +12,7 @@ from plumbum import local
 from benchbuild.project import Project
 from benchbuild.settings import CFG
 import benchbuild.utils.actions as actions
-from benchbuild.utils.cmd import opt, mkdir, timeout
+from benchbuild.utils.cmd import opt, mkdir
 
 from varats.experiments.extract import Extract
 import varats.experiments.blame_experiment as BE
@@ -87,6 +87,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
             run_cmd = opt[opt_params]
 
             timeout_duration = '8h'
+            from benchbuild.utils.cmd import timeout
 
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration, run_cmd],

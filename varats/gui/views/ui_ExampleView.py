@@ -6,8 +6,7 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-import sys
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class Ui_example_view(object):
@@ -29,7 +28,10 @@ class Ui_example_view(object):
         example_view.setWindowTitle(_translate("example_view", "Form"))
 
 
+
+
 if __name__ == "__main__":
+    import sys
     app = QtWidgets.QApplication(sys.argv)
     example_view = QtWidgets.QWidget()
     ui = Ui_example_view()

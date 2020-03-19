@@ -6,10 +6,10 @@ import typing as tp
 from pathlib import Path
 
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.style as style
 import matplotlib.axes as axes
-import numpy as np
 
 from varats.data.reports.commit_report import CommitMap
 from varats.jupyterhelper.file import load_blame_report
