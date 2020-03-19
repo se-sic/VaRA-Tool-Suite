@@ -6,11 +6,11 @@ from pathlib import Path
 from plumbum import local
 
 import benchbuild.utils.actions as actions
-from benchbuild.settings import CFG
+from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import extract_bc, cp, mkdir
 from benchbuild.project import Project
 
-CFG["vara"] = {
+BB_CFG["varats"] = {
     "outfile": {
         "default": "",
         "desc": "Path to store results of VaRA CFR analysis."
@@ -46,7 +46,7 @@ class Extract(actions.Step):  # type: ignore
         project = self.obj
 
         bc_cache_folder = self.BC_CACHE_FOLDER_TEMPLATE.format(
-            cache_dir=str(CFG["vara"]["result"]),
+            cache_dir=str(BB_CFG["varats"]["result"]),
             project_name=str(project.name))
         mkdir("-p", local.path() / bc_cache_folder)
 

@@ -10,7 +10,7 @@ from plumbum import local
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
-from benchbuild.settings import CFG
+from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import opt
 import benchbuild.utils.actions as actions
 
@@ -37,7 +37,7 @@ class DefaultAnalysis(actions.Step):  # type: ignore
             return
         project = self.obj
 
-        project_src = local.path(str(CFG["vara"]["result"]))
+        project_src = local.path(str(BB_CFG["varats"]["result"]))
 
         run_cmd = opt["-load", self.PATH_TO_PHASAR_PASS_LIB, "-phasar",
                       "--entry-points", "main"]
@@ -67,8 +67,8 @@ class PhasarDefault(Experiment):  # type: ignore
 
         analysis_actions = []
         if not os.path.exists(
-                local.path(str(CFG["vara"]["result"].value)) / project.name +
-                ".bc"):
+                local.path(str(BB_CFG["varats"]["result"].value)) /
+                project.name + ".bc"):
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(project))
 

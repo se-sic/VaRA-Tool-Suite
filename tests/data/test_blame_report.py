@@ -66,22 +66,22 @@ class TestBlameInstInteractions(unittest.TestCase):
         """
         Test if base_hash is loaded correctly.
         """
-        self.assertEqual(self.blame_interaction_1.base_hash,
+        self.assertEqual(self.blame_interaction_1.base_commit,
                          '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
 
-        self.assertEqual(self.blame_interaction_2.base_hash,
+        self.assertEqual(self.blame_interaction_2.base_commit,
                          '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
 
     def test_interactions(self):
         """
         Test if interactions are loaded correctly.
         """
-        self.assertEqual(self.blame_interaction_1.interacting_hashes[0],
+        self.assertEqual(self.blame_interaction_1.interacting_commits[0],
                          'a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
 
-        self.assertEqual(self.blame_interaction_2.interacting_hashes[0],
+        self.assertEqual(self.blame_interaction_2.interacting_commits[0],
                          'a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
-        self.assertEqual(self.blame_interaction_2.interacting_hashes[1],
+        self.assertEqual(self.blame_interaction_2.interacting_commits[1],
                          'e8999a84efbd9c3e739bff7af39500d14e61bfbc')
 
     def test_amount(self):
@@ -132,10 +132,10 @@ class TestResultFunctionEntry(unittest.TestCase):
         """
         c_interaction_list = self.func_entry_c.interactions
         self.assertEqual(len(c_interaction_list), 2)
-        self.assertEqual(c_interaction_list[0].base_hash,
+        self.assertEqual(c_interaction_list[0].base_commit,
                          '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         self.assertEqual(c_interaction_list[0].amount, 22)
-        self.assertEqual(c_interaction_list[1].base_hash,
+        self.assertEqual(c_interaction_list[1].base_commit,
                          '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         self.assertEqual(c_interaction_list[1].amount, 5)
 

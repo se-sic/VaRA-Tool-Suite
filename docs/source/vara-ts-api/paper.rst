@@ -89,6 +89,8 @@ The current status of all case studies belonging to the current paper config, ca
     CS: gzip_2: (5/5) processed
     CS: libvpx_0: (0/5) processed
 
+The tool :ref:`vara-pc` provides a simple command line interface for creating
+and managing paper configs.
 
 Artefacts
 .........

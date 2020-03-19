@@ -3,7 +3,6 @@ This module provides different jupyther helpers to allow easier interaction
 with varas file handling APIs.
 """
 
-import typing as tp
 from pathlib import Path
 
 from varats.data.data_manager import VDM
@@ -18,8 +17,7 @@ def load_commit_report(file_path: Path) -> CommitReport:
     Attributes:
         file_path (Path): Full path to the file
     """
-    return tp.cast(CommitReport,
-                   VDM.load_data_class_sync(file_path, CommitReport))
+    return VDM.load_data_class_sync(file_path, CommitReport)
 
 
 def load_blame_report(file_path: Path) -> BlameReport:
@@ -29,8 +27,7 @@ def load_blame_report(file_path: Path) -> BlameReport:
     Attributes:
         file_path (Path): Full path to the file
     """
-    return tp.cast(BlameReport,
-                   VDM.load_data_class_sync(file_path, BlameReport))
+    return VDM.load_data_class_sync(file_path, BlameReport)
 
 
 def load_commit_map(file_path: str) -> CommitMap:

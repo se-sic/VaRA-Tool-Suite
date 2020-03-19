@@ -31,15 +31,14 @@ class BlameInstInteractions():
         self.__amount = int(raw_inst_entry['amount'])
 
     @property
-    def base_hash(self) -> str:  # TODO: rename to base_commit
+    def base_commit(self) -> str:
         """
         Base hash of the analyzed instruction.
         """
         return self.__base_hash
 
     @property
-    def interacting_hashes(
-            self) -> tp.List[str]:  # TODO: rename to interacting_commits
+    def interacting_commits(self) -> tp.List[str]:
         """
         List of hashes that interact with the base.
         """
@@ -54,10 +53,10 @@ class BlameInstInteractions():
 
     def __str__(self) -> str:
         str_representation = "{base_hash} <-(# {amount:4})- [".format(
-            base_hash=self.base_hash, amount=self.amount)
+            base_hash=self.base_commit, amount=self.amount)
         sep = ""
-        for interacting_hash in self.interacting_hashes:
-            str_representation += sep + interacting_hash
+        for interacting_commit in self.interacting_commits:
+            str_representation += sep + interacting_commit
             sep = ", "
         str_representation += "]\n"
         return str_representation
@@ -68,8 +67,8 @@ class BlameResultFunctionEntry():
     Collection of all interactions for a specific function.
     """
 
-    def __init__(self, name: str,
-                 raw_function_entry: tp.Dict[str, tp.Any]) -> None:
+    def __init__(self, name: str, raw_function_entry: tp.Dict[str,
+                                                              tp.Any]) -> None:
         self.__name = name
         self.__demangled_name = str(raw_function_entry['demangled-name'])
         self.__inst_list: tp.List[BlameInstInteractions] = []
@@ -115,7 +114,7 @@ class BlameReport(BaseReport):
     FILE_TYPE = "yaml"
 
     def __init__(self, path: Path) -> None:
-        super(BlameReport, self).__init__()
+        super(BlameReport, self).__init__(path)
         self.__path = path
         with open(path, 'r') as stream:
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
@@ -133,15 +132,8 @@ class BlameReport(BaseReport):
                 self.__function_entries[
                     new_function_entry.name] = new_function_entry
 
-    @property
-    def path(self) -> Path:
-        """
-        Path to the report file.
-        """
-        return self.__path
-
-    def get_blame_result_function_entry(self, mangled_function_name: str
-                                       ) -> BlameResultFunctionEntry:
+    def get_blame_result_function_entry(
+            self, mangled_function_name: str) -> BlameResultFunctionEntry:
         """
         Get the result entry for a specific function.
         """
@@ -194,7 +186,7 @@ def generate_degree_tuples(report: BlameReport) -> tp.List[tp.Tuple[int, int]]:
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            degree = len(interaction.interacting_hashes)
+            degree = len(interaction.interacting_commits)
             degree_dict[degree] += interaction.amount
 
     return list(degree_dict.items())
@@ -217,7 +209,7 @@ def generate_author_degree_tuples(
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
             author_list = map_commits(lambda c: tp.cast(str, c.author.name),
-                                      interaction.interacting_hashes,
+                                      interaction.interacting_commits,
                                       commit_lookup)
 
             degree = len(set(author_list))
@@ -227,9 +219,9 @@ def generate_author_degree_tuples(
 
 
 def generate_time_delta_distribution_tuples(
-        report: BlameReport, project_name: str, bucket_size: int,
-        aggregate_function: tp.Callable[[tp.Sequence[tp.Union[int, float]]], tp.
-                                        Union[int, float]]
+    report: BlameReport, project_name: str, bucket_size: int,
+    aggregate_function: tp.Callable[[tp.Sequence[tp.Union[int, float]]],
+                                    tp.Union[int, float]]
 ) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples that represent the distribution of time delta
@@ -253,19 +245,21 @@ def generate_time_delta_distribution_tuples(
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            if (interaction.base_hash ==
+            if (interaction.base_commit ==
                     "0000000000000000000000000000000000000000"):
                 continue
 
-            base_commit = commit_lookup(interaction.base_hash)
+            base_commit = commit_lookup(interaction.base_commit)
             base_c_time = datetime.utcfromtimestamp(base_commit.commit_time)
 
-            def translate_to_time_deltas2(commit: pygit2.Commit) -> int:
+            def translate_to_time_deltas2(
+                    commit: pygit2.Commit,
+                    base_time: datetime = base_c_time) -> int:
                 other_c_time = datetime.utcfromtimestamp(commit.commit_time)
-                return abs((base_c_time - other_c_time).days)
+                return abs((base_time - other_c_time).days)
 
             author_list = map_commits(translate_to_time_deltas2,
-                                      interaction.interacting_hashes,
+                                      interaction.interacting_commits,
                                       commit_lookup)
 
             degree = aggregate_function(author_list) if author_list else 0
@@ -275,9 +269,9 @@ def generate_time_delta_distribution_tuples(
     return list(degree_dict.items())
 
 
-def generate_avg_time_distribution_tuples(report: BlameReport,
-                                          project_name: str, bucket_size: int
-                                         ) -> tp.List[tp.Tuple[int, int]]:
+def generate_avg_time_distribution_tuples(
+        report: BlameReport, project_name: str,
+        bucket_size: int) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples that represent the distribution of average time
     delta interactions. The first value in the tuple represents the degree of
@@ -296,9 +290,9 @@ def generate_avg_time_distribution_tuples(report: BlameReport,
                                                    bucket_size, np.average)
 
 
-def generate_max_time_distribution_tuples(report: BlameReport,
-                                          project_name: str, bucket_size: int
-                                         ) -> tp.List[tp.Tuple[int, int]]:
+def generate_max_time_distribution_tuples(
+        report: BlameReport, project_name: str,
+        bucket_size: int) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples that represent the distribution of maximal time
     delta interactions. The first value in the tuple represents the degree of
@@ -318,8 +312,8 @@ def generate_max_time_distribution_tuples(report: BlameReport,
                                                    bucket_size, max)
 
 
-def generate_in_head_interactions(report: BlameReport
-                                 ) -> tp.List[BlameInstInteractions]:
+def generate_in_head_interactions(
+        report: BlameReport) -> tp.List[BlameInstInteractions]:
     """
     Generate a list of interactions where the base_hash of the interaction is
     the same as the HEAD of the report.
@@ -330,15 +324,15 @@ def generate_in_head_interactions(report: BlameReport
     head_interactions = []
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            if interaction.base_hash.startswith(report.head_commit):
+            if interaction.base_commit.startswith(report.head_commit):
                 head_interactions.append(interaction)
                 continue
 
     return head_interactions
 
 
-def generate_out_head_interactions(report: BlameReport
-                                  ) -> tp.List[BlameInstInteractions]:
+def generate_out_head_interactions(
+        report: BlameReport) -> tp.List[BlameInstInteractions]:
     """
     Generate a list of interactions where one of the interacting hashes is the
     same as the HEAD of the report.
@@ -349,7 +343,7 @@ def generate_out_head_interactions(report: BlameReport
     head_interactions = []
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            for interacting_commit in interaction.interacting_hashes:
+            for interacting_commit in interaction.interacting_commits:
                 if interacting_commit.startswith(report.head_commit):
                     head_interactions.append(interaction)
                     break

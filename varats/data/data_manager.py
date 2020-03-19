@@ -16,11 +16,9 @@ from threading import Lock
 
 from PyQt5.QtCore import QRunnable, QThreadPool, QObject, pyqtSlot, pyqtSignal
 
-from varats.data.reports.commit_report import CommitReport
-from varats.data.reports.blame_report import BlameReport
+from varats.data.report import BaseReport
 
-# Add other loadable Types
-LoadableType = tp.Union[CommitReport, BlameReport]
+LoadableType = tp.TypeVar('LoadableType', bound=BaseReport)
 
 
 def sha256_checksum(file_path: Path, block_size: int = 65536) -> str:
@@ -74,7 +72,7 @@ class FileBlob():
         return self.__class_object
 
 
-class FileSignal(QObject):  # type: ignore
+class FileSignal(QObject):
     """
     Emit singlas after the file was loaded.
     """
@@ -82,21 +80,21 @@ class FileSignal(QObject):  # type: ignore
     clean = pyqtSignal()
 
 
-class FileLoader(QRunnable):  # type: ignore
+class FileLoader(QRunnable):
     """
     Manages concurrent file loading in the background of the application.
     """
 
-    def __init__(self,
-                 func: tp.Callable[[Path, tp.Type[LoadableType]], LoadableType],
-                 file_path: Path, class_type: tp.Type[LoadableType]) -> None:
+    def __init__(self, func: tp.Callable[[Path, tp.Type[LoadableType]],
+                                         LoadableType], file_path: Path,
+                 class_type: tp.Type[LoadableType]) -> None:
         super(FileLoader, self).__init__()
         self.func = func
         self.file_path = file_path
         self.class_type = class_type
         self.signal = FileSignal()
 
-    @pyqtSlot()  # type: ignore
+    @pyqtSlot()
     def run(self) -> None:
         """
         Run the file loading method.
@@ -128,7 +126,7 @@ class DataManager():
 
         key = sha256_checksum(file_path)
         if key in self.file_map:
-            return self.file_map[key].data
+            return tp.cast(LoadableType, self.file_map[key].data)
 
         try:
             new_blob = FileBlob(key, file_path, DataClassTy(file_path))
@@ -137,12 +135,11 @@ class DataManager():
             raise e
         self.file_map[key] = new_blob
 
-        return new_blob.data
+        return tp.cast(LoadableType, new_blob.data)
 
-    def load_data_class(self, file_path: Path,
-                        DataClassTy: tp.Type[LoadableType],
-                        loaded_callback: tp.Callable[[LoadableType], None]
-                       ) -> None:
+    def load_data_class(
+            self, file_path: Path, DataClassTy: tp.Type[LoadableType],
+            loaded_callback: tp.Callable[[LoadableType], None]) -> None:
         # pylint: disable=invalid-name
         """
         Load a DataClass of type <DataClassTy> from a file asynchronosly.
@@ -160,9 +157,9 @@ class DataManager():
         worker.signal.clean.connect(self._release_lock)
         self.thread_pool.start(worker)
 
-    def load_data_class_sync(self, file_path: Path,
-                             DataClassTy: tp.Type[LoadableType]
-                            ) -> LoadableType:
+    def load_data_class_sync(
+            self, file_path: Path,
+            DataClassTy: tp.Type[LoadableType]) -> LoadableType:
         # pylint: disable=invalid-name
         """
         Load a DataClass of type <DataClassTy> from a file synchronosly.

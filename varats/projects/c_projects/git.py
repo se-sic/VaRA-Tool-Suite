@@ -4,7 +4,7 @@ Project file for git.
 import typing as tp
 from pathlib import Path
 
-from benchbuild.settings import CFG
+from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
@@ -50,4 +50,4 @@ class Git(prj.Project):  # type: ignore
                 delete("configure", "config.status")
                 run(make["configure"])
                 run(local["./configure"])
-            run(make["-j", int(CFG["jobs"])])
+            run(make["-j", int(BB_CFG["jobs"])])

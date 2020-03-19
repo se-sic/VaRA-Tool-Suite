@@ -58,7 +58,7 @@ class TestVersionExperiment(unittest.TestCase):
         EU.V_CFG["experiment"]["random_order"] = False
         EU.V_CFG["experiment"]["file_status_whitelist"] = []
         EU.V_CFG["experiment"]["file_status_blacklist"] = []
-        EU.CFG["versions"]["full"] = False
+        EU.BB_CFG["versions"]["full"] = False
         self.rev_list = ['rev1', 'rev2', 'rev3', 'rev4', 'rev5']
 
     @staticmethod
@@ -87,7 +87,8 @@ class TestVersionExperiment(unittest.TestCase):
 
     def test_without_versions(self):
         """
-        Test if we get the correct revision if no VaRA modifications are enabled.
+        Test if we get the correct revision if no VaRA modifications are
+        enabled.
         """
         prj = EmptyProject(self.vers_expr)
         sample_gen = self.vers_expr.sample(prj, self.rev_list)
@@ -100,7 +101,7 @@ class TestVersionExperiment(unittest.TestCase):
         """
         Test if we can whitelist file status
         """
-        EU.CFG["versions"]["full"] = True
+        EU.BB_CFG["versions"]["full"] = True
         # Revision not in set
         mock_get_tagged_revisions.return_value = \
             self.generate_get_tagged_revisions_output()
@@ -120,7 +121,7 @@ class TestVersionExperiment(unittest.TestCase):
         """
         Test if we can whitelist file status
         """
-        EU.CFG["versions"]["full"] = True
+        EU.BB_CFG["versions"]["full"] = True
         # Revision not in set
         mock_get_tagged_revisions.return_value = \
             self.generate_get_tagged_revisions_output()
@@ -144,7 +145,7 @@ class TestVersionExperiment(unittest.TestCase):
         """
         Test if we can blacklist file status
         """
-        EU.CFG["versions"]["full"] = True
+        EU.BB_CFG["versions"]["full"] = True
         # Revision not in set
         mock_get_tagged_revisions.return_value = \
             self.generate_get_tagged_revisions_output()
@@ -167,7 +168,7 @@ class TestVersionExperiment(unittest.TestCase):
         """
         Test if we can blacklist file status
         """
-        EU.CFG["versions"]["full"] = True
+        EU.BB_CFG["versions"]["full"] = True
         # Revision not in set
         mock_get_tagged_revisions.return_value = \
             self.generate_get_tagged_revisions_output()
@@ -190,7 +191,7 @@ class TestVersionExperiment(unittest.TestCase):
         """
         Test if whitelist overwrites blacklist
         """
-        EU.CFG["versions"]["full"] = True
+        EU.BB_CFG["versions"]["full"] = True
         # Revision not in set
         mock_get_tagged_revisions.return_value = \
             self.generate_get_tagged_revisions_output()

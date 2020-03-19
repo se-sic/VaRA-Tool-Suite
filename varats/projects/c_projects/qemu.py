@@ -4,7 +4,7 @@ Project file for qemu.
 import typing as tp
 from pathlib import Path
 
-from benchbuild.settings import CFG
+from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.compiler import cc, cxx
 from benchbuild.utils.run import run
 from benchbuild.project import Project
@@ -54,4 +54,4 @@ class Qemu(Project):  # type: ignore
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
                 run(local["../configure"]
                     ["--disable-debug-info", "--target-list=x86_64-softmmu"])
-                run(make["-j", int(CFG["jobs"])])
+                run(make["-j", int(BB_CFG["jobs"])])

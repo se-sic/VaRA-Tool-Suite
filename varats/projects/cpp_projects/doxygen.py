@@ -4,7 +4,7 @@ Project file for doxygen.
 import typing as tp
 from pathlib import Path
 
-from benchbuild.settings import CFG
+from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.compiler import cxx
 from benchbuild.utils.run import run
 from benchbuild.project import Project
@@ -58,6 +58,6 @@ class Doxygen(Project):  # type: ignore
             with local.env(CXX=str(clangxx)):
                 delete("CMakeCache.txt")
                 cmake("-G", "Unix Makefiles", ".")
-            run(make["-j", int(CFG["jobs"])])
+            run(make["-j", int(BB_CFG["jobs"])])
 
             cp("bin/doxygen", ".")

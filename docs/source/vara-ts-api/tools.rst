@@ -1,71 +1,29 @@
 Tools
 =====
 
-`TODO (se-passau/VaRA#576) <https://github.com/se-passau/VaRA/issues/576>`_: write docs
+The **VaRA Tool-Suite** comes with a variety of tools for managing experiments,
+creating plots, configuring the tool-suite itself and more.
 
-Tools overview
---------------
-* :ref:`vara-art`
-* :ref:`vara-plot`
+.. toctree::
+    :maxdepth: 1
+    :caption: Setup tools:
 
-vara-art
-*********
-
-This tool manages the :ref:`Artefacts<Module: artefacts>` of a
-:ref:`paper config<How to use paper configs>`.
-
-.. program-output:: vara-art -h
-
-The subcommand ``vara-art add`` adds a new artefact to the current paper config.
-
-.. program-output:: vara-art add -h
-
-For example, an artefact that will generate a ``paper_config_overview_plot``
-(see :ref:`plots<Module: plots>`) for the current paper config can be added
-via::
-
-    vara-art add plot "overview plot" report_type=EmptyReport plot_type=paper_config_overview_plot
-
-.. note::
-
-    The double quotes around the artefact name are only needed if the name
-    contains spaces or other characters with special meaning.
-
-.. _vara-art-generate:
-
-To generate all artefacts of the current paper-config, use::
-
-    vara-art generate
-
-If you only want to generate some specific artefacts, you can specify their
-names with the ``--only`` parameter::
-
-    vara-art generate --only "overview plot"
-
-You can list all artefacts of the current paper config with::
-
-    vara-art list
-
-To show details for one or more artefacts, use::
-
-    vara-art show "overview plot"
-
-You can give multiple artefact names to ``vara-art show`` to see details for
-multiple artefacts at once.
+    tools/vara-buildsetup
+    tools/vara-gen-bbconfig
 
 
-vara-plot
-.........
+.. toctree::
+    :maxdepth: 1
+    :caption: Experiment tools:
 
-TODO: add example
+    tools/vara-pc
+    tools/vara-cs
+    tools/vara-plot
+    tools/vara-art
+    tools/vara-gen-commitmap
 
+.. toctree::
+    :maxdepth: 1
+    :caption: Development tools:
 
-vara-cs
-.......
-TODO: add example
-
-vara-cs ext
-***********
-
-vara-cs status
-**************
+    tools/vara-develop

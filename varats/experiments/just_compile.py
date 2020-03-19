@@ -7,7 +7,7 @@ import typing as tp
 import benchbuild.utils.actions as actions
 from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
-from benchbuild.settings import CFG
+from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import mkdir, touch
 
 from varats.experiments.wllvm import RunWLLVM
@@ -44,7 +44,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
         # analysis also the name and the unique id of the project of every
         # run.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(CFG["vara"]["outfile"]),
+            result_dir=str(BB_CFG["varats"]["outfile"]),
             project_dir=str(project.name))
 
         mkdir("-p", vara_result_folder)

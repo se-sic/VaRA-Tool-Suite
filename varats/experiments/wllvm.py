@@ -13,7 +13,7 @@ from os import getenv
 from plumbum import local
 
 from benchbuild.extensions import base
-from benchbuild.settings import CFG
+from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.path import list_to_path, path_to_list
 
@@ -34,7 +34,7 @@ class RunWLLVM(base.Extension):  # type: ignore
         else:
             wllvm = local["wllvm"]
 
-        env = CFG["env"].value
+        env = BB_CFG["env"].value
         path = path_to_list(getenv("PATH", ""))
         path.extend(env.get("PATH", []))
 
