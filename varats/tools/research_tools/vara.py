@@ -83,6 +83,12 @@ class VaRACodeBase(CodeBase):
         self.get_sub_project("phasar").checkout_branch(self.base_dir,
                                                        "development")
 
+    def setup_submodules(self) -> None:
+        """
+        Set up the git submodules of all sub projects.
+        """
+        self.get_sub_project("phasar").init_and_update_submodules(self.base_dir)
+
 
 class VaRA(ResearchTool[VaRACodeBase]):
     """
@@ -123,6 +129,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         self.code_base.clone(source_folder)
         self.code_base.setup_vara_remotes()
         self.code_base.checkout_vara_version(version, use_dev_branches)
+        self.code_base.setup_submodules()
         self.code_base.setup_build_link()
 
     def upgrade(self) -> None:

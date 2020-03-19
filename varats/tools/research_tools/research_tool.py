@@ -9,7 +9,8 @@ import logging
 from pathlib import Path
 
 from varats.vara_manager import (BuildType, download_repo, add_remote,
-                                 checkout_branch, fetch_remote)
+                                 checkout_branch, fetch_remote,
+                                 init_all_submodules, update_all_submodules)
 from varats.utils.cli_util import log_without_linsep
 from varats.utils.filesystem_util import FolderAlreadyPresentError
 
@@ -60,6 +61,16 @@ class SubProject():
             Specifies the full qualified path to the sub project folder.
         """
         return self.__sub_path
+
+    def init_and_update_submodules(self, cb_base_dir: Path) -> None:
+        """
+        Initialize and update all submodules of this sub project.
+
+        Args:
+            cb_base_dir: base directory for the ``CodeBase``
+        """
+        init_all_submodules(cb_base_dir / self.path)
+        update_all_submodules(cb_base_dir / self.path)
 
     def clone(self, cb_base_dir: Path) -> None:
         """
