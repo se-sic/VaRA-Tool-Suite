@@ -62,9 +62,10 @@ class Artefact(ABC):
         The output path for this artefact.
 
         The output path is relative to the directory specified as
-        ``artefacts.artefacts_dir`` in the current vara config.
+        ``artefacts.artefacts_dir`` in the current varats config.
         """
-        return Path(str(CFG['artefacts']['artefacts_dir'])) / self.__output_path
+        return Path(str(CFG['artefacts']['artefacts_dir'])) / Path(
+            str(CFG['paper_config']['current_config'])) / self.__output_path
 
     def get_dict(self) -> tp.Dict[str, str]:
         """
@@ -153,6 +154,9 @@ class PlotArtefact(Artefact):
         """
         Generate the specified plot.
         """
+        if not self.output_path.exists():
+            self.output_path.mkdir(parents=True)
+
         # pylint: disable=not-callable
         plot = self.plot_type_class(**self.plot_kwargs)
         plot.style = "ggplot"
@@ -241,7 +245,8 @@ def create_artefact(artefact_type: 'ArtefactType', name: str, output_path: Path,
         file_format = kwargs.pop('file_format', 'png')
         return PlotArtefact(name, output_path, plot_type, file_format, **kwargs)
 
-    raise AssertionError("Missing create for artefact type ", artefact_type)
+    raise AssertionError(
+        f"Missing create function for artefact type {artefact_type}")
 
 
 def load_artefacts_from_file(file_path: Path) -> Artefacts:
