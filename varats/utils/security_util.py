@@ -22,7 +22,7 @@ from tabulate import tabulate
 class CVE:
     """
     CVE representation with the major fields. 
-    
+
     Mainly a data object to store everything.
     Uses the API at https://cve.circl.lu/api/search/ to find entries.
     """
@@ -48,7 +48,7 @@ class CVE:
 
     @property
     def score(self) -> float:
-        """The score of this CVE. """
+        """The score of this CVE."""
         return self.__score
 
     @property
@@ -168,8 +168,8 @@ def find_all_cve(vendor: str, product: str) -> tp.FrozenSet[CVE]:
     Args:
         vendor: vendor to search for
         product: product to search for
-        
-    Return: 
+
+    Return:
         a set of :class:`CVE` objects.
     """
     if not vendor or not product:

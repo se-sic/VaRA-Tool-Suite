@@ -207,7 +207,7 @@ def __merge_results(
     """
     Merge a list of results into one dictionary.
     
-    Return: 
+    Return:
         the merged dictionary with line number as key and commit hash, a list of
         unique CVE's and a list of unique CWE's as values
     """
@@ -233,9 +233,9 @@ def generate_security_commit_map(
         end: str = "HEAD",
         start: tp.Optional[str] = None) -> tp.Dict[int, tp.Dict[str, tp.Any]]:
     """
-    Generate a commit map for a repository including the commits 
+    Generate a commit map for a repository including the commits
     ``]start..end]`` if they contain a fix for a CVE or CWE.
-    
+
     Commands to grep commit messages for CVE's/CWE's:
         git --no-pager log --all --pretty=format:'%H %d %s' --grep="CVE-"
         git --no-pager log --all --pretty=format:'%H %d %s' --grep="CWE-"
