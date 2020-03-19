@@ -32,14 +32,13 @@ class CVE:
         vector: tp.FrozenSet[str], references: tp.FrozenSet[str], summary: str,
         vulnerable_versions: tp.FrozenSet[tp.Union[LegacyVersion, Version]]
     ) -> None:
-        self.__cve_id: str = cve_id
-        self.__score: float = score
-        self.__published: datetime = published
-        self.__vector: tp.FrozenSet[str] = vector
-        self.__references: tp.FrozenSet[str] = references
-        self.__summary: str = summary
-        self.__vulnerable_versions: tp.FrozenSet[tp.Union[
-            LegacyVersion, Version]] = vulnerable_versions
+        self.__cve_id = cve_id
+        self.__score = score
+        self.__published = published
+        self.__vector = vector
+        self.__references = references
+        self.__summary = summary
+        self.__vulnerable_versions = vulnerable_versions
 
     @property
     def cve_id(self) -> str:
@@ -114,9 +113,9 @@ class CWE:
     """
 
     def __init__(self, cwe_id: str, name: str, description: str) -> None:
-        self.__cwe_id: str = cwe_id
-        self.__name: str = name
-        self.__description: str = description
+        self.__cwe_id = cwe_id
+        self.__name = name
+        self.__description = description
 
     @property
     def cwe_id(self) -> str:
@@ -161,6 +160,18 @@ class CWE:
         return hash(self.cwe_id)
 
 
+def __fetch_cve_data(source_url):
+    response = requests.get(source_url)
+    # Sometimes the rate limit is hit so keep repeating
+    while response.status_code == 429:
+        time.sleep(3)
+        response = requests.get(source_url)
+    if response.status_code != 200:
+        raise ValueError(f'Could not retrieve CVE information '
+                         f'(Code: {response.status_code})!')
+    return response
+
+
 def find_all_cve(vendor: str, product: str) -> tp.FrozenSet[CVE]:
     """
     Find all CVE's for a given vendor and product combination.
@@ -174,17 +185,9 @@ def find_all_cve(vendor: str, product: str) -> tp.FrozenSet[CVE]:
     """
     if not vendor or not product:
         raise ValueError('Missing a vendor or product to search CVE\'s for!')
-    response = requests.get(
-        f'https://cve.circl.lu/api/search/{vendor}/{product}')
-    # Sometimes the rate limit is hit so keep repeating
-    while response.status_code == 429:
-        time.sleep(3)
-        response = requests.get(
-            f'https://cve.circl.lu/api/search/{vendor}/{product}')
-    if response.status_code != 200:
-        raise ValueError(f'Could not retrieve CVE information '
-                         f'(Code: {response.status_code})!')
 
+    response = __fetch_cve_data(
+        f'https://cve.circl.lu/api/search/{vendor}/{product}')
     cve_list: tp.Set[CVE] = set()
     for entry in response.json()['results']:
         try:
@@ -210,20 +213,17 @@ def find_all_cve(vendor: str, product: str) -> tp.FrozenSet[CVE]:
 def find_cve(cve_id: str) -> CVE:
     """
     Find a CVE by its ID (CVE-YYYY-XXXXX).
-    :param cve_id: CVE id to search for.
-    :return: CVE object.
+
+    Args:
+        cve_id: CVE id to search for
+
+    Return:
+        a CVE object
     """
     if not cve_id:
         raise ValueError('Missing a CVE ID!')
-    response = requests.get(f'https://cve.circl.lu/api/cve/{cve_id}')
-    # Sometimes the rate limit is hit so keep repeating
-    while response.status_code == 429:
-        time.sleep(3)
-        response = requests.get(f'https://cve.circl.lu/api/cve/{cve_id}')
-    if response.status_code != 200:
-        raise ValueError(f'Could not retrieve CVE information '
-                         f'(Code: {response.status_code})!')
 
+    response = __fetch_cve_data(f'https://cve.circl.lu/api/cve/{cve_id}')
     cve_data: tp.Dict[str, tp.Any] = response.json()
     if not cve_data:
         raise ValueError(f'Could not find CVE information for {cve_id}, '
@@ -245,7 +245,9 @@ def find_all_cwe() -> tp.FrozenSet[CWE]:
     """
     Create a set of all CWE's. The set with CWE numbers is downloaded from
     @https://cwe.mitre.org/data/downloads.html.
-    :return: Set of CWE objects.
+
+    Return:
+        a set of CWE objects
     """
     source_urls: tp.FrozenSet[str] = frozenset([
         'https://cwe.mitre.org/data/csv/699.csv.zip',
@@ -257,15 +259,7 @@ def find_all_cwe() -> tp.FrozenSet[CWE]:
 
     # Download each zip file, extract it and parse its entries
     for source_url in source_urls:
-        response = requests.get(source_url)
-        # Sometimes the rate limit is hit so keep repeating
-        while response.status_code == 429:
-            time.sleep(3)
-            response = requests.get(source_url)
-        if response.status_code != 200:
-            raise ValueError(f'Could not retrieve CVE information '
-                             f'(Code: {response.status_code})!')
-
+        response = __fetch_cve_data(source_url)
         zip_file = zipfile.ZipFile(io.BytesIO(response.content))
         with zip_file.open(zip_file.namelist()[0], 'r') as csv_file:
             reader = csv.DictReader(io.TextIOWrapper(csv_file),
@@ -286,15 +280,19 @@ def find_cwe(cwe_id: str = '',
              cwe_description: str = '') -> CWE:
     """
     Find a CWE by its attributes (ID (CWE-XXX), name, description).
-    :param cwe_id: ID of the CWE to search for.
-    :param cwe_name: Name of the CWE to search for.
-    :param cwe_description: Description of the CWE to search for.
-    :return: CWE if one is found, otherwise raise a ValueError.
+
+    Args:
+        cwe_id: the ID of the CWE to search for
+        cwe_name: the name of the CWE to search for
+        cwe_description: the description of the CWE to search for
+
+    Return:
+        a CWE if one is found, otherwise raise a ``ValueError``
     """
     for cwe in CWE_LIST:
-        if (cwe_id and cwe.cwe_id == cwe_id) or \
-           (cwe_name and cwe.name == cwe_name) or \
-           (cwe_description and cwe.description == cwe_description):
+        if ((cwe_id and cwe.cwe_id == cwe_id) or
+            (cwe_name and cwe.name == cwe_name) or
+            (cwe_description and cwe.description == cwe_description)):
             return cwe
     raise ValueError(
         f'Could not find CWE ({cwe_id}, {cwe_name}, {cwe_description})!')
