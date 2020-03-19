@@ -36,14 +36,12 @@ class VaRACodeBase(CodeBase):
                        "https://github.com/llvm/llvm-project.git", "upstream",
                        "vara-llvm-project"),
             SubProject("VaRA", "git@github.com:se-passau/VaRA.git", "origin",
-                       "vara-llvm-project/vara")
+                       "vara-llvm-project/vara"),
+            SubProject(
+                "phasar",
+                "https://github.com/secure-software-engineering/phasar.git",
+                "origin", "vara-llvm-project/phasar")
         ]
-        if CFG["vara"]["with_phasar"].value:
-            sub_projects.append(
-                SubProject(
-                    "phasar",
-                    "https://github.com/secure-software-engineering/phasar.git",
-                    "origin", "vara-llvm-project/phasar"))
         super().__init__(base_dir, sub_projects)
 
     def setup_vara_remotes(self) -> None:
@@ -82,9 +80,8 @@ class VaRACodeBase(CodeBase):
         # TODO (sattlerf): make different checkout for older versions
         self.get_sub_project("VaRA").checkout_branch(self.base_dir,
                                                      f"vara" + dev_suffix)
-        if use_dev_branches and CFG["vara"]["with_phasar"].value:
-            self.get_sub_project("phasar").checkout_branch(
-                self.base_dir, "development")
+        self.get_sub_project("phasar").checkout_branch(self.base_dir,
+                                                       "development")
 
 
 class VaRA(ResearchTool[VaRACodeBase]):
