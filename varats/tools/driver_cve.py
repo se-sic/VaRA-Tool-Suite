@@ -1,9 +1,9 @@
 """
-Driver module for `vara-sec`.
+Driver module for `vara-cve`.
 """
 
 import argparse
-import varats.security as sec
+import varats.data.provider.cve.cve as sec
 
 
 def main() -> None:
@@ -11,14 +11,14 @@ def main() -> None:
     Main function for handling and simplifying common security interactions with
     the project.
 
-    `vara-sec`
+    `vara-cve`
     """
     parser = argparse.ArgumentParser("Security helper")
     sub_parsers = parser.add_subparsers(help="CVE/CWE relevant information",
                                         dest="command")
 
     # List cve's
-    cve_parser = sub_parsers.add_parser('list-cve')
+    cve_parser = sub_parsers.add_parser('list')
     cve_parser.add_argument('vendor',
                             type=str,
                             help='Name of the product vendor')
@@ -36,7 +36,7 @@ def main() -> None:
                              default=False)
 
     args = parser.parse_args()
-    if args.command == 'list-cve':
+    if args.command == 'list':
         sec.list_cve_for_projects(vendor=args.vendor,
                                   product=args.product,
                                   verbose=args.verbose)

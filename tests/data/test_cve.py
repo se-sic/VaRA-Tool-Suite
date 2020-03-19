@@ -5,7 +5,7 @@ Test the security utilities eg CVE, CWE stuff.
 from datetime import datetime
 import unittest
 import typing as tp
-from varats.utils.security_util import CVE, CWE, CWE_LIST, \
+from varats.data.provider.cve.cve_util import CVE, CWE, CWE_LIST, \
     find_cve, find_all_cve, find_cwe, find_all_cwe
 
 

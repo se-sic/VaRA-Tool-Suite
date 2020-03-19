@@ -2,7 +2,7 @@
 The security module provides different utility functions for VaRA.
 """
 
-from varats.utils.security_util import find_all_cve, find_cve, find_cwe
+from varats.data.provider.cve.cve_util import find_all_cve, find_cve, find_cwe
 
 
 def list_cve_for_projects(vendor: str,
