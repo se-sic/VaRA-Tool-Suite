@@ -1,13 +1,13 @@
-#!/usr/bin/env python3
-# -*- coding: UTF-8 -*-
 """
-The security module provides different utility function for VaRA.
+The security module provides different utility functions for VaRA.
 """
 
 from varats.utils.security_util import find_all_cve, find_cve, find_cwe
 
 
-def list_cve_for_projects(vendor: str, product: str, verbose: bool = False) -> None:
+def list_cve_for_projects(vendor: str,
+                          product: str,
+                          verbose: bool = False) -> None:
     """
     List all CVE's for the given vendor/product combination.
     Call via vara-sec list-cve <vendor> <product>.
@@ -42,4 +42,6 @@ def info(search: str, verbose: bool = False) -> None:
         else:
             print(f'{cwe.cwe_id:20} [{cwe.url}]')
     else:
-        print(f'Could not parse input. Did you mean CVE-{search} or CWE-{search}?')
+        print(
+            f'Could not parse input. Did you mean CVE-{search} or CWE-{search}?'
+        )

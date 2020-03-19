@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: UTF-8 -*-
 """
 Test the security utilities eg CVE, CWE stuff.
 """
@@ -18,16 +16,21 @@ class TestSecurity(unittest.TestCase):
 
     def test_find_single_cve(self):
         """
-        Check if the Heartbleed's CVE-2014-0160 can be properly retrieved and parsed.
-        @https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-2601
+        Check if the Heartbleed's CVE-2014-0160 can be properly retrieved and
+        parsed.
+        https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-2601
         """
         cve: CVE = find_cve('CVE-2014-0160')
 
         reference_data: dict = {
-            'cve_id': 'CVE-2014-0160',
-            'score': 5.0,
-            'published': datetime.strptime('2014-04-07 22:55:00', '%Y-%m-%d %H:%M:%S'),
-            'vector': frozenset(['AV:N', 'AC:L', 'Au:N', 'C:P', 'I:N', 'A:N'])
+            'cve_id':
+                'CVE-2014-0160',
+            'score':
+                5.0,
+            'published':
+                datetime.strptime('2014-04-07 22:55:00', '%Y-%m-%d %H:%M:%S'),
+            'vector':
+                frozenset(['AV:N', 'AC:L', 'Au:N', 'C:P', 'I:N', 'A:N'])
         }
 
         self.assertTrue(cve.cve_id == reference_data['cve_id'])
@@ -37,16 +40,20 @@ class TestSecurity(unittest.TestCase):
 
     def test_find_all_cve(self):
         """
-        Get all OpenSSL CVE's and check if the Heartbleed CVE-2014-0160 is contained.
+        Get all OpenSSL CVE's and check if the Heartbleed CVE-2014-0160 is 
+        contained.
         @https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-2601
         """
         cve_list: tp.FrozenSet[CVE] = find_all_cve('openssl', 'openssl')
         self.assertTrue(len(cve_list) != 0)
 
         reference_data: dict = {
-            'cve_id': 'CVE-2014-0160',
-            'score': 5.0,
-            'published': datetime.strptime('2014-04-07 22:55:00', '%Y-%m-%d %H:%M:%S'),
+            'cve_id':
+                'CVE-2014-0160',
+            'score':
+                5.0,
+            'published':
+                datetime.strptime('2014-04-07 22:55:00', '%Y-%m-%d %H:%M:%S'),
             'vector': ['AV:N', 'AC:L', 'Au:N', 'C:P', 'I:N', 'A:N']
         }
 
@@ -70,8 +77,10 @@ class TestSecurity(unittest.TestCase):
         reference_data: dict = {
             'cwe_id': 'CWE-478',
             'name': 'Missing Default Case in Switch Statement',
-            'description': 'The code does not have a default case in a switch statement, '
-                           'which might lead to complex logical errors and resultant weaknesses.'
+            'description':
+                'The code does not have a default case in a switch statement, '
+                'which might lead to complex logical errors and resultant '
+                'weaknesses.'
         }
 
         self.assertTrue(find_cwe(cwe_id=reference_data['cwe_id']))
@@ -90,15 +99,18 @@ class TestSecurity(unittest.TestCase):
         reference_data: dict = {
             'cwe_id': 'CWE-478',
             'name': 'Missing Default Case in Switch Statement',
-            'description': 'The code does not have a default case in a switch statement, '
-                           'which might lead to complex logical errors and resultant weaknesses.'
+            'description':
+                'The code does not have a default case in a switch statement, '
+                'which might lead to complex logical errors and resultant '
+                'weaknesses.'
         }
 
         found: bool = False
         for cwe in cwe_list:
             if cwe.cwe_id == reference_data['cwe_id']:
                 self.assertTrue(cwe.name == reference_data['name'])
-                self.assertTrue(cwe.description == reference_data['description'])
+                self.assertTrue(
+                    cwe.description == reference_data['description'])
                 found = True
                 break
         self.assertTrue(found)
