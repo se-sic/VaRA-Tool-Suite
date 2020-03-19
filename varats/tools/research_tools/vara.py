@@ -168,7 +168,8 @@ class VaRA(ResearchTool[VaRACodeBase]):
         # Set install prefix in cmake
         with local.cwd(full_path):
             CFG["vara"]["llvm_install_dir"] = str(install_location)
-            set_vara_cmake_variables(str(install_location), LOG.info)
+            set_vara_cmake_variables(str(install_location),
+                                     log_without_linsep(LOG.info))
 
         # Compile llvm + VaRA
         with ProcessManager.create_process("ninja", ["install"],
