@@ -45,7 +45,7 @@ CFG["vara"] = {
         "desc": "Build own libgit2 [Deprecated]",
     },
     "with_phasar": {
-        "default": False,
+        "default": True,
         "desc": "Include Phasar for static analysis [Deprecated]",
     },
     "developer_version": {
