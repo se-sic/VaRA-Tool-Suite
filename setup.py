@@ -38,7 +38,7 @@ setup(name='VaRA-Tool-Suite',
               'vara-gen-commitmap = varats.tools.driver_gen_commitmap:main',
               'vara-pc = varats.tools.driver_paper_config:main',
               'vara-plot = varats.tools.driver_plot:main',
-              'vara-sec = varats.driver:main_security',
+              'vara-sec = varats.tools.driver_security:main',
           ]
       },
       python_requires='>=3.6')
