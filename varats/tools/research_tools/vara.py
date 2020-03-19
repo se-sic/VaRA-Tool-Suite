@@ -19,6 +19,7 @@ from varats.tools.research_tools.research_tool import (ResearchTool, CodeBase,
 from varats.vara_manager import (BuildType, run_process_with_output,
                                  set_vara_cmake_variables, ProcessManager)
 from varats.utils.exceptions import ProcessTerminatedError
+from varats.utils.cli_util import log_without_linsep
 
 LOG = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ class VaRACodeBase(CodeBase):
             self.base_dir, "origin",
             "git@github.com:se-passau/vara-llvm-project.git")
 
-    def setup_build_link(self):
+    def setup_build_link(self) -> None:
         """
         Setup build-config folder link for VaRAs default build setup scripts.
         """
@@ -95,7 +96,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
     def __init__(self, base_dir: Path) -> None:
         super().__init__("VaRA", [BuildType.DEV], VaRACodeBase(base_dir))
 
-    def setup(self, source_folder: Path, **kwargs) -> None:
+    def setup(self, source_folder: Path, **kwargs: tp.Any) -> None:
         """
         Setup the research tool VaRA with it's code base. This method sets up
         all relevant config variables, downloads repositories via the
@@ -112,7 +113,8 @@ class VaRA(ResearchTool[VaRACodeBase]):
         CFG["vara"]["llvm_install_dir"] = str(kwargs["install_prefix"])
         version = kwargs["version"]
         if version:
-            CFG["vara"]["version"] = int(version)
+            version = int(tp.cast(int, version))
+            CFG["vara"]["version"] = version
         else:
             version = CFG["vara"]["version"].value
 
@@ -160,8 +162,8 @@ class VaRA(ResearchTool[VaRACodeBase]):
                         build_script, workdir=full_path.parent) as proc:
                     proc.setProcessChannelMode(QProcess.MergedChannels)
                     proc.readyReadStandardOutput.connect(
-                        lambda: run_process_with_output(proc, print)
-                    )  # TODO: post_out? update_term ?
+                        lambda: run_process_with_output(
+                            proc, log_without_linsep(LOG.info)))
             except ProcessTerminatedError as error:
                 shutil.rmtree(full_path)
                 raise error
@@ -169,11 +171,12 @@ class VaRA(ResearchTool[VaRACodeBase]):
         # Set install prefix in cmake
         with local.cwd(full_path):
             CFG["vara"]["llvm_install_dir"] = str(install_location)
-            set_vara_cmake_variables(str(install_location), print)
+            set_vara_cmake_variables(str(install_location), LOG.info)
 
         # Compile llvm + VaRA
         with ProcessManager.create_process("ninja", ["install"],
                                            workdir=full_path) as proc:
             proc.setProcessChannelMode(QProcess.MergedChannels)
             proc.readyReadStandardOutput.connect(
-                lambda: run_process_with_output(proc, print))
+                lambda: run_process_with_output(proc,
+                                                log_without_linsep(LOG.info)))

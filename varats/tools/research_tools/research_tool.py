@@ -1,5 +1,7 @@
 """
-TODO: module docs
+This modules provides the base classes for research tools that allow developers
+to setup and configure their own research tool by inheriting and implementing
+the base classes ``ResearchTool`` and ``CodeBase``.
 """
 import typing as tp
 import abc
@@ -8,6 +10,8 @@ from pathlib import Path
 
 from varats.vara_manager import (BuildType, download_repo, add_remote,
                                  checkout_branch, fetch_remote)
+from varats.utils.cli_util import log_without_linsep
+from varats.utils.filesystem_util import FolderAlreadyPresentError
 
 LOG = logging.getLogger(__name__)
 
@@ -67,9 +71,9 @@ class SubProject():
         """
         LOG.info(f"Cloning {self.name} into {cb_base_dir}")
         if (cb_base_dir / self.path).exists():
-            raise RuntimeError  # TODO: add folder already present exception
+            raise FolderAlreadyPresentError(cb_base_dir / self.path)
         download_repo(cb_base_dir / self.path.parent, self.url, self.path.name,
-                      self.remote, print)
+                      self.remote, log_without_linsep(LOG.info))
 
     def add_remote(self, cb_base_dir: Path, remote: str, url: str) -> None:
         """
@@ -181,7 +185,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         return build_type in self.__supported_build_types
 
     @abc.abstractmethod
-    def setup(self, source_folder: Path, **kwargs) -> None:
+    def setup(self, source_folder: Path, **kwargs: tp.Any) -> None:
         """
         Setup a research tool with it's code base. This method sets up all
         relevant config variables, downloads repositories via the ``CodeBase``,

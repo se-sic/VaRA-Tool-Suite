@@ -16,7 +16,8 @@ from varats.settings import get_value_or_default, CFG, save_config
 from varats.vara_manager import BuildType
 from varats.tools.research_tools.vara import VaRA
 from varats.utils.cli_util import initialize_logger_config
-from varats.tools.research_tools.research_tool import ResearchTool
+from varats.tools.research_tools.research_tool import (ResearchTool,
+                                                       SpecificCodeBase)
 
 
 class VaRATSSetup:
@@ -107,9 +108,6 @@ def main() -> None:
     Build VaRA on cli.
     """
     initialize_logger_config()
-    # TODO: generalize
-    llvm_src_dir = get_value_or_default(CFG["vara"], "llvm_source_dir",
-                                        str(os.getcwd()) + "/tools_src/")
     parser = argparse.ArgumentParser("vara-buildsetup")
 
     parser.add_argument("-c",
@@ -144,7 +142,7 @@ def main() -> None:
     parser.add_argument("sourcelocation",
                         help="Folder to store tool sources. (Optional)",
                         nargs='?',
-                        default=llvm_src_dir)
+                        default=None)
     parser.add_argument("installprefix",
                         default=None,
                         nargs='?',
@@ -171,40 +169,54 @@ def main() -> None:
     # return
 
     if args.researchtool == "VaRA" or args.researchtool == "vara":
-        tool = VaRA(Path(args.sourcelocation))
+        tool = VaRA(__get_source_location(args.sourcelocation))
 
     if args.init:
-        __build_setup_init(tool, args.sourcelocation, args.version)
+        __build_setup_init(tool, args.sourcelocation, args.installprefix,
+                           args.version)
     if args.update:
         tool.upgrade()
     if args.build:
         build_type = parse_string_to_build_type(args.buildtype)
-        tool.build(build_type, __get_install_prefix(tool, args))
+        tool.build(build_type, __get_install_prefix(tool, args.installprefix))
 
 
-def __build_setup_init(tool: ResearchTool, source_location, version):
-    src_folder = Path(source_location)
-    if not src_folder.exists():
-        src_folder.mkdir(parents=True)
+def __build_setup_init(tool: ResearchTool[SpecificCodeBase],
+                       raw_source_location: tp.Optional[str],
+                       raw_install_prefix: tp.Optional[str],
+                       version: tp.Optional[int]) -> None:
 
-    # TODO: finish work on args
-
-    tool.setup(src_folder,
-               install_prefix=__get_install_prefix(tool, args),
+    tool.setup(__get_source_location(raw_source_location),
+               install_prefix=__get_install_prefix(tool, raw_install_prefix),
                version=version)
 
 
-def __get_install_prefix(tool: ResearchTool,
-                         args: tp.Dict[str, tp.Any]) -> Path:
-    if args['installprefix'] is None:
-        install_prefix = get_value_or_default(
-            CFG["vara"], "llvm_install_dir",
-            str(os.getcwd()) + f"/tools/{tool.name}/")
+def __get_source_location(raw_source_location: tp.Optional[str]) -> Path:
+    if raw_source_location is None:
+        src_folder = Path(
+            get_value_or_default(CFG["vara"], "llvm_source_dir",
+                                 str(os.getcwd()) + "/tools_src/"))
     else:
-        install_prefix = Path(args['installprefix'])
+        src_folder = Path(raw_source_location)
+
+    if not src_folder.exists():
+        src_folder.mkdir(parents=True)
+
+    return src_folder
+
+
+def __get_install_prefix(tool: ResearchTool[SpecificCodeBase],
+                         raw_install_prefix: tp.Optional[str]) -> Path:
+    if raw_install_prefix is None:
+        install_prefix = Path(
+            get_value_or_default(CFG["vara"], "llvm_install_dir",
+                                 str(os.getcwd()) + f"/tools/{tool.name}/"))
+    else:
+        install_prefix = Path(raw_install_prefix)
 
     if not install_prefix.exists():
         install_prefix.mkdir(parents=True)
+
     return install_prefix
 
 
