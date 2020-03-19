@@ -144,7 +144,8 @@ List of supported projects
 --------------------------
 
 C - Projects
-^^^^^^^^^^^^
+............
+
 .. autoclass:: varats.projects.c_projects.busybox.Busybox
 .. autoclass:: varats.projects.c_projects.coreutils.Coreutils
 .. autoclass:: varats.projects.c_projects.git.Git
@@ -161,5 +162,6 @@ C - Projects
 .. autoclass:: varats.projects.c_projects.xz.Xz
 
 C++ - Projects
-^^^^^^^^^^^^^^
+..............
+
 .. autoclass:: varats.projects.cpp_projects.doxygen.Doxygen
