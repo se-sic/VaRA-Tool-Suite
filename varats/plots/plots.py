@@ -5,13 +5,13 @@ import re
 import sys
 import typing as tp
 import argparse
-from typing import TYPE_CHECKING
 
 # avoid circular import
 # see https://www.stefaanlippens.net/circular-imports-type-hints-python.html
-from varats.plots.plot_utils import check_required_args
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from varats.plots.plot import Plot
+from varats.plots.plot_utils import check_required_args
 
 
 class PlotRegistry(type):
