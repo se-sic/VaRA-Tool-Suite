@@ -19,7 +19,7 @@ function check_err {
 COVERAGE='coverage run -p'
 
 # Smoke tests
-$COVERAGE $(which vara-buildsetup) -c
+$COVERAGE $(which vara-buildsetup) vara -c
 check_err
 
 $COVERAGE $(which vara-gen-bbconfig)
