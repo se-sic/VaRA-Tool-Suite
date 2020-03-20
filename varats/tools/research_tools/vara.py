@@ -185,3 +185,18 @@ class VaRA(ResearchTool[VaRACodeBase]):
             proc.readyReadStandardOutput.connect(
                 lambda: run_process_with_output(proc,
                                                 log_without_linsep(LOG.info)))
+
+    def verify_install(self, install_location: Path) -> bool:
+        # pylint: disable=no-self-use
+        """
+        Verify if VaRA was correctly installed.
+
+        Returns:
+            True, if the tool was correctly installed
+        """
+        status_ok = True
+        status_ok &= (install_location / "bin/clang++").exists()
+        status_ok &= (install_location / "bin/opt").exists()
+        status_ok &= (install_location / "bin/phasar-llvm").exists()
+
+        return status_ok

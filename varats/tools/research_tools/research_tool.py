@@ -224,3 +224,12 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
                         development or release
             install_location: location to install the research tool into
         """
+
+    @abc.abstractmethod
+    def verify_install(self, install_location: Path) -> bool:
+        """
+        Verify if the research tool was correctly installed.
+
+        Returns:
+            True, if the tool was correctly installed
+        """

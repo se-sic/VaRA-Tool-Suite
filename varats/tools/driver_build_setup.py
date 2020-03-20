@@ -179,6 +179,10 @@ def main() -> None:
     if args.build:
         build_type = parse_string_to_build_type(args.buildtype)
         tool.build(build_type, __get_install_prefix(tool, args.installprefix))
+        if tool.verify_install(__get_install_prefix(tool, args.installprefix)):
+            print(f"{tool.name} was correctly installed.")
+        else:
+            print(f"Could not install {tool.name} correctly.")
 
 
 def __build_setup_init(tool: ResearchTool[SpecificCodeBase],
