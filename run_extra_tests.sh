@@ -49,7 +49,7 @@ check_err
 $COVERAGE $(which vara-cs) status EmptyReport
 check_err
 
-$COVERAGE $(which vara-art) add plot overview report_type=EmptyReport plot_type=paper_config_overview_plot
+$COVERAGE $(which vara-art) add --output-path overview_plots plot overview report_type=EmptyReport plot_type=paper_config_overview_plot
 check_err
 
 $COVERAGE $(which vara-art) generate --only overview
