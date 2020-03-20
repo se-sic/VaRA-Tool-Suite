@@ -75,19 +75,19 @@ Everything around VaRA can be setup automatically with either `vara-buildsetup` 
 ```bash
     mkdir $VARA_ROOT_FOLDER
     cd $VARA_ROOT_FOLDER
-    vara-buildsetup -i
-    vara-buildsetup -b
+    vara-buildsetup vara -i
+    vara-buildsetup vara -b
 ```
 
 Updating VaRA to a new version can also be done with `vara-buildsetup`.
 ```bash
-    vara-buildsetup -u
-    vara-buildsetup -b
+    vara-buildsetup vara -u
+    vara-buildsetup vara -b
 ```
 
 To upgrade VaRA to a new release, for example, `release_70`, use:
 ```bash
-    vara-buildsetup -u --version 70
+    vara-buildsetup vara -u --version 110
 ```
 
 ## Running experiments and analyzing projects
