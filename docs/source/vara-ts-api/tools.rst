@@ -6,10 +6,11 @@ creating plots, configuring the tool-suite itself and more.
 
 .. toctree::
     :maxdepth: 1
-    :caption: Setup tools:
+    :caption: Setup and config tools:
 
     tools/vara-buildsetup
     tools/vara-gen-bbconfig
+    tools/vara-config
 
 
 .. toctree::
