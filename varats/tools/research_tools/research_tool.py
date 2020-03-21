@@ -12,7 +12,7 @@ from varats.vara_manager import (
     BuildType, download_repo, add_remote, checkout_branch, checkout_new_branch,
     fetch_remote, init_all_submodules, update_all_submodules,
     pull_current_branch, show_status, branch_has_upstream, push_current_branch,
-    get_current_branch, has_branch, has_remote_branch, fetch_repository)
+    get_current_branch, has_branch, has_remote_branch, get_branches)
 from varats.utils.logger_util import log_without_linsep
 from varats.utils.filesystem_util import FolderAlreadyPresentError
 
@@ -89,7 +89,9 @@ class SubProject():
                       self.url, self.path.name, self.remote,
                       log_without_linsep(LOG.info))
 
-    def has_branch(self, branch_name: str, remote_to_check: str = None) -> bool:
+    def has_branch(self,
+                   branch_name: str,
+                   remote_to_check: tp.Optional[str] = None) -> bool:
         """
         Check if the sub project has a branch with the
         specified ``branch name``.
@@ -107,6 +109,20 @@ class SubProject():
             return has_branch(absl_repo_path, branch_name)
 
         return has_remote_branch(absl_repo_path, branch_name, remote_to_check)
+
+    def get_branches(self, extra_args: tp.Optional[tp.List[str]] = None
+                    ) -> tp.List[str]:
+        """
+        Get branch names from this sub project.
+
+        Args:
+            extra_args: extra arguments passed to `git branch`
+
+        Returns:
+            list of branch names
+        """
+        return get_branches(self.__parent_code_base.base_dir / self.path,
+                            extra_args).split()
 
     def add_remote(self, remote: str, url: str) -> None:
         """
@@ -141,11 +157,14 @@ class SubProject():
         checkout_new_branch(self.__parent_code_base.base_dir / self.path,
                             branch_name, remote_branch)
 
-    def fetch(self) -> None:
+    def fetch(self,
+              remote: tp.Optional[str] = None,
+              extra_args: tp.Optional[tp.List[str]] = None) -> None:
         """
         Fetch updates from the remote.
         """
-        fetch_repository(self.__parent_code_base.base_dir / self.path)
+        fetch_remote(remote, self.__parent_code_base.base_dir / self.path,
+                     extra_args)
 
     def pull(self) -> None:
         """
@@ -217,7 +236,7 @@ class CodeBase():
         for sub_project in self.__sub_projects:
             sub_project.clone()
 
-    def map_sub_projects(self, func: tp.Callable[[SubProject], None]):
+    def map_sub_projects(self, func: tp.Callable[[SubProject], None]) -> None:
         """
         Execute a callable ``func`` on all sub projects of the code base.
 

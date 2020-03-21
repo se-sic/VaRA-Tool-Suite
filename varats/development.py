@@ -5,17 +5,11 @@ development for VaRA.
 
 import typing as tp
 import logging
-from collections import defaultdict
-from pathlib import Path
 import re
+from collections import defaultdict
 
 from varats.settings import CFG
-from varats.vara_manager import (checkout_branch, checkout_new_branch,
-                                 get_current_branch, has_branch,
-                                 has_remote_branch, branch_has_upstream,
-                                 fetch_repository, fetch_remote, get_branches,
-                                 LLVMProjects, LLVMProject)
-from varats.tools.research_tools.research_tool import SubProject
+from varats.tools.research_tools.research_tool import SubProject, CodeBase
 
 LOG = logging.getLogger(__name__)
 
@@ -157,30 +151,27 @@ def show_status_for_projects(sub_projects: tp.List[SubProject]) -> None:
         sub_project.show_status()
 
 
-def show_dev_branches(projects: tp.List[tp.Union[LLVMProject, LLVMProjects]]
-                     ) -> None:
+def show_dev_branches(code_base: CodeBase) -> None:
     """
     Show all dev dev branches.
     """
-    llvm_folder = Path(str(CFG['llvm_source_dir']))
-
     found_branches: tp.DefaultDict[str, tp.List[str]] = defaultdict(list)
     max_branch_chars = 0
-    for project in projects:
-        if isinstance(project, LLVMProjects):
-            project = project.project
 
-        fetch_remote("origin",
-                     llvm_folder / project.path,
-                     extra_args=["--prune"])
-        branches = get_branches(llvm_folder / project.path, extra_args=["-r"])
-        for line in branches.split():
-            match = re.match(r".*(f-.*)", line)
+    def __handle_sub_project(sub_project: SubProject) -> None:
+        """
+        """
+        nonlocal max_branch_chars
+        sub_project.fetch("origin", extra_args=["--prune"])
+        for full_branch in sub_project.get_branches(extra_args=["-r"]):
+            match = re.match(r".*(f-.*)", full_branch)
             if match is not None:
                 branch_name = match.group(1).strip()
                 if len(branch_name) > max_branch_chars:
                     max_branch_chars = len(branch_name)
-                found_branches[branch_name] += [project.name]
+                found_branches[branch_name] += [sub_project.name]
+
+    code_base.map_sub_projects(__handle_sub_project)
 
     print("Feature Branches:")
     for branch_name in found_branches.keys():

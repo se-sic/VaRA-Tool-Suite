@@ -35,7 +35,7 @@ def initialize_logger_config() -> None:
 
 
 def get_research_tool(name: str, source_location: tp.Optional[Path] = None
-                     ) -> ResearchTool:
+                     ) -> ResearchTool[tp.Any]:
     """
     Look up a research tool by name.
 

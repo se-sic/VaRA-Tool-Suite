@@ -6,10 +6,6 @@ import argparse
 import typing as tp
 
 from varats import development as dev
-from varats.vara_manager import (generate_full_list_of_llvmprojects,
-                                 LLVMProjects,
-                                 generate_vara_list_of_llvmprojects,
-                                 convert_to_llvmprojects_enum)
 from varats.utils.cli_util import (initialize_logger_config, get_research_tool,
                                    get_supported_research_tool_names)
 from varats.tools.research_tools.research_tool import SubProject
@@ -93,7 +89,7 @@ def main() -> None:
             tool.code_base.map_sub_projects(project_list.append)
         else:
 
-            def __project_selector(sub_project: SubProject):
+            def __project_selector(sub_project: SubProject) -> None:
                 lower_name = sub_project.name.lower()
                 requested_sub_projects = args.projects
                 map(str.lower, requested_sub_projects)
@@ -112,12 +108,8 @@ def main() -> None:
         dev.push_projects(project_list)
     elif args.command == 'status':
         dev.show_status_for_projects(project_list)
-    elif args.command == 'f-branches':  # TODO: needs to be done
-        dev.show_dev_branches([
-            LLVMProjects.get_project_by_name("llvm"),
-            LLVMProjects.get_project_by_name("clang"),
-            LLVMProjects.get_project_by_name("vara")
-        ])
+    elif args.command == 'f-branches':
+        dev.show_dev_branches(tool.code_base)
     else:
         parser.print_help()
 
