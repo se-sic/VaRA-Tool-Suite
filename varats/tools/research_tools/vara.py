@@ -20,6 +20,7 @@ from varats.vara_manager import (BuildType, run_process_with_output,
                                  set_vara_cmake_variables, ProcessManager)
 from varats.utils.exceptions import ProcessTerminatedError
 from varats.utils.cli_util import log_without_linsep
+from varats.plots.plot_utils import check_required_args
 
 LOG = logging.getLogger(__name__)
 
