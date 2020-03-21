@@ -58,7 +58,7 @@ class SubProject():
         For example:
             ``CodeBase.base_dir / self.path``
 
-            Specifies the full qualified path to the sub project folder.
+            Specifies the absolute path to the sub project folder.
         """
         return self.__sub_path
 
@@ -146,7 +146,7 @@ class CodeBase():
     def clone(self, cb_base_dir: Path) -> None:
         """
         Clones the full code base into the specified folder ``cb_base_dir``,
-        which markes the base folder of the code base structure.
+        which marks the base folder of the code base structure.
 
         Args:
             cb_base_dir: new base dir of the code base
@@ -173,7 +173,7 @@ SpecificCodeBase = tp.TypeVar("SpecificCodeBase", bound=CodeBase)
 class ResearchTool(tp.Generic[SpecificCodeBase]):
     """
     ResearchTool is an abstract base class for specifying research tools that
-    are setup by VaRA-TS and usable through the tool suites experiments and
+    are set up by VaRA-TS and usable through the tool suites experiments and
     tools.
     """
 
@@ -200,7 +200,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """
         Setup a research tool with it's code base. This method sets up all
         relevant config variables, downloads repositories via the ``CodeBase``,
-        checkouts the correct branches and prepares the research tool to be
+        checks out the correct branches and prepares the research tool to be
         build.
 
         Args:

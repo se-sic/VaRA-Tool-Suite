@@ -27,7 +27,7 @@ LOG = logging.getLogger(__name__)
 class VaRACodeBase(CodeBase):
     """
     Layout of the VaRA code base: setting up vara-llvm-project fork, VaRA, and
-    optinaly phasar, for static analysis.
+    optinaly phasar for static analysis.
     """
 
     def __init__(self, base_dir: Path) -> None:
@@ -46,7 +46,7 @@ class VaRACodeBase(CodeBase):
 
     def setup_vara_remotes(self) -> None:
         """
-        Sets up VaRA specific upstream remotes for projects that where forked.
+        Sets up VaRA specific upstream remotes for projects that were forked.
         """
         self.get_sub_project("vara-llvm-project").add_remote(
             self.base_dir, "origin",
@@ -54,7 +54,7 @@ class VaRACodeBase(CodeBase):
 
     def setup_build_link(self) -> None:
         """
-        Setup build-config folder link for VaRAs default build setup scripts.
+        Setup build-config folder link for VaRA's default build setup scripts.
         """
         llvm_project_dir = self.base_dir / self.get_sub_project(
             "vara-llvm-project").path
@@ -72,7 +72,7 @@ class VaRACodeBase(CodeBase):
             use_dev_branches: true, if one wants the current development version
         """
         dev_suffix = "-dev" if use_dev_branches else ""
-        LOG.info(f"Checking out VaRA version {version}" + dev_suffix)
+        LOG.info(f"Checking out VaRA version {str(version) + dev_suffix}")
 
         self.get_sub_project("vara-llvm-project").checkout_branch(
             self.base_dir, f"vara-{version}" + dev_suffix)
@@ -99,12 +99,13 @@ class VaRA(ResearchTool[VaRACodeBase]):
     def __init__(self, base_dir: Path) -> None:
         super().__init__("VaRA", [BuildType.DEV], VaRACodeBase(base_dir))
 
+    @check_required_args(["install_prefix"])
     def setup(self, source_folder: Path, **kwargs: tp.Any) -> None:
         """
         Setup the research tool VaRA with it's code base. This method sets up
         all relevant config variables, downloads repositories via the
         ``CodeBase``, checkouts the correct branches and prepares the research
-        tool to be build.
+        tool to be built.
 
         Args:
             source_folder: location to store the code base in
@@ -114,7 +115,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         """
         CFG["vara"]["llvm_source_dir"] = str(source_folder)
         CFG["vara"]["llvm_install_dir"] = str(kwargs["install_prefix"])
-        version = kwargs["version"]
+        version = kwargs.get("version")
         if version:
             version = int(tp.cast(int, version))
             CFG["vara"]["version"] = version
