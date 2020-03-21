@@ -156,17 +156,6 @@ class CodeBase():
             sub_project.clone(self.base_dir)
 
 
-"""
-    TODO: remove later
-    ResearchTool | Project
-        ? repo interactions
-            * status accessors
-
-    ? good generalizations over different projects
-        * show status
-        * allow repo interactions
-"""
-
 SpecificCodeBase = tp.TypeVar("SpecificCodeBase", bound=CodeBase)
 
 
