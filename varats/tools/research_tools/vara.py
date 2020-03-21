@@ -19,7 +19,7 @@ from varats.tools.research_tools.research_tool import (ResearchTool, CodeBase,
 from varats.vara_manager import (BuildType, run_process_with_output,
                                  set_vara_cmake_variables, ProcessManager)
 from varats.utils.exceptions import ProcessTerminatedError
-from varats.utils.cli_util import log_without_linsep
+from varats.utils.logger_util import log_without_linsep
 from varats.plots.plot_utils import check_required_args
 
 LOG = logging.getLogger(__name__)
@@ -33,13 +33,13 @@ class VaRACodeBase(CodeBase):
 
     def __init__(self, base_dir: Path) -> None:
         sub_projects = [
-            SubProject("vara-llvm-project",
+            SubProject(self, "vara-llvm-project",
                        "https://github.com/llvm/llvm-project.git", "upstream",
                        "vara-llvm-project"),
-            SubProject("VaRA", "git@github.com:se-passau/VaRA.git", "origin",
-                       "vara-llvm-project/vara"),
+            SubProject(self, "VaRA", "git@github.com:se-passau/VaRA.git",
+                       "origin", "vara-llvm-project/vara"),
             SubProject(
-                "phasar",
+                self, "phasar",
                 "https://github.com/secure-software-engineering/phasar.git",
                 "origin", "vara-llvm-project/phasar")
         ]

@@ -15,6 +15,7 @@ from varats.vara_manager import (checkout_branch, checkout_new_branch,
                                  fetch_repository, fetch_remote, show_status,
                                  get_branches, pull_current_branch,
                                  push_current_branch, LLVMProjects, LLVMProject)
+from varats.tools.research_tools.research_tool import CodeBase, SubProject
 
 
 def __convert_to_vara_branch_naming_schema(branch_name: str) -> str:
@@ -87,8 +88,9 @@ def create_new_branch_for_projects(branch_name: str,
             checkout_new_branch(llvm_folder / project.path, branch_name)
 
 
-def checkout_remote_branch_for_projects(
-        branch_name: str, projects: tp.List[LLVMProjects]) -> None:
+def checkout_remote_branch_for_projects(branch_name: str,
+                                        projects: tp.List[LLVMProjects]
+                                       ) -> None:
     """
     Checkout a remote branch on all projects.
     """
@@ -116,15 +118,20 @@ def checkout_remote_branch_for_projects(
                   f"{project.name}")
 
 
-def pull_projects(projects: tp.List[LLVMProjects]) -> None:
+def pull_projects(code_base: CodeBase,
+                  sub_projects: tp.List[SubProject]) -> None:
     """
-    Pull the current branch of all projects.
-    """
-    llvm_folder = Path(str(CFG['llvm_source_dir']))
+    Pull the current branch of all sub_projects in a code_base.
 
-    for project in projects:
-        print("Pulling {project}".format(project=project.project_name))
-        pull_current_branch(llvm_folder / project.path)
+    Args:
+        code_base: project code base
+        sub_projects: a list of sub_projects from the code base
+                      that should be handled
+    """
+
+    for sub_project in sub_projects:
+        print(f"Pulling {sub_project.name}")
+        sub_project.pull(code_base.base_dir)
 
 
 def push_projects(projects: tp.List[LLVMProjects]) -> None:
@@ -144,23 +151,27 @@ def push_projects(projects: tp.List[LLVMProjects]) -> None:
                                 branch_name)
 
 
-def show_status_for_projects(projects: tp.List[LLVMProjects]) -> None:
+def show_status_for_projects(sub_projects: tp.List[SubProject]) -> None:
     """
-    Show the status of all projects.
+    Show the status of all sub projects of a code base.
+
+    Args:
+        sub_projects: a list of sub_projects from the code base
+                      that should be handled
     """
-    llvm_folder = Path(str(CFG['llvm_source_dir']))
 
     dlim = "#" * 80
-    for project in projects:
+    for sub_project in sub_projects:
         print("""
 {dlim}
 # Project: {name:67s} #
-{dlim}""".format(dlim=dlim, name=project.project_name))
-        show_status(llvm_folder / project.path)
+{dlim}""".format(dlim=dlim, name=sub_project.name))
+
+        sub_project.show_status()
 
 
-def show_dev_branches(
-        projects: tp.List[tp.Union[LLVMProject, LLVMProjects]]) -> None:
+def show_dev_branches(projects: tp.List[tp.Union[LLVMProject, LLVMProjects]]
+                     ) -> None:
     """
     Show all dev dev branches.
     """

@@ -14,8 +14,8 @@ from PyQt5.QtWidgets import QApplication
 from varats.gui.buildsetup_window import BuildSetup
 from varats.settings import get_value_or_default, CFG, save_config
 from varats.vara_manager import BuildType
-from varats.tools.research_tools.vara import VaRA
-from varats.utils.cli_util import initialize_logger_config
+from varats.utils.cli_util import (initialize_logger_config, get_research_tool,
+                                   get_supported_research_tool_names)
 from varats.tools.research_tools.research_tool import (ResearchTool,
                                                        SpecificCodeBase)
 
@@ -138,7 +138,7 @@ def main() -> None:
         help="Build type to use for the tool build configuration.")
     parser.add_argument("researchtool",
                         help="The research tool one wants to setup",
-                        choices=["VaRA", "vara"])
+                        choices=get_supported_research_tool_names())
     parser.add_argument("sourcelocation",
                         help="Folder to store tool sources. (Optional)",
                         nargs='?',
@@ -163,8 +163,8 @@ def main() -> None:
         save_config()
         return
 
-    if args.researchtool == "VaRA" or args.researchtool == "vara":
-        tool = VaRA(__get_source_location(args.sourcelocation))
+    tool = get_research_tool(args.researchtool,
+                             __get_source_location(args.sourcelocation))
 
     if args.init:
         __build_setup_init(tool, args.sourcelocation, args.installprefix,

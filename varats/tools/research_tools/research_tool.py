@@ -10,8 +10,9 @@ from pathlib import Path
 
 from varats.vara_manager import (BuildType, download_repo, add_remote,
                                  checkout_branch, fetch_remote,
-                                 init_all_submodules, update_all_submodules)
-from varats.utils.cli_util import log_without_linsep
+                                 init_all_submodules, update_all_submodules,
+                                 pull_current_branch, show_status)
+from varats.utils.logger_util import log_without_linsep
 from varats.utils.filesystem_util import FolderAlreadyPresentError
 
 LOG = logging.getLogger(__name__)
@@ -23,8 +24,10 @@ class SubProject():
     downloaded and integrated inside a ``CodeBase``.
     """
 
-    def __init__(self, name: str, URL: str, remote: str, sub_path: str):
+    def __init__(self, parent_code_base: 'CodeBase', name: str, URL: str,
+                 remote: str, sub_path: str):
         self.__name = name
+        self.__parent_code_base = parent_code_base
         self.__url = URL
         self.__remote = remote
         self.__sub_path = Path(sub_path)
@@ -108,6 +111,21 @@ class SubProject():
         """
         checkout_branch(cb_base_dir / self.path, branch_name)
 
+    def pull(self, cb_base_dir: Path) -> None:
+        """
+        Pull updates from the current branch into the sub project.
+
+        Args:
+            cb_base_dir: base directory for the ``CodeBase``
+        """
+        pull_current_branch(cb_base_dir / self.path)
+
+    def show_status(self) -> None:
+        """
+        Show the current status of the sub project.
+        """
+        show_status(self.__parent_code_base.base_dir / self.path)
+
     def __str__(self) -> str:
         return "{name} [{url}:{remote}] {folder}".format(name=self.name,
                                                          url=self.url,
@@ -154,6 +172,16 @@ class CodeBase():
         self.__base_dir = cb_base_dir
         for sub_project in self.__sub_projects:
             sub_project.clone(self.base_dir)
+
+    def map_sub_projects(self, func: tp.Callable[[SubProject], None]):
+        """
+        Execute a callable ``func`` on all sub projects of the code base.
+
+        Args:
+            func: function to execute on the sub projects
+        """
+        for sub_project in self.__sub_projects:
+            func(sub_project)
 
 
 SpecificCodeBase = tp.TypeVar("SpecificCodeBase", bound=CodeBase)
