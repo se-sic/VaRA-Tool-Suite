@@ -132,21 +132,17 @@ def pull_projects(sub_projects: tp.List[SubProject]) -> None:
         sub_project.pull()
 
 
-def push_projects(projects: tp.List[LLVMProjects]) -> None:
+def push_projects(sub_projects: tp.List[SubProject]) -> None:
     """
     Push the current branch of all projects.
+
+    Args:
+        sub_projects: a list of sub_projects from the code base
+                      that should be handled
     """
-    llvm_folder = Path(str(CFG['llvm_source_dir']))
-
-    for project in projects:
-        print("Pushing {project}".format(project=project.project_name))
-
-        branch_name = get_current_branch(llvm_folder / project.path)
-        if branch_has_upstream(llvm_folder / project.path, branch_name):
-            push_current_branch(llvm_folder / project.path)
-        else:
-            push_current_branch(llvm_folder / project.path, 'origin',
-                                branch_name)
+    for sub_project in sub_projects:
+        print(f"Pushing {sub_project.name}")
+        sub_project.push()
 
 
 def show_status_for_projects(sub_projects: tp.List[SubProject]) -> None:

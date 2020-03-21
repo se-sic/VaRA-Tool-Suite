@@ -111,10 +111,10 @@ def main() -> None:
     elif args.command == 'pull':
         dev.pull_projects(project_list)
     elif args.command == 'push':
-        dev.push_projects(project_list)  # TODO: needs to be done
+        dev.push_projects(project_list)
     elif args.command == 'status':
         dev.show_status_for_projects(project_list)
-    elif args.command == 'f-branches':
+    elif args.command == 'f-branches':  # TODO: needs to be done
         dev.show_dev_branches([
             LLVMProjects.get_project_by_name("llvm"),
             LLVMProjects.get_project_by_name("clang"),

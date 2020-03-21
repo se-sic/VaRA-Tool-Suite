@@ -155,6 +155,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         full_path /= build_type.build_folder()
 
         # Setup configured build folder
+        print(" - Setting up build folder.")
         if not os.path.exists(full_path):
             try:
                 os.makedirs(full_path.parent, exist_ok=True)
@@ -170,13 +171,16 @@ class VaRA(ResearchTool[VaRACodeBase]):
             except ProcessTerminatedError as error:
                 shutil.rmtree(full_path)
                 raise error
+        print(" - Finished setup of build folder.")
 
         # Set install prefix in cmake
         with local.cwd(full_path):
             CFG["vara"]["llvm_install_dir"] = str(install_location)
             set_vara_cmake_variables(str(install_location),
                                      log_without_linsep(LOG.info))
+        print(" - Finished extra cmake config.")
 
+        print(" - Now building...")
         # Compile llvm + VaRA
         with ProcessManager.create_process("ninja", ["install"],
                                            workdir=full_path) as proc:

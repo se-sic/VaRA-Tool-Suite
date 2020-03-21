@@ -11,7 +11,9 @@ from pathlib import Path
 from varats.vara_manager import (BuildType, download_repo, add_remote,
                                  checkout_branch, fetch_remote,
                                  init_all_submodules, update_all_submodules,
-                                 pull_current_branch, show_status)
+                                 pull_current_branch, show_status,
+                                 branch_has_upstream, push_current_branch,
+                                 get_current_branch)
 from varats.utils.logger_util import log_without_linsep
 from varats.utils.filesystem_util import FolderAlreadyPresentError
 
@@ -111,9 +113,20 @@ class SubProject():
 
     def pull(self) -> None:
         """
-        Pull updates from the current branch into the sub project.
+        Pull updates from the remote of the current branch into the sub project.
         """
         pull_current_branch(self.__parent_code_base.base_dir / self.path)
+
+    def push(self) -> None:
+        """
+        Push updates from the current branch to the remote branch.
+        """
+        absl_repo_path = self.__parent_code_base.base_dir / self.path
+        branch_name = get_current_branch(absl_repo_path)
+        if branch_has_upstream(absl_repo_path, branch_name):
+            push_current_branch(absl_repo_path)
+        else:
+            push_current_branch(absl_repo_path, "origin", branch_name)
 
     def show_status(self) -> None:
         """
