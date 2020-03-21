@@ -65,60 +65,55 @@ class SubProject():
         """
         return self.__sub_path
 
-    def init_and_update_submodules(self, cb_base_dir: Path) -> None:
+    def init_and_update_submodules(self) -> None:
         """
         Initialize and update all submodules of this sub project.
 
         Args:
             cb_base_dir: base directory for the ``CodeBase``
         """
-        init_all_submodules(cb_base_dir / self.path)
-        update_all_submodules(cb_base_dir / self.path)
+        init_all_submodules(self.__parent_code_base.base_dir / self.path)
+        update_all_submodules(self.__parent_code_base.base_dir / self.path)
 
-    def clone(self, cb_base_dir: Path) -> None:
+    def clone(self) -> None:
         """
-        Clone the sub project into the specified folder relative to
-        ``cb_base_dir``.
-
-        Args:
-            cb_base_dir: base directory for the ``CodeBase``
+        Clone the sub project into the specified folder relative to the base
+        dir of the ``CodeBase``.
         """
-        LOG.info(f"Cloning {self.name} into {cb_base_dir}")
-        if (cb_base_dir / self.path).exists():
-            raise FolderAlreadyPresentError(cb_base_dir / self.path)
-        download_repo(cb_base_dir / self.path.parent, self.url, self.path.name,
-                      self.remote, log_without_linsep(LOG.info))
+        LOG.info(f"Cloning {self.name} into {self.__parent_code_base.base_dir}")
+        if (self.__parent_code_base.base_dir / self.path).exists():
+            raise FolderAlreadyPresentError(self.__parent_code_base.base_dir /
+                                            self.path)
+        download_repo(self.__parent_code_base.base_dir / self.path.parent,
+                      self.url, self.path.name, self.remote,
+                      log_without_linsep(LOG.info))
 
-    def add_remote(self, cb_base_dir: Path, remote: str, url: str) -> None:
+    def add_remote(self, remote: str, url: str) -> None:
         """
         Add a new remote to the sub project
 
         Args:
-            cb_base_dir: base directory for the ``CodeBase``
             remote: name of the new remote
             url: to the remote
         """
-        add_remote(cb_base_dir / self.path, remote, url)
-        fetch_remote(remote, cb_base_dir / self.path)
+        add_remote(self.__parent_code_base.base_dir / self.path, remote, url)
+        fetch_remote(remote, self.__parent_code_base.base_dir / self.path)
 
-    def checkout_branch(self, cb_base_dir: Path, branch_name: str) -> None:
+    def checkout_branch(self, branch_name: str) -> None:
         """
         Checkout our branch in sub project.
 
         Args:
-            cb_base_dir: base directory for the ``CodeBase``
             branch_name: name of the branch, should exists in the repo
         """
-        checkout_branch(cb_base_dir / self.path, branch_name)
+        checkout_branch(self.__parent_code_base.base_dir / self.path,
+                        branch_name)
 
-    def pull(self, cb_base_dir: Path) -> None:
+    def pull(self) -> None:
         """
         Pull updates from the current branch into the sub project.
-
-        Args:
-            cb_base_dir: base directory for the ``CodeBase``
         """
-        pull_current_branch(cb_base_dir / self.path)
+        pull_current_branch(self.__parent_code_base.base_dir / self.path)
 
     def show_status(self) -> None:
         """
@@ -171,7 +166,7 @@ class CodeBase():
         """
         self.__base_dir = cb_base_dir
         for sub_project in self.__sub_projects:
-            sub_project.clone(self.base_dir)
+            sub_project.clone()
 
     def map_sub_projects(self, func: tp.Callable[[SubProject], None]):
         """

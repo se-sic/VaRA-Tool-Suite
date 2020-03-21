@@ -50,8 +50,7 @@ class VaRACodeBase(CodeBase):
         Sets up VaRA specific upstream remotes for projects that were forked.
         """
         self.get_sub_project("vara-llvm-project").add_remote(
-            self.base_dir, "origin",
-            "git@github.com:se-passau/vara-llvm-project.git")
+            "origin", "git@github.com:se-passau/vara-llvm-project.git")
 
     def setup_build_link(self) -> None:
         """
@@ -76,19 +75,17 @@ class VaRACodeBase(CodeBase):
         LOG.info(f"Checking out VaRA version {str(version) + dev_suffix}")
 
         self.get_sub_project("vara-llvm-project").checkout_branch(
-            self.base_dir, f"vara-{version}" + dev_suffix)
+            f"vara-{version}" + dev_suffix)
 
         # TODO (sattlerf): make different checkout for older versions
-        self.get_sub_project("VaRA").checkout_branch(self.base_dir,
-                                                     f"vara" + dev_suffix)
-        self.get_sub_project("phasar").checkout_branch(self.base_dir,
-                                                       "development")
+        self.get_sub_project("VaRA").checkout_branch(f"vara" + dev_suffix)
+        self.get_sub_project("phasar").checkout_branch("development")
 
     def setup_submodules(self) -> None:
         """
         Set up the git submodules of all sub projects.
         """
-        self.get_sub_project("phasar").init_and_update_submodules(self.base_dir)
+        self.get_sub_project("phasar").init_and_update_submodules()
 
 
 class VaRA(ResearchTool[VaRACodeBase]):

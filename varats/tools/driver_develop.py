@@ -109,7 +109,7 @@ def main() -> None:
         dev.checkout_remote_branch_for_projects(
             args.branch_name, project_list)  # TODO: needs to be done
     elif args.command == 'pull':
-        dev.pull_projects(tool.code_base, project_list)
+        dev.pull_projects(project_list)
     elif args.command == 'push':
         dev.push_projects(project_list)  # TODO: needs to be done
     elif args.command == 'status':

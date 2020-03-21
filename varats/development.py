@@ -118,20 +118,18 @@ def checkout_remote_branch_for_projects(branch_name: str,
                   f"{project.name}")
 
 
-def pull_projects(code_base: CodeBase,
-                  sub_projects: tp.List[SubProject]) -> None:
+def pull_projects(sub_projects: tp.List[SubProject]) -> None:
     """
     Pull the current branch of all sub_projects in a code_base.
 
     Args:
-        code_base: project code base
         sub_projects: a list of sub_projects from the code base
                       that should be handled
     """
 
     for sub_project in sub_projects:
         print(f"Pulling {sub_project.name}")
-        sub_project.pull(code_base.base_dir)
+        sub_project.pull()
 
 
 def push_projects(projects: tp.List[LLVMProjects]) -> None:
