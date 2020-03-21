@@ -13,8 +13,8 @@ from varats.settings import CFG
 from varats.vara_manager import (checkout_branch, checkout_new_branch,
                                  get_current_branch, has_branch,
                                  has_remote_branch, branch_has_upstream,
-                                 fetch_repository, fetch_remote, show_status,
-                                 get_branches, LLVMProjects, LLVMProject)
+                                 fetch_repository, fetch_remote, get_branches,
+                                 LLVMProjects, LLVMProject)
 from varats.tools.research_tools.research_tool import SubProject
 
 LOG = logging.getLogger(__name__)
@@ -71,22 +71,18 @@ def __quickfix_dev_branches(branch_name: str, sub_project: SubProject) -> str:
 
 
 def create_new_branch_for_projects(branch_name: str,
-                                   projects: tp.List[LLVMProjects]) -> None:
+                                   sub_projects: tp.List[SubProject]) -> None:
     """
     Create a new branch on all needed projects.
     """
     branch_name = __convert_to_vara_branch_naming_schema(branch_name)
-    llvm_folder = Path(str(CFG['llvm_source_dir']))
 
-    for project in projects:
-        if project.is_extra_project():
-            import warnings
-            warnings.warn("vara-develop can only create branches for VaRA " +
-                          "related projects not extra LLVMProjects.")
-            continue
-
-        if not has_branch(llvm_folder / project.path, branch_name):
-            checkout_new_branch(llvm_folder / project.path, branch_name)
+    for sub_project in sub_projects:
+        if not sub_project.has_branch(branch_name):
+            sub_project.checkout_new_branch(branch_name)
+            print(f"Created new branch {branch_name}")
+        else:
+            print(f"Branch {branch_name} does already exist.")
 
 
 def checkout_remote_branch_for_projects(branch_name: str,

@@ -103,8 +103,7 @@ def main() -> None:
             tool.code_base.map_sub_projects(__project_selector)
 
     if args.command == 'new-branch':
-        dev.create_new_branch_for_projects(
-            args.branch_name, project_list)  # TODO: needs to be done
+        dev.create_new_branch_for_projects(args.branch_name, project_list)
     elif args.command == 'checkout':
         dev.checkout_remote_branch_for_projects(args.branch_name, project_list)
     elif args.command == 'pull':
