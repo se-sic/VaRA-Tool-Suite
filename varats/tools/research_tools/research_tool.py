@@ -8,12 +8,11 @@ import abc
 import logging
 from pathlib import Path
 
-from varats.vara_manager import (BuildType, download_repo, add_remote,
-                                 checkout_branch, fetch_remote,
-                                 init_all_submodules, update_all_submodules,
-                                 pull_current_branch, show_status,
-                                 branch_has_upstream, push_current_branch,
-                                 get_current_branch)
+from varats.vara_manager import (
+    BuildType, download_repo, add_remote, checkout_branch, checkout_new_branch,
+    fetch_remote, init_all_submodules, update_all_submodules,
+    pull_current_branch, show_status, branch_has_upstream, push_current_branch,
+    get_current_branch, has_branch, has_remote_branch, fetch_repository)
 from varats.utils.logger_util import log_without_linsep
 from varats.utils.filesystem_util import FolderAlreadyPresentError
 
@@ -90,6 +89,25 @@ class SubProject():
                       self.url, self.path.name, self.remote,
                       log_without_linsep(LOG.info))
 
+    def has_branch(self, branch_name: str, remote_to_check: str = None) -> bool:
+        """
+        Check if the sub project has a branch with the
+        specified ``branch name``.
+
+        Args:
+            branch_name: name of the branch
+            remote_to_check: name of the remote to check, if None, only a local
+                             check will be performed
+
+        Returns:
+            True, if the branch exists
+        """
+        absl_repo_path = self.__parent_code_base.base_dir / self.path
+        if remote_to_check is None:
+            return has_branch(absl_repo_path, branch_name)
+
+        return has_remote_branch(absl_repo_path, branch_name, remote_to_check)
+
     def add_remote(self, remote: str, url: str) -> None:
         """
         Add a new remote to the sub project
@@ -103,13 +121,31 @@ class SubProject():
 
     def checkout_branch(self, branch_name: str) -> None:
         """
-        Checkout our branch in sub project.
+        Checkout out branch in sub project.
 
         Args:
             branch_name: name of the branch, should exists in the repo
         """
         checkout_branch(self.__parent_code_base.base_dir / self.path,
                         branch_name)
+
+    def checkout_new_branch(self,
+                            branch_name: str,
+                            remote_branch: tp.Optional[str] = None) -> None:
+        """
+        Create and checkout out a new branch in the sub project.
+
+        Args:
+            branch_name: name of the new branch, should not exists in the repo
+        """
+        checkout_new_branch(self.__parent_code_base.base_dir / self.path,
+                            branch_name, remote_branch)
+
+    def fetch(self) -> None:
+        """
+        Fetch updates from the remote.
+        """
+        fetch_repository(self.__parent_code_base.base_dir / self.path)
 
     def pull(self) -> None:
         """

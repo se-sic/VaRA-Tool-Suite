@@ -4,6 +4,7 @@ development for VaRA.
 """
 
 import typing as tp
+import logging
 from collections import defaultdict
 from pathlib import Path
 import re
@@ -13,9 +14,10 @@ from varats.vara_manager import (checkout_branch, checkout_new_branch,
                                  get_current_branch, has_branch,
                                  has_remote_branch, branch_has_upstream,
                                  fetch_repository, fetch_remote, show_status,
-                                 get_branches, pull_current_branch,
-                                 push_current_branch, LLVMProjects, LLVMProject)
-from varats.tools.research_tools.research_tool import CodeBase, SubProject
+                                 get_branches, LLVMProjects, LLVMProject)
+from varats.tools.research_tools.research_tool import SubProject
+
+LOG = logging.getLogger(__name__)
 
 
 def __convert_to_vara_branch_naming_schema(branch_name: str) -> str:
@@ -34,19 +36,19 @@ def __convert_to_vara_branch_naming_schema(branch_name: str) -> str:
     return branch_name if branch_name.startswith("f-") else "f-" + branch_name
 
 
-def __quickfix_dev_branches(branch_name: str, project: LLVMProject) -> str:
+def __quickfix_dev_branches(branch_name: str, sub_project: SubProject) -> str:
     """
     Fix vara branches names for checking out master or dev branches.
 
     Test:
     >>> import re
     >>> fixed_branch_name = __quickfix_dev_branches(\
-        'vara-dev', LLVMProjects.llvm.project)
+        'vara-dev', SubProject(None, "vara-llvm-project", "", "", ""))
     >>> re.match(r'vara-\\d+-dev', fixed_branch_name) is not None
     True
 
     >>> fixed_branch_name = __quickfix_dev_branches(\
-        'vara', LLVMProjects.clang.project)
+        'vara', SubProject(None, "vara-llvm-project", "", "", ""))
     >>> re.match(r'vara-\\d+', fixed_branch_name) is not None
     True
 
@@ -58,13 +60,12 @@ def __quickfix_dev_branches(branch_name: str, project: LLVMProject) -> str:
         "vara-dev", LLVMProjects.vara.project)
     'vara-dev'
     """
-    if project is LLVMProjects.get_project_by_name(
-            'llvm') or project is LLVMProjects.get_project_by_name('clang'):
+    if sub_project.name == "vara-llvm-project":
+        version = str(CFG['vara']['version'])
         if branch_name == 'vara-dev':
-            return 'vara-{version}-dev'.format(
-                version=str(CFG["vara"]['version']))
+            return f"vara-{version}-dev"
         if branch_name == 'vara':
-            return 'vara-{version}'.format(version=str(CFG["vara"]['version']))
+            return f"vara-{version}"
 
     return branch_name
 
@@ -89,33 +90,29 @@ def create_new_branch_for_projects(branch_name: str,
 
 
 def checkout_remote_branch_for_projects(branch_name: str,
-                                        projects: tp.List[LLVMProjects]
+                                        sub_projects: tp.List[SubProject]
                                        ) -> None:
     """
     Checkout a remote branch on all projects.
     """
-    llvm_folder = Path(str(CFG['llvm_source_dir']))
-
-    for project in projects:
-        fixed_branch_name = __quickfix_dev_branches(branch_name,
-                                                    project.project)
-        if has_branch(llvm_folder / project.path, fixed_branch_name):
-            checkout_branch(llvm_folder / project.path, fixed_branch_name)
-            print("Checked out existing branch {branch} for project {project}".
-                  format(branch=fixed_branch_name, project=project.name))
+    for sub_project in sub_projects:
+        fixed_branch_name = __quickfix_dev_branches(branch_name, sub_project)
+        if sub_project.has_branch(fixed_branch_name):
+            sub_project.checkout_branch(fixed_branch_name)
+            print(f"Checked out existing branch {fixed_branch_name} "
+                  f"for sub project {sub_project.name}")
             continue
 
-        fetch_repository(llvm_folder / project.path)
-        if has_remote_branch(llvm_folder / project.path, fixed_branch_name,
-                             'origin'):
-            checkout_new_branch(llvm_folder / project.path, fixed_branch_name,
-                                'origin/' + fixed_branch_name)
-            print("Checked out new branch {branch} (tracking origin/{branch}) "
-                  "for project {project}".format(branch=fixed_branch_name,
-                                                 project=project.name))
+        sub_project.fetch()
+        if sub_project.has_branch(fixed_branch_name, "origin"):
+            sub_project.checkout_new_branch(fixed_branch_name,
+                                            f"origin/{fixed_branch_name}")
+            print(f"Checked out new branch {fixed_branch_name} "
+                  f"(tracking origin/{fixed_branch_name}) "
+                  f"for sub project {sub_project.name}")
         else:
             print(f"No branch {fixed_branch_name} on remote origin for project "
-                  f"{project.name}")
+                  f"{sub_project.name}")
 
 
 def pull_projects(sub_projects: tp.List[SubProject]) -> None:

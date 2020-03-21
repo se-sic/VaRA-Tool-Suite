@@ -106,8 +106,7 @@ def main() -> None:
         dev.create_new_branch_for_projects(
             args.branch_name, project_list)  # TODO: needs to be done
     elif args.command == 'checkout':
-        dev.checkout_remote_branch_for_projects(
-            args.branch_name, project_list)  # TODO: needs to be done
+        dev.checkout_remote_branch_for_projects(args.branch_name, project_list)
     elif args.command == 'pull':
         dev.pull_projects(project_list)
     elif args.command == 'push':
