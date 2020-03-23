@@ -5,6 +5,11 @@ Command line utilities.
 import typing as tp
 import logging
 import os
+from pathlib import Path
+
+from varats.tools.research_tools.research_tool import ResearchTool
+from varats.tools.research_tools.vara import VaRA
+from varats.settings import CFG
 
 
 def cli_yn_choice(question: str, default: str = 'y') -> bool:
@@ -29,11 +34,29 @@ def initialize_logger_config() -> None:
     logging.basicConfig(level=log_level)
 
 
-def log_without_linsep(log_func: tp.Callable[[str], None]
-                      ) -> tp.Callable[[str], None]:
+def get_research_tool(name: str, source_location: tp.Optional[Path] = None
+                     ) -> ResearchTool[tp.Any]:
     """
-    Wraps the logger function and strips away all trailing whitespace and
-    newline characters, making logs more reable, e.g., for bash and command
-    line tool output.
+    Look up a research tool by name.
+
+    Args:
+        name: of the research tool
+        source_location: of the research tool, if ``None`` is provided the
+                         location saved in the config will be used
+
+    Returns:
+        the research tool with the specified ``name``,
+        otherwise, raises LookupError
     """
-    return lambda x: log_func(x.rstrip())
+    if name in ("VaRA", "vara"):
+        return VaRA(source_location if source_location is not None else Path(
+            CFG["vara"]["llvm_source_dir"].value))
+
+    raise LookupError(f"Could not find research tool {name}")
+
+
+def get_supported_research_tool_names() -> tp.List[str]:
+    """
+    Returns a list of all supported research tools.
+    """
+    return ["VaRA", "vara"]

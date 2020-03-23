@@ -19,7 +19,7 @@ from varats.tools.research_tools.research_tool import (ResearchTool, CodeBase,
 from varats.vara_manager import (BuildType, run_process_with_output,
                                  set_vara_cmake_variables, ProcessManager)
 from varats.utils.exceptions import ProcessTerminatedError
-from varats.utils.cli_util import log_without_linsep
+from varats.utils.logger_util import log_without_linsep
 from varats.plots.plot_utils import check_required_args
 
 LOG = logging.getLogger(__name__)
@@ -33,13 +33,13 @@ class VaRACodeBase(CodeBase):
 
     def __init__(self, base_dir: Path) -> None:
         sub_projects = [
-            SubProject("vara-llvm-project",
+            SubProject(self, "vara-llvm-project",
                        "https://github.com/llvm/llvm-project.git", "upstream",
                        "vara-llvm-project"),
-            SubProject("VaRA", "git@github.com:se-passau/VaRA.git", "origin",
-                       "vara-llvm-project/vara"),
+            SubProject(self, "VaRA", "git@github.com:se-passau/VaRA.git",
+                       "origin", "vara-llvm-project/vara"),
             SubProject(
-                "phasar",
+                self, "phasar",
                 "https://github.com/secure-software-engineering/phasar.git",
                 "origin", "vara-llvm-project/phasar")
         ]
@@ -50,8 +50,7 @@ class VaRACodeBase(CodeBase):
         Sets up VaRA specific upstream remotes for projects that were forked.
         """
         self.get_sub_project("vara-llvm-project").add_remote(
-            self.base_dir, "origin",
-            "git@github.com:se-passau/vara-llvm-project.git")
+            "origin", "git@github.com:se-passau/vara-llvm-project.git")
 
     def setup_build_link(self) -> None:
         """
@@ -76,19 +75,17 @@ class VaRACodeBase(CodeBase):
         LOG.info(f"Checking out VaRA version {str(version) + dev_suffix}")
 
         self.get_sub_project("vara-llvm-project").checkout_branch(
-            self.base_dir, f"vara-{version}" + dev_suffix)
+            f"vara-{version}" + dev_suffix)
 
         # TODO (sattlerf): make different checkout for older versions
-        self.get_sub_project("VaRA").checkout_branch(self.base_dir,
-                                                     f"vara" + dev_suffix)
-        self.get_sub_project("phasar").checkout_branch(self.base_dir,
-                                                       "development")
+        self.get_sub_project("VaRA").checkout_branch(f"vara" + dev_suffix)
+        self.get_sub_project("phasar").checkout_branch("development")
 
     def setup_submodules(self) -> None:
         """
         Set up the git submodules of all sub projects.
         """
-        self.get_sub_project("phasar").init_and_update_submodules(self.base_dir)
+        self.get_sub_project("phasar").init_and_update_submodules()
 
 
 class VaRA(ResearchTool[VaRACodeBase]):
@@ -158,6 +155,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         full_path /= build_type.build_folder()
 
         # Setup configured build folder
+        print(" - Setting up build folder.")
         if not os.path.exists(full_path):
             try:
                 os.makedirs(full_path.parent, exist_ok=True)
@@ -173,13 +171,16 @@ class VaRA(ResearchTool[VaRACodeBase]):
             except ProcessTerminatedError as error:
                 shutil.rmtree(full_path)
                 raise error
+        print(" - Finished setup of build folder.")
 
         # Set install prefix in cmake
         with local.cwd(full_path):
             CFG["vara"]["llvm_install_dir"] = str(install_location)
             set_vara_cmake_variables(str(install_location),
                                      log_without_linsep(LOG.info))
+        print(" - Finished extra cmake config.")
 
+        print(" - Now building...")
         # Compile llvm + VaRA
         with ProcessManager.create_process("ninja", ["install"],
                                            workdir=full_path) as proc:

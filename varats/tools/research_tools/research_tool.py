@@ -8,10 +8,12 @@ import abc
 import logging
 from pathlib import Path
 
-from varats.vara_manager import (BuildType, download_repo, add_remote,
-                                 checkout_branch, fetch_remote,
-                                 init_all_submodules, update_all_submodules)
-from varats.utils.cli_util import log_without_linsep
+from varats.vara_manager import (
+    BuildType, download_repo, add_remote, checkout_branch, checkout_new_branch,
+    fetch_remote, init_all_submodules, update_all_submodules,
+    pull_current_branch, show_status, branch_has_upstream, push_current_branch,
+    get_current_branch, has_branch, has_remote_branch, get_branches)
+from varats.utils.logger_util import log_without_linsep
 from varats.utils.filesystem_util import FolderAlreadyPresentError
 
 LOG = logging.getLogger(__name__)
@@ -23,8 +25,10 @@ class SubProject():
     downloaded and integrated inside a ``CodeBase``.
     """
 
-    def __init__(self, name: str, URL: str, remote: str, sub_path: str):
+    def __init__(self, parent_code_base: 'CodeBase', name: str, URL: str,
+                 remote: str, sub_path: str):
         self.__name = name
+        self.__parent_code_base = parent_code_base
         self.__url = URL
         self.__remote = remote
         self.__sub_path = Path(sub_path)
@@ -62,51 +66,128 @@ class SubProject():
         """
         return self.__sub_path
 
-    def init_and_update_submodules(self, cb_base_dir: Path) -> None:
+    def init_and_update_submodules(self) -> None:
         """
         Initialize and update all submodules of this sub project.
 
         Args:
             cb_base_dir: base directory for the ``CodeBase``
         """
-        init_all_submodules(cb_base_dir / self.path)
-        update_all_submodules(cb_base_dir / self.path)
+        init_all_submodules(self.__parent_code_base.base_dir / self.path)
+        update_all_submodules(self.__parent_code_base.base_dir / self.path)
 
-    def clone(self, cb_base_dir: Path) -> None:
+    def clone(self) -> None:
         """
-        Clone the sub project into the specified folder relative to
-        ``cb_base_dir``.
+        Clone the sub project into the specified folder relative to the base
+        dir of the ``CodeBase``.
+        """
+        LOG.info(f"Cloning {self.name} into {self.__parent_code_base.base_dir}")
+        if (self.__parent_code_base.base_dir / self.path).exists():
+            raise FolderAlreadyPresentError(self.__parent_code_base.base_dir /
+                                            self.path)
+        download_repo(self.__parent_code_base.base_dir / self.path.parent,
+                      self.url, self.path.name, self.remote,
+                      log_without_linsep(LOG.info))
+
+    def has_branch(self,
+                   branch_name: str,
+                   remote_to_check: tp.Optional[str] = None) -> bool:
+        """
+        Check if the sub project has a branch with the
+        specified ``branch name``.
 
         Args:
-            cb_base_dir: base directory for the ``CodeBase``
-        """
-        LOG.info(f"Cloning {self.name} into {cb_base_dir}")
-        if (cb_base_dir / self.path).exists():
-            raise FolderAlreadyPresentError(cb_base_dir / self.path)
-        download_repo(cb_base_dir / self.path.parent, self.url, self.path.name,
-                      self.remote, log_without_linsep(LOG.info))
+            branch_name: name of the branch
+            remote_to_check: name of the remote to check, if None, only a local
+                             check will be performed
 
-    def add_remote(self, cb_base_dir: Path, remote: str, url: str) -> None:
+        Returns:
+            True, if the branch exists
+        """
+        absl_repo_path = self.__parent_code_base.base_dir / self.path
+        if remote_to_check is None:
+            return has_branch(absl_repo_path, branch_name)
+
+        return has_remote_branch(absl_repo_path, branch_name, remote_to_check)
+
+    def get_branches(self, extra_args: tp.Optional[tp.List[str]] = None
+                    ) -> tp.List[str]:
+        """
+        Get branch names from this sub project.
+
+        Args:
+            extra_args: extra arguments passed to `git branch`
+
+        Returns:
+            list of branch names
+        """
+        return get_branches(self.__parent_code_base.base_dir / self.path,
+                            extra_args).split()
+
+    def add_remote(self, remote: str, url: str) -> None:
         """
         Add a new remote to the sub project
 
         Args:
-            cb_base_dir: base directory for the ``CodeBase``
             remote: name of the new remote
             url: to the remote
         """
-        add_remote(cb_base_dir / self.path, remote, url)
-        fetch_remote(remote, cb_base_dir / self.path)
+        add_remote(self.__parent_code_base.base_dir / self.path, remote, url)
+        fetch_remote(remote, self.__parent_code_base.base_dir / self.path)
 
-    def checkout_branch(self, cb_base_dir: Path, branch_name: str) -> None:
+    def checkout_branch(self, branch_name: str) -> None:
         """
-        Checkout our branch in sub project.
+        Checkout out branch in sub project.
 
         Args:
-            cb_base_dir: base directory for the ``CodeBase``
             branch_name: name of the branch, should exists in the repo
         """
-        checkout_branch(cb_base_dir / self.path, branch_name)
+        checkout_branch(self.__parent_code_base.base_dir / self.path,
+                        branch_name)
+
+    def checkout_new_branch(self,
+                            branch_name: str,
+                            remote_branch: tp.Optional[str] = None) -> None:
+        """
+        Create and checkout out a new branch in the sub project.
+
+        Args:
+            branch_name: name of the new branch, should not exists in the repo
+        """
+        checkout_new_branch(self.__parent_code_base.base_dir / self.path,
+                            branch_name, remote_branch)
+
+    def fetch(self,
+              remote: tp.Optional[str] = None,
+              extra_args: tp.Optional[tp.List[str]] = None) -> None:
+        """
+        Fetch updates from the remote.
+        """
+        fetch_remote(remote, self.__parent_code_base.base_dir / self.path,
+                     extra_args)
+
+    def pull(self) -> None:
+        """
+        Pull updates from the remote of the current branch into the sub project.
+        """
+        pull_current_branch(self.__parent_code_base.base_dir / self.path)
+
+    def push(self) -> None:
+        """
+        Push updates from the current branch to the remote branch.
+        """
+        absl_repo_path = self.__parent_code_base.base_dir / self.path
+        branch_name = get_current_branch(absl_repo_path)
+        if branch_has_upstream(absl_repo_path, branch_name):
+            push_current_branch(absl_repo_path)
+        else:
+            push_current_branch(absl_repo_path, "origin", branch_name)
+
+    def show_status(self) -> None:
+        """
+        Show the current status of the sub project.
+        """
+        show_status(self.__parent_code_base.base_dir / self.path)
 
     def __str__(self) -> str:
         return "{name} [{url}:{remote}] {folder}".format(name=self.name,
@@ -153,7 +234,17 @@ class CodeBase():
         """
         self.__base_dir = cb_base_dir
         for sub_project in self.__sub_projects:
-            sub_project.clone(self.base_dir)
+            sub_project.clone()
+
+    def map_sub_projects(self, func: tp.Callable[[SubProject], None]) -> None:
+        """
+        Execute a callable ``func`` on all sub projects of the code base.
+
+        Args:
+            func: function to execute on the sub projects
+        """
+        for sub_project in self.__sub_projects:
+            func(sub_project)
 
 
 SpecificCodeBase = tp.TypeVar("SpecificCodeBase", bound=CodeBase)

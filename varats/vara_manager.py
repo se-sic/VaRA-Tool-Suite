@@ -412,7 +412,7 @@ def get_branches(repo_folder: Path,
         return tp.cast(str, git(args))
 
 
-def fetch_remote(remote: str,
+def fetch_remote(remote: tp.Optional[str] = None,
                  repo_folder: tp.Optional[Path] = None,
                  extra_args: tp.Optional[tp.List[str]] = None) -> None:
     """
@@ -422,7 +422,8 @@ def fetch_remote(remote: str,
 
     args = ["fetch"]
     args += extra_args
-    args.append(remote)
+    if remote:
+        args.append(remote)
 
     with ProcessManager.create_process("git", args, workdir=repo_folder):
         pass
