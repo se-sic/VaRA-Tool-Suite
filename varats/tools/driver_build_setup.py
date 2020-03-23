@@ -163,11 +163,6 @@ def main() -> None:
         save_config()
         return
 
-    # setup_vara(args.init, args.update, args.build, Path(args.llvmfolder),
-    #            args.installprefix, own_libgit2, include_phasar, vara_version,
-    #            build_type, update_term)
-    # return
-
     if args.researchtool == "VaRA" or args.researchtool == "vara":
         tool = VaRA(__get_source_location(args.sourcelocation))
 
