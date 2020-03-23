@@ -8,6 +8,7 @@ Utilities overview
 * :ref:`Module: git_util`
 * :ref:`Module: experiment_util`
 * :ref:`Module: project_util`
+* :ref:`Module: filesystem_util`
 
 Module: cli_util
 ................
@@ -53,6 +54,16 @@ Module: project_util
 ....................
 
 .. automodule:: varats.utils.project_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+-----
+
+Module: filesystem_util
+.......................
+
+.. automodule:: varats.utils.filesystem_util
     :members:
     :undoc-members:
     :show-inheritance:

@@ -10,6 +10,7 @@ import argparse
 from pathlib import Path
 
 from varats.settings import CFG, save_config
+from varats.utils.cli_util import initialize_logger_config
 
 LOG = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ def main() -> None:
 
     `vara-pc`
     """
+    initialize_logger_config()
     parser = argparse.ArgumentParser("vara-pc")
 
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")

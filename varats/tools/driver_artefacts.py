@@ -13,6 +13,7 @@ from argparse_utils import enum_action
 from varats.paper.artefacts import (ArtefactType, create_artefact,
                                     store_artefacts, Artefact)
 from varats.paper.paper_config import get_paper_config
+from varats.utils.cli_util import initialize_logger_config
 
 LOG = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ def main() -> None:
 
     `vara-art`
     """
+    initialize_logger_config()
     parser = argparse.ArgumentParser("vara-art")
 
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
