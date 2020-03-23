@@ -22,15 +22,17 @@ Example Output:
         [..]
     }
 """
-
+import logging
 import typing as tp
 from pathlib import Path
 import re
 from packaging.version import parse as parse_version, Version, LegacyVersion
 from plumbum import local
 from plumbum.cmd import git
-from varats.data.provider.cve.cve_util import (CVE, CWE_LIST, find_cve, find_cwe,
-                                               find_all_cve)
+from varats.data.provider.cve.cve import (CVE, CWE_LIST, find_cve, find_cwe,
+                                          find_all_cve, CWE)
+
+LOG = logging.getLogger(__name__)
 
 
 def __n_grams(text: str,

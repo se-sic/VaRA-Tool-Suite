@@ -3,7 +3,7 @@ Driver module for `vara-cve`.
 """
 
 import argparse
-import varats.data.provider.cve.cve as sec
+import varats.data.provider.cve.cve_provider as sec
 
 
 def main() -> None:
