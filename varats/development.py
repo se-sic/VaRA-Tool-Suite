@@ -47,11 +47,11 @@ def __quickfix_dev_branches(branch_name: str, sub_project: SubProject) -> str:
     True
 
     >>> __quickfix_dev_branches(\
-        "f-FooBar", LLVMProjects.clang.project)
+        "f-FooBar", SubProject(None, "vara-llvm-project", "", "", ""))
     'f-FooBar'
 
     >>> __quickfix_dev_branches(\
-        "vara-dev", LLVMProjects.vara.project)
+        "vara-dev", SubProject(None, "vara-llvm-project", "", "", ""))
     'vara-dev'
     """
     if sub_project.name == "vara-llvm-project":
