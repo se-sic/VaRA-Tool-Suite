@@ -51,7 +51,7 @@ def __quickfix_dev_branches(branch_name: str, sub_project: SubProject) -> str:
     'f-FooBar'
 
     >>> __quickfix_dev_branches(\
-        "vara-dev", SubProject(None, "vara-llvm-project", "", "", ""))
+        "vara-dev", SubProject(None, "vara", "", "", ""))
     'vara-dev'
     """
     if sub_project.name == "vara-llvm-project":
