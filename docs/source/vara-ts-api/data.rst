@@ -2,6 +2,7 @@ Data handling
 =============
 
 * :ref:`reports`
+* :ref:`Handling utilities for generated report files`
 * :ref:`data handling utilities`
 
 Reports
@@ -26,6 +27,16 @@ Report module
 .............
 
 .. automodule:: varats.data.report
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+-----
+
+Handling utilities for generated report files
+.............................................
+
+.. automodule:: varats.data.revisions
     :members:
     :undoc-members:
     :show-inheritance:
