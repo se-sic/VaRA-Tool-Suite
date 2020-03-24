@@ -233,11 +233,7 @@ class BlameDegree(Plot):
             unique_revisions,
             sub_df_list,
             edgecolor=plot_cfg['edgecolor'],
-            colors=reversed(
-                color_map(
-                    np.linspace(0, 1,
-                                len(np.unique(
-                                    interaction_plot_df['degree']))))),
+            colors=reversed(color_map(np.linspace(0, 1, len(sub_df_list)))),
             # TODO (se-passau/VaRA#545): remove cast with plot config rework
             labels=map(
                 tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
