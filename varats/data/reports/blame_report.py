@@ -136,6 +136,9 @@ class BlameReport(BaseReport):
             self, mangled_function_name: str) -> BlameResultFunctionEntry:
         """
         Get the result entry for a specific function.
+
+        Args:
+            mangled_function_name: mangled name of the function to look up
         """
         return self.__function_entries[mangled_function_name]
 
@@ -163,6 +166,17 @@ class BlameReport(BaseReport):
         """
         Generates a filename for a commit report with 'yaml'
         as file extension.
+
+        Args:
+            project_name: name of the project for which the report was generated
+            binary_name: name of the binary for which the report was generated
+            project_version: version of the analysed project, i.e., commit hash
+            project_uuid: benchbuild uuid for the experiment run
+            extension_type: to specifed the status of the generated report
+            file_ext: file extension of the report file
+
+        Returns:
+            name for the report file that can later be uniquly identified
         """
         return MetaReport.get_file_name(BlameReport.SHORTHAND, project_name,
                                         binary_name, project_version,
@@ -181,6 +195,12 @@ def generate_degree_tuples(report: BlameReport) -> tp.List[tp.Tuple[int, int]]:
     degree of a blame interaction, e.g., the number of incoming interactions,
     and amount is the number of times an interaction with this degree was
     found in the report.
+
+    Args:
+        report: the blame report
+
+    Returns:
+        list of tuples (degree, amount)
     """
     degree_dict: tp.DefaultDict[int, int] = defaultdict(int)
 
@@ -201,6 +221,13 @@ def generate_author_degree_tuples(
     the number of unique authors for all blame interaction, e.g., the number of
     unique authors of incoming interactions, and amount is the number of times
     an interaction with this degree was found in the report.
+
+    Args:
+        report: the blame report
+        project_name: name of the project the report is based on
+
+    Returns:
+        list of tuples (author_degree, amount)
     """
 
     degree_dict: tp.DefaultDict[int, int] = defaultdict(int)
