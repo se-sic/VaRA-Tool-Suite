@@ -8,16 +8,6 @@ Experiments
 Experiment utilities
 --------------------
 
-Extract module
-..............
-
-.. automodule:: varats.experiments.extract
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-------
-
 WLLVM module
 ............
 

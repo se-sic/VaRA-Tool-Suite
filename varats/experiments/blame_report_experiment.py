@@ -14,7 +14,7 @@ from benchbuild.settings import CFG as BB_CFG
 import benchbuild.utils.actions as actions
 from benchbuild.utils.cmd import opt, mkdir
 
-from varats.experiments.extract import Extract
+from varats.experiments.wllvm import Extract
 import varats.experiments.blame_experiment as BE
 from varats.data.reports.blame_report import BlameReport as BR
 from varats.data.report import FileStatusExtension as FSE
@@ -33,8 +33,8 @@ class BlameReportGeneration(actions.Step):  # type: ignore
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
     def __init__(
-            self,
-            project: Project,
+        self,
+        project: Project,
     ):
         super(BlameReportGeneration, self).__init__(obj=project,
                                                     action_fn=self.analyze)
@@ -67,8 +67,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         for binary in project.binaries:
             result_file = BR.get_file_name(project_name=str(project.name),
                                            binary_name=binary.name,
-                                           project_version=str(
-                                               project.version),
+                                           project_version=str(project.version),
                                            project_uuid=str(project.run_uuid),
                                            extension_type=FSE.Success)
 
@@ -78,11 +77,10 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                     res_folder=vara_result_folder, res_file=result_file)
             ]
 
-            opt_params.append(bc_cache_folder /
-                              Extract.BC_FILE_TEMPLATE.format(
-                                  project_name=project.name,
-                                  binary_name=binary.name,
-                                  project_version=project.version))
+            opt_params.append(bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
+                project_name=project.name,
+                binary_name=binary.name,
+                project_version=project.version))
 
             run_cmd = opt[opt_params]
 
