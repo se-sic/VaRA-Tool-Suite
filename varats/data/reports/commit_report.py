@@ -97,7 +97,8 @@ class RegionToRegionEdge():
 
 class FunctionGraphEdges():
     """
-    A graph like structure that represent the connections between ``FunctionInfo``'s.
+    A graph like structure that represent the connections between
+    ``FunctionInfo``'s.
     """
 
     def __init__(self, raw_yaml: tp.Dict[str, tp.Any]) -> None:
