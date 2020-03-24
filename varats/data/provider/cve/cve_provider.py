@@ -11,7 +11,7 @@ from varats.data.provider.cve.cve import (find_all_cve, find_cve, find_cwe,
 from varats.data.provider.provider import Provider
 
 
-class CVEProviderInformation(ABC):
+class CVEProviderHook(ABC):
     """
     Gives the :class:`CVEProvider` the necessary information how to find CVEs
     and CWEs for a project.
@@ -36,7 +36,7 @@ class CVEProvider(Provider):
 
     def __init__(self, project: Project) -> None:
         super().__init__(project)
-        if isinstance(project, CVEProviderInformation):
+        if isinstance(project, CVEProviderHook):
             vendor, product = project.get_cve_product_info()
             self.__cves = set(
                 find_all_cve(vendor=vendor, product=product))
@@ -47,7 +47,7 @@ class CVEProvider(Provider):
     @classmethod
     def create_provider_for_project(
             cls, project: Project) -> tp.Optional['CVEProvider']:
-        if isinstance(project, CVEProviderInformation):
+        if isinstance(project, CVEProviderHook):
             return CVEProvider(project)
         return None
 
