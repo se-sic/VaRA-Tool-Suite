@@ -59,8 +59,8 @@ class ChurnConfig():
         return config
 
     @staticmethod
-    def init_as_default_if_none(config: tp.Optional['ChurnConfig']
-                               ) -> 'ChurnConfig':
+    def init_as_default_if_none(
+            config: tp.Optional['ChurnConfig']) -> 'ChurnConfig':
         """
         Returns a default initialized config or the passed one.
 
@@ -148,8 +148,8 @@ class ChurnConfig():
         return concat_str
 
 
-def create_commit_lookup_helper(project_name: str
-                               ) -> tp.Callable[[str], pygit2.Commit]:
+def create_commit_lookup_helper(
+        project_name: str) -> tp.Callable[[str], pygit2.Commit]:
     """
     Creates a commit lookup function for a specific repository.
     """
@@ -176,10 +176,10 @@ def create_commit_lookup_helper(project_name: str
 MC_RET = tp.TypeVar("MC_RET")
 
 
-def map_commits(func: tp.Callable[[pygit2.Commit], MC_RET],
-                c_hash_list: tp.Iterable[str],
-                commit_lookup: tp.Callable[[str], pygit2.Commit]
-               ) -> tp.Sequence[MC_RET]:
+def map_commits(
+    func: tp.Callable[[pygit2.Commit], MC_RET], c_hash_list: tp.Iterable[str],
+    commit_lookup: tp.Callable[[str], pygit2.Commit]
+) -> tp.Sequence[MC_RET]:
     # Skip 0000 hashes that we added to mark uncommitted files
     return [
         func(commit_lookup(c_hash))
@@ -194,11 +194,12 @@ GIT_LOG_MATCHER = re.compile(r"\'(?P<hash>.*)\'\n?" +
                              r"(, (?P<deletions>\d*) deletions?\(-\))?")
 
 
-def __calc_code_churn_range_impl(repo_path: str,
-                                 churn_config: ChurnConfig,
-                                 start_range: tp.Optional[str] = None,
-                                 end_range: tp.Optional[str] = None
-                                ) -> tp.Dict[str, tp.Tuple[int, int, int]]:
+def __calc_code_churn_range_impl(
+    repo_path: str,
+    churn_config: ChurnConfig,
+    start_range: tp.Optional[str] = None,
+    end_range: tp.Optional[str] = None
+) -> tp.Dict[str, tp.Tuple[int, int, int]]:
     """
     Calculates all churn values for the commits in the specified
     range [start..end]. If no range is supplied, the churn values of all
@@ -225,19 +226,26 @@ def __calc_code_churn_range_impl(repo_path: str,
         revision_range = "{}~..{}".format(start_range, end_range)
 
     with local.cwd(repo_path):
-        base_params = [
+        log_base_params = ["log", "--pretty=%H"]
+        diff_base_params = [
             "log", "--pretty=format:'%H'", "--date=short", "--shortstat", "-l0"
         ]
         if not churn_config.include_everything:
-            base_params.append("--")
+            diff_base_params.append("--")
             # builds a regrex to select files that git includes into churn calc
-            base_params.append(":*.[" + churn_config.get_extensions_repr('|') +
-                               "]")
+            diff_base_params.append(":*.[" +
+                                    churn_config.get_extensions_repr('|') + "]")
 
         if revision_range:
-            stdout = git(base_params, revision_range)
+            stdout = git(diff_base_params, revision_range)
+            revs = git(log_base_params, revision_range).strip().split()
         else:
-            stdout = git(base_params)
+            stdout = git(diff_base_params)
+            revs = git(log_base_params).strip().split()
+        # initialize with 0 as otherwise commits without changes would be
+        # missing from the churn data
+        for rev in revs:
+            churn_values[rev] = (0, 0, 0)
         for match in GIT_LOG_MATCHER.finditer(stdout):
             commit_hash = match.group('hash')
             files_changed_m = match.group('files')
@@ -253,10 +261,10 @@ def __calc_code_churn_range_impl(repo_path: str,
 
 
 def calc_code_churn_range(
-        repo: tp.Union[pygit2.Repository, str],
-        churn_config: tp.Optional[ChurnConfig] = None,
-        start_range: tp.Optional[tp.Union[pygit2.Commit, str]] = None,
-        end_range: tp.Optional[tp.Union[pygit2.Commit, str]] = None
+    repo: tp.Union[pygit2.Repository, str],
+    churn_config: tp.Optional[ChurnConfig] = None,
+    start_range: tp.Optional[tp.Union[pygit2.Commit, str]] = None,
+    end_range: tp.Optional[tp.Union[pygit2.Commit, str]] = None
 ) -> tp.Dict[str, tp.Tuple[int, int, int]]:
     """
     Calculates all churn values for the commits in the specified
@@ -279,10 +287,11 @@ def calc_code_churn_range(
         end_range.id if isinstance(end_range, pygit2.Commit) else end_range)
 
 
-def calc_commit_code_churn(repo: pygit2.Repository,
-                           commit: pygit2.Commit,
-                           churn_config: tp.Optional[ChurnConfig] = None
-                          ) -> tp.Tuple[int, int, int]:
+def calc_commit_code_churn(
+    repo: pygit2.Repository,
+    commit: pygit2.Commit,
+    churn_config: tp.Optional[ChurnConfig] = None
+) -> tp.Tuple[int, int, int]:
     """
     Calculates churn of a specific commit.
 
@@ -299,9 +308,10 @@ def calc_commit_code_churn(repo: pygit2.Repository,
                                  commit)[str(commit.id)]
 
 
-def calc_repo_code_churn(repo: pygit2.Repository,
-                         churn_config: tp.Optional[ChurnConfig] = None
-                        ) -> tp.Dict[str, tp.Tuple[int, int, int]]:
+def calc_repo_code_churn(
+    repo: pygit2.Repository,
+    churn_config: tp.Optional[ChurnConfig] = None
+) -> tp.Dict[str, tp.Tuple[int, int, int]]:
     """
     Calculates code churn for a repository.
 
@@ -317,9 +327,9 @@ def calc_repo_code_churn(repo: pygit2.Repository,
     return calc_code_churn_range(repo, churn_config)
 
 
-def __print_calc_repo_code_churn(repo: pygit2.Repository,
-                                 churn_config: tp.Optional[ChurnConfig] = None
-                                ) -> None:
+def __print_calc_repo_code_churn(
+        repo: pygit2.Repository,
+        churn_config: tp.Optional[ChurnConfig] = None) -> None:
     """
     Prints calc repo code churn data like git log would do.
     """
