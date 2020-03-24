@@ -9,7 +9,7 @@ import typing as tp
 # see https://www.stefaanlippens.net/circular-imports-type-hints-python.html
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from varats.plots.plot import Plot
+    import varats.plots.plot as plot
 from varats.plots.plot_utils import check_required_args
 
 
@@ -43,7 +43,7 @@ class PlotRegistry(type):
             [key for key in PlotRegistry.plots if key != "plot"])
 
     @staticmethod
-    def get_class_for_plot_type(plot: str) -> tp.Type['Plot']:
+    def get_class_for_plot_type(plot: str) -> tp.Type['plot.Plot']:
         """
         Get the class for plot from the plot registry.
 
