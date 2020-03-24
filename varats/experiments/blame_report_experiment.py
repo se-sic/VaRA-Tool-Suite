@@ -1,8 +1,6 @@
 """
-Implements the blame report experiment.
-
-The experiment analyses a project with VaRAs blame analysis and generates a
-BlameReports.
+Implements the basic blame report experiment. The experiment analyses a project
+with VaRAs blame analysis and generates a BlameReports.
 """
 
 import typing as tp
@@ -41,10 +39,12 @@ class BlameReportGeneration(actions.Step):  # type: ignore
 
     def analyze(self) -> actions.StepResult:
         """
-        This step performs the actual analysis with the correct flags.
-        Flags:
-            -vara-BR: to run a commit flow report
-            -yaml-report-outfile=<path>: specify the path to store the results
+        This step performs the actual analysis with the correct command line
+        flags.
+
+        Flags used:
+            * -vara-BR: to run a commit flow report
+            * -yaml-report-outfile=<path>: specify the path to store the results
         """
         if not self.obj:
             return
@@ -112,7 +112,11 @@ class BlameReportExperiment(VersionExperiment):
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """Returns the specified steps to run the project(s) specified in
-        the call in a fixed order."""
+        the call in a fixed order.
+
+        Args:
+            project: to analyze
+        """
 
         BE.setup_basic_blame_experiment(
             self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE)

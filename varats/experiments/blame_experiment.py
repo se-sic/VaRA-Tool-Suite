@@ -1,5 +1,6 @@
 """
-Implements the base blame experiment.
+Implements the base blame experiment, making it easier to create different
+blame experiments that have a similar experiment setup.
 """
 
 import typing as tp

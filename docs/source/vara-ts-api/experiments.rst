@@ -33,6 +33,7 @@ Tool suite provided experiments
    :maxdepth: 1
 
    experiments/just_compile
+   experiments/blame_report_experiments
 
 Experiment utilities
 --------------------
