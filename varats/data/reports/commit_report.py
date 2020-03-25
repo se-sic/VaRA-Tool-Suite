@@ -13,7 +13,7 @@ from varats.data.version_header import VersionHeader
 
 class FunctionInfo():
     """
-    Encapsulates the informations gathered for a single functions.
+    Encapsulates the information gathered for a single functions.
     """
 
     def __init__(self, raw_yaml: tp.Dict[str, tp.Any]) -> None:
@@ -97,8 +97,8 @@ class RegionToRegionEdge():
 
 class FunctionGraphEdges():
     """
-    A graph like structure that represent the connections between
-    ``FunctionInfo``'s.
+    A graph like structure that represents the connections between
+    ``FunctionInfo``s.
     """
 
     def __init__(self, raw_yaml: tp.Dict[str, tp.Any]) -> None:
@@ -200,9 +200,9 @@ class CommitReport(BaseReport):
         Args:
             project_name: name of the project for which the report was generated
             binary_name: name of the binary for which the report was generated
-            project_version: version of the analysed project, i.e., commit hash
+            project_version: version of the analyzed project, i.e., commit hash
             project_uuid: benchbuild uuid for the experiment run
-            extension_type: to specifed the status of the generated report
+            extension_type: to specify the status of the generated report
             file_ext: file extension of the report file
 
         Returns:
@@ -222,7 +222,7 @@ class CommitReport(BaseReport):
         Args:
             project_name: name of the project for which the report was generated
             binary_name: name of the binary for which the report was generated
-            project_version: version of the analysed project, i.e., commit hash
+            project_version: version of the analyzed project, i.e., commit hash
             project_uuid: benchbuild uuid for the experiment run
             info_type: specifies the kind of supplementary file
             file_ext: file extension of the report file

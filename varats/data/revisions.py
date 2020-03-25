@@ -1,7 +1,7 @@
 """
-Module for handling revision specific files.  When analyzing project, result
+Module for handling revision specific files.  When analyzing a project, result
 files are generated for specific project revisions.  This module provides
-function to manage and access these revision specific files, e.g., get all
+functionality to manage and access these revision specific files, e.g., to get all
 files of a specific report that have been process successfully.
 """
 
@@ -103,7 +103,7 @@ def get_processed_revisions_files(
                           true; if the file_name should not be checked
 
     Returns:
-        a list of file paths to correctly processed revision files.
+        a list of file paths to correctly processed revision files
     """
     processed_revisions_paths = []
 
@@ -260,9 +260,9 @@ def get_supplementary_result_files(
     Args:
         project_name: target project
         result_file_type: the type of the result file
-        revision: The revision for which the result files should
-                        be returned.
-        suppl_info_type: Only include result files of the specified type
+        revision: the revision for which the result files should
+                        be returned
+        suppl_info_type: only include result files of the specified type
 
     Returns:
         list of tuples of result file path, revision, and supplementary result

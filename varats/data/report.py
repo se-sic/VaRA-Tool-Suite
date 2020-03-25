@@ -1,6 +1,6 @@
 """
 The Report module implements basic report functionalities and provides a
-minimal interface `BaseReport` to implement own reports.
+minimal interface ``BaseReport`` to implement own reports.
 """
 
 import typing as tp
@@ -357,9 +357,9 @@ class MetaReport(type):
             report_shorthand: unique shorthand of the report
             project_name: name of the project for which the report was generated
             binary_name: name of the binary for which the report was generated
-            project_version: version of the analysed project, i.e., commit hash
+            project_version: version of the analyzed project, i.e., commit hash
             project_uuid: benchbuild uuid for the experiment run
-            extension_type: to specifed the status of the generated report
+            extension_type: to specify the status of the generated report
             file_ext: file extension of the report file
 
         Returns:
@@ -395,7 +395,7 @@ class MetaReport(type):
             report_shorthand: unique shorthand of the report
             project_name: name of the project for which the report was generated
             binary_name: name of the binary for which the report was generated
-            project_version: version of the analysed project, i.e., commit hash
+            project_version: version of the analyzed project, i.e., commit hash
             project_uuid: benchbuild uuid for the experiment run
             info_type: specifies the kind of supplementary file
             file_ext: file extension of the report file
@@ -456,9 +456,9 @@ class BaseReport(metaclass=MetaReport):
         Args:
             project_name: name of the project for which the report was generated
             binary_name: name of the binary for which the report was generated
-            project_version: version of the analysed project, i.e., commit hash
+            project_version: version of the analyzed project, i.e., commit hash
             project_uuid: benchbuild uuid for the experiment run
-            extension_type: to specifed the status of the generated report
+            extension_type: to specify the status of the generated report
             file_ext: file extension of the report file
 
         Returns:

@@ -18,8 +18,8 @@ CACHE_REVISION_COL = 'cache_revision'
 
 class GraphCacheType(Enum):
     """
-    Identifiers for cached plot dataframes. These identifiers allow plot to
-    refere to a possibly cached dataframe.  Identifiers can be used in multiple
+    Identifiers for cached plot dataframes. These identifiers allow a plot to
+    refer to a possibly cached dataframe.  Identifiers can be used in multiple
     plots that use the same or a similar dataframe layout, e.g., are based on
     similar data.
     """
@@ -31,7 +31,7 @@ class GraphCacheType(Enum):
 def __get_data_file_path(data_id: tp.Union[GraphCacheType, str],
                          project_name: str) -> Path:
     """
-    Compose the identifier und project into a file path that points to the
+    Compose the identifier and project into a file path that points to the
     corresponding cache file in the cache directory.
 
     Args:
