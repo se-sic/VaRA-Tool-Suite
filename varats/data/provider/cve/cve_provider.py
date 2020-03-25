@@ -77,6 +77,7 @@ class CVEDefaultProvider(CVEProvider):
     """
 
     def __init__(self, project: tp.Type[Project]) -> None:
+        # pylint: disable=E1003
         super(CVEProvider, self).__init__(project)
 
     def get_revision_cve_tuples(
