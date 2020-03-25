@@ -22,11 +22,11 @@ class Provider(ABC):
         the project this provider is associated with
     """
 
-    def __init__(self, project: Project) -> None:
+    def __init__(self, project: tp.Type[Project]) -> None:
         self.__project = project
 
     @property
-    def project(self) -> Project:
+    def project(self) -> tp.Type[Project]:
         """The project this provider is associated with."""
         return self.__project
 
@@ -34,7 +34,7 @@ class Provider(ABC):
     @abstractmethod
     def create_provider_for_project(
             cls: tp.Type[ProviderType],
-            project: Project) -> tp.Optional[ProviderType]:
+            project: tp.Type[Project]) -> tp.Optional[ProviderType]:
         """
         Creates a provider instance for the given project if possible.
 
@@ -46,7 +46,7 @@ class Provider(ABC):
     @classmethod
     @abstractmethod
     def create_default_provider(cls: tp.Type[ProviderType],
-                                project: Project) -> ProviderType:
+                                project: tp.Type[Project]) -> ProviderType:
         """
         Creates a default provider instance that can be used with any project
 
@@ -56,7 +56,7 @@ class Provider(ABC):
 
     @classmethod
     def get_provider_for_project(cls: tp.Type[ProviderType],
-                                 project: Project) -> ProviderType:
+                                 project: tp.Type[Project]) -> ProviderType:
         """
         Factory function for creating providers.
 
