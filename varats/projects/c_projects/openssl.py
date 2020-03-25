@@ -48,6 +48,5 @@ class OpenSSL(Project, CVEProviderHook):  # type: ignore
                 run(local['./config'])
             run(make["-j", int(BB_CFG["jobs"])])
 
-    def get_cve_product_info(self) -> tp.Tuple[str, str]:
-        # also: "openssl_project", "openssl"
-        return "openssl", "openssl"
+    def get_cve_product_info(self) -> tp.List[tp.Tuple[str, str]]:
+        return [("openssl_project", "openssl"), ("openssl", "openssl")]

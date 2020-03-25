@@ -6,7 +6,7 @@ import typing as tp
 from benchbuild.project import Project
 
 from varats.data.provider.cve.cve import (find_all_cve, find_cve, find_cwe, CVE)
-from varats.data.provider.cve.cve_map import generate_security_commit_map
+from varats.data.provider.cve.cve_map import generate_cve_map
 from varats.data.provider.provider import Provider
 from varats.utils.project_util import get_local_project_git_path
 
@@ -19,7 +19,7 @@ class CVEProviderHook():
     This class should be inherited by projects.
     """
 
-    def get_cve_product_info(self) -> tp.Tuple[str, str]:
+    def get_cve_product_info(self) -> tp.List[tp.Tuple[str, str]]:
         """
         Get information on how to find CVEs for a project.
 
@@ -37,9 +37,9 @@ class CVEProvider(Provider):
     def __init__(self, project: tp.Type[Project]) -> None:
         super().__init__(project)
         if hasattr(project, "get_cve_product_info"):
-            vendor, product = project.get_cve_product_info(project)
-            self.__cve_map = generate_security_commit_map(
-                get_local_project_git_path(project.NAME), vendor, product)
+            self.__cve_map = generate_cve_map(
+                get_local_project_git_path(project.NAME),
+                project.get_cve_product_info(project))
         else:
             raise ValueError(f"Project {project} does not implement "
                              f"CVEProviderHook.")

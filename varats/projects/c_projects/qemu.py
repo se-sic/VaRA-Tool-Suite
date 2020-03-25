@@ -53,9 +53,9 @@ class Qemu(Project, CVEProviderHook):  # type: ignore
 
         with local.cwd(build_folder):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-                run(local["../configure"]
-                    ["--disable-debug-info", "--target-list=x86_64-softmmu"])
+                run(local["../configure"]["--disable-debug-info",
+                                          "--target-list=x86_64-softmmu"])
                 run(make["-j", int(BB_CFG["jobs"])])
 
-    def get_cve_product_info(self) -> tp.Tuple[str, str]:
-        return "qemu", "qemu"
+    def get_cve_product_info(self) -> tp.List[tp.Tuple[str, str]]:
+        return [("qemu", "qemu")]

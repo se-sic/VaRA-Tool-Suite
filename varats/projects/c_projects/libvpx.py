@@ -18,11 +18,10 @@ from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
 
 
-@with_git(
-    "https://github.com/webmproject/libvpx.git",
-    refspec="HEAD",
-    shallow_clone=False,
-    version_filter=project_filter_generator("libvpx"))
+@with_git("https://github.com/webmproject/libvpx.git",
+          refspec="HEAD",
+          shallow_clone=False,
+          version_filter=project_filter_generator("libvpx"))
 class Libvpx(Project, CVEProviderHook):  # type: ignore
     """Codec SDK libvpx (fetched by Git)"""
 
@@ -52,5 +51,5 @@ class Libvpx(Project, CVEProviderHook):  # type: ignore
                 run(local["./configure"])
             run(make["-j", int(BB_CFG["jobs"])])
 
-    def get_cve_product_info(self) -> tp.Tuple[str, str]:
-        return "john_koleszar", "libvpx"
+    def get_cve_product_info(self) -> tp.List[tp.Tuple[str, str]]:
+        return [("john_koleszar", "libvpx")]

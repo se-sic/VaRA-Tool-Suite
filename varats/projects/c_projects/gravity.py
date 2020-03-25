@@ -91,5 +91,5 @@ class Gravity(Project, CVEProviderHook):  # type: ignore
             with local.env(CC=str(clang)):
                 run(make["-j", int(BB_CFG["jobs"])])
 
-    def get_cve_product_info(self) -> tp.Tuple[str, str]:
-        return "creolabs", "gravity"
+    def get_cve_product_info(self) -> tp.List[tp.Tuple[str, str]]:
+        return [("creolabs", "gravity")]

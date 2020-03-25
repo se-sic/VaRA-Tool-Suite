@@ -63,6 +63,5 @@ class Doxygen(Project, CVEProviderHook):  # type: ignore
 
             cp("bin/doxygen", ".")
 
-
-    def get_cve_product_info(self) -> tp.Tuple[str, str]:
-        return "doxygen", "doxygen"
+    def get_cve_product_info(self) -> tp.List[tp.Tuple[str, str]]:
+        return [("doxygen", "doxygen")]

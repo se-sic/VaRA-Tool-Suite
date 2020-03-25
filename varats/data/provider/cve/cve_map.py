@@ -211,10 +211,9 @@ def __merge_results(
     return results
 
 
-def generate_security_commit_map(
+def generate_cve_map(
     path: Path,
-    vendor: str,
-    product: str,
+    products: tp.List[tp.Tuple[str, str]],
     end: str = "HEAD",
     start: tp.Optional[str] = None
 ) -> tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[CVE, CWE]]]]:
@@ -240,14 +239,20 @@ def generate_security_commit_map(
                       search_range)
         wanted_out = [x[1:-1] for x in commits.split('\n')]
 
-        cve_list = find_all_cve(vendor=vendor, product=product)
-        results = __merge_results([
-            __collect_via_commit_mgs(commits=wanted_out),
-            __collect_via_version(commits=wanted_out, cve_list=cve_list),
-            __collect_via_references(commits=wanted_out,
-                                     cve_list=cve_list,
-                                     vendor=vendor,
-                                     product=product)
-        ])
+        def get_results_for_product(
+            vendor: str, product: str
+        ) -> tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[CVE, CWE]]]]:
+            cve_list = find_all_cve(vendor=vendor, product=product)
+            return __merge_results([
+                __collect_via_commit_mgs(commits=wanted_out),
+                __collect_via_version(commits=wanted_out, cve_list=cve_list),
+                __collect_via_references(commits=wanted_out,
+                                         cve_list=cve_list,
+                                         vendor=vendor,
+                                         product=product)
+            ])
 
-        return results
+        return __merge_results([
+            get_results_for_product(vendor, product)
+            for vendor, product in products
+        ])

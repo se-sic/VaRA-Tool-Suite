@@ -28,11 +28,10 @@ from varats.utils.project_util import get_tagged_commits, \
                          "203e40cc4558a80998d05eb74b373a51e796ca8b",
                          "Needs glibc < 2.28")
 ])
-@with_git(
-    "https://git.savannah.gnu.org/git/gzip.git",
-    refspec="HEAD",
-    shallow_clone=False,
-    version_filter=project_filter_generator("gzip"))
+@with_git("https://git.savannah.gnu.org/git/gzip.git",
+          refspec="HEAD",
+          shallow_clone=False,
+          version_filter=project_filter_generator("gzip"))
 class Gzip(prj.Project, ReleaseProvider, CVEProviderHook):  # type: ignore
     """Compression and decompression tool Gzip (fetched by Git)"""
 
@@ -78,10 +77,8 @@ class Gzip(prj.Project, ReleaseProvider, CVEProviderHook):  # type: ignore
                 if re.match(major_release_regex, tag)
             ]
         return [
-            h for h, tag in tagged_commits
-            if re.match(minor_release_regex, tag)
+            h for h, tag in tagged_commits if re.match(minor_release_regex, tag)
         ]
 
-    def get_cve_product_info(self) -> tp.Tuple[str, str]:
-        # also: "gzip", "gzip"
-        return "gnu", "gzip"
+    def get_cve_product_info(self) -> tp.List[tp.Tuple[str, str]]:
+        return [("gzip", "gzip"), ("gnu", "gzip")]

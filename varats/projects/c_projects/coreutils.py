@@ -171,5 +171,5 @@ class Coreutils(prj.Project, CVEProviderHook):  # type: ignore
                 if not Path("{binary}".format(binary=binary)).exists():
                     print("Shit is fucked up ", binary)
 
-    def get_cve_product_info(self) -> tp.Tuple[str, str]:
-        return "gnu", "coreutils"
+    def get_cve_product_info(self) -> tp.List[tp.Tuple[str, str]]:
+        return [("gnu", "coreutils")]

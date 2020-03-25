@@ -18,11 +18,10 @@ from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
 
 
-@with_git(
-    "git://sourceware.org/git/glibc.git",
-    refspec="HEAD",
-    shallow_clone=False,
-    version_filter=project_filter_generator("glibc"))
+@with_git("git://sourceware.org/git/glibc.git",
+          refspec="HEAD",
+          shallow_clone=False,
+          version_filter=project_filter_generator("glibc"))
 class Glibc(Project, CVEProviderHook):  # type: ignore
     """Standard GNU C-library"""
 
@@ -51,5 +50,5 @@ class Glibc(Project, CVEProviderHook):  # type: ignore
                 run(local["./../configure"])
             run(make["-j", int(BB_CFG["jobs"])])
 
-    def get_cve_product_info(self) -> tp.Tuple[str, str]:
-        return "gnu", "glibc"
+    def get_cve_product_info(self) -> tp.List[tp.Tuple[str, str]]:
+        return [("gnu", "glibc")]

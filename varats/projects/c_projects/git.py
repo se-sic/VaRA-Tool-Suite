@@ -19,11 +19,10 @@ from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
 
 
-@with_git(
-    "https://github.com/git/git.git",
-    refspec="HEAD",
-    shallow_clone=False,
-    version_filter=project_filter_generator("git"))
+@with_git("https://github.com/git/git.git",
+          refspec="HEAD",
+          shallow_clone=False,
+          version_filter=project_filter_generator("git"))
 class Git(prj.Project, CVEProviderHook):  # type: ignore
     """Git"""
 
@@ -53,5 +52,5 @@ class Git(prj.Project, CVEProviderHook):  # type: ignore
                 run(local["./configure"])
             run(make["-j", int(BB_CFG["jobs"])])
 
-    def get_cve_product_info(self) -> tp.Tuple[str, str]:
-        return "git", "git"
+    def get_cve_product_info(self) -> tp.List[tp.Tuple[str, str]]:
+        return [("git", "git")]
