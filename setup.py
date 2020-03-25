@@ -30,6 +30,7 @@ setup(name='VaRA-Tool-Suite',
           "console_scripts": [
               'vara-art = varats.tools.driver_artefacts:main',
               'vara-buildsetup = varats.tools.driver_build_setup:main',
+              'vara-config = varats.tools.driver_config:main',
               'vara-cs = varats.tools.driver_casestudy:main',
               'vara-develop = varats.tools.driver_develop:main',
               'vd = varats.tools.driver_develop:main',

@@ -1,8 +1,6 @@
 """
-Implements the blame report experiment.
-
-The experiment analyses a project with VaRAs blame analysis and generates a
-BlameReports.
+Implements the basic blame report experiment. The experiment analyses a project
+with VaRA's blame analysis and generates a BlameReport.
 """
 
 import typing as tp
@@ -14,7 +12,7 @@ from benchbuild.settings import CFG as BB_CFG
 import benchbuild.utils.actions as actions
 from benchbuild.utils.cmd import opt, mkdir
 
-from varats.experiments.extract import Extract
+from varats.experiments.wllvm import Extract
 import varats.experiments.blame_experiment as BE
 from varats.data.reports.blame_report import BlameReport as BR
 from varats.data.report import FileStatusExtension as FSE
@@ -33,18 +31,20 @@ class BlameReportGeneration(actions.Step):  # type: ignore
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
     def __init__(
-            self,
-            project: Project,
+        self,
+        project: Project,
     ):
         super(BlameReportGeneration, self).__init__(obj=project,
                                                     action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
         """
-        This step performs the actual analysis with the correct flags.
-        Flags:
-            -vara-BR: to run a commit flow report
-            -yaml-report-outfile=<path>: specify the path to store the results
+        This step performs the actual analysis with the correct command line
+        flags.
+
+        Flags used:
+            * -vara-BR: to run a commit flow report
+            * -yaml-report-outfile=<path>: specify the path to store the results
         """
         if not self.obj:
             return
@@ -67,8 +67,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         for binary in project.binaries:
             result_file = BR.get_file_name(project_name=str(project.name),
                                            binary_name=binary.name,
-                                           project_version=str(
-                                               project.version),
+                                           project_version=str(project.version),
                                            project_uuid=str(project.run_uuid),
                                            extension_type=FSE.Success)
 
@@ -78,11 +77,10 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                     res_folder=vara_result_folder, res_file=result_file)
             ]
 
-            opt_params.append(bc_cache_folder /
-                              Extract.BC_FILE_TEMPLATE.format(
-                                  project_name=project.name,
-                                  binary_name=binary.name,
-                                  project_version=project.version))
+            opt_params.append(bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
+                project_name=project.name,
+                binary_name=binary.name,
+                project_version=project.version))
 
             run_cmd = opt[opt_params]
 
@@ -113,8 +111,13 @@ class BlameReportExperiment(VersionExperiment):
     REPORT_TYPE = BR
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
-        """Returns the specified steps to run the project(s) specified in
-        the call in a fixed order."""
+        """
+        Returns the specified steps to run the project(s) specified in
+        the call in a fixed order.
+
+        Args:
+            project: to analyze
+        """
 
         BE.setup_basic_blame_experiment(
             self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE)

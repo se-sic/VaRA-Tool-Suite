@@ -3,6 +3,7 @@ Driver module for `vara-art`. This module handles command-line parsing and maps
 the commands to tool suite internal functionality.
 """
 import argparse
+import logging
 import textwrap
 import typing as tp
 
@@ -12,6 +13,9 @@ from argparse_utils import enum_action
 from varats.paper.artefacts import (ArtefactType, create_artefact,
                                     store_artefacts, Artefact)
 from varats.paper.paper_config import get_paper_config
+from varats.utils.cli_util import initialize_logger_config
+
+LOG = logging.getLogger(__name__)
 
 
 def main() -> None:
@@ -20,6 +24,7 @@ def main() -> None:
 
     `vara-art`
     """
+    initialize_logger_config()
     parser = argparse.ArgumentParser("vara-art")
 
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
@@ -59,9 +64,9 @@ def main() -> None:
         "If an artefact with this name already exists, it is overridden.",
         type=str)
     add_parser.add_argument(
-        "--output_path",
+        "--output-path",
         help=("The output file for the new artefact. This is relative to "
-              "`artefacts_dir` in the current `.vara.yml`."),
+              "`artefacts_dir/current_config` from the current `.varats.yml`."),
         type=str,
         default=".")
     add_parser.add_argument(
@@ -118,8 +123,8 @@ def __artefact_generate(args: tp.Dict[str, tp.Any]) -> None:
     else:
         artefacts = get_paper_config().get_all_artefacts()
     for artefact in artefacts:
-        print(f"Generating artefact {artefact.name} in location "
-              f"{artefact.output_path}")
+        LOG.info(f"Generating artefact {artefact.name} in location "
+                 f"{artefact.output_path}")
         artefact.generate_artefact()
 
 
@@ -136,9 +141,9 @@ def __artefact_add(args: tp.Dict[str, tp.Any]) -> None:
 
     name = args['name']
     if paper_config.artefacts.get_artefact(name):
-        print(f"Updating existing artefact '{name}'.")
+        LOG.info(f"Updating existing artefact '{name}'.")
     else:
-        print(f"Creating new artefact '{name}'.")
+        LOG.info(f"Creating new artefact '{name}'.")
     artefact = create_artefact(args['artefact_type'], name, args['output_path'],
                                **extra_args)
     paper_config.add_artefact(artefact)

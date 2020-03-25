@@ -8,14 +8,32 @@ Welcome to VaRA's documentation!
 
 Quick overview
 --------------
+* :ref:`VaRA-TS Research Tools`
 * :ref:`vara-ts api reference`
 * :ref:`VaRA Docs`
 * :ref:`VaRA API Reference`
 
+VaRA-TS Research Tools
+======================
+VaRA-TS gives convenient access to a list of different research tools, which can be automatically installed and utilized in the provided experiments or accessed direclty for own use.
+
+.. toctree::
+   :maxdepth: 1
+   :caption: List of provided research tools:
+
+   vara-ts-api/tools/research_tools/vara
+
+VaRA-TS Docs
+============
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Contents:
+
+   vara-ts/benchbuild
 
 VaRA-TS API Reference
 =====================
-
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
@@ -26,6 +44,7 @@ VaRA-TS API Reference
    vara-ts-api/plots
    vara-ts-api/projects
    vara-ts-api/tools
+   vara-ts-api/tools/research_tools
    vara-ts-api/utils.rst
 
 VaRA Docs

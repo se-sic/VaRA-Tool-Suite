@@ -21,10 +21,10 @@ from benchbuild.settings import CFG as BB_CFG
 from benchbuild.project import Project
 import benchbuild.utils.actions as actions
 from benchbuild.utils.cmd import opt, mkdir, timeout
+
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.data.report import FileStatusExtension as FSE
-from varats.experiments.extract import Extract
-from varats.experiments.wllvm import RunWLLVM
+from varats.experiments.wllvm import RunWLLVM, Extract
 from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
                                           FunctionPEErrorWrapper,
                                           VersionExperiment, PEErrorHandler)
@@ -42,8 +42,7 @@ class VaraMTFACheck(actions.Step):  # type: ignore
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
     def __init__(self, project: Project):
-        super(VaraMTFACheck, self).__init__(obj=project,
-                                            action_fn=self.analyze)
+        super(VaraMTFACheck, self).__init__(obj=project, action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
         """
@@ -89,8 +88,7 @@ class VaraMTFACheck(actions.Step):  # type: ignore
             # Define output file name of failed runs
             error_file = TPR.get_file_name(project_name=str(project.name),
                                            binary_name=binary.name,
-                                           project_version=str(
-                                               project.version),
+                                           project_version=str(project.version),
                                            project_uuid=str(project.run_uuid),
                                            extension_type=FSE.Failed,
                                            file_ext=TPR.FILE_TYPE)
@@ -98,8 +96,8 @@ class VaraMTFACheck(actions.Step):  # type: ignore
             # Put together the path to the bc file and the opt command of vara
             vara_run_cmd = opt[
                 "-vara-CD", "-print-Full-MTFA", "{cache_folder}/{bc_file}".
-                format(cache_folder=bc_cache_dir, bc_file=bc_target_file
-                       ), "-o", "/dev/null"]
+                format(cache_folder=bc_cache_dir, bc_file=bc_target_file), "-o",
+                "/dev/null"]
 
             # Run the MTFA command with custom error handler and timeout
             exec_func_with_pe_error_handler(

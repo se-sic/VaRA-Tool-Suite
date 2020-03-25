@@ -19,10 +19,13 @@ function check_err {
 COVERAGE='coverage run -p'
 
 # Smoke tests
-$COVERAGE $(which vara-buildsetup) -c
+$COVERAGE $(which vara-buildsetup) vara -c
 check_err
 
 $COVERAGE $(which vara-gen-bbconfig)
+check_err
+
+$COVERAGE $(which vara-config) set artefacts/artefacts_dir=artefacts
 check_err
 
 $COVERAGE $(which vara-pc) create test_extra
@@ -46,7 +49,7 @@ check_err
 $COVERAGE $(which vara-cs) status EmptyReport
 check_err
 
-$COVERAGE $(which vara-art) add plot overview report_type=EmptyReport plot_type=paper_config_overview_plot
+$COVERAGE $(which vara-art) add --output-path overview_plots plot overview report_type=EmptyReport plot_type=paper_config_overview_plot
 check_err
 
 $COVERAGE $(which vara-art) generate --only overview

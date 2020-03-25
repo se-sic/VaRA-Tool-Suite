@@ -1,5 +1,8 @@
 """
-Module for handling the state of project revisions in VaRA.
+Module for handling revision specific files.  When analyzing a project, result
+files are generated for specific project revisions.  This module provides
+functionality to manage and access these revision specific files, e.g., to get all
+files of a specific report that have been process successfully.
 """
 
 import typing as tp
@@ -91,14 +94,16 @@ def get_processed_revisions_files(
     file_name_filter: tp.Optional[tp.Callable[[str], bool]] = None
 ) -> tp.List[Path]:
     """
-    Returns a list of file paths to correctly processed revision files.
+    Find all file paths to correctly processed revision files.
 
     Args:
         project_name: target project
         result_file_type: the type of the result file
-        file_name_filter: optional filter to exclude certain files,
-                            returns true; if the file_name should not be
-                            checked
+        file_name_filter: optional filter to exclude certain files, returns
+                          true; if the file_name should not be checked
+
+    Returns:
+        a list of file paths to correctly processed revision files
     """
     processed_revisions_paths = []
 
@@ -124,6 +129,9 @@ def get_processed_revisions(project_name: str,
     Args:
         project_name: target project
         result_file_type: the type of the result file
+
+    Returns:
+        list of correctly process revisions
     """
     return [
         result_file_type.get_commit_hash_from_result_file(x.name)
@@ -139,6 +147,9 @@ def get_failed_revisions(project_name: str,
     Args:
         project_name: target project
         result_file_type: the type of the result file
+
+    Returns:
+        list of failed revisions
     """
     failed_revisions = []
 
@@ -194,6 +205,9 @@ def get_tagged_revisions(
         project_name: target project
         result_file_type: the type of the result file
         tag_blocked: whether to tag blocked revisions as blocked
+
+    Returns:
+        list of tuples (revision, ``FileStatusExtension``)
     """
     revisions = []
     project_cls = get_project_cls_by_name(project_name)
@@ -244,15 +258,15 @@ def get_supplementary_result_files(
     revisions are returned.
 
     Args:
-        project_name (str): target project
-        result_file_type (MetaReport): the type of the result file
-        revision (str): The revision for which the result files should
-                        be returned.
-        suppl_info_type (str): Only include result files of the specified type
+        project_name: target project
+        result_file_type: the type of the result file
+        revision: the revision for which the result files should
+                        be returned
+        suppl_info_type: only include result files of the specified type
 
     Returns:
-        [(Path, str, str)]: List of tuples of result file path, revision,
-                            and supplementary result file type
+        list of tuples of result file path, revision, and supplementary result
+        file type
     """
     result_files = __get_supplementary_result_files_dict(
         project_name, result_file_type, revision)

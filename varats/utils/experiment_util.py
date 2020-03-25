@@ -27,6 +27,7 @@ class FunctionPEErrorWrapper():
     Wrap a function call with an exception handler.
 
     Args:
+        func: function to be executed
         handler: function to handle exception
     """
 
@@ -42,13 +43,14 @@ class FunctionPEErrorWrapper():
             self.__handler(ex)
 
 
-def exec_func_with_pe_error_handler(func: tp.Callable[..., tp.Any],
-                                    handler: tp.Callable[[Exception], None]
-                                   ) -> None:
+def exec_func_with_pe_error_handler(
+        func: tp.Callable[..., tp.Any], handler: tp.Callable[[Exception],
+                                                             None]) -> None:
     """
     Execute a function call with an exception handler.
 
     Args:
+        func: function to be executed
         handler: function to handle exception
     """
     FunctionPEErrorWrapper(func, handler)()
@@ -102,12 +104,19 @@ Timeout after: {timeout_duration}
         raise ex
 
 
-def get_default_compile_error_wrapped(project: Project,
-                                      report_type: tp.Type[BaseReport],
-                                      result_folder_template: str
-                                     ) -> FunctionPEErrorWrapper:
+def get_default_compile_error_wrapped(
+        project: Project, report_type: tp.Type[BaseReport],
+        result_folder_template: str) -> FunctionPEErrorWrapper:
     """
     Setup the default project compile function with an error handler.
+
+    Args:
+        project: that will be compiled
+        report_type: that should be generated
+        result_folder_template: where the results will be placed
+
+    Returns:
+        project compilation function, wrapped with automatic error handling
     """
     result_dir = str(BB_CFG["varats"]["outfile"])
     result_folder = result_folder_template.format(result_dir=result_dir,
@@ -148,13 +157,21 @@ class VersionExperiment(Experiment):  # type: ignore
         ]
         return versions
 
-    def sample(self,
-               prj_cls: tp.Type[Project],
-               versions: tp.Optional[tp.List[str]] = None
-              ) -> tp.Generator[str, None, None]:
+    def sample(
+        self,
+        prj_cls: tp.Type[Project],
+        versions: tp.Optional[tp.List[str]] = None
+    ) -> tp.Generator[str, None, None]:
         """
         Adapt version sampling process if needed, otherwise fallback to default
         implementation.
+
+        Args:
+            prj_cls: project class
+            versions: full list of versions to sample from
+
+        Returns:
+            generator that outputs a sequence of sampled versions
         """
         if versions is None:
             versions = []

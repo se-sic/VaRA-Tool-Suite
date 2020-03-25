@@ -160,8 +160,8 @@ class LLVMProjects(Enum):
         return not self.is_vara_project()
 
 
-def convert_to_llvmprojects_enum(
-        projects_names: tp.List[str]) -> tp.List[LLVMProjects]:
+def convert_to_llvmprojects_enum(projects_names: tp.List[str]
+                                ) -> tp.List[LLVMProjects]:
     """
     Converts a list of strings into a list of LLVMProject.
 
@@ -236,9 +236,9 @@ class VaRAExtraProjectsIter():
                 return val
 
 
-def run_process_with_output(
-        process: QProcess,
-        post_out: tp.Callable[[str], None] = lambda x: None) -> None:
+def run_process_with_output(process: QProcess,
+                            post_out: tp.Callable[[str], None] = lambda x: None
+                           ) -> None:
     """
     Run a process and forward stdout to a post_out function.
     """
@@ -412,7 +412,7 @@ def get_branches(repo_folder: Path,
         return tp.cast(str, git(args))
 
 
-def fetch_remote(remote: str,
+def fetch_remote(remote: tp.Optional[str] = None,
                  repo_folder: tp.Optional[Path] = None,
                  extra_args: tp.Optional[tp.List[str]] = None) -> None:
     """
@@ -422,7 +422,8 @@ def fetch_remote(remote: str,
 
     args = ["fetch"]
     args += extra_args
-    args.append(remote)
+    if remote:
+        args.append(remote)
 
     with ProcessManager.create_process("git", args, workdir=repo_folder):
         pass
@@ -652,10 +653,10 @@ def set_cmake_var(var_name: str,
             lambda: run_process_with_output(proc, post_out))
 
 
-def init_vara_build(
-        path_to_llvm: Path,
-        build_type: BuildType,
-        post_out: tp.Callable[[str], None] = lambda x: None) -> None:
+def init_vara_build(path_to_llvm: Path,
+                    build_type: BuildType,
+                    post_out: tp.Callable[[str], None] = lambda x: None
+                   ) -> None:
     """
     Initialize a VaRA build config.
     """
@@ -702,7 +703,7 @@ def build_vara(path_to_llvm: Path,
     Builds a VaRA configuration
     """
     own_libgit = bool(CFG["vara"]["own_libgit2"])
-    include_phasar = bool(CFG["vara"]["include_phasar"])
+    include_phasar = bool(CFG["vara"]["with_phasar"])
     full_path = path_to_llvm / "build/"
     full_path /= build_type.build_folder()
 
@@ -725,9 +726,9 @@ def build_vara(path_to_llvm: Path,
             lambda: run_process_with_output(proc, post_out))
 
 
-def set_vara_cmake_variables(
-        install_prefix: str,
-        post_out: tp.Callable[[str], None] = lambda x: None) -> None:
+def set_vara_cmake_variables(install_prefix: str,
+                             post_out: tp.Callable[[str], None] = lambda x: None
+                            ) -> None:
     """
     Set all wanted/needed cmake flags.
     """
@@ -891,11 +892,10 @@ class ProcessManager():
 
     @staticmethod
     @contextmanager
-    def create_process(
-        program: str,
-        args: tp.Optional[tp.List[str]] = None,
-        workdir: tp.Optional[tp.Union[str, Path]] = None
-    ) -> tp.Iterator[QProcess]:
+    def create_process(program: str,
+                       args: tp.Optional[tp.List[str]] = None,
+                       workdir: tp.Optional[tp.Union[str, Path]] = None
+                      ) -> tp.Iterator[QProcess]:
         """
         Creates a new process.
         The method does not return immediately. Instead it waits until the

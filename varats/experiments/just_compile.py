@@ -1,5 +1,5 @@
 """
-Implements the an empty experiment that just compiles the project.
+Implements an empty experiment that just compiles the project.
 """
 
 import typing as tp
@@ -18,6 +18,7 @@ from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.empty_report import EmptyReport
 
 
+# Please take care when changing this file, see docs experiments/just_compile
 class EmptyAnalysis(actions.Step):  # type: ignore
     """
     Empty analysis step for testing.
@@ -29,8 +30,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
     def __init__(self, project: Project):
-        super(EmptyAnalysis, self).__init__(obj=project,
-                                            action_fn=self.analyze)
+        super(EmptyAnalysis, self).__init__(obj=project, action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
         """
@@ -72,6 +72,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
                         extension_type=FSE.Failed), run_cmd))
 
 
+# Please take care when changing this file, see docs experiments/just_compile
 class JustCompileReport(VersionExperiment):
     """
     Generates empty report file.

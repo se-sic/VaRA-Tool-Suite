@@ -18,7 +18,10 @@ CACHE_REVISION_COL = 'cache_revision'
 
 class GraphCacheType(Enum):
     """
-    Cached dataframes for graphs.
+    Identifiers for cached plot dataframes. These identifiers allow a plot to
+    refer to a possibly cached dataframe.  Identifiers can be used in multiple
+    plots that use the same or a similar dataframe layout, e.g., are based on
+    similar data.
     """
     CommitInteractionData = "interaction_table"
     BlameInteractionDegreeData = "b_interaction_degree_table"
@@ -28,6 +31,12 @@ class GraphCacheType(Enum):
 def __get_data_file_path(data_id: tp.Union[GraphCacheType, str],
                          project_name: str) -> Path:
     """
+    Compose the identifier and project into a file path that points to the
+    corresponding cache file in the cache directory.
+
+    Args:
+        data_id: identifier or identifier_name of the dataframe
+        project_name: name of the project
 
     Test:
     >>> str(__get_data_file_path("foo", "tmux"))
@@ -52,7 +61,8 @@ def load_cached_df_or_none(data_id: tp.Union[GraphCacheType, str],
     Load cached dataframe from disk, otherwise return None.
 
     Args:
-        data_id: File name or GraphCacheType
+        data_id: identifier or identifier_name of the dataframe
+        project_name: name of the project
     """
 
     file_path = __get_data_file_path(data_id, project_name)
@@ -68,7 +78,8 @@ def cache_dataframe(data_id: tp.Union[GraphCacheType], project_name: str,
     Cache a dataframe by persisting it to disk.
 
     Args:
-        data_id: File name or GraphCacheType
+        data_id: identifier or identifier_name of the dataframe
+        project_name: name of the project
         df: pandas dataframe to store
     """
     file_path = __get_data_file_path(data_id, project_name)
@@ -85,7 +96,7 @@ def build_cached_report_table(
     Build up an automatically cache dataframe
 
     Args:
-        graph_cache_type: graph cache descriptor
+        graph_cache_type: graph cache identifier
         create_empty_df: create a empty layout of the dataframe
         create_df_from_report: create a dataframe from a report
         create_report: callback to load a report
