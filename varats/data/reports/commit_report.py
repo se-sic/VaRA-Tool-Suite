@@ -12,6 +12,9 @@ from varats.data.version_header import VersionHeader
 
 
 class FunctionInfo():
+    """
+    Encapsulates the information gathered for a single functions.
+    """
 
     def __init__(self, raw_yaml: tp.Dict[str, tp.Any]) -> None:
         self.__name = str(raw_yaml['function-name'])
@@ -20,14 +23,17 @@ class FunctionInfo():
 
     @property
     def name(self) -> str:
+        """Name of the function"""
         return self.__name
 
     @property
     def id(self) -> str:
+        """Unique ID of the function info"""
         return self.__id
 
     @property
     def region_id(self) -> str:
+        """ID of the region"""
         return self.__region_id
 
     def __str__(self) -> str:
@@ -35,6 +41,9 @@ class FunctionInfo():
 
 
 class RegionMapping():
+    """
+    Mapping from region ID to commit hash.
+    """
 
     def __init__(self, raw_yaml: tp.Dict[str, tp.Any]) -> None:
         self.id = str(raw_yaml['id'])
@@ -45,6 +54,9 @@ class RegionMapping():
 
 
 class RegionToFunctionEdge():
+    """
+    Graph edge to connect regions and function data.
+    """
 
     def __init__(self, from_region: str, to_function: str) -> None:
         self._from = from_region
@@ -63,6 +75,9 @@ class RegionToFunctionEdge():
 
 
 class RegionToRegionEdge():
+    """
+    Graph edge to interconnect regions.
+    """
 
     def __init__(self, raw_yaml: tp.Dict[str, tp.Any]) -> None:
         self._from = str(raw_yaml['from'])
@@ -81,6 +96,10 @@ class RegionToRegionEdge():
 
 
 class FunctionGraphEdges():
+    """
+    A graph like structure that represents the connections between
+    ``FunctionInfo``s.
+    """
 
     def __init__(self, raw_yaml: tp.Dict[str, tp.Any]) -> None:
         self.fid = raw_yaml['function-id']
@@ -124,6 +143,9 @@ class FunctionGraphEdges():
 
 
 class CommitReport(BaseReport):
+    """
+    Data class that gives access to a loaded commit report.
+    """
 
     SHORTHAND = "CR"
     FILE_TYPE = "yaml"
@@ -151,7 +173,7 @@ class CommitReport(BaseReport):
 
             gedges = next(documents)
             self.graph_info: tp.Dict[str, FunctionGraphEdges] = dict()
-            # TODO: parse this into a full graph
+
             for raw_fg_edge in gedges:
                 f_edge = FunctionGraphEdges(raw_fg_edge)
                 self.graph_info[f_edge.fid] = f_edge
@@ -174,6 +196,17 @@ class CommitReport(BaseReport):
         """
         Generates a filename for a commit report with 'yaml'
         as file extension.
+
+        Args:
+            project_name: name of the project for which the report was generated
+            binary_name: name of the binary for which the report was generated
+            project_version: version of the analyzed project, i.e., commit hash
+            project_uuid: benchbuild uuid for the experiment run
+            extension_type: to specify the status of the generated report
+            file_ext: file extension of the report file
+
+        Returns:
+            name for the report file that can later be uniquly identified
         """
         return MetaReport.get_file_name(CommitReport.SHORTHAND, project_name,
                                         binary_name, project_version,
@@ -185,6 +218,18 @@ class CommitReport(BaseReport):
                                     info_type: str, file_ext: str) -> str:
         """
         Generates a filename for a commit report supplementary file.
+
+        Args:
+            project_name: name of the project for which the report was generated
+            binary_name: name of the binary for which the report was generated
+            project_version: version of the analyzed project, i.e., commit hash
+            project_uuid: benchbuild uuid for the experiment run
+            info_type: specifies the kind of supplementary file
+            file_ext: file extension of the report file
+
+        Returns:
+            name for the supplementary report file that can later be uniquly
+            identified
         """
         return BaseReport.get_supplementary_file_name(CommitReport.SHORTHAND,
                                                       project_name, binary_name,
@@ -234,6 +279,9 @@ class CommitReport(BaseReport):
                                                      tp.List[int]]) -> None:
         """
         Initialize control-flow map with edges and from/to counters.
+
+        Args:
+            cf_map: control-flow
         """
         # if any information is missing add all from the original
         # report to avoid errors.
@@ -261,6 +309,9 @@ class CommitReport(BaseReport):
         """
         The number of control-flow interactions the HEAD commit has with other
         commits.
+
+        Returns:
+            tuple (incoming_head_interactions, outgoing_head_interactions)
         """
         cf_map: tp.Dict[str, tp.List[int]] = dict()
         self.init_cf_map_with_edges(cf_map)
@@ -275,6 +326,9 @@ class CommitReport(BaseReport):
                                                      tp.List[int]]) -> None:
         """
         Initialize data-flow map with edges and from/to counters.
+
+        Returns:
+            tuple (incoming_head_interactions, outgoing_head_interactions)
         """
         # if any information is missing add all from the original report
         # to avoid errors.
@@ -314,6 +368,10 @@ class CommitReport(BaseReport):
 
 
 class CommitReportMeta():
+    """
+    Meta report class that combines the data of multiple reports, comming from
+    different revisions, into one.
+    """
 
     def __init__(self) -> None:
         self.finfos: tp.Dict[str, FunctionInfo] = dict()
@@ -322,7 +380,12 @@ class CommitReportMeta():
         self.__df_ylimit = 0
 
     def merge(self, commit_report: CommitReport) -> None:
-        """Merge data from commit report into CommitReportMeta"""
+        """
+        Merge data from commit report into CommitReportMeta
+
+        Args:
+            commit_report: new report that will be added to the meta report
+        """
         self.finfos.update(commit_report.finfos)
         self.region_mappings.update(commit_report.region_mappings)
         self.__cf_ylimit = max(self.__cf_ylimit,
@@ -359,6 +422,12 @@ class CommitMap():
         Convert a commit hash to a time id that allows a total order on the
         commits, based on the c_map, e.g., created from the analyzed git
         history.
+
+        Args:
+            c_hash: commit hash
+
+        Returns:
+            unique time-ordered id
         """
         return self.__hash_to_id[c_hash]
 
@@ -370,6 +439,12 @@ class CommitMap():
 
         The first time id is returend where the hash belonging to it starts
         with the short hash.
+
+        Args:
+            c_hash: commit hash
+
+        Returns:
+            unique time-ordered id
         """
         for key in self.__hash_to_id:
             if key.startswith(c_hash):
@@ -379,6 +454,12 @@ class CommitMap():
     def c_hash(self, time_id: int) -> str:
         """
         Get the hash belonging to the time id.
+
+        Args:
+            time_id: unique time-ordered id
+
+        Returns:
+            commit hash
         """
         for c_hash, t_id in self.__hash_to_id.items():
             if t_id == time_id:
@@ -413,6 +494,10 @@ def generate_inout_cfg_cf(
     """
     Generates a pandas dataframe that contains the commit
     region control-flow interaction information.
+
+    Args:
+        commit_report: report containing the commit data
+        cr_meta: the meta commit report, if available
     """
     cf_map = dict()  # RM -> [from, to]
 
@@ -439,6 +524,14 @@ def generate_inout_cfg_cf(
 
 def generate_interactions(commit_report: CommitReport,
                           c_map: CommitMap) -> pd.DataFrame:
+    """
+    Converts the commit analysis interaction data from a ``CommitReport`` into
+    a pandas data frame for plotting.
+
+    Args:
+        commit_report: the report
+        c_map: commit map for mapping commits to unique IDs
+    """
     node_rows = []
     for item in commit_report.region_mappings.values():
         node_rows.append([item.hash, c_map.time_id(item.hash)])
@@ -465,6 +558,10 @@ def generate_inout_cfg_df(
     """
     Generates a pandas dataframe that contains the commit region
     data-flow interaction information.
+
+    Args:
+        commit_report: report containing the commit data
+        cr_meta: the meta commit report, if available
     """
     df_map = dict()  # RM -> [from, to]
 
