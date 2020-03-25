@@ -13,7 +13,6 @@ from benchbuild.utils.run import run
 
 from plumbum import local
 
-from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.project_util import get_all_revisions_between
 
 from varats.paper.paper_config import project_filter_generator
