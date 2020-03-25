@@ -1,7 +1,7 @@
 """
 Generate plots for the degree of blame interactions.
 """
-
+import logging
 import typing as tp
 import abc
 from pathlib import Path
@@ -15,6 +15,7 @@ import numpy as np
 
 from varats.data.cache_helper import build_cached_report_table, GraphCacheType
 from varats.jupyterhelper.file import load_blame_report
+from varats.plots.cve_annotation import draw_cves
 from varats.plots.plot import Plot, PlotDataEmpty
 from varats.data.revisions import get_processed_revisions_files
 from varats.data.reports.blame_report import (
@@ -24,6 +25,9 @@ from varats.data.reports.blame_report import (
 from varats.plots.plot_utils import check_required_args
 from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
 from varats.plots.repository_churn import draw_code_churn
+from varats.utils.project_util import get_project_cls_by_name
+
+LOG = logging.getLogger(__name__)
 
 MAX_TIME_BUCKET_SIZE = 1
 AVG_TIME_BUCKET_SIZE = 1
@@ -251,11 +255,19 @@ class BlameDegree(Plot):
                  family='monospace')
         legend.set_visible(plot_cfg['legend_visible'])
 
+        revs = list(map(lambda x: x.split('-')[1], unique_revisions))
+
+        # annotate CVEs
+        with_cve = self.plot_kwargs.get("with_cve", False)
+        if with_cve:
+            if not "project" in self.plot_kwargs:
+                LOG.error("with_cve is true but no project is given.")
+            else:
+                project = get_project_cls_by_name(self.plot_kwargs["project"])
+                draw_cves(main_axis, project, revs, plot_cfg)
+
         # draw churn subplot
         if with_churn:
-            revs = list(
-                map(lambda x: tp.cast(object,
-                                      x.split('-')[1]), unique_revisions))
             draw_code_churn(churn_axis, self.plot_kwargs['project'],
                             self.plot_kwargs['get_cmap'](),
                             lambda x: x[:10] in revs)
