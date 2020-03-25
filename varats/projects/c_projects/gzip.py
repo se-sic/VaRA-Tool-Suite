@@ -14,6 +14,7 @@ import benchbuild.project as prj
 
 from plumbum import local
 
+from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.case_study import ReleaseType, ReleaseProvider
 from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import get_tagged_commits, \
@@ -32,7 +33,7 @@ from varats.utils.project_util import get_tagged_commits, \
     refspec="HEAD",
     shallow_clone=False,
     version_filter=project_filter_generator("gzip"))
-class Gzip(prj.Project, ReleaseProvider):  # type: ignore
+class Gzip(prj.Project, ReleaseProvider, CVEProviderHook):  # type: ignore
     """ Compression and decompression tool Gzip (fetched by Git) """
 
     NAME = 'gzip'
@@ -80,3 +81,7 @@ class Gzip(prj.Project, ReleaseProvider):  # type: ignore
             h for h, tag in tagged_commits
             if re.match(minor_release_regex, tag)
         ]
+
+    def get_cve_product_info(self) -> tp.Tuple[str, str]:
+        return "gnu", "gzip"
+
