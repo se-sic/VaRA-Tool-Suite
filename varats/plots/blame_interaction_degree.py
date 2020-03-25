@@ -8,7 +8,7 @@ from pathlib import Path
 from enum import Enum
 
 import matplotlib.pyplot as plt
-from matplotlib import cm, axes
+from matplotlib import cm
 import matplotlib.style as style
 import pandas as pd
 import numpy as np
