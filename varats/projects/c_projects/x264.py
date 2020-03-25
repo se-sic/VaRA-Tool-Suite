@@ -25,7 +25,7 @@ from varats.utils.project_util import wrap_paths_to_binaries
     refspec="HEAD",
     shallow_clone=False,
     version_filter=project_filter_generator("x264"))
-class X264(Project, CVEProviderHook):  # type: ignore
+class X264(Project):  # type: ignore
     """Video encoder x264 (fetched by Git)"""
 
     NAME = 'x264'

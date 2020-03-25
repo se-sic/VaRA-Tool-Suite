@@ -204,6 +204,7 @@ class BlameDegree(Plot):
             'legend_visible': True,
             'fig_title': 'MISSING figure title',
             'edgecolor': 'black',
+            'color_map': cm.get_cmap('gist_stern'),
         }
         if extra_plot_cfg is not None:
             plot_cfg.update(extra_plot_cfg)
@@ -213,8 +214,6 @@ class BlameDegree(Plot):
         interaction_plot_df = _gen_blame_interaction_data(**self.plot_kwargs)
         unique_revisions, sub_df_list = _filter_data_frame(
             degree_type, interaction_plot_df, self.plot_kwargs)
-
-        color_map = cm.get_cmap('gist_stern')
 
         fig = plt.figure()
         grid_spec = fig.add_gridspec(3, 1)
@@ -237,7 +236,8 @@ class BlameDegree(Plot):
             unique_revisions,
             sub_df_list,
             edgecolor=plot_cfg['edgecolor'],
-            colors=reversed(color_map(np.linspace(0, 1, len(sub_df_list)))),
+            colors=reversed(plot_cfg['color_map'](np.linspace(
+                0, 1, len(sub_df_list)))),
             # TODO (se-passau/VaRA#545): remove cast with plot config rework
             labels=map(
                 tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
