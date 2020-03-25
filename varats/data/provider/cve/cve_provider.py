@@ -40,7 +40,7 @@ class CVEProvider(Provider):
         if hasattr(project, "get_cve_product_info"):
             self.__cve_map = generate_cve_map(
                 get_local_project_git_path(project.NAME),
-                project.get_cve_product_info(project))
+                project.get_cve_product_info())
         else:
             raise ValueError(f"Project {project} does not implement "
                              f"CVEProviderHook.")
