@@ -12,6 +12,8 @@ from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
 
 from plumbum import local
+
+from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.project_util import get_all_revisions_between
 
 from varats.paper.paper_config import project_filter_generator
@@ -23,8 +25,8 @@ from varats.utils.project_util import wrap_paths_to_binaries
     refspec="HEAD",
     shallow_clone=False,
     version_filter=project_filter_generator("x264"))
-class X264(Project):  # type: ignore
-    """ Video encoder x264 (fetched by Git) """
+class X264(Project, CVEProviderHook):  # type: ignore
+    """Video encoder x264 (fetched by Git)"""
 
     NAME = 'x264'
     GROUP = 'c_projects'

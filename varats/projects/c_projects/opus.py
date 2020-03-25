@@ -52,3 +52,6 @@ class Opus(Project):  # type: ignore
                 run(local["./autogen.sh"])
                 run(local["./configure"])
             run(make["-j", int(BB_CFG["jobs"])])
+
+    def get_cve_product_info(self) -> tp.Tuple[str, str]:
+        return "opus-codec", "opus"

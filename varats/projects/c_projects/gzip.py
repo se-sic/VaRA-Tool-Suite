@@ -34,7 +34,7 @@ from varats.utils.project_util import get_tagged_commits, \
     shallow_clone=False,
     version_filter=project_filter_generator("gzip"))
 class Gzip(prj.Project, ReleaseProvider, CVEProviderHook):  # type: ignore
-    """ Compression and decompression tool Gzip (fetched by Git) """
+    """Compression and decompression tool Gzip (fetched by Git)"""
 
     NAME = 'gzip'
     GROUP = 'c_projects'
@@ -83,4 +83,5 @@ class Gzip(prj.Project, ReleaseProvider, CVEProviderHook):  # type: ignore
         ]
 
     def get_cve_product_info(self) -> tp.Tuple[str, str]:
+        # also: "gzip", "gzip"
         return "gnu", "gzip"

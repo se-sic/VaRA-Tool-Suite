@@ -13,6 +13,7 @@ from benchbuild.utils.run import run
 
 from plumbum import local
 
+from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
 
@@ -20,8 +21,8 @@ from varats.utils.project_util import wrap_paths_to_binaries
 @with_git("https://github.com/openssl/openssl.git",
           refspec="HEAD",
           version_filter=project_filter_generator("openssl"))
-class OpenSSL(Project):  # type: ignore
-    """ TLS-framework OpenSSL (fetched by Git) """
+class OpenSSL(Project, CVEProviderHook):  # type: ignore
+    """TLS-framework OpenSSL (fetched by Git)"""
 
     NAME = 'openssl'
     GROUP = 'c_projects'
@@ -46,3 +47,7 @@ class OpenSSL(Project):  # type: ignore
             with local.env(CC=str(compiler)):
                 run(local['./config'])
             run(make["-j", int(BB_CFG["jobs"])])
+
+    def get_cve_product_info(self) -> tp.Tuple[str, str]:
+        # also: "openssl_project", "openssl"
+        return "openssl", "openssl"

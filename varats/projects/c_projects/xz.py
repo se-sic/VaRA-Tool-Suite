@@ -12,6 +12,8 @@ from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
 
 from plumbum import local
+
+from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.project_util import (get_all_revisions_between,
                                        block_revisions, BugAndFixPair)
 
@@ -31,8 +33,8 @@ from varats.utils.project_util import wrap_paths_to_binaries
           refspec="HEAD",
           shallow_clone=False,
           version_filter=project_filter_generator("xz"))
-class Xz(Project):  # type: ignore
-    """ Compression and decompression tool xz (fetched by Git) """
+class Xz(Project, CVEProviderHook):  # type: ignore
+    """Compression and decompression tool xz (fetched by Git)"""
 
     NAME = 'xz'
     GROUP = 'c_projects'
@@ -73,3 +75,6 @@ class Xz(Project):  # type: ignore
                 else:
                     run(local["./configure"])
             run(make["-j", int(BB_CFG["jobs"])])
+
+    def get_cve_product_info(self) -> tp.Tuple[str, str]:
+        return "tukaani", "xz"

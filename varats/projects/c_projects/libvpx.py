@@ -13,6 +13,7 @@ from benchbuild.utils.run import run
 
 from plumbum import local
 
+from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
 
@@ -22,8 +23,8 @@ from varats.utils.project_util import wrap_paths_to_binaries
     refspec="HEAD",
     shallow_clone=False,
     version_filter=project_filter_generator("libvpx"))
-class Libvpx(Project):  # type: ignore
-    """ Codec SDK libvpx (fetched by Git) """
+class Libvpx(Project, CVEProviderHook):  # type: ignore
+    """Codec SDK libvpx (fetched by Git)"""
 
     NAME = 'libvpx'
     GROUP = 'c_projects'
@@ -50,3 +51,6 @@ class Libvpx(Project):  # type: ignore
             with local.env(CC=str(clang)):
                 run(local["./configure"])
             run(make["-j", int(BB_CFG["jobs"])])
+
+    def get_cve_product_info(self) -> tp.Tuple[str, str]:
+        return "john_koleszar", "libvpx"

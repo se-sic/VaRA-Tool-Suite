@@ -46,7 +46,7 @@ from varats.utils.project_util import (get_all_revisions_between,
           shallow_clone=False,
           version_filter=project_filter_generator("gravity"))
 class Gravity(Project, CVEProviderHook):  # type: ignore
-    """ Programming language Gravity """
+    """Programming language Gravity"""
 
     NAME = 'gravity'
     GROUP = 'c_projects'

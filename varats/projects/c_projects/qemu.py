@@ -13,6 +13,7 @@ from benchbuild.utils.download import with_git
 
 from plumbum import local
 
+from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
 
@@ -21,8 +22,8 @@ from varats.utils.project_util import wrap_paths_to_binaries
           refspec="HEAD",
           shallow_clone=False,
           version_filter=project_filter_generator("qemu"))
-class Qemu(Project):  # type: ignore
-    """ Programming language qemu"""
+class Qemu(Project, CVEProviderHook):  # type: ignore
+    """QEMU, the FAST! processor emulator."""
 
     NAME = 'qemu'
     GROUP = 'c_projects'
@@ -55,3 +56,6 @@ class Qemu(Project):  # type: ignore
                 run(local["../configure"]
                     ["--disable-debug-info", "--target-list=x86_64-softmmu"])
                 run(make["-j", int(BB_CFG["jobs"])])
+
+    def get_cve_product_info(self) -> tp.Tuple[str, str]:
+        return "qemu", "qemu"

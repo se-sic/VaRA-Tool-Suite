@@ -13,6 +13,7 @@ from benchbuild.utils.run import run
 
 from plumbum import local
 
+from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
 
@@ -22,8 +23,8 @@ from varats.utils.project_util import wrap_paths_to_binaries
     refspec="HEAD",
     shallow_clone=False,
     version_filter=project_filter_generator("tmux"))
-class Tmux(Project):  # type: ignore
-    """ Terminal multiplexer Tmux """
+class Tmux(Project, CVEProviderHook):  # type: ignore
+    """Terminal multiplexer Tmux"""
 
     NAME = 'tmux'
     GROUP = 'c_projects'
@@ -49,3 +50,6 @@ class Tmux(Project):  # type: ignore
                 run(local["./autogen.sh"])
                 run(local["./configure"])
             run(make["-j", int(BB_CFG["jobs"])])
+
+    def get_cve_product_info(self) -> tp.Tuple[str, str]:
+        return "Nicholas_marriott", "tmux"

@@ -14,6 +14,7 @@ import benchbuild.project as prj
 from plumbum import local
 from plumbum.path.utils import delete
 
+from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
 
@@ -23,8 +24,8 @@ from varats.utils.project_util import wrap_paths_to_binaries
     refspec="HEAD",
     shallow_clone=False,
     version_filter=project_filter_generator("git"))
-class Git(prj.Project):  # type: ignore
-    """ Git """
+class Git(prj.Project, CVEProviderHook):  # type: ignore
+    """Git"""
 
     NAME = 'git'
     GROUP = 'c_projects'
@@ -51,3 +52,6 @@ class Git(prj.Project):  # type: ignore
                 run(make["configure"])
                 run(local["./configure"])
             run(make["-j", int(BB_CFG["jobs"])])
+
+    def get_cve_product_info(self) -> tp.Tuple[str, str]:
+        return "git", "git"

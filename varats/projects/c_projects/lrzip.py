@@ -24,7 +24,7 @@ from varats.utils.project_util import wrap_paths_to_binaries
     shallow_clone=False,
     version_filter=project_filter_generator("lrzip"))
 class Lrzip(Project, CVEProviderHook):  # type: ignore
-    """ Compression and decompression tool lrzip (fetched by Git) """
+    """Compression and decompression tool lrzip (fetched by Git)"""
 
     NAME = 'lrzip'
     GROUP = 'c_projects'
