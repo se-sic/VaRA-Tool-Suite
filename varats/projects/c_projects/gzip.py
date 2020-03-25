@@ -80,5 +80,6 @@ class Gzip(prj.Project, ReleaseProvider, CVEProviderHook):  # type: ignore
             h for h, tag in tagged_commits if re.match(minor_release_regex, tag)
         ]
 
-    def get_cve_product_info(self) -> tp.List[tp.Tuple[str, str]]:
+    @classmethod
+    def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
         return [("gzip", "gzip"), ("gnu", "gzip")]

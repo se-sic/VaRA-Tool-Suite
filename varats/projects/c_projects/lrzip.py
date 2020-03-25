@@ -52,5 +52,6 @@ class Lrzip(Project, CVEProviderHook):  # type: ignore
                 run(local["./configure"])
             run(make["-j", int(BB_CFG["jobs"])])
 
-    def get_cve_product_info(self) -> tp.List[tp.Tuple[str, str]]:
+    @classmethod
+    def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
         return [("lrzip_project", "lrzip")]
