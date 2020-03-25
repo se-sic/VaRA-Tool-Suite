@@ -12,6 +12,9 @@ from varats.experiments.wllvm import RunWLLVM
 
 
 class RegionAnalyser(Experiment):  # type: ignore
+    """
+    Small region instrumentation experiment to test vara tracer.
+    """
 
     NAME = "RegionAnalyser"
 

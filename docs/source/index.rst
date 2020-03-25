@@ -23,6 +23,15 @@ VaRA-TS gives convenient access to a list of different research tools, which can
 
    vara-ts-api/tools/research_tools/vara
 
+VaRA-TS Docs
+============
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Contents:
+
+   vara-ts/benchbuild
+
 VaRA-TS API Reference
 =====================
 .. toctree::

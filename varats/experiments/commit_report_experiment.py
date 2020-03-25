@@ -20,8 +20,7 @@ import benchbuild.utils.actions as actions
 
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.data.report import FileStatusExtension as FSE
-from varats.experiments.extract import Extract
-from varats.experiments.wllvm import RunWLLVM
+from varats.experiments.wllvm import RunWLLVM, Extract
 from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
                                           VersionExperiment, PEErrorHandler,
                                           get_default_compile_error_wrapped)

@@ -1,5 +1,6 @@
 """
-Implements the base blame experiment.
+Implements the base blame experiment, making it easier to create different
+blame experiments that have a similar experiment setup.
 """
 
 import typing as tp
@@ -13,8 +14,7 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.settings import CFG as BB_CFG
 import benchbuild.utils.actions as actions
 
-from varats.experiments.extract import Extract
-from varats.experiments.wllvm import RunWLLVM
+from varats.experiments.wllvm import RunWLLVM, Extract
 from varats.utils.experiment_util import get_default_compile_error_wrapped
 from varats.data.report import BaseReport
 
@@ -39,16 +39,16 @@ def setup_basic_blame_experiment(experiment: Experiment, project: Project,
         << run.WithTimeout()
 
     # Add own error handler to compile step.
-    project.compile = get_default_compile_error_wrapped(
-        project, report_type, result_folder_template)
+    project.compile = get_default_compile_error_wrapped(project, report_type,
+                                                        result_folder_template)
 
     # This c-flag is provided by VaRA and it suggests to use the git-blame
     # annotation.
     project.cflags = ["-fvara-GB"]
 
 
-def generate_basic_blame_experiment_actions(project: Project
-                                            ) -> tp.List[actions.Step]:
+def generate_basic_blame_experiment_actions(
+        project: Project) -> tp.List[actions.Step]:
     """
     Generate the basic actions for a blame experiment.
         - handle caching of BC files

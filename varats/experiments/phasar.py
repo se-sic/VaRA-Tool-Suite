@@ -14,8 +14,7 @@ from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import opt
 import benchbuild.utils.actions as actions
 
-from varats.experiments.extract import Extract
-from varats.experiments.wllvm import RunWLLVM
+from varats.experiments.wllvm import RunWLLVM, Extract
 
 
 class DefaultAnalysis(actions.Step):  # type: ignore
