@@ -9,9 +9,9 @@ Reports
 -------
 
 VaRA-TS manages experiment result data in the form of reports.
-The report file contains all generated data during the experiment and the report class gives the user a interface to interact with the data.
+The report file contains all generated data during the experiment and the report class gives the user an interface to interact with the data.
 To simplify report handling and storage management, the report base classes provide functionality to automatically create customized filenames.
-In each filename the framework encodes information like report type, project, revision, and a UUID, to specify the run that created the file.
+In each filename, the framework encodes information like report type, project, revision, and a UUID, to specify the run that created the file.
 Furthermore, report implementers have the option to customize the filename even further.
 
 As a simple example and help to implement your own report, take a look at the :ref:`EmptyReport`.
