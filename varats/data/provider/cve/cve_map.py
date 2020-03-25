@@ -24,6 +24,7 @@ Example Output:
 """
 import logging
 import typing as tp
+from collections import defaultdict
 from pathlib import Path
 import re
 from packaging.version import parse as parse_version, Version, LegacyVersion
@@ -61,7 +62,8 @@ def __n_grams(text: str,
 
 
 def __collect_via_commit_mgs(
-        commits: tp.List[str]) -> tp.Dict[int, tp.Dict[str, tp.Any]]:
+    commits: tp.List[str]
+) -> tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[CVE, CWE]]]]:
     """
     Collect data about resolved CVE's/CWE's using the commit message.
     
@@ -69,33 +71,34 @@ def __collect_via_commit_mgs(
         commits: a list of commits
     
     Return: 
-        a dictionary with line number as key and commit hash, a list of CVE's
-        and a list of CWE's as values
+        a dictionary with commit hash as key and a set of CVE's and a set of
+        CWE's as values
     """
-    results: tp.Dict[int, tp.Dict[str, tp.Any]] = {}
+    results: tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[
+        CVE, CWE]]]] = defaultdict(lambda: defaultdict(set))
 
-    for number, line in enumerate(reversed(commits)):
+    for line in commits:
         line_parts = line.split(' ')
         commit, message = line_parts[0], ' '.join(line_parts[1:])
         if 'CVE-' in message or 'CWE-' in message:
             # Check commit message for "CVE-XXXX-XXXXXXXX"
             # Includes old CVE format with just 4 numbers at the end,
             # as well as the new one with 8
-            cve_list, cve_data = re.findall(r'CVE-\d{4}-\d{4,8}', message,
-                                            re.IGNORECASE), []
+            cve_list = re.findall(r'CVE-\d{4}-\d{4,8}', message, re.IGNORECASE)
+            cve_data = []
             for cve in cve_list:
                 try:
                     cve_data.append(find_cve(cve))
                 except ValueError as error_msg:
-                    print(error_msg)
+                    LOG.error(error_msg)
             # Check commit message for "CWE-XXXX"
-            cwe_list, cwe_data = re.findall(r'CWE-[\d\-]+\d', message,
-                                            re.IGNORECASE), []
+            cwe_list = re.findall(r'CWE-[\d\-]+\d', message, re.IGNORECASE)
+            cwe_data = []
             for cwe in cwe_list:
                 try:
                     cwe_data.append(find_cwe(cwe_id=cwe))
                 except ValueError as error_msg:
-                    print(error_msg)
+                    LOG.error(error_msg)
             # Check commit message whether it contains any name or description
             # from the CWE entries
             for cwe in CWE_LIST:
@@ -108,18 +111,15 @@ def __collect_via_commit_mgs(
                    not __n_grams(text=cwe.description) ^ message_parts:
                     cwe_data.append(cwe)
 
-            results[number] = {
-                'commit': commit,
-                'cve': cve_data,
-                'cwe': cwe_data
-            }
+            results[commit]['cve'].update(cve_data)
+            results[commit]['cwe'].update(cwe_data)
 
     return results
 
 
 def __collect_via_version(
-        commits: tp.List[str],
-        cve_list: tp.FrozenSet[CVE]) -> tp.Dict[int, tp.Dict[str, tp.Any]]:
+    commits: tp.List[str], cve_list: tp.FrozenSet[CVE]
+) -> tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[CVE, CWE]]]]:
     """
     Collect data about resolved CVE's using the tagged versions
     and the vulnerable version list in the CVE's.
@@ -128,10 +128,11 @@ def __collect_via_version(
         commits: a list of commits
 
     Return:
-        a dictionary with line number as key and commit hash, a list of CVE's
-        and a list of CWE's as values
+        a dictionary with commit hash as key and a set of CVE's and a set of
+        CWE's as values
     """
-    results: tp.Dict[int, tp.Dict[str, tp.Any]] = {}
+    results: tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[
+        CVE, CWE]]]] = defaultdict(lambda: defaultdict(set))
 
     # Collect tagged commits
     tag_list: tp.Dict[tp.Union[LegacyVersion, Version], tp.Dict[str,
@@ -149,14 +150,7 @@ def __collect_via_version(
     for cve in cve_list:
         for version in sorted(tag_list.keys()):
             if all([version > x for x in cve.vulnerable_versions]):
-                if tag_list[version]['number'] in results.keys():
-                    results[tag_list[version]['number']]['cve'] += [cve]
-                else:
-                    results[tag_list[version]['number']] = {
-                        'commit': tag_list[version]['commit'],
-                        'cve': [cve],
-                        'cwe': [],
-                    }
+                results[tag_list[version]['commit']]['cve'].add(cve)
                 break
 
     return results
@@ -164,7 +158,7 @@ def __collect_via_version(
 
 def __collect_via_references(
         commits: tp.List[str], cve_list: tp.FrozenSet[CVE], vendor: str,
-        product: str) -> tp.Dict[int, tp.Dict[str, tp.Any]]:
+        product: str) -> tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[CVE, CWE]]]]:
     """
     Collect data about resolved CVE' using the reference list in each CVE's.
 
@@ -175,7 +169,8 @@ def __collect_via_references(
         a dictionary with line number as key and commit hash, a list of CVE's
         and a list of CWE's as values
     """
-    results: tp.Dict[int, tp.Dict[str, tp.Any]] = {}
+    results: tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[
+        CVE, CWE]]]] = defaultdict(lambda: defaultdict(set))
 
     for cve in cve_list:
         # Parse for github/gitlab urls which usually look like
@@ -187,25 +182,18 @@ def __collect_via_references(
             continue
 
         for referenced_commit in referenced_commits:
-            for number, line in enumerate(reversed(commits)):
+            for line in commits:
                 commit = line.split(' ')[0]
                 if referenced_commit == commit:
-                    if number in results.keys():
-                        results[number]['cve'] += [cve]
-                    else:
-                        results[number] = {
-                            'commit': commit,
-                            'cve': [cve],
-                            'cwe': []
-                        }
+                    results[commit]['cve'].add(cve)
                     break
 
     return results
 
 
 def __merge_results(
-    result_list: tp.List[tp.Dict[int, tp.Dict[str, tp.Any]]]
-) -> tp.Dict[int, tp.Dict[str, tp.Any]]:
+    result_list: tp.List[tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[CVE, CWE]]]]]
+) -> tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[CVE, CWE]]]]:
     """
     Merge a list of results into one dictionary.
     
@@ -213,27 +201,23 @@ def __merge_results(
         the merged dictionary with line number as key and commit hash, a list of
         unique CVE's and a list of unique CWE's as values
     """
-    results: tp.Dict[int, tp.Dict[str, tp.Any]] = {}
+    results: tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[
+        CVE, CWE]]]] = defaultdict(lambda: defaultdict(set))
 
     for unmerged in result_list:
         for entry in unmerged.keys():
-            if entry in results.keys():
-                results[entry]['cve'] = list(
-                    set(results[entry]['cve'] + unmerged[entry]['cve']))
-                results[entry]['cwe'] = list(
-                    set(results[entry]['cwe'] + unmerged[entry]['cwe']))
-            else:
-                results[entry] = unmerged[entry]
-
+            results[entry]['cve'].update(unmerged[entry]['cve'])
+            results[entry]['cwe'].update(unmerged[entry]['cwe'])
     return results
 
 
 def generate_security_commit_map(
-        path: Path,
-        vendor: str,
-        product: str,
-        end: str = "HEAD",
-        start: tp.Optional[str] = None) -> tp.Dict[int, tp.Dict[str, tp.Any]]:
+    path: Path,
+    vendor: str,
+    product: str,
+    end: str = "HEAD",
+    start: tp.Optional[str] = None
+) -> tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[CVE, CWE]]]]:
     """
     Generate a commit map for a repository including the commits
     ``]start..end]`` if they contain a fix for a CVE or CWE.
