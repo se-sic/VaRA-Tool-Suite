@@ -164,7 +164,7 @@ def get_failed_revisions(project_name: str,
 
 def __get_tag_for_revision(revision: str,
                            file_list: tp.List[Path],
-                           project_cls: Project,
+                           project_cls: tp.Type[Project],
                            result_file_type: MetaReport,
                            tag_blocked: bool = True) -> FileStatusExtension:
     """

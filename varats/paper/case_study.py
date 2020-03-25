@@ -1043,7 +1043,7 @@ def extend_with_release_revs(case_study: CaseStudy, cmap: CommitMap,
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
     """
-    project: Project = get_project_cls_by_name(kwargs['project'])
+    project: tp.Type[Project] = get_project_cls_by_name(kwargs['project'])
     release_revisions: tp.List[str] = project.get_release_revisions(
         kwargs['release_type'])
     case_study.include_revisions(
