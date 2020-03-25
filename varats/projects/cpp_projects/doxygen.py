@@ -14,7 +14,6 @@ from benchbuild.utils.download import with_git
 from plumbum.path.utils import delete
 from plumbum import local
 
-from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import (wrap_paths_to_binaries, block_revisions,
                                        BugAndFixPair)
@@ -33,7 +32,7 @@ from varats.utils.project_util import (wrap_paths_to_binaries, block_revisions,
           refspec="HEAD",
           shallow_clone=False,
           version_filter=project_filter_generator("doxygen"))
-class Doxygen(Project, CVEProviderHook):  # type: ignore
+class Doxygen(Project):  # type: ignore
     """Doxygen"""
 
     NAME = 'doxygen'

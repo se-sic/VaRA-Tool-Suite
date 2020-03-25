@@ -41,13 +41,13 @@ def __n_grams(text: str,
               filter_len: int = 3) -> tp.Set[str]:
     """
     Divide some text into character-level n-grams.
-    
+
     Args:
         text: the text to compute the n-grams for
         filter_reg: regular expression to filter out special characters
                     (default: non-letters)
-    
-    Return: 
+
+    Return:
         the set of n-grams
     """
     results: tp.Set[str] = set()
@@ -66,10 +66,10 @@ def __collect_via_commit_mgs(
 ) -> tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[CVE, CWE]]]]:
     """
     Collect data about resolved CVE's/CWE's using the commit message.
-    
+
     Args:
         commits: a list of commits
-    
+
     Return:
         a dictionary with commit hash as key and a set of CVE's and a set of
         CWE's as values
