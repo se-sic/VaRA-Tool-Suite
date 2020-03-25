@@ -43,6 +43,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.autosectionlabel',
     'sphinxcontrib.programoutput',
+    'sphinx_autodoc_typehints',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -72,6 +73,8 @@ pygments_style = 'sphinx'
 autodoc_member_order = "bysource"
 add_function_parentheses = True
 add_module_names = True
+
+set_type_checking_flag = True
 
 # -- Prevent import warnings -------------------------------------------------
 
