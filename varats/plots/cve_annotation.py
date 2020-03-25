@@ -10,7 +10,7 @@ from varats.data.provider.cve.cve_provider import CVEProvider
 from varats.tools.commit_map import create_lazy_commit_map_loader
 
 
-def draw_cves(axis: axes.SubplotBase,
+def draw_cves(axis: axes.Axes,
               project: tp.Type[Project],
               revisions: tp.List[str],
               extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None) -> None:

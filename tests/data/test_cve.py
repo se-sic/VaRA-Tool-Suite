@@ -49,7 +49,7 @@ class TestSecurity(unittest.TestCase):
 
     def test_find_all_cve(self):
         """
-        Get all OpenSSL CVE's and check if the Heartbleed CVE-2014-0160 is 
+        Get all OpenSSL CVE's and check if the Heartbleed CVE-2014-0160 is
         contained.
         @https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-2601
         """
