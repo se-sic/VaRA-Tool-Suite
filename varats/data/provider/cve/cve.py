@@ -197,7 +197,7 @@ def find_all_cve(vendor: str, product: str) -> tp.FrozenSet[CVE]:
                     score=entry.get('cvss'),
                     published=datetime.strptime(entry.get('Published'),
                                                 '%Y-%m-%dT%H:%M:%S'),
-                    vector=entry.get('cvss-vector', "").split('/'),
+                    vector=frozenset(entry.get('cvss-vector', "").split('/')),
                     references=entry.get('references'),
                     summary=entry.get('summary'),
                     vulnerable_versions=frozenset([
