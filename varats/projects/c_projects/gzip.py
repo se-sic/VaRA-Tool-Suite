@@ -84,4 +84,3 @@ class Gzip(prj.Project, ReleaseProvider, CVEProviderHook):  # type: ignore
 
     def get_cve_product_info(self) -> tp.Tuple[str, str]:
         return "gnu", "gzip"
-

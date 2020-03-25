@@ -70,7 +70,7 @@ def __collect_via_commit_mgs(
     Args:
         commits: a list of commits
     
-    Return: 
+    Return:
         a dictionary with commit hash as key and a set of CVE's and a set of
         CWE's as values
     """
@@ -196,7 +196,7 @@ def __merge_results(
 ) -> tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[CVE, CWE]]]]:
     """
     Merge a list of results into one dictionary.
-    
+
     Return:
         the merged dictionary with line number as key and commit hash, a list of
         unique CVE's and a list of unique CWE's as values

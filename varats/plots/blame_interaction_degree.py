@@ -260,7 +260,7 @@ class BlameDegree(Plot):
         # annotate CVEs
         with_cve = self.plot_kwargs.get("with_cve", False)
         if with_cve:
-            if not "project" in self.plot_kwargs:
+            if "project" not in self.plot_kwargs:
                 LOG.error("with_cve is true but no project is given.")
             else:
                 project = get_project_cls_by_name(self.plot_kwargs["project"])

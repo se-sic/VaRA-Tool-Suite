@@ -61,12 +61,12 @@ class CVEProvider(Provider):
         """
         Get all CVEs associated with this provider's project along with the
         fixing commits/versions.
-        
+
         Return:
             a set of tuples of commit hash and cves
         """
-        return set([(k, frozenset(tp.cast(tp.Set[CVE], v["cve"])))
-                    for k, v in self.__cve_map.items()])
+        return {(k, frozenset(tp.cast(tp.Set[CVE], v["cve"])))
+                for k, v in self.__cve_map.items()}
 
 
 class CVEDefaultProvider(CVEProvider):

@@ -1,9 +1,10 @@
 """
 Annotate CVE/CWE data to a plot.
 """
+import typing as tp
+
 from benchbuild.project import Project
 from matplotlib import axes
-import typing as tp
 
 from varats.data.provider.cve.cve_provider import CVEProvider
 from varats.tools.commit_map import create_lazy_commit_map_loader
@@ -54,7 +55,7 @@ def draw_cves(axis: axes.SubplotBase,
                          label=cve.cve_id,
                          linewidth=plot_cfg["linewidth"],
                          color=plot_cfg["color"])
-            axis.text(index+0.1,
+            axis.text(index + 0.1,
                       0,
                       cve.cve_id,
                       transform=transform,

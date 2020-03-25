@@ -22,7 +22,7 @@ from tabulate import tabulate
 
 class CVE:
     """
-    CVE representation with the major fields. 
+    CVE representation with the major fields.
 
     Mainly a data object to store everything.
     Uses the API at https://cve.circl.lu/api/search/ to find entries.
@@ -176,7 +176,7 @@ def __fetch_cve_data(source_url: str) -> Response:
 def find_all_cve(vendor: str, product: str) -> tp.FrozenSet[CVE]:
     """
     Find all CVE's for a given vendor and product combination.
-    
+
     Args:
         vendor: vendor to search for
         product: product to search for
