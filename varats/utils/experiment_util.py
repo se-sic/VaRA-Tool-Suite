@@ -113,7 +113,7 @@ def get_default_compile_error_wrapped(
     Args:
         project: that will be compiled
         report_type: that should be generated
-        result_folder_template: where the results would be placed
+        result_folder_template: where the results will be placed
 
     Returns:
         project compilation function, wrapped with automatic error handling

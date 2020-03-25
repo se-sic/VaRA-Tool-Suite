@@ -1,6 +1,6 @@
 """
 Implements the basic blame report experiment. The experiment analyses a project
-with VaRAs blame analysis and generates a BlameReports.
+with VaRA's blame analysis and generates a BlameReport.
 """
 
 import typing as tp
@@ -111,7 +111,8 @@ class BlameReportExperiment(VersionExperiment):
     REPORT_TYPE = BR
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
-        """Returns the specified steps to run the project(s) specified in
+        """
+        Returns the specified steps to run the project(s) specified in
         the call in a fixed order.
 
         Args:

@@ -6,22 +6,22 @@ They are designed to make the execution of research experiments easy and reprodu
 For example, how a specific project is compiled is the responsibilitty of the project writer, where how the project is evaluated during a research experiment is the ``Experiment``'s task.
 
 .. note::
-  Details on how to run experiments can be found :ref:`here<Running experiments with BenchBuild>`
+  Details on how to run experiments can be found :ref:`here<Running experiments with BenchBuild>`.
 
 Designing a new ``Experiment`` is also quite simple.
 
-* First, create a new python module in the experiments directory and add a experiment class which inherits from ``benchbuild.experiment.Experiment``.
-  If VaRA-TS should provide automatic support for analyzing different version, i.e., different revisions of a git based project, use :class:`~varats.utils.experiment_util.VersionExperiment` as base class.
+* First, create a new python module in the ``experiments`` directory and add an experiment class which inherits from ``benchbuild.experiment.Experiment``.
+  If VaRA-TS should provide automatic support for analyzing different versions, i.e., different revisions of a git based project, use :class:`~varats.utils.experiment_util.VersionExperiment` as base class.
 * Second, define two static variables for your experiment: ``NAME`` and ``REPORT_TYPE``
 * Next, override the ``actions_for_project`` method.
   This method should assign run-time/compile-time extensions and specify the list of actions that should be performed.
-  Each action the experiment does is call a ``Step`` and will be executed by BenchBuild in order.
+  Each action the experiment does is called a ``Step`` and will be executed by BenchBuild in order.
 * Last, add your experiment for testing to the BenchBuild config file `vara-root/benchbuild/.benchbuild.yml` under plugins/experiments/value. After testing, integrate them into the tool suite by adding it to the experiment list in ``varats.settings.generate_benchbuild_config``, so it will be automatically added to the BenchBuild config in the future.
 
 .. note::
   For more information about ``Experiment``'s consider reading the BenchBuild `docs <https://pprof-study.readthedocs.io/en/master/>`_.
 
-If you're looking for a simple example experiment, consider taking a look at :class:`~varats.experiments.just_compile.JustCompileReport`
+If you're looking for a simple example experiment, consider taking a look at :class:`~varats.experiments.just_compile.JustCompileReport`.
 
 * :ref:`Tool suite provided experiments`
 * :ref:`experiment utilities`
