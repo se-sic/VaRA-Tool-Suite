@@ -20,8 +20,10 @@ def cli_yn_choice(question: str, default: str = 'y') -> bool:
     choice: str = str(
         input("{message} ({choices}) ".format(message=question,
                                               choices=choices)))
-    values: tp.Union[tp.Tuple[str, str], tp.Tuple[str, str, str]] = (
-        'y', 'yes', '') if choices == 'Y/n' else ('y', 'yes')
+    values: tp.Union[tp.Tuple[str, str],
+                     tp.Tuple[str, str,
+                              str]] = ('y', 'yes',
+                                       '') if choices == 'Y/n' else ('y', 'yes')
     return choice.strip().lower() in values
 
 
@@ -34,8 +36,9 @@ def initialize_logger_config() -> None:
     logging.basicConfig(level=log_level)
 
 
-def get_research_tool(name: str, source_location: tp.Optional[Path] = None
-                     ) -> ResearchTool[tp.Any]:
+def get_research_tool(
+        name: str,
+        source_location: tp.Optional[Path] = None) -> ResearchTool[tp.Any]:
     """
     Look up a research tool by name.
 
