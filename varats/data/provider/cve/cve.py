@@ -15,8 +15,8 @@ import time
 import typing as tp
 import requests
 from packaging.version import Version, parse as version_parse, LegacyVersion
-import requests_cache  # type: ignore
 from requests import Response
+import requests_cache  # type: ignore
 from tabulate import tabulate
 
 
