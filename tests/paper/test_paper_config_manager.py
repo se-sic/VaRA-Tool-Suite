@@ -18,6 +18,8 @@ import varats.paper.paper_config_manager as PCM
 from varats.paper.case_study import load_case_study_from_file
 from test_case_study import YAML_CASE_STUDY
 
+from varats.projects.c_projects.gzip import Gzip
+
 
 class TestPaperConfigManager(unittest.TestCase):
     """
@@ -34,17 +36,38 @@ class TestPaperConfigManager(unittest.TestCase):
             yaml_file.seek(0)
             cls.case_study = load_case_study_from_file(Path(yaml_file.name))
 
+    def setUp(self) -> None:
+        gzip_patcher = mock.patch('varats.projects.c_projects.gzip.Gzip',
+                                  spec=Gzip)
+        self.addCleanup(gzip_patcher.stop)
+        self.mock_gzip = gzip_patcher.start()
+        self.mock_gzip.is_blocked_revision = lambda x: (False, "")
+
+        project_util_patcher = mock.patch(
+            'varats.paper.case_study.get_project_cls_by_name')
+        self.addCleanup(project_util_patcher.stop)
+        self.mock_get_project = project_util_patcher.start()
+        self.mock_get_project.return_value = self.mock_gzip
+
     @mock.patch('varats.paper.case_study.get_tagged_revisions')
     def test_short_status(self, mock_get_tagged_revisions):
         """
         Check if the case study can show a short status.
         """
+
+        def is_blocked_revision(rev: str):
+            if rev == "7620b81735":
+                return True, ""
+            return False, ""
+
+        # block a revision
+        self.mock_gzip.is_blocked_revision = is_blocked_revision
         # Revision not in set
         mock_get_tagged_revisions.return_value = [('42b25e7f15',
                                                    FileStatusExtension.Success)]
 
         status = PCM.get_short_status(self.case_study, CommitReport, 5)
-        self.assertEqual(status, 'CS: gzip_1: (  0/10) processed [0/0/0/10/0]')
+        self.assertEqual(status, 'CS: gzip_1: (  0/10) processed [0/0/0/9/1]')
         mock_get_tagged_revisions.assert_called()
 
         mock_get_tagged_revisions.reset_mock()
@@ -52,7 +75,7 @@ class TestPaperConfigManager(unittest.TestCase):
                                                    FileStatusExtension.Success)]
 
         status = PCM.get_short_status(self.case_study, CommitReport, 5)
-        self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [1/0/0/9/0]')
+        self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [1/0/0/8/1]')
         mock_get_tagged_revisions.assert_called()
 
     @mock.patch('varats.paper.case_study.get_tagged_revisions')
@@ -320,8 +343,8 @@ class TestPaperConfigManager(unittest.TestCase):
         """
         Check if the total status is correctly generated.
         """
-        total_status_occurrences: tp.DefaultDict[FileStatusExtension, tp.
-                                                 Set[str]] = defaultdict(set)
+        total_status_occurrences: tp.DefaultDict[FileStatusExtension,
+                                                 tp.Set[str]] = defaultdict(set)
         # Revision not in set
         mock_get_tagged_revisions.return_value = [('42b25e7f15',
                                                    FileStatusExtension.Success)]
