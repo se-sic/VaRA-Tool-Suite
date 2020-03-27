@@ -3,21 +3,19 @@ Test paper config manager
 """
 
 import typing as tp
-from collections import defaultdict
 import unittest
+from collections import defaultdict
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import mock
+from test_case_study import YAML_CASE_STUDY
 
+import varats.paper.paper_config_manager as PCM
 from tests.paper.test_case_study import mocked_create_lazy_commit_map_loader
 from varats.data.report import FileStatusExtension
 from varats.data.reports.commit_report import CommitReport
-import varats.paper.paper_config_manager as PCM
-
 from varats.paper.case_study import load_case_study_from_file
-from test_case_study import YAML_CASE_STUDY
-
 from varats.projects.c_projects.gzip import Gzip
 
 
