@@ -6,6 +6,7 @@ setting should be modifiable via environment variable.
 """
 
 import typing as tp
+from pathlib import Path
 from os import path, makedirs, getcwd
 
 import benchbuild.utils.settings as s
@@ -236,7 +237,9 @@ def generate_benchbuild_config(varats_cfg: s.Configuration,
     BB_CFG["slurm"]["partition"] = "anywhere"
 
     BB_CFG["env"] = {
-        "PATH": [str(varats_cfg["vara"]["llvm_install_dir"]) + "bin/"]
+        "PATH": [
+            str(Path(str(varats_cfg["vara"]["llvm_install_dir"])) / "bin/")
+        ]
     }
 
     # Add VaRA experiment config variables

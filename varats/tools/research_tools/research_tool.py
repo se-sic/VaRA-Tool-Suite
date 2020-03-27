@@ -110,7 +110,8 @@ class SubProject():
 
         return has_remote_branch(absl_repo_path, branch_name, remote_to_check)
 
-    def get_branches(self, extra_args: tp.Optional[tp.List[str]] = None
+    def get_branches(self,
+                     extra_args: tp.Optional[tp.List[str]] = None
                     ) -> tp.List[str]:
         """
         Get branch names from this sub project.
