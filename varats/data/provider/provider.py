@@ -1,5 +1,6 @@
 """
-Provider interface module for projects.
+Provider interface module for projects.  Providers are a means to supply
+additional data for a project.
 """
 import logging
 import typing as tp
@@ -19,7 +20,7 @@ class Provider(ABC):
     a project.
 
     Args:
-        the project this provider is associated with
+        project: the project this provider is associated with
     """
 
     def __init__(self, project: tp.Type[Project]) -> None:
@@ -39,8 +40,8 @@ class Provider(ABC):
         Creates a provider instance for the given project if possible.
 
         Returns:
-            a provider instance for the given project if possible or ``None``
-            if not
+            a provider instance for the given project if possible,
+            otherwise, ``None``
         """
 
     @classmethod

@@ -13,9 +13,9 @@ import zipfile
 import io
 import time
 import typing as tp
+
 import requests
 from packaging.version import Version, parse as version_parse, LegacyVersion
-from requests import Response
 import requests_cache  # type: ignore
 from tabulate import tabulate
 
@@ -161,7 +161,7 @@ class CWE:
         return hash(self.cwe_id)
 
 
-def __fetch_cve_data(source_url: str) -> Response:
+def __fetch_cve_data(source_url: str) -> requests.Response:
     response = requests.get(source_url)
     # Sometimes the rate limit is hit so keep repeating
     while response.status_code == 429:
