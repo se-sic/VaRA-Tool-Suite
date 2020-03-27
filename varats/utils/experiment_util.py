@@ -199,7 +199,7 @@ class VersionExperiment(Experiment):  # type: ignore
                     "Experiment sub class does not implement REPORT_TYPE.")
 
             for revision, file_status in get_tagged_revisions(
-                    prj_cls.NAME, getattr(self, 'REPORT_TYPE')):
+                    prj_cls, getattr(self, 'REPORT_TYPE')):
                 if file_status not in fs_good and revision in versions:
                     versions.remove(revision)
 

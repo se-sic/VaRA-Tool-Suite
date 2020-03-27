@@ -164,7 +164,7 @@ def get_failed_revisions(project_name: str,
 
 def __get_tag_for_revision(revision: str,
                            file_list: tp.List[Path],
-                           project_cls: Project,
+                           project_cls: tp.Type[Project],
                            result_file_type: MetaReport,
                            tag_blocked: bool = True) -> FileStatusExtension:
     """
@@ -193,7 +193,7 @@ def __get_tag_for_revision(revision: str,
 
 
 def get_tagged_revisions(
-    project_name: str,
+    project_cls: tp.Type[Project],
     result_file_type: MetaReport,
     tag_blocked: bool = True
 ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
@@ -202,7 +202,7 @@ def get_tagged_revisions(
     If two files exists the newest is considered for detecting the status.
 
     Args:
-        project_name: target project
+        project_cls: target project
         result_file_type: the type of the result file
         tag_blocked: whether to tag blocked revisions as blocked
 
@@ -210,8 +210,7 @@ def get_tagged_revisions(
         list of tuples (revision, ``FileStatusExtension``)
     """
     revisions = []
-    project_cls = get_project_cls_by_name(project_name)
-    result_files = __get_result_files_dict(project_name, result_file_type)
+    result_files = __get_result_files_dict(project_cls.NAME, result_file_type)
     for commit_hash, file_list in result_files.items():
         revisions.append(
             (commit_hash,

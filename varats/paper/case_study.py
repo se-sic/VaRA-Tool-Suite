@@ -586,7 +586,8 @@ class CaseStudy():
         Returns:
             a list of (revision, status) tuples
         """
-        tagged_revisions = get_tagged_revisions(self.project_name,
+        project_cls = get_project_cls_by_name(self.project_name)
+        tagged_revisions = get_tagged_revisions(project_cls,
                                                 result_file_type, tag_blocked)
 
         def filtered_tagged_revs(
@@ -595,14 +596,21 @@ class CaseStudy():
             filtered_revisions = []
             for rev in rev_provider:
                 found = False
+                short_rev = rev[:10]
                 for tagged_rev in tagged_revisions:
-                    if rev[:10] == tagged_rev[0][:10]:
+                    if short_rev == tagged_rev[0][:10]:
                         filtered_revisions.append(tagged_rev)
                         found = True
                         break
                 if not found:
-                    filtered_revisions.append(
-                        (rev[:10], FileStatusExtension.Missing))
+                    if tag_blocked and hasattr(
+                            project_cls, "is_blocked_revision"
+                    ) and project_cls.is_blocked_revision(short_rev)[0]:
+                        filtered_revisions.append((short_rev,
+                                                  FileStatusExtension.Blocked))
+                    else:
+                        filtered_revisions.append(
+                            (short_rev, FileStatusExtension.Missing))
             return filtered_revisions
 
         if stage_num == -1:
