@@ -224,7 +224,8 @@ def generate_cve_map(
     path: Path,
     products: tp.List[tp.Tuple[str, str]],
     end: str = "HEAD",
-    start: tp.Optional[str] = None
+    start: tp.Optional[str] = None,
+    only_precise: bool = True
 ) -> tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[CVE, CWE]]]]:
     """
     Generate a commit map for a repository including the commits
@@ -238,6 +239,17 @@ def generate_cve_map(
 
     But since this does not work in all projects, also look in the CVE/CWE
     database for matching entries.
+    
+    Args:
+        path: path to the git repo of the project to get the map for
+        products: a list of tuples used for querying the CVE database
+        end: newest revision to consider
+        start: oldest revision to consider
+        only_precise: only include CVEs where an exact fixing commit can be 
+            identified
+            
+    Return:
+        a map ``revision -> set of CVEs fixed by that revision``
     """
     search_range = ""
     if start is not None:
@@ -253,14 +265,18 @@ def generate_cve_map(
             vendor: str, product: str
         ) -> tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[CVE, CWE]]]]:
             cve_list = find_all_cve(vendor=vendor, product=product)
-            return __merge_results([
+            cve_maps = [
                 __collect_via_commit_mgs(commits=wanted_out),
-                __collect_via_version(commits=wanted_out, cve_list=cve_list),
                 __collect_via_references(commits=wanted_out,
                                          cve_list=cve_list,
                                          vendor=vendor,
                                          product=product)
-            ])
+            ]
+            if not only_precise:
+                cve_maps.append(
+                    __collect_via_version(commits=wanted_out,
+                                          cve_list=cve_list),)
+            return __merge_results(cve_maps)
 
         return __merge_results([
             get_results_for_product(vendor, product)
