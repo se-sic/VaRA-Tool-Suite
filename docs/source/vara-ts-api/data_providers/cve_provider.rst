@@ -8,3 +8,13 @@ It relies on a :class:`hook<varats.data.provider.cve.cve_provider.CVEProviderHoo
     :members:
     :undoc-members:
     :show-inheritance:
+
+.. automodule:: varats.data.provider.cve.cve
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: varats.data.provider.cve.cve_map
+    :members:
+    :undoc-members:
+    :show-inheritance:

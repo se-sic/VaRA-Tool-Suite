@@ -1,7 +1,8 @@
-"""
+r"""
 Map commits with resolved CVE's and CWE's based on multiple strategies.
 
-Example Calls:
+Example Calls::
+
     generate_security_commit_map(
         path=Path('/home/vara/repos/vim'),
         vendor='vim',
@@ -12,7 +13,9 @@ Example Calls:
         vendor='google',
         product='tensorflow'
     )
-Example Output:
+
+Example Output::
+
     {
         799: {
             'commit': '76b92b2830841fd4e05006cc3cad1d8f0bc8101b',
@@ -71,7 +74,7 @@ def __collect_via_commit_mgs(
     Collect data about resolved CVE's/CWE's using the commit message.
 
     Args:
-        commits: a list of commits
+        commits: a list of commits in textual form
 
     Return:
         a dictionary with commit hash as key and a set of CVE's and a set of
@@ -128,7 +131,7 @@ def __collect_via_version(
     and the vulnerable version list in the CVE's.
 
     Args:
-        commits: a list of commits
+        commits: a list of commits in textual form
 
     Return:
         a dictionary with commit hash as key and a set of CVE's and a set of
@@ -166,7 +169,7 @@ def __collect_via_references(
     Collect data about resolved CVE' using the reference list in each CVE's.
 
     Args:
-        commits: a list of commits
+        commits: a list of commits in textual form
 
     Return:
         a dictionary with line number as key and commit hash, a list of CVE's
@@ -200,6 +203,9 @@ def __merge_results(
     """
     Merge a list of results into one dictionary.
 
+    Args:
+        result_list: a list of ``commit -> cve`` maps to be merged
+
     Return:
         the merged dictionary with line number as key and commit hash, a list of
         unique CVE's and a list of unique CWE's as values
@@ -224,7 +230,8 @@ def generate_cve_map(
     Generate a commit map for a repository including the commits
     ``]start..end]`` if they contain a fix for a CVE or CWE.
 
-    Commands to grep commit messages for CVE's/CWE's:
+    Commands to grep commit messages for CVE's/CWE's::
+
         git --no-pager log --all --pretty=format:'%H %d %s' --grep="CVE-"
         git --no-pager log --all --pretty=format:'%H %d %s' --grep="CWE-"
         git --no-pager log --all --tags --pretty="%H %d %s"
