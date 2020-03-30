@@ -12,3 +12,7 @@ wllvm>=1.1.4
 argparse-utils>=1.2.0
 pygit2>=0.28.2
 pyzmq>=19.0.0
+packaging>=20.1
+requests>=2.23.0
+requests_cache>=0.5.2
+tabulate>=0.8.6

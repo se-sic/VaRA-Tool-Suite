@@ -22,7 +22,7 @@ from varats.utils.project_util import wrap_paths_to_binaries
           shallow_clone=False,
           version_filter=project_filter_generator("vim"))
 class Vim(Project):  # type: ignore
-    """ Text processing tool vim """
+    """Text processing tool vim"""
 
     NAME = 'vim'
     GROUP = 'c_projects'
@@ -47,3 +47,7 @@ class Vim(Project):  # type: ignore
             with local.env(CC=str(clang)):
                 run(local["./configure"])
             run(make["-j", int(BB_CFG["jobs"])])
+
+    @classmethod
+    def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
+        return [("vim_development_group", "vim"), ("vim", "vim")]

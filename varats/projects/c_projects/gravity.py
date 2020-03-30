@@ -13,6 +13,7 @@ from benchbuild.utils.download import with_git
 
 from plumbum import local
 
+from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import (get_all_revisions_between,
                                        wrap_paths_to_binaries, block_revisions,
@@ -44,8 +45,8 @@ from varats.utils.project_util import (get_all_revisions_between,
           refspec="HEAD",
           shallow_clone=False,
           version_filter=project_filter_generator("gravity"))
-class Gravity(Project):  # type: ignore
-    """ Programming language Gravity """
+class Gravity(Project, CVEProviderHook):  # type: ignore
+    """Programming language Gravity"""
 
     NAME = 'gravity'
     GROUP = 'c_projects'
@@ -89,3 +90,7 @@ class Gravity(Project):  # type: ignore
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
                 run(make["-j", int(BB_CFG["jobs"])])
+
+    @classmethod
+    def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
+        return [("creolabs", "gravity")]

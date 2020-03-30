@@ -14,6 +14,7 @@ import benchbuild.project as prj
 
 from plumbum import local
 
+from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.case_study import ReleaseType, ReleaseProvider
 from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import get_tagged_commits, \
@@ -27,13 +28,12 @@ from varats.utils.project_util import get_tagged_commits, \
                          "203e40cc4558a80998d05eb74b373a51e796ca8b",
                          "Needs glibc < 2.28")
 ])
-@with_git(
-    "https://git.savannah.gnu.org/git/gzip.git",
-    refspec="HEAD",
-    shallow_clone=False,
-    version_filter=project_filter_generator("gzip"))
-class Gzip(prj.Project, ReleaseProvider):  # type: ignore
-    """ Compression and decompression tool Gzip (fetched by Git) """
+@with_git("https://git.savannah.gnu.org/git/gzip.git",
+          refspec="HEAD",
+          shallow_clone=False,
+          version_filter=project_filter_generator("gzip"))
+class Gzip(prj.Project, ReleaseProvider, CVEProviderHook):  # type: ignore
+    """Compression and decompression tool Gzip (fetched by Git)"""
 
     NAME = 'gzip'
     GROUP = 'c_projects'
@@ -77,6 +77,9 @@ class Gzip(prj.Project, ReleaseProvider):  # type: ignore
                 if re.match(major_release_regex, tag)
             ]
         return [
-            h for h, tag in tagged_commits
-            if re.match(minor_release_regex, tag)
+            h for h, tag in tagged_commits if re.match(minor_release_regex, tag)
         ]
+
+    @classmethod
+    def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
+        return [("gzip", "gzip"), ("gnu", "gzip")]

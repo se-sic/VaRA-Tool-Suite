@@ -33,7 +33,7 @@ from varats.utils.project_util import (wrap_paths_to_binaries, block_revisions,
           shallow_clone=False,
           version_filter=project_filter_generator("doxygen"))
 class Doxygen(Project):  # type: ignore
-    """ Doxygen """
+    """Doxygen"""
 
     NAME = 'doxygen'
     GROUP = 'cpp_projects'
@@ -61,3 +61,7 @@ class Doxygen(Project):  # type: ignore
             run(make["-j", int(BB_CFG["jobs"])])
 
             cp("bin/doxygen", ".")
+
+    @classmethod
+    def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
+        return [("doxygen", "doxygen")]

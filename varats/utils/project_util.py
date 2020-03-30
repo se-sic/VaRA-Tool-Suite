@@ -19,7 +19,7 @@ from benchbuild.utils.settings import setup_config
 from varats.settings import CFG
 
 
-def get_project_cls_by_name(project_name: str) -> Project:
+def get_project_cls_by_name(project_name: str) -> tp.Type[Project]:
     """
     Look up a BenchBuild project by it's name.
     """
@@ -29,7 +29,8 @@ def get_project_cls_by_name(project_name: str) -> Project:
             continue
 
         if proj.startswith(project_name):
-            return ProjectRegistry.projects[proj]
+            project: tp.Type[Project] = ProjectRegistry.projects[proj]
+            return project
 
     raise LookupError
 

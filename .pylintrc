@@ -340,7 +340,7 @@ ignored-classes=optparse.Values,thread._local,_thread._local
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis). It
 # supports qualified module names, as well as Unix pattern matching.
-ignored-modules=benchbuild,matplotlib,seaborn,plumbum,yaml,PyQt5,pandas,numpy,pygit2,scipy,argparse_utils,mock
+ignored-modules=benchbuild,matplotlib,seaborn,plumbum,yaml,PyQt5,pandas,numpy,pygit2,scipy,argparse_utils,mock,requests_cache,tabulate,requests, packaging
 
 # Show a hint with possible names when a member name was not found. The aspect
 # of finding the hint is based on edit distance.
@@ -488,7 +488,7 @@ max-args=10
 max-attributes=7
 
 # Maximum number of boolean expressions in an if statement (see R0916).
-max-bool-expr=5
+max-bool-expr=6
 
 # Maximum number of branch for function / method body.
 max-branches=12

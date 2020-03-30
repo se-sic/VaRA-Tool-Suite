@@ -13,6 +13,7 @@ import benchbuild.project as prj
 
 from plumbum import local
 
+from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
 
@@ -21,8 +22,8 @@ from varats.utils.project_util import wrap_paths_to_binaries
           refspec="HEAD",
           shallow_clone=False,
           version_filter=project_filter_generator("coreutils"))
-class Coreutils(prj.Project):  # type: ignore
-    """ GNU coretuils / UNIX command-line tools (fetched by Git) """
+class Coreutils(prj.Project, CVEProviderHook):  # type: ignore
+    """GNU coretuils / UNIX command-line tools (fetched by Git)"""
 
     NAME = 'coreutils'
     GROUP = 'c_projects'
@@ -169,3 +170,7 @@ class Coreutils(prj.Project):  # type: ignore
             for binary in self.binaries:
                 if not Path("{binary}".format(binary=binary)).exists():
                     print("Shit is fucked up ", binary)
+
+    @classmethod
+    def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
+        return [("gnu", "coreutils")]

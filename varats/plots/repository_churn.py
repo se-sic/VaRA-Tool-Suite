@@ -61,7 +61,7 @@ CODE_CHURN_DELETION_LIMIT = 1500
 
 
 def draw_code_churn(
-        axis: axes.SubplotBase,
+        axis: axes.Axes,
         project_name: str,
         commit_map: CommitMap,
         revision_selector: tp.Callable[[str], bool] = lambda x: True,
