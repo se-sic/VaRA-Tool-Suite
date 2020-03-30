@@ -87,8 +87,6 @@ class VaRACodeBase(CodeBase):
         """
         Set up the git submodules of all sub projects.
         """
-        self.get_sub_project("vara-llvm-project").checkout_branch(
-            "f-updategitignore")
         self.get_sub_project("vara-llvm-project").init_and_update_submodules()
         self.get_sub_project("phasar").init_and_update_submodules()
 
