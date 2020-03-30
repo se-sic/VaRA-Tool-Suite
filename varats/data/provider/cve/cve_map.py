@@ -239,13 +239,13 @@ def generate_cve_map(
 
     But since this does not work in all projects, also look in the CVE/CWE
     database for matching entries.
-    
+
     Args:
         path: path to the git repo of the project to get the map for
         products: a list of tuples used for querying the CVE database
         end: newest revision to consider
         start: oldest revision to consider
-        only_precise: only include CVEs where an exact fixing commit can be 
+        only_precise: only include CVEs where an exact fixing commit can be
             identified
             
     Return:
