@@ -25,13 +25,19 @@ class SubProject():
     downloaded and integrated inside a ``CodeBase``.
     """
 
-    def __init__(self, parent_code_base: 'CodeBase', name: str, URL: str,
-                 remote: str, sub_path: str):
+    def __init__(self,
+                 parent_code_base: 'CodeBase',
+                 name: str,
+                 URL: str,
+                 remote: str,
+                 sub_path: str,
+                 auto_clone: bool = True):
         self.__name = name
         self.__parent_code_base = parent_code_base
         self.__url = URL
         self.__remote = remote
         self.__sub_path = Path(sub_path)
+        self.__auto_clone = auto_clone
 
     @property
     def name(self) -> str:
@@ -65,6 +71,17 @@ class SubProject():
             Specifies the absolute path to the sub project folder.
         """
         return self.__sub_path
+
+    @property
+    def auto_clone(self) -> bool:
+        """
+        Determine if this project should be automatically cloned when a
+        `CodeBase` is initialized.
+
+        Returns:
+            True, if it should be automatically cloned
+        """
+        return self.__auto_clone
 
     def init_and_update_submodules(self) -> None:
         """
@@ -235,7 +252,8 @@ class CodeBase():
         """
         self.__base_dir = cb_base_dir
         for sub_project in self.__sub_projects:
-            sub_project.clone()
+            if sub_project.auto_clone:
+                sub_project.clone()
 
     def map_sub_projects(self, func: tp.Callable[[SubProject], None]) -> None:
         """

@@ -39,9 +39,12 @@ class VaRACodeBase(CodeBase):
             SubProject(self, "VaRA", "git@github.com:se-passau/VaRA.git",
                        "origin", "vara-llvm-project/vara"),
             SubProject(
-                self, "phasar",
+                self,
+                "phasar",
                 "https://github.com/secure-software-engineering/phasar.git",
-                "origin", "vara-llvm-project/phasar")
+                "origin",
+                "vara-llvm-project/phasar",
+                auto_clone=False)
         ]
         super().__init__(base_dir, sub_projects)
 
@@ -79,12 +82,12 @@ class VaRACodeBase(CodeBase):
 
         # TODO (sattlerf): make different checkout for older versions
         self.get_sub_project("VaRA").checkout_branch(f"vara" + dev_suffix)
-        self.get_sub_project("phasar").checkout_branch("development")
 
     def setup_submodules(self) -> None:
         """
         Set up the git submodules of all sub projects.
         """
+        self.get_sub_project("vara-llvm-project").init_and_update_submodules()
         self.get_sub_project("phasar").init_and_update_submodules()
 
 
