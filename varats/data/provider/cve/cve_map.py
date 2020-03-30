@@ -247,7 +247,6 @@ def generate_cve_map(
         start: oldest revision to consider
         only_precise: only include CVEs where an exact fixing commit can be
             identified
-            
     Return:
         a map ``revision -> set of CVEs fixed by that revision``
     """
