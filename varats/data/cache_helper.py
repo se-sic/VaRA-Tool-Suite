@@ -133,24 +133,34 @@ def build_cached_report_table(graph_cache_type: GraphCacheType,
     else:
         cached_df = optional_cached_df
 
-    def file_needs_loading(report_file: Path) -> bool:
+    def is_missing_file(report_file: Path) -> bool:
         commit_hash = MetaReport.get_commit_hash_from_result_file(
             report_file.name)
-        report_in_data_frame = tp.cast(
-            bool, (commit_hash == cached_df[CACHE_REVISION_COL]).any())
-        is_newer_than_cache = report_file.stat().st_mtime > cached_df[
-            CACHE_REVISION_COL == commit_hash][CACHE_TIMESTAMP_COL]
-        return not report_in_data_frame or is_newer_than_cache
+        return not tp.cast(bool,
+                           (commit_hash == cached_df[CACHE_REVISION_COL]).any())
 
-    report_files_to_load = [
+    def is_newer_file(report_file: Path) -> bool:
+        commit_hash = MetaReport.get_commit_hash_from_result_file(
+            report_file.name)
+        return tp.cast(bool,
+                       (report_file.stat().st_mtime >
+                        cached_df[cached_df[CACHE_REVISION_COL] ==
+                                  commit_hash][CACHE_TIMESTAMP_COL]).any())
+
+    missing_report_files = [
         report_file for report_file in report_files
-        if file_needs_loading(report_file)
+        if is_missing_file(report_file)
+    ]
+
+    updated_report_files = [
+        report_file for report_file in report_files
+        if is_newer_file(report_file)
     ]
 
     new_data_frames = []
-    total_reports_to_load = len(report_files_to_load)
-    for num, file_path in enumerate(report_files_to_load):
-        LOG.info(f"Loading missing file ({(num + 1)}/{total_reports_to_load}): "
+    total_missing_reports = len(missing_report_files)
+    for num, file_path in enumerate(missing_report_files):
+        LOG.info(f"Loading missing file ({(num + 1)}/{total_missing_reports}): "
                  f"{file_path}")
         new_data_frames.append(
             __create_cache_entry(create_df_from_report, create_report,
@@ -160,6 +170,17 @@ def build_cached_report_table(graph_cache_type: GraphCacheType,
                        ignore_index=True,
                        sort=False)
 
+    new_df.set_index(CACHE_REVISION_COL, inplace=True)
+    total_updated_reports = len(updated_report_files)
+    for num, file_path in enumerate(updated_report_files):
+        LOG.info(f"Updating outdated file "
+                 f"({(num + 1)}/{total_updated_reports}): {file_path}")
+        updated_entry = __create_cache_entry(create_df_from_report,
+                                             create_report, file_path)
+        updated_entry.set_index(CACHE_REVISION_COL)
+        new_df.update(updated_entry)
+
+    new_df.reset_index(inplace=True)
     cache_dataframe(graph_cache_type, project_name, new_df)
 
     return new_df.loc[:, new_df.columns != CACHE_REVISION_COL]
