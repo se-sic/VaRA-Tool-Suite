@@ -83,7 +83,7 @@ def cache_dataframe(data_id: tp.Union[GraphCacheType], project_name: str,
     Args:
         data_id: identifier or identifier_name of the dataframe
         project_name: name of the project
-        df: pandas dataframe to store
+        dataframe: pandas dataframe to store
     """
     file_path = __get_data_file_path(data_id, project_name)
     dataframe.to_csv(str(file_path))
