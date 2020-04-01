@@ -105,13 +105,13 @@ def __create_cache_entry(create_df_from_report: tp.Callable[[tp.Any],
         LOG.error(f"YAML file was incomplete: {file_path}")
 
 
-def build_cached_report_table(graph_cache_type: GraphCacheType,
-                              project_name: str,
-                              create_empty_df: tp.Callable[[], pd.DataFrame],
-                              create_df_from_report: tp.Callable[[tp.Any],
-                                                                 pd.DataFrame],
-                              create_report: tp.Callable[[Path], BaseReport],
-                              report_files: tp.List[Path]) -> pd.DataFrame:
+def build_cached_report_table(
+        graph_cache_type: GraphCacheType, project_name: str,
+        create_empty_df: tp.Callable[[], pd.DataFrame],
+        create_df_from_report: tp.Callable[[tp.Any], pd.DataFrame],
+        create_report: tp.Callable[[Path],
+                                   BaseReport], report_files: tp.List[Path],
+        failed_report_files: tp.List[Path]) -> pd.DataFrame:
     """
     Build up an automatically cache dataframe
 
@@ -157,6 +157,12 @@ def build_cached_report_table(graph_cache_type: GraphCacheType,
         if is_newer_file(report_file)
     ]
 
+    failed_revisions = [
+        MetaReport.get_commit_hash_from_result_file(failed_file.name)
+        for failed_file in failed_report_files
+        if is_newer_file(failed_file)
+    ]
+
     new_data_frames = []
     total_missing_reports = len(missing_report_files)
     for num, file_path in enumerate(missing_report_files):
@@ -179,8 +185,15 @@ def build_cached_report_table(graph_cache_type: GraphCacheType,
                                              create_report, file_path)
         updated_entry.set_index(CACHE_REVISION_COL)
         new_df.update(updated_entry)
-
     new_df.reset_index(inplace=True)
+
+    total_failed_reports = len(failed_revisions)
+    if total_failed_reports > 0:
+        LOG.info(f"Dropping {total_failed_reports} newly failing file(s)")
+        new_df.drop(
+            new_df[new_df[CACHE_REVISION_COL].isin(failed_revisions)].index,
+            inplace=True)
+
     cache_dataframe(graph_cache_type, project_name, new_df)
 
     return new_df.loc[:, new_df.columns != CACHE_REVISION_COL]

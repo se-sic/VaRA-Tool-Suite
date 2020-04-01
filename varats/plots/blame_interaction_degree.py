@@ -17,7 +17,8 @@ from varats.data.cache_helper import build_cached_report_table, GraphCacheType
 from varats.jupyterhelper.file import load_blame_report
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.plot import Plot, PlotDataEmpty
-from varats.data.revisions import get_processed_revisions_files
+from varats.data.revisions import get_processed_revisions_files, \
+    get_failed_revisions_files
 from varats.data.reports.blame_report import (
     BlameReport, generate_degree_tuples, generate_author_degree_tuples,
     generate_max_time_distribution_tuples,
@@ -41,6 +42,7 @@ class _DegreeType(Enum):
 
 
 def _build_interaction_table(report_files: tp.List[Path],
+                             failed_report_files: tp.List[Path],
                              project_name: str) -> pd.DataFrame:
 
     def create_dataframe_layout() -> pd.DataFrame:
@@ -104,7 +106,8 @@ def _build_interaction_table(report_files: tp.List[Path],
     return build_cached_report_table(GraphCacheType.BlameInteractionDegreeData,
                                      project_name, create_dataframe_layout,
                                      create_data_frame_for_report,
-                                     load_blame_report, report_files)
+                                     load_blame_report, report_files,
+                                     failed_report_files)
 
 
 @check_required_args(["project", 'get_cmap'])
@@ -115,8 +118,11 @@ def _gen_blame_interaction_data(**kwargs: tp.Any) -> pd.DataFrame:
 
     report_files = get_processed_revisions_files(
         project_name, BlameReport, get_case_study_file_name_filter(case_study))
+    failed_report_files = get_failed_revisions_files(
+        project_name, BlameReport, get_case_study_file_name_filter(case_study))
 
-    data_frame = _build_interaction_table(report_files, str(project_name))
+    data_frame = _build_interaction_table(report_files, failed_report_files,
+                                          str(project_name))
 
     data_frame['revision'] = data_frame['revision'].apply(
         lambda x: "{num}-{head}".format(head=x, num=commit_map.short_time_id(x)
