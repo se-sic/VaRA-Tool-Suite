@@ -10,3 +10,4 @@ How to setup VaRA
     add_setup_infos/clion_setup
     add_setup_infos/slurm_setup
     add_setup_infos/buildbot_setup
+    add_setup_infos/python_scripting_tips
