@@ -72,3 +72,12 @@ How-To Setup VaRA/LLVM in CLion
 - Choose configuration ``Build All Targets`` -> ``Build`` button
 - You can switch between ``Debug`` and ``Release`` builds in CLion's build configuration drop-down menu
 - Done
+
+
+Tips & Tricks
+-------------
+
+The debugger does stop at breakpoints and doesn't show the source code.
+#######################################################################
+
+This is most likely because the build does not include debugging symbols. Check if you have selected the ``Debug`` configuration for the build. If it doesn't work even if you used the debug configuration, the problem might disappear if you delete the build directory (e.g. ``build/dev-clion``), restart CLion and rebuild.
