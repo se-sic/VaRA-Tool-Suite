@@ -3,7 +3,7 @@ Running with Slurm
 
 This page describes how benchbuild/VaRA experiments can be run on the chair's cluster using slurm.
 
-As no home directories are not available on the cluuster nodes, you must use ``scratch`` instead. This guide assumes that your vara-root directory is ``/scratch/<user>/vara``
+As no home directories are not available on the cluster nodes, you must use ``scratch`` instead. This guide assumes that your vara-root directory is ``/scratch/<user>/vara``
 
 .. code-block::
 
