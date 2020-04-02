@@ -130,6 +130,13 @@ CFG['artefacts'] = {
     },
 }
 
+CFG['provider'] = {
+    "github_access_token": {
+        "desc": "GitHub access token",
+        "default": None,
+    },
+}
+
 
 def get_value_or_default(cfg: s.Configuration, varname: str,
                          default: tp.Any) -> tp.Any:
