@@ -1,16 +1,18 @@
 """
 Module for the :class:`CVEProvider`.
 """
+import logging
 import re
 import typing as tp
 from collections import defaultdict
 
 from benchbuild.project import Project
-from github import Github
+from github import Github, GithubException
 from github.Repository import Repository
 
 from varats.data.provider.provider import Provider
 
+LOG = logging.getLogger(__name__)
 
 GITHUB_URL_PATTERN = re.compile(r"https://github\.com/(.*)/(.*)\.git")
 
@@ -68,11 +70,15 @@ class BugDefaultProvider(BugProvider):
 def get_github_bugs(full_repo_name: str) -> tp.Dict[str, tp.Set[str]]:
     resolved_bugs: tp.Dict[str, tp.Set[str]] = defaultdict(set)
 
-    github = Github()
-    repository: Repository = github.get_repo(full_repo_name)
-    issues_events = repository.get_issues_events()
-    for issue_event in issues_events:
-        if issue_event.event == "closed" and issue_event.commit_id is not None:
-            resolved_bugs[issue_event.commit_id].add(issue_event.issue.number)
-
-    return resolved_bugs
+    try:
+        github = Github()
+        repository: Repository = github.get_repo(full_repo_name)
+        issues_events = repository.get_issues_events()
+        for issue_event in issues_events:
+            if (issue_event.event == "closed" and
+                    issue_event.commit_id is not None):
+                resolved_bugs[issue_event.commit_id].add(
+                    issue_event.issue.number)
+        return resolved_bugs
+    except GithubException as e:
+        LOG.error(e)
