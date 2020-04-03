@@ -105,7 +105,7 @@ As no home directories are not available on the cluster nodes, you must use ``sc
 
 NOTE: If you want to run the same project again (with GitBlameAnnotationReport), you need to empty the BC_files directory, because the path to the git repository will be different. See `#494 <https://github.com/se-passau/VaRA/issues/494>`_
 
-To use interaction filters, I recommend storing all of them in a separate directory (e.g. benchbuild/interaction_filters) with descriptive names and symlinking them to the place where the experiment expects them.
+To use interaction filters, I recommend storing all of them in a separate directory (e.g., benchbuild/interaction_filters) with descriptive names and symlinking them to the place where the experiment expects them.
 
 TIP: In case you get strange errors or results, try to empty all temporary directories and try again, e.g.:
 
@@ -135,4 +135,3 @@ If certain libraries needed by vara or clang are missing on the slurm-nodes, you
           value:
               LD_LIBARARY_PATH:
               - /scratch/<user>/vara/libs
-
