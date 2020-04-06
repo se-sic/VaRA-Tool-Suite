@@ -11,8 +11,8 @@ import pandas as pd
 import numpy as np
 from matplotlib import cm
 
-from varats.data.databases.blame_interaction_degree_database import DegreeType, \
-    BlameInteractionDegreeDatabase
+from varats.data.databases.blame_interaction_degree_database import (
+    DegreeType, BlameInteractionDegreeDatabase)
 from varats.data.reports.commit_report import CommitMap
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.plot import Plot, PlotDataEmpty

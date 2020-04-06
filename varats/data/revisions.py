@@ -88,6 +88,40 @@ def __get_supplementary_result_files_dict(
     return result_files
 
 
+def __get_files_with_status(
+    project_name: str,
+    result_file_type: MetaReport,
+    file_statuses: tp.List[FileStatusExtension],
+    file_name_filter: tp.Optional[tp.Callable[[str], bool]] = None
+) -> tp.List[Path]:
+    """
+        Find all file paths to revision files with given file statuses.
+
+        Args:
+            project_name: target project
+            result_file_type: the type of the result file
+            file_statuses: a list of statuses the files should have
+            file_name_filter: optional filter to exclude certain files, returns
+                              true; if the file_name should not be checked
+
+        Returns:
+            a list of file paths to correctly processed revision files
+        """
+    processed_revisions_paths = []
+
+    result_files = __get_result_files_dict(project_name, result_file_type)
+    for value in result_files.values():
+        newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
+        if file_name_filter is not None:
+            if file_name_filter(newest_res_file.name):
+                continue
+        if result_file_type.get_status_from_result_file(
+                newest_res_file.name) in file_statuses:
+            processed_revisions_paths.append(newest_res_file)
+
+    return processed_revisions_paths
+
+
 def get_processed_revisions_files(
     project_name: str,
     result_file_type: MetaReport,
@@ -105,19 +139,32 @@ def get_processed_revisions_files(
     Returns:
         a list of file paths to correctly processed revision files
     """
-    processed_revisions_paths = []
+    return __get_files_with_status(project_name, result_file_type,
+                                   [FileStatusExtension.Success],
+                                   file_name_filter)
 
-    result_files = __get_result_files_dict(project_name, result_file_type)
-    for value in result_files.values():
-        newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
-        if file_name_filter is not None:
-            if file_name_filter(newest_res_file.name):
-                continue
-        if result_file_type.result_file_has_status_success(
-                newest_res_file.name):
-            processed_revisions_paths.append(newest_res_file)
 
-    return processed_revisions_paths
+def get_failed_revisions_files(
+    project_name: str,
+    result_file_type: MetaReport,
+    file_name_filter: tp.Optional[tp.Callable[[str], bool]] = None
+) -> tp.List[Path]:
+    """
+    Find all file paths to failed revision files.
+
+    Args:
+        project_name: target project
+        result_file_type: the type of the result file
+        file_name_filter: optional filter to exclude certain files, returns
+                          true; if the file_name should not be checked
+
+    Returns:
+        a list of file paths to failed revision files
+    """
+    return __get_files_with_status(
+        project_name, result_file_type,
+        [FileStatusExtension.Failed, FileStatusExtension.CompileError],
+        file_name_filter)
 
 
 def get_processed_revisions(project_name: str,

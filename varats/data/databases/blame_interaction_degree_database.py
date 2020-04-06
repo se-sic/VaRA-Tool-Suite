@@ -11,7 +11,8 @@ from varats.data.reports.blame_report import (
     generate_max_time_distribution_tuples,
     generate_avg_time_distribution_tuples)
 from varats.data.reports.commit_report import CommitMap
-from varats.data.revisions import get_processed_revisions_files
+from varats.data.revisions import get_processed_revisions_files, \
+    get_failed_revisions_files
 from varats.jupyterhelper.file import load_blame_report
 from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
 
@@ -97,9 +98,13 @@ class BlameInteractionDegreeDatabase(Database):
             project_name, BlameReport,
             get_case_study_file_name_filter(case_study))
 
+        failed_report_files = get_failed_revisions_files(
+            project_name, BlameReport,
+            get_case_study_file_name_filter(case_study))
+
         data_frame = build_cached_report_table(
             GraphCacheType.BlameInteractionDegreeData, project_name,
             create_dataframe_layout, create_data_frame_for_report,
-            load_blame_report, report_files)
+            load_blame_report, report_files, failed_report_files)
 
         return data_frame
