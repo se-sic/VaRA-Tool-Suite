@@ -69,7 +69,7 @@ def load_cached_df_or_none(data_id: tp.Union[GraphCacheType, str],
     if not file_path.exists():
         return None
 
-    return pd.read_csv(str(file_path))
+    return pd.read_csv(str(file_path), index_col=0)
 
 
 def cache_dataframe(data_id: tp.Union[GraphCacheType], project_name: str,

@@ -1,178 +1,52 @@
 """
 Generate plots for the degree of blame interactions.
 """
+import abc
 import logging
 import typing as tp
-import abc
-from pathlib import Path
-from enum import Enum
 
 import matplotlib.pyplot as plt
-from matplotlib import cm
 import matplotlib.style as style
 import pandas as pd
 import numpy as np
+from matplotlib import cm
 
-from varats.data.cache_helper import build_cached_report_table, GraphCacheType
-from varats.jupyterhelper.file import load_blame_report
+from varats.data.databases.blame_interaction_degree_database import DegreeType, \
+    BlameInteractionDegreeDatabase
+from varats.data.reports.commit_report import CommitMap
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.plot import Plot, PlotDataEmpty
-from varats.data.revisions import get_processed_revisions_files
-from varats.data.reports.blame_report import (
-    BlameReport, generate_degree_tuples, generate_author_degree_tuples,
-    generate_max_time_distribution_tuples,
-    generate_avg_time_distribution_tuples)
-from varats.plots.plot_utils import check_required_args
-from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
 from varats.plots.repository_churn import draw_code_churn
 from varats.utils.project_util import get_project_cls_by_name
 
 LOG = logging.getLogger(__name__)
 
-MAX_TIME_BUCKET_SIZE = 1
-AVG_TIME_BUCKET_SIZE = 1
-
-
-class _DegreeType(Enum):
-    interaction = "interaction"
-    author = "author"
-    max_time = "max_time"
-    avg_time = "avg_time"
-
-
-def _build_interaction_table(report_files: tp.List[Path],
-                             project_name: str) -> pd.DataFrame:
-
-    def create_dataframe_layout() -> pd.DataFrame:
-        df_layout = pd.DataFrame(
-            columns=['revision', 'degree_type', 'degree', 'amount', 'fraction'])
-        df_layout.degree = df_layout.degree.astype('int64')
-        df_layout.amount = df_layout.amount.astype('int64')
-        df_layout.fraction = df_layout.fraction.astype('int64')
-        return df_layout
-
-    def create_data_frame_for_report(report: BlameReport) -> pd.DataFrame:
-        list_of_degree_occurrences = generate_degree_tuples(report)
-        degrees, amounts = map(list, zip(*list_of_degree_occurrences))
-        total = sum(amounts)
-
-        list_of_author_degree_occurrences = generate_author_degree_tuples(
-            report, project_name)
-        author_degrees, author_amounts = map(
-            list, zip(*list_of_author_degree_occurrences))
-        author_total = sum(author_amounts)
-
-        list_of_max_time_deltas = generate_max_time_distribution_tuples(
-            report, project_name, MAX_TIME_BUCKET_SIZE)
-        max_time_buckets, max_time_amounts = map(list,
-                                                 zip(*list_of_max_time_deltas))
-        total_max_time_amounts = sum(max_time_amounts)
-
-        list_of_avg_time_deltas = generate_avg_time_distribution_tuples(
-            report, project_name, AVG_TIME_BUCKET_SIZE)
-        avg_time_buckets, avg_time_amounts = map(list,
-                                                 zip(*list_of_avg_time_deltas))
-        total_avg_time_amounts = sum(avg_time_amounts)
-
-        amount_of_entries = len(degrees + author_degrees + max_time_buckets +
-                                avg_time_buckets)
-
-        return pd.DataFrame(
-            {
-                'revision': [report.head_commit] * amount_of_entries,
-                'degree_type':
-                    [_DegreeType.interaction.value] * len(degrees) +
-                    [_DegreeType.author.value] * len(author_degrees) +
-                    [_DegreeType.max_time.value] * len(max_time_buckets) +
-                    [_DegreeType.avg_time.value] * len(avg_time_buckets),
-                'degree':
-                    degrees + author_degrees + max_time_buckets +
-                    avg_time_buckets,
-                'amount':
-                    amounts + author_amounts + max_time_amounts +
-                    avg_time_amounts,
-                'fraction':
-                    np.concatenate([
-                        np.divide(amounts, total),
-                        np.divide(author_amounts, author_total),
-                        np.divide(max_time_amounts, total_max_time_amounts),
-                        np.divide(avg_time_amounts, total_avg_time_amounts)
-                    ]),
-            },
-            index=range(0, amount_of_entries))
-
-    return build_cached_report_table(GraphCacheType.BlameInteractionDegreeData,
-                                     project_name, create_dataframe_layout,
-                                     create_data_frame_for_report,
-                                     load_blame_report, report_files)
-
-
-@check_required_args(["project", 'get_cmap'])
-def _gen_blame_interaction_data(**kwargs: tp.Any) -> pd.DataFrame:
-    commit_map = kwargs['get_cmap']()
-    case_study = kwargs.get('plot_case_study', None)  # can be None
-    project_name = kwargs["project"]
-
-    report_files = get_processed_revisions_files(
-        project_name, BlameReport, get_case_study_file_name_filter(case_study))
-
-    data_frame = _build_interaction_table(report_files, str(project_name))
-
-    data_frame['revision'] = data_frame['revision'].apply(
-        lambda x: "{num}-{head}".format(head=x, num=commit_map.short_time_id(x)
-                                       ))
-
-    return data_frame
-
 
 def _filter_data_frame(
-        degree_type: _DegreeType, interaction_plot_df: pd.DataFrame,
-        kwargs: tp.Any) -> tp.Tuple[tp.List[str], tp.List[pd.Series]]:
+        degree_type: DegreeType, interaction_plot_df: pd.DataFrame,
+        commit_map: CommitMap) -> tp.Tuple[tp.List[str], tp.List[pd.Series]]:
     """
     Reduce data frame to rows that match the degree type
     """
-
-    # TODO (se-passau/VaRA#550): refactor cs_filter into helper function
-    def cs_filter(data_frame: pd.DataFrame) -> pd.DataFrame:
-        """
-        Filter out all commits that are not in the case study, if one was
-        selected. This allows us to only load files related to the
-        case-study.
-        """
-        if kwargs['plot_case_study'] is None or data_frame.empty:
-            return data_frame
-        case_study: CaseStudy = kwargs['plot_case_study']
-        return data_frame[data_frame.apply(
-            lambda x: case_study.has_revision(x['revision'].split('-')[1]),
-            axis=1)]
-
-    interaction_plot_df = cs_filter(interaction_plot_df)
-
-    if interaction_plot_df.empty or len(
-            np.unique(interaction_plot_df['revision'])) == 1:
-        # Plot can only be build with more than one data point
-        raise PlotDataEmpty
-
     interaction_plot_df = interaction_plot_df[interaction_plot_df.degree_type ==
                                               degree_type.value]
-    degree_levels = sorted(np.unique(interaction_plot_df['degree']))
+
+    degree_levels = sorted(np.unique(interaction_plot_df.degree))
     interaction_plot_df = interaction_plot_df.set_index(['revision', 'degree'])
     interaction_plot_df = interaction_plot_df.reindex(
         pd.MultiIndex.from_product(interaction_plot_df.index.levels,
                                    names=interaction_plot_df.index.names),
         fill_value=0).reset_index()
-    interaction_plot_df['cm_idx'] = interaction_plot_df['revision'].apply(
-        lambda x: int(x.split('-')[0]))
-    interaction_plot_df.cm_idx.astype(int)
-    interaction_plot_df.sort_values(by=['cm_idx'], inplace=True)
+    # fix missing time_ids introduced by the product index
+    interaction_plot_df['time_id'] = interaction_plot_df['revision'].apply(
+        commit_map.short_time_id)
+    interaction_plot_df.sort_values(by=['time_id'], inplace=True)
 
     sub_df_list = [
-        interaction_plot_df.loc[interaction_plot_df['degree'] == x]['fraction']
+        interaction_plot_df.loc[interaction_plot_df.degree == x].fraction
         for x in degree_levels
     ]
-
-    unique_revisions = sorted(np.unique(interaction_plot_df['revision']),
-                              key=lambda x: int(x.split('-')[0]))
+    unique_revisions = sorted(np.unique(interaction_plot_df.revision))
 
     return unique_revisions, sub_df_list
 
@@ -192,7 +66,7 @@ class BlameDegree(Plot):
 
     def _degree_plot(self,
                      view_mode: bool,
-                     degree_type: _DegreeType,
+                     degree_type: DegreeType,
                      extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
                      with_churn: bool = True) -> None:
         plot_cfg = {
@@ -211,9 +85,23 @@ class BlameDegree(Plot):
 
         style.use(self.style)
 
-        interaction_plot_df = _gen_blame_interaction_data(**self.plot_kwargs)
+        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
+        case_study = self.plot_kwargs.get('plot_case_study',
+                                          None)  # can be None
+        project_name = self.plot_kwargs["project"]
+        interaction_plot_df = BlameInteractionDegreeDatabase.get_data_for_project(
+            project_name, [
+                "revision", "time_id", "degree_type", "degree", "amount",
+                "fraction"
+            ], commit_map, case_study)
+
+        if interaction_plot_df.empty or len(
+                np.unique(interaction_plot_df['revision'])) == 1:
+            # Plot can only be build with more than one data point
+            raise PlotDataEmpty
+
         unique_revisions, sub_df_list = _filter_data_frame(
-            degree_type, interaction_plot_df, self.plot_kwargs)
+            degree_type, interaction_plot_df, commit_map)
 
         fig = plt.figure()
         grid_spec = fig.add_gridspec(3, 1)
@@ -255,8 +143,6 @@ class BlameDegree(Plot):
                  family='monospace')
         legend.set_visible(plot_cfg['legend_visible'])
 
-        revs = list(map(lambda x: x.split('-')[1], unique_revisions))
-
         # annotate CVEs
         with_cve = self.plot_kwargs.get("with_cve", False)
         if with_cve:
@@ -264,13 +150,13 @@ class BlameDegree(Plot):
                 LOG.error("with_cve is true but no project is given.")
             else:
                 project = get_project_cls_by_name(self.plot_kwargs["project"])
-                draw_cves(main_axis, project, revs, plot_cfg)
+                draw_cves(main_axis, project, unique_revisions, plot_cfg)
 
         # draw churn subplot
         if with_churn:
             draw_code_churn(churn_axis, self.plot_kwargs['project'],
                             self.plot_kwargs['get_cmap'](),
-                            lambda x: x[:10] in revs)
+                            lambda x: x[:10] in unique_revisions)
 
         for y_label in x_axis.get_yticklabels():
             y_label.set_fontsize(8)
@@ -298,7 +184,7 @@ class BlameInteractionDegree(BlameDegree):
             'legend_title': 'Interaction degrees',
             'fig_title': 'Blame interactions'
         }
-        self._degree_plot(view_mode, _DegreeType.interaction, extra_plot_cfg)
+        self._degree_plot(view_mode, DegreeType.interaction, extra_plot_cfg)
 
     def show(self) -> None:
         self.plot(True)
@@ -323,7 +209,7 @@ class BlameAuthorDegree(BlameDegree):
             'legend_title': 'Author interaction degrees',
             'fig_title': 'Author blame interactions'
         }
-        self._degree_plot(view_mode, _DegreeType.author, extra_plot_cfg)
+        self._degree_plot(view_mode, DegreeType.author, extra_plot_cfg)
 
     def show(self) -> None:
         self.plot(True)
@@ -350,7 +236,7 @@ class BlameMaxTimeDistribution(BlameDegree):
             'fig_title': 'Max time distribution',
             'edgecolor': None,
         }
-        self._degree_plot(view_mode, _DegreeType.max_time, extra_plot_cfg)
+        self._degree_plot(view_mode, DegreeType.max_time, extra_plot_cfg)
 
     def show(self) -> None:
         self.plot(True)
@@ -377,7 +263,7 @@ class BlameAvgTimeDistribution(BlameDegree):
             'fig_title': 'Average time distribution',
             'edgecolor': None,
         }
-        self._degree_plot(view_mode, _DegreeType.avg_time, extra_plot_cfg)
+        self._degree_plot(view_mode, DegreeType.avg_time, extra_plot_cfg)
 
     def show(self) -> None:
         self.plot(True)
