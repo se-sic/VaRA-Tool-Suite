@@ -196,4 +196,7 @@ def build_cached_report_table(
 
     cache_dataframe(graph_cache_type, project_name, new_df)
 
-    return new_df.loc[:, new_df.columns != CACHE_REVISION_COL]
+    return new_df.loc[:, [
+        col for col in new_df.columns
+        if col not in [CACHE_REVISION_COL, CACHE_TIMESTAMP_COL]
+    ]]
