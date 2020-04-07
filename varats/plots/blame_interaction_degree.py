@@ -86,10 +86,10 @@ class BlameDegree(Plot):
         style.use(self.style)
 
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
-        case_study = self.plot_kwargs.get('plot_case_study',
-                                          None)  # can be None
+        case_study = self.plot_kwargs.get('plot_case_study', None)
         project_name = self.plot_kwargs["project"]
-        interaction_plot_df = BlameInteractionDegreeDatabase.get_data_for_project(
+        interaction_plot_df = \
+            BlameInteractionDegreeDatabase.get_data_for_project(
             project_name, [
                 "revision", "time_id", "degree_type", "degree", "amount",
                 "fraction"
@@ -158,14 +158,11 @@ class BlameDegree(Plot):
                             self.plot_kwargs['get_cmap'](),
                             lambda x: x[:10] in unique_revisions)
 
-        for y_label in x_axis.get_yticklabels():
-            y_label.set_fontsize(8)
-            y_label.set_fontfamily('monospace')
-
-        for x_label in x_axis.get_xticklabels():
-            x_label.set_fontsize(plot_cfg['xtick_size'])
-            x_label.set_rotation(270)
-            x_label.set_fontfamily('monospace')
+        plt.setp(x_axis.get_yticklabels(), fontsize=8, fontfamily='monospace')
+        plt.setp(x_axis.get_xticklabels(),
+                 fontsize=plot_cfg['xtick_size'],
+                 fontfamily='monospace',
+                 rotation=270)
 
 
 class BlameInteractionDegree(BlameDegree):

@@ -1,3 +1,6 @@
+"""
+Module for the base BlameInteractionDegreeDatabase class
+"""
 import typing as tp
 from enum import Enum
 
@@ -21,6 +24,9 @@ AVG_TIME_BUCKET_SIZE = 1
 
 
 class DegreeType(Enum):
+    """
+    Degree types of blame interaction data.
+    """
     interaction = "interaction"
     author = "author"
     max_time = "max_time"
@@ -39,7 +45,7 @@ class BlameInteractionDegreeDatabase(Database):
                         case_study: tp.Optional[CaseStudy]) -> pd.DataFrame:
 
         def create_dataframe_layout() -> pd.DataFrame:
-            df_layout = pd.DataFrame(columns=[col for col in cls.COLUMNS])
+            df_layout = pd.DataFrame(columns=cls.COLUMNS)
             df_layout.degree = df_layout.degree.astype('int64')
             df_layout.amount = df_layout.amount.astype('int64')
             df_layout.fraction = df_layout.fraction.astype('int64')

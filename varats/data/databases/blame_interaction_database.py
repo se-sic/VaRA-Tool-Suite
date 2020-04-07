@@ -1,3 +1,6 @@
+"""
+Module for the base BlameInteractionDatabase class
+"""
 import typing as tp
 
 import pandas as pd
@@ -28,7 +31,7 @@ class BlameInteractionDatabase(Database):
                         case_study: tp.Optional[CaseStudy]) -> pd.DataFrame:
 
         def create_dataframe_layout() -> pd.DataFrame:
-            df_layout = pd.DataFrame(columns=[col for col in cls.COLUMNS])
+            df_layout = pd.DataFrame(columns=cls.COLUMNS)
             df_layout.IN_HEAD_Interactions = \
                 df_layout.IN_HEAD_Interactions.astype('int64')
             df_layout.OUT_HEAD_Interactions = \
