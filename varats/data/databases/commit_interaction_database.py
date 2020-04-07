@@ -70,7 +70,7 @@ class CommitInteractionDatabase(Database):
             project_name, CommitReport,
             get_case_study_file_name_filter(case_study))
 
-        data_frame = build_cached_report_table(cls, project_name,
+        data_frame = build_cached_report_table(cls.CACHE_ID, project_name,
                                                create_dataframe_layout,
                                                create_data_frame_for_report,
                                                load_commit_report, report_files,

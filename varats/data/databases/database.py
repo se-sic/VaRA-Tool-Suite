@@ -6,6 +6,7 @@ import typing as tp
 
 import pandas as pd
 
+from varats.data.cache_helper import get_data_file_path
 from varats.data.reports.commit_report import CommitMap
 from varats.paper.case_study import CaseStudy
 
@@ -17,13 +18,14 @@ class Database(abc.ABC):
     Base class for accessing report data.
 
     Subclasses have to provide the following:
-        - a list of available columns in the variable ``COLUMNS``
+        - a list of available columns in the variable ``COLUMNS``; this list
+          must start with ``Database.COLUMNS``!
         - an identifier for cache files ``CACHE_ID``
         - a function :func:`_load_dataframe` that loads and transparently caches
           report data
     """
 
-    CACHE_ID = None
+    CACHE_ID: tp.Optional[str] = None
     COLUMNS = ["revision", "time_id"]
 
     @classmethod
@@ -65,11 +67,25 @@ class Database(abc.ABC):
         Return:
             a pandas dataframe with the given columns and the
         """
+        assert cls.__name__ != "Database", ("You must not call this function "
+                                            "on the 'Database' base class.")
+        assert cls.CACHE_ID is not None, ("CACHE_ID is 'None'. Did you forget "
+                                          "to override it?")
+        assert cls.COLUMNS[:len(Database.COLUMNS)] == Database.COLUMNS, (
+            "COLUMNS does not start with Database.COLUMNS.")
 
         data: pd.DataFrame = cls._load_dataframe(project_name, commit_map,
                                                  case_study)
-        assert [*data] == cls.COLUMNS
-        assert all(column in cls.COLUMNS for column in columns)
+
+        if not [*data] == cls.COLUMNS:
+            raise AssertionError(
+                "Loaded dataframe does not match expected layout."
+                "Consider removing the cache file "
+                f"{get_data_file_path(cls.CACHE_ID, project_name)}.")
+
+        if not all(column in cls.COLUMNS for column in columns):
+            raise ValueError(
+                f"All values in 'columns' must be in {cls.__name__}.COLUMNS")
 
         def cs_filter(data_frame: pd.DataFrame) -> pd.DataFrame:
             """
