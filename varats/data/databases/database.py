@@ -13,15 +13,33 @@ AvailableColumns = tp.TypeVar("AvailableColumns")
 
 
 class Database(abc.ABC):
+    """
+    Base class for access to report data.
+
+
+
+    The available columns are specified in the variable ``COLUMNS``.
+    """
 
     COLUMNS = ["revision", "time_id"]
 
     @classmethod
     @abc.abstractmethod
-    def load_dataframe(cls, project_name: str, commit_map: CommitMap,
-                       case_study: tp.Optional[CaseStudy]) -> pd.DataFrame:
+    def _load_dataframe(cls, project_name: str, commit_map: CommitMap,
+                        case_study: tp.Optional[CaseStudy]) -> pd.DataFrame:
         """
+        Load and transparently cache the dataframe for this database class.
 
+        NOTE: this function is not intended for external use.
+              Use :func:`get_data_for_project` instead.
+
+        Args:
+            project_name: the project to load data for
+            commit_map: the commit map to use
+            case_study: the case_study to load data for
+
+        Return:
+            a pandas dataframe with all the cached data
         """
 
     @classmethod
@@ -31,9 +49,22 @@ class Database(abc.ABC):
             columns: tp.List[str],
             commit_map: CommitMap,
             case_study: tp.Optional[CaseStudy] = None) -> pd.DataFrame:
+        """
+        Retrieve data for a given project and case study.
 
-        data: pd.DataFrame = cls.load_dataframe(project_name, commit_map,
-                                                case_study)
+        Args:
+            project_name: the project to retrieve data for
+            columns: the columns the resulting dataframe should have; all column
+                     names must occur in the ``COLUMNS`` class variable
+            commit_map: the commit map to use
+            case_study: the case study to retrieve data for
+
+        Return:
+            a pandas dataframe with the given columns and the
+        """
+
+        data: pd.DataFrame = cls._load_dataframe(project_name, commit_map,
+                                                 case_study)
         assert [*data] == cls.COLUMNS
         assert all(column in cls.COLUMNS for column in columns)
 

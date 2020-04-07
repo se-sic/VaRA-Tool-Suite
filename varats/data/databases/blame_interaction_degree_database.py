@@ -28,12 +28,15 @@ class DegreeType(Enum):
 
 
 class BlameInteractionDegreeDatabase(Database):
+    """
+    Provides access to blame interaction degree data.
+    """
 
     COLUMNS = Database.COLUMNS + ["degree_type", "degree", "amount", "fraction"]
 
     @classmethod
-    def load_dataframe(cls, project_name: str, commit_map: CommitMap,
-                       case_study: tp.Optional[CaseStudy]) -> pd.DataFrame:
+    def _load_dataframe(cls, project_name: str, commit_map: CommitMap,
+                        case_study: tp.Optional[CaseStudy]) -> pd.DataFrame:
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=[col for col in cls.COLUMNS])
