@@ -14,13 +14,16 @@ AvailableColumns = tp.TypeVar("AvailableColumns")
 
 class Database(abc.ABC):
     """
-    Base class for access to report data.
+    Base class for accessing report data.
 
-
-
-    The available columns are specified in the variable ``COLUMNS``.
+    Subclasses have to provide the following:
+        - a list of available columns in the variable ``COLUMNS``
+        - an identifier for cache files ``CACHE_ID``
+        - a function :func:`_load_dataframe` that loads and transparently caches
+          report data
     """
 
+    CACHE_ID = None
     COLUMNS = ["revision", "time_id"]
 
     @classmethod

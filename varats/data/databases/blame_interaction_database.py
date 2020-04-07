@@ -5,7 +5,7 @@ import typing as tp
 
 import pandas as pd
 
-from varats.data.cache_helper import build_cached_report_table, GraphCacheType
+from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.database import Database
 from varats.data.reports.blame_report import (BlameReport,
                                               generate_in_head_interactions,
@@ -22,6 +22,7 @@ class BlameInteractionDatabase(Database):
     Provides access to blame interaction data.
     """
 
+    CACHE_ID = "blame_interaction_data"
     COLUMNS = Database.COLUMNS + [
         "IN_HEAD_Interactions", "OUT_HEAD_Interactions", "HEAD_Interactions"
     ]
@@ -67,9 +68,10 @@ class BlameInteractionDatabase(Database):
             project_name, BlameReport,
             get_case_study_file_name_filter(case_study))
 
-        data_frame = build_cached_report_table(
-            GraphCacheType.BlameInteractionData, project_name,
-            create_dataframe_layout, create_data_frame_for_report,
-            load_blame_report, report_files, failed_report_files)
+        data_frame = build_cached_report_table(cls, project_name,
+                                               create_dataframe_layout,
+                                               create_data_frame_for_report,
+                                               load_blame_report, report_files,
+                                               failed_report_files)
 
         return data_frame

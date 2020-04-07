@@ -7,7 +7,7 @@ from enum import Enum
 import numpy as np
 import pandas as pd
 
-from varats.data.cache_helper import build_cached_report_table, GraphCacheType
+from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.database import Database
 from varats.data.reports.blame_report import (
     BlameReport, generate_degree_tuples, generate_author_degree_tuples,
@@ -38,6 +38,7 @@ class BlameInteractionDegreeDatabase(Database):
     Provides access to blame interaction degree data.
     """
 
+    CACHE_ID = "blame_interaction_degree_data"
     COLUMNS = Database.COLUMNS + ["degree_type", "degree", "amount", "fraction"]
 
     @classmethod
@@ -111,9 +112,10 @@ class BlameInteractionDegreeDatabase(Database):
             project_name, BlameReport,
             get_case_study_file_name_filter(case_study))
 
-        data_frame = build_cached_report_table(
-            GraphCacheType.BlameInteractionDegreeData, project_name,
-            create_dataframe_layout, create_data_frame_for_report,
-            load_blame_report, report_files, failed_report_files)
+        data_frame = build_cached_report_table(cls, project_name,
+                                               create_dataframe_layout,
+                                               create_data_frame_for_report,
+                                               load_blame_report, report_files,
+                                               failed_report_files)
 
         return data_frame
