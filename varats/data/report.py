@@ -150,6 +150,26 @@ class MetaReport(type):
                                  "a static variable {var}."))
 
     @staticmethod
+    def lookup_report_type_from_file_name(file_name: str
+                                         ) -> tp.Optional['MetaReport']:
+        """
+        Looks-up the correct report class from a given `file_name`.
+
+        Args:
+            file_name: of the report file
+
+        Returns:
+            corresponding report class
+        """
+        match = MetaReport.__RESULT_FILE_REGEX.search(file_name)
+        if match:
+            short_hand = match.group("project_shorthand")
+            for report_type in MetaReport.REPORT_TYPES.values():
+                if getattr(report_type, "SHORTHAND") == short_hand:
+                    return report_type
+        return None
+
+    @staticmethod
     def result_file_has_status_success(file_name: str) -> bool:
         """
         Checks if the passed file name is a (Success) result file.
