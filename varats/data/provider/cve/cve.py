@@ -188,7 +188,7 @@ def __parse_cve(cve_data: tp.Dict[str, tp.Any]) -> CVE:
                references=cve_data.get('references', None),
                summary=cve_data.get('summary', None),
                vulnerable_versions=frozenset([
-                   version_parse(x['title'].replace(':*', '').split(':')[-1])
+                   version_parse(x.replace(':*', '').split(':')[-1])
                    for x in cve_data.get('vulnerable_configuration', [])
                ]))
 
@@ -208,7 +208,7 @@ def find_all_cve(vendor: str, product: str) -> tp.FrozenSet[CVE]:
         raise ValueError('Missing a vendor or product to search CVE\'s for!')
 
     response_data = __fetch_cve_data(
-        f'https://cve.circl.lu/api/search/{vendor}/{product}')
+        f'http://cve.circl.lu/api/search/{vendor}/{product}')
     cve_list: tp.Set[CVE] = set()
     for entry in response_data['results']:
         try:
