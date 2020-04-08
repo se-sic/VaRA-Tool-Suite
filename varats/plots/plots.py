@@ -5,7 +5,8 @@ import re
 import sys
 import typing as tp
 
-import varats.plots.plot as plot
+if tp.TYPE_CHECKING:
+    import varats.plots.plot as plot
 from varats.plots.plot_utils import check_required_args
 
 
