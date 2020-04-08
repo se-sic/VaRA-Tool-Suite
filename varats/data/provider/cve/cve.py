@@ -176,7 +176,7 @@ def __fetch_url(source_url: str) -> requests.Response:
 
 
 def __fetch_cve_data(source_url: str) -> tp.Dict[str, tp.Any]:
-    return __fetch_url(source_url).json()
+    return tp.cast(tp.Dict[str, tp.Any], __fetch_url(source_url).json())
 
 
 def __parse_cve(cve_data: tp.Dict[str, tp.Any]) -> CVE:
