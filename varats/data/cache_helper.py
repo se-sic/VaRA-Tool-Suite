@@ -34,8 +34,7 @@ def get_data_file_path(data_id: str, project_name: str) -> Path:
     True
     """
     return Path(str(
-        CFG["plots"]["data_cache"])) / "{plot_name}-{project_name}.csv".format(
-            plot_name=data_id, project_name=project_name)
+        CFG["plots"]["data_cache"])) / f"{data_id}-{project_name}.csv"
 
 
 def load_cached_df_or_none(data_id: str,
