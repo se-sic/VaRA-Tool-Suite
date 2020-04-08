@@ -241,13 +241,6 @@ def find_cve(cve_id: str) -> CVE:
 
 
 def __find_all_cwe() -> tp.FrozenSet[CWE]:
-    """
-    Create a set of all CWE's. The set with CWE numbers is downloaded from
-    @https://cwe.mitre.org/data/downloads.html.
-
-    Return:
-        a set of CWE objects
-    """
     source_urls: tp.FrozenSet[str] = frozenset([
         'https://cwe.mitre.org/data/csv/699.csv.zip',
         'https://cwe.mitre.org/data/csv/1194.csv.zip',
@@ -278,6 +271,14 @@ __CWE_LIST: tp.Optional[tp.FrozenSet[CWE]] = None
 
 
 def find_all_cwe() -> tp.FrozenSet[CWE]:
+    """
+    Create a set of all CWE's. The set with CWE numbers is downloaded from
+    @https://cwe.mitre.org/data/downloads.html.
+
+    Return:
+        a set of CWE objects
+    """
+    # pylint:  disable=W0603
     global __CWE_LIST
     if not __CWE_LIST:
         __CWE_LIST = __find_all_cwe()
