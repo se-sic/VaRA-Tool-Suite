@@ -36,8 +36,8 @@ from packaging.version import parse as parse_version, Version, LegacyVersion
 from plumbum import local
 from plumbum.cmd import git
 
-from varats.data.provider.cve.cve import (CVE, CWE_LIST, find_cve, find_cwe,
-                                          find_all_cve, CWE)
+from varats.data.provider.cve.cve import (CVE, find_cve, find_cwe, find_all_cve,
+                                          CWE, find_all_cwe)
 
 LOG = logging.getLogger(__name__)
 
@@ -107,12 +107,12 @@ def __collect_via_commit_mgs(
                     LOG.error(error_msg)
             # Check commit message whether it contains any name or description
             # from the CWE entries
-            for cwe in CWE_LIST:
+            for cwe in find_all_cwe():
                 if cwe.name in message or cwe.description in message:
                     cwe_data.append(cwe)
             # Compare commit messages with CWE list using n-grams
             message_parts = __n_grams(text=message)
-            for cwe in CWE_LIST:
+            for cwe in find_all_cwe():
                 if not __n_grams(text=cwe.name) ^ message_parts or \
                    not __n_grams(text=cwe.description) ^ message_parts:
                     cwe_data.append(cwe)
