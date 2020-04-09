@@ -13,11 +13,15 @@ class TestMetaReport(unittest.TestCase):
     """
     Test basic CommitReport functionality.
     """
+
     @classmethod
     def setUpClass(cls):
         """
         Setup file and CommitReport
         """
+        cls.success_filename_cr = ("CR-foo-foo-7bb9ef5f8c_"
+                                   "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
+                                   "success.txt")
         cls.success_filename = ("EMPTY-foo-foo-7bb9ef5f8c_"
                                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
                                 "success.txt")
@@ -27,6 +31,20 @@ class TestMetaReport(unittest.TestCase):
         cls.supplementary_filename = (
             "CR-SUPPL-foo-foo-7bb9ef5f8c_"
             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_test.txt")
+
+    def test_report_type_lookup(self):
+        """Check if we can lookup report types with file names."""
+        self.assertEqual(
+            MetaReport.lookup_report_type_from_file_name(
+                self.success_filename_cr), CR)
+        self.assertEqual(
+            MetaReport.lookup_report_type_from_file_name(
+                "some_wrong_file_path"), None)
+        self.assertEqual(
+            MetaReport.lookup_report_type_from_file_name(
+                "NONEXISTINGSHORTHAND-foo-foo-7bb9ef5f8c_"
+                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
+                "success.txt"), None)
 
     def test_is_result_file(self):
         """Check if the result file matcher works"""
@@ -45,8 +63,7 @@ class TestMetaReport(unittest.TestCase):
         self.assertFalse(
             MetaReport.is_result_file_supplementary(
                 self.supplementary_filename.replace("_", "")))
-        self.assertFalse(MetaReport.is_result_file(
-            self.supplementary_filename))
+        self.assertFalse(MetaReport.is_result_file(self.supplementary_filename))
 
     def test_file_status(self):
         """

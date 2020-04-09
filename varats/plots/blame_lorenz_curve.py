@@ -16,7 +16,8 @@ from varats.jupyterhelper.file import load_blame_report
 from varats.data.cache_helper import \
     (GraphCacheType, build_cached_report_table)
 from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
-from varats.data.revisions import get_processed_revisions_files
+from varats.data.revisions import get_processed_revisions_files, \
+    get_failed_revisions_files
 from varats.data.reports.blame_report import (BlameReport,
                                               generate_in_head_interactions,
                                               generate_out_head_interactions)
@@ -28,6 +29,7 @@ from varats.plots.plot import Plot
 
 
 def _build_commit_interaction_table(report_files: tp.List[Path],
+                                    failed_report_files: tp.List[Path],
                                     project_name: str,
                                     commit_map: CommitMap) -> pd.DataFrame:
 
@@ -70,7 +72,8 @@ def _build_commit_interaction_table(report_files: tp.List[Path],
     return build_cached_report_table(GraphCacheType.BlameInteractionData,
                                      project_name, create_dataframe_layout,
                                      create_data_frame_for_report,
-                                     load_blame_report, report_files)
+                                     load_blame_report, report_files,
+                                     failed_report_files)
 
 
 def _transform_to_lorenz_values(data: pd.Series) -> pd.Series:
@@ -137,8 +140,11 @@ def _gen_blame_head_interaction_data(**kwargs: tp.Any) -> pd.DataFrame:
 
     report_files = get_processed_revisions_files(
         project_name, BlameReport, get_case_study_file_name_filter(case_study))
+    failed_report_files = get_failed_revisions_files(
+        project_name, BlameReport, get_case_study_file_name_filter(case_study))
 
     data_frame = _build_commit_interaction_table(report_files,
+                                                 failed_report_files,
                                                  str(project_name), commit_map)
     return data_frame
 

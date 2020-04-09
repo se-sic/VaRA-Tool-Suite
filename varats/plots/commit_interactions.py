@@ -16,12 +16,14 @@ from varats.data.cache_helper import (GraphCacheType, build_cached_report_table)
 from varats.data.reports.commit_report import CommitReport
 from varats.jupyterhelper.file import load_commit_report
 from varats.plots.plot_utils import check_required_args
-from varats.data.revisions import get_processed_revisions_files
+from varats.data.revisions import get_processed_revisions_files, \
+    get_failed_revisions_files
 from varats.paper.case_study import (CaseStudy, CSStage,
                                      get_case_study_file_name_filter)
 
 
 def _build_interaction_table(report_files: tp.List[Path],
+                             failed_report_files: tp.List[Path],
                              project_name: str) -> pd.DataFrame:
     """
     Create a table with commit interaction data.
@@ -70,7 +72,8 @@ def _build_interaction_table(report_files: tp.List[Path],
     return build_cached_report_table(GraphCacheType.CommitInteractionData,
                                      project_name, create_dataframe_layout,
                                      create_data_frame_for_report,
-                                     load_commit_report, report_files)
+                                     load_commit_report, report_files,
+                                     failed_report_files)
 
 
 @check_required_args(["project", "get_cmap"])
@@ -85,8 +88,11 @@ def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
 
     report_files = get_processed_revisions_files(
         project_name, CommitReport, get_case_study_file_name_filter(case_study))
+    failed_report_files = get_failed_revisions_files(
+        project_name, CommitReport, get_case_study_file_name_filter(case_study))
 
-    data_frame = _build_interaction_table(report_files, str(project_name))
+    data_frame = _build_interaction_table(report_files, failed_report_files,
+                                          str(project_name))
 
     data_frame['head_cm'] = data_frame['head_cm'].apply(
         lambda x: "{num}-{head}".format(head=x, num=commit_map.short_time_id(x)
@@ -154,8 +160,9 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
 
             def filter_out_stage(data_frame: pd.DataFrame) -> None:
 
-                def cf_removal_helper(row: pd.Series, stage: CSStage = stage
-                                     ) -> tp.Union[np.int64]:
+                def cf_removal_helper(
+                        row: pd.Series,
+                        stage: CSStage = stage) -> tp.Union[np.int64]:
                     if stage.has_revision(row['head_cm'].split('-')[1]):
                         return np.NaN
                     return row['CFInteractions']
@@ -163,8 +170,9 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
                 data_frame['CFInteractions'] = data_frame.apply(
                     cf_removal_helper, axis=1)
 
-                def df_removal_helper(row: pd.Series, stage: CSStage = stage
-                                     ) -> tp.Union[np.int64]:
+                def df_removal_helper(
+                        row: pd.Series,
+                        stage: CSStage = stage) -> tp.Union[np.int64]:
                     if stage.has_revision(row['head_cm'].split('-')[1]):
                         return np.NaN
                     return row['DFInteractions']

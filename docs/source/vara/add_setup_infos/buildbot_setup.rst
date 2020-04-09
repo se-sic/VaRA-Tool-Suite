@@ -64,9 +64,6 @@ Create a Static ClangFormat Binary
 
    # static clang-format binary is located at bin/clang-format
 
-Buildbot Worker Setup
----------------------
-
 Create Virtualenv
 ^^^^^^^^^^^^^^^^^
 
