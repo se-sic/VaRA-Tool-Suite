@@ -180,17 +180,27 @@ def __fetch_cve_data(source_url: str) -> tp.Dict[str, tp.Any]:
 
 
 def __parse_cve(cve_data: tp.Dict[str, tp.Any]) -> CVE:
+    vulnerable_configurations = cve_data.get('vulnerable_configuration', [])
+    if vulnerable_configurations and isinstance(vulnerable_configurations[0],
+                                                str):
+        vulnerable_versions = frozenset([
+            version_parse(x.replace(':*', '').split(':')[-1])
+            for x in vulnerable_configurations
+        ])
+    else:
+        vulnerable_versions = frozenset([
+            version_parse(x['title'].replace(':*', '').split(':')[-1])
+            for x in vulnerable_configurations
+        ])
+
     return CVE(cve_id=cve_data.get('id', None),
                score=cve_data.get('cvss', None),
                published=datetime.strptime(cve_data.get('Published', None),
                                            '%Y-%m-%dT%H:%M:%S'),
-               vector=frozenset(cve_data.get('cvss-vector', None).split('/')),
+               vector=frozenset(cve_data.get('cvss-vector', '').split('/')),
                references=cve_data.get('references', None),
                summary=cve_data.get('summary', None),
-               vulnerable_versions=frozenset([
-                   version_parse(x.replace(':*', '').split(':')[-1])
-                   for x in cve_data.get('vulnerable_configuration', [])
-               ]))
+               vulnerable_versions=vulnerable_versions)
 
 
 def find_all_cve(vendor: str, product: str) -> tp.FrozenSet[CVE]:
