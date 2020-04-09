@@ -19,6 +19,8 @@ from packaging.version import Version, parse as version_parse, LegacyVersion
 import requests_cache  # type: ignore
 from tabulate import tabulate
 
+from varats.settings import CFG
+
 
 class CVE:
     """
@@ -161,7 +163,7 @@ class CWE:
         return hash(self.cwe_id)
 
 
-def __fetch_cve_data(source_url: str) -> requests.Response:
+def __fetch_url(source_url: str) -> requests.Response:
     response = requests.get(source_url)
     # Sometimes the rate limit is hit so keep repeating
     while response.status_code == 429:
@@ -171,6 +173,34 @@ def __fetch_cve_data(source_url: str) -> requests.Response:
         raise ValueError(f'Could not retrieve CVE information '
                          f'(Code: {response.status_code})!')
     return response
+
+
+def __fetch_cve_data(source_url: str) -> tp.Dict[str, tp.Any]:
+    return tp.cast(tp.Dict[str, tp.Any], __fetch_url(source_url).json())
+
+
+def __parse_cve(cve_data: tp.Dict[str, tp.Any]) -> CVE:
+    vulnerable_configurations = cve_data.get('vulnerable_configuration', [])
+    if vulnerable_configurations and isinstance(vulnerable_configurations[0],
+                                                str):
+        vulnerable_versions = frozenset([
+            version_parse(x.replace(':*', '').split(':')[-1])
+            for x in vulnerable_configurations
+        ])
+    else:
+        vulnerable_versions = frozenset([
+            version_parse(x['title'].replace(':*', '').split(':')[-1])
+            for x in vulnerable_configurations
+        ])
+
+    return CVE(cve_id=cve_data.get('id', None),
+               score=cve_data.get('cvss', None),
+               published=datetime.strptime(cve_data.get('Published', None),
+                                           '%Y-%m-%dT%H:%M:%S'),
+               vector=frozenset(cve_data.get('cvss-vector', '').split('/')),
+               references=cve_data.get('references', None),
+               summary=cve_data.get('summary', None),
+               vulnerable_versions=vulnerable_versions)
 
 
 def find_all_cve(vendor: str, product: str) -> tp.FrozenSet[CVE]:
@@ -187,23 +217,12 @@ def find_all_cve(vendor: str, product: str) -> tp.FrozenSet[CVE]:
     if not vendor or not product:
         raise ValueError('Missing a vendor or product to search CVE\'s for!')
 
-    response = __fetch_cve_data(
-        f'https://cve.circl.lu/api/search/{vendor}/{product}')
+    response_data = __fetch_cve_data(
+        f'http://cve.circl.lu/api/search/{vendor}/{product}')
     cve_list: tp.Set[CVE] = set()
-    for entry in response.json()['results']:
+    for entry in response_data['results']:
         try:
-            cve_list.add(
-                CVE(cve_id=entry.get('id'),
-                    score=entry.get('cvss'),
-                    published=datetime.strptime(entry.get('Published'),
-                                                '%Y-%m-%dT%H:%M:%S'),
-                    vector=frozenset(entry.get('cvss-vector', "").split('/')),
-                    references=entry.get('references'),
-                    summary=entry.get('summary'),
-                    vulnerable_versions=frozenset([
-                        version_parse(x.replace(':*', '').split(':')[-1])
-                        for x in entry.get('vulnerable_configuration')
-                    ])))
+            cve_list.add(__parse_cve(entry))
         except KeyError as error_msg:
             cve_id = entry.get('id')
             print(f'Error parsing {cve_id}: {error_msg}!')
@@ -224,32 +243,14 @@ def find_cve(cve_id: str) -> CVE:
     if not cve_id:
         raise ValueError('Missing a CVE ID!')
 
-    response = __fetch_cve_data(f'https://cve.circl.lu/api/cve/{cve_id}')
-    cve_data: tp.Dict[str, tp.Any] = response.json()
+    cve_data = __fetch_cve_data(f'https://cve.circl.lu/api/cve/{cve_id}')
     if not cve_data:
         raise ValueError(f'Could not find CVE information for {cve_id}, '
                          f'maybe it is a wrong number?')
-    return CVE(cve_id=cve_data.get('id', None),
-               score=cve_data.get('cvss', None),
-               published=datetime.strptime(cve_data.get('Published', None),
-                                           '%Y-%m-%dT%H:%M:%S'),
-               vector=frozenset(cve_data.get('cvss-vector', None).split('/')),
-               references=cve_data.get('references', None),
-               summary=cve_data.get('summary', None),
-               vulnerable_versions=frozenset([
-                   version_parse(x['title'].replace(':*', '').split(':')[-1])
-                   for x in cve_data.get('vulnerable_configuration', None)
-               ]))
+    return __parse_cve(cve_data)
 
 
-def find_all_cwe() -> tp.FrozenSet[CWE]:
-    """
-    Create a set of all CWE's. The set with CWE numbers is downloaded from
-    @https://cwe.mitre.org/data/downloads.html.
-
-    Return:
-        a set of CWE objects
-    """
+def __find_all_cwe() -> tp.FrozenSet[CWE]:
     source_urls: tp.FrozenSet[str] = frozenset([
         'https://cwe.mitre.org/data/csv/699.csv.zip',
         'https://cwe.mitre.org/data/csv/1194.csv.zip',
@@ -260,7 +261,7 @@ def find_all_cwe() -> tp.FrozenSet[CWE]:
 
     # Download each zip file, extract it and parse its entries
     for source_url in source_urls:
-        response = __fetch_cve_data(source_url)
+        response = __fetch_url(source_url)
         zip_file = zipfile.ZipFile(io.BytesIO(response.content))
         with zip_file.open(zip_file.namelist()[0], 'r') as csv_file:
             reader = csv.DictReader(io.TextIOWrapper(csv_file),
@@ -274,6 +275,25 @@ def find_all_cwe() -> tp.FrozenSet[CWE]:
                         description=entry.get('Description', '')))
 
     return frozenset(cwe_list)
+
+
+__CWE_LIST: tp.Optional[tp.FrozenSet[CWE]] = None
+
+
+def find_all_cwe() -> tp.FrozenSet[CWE]:
+    """
+    Create a set of all CWE's. The set with CWE numbers is downloaded from
+    @https://cwe.mitre.org/data/downloads.html.
+
+    Return:
+        a set of CWE objects
+    """
+    # pylint:  disable=W0603
+    global __CWE_LIST
+    if not __CWE_LIST:
+        __CWE_LIST = __find_all_cwe()
+
+    return __CWE_LIST
 
 
 def find_cwe(cwe_id: str = '',
@@ -290,7 +310,7 @@ def find_cwe(cwe_id: str = '',
     Return:
         a CWE if one is found, otherwise raise a ``ValueError``
     """
-    for cwe in CWE_LIST:
+    for cwe in find_all_cwe():
         if ((cwe_id and cwe.cwe_id == cwe_id) or
             (cwe_name and cwe.name == cwe_name) or
             (cwe_description and cwe.description == cwe_description)):
@@ -300,8 +320,6 @@ def find_cwe(cwe_id: str = '',
 
 
 # Cache all requests to limit external requests for a week
-requests_cache.install_cache('requests_cache', expire_after=604800)
-
-# Since this list is static it might as well be declared here so it is
-# ready to use
-CWE_LIST: tp.FrozenSet[CWE] = find_all_cwe()
+requests_cache.install_cache(
+    f"{str(CFG['plots']['data_cache'])}/requests_cache",
+    expire_after=604800)
