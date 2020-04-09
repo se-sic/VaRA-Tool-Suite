@@ -321,6 +321,5 @@ def find_cwe(cwe_id: str = '',
 
 # Cache all requests to limit external requests for a week
 requests_cache.install_cache(
-    f"{str(CFG['config_file']).rsplit('/', 1)[0]}/"
     f"{str(CFG['plots']['data_cache'])}/requests_cache",
     expire_after=604800)

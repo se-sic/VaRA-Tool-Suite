@@ -6,6 +6,8 @@ from datetime import datetime
 import unittest
 import typing as tp
 
+import requests_cache
+
 from varats.data.provider.cve.cve import (CVE, CWE, find_cve, find_all_cve,
                                           find_cwe, find_all_cwe)
 
@@ -41,7 +43,8 @@ class TestSecurity(unittest.TestCase):
         parsed.
         https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-2601
         """
-        cve: CVE = find_cve('CVE-2014-0160')
+        with requests_cache.disabled():
+            cve: CVE = find_cve('CVE-2014-0160')
 
         self.assertTrue(cve.cve_id == self.REFERENCE_CVE_DATA['cve_id'])
         self.assertTrue(cve.score == self.REFERENCE_CVE_DATA['score'])
@@ -54,7 +57,8 @@ class TestSecurity(unittest.TestCase):
         contained.
         @https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-2601
         """
-        cve_list: tp.FrozenSet[CVE] = find_all_cve('openssl', 'openssl')
+        with requests_cache.disabled():
+            cve_list: tp.FrozenSet[CVE] = find_all_cve('openssl', 'openssl')
         self.assertTrue(len(cve_list) > 0)
 
         found: bool = False
