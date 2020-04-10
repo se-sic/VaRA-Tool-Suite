@@ -55,6 +55,7 @@ VaRA Docs
 
    vara/setup
    vara/debugging
+   vara/passes
 
 VaRA API Reference
 ==================
