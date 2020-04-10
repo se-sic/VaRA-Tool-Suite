@@ -1,7 +1,9 @@
 Blame-MD-Verifier
 =================
 
-The Blame-Verifier can be used to analyse repositories in order to find inconsistencies between VaRA-commit-hashes and debug-commit-hashes. It accesses the IRegion of an instruction in a module to gain the VaRA-hash and compares it with the Debug-hash, which is gained through accessing the debug information in an instruction. The Blame-Verifier comes with a set of verifier-options, which can be used to filter the printed results of the analysis.
+The Blame-Verifier is designed to analyse repositories in order to find inconsistencies between VaRA-commit-hashes and debug-commit-hashes.
+It accesses the IRegion of an instruction in a module to gain the VaRA-hash and compares it with the Debug-hash, which is gained through accessing the debug information in an instruction.
+The Blame-Verifier comes with a set of verifier-options, which can be used to filter the printed results of the analysis.
 
 Run Blame-MD-Verifier
 ---------------------
