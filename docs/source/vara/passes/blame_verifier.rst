@@ -8,8 +8,7 @@ The Blame-Verifier comes with a set of verifier-options, which can be used to fi
 Run Blame-MD-Verifier
 ---------------------
 
-The existence of ``llvm-debug-information`` in the used ``IR``-file is a requirement to assure a correct comparison between commit hashes.
-
+Before using the verifier, please ensure that you build your LLVM-IR file with ``llvm-debug-information`` to assure a correct comparison between commit hashes.
 To use the Blame-Verifier, you first have to enable the Blame Detection in your ``opt`` build with ``-vara-BD`` and activate the verifier itself with ``-vara-verify-blameMD``. To let the Blame Detection initialize the commits for repositories use ``-vara-init-commits`` in addition. Optionally you can add ``verifier-options``, which are listed below, with ``-verifier-options=Your_Option`` to filter the results. If the ``verifier-options`` are used but none is chosen explicitly, it will default to the ``Status``-option.
 
 An example of how the Blame-Verifier can be used on a ``.ll`` file:
