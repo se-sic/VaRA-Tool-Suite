@@ -117,7 +117,11 @@ class BlameReport(BaseReport):
         super(BlameReport, self).__init__(path)
         self.__path = path
         with open(path, 'r') as stream:
-            documents = yaml.load_all(stream, Loader=yaml.CLoader)
+            try:
+                documents = yaml.load_all(stream, Loader=yaml.CLoader)
+            except AttributeError:
+                documents = yaml.load_all(stream, Loader=yaml.Loader)
+
             version_header = VersionHeader(next(documents))
             version_header.raise_if_not_type("BlameReport")
             version_header.raise_if_version_is_less_than(1)
