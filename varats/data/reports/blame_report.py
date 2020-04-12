@@ -180,7 +180,7 @@ class BlameReport(BaseReport):
             file_ext: file extension of the report file
 
         Returns:
-            name for the report file that can later be uniquly identified
+            name for the report file that can later be uniquely identified
         """
         return MetaReport.get_file_name(BlameReport.SHORTHAND, project_name,
                                         binary_name, project_version,

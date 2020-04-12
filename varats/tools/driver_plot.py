@@ -27,7 +27,7 @@ def main() -> None:
     initialize_logger_config()
     parser = argparse.ArgumentParser("vara-plot")
     parser.add_argument("plot_type",
-                        help="Plot to generate." +
+                        help="Plot to generate. " +
                         PlotRegistry.get_plot_types_help_string())
     parser.add_argument("-r",
                         "--result-output",
