@@ -59,6 +59,12 @@ def main() -> None:
                         "Plots may ignore this option.",
                         default="EmptyReport")
     parser.add_argument(
+        "--ignore-whitespace",
+        help="Ignore whitespace (only useful for plot related to git-blame)",
+        default=False,
+        action="store_true"
+    )
+    parser.add_argument(
         "extra_args",
         metavar="KEY=VALUE",
         nargs=argparse.REMAINDER,

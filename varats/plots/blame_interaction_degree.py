@@ -22,7 +22,8 @@ from varats.data.revisions import get_processed_revisions_files, \
 from varats.data.reports.blame_report import (
     BlameReport, generate_degree_tuples, generate_author_degree_tuples,
     generate_max_time_distribution_tuples,
-    generate_avg_time_distribution_tuples)
+    generate_avg_time_distribution_tuples,
+    BlameIgnoreWhitespaceReport)
 from varats.plots.plot_utils import check_required_args
 from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
 from varats.plots.repository_churn import draw_code_churn
@@ -116,10 +117,15 @@ def _gen_blame_interaction_data(**kwargs: tp.Any) -> pd.DataFrame:
     case_study = kwargs.get('plot_case_study', None)  # can be None
     project_name = kwargs["project"]
 
+    if kwargs["ignore_whitespace"]:
+        report_type = BlameIgnoreWhitespaceReport
+    else:
+        report_type = BlameReport
+
     report_files = get_processed_revisions_files(
-        project_name, BlameReport, get_case_study_file_name_filter(case_study))
+        project_name, report_type, get_case_study_file_name_filter(case_study))
     failed_report_files = get_failed_revisions_files(
-        project_name, BlameReport, get_case_study_file_name_filter(case_study))
+        project_name, report_type, get_case_study_file_name_filter(case_study))
 
     data_frame = _build_interaction_table(report_files, failed_report_files,
                                           str(project_name))
@@ -201,6 +207,7 @@ class BlameDegree(Plot):
                      degree_type: _DegreeType,
                      extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
                      with_churn: bool = True) -> None:
+
         plot_cfg = {
             'linewidth': 1 if view_mode else 0.25,
             'legend_size': 8 if view_mode else 2,

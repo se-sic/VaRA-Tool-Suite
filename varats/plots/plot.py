@@ -103,11 +103,17 @@ class Plot(metaclass=PlotRegistry):
             plot_dir = path
         project_name = self.plot_kwargs["project"]
 
+        if self.plot_kwargs["ignore_whitespace"]:
+            whitespace = "_ignore_whitespace"
+        else:
+            whitespace = ""
+
         plt.savefig(plot_dir /
-                    (project_name + "_{graph_name}{stages}.{filetype}".format(
+                    (project_name + "_{graph_name}{whitespace}{stages}.{filetype}".format(
                         graph_name=self.name,
                         stages='S' if self.plot_kwargs['sep_stages'] else '',
-                        filetype=filetype)),
+                        filetype=filetype,
+                        whitespace=whitespace)),
                     dpi=1200,
                     bbox_inches="tight",
                     format=filetype)
