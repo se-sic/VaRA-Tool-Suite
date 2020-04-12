@@ -21,7 +21,8 @@ from varats.data.report import BaseReport
 
 def setup_basic_blame_experiment(experiment: Experiment, project: Project,
                                  report_type: tp.Type[BaseReport],
-                                 result_folder_template: str) -> None:
+                                 result_folder_template: str,
+                                 ignore_whitespace: bool) -> None:
     """
     Setup the project for a blame experiment.
         - run time extensions
@@ -44,7 +45,10 @@ def setup_basic_blame_experiment(experiment: Experiment, project: Project,
 
     # This c-flag is provided by VaRA and it suggests to use the git-blame
     # annotation.
-    project.cflags = ["-fvara-GB"]
+    if ignore_whitespace:
+        project.cflags = ["-fvara-GB-ignore"]
+    else:
+        project.cflags = ["-fvara-GB"]
 
 
 def generate_basic_blame_experiment_actions(

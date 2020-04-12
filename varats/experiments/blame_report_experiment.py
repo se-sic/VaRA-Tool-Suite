@@ -26,9 +26,14 @@ class BlameReportGeneration(actions.Step):  # type: ignore
     """
 
     NAME = "BlameReportGeneration"
+
     DESCRIPTION = "Analyses the bitcode with -vara-BR of VaRA."
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
+
+    REPORT_TYPE = BR
+
+    IGNORE_WHITESPACE = False
 
     def __init__(
         self,
@@ -65,7 +70,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         mkdir("-p", vara_result_folder)
 
         for binary in project.binaries:
-            result_file = BR.get_file_name(project_name=str(project.name),
+            result_file = self.REPORT_TYPE.get_file_name(project_name=str(project.name),
                                            binary_name=binary.name,
                                            project_version=str(project.version),
                                            project_uuid=str(project.run_uuid),
@@ -76,6 +81,9 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                 "-vara-report-outfile={res_folder}/{res_file}".format(
                     res_folder=vara_result_folder, res_file=result_file)
             ]
+
+            if self.IGNORE_WHITESPACE:
+                opt_params.append('-ignore-whitespace')
 
             opt_params.append(bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
                 project_name=project.name,
@@ -91,12 +99,12 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                 timeout[timeout_duration, run_cmd],
                 PEErrorHandler(
                     vara_result_folder,
-                    BR.get_file_name(project_name=str(project.name),
-                                     binary_name=binary.name,
-                                     project_version=str(project.version),
-                                     project_uuid=str(project.run_uuid),
-                                     extension_type=FSE.Failed,
-                                     file_ext=".txt"), run_cmd,
+                    self.REPORT_TYPE.get_file_name(project_name=str(project.name),
+                                                   binary_name=binary.name,
+                                                   project_version=str(project.version),
+                                                   project_uuid=str(project.run_uuid),
+                                                   extension_type=FSE.Failed,
+                                                   file_ext=".txt"), run_cmd,
                     timeout_duration))
 
 
@@ -110,6 +118,8 @@ class BlameReportExperiment(VersionExperiment):
 
     REPORT_TYPE = BR
 
+    REPORT_GENERATION = BlameReportGeneration
+
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in
@@ -120,11 +130,13 @@ class BlameReportExperiment(VersionExperiment):
         """
 
         BE.setup_basic_blame_experiment(
-            self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE)
+            self, project, self.REPORT_TYPE,
+            self.REPORT_GENERATION.RESULT_FOLDER_TEMPLATE,
+            self.REPORT_GENERATION.IGNORE_WHITESPACE)
 
         analysis_actions = BE.generate_basic_blame_experiment_actions(project)
 
-        analysis_actions.append(BlameReportGeneration(project))
+        analysis_actions.append(self.REPORT_GENERATION(project))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
