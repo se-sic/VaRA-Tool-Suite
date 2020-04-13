@@ -18,7 +18,6 @@ VaRA is a variablity aware region analyzer framework for LLVM.
 
 Documentation
 =============
-
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
