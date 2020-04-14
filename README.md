@@ -104,6 +104,8 @@ vara-gen-bbconfig
 Second, we change into the benchbuild folder and run an experiment that generates `CommitReports` for provided projects, in this case we use `gzip`.
 ```console
 cd $VARA_ROOT/benchbuild
+export LD_LIBRARY_PATH=$VARA_ROOT/tools/VaRA/lib:$LD_LIBRARY_PATH
+export PATH=$VARA_ROOT/tools/VaRA/bin:$PATH
 benchbuild -vv run -E GenerateCommitReport gzip
 ```
 The generated result files are place in the `vara/results/$PROJECT_NAME` folder and can be further visualized with VaRA-TS graph generators.
