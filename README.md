@@ -31,64 +31,10 @@ Additional packages are required to build VaRA from source.
 sudo apt install libsqlite3-dev libcurl4-openssl-dev libboost-all-dev libpapi-dev googletest libxml2-dev
 ```
 
-### Install VaRA-TS
+### Install VaRA with vara-buildsetup
 
-#### Install to python user-directory (easier)
-
-To install VaRA-TS into the user directory use the following command.
-The same command can be used to update an existing installation (if necessary).
-
-```bash
-# cd to VaRA-TS directory
-python3 -m pip install --user --upgrade -e .
-
-# developers also need to execute the next command
-# (if you want to contribute to VaRA/VaRA-TS):
-python3 -m pip install -r requirements.txt
-```
-This initializes `VaRA-TS` and installs the `vara-graphview` tool to visualize VaRA results.
-
-#### Install to python virtualenv (advanced)
-
-```bash
-# create virtualenv
-python3 -m venv /where/you/want/your/virtualenv/to/live
-
-# activate virtualenv
-source /path/to/virtualenv/bin/activate
-
-# cd to VaRA-TS directory
-python3 -m pip install --upgrade -e .
-
-# developers also need to execute the next command
-# (if you want to contribute to VaRA/VaRA-TS):
-python3 -m pip install -r requirements.txt
-```
-
-The virtualenv method has the advantage that it does not mess with your local python user
-directory. With this method you have to execute the `source` command every time before
-you can execute the `vara-graphview` program.
-
-### Install VaRA
-Everything around VaRA can be setup automatically with either `vara-buildsetup` or by using the GUI Buildsetup, included in most GUI tools. The following example shows how to setup VaRA via command line.
-
-```bash
-    mkdir $VARA_ROOT_FOLDER
-    cd $VARA_ROOT_FOLDER
-    vara-buildsetup vara -i
-    vara-buildsetup vara -b
-```
-
-Updating VaRA to a new version can also be done with `vara-buildsetup`.
-```bash
-    vara-buildsetup vara -u
-    vara-buildsetup vara -b
-```
-
-To upgrade VaRA to a new release, for example, `release_70`, use:
-```bash
-    vara-buildsetup vara -u --version 110
-```
+The easiest way to install VaRa is to use our `vara-buildsetup` tool. You can find more information
+about this tool in its [documentation](https://vara.readthedocs.io/en/vara-dev/vara-ts/vara-buildsetup.html).
 
 ## Running experiments and analyzing projects
 VaRA-TS provides different preconfigured experiments and projects.
