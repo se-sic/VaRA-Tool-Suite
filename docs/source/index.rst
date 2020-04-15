@@ -30,6 +30,7 @@ VaRA-TS Docs
    :maxdepth: 1
    :caption: Contents:
 
+   vara-ts/vara-buildseup
    vara-ts/benchbuild
 
 VaRA-TS API Reference

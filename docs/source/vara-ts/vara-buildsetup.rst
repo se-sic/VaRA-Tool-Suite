@@ -1,5 +1,5 @@
-vara-buildsetup
-===============
+Build VaRA with vara-buildsetup
+===============================
 
 `vara-buildsetup` is the tool used to install and build VaRA.
 
