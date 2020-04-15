@@ -1,7 +1,7 @@
 Build VaRA with vara-buildsetup
 ===============================
 
-`vara-buildsetup` is the tool used to install and build VaRA.
+:ref:`vara-buildsetup` is the tool used to install and build VaRA.
 
 Installation
 ------------
@@ -116,4 +116,3 @@ use the just compiled VaRA build instead of your system clang install.
 
     export LD_LIBRARY_PATH=$VARA_ROOT/tools/VaRA/lib:$LD_LIBRARY_PATH
     export PATH=$VARA_ROOT/tools/VaRA/bin:$PATH
-
