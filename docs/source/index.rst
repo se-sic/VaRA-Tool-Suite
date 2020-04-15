@@ -23,7 +23,7 @@ VaRA-TS gives convenient access to a list of different research tools, which can
    research_tool_docs/vara/vara
 
 
-Tool-Suite overview
+Tool-Suite Overview
 ===================
 .. image:: VaRA-overview-white.svg
 
