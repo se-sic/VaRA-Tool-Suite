@@ -59,7 +59,7 @@ For regression tests, the same subpath can be added to the test-repo meta-variab
 
 Debugging options
 =================
-VaRA can produce specific debug output to ease debugging, to enable this output use LLVM debugging options.
+VaRA can produce specific debug output to ease debugging. To enable this output use LLVM debugging options.
 Add the corresponding debug flag to your run line `-debug-only=$DB_FLAG`
 
 VaRA specific DB_FLAGs

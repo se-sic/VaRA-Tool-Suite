@@ -26,7 +26,7 @@ Second, checkout the VaRA repository as ``vara`` into ``vara-llvm-project``.
   git clone https://github.com/se-passau/VaRA.git vara
   git submodule init && git submodule update --recursive
 
-Third, to complet the setup link the prepared VaRA build scripts into a build folder.
+Third, to complete the setup link the prepared VaRA build scripts into a build folder.
 
 .. code-block:: bash
 
