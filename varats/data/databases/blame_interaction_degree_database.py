@@ -112,6 +112,8 @@ class BlameInteractionDegreeDatabase(
             project_name, BlameReport,
             get_case_study_file_name_filter(case_study))
 
+        # cls.CACHE_ID is set by superclass
+        # pylint: disable=E1101
         data_frame = build_cached_report_table(cls.CACHE_ID, project_name,
                                                create_dataframe_layout,
                                                create_data_frame_for_report,
