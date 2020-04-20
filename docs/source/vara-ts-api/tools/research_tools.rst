@@ -1,5 +1,5 @@
-Research Tools
-==============
+Provided research tools
+=======================
 
 .. toctree::
    :maxdepth: 1

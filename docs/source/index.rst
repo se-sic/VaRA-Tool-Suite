@@ -8,20 +8,24 @@ Welcome to VaRA's documentation!
 
 Quick overview
 --------------
-* :ref:`VaRA-TS Research Tools`
+* :ref:`Research Tools`
+* :ref:`VaRA-TS Docs`
 * :ref:`vara-ts api reference`
-* :ref:`VaRA Docs`
-* :ref:`VaRA API Reference`
 
-VaRA-TS Research Tools
-======================
+Research Tools
+==============
 VaRA-TS gives convenient access to a list of different research tools, which can be automatically installed and utilized in the provided experiments or accessed direclty for own use.
 
 .. toctree::
    :maxdepth: 1
    :caption: List of provided research tools:
 
-   vara-ts-api/tools/research_tools/vara
+   research_tool_docs/vara/vara
+
+
+Tool-Suite Overview
+===================
+.. image:: VaRA-overview-white.svg
 
 VaRA-TS Docs
 ============
@@ -38,32 +42,14 @@ VaRA-TS API Reference
    :maxdepth: 2
    :caption: Contents:
 
-   vara-ts-api/data
-   vara-ts-api/experiments
-   vara-ts-api/paper
-   vara-ts-api/plots
-   vara-ts-api/projects
-   vara-ts-api/tools
    vara-ts-api/tools/research_tools
+   vara-ts-api/experiments
+   vara-ts-api/projects
+   vara-ts-api/paper
+   vara-ts-api/tools
+   vara-ts-api/plots
+   vara-ts-api/data
    vara-ts-api/utils.rst
-
-VaRA Docs
-=========
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-   vara/setup
-   vara/debugging
-   vara/passes
-
-VaRA API Reference
-==================
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-   vara-api/analyses
 
 
 Indices and tables
@@ -80,9 +66,9 @@ A very big thanks to all who supported and help to develop VaRA.
   - `Sven Apel`_, for supervision and guidance
   - `Norbert Siegmund`_, for supervision and guidance
   - Florian Niederhuber, for implementing the first version of the CommitDetection
-  - Lisa Griebl, for providing the VaRA Logo. :ref:`logo license`
+  - Lisa Griebl, for providing the VaRA Logo. :ref:`Logo License`
   - `Sebastian Böhm`_
- 
+
 Logo License
 ------------
 The logo was created using the following brushes from Axeraider70, `Galactic Brushes`_ and `Green Lotus Brushes`_, which are licensed under `CC BY-NC-ND 3.0`_.
