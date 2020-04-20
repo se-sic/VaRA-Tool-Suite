@@ -22,3 +22,57 @@ Second, we change into the benchbuild folder and run an experiment that generate
   benchbuild -vv run -E GenerateBlameReport gzip
 
 The generated result files are place in the ``vara/results/$PROJECT_NAME`` folder and can be further visualized with VaRA-TS graph generators.
+
+How-to configure BenchBuild yourself
+------------------------------------
+BenchBuild's configuration file ``.benchbuild.yml`` normally is placed inside the ``benchbuild`` folder, which is located in the vara root folder.
+A default version of this file can be automatically generated with our tool :ref:`vara-gen-bbconfig`.
+To adapt and tune BenchBuild further, you can moify the different configuration flags in this config file. The following list shows the most important ones:
+
+* Adding extra paths to the environment
+
+.. code-block:: yaml
+
+  env:
+    path:
+      value: ["paths from your system that should be included in the PATH variable for experiments"]
+
+* Other experiments or projects can be loaded similar to python imports
+
+.. code-block:: yaml
+
+  plugins:
+  experiments:
+    default:
+      - varats.vara-experiments.CommitAnnotationReport
+      - varats.vara-experiments.RegionAnalyser
+  projects:
+    default:
+      - varats.vara-projects.git.gzip
+      - pythonmodule.projectclass
+
+* Enable/Disable BenchBuild version support, i.e., let BB consider all revisions from a project or just the latest one.
+
+.. code-block:: yaml
+
+  versions:
+    full:
+      default: false
+      desc: Ignore default sampling and provide full version exploration.
+      value: true
+
+* Adapt the number of threads that should be used for project compilation.
+
+.. code-block:: yaml
+
+  jobs:
+    desc: Number of jobs that can be used for building and running.
+    value: '4'
+
+* Adapt the number of parallel running experiment executions.
+
+.. code-block:: yaml
+
+  parallel_processes:
+    desc: Proccesses use to work on execution plans.
+    value: 4
