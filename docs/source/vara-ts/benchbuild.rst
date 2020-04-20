@@ -25,9 +25,9 @@ The generated result files are place in the ``vara/results/$PROJECT_NAME`` folde
 
 How-to configure BenchBuild yourself
 ------------------------------------
-BenchBuild's configuration file ``.benchbuild.yml`` normally is placed inside the `benchbuild` folder, which is located in the vara root folder.
+BenchBuild's configuration file ``.benchbuild.yml`` normally is placed inside the ``benchbuild`` folder, which is located in the vara root folder.
 A default version of this file can be automatically generated with our tool :ref:`vara-gen-bbconfig`.
-To adapt and tune BenchBuild further a lot of different configuration flags can be adapted. The following list shows the most important ones:
+To adapt and tune BenchBuild further, you can moify the different configuration flags in this config file. The following list shows the most important ones:
 
 * Adding extra paths to the environment
 
@@ -37,7 +37,7 @@ To adapt and tune BenchBuild further a lot of different configuration flags can 
     path:
       value: ["paths from your system that should be included in the PATH variable for experiments"]
 
-* Loading other experiments or projects can be specified similar to python imports
+* Other experiments or projects can be loaded similar to python imports
 
 .. code-block:: yaml
 
@@ -61,7 +61,7 @@ To adapt and tune BenchBuild further a lot of different configuration flags can 
       desc: Ignore default sampling and provide full version exploration.
       value: true
 
-* Adapt the number of threads that should be running for project compilation.
+* Adapt the number of threads that should be used for project compilation.
 
 .. code-block:: yaml
 

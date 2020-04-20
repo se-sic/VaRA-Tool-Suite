@@ -9,7 +9,7 @@ If you want to manually install llvm and VaRA see the following instructions.
 
 Linux
 .....
-To create your own setup or integrate VaRA into LLVM follow these instructions.
+To create your own setup or integrate VaRA into LLVM, follow these instructions.
 First, clone our modified version of `llvm's monorepo <https://github.com/se-passau/vara-llvm-project>`_ or patch our modifications into your version of llvm-project.
 
 .. code-block:: bash

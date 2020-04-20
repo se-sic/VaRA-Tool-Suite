@@ -37,9 +37,9 @@ To run all llvm related regression tests in ``test/vara-llvm/``:
 Testing commit and git analyses
 -------------------------------
 
-For testing of commit and git related analyses, VaRA offers additional testing repositories, which are automatically provided to your regression or unittests.
+For testing of commit and git related analyses, VaRA offers additional testing repositories which are automatically provided to your regression or unittests.
 
-For unittests, just include the ``UnittestHelper.h`` and load a repository by specifying it's subpath, relative to the ``TestRepositories`` folder.
+For unittests, just include the ``UnittestHelper.h`` and load a repository by specifying its subpath, relative to the ``TestRepositories`` folder.
 
 .. code-block:: cpp
 
@@ -60,7 +60,7 @@ For regression tests, the same subpath can be added to the test-repo meta-variab
 Debugging options
 =================
 VaRA can produce specific debug output to ease debugging. To enable this output use LLVM debugging options.
-Add the corresponding debug flag to your run line `-debug-only=$DB_FLAG`
+Add the corresponding debug flag to your run line ``-debug-only=$DB_FLAG``
 
 VaRA specific DB_FLAGs
 
