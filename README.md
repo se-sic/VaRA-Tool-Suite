@@ -26,14 +26,21 @@ sudo apt install python3-dev python3-tk python3-psutil psutils ninja-build pytho
 sudo apt install python3-venv # If you want to install VaRA-TS in a python virtualenv
 ```
 
+### Installation from pip
+
+```
+pip3 install TODO-PACKAGE-NAME
+```
+
+### Installation from source
+
+
 Additional packages are required to build VaRA from source.
 ```bash
 sudo apt install libsqlite3-dev libcurl4-openssl-dev libboost-all-dev libpapi-dev googletest libxml2-dev
 ```
 
-### Install VaRA with vara-buildsetup
-
-The easiest way to install VaRa is to use our `vara-buildsetup` tool. You can find more information
+The easiest way to install VaRa is to use the `vara-buildsetup` tool. You can find more information
 about this tool in its [documentation](https://vara.readthedocs.io/en/vara-dev/vara-ts/vara-buildsetup.html).
 
 ## Running experiments and analyzing projects

@@ -3,8 +3,24 @@ Build VaRA with vara-buildsetup
 
 `vara-buildsetup` is the tool used to install and build VaRA.
 
+
 Installation
 ------------
+
+Install dependencies
+********************
+
+To use the VaRA Tool Suite, make sure you have the necessary packages installed.
+For ubuntu, you can use the following command to install them (your system has to
+have at least `python3.6`):
+
+.. code-block:: console
+
+    sudo apt install python3-dev python3-tk python3-psutil psutils ninja-build python3-pip autoconf cmake ruby curl time libyaml-dev
+    sudo apt install python3-venv # If you want to install VaRA-TS in a python virtualenv
+
+Get the source
+**************
 
 First you will need to clone the VaRA Tool Suite repository.
 
