@@ -4,7 +4,7 @@ This is a quick guide on how to setup VaRA either with our automatic setup or ma
 
 Manual Installation
 -------------------
-VaRA can be automatically set up with :ref:`vara-buildsetup` from the tool suite, for instructions see setup.
+VaRA can be automatically set up with :ref:`vara-buildsetup` from the tool suite.
 If you want to manually install llvm and VaRA see the following instructions.
 
 Linux
