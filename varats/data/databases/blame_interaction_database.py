@@ -6,7 +6,7 @@ import typing as tp
 import pandas as pd
 
 from varats.data.cache_helper import build_cached_report_table
-from varats.data.databases.database import Database
+from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.data.reports.blame_report import (BlameReport,
                                               generate_in_head_interactions,
                                               generate_out_head_interactions)
@@ -17,7 +17,7 @@ from varats.jupyterhelper.file import load_blame_report
 from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
 
 
-class BlameInteractionDatabase(Database,
+class BlameInteractionDatabase(EvaluationDatabase,
                                cache_id="blame_interaction_data",
                                columns=[
                                    "IN_HEAD_Interactions",

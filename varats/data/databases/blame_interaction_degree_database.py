@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from varats.data.cache_helper import build_cached_report_table
-from varats.data.databases.database import Database
+from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.data.reports.blame_report import (
     BlameReport, generate_degree_tuples, generate_author_degree_tuples,
     generate_max_time_distribution_tuples,
@@ -34,7 +34,7 @@ class DegreeType(Enum):
 
 
 class BlameInteractionDegreeDatabase(
-        Database,
+        EvaluationDatabase,
         cache_id="blame_interaction_degree_data",
         columns=["degree_type", "degree", "amount", "fraction"]):
     """

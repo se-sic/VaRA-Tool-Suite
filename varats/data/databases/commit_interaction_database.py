@@ -6,7 +6,7 @@ import typing as tp
 import pandas as pd
 
 from varats.data.cache_helper import build_cached_report_table
-from varats.data.databases.database import Database
+from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.data.reports.commit_report import CommitMap, CommitReport
 from varats.data.revisions import (get_processed_revisions_files,
                                    get_failed_revisions_files)
@@ -14,7 +14,7 @@ from varats.jupyterhelper.file import load_commit_report
 from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
 
 
-class CommitInteractionDatabase(Database,
+class CommitInteractionDatabase(EvaluationDatabase,
                                 cache_id="commit_interaction_data",
                                 columns=[
                                     "CFInteractions", "DFInteractions",

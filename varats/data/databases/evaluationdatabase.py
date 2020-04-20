@@ -13,7 +13,7 @@ from varats.paper.case_study import CaseStudy
 AvailableColumns = tp.TypeVar("AvailableColumns")
 
 
-class Database(abc.ABC):
+class EvaluationDatabase(abc.ABC):
     """
     Base class for accessing report data.
 
