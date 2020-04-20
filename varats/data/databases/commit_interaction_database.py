@@ -14,16 +14,16 @@ from varats.jupyterhelper.file import load_commit_report
 from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
 
 
-class CommitInteractionDatabase(Database):
+class CommitInteractionDatabase(Database,
+                                cache_id="commit_interaction_data",
+                                columns=[
+                                    "CFInteractions", "DFInteractions",
+                                    "HEAD CF Interactions",
+                                    "HEAD DF Interactions"
+                                ]):
     """
     Provides access to commit interaction data.
     """
-
-    CACHE_ID = "commit_interaction_data"
-    COLUMNS = Database.COLUMNS + [
-        "CFInteractions", "DFInteractions", "HEAD CF Interactions",
-        "HEAD DF Interactions"
-    ]
 
     @classmethod
     def _load_dataframe(cls, project_name: str, commit_map: CommitMap,

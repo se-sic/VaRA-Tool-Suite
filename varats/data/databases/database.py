@@ -25,8 +25,17 @@ class Database(abc.ABC):
           report data
     """
 
-    CACHE_ID: tp.Optional[str] = None
+    CACHE_ID: str
     COLUMNS = ["revision", "time_id"]
+
+    @classmethod
+    def __init_subclass__(cls, *args: tp.Any, cache_id: str,
+                          columns: tp.List[str], **kwargs: tp.Any) -> None:
+        # mypy does not yet fully understand __init_subclass__()
+        # https://github.com/python/mypy/issues/4660
+        super().__init_subclass__(*args, **kwargs)  # type: ignore
+        cls.CACHE_ID = cache_id
+        cls.COLUMNS += columns
 
     @classmethod
     @abc.abstractmethod
@@ -67,12 +76,9 @@ class Database(abc.ABC):
         Return:
             a pandas dataframe with the given columns and the
         """
-        assert cls.__name__ != "Database", ("You must not call this function "
-                                            "on the 'Database' base class.")
-        assert cls.CACHE_ID is not None, ("CACHE_ID is 'None'. Did you forget "
-                                          "to override it?")
-        assert cls.COLUMNS[:len(Database.COLUMNS)] == Database.COLUMNS, (
-            "COLUMNS does not start with Database.COLUMNS.")
+        if cls.__name__ == "Database":
+            raise AssertionError("You must not call this function on the "
+                                 "'Database' base class.")
 
         data: pd.DataFrame = cls._load_dataframe(project_name, commit_map,
                                                  case_study)

@@ -17,15 +17,15 @@ from varats.jupyterhelper.file import load_blame_report
 from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
 
 
-class BlameInteractionDatabase(Database):
+class BlameInteractionDatabase(Database,
+                               cache_id="blame_interaction_data",
+                               columns=[
+                                   "IN_HEAD_Interactions",
+                                   "OUT_HEAD_Interactions", "HEAD_Interactions"
+                               ]):
     """
     Provides access to blame interaction data.
     """
-
-    CACHE_ID = "blame_interaction_data"
-    COLUMNS = Database.COLUMNS + [
-        "IN_HEAD_Interactions", "OUT_HEAD_Interactions", "HEAD_Interactions"
-    ]
 
     @classmethod
     def _load_dataframe(cls, project_name: str, commit_map: CommitMap,

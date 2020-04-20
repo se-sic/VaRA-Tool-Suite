@@ -33,13 +33,13 @@ class DegreeType(Enum):
     avg_time = "avg_time"
 
 
-class BlameInteractionDegreeDatabase(Database):
+class BlameInteractionDegreeDatabase(
+        Database,
+        cache_id="blame_interaction_degree_data",
+        columns=["degree_type", "degree", "amount", "fraction"]):
     """
     Provides access to blame interaction degree data.
     """
-
-    CACHE_ID = "blame_interaction_degree_data"
-    COLUMNS = Database.COLUMNS + ["degree_type", "degree", "amount", "fraction"]
 
     @classmethod
     def _load_dataframe(cls, project_name: str, commit_map: CommitMap,
