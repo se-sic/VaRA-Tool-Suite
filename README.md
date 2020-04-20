@@ -26,7 +26,7 @@ sudo apt install python3-dev python3-tk python3-psutil psutils ninja-build pytho
 sudo apt install python3-venv # If you want to install VaRA-TS in a python virtualenv
 ```
 
-### Installation from pip
+### Installation from PyPI
 
 ```
 pip3 install TODO-PACKAGE-NAME
