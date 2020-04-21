@@ -34,7 +34,6 @@ pip3 install TODO-PACKAGE-NAME
 
 ### Installation from source
 
-
 Additional packages are required to build VaRA from source.
 ```bash
 sudo apt install libsqlite3-dev libcurl4-openssl-dev libboost-all-dev libpapi-dev googletest libxml2-dev
