@@ -4,6 +4,9 @@ Auto discover all plots.
 
 import pkgutil
 
+# avoid a potential cyclic import problem
+import varats.plots.plot
+
 
 def discover() -> None:
     """

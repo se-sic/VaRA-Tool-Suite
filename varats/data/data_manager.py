@@ -1,7 +1,7 @@
 """
 The DataManager module handles the loading, creation, and caching of data
 classes. With the DataManager in the background, we can load files from multiple
-locations within the tools suite, without loading the same file twice.
+locations within the tool suite, without loading the same file twice.
 In addition, this speeds up reloading of files, for example, in interactive
 plots, like in jupyter notebooks, where we sometimes re-execute triggers
 a file load.
@@ -74,7 +74,7 @@ class FileBlob():
 
 class FileSignal(QObject):
     """
-    Emit singlas after the file was loaded.
+    Emit signals after the file was loaded.
     """
     finished = pyqtSignal(object)
     clean = pyqtSignal()

@@ -160,8 +160,8 @@ class LLVMProjects(Enum):
         return not self.is_vara_project()
 
 
-def convert_to_llvmprojects_enum(projects_names: tp.List[str]
-                                ) -> tp.List[LLVMProjects]:
+def convert_to_llvmprojects_enum(
+        projects_names: tp.List[str]) -> tp.List[LLVMProjects]:
     """
     Converts a list of strings into a list of LLVMProject.
 
@@ -236,9 +236,9 @@ class VaRAExtraProjectsIter():
                 return val
 
 
-def run_process_with_output(process: QProcess,
-                            post_out: tp.Callable[[str], None] = lambda x: None
-                           ) -> None:
+def run_process_with_output(
+        process: QProcess,
+        post_out: tp.Callable[[str], None] = lambda x: None) -> None:
     """
     Run a process and forward stdout to a post_out function.
     """
@@ -438,12 +438,15 @@ def init_all_submodules(folder: Path) -> None:
         pass
 
 
-def update_all_submodules(folder: Path) -> None:
+def update_all_submodules(folder: Path, recursive: bool = True) -> None:
     """
     Updates all submodules.
     """
-    with ProcessManager.create_process("git", ["submodule", "update"],
-                                       workdir=folder):
+    git_params = ["submodule", "update"]
+    if recursive:
+        git_params.append("--recursive")
+
+    with ProcessManager.create_process("git", git_params, workdir=folder):
         pass
 
 
@@ -653,10 +656,10 @@ def set_cmake_var(var_name: str,
             lambda: run_process_with_output(proc, post_out))
 
 
-def init_vara_build(path_to_llvm: Path,
-                    build_type: BuildType,
-                    post_out: tp.Callable[[str], None] = lambda x: None
-                   ) -> None:
+def init_vara_build(
+        path_to_llvm: Path,
+        build_type: BuildType,
+        post_out: tp.Callable[[str], None] = lambda x: None) -> None:
     """
     Initialize a VaRA build config.
     """
@@ -726,9 +729,9 @@ def build_vara(path_to_llvm: Path,
             lambda: run_process_with_output(proc, post_out))
 
 
-def set_vara_cmake_variables(install_prefix: str,
-                             post_out: tp.Callable[[str], None] = lambda x: None
-                            ) -> None:
+def set_vara_cmake_variables(
+        install_prefix: str,
+        post_out: tp.Callable[[str], None] = lambda x: None) -> None:
     """
     Set all wanted/needed cmake flags.
     """
@@ -892,10 +895,11 @@ class ProcessManager():
 
     @staticmethod
     @contextmanager
-    def create_process(program: str,
-                       args: tp.Optional[tp.List[str]] = None,
-                       workdir: tp.Optional[tp.Union[str, Path]] = None
-                      ) -> tp.Iterator[QProcess]:
+    def create_process(
+        program: str,
+        args: tp.Optional[tp.List[str]] = None,
+        workdir: tp.Optional[tp.Union[str, Path]] = None
+    ) -> tp.Iterator[QProcess]:
         """
         Creates a new process.
         The method does not return immediately. Instead it waits until the

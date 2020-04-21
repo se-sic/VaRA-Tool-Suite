@@ -24,7 +24,7 @@ def build_repo_churn_table(project_name: str,
     repository.
 
     Table layout:
-            "revision", "rev_id", "insertions", "deletions", "changed_files"
+            "revision", "time_id", "insertions", "deletions", "changed_files"
 
     Args:
         project_name: name of the project
@@ -33,9 +33,9 @@ def build_repo_churn_table(project_name: str,
 
     def create_dataframe_layout() -> pd.DataFrame:
         df_layout = pd.DataFrame(columns=[
-            "revision", "rev_id", "insertions", "deletions", "changed_files"
+            "revision", "time_id", "insertions", "deletions", "changed_files"
         ])
-        df_layout.rev_id = df_layout.rev_id.astype('int32')
+        df_layout.time_id = df_layout.time_id.astype('int32')
         df_layout.insertions = df_layout.insertions.astype('int64')
         df_layout.deletions = df_layout.deletions.astype('int64')
         df_layout.changed_files = df_layout.changed_files.astype('int64')
@@ -47,7 +47,7 @@ def build_repo_churn_table(project_name: str,
         repo, ChurnConfig.create_c_style_languages_config())
     churn_data = pd.DataFrame({
         "revision": list(code_churn),
-        "rev_id": [commit_map.time_id(x) for x in code_churn],
+        "time_id": [commit_map.time_id(x) for x in code_churn],
         "insertions": [x[1] for x in code_churn.values()],
         "deletions": [x[2] for x in code_churn.values()],
         "changed_files": [x[0] for x in code_churn.values()]
@@ -66,7 +66,7 @@ def draw_code_churn(
         commit_map: CommitMap,
         revision_selector: tp.Callable[[str], bool] = lambda x: True,
         sort_df: tp.Callable[[pd.DataFrame], pd.DataFrame] = lambda data: data.
-        sort_values(by=['rev_id'])) -> None:
+        sort_values(by=['time_id'])) -> None:
     """
     Draws a churn plot onto an axis, showing insertions with green and
     deletions with red.
@@ -86,7 +86,7 @@ def draw_code_churn(
 
     code_churn = sort_df(code_churn)
 
-    revisions = code_churn.rev_id.astype(str) + '-' + code_churn.revision.map(
+    revisions = code_churn.time_id.astype(str) + '-' + code_churn.revision.map(
         lambda x: x[:10])
     clipped_insertions = [
         x if x < CODE_CHURN_INSERTION_LIMIT else 1.3 *
