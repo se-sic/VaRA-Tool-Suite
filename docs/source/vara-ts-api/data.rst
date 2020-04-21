@@ -3,8 +3,8 @@ Data handling
 
 * :ref:`reports`
 * :ref:`Handling utilities for generated report files`
+* :ref:`data management`
 * :ref:`Data providers`
-* :ref:`data handling utilities`
 
 Reports
 -------
@@ -44,6 +44,65 @@ Handling utilities for generated report files
 
 -----
 
+Data management
+---------------
+
+Report data can be accessed via different :class:`~varats.data.databases.database.Database` classes.
+Each concrete database class offers its data in form of a pandas dataframe with a specific layout.
+Clients can query them for the data for a specific project or case study via the function ``get_data_for_project``.
+The database class then takes care of :class:`loading<varats.data.data_manager.DataManager>` and :func:`caching<varats.data.cache_helper.build_cached_report_table>` the relevant result files.
+
+You can add new database classes by creating a subclass of :class:`~varats.data.databases.database.Database` in a separate module in the directory ``varats/data/databases``.
+
+.. toctree::
+    :maxdepth: 1
+    :caption: The following databases are currently available:
+
+    data_databases/blame_interaction_database
+    data_databases/blame_interaction_degree_database
+    data_databases/commit_interaction_database
+
+
+Module: database
+....................
+
+.. automodule:: varats.data.databases.database
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+-----
+
+Module: cache_helper
+....................
+
+.. automodule:: varats.data.cache_helper
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+-----
+
+Module: data_manager
+......................
+
+.. automodule:: varats.data.data_manager
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+-----
+
+Module: version_header
+......................
+
+.. automodule:: varats.data.version_header
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+-----
+
 Data providers
 --------------
 
@@ -70,39 +129,6 @@ Provider module
 ...............
 
 .. automodule:: varats.data.provider.provider
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
------
-
-Data handling utilities
------------------------
-
-Module: cache_helper
-....................
-
-.. automodule:: varats.data.cache_helper
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
------
-
-Module: data_manager
-......................
-
-.. automodule:: varats.data.data_manager
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
------
-
-Module: version_header
-......................
-
-.. automodule:: varats.data.version_header
     :members:
     :undoc-members:
     :show-inheritance:
