@@ -40,7 +40,7 @@ Additional packages are required to build VaRA from source.
 sudo apt install libsqlite3-dev libcurl4-openssl-dev libboost-all-dev libpapi-dev googletest libxml2-dev
 ```
 
-The easiest way to install VaRa is to use the `vara-buildsetup` tool. You can find more information
+The easiest way to install VaRA is to use the `vara-buildsetup` tool. You can find more information
 about this tool in its [documentation](https://vara.readthedocs.io/en/vara-dev/vara-ts/vara-buildsetup.html).
 
 ## Running experiments and analyzing projects
