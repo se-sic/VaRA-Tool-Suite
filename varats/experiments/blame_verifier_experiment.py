@@ -14,19 +14,20 @@ from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import opt, mkdir
 import benchbuild.utils.actions as actions
 
-from varats.data.reports.blame_report import BlameReport as BR
+from varats.data.reports.blame_verifier_report import BlameVerifierReport as BVR
 from varats.data.report import FileStatusExtension as FSE
 from varats.experiments.wllvm import Extract
 from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
                                           VersionExperiment, PEErrorHandler)
 
-class BlameVerifierReport(actions.Step):  # type: ignore
+
+class BlameVerifierReportGeneration(actions.Step):  # type: ignore
     """
     Analyse a project with the BlameVerifier and generate a BlameVerifierReport.
     """
 
-    NAME = "BlameVerifierReport"
-    DESCRIPTION = "Analyses VaRA-commit-hashes and debug-commit-hashes."
+    NAME = "BlameVerifierReportGeneration"
+    DESCRIPTION = "Compares and analyses VaRA-commit-hashes and debug-commit-hashes."
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
@@ -34,8 +35,8 @@ class BlameVerifierReport(actions.Step):  # type: ignore
             self,
             project: Project
     ):
-        super(BlameVerifierReport, self).__init__(
-            obj=project, 
+        super(BlameVerifierReportGeneration, self).__init__(
+            obj=project,
             action_fn=self.analyze
         )
 
@@ -45,13 +46,12 @@ class BlameVerifierReport(actions.Step):  # type: ignore
         flags.
 
         Flags used:
-            * -vara-BR: to run a commit flow report
-            * -yaml-report-outfile=<path>: specify the path to store the results
             * -vara-BD: activates Blame Detection
-            * -vara-init-commits: let's the Blame Detection initialize Commit for Repos
+            * -vara-init-commits: let's the Blame Detection initialize Commits for Repos
             * -vara-verify-blameMD: activate BlameMDVerifier
             * -vara-verifier-options=: chooses between multiple print options
                 * Status: prints if the module as a whole passed or failed
+            * -yaml-report-outfile=<path>: specify the path to store the results
         """
         if not self.obj:
             return
@@ -72,7 +72,7 @@ class BlameVerifierReport(actions.Step):  # type: ignore
         mkdir("-p", vara_result_folder)
 
         for binary in project.binaries:
-            result_file = EmptyReport.get_file_name(
+            result_file = BVR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
                 project_version=str(project.version),
@@ -80,7 +80,7 @@ class BlameVerifierReport(actions.Step):  # type: ignore
                 extension_type=FSE.Success)
 
             opt_params = [
-                "-vara-BD", "-vara-BR", "-vara-init-commits",
+                "-vara-BD", "-vara-init-commits",
                 "-vara-verify-blameMD", "-vara-verifier-options=Status",
                 "-vara-report-outfile={res_folder}/{res_file}".format(
                     res_folder=vara_result_folder, res_file=result_file)
@@ -100,12 +100,12 @@ class BlameVerifierReport(actions.Step):  # type: ignore
                 timeout[timeout_duration, run_cmd],
                 PEErrorHandler(
                     vara_result_folder,
-                    BR.get_file_name(project_name=str(project.name),
-                                     binary_name=binary.name,
-                                     project_version=str(project.version),
-                                     project_uuid=str(project.run_uuid),
-                                     extension_type=FSE.Failed,
-                                     file_ext=".txt"), run_cmd,
+                    BVR.get_file_name(project_name=str(project.name),
+                                      binary_name=binary.name,
+                                      project_version=str(project.version),
+                                      project_uuid=str(project.run_uuid),
+                                      extension_type=FSE.Failed,
+                                      file_ext=".txt"), run_cmd,
                     timeout_duration))
 
 
@@ -117,27 +117,20 @@ class BlameVerifierReportExperiment(VersionExperiment):
 
     NAME = "GenerateBlameVerifierReport"
 
-    REPORT_TYPE = BR
+    REPORT_TYPE = BVR
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
-        """Returns the specified steps to run the project(s) specified in
-        the call in a fixed order."""
+        """
+        Returns the specified steps to run the project(s) specified in
+        the call in a fixed order.
+        """
 
-        # Add the required runtime extensions to the project(s).
-        project.runtime_extension = run.RuntimeExtension(project, self) \
-            << time.RunWithTime()
+        BE.setup_basic_blame_experiment(
+            self, project, BVR, BlameVerifierReportGeneration.RESULT_FOLDER_TEMPLATE)
 
-        # Add the required compiler extensions to the project(s).
-        project.compiler_extension = compiler.RunCompiler(project, self) \
-            << RunWLLVM() \
-            << run.WithTimeout()
+        analysis_actions = BE.generate_basic_blame_experiment_actions(project)
 
-        project.compile = get_default_compile_error_wrapped(
-            project, EmptyReport, EmptyAnalysis.RESULT_FOLDER_TEMPLATE)
-
-        analysis_actions = []
-        analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(EmptyAnalysis(project))
+        analysis_actions.append(BlameVerifierReportGeneration(project))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
