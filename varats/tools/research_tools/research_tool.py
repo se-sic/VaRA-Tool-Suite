@@ -16,8 +16,6 @@ from varats.vara_manager import (
 from varats.utils.logger_util import log_without_linsep
 from varats.utils.filesystem_util import FolderAlreadyPresentError
 
-LOG = logging.getLogger(__name__)
-
 
 class SubProject():
     """
@@ -98,13 +96,12 @@ class SubProject():
         Clone the sub project into the specified folder relative to the base
         dir of the ``CodeBase``.
         """
-        LOG.info(f"Cloning {self.name} into {self.__parent_code_base.base_dir}")
+        print(f"Cloning {self.name} into {self.__parent_code_base.base_dir}")
         if (self.__parent_code_base.base_dir / self.path).exists():
             raise FolderAlreadyPresentError(self.__parent_code_base.base_dir /
                                             self.path)
         download_repo(self.__parent_code_base.base_dir / self.path.parent,
-                      self.url, self.path.name, self.remote,
-                      log_without_linsep(LOG.info))
+                      self.url, self.path.name, self.remote, print)
 
     def has_branch(self,
                    branch_name: str,

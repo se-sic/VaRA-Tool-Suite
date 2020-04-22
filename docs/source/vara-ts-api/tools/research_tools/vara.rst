@@ -1,5 +1,5 @@
-VaRA
-====
+VaRA research tool
+==================
 
 .. automodule:: varats.tools.research_tools.vara
     :members:

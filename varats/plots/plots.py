@@ -5,10 +5,7 @@ import re
 import sys
 import typing as tp
 
-# avoid circular import
-# see https://www.stefaanlippens.net/circular-imports-type-hints-python.html
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
+if tp.TYPE_CHECKING:
     import varats.plots.plot as plot
 from varats.plots.plot_utils import check_required_args
 

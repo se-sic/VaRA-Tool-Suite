@@ -75,7 +75,7 @@ class VaRACodeBase(CodeBase):
             use_dev_branches: true, if one wants the current development version
         """
         dev_suffix = "-dev" if use_dev_branches else ""
-        LOG.info(f"Checking out VaRA version {str(version) + dev_suffix}")
+        print(f"Checking out VaRA version {str(version) + dev_suffix}")
 
         self.get_sub_project("vara-llvm-project").checkout_branch(
             f"vara-{version}" + dev_suffix)
@@ -123,7 +123,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         else:
             version = CFG["vara"]["version"].value
 
-        LOG.info(f"Setting up VaRA at {source_folder}")
+        print(f"Setting up VaRA at {source_folder}")
         save_config()
 
         use_dev_branches = CFG["vara"]["developer_version"].value
@@ -169,8 +169,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
                         build_script, workdir=full_path.parent) as proc:
                     proc.setProcessChannelMode(QProcess.MergedChannels)
                     proc.readyReadStandardOutput.connect(
-                        lambda: run_process_with_output(
-                            proc, log_without_linsep(LOG.info)))
+                        lambda: run_process_with_output(proc, print))
             except ProcessTerminatedError as error:
                 shutil.rmtree(full_path)
                 raise error
@@ -179,8 +178,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         # Set install prefix in cmake
         with local.cwd(full_path):
             CFG["vara"]["llvm_install_dir"] = str(install_location)
-            set_vara_cmake_variables(str(install_location),
-                                     log_without_linsep(LOG.info))
+            set_vara_cmake_variables(str(install_location), print)
         print(" - Finished extra cmake config.")
 
         print(" - Now building...")
@@ -189,8 +187,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
                                            workdir=full_path) as proc:
             proc.setProcessChannelMode(QProcess.MergedChannels)
             proc.readyReadStandardOutput.connect(
-                lambda: run_process_with_output(proc,
-                                                log_without_linsep(LOG.info)))
+                lambda: run_process_with_output(proc, print))
 
     def verify_install(self, install_location: Path) -> bool:
         # pylint: disable=no-self-use

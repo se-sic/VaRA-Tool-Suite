@@ -21,7 +21,6 @@ creating plots, configuring the tool-suite itself and more.
     tools/vara-cs
     tools/vara-plot
     tools/vara-art
-    tools/vara-gen-commitmap
 
 .. toctree::
     :maxdepth: 1
