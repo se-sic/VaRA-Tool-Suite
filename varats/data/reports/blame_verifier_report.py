@@ -8,7 +8,6 @@ class BlameVerifierReport(BaseReport):
     """
 
     SHORTHAND = "BVR"
-    FILE_TYPE = "yaml"
 
     @staticmethod
     def get_file_name(project_name: str,
@@ -16,10 +15,9 @@ class BlameVerifierReport(BaseReport):
                       project_version: str,
                       project_uuid: str,
                       extension_type: FileStatusExtension,
-                      file_ext: str = "yaml") -> str:
+                      file_ext: str = ".txt") -> str:
         """
-        Generates a filename for a commit report with 'yaml'
-        as file extension.
+        Generates a filename for a commit report without any file ending.
 
         Args:
             project_name: name of the project for which the report was generated
