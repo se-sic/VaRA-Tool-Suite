@@ -13,7 +13,7 @@ from varats.vara_manager import (
     fetch_remote, init_all_submodules, update_all_submodules,
     pull_current_branch, show_status, branch_has_upstream, push_current_branch,
     get_current_branch, has_branch, has_remote_branch, get_branches)
-from varats.utils.logger_util import log_without_linsep
+from varats.utils.logger_util import log_without_linesep
 from varats.utils.filesystem_util import FolderAlreadyPresentError
 
 
@@ -101,7 +101,8 @@ class SubProject():
             raise FolderAlreadyPresentError(self.__parent_code_base.base_dir /
                                             self.path)
         download_repo(self.__parent_code_base.base_dir / self.path.parent,
-                      self.url, self.path.name, self.remote, print)
+                      self.url, self.path.name, self.remote,
+                      log_without_linesep(print))
 
     def has_branch(self,
                    branch_name: str,
