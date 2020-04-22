@@ -4,35 +4,20 @@ other data.
 """
 import logging
 import typing as tp
-from enum import Enum
 from pathlib import Path
 
 import pandas as pd
 
-from varats.settings import CFG
 from varats.data.report import BaseReport, MetaReport
+from varats.settings import CFG
 
 LOG = logging.getLogger(__name__)
 
 CACHE_REVISION_COL = 'cache_revision'
 CACHE_TIMESTAMP_COL = 'cache_timestamp'
-# TODO (se-passau/VaRA#518): rename to plot
 
 
-class GraphCacheType(Enum):
-    """
-    Identifiers for cached plot dataframes. These identifiers allow a plot to
-    refer to a possibly cached dataframe.  Identifiers can be used in multiple
-    plots that use the same or a similar dataframe layout, e.g., are based on
-    similar data.
-    """
-    CommitInteractionData = "interaction_table"
-    BlameInteractionDegreeData = "b_interaction_degree_table"
-    BlameInteractionData = "b_interaction_data"
-
-
-def __get_data_file_path(data_id: tp.Union[GraphCacheType, str],
-                         project_name: str) -> Path:
+def get_data_file_path(data_id: str, project_name: str) -> Path:
     """
     Compose the identifier and project into a file path that points to the
     corresponding cache file in the cache directory.
@@ -42,23 +27,17 @@ def __get_data_file_path(data_id: tp.Union[GraphCacheType, str],
         project_name: name of the project
 
     Test:
-    >>> str(__get_data_file_path("foo", "tmux"))
+    >>> str(get_data_file_path("foo", "tmux"))
     'data_cache/foo-tmux.csv'
 
-    >>> isinstance(__get_data_file_path("foo.csv", "tmux"), Path)
+    >>> isinstance(get_data_file_path("foo.csv", "tmux"), Path)
     True
-
-    >>> str(__get_data_file_path(GraphCacheType.CommitInteractionData, "tmux"))
-    'data_cache/interaction_table-tmux.csv'
     """
     return Path(str(
-        CFG["plots"]["data_cache"])) / "{plot_name}-{project_name}.csv".format(
-            plot_name=data_id.value
-            if isinstance(data_id, GraphCacheType) else data_id,
-            project_name=project_name)
+        CFG["plots"]["data_cache"])) / f"{data_id}-{project_name}.csv"
 
 
-def load_cached_df_or_none(data_id: tp.Union[GraphCacheType, str],
+def load_cached_df_or_none(data_id: str,
                            project_name: str) -> tp.Optional[pd.DataFrame]:
     """
     Load cached dataframe from disk, otherwise return None.
@@ -68,14 +47,14 @@ def load_cached_df_or_none(data_id: tp.Union[GraphCacheType, str],
         project_name: name of the project
     """
 
-    file_path = __get_data_file_path(data_id, project_name)
+    file_path = get_data_file_path(data_id, project_name)
     if not file_path.exists():
         return None
 
-    return pd.read_csv(str(file_path))
+    return pd.read_csv(str(file_path), index_col=0)
 
 
-def cache_dataframe(data_id: tp.Union[GraphCacheType], project_name: str,
+def cache_dataframe(data_id: str, project_name: str,
                     dataframe: pd.DataFrame) -> None:
     """
     Cache a dataframe by persisting it to disk.
@@ -85,7 +64,7 @@ def cache_dataframe(data_id: tp.Union[GraphCacheType], project_name: str,
         project_name: name of the project
         dataframe: pandas dataframe to store
     """
-    file_path = __get_data_file_path(data_id, project_name)
+    file_path = get_data_file_path(data_id, project_name)
     dataframe.to_csv(str(file_path))
 
 
@@ -106,7 +85,7 @@ def __create_cache_entry(create_df_from_report: tp.Callable[[tp.Any],
 
 
 def build_cached_report_table(
-        graph_cache_type: GraphCacheType, project_name: str,
+        data_id: str, project_name: str,
         create_empty_df: tp.Callable[[], pd.DataFrame],
         create_df_from_report: tp.Callable[[tp.Any], pd.DataFrame],
         create_report: tp.Callable[[Path],
@@ -116,16 +95,17 @@ def build_cached_report_table(
     Build up an automatically cache dataframe
 
     Args:
-        graph_cache_type: graph cache identifier
+        data_id: graph cache identifier
         project_name: name of the project to work with
         create_empty_df: creates an empty layout of the dataframe
         create_df_from_report: creates a dataframe from a report
         create_report: callback to load a report
         report_files: list of files to be loaded
+        failed_report_files: list of files to be discarded
     """
 
     # mypy needs this
-    optional_cached_df = load_cached_df_or_none(graph_cache_type, project_name)
+    optional_cached_df = load_cached_df_or_none(data_id, project_name)
     if optional_cached_df is None:
         cached_df = create_empty_df()
         cached_df[CACHE_REVISION_COL] = ""
@@ -164,10 +144,9 @@ def build_cached_report_table(
     ]
 
     new_data_frames = []
-    total_missing_reports = len(missing_report_files)
     for num, file_path in enumerate(missing_report_files):
-        LOG.info(f"Loading missing file ({(num + 1)}/{total_missing_reports}): "
-                 f"{file_path}")
+        LOG.info(f"Loading missing file ({(num + 1)}/"
+                 f"{len(missing_report_files)}): {file_path}")
         new_data_frames.append(
             __create_cache_entry(create_df_from_report, create_report,
                                  file_path))
@@ -177,23 +156,24 @@ def build_cached_report_table(
                        sort=False)
 
     new_df.set_index(CACHE_REVISION_COL, inplace=True)
-    total_updated_reports = len(updated_report_files)
     for num, file_path in enumerate(updated_report_files):
         LOG.info(f"Updating outdated file "
-                 f"({(num + 1)}/{total_updated_reports}): {file_path}")
+                 f"({(num + 1)}/{len(updated_report_files)}): {file_path}")
         updated_entry = __create_cache_entry(create_df_from_report,
                                              create_report, file_path)
         updated_entry.set_index(CACHE_REVISION_COL)
         new_df.update(updated_entry)
     new_df.reset_index(inplace=True)
 
-    total_failed_reports = len(failed_revisions)
-    if total_failed_reports > 0:
-        LOG.info(f"Dropping {total_failed_reports} newly failing file(s)")
+    if len(failed_revisions) > 0:
+        LOG.info(f"Dropping {len(failed_revisions)} newly failing file(s)")
         new_df.drop(
             new_df[new_df[CACHE_REVISION_COL].isin(failed_revisions)].index,
             inplace=True)
 
-    cache_dataframe(graph_cache_type, project_name, new_df)
+    cache_dataframe(data_id, project_name, new_df)
 
-    return new_df.loc[:, new_df.columns != CACHE_REVISION_COL]
+    return new_df.loc[:, [
+        col for col in new_df.columns
+        if col not in [CACHE_REVISION_COL, CACHE_TIMESTAMP_COL]
+    ]]

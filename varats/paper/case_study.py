@@ -747,7 +747,7 @@ def get_newest_result_files_for_case_study(
 
 
 def get_case_study_file_name_filter(
-        case_study: CaseStudy) -> tp.Callable[[str], bool]:
+        case_study: tp.Optional[CaseStudy]) -> tp.Callable[[str], bool]:
     """
     Generate a case study specific file-name filter function that allows the
     user to check if a file name is related to this case study.

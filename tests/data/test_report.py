@@ -36,7 +36,8 @@ class TestMetaReport(unittest.TestCase):
         """Check if we can lookup report types with file names."""
         self.assertEqual(
             MetaReport.lookup_report_type_from_file_name(
-                self.success_filename_cr), CR)
+                self.success_filename_cr),
+            MetaReport.REPORT_TYPES['CommitReport'])
         self.assertEqual(
             MetaReport.lookup_report_type_from_file_name(
                 "some_wrong_file_path"), None)
