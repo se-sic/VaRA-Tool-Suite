@@ -15,6 +15,7 @@ from benchbuild.utils.cmd import opt, mkdir
 import benchbuild.utils.actions as actions
 
 from varats.data.reports.blame_verifier_report import BlameVerifierReport as BVR
+import varats.experiments.blame_experiment as BE
 from varats.data.report import FileStatusExtension as FSE
 from varats.experiments.wllvm import Extract
 from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
