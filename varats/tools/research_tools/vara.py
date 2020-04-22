@@ -19,7 +19,7 @@ from varats.tools.research_tools.research_tool import (ResearchTool, CodeBase,
 from varats.vara_manager import (BuildType, run_process_with_output,
                                  set_vara_cmake_variables, ProcessManager)
 from varats.utils.exceptions import ProcessTerminatedError
-from varats.utils.logger_util import log_without_linsep
+from varats.utils.logger_util import log_without_linesep
 from varats.plots.plot_utils import check_required_args
 
 LOG = logging.getLogger(__name__)
@@ -169,7 +169,8 @@ class VaRA(ResearchTool[VaRACodeBase]):
                         build_script, workdir=full_path.parent) as proc:
                     proc.setProcessChannelMode(QProcess.MergedChannels)
                     proc.readyReadStandardOutput.connect(
-                        lambda: run_process_with_output(proc, print))
+                        lambda: run_process_with_output(
+                            proc, log_without_linesep(print)))
             except ProcessTerminatedError as error:
                 shutil.rmtree(full_path)
                 raise error
@@ -178,7 +179,8 @@ class VaRA(ResearchTool[VaRACodeBase]):
         # Set install prefix in cmake
         with local.cwd(full_path):
             CFG["vara"]["llvm_install_dir"] = str(install_location)
-            set_vara_cmake_variables(str(install_location), print)
+            set_vara_cmake_variables(str(install_location),
+                                     log_without_linesep(print))
         print(" - Finished extra cmake config.")
 
         print(" - Now building...")
@@ -187,7 +189,8 @@ class VaRA(ResearchTool[VaRACodeBase]):
                                            workdir=full_path) as proc:
             proc.setProcessChannelMode(QProcess.MergedChannels)
             proc.readyReadStandardOutput.connect(
-                lambda: run_process_with_output(proc, print))
+                lambda: run_process_with_output(proc, log_without_linesep(print)
+                                               ))
 
     def verify_install(self, install_location: Path) -> bool:
         # pylint: disable=no-self-use
