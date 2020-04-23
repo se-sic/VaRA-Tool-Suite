@@ -10,7 +10,6 @@ import typing as tp
 from plumbum import local
 
 from benchbuild.project import Project
-from benchbuild.extensions import compiler, run
 from benchbuild.settings import CFG as BB_CFG
 import benchbuild.utils.actions as actions
 from benchbuild.utils.cmd import opt, mkdir, timeout
