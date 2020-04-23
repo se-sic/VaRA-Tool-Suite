@@ -30,9 +30,17 @@ class ReleaseType(Enum):
         Merges two release type.
         It is assumed that minor releases include major releases
         and patch releases include minor releases.
+
+        >>> ReleaseType.minor.merge(ReleaseType.major)
+        <ReleaseType.minor: 2>
+
+        >>> ReleaseType.major.merge(ReleaseType.patch)
+        <ReleaseType.patch: 3>
         """
         if other is None:
             return self
+        # Pylint incorrectly issues a warning here.
+        # pylint: disable=W0143
         return self if self.value >= other.value else other
 
 
