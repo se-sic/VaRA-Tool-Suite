@@ -4,7 +4,7 @@ Module for the :class:`ReleaseProvider`.
 import typing as tp
 from enum import Enum
 
-from packaging.version import parse as parse_version
+from packaging.version import parse as parse_version, Version
 
 from benchbuild.project import Project
 
@@ -108,8 +108,12 @@ class ReleaseDefaultProvider(ReleaseProvider):
         # pylint: disable=E1003
         super(ReleaseProvider, self).__init__(project)
         tagged_commits = get_tagged_commits(self.project.NAME)
-        self.releases = [
+        releases = [
             (commit, tag, parse_version(tag)) for commit, tag in tagged_commits
+        ]
+        self.releases = [
+            (commit, tag, version) for commit, tag, version in releases
+            if isinstance(version, Version)
         ]
 
     def get_release_revisions(
