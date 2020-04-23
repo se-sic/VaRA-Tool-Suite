@@ -1,7 +1,8 @@
 """
 Implements the BlameVerifier experiment. The experiment analyses a project,
 which contains llvm-debug-information and checks for inconsistencies between
-VaRA-commit-hashes and debug-commit-hashes in order to generate a BlameVerifierReport.
+VaRA-commit-hashes and debug-commit-hashes in order to generate a
+BlameVerifierReport.
 """
 
 import typing as tp
@@ -9,10 +10,10 @@ import typing as tp
 from plumbum import local
 
 from benchbuild.project import Project
-from benchbuild.extensions import compiler, run, time
+from benchbuild.extensions import compiler, run
 from benchbuild.settings import CFG as BB_CFG
-from benchbuild.utils.cmd import opt, mkdir
 import benchbuild.utils.actions as actions
+from benchbuild.utils.cmd import opt, mkdir, timeout
 
 from varats.data.reports.blame_verifier_report import BlameVerifierReport as BVR
 import varats.experiments.blame_experiment as BE
@@ -28,7 +29,8 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
     """
 
     NAME = "BlameVerifierReportGeneration"
-    DESCRIPTION = "Compares and analyses VaRA-commit-hashes and debug-commit-hashes."
+    DESCRIPTION = "Compares and analyses VaRA-commit-hashes and " \
+                  "debug-commit-hashes."
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
@@ -48,7 +50,8 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
 
         Flags used:
             * -vara-BD: activates Blame Detection
-            * -vara-init-commits: let's the Blame Detection initialize Commits for Repos
+            * -vara-init-commits: let's the Blame Detection initialize
+            Commits for Repos
             * -vara-verify-blameMD: activate BlameMDVerifier
             * -vara-verifier-options=: chooses between multiple print options
                 * Status: prints if the module as a whole passed or failed
@@ -95,7 +98,6 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
             run_cmd = opt[opt_params]
 
             timeout_duration = '8h'
-            from benchbuild.utils.cmd import timeout
 
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration, run_cmd],
@@ -127,7 +129,8 @@ class BlameVerifierReportExperiment(VersionExperiment):
         """
 
         BE.setup_basic_blame_experiment(
-            self, project, BVR, BlameVerifierReportGeneration.RESULT_FOLDER_TEMPLATE)
+            self, project, BVR,
+            BlameVerifierReportGeneration.RESULT_FOLDER_TEMPLATE)
 
         analysis_actions = BE.generate_basic_blame_experiment_actions(project)
 

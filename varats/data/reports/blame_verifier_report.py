@@ -1,3 +1,7 @@
+"""
+Module for a BlameVerifierReport.
+"""
+
 from varats.data.report import BaseReport, MetaReport, FileStatusExtension
 
 
@@ -30,6 +34,7 @@ class BlameVerifierReport(BaseReport):
         Returns:
             name for the report file that can later be uniquely identified
         """
-        return MetaReport.get_file_name(BlameVerifierReport.SHORTHAND, project_name,
+        return MetaReport.get_file_name(BlameVerifierReport.SHORTHAND,
+                                        project_name,
                                         binary_name, project_version,
                                         project_uuid, extension_type, file_ext)
