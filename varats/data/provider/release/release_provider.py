@@ -4,7 +4,7 @@ Module for the :class:`ReleaseProvider`.
 import typing as tp
 from enum import Enum
 
-from packaging.version import parse as parse_version, Version, LegacyVersion
+from packaging.version import parse as parse_version
 
 from benchbuild.project import Project
 
@@ -86,7 +86,7 @@ class ReleaseProvider(Provider):
         """
         Get all release revisions of this provider's project along with their
         version strings.
-        
+
         Args:
             release_type: the type of releases to return
 
@@ -126,3 +126,4 @@ class ReleaseDefaultProvider(ReleaseProvider):
             return [(commit, tag)
                     for commit, tag, version in self.releases
                     if version.minor == 0]
+        return []
