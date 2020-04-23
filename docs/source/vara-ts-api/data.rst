@@ -124,6 +124,7 @@ For an example provider implementation take a look at the :ref:`CVE provider`.
     :caption: List of supported providers
 
     data_providers/cve_provider
+    data_providers/release_provider
 
 Provider module
 ...............
