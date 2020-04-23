@@ -14,9 +14,10 @@ from argparse_utils import enum_action
 from varats.data.report import MetaReport
 from varats.paper import paper_config_manager as PCM
 from varats.paper.case_study import (SamplingMethod, ExtenderStrategy,
-                                     ReleaseType, load_case_study_from_file,
+                                     load_case_study_from_file,
                                      extend_case_study, store_case_study,
                                      generate_case_study)
+from varats.data.provider.release.release_provider import ReleaseType
 from varats.settings import CFG
 from varats.tools.commit_map import create_lazy_commit_map_loader
 from varats.utils.project_util import get_local_project_git_path
