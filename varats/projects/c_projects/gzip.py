@@ -15,7 +15,8 @@ import benchbuild.project as prj
 from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
-from varats.paper.case_study import ReleaseType, ReleaseProvider
+from varats.data.provider.release.release_provider import ReleaseProviderHook, \
+    ReleaseType
 from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import get_tagged_commits, \
     wrap_paths_to_binaries, BlockedRevisionRange, block_revisions
@@ -32,7 +33,7 @@ from varats.utils.project_util import get_tagged_commits, \
           refspec="HEAD",
           shallow_clone=False,
           version_filter=project_filter_generator("gzip"))
-class Gzip(prj.Project, ReleaseProvider, CVEProviderHook):  # type: ignore
+class Gzip(prj.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
     """Compression and decompression tool Gzip (fetched by Git)"""
 
     NAME = 'gzip'
@@ -66,19 +67,19 @@ class Gzip(prj.Project, ReleaseProvider, CVEProviderHook):  # type: ignore
             run(make["-j", int(BB_CFG["jobs"])])
 
     @classmethod
-    def get_release_revisions(cls, release_type: ReleaseType) -> tp.List[str]:
+    def get_release_revisions(
+            cls, release_type: ReleaseType) -> tp.List[tp.Tuple[str, str]]:
         major_release_regex = "^v[0-9]+\\.[0-9]+$"
         minor_release_regex = "^v[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
 
         tagged_commits = get_tagged_commits(cls.NAME)
         if release_type == ReleaseType.major:
-            return [
-                h for h, tag in tagged_commits
-                if re.match(major_release_regex, tag)
-            ]
-        return [
-            h for h, tag in tagged_commits if re.match(minor_release_regex, tag)
-        ]
+            return [(h, tag)
+                    for h, tag in tagged_commits
+                    if re.match(major_release_regex, tag)]
+        return [(h, tag)
+                for h, tag in tagged_commits
+                if re.match(minor_release_regex, tag)]
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

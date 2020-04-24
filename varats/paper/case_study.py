@@ -2,7 +2,6 @@
 A case study is used to pin down the exact set of revisions that
 should be analysed for a project.
 """
-import abc
 import typing as tp
 from collections import defaultdict
 from datetime import datetime
@@ -15,6 +14,8 @@ from scipy.stats import halfnorm
 import numpy as np
 import pygit2
 
+from varats.data.provider.release.release_provider import (ReleaseType,
+                                                           ReleaseProvider)
 from varats.plots.plots import PlotRegistry
 from varats.utils.project_util import get_project_cls_by_name
 from varats.data.revisions import (get_processed_revisions,
@@ -72,42 +73,6 @@ class SamplingMethod(Enum):
             return halfnormal
 
         raise Exception('Unsupported SamplingMethod')
-
-
-class ReleaseType(Enum):
-    """
-    A ReleaseType referes to one of the three parts of the semantic versioning
-    specification.
-
-    It is assumed that a major release is also a minor release and that a minor
-    release is also a patch release.
-    """
-
-    major = 1
-    minor = 2
-    patch = 3
-
-    def merge(self, other: tp.Optional["ReleaseType"]) -> "ReleaseType":
-        """
-        Merges two release type.
-        It is assumed that minor releases include major releases
-        and patch releases include minor releases.
-        """
-        if other is None:
-            return self
-        return self if self.value >= other.value else other
-
-
-class ReleaseProvider():
-    """
-    Interface needed by the release extender.
-    Projects that want to use that extender need to implement this interface.
-    """
-
-    @classmethod
-    @abc.abstractmethod
-    def get_release_revisions(cls, release_type: ReleaseType) -> tp.List[str]:
-        """Get a set of all release revisions for a project"""
 
 
 class HashIDTuple():
@@ -587,8 +552,8 @@ class CaseStudy():
             a list of (revision, status) tuples
         """
         project_cls = get_project_cls_by_name(self.project_name)
-        tagged_revisions = get_tagged_revisions(project_cls,
-                                                result_file_type, tag_blocked)
+        tagged_revisions = get_tagged_revisions(project_cls, result_file_type,
+                                                tag_blocked)
 
         def filtered_tagged_revs(
             rev_provider: tp.Iterable[str]
@@ -606,8 +571,8 @@ class CaseStudy():
                     if tag_blocked and hasattr(
                             project_cls, "is_blocked_revision"
                     ) and project_cls.is_blocked_revision(short_rev)[0]:
-                        filtered_revisions.append((short_rev,
-                                                  FileStatusExtension.Blocked))
+                        filtered_revisions.append(
+                            (short_rev, FileStatusExtension.Blocked))
                     else:
                         filtered_revisions.append(
                             (short_rev, FileStatusExtension.Missing))
@@ -1052,8 +1017,11 @@ def extend_with_release_revs(case_study: CaseStudy, cmap: CommitMap,
         cmap: commit map to map revisions to unique IDs
     """
     project: tp.Type[Project] = get_project_cls_by_name(kwargs['project'])
-    release_revisions: tp.List[str] = project.get_release_revisions(
-        kwargs['release_type'])
+    release_provider = ReleaseProvider.get_provider_for_project(project)
+    release_revisions: tp.List[str] = [
+        revision for revision, release in
+        release_provider.get_release_revisions(kwargs['release_type'])
+    ]
     case_study.include_revisions(
         [(rev, cmap.time_id(rev)) for rev in release_revisions],
         kwargs['merge_stage'],
