@@ -66,7 +66,7 @@ class ReleaseProviderHook():
 
 class ReleaseProvider(Provider):
     """
-    Provides CVE and CWE information for a project.
+    Provides access to release revisions of a project.
     """
 
     def __init__(self, project: tp.Type[Project]) -> None:
