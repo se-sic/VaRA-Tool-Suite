@@ -54,7 +54,6 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
             * -vara-verify-blameMD: activate BlameMDVerifier
             * -vara-verifier-options=: chooses between multiple print options
                 * Status: prints if the module as a whole passed or failed
-            * -yaml-report-outfile=<path>: specify the path to store the results
         """
         if not self.obj:
             return
@@ -84,15 +83,15 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
 
             opt_params = [
                 "-vara-BD", "-vara-init-commits",
-                "-vara-verify-blameMD", "-vara-verifier-options=Status",
-                "-vara-report-outfile={res_folder}/{res_file}".format(
+                "-vara-verify-blameMD", "-vara-verifier-options=Status".format(
                     res_folder=vara_result_folder, res_file=result_file)
             ]
 
             opt_params.append(bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
                 project_name=project.name,
                 binary_name=binary.name,
-                project_version=project.version))
+                project_version=project.version,
+                asdf=binary))
 
             run_cmd = opt[opt_params]
 
@@ -113,7 +112,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
 
 class BlameVerifierReportExperiment(VersionExperiment):
     """
-    Generates a commit flow report (CFR) of the project(s) specified in the
+    Generates a Blame Verifier Report (BVR) of the project(s) specified in the
     call.
     """
 
@@ -129,7 +128,7 @@ class BlameVerifierReportExperiment(VersionExperiment):
 
         BE.setup_basic_blame_experiment(
             self, project, BVR,
-            BlameVerifierReportGeneration.RESULT_FOLDER_TEMPLATE)
+            BlameVerifierReportGeneration.RESULT_FOLDER_TEMPLATE, True)
 
         analysis_actions = BE.generate_basic_blame_experiment_actions(project)
 

@@ -21,7 +21,8 @@ from varats.data.report import BaseReport
 
 def setup_basic_blame_experiment(experiment: Experiment, project: Project,
                                  report_type: tp.Type[BaseReport],
-                                 result_folder_template: str) -> None:
+                                 result_folder_template: str,
+                                 dbg: bool) -> None:
     """
     Setup the project for a blame experiment.
         - run time extensions
@@ -31,12 +32,12 @@ def setup_basic_blame_experiment(experiment: Experiment, project: Project,
     """
     # Add the required runtime extensions to the project(s).
     project.runtime_extension = run.RuntimeExtension(project, experiment) \
-        << time.RunWithTime()
+                                << time.RunWithTime()
 
     # Add the required compiler extensions to the project(s).
     project.compiler_extension = compiler.RunCompiler(project, experiment) \
-        << RunWLLVM() \
-        << run.WithTimeout()
+                                 << RunWLLVM() \
+                                 << run.WithTimeout()
 
     # Add own error handler to compile step.
     project.compile = get_default_compile_error_wrapped(project, report_type,
@@ -45,6 +46,10 @@ def setup_basic_blame_experiment(experiment: Experiment, project: Project,
     # This c-flag is provided by VaRA and it suggests to use the git-blame
     # annotation.
     project.cflags = ["-fvara-GB"]
+
+    if dbg:
+        # This c-flag provides debug information
+        project.cflags = ["-g"]
 
 
 def generate_basic_blame_experiment_actions(
