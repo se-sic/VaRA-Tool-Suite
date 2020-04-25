@@ -1,5 +1,5 @@
 """
-Module to provide WLLVM support for project compilation and extracing bc files
+Module to provide WLLVM support for project compilation and extracting bc files
 from generated binaries.
 
 WLLVM is a compiler replacement/hook to compile projects with clang, producing
