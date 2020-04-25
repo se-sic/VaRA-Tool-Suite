@@ -120,7 +120,8 @@ class BlameReportExperiment(VersionExperiment):
         """
 
         BE.setup_basic_blame_experiment(
-            self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE)
+            self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE,
+            False)
 
         analysis_actions = BE.generate_basic_blame_experiment_actions(project)
 

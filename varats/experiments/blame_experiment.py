@@ -49,7 +49,7 @@ def setup_basic_blame_experiment(experiment: Experiment, project: Project,
 
     if dbg:
         # This c-flag provides debug information
-        project.cflags = ["-g"]
+        project.cflags.append("-g")
 
 
 def generate_basic_blame_experiment_actions(

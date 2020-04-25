@@ -7,6 +7,7 @@ BlameVerifierReport.
 
 import typing as tp
 
+from benchbuild import project
 from plumbum import local
 
 from benchbuild.project import Project
@@ -90,8 +91,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
             opt_params.append(bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
                 project_name=project.name,
                 binary_name=binary.name,
-                project_version=project.version,
-                asdf=binary))
+                project_version=project.version))
 
             run_cmd = opt[opt_params]
 
