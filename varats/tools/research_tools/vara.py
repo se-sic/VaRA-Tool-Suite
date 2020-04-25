@@ -90,6 +90,13 @@ class VaRACodeBase(CodeBase):
         self.get_sub_project("vara-llvm-project").init_and_update_submodules()
         self.get_sub_project("phasar").init_and_update_submodules()
 
+    def pull(self) -> None:
+        """
+        Pull and update all ``SubProject``s.
+        """
+        self.map_sub_projects(lambda prj: prj.pull())
+        self.setup_submodules()
+
 
 class VaRA(ResearchTool[VaRACodeBase]):
     """
@@ -138,7 +145,13 @@ class VaRA(ResearchTool[VaRACodeBase]):
         """
         Upgrade the research tool to a newer version.
         """
-        raise NotImplementedError
+        version = 100
+
+        # TODO (se-passau/VaRA#640): version upgrade
+        if str(CFG["vara"]["version"]) != str(version):
+            raise NotImplementedError
+        else:
+            self.code_base.pull()
 
     def build(self, build_type: BuildType, install_location: Path) -> None:
         """
