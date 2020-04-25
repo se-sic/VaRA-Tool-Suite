@@ -150,8 +150,8 @@ class VaRA(ResearchTool[VaRACodeBase]):
         # TODO (se-passau/VaRA#640): version upgrade
         if str(CFG["vara"]["version"]) != str(version):
             raise NotImplementedError
-        else:
-            self.code_base.pull()
+
+        self.code_base.pull()
 
     def build(self, build_type: BuildType, install_location: Path) -> None:
         """
