@@ -29,7 +29,8 @@ class BlameInteractionDatabase(EvaluationDatabase,
 
     @classmethod
     def _load_dataframe(cls, project_name: str, commit_map: CommitMap,
-                        case_study: tp.Optional[CaseStudy]) -> pd.DataFrame:
+                        case_study: tp.Optional[CaseStudy],
+                        **kwargs: tp.Any) -> pd.DataFrame:
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)

@@ -40,7 +40,8 @@ class EvaluationDatabase(abc.ABC):
     @classmethod
     @abc.abstractmethod
     def _load_dataframe(cls, project_name: str, commit_map: CommitMap,
-                        case_study: tp.Optional[CaseStudy]) -> pd.DataFrame:
+                        case_study: tp.Optional[CaseStudy],
+                        **kwargs: tp.Dict[str, tp.Any]) -> pd.DataFrame:
         """
         Load and transparently cache the dataframe for this database class.
 
@@ -51,18 +52,19 @@ class EvaluationDatabase(abc.ABC):
             project_name: the project to load data for
             commit_map: the commit map to use
             case_study: the case_study to load data for
+            kwargs: additional arguments used to load data
 
         Return:
             a pandas dataframe with all the cached data
         """
 
     @classmethod
-    def get_data_for_project(
-            cls,
-            project_name: str,
-            columns: tp.List[str],
-            commit_map: CommitMap,
-            case_study: tp.Optional[CaseStudy] = None) -> pd.DataFrame:
+    def get_data_for_project(cls,
+                             project_name: str,
+                             columns: tp.List[str],
+                             commit_map: CommitMap,
+                             case_study: tp.Optional[CaseStudy] = None,
+                             **kwargs: tp.Any) -> pd.DataFrame:
         """
         Retrieve data for a given project and case study.
 
@@ -72,6 +74,8 @@ class EvaluationDatabase(abc.ABC):
                      names must occur in the ``COLUMNS`` class variable
             commit_map: the commit map to use
             case_study: the case study to retrieve data for
+            kwargs: additional arguments that are passed to
+                    :func:`_load_dataframe()`
 
         Return:
             a pandas dataframe with the given columns and the
@@ -81,7 +85,7 @@ class EvaluationDatabase(abc.ABC):
                                  "'Database' base class.")
 
         data: pd.DataFrame = cls._load_dataframe(project_name, commit_map,
-                                                 case_study)
+                                                 case_study, **kwargs)
 
         if not [*data] == cls.COLUMNS:
             raise AssertionError(
