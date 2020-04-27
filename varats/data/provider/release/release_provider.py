@@ -109,7 +109,7 @@ class ReleaseDefaultProvider(ReleaseProvider):
     Default implementation of the :class:`ReleaseProvider` for projects that
     do not need or support their own implementation. This implementation looks
     for commits with tags that are
-    :ref:`PEP 440<https://www.python.org/dev/peps/pep-0440/>` versions.
+    `PEP 440 <https://www.python.org/dev/peps/pep-0440/>`_ versions.
     """
 
     def __init__(self, project: tp.Type[Project]) -> None:
