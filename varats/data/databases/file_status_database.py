@@ -16,7 +16,10 @@ class FileStatusDatabase(EvaluationDatabase,
                          cache_id="file_status_data",
                          columns=["file_status"]):
     """
-    Provides access to blame interaction data.
+    Provides access to file status data.
+    
+    This data is not cached, as most of it would be computed for the
+    cache-integrity check anyways.
     """
 
     @classmethod
@@ -55,11 +58,8 @@ class FileStatusDatabase(EvaluationDatabase,
                          sort=False)
 
     @classmethod
-    def get_data_for_project(cls,
-                             project_name: str,
-                             columns: tp.List[str],
-                             commit_map: CommitMap,
-                             *case_studies: CaseStudy,
+    def get_data_for_project(cls, project_name: str, columns: tp.List[str],
+                             commit_map: CommitMap, *case_studies: CaseStudy,
                              **kwargs: tp.Any) -> pd.DataFrame:
         """
         Retrieve data for a given project and case study.
@@ -71,8 +71,9 @@ class FileStatusDatabase(EvaluationDatabase,
             commit_map: the commit map to use
             case_studies: the case study to retrieve data for
             kwargs:
-                - result_file_type
-                - tag_blocked
+                - result_file_type: the report type to compute the status for
+                - tag_blocked: whether to include information about blocked 
+                               revisions
 
         Return:
             a pandas dataframe with the given columns and the
