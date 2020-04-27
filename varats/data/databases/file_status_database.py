@@ -17,7 +17,7 @@ class FileStatusDatabase(EvaluationDatabase,
                          columns=["file_status"]):
     """
     Provides access to file status data.
-    
+
     This data is not cached, as most of it would be computed for the
     cache-integrity check anyways.
     """
@@ -72,7 +72,7 @@ class FileStatusDatabase(EvaluationDatabase,
             case_studies: the case study to retrieve data for
             kwargs:
                 - result_file_type: the report type to compute the status for
-                - tag_blocked: whether to include information about blocked 
+                - tag_blocked: whether to include information about blocked
                                revisions
 
         Return:
