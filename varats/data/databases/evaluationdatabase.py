@@ -35,7 +35,7 @@ class EvaluationDatabase(abc.ABC):
         # https://github.com/python/mypy/issues/4660
         super().__init_subclass__(*args, **kwargs)  # type: ignore
         cls.CACHE_ID = cache_id
-        cls.COLUMNS += columns
+        cls.COLUMNS = cls.COLUMNS + columns
 
     @classmethod
     @abc.abstractmethod
