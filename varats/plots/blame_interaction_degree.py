@@ -173,8 +173,7 @@ class BlameInteractionDegree(BlameDegree):
     NAME = 'b_interaction_degree'
 
     def __init__(self, **kwargs: tp.Any):
-        super(BlameInteractionDegree, self).__init__('b_interaction_degree',
-                                                     **kwargs)
+        super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
@@ -199,7 +198,7 @@ class BlameAuthorDegree(BlameDegree):
     NAME = 'b_author_degree'
 
     def __init__(self, **kwargs: tp.Any):
-        super(BlameAuthorDegree, self).__init__('b_author_degree', **kwargs)
+        super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
@@ -224,8 +223,7 @@ class BlameMaxTimeDistribution(BlameDegree):
     NAME = 'b_maxtime_distribution'
 
     def __init__(self, **kwargs: tp.Any):
-        super(BlameMaxTimeDistribution, self).__init__('b_maxtime_distribution',
-                                                       **kwargs)
+        super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
@@ -251,8 +249,7 @@ class BlameAvgTimeDistribution(BlameDegree):
     NAME = 'b_avgtime_distribution'
 
     def __init__(self, **kwargs: tp.Any):
-        super(BlameAvgTimeDistribution, self).__init__('b_avgtime_distribution',
-                                                       **kwargs)
+        super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {

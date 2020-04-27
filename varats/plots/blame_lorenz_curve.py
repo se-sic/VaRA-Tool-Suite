@@ -136,7 +136,7 @@ class BlameLorenzCurve(Plot):
     NAME = 'b_lorenz_curve'
 
     def __init__(self, **kwargs: tp.Any) -> None:
-        super(BlameLorenzCurve, self).__init__("b_lorenz_curve", **kwargs)
+        super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         plot_cfg = {
@@ -347,7 +347,7 @@ class BlameGiniOverTime(Plot):
     NAME = 'b_gini_overtime'
 
     def __init__(self, **kwargs: tp.Any) -> None:
-        super(BlameGiniOverTime, self).__init__("b_gini_overtime", **kwargs)
+        super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         plot_cfg = {
