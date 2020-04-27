@@ -59,7 +59,7 @@ class FileStatusDatabase(EvaluationDatabase,
                              project_name: str,
                              columns: tp.List[str],
                              commit_map: CommitMap,
-                             case_study: tp.Optional[CaseStudy] = None,
+                             *case_studies: CaseStudy,
                              **kwargs: tp.Any) -> pd.DataFrame:
         """
         Retrieve data for a given project and case study.
@@ -69,7 +69,7 @@ class FileStatusDatabase(EvaluationDatabase,
             columns: the columns the resulting dataframe should have; all column
                      names must occur in the ``COLUMNS`` class variable
             commit_map: the commit map to use
-            case_study: the case study to retrieve data for
+            case_studies: the case study to retrieve data for
             kwargs:
                 - result_file_type
                 - tag_blocked
@@ -78,4 +78,4 @@ class FileStatusDatabase(EvaluationDatabase,
             a pandas dataframe with the given columns and the
         """
         return super().get_data_for_project(project_name, columns, commit_map,
-                                            case_study, **kwargs)
+                                            *case_studies, **kwargs)

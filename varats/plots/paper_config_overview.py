@@ -43,17 +43,13 @@ def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
     project = kwargs['project']
     cmap: CommitMap = kwargs['cmap']
     # load data
-    revisions_list: tp.List[pd.DataFrame] = []
-    for case_study in current_config.get_case_studies(project):
-        frame = FileStatusDatabase.get_data_for_project(
-            project, ["revision", "time_id", "file_status"],
-            cmap,
-            case_study,
-            result_file_type=result_file_type,
-            tag_blocked=True)
-        revisions_list.append(frame)
-    revisions = pd.concat(revisions_list, ignore_index=True, sort=False)
-    return revisions
+    frame = FileStatusDatabase.get_data_for_project(
+        project, ["revision", "time_id", "file_status"],
+        cmap,
+        *current_config.get_case_studies(project),
+        result_file_type=result_file_type,
+        tag_blocked=True)
+    return frame
 
 
 def _load_projects_ordered_by_year(

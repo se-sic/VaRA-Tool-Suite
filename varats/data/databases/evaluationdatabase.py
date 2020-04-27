@@ -59,31 +59,10 @@ class EvaluationDatabase(abc.ABC):
         """
 
     @classmethod
-    def get_data_for_project(cls,
-                             project_name: str,
-                             columns: tp.List[str],
-                             commit_map: CommitMap,
-                             case_study: tp.Optional[CaseStudy] = None,
-                             **kwargs: tp.Any) -> pd.DataFrame:
-        """
-        Retrieve data for a given project and case study.
-
-        Args:
-            project_name: the project to retrieve data for
-            columns: the columns the resulting dataframe should have; all column
-                     names must occur in the ``COLUMNS`` class variable
-            commit_map: the commit map to use
-            case_study: the case study to retrieve data for
-            kwargs: additional arguments that are passed to
-                    :func:`_load_dataframe()`
-
-        Return:
-            a pandas dataframe with the given columns and the
-        """
-        if cls.__name__ == "Database":
-            raise AssertionError("You must not call this function on the "
-                                 "'Database' base class.")
-
+    def __get_data_for_case_study(cls, project_name: str, columns: tp.List[str],
+                                  commit_map: CommitMap,
+                                  case_study: tp.Optional[CaseStudy],
+                                  **kwargs: tp.Any) -> pd.DataFrame:
         data: pd.DataFrame = cls._load_dataframe(project_name, commit_map,
                                                  case_study, **kwargs)
 
@@ -108,6 +87,38 @@ class EvaluationDatabase(abc.ABC):
                 lambda x: case_study.has_revision(x["revision"]), axis=1)]
 
         data = cs_filter(data)
-        data = data[columns]
+        return data[columns]
 
-        return data
+    @classmethod
+    def get_data_for_project(cls, project_name: str, columns: tp.List[str],
+                             commit_map: CommitMap, *case_studies: CaseStudy,
+                             **kwargs: tp.Any) -> pd.DataFrame:
+        """
+        Retrieve data for a given project and case study.
+
+        Args:
+            project_name: the project to retrieve data for
+            columns: the columns the resulting dataframe should have; all column
+                     names must occur in the ``COLUMNS`` class variable
+            commit_map: the commit map to use
+            case_studies: the case studies to retrieve data for
+            kwargs: additional arguments that are passed to
+                    :func:`_load_dataframe()`
+
+        Return:
+            a pandas dataframe with the given columns and the
+        """
+        if cls.__name__ == "Database":
+            raise AssertionError("You must not call this function on the "
+                                 "'Database' base class.")
+
+        if not case_studies:
+            return cls.__get_data_for_case_study(project_name, columns,
+                                                 commit_map, None, **kwargs)
+
+        data_frames: tp.List[pd.DataFrame] = []
+        for case_study in case_studies:
+            data_frames.append(
+                cls.__get_data_for_case_study(project_name, columns, commit_map,
+                                              case_study, **kwargs))
+        return pd.concat(data_frames)
