@@ -10,6 +10,7 @@ from argparse import ArgumentParser, ArgumentTypeError
 from pathlib import Path
 
 from argparse_utils import enum_action
+from plumbum import colors
 
 from varats.data.report import MetaReport
 from varats.paper import paper_config_manager as PCM
@@ -76,6 +77,12 @@ def main() -> None:
                                help="Print status with legend",
                                action="store_true",
                                default=False)
+    status_parser.add_argument(
+        "--force-color",
+        help="Force colored output also when not connected to a terminal "
+        "(e.g. when piping to less -r).",
+        action="store_true",
+        default=False)
 
     def add_common_args(sub_parser: ArgumentParser) -> None:
         """
@@ -195,6 +202,8 @@ def main() -> None:
 
 def __casestudy_status(args: tp.Dict[str, tp.Any],
                        parser: ArgumentParser) -> None:
+    if args.get("force_color", False):
+        colors.use_color = True
     if 'paper_config' in args:
         CFG['paper_config']['current_config'] = args['paper_config']
     if args['short'] and args['list_revs']:
