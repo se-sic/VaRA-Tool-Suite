@@ -158,7 +158,7 @@ class InteractionPlot(Plot):
     NAME = 'interaction_graph'
 
     def __init__(self, **kwargs: tp.Any) -> None:
-        super(InteractionPlot, self).__init__("interaction_graph", **kwargs)
+        super().__init__(self.NAME, **kwargs)
 
     @staticmethod
     def supports_stage_separation() -> bool:
