@@ -134,6 +134,26 @@ def get_default_compile_error_wrapped(
                 file_ext=".txt")))
 
 
+class UnlimitStackSize(actions.Step):  # type: ignore
+    """
+    Set higher user limits on stack size for RAM intense experiments.
+    Basically the same as calling the shell built-in ulimit.
+    """
+
+    NAME = "Unlimit stack size"
+    DESCRIPTION = "Sets new resource limits."
+
+    def __init__(self, project: Project):
+        super(UnlimitStackSize, self).__init__(obj=project,
+                                               action_fn=self.__call__)
+
+    def __call__(self) -> actions.StepResult:
+        """
+        Same as 'ulimit -s 16777216' in a shell.
+        """
+        resource.setrlimit(resource.RLIMIT_STACK, (16777216, 16777216))
+
+
 class VersionExperiment(Experiment):  # type: ignore
     """
     Base class for experiments that want to analyze different project
