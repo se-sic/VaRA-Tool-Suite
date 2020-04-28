@@ -17,7 +17,8 @@ import varats.experiments.blame_experiment as BE
 from varats.data.reports.blame_report import BlameReport as BR
 from varats.data.report import FileStatusExtension as FSE
 from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
-                                          VersionExperiment, PEErrorHandler)
+                                          VersionExperiment, PEErrorHandler,
+                                          UnlimitStackSize)
 
 
 class BlameReportGeneration(actions.Step):  # type: ignore
@@ -124,6 +125,7 @@ class BlameReportExperiment(VersionExperiment):
 
         analysis_actions = BE.generate_basic_blame_experiment_actions(project)
 
+        analysis_actions.append(UnlimitStackSize(project))
         analysis_actions.append(BlameReportGeneration(project))
         analysis_actions.append(actions.Clean(project))
 

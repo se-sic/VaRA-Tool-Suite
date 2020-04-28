@@ -5,6 +5,7 @@ Utility module for BenchBuild experiments.
 import os
 import typing as tp
 import random
+import resource
 import traceback
 from pathlib import Path
 from abc import abstractmethod
@@ -14,7 +15,7 @@ from plumbum.commands.base import BoundCommand
 
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
-from benchbuild.utils.actions import Step
+from benchbuild.utils.actions import Step, StepResult
 from benchbuild.settings import CFG as BB_CFG
 
 from varats.data.revisions import get_tagged_revisions
@@ -132,6 +133,26 @@ def get_default_compile_error_wrapped(
                 project_uuid=str(project.run_uuid),
                 extension_type=FileStatusExtension.CompileError,
                 file_ext=".txt")))
+
+
+class UnlimitStackSize(Step):  # type: ignore
+    """
+    Set higher user limits on stack size for RAM intense experiments.
+    Basically the same as calling the shell built-in ulimit.
+    """
+
+    NAME = "Unlimit stack size"
+    DESCRIPTION = "Sets new resource limits."
+
+    def __init__(self, project: Project):
+        super(UnlimitStackSize, self).__init__(obj=project,
+                                               action_fn=self.__call__)
+
+    def __call__(self) -> StepResult:
+        """
+        Same as 'ulimit -s 16777216' in a shell.
+        """
+        resource.setrlimit(resource.RLIMIT_STACK, (16777216, 16777216))
 
 
 class VersionExperiment(Experiment):  # type: ignore

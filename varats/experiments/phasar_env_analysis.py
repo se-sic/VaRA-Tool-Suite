@@ -9,7 +9,6 @@ examples produced a valid json result and which ones failed.
 
 import typing as tp
 from os import path
-import resource
 
 from plumbum import local
 
@@ -25,7 +24,7 @@ from varats.data.report import FileStatusExtension as FSE
 from varats.experiments.wllvm import RunWLLVM, Extract
 from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
                                           FunctionPEErrorWrapper,
-                                          PEErrorHandler)
+                                          PEErrorHandler, UnlimitStackSize)
 
 
 class PhasarEnvIFDS(actions.Step):  # type: ignore
@@ -108,26 +107,6 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
                 timeout[timeout_duration, phasar_run_cmd],
                 PEErrorHandler(result_folder, error_file, phasar_run_cmd,
                                timeout_duration))
-
-
-class UnlimitStackSize(actions.Step):  # type: ignore
-    """
-    Set higher user limits on stack size for RAM intense experiments.
-    Basically the same as calling the shell built-in ulimit.
-    """
-
-    NAME = "Unlimit stack size"
-    DESCRIPTION = "Sets new resource limits."
-
-    def __init__(self, project: Project):
-        super(UnlimitStackSize, self).__init__(obj=project,
-                                               action_fn=self.__call__)
-
-    def __call__(self) -> actions.StepResult:
-        """
-        Same as 'ulimit -s 16777216' in a shell.
-        """
-        resource.setrlimit(resource.RLIMIT_STACK, (16777216, 16777216))
 
 
 class PhasarEnvironmentTracing(Experiment):  # type: ignore
