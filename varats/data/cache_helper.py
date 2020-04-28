@@ -28,13 +28,13 @@ def get_data_file_path(data_id: str, project_name: str) -> Path:
 
     Test:
     >>> str(get_data_file_path("foo", "tmux"))
-    'data_cache/foo-tmux.csv'
+    'data_cache/foo-tmux.csv.gz'
 
     >>> isinstance(get_data_file_path("foo.csv", "tmux"), Path)
     True
     """
     return Path(str(
-        CFG["plots"]["data_cache"])) / f"{data_id}-{project_name}.csv"
+        CFG["plots"]["data_cache"])) / f"{data_id}-{project_name}.csv.gz"
 
 
 def load_cached_df_or_none(data_id: str,
@@ -49,9 +49,14 @@ def load_cached_df_or_none(data_id: str,
 
     file_path = get_data_file_path(data_id, project_name)
     if not file_path.exists():
-        return None
+        # fall back to uncompressed file if present for seamless migration
+        # to cache file compression
+        if Path(str(file_path)[:-3]).exists():
+            file_path = Path(str(file_path)[:-3])
+        else:
+            return None
 
-    return pd.read_csv(str(file_path), index_col=0)
+    return pd.read_csv(str(file_path), index_col=0, compression='infer')
 
 
 def cache_dataframe(data_id: str, project_name: str,
@@ -65,7 +70,7 @@ def cache_dataframe(data_id: str, project_name: str,
         dataframe: pandas dataframe to store
     """
     file_path = get_data_file_path(data_id, project_name)
-    dataframe.to_csv(str(file_path))
+    dataframe.to_csv(str(file_path), compression='infer')
 
 
 def __create_cache_entry(create_df_from_report: tp.Callable[[tp.Any],
