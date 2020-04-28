@@ -61,12 +61,13 @@ You can add new database classes by creating a subclass of :class:`~varats.data.
     data_databases/blame_interaction_database
     data_databases/blame_interaction_degree_database
     data_databases/commit_interaction_database
+    data_databases/file_status_database
 
 
 Module: database
 ....................
 
-.. automodule:: varats.data.databases.database
+.. automodule:: varats.data.databases.evaluationdatabase
     :members:
     :undoc-members:
     :show-inheritance:

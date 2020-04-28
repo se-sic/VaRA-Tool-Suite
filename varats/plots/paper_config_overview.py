@@ -14,6 +14,7 @@ import numpy as np
 import seaborn as sb
 from matplotlib.patches import Patch
 
+from varats.data.databases.file_status_database import FileStatusDatabase
 from varats.data.reports.commit_report import CommitMap
 from varats.data.report import MetaReport, FileStatusExtension
 from varats.data.reports.empty_report import EmptyReport
@@ -42,22 +43,13 @@ def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
     project = kwargs['project']
     cmap: CommitMap = kwargs['cmap']
     # load data
-    revisions_list: tp.List[pd.DataFrame] = []
-    for case_study in current_config.get_case_studies(project):
-        processed_revisions = case_study.get_revisions_status(result_file_type)
-
-        for rev, status in processed_revisions:
-            time_id = cmap.time_id(rev)
-            frame = pd.DataFrame(
-                {
-                    "commit_hash": rev,
-                    "commit_id": time_id,
-                    "status": status
-                },
-                index=[0])
-            revisions_list.append(frame)
-    revisions = pd.concat(revisions_list, ignore_index=True, sort=False)
-    return revisions
+    frame = FileStatusDatabase.get_data_for_project(
+        project, ["revision", "time_id", "file_status"],
+        cmap,
+        *current_config.get_case_studies(project),
+        result_file_type=result_file_type,
+        tag_blocked=True)
+    return frame
 
 
 def _load_projects_ordered_by_year(
@@ -250,8 +242,7 @@ class PaperConfigOverviewPlot(Plot):
     NAME = 'paper_config_overview_plot'
 
     def __init__(self, **kwargs: tp.Any) -> None:
-        super(PaperConfigOverviewPlot,
-              self).__init__("paper_config_overview_plot", **kwargs)
+        super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         style.use(self.style)

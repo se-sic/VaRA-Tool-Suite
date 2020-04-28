@@ -115,7 +115,7 @@ class RepoChurnPlot(Plot):
     NAME = 'repo_churn'
 
     def __init__(self, **kwargs: tp.Any) -> None:
-        super(RepoChurnPlot, self).__init__("repo_churn", **kwargs)
+        super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         plot_cfg = {
