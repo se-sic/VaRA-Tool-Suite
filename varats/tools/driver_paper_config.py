@@ -15,7 +15,8 @@ from varats.utils.cli_util import initialize_logger_config
 LOG = logging.getLogger(__name__)
 
 
-def set_paper_config_parser_arg(parser, opt=False) -> None:
+def set_paper_config_parser_arg(parser: argparse.ArgumentParser,
+                                opt: bool = False) -> None:
     config_opt_name = "paper_config" if not opt else "--paper_config"
     parser.add_argument(config_opt_name,
                         help="Path to the new paper config. Relative "
