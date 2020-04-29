@@ -70,3 +70,14 @@ current paper config into a ``.zip`` file.
 
 .. program-output:: vara-cs package -h
     :nostderr:
+
+
+vara-cs view
+---------------
+
+The ``vara-cs view`` command allows to easily open result files in your favourite editor.
+The tool searches for result files matching the given commit hash and presents you a list with the found files.
+The selected file then gets opened using the program in your ``EDITOR`` environment variable.
+
+.. program-output:: vara-cs view -h
+    :nostderr:
