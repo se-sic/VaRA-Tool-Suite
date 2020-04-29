@@ -10,7 +10,7 @@ from argparse import ArgumentParser, ArgumentTypeError
 from pathlib import Path
 
 from argparse_utils import enum_action
-from plumbum import colors
+from plumbum import colors, local, FG
 
 from varats.data.report import MetaReport
 from varats.paper import paper_config_manager as PCM
@@ -163,9 +163,8 @@ def main() -> None:
     ext_parser.add_argument("--report-type",
                             help="Passed to the plot given via --plot-type.",
                             default="EmptyReport")
-    ext_parser.add_argument(
-        "--result-folder",
-        help="Maximal expected gradient in percent between two revisions")
+    ext_parser.add_argument("--result-folder",
+                            help="Folder in which to search for result files.")
     add_common_args(ext_parser)
 
     # vara-cs package
@@ -186,6 +185,19 @@ def main() -> None:
         nargs="*",
         default=[])
 
+    # vara-cs view
+    view_parser = sub_parsers.add_parser('view', help="View report files.")
+    view_parser.add_argument("report_type",
+                             help="Report type of the result files.",
+                             choices=MetaReport.REPORT_TYPES.keys(),
+                             type=str)
+    view_parser.add_argument("project",
+                             help="Project to view result files for.")
+    view_parser.add_argument("commit_hash",
+                             help="Commit hash to view result files for.")
+    view_parser.add_argument("--result-folder",
+                             help="Folder in which to search for result files.")
+
     args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
 
     if 'subcommand' not in args:
@@ -198,6 +210,8 @@ def main() -> None:
         __casestudy_create_or_extend(args, parser)
     elif args['subcommand'] == 'package':
         __casestudy_package(args, parser)
+    elif args['subcommand'] == 'view':
+        __casestudy_view(args)
 
 
 def __casestudy_status(args: tp.Dict[str, tp.Any],
@@ -288,6 +302,34 @@ def __casestudy_package(args: tp.Dict[str, tp.Any],
         parser.error(
             "--output has the wrong file type extension. "
             "Please do not provide any other file type extension than .zip")
+
+
+def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
+    result_file_type = MetaReport.REPORT_TYPES[args["report_type"]]
+    result_files = PCM.get_result_files(result_file_type, args["project"],
+                                        args["commit_hash"])
+
+    print(
+        f"Found {len(result_files)} matching result files (newest to oldest):")
+    for idx, result_file in enumerate(result_files):
+        status = (result_file_type.get_status_from_result_file(
+            result_file.name)).get_colored_status()
+        print(f"  {idx}. [{status}] {result_file.name}")
+    try:
+        choice = ""
+        while not choice.startswith("q"):
+            choice = input("Enter a number to open a file or 'q' to quit "
+                           "(default=0): ")
+            if not choice:
+                choice = "0"
+            if choice.isdigit() and int(choice) < len(result_files):
+                editor_name = local.env["EDITOR"]
+                if not editor_name:
+                    editor_name = "vim"
+                editor = local[editor_name]
+                editor[str(result_files[int(choice)])] & FG
+    except EOFError:
+        return
 
 
 if __name__ == '__main__':

@@ -11,6 +11,8 @@ from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from plumbum import colors
+
+from varats.data.revisions import get_all_revisions_files
 from varats.tools.commit_map import create_lazy_commit_map_loader
 
 from varats.data.report import FileStatusExtension, MetaReport
@@ -57,8 +59,8 @@ def show_status_of_case_studies(report_name: str, filter_regex: str,
         print(get_legend(True))
 
     report_type = MetaReport.REPORT_TYPES[report_name]
-    total_status_occurrences: tp.DefaultDict[FileStatusExtension, tp.
-                                             Set[str]] = defaultdict(set)
+    total_status_occurrences: tp.DefaultDict[FileStatusExtension,
+                                             tp.Set[str]] = defaultdict(set)
 
     for case_study in output_case_studies:
         if print_rev_list:
@@ -97,9 +99,23 @@ def get_revision_list(case_study: CaseStudy) -> str:
     return res_str
 
 
-def get_occurrences(
-        status_occurrences: tp.DefaultDict[FileStatusExtension, tp.Set[str]],
-        use_color: bool = False) -> str:
+def get_result_files(result_file_type: MetaReport, project_name: str,
+                     commit_hash: str) -> tp.List[Path]:
+
+    def file_name_filter(file_name: str) -> bool:
+        file_commit_hash = MetaReport.get_commit_hash_from_result_file(
+            file_name)
+        return commit_hash != file_commit_hash
+
+    return get_all_revisions_files(project_name,
+                                   result_file_type,
+                                   file_name_filter,
+                                   only_newest=False)
+
+
+def get_occurrences(status_occurrences: tp.DefaultDict[FileStatusExtension,
+                                                       tp.Set[str]],
+                    use_color: bool = False) -> str:
     """
     Returns a string with all status occurrences of a case study.
 
@@ -145,8 +161,8 @@ def get_occurrences(
     return status
 
 
-def get_total_status(total_status_occurrences: tp.
-                     DefaultDict[FileStatusExtension, tp.Set[str]],
+def get_total_status(total_status_occurrences: tp.DefaultDict[
+        FileStatusExtension, tp.Set[str]],
                      longest_cs_name: int,
                      use_color: bool = False) -> str:
     """
@@ -169,12 +185,13 @@ def get_total_status(total_status_occurrences: tp.
 
 
 def get_short_status(
-        case_study: CaseStudy,
-        result_file_type: MetaReport,
-        longest_cs_name: int,
-        use_color: bool = False,
-        total_status_occurrences: tp.Optional[
-            tp.DefaultDict[FileStatusExtension, tp.Set[str]]] = None) -> str:
+    case_study: CaseStudy,
+    result_file_type: MetaReport,
+    longest_cs_name: int,
+    use_color: bool = False,
+    total_status_occurrences: tp.Optional[tp.DefaultDict[FileStatusExtension,
+                                                         tp.Set[str]]] = None
+) -> str:
     """
     Return a short string representation that describes the current status of
     the case study.
@@ -196,8 +213,8 @@ def get_short_status(
             longest_cs_name -
             (len(case_study.project_name) + len(str(case_study.version))), ' ')
 
-    status_occurrences: tp.DefaultDict[FileStatusExtension, tp.
-                                       Set[str]] = defaultdict(set)
+    status_occurrences: tp.DefaultDict[FileStatusExtension,
+                                       tp.Set[str]] = defaultdict(set)
     for tagged_rev in case_study.get_revisions_status(result_file_type):
         status_occurrences[tagged_rev[1]].add(tagged_rev[0])
 
@@ -209,15 +226,16 @@ def get_short_status(
     return status
 
 
-def get_status(case_study: CaseStudy,
-               result_file_type: MetaReport,
-               longest_cs_name: int,
-               sep_stages: bool,
-               sort: bool,
-               use_color: bool = False,
-               total_status_occurrences: tp.Optional[
-                   tp.DefaultDict[FileStatusExtension, tp.Set[str]]] = None
-              ) -> str:
+def get_status(
+    case_study: CaseStudy,
+    result_file_type: MetaReport,
+    longest_cs_name: int,
+    sep_stages: bool,
+    sort: bool,
+    use_color: bool = False,
+    total_status_occurrences: tp.Optional[tp.DefaultDict[FileStatusExtension,
+                                                         tp.Set[str]]] = None
+) -> str:
     """
     Return a string representation that describes the current status of
     the case study.
