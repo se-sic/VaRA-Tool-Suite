@@ -7,4 +7,5 @@ Passes
     :maxdepth: 1
 
     passes/blame_verifier
+    passes/MDRewriter
 
