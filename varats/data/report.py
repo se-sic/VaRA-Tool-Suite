@@ -48,6 +48,25 @@ class FileStatusExtension(Enum):
         return tp.cast(str, self.status_color[self.name])
 
     @staticmethod
+    def get_physical_file_statuses() -> tp.Set['FileStatusExtension']:
+        """
+        Returns the set of file status extensions that are associated with real
+        result files.        
+        """
+        return {
+            FileStatusExtension.Success, FileStatusExtension.Failed,
+            FileStatusExtension.CompileError
+        }
+
+    @staticmethod
+    def get_virtual_file_statuses() -> tp.Set['FileStatusExtension']:
+        """
+        Returns the set of file status extensions that are not associated with
+        real result files.        
+        """
+        return {FileStatusExtension.Missing, FileStatusExtension.Blocked}
+
+    @staticmethod
     def get_regex_grp() -> str:
         """
         Returns a regex group that can match all file stati.
@@ -150,8 +169,8 @@ class MetaReport(type):
                                  "a static variable {var}."))
 
     @staticmethod
-    def lookup_report_type_from_file_name(file_name: str
-                                         ) -> tp.Optional['MetaReport']:
+    def lookup_report_type_from_file_name(
+            file_name: str) -> tp.Optional['MetaReport']:
         """
         Looks-up the correct report class from a given `file_name`.
 
