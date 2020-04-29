@@ -15,6 +15,15 @@ from varats.utils.cli_util import initialize_logger_config
 LOG = logging.getLogger(__name__)
 
 
+def set_paper_config_parser_arg(parser, opt=False) -> None:
+    config_opt_name = "paper_config" if not opt else "--paper_config"
+    parser.add_argument(config_opt_name,
+                        help="Path to the new paper config. Relative "
+                        "paths are interpreted relative to the current "
+                        "`paper_config/folder`.",
+                        type=str)
+
+
 def main() -> None:
     """
     Main function for working with paper configs.
@@ -29,20 +38,17 @@ def main() -> None:
     # vara-pc create
     create_parser = sub_parsers.add_parser('create',
                                            help="Create a new paper config.")
-    create_parser.add_argument("paper_config",
-                               help="Path to the new paper config. Relative "
-                               "paths are interpreted relative to the current "
-                               "`paper_config/folder`.",
-                               type=str)
+    set_paper_config_parser_arg(create_parser)
 
     # vara-pc set
     set_parser = sub_parsers.add_parser('select',
                                         help="Select the current paper config.")
-    set_parser.add_argument("paper_config",
-                            help="Path paper config to select as the current "
-                            "one. Relative paths are interpreted relative to "
-                            "the current `paper_config/folder`.",
-                            type=str)
+    set_paper_config_parser_arg(set_parser)
+
+    # vara-pc list
+    list_parser = sub_parsers.add_parser(
+        'list', help="List all available paper configs")
+    set_paper_config_parser_arg(list_parser, True)
 
     args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
 
@@ -54,6 +60,8 @@ def main() -> None:
         __pc_create(args)
     elif args['subcommand'] == 'select':
         __pc_set(args)
+    elif args['subcommand'] == 'list':
+        __pc_list(args)
 
 
 def __pc_create(args: tp.Dict[str, tp.Any]) -> None:
@@ -103,6 +111,22 @@ def __pc_set(args: tp.Dict[str, tp.Any]) -> None:
     CFG["paper_config"]["folder"] = str(folder)
     CFG["paper_config"]["current_config"] = str(current_config)
     save_config()
+
+
+def __pc_list(args: tp.Dict[str, tp.Any]) -> None:
+    if "paper_config" in args:
+        pc_folder_path = Path(args['paper_config'])
+    else:
+        pc_folder_path = Path(CFG["paper_config"]["folder"].value)
+
+    if not (pc_folder_path.exists() and pc_folder_path.is_dir()):
+        LOG.error(f"Not a paper config: {pc_folder_path} "
+                  "(Path does not exist or is no directory).")
+        return
+
+    print("Found the following paper_configs:")
+    for folder in pc_folder_path.iterdir():
+        print(folder.name)
 
 
 if __name__ == '__main__':
