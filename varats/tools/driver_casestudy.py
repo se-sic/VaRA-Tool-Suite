@@ -6,7 +6,7 @@ import logging
 import os
 import re
 import typing as tp
-from argparse import ArgumentParser, ArgumentTypeError
+from argparse import ArgumentParser, ArgumentTypeError, _SubParsersAction
 from pathlib import Path
 
 from argparse_utils import enum_action
@@ -35,7 +35,29 @@ def main() -> None:
     parser = ArgumentParser("vara-cs")
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
 
-    # vara-cs status
+    __create_status_parser(sub_parsers)  # vara-cs status
+    __create_gen_parser(sub_parsers)  # vara-cs gen
+    __create_ext_parser(sub_parsers)  # vara-cs ext
+    __create_package_parser(sub_parsers)  # vara-cs package
+    __create_view_parser(sub_parsers)  # vara-cs view
+
+    args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
+
+    if 'subcommand' not in args:
+        parser.print_help()
+        return
+
+    if args['subcommand'] == 'status':
+        __casestudy_status(args, parser)
+    elif args['subcommand'] == 'gen' or args['subcommand'] == 'ext':
+        __casestudy_create_or_extend(args, parser)
+    elif args['subcommand'] == 'package':
+        __casestudy_package(args, parser)
+    elif args['subcommand'] == 'view':
+        __casestudy_view(args)
+
+
+def __create_status_parser(sub_parsers: _SubParsersAction) -> None:
     status_parser = sub_parsers.add_parser(
         'status', help="Show status of current case study")
     status_parser.add_argument(
@@ -84,59 +106,61 @@ def main() -> None:
         action="store_true",
         default=False)
 
-    def add_common_args(sub_parser: ArgumentParser) -> None:
-        """
-        Group common args to provide all args on different sub parsers.
-        """
-        sub_parser.add_argument("--git-path",
-                                help="Path to git repository",
-                                default=None)
-        sub_parser.add_argument("-p",
-                                "--project",
-                                help="Project name",
-                                default=None)
-        sub_parser.add_argument("--end",
-                                help="End of the commit range (inclusive)",
-                                default="HEAD")
-        sub_parser.add_argument("--start",
-                                help="Start of the commit range (exclusive)",
-                                default=None)
-        sub_parser.add_argument(
-            "--extra-revs",
-            nargs="+",
-            default=[],
-            help="Add a list of additional revisions to the case-study")
-        sub_parser.add_argument(
-            "--revs-per-year",
-            type=int,
-            default=0,
-            help="Add this many revisions per year to the case-study.")
-        sub_parser.add_argument(
-            "--revs-year-sep",
-            action="store_true",
-            default=False,
-            help="Separate the revisions in different stages per year "
-            "(when using \'--revs-per-year\').")
-        sub_parser.add_argument("--num-rev",
-                                type=int,
-                                default=10,
-                                help="Number of revisions to select.")
 
-    # vara-cs gen
+def __add_common_args(sub_parser: ArgumentParser) -> None:
+    """
+    Group common args to provide all args on different sub parsers.
+    """
+    sub_parser.add_argument("--git-path",
+                            help="Path to git repository",
+                            default=None)
+    sub_parser.add_argument("-p",
+                            "--project",
+                            help="Project name",
+                            default=None)
+    sub_parser.add_argument("--end",
+                            help="End of the commit range (inclusive)",
+                            default="HEAD")
+    sub_parser.add_argument("--start",
+                            help="Start of the commit range (exclusive)",
+                            default=None)
+    sub_parser.add_argument(
+        "--extra-revs",
+        nargs="+",
+        default=[],
+        help="Add a list of additional revisions to the case-study")
+    sub_parser.add_argument(
+        "--revs-per-year",
+        type=int,
+        default=0,
+        help="Add this many revisions per year to the case-study.")
+    sub_parser.add_argument(
+        "--revs-year-sep",
+        action="store_true",
+        default=False,
+        help="Separate the revisions in different stages per year "
+        "(when using \'--revs-per-year\').")
+    sub_parser.add_argument("--num-rev",
+                            type=int,
+                            default=10,
+                            help="Number of revisions to select.")
+
+
+def __create_gen_parser(sub_parsers: _SubParsersAction) -> None:
     gen_parser = sub_parsers.add_parser('gen', help="Generate a case study.")
     gen_parser.add_argument(
         "paper_config_path",
         help="Path to paper_config folder (e.g., paper_configs/ase-17)")
-
     gen_parser.add_argument("distribution", action=enum_action(SamplingMethod))
     gen_parser.add_argument("-v",
                             "--version",
                             type=int,
                             default=0,
                             help="Case study version.")
-    add_common_args(gen_parser)
+    __add_common_args(gen_parser)
 
-    # vara-cs ext
+
+def __create_ext_parser(sub_parsers: _SubParsersAction) -> None:
     ext_parser = sub_parsers.add_parser('ext',
                                         help="Extend an existing case study.")
     ext_parser.add_argument("case_study_path", help="Path to case_study")
@@ -165,9 +189,10 @@ def main() -> None:
                             default="EmptyReport")
     ext_parser.add_argument("--result-folder",
                             help="Folder in which to search for result files.")
-    add_common_args(ext_parser)
+    __add_common_args(ext_parser)
 
-    # vara-cs package
+
+def __create_package_parser(sub_parsers: _SubParsersAction) -> None:
     package_parser = sub_parsers.add_parser('package',
                                             help="Case study packaging util")
     package_parser.add_argument("-o", "--output", help="Output file")
@@ -185,7 +210,8 @@ def main() -> None:
         nargs="*",
         default=[])
 
-    # vara-cs view
+
+def __create_view_parser(sub_parsers: _SubParsersAction) -> None:
     view_parser = sub_parsers.add_parser('view', help="View report files.")
     view_parser.add_argument("report_type",
                              help="Report type of the result files.",
@@ -200,21 +226,6 @@ def main() -> None:
         action="store_true",
         default=False,
         help="Only report the newest file for each matched commit hash")
-
-    args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
-
-    if 'subcommand' not in args:
-        parser.print_help()
-        return
-
-    if args['subcommand'] == 'status':
-        __casestudy_status(args, parser)
-    elif args['subcommand'] == 'gen' or args['subcommand'] == 'ext':
-        __casestudy_create_or_extend(args, parser)
-    elif args['subcommand'] == 'package':
-        __casestudy_package(args, parser)
-    elif args['subcommand'] == 'view':
-        __casestudy_view(args)
 
 
 def __casestudy_status(args: tp.Dict[str, tp.Any],
@@ -332,7 +343,7 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
         return f"[{status}] {result_file.name}"
 
     def open_in_editor(result_file: Path) -> None:
-        editor[str(result_file)] & FG
+        _ = editor[str(result_file)] & FG
 
     editor_name = local.env["EDITOR"]
     if not editor_name:
