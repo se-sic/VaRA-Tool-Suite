@@ -149,10 +149,10 @@ def get_all_revisions_files(project_name: str,
     Returns:
         a list of file paths to correctly processed revision files
     """
-    return __get_files_with_status(project_name, result_file_type, [
-        FileStatusExtension.Success, FileStatusExtension.Failed,
-        FileStatusExtension.CompileError
-    ], file_name_filter, only_newest)
+    return __get_files_with_status(
+        project_name, result_file_type,
+        list(FileStatusExtension.get_physical_file_statuses()),
+        file_name_filter, only_newest)
 
 
 def get_processed_revisions_files(

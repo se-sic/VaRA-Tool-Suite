@@ -12,7 +12,7 @@ from pathlib import Path
 from argparse_utils import enum_action
 from plumbum import colors, local, FG
 
-from varats.data.report import MetaReport
+from varats.data.report import MetaReport, FileStatusExtension
 from varats.paper import paper_config_manager as PCM
 from varats.paper.case_study import (SamplingMethod, ExtenderStrategy,
                                      load_case_study_from_file,
@@ -316,9 +316,15 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
     print(
         f"Found {len(result_files)} matching result files (newest to oldest):")
 
+    longest_file_status_extension = max([
+        len(status.get_colored_status())
+        for status in FileStatusExtension.get_physical_file_statuses()
+    ])
+
     def result_file_to_list_entry(result_file: Path) -> str:
         status = (result_file_type.get_status_from_result_file(
-            result_file.name)).get_colored_status()
+            result_file.name)).get_colored_status().rjust(
+                longest_file_status_extension, " ")
         return f"[{status}] {result_file.name}"
 
     editor_name = local.env["EDITOR"]
