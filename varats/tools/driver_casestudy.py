@@ -331,6 +331,9 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
                 longest_file_status_extension, " ")
         return f"[{status}] {result_file.name}"
 
+    def open_in_editor(result_file: Path) -> None:
+        editor[str(result_file)] & FG
+
     editor_name = local.env["EDITOR"]
     if not editor_name:
         editor_name = "vim"
@@ -339,7 +342,7 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
         cli_list_choice("Select a number to open a file",
                         result_files,
                         result_file_to_list_entry,
-                        lambda x: editor[str(x)] & FG,
+                        open_in_editor,
                         start_label=1,
                         default=1,
                         repeat=True)

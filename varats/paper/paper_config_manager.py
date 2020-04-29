@@ -100,7 +100,7 @@ def get_revision_list(case_study: CaseStudy) -> str:
 
 
 def get_result_files(result_file_type: MetaReport, project_name: str,
-                     commit_hash: str, only_newest) -> tp.List[Path]:
+                     commit_hash: str, only_newest: bool) -> tp.List[Path]:
     """
     Returns a list of result files that (partially) match the given commit hash.
 

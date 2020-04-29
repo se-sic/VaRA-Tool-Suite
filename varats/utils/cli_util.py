@@ -33,10 +33,10 @@ ListType = tp.TypeVar("ListType")
 def cli_list_choice(question: str,
                     choices: tp.List[ListType],
                     choice_to_str: tp.Callable[[ListType], str],
-                    on_choice_callback: tp.Callable[[ListType], bool],
+                    on_choice_callback: tp.Callable[[ListType], None],
                     start_label: int = 0,
                     default: int = 0,
-                    repeat: bool = False):
+                    repeat: bool = False) -> None:
     """
     Ask the user to select an item from a list on the cli.
 
