@@ -3,7 +3,15 @@ Running with Slurm
 
 This page describes how benchbuild/VaRA experiments can be run on the chair's cluster using slurm.
 
-As no home directories are not available on the cluster nodes, you must use ``scratch`` instead. This guide assumes that your vara-root directory is ``/scratch/<user>/vara``
+As no home directories are available on the cluster nodes, you must use ``scratch`` instead.
+Setup up a ``virtualenv`` with the tool suite in ``scratch/<user>``.
+
+.. code-block:: bash
+
+  cd /scratch/<user>/
+  virtualenv -p /usr/bin/python3 vara-virt
+
+Furthermore, this guide assumes that your vara-root directory is ``/scratch/<user>/vara``.
 
 .. code-block::
 
@@ -77,6 +85,10 @@ As no home directories are not available on the cluster nodes, you must use ``sc
 
 5. Generate bb script
 
+    .. note::
+
+      Activate your virtualenv to use the correct benchbuild
+
    .. code-block::
 
       benchbuild slurm -E <report_type> <project>
@@ -91,7 +103,7 @@ As no home directories are not available on the cluster nodes, you must use ``sc
 
    .. code-block::
 
-      #SBATCH - o /scratch/<user>/vara/benchbuild/slurm-output/cs-overview/doxygen/GitBlameAnnotationReport-%A_%a.txt
+      #SBATCH -o /scratch/<user>/vara/benchbuild/slurm-output/cs-overview/doxygen/GitBlameAnnotationReport-%A_%a.txt
 
 7. Start a job:
 
