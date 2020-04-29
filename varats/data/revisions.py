@@ -95,19 +95,21 @@ def __get_files_with_status(project_name: str,
                                 [str], bool] = lambda x: False,
                             only_newest: bool = True) -> tp.List[Path]:
     """
-        Find all file paths to revision files with given file statuses.
+    Find all file paths to revision files with given file statuses.
 
-        Args:
-            project_name: target project
-            result_file_type: the type of the result file
-            file_statuses: a list of statuses the files should have
-            file_name_filter: optional filter to exclude certain files; returns
-                              true if the file_name should not be checked
-            only_newest: whether to include all result files, or only the newest
+    Args:
+        project_name: target project
+        result_file_type: the type of the result file
+        file_statuses: a list of statuses the files should have
+        file_name_filter: optional filter to exclude certain files; returns
+                          true if the file_name should not be checked
+        only_newest: whether to include all result files, or only the newest;
+                     if ``False``, result files for the same revision are sorted
+                     descending by the file's mtime
 
-        Returns:
-            a list of file paths to matching revision files
-        """
+    Returns:
+        a list of file paths to matching revision files
+    """
     processed_revisions_paths = []
 
     result_files = __get_result_files_dict(project_name, result_file_type)
@@ -140,7 +142,9 @@ def get_all_revisions_files(project_name: str,
         result_file_type: the type of the result file
         file_name_filter: optional filter to exclude certain files; returns
                           true if the file_name should not be checked
-        only_newest: whether to include all result files, or only the newest
+        only_newest: whether to include all result files, or only the newest;
+                     if ``False``, result files for the same revision are sorted
+                     descending by the file's mtime
 
     Returns:
         a list of file paths to correctly processed revision files

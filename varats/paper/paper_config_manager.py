@@ -101,11 +101,23 @@ def get_revision_list(case_study: CaseStudy) -> str:
 
 def get_result_files(result_file_type: MetaReport, project_name: str,
                      commit_hash: str) -> tp.List[Path]:
+    """
+    Returns a list of result files that (partially) match the given commit hash.
+
+    Args:
+        result_file_type: the type of the result file
+        project_name: target project
+        commit_hash: the commit hash to search result files for
+
+    Returns:
+        a list of matching result file paths; result files for the same revision
+        are sorted descending by the file's mtime
+    """
 
     def file_name_filter(file_name: str) -> bool:
         file_commit_hash = MetaReport.get_commit_hash_from_result_file(
             file_name)
-        return commit_hash != file_commit_hash
+        return not file_commit_hash.startswith(commit_hash)
 
     return get_all_revisions_files(project_name,
                                    result_file_type,
