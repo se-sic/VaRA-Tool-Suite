@@ -309,6 +309,10 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
     result_files = PCM.get_result_files(result_file_type, args["project"],
                                         args["commit_hash"])
 
+    if not result_files:
+        print("No matching result files found.")
+        return
+
     print(
         f"Found {len(result_files)} matching result files (newest to oldest):")
     for idx, result_file in enumerate(result_files):
