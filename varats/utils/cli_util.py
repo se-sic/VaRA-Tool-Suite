@@ -27,6 +27,31 @@ def cli_yn_choice(question: str, default: str = 'y') -> bool:
     return choice.strip().lower() in values
 
 
+def cli_list_choice(question: str,
+                    num_choices: int,
+                    start: int = 0,
+                    default: int = 0) -> tp.Optional[int]:
+    """
+    Ask the user to select an item from a list on the cli.
+
+    Args:
+        question: the question to ask the user
+        num_choices: the number of choices the user has
+        start: the number of the first choice
+        default: the default choice that is taken if no input is given
+
+    Returns:
+        the user's choice, i.e., a number between ``start`` (inclusive) and
+        ``start + num_choices`` (exclusive), or ``None`` for an invalid choice
+    """
+    choice = input(f"{question} (default={default}): ")
+    if not choice:
+        return default
+    if choice.isdigit() and start <= int(choice) < start + num_choices:
+        return int(choice)
+    return None
+
+
 def initialize_logger_config() -> None:
     """
     Initializes the logging framework with a basic config, allowing the user to

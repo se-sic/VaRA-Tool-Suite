@@ -22,7 +22,7 @@ from varats.data.provider.release.release_provider import ReleaseType
 from varats.settings import CFG
 from varats.tools.commit_map import create_lazy_commit_map_loader
 from varats.utils.project_util import get_local_project_git_path
-from varats.utils.cli_util import initialize_logger_config
+from varats.utils.cli_util import initialize_logger_config, cli_list_choice
 
 LOG = logging.getLogger(__name__)
 
@@ -315,19 +315,18 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
         status = (result_file_type.get_status_from_result_file(
             result_file.name)).get_colored_status()
         print(f"  {idx}. [{status}] {result_file.name}")
+
+    editor_name = local.env["EDITOR"]
+    if not editor_name:
+        editor_name = "vim"
+    editor = local[editor_name]
     try:
-        choice = ""
-        while not choice.startswith("q"):
-            choice = input("Enter a number to open a file or 'q' to quit "
-                           "(default=0): ")
+        while True:
+            choice = cli_list_choice("Enter a number to open a file",
+                                     len(result_files), 1, 1) - 1
             if not choice:
-                choice = "0"
-            if choice.isdigit() and int(choice) < len(result_files):
-                editor_name = local.env["EDITOR"]
-                if not editor_name:
-                    editor_name = "vim"
-                editor = local[editor_name]
-                editor[str(result_files[int(choice)])] & FG
+                break
+            editor[str(result_files[int(choice)])] & FG
     except EOFError:
         return
 
