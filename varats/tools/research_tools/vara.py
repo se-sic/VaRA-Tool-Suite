@@ -92,7 +92,7 @@ class VaRACodeBase(CodeBase):
 
     def pull(self) -> None:
         """
-        Pull and update all ``SubProject``s.
+        Pull and update all ``SubProject`` s.
         """
         self.map_sub_projects(lambda prj: prj.pull())
         self.setup_submodules()
