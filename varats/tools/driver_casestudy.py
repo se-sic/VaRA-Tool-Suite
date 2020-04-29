@@ -195,8 +195,11 @@ def main() -> None:
                              help="Project to view result files for.")
     view_parser.add_argument("commit_hash",
                              help="Commit hash to view result files for.")
-    view_parser.add_argument("--result-folder",
-                             help="Folder in which to search for result files.")
+    view_parser.add_argument(
+        "--newest-only",
+        action="store_true",
+        default=False,
+        help="Only report the newest file for each matched commit hash")
 
     args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
 
@@ -307,7 +310,8 @@ def __casestudy_package(args: tp.Dict[str, tp.Any],
 def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
     result_file_type = MetaReport.REPORT_TYPES[args["report_type"]]
     result_files = PCM.get_result_files(result_file_type, args["project"],
-                                        args["commit_hash"])
+                                        args["commit_hash"],
+                                        args.get("newest-only", False))
 
     if not result_files:
         print("No matching result files found.")

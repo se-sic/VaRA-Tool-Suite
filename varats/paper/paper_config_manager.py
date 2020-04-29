@@ -100,7 +100,7 @@ def get_revision_list(case_study: CaseStudy) -> str:
 
 
 def get_result_files(result_file_type: MetaReport, project_name: str,
-                     commit_hash: str) -> tp.List[Path]:
+                     commit_hash: str, only_newest) -> tp.List[Path]:
     """
     Returns a list of result files that (partially) match the given commit hash.
 
@@ -108,6 +108,9 @@ def get_result_files(result_file_type: MetaReport, project_name: str,
         result_file_type: the type of the result file
         project_name: target project
         commit_hash: the commit hash to search result files for
+        only_newest: whether to include all result files, or only the newest;
+                     if ``False``, result files for the same revision are sorted
+                     descending by the file's mtime
 
     Returns:
         a list of matching result file paths; result files for the same revision
@@ -119,10 +122,8 @@ def get_result_files(result_file_type: MetaReport, project_name: str,
             file_name)
         return not file_commit_hash.startswith(commit_hash)
 
-    return get_all_revisions_files(project_name,
-                                   result_file_type,
-                                   file_name_filter,
-                                   only_newest=False)
+    return get_all_revisions_files(project_name, result_file_type,
+                                   file_name_filter, only_newest)
 
 
 def get_occurrences(status_occurrences: tp.DefaultDict[FileStatusExtension,
