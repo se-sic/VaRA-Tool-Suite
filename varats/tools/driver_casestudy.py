@@ -315,22 +315,24 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
 
     print(
         f"Found {len(result_files)} matching result files (newest to oldest):")
-    for idx, result_file in enumerate(result_files):
+
+    def result_file_to_list_entry(result_file: Path) -> str:
         status = (result_file_type.get_status_from_result_file(
             result_file.name)).get_colored_status()
-        print(f"  {idx}. [{status}] {result_file.name}")
+        return f"[{status}] {result_file.name}"
 
     editor_name = local.env["EDITOR"]
     if not editor_name:
         editor_name = "vim"
     editor = local[editor_name]
     try:
-        while True:
-            choice = cli_list_choice("Enter a number to open a file",
-                                     len(result_files), 1, 1) - 1
-            if not choice:
-                break
-            editor[str(result_files[int(choice)])] & FG
+        cli_list_choice("Select a number to open a file",
+                        result_files,
+                        result_file_to_list_entry,
+                        lambda x: editor[str(x)] & FG,
+                        start_label=1,
+                        default=1,
+                        repeat=True)
     except EOFError:
         return
 
