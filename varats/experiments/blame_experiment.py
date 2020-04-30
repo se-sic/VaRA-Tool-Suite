@@ -21,8 +21,7 @@ from varats.data.report import BaseReport
 
 def setup_basic_blame_experiment(experiment: Experiment, project: Project,
                                  report_type: tp.Type[BaseReport],
-                                 result_folder_template: str,
-                                 dbg: bool) -> None:
+                                 result_folder_template: str) -> None:
     """
     Setup the project for a blame experiment.
         - run time extensions
@@ -32,12 +31,12 @@ def setup_basic_blame_experiment(experiment: Experiment, project: Project,
     """
     # Add the required runtime extensions to the project(s).
     project.runtime_extension = run.RuntimeExtension(project, experiment) \
-                                << time.RunWithTime()
+        << time.RunWithTime()
 
     # Add the required compiler extensions to the project(s).
     project.compiler_extension = compiler.RunCompiler(project, experiment) \
-                                 << RunWLLVM() \
-                                 << run.WithTimeout()
+        << RunWLLVM() \
+        << run.WithTimeout()
 
     # Add own error handler to compile step.
     project.compile = get_default_compile_error_wrapped(project, report_type,
@@ -47,13 +46,9 @@ def setup_basic_blame_experiment(experiment: Experiment, project: Project,
     # annotation.
     project.cflags = ["-fvara-GB"]
 
-    if dbg:
-        # This c-flag provides debug information
-        project.cflags.append("-g")
-
 
 def generate_basic_blame_experiment_actions(
-        project: Project) -> tp.List[actions.Step]:
+        project: Project, dbg: bool = False) -> tp.List[actions.Step]:
     """
     Generate the basic actions for a blame experiment.
         - handle caching of BC files
@@ -63,16 +58,18 @@ def generate_basic_blame_experiment_actions(
 
     # Check if all binaries have corresponding BC files
     all_files_present = True
+
     for binary in project.binaries:
         all_files_present &= path.exists(
             local.path(
                 Extract.BC_CACHE_FOLDER_TEMPLATE.format(
                     cache_dir=str(BB_CFG["varats"]["result"]),
                     project_name=str(project.name)) +
-                Extract.BC_FILE_TEMPLATE.format(project_name=str(project.name),
-                                                binary_name=binary.name,
-                                                project_version=str(
-                                                    project.version))))
+                Extract.get_bc_file_name(project_name=str(project.name),
+                                         binary_name=binary.name,
+                                         project_version=str(
+                                             project.version),
+                                         dbg=dbg)))
 
     if not all_files_present:
         analysis_actions.append(actions.Compile(project))

@@ -73,7 +73,17 @@ class Extract(actions.Step):  # type: ignore
     DESCRIPTION = "Extract bitcode out of the execution file."
 
     BC_CACHE_FOLDER_TEMPLATE = "{cache_dir}/{project_name}/"
-    BC_FILE_TEMPLATE = "{project_name}-{binary_name}-{project_version}.bc"
+
+    @staticmethod
+    def get_bc_file_name(project_name: str, binary_name: str,
+                         project_version: str, dbg: bool = False):
+        if dbg:
+            dbg = "_dbg"
+        else:
+            dbg = ""
+
+        return "%s-%s-%s%s.bc" % (project_name, binary_name,
+                                  project_version, dbg)
 
     def __init__(self, project: Project) -> None:
         super(Extract, self).__init__(obj=project, action_fn=self.extract)
@@ -93,7 +103,7 @@ class Extract(actions.Step):  # type: ignore
         mkdir("-p", local.path() / bc_cache_folder)
 
         for binary in project.binaries:
-            bc_cache_file = bc_cache_folder + self.BC_FILE_TEMPLATE.format(
+            bc_cache_file = bc_cache_folder + self.get_bc_file_name(
                 project_name=str(project.name),
                 binary_name=str(binary.name),
                 project_version=str(project.version))

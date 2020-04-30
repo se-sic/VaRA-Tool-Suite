@@ -77,7 +77,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                     res_folder=vara_result_folder, res_file=result_file)
             ]
 
-            opt_params.append(bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
+            opt_params.append(bc_cache_folder / Extract.get_bc_file_name(
                 project_name=project.name,
                 binary_name=binary.name,
                 project_version=project.version))

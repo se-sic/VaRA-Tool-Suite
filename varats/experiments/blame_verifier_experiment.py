@@ -88,10 +88,11 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
                     res_folder=vara_result_folder, res_file=result_file)
             ]
 
-            opt_params.append(bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
+            opt_params.append(bc_cache_folder / Extract.get_bc_file_name(
                 project_name=project.name,
                 binary_name=binary.name,
-                project_version=project.version))
+                project_version=project.version,
+                dbg=True))
 
             run_cmd = opt[opt_params]
 
@@ -128,9 +129,11 @@ class BlameVerifierReportExperiment(VersionExperiment):
 
         BE.setup_basic_blame_experiment(
             self, project, BVR,
-            BlameVerifierReportGeneration.RESULT_FOLDER_TEMPLATE, True)
+            BlameVerifierReportGeneration.RESULT_FOLDER_TEMPLATE)
+        project.cflags.append("-g")
 
-        analysis_actions = BE.generate_basic_blame_experiment_actions(project)
+        analysis_actions = BE.generate_basic_blame_experiment_actions(
+            project, True)
 
         analysis_actions.append(BlameVerifierReportGeneration(project))
         analysis_actions.append(actions.Clean(project))

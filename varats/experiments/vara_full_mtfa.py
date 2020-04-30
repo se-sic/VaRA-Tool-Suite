@@ -71,7 +71,7 @@ class VaraMTFACheck(actions.Step):  # type: ignore
 
         for binary in project.binaries:
             # Combine the input bitcode file's name
-            bc_target_file = Extract.BC_FILE_TEMPLATE.format(
+            bc_target_file = Extract.get_bc_file_name(
                 project_name=str(project.name),
                 binary_name=str(binary.name),
                 project_version=str(project.version))
@@ -157,10 +157,10 @@ class VaRATaintPropagation(VersionExperiment):
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
                         cache_dir=str(BB_CFG["varats"]["result"]),
                         project_name=str(project.name)) +
-                    Extract.BC_FILE_TEMPLATE.format(
-                        project_name=str(project.name),
-                        binary_name=binary.name,
-                        project_version=str(project.version))))
+                    Extract.get_bc_file_name(project_name=str(project.name),
+                                             binary_name=binary.name,
+                                             project_version=str(
+                                                 project.version))))
 
             if not all_cache_files_present:
                 analysis_actions.append(actions.Compile(project))
