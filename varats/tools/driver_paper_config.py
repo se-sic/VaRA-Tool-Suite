@@ -18,7 +18,7 @@ LOG = logging.getLogger(__name__)
 
 def set_paper_config_parser_arg(parser: argparse.ArgumentParser,
                                 opt: bool = False) -> None:
-    config_opt_name = "paper-config" if not opt else "--paper-config"
+    config_opt_name = "paper_config" if not opt else "--paper-config"
     parser.add_argument(config_opt_name,
                         help="Path to the new paper config. Relative "
                         "paths are interpreted relative to the current "
