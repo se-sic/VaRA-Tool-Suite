@@ -187,6 +187,20 @@ def save_config() -> None:
     CFG.store(config_file)
 
 
+def get_varats_base_folder() -> Path:
+    """
+    Returns the path to the tool suite base folder, i.e., the folder that
+    contains the config file.
+
+    Returns:
+        path to base folder
+    """
+    cfg_config_file = CFG["config_file"].value
+    if cfg_config_file is None:
+        raise ValueError("Know config file found.")
+    return Path(cfg_config_file).parent
+
+
 def generate_benchbuild_config(varats_cfg: s.Configuration,
                                bb_config_path: str) -> None:
     """
