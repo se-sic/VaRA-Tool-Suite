@@ -11,7 +11,7 @@ addons:
       - time
       - git
       - libgit2-dev
-      - ninja
+      - ninja-build
 
 install:
   - pip install .
