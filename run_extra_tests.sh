@@ -31,7 +31,7 @@ check_err
 $COVERAGE $(which vara-pc) create test_extra
 check_err
 
-$COVERAGE $(which vara-pc) select --paper_config test_extra
+$COVERAGE $(which vara-pc) select --paper-config test_extra
 check_err
 
 $COVERAGE $(which vara-pc) list

@@ -18,7 +18,7 @@ LOG = logging.getLogger(__name__)
 
 def set_paper_config_parser_arg(parser: argparse.ArgumentParser,
                                 opt: bool = False) -> None:
-    config_opt_name = "paper_config" if not opt else "--paper_config"
+    config_opt_name = "paper-config" if not opt else "--paper-config"
     parser.add_argument(config_opt_name,
                         help="Path to the new paper config. Relative "
                         "paths are interpreted relative to the current "
@@ -50,7 +50,7 @@ def main() -> None:
     # vara-pc list
     list_parser = sub_parsers.add_parser(
         'list', help="List all available paper configs")
-    list_parser.add_argument("--paper_config_path",
+    list_parser.add_argument("--paper-config-path",
                              help="Path to the paper config folder.",
                              type=Path)
 
@@ -126,8 +126,11 @@ def __pc_set(args: tp.Dict[str, tp.Any]) -> None:
             nonlocal raw_pc_path
             raw_pc_path = choice
 
-        cli_list_choice("Choose a number to select a paper config",
-                        paper_configs, lambda x: x, set_pc_path)
+        try:
+            cli_list_choice("Choose a number to select a paper config",
+                            paper_configs, lambda x: x, set_pc_path)
+        except EOFError:
+            return
         if raw_pc_path is None:
             raise AssertionError("Choice should always return a value")
         pc_path = Path(raw_pc_path)
