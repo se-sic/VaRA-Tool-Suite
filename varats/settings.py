@@ -197,7 +197,7 @@ def get_varats_base_folder() -> Path:
     """
     cfg_config_file = CFG["config_file"].value
     if cfg_config_file is None:
-        raise ValueError("Know config file found.")
+        raise ValueError("No config file found.")
     return Path(cfg_config_file).parent
 
 
