@@ -122,7 +122,7 @@ def __pc_set(args: tp.Dict[str, tp.Any]) -> None:
 
         raw_pc_path = None
 
-        def set_pc_path(choice: str):
+        def set_pc_path(choice: str) -> None:
             nonlocal raw_pc_path
             raw_pc_path = choice
 
