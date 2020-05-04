@@ -145,5 +145,5 @@ If certain libraries needed by vara or clang are missing on the slurm-nodes, you
 
       env:
           value:
-              LD_LIBARARY_PATH:
+              LD_LIBRARY_PATH:
               - /scratch/<user>/vara/libs
