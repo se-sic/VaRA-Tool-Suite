@@ -12,6 +12,7 @@ import pandas as pd
 
 from varats.data.databases.blame_interaction_database import (
     BlameInteractionDatabase)
+from varats.data.metrics import gini_coefficient, lorenz_curve
 from varats.data.reports.commit_report import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plots.plot import Plot
@@ -19,17 +20,6 @@ from varats.plots.repository_churn import (draw_code_churn,
                                            build_repo_churn_table)
 from varats.utils.git_util import calc_repo_code_churn, ChurnConfig
 from varats.utils.project_util import get_local_project_git
-
-
-def _transform_to_lorenz_values(data: pd.Series) -> pd.Series:
-    """
-    Calucaltes the values for lorenz curve, i.e., the scaled prefix sum.
-
-    Args:
-        data: data range to calc scaled-prefix sum on
-    """
-    scaled_prefix_sum = data.cumsum() / data.sum()
-    return scaled_prefix_sum
 
 
 def draw_interaction_lorenz_curve(axis: axes.SubplotBase, data: pd.DataFrame,
@@ -54,7 +44,7 @@ def draw_interaction_lorenz_curve(axis: axes.SubplotBase, data: pd.DataFrame,
             "At least one of the in/out interaction needs to be selected")
 
     data.sort_values(by=[data_selector, 'revision'], inplace=True)
-    lor = _transform_to_lorenz_values(data[data_selector])
+    lor = lorenz_curve(data[data_selector])
     axis.plot(data['revision'],
               lor,
               color='#cc0099',
@@ -204,19 +194,6 @@ class BlameLorenzCurve(Plot):
         raise NotImplementedError
 
 
-def gini(lorenz_values: pd.Series) -> pd.Series:
-    """
-    Calculates the gini coefficient:  half of the relative mean absolute
-    difference between the lorenz values
-
-    Args:
-        lorenz_values: the scaled prefix sum of an ordered values range
-    """
-    return 0.5 * (
-        (np.abs(np.subtract.outer(lorenz_values, lorenz_values)).mean()) /
-        np.mean(lorenz_values))
-
-
 def draw_gini_churn_over_time(axis: axes.SubplotBase, blame_data: pd.DataFrame,
                               project_name: str, commit_map: CommitMap,
                               consider_insertions: bool,
@@ -254,25 +231,25 @@ def draw_gini_churn_over_time(axis: axes.SubplotBase, blame_data: pd.DataFrame,
     for time_id in blame_data['time_id']:
         if consider_insertions and consider_deletions:
             lorenz_values = np.array(
-                _transform_to_lorenz_values(
+                lorenz_curve(
                     (churn_data[churn_data.time_id <= time_id].insertions +
                      churn_data[churn_data.time_id <= time_id].deletions
                     ).sort_values(ascending=True)))
         elif consider_insertions:
             lorenz_values = np.array(
-                _transform_to_lorenz_values(churn_data[
+                lorenz_curve(churn_data[
                     churn_data.time_id <= time_id].insertions.sort_values(
                         ascending=True)))
         elif consider_deletions:
             lorenz_values = np.array(
-                _transform_to_lorenz_values(churn_data[
+                lorenz_curve(churn_data[
                     churn_data.time_id <= time_id].deletions.sort_values(
                         ascending=True)))
         else:
             raise AssertionError(
                 "At least one of the in/out interaction needs to be selected")
 
-        gini_churn.append(gini(lorenz_values))
+        gini_churn.append(gini_coefficient(lorenz_values))
     if consider_insertions and consider_deletions:
         linestyle = '-'
         label = 'Insertions + Deletions'
@@ -324,11 +301,11 @@ def draw_gini_blame_over_time(axis: axes.SubplotBase, blame_data: pd.DataFrame,
 
     for time_id in blame_data.time_id:
         lvalues = np.array(
-            _transform_to_lorenz_values(
+            lorenz_curve(
                 blame_data[blame_data.time_id <= time_id]
                 [data_selector].sort_values(ascending=True)))
 
-        gini_coefficients.append(gini(lvalues))
+        gini_coefficients.append(gini_coefficient(lvalues))
 
     axis.plot(blame_data.revision,
               gini_coefficients,
