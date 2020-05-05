@@ -162,7 +162,7 @@ def _calc_diff_between_func_entries(
     for base_inter in base_interactions:
         if base_inter in prev_interactions:
             prev_inter_idx = prev_interactions.index(base_inter)
-            prev_inter = prev_interactions[prev_inter_idx]
+            prev_inter = prev_interactions.pop(prev_inter_idx)
             # create new blame inst interaction with the absolute differente
             # between base and prev
             difference = base_inter.amount - prev_inter.amount
@@ -171,7 +171,6 @@ def _calc_diff_between_func_entries(
                     BlameInstInteractions(
                         base_inter.base_commit,
                         deepcopy(base_inter.interacting_commits), difference))
-            del prev_interactions[prev_inter_idx]
         else:
             # append new interaction from base report
             diff_interactions.append(deepcopy(base_inter))
