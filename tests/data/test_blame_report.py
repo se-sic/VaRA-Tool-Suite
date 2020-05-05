@@ -419,7 +419,7 @@ class TestBlameReportDiff(unittest.TestCase):
                          1)
         self.assertEqual(changed_func.interactions[0].interacting_commits[0],
                          'a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
-        self.assertEqual(changed_func.interactions[0].amount, 3)
+        self.assertEqual(changed_func.interactions[0].amount, -3)
 
     def test_function_not_in_diff(self):
         """

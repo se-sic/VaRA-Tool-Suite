@@ -106,8 +106,9 @@ class BlameResultFunctionEntry():
 
     @staticmethod
     def create_blame_result_function_entry(
-        name: str, raw_function_entry: tp.Dict[str, tp.Any]
-    ) -> 'BlameResultFunctionEntry':
+            name: str,
+            raw_function_entry: tp.Dict[str,
+                                        tp.Any]) -> 'BlameResultFunctionEntry':
         """
         Creates a `BlameResultFunctionEntry` from the corresponding yaml
         document section.
@@ -164,8 +165,8 @@ def _calc_diff_between_func_entries(
             prev_inter = prev_interactions[prev_inter_idx]
             # create new blame inst interaction with the absolute differente
             # between base and prev
-            difference = abs(base_inter.amount - prev_inter.amount)
-            if difference > 0:
+            difference = base_inter.amount - prev_inter.amount
+            if difference != 0:
                 diff_interactions.append(
                     BlameInstInteractions(
                         base_inter.base_commit,
@@ -389,8 +390,8 @@ def generate_degree_tuples(report: BlameReport) -> tp.List[tp.Tuple[int, int]]:
 
 
 def generate_author_degree_tuples(
-        report: BlameReport,
-        project_name: str,
+    report: BlameReport,
+    project_name: str,
 ) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples (author_degree, amount) where author_degree is
