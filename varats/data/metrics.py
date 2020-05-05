@@ -22,14 +22,14 @@ def lorenz_curve(data: pd.Series) -> pd.Series:
 
 def gini_coefficient(lorenz_values: pd.Series) -> pd.Series:
     """
-    Calculates the 
+    Calculates the
     `gini coefficient <https://en.wikipedia.org/wiki/Gini_coefficient>`_
     for a lorenz curve.
 
     Args:
-        lorenz_values: the values of a lorenz curve as optained by 
+        lorenz_values: the values of a lorenz curve as optained by
                        :func:`calculate_lorenz_curve()`
-                       
+
     Returns:
         the gini coefficient for the lorenz curve
     """
