@@ -270,7 +270,7 @@ class BlameReport(BaseReport):
 
 class BlameReportDiff():
     """
-    Diff class that contains all interactions that changed between to report
+    Diff class that contains all interactions that changed between two report
     revisions.
     """
 
