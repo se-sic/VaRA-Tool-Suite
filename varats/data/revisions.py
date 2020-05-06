@@ -11,9 +11,9 @@ from pathlib import Path
 
 from benchbuild.project import Project
 
-from varats.utils.project_util import get_project_cls_by_name
+from varats.data.report import FileStatusExtension, MetaReport
 from varats.settings import CFG
-from varats.data.report import MetaReport, FileStatusExtension
+from varats.utils.project_util import get_project_cls_by_name
 
 
 def __get_result_files_dict(

@@ -5,20 +5,22 @@ with VaRA's blame analysis and generates a BlameReport.
 
 import typing as tp
 
-from plumbum import local
-
+import benchbuild.utils.actions as actions
 from benchbuild.project import Project
 from benchbuild.settings import CFG as BB_CFG
-import benchbuild.utils.actions as actions
-from benchbuild.utils.cmd import opt, mkdir
+from benchbuild.utils.cmd import mkdir, opt
+from plumbum import local
 
-from varats.experiments.wllvm import Extract
 import varats.experiments.blame_experiment as BE
-from varats.data.reports.blame_report import BlameReport as BR
 from varats.data.report import FileStatusExtension as FSE
-from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
-                                          VersionExperiment, PEErrorHandler,
-                                          UnlimitStackSize)
+from varats.data.reports.blame_report import BlameReport as BR
+from varats.experiments.wllvm import Extract
+from varats.utils.experiment_util import (
+    PEErrorHandler,
+    UnlimitStackSize,
+    VersionExperiment,
+    exec_func_with_pe_error_handler,
+)
 
 
 class BlameReportGeneration(actions.Step):  # type: ignore

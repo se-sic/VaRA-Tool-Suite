@@ -3,16 +3,15 @@ A module that manages the building of VaRa.
 """
 import os
 import re
-
 from pathlib import Path
 
-from PyQt5.QtWidgets import QWidget, QShortcut
-from PyQt5.QtCore import QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject
-from PyQt5.QtGui import QTextCursor, QKeySequence
+from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal, pyqtSlot
+from PyQt5.QtGui import QKeySequence, QTextCursor
+from PyQt5.QtWidgets import QShortcut, QWidget
 
-from varats.settings import CFG, get_value_or_default, save_config
-from varats.gui.views.ui_BuildMenu import Ui_BuildSetup
 from varats import vara_manager
+from varats.gui.views.ui_BuildMenu import Ui_BuildSetup
+from varats.settings import CFG, get_value_or_default, save_config
 from varats.utils.exceptions import ProcessTerminatedError
 
 

@@ -2,30 +2,32 @@
 A case study is used to pin down the exact set of revisions that
 should be analysed for a project.
 """
+import random
 import typing as tp
 from collections import defaultdict
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-import random
 
-from benchbuild.project import Project
-from scipy.stats import halfnorm
 import numpy as np
 import pygit2
+from benchbuild.project import Project
+from scipy.stats import halfnorm
 
-from varats.data.provider.release.release_provider import (ReleaseType,
-                                                           ReleaseProvider)
+from varats.data.provider.release.release_provider import ReleaseProvider, ReleaseType
+from varats.data.report import FileStatusExtension, MetaReport
+from varats.data.reports.commit_report import CommitMap
+from varats.data.revisions import (
+    get_failed_revisions,
+    get_processed_revisions,
+    get_tagged_revision,
+    get_tagged_revisions,
+)
+from varats.data.version_header import VersionHeader
+from varats.plots.plot_utils import check_required_args
 from varats.plots.plots import PlotRegistry
 from varats.utils.project_util import get_project_cls_by_name
-from varats.data.revisions import (get_processed_revisions,
-                                   get_failed_revisions, get_tagged_revisions,
-                                   get_tagged_revision)
-from varats.plots.plot_utils import check_required_args
-from varats.data.version_header import VersionHeader
-from varats.data.reports.commit_report import CommitMap
-from varats.data.report import MetaReport, FileStatusExtension
-from varats.utils.yaml_util import store_as_yaml, load_yaml
+from varats.utils.yaml_util import load_yaml, store_as_yaml
 
 
 class ExtenderStrategy(Enum):

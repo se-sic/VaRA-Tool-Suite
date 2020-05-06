@@ -4,9 +4,9 @@ Module for the :class:`ReleaseProvider`.
 import typing as tp
 from enum import Enum
 
-from packaging.version import parse as parse_version, Version
-
 from benchbuild.project import Project
+from packaging.version import Version
+from packaging.version import parse as parse_version
 
 from varats.data.provider.provider import Provider
 from varats.utils.project_util import get_tagged_commits

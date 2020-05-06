@@ -5,23 +5,20 @@ Setting up the tooling, keeping it up to date,
 and providing necessary information.
 """
 
-import typing as tp
 import os
 import re
-from pathlib import Path
 import shutil
-
+import typing as tp
 from contextlib import contextmanager
 from enum import Enum
+from pathlib import Path
 from threading import RLock
 
-from PyQt5.QtCore import (QRunnable, QThreadPool, pyqtSlot, pyqtSignal, QObject,
-                          QProcess)
+from plumbum import RETCODE, TF, local
+from plumbum.cmd import cmake, git, grep, ln, mkdir
+from PyQt5.QtCore import QObject, QProcess, QRunnable, QThreadPool, pyqtSignal, pyqtSlot
 
-from plumbum import local, TF, RETCODE
-from plumbum.cmd import git, mkdir, ln, grep, cmake
-
-from varats.settings import save_config, CFG
+from varats.settings import CFG, save_config
 from varats.utils.exceptions import ProcessTerminatedError
 
 

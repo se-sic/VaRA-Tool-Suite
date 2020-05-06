@@ -6,17 +6,16 @@ blame experiments that have a similar experiment setup.
 import typing as tp
 from os import path
 
-from plumbum import local
-
-from benchbuild.project import Project
+import benchbuild.utils.actions as actions
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import compiler, run, time
+from benchbuild.project import Project
 from benchbuild.settings import CFG as BB_CFG
-import benchbuild.utils.actions as actions
+from plumbum import local
 
-from varats.experiments.wllvm import RunWLLVM, Extract
-from varats.utils.experiment_util import get_default_compile_error_wrapped
 from varats.data.report import BaseReport
+from varats.experiments.wllvm import Extract, RunWLLVM
+from varats.utils.experiment_util import get_default_compile_error_wrapped
 
 
 def setup_basic_blame_experiment(experiment: Experiment, project: Project,

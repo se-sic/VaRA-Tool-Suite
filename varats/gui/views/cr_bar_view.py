@@ -4,14 +4,13 @@ Module to manage the CommitReport BarView
 
 from os import path
 
-from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox
 from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget
 
-from varats.gui.views.ui_CRBarView import Ui_Form
 from varats.data.data_manager import VDM
-from varats.data.reports.commit_report import (CommitReport, CommitReportMeta,
-                                               CommitMap)
+from varats.data.reports.commit_report import CommitMap, CommitReport, CommitReportMeta
 from varats.gui.options import OptionTreeWidget
+from varats.gui.views.ui_CRBarView import Ui_Form
 
 
 class CRBarView(QWidget, Ui_Form):

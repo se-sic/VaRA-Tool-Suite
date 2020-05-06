@@ -2,22 +2,24 @@
 Driver module for `vara-buildsetup`.
 """
 
-import typing as tp
 import argparse
 import os
 import sys
+import typing as tp
 from pathlib import Path
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 
 from varats.gui.buildsetup_window import BuildSetup
-from varats.settings import get_value_or_default, CFG, save_config
+from varats.settings import CFG, get_value_or_default, save_config
+from varats.tools.research_tools.research_tool import ResearchTool, SpecificCodeBase
+from varats.utils.cli_util import (
+    get_research_tool,
+    get_supported_research_tool_names,
+    initialize_logger_config,
+)
 from varats.vara_manager import BuildType
-from varats.utils.cli_util import (initialize_logger_config, get_research_tool,
-                                   get_supported_research_tool_names)
-from varats.tools.research_tools.research_tool import (ResearchTool,
-                                                       SpecificCodeBase)
 
 
 class VaRATSSetup:

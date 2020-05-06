@@ -2,7 +2,7 @@
 Empty report implementation for testing.
 """
 
-from varats.data.report import BaseReport, MetaReport, FileStatusExtension
+from varats.data.report import BaseReport, FileStatusExtension, MetaReport
 
 
 class EmptyReport(BaseReport):

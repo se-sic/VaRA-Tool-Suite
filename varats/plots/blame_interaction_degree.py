@@ -7,12 +7,14 @@ import typing as tp
 
 import matplotlib.pyplot as plt
 import matplotlib.style as style
-import pandas as pd
 import numpy as np
+import pandas as pd
 from matplotlib import cm
 
 from varats.data.databases.blame_interaction_degree_database import (
-    DegreeType, BlameInteractionDegreeDatabase)
+    BlameInteractionDegreeDatabase,
+    DegreeType,
+)
 from varats.data.reports.commit_report import CommitMap
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.plot import Plot, PlotDataEmpty

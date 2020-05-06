@@ -3,10 +3,10 @@ The Report module implements basic report functionalities and provides a
 minimal interface ``BaseReport`` to implement own reports.
 """
 
-import typing as tp
 import re
-from enum import Enum
+import typing as tp
 from abc import abstractmethod
+from enum import Enum
 from pathlib import Path
 
 from plumbum import colors

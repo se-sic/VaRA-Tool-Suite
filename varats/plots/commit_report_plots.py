@@ -3,18 +3,18 @@ Module for different CommitReport plots
 """
 
 import typing as tp
-import seaborn as sns
-
-from PyQt5.QtWidgets import QWidget, QGridLayout, QSizePolicy
 
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg \
-    as FigureCanvas
+import seaborn as sns
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from PyQt5.QtWidgets import QGridLayout, QSizePolicy, QWidget
 
-from varats.data.reports.commit_report import (CommitReport,
-                                               generate_inout_cfg_cf,
-                                               generate_inout_cfg_df,
-                                               CommitReportMeta)
+from varats.data.reports.commit_report import (
+    CommitReport,
+    CommitReportMeta,
+    generate_inout_cfg_cf,
+    generate_inout_cfg_df,
+)
 
 
 class CRBarPlotWidget(QWidget):

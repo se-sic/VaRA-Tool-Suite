@@ -5,16 +5,16 @@ For code churn, we only consider changes in source files.
 """
 import typing as tp
 
-import pandas as pd
-import matplotlib.pyplot as plt
 import matplotlib.axes as axes
+import matplotlib.pyplot as plt
 import matplotlib.style as style
+import pandas as pd
 
 from varats.data.reports.commit_report import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plots.plot import Plot
+from varats.utils.git_util import ChurnConfig, calc_repo_code_churn
 from varats.utils.project_util import get_local_project_git
-from varats.utils.git_util import calc_repo_code_churn, ChurnConfig
 
 
 def build_repo_churn_table(project_name: str,

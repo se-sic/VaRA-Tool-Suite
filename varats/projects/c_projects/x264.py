@@ -6,17 +6,14 @@ from pathlib import Path
 
 from benchbuild.project import Project
 from benchbuild.settings import CFG as BB_CFG
-from benchbuild.utils.cmd import make, git
+from benchbuild.utils.cmd import git, make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
-
 from plumbum import local
 
-from varats.utils.project_util import get_all_revisions_between
-
 from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import wrap_paths_to_binaries
+from varats.utils.project_util import get_all_revisions_between, wrap_paths_to_binaries
 
 
 @with_git("https://code.videolan.org/videolan/x264.git",

@@ -4,19 +4,21 @@ Project file for doxygen.
 import typing as tp
 from pathlib import Path
 
-from benchbuild.settings import CFG as BB_CFG
-from benchbuild.utils.compiler import cxx
-from benchbuild.utils.run import run
 from benchbuild.project import Project
-from benchbuild.utils.cmd import make, cmake, cp
+from benchbuild.settings import CFG as BB_CFG
+from benchbuild.utils.cmd import cmake, cp, make
+from benchbuild.utils.compiler import cxx
 from benchbuild.utils.download import with_git
-
-from plumbum.path.utils import delete
+from benchbuild.utils.run import run
 from plumbum import local
+from plumbum.path.utils import delete
 
 from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import (wrap_paths_to_binaries, block_revisions,
-                                       BugAndFixPair)
+from varats.utils.project_util import (
+    BugAndFixPair,
+    block_revisions,
+    wrap_paths_to_binaries,
+)
 
 
 @block_revisions([

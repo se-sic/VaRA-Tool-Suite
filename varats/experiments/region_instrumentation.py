@@ -4,7 +4,7 @@ Experiment that adds tracing markers for highlight regions.
 import typing as tp
 
 from benchbuild.experiment import Experiment
-from benchbuild.extensions import compiler, time, run
+from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
 from benchbuild.utils.actions import Step
 

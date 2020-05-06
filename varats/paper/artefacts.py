@@ -17,7 +17,7 @@ from varats.data.version_header import VersionHeader
 from varats.plots.plot import Plot
 from varats.plots.plots import PlotRegistry
 from varats.settings import CFG
-from varats.utils.yaml_util import store_as_yaml, load_yaml
+from varats.utils.yaml_util import load_yaml, store_as_yaml
 
 
 class Artefact(ABC):

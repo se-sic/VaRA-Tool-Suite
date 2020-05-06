@@ -8,7 +8,7 @@ import textwrap
 import typing as tp
 
 import yaml
-from benchbuild.utils.settings import Configuration, ConfigDumper
+from benchbuild.utils.settings import ConfigDumper, Configuration
 
 from varats.settings import CFG, save_config
 

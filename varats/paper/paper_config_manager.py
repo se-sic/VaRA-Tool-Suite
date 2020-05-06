@@ -4,22 +4,20 @@ this modules provides functionality to visualize the status of case studies
 or to package a whole paper config into a zip folder.
 """
 
-import typing as tp
 import re
+import typing as tp
 from collections import defaultdict
 from pathlib import Path
-from zipfile import ZipFile, ZIP_DEFLATED
+from zipfile import ZIP_DEFLATED, ZipFile
 
 from plumbum import colors
 
-from varats.data.revisions import get_all_revisions_files
-from varats.tools.commit_map import create_lazy_commit_map_loader
-
-from varats.data.report import FileStatusExtension, MetaReport
-from varats.paper.case_study import (CaseStudy,
-                                     get_newest_result_files_for_case_study)
-from varats.settings import CFG
 import varats.paper.paper_config as PC
+from varats.data.report import FileStatusExtension, MetaReport
+from varats.data.revisions import get_all_revisions_files
+from varats.paper.case_study import CaseStudy, get_newest_result_files_for_case_study
+from varats.settings import CFG
+from varats.tools.commit_map import create_lazy_commit_map_loader
 
 
 def show_status_of_case_studies(report_name: str, filter_regex: str,

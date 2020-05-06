@@ -10,12 +10,15 @@ from benchbuild.project import Project
 from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import mkdir, touch
 
-from varats.experiments.wllvm import RunWLLVM
-from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
-                                          PEErrorHandler, VersionExperiment,
-                                          get_default_compile_error_wrapped)
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.empty_report import EmptyReport
+from varats.experiments.wllvm import RunWLLVM
+from varats.utils.experiment_util import (
+    PEErrorHandler,
+    VersionExperiment,
+    exec_func_with_pe_error_handler,
+    get_default_compile_error_wrapped,
+)
 
 
 # Please take care when changing this file, see docs experiments/just_compile

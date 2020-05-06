@@ -6,8 +6,8 @@ setting should be modifiable via environment variable.
 """
 
 import typing as tp
+from os import getcwd, makedirs, path
 from pathlib import Path
-from os import path, makedirs, getcwd
 
 import benchbuild.utils.settings as s
 

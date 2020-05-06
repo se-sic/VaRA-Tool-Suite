@@ -6,8 +6,8 @@ with varas file handling APIs.
 from pathlib import Path
 
 from varats.data.data_manager import VDM
-from varats.data.reports.commit_report import CommitReport, CommitMap
 from varats.data.reports.blame_report import BlameReport
+from varats.data.reports.commit_report import CommitMap, CommitReport
 
 
 def load_commit_report(file_path: Path) -> CommitReport:

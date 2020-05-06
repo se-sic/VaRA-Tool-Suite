@@ -7,13 +7,17 @@ from os import path
 
 from PyQt5.QtWidgets import QMainWindow, QWidget
 
-from varats.settings import CFG, save_config, generate_benchbuild_config,\
-    create_missing_folders
-from varats.gui.ui_MainWindow import Ui_MainWindow
-from varats.gui.views.example_view import ExampleView
-from varats.gui.views.cr_bar_view import CRBarView
 from varats.gui.buildsetup_window import BuildSetup
 from varats.gui.filtertree_window import FilterWindow
+from varats.gui.ui_MainWindow import Ui_MainWindow
+from varats.gui.views.cr_bar_view import CRBarView
+from varats.gui.views.example_view import ExampleView
+from varats.settings import (
+    CFG,
+    create_missing_folders,
+    generate_benchbuild_config,
+    save_config,
+)
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore

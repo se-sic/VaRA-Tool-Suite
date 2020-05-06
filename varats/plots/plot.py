@@ -2,8 +2,8 @@
 Base plot module.
 """
 
-import typing as tp
 import abc
+import typing as tp
 from pathlib import Path
 
 import matplotlib.pyplot as plt

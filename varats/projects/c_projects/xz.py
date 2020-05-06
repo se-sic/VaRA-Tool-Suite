@@ -6,19 +6,20 @@ from pathlib import Path
 
 from benchbuild.project import Project
 from benchbuild.settings import CFG as BB_CFG
-from benchbuild.utils.cmd import make, autoreconf, git
+from benchbuild.utils.cmd import autoreconf, git, make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
-
 from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
-from varats.utils.project_util import (get_all_revisions_between,
-                                       block_revisions, BugAndFixPair)
-
 from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import wrap_paths_to_binaries
+from varats.utils.project_util import (
+    BugAndFixPair,
+    block_revisions,
+    get_all_revisions_between,
+    wrap_paths_to_binaries,
+)
 
 
 @block_revisions([

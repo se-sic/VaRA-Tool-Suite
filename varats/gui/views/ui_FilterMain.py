@@ -8,6 +8,9 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+from varats.gui import icons_rc
+from varats.gui.deselectable_tree_view import DeselectableQTreeView
+
 
 class Ui_FilterEditor(object):
 
@@ -211,9 +214,6 @@ class Ui_FilterEditor(object):
         self.uiActionHelp.setText(_translate("FilterEditor", "&Help"))
         self.uiActionHelp.setToolTip(_translate("FilterEditor", "Help"))
 
-
-from varats.gui.deselectable_tree_view import DeselectableQTreeView
-from varats.gui import icons_rc
 
 if __name__ == "__main__":
     import sys

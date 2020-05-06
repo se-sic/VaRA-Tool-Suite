@@ -4,14 +4,18 @@ Driver module for `vara-pc`.
 This module provides a command line interface for creating and managing paper
 configs.
 """
+import argparse
 import logging
 import typing as tp
-import argparse
 from pathlib import Path
 
-from varats.settings import (CFG, save_config, get_value_or_default,
-                             get_varats_base_folder)
-from varats.utils.cli_util import initialize_logger_config, cli_list_choice
+from varats.settings import (
+    CFG,
+    get_value_or_default,
+    get_varats_base_folder,
+    save_config,
+)
+from varats.utils.cli_util import cli_list_choice, initialize_logger_config
 
 LOG = logging.getLogger(__name__)
 

@@ -8,6 +8,8 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+from varats.gui import icons_rc
+
 
 class Ui_CommitDateDeltaMaxFilter(object):
 
@@ -56,8 +58,6 @@ class Ui_CommitDateDeltaMaxFilter(object):
             _translate("CommitDateDeltaMaxFilter", "CommitDateDelta Maximum"))
         self.uiHelp.setToolTip(_translate("CommitDateDeltaMaxFilter", "Help"))
 
-
-from varats.gui import icons_rc
 
 if __name__ == "__main__":
     import sys

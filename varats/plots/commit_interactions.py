@@ -11,9 +11,8 @@ import numpy as np
 import pandas as pd
 from matplotlib import cm
 
-from varats.data.databases.commit_interaction_database import (
-    CommitInteractionDatabase)
-from varats.paper.case_study import (CaseStudy, CSStage)
+from varats.data.databases.commit_interaction_database import CommitInteractionDatabase
+from varats.paper.case_study import CaseStudy, CSStage
 from varats.plots.plot import Plot
 from varats.plots.plot_utils import check_required_args
 

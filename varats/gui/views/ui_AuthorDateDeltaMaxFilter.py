@@ -8,6 +8,8 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+from varats.gui import icons_rc
+
 
 class Ui_AuthorDateDeltaMaxFilter(object):
 
@@ -56,8 +58,6 @@ class Ui_AuthorDateDeltaMaxFilter(object):
             _translate("AuthorDateDeltaMaxFilter", "AuthorDateDelta Maximum"))
         self.uiHelp.setToolTip(_translate("AuthorDateDeltaMaxFilter", "Help"))
 
-
-from varats.gui import icons_rc
 
 if __name__ == "__main__":
     import sys

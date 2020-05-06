@@ -1,12 +1,24 @@
-from PyQt5.QtCore import QModelIndex, QAbstractItemModel, Qt
+from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt
 from PyQt5.QtGui import QIcon, QPixmap
 
 from varats.data.filtertree_data import (
-    AndOperator, OrOperator, NotOperator, SourceOperator, TargetOperator,
-    InteractionFilter, AuthorFilter, CommitterFilter, AuthorDateMinFilter,
-    AuthorDateMaxFilter, CommitDateMinFilter, CommitDateMaxFilter,
-    AuthorDateDeltaMinFilter, AuthorDateDeltaMaxFilter,
-    CommitDateDeltaMinFilter, CommitDateDeltaMaxFilter)
+    AndOperator,
+    AuthorDateDeltaMaxFilter,
+    AuthorDateDeltaMinFilter,
+    AuthorDateMaxFilter,
+    AuthorDateMinFilter,
+    AuthorFilter,
+    CommitDateDeltaMaxFilter,
+    CommitDateDeltaMinFilter,
+    CommitDateMaxFilter,
+    CommitDateMinFilter,
+    CommitterFilter,
+    InteractionFilter,
+    NotOperator,
+    OrOperator,
+    SourceOperator,
+    TargetOperator,
+)
 
 
 class FilterTreeModel(QAbstractItemModel):

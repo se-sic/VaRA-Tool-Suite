@@ -2,7 +2,7 @@
 Module for all reports generated for taint flow analyses."
 """
 
-from varats.data.report import BaseReport, MetaReport, FileStatusExtension
+from varats.data.report import BaseReport, FileStatusExtension, MetaReport
 
 
 class TaintPropagationReport(BaseReport):

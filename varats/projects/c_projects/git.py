@@ -4,13 +4,12 @@ Project file for git.
 import typing as tp
 from pathlib import Path
 
+import benchbuild.project as prj
 from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
-import benchbuild.project as prj
-
 from plumbum import local
 from plumbum.path.utils import delete
 

@@ -4,12 +4,11 @@ Compile a collection of representing examples for the taint analysis.
 import typing as tp
 from pathlib import Path
 
-from plumbum import local
-
-from benchbuild.utils.run import run
+import benchbuild.project as prj
 from benchbuild.utils.compiler import cxx
 from benchbuild.utils.download import with_git
-import benchbuild.project as prj
+from benchbuild.utils.run import run
+from plumbum import local
 
 from varats.utils.project_util import wrap_paths_to_binaries
 

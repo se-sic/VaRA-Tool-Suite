@@ -2,8 +2,8 @@
 Plot module for util functionality.
 """
 
-import typing as tp
 import functools
+import typing as tp
 from pathlib import Path
 
 from varats.data.reports.commit_report import CommitMap

@@ -4,16 +4,14 @@ Instrument the generated binary with print markers to show region entry/exits.
 
 import typing as tp
 
-from plumbum import local
-from plumbum.commands.base import BoundCommand
-
 from benchbuild.experiment import Experiment
-from benchbuild.extensions import base
-from benchbuild.extensions import compiler
+from benchbuild.extensions import base, compiler
 from benchbuild.project import Project
 from benchbuild.utils import run
 from benchbuild.utils.actions import Step
 from benchbuild.utils.settings import Configuration
+from plumbum import local
+from plumbum.commands.base import BoundCommand
 
 
 class TraceBinaryCreator(base.Extension):  # type: ignore

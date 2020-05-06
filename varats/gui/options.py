@@ -2,10 +2,16 @@
 Option module, providing different options to manage user modifications.
 """
 
-from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QHeaderView,\
-                            QComboBox, QFileDialog, QLineEdit
-from PyQt5.QtGui import QIntValidator
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIntValidator
+from PyQt5.QtWidgets import (
+    QComboBox,
+    QFileDialog,
+    QHeaderView,
+    QLineEdit,
+    QTreeWidget,
+    QTreeWidgetItem,
+)
 
 
 class OptionTreeWidget(QTreeWidget):  # type: ignore

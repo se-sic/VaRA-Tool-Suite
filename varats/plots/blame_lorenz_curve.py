@@ -10,14 +10,12 @@ import matplotlib.style as style
 import numpy as np
 import pandas as pd
 
-from varats.data.databases.blame_interaction_database import (
-    BlameInteractionDatabase)
+from varats.data.databases.blame_interaction_database import BlameInteractionDatabase
 from varats.data.reports.commit_report import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plots.plot import Plot
-from varats.plots.repository_churn import (draw_code_churn,
-                                           build_repo_churn_table)
-from varats.utils.git_util import calc_repo_code_churn, ChurnConfig
+from varats.plots.repository_churn import build_repo_churn_table, draw_code_churn
+from varats.utils.git_util import ChurnConfig, calc_repo_code_churn
 from varats.utils.project_util import get_local_project_git
 
 

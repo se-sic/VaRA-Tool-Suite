@@ -14,20 +14,22 @@ files for each executed binary.
 import typing as tp
 from os import path
 
+import benchbuild.utils.actions as actions
+from benchbuild.extensions import compiler, run, time
+from benchbuild.project import Project
+from benchbuild.settings import CFG as BB_CFG
+from benchbuild.utils.cmd import mkdir, opt, timeout
 from plumbum import local
 
-from benchbuild.extensions import compiler, run, time
-from benchbuild.settings import CFG as BB_CFG
-from benchbuild.project import Project
-import benchbuild.utils.actions as actions
-from benchbuild.utils.cmd import opt, mkdir, timeout
-
-from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.data.report import FileStatusExtension as FSE
-from varats.experiments.wllvm import RunWLLVM, Extract
-from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
-                                          FunctionPEErrorWrapper,
-                                          VersionExperiment, PEErrorHandler)
+from varats.data.reports.taint_report import TaintPropagationReport as TPR
+from varats.experiments.wllvm import Extract, RunWLLVM
+from varats.utils.experiment_util import (
+    FunctionPEErrorWrapper,
+    PEErrorHandler,
+    VersionExperiment,
+    exec_func_with_pe_error_handler,
+)
 
 
 class VaraMTFACheck(actions.Step):  # type: ignore

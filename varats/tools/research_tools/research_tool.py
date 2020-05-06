@@ -3,18 +3,31 @@ This modules provides the base classes for research tools that allow developers
 to setup and configure their own research tool by inheriting and implementing
 the base classes ``ResearchTool`` and ``CodeBase``.
 """
-import typing as tp
 import abc
 import logging
+import typing as tp
 from pathlib import Path
 
-from varats.vara_manager import (
-    BuildType, download_repo, add_remote, checkout_branch, checkout_new_branch,
-    fetch_remote, init_all_submodules, update_all_submodules,
-    pull_current_branch, show_status, branch_has_upstream, push_current_branch,
-    get_current_branch, has_branch, has_remote_branch, get_branches)
-from varats.utils.logger_util import log_without_linesep
 from varats.utils.filesystem_util import FolderAlreadyPresentError
+from varats.utils.logger_util import log_without_linesep
+from varats.vara_manager import (
+    BuildType,
+    add_remote,
+    branch_has_upstream,
+    checkout_branch,
+    checkout_new_branch,
+    download_repo,
+    fetch_remote,
+    get_branches,
+    get_current_branch,
+    has_branch,
+    has_remote_branch,
+    init_all_submodules,
+    pull_current_branch,
+    push_current_branch,
+    show_status,
+    update_all_submodules,
+)
 
 
 class SubProject():

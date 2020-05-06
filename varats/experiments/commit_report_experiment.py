@@ -10,20 +10,22 @@ import typing as tp
 from os import path
 from pathlib import Path
 
+import benchbuild.utils.actions as actions
+from benchbuild.extensions import compiler, run, time
+from benchbuild.project import Project
+from benchbuild.settings import CFG as BB_CFG
+from benchbuild.utils.cmd import mkdir, opt
 from plumbum import local
 
-from benchbuild.project import Project
-from benchbuild.extensions import compiler, run, time
-from benchbuild.settings import CFG as BB_CFG
-from benchbuild.utils.cmd import opt, mkdir
-import benchbuild.utils.actions as actions
-
-from varats.data.reports.commit_report import CommitReport as CR
 from varats.data.report import FileStatusExtension as FSE
-from varats.experiments.wllvm import RunWLLVM, Extract
-from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
-                                          VersionExperiment, PEErrorHandler,
-                                          get_default_compile_error_wrapped)
+from varats.data.reports.commit_report import CommitReport as CR
+from varats.experiments.wllvm import Extract, RunWLLVM
+from varats.utils.experiment_util import (
+    PEErrorHandler,
+    VersionExperiment,
+    exec_func_with_pe_error_handler,
+    get_default_compile_error_wrapped,
+)
 
 
 class CRAnalysis(actions.Step):  # type: ignore

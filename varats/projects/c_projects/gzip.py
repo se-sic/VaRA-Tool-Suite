@@ -1,25 +1,30 @@
 """
 Project file for gzip.
 """
+import re
 import typing as tp
 from pathlib import Path
-import re
 
+import benchbuild.project as prj
 from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
-import benchbuild.project as prj
-
 from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
-from varats.data.provider.release.release_provider import ReleaseProviderHook, \
-    ReleaseType
+from varats.data.provider.release.release_provider import (
+    ReleaseProviderHook,
+    ReleaseType,
+)
 from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import get_tagged_commits, \
-    wrap_paths_to_binaries, BlockedRevisionRange, block_revisions
+from varats.utils.project_util import (
+    BlockedRevisionRange,
+    block_revisions,
+    get_tagged_commits,
+    wrap_paths_to_binaries,
+)
 
 
 @block_revisions([

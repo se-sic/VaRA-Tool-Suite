@@ -12,15 +12,14 @@ import typing as tp
 from os import getenv
 from pathlib import Path
 
-from plumbum import local
-
 import benchbuild.utils.actions as actions
 from benchbuild.extensions import base
 from benchbuild.project import Project
 from benchbuild.settings import CFG as BB_CFG
-from benchbuild.utils.cmd import extract_bc, cp, mkdir
+from benchbuild.utils.cmd import cp, extract_bc, mkdir
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.path import list_to_path, path_to_list
+from plumbum import local
 
 
 class RunWLLVM(base.Extension):  # type: ignore

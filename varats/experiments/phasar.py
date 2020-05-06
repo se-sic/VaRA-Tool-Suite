@@ -2,19 +2,18 @@
 Experiment module for phasa analyses.
 """
 
-import typing as tp
 import os
+import typing as tp
 
-from plumbum import local
-
+import benchbuild.utils.actions as actions
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
 from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import opt
-import benchbuild.utils.actions as actions
+from plumbum import local
 
-from varats.experiments.wllvm import RunWLLVM, Extract
+from varats.experiments.wllvm import Extract, RunWLLVM
 
 
 class DefaultAnalysis(actions.Step):  # type: ignore

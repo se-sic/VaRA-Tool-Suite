@@ -2,25 +2,27 @@
 Module for the research tool VaRA that describes the VaRA code base layout and
 how to configure and setup VaRA.
 """
-import typing as tp
-import os
 import logging
-from pathlib import Path
+import os
 import shutil
-
-from PyQt5.QtCore import (QProcess)
+import typing as tp
+from pathlib import Path
 
 from plumbum import local
-from plumbum.cmd import mkdir, ln
+from plumbum.cmd import ln, mkdir
+from PyQt5.QtCore import QProcess
 
+from varats.plots.plot_utils import check_required_args
 from varats.settings import CFG, save_config
-from varats.tools.research_tools.research_tool import (ResearchTool, CodeBase,
-                                                       SubProject)
-from varats.vara_manager import (BuildType, run_process_with_output,
-                                 set_vara_cmake_variables, ProcessManager)
+from varats.tools.research_tools.research_tool import CodeBase, ResearchTool, SubProject
 from varats.utils.exceptions import ProcessTerminatedError
 from varats.utils.logger_util import log_without_linesep
-from varats.plots.plot_utils import check_required_args
+from varats.vara_manager import (
+    BuildType,
+    ProcessManager,
+    run_process_with_output,
+    set_vara_cmake_variables,
+)
 
 LOG = logging.getLogger(__name__)
 

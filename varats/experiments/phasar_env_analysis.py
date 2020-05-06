@@ -10,21 +10,23 @@ examples produced a valid json result and which ones failed.
 import typing as tp
 from os import path
 
+import benchbuild.utils.actions as actions
+from benchbuild.experiment import Experiment
+from benchbuild.extensions import compiler, run, time
+from benchbuild.project import Project
+from benchbuild.settings import CFG as BB_CFG
+from benchbuild.utils.cmd import mkdir, phasar, timeout
 from plumbum import local
 
-from benchbuild.extensions import compiler, run, time
-from benchbuild.settings import CFG as BB_CFG
-from benchbuild.project import Project
-from benchbuild.experiment import Experiment
-import benchbuild.utils.actions as actions
-from benchbuild.utils.cmd import phasar, mkdir, timeout
-
-from varats.data.reports.env_trace_report import EnvTraceReport as ENVR
 from varats.data.report import FileStatusExtension as FSE
-from varats.experiments.wllvm import RunWLLVM, Extract
-from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
-                                          FunctionPEErrorWrapper,
-                                          PEErrorHandler, UnlimitStackSize)
+from varats.data.reports.env_trace_report import EnvTraceReport as ENVR
+from varats.experiments.wllvm import Extract, RunWLLVM
+from varats.utils.experiment_util import (
+    FunctionPEErrorWrapper,
+    PEErrorHandler,
+    UnlimitStackSize,
+    exec_func_with_pe_error_handler,
+)
 
 
 class PhasarEnvIFDS(actions.Step):  # type: ignore

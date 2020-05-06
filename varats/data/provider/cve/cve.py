@@ -7,16 +7,17 @@ Example:
     CWE.find_all_cwe()
 """
 
-from datetime import datetime
 import csv
-import zipfile
 import io
 import time
 import typing as tp
+import zipfile
+from datetime import datetime
 
 import requests
-from packaging.version import Version, parse as version_parse, LegacyVersion
 import requests_cache  # type: ignore
+from packaging.version import LegacyVersion, Version
+from packaging.version import parse as version_parse
 from tabulate import tabulate
 
 from varats.settings import CFG

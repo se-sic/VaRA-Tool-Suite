@@ -26,18 +26,24 @@ Example Output::
     }
 """
 import logging
+import re
 import typing as tp
 from collections import defaultdict
 from pathlib import Path
-import re
 
-from packaging.version import parse as parse_version, Version, LegacyVersion
-
+from packaging.version import LegacyVersion, Version
+from packaging.version import parse as parse_version
 from plumbum import local
 from plumbum.cmd import git
 
-from varats.data.provider.cve.cve import (CVE, find_cve, find_cwe, find_all_cve,
-                                          CWE, find_all_cwe)
+from varats.data.provider.cve.cve import (
+    CVE,
+    CWE,
+    find_all_cve,
+    find_all_cwe,
+    find_cve,
+    find_cwe,
+)
 
 LOG = logging.getLogger(__name__)
 

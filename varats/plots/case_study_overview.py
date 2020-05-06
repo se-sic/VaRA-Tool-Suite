@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.style as style
 
 from varats.data.databases.file_status_database import FileStatusDatabase
-from varats.data.report import MetaReport, FileStatusExtension
+from varats.data.report import FileStatusExtension, MetaReport
 from varats.data.reports.commit_report import CommitMap
 from varats.data.reports.empty_report import EmptyReport
 from varats.paper.case_study import CaseStudy

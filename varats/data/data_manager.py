@@ -7,14 +7,13 @@ plots, like in jupyter notebooks, where we sometimes re-execute triggers
 a file load.
 """
 
-import typing as tp
 import hashlib
 import os
+import typing as tp
 from pathlib import Path
-
 from threading import Lock
 
-from PyQt5.QtCore import QRunnable, QThreadPool, QObject, pyqtSlot, pyqtSignal
+from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal, pyqtSlot
 
 from varats.data.report import BaseReport
 

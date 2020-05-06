@@ -1,28 +1,41 @@
-import yaml
 import os
 from threading import Lock
-from PyQt5.QtWidgets import QWidget, QMainWindow, QMessageBox, QDataWidgetMapper, QMenu, QFileDialog
-from PyQt5.QtCore import QModelIndex
-from PyQt5.QtGui import QIcon, QPixmap, QCloseEvent
 
-from varats.gui.views.ui_FilterMain import Ui_FilterEditor
-from varats.gui.views.ui_FilterProperties import Ui_FilterProperties
-from varats.gui.views.ui_FilterNodeProperties import Ui_FilterNodeProperties
-from varats.gui.views.ui_FilterUnaryWarning import Ui_FilterUnaryWarning
-from varats.gui.views.ui_AuthorFilterProperties import Ui_AuthorFilterProperties
-from varats.gui.views.ui_CommitterFilterProperties import Ui_CommitterFilterProperties
-from varats.gui.views.ui_AuthorDateMinFilter import Ui_AuthorDateMinFilter
-from varats.gui.views.ui_AuthorDateMaxFilter import Ui_AuthorDateMaxFilter
-from varats.gui.views.ui_CommitDateMinFilter import Ui_CommitDateMinFilter
-from varats.gui.views.ui_CommitDateMaxFilter import Ui_CommitDateMaxFilter
-from varats.gui.views.ui_AuthorDateDeltaMinFilter import Ui_AuthorDateDeltaMinFilter
-from varats.gui.views.ui_AuthorDateDeltaMaxFilter import Ui_AuthorDateDeltaMaxFilter
-from varats.gui.views.ui_CommitDateDeltaMinFilter import Ui_CommitDateDeltaMinFilter
-from varats.gui.views.ui_CommitDateDeltaMaxFilter import Ui_CommitDateDeltaMaxFilter
+import yaml
+from PyQt5.QtCore import QModelIndex
+from PyQt5.QtGui import QCloseEvent, QIcon, QPixmap
+from PyQt5.QtWidgets import (
+    QDataWidgetMapper,
+    QFileDialog,
+    QMainWindow,
+    QMenu,
+    QMessageBox,
+    QWidget,
+)
+
+from varats.data.filtertree_data import (
+    AndOperator,
+    SourceOperator,
+    TargetOperator,
+    UnaryInteractionFilter,
+)
+from varats.data.version_header import VersionHeader
 from varats.gui import icons_rc  # noqa # pylint: disable=unused-import
 from varats.gui.filtertree_model import FilterTreeModel
-from varats.data.filtertree_data import AndOperator, UnaryInteractionFilter, SourceOperator, TargetOperator
-from varats.data.version_header import VersionHeader
+from varats.gui.views.ui_AuthorDateDeltaMaxFilter import Ui_AuthorDateDeltaMaxFilter
+from varats.gui.views.ui_AuthorDateDeltaMinFilter import Ui_AuthorDateDeltaMinFilter
+from varats.gui.views.ui_AuthorDateMaxFilter import Ui_AuthorDateMaxFilter
+from varats.gui.views.ui_AuthorDateMinFilter import Ui_AuthorDateMinFilter
+from varats.gui.views.ui_AuthorFilterProperties import Ui_AuthorFilterProperties
+from varats.gui.views.ui_CommitDateDeltaMaxFilter import Ui_CommitDateDeltaMaxFilter
+from varats.gui.views.ui_CommitDateDeltaMinFilter import Ui_CommitDateDeltaMinFilter
+from varats.gui.views.ui_CommitDateMaxFilter import Ui_CommitDateMaxFilter
+from varats.gui.views.ui_CommitDateMinFilter import Ui_CommitDateMinFilter
+from varats.gui.views.ui_CommitterFilterProperties import Ui_CommitterFilterProperties
+from varats.gui.views.ui_FilterMain import Ui_FilterEditor
+from varats.gui.views.ui_FilterNodeProperties import Ui_FilterNodeProperties
+from varats.gui.views.ui_FilterProperties import Ui_FilterProperties
+from varats.gui.views.ui_FilterUnaryWarning import Ui_FilterUnaryWarning
 
 
 def _showTimeDurationHelp() -> None:

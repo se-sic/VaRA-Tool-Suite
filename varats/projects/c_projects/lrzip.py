@@ -10,7 +10,6 @@ from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
-
 from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook

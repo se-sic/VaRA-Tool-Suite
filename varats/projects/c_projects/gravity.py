@@ -4,21 +4,24 @@ Project file for gravity.
 import typing as tp
 from pathlib import Path
 
-from benchbuild.settings import CFG as BB_CFG
-from benchbuild.utils.compiler import cc
-from benchbuild.utils.run import run
 from benchbuild.project import Project
-from benchbuild.utils.cmd import make, cmake, git
+from benchbuild.settings import CFG as BB_CFG
+from benchbuild.utils.cmd import cmake, git, make
+from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
-
+from benchbuild.utils.run import run
 from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import (get_all_revisions_between,
-                                       wrap_paths_to_binaries, block_revisions,
-                                       BlockedRevisionRange, BugAndFixPair,
-                                       BlockedRevision)
+from varats.utils.project_util import (
+    BlockedRevision,
+    BlockedRevisionRange,
+    BugAndFixPair,
+    block_revisions,
+    get_all_revisions_between,
+    wrap_paths_to_binaries,
+)
 
 
 @block_revisions([

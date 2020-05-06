@@ -10,10 +10,17 @@ experiment to compare the results.
 import typing as tp
 from pathlib import Path
 
-from varats.paper.artefacts import Artefacts, load_artefacts_from_file, \
-    store_artefacts, Artefact
-from varats.paper.case_study import (load_case_study_from_file,
-                                     store_case_study, CaseStudy)
+from varats.paper.artefacts import (
+    Artefact,
+    Artefacts,
+    load_artefacts_from_file,
+    store_artefacts,
+)
+from varats.paper.case_study import (
+    CaseStudy,
+    load_case_study_from_file,
+    store_case_study,
+)
 from varats.settings import CFG
 
 

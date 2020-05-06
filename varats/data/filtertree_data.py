@@ -64,8 +64,8 @@ InteractionFilter
 
 import typing as tp
 from copy import deepcopy
-import yaml
 
+import yaml
 from PyQt5.QtCore import QDateTime, Qt
 
 from varats.data.version_header import VersionHeader

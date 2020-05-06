@@ -3,13 +3,13 @@ The development module provides different utility function to ease the
 development for VaRA.
 """
 
-import typing as tp
 import logging
 import re
+import typing as tp
 from collections import defaultdict
 
 from varats.settings import CFG
-from varats.tools.research_tools.research_tool import SubProject, CodeBase
+from varats.tools.research_tools.research_tool import CodeBase, SubProject
 
 LOG = logging.getLogger(__name__)
 

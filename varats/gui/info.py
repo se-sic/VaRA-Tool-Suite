@@ -2,7 +2,7 @@
 Info module, providing different ways to represent information in the GUI.
 """
 
-from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QHeaderView
+from PyQt5.QtWidgets import QHeaderView, QTreeWidget, QTreeWidgetItem
 
 
 class InfoTreeWidget(QTreeWidget):

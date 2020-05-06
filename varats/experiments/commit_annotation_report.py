@@ -8,18 +8,17 @@ be accessed via the site-packages folder due to the installation via the
 Package manager pip.
 """
 
-import typing as tp
 import os
-
-from plumbum import local
+import typing as tp
 
 from benchbuild.experiment import Experiment
-from benchbuild.extensions import time, run, compiler
+from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
 from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils import actions
 from benchbuild.utils.actions import Step
-from benchbuild.utils.cmd import extract_bc, opt, cp
+from benchbuild.utils.cmd import cp, extract_bc, opt
+from plumbum import local
 
 from varats.experiments.wllvm import RunWLLVM
 

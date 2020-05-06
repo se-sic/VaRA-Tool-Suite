@@ -8,7 +8,7 @@ import os
 import sys
 
 from varats import settings
-from varats.settings import save_config, CFG, generate_benchbuild_config
+from varats.settings import CFG, generate_benchbuild_config, save_config
 from varats.utils.cli_util import cli_yn_choice
 
 LOG = logging.getLogger(__name__)
