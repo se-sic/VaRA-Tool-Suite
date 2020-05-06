@@ -47,6 +47,7 @@ class TestBlameInstInteractions(unittest.TestCase):
     """
     Test if a blame inst interactions are correctly reconstruction from yaml.
     """
+
     @classmethod
     def setUpClass(cls):
         """
@@ -96,6 +97,7 @@ class TestResultFunctionEntry(unittest.TestCase):
     """
     Test if a result function entry is correctly reconstruction from yaml.
     """
+
     @classmethod
     def setUpClass(cls):
         """
@@ -147,6 +149,7 @@ class TestBlameReport(unittest.TestCase):
     """
     Test if a blame report is correctly reconstructed from yaml.
     """
+
     @classmethod
     def setUpClass(cls):
         """
@@ -195,6 +198,7 @@ class TestBlameReportHelperFunctions(unittest.TestCase):
     """
     Test if a blame report is correctly reconstruction from yaml.
     """
+
     @classmethod
     def setUpClass(cls):
         """

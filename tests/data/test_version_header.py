@@ -47,8 +47,7 @@ Version:         3
         expect other values.
         """
         self.assertRaises(vh.WrongYamlFileType,
-                          self.version_header.raise_if_not_type,
-                          "FooReport")
+                          self.version_header.raise_if_not_type, "FooReport")
         self.assertRaises(vh.WrongYamlFileVersion,
                           self.version_header.raise_if_version_is_less_than, 4)
 

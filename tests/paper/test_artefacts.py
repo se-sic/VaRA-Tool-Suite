@@ -61,8 +61,8 @@ class TestArtefacts(unittest.TestCase):
         """
         self.assertEqual(
             self.artefact.output_path,
-            Path(str(CFG['artefacts']['artefacts_dir'])) / Path(
-            str(CFG['paper_config']['current_config'])) / 'some/path')
+            Path(str(CFG['artefacts']['artefacts_dir'])) /
+            Path(str(CFG['paper_config']['current_config'])) / 'some/path')
 
     def test_artefact_to_dict(self):
         """

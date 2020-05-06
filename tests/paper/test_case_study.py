@@ -59,10 +59,10 @@ b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"""
 
 
 def mocked_create_lazy_commit_map_loader(
-        project_name: str,  # pylint: disable=unused-argument
-        cmap_path: tp.Optional[Path] = None,  # pylint: disable=unused-argument
-        end: str = "HEAD",  # pylint: disable=unused-argument
-        start: tp.Optional[str] = None):  # pylint: disable=unused-argument
+    project_name: str,  # pylint: disable=unused-argument
+    cmap_path: tp.Optional[Path] = None,  # pylint: disable=unused-argument
+    end: str = "HEAD",  # pylint: disable=unused-argument
+    start: tp.Optional[str] = None):  # pylint: disable=unused-argument
     """
     Mock function to replace a lazy commit map loader callback.
 

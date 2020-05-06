@@ -28,6 +28,7 @@ class TestVersionExperiment(unittest.TestCase):
     """
     Test VersionExperiments sampling behaviour.
     """
+
     @classmethod
     def setUpClass(cls):
         """

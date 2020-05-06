@@ -8,9 +8,9 @@ import unittest.mock as mock
 import yaml
 
 from varats.data.report import FileStatusExtension
-from varats.data.reports.commit_report import (
-    FunctionGraphEdges, FunctionInfo, RegionMapping, CommitReport, CommitMap,
-    generate_interactions)
+from varats.data.reports.commit_report import (FunctionGraphEdges, FunctionInfo,
+                                               RegionMapping, CommitReport,
+                                               CommitMap, generate_interactions)
 
 YAML_DOC_1 = """---
 DocType:         CommitReport
@@ -86,8 +86,8 @@ class TestFunctionInfo(unittest.TestCase):
         """
         Load and parse function infos from yaml file.
         """
-        with mock.patch(
-                "builtins.open", new=mock.mock_open(read_data=YAML_DOC_2)):
+        with mock.patch("builtins.open",
+                        new=mock.mock_open(read_data=YAML_DOC_2)):
             with open("fake_file_path") as yaml_file:
                 yaml_doc = yaml.safe_load(yaml_file)
                 cls.finfos = {}
@@ -122,8 +122,8 @@ class TestRegionMapping(unittest.TestCase):
         """
         Load and parse region mappings from yaml file.
         """
-        with mock.patch(
-                "builtins.open", new=mock.mock_open(read_data=YAML_DOC_2)):
+        with mock.patch("builtins.open",
+                        new=mock.mock_open(read_data=YAML_DOC_2)):
             with open("fake_file_path") as yaml_file:
                 yaml_doc = yaml.safe_load(yaml_file)
                 cls.r_mappings = {}
@@ -154,8 +154,8 @@ class TestFunctionGraphEdges(unittest.TestCase):
         """
         Load and parse FunctionGraphEdges from yaml file.
         """
-        with mock.patch(
-                "builtins.open", new=mock.mock_open(read_data=YAML_DOC_3)):
+        with mock.patch("builtins.open",
+                        new=mock.mock_open(read_data=YAML_DOC_3)):
             with open("fake_file_path") as yaml_file:
                 yaml_doc = yaml.safe_load(yaml_file)
                 cls.edge_dict = {}
@@ -228,8 +228,8 @@ class TestCommitReport(unittest.TestCase):
         Setup file and CommitReport
         """
         file_content = YAML_DOC_1 + YAML_DOC_2 + YAML_DOC_3
-        with mock.patch(
-                'builtins.open', new=mock.mock_open(read_data=file_content)):
+        with mock.patch('builtins.open',
+                        new=mock.mock_open(read_data=file_content)):
             cls.commit_report = CommitReport("fake_file_path")
 
         cls.success_filename = ("CR-foo-foo-7bb9ef5f8c_"
@@ -257,14 +257,12 @@ class TestCommitReport(unittest.TestCase):
         self.assertTrue(CommitReport.is_result_file(self.success_filename))
         self.assertTrue(CommitReport.is_result_file(self.fail_filename))
         self.assertFalse(
-            CommitReport.is_result_file(
-                self.success_filename.replace("_", "")))
+            CommitReport.is_result_file(self.success_filename.replace("_", "")))
         self.assertFalse(
-            CommitReport.is_result_file(
-                self.success_filename.replace("-", "")))
+            CommitReport.is_result_file(self.success_filename.replace("-", "")))
         self.assertFalse(
-            CommitReport.is_result_file(
-                self.success_filename.replace(".", "f")))
+            CommitReport.is_result_file(self.success_filename.replace(".",
+                                                                      "f")))
 
     def test_file_status(self):
         """
@@ -399,8 +397,8 @@ class TestCommitConnectionGenerators(unittest.TestCase):
         Setup file and CommitReport
         """
         file_content = YAML_DOC_1 + YAML_DOC_2 + YAML_DOC_3
-        with mock.patch(
-                'builtins.open', new=mock.mock_open(read_data=file_content)):
+        with mock.patch('builtins.open',
+                        new=mock.mock_open(read_data=file_content)):
             cls.commit_report = CommitReport("fake_file_path")
 
         cls.cmap = testing_gen_commit_map()
