@@ -1144,4 +1144,3 @@ class TestFilterTreeYamlLoad(unittest.TestCase):
         self.assertEqual(node18.childCount(), 0)
         self.assertEqual(node18.authorName(), "Jane Doe")
         self.assertEqual(node18.authorEmail(), "doe@example.com")
-

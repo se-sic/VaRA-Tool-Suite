@@ -62,4 +62,3 @@ if __name__ == "__main__":
     ui.setupUi(FilterProperties)
     FilterProperties.show()
     sys.exit(app.exec_())
-

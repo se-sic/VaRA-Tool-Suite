@@ -58,4 +58,3 @@ if __name__ == "__main__":
     ui.setupUi(CommitDateDeltaMinFilter)
     CommitDateDeltaMinFilter.show()
     sys.exit(app.exec_())
-

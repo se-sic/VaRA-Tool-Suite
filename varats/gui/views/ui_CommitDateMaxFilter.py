@@ -47,4 +47,3 @@ if __name__ == "__main__":
     ui.setupUi(CommitDateMaxFilter)
     CommitDateMaxFilter.show()
     sys.exit(app.exec_())
-

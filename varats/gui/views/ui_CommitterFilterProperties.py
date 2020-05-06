@@ -56,4 +56,3 @@ if __name__ == "__main__":
     ui.setupUi(CommitterFilterProperties)
     CommitterFilterProperties.show()
     sys.exit(app.exec_())
-

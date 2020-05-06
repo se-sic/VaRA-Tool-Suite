@@ -278,4 +278,3 @@ class FilterTreeModel(QAbstractItemModel):
     def removeNode(self) -> bool:
         selection = self._selection
         return self.removeRows(selection.row(), 1, selection.parent())
-

@@ -47,4 +47,3 @@ if __name__ == "__main__":
     ui.setupUi(AuthorDateMinFilter)
     AuthorDateMinFilter.show()
     sys.exit(app.exec_())
-

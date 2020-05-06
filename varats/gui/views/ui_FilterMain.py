@@ -190,4 +190,3 @@ if __name__ == "__main__":
     ui.setupUi(FilterEditor)
     FilterEditor.show()
     sys.exit(app.exec_())
-
