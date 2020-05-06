@@ -18,11 +18,10 @@ from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
 
 
-@with_git(
-    "https://github.com/mirror/busybox.git",
-    refspec="HEAD",
-    shallow_clone=False,
-    version_filter=project_filter_generator("busybox"))
+@with_git("https://github.com/mirror/busybox.git",
+          refspec="HEAD",
+          shallow_clone=False,
+          version_filter=project_filter_generator("busybox"))
 class Busybox(Project, CVEProviderHook):  # type: ignore
     """UNIX utility wrapper BusyBox"""
 

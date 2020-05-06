@@ -86,7 +86,8 @@ class Plot(metaclass=PlotRegistry):
     def show(self) -> None:
         """Show the current plot"""
 
-    def save(self, path: tp.Optional[Path] = None,
+    def save(self,
+             path: tp.Optional[Path] = None,
              filetype: str = 'svg') -> None:
         """
         Save the current plot to a file.

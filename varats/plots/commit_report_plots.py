@@ -11,9 +11,10 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg \
     as FigureCanvas
 
-from varats.data.reports.commit_report import (
-    CommitReport, generate_inout_cfg_cf, generate_inout_cfg_df,
-    CommitReportMeta)
+from varats.data.reports.commit_report import (CommitReport,
+                                               generate_inout_cfg_cf,
+                                               generate_inout_cfg_df,
+                                               CommitReportMeta)
 
 
 class CRBarPlotWidget(QWidget):
@@ -93,8 +94,11 @@ def plot_cfg_barplot(fig: plt.Figure, commit_report: tp.Optional[CommitReport],
     plt.clf()
     if ylimit is not None:
         plt.ylim(0, ylimit)
-    bar_p = sns.barplot(x="Region", y="Amount",
-                        hue="Direction", data=data, palette=color_palette)
+    bar_p = sns.barplot(x="Region",
+                        y="Amount",
+                        hue="Direction",
+                        data=data,
+                        palette=color_palette)
 
     for label in bar_p.get_xticklabels():
         label.set_rotation(90)

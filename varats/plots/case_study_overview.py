@@ -71,9 +71,9 @@ def _gen_overview_data(tag_blocked: bool,
     positions["blocked"] = (
         revisions[revisions["file_status"] == FileStatusExtension.Blocked.
                   get_status_extension()])["time_id"].tolist()
-    positions["blocked_all"].extend((
-        revisions[revisions["file_status"] == FileStatusExtension.Blocked.
-            get_status_extension()])["time_id"].tolist())
+    positions["blocked_all"].extend(
+        (revisions[revisions["file_status"] == FileStatusExtension.Blocked.
+                   get_status_extension()])["time_id"].tolist())
     positions["missing"] = (
         revisions[revisions["file_status"] == FileStatusExtension.Missing.
                   get_status_extension()])["time_id"].tolist()

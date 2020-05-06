@@ -38,7 +38,6 @@ class Coreutils(prj.Project, CVEProviderHook):  # type: ignore
         return wrap_paths_to_binaries([
             # figure out how to handle this file correctly in filenames
             # 'src/[',
-
             'src/uniq',
             'src/dircolors',
             'src/numfmt',

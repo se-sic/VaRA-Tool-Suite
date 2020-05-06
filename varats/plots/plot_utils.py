@@ -22,14 +22,14 @@ def __check_required_args_impl(required_args: tp.List[str],
 
 
 def check_required_args(
-        required_args: tp.List[str]
+    required_args: tp.List[str]
 ) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Callable[..., tp.Any]]:
     """
     Check if all required graph args are passed by the user.
     """
 
-    def decorator_pp(func: tp.Callable[..., tp.Any]
-                    ) -> tp.Callable[..., tp.Any]:
+    def decorator_pp(
+            func: tp.Callable[..., tp.Any]) -> tp.Callable[..., tp.Any]:
 
         @functools.wraps(func)
         def wrapper_func(*args: tp.Any, **kwargs: tp.Any) -> tp.Any:
@@ -43,8 +43,8 @@ def check_required_args(
 
 def find_missing_revisions(
         data: tp.Generator[tp.Any, None, None], git_path: Path, cmap: CommitMap,
-        should_insert_revision: tp.Callable[[tp.Any, tp.Any], tp.
-                                            Tuple[bool, float]],
+        should_insert_revision: tp.Callable[[tp.Any, tp.Any], tp.Tuple[bool,
+                                                                       float]],
         to_commit_hash: tp.Callable[[tp.Any], str],
         are_neighbours: tp.Callable[[str, str], bool]) -> tp.Set[str]:
     """

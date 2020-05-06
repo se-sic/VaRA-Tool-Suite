@@ -214,10 +214,9 @@ class BugAndFixPair(AbstractRevisionBlocker):
             BUGGY = 2
             UNKNOWN = FIXED | BUGGY
 
-        def find_blocked_commits(commit: pygit2.Commit,
-                                 good: tp.List[pygit2.Commit],
-                                 bad: tp.List[pygit2.Commit]
-                                ) -> tp.List[pygit2.Commit]:
+        def find_blocked_commits(
+                commit: pygit2.Commit, good: tp.List[pygit2.Commit],
+                bad: tp.List[pygit2.Commit]) -> tp.List[pygit2.Commit]:
             """
             Find all buggy commits not yet fixed by performing a backwards
             search starting at commit.
@@ -308,8 +307,8 @@ def block_revisions(blocks: tp.List[AbstractRevisionBlocker]) -> tp.Any:
 
     def revision_blocker_decorator(cls: tp.Any) -> tp.Any:
 
-        def is_blocked_revision_impl(rev_id: str
-                                    ) -> tp.Tuple[bool, tp.Optional[str]]:
+        def is_blocked_revision_impl(
+                rev_id: str) -> tp.Tuple[bool, tp.Optional[str]]:
             """
             Checks whether a revision is blocked or not. Also returns the
             reason for the block if available.

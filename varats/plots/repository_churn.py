@@ -61,12 +61,14 @@ CODE_CHURN_DELETION_LIMIT = 1500
 
 
 def draw_code_churn(
-        axis: axes.Axes,
-        project_name: str,
-        commit_map: CommitMap,
-        revision_selector: tp.Callable[[str], bool] = lambda x: True,
-        sort_df: tp.Callable[[pd.DataFrame], pd.DataFrame] = lambda data: data.
-        sort_values(by=['time_id'])) -> None:
+    axis: axes.Axes,
+    project_name: str,
+    commit_map: CommitMap,
+    revision_selector: tp.Callable[[str], bool] = lambda x: True,
+    sort_df: tp.Callable[
+        [pd.DataFrame],
+        pd.DataFrame] = lambda data: data.sort_values(by=['time_id'])
+) -> None:
     """
     Draws a churn plot onto an axis, showing insertions with green and
     deletions with red.

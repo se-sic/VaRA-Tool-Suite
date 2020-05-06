@@ -14,10 +14,9 @@ import benchbuild.project as prj
 from varats.utils.project_util import wrap_paths_to_binaries
 
 
-@with_git(
-    "https://github.com/se-passau/vara-perf-tests.git",
-    limit=1,
-    refspec="origin/f-taintTests")
+@with_git("https://github.com/se-passau/vara-perf-tests.git",
+          limit=1,
+          refspec="origin/f-taintTests")
 class TaintTests(prj.Project):  # type: ignore
     """
     Taint tests:
@@ -32,22 +31,14 @@ class TaintTests(prj.Project):  # type: ignore
     SRC_FILE = "vara-perf-tests"
 
     CPP_FILES = [
-        "arrayTaintPropagation.cpp",
-        "byValueArgPassing.cpp",
-        "coercedArgPassing.cpp",
-        "coercedReturnValuePassing.cpp",
-        "controlFlowDependency.cpp",
-        "operatorTaintPropagation.cpp",
-        "pointerTaintPropagation1.cpp",
-        "pointerTaintPropagation2.cpp",
-        "pointerTaintPropagation3.cpp",
-        "regularArgPassing.cpp",
-        "regularReturnValuePassing.cpp",
-        "returnValueMapping.cpp",
-        "switchFallthrough.cpp",
-        "unionTaintPropagation.cpp",
-        "variableLengthArgForwarding.cpp",
-        "variableLengthArgPassing.cpp"
+        "arrayTaintPropagation.cpp", "byValueArgPassing.cpp",
+        "coercedArgPassing.cpp", "coercedReturnValuePassing.cpp",
+        "controlFlowDependency.cpp", "operatorTaintPropagation.cpp",
+        "pointerTaintPropagation1.cpp", "pointerTaintPropagation2.cpp",
+        "pointerTaintPropagation3.cpp", "regularArgPassing.cpp",
+        "regularReturnValuePassing.cpp", "returnValueMapping.cpp",
+        "switchFallthrough.cpp", "unionTaintPropagation.cpp",
+        "variableLengthArgForwarding.cpp", "variableLengthArgPassing.cpp"
     ]
 
     @property
@@ -66,4 +57,5 @@ class TaintTests(prj.Project):  # type: ignore
         with local.cwd(self.SRC_FILE):
             for file in self.CPP_FILES:
                 run(clang["{name}/{file}".format(name=self.NAME, file=file),
-                          "-o", file.replace('.cpp', '')])
+                          "-o",
+                          file.replace('.cpp', '')])
