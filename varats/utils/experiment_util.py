@@ -3,23 +3,22 @@ Utility module for BenchBuild experiments.
 """
 
 import os
-import typing as tp
 import random
 import resource
 import traceback
-from pathlib import Path
+import typing as tp
 from abc import abstractmethod
-
-from plumbum.commands import ProcessExecutionError
-from plumbum.commands.base import BoundCommand
+from pathlib import Path
 
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
-from benchbuild.utils.actions import Step, StepResult
 from benchbuild.settings import CFG as BB_CFG
+from benchbuild.utils.actions import Step, StepResult
+from plumbum.commands import ProcessExecutionError
+from plumbum.commands.base import BoundCommand
 
+from varats.data.report import BaseReport, FileStatusExtension
 from varats.data.revisions import get_tagged_revisions
-from varats.data.report import FileStatusExtension, BaseReport
 from varats.settings import CFG as V_CFG
 
 

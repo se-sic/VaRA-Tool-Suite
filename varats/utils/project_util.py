@@ -2,19 +2,18 @@
 Utility module for BenchBuild project handling.
 """
 import abc
+import tempfile
+import typing as tp
 from enum import IntFlag
 from pathlib import Path
-import typing as tp
-import tempfile
 
 import pygit2
-from plumbum import local
-
-from benchbuild.project import ProjectRegistry, Project
+from benchbuild.project import Project, ProjectRegistry
 from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import git
 from benchbuild.utils.download import Git
 from benchbuild.utils.settings import setup_config
+from plumbum import local
 
 from varats.settings import CFG
 

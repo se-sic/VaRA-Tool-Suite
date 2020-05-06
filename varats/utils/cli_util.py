@@ -2,14 +2,14 @@
 Command line utilities.
 """
 
-import typing as tp
 import logging
 import os
+import typing as tp
 from pathlib import Path
 
+from varats.settings import CFG
 from varats.tools.research_tools.research_tool import ResearchTool
 from varats.tools.research_tools.vara import VaRA
-from varats.settings import CFG
 
 
 def cli_yn_choice(question: str, default: str = 'y') -> bool:
