@@ -1,9 +1,9 @@
 """
 Test module for settings.
 """
-import unittest
-import tempfile
 import os
+import tempfile
+import unittest
 
 from benchbuild.settings import CFG as BB_CFG
 

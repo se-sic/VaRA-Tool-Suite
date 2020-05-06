@@ -1,13 +1,13 @@
 """
 Test case study
 """
-import unittest
 import typing as tp
+import unittest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from varats.data.reports.commit_report import CommitMap
 import varats.paper.case_study as CS
+from varats.data.reports.commit_report import CommitMap
 
 YAML_CASE_STUDY = """---
 DocType: CaseStudy

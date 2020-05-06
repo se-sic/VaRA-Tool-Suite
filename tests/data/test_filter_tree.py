@@ -9,11 +9,22 @@ import yaml
 from PyQt5.QtCore import QDateTime, Qt
 
 from varats.data.filtertree_data import (
-    AndOperator, OrOperator, NotOperator, SourceOperator, TargetOperator,
-    AuthorFilter, CommitterFilter, AuthorDateMinFilter, AuthorDateMaxFilter,
-    CommitDateMinFilter, CommitDateMaxFilter, AuthorDateDeltaMinFilter,
-    AuthorDateDeltaMaxFilter, CommitDateDeltaMinFilter,
-    CommitDateDeltaMaxFilter)
+    AndOperator,
+    AuthorDateDeltaMaxFilter,
+    AuthorDateDeltaMinFilter,
+    AuthorDateMaxFilter,
+    AuthorDateMinFilter,
+    AuthorFilter,
+    CommitDateDeltaMaxFilter,
+    CommitDateDeltaMinFilter,
+    CommitDateMaxFilter,
+    CommitDateMinFilter,
+    CommitterFilter,
+    NotOperator,
+    OrOperator,
+    SourceOperator,
+    TargetOperator,
+)
 
 YAML_DOC_1 = """!AndOperator
 _children:

@@ -5,15 +5,14 @@ import typing as tp
 import unittest
 import unittest.mock as mock
 
-import benchbuild.utils.settings as s
 import benchbuild.utils.actions as actions
+import benchbuild.utils.settings as s
 from benchbuild.project import Project
 
 import varats.utils.experiment_util as EU
-from varats.data.reports.commit_report import CommitReport as CR
-from varats.data.report import FileStatusExtension
-
 from tests.test_helper import EmptyProject
+from varats.data.report import FileStatusExtension
+from varats.data.reports.commit_report import CommitReport as CR
 
 
 class MockExperiment(EU.VersionExperiment):

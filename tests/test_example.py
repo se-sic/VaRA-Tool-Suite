@@ -2,6 +2,7 @@
 Test example file that can be used as orientation.
 """
 import unittest
+
 import mock
 
 

@@ -5,8 +5,8 @@ Test VaRA report.
 import unittest
 
 from varats.data.report import FileStatusExtension, MetaReport
-from varats.data.reports.empty_report import EmptyReport
 from varats.data.reports.commit_report import CommitReport as CR
+from varats.data.reports.empty_report import EmptyReport
 
 
 class TestMetaReport(unittest.TestCase):

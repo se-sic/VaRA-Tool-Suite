@@ -5,8 +5,7 @@ needed to build VaRA.
 import unittest
 from pathlib import Path
 
-from varats.vara_manager import LLVMProjects, VaRAProjectsIter,\
-    VaRAExtraProjectsIter
+from varats.vara_manager import LLVMProjects, VaRAExtraProjectsIter, VaRAProjectsIter
 
 
 class TestLLVMProjects(unittest.TestCase):

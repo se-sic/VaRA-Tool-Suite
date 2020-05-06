@@ -2,14 +2,20 @@
 Test the security utilities eg CVE, CWE stuff.
 """
 
-from datetime import datetime
-import unittest
 import typing as tp
+import unittest
+from datetime import datetime
 
 import requests_cache
 
-from varats.data.provider.cve.cve import (CVE, CWE, find_cve, find_all_cve,
-                                          find_cwe, find_all_cwe)
+from varats.data.provider.cve.cve import (
+    CVE,
+    CWE,
+    find_all_cve,
+    find_all_cwe,
+    find_cve,
+    find_cwe,
+)
 
 
 class TestSecurity(unittest.TestCase):

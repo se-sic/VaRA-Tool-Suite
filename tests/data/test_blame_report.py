@@ -8,10 +8,12 @@ from pathlib import Path
 
 import yaml
 
-from varats.data.reports.blame_report import (BlameReport,
-                                              BlameResultFunctionEntry,
-                                              BlameInstInteractions,
-                                              generate_degree_tuples)
+from varats.data.reports.blame_report import (
+    BlameInstInteractions,
+    BlameReport,
+    BlameResultFunctionEntry,
+    generate_degree_tuples,
+)
 
 YAML_DOC_1 = """---
 DocType:         BlameReport

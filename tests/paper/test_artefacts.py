@@ -5,8 +5,7 @@ import unittest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from varats.paper.artefacts import load_artefacts_from_file, ArtefactType, \
-    PlotArtefact
+from varats.paper.artefacts import ArtefactType, PlotArtefact, load_artefacts_from_file
 from varats.plots.paper_config_overview import PaperConfigOverviewPlot
 from varats.settings import CFG
 

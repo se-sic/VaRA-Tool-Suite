@@ -8,9 +8,14 @@ import unittest.mock as mock
 import yaml
 
 from varats.data.report import FileStatusExtension
-from varats.data.reports.commit_report import (FunctionGraphEdges, FunctionInfo,
-                                               RegionMapping, CommitReport,
-                                               CommitMap, generate_interactions)
+from varats.data.reports.commit_report import (
+    CommitMap,
+    CommitReport,
+    FunctionGraphEdges,
+    FunctionInfo,
+    RegionMapping,
+    generate_interactions,
+)
 
 YAML_DOC_1 = """---
 DocType:         CommitReport
