@@ -8,7 +8,9 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_FilterNodeProperties(object):
+
     def setupUi(self, FilterNodeProperties):
         FilterNodeProperties.setObjectName("FilterNodeProperties")
         FilterNodeProperties.resize(266, 84)
@@ -42,11 +44,15 @@ class Ui_FilterNodeProperties(object):
 
     def retranslateUi(self, FilterNodeProperties):
         _translate = QtCore.QCoreApplication.translate
-        FilterNodeProperties.setWindowTitle(_translate("FilterNodeProperties", "Form"))
+        FilterNodeProperties.setWindowTitle(
+            _translate("FilterNodeProperties", "Form"))
         self.label.setText(_translate("FilterNodeProperties", "Name"))
-        self.uiName.setToolTip(_translate("FilterNodeProperties", "Type of the node"))
+        self.uiName.setToolTip(
+            _translate("FilterNodeProperties", "Type of the node"))
         self.label_2.setText(_translate("FilterNodeProperties", "Comment"))
-        self.uiComment.setToolTip(_translate("FilterNodeProperties", "Arbitrary user comment that describes the node"))
+        self.uiComment.setToolTip(
+            _translate("FilterNodeProperties",
+                       "Arbitrary user comment that describes the node"))
 
 
 if __name__ == "__main__":

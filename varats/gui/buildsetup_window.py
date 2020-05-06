@@ -29,6 +29,7 @@ class SetupWorker(QRunnable):
     """
     Setup worker to handle the setup of VaRA.
     """
+
     def __init__(self, path):
         super(SetupWorker, self).__init__()
         self.path = path
@@ -79,6 +80,7 @@ class BuildWorker(QRunnable):
     """
     BuildWorker to build an install VaRA.
     """
+
     def __init__(self, path_to_llvm, install_prefix,
                  build_type: vara_manager.BuildType):
         super(BuildWorker, self).__init__()
@@ -108,6 +110,7 @@ class BuildSetup(QWidget, Ui_BuildSetup):
     """
     Window to control the setup and status of the local VaRA installation.
     """
+
     def __init__(self) -> None:
         super().__init__()
         self.setupUi(self)

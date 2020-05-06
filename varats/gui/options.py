@@ -119,7 +119,9 @@ class OptionTreeWidget(QTreeWidget):  # type: ignore
     def _get_file(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Load CommitReport file", "",
-            "All Files (*)", options=options)
+        file_path, _ = QFileDialog.getOpenFileName(self,
+                                                   "Load CommitReport file",
+                                                   "",
+                                                   "All Files (*)",
+                                                   options=options)
         return file_path

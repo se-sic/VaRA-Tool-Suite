@@ -8,7 +8,9 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_CommitDateDeltaMaxFilter(object):
+
     def setupUi(self, CommitDateDeltaMaxFilter):
         CommitDateDeltaMaxFilter.setObjectName("CommitDateDeltaMaxFilter")
         CommitDateDeltaMaxFilter.resize(400, 45)
@@ -21,19 +23,23 @@ class Ui_CommitDateDeltaMaxFilter(object):
         self.label.setMinimumSize(QtCore.QSize(200, 0))
         self.label.setObjectName("label")
         self.horizontalLayout.addWidget(self.label)
-        self.uiCommitDateDeltaMax = QtWidgets.QLineEdit(CommitDateDeltaMaxFilter)
+        self.uiCommitDateDeltaMax = QtWidgets.QLineEdit(
+            CommitDateDeltaMaxFilter)
         self.uiCommitDateDeltaMax.setObjectName("uiCommitDateDeltaMax")
         self.horizontalLayout.addWidget(self.uiCommitDateDeltaMax)
         self.uiHelp = QtWidgets.QPushButton(CommitDateDeltaMaxFilter)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                           QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(30)
         sizePolicy.setVerticalStretch(30)
-        sizePolicy.setHeightForWidth(self.uiHelp.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.uiHelp.sizePolicy().hasHeightForWidth())
         self.uiHelp.setSizePolicy(sizePolicy)
         self.uiHelp.setMaximumSize(QtCore.QSize(30, 30))
         self.uiHelp.setText("")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(":/breeze/light/help-about.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(":/breeze/light/help-about.svg"),
+                       QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.uiHelp.setIcon(icon)
         self.uiHelp.setObjectName("uiHelp")
         self.horizontalLayout.addWidget(self.uiHelp)
@@ -44,9 +50,12 @@ class Ui_CommitDateDeltaMaxFilter(object):
 
     def retranslateUi(self, CommitDateDeltaMaxFilter):
         _translate = QtCore.QCoreApplication.translate
-        CommitDateDeltaMaxFilter.setWindowTitle(_translate("CommitDateDeltaMaxFilter", "Form"))
-        self.label.setText(_translate("CommitDateDeltaMaxFilter", "CommitDateDelta Maximum"))
+        CommitDateDeltaMaxFilter.setWindowTitle(
+            _translate("CommitDateDeltaMaxFilter", "Form"))
+        self.label.setText(
+            _translate("CommitDateDeltaMaxFilter", "CommitDateDelta Maximum"))
         self.uiHelp.setToolTip(_translate("CommitDateDeltaMaxFilter", "Help"))
+
 
 from varats.gui import icons_rc
 

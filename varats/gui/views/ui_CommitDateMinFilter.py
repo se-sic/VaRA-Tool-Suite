@@ -8,7 +8,9 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_CommitDateMinFilter(object):
+
     def setupUi(self, CommitDateMinFilter):
         CommitDateMinFilter.setObjectName("CommitDateMinFilter")
         CommitDateMinFilter.resize(353, 45)
@@ -22,7 +24,8 @@ class Ui_CommitDateMinFilter(object):
         self.label.setObjectName("label")
         self.horizontalLayout.addWidget(self.label)
         self.uiCommitDateMin = QtWidgets.QDateTimeEdit(CommitDateMinFilter)
-        self.uiCommitDateMin.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
+        self.uiCommitDateMin.setButtonSymbols(
+            QtWidgets.QAbstractSpinBox.UpDownArrows)
         self.uiCommitDateMin.setCalendarPopup(True)
         self.uiCommitDateMin.setTimeSpec(QtCore.Qt.UTC)
         self.uiCommitDateMin.setObjectName("uiCommitDateMin")
@@ -34,9 +37,12 @@ class Ui_CommitDateMinFilter(object):
 
     def retranslateUi(self, CommitDateMinFilter):
         _translate = QtCore.QCoreApplication.translate
-        CommitDateMinFilter.setWindowTitle(_translate("CommitDateMinFilter", "Form"))
-        self.label.setText(_translate("CommitDateMinFilter", "CommitDate Minimum"))
-        self.uiCommitDateMin.setDisplayFormat(_translate("CommitDateMinFilter", "dd.MM.yyyy HH:mm"))
+        CommitDateMinFilter.setWindowTitle(
+            _translate("CommitDateMinFilter", "Form"))
+        self.label.setText(
+            _translate("CommitDateMinFilter", "CommitDate Minimum"))
+        self.uiCommitDateMin.setDisplayFormat(
+            _translate("CommitDateMinFilter", "dd.MM.yyyy HH:mm"))
 
 
 if __name__ == "__main__":

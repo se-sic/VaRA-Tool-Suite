@@ -10,26 +10,33 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class Ui_BuildSetup(object):
+
     def setupUi(self, BuildSetup):
         BuildSetup.setObjectName("BuildSetup")
         BuildSetup.resize(640, 480)
         self.gridLayout = QtWidgets.QGridLayout(BuildSetup)
         self.gridLayout.setObjectName("gridLayout")
         self.advancedMode = QtWidgets.QPushButton(BuildSetup)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum,
+                                           QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.advancedMode.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.advancedMode.sizePolicy().hasHeightForWidth())
         self.advancedMode.setSizePolicy(sizePolicy)
         self.advancedMode.setObjectName("advancedMode")
         self.gridLayout.addWidget(self.advancedMode, 2, 0, 1, 1)
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacerItem = QtWidgets.QSpacerItem(40, 20,
+                                           QtWidgets.QSizePolicy.Expanding,
+                                           QtWidgets.QSizePolicy.Minimum)
         self.gridLayout.addItem(spacerItem, 2, 1, 1, 1)
         self.widget = QtWidgets.QWidget(BuildSetup)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                           QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.widget.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.widget.sizePolicy().hasHeightForWidth())
         self.widget.setSizePolicy(sizePolicy)
         self.widget.setObjectName("widget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.widget)
@@ -46,7 +53,9 @@ class Ui_BuildSetup(object):
         self.installPath = QtWidgets.QLineEdit(self.widget)
         self.installPath.setObjectName("installPath")
         self.verticalLayout.addWidget(self.installPath)
-        spacerItem1 = QtWidgets.QSpacerItem(20, 140, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        spacerItem1 = QtWidgets.QSpacerItem(20, 140,
+                                            QtWidgets.QSizePolicy.Minimum,
+                                            QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout.addItem(spacerItem1)
         self.textOutput = QtWidgets.QTextEdit(self.widget)
         self.textOutput.setObjectName("textOutput")
@@ -72,10 +81,12 @@ class Ui_BuildSetup(object):
         self.updateButton.setObjectName("updateButton")
         self.verticalLayout_2.addWidget(self.updateButton)
         self.widget_4 = QtWidgets.QWidget(self.widget_2)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                           QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.widget_4.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.widget_4.sizePolicy().hasHeightForWidth())
         self.widget_4.setSizePolicy(sizePolicy)
         self.widget_4.setObjectName("widget_4")
         self.gridLayout_2 = QtWidgets.QGridLayout(self.widget_4)
@@ -113,7 +124,9 @@ class Ui_BuildSetup(object):
         self.checkOpt.setObjectName("checkOpt")
         self.verticalLayout_3.addWidget(self.checkOpt)
         self.verticalLayout_2.addWidget(self.widget_3)
-        spacerItem2 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        spacerItem2 = QtWidgets.QSpacerItem(20, 40,
+                                            QtWidgets.QSizePolicy.Minimum,
+                                            QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout_2.addItem(spacerItem2)
         self.gridLayout.addWidget(self.widget_2, 0, 2, 3, 1)
 
@@ -137,8 +150,6 @@ class Ui_BuildSetup(object):
         self.buildButton.setText(_translate("BuildSetup", "Build"))
         self.checkDev.setText(_translate("BuildSetup", "Dev"))
         self.checkOpt.setText(_translate("BuildSetup", "Opt"))
-
-
 
 
 if __name__ == "__main__":

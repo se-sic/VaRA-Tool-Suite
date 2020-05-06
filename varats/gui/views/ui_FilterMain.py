@@ -8,7 +8,9 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_FilterEditor(object):
+
     def setupUi(self, FilterEditor):
         FilterEditor.setObjectName("FilterEditor")
         FilterEditor.resize(501, 499)
@@ -17,10 +19,12 @@ class Ui_FilterEditor(object):
         self.layoutMain = QtWidgets.QVBoxLayout(self.uiCentralWidget)
         self.layoutMain.setObjectName("layoutMain")
         self.frame = QtWidgets.QFrame(self.uiCentralWidget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding,
+                                           QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.frame.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.frame.sizePolicy().hasHeightForWidth())
         self.frame.setSizePolicy(sizePolicy)
         self.frame.setBaseSize(QtCore.QSize(0, 0))
         self.frame.setFrameShape(QtWidgets.QFrame.NoFrame)
@@ -34,10 +38,12 @@ class Ui_FilterEditor(object):
         self.uiTree.setObjectName("uiTree")
         self.horizontalLayout.addWidget(self.uiTree)
         self.frame_2 = QtWidgets.QFrame(self.frame)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                           QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.frame_2.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.frame_2.sizePolicy().hasHeightForWidth())
         self.frame_2.setSizePolicy(sizePolicy)
         self.frame_2.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.frame_2.setFrameShadow(QtWidgets.QFrame.Plain)
@@ -46,74 +52,93 @@ class Ui_FilterEditor(object):
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.frame_2)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.uiHelp = QtWidgets.QPushButton(self.frame_2)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                           QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(50)
         sizePolicy.setVerticalStretch(30)
-        sizePolicy.setHeightForWidth(self.uiHelp.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.uiHelp.sizePolicy().hasHeightForWidth())
         self.uiHelp.setSizePolicy(sizePolicy)
         self.uiHelp.setMaximumSize(QtCore.QSize(50, 30))
         self.uiHelp.setText("")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(":/breeze/light/help-about.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(":/breeze/light/help-about.svg"),
+                       QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.uiHelp.setIcon(icon)
         self.uiHelp.setObjectName("uiHelp")
         self.verticalLayout_3.addWidget(self.uiHelp)
-        spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        spacerItem = QtWidgets.QSpacerItem(20, 40,
+                                           QtWidgets.QSizePolicy.Minimum,
+                                           QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout_3.addItem(spacerItem)
         self.uiAddButton = QtWidgets.QPushButton(self.frame_2)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                           QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(50)
         sizePolicy.setVerticalStretch(30)
-        sizePolicy.setHeightForWidth(self.uiAddButton.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.uiAddButton.sizePolicy().hasHeightForWidth())
         self.uiAddButton.setSizePolicy(sizePolicy)
         self.uiAddButton.setMaximumSize(QtCore.QSize(50, 30))
         self.uiAddButton.setText("")
         icon1 = QtGui.QIcon()
-        icon1.addPixmap(QtGui.QPixmap(":/breeze/light/list-add.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon1.addPixmap(QtGui.QPixmap(":/breeze/light/list-add.svg"),
+                        QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.uiAddButton.setIcon(icon1)
         self.uiAddButton.setObjectName("uiAddButton")
         self.verticalLayout_3.addWidget(self.uiAddButton)
         self.uiRemoveButton = QtWidgets.QPushButton(self.frame_2)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                           QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(30)
         sizePolicy.setVerticalStretch(30)
-        sizePolicy.setHeightForWidth(self.uiRemoveButton.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.uiRemoveButton.sizePolicy().hasHeightForWidth())
         self.uiRemoveButton.setSizePolicy(sizePolicy)
         self.uiRemoveButton.setMinimumSize(QtCore.QSize(0, 0))
         self.uiRemoveButton.setMaximumSize(QtCore.QSize(50, 30))
         self.uiRemoveButton.setText("")
         icon2 = QtGui.QIcon()
-        icon2.addPixmap(QtGui.QPixmap(":/breeze/light/edit-delete.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon2.addPixmap(QtGui.QPixmap(":/breeze/light/edit-delete.svg"),
+                        QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.uiRemoveButton.setIcon(icon2)
         self.uiRemoveButton.setObjectName("uiRemoveButton")
         self.verticalLayout_3.addWidget(self.uiRemoveButton)
         self.uiUpButton = QtWidgets.QPushButton(self.frame_2)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                           QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(30)
         sizePolicy.setVerticalStretch(30)
-        sizePolicy.setHeightForWidth(self.uiUpButton.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.uiUpButton.sizePolicy().hasHeightForWidth())
         self.uiUpButton.setSizePolicy(sizePolicy)
         self.uiUpButton.setMaximumSize(QtCore.QSize(50, 30))
         self.uiUpButton.setText("")
         icon3 = QtGui.QIcon()
-        icon3.addPixmap(QtGui.QPixmap(":/breeze/light/go-up.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon3.addPixmap(QtGui.QPixmap(":/breeze/light/go-up.svg"),
+                        QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.uiUpButton.setIcon(icon3)
         self.uiUpButton.setObjectName("uiUpButton")
         self.verticalLayout_3.addWidget(self.uiUpButton)
         self.uiDownButton = QtWidgets.QPushButton(self.frame_2)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                           QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(30)
         sizePolicy.setVerticalStretch(30)
-        sizePolicy.setHeightForWidth(self.uiDownButton.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.uiDownButton.sizePolicy().hasHeightForWidth())
         self.uiDownButton.setSizePolicy(sizePolicy)
         self.uiDownButton.setMaximumSize(QtCore.QSize(50, 30))
         self.uiDownButton.setText("")
         icon4 = QtGui.QIcon()
-        icon4.addPixmap(QtGui.QPixmap(":/breeze/light/go-down.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon4.addPixmap(QtGui.QPixmap(":/breeze/light/go-down.svg"),
+                        QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.uiDownButton.setIcon(icon4)
         self.uiDownButton.setObjectName("uiDownButton")
         self.verticalLayout_3.addWidget(self.uiDownButton)
-        spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        spacerItem1 = QtWidgets.QSpacerItem(20, 40,
+                                            QtWidgets.QSizePolicy.Minimum,
+                                            QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout_3.addItem(spacerItem1)
         self.horizontalLayout.addWidget(self.frame_2)
         self.layoutMain.addWidget(self.frame)
@@ -128,22 +153,26 @@ class Ui_FilterEditor(object):
         FilterEditor.setMenuBar(self.uiMenubar)
         self.uiActionOpen = QtWidgets.QAction(FilterEditor)
         icon5 = QtGui.QIcon()
-        icon5.addPixmap(QtGui.QPixmap(":/breeze/light/document-open.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon5.addPixmap(QtGui.QPixmap(":/breeze/light/document-open.svg"),
+                        QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.uiActionOpen.setIcon(icon5)
         self.uiActionOpen.setObjectName("uiActionOpen")
         self.uiActionSave = QtWidgets.QAction(FilterEditor)
         icon6 = QtGui.QIcon()
-        icon6.addPixmap(QtGui.QPixmap(":/breeze/light/document-save.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon6.addPixmap(QtGui.QPixmap(":/breeze/light/document-save.svg"),
+                        QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.uiActionSave.setIcon(icon6)
         self.uiActionSave.setObjectName("uiActionSave")
         self.uiActionSaveAs = QtWidgets.QAction(FilterEditor)
         icon7 = QtGui.QIcon()
-        icon7.addPixmap(QtGui.QPixmap(":/breeze/light/document-save-as.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon7.addPixmap(QtGui.QPixmap(":/breeze/light/document-save-as.svg"),
+                        QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.uiActionSaveAs.setIcon(icon7)
         self.uiActionSaveAs.setObjectName("uiActionSaveAs")
         self.uiActionExit = QtWidgets.QAction(FilterEditor)
         icon8 = QtGui.QIcon()
-        icon8.addPixmap(QtGui.QPixmap(":/breeze/light/application-exit.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon8.addPixmap(QtGui.QPixmap(":/breeze/light/application-exit.svg"),
+                        QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.uiActionExit.setIcon(icon8)
         self.uiActionExit.setObjectName("uiActionExit")
         self.uiActionHelp = QtWidgets.QAction(FilterEditor)
@@ -166,10 +195,13 @@ class Ui_FilterEditor(object):
         _translate = QtCore.QCoreApplication.translate
         FilterEditor.setWindowTitle(_translate("FilterEditor", "MainWindow"))
         self.uiHelp.setToolTip(_translate("FilterEditor", "Help"))
-        self.uiAddButton.setToolTip(_translate("FilterEditor", "Add a new node"))
-        self.uiRemoveButton.setToolTip(_translate("FilterEditor", "Delete node"))
+        self.uiAddButton.setToolTip(_translate("FilterEditor",
+                                               "Add a new node"))
+        self.uiRemoveButton.setToolTip(_translate("FilterEditor",
+                                                  "Delete node"))
         self.uiUpButton.setToolTip(_translate("FilterEditor", "Move node up"))
-        self.uiDownButton.setToolTip(_translate("FilterEditor", "Move node down"))
+        self.uiDownButton.setToolTip(
+            _translate("FilterEditor", "Move node down"))
         self.menu_File.setTitle(_translate("FilterEditor", "&File"))
         self.menuHelp.setTitle(_translate("FilterEditor", "&Help"))
         self.uiActionOpen.setText(_translate("FilterEditor", "&Open"))
@@ -178,6 +210,7 @@ class Ui_FilterEditor(object):
         self.uiActionExit.setText(_translate("FilterEditor", "&Quit"))
         self.uiActionHelp.setText(_translate("FilterEditor", "&Help"))
         self.uiActionHelp.setToolTip(_translate("FilterEditor", "Help"))
+
 
 from varats.gui.deselectable_tree_view import DeselectableQTreeView
 from varats.gui import icons_rc

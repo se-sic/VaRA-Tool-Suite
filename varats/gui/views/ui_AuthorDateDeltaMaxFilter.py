@@ -8,7 +8,9 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_AuthorDateDeltaMaxFilter(object):
+
     def setupUi(self, AuthorDateDeltaMaxFilter):
         AuthorDateDeltaMaxFilter.setObjectName("AuthorDateDeltaMaxFilter")
         AuthorDateDeltaMaxFilter.resize(394, 45)
@@ -21,19 +23,23 @@ class Ui_AuthorDateDeltaMaxFilter(object):
         self.label.setMinimumSize(QtCore.QSize(200, 0))
         self.label.setObjectName("label")
         self.horizontalLayout.addWidget(self.label)
-        self.uiAuthorDateDeltaMax = QtWidgets.QLineEdit(AuthorDateDeltaMaxFilter)
+        self.uiAuthorDateDeltaMax = QtWidgets.QLineEdit(
+            AuthorDateDeltaMaxFilter)
         self.uiAuthorDateDeltaMax.setObjectName("uiAuthorDateDeltaMax")
         self.horizontalLayout.addWidget(self.uiAuthorDateDeltaMax)
         self.uiHelp = QtWidgets.QPushButton(AuthorDateDeltaMaxFilter)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                           QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(30)
         sizePolicy.setVerticalStretch(30)
-        sizePolicy.setHeightForWidth(self.uiHelp.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.uiHelp.sizePolicy().hasHeightForWidth())
         self.uiHelp.setSizePolicy(sizePolicy)
         self.uiHelp.setMaximumSize(QtCore.QSize(30, 30))
         self.uiHelp.setText("")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(":/breeze/light/help-about.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(":/breeze/light/help-about.svg"),
+                       QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.uiHelp.setIcon(icon)
         self.uiHelp.setObjectName("uiHelp")
         self.horizontalLayout.addWidget(self.uiHelp)
@@ -44,9 +50,12 @@ class Ui_AuthorDateDeltaMaxFilter(object):
 
     def retranslateUi(self, AuthorDateDeltaMaxFilter):
         _translate = QtCore.QCoreApplication.translate
-        AuthorDateDeltaMaxFilter.setWindowTitle(_translate("AuthorDateDeltaMaxFilter", "Form"))
-        self.label.setText(_translate("AuthorDateDeltaMaxFilter", "AuthorDateDelta Maximum"))
+        AuthorDateDeltaMaxFilter.setWindowTitle(
+            _translate("AuthorDateDeltaMaxFilter", "Form"))
+        self.label.setText(
+            _translate("AuthorDateDeltaMaxFilter", "AuthorDateDelta Maximum"))
         self.uiHelp.setToolTip(_translate("AuthorDateDeltaMaxFilter", "Help"))
+
 
 from varats.gui import icons_rc
 

@@ -71,8 +71,11 @@ class CRBarView(QWidget, Ui_Form):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         file_paths, _ = QFileDialog.getOpenFileNames(
-            self, "Load CommitReport file", "",
-            "Yaml Files (*.yaml *.yml);;All Files (*)", options=options)
+            self,
+            "Load CommitReport file",
+            "",
+            "Yaml Files (*.yaml *.yml);;All Files (*)",
+            options=options)
 
         for file_path in file_paths:
             if not path.isfile(file_path):
@@ -84,8 +87,7 @@ class CRBarView(QWidget, Ui_Form):
                 err.exec_()
                 return
 
-            if not (file_path.endswith(".yaml")
-                    or file_path.endswith(".yml")):
+            if not (file_path.endswith(".yaml") or file_path.endswith(".yml")):
                 err = QMessageBox()
                 err.setIcon(QMessageBox.Warning)
                 err.setWindowTitle("Wrong File ending.")
@@ -195,6 +197,7 @@ class CRBarView(QWidget, Ui_Form):
         text = self.optionsTree.report_order
 
         if text == 'Linear History':
+
             def order_func(x):
                 file_path = x.path
                 filename = path.basename(file_path)
@@ -203,6 +206,7 @@ class CRBarView(QWidget, Ui_Form):
                     return self.c_map.time_id(c_hash)
                 return c_hash
         else:
+
             def order_func(x):
                 return x
 

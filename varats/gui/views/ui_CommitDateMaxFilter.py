@@ -8,7 +8,9 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_CommitDateMaxFilter(object):
+
     def setupUi(self, CommitDateMaxFilter):
         CommitDateMaxFilter.setObjectName("CommitDateMaxFilter")
         CommitDateMaxFilter.resize(353, 45)
@@ -22,7 +24,8 @@ class Ui_CommitDateMaxFilter(object):
         self.label.setObjectName("label")
         self.horizontalLayout.addWidget(self.label)
         self.uiCommitDateMax = QtWidgets.QDateTimeEdit(CommitDateMaxFilter)
-        self.uiCommitDateMax.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
+        self.uiCommitDateMax.setButtonSymbols(
+            QtWidgets.QAbstractSpinBox.UpDownArrows)
         self.uiCommitDateMax.setCalendarPopup(True)
         self.uiCommitDateMax.setTimeSpec(QtCore.Qt.UTC)
         self.uiCommitDateMax.setObjectName("uiCommitDateMax")
@@ -34,9 +37,12 @@ class Ui_CommitDateMaxFilter(object):
 
     def retranslateUi(self, CommitDateMaxFilter):
         _translate = QtCore.QCoreApplication.translate
-        CommitDateMaxFilter.setWindowTitle(_translate("CommitDateMaxFilter", "Form"))
-        self.label.setText(_translate("CommitDateMaxFilter", "CommitDate Maximum"))
-        self.uiCommitDateMax.setDisplayFormat(_translate("CommitDateMaxFilter", "dd.MM.yyyy HH:mm"))
+        CommitDateMaxFilter.setWindowTitle(
+            _translate("CommitDateMaxFilter", "Form"))
+        self.label.setText(
+            _translate("CommitDateMaxFilter", "CommitDate Maximum"))
+        self.uiCommitDateMax.setDisplayFormat(
+            _translate("CommitDateMaxFilter", "dd.MM.yyyy HH:mm"))
 
 
 if __name__ == "__main__":

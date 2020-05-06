@@ -8,7 +8,9 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_AuthorDateMaxFilter(object):
+
     def setupUi(self, AuthorDateMaxFilter):
         AuthorDateMaxFilter.setObjectName("AuthorDateMaxFilter")
         AuthorDateMaxFilter.resize(353, 45)
@@ -22,7 +24,8 @@ class Ui_AuthorDateMaxFilter(object):
         self.label.setObjectName("label")
         self.horizontalLayout.addWidget(self.label)
         self.uiAuthorDateMax = QtWidgets.QDateTimeEdit(AuthorDateMaxFilter)
-        self.uiAuthorDateMax.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
+        self.uiAuthorDateMax.setButtonSymbols(
+            QtWidgets.QAbstractSpinBox.UpDownArrows)
         self.uiAuthorDateMax.setCalendarPopup(True)
         self.uiAuthorDateMax.setTimeSpec(QtCore.Qt.UTC)
         self.uiAuthorDateMax.setObjectName("uiAuthorDateMax")
@@ -34,9 +37,12 @@ class Ui_AuthorDateMaxFilter(object):
 
     def retranslateUi(self, AuthorDateMaxFilter):
         _translate = QtCore.QCoreApplication.translate
-        AuthorDateMaxFilter.setWindowTitle(_translate("AuthorDateMaxFilter", "Form"))
-        self.label.setText(_translate("AuthorDateMaxFilter", "AuthorDate Maximum"))
-        self.uiAuthorDateMax.setDisplayFormat(_translate("AuthorDateMaxFilter", "dd.MM.yyyy HH:mm"))
+        AuthorDateMaxFilter.setWindowTitle(
+            _translate("AuthorDateMaxFilter", "Form"))
+        self.label.setText(
+            _translate("AuthorDateMaxFilter", "AuthorDate Maximum"))
+        self.uiAuthorDateMax.setDisplayFormat(
+            _translate("AuthorDateMaxFilter", "dd.MM.yyyy HH:mm"))
 
 
 if __name__ == "__main__":

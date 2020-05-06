@@ -8,7 +8,9 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_AuthorDateMinFilter(object):
+
     def setupUi(self, AuthorDateMinFilter):
         AuthorDateMinFilter.setObjectName("AuthorDateMinFilter")
         AuthorDateMinFilter.resize(353, 45)
@@ -22,7 +24,8 @@ class Ui_AuthorDateMinFilter(object):
         self.label.setObjectName("label")
         self.horizontalLayout.addWidget(self.label)
         self.uiAuthorDateMin = QtWidgets.QDateTimeEdit(AuthorDateMinFilter)
-        self.uiAuthorDateMin.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
+        self.uiAuthorDateMin.setButtonSymbols(
+            QtWidgets.QAbstractSpinBox.UpDownArrows)
         self.uiAuthorDateMin.setCalendarPopup(True)
         self.uiAuthorDateMin.setTimeSpec(QtCore.Qt.UTC)
         self.uiAuthorDateMin.setObjectName("uiAuthorDateMin")
@@ -34,9 +37,12 @@ class Ui_AuthorDateMinFilter(object):
 
     def retranslateUi(self, AuthorDateMinFilter):
         _translate = QtCore.QCoreApplication.translate
-        AuthorDateMinFilter.setWindowTitle(_translate("AuthorDateMinFilter", "Form"))
-        self.label.setText(_translate("AuthorDateMinFilter", "AuthorDate Minimum"))
-        self.uiAuthorDateMin.setDisplayFormat(_translate("AuthorDateMinFilter", "dd.MM.yyyy HH:mm"))
+        AuthorDateMinFilter.setWindowTitle(
+            _translate("AuthorDateMinFilter", "Form"))
+        self.label.setText(
+            _translate("AuthorDateMinFilter", "AuthorDate Minimum"))
+        self.uiAuthorDateMin.setDisplayFormat(
+            _translate("AuthorDateMinFilter", "dd.MM.yyyy HH:mm"))
 
 
 if __name__ == "__main__":

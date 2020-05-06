@@ -8,12 +8,15 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_MainWindow(object):
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1024, 576)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("../../../icons/straus64.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap("../../../icons/straus64.png"),
+                       QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(icon)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -58,9 +61,11 @@ class Ui_MainWindow(object):
         self.actionSave_Config = QtWidgets.QAction(MainWindow)
         self.actionSave_Config.setObjectName("actionSave_Config")
         self.actionCreate_BenchBuild_Config = QtWidgets.QAction(MainWindow)
-        self.actionCreate_BenchBuild_Config.setObjectName("actionCreate_BenchBuild_Config")
+        self.actionCreate_BenchBuild_Config.setObjectName(
+            "actionCreate_BenchBuild_Config")
         self.actionInteractionFilter_Editor = QtWidgets.QAction(MainWindow)
-        self.actionInteractionFilter_Editor.setObjectName("actionInteractionFilter_Editor")
+        self.actionInteractionFilter_Editor.setObjectName(
+            "actionInteractionFilter_Editor")
         self.menuConfig.addAction(self.actionCreate_BenchBuild_Config)
         self.menuConfig.addAction(self.actionSave_Config)
         self.menuFile.addAction(self.actionVaRA_Setup)
@@ -88,15 +93,21 @@ class Ui_MainWindow(object):
         self.actionExampleView.setText(_translate("MainWindow", "ExampleView"))
         self.actionCR_BarView.setText(_translate("MainWindow", "CR-BarView"))
         self.actionSetup.setText(_translate("MainWindow", "Setup"))
-        self.actionDownload_VaRA.setText(_translate("MainWindow", "Initialize VaRA"))
-        self.actionDownload_VaRA.setToolTip(_translate("MainWindow", "Downloads and builds VaRA"))
+        self.actionDownload_VaRA.setText(
+            _translate("MainWindow", "Initialize VaRA"))
+        self.actionDownload_VaRA.setToolTip(
+            _translate("MainWindow", "Downloads and builds VaRA"))
         self.actionUpdate_VaRA.setText(_translate("MainWindow", "Update VaRA"))
-        self.actionShow_VaRA_status.setText(_translate("MainWindow", "Show VaRA status"))
+        self.actionShow_VaRA_status.setText(
+            _translate("MainWindow", "Show VaRA status"))
         self.actionVaRA_Setup.setText(_translate("MainWindow", "VaRA Setup"))
         self.actionVaRA_Setup.setShortcut(_translate("MainWindow", "Ctrl+B"))
-        self.actionSave_Config.setText(_translate("MainWindow", "Save VaRA Config"))
-        self.actionCreate_BenchBuild_Config.setText(_translate("MainWindow", "Create BenchBuild Config"))
-        self.actionInteractionFilter_Editor.setText(_translate("MainWindow", "InteractionFilter Editor"))
+        self.actionSave_Config.setText(
+            _translate("MainWindow", "Save VaRA Config"))
+        self.actionCreate_BenchBuild_Config.setText(
+            _translate("MainWindow", "Create BenchBuild Config"))
+        self.actionInteractionFilter_Editor.setText(
+            _translate("MainWindow", "InteractionFilter Editor"))
 
 
 if __name__ == "__main__":
