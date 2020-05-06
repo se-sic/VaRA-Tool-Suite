@@ -1,8 +1,8 @@
 """
 Module for handling revision specific files.  When analyzing a project, result
 files are generated for specific project revisions.  This module provides
-functionality to manage and access these revision specific files, e.g., to get all
-files of a specific report that have been process successfully.
+functionality to manage and access these revision specific files, e.g., to get
+all files of a specific report that have been process successfully.
 """
 
 import typing as tp
@@ -155,11 +155,11 @@ def get_all_revisions_files(project_name: str,
         file_name_filter, only_newest)
 
 
-def get_processed_revisions_files(
-    project_name: str,
-    result_file_type: MetaReport,
-    file_name_filter: tp.Callable[[str], bool] = lambda x: False
-) -> tp.List[Path]:
+def get_processed_revisions_files(project_name: str,
+                                  result_file_type: MetaReport,
+                                  file_name_filter: tp.Callable[
+                                      [str], bool] = lambda x: False,
+                                  only_newest: bool = True) -> tp.List[Path]:
     """
     Find all file paths to correctly processed revision files.
 
@@ -174,7 +174,7 @@ def get_processed_revisions_files(
     """
     return __get_files_with_status(project_name, result_file_type,
                                    [FileStatusExtension.Success],
-                                   file_name_filter)
+                                   file_name_filter, only_newest)
 
 
 def get_failed_revisions_files(
@@ -189,7 +189,10 @@ def get_failed_revisions_files(
         project_name: target project
         result_file_type: the type of the result file
         file_name_filter: optional filter to exclude certain files; returns
-                          true if the file_name should not be checked
+                          ``True`` if the file_name should not be included
+        only_newest: whether to include all result files, or only the newest;
+                     if ``False``, result files for the same revision are sorted
+                     descending by the file's mtime
 
     Returns:
         a list of file paths to failed revision files

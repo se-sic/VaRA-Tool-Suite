@@ -230,6 +230,10 @@ def __calc_code_churn_range_impl(
         diff_base_params = [
             "log", "--pretty=format:'%H'", "--date=short", "--shortstat", "-l0"
         ]
+        if revision_range:
+            log_base_params.append(revision_range)
+            diff_base_params.append(revision_range)
+
         if not churn_config.include_everything:
             diff_base_params.append("--")
             # builds a regrex to select files that git includes into churn calc
@@ -237,8 +241,8 @@ def __calc_code_churn_range_impl(
                                     churn_config.get_extensions_repr('|') + "]")
 
         if revision_range:
-            stdout = git(diff_base_params, revision_range)
-            revs = git(log_base_params, revision_range).strip().split()
+            stdout = git(diff_base_params)
+            revs = git(log_base_params).strip().split()
         else:
             stdout = git(diff_base_params)
             revs = git(log_base_params).strip().split()
