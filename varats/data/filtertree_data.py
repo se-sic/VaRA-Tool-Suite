@@ -647,11 +647,11 @@ class FilterOperator(InteractionFilter):
 class AndOperator(FilterOperator):
     yaml_tag = u'!AndOperator'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None,
-                 children: tp.Optional[tp.List[InteractionFilter]] = None
-                ) -> None:
+    def __init__(
+            self,
+            parent: tp.Optional[InteractionFilter] = None,
+            comment: tp.Optional[str] = None,
+            children: tp.Optional[tp.List[InteractionFilter]] = None) -> None:
         super().__init__(parent, comment)
         self._children: tp.List[InteractionFilter] = []
         if children is not None:
@@ -707,11 +707,11 @@ class AndOperator(FilterOperator):
 class OrOperator(FilterOperator):
     yaml_tag = u'!OrOperator'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None,
-                 children: tp.Optional[tp.List[InteractionFilter]] = None
-                ) -> None:
+    def __init__(
+            self,
+            parent: tp.Optional[InteractionFilter] = None,
+            comment: tp.Optional[str] = None,
+            children: tp.Optional[tp.List[InteractionFilter]] = None) -> None:
         super().__init__(parent, comment)
         self._children: tp.List[InteractionFilter] = []
         if children is not None:

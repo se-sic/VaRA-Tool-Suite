@@ -79,9 +79,8 @@ def create_new_branch_for_projects(branch_name: str,
             print(f"Branch {branch_name} does already exist.")
 
 
-def checkout_remote_branch_for_projects(branch_name: str,
-                                        sub_projects: tp.List[SubProject]
-                                       ) -> None:
+def checkout_remote_branch_for_projects(
+        branch_name: str, sub_projects: tp.List[SubProject]) -> None:
     """
     Checkout a remote branch on all projects.
     """

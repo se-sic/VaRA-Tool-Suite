@@ -63,8 +63,8 @@ class TraceBinaryCreator(base.Extension):  # type: ignore
 
         opt = local["opt"]["-vara-HD", "-vara-trace", "-vara-trace-RTy=High",
                            "-vara-trace-MTy={MType}".format(
-                               MType=self.marker_type
-                           ), "-S", "-o", "traced.ll", fake_file_name]
+                               MType=self.marker_type), "-S", "-o", "traced.ll",
+                           fake_file_name]
         with run.track_execution(opt, self.project, self.experiment) as _run:
             res.append(_run())
 
@@ -72,8 +72,8 @@ class TraceBinaryCreator(base.Extension):  # type: ignore
         with run.track_execution(llc, self.project, self.experiment) as _run:
             res.append(_run())
 
-        clang_stage_2 = command["-O2", "traced.o", self.
-                                extra_ldflags, "-lSTrace", "-o",
+        clang_stage_2 = command["-O2", "traced.o", self.extra_ldflags,
+                                "-lSTrace", "-o",
                                 src_file.replace(".cpp", "_traced")]
         with run.track_execution(clang_stage_2, self.project,
                                  self.experiment) as _run:

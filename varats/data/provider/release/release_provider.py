@@ -119,10 +119,9 @@ class ReleaseDefaultProvider(ReleaseProvider):
         releases = [
             (commit, tag, parse_version(tag)) for commit, tag in tagged_commits
         ]
-        self.releases = [
-            (commit, tag, version) for commit, tag, version in releases
-            if isinstance(version, Version)
-        ]
+        self.releases = [(commit, tag, version)
+                         for commit, tag, version in releases
+                         if isinstance(version, Version)]
 
     def get_release_revisions(
             self, release_type: ReleaseType) -> tp.List[tp.Tuple[str, str]]:
