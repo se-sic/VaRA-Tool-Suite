@@ -10,9 +10,10 @@ import pandas as pd
 from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.data.report import MetaReport
-from varats.data.reports.blame_report import (BlameReport, BlameReportDiff,
-                                              generate_in_head_interactions,
-                                              generate_out_head_interactions)
+from varats.data.reports.blame_report import (
+    BlameReport, BlameReportDiff, generate_degree_tuples,
+    generate_author_degree_tuples, generate_avg_time_distribution_tuples,
+    generate_in_head_interactions, generate_out_head_interactions)
 from varats.data.reports.commit_report import CommitMap
 from varats.data.revisions import (get_processed_revisions_files,
                                    get_failed_revisions_files)
@@ -24,8 +25,11 @@ from varats.utils.git_util import (calc_code_churn_range, ChurnConfig)
 
 class BlameDiffMetricsDatabase(EvaluationDatabase,
                                cache_id="blame_diff_metrics_data",
-                               columns=["churn_total", "diff_ci_total",
-                                        "year"]):
+                               columns=[
+                                   "churn_total", "diff_ci_total",
+                                   "ci_degree_mean", "author_mean",
+                                   "avg_time_mean", "year"
+                               ]):
     """
     Metrics database that contains all different blame-interaction metrics that
     are based on a diff between two `BlameReports`.
@@ -62,6 +66,9 @@ class BlameDiffMetricsDatabase(EvaluationDatabase,
                         'revision': report.head_commit,
                         'churn_total': 0,
                         'diff_ci_total': 0,
+                        "ci_degree_mean": 0.0,
+                        "author_mean": 0.0,
+                        "avg_time_mean": 0.0,
                         'year': commit_date.year,
                     },
                     index=[0])
@@ -103,12 +110,37 @@ class BlameDiffMetricsDatabase(EvaluationDatabase,
                 for churn_rev in code_churn.values()
             ])
 
+            # TODO: rework to metrics
+            def weighted_avg(tuples: tp.List[tp.Tuple[int, int]]) -> float:
+                total_sum = 0
+                degree_sum = 0
+                for degree, amount in tuples:
+                    degree_sum += degree
+                    total_sum += (degree * amount)
+
+                return total_sum / max(1, degree_sum)
+
             return pd.DataFrame(
                 {
-                    'revision': report.head_commit,
-                    'churn_total': total_churn,
-                    'diff_ci_total': ci_total,
-                    'year': commit_date.year,
+                    'revision':
+                        report.head_commit,
+                    'churn_total':
+                        total_churn,
+                    'diff_ci_total':
+                        ci_total,
+                    "ci_degree_mean":
+                        weighted_avg(
+                            generate_degree_tuples(diff_between_head_pred)),
+                    "author_mean":
+                        weighted_avg(
+                            generate_author_degree_tuples(
+                                diff_between_head_pred, project_name)),
+                    "avg_time_mean":
+                        weighted_avg(
+                            generate_avg_time_distribution_tuples(
+                                diff_between_head_pred, project_name, 1)),
+                    'year':
+                        commit_date.year,
                 },
                 index=[0])
 

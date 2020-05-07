@@ -389,7 +389,7 @@ def generate_degree_tuples(report: BlameReport) -> tp.List[tp.Tuple[int, int]]:
 
 
 def generate_author_degree_tuples(
-        report: BlameReport,
+        report: tp.Union[BlameReport, BlameReportDiff],
         project_name: str,
 ) -> tp.List[tp.Tuple[int, int]]:
     """
@@ -422,7 +422,8 @@ def generate_author_degree_tuples(
 
 
 def generate_time_delta_distribution_tuples(
-    report: BlameReport, project_name: str, bucket_size: int,
+    report: tp.Union[BlameReport,
+                     BlameReportDiff], project_name: str, bucket_size: int,
     aggregate_function: tp.Callable[[tp.Sequence[tp.Union[int, float]]],
                                     tp.Union[int, float]]
 ) -> tp.List[tp.Tuple[int, int]]:
@@ -473,7 +474,7 @@ def generate_time_delta_distribution_tuples(
 
 
 def generate_avg_time_distribution_tuples(
-        report: BlameReport, project_name: str,
+        report: tp.Union[BlameReport, BlameReportDiff], project_name: str,
         bucket_size: int) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples that represent the distribution of average time
@@ -494,7 +495,7 @@ def generate_avg_time_distribution_tuples(
 
 
 def generate_max_time_distribution_tuples(
-        report: BlameReport, project_name: str,
+        report: tp.Union[BlameReport, BlameReportDiff], project_name: str,
         bucket_size: int) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples that represent the distribution of maximal time
