@@ -20,7 +20,7 @@ repos:
     hooks:
     - id: isort
       args: ['-nis']
--   repo: git@github.com:myint/docformatter.git
+-   repo: https://github.com/myint/docformatter.git
     rev: v1.1
     hooks:
     - id: docformatter
