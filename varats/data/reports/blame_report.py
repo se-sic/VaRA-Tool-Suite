@@ -103,10 +103,8 @@ class BlameResultFunctionEntry():
     def create_blame_result_function_entry(
         name: str, raw_function_entry: tp.Dict[str, tp.Any]
     ) -> 'BlameResultFunctionEntry':
-        """
-        Creates a `BlameResultFunctionEntry` from the corresponding yaml
-        document section.
-        """
+        """Creates a `BlameResultFunctionEntry` from the corresponding yaml
+        document section."""
         demangled_name = str(raw_function_entry['demangled-name'])
         inst_list: tp.List[BlameInstInteractions] = []
         for raw_inst_entry in raw_function_entry['insts']:
@@ -391,8 +389,8 @@ def generate_degree_tuples(
 
 
 def generate_author_degree_tuples(
-        report: tp.Union[BlameReport, BlameReportDiff],
-        project_name: str,
+    report: tp.Union[BlameReport, BlameReportDiff],
+    project_name: str,
 ) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples (author_degree, amount) where author_degree is
@@ -481,8 +479,9 @@ def generate_time_delta_distribution_tuples(
 
 
 def generate_avg_time_distribution_tuples(
-        report: tp.Union[BlameReport, BlameReportDiff], project_name: str,
-        bucket_size: int) -> tp.List[tp.Tuple[int, int]]:
+    report: tp.Union[BlameReport, BlameReportDiff], project_name: str,
+    bucket_size: int
+) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples that represent the distribution of average time
     delta interactions. The first value in the tuple represents the degree of
@@ -503,8 +502,9 @@ def generate_avg_time_distribution_tuples(
 
 
 def generate_max_time_distribution_tuples(
-        report: tp.Union[BlameReport, BlameReportDiff], project_name: str,
-        bucket_size: int) -> tp.List[tp.Tuple[int, int]]:
+    report: tp.Union[BlameReport, BlameReportDiff], project_name: str,
+    bucket_size: int
+) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples that represent the distribution of maximal time
     delta interactions. The first value in the tuple represents the degree of

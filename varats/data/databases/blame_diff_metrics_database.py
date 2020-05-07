@@ -1,6 +1,4 @@
-"""
-Module for diff based commit-data metrics.
-"""
+"""Module for diff based commit-data metrics."""
 import typing as tp
 from datetime import datetime
 from functools import reduce
@@ -11,34 +9,41 @@ from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.data.report import MetaReport
 from varats.data.reports.blame_report import (
-    BlameReport, BlameReportDiff, generate_degree_tuples,
-    generate_author_degree_tuples, generate_avg_time_distribution_tuples,
-    generate_in_head_interactions, generate_out_head_interactions)
+    BlameReport,
+    BlameReportDiff,
+    generate_degree_tuples,
+    generate_author_degree_tuples,
+    generate_avg_time_distribution_tuples,
+    generate_in_head_interactions,
+    generate_out_head_interactions,
+)
 from varats.data.reports.commit_report import CommitMap
-from varats.data.revisions import (get_processed_revisions_files,
-                                   get_failed_revisions_files)
+from varats.data.revisions import (
+    get_processed_revisions_files,
+    get_failed_revisions_files,
+)
 from varats.jupyterhelper.file import load_blame_report
 from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
+from varats.utils.git_util import calc_code_churn_range, ChurnConfig
 from varats.utils.project_util import get_local_project_git
-from varats.utils.git_util import (calc_code_churn_range, ChurnConfig)
 
 
-class BlameDiffMetricsDatabase(EvaluationDatabase,
-                               cache_id="blame_diff_metrics_data",
-                               columns=[
-                                   "churn_total", "diff_ci_total",
-                                   "ci_degree_mean", "author_mean",
-                                   "avg_time_mean", "year"
-                               ]):
-    """
-    Metrics database that contains all different blame-interaction metrics that
-    are based on a diff between two `BlameReports`.
-    """
+class BlameDiffMetricsDatabase(
+    EvaluationDatabase,
+    cache_id="blame_diff_metrics_data",
+    columns=[
+        "churn_total", "diff_ci_total", "ci_degree_mean", "author_mean",
+        "avg_time_mean", "year"
+    ]
+):
+    """Metrics database that contains all different blame-interaction metrics
+    that are based on a diff between two `BlameReports`."""
 
     @classmethod
-    def _load_dataframe(cls, project_name: str, commit_map: CommitMap,
-                        case_study: tp.Optional[CaseStudy],
-                        **kwargs: tp.Any) -> pd.DataFrame:
+    def _load_dataframe(
+        cls, project_name: str, commit_map: CommitMap,
+        case_study: tp.Optional[CaseStudy], **kwargs: tp.Any
+    ) -> pd.DataFrame:
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
@@ -61,17 +66,16 @@ class BlameDiffMetricsDatabase(EvaluationDatabase,
                             if commit_map.short_time_id(rev) < commit_time_id]
 
             def empty_data_frame() -> pd.DataFrame:
-                return pd.DataFrame(
-                    {
-                        'revision': report.head_commit,
-                        'churn_total': 0,
-                        'diff_ci_total': 0,
-                        "ci_degree_mean": 0.0,
-                        "author_mean": 0.0,
-                        "avg_time_mean": 0.0,
-                        'year': commit_date.year,
-                    },
-                    index=[0])
+                return pd.DataFrame({
+                    'revision': report.head_commit,
+                    'churn_total': 0,
+                    'diff_ci_total': 0,
+                    "ci_degree_mean": 0.0,
+                    "author_mean": 0.0,
+                    "avg_time_mean": 0.0,
+                    'year': commit_date.year,
+                },
+                                    index=[0])
 
             if not pred_commits:
                 return empty_data_frame()
@@ -80,16 +84,19 @@ class BlameDiffMetricsDatabase(EvaluationDatabase,
 
             def is_not_predecessor_revision(revision_file: str) -> bool:
                 return not pred_report_commit_hash.startswith(
-                    MetaReport.get_commit_hash_from_result_file(revision_file))
+                    MetaReport.get_commit_hash_from_result_file(revision_file)
+                )
 
             report_files = get_processed_revisions_files(
-                project_name, BlameReport, is_not_predecessor_revision)
+                project_name, BlameReport, is_not_predecessor_revision
+            )
 
             if not report_files:
                 return empty_data_frame()
 
             diff_between_head_pred = BlameReportDiff(
-                report, load_blame_report(report_files[0]))
+                report, load_blame_report(report_files[0])
+            )
 
             # Calculate the total number of commit interactions between the pred
             # and base BlameReport
@@ -104,11 +111,14 @@ class BlameDiffMetricsDatabase(EvaluationDatabase,
             # Calculate the total churn between pred and base commit
             code_churn = calc_code_churn_range(
                 repo, ChurnConfig.create_c_style_languages_config(),
-                pred_report_commit_hash, commit)
-            total_churn = reduce(lambda x, y: x + y, [
-                churn_rev[1] + churn_rev[2]
-                for churn_rev in code_churn.values()
-            ])
+                pred_report_commit_hash, commit
+            )
+            total_churn = reduce(
+                lambda x, y: x + y, [
+                    churn_rev[1] + churn_rev[2]
+                    for churn_rev in code_churn.values()
+                ]
+            )
 
             # TODO: rework to metrics
             def weighted_avg(tuples: tp.List[tp.Tuple[int, int]]) -> float:
@@ -120,47 +130,53 @@ class BlameDiffMetricsDatabase(EvaluationDatabase,
 
                 return total_sum / max(1, degree_sum)
 
-            return pd.DataFrame(
-                {
-                    'revision':
-                        report.head_commit,
-                    'churn_total':
-                        total_churn,
-                    'diff_ci_total':
-                        ci_total,
-                    "ci_degree_mean":
-                        weighted_avg(
-                            generate_degree_tuples(diff_between_head_pred)),
-                    "author_mean":
-                        weighted_avg(
-                            generate_author_degree_tuples(
-                                diff_between_head_pred, project_name)),
-                    "avg_time_mean":
-                        weighted_avg(
-                            generate_avg_time_distribution_tuples(
-                                diff_between_head_pred, project_name, 1)),
-                    'year':
-                        commit_date.year,
-                },
-                index=[0])
+            return pd.DataFrame({
+                'revision':
+                    report.head_commit,
+                'churn_total':
+                    total_churn,
+                'diff_ci_total':
+                    ci_total,
+                "ci_degree_mean":
+                    weighted_avg(
+                        generate_degree_tuples(diff_between_head_pred)
+                    ),
+                "author_mean":
+                    weighted_avg(
+                        generate_author_degree_tuples(
+                            diff_between_head_pred, project_name
+                        )
+                    ),
+                "avg_time_mean":
+                    weighted_avg(
+                        generate_avg_time_distribution_tuples(
+                            diff_between_head_pred, project_name, 1
+                        )
+                    ),
+                'year':
+                    commit_date.year,
+            },
+                                index=[0])
 
         report_files = get_processed_revisions_files(
             project_name,
             BlameReport,
             # TODO: @boehm is passing here only_newest report_files ok?
             get_case_study_file_name_filter(case_study),
-            False)
+            False
+        )
 
         failed_report_files = get_failed_revisions_files(
             project_name, BlameReport,
-            get_case_study_file_name_filter(case_study))
+            get_case_study_file_name_filter(case_study)
+        )
 
         # cls.CACHE_ID is set by superclass
         # pylint: disable=E1101
-        data_frame = build_cached_report_table(cls.CACHE_ID, project_name,
-                                               create_dataframe_layout,
-                                               create_data_frame_for_report,
-                                               load_blame_report, report_files,
-                                               failed_report_files)
+        data_frame = build_cached_report_table(
+            cls.CACHE_ID, project_name, create_dataframe_layout,
+            create_data_frame_for_report, load_blame_report, report_files,
+            failed_report_files
+        )
 
         return data_frame
