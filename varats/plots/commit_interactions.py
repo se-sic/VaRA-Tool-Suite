@@ -11,7 +11,9 @@ import numpy as np
 import pandas as pd
 from matplotlib import cm
 
-from varats.data.databases.commit_interaction_database import CommitInteractionDatabase
+from varats.data.databases.commit_interaction_database import (
+    CommitInteractionDatabase,
+)
 from varats.paper.case_study import CaseStudy, CSStage
 from varats.plots.plot import Plot
 from varats.plots.plot_utils import check_required_args
@@ -31,14 +33,17 @@ def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
         project_name, [
             "revision", "time_id", "CFInteractions", "DFInteractions",
             "HEAD CF Interactions", "HEAD DF Interactions"
-        ], commit_map, case_study)
+        ], commit_map, case_study
+    )
 
     return data_frame
 
 
-def _plot_interaction_graph(data_frame: pd.DataFrame,
-                            stages: tp.Optional[tp.List[CSStage]] = None,
-                            view_mode: bool = True) -> None:
+def _plot_interaction_graph(
+    data_frame: pd.DataFrame,
+    stages: tp.Optional[tp.List[CSStage]] = None,
+    view_mode: bool = True
+) -> None:
     """
     Plot a plot, showing the amount of interactions between commits and
     interactions between the HEAD commit and all others.
@@ -63,65 +68,79 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
     if stages:
         # We need to plot all different stages separatly
         cf_color_iter = iter(
-            reversed(cm.get_cmap('Blues')(np.linspace(0.3, 1, len(stages)))))
+            reversed(cm.get_cmap('Blues')(np.linspace(0.3, 1, len(stages))))
+        )
         df_color_iter = iter(
-            reversed(cm.get_cmap('Oranges')(np.linspace(0.3, 1, len(stages)))))
+            reversed(cm.get_cmap('Oranges')(np.linspace(0.3, 1, len(stages))))
+        )
         stage_num = len(stages)
 
         for stage in reversed(stages):
             stage_num -= 1
 
             cf_mask = np.isfinite(data_frame.CFInteractions.values)
-            plt.plot(data_frame.revisions.values[cf_mask],
-                     data_frame.CFInteractions.values[cf_mask],
-                     color=next(cf_color_iter),
-                     label="CFInteractions-" + str(stage_num),
-                     zorder=stage_num + 1,
-                     linewidth=plot_cfg['linewidth'])
+            plt.plot(
+                data_frame.revisions.values[cf_mask],
+                data_frame.CFInteractions.values[cf_mask],
+                color=next(cf_color_iter),
+                label="CFInteractions-" + str(stage_num),
+                zorder=stage_num + 1,
+                linewidth=plot_cfg['linewidth']
+            )
 
             df_mask = np.isfinite(data_frame.DFInteractions.values)
-            plt.plot(data_frame.revision.values[df_mask],
-                     data_frame.DFInteractions.values[df_mask],
-                     color=next(df_color_iter),
-                     label="DFInteractions-" + str(stage_num),
-                     zorder=stage_num + 1,
-                     linewidth=plot_cfg['linewidth'])
+            plt.plot(
+                data_frame.revision.values[df_mask],
+                data_frame.DFInteractions.values[df_mask],
+                color=next(df_color_iter),
+                label="DFInteractions-" + str(stage_num),
+                zorder=stage_num + 1,
+                linewidth=plot_cfg['linewidth']
+            )
 
             def filter_out_stage(data_frame: pd.DataFrame) -> None:
 
                 def cf_removal_helper(
-                        row: pd.Series,
-                        stage: CSStage = stage) -> tp.Union[np.int64]:
+                    row: pd.Series,
+                    stage: CSStage = stage
+                ) -> tp.Union[np.int64]:
                     if stage.has_revision(row.revision):
                         return np.NaN
                     return row['CFInteractions']
 
                 data_frame['CFInteractions'] = data_frame.apply(
-                    cf_removal_helper, axis=1)
+                    cf_removal_helper, axis=1
+                )
 
                 def df_removal_helper(
-                        row: pd.Series,
-                        stage: CSStage = stage) -> tp.Union[np.int64]:
+                    row: pd.Series,
+                    stage: CSStage = stage
+                ) -> tp.Union[np.int64]:
                     if stage.has_revision(row.revision):
                         return np.NaN
                     return row['DFInteractions']
 
                 data_frame['DFInteractions'] = data_frame.apply(
-                    func=df_removal_helper, axis=1)
+                    func=df_removal_helper, axis=1
+                )
 
             filter_out_stage(data_frame)
 
     else:
-        plt.plot('revision',
-                 'CFInteractions',
-                 data=data_frame,
-                 color='blue',
-                 linewidth=plot_cfg['linewidth'])
-        plt.plot('revision',
-                 'DFInteractions',
-                 data=data_frame,
-                 color='red',
-                 linewidth=plot_cfg['linewidth'])
+        plt.plot(
+            'revision',
+            'CFInteractions',
+            data=data_frame,
+            color='blue',
+            linewidth=plot_cfg['linewidth']
+        )
+        plt.plot(
+            'revision',
+            'DFInteractions',
+            data=data_frame,
+            color='red',
+            linewidth=plot_cfg['linewidth']
+        )
 
     axis.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
 
@@ -129,21 +148,27 @@ def _plot_interaction_graph(data_frame: pd.DataFrame,
     axis = plt.subplot(212)
 
     plt.setp(axis.get_yticklabels(), fontsize=8, fontfamily='monospace')
-    plt.setp(axis.get_xticklabels(),
-             fontsize=plot_cfg['xtick_size'],
-             fontfamily='monospace',
-             rotation=270)
+    plt.setp(
+        axis.get_xticklabels(),
+        fontsize=plot_cfg['xtick_size'],
+        fontfamily='monospace',
+        rotation=270
+    )
 
-    plt.plot('revision',
-             'HEAD CF Interactions',
-             data=data_frame,
-             color='aqua',
-             linewidth=plot_cfg['linewidth'])
-    plt.plot('revision',
-             'HEAD DF Interactions',
-             data=data_frame,
-             color='crimson',
-             linewidth=plot_cfg['linewidth'])
+    plt.plot(
+        'revision',
+        'HEAD CF Interactions',
+        data=data_frame,
+        color='aqua',
+        linewidth=plot_cfg['linewidth']
+    )
+    plt.plot(
+        'revision',
+        'HEAD DF Interactions',
+        data=data_frame,
+        color='crimson',
+        linewidth=plot_cfg['linewidth']
+    )
 
     plt.xlabel("Revisions", **{'size': '10'})
     axis.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
@@ -177,7 +202,8 @@ class InteractionPlot(Plot):
             case_study: CaseStudy = self.plot_kwargs['plot_case_study']
             return data_frame[data_frame.apply(
                 lambda x: case_study.has_revision(x['head_cm'].split('-')[1]),
-                axis=1)]
+                axis=1
+            )]
 
         interaction_plot_df = _gen_interaction_graph(**self.plot_kwargs)
 
@@ -188,7 +214,8 @@ class InteractionPlot(Plot):
 
         _plot_interaction_graph(
             cs_filter(interaction_plot_df),
-            case_study.stages if case_study is not None else None, view_mode)
+            case_study.stages if case_study is not None else None, view_mode
+        )
 
     def show(self) -> None:
         self.plot(True)
@@ -217,39 +244,50 @@ class InteractionPlot(Plot):
                     rhs_cm = row['head_cm']
 
                     if head_cm_neighbours(lhs_cm, rhs_cm):
-                        print("Found steep gradient between neighbours " +
-                              "{lhs_cm} - {rhs_cm}: {gradient}".format(
-                                  lhs_cm=lhs_cm,
-                                  rhs_cm=rhs_cm,
-                                  gradient=round(gradient, 5)))
+                        print(
+                            "Found steep gradient between neighbours " +
+                            "{lhs_cm} - {rhs_cm}: {gradient}".format(
+                                lhs_cm=lhs_cm,
+                                rhs_cm=rhs_cm,
+                                gradient=round(gradient, 5)
+                            )
+                        )
                         git_path = Path(self.plot_kwargs['git_path'])
                         lhs = lhs_cm.split('-')[1]
                         rhs = rhs_cm.split('-')[1]
                         print(
-                            f"Investigate: git -C {git_path} diff {lhs} {rhs}")
+                            f"Investigate: git -C {git_path} diff {lhs} {rhs}"
+                        )
                     else:
-                        print("Unusual gradient between " +
-                              "{lhs_cm} - {rhs_cm}: {gradient}".format(
-                                  lhs_cm=lhs_cm,
-                                  rhs_cm=rhs_cm,
-                                  gradient=round(gradient, 5)))
+                        print(
+                            "Unusual gradient between " +
+                            "{lhs_cm} - {rhs_cm}: {gradient}".format(
+                                lhs_cm=lhs_cm,
+                                rhs_cm=rhs_cm,
+                                gradient=round(gradient, 5)
+                            )
+                        )
                         new_rev_id = round(
-                            (cm_num(lhs_cm) + cm_num(rhs_cm)) / 2.0)
+                            (cm_num(lhs_cm) + cm_num(rhs_cm)) / 2.0
+                        )
                         new_rev = self.plot_kwargs['cmap'].c_hash(new_rev_id)
                         print(
                             "-> Adding {rev} as new revision to the sample set".
-                            format(rev=new_rev))
+                            format(rev=new_rev)
+                        )
                         new_revs.add(new_rev)
                     print()
                 last_row = row
             return new_revs
 
         print("--- Checking CFInteractions ---")
-        missing_revs = rev_calc_helper(data_frame[['head_cm',
-                                                   'CFInteractions']])
+        missing_revs = rev_calc_helper(
+            data_frame[['head_cm', 'CFInteractions']]
+        )
 
         print("--- Checking DFInteractions ---")
         missing_revs.union(
-            rev_calc_helper(data_frame[['head_cm', 'DFInteractions']]))
+            rev_calc_helper(data_frame[['head_cm', 'DFInteractions']])
+        )
 
         return missing_revs

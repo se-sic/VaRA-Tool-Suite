@@ -16,7 +16,14 @@ from threading import RLock
 
 from plumbum import RETCODE, TF, local
 from plumbum.cmd import cmake, git, grep, ln, mkdir
-from PyQt5.QtCore import QObject, QProcess, QRunnable, QThreadPool, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import (
+    QObject,
+    QProcess,
+    QRunnable,
+    QThreadPool,
+    pyqtSignal,
+    pyqtSlot,
+)
 
 from varats.settings import CFG, save_config
 from varats.utils.exceptions import ProcessTerminatedError
@@ -62,33 +69,39 @@ class LLVMProject():
         return self.__sub_path
 
     def __str__(self) -> str:
-        return "{name} [{url}:{remote}] {folder}".format(name=self.name,
-                                                         url=self.url,
-                                                         remote=self.remote,
-                                                         folder=self.path)
+        return "{name} [{url}:{remote}] {folder}".format(
+            name=self.name, url=self.url, remote=self.remote, folder=self.path
+        )
 
 
 class LLVMProjects(Enum):
     """
     Mapping of all LLVM projects to paths.
     """
-    llvm = LLVMProject("llvm", "https://git.llvm.org/git/llvm.git", "upstream",
-                       "")
-    clang = LLVMProject("clang", "https://git.llvm.org/git/clang.git",
-                        "upstream", "tools/clang")
-    vara = LLVMProject("VaRA", "git@github.com:se-passau/VaRA.git", "origin",
-                       "tools/VaRA")
-    clang_extra = LLVMProject("clang_extra",
-                              "https://git.llvm.org/git/clang-tools-extra.git",
-                              "upstream", "tools/clang/tools/extra")
-    compiler_rt = LLVMProject("compiler-rt",
-                              "https://git.llvm.org/git/compiler-rt.git",
-                              "upstream", "projects/compiler-rt")
-    lld = LLVMProject("lld", "https://git.llvm.org/git/lld.git", "upstream",
-                      "tools/lld")
+    llvm = LLVMProject(
+        "llvm", "https://git.llvm.org/git/llvm.git", "upstream", ""
+    )
+    clang = LLVMProject(
+        "clang", "https://git.llvm.org/git/clang.git", "upstream", "tools/clang"
+    )
+    vara = LLVMProject(
+        "VaRA", "git@github.com:se-passau/VaRA.git", "origin", "tools/VaRA"
+    )
+    clang_extra = LLVMProject(
+        "clang_extra", "https://git.llvm.org/git/clang-tools-extra.git",
+        "upstream", "tools/clang/tools/extra"
+    )
+    compiler_rt = LLVMProject(
+        "compiler-rt", "https://git.llvm.org/git/compiler-rt.git", "upstream",
+        "projects/compiler-rt"
+    )
+    lld = LLVMProject(
+        "lld", "https://git.llvm.org/git/lld.git", "upstream", "tools/lld"
+    )
     phasar = LLVMProject(
         "phasar", "https://github.com/secure-software-engineering/phasar.git",
-        "origin", "tools/phasar")
+        "origin", "tools/phasar"
+    )
 
     def __str__(self) -> str:
         return str(self.value)
@@ -158,7 +171,8 @@ class LLVMProjects(Enum):
 
 
 def convert_to_llvmprojects_enum(
-        projects_names: tp.List[str]) -> tp.List[LLVMProjects]:
+    projects_names: tp.List[str]
+) -> tp.List[LLVMProjects]:
     """
     Converts a list of strings into a list of LLVMProject.
 
@@ -176,8 +190,10 @@ def convert_to_llvmprojects_enum(
 
     if projects_names:
         for project_name in projects_names:
-            print("Warning: {} is not a supported project name".format(
-                project_name))
+            print(
+                "Warning: {} is not a supported project name".
+                format(project_name)
+            )
 
     return enum_list
 
@@ -234,8 +250,9 @@ class VaRAExtraProjectsIter():
 
 
 def run_process_with_output(
-        process: QProcess,
-        post_out: tp.Callable[[str], None] = lambda x: None) -> None:
+    process: QProcess,
+    post_out: tp.Callable[[str], None] = lambda x: None
+) -> None:
     """
     Run a process and forward stdout to a post_out function.
     """
@@ -244,17 +261,22 @@ def run_process_with_output(
         post_out(line)
 
 
-def download_repo(dl_folder: Path,
-                  url: str,
-                  repo_name: tp.Optional[str] = None,
-                  remote_name: tp.Optional[str] = None,
-                  post_out: tp.Callable[[str], None] = lambda x: None) -> None:
+def download_repo(
+    dl_folder: Path,
+    url: str,
+    repo_name: tp.Optional[str] = None,
+    remote_name: tp.Optional[str] = None,
+    post_out: tp.Callable[[str], None] = lambda x: None
+) -> None:
     """
     Download a repo into the specified folder.
     """
     if not dl_folder.exists():
-        raise Exception("Could not find download folder  {dl_folder}".format(
-            dl_folder=dl_folder))
+        raise Exception(
+            "Could not find download folder  {dl_folder}".format(
+                dl_folder=dl_folder
+            )
+        )
 
     with local.cwd(dl_folder):
         args = ["clone", "--progress", url]
@@ -268,7 +290,8 @@ def download_repo(dl_folder: Path,
         with ProcessManager.create_process("git", args) as proc:
             proc.setProcessChannelMode(QProcess.MergedChannels)
             proc.readyReadStandardOutput.connect(
-                lambda: run_process_with_output(proc, post_out))
+                lambda: run_process_with_output(proc, post_out)
+            )
 
 
 class BuildType(Enum):
@@ -300,16 +323,18 @@ class BuildType(Enum):
         return Path(str(self))
 
 
-def setup_vara(init: bool,
-               update: bool,
-               build: bool,
-               llvm_folder: Path,
-               install_prefix: str,
-               own_libgit: bool,
-               include_phasar: bool,
-               version: int,
-               build_type: BuildType,
-               post_out: tp.Callable[[str], None] = lambda x: None) -> None:
+def setup_vara(
+    init: bool,
+    update: bool,
+    build: bool,
+    llvm_folder: Path,
+    install_prefix: str,
+    own_libgit: bool,
+    include_phasar: bool,
+    version: int,
+    build_type: BuildType,
+    post_out: tp.Callable[[str], None] = lambda x: None
+) -> None:
     """
     Sets up VaRA over cli.
     """
@@ -324,8 +349,9 @@ def setup_vara(init: bool,
             print(f"LLVM was already checked out in '{llvm_folder}'.")
         else:
             download_vara(llvm_folder, post_out=post_out)
-            checkout_vara_version(llvm_folder, include_phasar, version,
-                                  use_dev_branches)
+            checkout_vara_version(
+                llvm_folder, include_phasar, version, use_dev_branches
+            )
             if own_libgit:
                 init_all_submodules(llvm_folder / LLVMProjects.vara.path)
                 update_all_submodules(llvm_folder / LLVMProjects.vara.path)
@@ -335,8 +361,10 @@ def setup_vara(init: bool,
                 update_all_submodules(llvm_folder / LLVMProjects.phasar.path)
 
     if not os.path.exists(llvm_folder):
-        print("LLVM was not initialized. Please initialize LLVM with VaRA, " +
-              "for example, with 'vara-buildsetup -i'.")
+        print(
+            "LLVM was not initialized. Please initialize LLVM with VaRA, " +
+            "for example, with 'vara-buildsetup -i'."
+        )
     else:
         if update:
             if str(CFG["vara"]["version"]) != str(version):
@@ -348,15 +376,19 @@ def setup_vara(init: bool,
                 if use_dev_branches:
                     version_name += "-dev"
                 checkout_branch(llvm_folder, "vara-" + version_name)
-                checkout_branch(llvm_folder / LLVMProjects.clang.path,
-                                "vara-" + version_name)
+                checkout_branch(
+                    llvm_folder / LLVMProjects.clang.path,
+                    "vara-" + version_name
+                )
                 if use_dev_branches:
-                    checkout_branch(llvm_folder / LLVMProjects.vara.path,
-                                    "vara-dev")
+                    checkout_branch(
+                        llvm_folder / LLVMProjects.vara.path, "vara-dev"
+                    )
 
                 for project in VaRAExtraProjectsIter():
-                    checkout_branch(llvm_folder / project.path,
-                                    "release_" + str(version))
+                    checkout_branch(
+                        llvm_folder / project.path, "release_" + str(version)
+                    )
 
                 CFG["vara"]["version"] = int(version)
                 save_config()
@@ -372,18 +404,21 @@ def setup_vara(init: bool,
                 update_all_submodules(llvm_folder / LLVMProjects.phasar.path)
 
         if build:
-            build_vara(llvm_folder,
-                       install_prefix=install_prefix,
-                       build_type=build_type,
-                       post_out=post_out)
+            build_vara(
+                llvm_folder,
+                install_prefix=install_prefix,
+                build_type=build_type,
+                post_out=post_out
+            )
 
 
 def add_remote(repo_folder: Path, remote: str, url: str) -> None:
     """
     Adds new remote to the repository.
     """
-    with ProcessManager.create_process("git", ["remote", "add", remote, url],
-                                       workdir=repo_folder):
+    with ProcessManager.create_process(
+        "git", ["remote", "add", remote, url], workdir=repo_folder
+    ):
         pass
 
 
@@ -395,8 +430,9 @@ def show_status(repo_folder: Path) -> None:
         git["status"].run_fg()
 
 
-def get_branches(repo_folder: Path,
-                 extra_args: tp.Optional[tp.List[str]] = None) -> str:
+def get_branches(
+    repo_folder: Path, extra_args: tp.Optional[tp.List[str]] = None
+) -> str:
     """
     Show git branches.
     """
@@ -409,9 +445,11 @@ def get_branches(repo_folder: Path,
         return tp.cast(str, git(args))
 
 
-def fetch_remote(remote: tp.Optional[str] = None,
-                 repo_folder: tp.Optional[Path] = None,
-                 extra_args: tp.Optional[tp.List[str]] = None) -> None:
+def fetch_remote(
+    remote: tp.Optional[str] = None,
+    repo_folder: tp.Optional[Path] = None,
+    extra_args: tp.Optional[tp.List[str]] = None
+) -> None:
     """
     Fetches the new changes from the remote.
     """
@@ -430,8 +468,9 @@ def init_all_submodules(folder: Path) -> None:
     """
     Inits all submodules.
     """
-    with ProcessManager.create_process("git", ["submodule", "init"],
-                                       workdir=folder):
+    with ProcessManager.create_process(
+        "git", ["submodule", "init"], workdir=folder
+    ):
         pass
 
 
@@ -455,9 +494,11 @@ def pull_current_branch(repo_folder: tp.Optional[Path] = None) -> None:
         pass
 
 
-def push_current_branch(repo_folder: tp.Optional[Path] = None,
-                        upstream: tp.Optional[str] = None,
-                        branch_name: tp.Optional[str] = None) -> None:
+def push_current_branch(
+    repo_folder: tp.Optional[Path] = None,
+    upstream: tp.Optional[str] = None,
+    branch_name: tp.Optional[str] = None
+) -> None:
     """
     Push in changes in a certain branch.
     """
@@ -490,14 +531,17 @@ def checkout_branch(repo_folder: Path, branch: str) -> None:
     """
     Checks out a branch in the repository.
     """
-    with ProcessManager.create_process("git", ["checkout", branch],
-                                       workdir=repo_folder):
+    with ProcessManager.create_process(
+        "git", ["checkout", branch], workdir=repo_folder
+    ):
         pass
 
 
-def checkout_new_branch(repo_folder: Path,
-                        branch: str,
-                        remote_branch: tp.Optional[str] = None) -> None:
+def checkout_new_branch(
+    repo_folder: Path,
+    branch: str,
+    remote_branch: tp.Optional[str] = None
+) -> None:
     """
     Checks out a new branch in the repository.
     """
@@ -533,20 +577,23 @@ def has_remote_branch(repo_folder: Path, branch_name: str, remote: str) -> bool:
     Checks if a remote branch of a repository exists.
     """
     with local.cwd(repo_folder):
-        exit_code = (git["ls-remote", "--heads", remote, branch_name] |
-                     grep[branch_name]) & RETCODE
+        exit_code = (
+            git["ls-remote", "--heads", remote, branch_name] | grep[branch_name]
+        ) & RETCODE
         return tp.cast(bool, exit_code == 0)
 
 
-def branch_has_upstream(repo_folder: Path,
-                        branch_name: str,
-                        upstream: str = 'origin') -> bool:
+def branch_has_upstream(
+    repo_folder: Path, branch_name: str, upstream: str = 'origin'
+) -> bool:
     """
     Check if a branch has an upstream remote.
     """
     with local.cwd(repo_folder):
-        exit_code = (git["rev-parse", "--abbrev-ref", branch_name +
-                         "@{upstream}"] | grep[upstream]) & RETCODE
+        exit_code = (
+            git["rev-parse", "--abbrev-ref", branch_name + "@{upstream}"] |
+            grep[upstream]
+        ) & RETCODE
         return tp.cast(bool, exit_code == 0)
 
 
@@ -558,9 +605,11 @@ def get_download_steps() -> int:
     return 6
 
 
-def download_vara(llvm_source_folder: Path,
-                  progress_func: tp.Callable[[int], None] = lambda x: None,
-                  post_out: tp.Callable[[str], None] = lambda x: None) -> None:
+def download_vara(
+    llvm_source_folder: Path,
+    progress_func: tp.Callable[[int], None] = lambda x: None,
+    post_out: tp.Callable[[str], None] = lambda x: None
+) -> None:
     """
     Downloads VaRA an all other necessary repos from github.
     """
@@ -571,28 +620,37 @@ def download_vara(llvm_source_folder: Path,
         progress_func(dl_counter)
         dl_counter += 1
         if project is LLVMProjects.llvm:
-            download_repo(dl_folder.parent,
-                          project.url,
-                          dl_folder.name,
-                          remote_name=project.remote,
-                          post_out=post_out)
-            add_remote(dl_folder, "origin",
-                       "git@github.com:se-passau/vara-llvm.git")
+            download_repo(
+                dl_folder.parent,
+                project.url,
+                dl_folder.name,
+                remote_name=project.remote,
+                post_out=post_out
+            )
+            add_remote(
+                dl_folder, "origin", "git@github.com:se-passau/vara-llvm.git"
+            )
             fetch_remote("origin", dl_folder)
         if project is LLVMProjects.clang_extra:
-            download_repo(dl_folder / project.path.parent,
-                          project.url,
-                          "extra",
-                          remote_name=project.remote,
-                          post_out=post_out)
+            download_repo(
+                dl_folder / project.path.parent,
+                project.url,
+                "extra",
+                remote_name=project.remote,
+                post_out=post_out
+            )
         else:
-            download_repo(dl_folder / project.path.parent,
-                          project.url,
-                          remote_name=project.remote,
-                          post_out=post_out)
+            download_repo(
+                dl_folder / project.path.parent,
+                project.url,
+                remote_name=project.remote,
+                post_out=post_out
+            )
             if project is LLVMProjects.clang:
-                add_remote(dl_folder / project.path, "origin",
-                           "git@github.com:se-passau/vara-clang.git")
+                add_remote(
+                    dl_folder / project.path, "origin",
+                    "git@github.com:se-passau/vara-clang.git"
+                )
                 fetch_remote("origin", dl_folder / project.path)
 
     progress_func(dl_counter)
@@ -601,8 +659,9 @@ def download_vara(llvm_source_folder: Path,
         ln("-s", dl_folder / "tools/VaRA/utils/vara/builds/", "build_cfg")
 
 
-def checkout_vara_version(llvm_folder: Path, include_phasar: bool, version: int,
-                          dev: bool) -> None:
+def checkout_vara_version(
+    llvm_folder: Path, include_phasar: bool, version: int, dev: bool
+) -> None:
     """
     Checks out all related repositories to match the VaRA version number.
 
@@ -613,18 +672,23 @@ def checkout_vara_version(llvm_folder: Path, include_phasar: bool, version: int,
     if dev:
         version_name += "-dev"
 
-    checkout_new_branch(llvm_folder, "vara-" + version_name,
-                        "origin/vara-" + version_name)
-    checkout_new_branch(llvm_folder / "tools/clang/", "vara-" + version_name,
-                        "origin/vara-" + version_name)
+    checkout_new_branch(
+        llvm_folder, "vara-" + version_name, "origin/vara-" + version_name
+    )
+    checkout_new_branch(
+        llvm_folder / "tools/clang/", "vara-" + version_name,
+        "origin/vara-" + version_name
+    )
     if dev:
         checkout_branch(llvm_folder / "tools/VaRA/", "vara-dev")
 
-    checkout_branch(llvm_folder / "tools/clang/tools/extra/",
-                    "release_" + str(version))
+    checkout_branch(
+        llvm_folder / "tools/clang/tools/extra/", "release_" + str(version)
+    )
     checkout_branch(llvm_folder / "tools/lld/", "release_" + str(version))
-    checkout_branch(llvm_folder / "projects/compiler-rt/",
-                    "release_" + str(version))
+    checkout_branch(
+        llvm_folder / "projects/compiler-rt/", "release_" + str(version)
+    )
     if include_phasar:
         checkout_branch(llvm_folder / LLVMProjects.phasar.path, "development")
 
@@ -640,23 +704,28 @@ def get_cmake_var(var_name: str) -> bool:
     return False
 
 
-def set_cmake_var(var_name: str,
-                  value: str,
-                  post_out: tp.Callable[[str], None] = lambda x: None) -> None:
+def set_cmake_var(
+    var_name: str,
+    value: str,
+    post_out: tp.Callable[[str], None] = lambda x: None
+) -> None:
     """
     Sets a cmake variable in the current cmake config.
     """
     with ProcessManager.create_process(
-            "cmake", ["-D" + var_name + "=" + value, "."]) as proc:
+        "cmake", ["-D" + var_name + "=" + value, "."]
+    ) as proc:
         proc.setProcessChannelMode(QProcess.MergedChannels)
         proc.readyReadStandardOutput.connect(
-            lambda: run_process_with_output(proc, post_out))
+            lambda: run_process_with_output(proc, post_out)
+        )
 
 
 def init_vara_build(
-        path_to_llvm: Path,
-        build_type: BuildType,
-        post_out: tp.Callable[[str], None] = lambda x: None) -> None:
+    path_to_llvm: Path,
+    build_type: BuildType,
+    post_out: tp.Callable[[str], None] = lambda x: None
+) -> None:
     """
     Initialize a VaRA build config.
     """
@@ -665,16 +734,19 @@ def init_vara_build(
         os.makedirs(full_path)
 
     build_script = "./build_cfg/build-{build_type}.sh".format(
-        build_type=str(build_type))
+        build_type=str(build_type)
+    )
 
     with ProcessManager.create_process(build_script, workdir=full_path) as proc:
         proc.setProcessChannelMode(QProcess.MergedChannels)
         proc.readyReadStandardOutput.connect(
-            lambda: run_process_with_output(proc, post_out))
+            lambda: run_process_with_output(proc, post_out)
+        )
 
 
-def verify_build_structure(own_libgit: bool, include_phasar: bool,
-                           path_to_llvm: Path) -> None:
+def verify_build_structure(
+    own_libgit: bool, include_phasar: bool, path_to_llvm: Path
+) -> None:
     """
     Verify the build strucutre of VaRA:
         - ensure status of submodules
@@ -695,10 +767,12 @@ def verify_build_structure(own_libgit: bool, include_phasar: bool,
         update_all_submodules(path_to_llvm / LLVMProjects.phasar.path)
 
 
-def build_vara(path_to_llvm: Path,
-               install_prefix: str,
-               build_type: BuildType,
-               post_out: tp.Callable[[str], None] = lambda x: None) -> None:
+def build_vara(
+    path_to_llvm: Path,
+    install_prefix: str,
+    build_type: BuildType,
+    post_out: tp.Callable[[str], None] = lambda x: None
+) -> None:
     """
     Builds a VaRA configuration
     """
@@ -719,16 +793,19 @@ def build_vara(path_to_llvm: Path,
 
         set_vara_cmake_variables(install_prefix, post_out)
 
-    with ProcessManager.create_process("ninja", ["install"],
-                                       workdir=full_path) as proc:
+    with ProcessManager.create_process(
+        "ninja", ["install"], workdir=full_path
+    ) as proc:
         proc.setProcessChannelMode(QProcess.MergedChannels)
         proc.readyReadStandardOutput.connect(
-            lambda: run_process_with_output(proc, post_out))
+            lambda: run_process_with_output(proc, post_out)
+        )
 
 
 def set_vara_cmake_variables(
-        install_prefix: str,
-        post_out: tp.Callable[[str], None] = lambda x: None) -> None:
+    install_prefix: str,
+    post_out: tp.Callable[[str], None] = lambda x: None
+) -> None:
     """
     Set all wanted/needed cmake flags.
     """
@@ -780,8 +857,9 @@ class GitStatus():
         return "Error"
 
 
-def get_llvm_project_status(llvm_folder: Path,
-                            project_folder: str = "") -> GitStatus:
+def get_llvm_project_status(
+    llvm_folder: Path, project_folder: str = ""
+) -> GitStatus:
     """
     Retrieve the git status of a llvm project.
     """
@@ -847,8 +925,9 @@ class GitStateChecker(QRunnable):
     GitStateChecker to fetch and verify the git status.
     """
 
-    def __init__(self, state_signal: GitStateSignals,
-                 path_to_llvm: Path) -> None:
+    def __init__(
+        self, state_signal: GitStateSignals, path_to_llvm: Path
+    ) -> None:
         super(GitStateChecker, self).__init__()
         self.path_to_llvm = path_to_llvm
         self.signals = state_signal
@@ -859,8 +938,9 @@ class GitStateChecker(QRunnable):
         Retrieve status updates for llvm,clang, and VaRA
         """
         llvm_status = get_llvm_project_status(self.path_to_llvm)
-        clang_status = get_llvm_project_status(self.path_to_llvm,
-                                               str(LLVMProjects.clang.path))
+        clang_status = get_llvm_project_status(
+            self.path_to_llvm, str(LLVMProjects.clang.path)
+        )
         vara_status = get_vara_status(self.path_to_llvm)
 
         self.signals.status_update.emit(llvm_status, clang_status, vara_status)
@@ -940,9 +1020,11 @@ class ProcessManager():
         return ProcessManager.__instance
 
     @staticmethod
-    def start_process(process: QProcess,
-                      program: str,
-                      args: tp.Optional[tp.List[str]] = None) -> None:
+    def start_process(
+        process: QProcess,
+        program: str,
+        args: tp.Optional[tp.List[str]] = None
+    ) -> None:
         """
         Starts a QProcess object.
         This method returns immediately and does not wait for the process
@@ -981,8 +1063,9 @@ class ProcessManager():
                 x for x in self.__processes if x.state() != QProcess.NotRunning
             ]
 
-    def __start_process(self, process: QProcess, program: str,
-                        args: tp.List[str]) -> None:
+    def __start_process(
+        self, process: QProcess, program: str, args: tp.List[str]
+    ) -> None:
         with self.__mutex:
             if self.__has_shutdown:
                 return

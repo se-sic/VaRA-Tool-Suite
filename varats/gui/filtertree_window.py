@@ -22,16 +22,26 @@ from varats.data.filtertree_data import (
 from varats.data.version_header import VersionHeader
 from varats.gui import icons_rc  # noqa # pylint: disable=unused-import
 from varats.gui.filtertree_model import FilterTreeModel
-from varats.gui.views.ui_AuthorDateDeltaMaxFilter import Ui_AuthorDateDeltaMaxFilter
-from varats.gui.views.ui_AuthorDateDeltaMinFilter import Ui_AuthorDateDeltaMinFilter
+from varats.gui.views.ui_AuthorDateDeltaMaxFilter import (
+    Ui_AuthorDateDeltaMaxFilter,
+)
+from varats.gui.views.ui_AuthorDateDeltaMinFilter import (
+    Ui_AuthorDateDeltaMinFilter,
+)
 from varats.gui.views.ui_AuthorDateMaxFilter import Ui_AuthorDateMaxFilter
 from varats.gui.views.ui_AuthorDateMinFilter import Ui_AuthorDateMinFilter
 from varats.gui.views.ui_AuthorFilterProperties import Ui_AuthorFilterProperties
-from varats.gui.views.ui_CommitDateDeltaMaxFilter import Ui_CommitDateDeltaMaxFilter
-from varats.gui.views.ui_CommitDateDeltaMinFilter import Ui_CommitDateDeltaMinFilter
+from varats.gui.views.ui_CommitDateDeltaMaxFilter import (
+    Ui_CommitDateDeltaMaxFilter,
+)
+from varats.gui.views.ui_CommitDateDeltaMinFilter import (
+    Ui_CommitDateDeltaMinFilter,
+)
 from varats.gui.views.ui_CommitDateMaxFilter import Ui_CommitDateMaxFilter
 from varats.gui.views.ui_CommitDateMinFilter import Ui_CommitDateMinFilter
-from varats.gui.views.ui_CommitterFilterProperties import Ui_CommitterFilterProperties
+from varats.gui.views.ui_CommitterFilterProperties import (
+    Ui_CommitterFilterProperties,
+)
 from varats.gui.views.ui_FilterMain import Ui_FilterEditor
 from varats.gui.views.ui_FilterNodeProperties import Ui_FilterNodeProperties
 from varats.gui.views.ui_FilterProperties import Ui_FilterProperties
@@ -78,13 +88,17 @@ class PropertiesEditor(QWidget, Ui_FilterProperties):
         self._commit_date_min_filter_editor = CommitDateMinFilterEditor(self)
         self._commit_date_max_filter_editor = CommitDateMaxFilterEditor(self)
         self._author_date_delta_min_filter_editor = AuthorDateDeltaMinFilterEditor(
-            self)
+            self
+        )
         self._author_date_delta_max_filter_editor = AuthorDateDeltaMaxFilterEditor(
-            self)
+            self
+        )
         self._commit_date_delta_min_filter_editor = CommitDateDeltaMinFilterEditor(
-            self)
+            self
+        )
         self._commit_date_delta_max_filter_editor = CommitDateDeltaMaxFilterEditor(
-            self)
+            self
+        )
 
         self.layoutNode.addWidget(self._node_editor)
         self.layoutNodeWarning.addWidget(self._filter_unary_warning)
@@ -215,8 +229,8 @@ class FilterUnaryWarning(QWidget, Ui_FilterUnaryWarning):
         node = self._model.getNode(current)
         if issubclass(type(node), UnaryInteractionFilter):
             if node.hasFilterTypeAsParent(
-                    SourceOperator) or node.hasFilterTypeAsParent(
-                        TargetOperator):
+                SourceOperator
+            ) or node.hasFilterTypeAsParent(TargetOperator):
                 self.uiWarningLabel.hide()
             else:
                 self.uiWarningLabel.show()
@@ -436,44 +450,70 @@ class FilterWindow(QMainWindow, Ui_FilterEditor):
         self.uiTree.setModel(self._model)
 
         menu = QMenu()
-        menu.addAction(QIcon(QPixmap(":/operators/and-operator.svg")),
-                       'And Operator', self.addAndNode)
-        menu.addAction(QIcon(QPixmap(":/operators/or-operator.svg")),
-                       'Or Operator', self.addOrNode)
-        menu.addAction(QIcon(QPixmap(":/operators/not-operator.svg")),
-                       'Not Operator', self.addNotNode)
+        menu.addAction(
+            QIcon(QPixmap(":/operators/and-operator.svg")), 'And Operator',
+            self.addAndNode
+        )
+        menu.addAction(
+            QIcon(QPixmap(":/operators/or-operator.svg")), 'Or Operator',
+            self.addOrNode
+        )
+        menu.addAction(
+            QIcon(QPixmap(":/operators/not-operator.svg")), 'Not Operator',
+            self.addNotNode
+        )
         menu.addSeparator()
-        menu.addAction(QIcon(QPixmap(":/operators/source-operator.svg")),
-                       'Source Operator', self.addSourceNode)
-        menu.addAction(QIcon(QPixmap(":/operators/target-operator.svg")),
-                       'Target Operator', self.addTargetNode)
+        menu.addAction(
+            QIcon(QPixmap(":/operators/source-operator.svg")),
+            'Source Operator', self.addSourceNode
+        )
+        menu.addAction(
+            QIcon(QPixmap(":/operators/target-operator.svg")),
+            'Target Operator', self.addTargetNode
+        )
         menu.addSeparator()
-        menu.addAction(QIcon(QPixmap(":/breeze/light/im-user.svg")),
-                       'Committer Filter', self.addCommitterFilterNode)
-        menu.addAction(QIcon(QPixmap(":/breeze/light/im-user.svg")),
-                       'Author Filter', self.addAuthorFilterNode)
+        menu.addAction(
+            QIcon(QPixmap(":/breeze/light/im-user.svg")), 'Committer Filter',
+            self.addCommitterFilterNode
+        )
+        menu.addAction(
+            QIcon(QPixmap(":/breeze/light/im-user.svg")), 'Author Filter',
+            self.addAuthorFilterNode
+        )
         menu.addSeparator()
-        menu.addAction(QIcon(QPixmap(":/breeze/light/appointment-new.svg")),
-                       'AuthorDate Min Filter', self.addAuthorDateMinFilterNode)
-        menu.addAction(QIcon(QPixmap(":/breeze/light/appointment-new.svg")),
-                       'AuthorDate Max Filter', self.addAuthorDateMaxFilterNode)
-        menu.addAction(QIcon(QPixmap(":/breeze/light/appointment-new.svg")),
-                       'CommitDate Min Filter', self.addCommitDateMinFilterNode)
-        menu.addAction(QIcon(QPixmap(":/breeze/light/appointment-new.svg")),
-                       'CommitDate Max Filter', self.addCommitDateMaxFilterNode)
+        menu.addAction(
+            QIcon(QPixmap(":/breeze/light/appointment-new.svg")),
+            'AuthorDate Min Filter', self.addAuthorDateMinFilterNode
+        )
+        menu.addAction(
+            QIcon(QPixmap(":/breeze/light/appointment-new.svg")),
+            'AuthorDate Max Filter', self.addAuthorDateMaxFilterNode
+        )
+        menu.addAction(
+            QIcon(QPixmap(":/breeze/light/appointment-new.svg")),
+            'CommitDate Min Filter', self.addCommitDateMinFilterNode
+        )
+        menu.addAction(
+            QIcon(QPixmap(":/breeze/light/appointment-new.svg")),
+            'CommitDate Max Filter', self.addCommitDateMaxFilterNode
+        )
         menu.addSeparator()
-        menu.addAction(QIcon(QPixmap(":/breeze/light/chronometer.svg")),
-                       'AuthorDateDelta Min Filter',
-                       self.addAuthorDateDeltaMinFilterNode)
-        menu.addAction(QIcon(QPixmap(":/breeze/light/chronometer.svg")),
-                       'AuthorDateDelta Max Filter',
-                       self.addAuthorDateDeltaMaxFilterNode)
-        menu.addAction(QIcon(QPixmap(":/breeze/light/chronometer.svg")),
-                       'CommitDateDelta Min Filter',
-                       self.addCommitDateDeltaMinFilterNode)
-        menu.addAction(QIcon(QPixmap(":/breeze/light/chronometer.svg")),
-                       'CommitDateDelta Max Filter',
-                       self.addCommitDateDeltaMaxFilterNode)
+        menu.addAction(
+            QIcon(QPixmap(":/breeze/light/chronometer.svg")),
+            'AuthorDateDelta Min Filter', self.addAuthorDateDeltaMinFilterNode
+        )
+        menu.addAction(
+            QIcon(QPixmap(":/breeze/light/chronometer.svg")),
+            'AuthorDateDelta Max Filter', self.addAuthorDateDeltaMaxFilterNode
+        )
+        menu.addAction(
+            QIcon(QPixmap(":/breeze/light/chronometer.svg")),
+            'CommitDateDelta Min Filter', self.addCommitDateDeltaMinFilterNode
+        )
+        menu.addAction(
+            QIcon(QPixmap(":/breeze/light/chronometer.svg")),
+            'CommitDateDelta Max Filter', self.addCommitDateDeltaMaxFilterNode
+        )
 
         self.uiAddButton.setMenu(menu)
 
@@ -503,25 +543,30 @@ class FilterWindow(QMainWindow, Ui_FilterEditor):
         self._prop_editor.setModel(self._model)
 
         self.uiTree.selectionModel().currentChanged.connect(
-            self._prop_editor.setSelection)
+            self._prop_editor.setSelection
+        )
         self.uiTree.selectionModel().currentChanged.connect(
-            self._model.setSelection)
+            self._model.setSelection
+        )
 
         self.uiTree.setColumnWidth(0, 250)
 
     def closeEvent(self, event: QCloseEvent) -> None:
         if self.isWindowModified():
-            reply = QMessageBox.question(self, "Warning",
-                                         "Discard unsaved changes?",
-                                         QMessageBox.Yes | QMessageBox.No)
+            reply = QMessageBox.question(
+                self, "Warning", "Discard unsaved changes?",
+                QMessageBox.Yes | QMessageBox.No
+            )
             if reply == QMessageBox.Yes:
                 event.accept()
             else:
                 event.ignore()
 
     def updateWindowTitle(self) -> None:
-        self.setWindowTitle("[*]{} - InteractionFilter Editor".format(
-            self._file_basename if self._file_basename else "Untitled"))
+        self.setWindowTitle(
+            "[*]{} - InteractionFilter Editor".
+            format(self._file_basename if self._file_basename else "Untitled")
+        )
 
     def addAndNode(self):
         with self._lock:
@@ -649,9 +694,10 @@ class FilterWindow(QMainWindow, Ui_FilterEditor):
 
     def openFile(self) -> None:
         if self.isWindowModified():
-            reply = QMessageBox.question(self, "Warning",
-                                         "Discard unsaved changes?",
-                                         QMessageBox.Yes | QMessageBox.No)
+            reply = QMessageBox.question(
+                self, "Warning", "Discard unsaved changes?",
+                QMessageBox.Yes | QMessageBox.No
+            )
             if reply == QMessageBox.No:
                 return
 

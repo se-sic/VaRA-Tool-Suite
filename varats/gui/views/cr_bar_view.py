@@ -8,7 +8,11 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget
 
 from varats.data.data_manager import VDM
-from varats.data.reports.commit_report import CommitMap, CommitReport, CommitReportMeta
+from varats.data.reports.commit_report import (
+    CommitMap,
+    CommitReport,
+    CommitReportMeta,
+)
 from varats.gui.options import OptionTreeWidget
 from varats.gui.views.ui_CRBarView import Ui_Form
 
@@ -74,7 +78,8 @@ class CRBarView(QWidget, Ui_Form):
             "Load CommitReport file",
             "",
             "Yaml Files (*.yaml *.yml);;All Files (*)",
-            options=options)
+            options=options
+        )
 
         for file_path in file_paths:
             if not path.isfile(file_path):
@@ -105,10 +110,12 @@ class CRBarView(QWidget, Ui_Form):
             if skip:
                 continue
             self.loading_files += 1
-            self.statusLabel.setText("Loading files... " +
-                                     str(self.loading_files))
-            VDM.load_data_class(file_path, CommitReport,
-                                self._set_new_commit_report)
+            self.statusLabel.setText(
+                "Loading files... " + str(self.loading_files)
+            )
+            VDM.load_data_class(
+                file_path, CommitReport, self._set_new_commit_report
+            )
 
     def _update_option(self, item, col):
         text = item.text(0)
@@ -145,8 +152,9 @@ class CRBarView(QWidget, Ui_Form):
         if self.loading_files == 0:
             self.statusLabel.setText("")
         else:
-            self.statusLabel.setText("Loading files... " +
-                                     str(self.loading_files))
+            self.statusLabel.setText(
+                "Loading files... " + str(self.loading_files)
+            )
 
         self._update_report_order()
 

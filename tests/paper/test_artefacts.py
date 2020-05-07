@@ -5,7 +5,11 @@ import unittest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from varats.paper.artefacts import ArtefactType, PlotArtefact, load_artefacts_from_file
+from varats.paper.artefacts import (
+    ArtefactType,
+    PlotArtefact,
+    load_artefacts_from_file,
+)
 from varats.plots.paper_config_overview import PaperConfigOverviewPlot
 from varats.settings import CFG
 
@@ -61,7 +65,8 @@ class TestArtefacts(unittest.TestCase):
         self.assertEqual(
             self.artefact.output_path,
             Path(str(CFG['artefacts']['artefacts_dir'])) /
-            Path(str(CFG['paper_config']['current_config'])) / 'some/path')
+            Path(str(CFG['paper_config']['current_config'])) / 'some/path'
+        )
 
     def test_artefact_to_dict(self):
         """
@@ -73,8 +78,9 @@ class TestArtefacts(unittest.TestCase):
         self.assertEqual(artefact_dict['file_format'], 'png')
         self.assertEqual(artefact_dict['name'], 'overview')
         self.assertEqual(artefact_dict['output_path'], 'some/path')
-        self.assertEqual(artefact_dict['plot_type'],
-                         'paper_config_overview_plot')
+        self.assertEqual(
+            artefact_dict['plot_type'], 'paper_config_overview_plot'
+        )
         self.assertEqual(artefact_dict['report_type'], 'EmptyReport')
 
     # PlotArtefact tests
@@ -89,29 +95,36 @@ class TestArtefacts(unittest.TestCase):
         """
         Check if plot type is loaded correctly.
         """
-        self.__test_plot_artefact(lambda artefact: self.assertEqual(
-            artefact.plot_type, 'paper_config_overview_plot'))
+        self.__test_plot_artefact(
+            lambda artefact: self.
+            assertEqual(artefact.plot_type, 'paper_config_overview_plot')
+        )
 
     def test_artefact_plot_type_class(self):
         """
         Check if plot class is resolved correctly.
         """
-        self.__test_plot_artefact(lambda artefact: self.assertEqual(
-            artefact.plot_type_class, PaperConfigOverviewPlot))
+        self.__test_plot_artefact(
+            lambda artefact: self.
+            assertEqual(artefact.plot_type_class, PaperConfigOverviewPlot)
+        )
 
     def test_artefact_file_format(self):
         """
         Check if plot file format is loaded correctly.
         """
         self.__test_plot_artefact(
-            lambda artefact: self.assertEqual(artefact.file_format, 'png'))
+            lambda artefact: self.assertEqual(artefact.file_format, 'png')
+        )
 
     def test_artefact_plot_kwargs(self):
         """
         Check if plot kwargs are loaded correctly.
         """
-        self.__test_plot_artefact(lambda artefact: self.assertEqual(
-            artefact.plot_kwargs['report_type'], 'EmptyReport'))
+        self.__test_plot_artefact(
+            lambda artefact: self.
+            assertEqual(artefact.plot_kwargs['report_type'], 'EmptyReport')
+        )
 
     # Artefacts tests
 
@@ -126,11 +139,14 @@ class TestArtefacts(unittest.TestCase):
         Check if artefact is added.
         """
         self.artefacts.add_artefact(
-            PlotArtefact('foo',
-                         Path('some/path'),
-                         'paper_config_overview_plot',
-                         'svg',
-                         some='argument'))
+            PlotArtefact(
+                'foo',
+                Path('some/path'),
+                'paper_config_overview_plot',
+                'svg',
+                some='argument'
+            )
+        )
         self.assertEqual(len(list(self.artefacts)), 2)
 
     def test_artefacts_to_dict(self):

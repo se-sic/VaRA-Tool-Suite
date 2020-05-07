@@ -14,7 +14,11 @@ from PyQt5.QtCore import QProcess
 
 from varats.plots.plot_utils import check_required_args
 from varats.settings import CFG, save_config
-from varats.tools.research_tools.research_tool import CodeBase, ResearchTool, SubProject
+from varats.tools.research_tools.research_tool import (
+    CodeBase,
+    ResearchTool,
+    SubProject,
+)
 from varats.utils.exceptions import ProcessTerminatedError
 from varats.utils.logger_util import log_without_linesep
 from varats.vara_manager import (
@@ -35,18 +39,23 @@ class VaRACodeBase(CodeBase):
 
     def __init__(self, base_dir: Path) -> None:
         sub_projects = [
-            SubProject(self, "vara-llvm-project",
-                       "https://github.com/llvm/llvm-project.git", "upstream",
-                       "vara-llvm-project"),
-            SubProject(self, "VaRA", "git@github.com:se-passau/VaRA.git",
-                       "origin", "vara-llvm-project/vara"),
+            SubProject(
+                self, "vara-llvm-project",
+                "https://github.com/llvm/llvm-project.git", "upstream",
+                "vara-llvm-project"
+            ),
+            SubProject(
+                self, "VaRA", "git@github.com:se-passau/VaRA.git", "origin",
+                "vara-llvm-project/vara"
+            ),
             SubProject(
                 self,
                 "phasar",
                 "https://github.com/secure-software-engineering/phasar.git",
                 "origin",
                 "vara-llvm-project/phasar",
-                auto_clone=False)
+                auto_clone=False
+            )
         ]
         super().__init__(base_dir, sub_projects)
 
@@ -55,20 +64,23 @@ class VaRACodeBase(CodeBase):
         Sets up VaRA specific upstream remotes for projects that were forked.
         """
         self.get_sub_project("vara-llvm-project").add_remote(
-            "origin", "git@github.com:se-passau/vara-llvm-project.git")
+            "origin", "git@github.com:se-passau/vara-llvm-project.git"
+        )
 
     def setup_build_link(self) -> None:
         """
         Setup build-config folder link for VaRA's default build setup scripts.
         """
         llvm_project_dir = self.base_dir / self.get_sub_project(
-            "vara-llvm-project").path
+            "vara-llvm-project"
+        ).path
         mkdir(llvm_project_dir / "build/")
         with local.cwd(llvm_project_dir / "build/"):
             ln("-s", llvm_project_dir / "vara/utils/vara/builds/", "build_cfg")
 
-    def checkout_vara_version(self, version: int,
-                              use_dev_branches: bool) -> None:
+    def checkout_vara_version(
+        self, version: int, use_dev_branches: bool
+    ) -> None:
         """
         Checkout out a specific version of VaRA.
 
@@ -79,8 +91,8 @@ class VaRACodeBase(CodeBase):
         dev_suffix = "-dev" if use_dev_branches else ""
         print(f"Checking out VaRA version {str(version) + dev_suffix}")
 
-        self.get_sub_project("vara-llvm-project").checkout_branch(
-            f"vara-{version}" + dev_suffix)
+        self.get_sub_project("vara-llvm-project"
+                            ).checkout_branch(f"vara-{version}" + dev_suffix)
 
         # TODO (sattlerf): make different checkout for older versions
         self.get_sub_project("VaRA").checkout_branch(f"vara" + dev_suffix)
@@ -167,7 +179,8 @@ class VaRA(ResearchTool[VaRACodeBase]):
         full_path = self.code_base.base_dir / "vara-llvm-project" / "build/"
         if not self.is_build_type_supported(build_type):
             LOG.critical(
-                f"BuildType {build_type.name} is not supported by VaRA")
+                f"BuildType {build_type.name} is not supported by VaRA"
+            )
             return
 
         full_path /= build_type.build_folder()
@@ -178,14 +191,18 @@ class VaRA(ResearchTool[VaRACodeBase]):
             try:
                 os.makedirs(full_path.parent, exist_ok=True)
                 build_script = "./build_cfg/build-{build_type}.sh".format(
-                    build_type=str(build_type))
+                    build_type=str(build_type)
+                )
 
                 with ProcessManager.create_process(
-                        build_script, workdir=full_path.parent) as proc:
+                    build_script, workdir=full_path.parent
+                ) as proc:
                     proc.setProcessChannelMode(QProcess.MergedChannels)
                     proc.readyReadStandardOutput.connect(
                         lambda: run_process_with_output(
-                            proc, log_without_linesep(print)))
+                            proc, log_without_linesep(print)
+                        )
+                    )
             except ProcessTerminatedError as error:
                 shutil.rmtree(full_path)
                 raise error
@@ -194,18 +211,21 @@ class VaRA(ResearchTool[VaRACodeBase]):
         # Set install prefix in cmake
         with local.cwd(full_path):
             CFG["vara"]["llvm_install_dir"] = str(install_location)
-            set_vara_cmake_variables(str(install_location),
-                                     log_without_linesep(print))
+            set_vara_cmake_variables(
+                str(install_location), log_without_linesep(print)
+            )
         print(" - Finished extra cmake config.")
 
         print(" - Now building...")
         # Compile llvm + VaRA
-        with ProcessManager.create_process("ninja", ["install"],
-                                           workdir=full_path) as proc:
+        with ProcessManager.create_process(
+            "ninja", ["install"], workdir=full_path
+        ) as proc:
             proc.setProcessChannelMode(QProcess.MergedChannels)
             proc.readyReadStandardOutput.connect(
-                lambda: run_process_with_output(proc, log_without_linesep(print)
-                                               ))
+                lambda:
+                run_process_with_output(proc, log_without_linesep(print))
+            )
 
     def verify_install(self, install_location: Path) -> bool:
         # pylint: disable=no-self-use

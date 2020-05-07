@@ -10,11 +10,16 @@ import matplotlib.style as style
 import numpy as np
 import pandas as pd
 
-from varats.data.databases.blame_interaction_database import BlameInteractionDatabase
+from varats.data.databases.blame_interaction_database import (
+    BlameInteractionDatabase,
+)
 from varats.data.reports.commit_report import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plots.plot import Plot
-from varats.plots.repository_churn import build_repo_churn_table, draw_code_churn
+from varats.plots.repository_churn import (
+    build_repo_churn_table,
+    draw_code_churn,
+)
 from varats.utils.git_util import ChurnConfig, calc_repo_code_churn
 from varats.utils.project_util import get_local_project_git
 
@@ -30,10 +35,10 @@ def _transform_to_lorenz_values(data: pd.Series) -> pd.Series:
     return scaled_prefix_sum
 
 
-def draw_interaction_lorenz_curve(axis: axes.SubplotBase, data: pd.DataFrame,
-                                  consider_in_interactions: bool,
-                                  consider_out_interactions: bool,
-                                  plot_cfg: tp.Dict[str, tp.Any]) -> None:
+def draw_interaction_lorenz_curve(
+    axis: axes.SubplotBase, data: pd.DataFrame, consider_in_interactions: bool,
+    consider_out_interactions: bool, plot_cfg: tp.Dict[str, tp.Any]
+) -> None:
     """
     Draws a lorenz_curve onto the given axis.
 
@@ -49,18 +54,19 @@ def draw_interaction_lorenz_curve(axis: axes.SubplotBase, data: pd.DataFrame,
         data_selector = 'OUT_HEAD_Interactions'
     else:
         raise AssertionError(
-            "At least one of the in/out interaction needs to be selected")
+            "At least one of the in/out interaction needs to be selected"
+        )
 
     data.sort_values(by=[data_selector, 'revision'], inplace=True)
     lor = _transform_to_lorenz_values(data[data_selector])
-    axis.plot(data['revision'],
-              lor,
-              color='#cc0099',
-              linewidth=plot_cfg['linewidth'])
+    axis.plot(
+        data['revision'], lor, color='#cc0099', linewidth=plot_cfg['linewidth']
+    )
 
 
-def draw_perfect_lorenz_curve(axis: axes.SubplotBase, data: pd.DataFrame,
-                              plot_cfg: tp.Dict[str, tp.Any]) -> None:
+def draw_perfect_lorenz_curve(
+    axis: axes.SubplotBase, data: pd.DataFrame, plot_cfg: tp.Dict[str, tp.Any]
+) -> None:
     """
     Draws a perfect lorenz curve onto the given axis, i.e., a straight line
     from the point of origin to the right upper corner.
@@ -69,16 +75,19 @@ def draw_perfect_lorenz_curve(axis: axes.SubplotBase, data: pd.DataFrame,
         axis: axis to draw to
         data: plotting data
     """
-    axis.plot(data['revision'],
-              np.linspace(0.0, 1.0, len(data['revision'])),
-              color='black',
-              linestyle='--',
-              linewidth=plot_cfg['linewidth'])
+    axis.plot(
+        data['revision'],
+        np.linspace(0.0, 1.0, len(data['revision'])),
+        color='black',
+        linestyle='--',
+        linewidth=plot_cfg['linewidth']
+    )
 
 
-def draw_interaction_code_churn(axis: axes.SubplotBase, data: pd.DataFrame,
-                                project_name: str,
-                                commit_map: CommitMap) -> None:
+def draw_interaction_code_churn(
+    axis: axes.SubplotBase, data: pd.DataFrame, project_name: str,
+    commit_map: CommitMap
+) -> None:
     """
     Helper function to draw parts of the code churn that are related to our
     data.
@@ -101,12 +110,15 @@ def draw_interaction_code_churn(axis: axes.SubplotBase, data: pd.DataFrame,
         churn_data = churn_data.reindex(index=data['time_id'])
         return churn_data.reset_index()
 
-    draw_code_churn(axis, project_name, commit_map,
-                    remove_revisions_without_data, apply_sorting)
+    draw_code_churn(
+        axis, project_name, commit_map, remove_revisions_without_data,
+        apply_sorting
+    )
 
 
-def filter_non_code_changes(blame_data: pd.DataFrame,
-                            project_name: str) -> pd.DataFrame:
+def filter_non_code_changes(
+    blame_data: pd.DataFrame, project_name: str
+) -> pd.DataFrame:
     """
     Filter all revision from data frame that are not code change related.
 
@@ -120,10 +132,12 @@ def filter_non_code_changes(blame_data: pd.DataFrame,
     repo = get_local_project_git(project_name)
     code_related_changes = [
         x[:10] for x in calc_repo_code_churn(
-            repo, ChurnConfig.create_c_style_languages_config())
+            repo, ChurnConfig.create_c_style_languages_config()
+        )
     ]
     return blame_data[blame_data.apply(
-        lambda x: x['revision'][:10] in code_related_changes, axis=1)]
+        lambda x: x['revision'][:10] in code_related_changes, axis=1
+    )]
 
 
 class BlameLorenzCurve(Plot):
@@ -167,7 +181,8 @@ class BlameLorenzCurve(Plot):
             project_name, [
                 "revision", "time_id", "IN_HEAD_Interactions",
                 "OUT_HEAD_Interactions", "HEAD_Interactions"
-            ], commit_map, case_study)
+            ], commit_map, case_study
+        )
         data = filter_non_code_changes(data, project_name)
 
         # Draw left side of the plot
@@ -180,8 +195,9 @@ class BlameLorenzCurve(Plot):
         draw_interaction_lorenz_curve(main_axis_r, data, False, True, plot_cfg)
         draw_perfect_lorenz_curve(main_axis_r, data, plot_cfg)
 
-        draw_interaction_code_churn(churn_axis_r, data, project_name,
-                                    commit_map)
+        draw_interaction_code_churn(
+            churn_axis_r, data, project_name, commit_map
+        )
 
         # Adapt axis to draw nicer plots
         for x_label in churn_axis.get_xticklabels():
@@ -212,14 +228,15 @@ def gini(lorenz_values: pd.Series) -> pd.Series:
     """
     return 0.5 * (
         (np.abs(np.subtract.outer(lorenz_values, lorenz_values)).mean()) /
-        np.mean(lorenz_values))
+        np.mean(lorenz_values)
+    )
 
 
-def draw_gini_churn_over_time(axis: axes.SubplotBase, blame_data: pd.DataFrame,
-                              project_name: str, commit_map: CommitMap,
-                              consider_insertions: bool,
-                              consider_deletions: bool,
-                              plot_cfg: tp.Dict[str, tp.Any]) -> None:
+def draw_gini_churn_over_time(
+    axis: axes.SubplotBase, blame_data: pd.DataFrame, project_name: str,
+    commit_map: CommitMap, consider_insertions: bool, consider_deletions: bool,
+    plot_cfg: tp.Dict[str, tp.Any]
+) -> None:
     """
     Draws the gini of the churn distribution over time.
 
@@ -241,7 +258,8 @@ def draw_gini_churn_over_time(axis: axes.SubplotBase, blame_data: pd.DataFrame,
         return revision[:10] in unique_revs
 
     churn_data = churn_data[churn_data.apply(
-        lambda x: remove_revisions_without_data(x['revision']), axis=1)]
+        lambda x: remove_revisions_without_data(x['revision']), axis=1
+    )]
 
     # reorder churn data to match blame_data
     churn_data.set_index('time_id', inplace=True)
@@ -252,23 +270,29 @@ def draw_gini_churn_over_time(axis: axes.SubplotBase, blame_data: pd.DataFrame,
     for time_id in blame_data['time_id']:
         if consider_insertions and consider_deletions:
             lorenz_values = np.array(
-                _transform_to_lorenz_values(
-                    (churn_data[churn_data.time_id <= time_id].insertions +
-                     churn_data[churn_data.time_id <= time_id].deletions
-                    ).sort_values(ascending=True)))
+                _transform_to_lorenz_values((
+                    churn_data[churn_data.time_id <= time_id].insertions +
+                    churn_data[churn_data.time_id <= time_id].deletions
+                ).sort_values(ascending=True))
+            )
         elif consider_insertions:
             lorenz_values = np.array(
-                _transform_to_lorenz_values(churn_data[
-                    churn_data.time_id <= time_id].insertions.sort_values(
-                        ascending=True)))
+                _transform_to_lorenz_values(
+                    churn_data[churn_data.time_id <= time_id
+                              ].insertions.sort_values(ascending=True)
+                )
+            )
         elif consider_deletions:
             lorenz_values = np.array(
-                _transform_to_lorenz_values(churn_data[
-                    churn_data.time_id <= time_id].deletions.sort_values(
-                        ascending=True)))
+                _transform_to_lorenz_values(
+                    churn_data[churn_data.time_id <= time_id
+                              ].deletions.sort_values(ascending=True)
+                )
+            )
         else:
             raise AssertionError(
-                "At least one of the in/out interaction needs to be selected")
+                "At least one of the in/out interaction needs to be selected"
+            )
 
         gini_churn.append(gini(lorenz_values))
     if consider_insertions and consider_deletions:
@@ -281,18 +305,21 @@ def draw_gini_churn_over_time(axis: axes.SubplotBase, blame_data: pd.DataFrame,
         linestyle = ':'
         label = 'Deletions'
 
-    axis.plot(blame_data['revision'],
-              gini_churn,
-              linestyle=linestyle,
-              linewidth=plot_cfg['linewidth'],
-              label=label,
-              color='orange')
+    axis.plot(
+        blame_data['revision'],
+        gini_churn,
+        linestyle=linestyle,
+        linewidth=plot_cfg['linewidth'],
+        label=label,
+        color='orange'
+    )
 
 
-def draw_gini_blame_over_time(axis: axes.SubplotBase, blame_data: pd.DataFrame,
-                              consider_in_interactions: bool,
-                              consider_out_interactions: bool,
-                              plot_cfg: tp.Dict[str, tp.Any]) -> None:
+def draw_gini_blame_over_time(
+    axis: axes.SubplotBase, blame_data: pd.DataFrame,
+    consider_in_interactions: bool, consider_out_interactions: bool,
+    plot_cfg: tp.Dict[str, tp.Any]
+) -> None:
     """
     Draws the gini coefficients of the blame interactions over time.
 
@@ -316,7 +343,8 @@ def draw_gini_blame_over_time(axis: axes.SubplotBase, blame_data: pd.DataFrame,
         label = "OUT Interactions"
     else:
         raise AssertionError(
-            "At least one of the in/out interaction needs to be selected")
+            "At least one of the in/out interaction needs to be selected"
+        )
 
     gini_coefficients = []
 
@@ -324,16 +352,20 @@ def draw_gini_blame_over_time(axis: axes.SubplotBase, blame_data: pd.DataFrame,
         lvalues = np.array(
             _transform_to_lorenz_values(
                 blame_data[blame_data.time_id <= time_id]
-                [data_selector].sort_values(ascending=True)))
+                [data_selector].sort_values(ascending=True)
+            )
+        )
 
         gini_coefficients.append(gini(lvalues))
 
-    axis.plot(blame_data.revision,
-              gini_coefficients,
-              linestyle=linestyle,
-              linewidth=plot_cfg['linewidth'],
-              label=label,
-              color='#cc0099')
+    axis.plot(
+        blame_data.revision,
+        gini_coefficients,
+        linestyle=linestyle,
+        linewidth=plot_cfg['linewidth'],
+        label=label,
+        color='#cc0099'
+    )
 
 
 class BlameGiniOverTime(Plot):
@@ -373,26 +405,31 @@ class BlameGiniOverTime(Plot):
             project_name, [
                 "revision", "time_id", "IN_HEAD_Interactions",
                 "OUT_HEAD_Interactions", "HEAD_Interactions"
-            ], commit_map, case_study)
+            ], commit_map, case_study
+        )
         data = filter_non_code_changes(data, project_name)
         data.sort_values(by=['time_id'], inplace=True)
 
         draw_gini_blame_over_time(main_axis, data, True, True, plot_cfg)
         draw_gini_blame_over_time(main_axis, data, True, False, plot_cfg)
         draw_gini_blame_over_time(main_axis, data, False, True, plot_cfg)
-        draw_gini_churn_over_time(main_axis, data, project_name, commit_map,
-                                  True, True, plot_cfg)
-        draw_gini_churn_over_time(main_axis, data, project_name, commit_map,
-                                  True, False, plot_cfg)
-        draw_gini_churn_over_time(main_axis, data, project_name, commit_map,
-                                  False, True, plot_cfg)
+        draw_gini_churn_over_time(
+            main_axis, data, project_name, commit_map, True, True, plot_cfg
+        )
+        draw_gini_churn_over_time(
+            main_axis, data, project_name, commit_map, True, False, plot_cfg
+        )
+        draw_gini_churn_over_time(
+            main_axis, data, project_name, commit_map, False, True, plot_cfg
+        )
         main_axis.legend()
 
         main_axis.set_ylim((0., 1.))
 
-        draw_interaction_code_churn(churn_axis, data,
-                                    self.plot_kwargs['project'],
-                                    self.plot_kwargs['get_cmap']())
+        draw_interaction_code_churn(
+            churn_axis, data, self.plot_kwargs['project'],
+            self.plot_kwargs['get_cmap']()
+        )
 
         # Adapt axis to draw nicer plots
         for x_label in churn_axis.get_xticklabels():

@@ -5,7 +5,11 @@ needed to build VaRA.
 import unittest
 from pathlib import Path
 
-from varats.vara_manager import LLVMProjects, VaRAExtraProjectsIter, VaRAProjectsIter
+from varats.vara_manager import (
+    LLVMProjects,
+    VaRAExtraProjectsIter,
+    VaRAProjectsIter,
+)
 
 
 class TestLLVMProjects(unittest.TestCase):
@@ -39,10 +43,12 @@ class TestLLVMProjects(unittest.TestCase):
         Tests if the VaRA only extra projects iterator works.
         """
         vara_extra_projects_iter = iter(VaRAExtraProjectsIter())
-        self.assertEqual(next(vara_extra_projects_iter),
-                         LLVMProjects.clang_extra)
-        self.assertEqual(next(vara_extra_projects_iter),
-                         LLVMProjects.compiler_rt)
+        self.assertEqual(
+            next(vara_extra_projects_iter), LLVMProjects.clang_extra
+        )
+        self.assertEqual(
+            next(vara_extra_projects_iter), LLVMProjects.compiler_rt
+        )
         self.assertEqual(next(vara_extra_projects_iter), LLVMProjects.lld)
         self.assertEqual(next(vara_extra_projects_iter), LLVMProjects.phasar)
         self.assertRaises(StopIteration, next, vara_extra_projects_iter)
