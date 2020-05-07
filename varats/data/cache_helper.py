@@ -33,8 +33,9 @@ def get_data_file_path(data_id: str, project_name: str) -> Path:
     >>> isinstance(get_data_file_path("foo.csv", "tmux"), Path)
     True
     """
-    return Path(str(
-        CFG["plots"]["data_cache"])) / f"{data_id}-{project_name}.csv.gz"
+    return Path(
+        str(CFG["plots"]["data_cache"])
+    ) / f"{data_id}-{project_name}.csv.gz"
 
 
 def load_cached_df_or_none(data_id: str,
@@ -59,8 +60,9 @@ def load_cached_df_or_none(data_id: str,
     return pd.read_csv(str(file_path), index_col=0, compression='infer')
 
 
-def cache_dataframe(data_id: str, project_name: str,
-                    dataframe: pd.DataFrame) -> None:
+def cache_dataframe(
+    data_id: str, project_name: str, dataframe: pd.DataFrame
+) -> None:
     """
     Cache a dataframe by persisting it to disk.
 
@@ -73,10 +75,10 @@ def cache_dataframe(data_id: str, project_name: str,
     dataframe.to_csv(str(file_path), compression='infer')
 
 
-def __create_cache_entry(create_df_from_report: tp.Callable[[tp.Any],
-                                                            pd.DataFrame],
-                         create_report: tp.Callable[[Path], BaseReport],
-                         file_path: Path) -> pd.DataFrame:
+def __create_cache_entry(
+    create_df_from_report: tp.Callable[[tp.Any], pd.DataFrame],
+    create_report: tp.Callable[[Path], BaseReport], file_path: Path
+) -> pd.DataFrame:
     try:
         new_df = create_df_from_report(create_report(file_path))
         new_df[CACHE_REVISION_COL] = \
@@ -90,12 +92,12 @@ def __create_cache_entry(create_df_from_report: tp.Callable[[tp.Any],
 
 
 def build_cached_report_table(
-        data_id: str, project_name: str,
-        create_empty_df: tp.Callable[[], pd.DataFrame],
-        create_df_from_report: tp.Callable[[tp.Any], pd.DataFrame],
-        create_report: tp.Callable[[Path],
-                                   BaseReport], report_files: tp.List[Path],
-        failed_report_files: tp.List[Path]) -> pd.DataFrame:
+    data_id: str, project_name: str, create_empty_df: tp.Callable[[],
+                                                                  pd.DataFrame],
+    create_df_from_report: tp.Callable[[tp.Any], pd.DataFrame],
+    create_report: tp.Callable[[Path], BaseReport], report_files: tp.List[Path],
+    failed_report_files: tp.List[Path]
+) -> pd.DataFrame:
     """
     Build up an automatically cache dataframe
 
@@ -120,17 +122,23 @@ def build_cached_report_table(
 
     def is_missing_file(report_file: Path) -> bool:
         commit_hash = MetaReport.get_commit_hash_from_result_file(
-            report_file.name)
-        return not tp.cast(bool,
-                           (commit_hash == cached_df[CACHE_REVISION_COL]).any())
+            report_file.name
+        )
+        return not tp.cast(
+            bool, (commit_hash == cached_df[CACHE_REVISION_COL]).any()
+        )
 
     def is_newer_file(report_file: Path) -> bool:
         commit_hash = MetaReport.get_commit_hash_from_result_file(
-            report_file.name)
-        return tp.cast(bool,
-                       (report_file.stat().st_mtime >
-                        cached_df[cached_df[CACHE_REVISION_COL] ==
-                                  commit_hash][CACHE_TIMESTAMP_COL]).any())
+            report_file.name
+        )
+        return tp.cast(
+            bool, (
+                report_file.stat().st_mtime >
+                cached_df[cached_df[CACHE_REVISION_COL] == commit_hash
+                         ][CACHE_TIMESTAMP_COL]
+            ).any()
+        )
 
     missing_report_files = [
         report_file for report_file in report_files
@@ -150,11 +158,15 @@ def build_cached_report_table(
 
     new_data_frames = []
     for num, file_path in enumerate(missing_report_files):
-        LOG.info(f"Loading missing file ({(num + 1)}/"
-                 f"{len(missing_report_files)}): {file_path}")
+        LOG.info(
+            f"Loading missing file ({(num + 1)}/"
+            f"{len(missing_report_files)}): {file_path}"
+        )
         new_data_frames.append(
-            __create_cache_entry(create_df_from_report, create_report,
-                                 file_path))
+            __create_cache_entry(
+                create_df_from_report, create_report, file_path
+            )
+        )
 
     new_df = pd.concat([cached_df] + new_data_frames,
                        ignore_index=True,
@@ -162,10 +174,13 @@ def build_cached_report_table(
 
     new_df.set_index(CACHE_REVISION_COL, inplace=True)
     for num, file_path in enumerate(updated_report_files):
-        LOG.info(f"Updating outdated file "
-                 f"({(num + 1)}/{len(updated_report_files)}): {file_path}")
-        updated_entry = __create_cache_entry(create_df_from_report,
-                                             create_report, file_path)
+        LOG.info(
+            f"Updating outdated file "
+            f"({(num + 1)}/{len(updated_report_files)}): {file_path}"
+        )
+        updated_entry = __create_cache_entry(
+            create_df_from_report, create_report, file_path
+        )
         updated_entry.set_index(CACHE_REVISION_COL)
         new_df.update(updated_entry)
     new_df.reset_index(inplace=True)
@@ -174,7 +189,8 @@ def build_cached_report_table(
         LOG.info(f"Dropping {len(failed_revisions)} newly failing file(s)")
         new_df.drop(
             new_df[new_df[CACHE_REVISION_COL].isin(failed_revisions)].index,
-            inplace=True)
+            inplace=True
+        )
 
     cache_dataframe(data_id, project_name, new_df)
 

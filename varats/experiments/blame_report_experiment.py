@@ -37,8 +37,8 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         self,
         project: Project,
     ):
-        super(BlameReportGeneration, self).__init__(obj=project,
-                                                    action_fn=self.analyze)
+        super(BlameReportGeneration,
+              self).__init__(obj=project, action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
         """
@@ -56,34 +56,43 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         bc_cache_folder = local.path(
             Extract.BC_CACHE_FOLDER_TEMPLATE.format(
                 cache_dir=str(BB_CFG["varats"]["result"]),
-                project_name=str(project.name)))
+                project_name=str(project.name)
+            )
+        )
 
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
             result_dir=str(BB_CFG["varats"]["outfile"]),
-            project_dir=str(project.name))
+            project_dir=str(project.name)
+        )
 
         mkdir("-p", vara_result_folder)
 
         for binary in project.binaries:
-            result_file = BR.get_file_name(project_name=str(project.name),
-                                           binary_name=binary.name,
-                                           project_version=str(project.version),
-                                           project_uuid=str(project.run_uuid),
-                                           extension_type=FSE.Success)
+            result_file = BR.get_file_name(
+                project_name=str(project.name),
+                binary_name=binary.name,
+                project_version=str(project.version),
+                project_uuid=str(project.run_uuid),
+                extension_type=FSE.Success
+            )
 
             opt_params = [
                 "-vara-BD", "-vara-BR", "-vara-init-commits",
                 "-vara-report-outfile={res_folder}/{res_file}".format(
-                    res_folder=vara_result_folder, res_file=result_file)
+                    res_folder=vara_result_folder, res_file=result_file
+                )
             ]
 
-            opt_params.append(bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
-                project_name=project.name,
-                binary_name=binary.name,
-                project_version=project.version))
+            opt_params.append(
+                bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
+                    project_name=project.name,
+                    binary_name=binary.name,
+                    project_version=project.version
+                )
+            )
 
             run_cmd = opt[opt_params]
 
@@ -94,13 +103,16 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                 timeout[timeout_duration, run_cmd],
                 PEErrorHandler(
                     vara_result_folder,
-                    BR.get_file_name(project_name=str(project.name),
-                                     binary_name=binary.name,
-                                     project_version=str(project.version),
-                                     project_uuid=str(project.run_uuid),
-                                     extension_type=FSE.Failed,
-                                     file_ext=".txt"), run_cmd,
-                    timeout_duration))
+                    BR.get_file_name(
+                        project_name=str(project.name),
+                        binary_name=binary.name,
+                        project_version=str(project.version),
+                        project_uuid=str(project.run_uuid),
+                        extension_type=FSE.Failed,
+                        file_ext=".txt"
+                    ), run_cmd, timeout_duration
+                )
+            )
 
 
 class BlameReportExperiment(VersionExperiment):
@@ -123,7 +135,8 @@ class BlameReportExperiment(VersionExperiment):
         """
 
         BE.setup_basic_blame_experiment(
-            self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE)
+            self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE
+        )
 
         analysis_actions = BE.generate_basic_blame_experiment_actions(project)
 

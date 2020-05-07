@@ -61,25 +61,32 @@ def _gen_overview_data(tag_blocked: bool,
         commit_map,
         case_study,
         result_file_type=result_file_type,
-        tag_blocked=tag_blocked)
+        tag_blocked=tag_blocked
+    )
     positions["success"] = (
-        revisions[revisions["file_status"] == FileStatusExtension.Success.
-                  get_status_extension()])["time_id"].tolist()
+        revisions[revisions["file_status"] ==
+                  FileStatusExtension.Success.get_status_extension()]
+    )["time_id"].tolist()
     positions["failed"] = (
-        revisions[revisions["file_status"] == FileStatusExtension.Failed.
-                  get_status_extension()])["time_id"].tolist()
+        revisions[revisions["file_status"] ==
+                  FileStatusExtension.Failed.get_status_extension()]
+    )["time_id"].tolist()
     positions["blocked"] = (
-        revisions[revisions["file_status"] == FileStatusExtension.Blocked.
-                  get_status_extension()])["time_id"].tolist()
-    positions["blocked_all"].extend(
-        (revisions[revisions["file_status"] == FileStatusExtension.Blocked.
-                   get_status_extension()])["time_id"].tolist())
+        revisions[revisions["file_status"] ==
+                  FileStatusExtension.Blocked.get_status_extension()]
+    )["time_id"].tolist()
+    positions["blocked_all"].extend((
+        revisions[revisions["file_status"] ==
+                  FileStatusExtension.Blocked.get_status_extension()]
+    )["time_id"].tolist())
     positions["missing"] = (
-        revisions[revisions["file_status"] == FileStatusExtension.Missing.
-                  get_status_extension()])["time_id"].tolist()
+        revisions[revisions["file_status"] ==
+                  FileStatusExtension.Missing.get_status_extension()]
+    )["time_id"].tolist()
     positions["compile_error"] = (
-        revisions[revisions["file_status"] == FileStatusExtension.CompileError.
-                  get_status_extension()])["time_id"].tolist()
+        revisions[revisions["file_status"] ==
+                  FileStatusExtension.CompileError.get_status_extension()]
+    )["time_id"].tolist()
 
     return positions
 
@@ -99,9 +106,11 @@ class PaperConfigOverviewPlot(Plot):
 
         commit_map: CommitMap = self.plot_kwargs["get_cmap"]()
         show_blocked: bool = strtobool(
-            self.plot_kwargs.get("show_blocked", "True"))
+            self.plot_kwargs.get("show_blocked", "True")
+        )
         show_all_blocked: bool = strtobool(
-            self.plot_kwargs.get("show_all_blocked", "False"))
+            self.plot_kwargs.get("show_all_blocked", "False")
+        )
 
         data = _gen_overview_data(show_blocked, **self.plot_kwargs)
 
@@ -111,33 +120,36 @@ class PaperConfigOverviewPlot(Plot):
 
         _, axis = plt.subplots(1, 1, figsize=(fig_width, 1))
 
-        linewidth = (fig_width /
-                     len(commit_map.mapping_items())) / dot_to_inch * line_width
+        linewidth = (
+            fig_width / len(commit_map.mapping_items())
+        ) / dot_to_inch * line_width
 
-        axis.eventplot(data["background"],
-                       linewidths=linewidth,
-                       colors=BACKGROUND_COLOR)
-        axis.eventplot(data["success"],
-                       linewidths=linewidth,
-                       colors=SUCCESS_COLOR)
-        axis.eventplot(data["failed"],
-                       linewidths=linewidth,
-                       colors=FAILED_COLOR)
-        axis.eventplot(data["missing"],
-                       linewidths=linewidth,
-                       colors=MISSING_COLOR)
-        axis.eventplot(data["compile_error"],
-                       linewidths=linewidth,
-                       colors=COMPILE_ERROR_COLOR)
+        axis.eventplot(
+            data["background"], linewidths=linewidth, colors=BACKGROUND_COLOR
+        )
+        axis.eventplot(
+            data["success"], linewidths=linewidth, colors=SUCCESS_COLOR
+        )
+        axis.eventplot(
+            data["failed"], linewidths=linewidth, colors=FAILED_COLOR
+        )
+        axis.eventplot(
+            data["missing"], linewidths=linewidth, colors=MISSING_COLOR
+        )
+        axis.eventplot(
+            data["compile_error"],
+            linewidths=linewidth,
+            colors=COMPILE_ERROR_COLOR
+        )
 
         if show_all_blocked:
-            axis.eventplot(data["blocked_all"],
-                           linewidths=linewidth,
-                           colors=BLOCKED_COLOR)
+            axis.eventplot(
+                data["blocked_all"], linewidths=linewidth, colors=BLOCKED_COLOR
+            )
         else:
-            axis.eventplot(data["blocked"],
-                           linewidths=linewidth,
-                           colors=BLOCKED_COLOR)
+            axis.eventplot(
+                data["blocked"], linewidths=linewidth, colors=BLOCKED_COLOR
+            )
 
         axis.set_axis_off()
 

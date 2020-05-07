@@ -72,7 +72,8 @@ class TestSecurity(unittest.TestCase):
             if cve.cve_id == self.REFERENCE_CVE_DATA['cve_id']:
                 self.assertTrue(cve.score == self.REFERENCE_CVE_DATA['score'])
                 self.assertTrue(
-                    cve.published == self.REFERENCE_CVE_DATA['published'])
+                    cve.published == self.REFERENCE_CVE_DATA['published']
+                )
                 self.assertTrue(cve.vector == self.REFERENCE_CVE_DATA['vector'])
                 found = True
                 break
@@ -89,7 +90,8 @@ class TestSecurity(unittest.TestCase):
         self.assertTrue(find_cwe(cwe_id=self.REFERENCE_CWE_DATA['cwe_id']))
         self.assertTrue(find_cwe(cwe_name=self.REFERENCE_CWE_DATA['name']))
         self.assertTrue(
-            find_cwe(cwe_description=self.REFERENCE_CWE_DATA['description']))
+            find_cwe(cwe_description=self.REFERENCE_CWE_DATA['description'])
+        )
 
     @unittest.skip("Disable CWE tests for now.")
     def test_find_all_cwe(self):
@@ -105,7 +107,8 @@ class TestSecurity(unittest.TestCase):
             if cwe.cwe_id == self.REFERENCE_CWE_DATA['cwe_id']:
                 self.assertTrue(cwe.name == self.REFERENCE_CWE_DATA['name'])
                 self.assertTrue(
-                    cwe.description == self.REFERENCE_CWE_DATA['description'])
+                    cwe.description == self.REFERENCE_CWE_DATA['description']
+                )
                 found = True
                 break
         self.assertTrue(found)

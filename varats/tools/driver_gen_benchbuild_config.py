@@ -21,8 +21,9 @@ def main() -> None:
     `vara-gen-bbconfig`
     """
     parser = argparse.ArgumentParser("vara-gen-bbconfig")
-    parser.add_argument("--bb-root",
-                        help="Set an alternative BenchBuild root folder.")
+    parser.add_argument(
+        "--bb-root", help="Set an alternative BenchBuild root folder."
+    )
 
     args = parser.parse_args()
 
@@ -49,8 +50,10 @@ def main() -> None:
         LOG.info(f"Setting BB path to: {CFG['benchbuild_root']}")
         save_config()
 
-    generate_benchbuild_config(CFG,
-                               str(CFG["benchbuild_root"]) + "/.benchbuild.yml")
+    generate_benchbuild_config(
+        CFG,
+        str(CFG["benchbuild_root"]) + "/.benchbuild.yml"
+    )
 
 
 if __name__ == '__main__':

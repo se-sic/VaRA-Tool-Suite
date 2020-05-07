@@ -36,13 +36,15 @@ class SubProject():
     downloaded and integrated inside a ``CodeBase``.
     """
 
-    def __init__(self,
-                 parent_code_base: 'CodeBase',
-                 name: str,
-                 URL: str,
-                 remote: str,
-                 sub_path: str,
-                 auto_clone: bool = True):
+    def __init__(
+        self,
+        parent_code_base: 'CodeBase',
+        name: str,
+        URL: str,
+        remote: str,
+        sub_path: str,
+        auto_clone: bool = True
+    ):
         self.__name = name
         self.__parent_code_base = parent_code_base
         self.__url = URL
@@ -111,15 +113,19 @@ class SubProject():
         """
         print(f"Cloning {self.name} into {self.__parent_code_base.base_dir}")
         if (self.__parent_code_base.base_dir / self.path).exists():
-            raise FolderAlreadyPresentError(self.__parent_code_base.base_dir /
-                                            self.path)
-        download_repo(self.__parent_code_base.base_dir / self.path.parent,
-                      self.url, self.path.name, self.remote,
-                      log_without_linesep(print))
+            raise FolderAlreadyPresentError(
+                self.__parent_code_base.base_dir / self.path
+            )
+        download_repo(
+            self.__parent_code_base.base_dir / self.path.parent, self.url,
+            self.path.name, self.remote, log_without_linesep(print)
+        )
 
-    def has_branch(self,
-                   branch_name: str,
-                   remote_to_check: tp.Optional[str] = None) -> bool:
+    def has_branch(
+        self,
+        branch_name: str,
+        remote_to_check: tp.Optional[str] = None
+    ) -> bool:
         """
         Check if the sub project has a branch with the
         specified ``branch name``.
@@ -139,8 +145,8 @@ class SubProject():
         return has_remote_branch(absl_repo_path, branch_name, remote_to_check)
 
     def get_branches(self,
-                     extra_args: tp.Optional[tp.List[str]] = None
-                    ) -> tp.List[str]:
+                     extra_args: tp.Optional[tp.List[str]
+                                            ] = None) -> tp.List[str]:
         """
         Get branch names from this sub project.
 
@@ -150,8 +156,9 @@ class SubProject():
         Returns:
             list of branch names
         """
-        return get_branches(self.__parent_code_base.base_dir / self.path,
-                            extra_args).split()
+        return get_branches(
+            self.__parent_code_base.base_dir / self.path, extra_args
+        ).split()
 
     def add_remote(self, remote: str, url: str) -> None:
         """
@@ -171,29 +178,35 @@ class SubProject():
         Args:
             branch_name: name of the branch, should exists in the repo
         """
-        checkout_branch(self.__parent_code_base.base_dir / self.path,
-                        branch_name)
+        checkout_branch(
+            self.__parent_code_base.base_dir / self.path, branch_name
+        )
 
-    def checkout_new_branch(self,
-                            branch_name: str,
-                            remote_branch: tp.Optional[str] = None) -> None:
+    def checkout_new_branch(
+        self, branch_name: str, remote_branch: tp.Optional[str] = None
+    ) -> None:
         """
         Create and checkout out a new branch in the sub project.
 
         Args:
             branch_name: name of the new branch, should not exists in the repo
         """
-        checkout_new_branch(self.__parent_code_base.base_dir / self.path,
-                            branch_name, remote_branch)
+        checkout_new_branch(
+            self.__parent_code_base.base_dir / self.path, branch_name,
+            remote_branch
+        )
 
-    def fetch(self,
-              remote: tp.Optional[str] = None,
-              extra_args: tp.Optional[tp.List[str]] = None) -> None:
+    def fetch(
+        self,
+        remote: tp.Optional[str] = None,
+        extra_args: tp.Optional[tp.List[str]] = None
+    ) -> None:
         """
         Fetch updates from the remote.
         """
-        fetch_remote(remote, self.__parent_code_base.base_dir / self.path,
-                     extra_args)
+        fetch_remote(
+            remote, self.__parent_code_base.base_dir / self.path, extra_args
+        )
 
     def pull(self) -> None:
         """
@@ -219,10 +232,9 @@ class SubProject():
         show_status(self.__parent_code_base.base_dir / self.path)
 
     def __str__(self) -> str:
-        return "{name} [{url}:{remote}] {folder}".format(name=self.name,
-                                                         url=self.url,
-                                                         remote=self.remote,
-                                                         folder=self.path)
+        return "{name} [{url}:{remote}] {folder}".format(
+            name=self.name, url=self.url, remote=self.remote, folder=self.path
+        )
 
 
 class CodeBase():
@@ -287,9 +299,10 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
     tools.
     """
 
-    def __init__(self, tool_name: str,
-                 supported_build_types: tp.List[BuildType],
-                 code_base: SpecificCodeBase) -> None:
+    def __init__(
+        self, tool_name: str, supported_build_types: tp.List[BuildType],
+        code_base: SpecificCodeBase
+    ) -> None:
         self.__name = tool_name
         self.__supported_build_types = supported_build_types
         self.__code_base = code_base

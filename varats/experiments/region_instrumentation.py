@@ -19,11 +19,12 @@ class RegionAnalyser(Experiment):  # type: ignore
     NAME = "RegionAnalyser"
 
     def actions_for_project(self, project: Project) -> tp.List[Step]:
-        project.runtime_extension = run.RuntimeExtension(
-            project, self) << time.RunWithTime()
+        project.runtime_extension = run.RuntimeExtension(project, self
+                                                        ) << time.RunWithTime()
 
         project.compiler_extension = compiler.RunCompiler(
-            project, self) << RunWLLVM() << time.RunWithTime()
+            project, self
+        ) << RunWLLVM() << time.RunWithTime()
 
         project.ldflags = ["-lTrace"]
         project.cflags = ["-fvara-handleRM=High", "-mllvm", "-vara-tracer"]

@@ -64,8 +64,10 @@ class FilterTreeModel(QAbstractItemModel):
             if index.column() == 0:
                 resource_name = node.resource()
                 return QIcon(
-                    QPixmap(resource_name).scaled(12, 12, Qt.KeepAspectRatio,
-                                                  Qt.SmoothTransformation))
+                    QPixmap(resource_name).scaled(
+                        12, 12, Qt.KeepAspectRatio, Qt.SmoothTransformation
+                    )
+                )
 
     def setData(self, index, value, role=Qt.EditRole):
         """
@@ -132,11 +134,13 @@ class FilterTreeModel(QAbstractItemModel):
 
         return self._root_node
 
-    def insertRows(self,
-                   node_type,
-                   position: int,
-                   rows: int,
-                   parent: QModelIndex = QModelIndex()) -> bool:
+    def insertRows(
+        self,
+        node_type,
+        position: int,
+        rows: int,
+        parent: QModelIndex = QModelIndex()
+    ) -> bool:
         """
         :param parent: QModelIndex
         """
@@ -148,8 +152,9 @@ class FilterTreeModel(QAbstractItemModel):
         if (position < 0 or parent_node.childCount() < position or rows < 0):
             return False
 
-        self.beginInsertRows(parent, parent_num_children,
-                             parent_num_children + rows - 1)
+        self.beginInsertRows(
+            parent, parent_num_children, parent_num_children + rows - 1
+        )
 
         for _ in range(rows):
             child_node = node_type(parent_node)
@@ -159,8 +164,10 @@ class FilterTreeModel(QAbstractItemModel):
 
         return success
 
-    def moveRows(self, sourceParent, sourceRow, count, destinationParent,
-                 destinationChild) -> bool:
+    def moveRows(
+        self, sourceParent, sourceRow, count, destinationParent,
+        destinationChild
+    ) -> bool:
         """
         :param sourceParent: QModelIndex
         :param sourceRow: int
@@ -171,18 +178,23 @@ class FilterTreeModel(QAbstractItemModel):
         source_parent_node = self.getNode(sourceParent)
         dest_parent_node = self.getNode(destinationParent)
 
-        if (sourceRow < 0 or source_parent_node.childCount() <= sourceRow or
-                destinationChild < 0 or
-                destinationChild > dest_parent_node.childCount() or count < 1):
+        if (
+            sourceRow < 0 or source_parent_node.childCount() <= sourceRow or
+            destinationChild < 0 or
+            destinationChild > dest_parent_node.childCount() or count < 1
+        ):
             return False
 
-        self.beginMoveRows(sourceParent, sourceRow, sourceRow + count - 1,
-                           destinationParent, destinationChild)
+        self.beginMoveRows(
+            sourceParent, sourceRow, sourceRow + count - 1, destinationParent,
+            destinationChild
+        )
 
         if sourceParent == destinationParent:
             for i in range(count):
-                success = source_parent_node.moveChild(sourceRow + i,
-                                                       destinationChild + i)
+                success = source_parent_node.moveChild(
+                    sourceRow + i, destinationChild + i
+                )
         else:
             raise AssertionError(
                 "Moving nodes to a different parent is currently not implemented."
@@ -192,15 +204,18 @@ class FilterTreeModel(QAbstractItemModel):
 
         return success
 
-    def removeRows(self, position: int, rows: int,
-                   parent=QModelIndex()) -> bool:
+    def removeRows(
+        self, position: int, rows: int, parent=QModelIndex()
+    ) -> bool:
         """
         :param parent: QModelIndex
         """
         parent_node = self.getNode(parent)
 
-        if (position < 0 or parent_node.childCount() < position + rows or
-                rows < 1):
+        if (
+            position < 0 or parent_node.childCount() < position + rows or
+            rows < 1
+        ):
             return False
 
         self.beginRemoveRows(parent, position, position + rows - 1)
@@ -241,8 +256,9 @@ class FilterTreeModel(QAbstractItemModel):
 
     def addCommitterFilterNode(self) -> bool:
         num_children = self.getNode(self._selection).childCount()
-        return self.insertRows(CommitterFilter, num_children, 1,
-                               self._selection)
+        return self.insertRows(
+            CommitterFilter, num_children, 1, self._selection
+        )
 
     def addAuthorFilterNode(self) -> bool:
         num_children = self.getNode(self._selection).childCount()
@@ -250,43 +266,51 @@ class FilterTreeModel(QAbstractItemModel):
 
     def addAuthorDateMinFilterNode(self) -> bool:
         num_children = self.getNode(self._selection).childCount()
-        return self.insertRows(AuthorDateMinFilter, num_children, 1,
-                               self._selection)
+        return self.insertRows(
+            AuthorDateMinFilter, num_children, 1, self._selection
+        )
 
     def addAuthorDateMaxFilterNode(self) -> bool:
         num_children = self.getNode(self._selection).childCount()
-        return self.insertRows(AuthorDateMaxFilter, num_children, 1,
-                               self._selection)
+        return self.insertRows(
+            AuthorDateMaxFilter, num_children, 1, self._selection
+        )
 
     def addCommitDateMinFilterNode(self) -> bool:
         num_children = self.getNode(self._selection).childCount()
-        return self.insertRows(CommitDateMinFilter, num_children, 1,
-                               self._selection)
+        return self.insertRows(
+            CommitDateMinFilter, num_children, 1, self._selection
+        )
 
     def addCommitDateMaxFilterNode(self) -> bool:
         num_children = self.getNode(self._selection).childCount()
-        return self.insertRows(CommitDateMaxFilter, num_children, 1,
-                               self._selection)
+        return self.insertRows(
+            CommitDateMaxFilter, num_children, 1, self._selection
+        )
 
     def addAuthorDateDeltaMinFilterNode(self) -> bool:
         num_children = self.getNode(self._selection).childCount()
-        return self.insertRows(AuthorDateDeltaMinFilter, num_children, 1,
-                               self._selection)
+        return self.insertRows(
+            AuthorDateDeltaMinFilter, num_children, 1, self._selection
+        )
 
     def addAuthorDateDeltaMaxFilterNode(self) -> bool:
         num_children = self.getNode(self._selection).childCount()
-        return self.insertRows(AuthorDateDeltaMaxFilter, num_children, 1,
-                               self._selection)
+        return self.insertRows(
+            AuthorDateDeltaMaxFilter, num_children, 1, self._selection
+        )
 
     def addCommitDateDeltaMinFilterNode(self) -> bool:
         num_children = self.getNode(self._selection).childCount()
-        return self.insertRows(CommitDateDeltaMinFilter, num_children, 1,
-                               self._selection)
+        return self.insertRows(
+            CommitDateDeltaMinFilter, num_children, 1, self._selection
+        )
 
     def addCommitDateDeltaMaxFilterNode(self) -> bool:
         num_children = self.getNode(self._selection).childCount()
-        return self.insertRows(CommitDateDeltaMaxFilter, num_children, 1,
-                               self._selection)
+        return self.insertRows(
+            CommitDateDeltaMaxFilter, num_children, 1, self._selection
+        )
 
     def moveRowUp(self) -> bool:
         selected_node = self.getNode(self._selection)

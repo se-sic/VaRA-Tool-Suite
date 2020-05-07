@@ -48,7 +48,8 @@ class EmptyAnalysis(actions.Step):  # type: ignore
         # run.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
             result_dir=str(BB_CFG["varats"]["outfile"]),
-            project_dir=str(project.name))
+            project_dir=str(project.name)
+        )
 
         mkdir("-p", vara_result_folder)
 
@@ -58,10 +59,12 @@ class EmptyAnalysis(actions.Step):  # type: ignore
                 binary_name=binary.name,
                 project_version=str(project.version),
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.Success)
+                extension_type=FSE.Success
+            )
 
             run_cmd = touch["{res_folder}/{res_file}".format(
-                res_folder=vara_result_folder, res_file=result_file)]
+                res_folder=vara_result_folder, res_file=result_file
+            )]
 
             exec_func_with_pe_error_handler(
                 run_cmd,
@@ -72,7 +75,10 @@ class EmptyAnalysis(actions.Step):  # type: ignore
                         binary_name="all",
                         project_version=str(project.version),
                         project_uuid=str(project.run_uuid),
-                        extension_type=FSE.Failed), run_cmd))
+                        extension_type=FSE.Failed
+                    ), run_cmd
+                )
+            )
 
 
 # Please take care when changing this file, see docs experiments/just_compile
@@ -99,7 +105,8 @@ class JustCompileReport(VersionExperiment):
             << run.WithTimeout()
 
         project.compile = get_default_compile_error_wrapped(
-            project, EmptyReport, EmptyAnalysis.RESULT_FOLDER_TEMPLATE)
+            project, EmptyReport, EmptyAnalysis.RESULT_FOLDER_TEMPLATE
+        )
 
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))

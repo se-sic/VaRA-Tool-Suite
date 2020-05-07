@@ -27,12 +27,17 @@ class VaRATSGui:
             err = QMessageBox()
             err.setIcon(QMessageBox.Warning)
             err.setWindowTitle("Missing config file.")
-            err.setText("Could not find VaRA config file.\n"
-                        "Should we create a config file in the current folder?")
+            err.setText(
+                "Could not find VaRA config file.\n"
+                "Should we create a config file in the current folder?"
+            )
 
             err.setStandardButtons(
-                tp.cast(QMessageBox.StandardButtons,
-                        QMessageBox.Yes | QMessageBox.No))
+                tp.cast(
+                    QMessageBox.StandardButtons,
+                    QMessageBox.Yes | QMessageBox.No
+                )
+            )
             answer = err.exec_()
             if answer == QMessageBox.Yes:
                 settings.save_config()

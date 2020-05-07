@@ -18,9 +18,10 @@ from varats.experiments.wllvm import Extract, RunWLLVM
 from varats.utils.experiment_util import get_default_compile_error_wrapped
 
 
-def setup_basic_blame_experiment(experiment: Experiment, project: Project,
-                                 report_type: tp.Type[BaseReport],
-                                 result_folder_template: str) -> None:
+def setup_basic_blame_experiment(
+    experiment: Experiment, project: Project, report_type: tp.Type[BaseReport],
+    result_folder_template: str
+) -> None:
     """
     Setup the project for a blame experiment.
         - run time extensions
@@ -38,8 +39,9 @@ def setup_basic_blame_experiment(experiment: Experiment, project: Project,
         << run.WithTimeout()
 
     # Add own error handler to compile step.
-    project.compile = get_default_compile_error_wrapped(project, report_type,
-                                                        result_folder_template)
+    project.compile = get_default_compile_error_wrapped(
+        project, report_type, result_folder_template
+    )
 
     # This c-flag is provided by VaRA and it suggests to use the git-blame
     # annotation.
@@ -47,7 +49,8 @@ def setup_basic_blame_experiment(experiment: Experiment, project: Project,
 
 
 def generate_basic_blame_experiment_actions(
-        project: Project) -> tp.List[actions.Step]:
+    project: Project
+) -> tp.List[actions.Step]:
     """
     Generate the basic actions for a blame experiment.
         - handle caching of BC files
@@ -62,11 +65,14 @@ def generate_basic_blame_experiment_actions(
             local.path(
                 Extract.BC_CACHE_FOLDER_TEMPLATE.format(
                     cache_dir=str(BB_CFG["varats"]["result"]),
-                    project_name=str(project.name)) +
-                Extract.BC_FILE_TEMPLATE.format(project_name=str(project.name),
-                                                binary_name=binary.name,
-                                                project_version=str(
-                                                    project.version))))
+                    project_name=str(project.name)
+                ) + Extract.BC_FILE_TEMPLATE.format(
+                    project_name=str(project.name),
+                    binary_name=binary.name,
+                    project_version=str(project.version)
+                )
+            )
+        )
 
     if not all_files_present:
         analysis_actions.append(actions.Compile(project))

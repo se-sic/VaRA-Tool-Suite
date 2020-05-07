@@ -46,11 +46,14 @@ class Ui_CommitterFilterProperties(object):
     def retranslateUi(self, CommitterFilterProperties):
         _translate = QtCore.QCoreApplication.translate
         CommitterFilterProperties.setWindowTitle(
-            _translate("CommitterFilterProperties", "Form"))
+            _translate("CommitterFilterProperties", "Form")
+        )
         self.label.setText(
-            _translate("CommitterFilterProperties", "Committer Name"))
+            _translate("CommitterFilterProperties", "Committer Name")
+        )
         self.label_2.setText(
-            _translate("CommitterFilterProperties", "Committer Email"))
+            _translate("CommitterFilterProperties", "Committer Email")
+        )
 
 
 if __name__ == "__main__":

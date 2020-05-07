@@ -12,9 +12,9 @@ from varats.data.reports.commit_report import CommitMap
 from varats.utils.project_util import get_local_project_git_path
 
 
-def generate_commit_map(path: Path,
-                        end: str = "HEAD",
-                        start: tp.Optional[str] = None) -> CommitMap:
+def generate_commit_map(
+    path: Path, end: str = "HEAD", start: tp.Optional[str] = None
+) -> CommitMap:
     """
     Generate a commit map for a repository including the commits ]start..end]
     """
@@ -25,8 +25,9 @@ def generate_commit_map(path: Path,
 
     with local.cwd(path):
         full_out = git("--no-pager", "log", "--pretty=format:'%H'")
-        wanted_out = git("--no-pager", "log", "--pretty=format:'%H'",
-                         search_range)
+        wanted_out = git(
+            "--no-pager", "log", "--pretty=format:'%H'", search_range
+        )
 
         def format_stream() -> tp.Generator[str, None, None]:
             wanted_cm = set()
@@ -59,10 +60,12 @@ def load_commit_map_from_path(cmap_path: Path) -> CommitMap:
         return CommitMap(c_map_file.readlines())
 
 
-def get_commit_map(project_name: str,
-                   cmap_path: tp.Optional[Path] = None,
-                   end: str = "HEAD",
-                   start: tp.Optional[str] = None) -> CommitMap:
+def get_commit_map(
+    project_name: str,
+    cmap_path: tp.Optional[Path] = None,
+    end: str = "HEAD",
+    start: tp.Optional[str] = None
+) -> CommitMap:
     """
     Get a commit map for a project.
     """
@@ -75,10 +78,11 @@ def get_commit_map(project_name: str,
 
 
 def create_lazy_commit_map_loader(
-        project_name: str,
-        cmap_path: tp.Optional[Path] = None,
-        end: str = "HEAD",
-        start: tp.Optional[str] = None) -> tp.Callable[[], CommitMap]:
+    project_name: str,
+    cmap_path: tp.Optional[Path] = None,
+    end: str = "HEAD",
+    start: tp.Optional[str] = None
+) -> tp.Callable[[], CommitMap]:
     """
     Create a generator function that lazy loads a CommitMap.
     """
@@ -87,8 +91,9 @@ def create_lazy_commit_map_loader(
     def get_cmap_lazy() -> CommitMap:
         nonlocal lazy_cached_cmap
         if lazy_cached_cmap is None:
-            lazy_cached_cmap = get_commit_map(project_name, cmap_path, end,
-                                              start)
+            lazy_cached_cmap = get_commit_map(
+                project_name, cmap_path, end, start
+            )
 
         return lazy_cached_cmap
 

@@ -46,10 +46,12 @@ class Ui_AuthorFilterProperties(object):
     def retranslateUi(self, AuthorFilterProperties):
         _translate = QtCore.QCoreApplication.translate
         AuthorFilterProperties.setWindowTitle(
-            _translate("AuthorFilterProperties", "Form"))
+            _translate("AuthorFilterProperties", "Form")
+        )
         self.label.setText(_translate("AuthorFilterProperties", "Author Name"))
         self.label_2.setText(
-            _translate("AuthorFilterProperties", "Author Email"))
+            _translate("AuthorFilterProperties", "Author Email")
+        )
 
 
 if __name__ == "__main__":

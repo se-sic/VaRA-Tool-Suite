@@ -76,7 +76,8 @@ class CVE:
 
     @property
     def vulnerable_versions(
-            self) -> tp.FrozenSet[tp.Union[LegacyVersion, Version]]:
+        self
+    ) -> tp.FrozenSet[tp.Union[LegacyVersion, Version]]:
         """The set of vulnerable version numbers."""
         return self.__vulnerable_versions
 
@@ -171,8 +172,10 @@ def __fetch_url(source_url: str) -> requests.Response:
         time.sleep(3)
         response = requests.get(source_url)
     if response.status_code != 200:
-        raise ValueError(f'Could not retrieve CVE information '
-                         f'(Code: {response.status_code})!')
+        raise ValueError(
+            f'Could not retrieve CVE information '
+            f'(Code: {response.status_code})!'
+        )
     return response
 
 
@@ -182,8 +185,9 @@ def __fetch_cve_data(source_url: str) -> tp.Dict[str, tp.Any]:
 
 def __parse_cve(cve_data: tp.Dict[str, tp.Any]) -> CVE:
     vulnerable_configurations = cve_data.get('vulnerable_configuration', [])
-    if vulnerable_configurations and isinstance(vulnerable_configurations[0],
-                                                str):
+    if vulnerable_configurations and isinstance(
+        vulnerable_configurations[0], str
+    ):
         vulnerable_versions = frozenset([
             version_parse(x.replace(':*', '').split(':')[-1])
             for x in vulnerable_configurations
@@ -194,14 +198,17 @@ def __parse_cve(cve_data: tp.Dict[str, tp.Any]) -> CVE:
             for x in vulnerable_configurations
         ])
 
-    return CVE(cve_id=cve_data.get('id', None),
-               score=cve_data.get('cvss', None),
-               published=datetime.strptime(cve_data.get('Published', None),
-                                           '%Y-%m-%dT%H:%M:%S'),
-               vector=frozenset(cve_data.get('cvss-vector', '').split('/')),
-               references=cve_data.get('references', None),
-               summary=cve_data.get('summary', None),
-               vulnerable_versions=vulnerable_versions)
+    return CVE(
+        cve_id=cve_data.get('id', None),
+        score=cve_data.get('cvss', None),
+        published=datetime.strptime(
+            cve_data.get('Published', None), '%Y-%m-%dT%H:%M:%S'
+        ),
+        vector=frozenset(cve_data.get('cvss-vector', '').split('/')),
+        references=cve_data.get('references', None),
+        summary=cve_data.get('summary', None),
+        vulnerable_versions=vulnerable_versions
+    )
 
 
 def find_all_cve(vendor: str, product: str) -> tp.FrozenSet[CVE]:
@@ -219,7 +226,8 @@ def find_all_cve(vendor: str, product: str) -> tp.FrozenSet[CVE]:
         raise ValueError('Missing a vendor or product to search CVE\'s for!')
 
     response_data = __fetch_cve_data(
-        f'http://cve.circl.lu/api/search/{vendor}/{product}')
+        f'http://cve.circl.lu/api/search/{vendor}/{product}'
+    )
     cve_list: tp.Set[CVE] = set()
     for entry in response_data['results']:
         try:
@@ -246,8 +254,10 @@ def find_cve(cve_id: str) -> CVE:
 
     cve_data = __fetch_cve_data(f'https://cve.circl.lu/api/cve/{cve_id}')
     if not cve_data:
-        raise ValueError(f'Could not find CVE information for {cve_id}, '
-                         f'maybe it is a wrong number?')
+        raise ValueError(
+            f'Could not find CVE information for {cve_id}, '
+            f'maybe it is a wrong number?'
+        )
     return __parse_cve(cve_data)
 
 
@@ -265,15 +275,18 @@ def __find_all_cwe() -> tp.FrozenSet[CWE]:
         response = __fetch_url(source_url)
         zip_file = zipfile.ZipFile(io.BytesIO(response.content))
         with zip_file.open(zip_file.namelist()[0], 'r') as csv_file:
-            reader = csv.DictReader(io.TextIOWrapper(csv_file),
-                                    delimiter=',',
-                                    quotechar='"')
+            reader = csv.DictReader(
+                io.TextIOWrapper(csv_file), delimiter=',', quotechar='"'
+            )
             for entry in reader:
                 cwe_id = entry.get('CWE-ID')
                 cwe_list.add(
-                    CWE(cwe_id=f'CWE-{cwe_id}',
+                    CWE(
+                        cwe_id=f'CWE-{cwe_id}',
                         name=entry.get('Name', ''),
-                        description=entry.get('Description', '')))
+                        description=entry.get('Description', '')
+                    )
+                )
 
     return frozenset(cwe_list)
 
@@ -297,9 +310,9 @@ def find_all_cwe() -> tp.FrozenSet[CWE]:
     return __CWE_LIST
 
 
-def find_cwe(cwe_id: str = '',
-             cwe_name: str = '',
-             cwe_description: str = '') -> CWE:
+def find_cwe(
+    cwe_id: str = '', cwe_name: str = '', cwe_description: str = ''
+) -> CWE:
     """
     Find a CWE by its attributes (ID (CWE-XXX), name, description).
 
@@ -317,9 +330,11 @@ def find_cwe(cwe_id: str = '',
             (cwe_description and cwe.description == cwe_description)):
             return cwe
     raise ValueError(
-        f'Could not find CWE ({cwe_id}, {cwe_name}, {cwe_description})!')
+        f'Could not find CWE ({cwe_id}, {cwe_name}, {cwe_description})!'
+    )
 
 
 # Cache all requests to limit external requests for a week
 requests_cache.install_cache(
-    f"{str(CFG['plots']['data_cache'])}/requests_cache", expire_after=604800)
+    f"{str(CFG['plots']['data_cache'])}/requests_cache", expire_after=604800
+)

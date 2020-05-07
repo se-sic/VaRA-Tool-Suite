@@ -12,9 +12,9 @@ from varats.data.reports.empty_report import EmptyReport
 from varats.paper.case_study import CaseStudy
 
 
-class FileStatusDatabase(EvaluationDatabase,
-                         cache_id="file_status_data",
-                         columns=["file_status"]):
+class FileStatusDatabase(
+    EvaluationDatabase, cache_id="file_status_data", columns=["file_status"]
+):
     """
     Provides access to file status data.
 
@@ -23,11 +23,13 @@ class FileStatusDatabase(EvaluationDatabase,
     """
 
     @classmethod
-    def _load_dataframe(cls, project_name: str, commit_map: CommitMap,
-                        case_study: tp.Optional[CaseStudy],
-                        **kwargs: tp.Any) -> pd.DataFrame:
-        result_file_type = tp.cast(MetaReport,
-                                   kwargs.get("result_file_type", EmptyReport))
+    def _load_dataframe(
+        cls, project_name: str, commit_map: CommitMap,
+        case_study: tp.Optional[CaseStudy], **kwargs: tp.Any
+    ) -> pd.DataFrame:
+        result_file_type = tp.cast(
+            MetaReport, kwargs.get("result_file_type", EmptyReport)
+        )
         tag_blocked = tp.cast(bool, kwargs.get("tag_blocked", True))
 
         def create_dataframe_layout() -> pd.DataFrame:
@@ -35,21 +37,22 @@ class FileStatusDatabase(EvaluationDatabase,
             return df_layout
 
         def create_data_frame_for_revision(
-                revision: str, status: FileStatusExtension) -> pd.DataFrame:
-            return pd.DataFrame(
-                {
-                    'revision': revision,
-                    'time_id': commit_map.short_time_id(revision),
-                    'file_status': status.get_status_extension()
-                },
-                index=[0])
+            revision: str, status: FileStatusExtension
+        ) -> pd.DataFrame:
+            return pd.DataFrame({
+                'revision': revision,
+                'time_id': commit_map.short_time_id(revision),
+                'file_status': status.get_status_extension()
+            },
+                                index=[0])
 
         data_frame = create_dataframe_layout()
         data_frames = []
 
         if case_study:
             processed_revisions = case_study.get_revisions_status(
-                result_file_type, tag_blocked=tag_blocked)
+                result_file_type, tag_blocked=tag_blocked
+            )
             for rev, stat in processed_revisions:
                 data_frames.append(create_data_frame_for_revision(rev, stat))
 
@@ -58,9 +61,10 @@ class FileStatusDatabase(EvaluationDatabase,
                          sort=False)
 
     @classmethod
-    def get_data_for_project(cls, project_name: str, columns: tp.List[str],
-                             commit_map: CommitMap, *case_studies: CaseStudy,
-                             **kwargs: tp.Any) -> pd.DataFrame:
+    def get_data_for_project(
+        cls, project_name: str, columns: tp.List[str], commit_map: CommitMap,
+        *case_studies: CaseStudy, **kwargs: tp.Any
+    ) -> pd.DataFrame:
         """
         Retrieve data for a given project and case study.
 
@@ -78,5 +82,6 @@ class FileStatusDatabase(EvaluationDatabase,
         Return:
             a pandas dataframe with the given columns and the
         """
-        return super().get_data_for_project(project_name, columns, commit_map,
-                                            *case_studies, **kwargs)
+        return super().get_data_for_project(
+            project_name, columns, commit_map, *case_studies, **kwargs
+        )

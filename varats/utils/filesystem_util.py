@@ -13,5 +13,7 @@ class FolderAlreadyPresentError(Exception):
     """
 
     def __init__(self, folder: tp.Union[Path, str]) -> None:
-        super().__init__(f"Folder: '{str(folder)}' should be created "
-                         "but was already present.")
+        super().__init__(
+            f"Folder: '{str(folder)}' should be created "
+            "but was already present."
+        )

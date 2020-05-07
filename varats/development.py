@@ -64,8 +64,9 @@ def __quickfix_dev_branches(branch_name: str, sub_project: SubProject) -> str:
     return branch_name
 
 
-def create_new_branch_for_projects(branch_name: str,
-                                   sub_projects: tp.List[SubProject]) -> None:
+def create_new_branch_for_projects(
+    branch_name: str, sub_projects: tp.List[SubProject]
+) -> None:
     """
     Create a new branch on all needed projects.
     """
@@ -80,7 +81,8 @@ def create_new_branch_for_projects(branch_name: str,
 
 
 def checkout_remote_branch_for_projects(
-        branch_name: str, sub_projects: tp.List[SubProject]) -> None:
+    branch_name: str, sub_projects: tp.List[SubProject]
+) -> None:
     """
     Checkout a remote branch on all projects.
     """
@@ -88,20 +90,27 @@ def checkout_remote_branch_for_projects(
         fixed_branch_name = __quickfix_dev_branches(branch_name, sub_project)
         if sub_project.has_branch(fixed_branch_name):
             sub_project.checkout_branch(fixed_branch_name)
-            print(f"Checked out existing branch {fixed_branch_name} "
-                  f"for sub project {sub_project.name}")
+            print(
+                f"Checked out existing branch {fixed_branch_name} "
+                f"for sub project {sub_project.name}"
+            )
             continue
 
         sub_project.fetch()
         if sub_project.has_branch(fixed_branch_name, "origin"):
-            sub_project.checkout_new_branch(fixed_branch_name,
-                                            f"origin/{fixed_branch_name}")
-            print(f"Checked out new branch {fixed_branch_name} "
-                  f"(tracking origin/{fixed_branch_name}) "
-                  f"for sub project {sub_project.name}")
+            sub_project.checkout_new_branch(
+                fixed_branch_name, f"origin/{fixed_branch_name}"
+            )
+            print(
+                f"Checked out new branch {fixed_branch_name} "
+                f"(tracking origin/{fixed_branch_name}) "
+                f"for sub project {sub_project.name}"
+            )
         else:
-            print(f"No branch {fixed_branch_name} on remote origin for project "
-                  f"{sub_project.name}")
+            print(
+                f"No branch {fixed_branch_name} on remote origin for project "
+                f"{sub_project.name}"
+            )
 
 
 def pull_projects(sub_projects: tp.List[SubProject]) -> None:
@@ -142,10 +151,12 @@ def show_status_for_projects(sub_projects: tp.List[SubProject]) -> None:
 
     dlim = "#" * 80
     for sub_project in sub_projects:
-        print("""
+        print(
+            """
 {dlim}
 # Project: {name:67s} #
-{dlim}""".format(dlim=dlim, name=sub_project.name))
+{dlim}""".format(dlim=dlim, name=sub_project.name)
+        )
 
         sub_project.show_status()
 
@@ -175,5 +186,6 @@ def show_dev_branches(code_base: CodeBase) -> None:
     print("Feature Branches:")
     for branch_name in found_branches.keys():
         print(("  {branch_name:" + str(max_branch_chars + 4) +
-               "s} {repos}").format(branch_name=branch_name,
-                                    repos=found_branches[branch_name]))
+               "s} {repos}").format(
+                   branch_name=branch_name, repos=found_branches[branch_name]
+               ))

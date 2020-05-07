@@ -46,8 +46,9 @@ class PaperConfig():
             else:
                 self.__case_studies[case_study.project_name] = [case_study]
         if (self.__path / 'artefacts.yaml').exists():
-            self.__artefacts = load_artefacts_from_file(self.__path /
-                                                        'artefacts.yaml')
+            self.__artefacts = load_artefacts_from_file(
+                self.__path / 'artefacts.yaml'
+            )
         else:
             self.__artefacts = Artefacts([])
 
@@ -200,7 +201,9 @@ def project_filter_generator(project_name: str) -> tp.Callable[[str], bool]:
         load_paper_config(
             Path(
                 str(CFG["paper_config"]["folder"]) + "/" +
-                str(CFG["paper_config"]["current_config"])))
+                str(CFG["paper_config"]["current_config"])
+            )
+        )
 
     return get_paper_config().get_filter_for_case_study(project_name)
 
@@ -242,13 +245,16 @@ def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
     """
     if config_path is None:
         if CFG["paper_config"]["folder"].value is None or CFG["paper_config"][
-                "current_config"].value is None:
+            "current_config"].value is None:
             raise Exception(
                 "No paper config was set in VaRA config file {}".format(
-                    CFG['config_file']))
+                    CFG['config_file']
+                )
+            )
         config_path = Path(
             str(CFG["paper_config"]["folder"]) + "/" +
-            str(CFG["paper_config"]["current_config"]))
+            str(CFG["paper_config"]["current_config"])
+        )
 
     global __G_PAPER_CONFIG  # pylint: disable=global-statement
     __G_PAPER_CONFIG = PaperConfig(config_path)

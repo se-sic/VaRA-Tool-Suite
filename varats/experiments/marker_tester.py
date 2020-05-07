@@ -19,13 +19,15 @@ class TraceBinaryCreator(base.Extension):  # type: ignore
     Create an additional binary with trace markers.
     """
 
-    def __init__(self,
-                 project: Project,
-                 experiment: Experiment,
-                 marker_type: str,
-                 *extensions: tp.List[base.Extension],
-                 extra_ldflags: tp.Optional[tp.List[str]] = None,
-                 config: tp.Optional[Configuration] = None) -> None:
+    def __init__(
+        self,
+        project: Project,
+        experiment: Experiment,
+        marker_type: str,
+        *extensions: tp.List[base.Extension],
+        extra_ldflags: tp.Optional[tp.List[str]] = None,
+        config: tp.Optional[Configuration] = None
+    ) -> None:
         self.project = project
         self.experiment = experiment
         self.marker_type = marker_type
@@ -36,12 +38,14 @@ class TraceBinaryCreator(base.Extension):  # type: ignore
 
         super(TraceBinaryCreator, self).__init__(*extensions, config=config)
 
-    def __call__(self,
-                 command: BoundCommand,
-                 *args: tp.Any,
-                 project: Project = None,
-                 rerun_on_error: bool = True,
-                 **kwargs: tp.Any) -> tp.List[run.RunInfo]:
+    def __call__(
+        self,
+        command: BoundCommand,
+        *args: tp.Any,
+        project: Project = None,
+        rerun_on_error: bool = True,
+        **kwargs: tp.Any
+    ) -> tp.List[run.RunInfo]:
 
         res: tp.List[run.RunInfo] = self.call_next(command, *args, **kwargs)
 
@@ -55,14 +59,15 @@ class TraceBinaryCreator(base.Extension):  # type: ignore
         clang_stage_1 = command[self.extra_ldflags, "-Qunused-arguments",
                                 "-fvara-handleRM=High", "-S", "-emit-llvm",
                                 "-o", fake_file_name, src_file]
-        with run.track_execution(clang_stage_1, self.project,
-                                 self.experiment) as _run:
+        with run.track_execution(
+            clang_stage_1, self.project, self.experiment
+        ) as _run:
             res.append(_run())
 
-        opt = local["opt"]["-vara-HD", "-vara-trace", "-vara-trace-RTy=High",
-                           "-vara-trace-MTy={MType}".format(
-                               MType=self.marker_type), "-S", "-o", "traced.ll",
-                           fake_file_name]
+        opt = local["opt"][
+            "-vara-HD", "-vara-trace", "-vara-trace-RTy=High",
+            "-vara-trace-MTy={MType}".format(MType=self.marker_type), "-S",
+            "-o", "traced.ll", fake_file_name]
         with run.track_execution(opt, self.project, self.experiment) as _run:
             res.append(_run())
 
@@ -73,8 +78,9 @@ class TraceBinaryCreator(base.Extension):  # type: ignore
         clang_stage_2 = command["-O2", "traced.o", self.extra_ldflags,
                                 "-lSTrace", "-o",
                                 src_file.replace(".cpp", "_traced")]
-        with run.track_execution(clang_stage_2, self.project,
-                                 self.experiment) as _run:
+        with run.track_execution(
+            clang_stage_2, self.project, self.experiment
+        ) as _run:
             res.append(_run())
 
         return res
@@ -89,12 +95,14 @@ class PrintMarkerInstTest(Experiment):  # type: ignore
 
     def actions_for_project(self, project: Project) -> tp.List[Step]:
         project.compiler_extension = compiler.RunCompiler(
-            project, self) << TraceBinaryCreator(project, self, "Print")
+            project, self
+        ) << TraceBinaryCreator(project, self, "Print")
 
         project.cflags = ["-fvara-handleRM=High"]
 
         project_actions: tp.List[Step] = self.default_compiletime_actions(
-            project)
+            project
+        )
 
         return project_actions
 
@@ -108,16 +116,19 @@ class PapiMarkerInstTest(Experiment):  # type: ignore
 
     def actions_for_project(self, project: Project) -> tp.List[Step]:
         project.compiler_extension = compiler.RunCompiler(
-            project, self) << TraceBinaryCreator(
-                project,
-                self,
-                "Papi",
-                extra_ldflags=["-stdlib=libc++", "-lpthread", "-lpapi"])
+            project, self
+        ) << TraceBinaryCreator(
+            project,
+            self,
+            "Papi",
+            extra_ldflags=["-stdlib=libc++", "-lpthread", "-lpapi"]
+        )
 
         project.cflags = ["-fvara-handleRM=High"]
 
         project_actions: tp.List[Step] = self.default_compiletime_actions(
-            project)
+            project
+        )
 
         return project_actions
 
@@ -131,11 +142,13 @@ class CheckMarkerInstTest(Experiment):  # type: ignore
 
     def actions_for_project(self, project: Project) -> tp.List[Step]:
         project.compiler_extension = compiler.RunCompiler(
-            project, self) << TraceBinaryCreator(project, self, "Check")
+            project, self
+        ) << TraceBinaryCreator(project, self, "Check")
 
         project.cflags = ["-fvara-handleRM=High"]
 
         project_actions: tp.List[Step] = self.default_compiletime_actions(
-            project)
+            project
+        )
 
         return project_actions

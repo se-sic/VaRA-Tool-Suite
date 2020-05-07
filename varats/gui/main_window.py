@@ -38,10 +38,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
         # Signals for menubar
         self.actionVaRA_Setup.triggered.connect(self._spawn_vara_build_setup)
         self.actionInteractionFilter_Editor.triggered.connect(
-            self._spawn_filter_editor)
+            self._spawn_filter_editor
+        )
         self.actionSave_Config.triggered.connect(self._save_config)
         self.actionCreate_BenchBuild_Config.triggered.connect(
-            self._create_benchbuild_config)
+            self._create_benchbuild_config
+        )
 
         self.tabWidget.tabCloseRequested.connect(self.__remove_tab)
 
@@ -87,8 +89,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
     @staticmethod
     def _create_benchbuild_config() -> None:
         if CFG["config_file"].value is None:
-            print("No VaRA config found, please initialize a " +
-                  "VaRA config first.")
+            print(
+                "No VaRA config found, please initialize a " +
+                "VaRA config first."
+            )
             return
 
         if CFG["benchbuild_root"].value is None:
@@ -98,7 +102,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
 
         generate_benchbuild_config(
             CFG,
-            str(CFG["benchbuild_root"]) + "/.benchbuild.yml")
+            str(CFG["benchbuild_root"]) + "/.benchbuild.yml"
+        )
 
     def __remove_tab(self, index: int) -> None:
         tab = self.tabWidget.widget(index)

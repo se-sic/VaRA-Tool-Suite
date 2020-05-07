@@ -16,9 +16,11 @@ from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
 
 
-@with_git("https://github.com/xiph/opus.git",
-          refspec="HEAD",
-          version_filter=project_filter_generator("opus"))
+@with_git(
+    "https://github.com/xiph/opus.git",
+    refspec="HEAD",
+    version_filter=project_filter_generator("opus")
+)
 class Opus(Project):  # type: ignore
     """
     Opus is a codec for interactive speech and audio transmission

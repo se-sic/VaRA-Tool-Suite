@@ -131,26 +131,36 @@ class TestFilterTreeElements(unittest.TestCase):
         """
         cls.parent_dummy = AndOperator()
 
-        cls.author_filter = AuthorFilter(cls.parent_dummy, "comment",
-                                         "Jane Doe", "doe@example.com")
-        cls.committer_filter = CommitterFilter(cls.parent_dummy, "comment",
-                                               "Jane Doe", "doe@example.com")
+        cls.author_filter = AuthorFilter(
+            cls.parent_dummy, "comment", "Jane Doe", "doe@example.com"
+        )
+        cls.committer_filter = CommitterFilter(
+            cls.parent_dummy, "comment", "Jane Doe", "doe@example.com"
+        )
         cls.author_date_min_filter = AuthorDateMinFilter(
-            cls.parent_dummy, "comment", "2000-01-01T00:00:00Z")
+            cls.parent_dummy, "comment", "2000-01-01T00:00:00Z"
+        )
         cls.author_date_max_filter = AuthorDateMaxFilter(
-            cls.parent_dummy, "comment", "2000-01-01T00:00:00Z")
+            cls.parent_dummy, "comment", "2000-01-01T00:00:00Z"
+        )
         cls.commit_date_min_filter = CommitDateMinFilter(
-            cls.parent_dummy, "comment", "2000-01-01T00:00:00Z")
+            cls.parent_dummy, "comment", "2000-01-01T00:00:00Z"
+        )
         cls.commit_date_max_filter = CommitDateMaxFilter(
-            cls.parent_dummy, "comment", "2000-01-01T00:00:00Z")
+            cls.parent_dummy, "comment", "2000-01-01T00:00:00Z"
+        )
         cls.author_date_delta_min_filter = AuthorDateDeltaMinFilter(
-            cls.parent_dummy, "comment", "P3DT12H30M")
+            cls.parent_dummy, "comment", "P3DT12H30M"
+        )
         cls.author_date_delta_max_filter = AuthorDateDeltaMaxFilter(
-            cls.parent_dummy, "comment", "P3DT12H30M")
+            cls.parent_dummy, "comment", "P3DT12H30M"
+        )
         cls.commit_date_delta_min_filter = CommitDateDeltaMinFilter(
-            cls.parent_dummy, "comment", "P3DT12H30M")
+            cls.parent_dummy, "comment", "P3DT12H30M"
+        )
         cls.commit_date_delta_max_filter = CommitDateDeltaMaxFilter(
-            cls.parent_dummy, "comment", "P3DT12H30M")
+            cls.parent_dummy, "comment", "P3DT12H30M"
+        )
 
         cls.and_operator = AndOperator(cls.parent_dummy, "comment")
         cls.or_operator = OrOperator(cls.parent_dummy, "comment")
@@ -166,10 +176,12 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node._type, "AuthorFilter")
 
         filter_node.setData(0, "name_2")
-        self.assertEqual(filter_node.name(), "AuthorFilter",
-                         "Name should be read-only!")
-        self.assertEqual(filter_node.data(0), "AuthorFilter",
-                         "Name should be read-only!")
+        self.assertEqual(
+            filter_node.name(), "AuthorFilter", "Name should be read-only!"
+        )
+        self.assertEqual(
+            filter_node.data(0), "AuthorFilter", "Name should be read-only!"
+        )
 
         self.assertEqual(filter_node.comment(), "comment")
         self.assertEqual(filter_node.data(1), "comment")
@@ -224,10 +236,12 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node._type, "CommitterFilter")
 
         filter_node.setData(0, "name_2")
-        self.assertEqual(filter_node.name(), "CommitterFilter",
-                         "Name should be read-only!")
-        self.assertEqual(filter_node.data(0), "CommitterFilter",
-                         "Name should be read-only!")
+        self.assertEqual(
+            filter_node.name(), "CommitterFilter", "Name should be read-only!"
+        )
+        self.assertEqual(
+            filter_node.data(0), "CommitterFilter", "Name should be read-only!"
+        )
 
         self.assertEqual(filter_node.comment(), "comment")
         self.assertEqual(filter_node.data(1), "comment")
@@ -282,10 +296,14 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node._type, "AuthorDateMinFilter")
 
         filter_node.setData(0, "name_2")
-        self.assertEqual(filter_node.name(), "AuthorDateMinFilter",
-                         "Name should be read-only!")
-        self.assertEqual(filter_node.data(0), "AuthorDateMinFilter",
-                         "Name should be read-only!")
+        self.assertEqual(
+            filter_node.name(), "AuthorDateMinFilter",
+            "Name should be read-only!"
+        )
+        self.assertEqual(
+            filter_node.data(0), "AuthorDateMinFilter",
+            "Name should be read-only!"
+        )
 
         self.assertEqual(filter_node.comment(), "comment")
         self.assertEqual(filter_node.data(1), "comment")
@@ -308,27 +326,39 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.childCount(), 0)
 
-        self.assertEqual(filter_node.authorDateMin().toString(Qt.ISODate),
-                         "2000-01-01T00:00:00Z")
         self.assertEqual(
-            filter_node.data(2).toString(Qt.ISODate), "2000-01-01T00:00:00Z")
+            filter_node.authorDateMin().toString(Qt.ISODate),
+            "2000-01-01T00:00:00Z"
+        )
+        self.assertEqual(
+            filter_node.data(2).toString(Qt.ISODate), "2000-01-01T00:00:00Z"
+        )
 
         filter_node.setAuthorDateMin(
-            QDateTime.fromString("2010-01-01T00:00:00Z", Qt.ISODate))
-        self.assertEqual(filter_node.authorDateMin().toString(Qt.ISODate),
-                         "2010-01-01T00:00:00Z")
+            QDateTime.fromString("2010-01-01T00:00:00Z", Qt.ISODate)
+        )
         self.assertEqual(
-            filter_node.data(2).toString(Qt.ISODate), "2010-01-01T00:00:00Z")
+            filter_node.authorDateMin().toString(Qt.ISODate),
+            "2010-01-01T00:00:00Z"
+        )
+        self.assertEqual(
+            filter_node.data(2).toString(Qt.ISODate), "2010-01-01T00:00:00Z"
+        )
 
         filter_node.setData(
-            2, QDateTime.fromString("2015-01-01T00:00:00Z", Qt.ISODate))
-        self.assertEqual(filter_node.authorDateMin().toString(Qt.ISODate),
-                         "2015-01-01T00:00:00Z")
+            2, QDateTime.fromString("2015-01-01T00:00:00Z", Qt.ISODate)
+        )
         self.assertEqual(
-            filter_node.data(2).toString(Qt.ISODate), "2015-01-01T00:00:00Z")
+            filter_node.authorDateMin().toString(Qt.ISODate),
+            "2015-01-01T00:00:00Z"
+        )
+        self.assertEqual(
+            filter_node.data(2).toString(Qt.ISODate), "2015-01-01T00:00:00Z"
+        )
 
-        self.assertEqual(filter_node.resource(),
-                         ":/breeze/light/appointment-new.svg")
+        self.assertEqual(
+            filter_node.resource(), ":/breeze/light/appointment-new.svg"
+        )
 
     def test_author_date_max_filter(self):
         filter_node = self.author_date_max_filter
@@ -338,10 +368,14 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node._type, "AuthorDateMaxFilter")
 
         filter_node.setData(0, "name_2")
-        self.assertEqual(filter_node.name(), "AuthorDateMaxFilter",
-                         "Name should be read-only!")
-        self.assertEqual(filter_node.data(0), "AuthorDateMaxFilter",
-                         "Name should be read-only!")
+        self.assertEqual(
+            filter_node.name(), "AuthorDateMaxFilter",
+            "Name should be read-only!"
+        )
+        self.assertEqual(
+            filter_node.data(0), "AuthorDateMaxFilter",
+            "Name should be read-only!"
+        )
 
         self.assertEqual(filter_node.comment(), "comment")
         self.assertEqual(filter_node.data(1), "comment")
@@ -364,27 +398,39 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.childCount(), 0)
 
-        self.assertEqual(filter_node.authorDateMax().toString(Qt.ISODate),
-                         "2000-01-01T00:00:00Z")
         self.assertEqual(
-            filter_node.data(2).toString(Qt.ISODate), "2000-01-01T00:00:00Z")
+            filter_node.authorDateMax().toString(Qt.ISODate),
+            "2000-01-01T00:00:00Z"
+        )
+        self.assertEqual(
+            filter_node.data(2).toString(Qt.ISODate), "2000-01-01T00:00:00Z"
+        )
 
         filter_node.setAuthorDateMax(
-            QDateTime.fromString("2010-01-01T00:00:00Z", Qt.ISODate))
-        self.assertEqual(filter_node.authorDateMax().toString(Qt.ISODate),
-                         "2010-01-01T00:00:00Z")
+            QDateTime.fromString("2010-01-01T00:00:00Z", Qt.ISODate)
+        )
         self.assertEqual(
-            filter_node.data(2).toString(Qt.ISODate), "2010-01-01T00:00:00Z")
+            filter_node.authorDateMax().toString(Qt.ISODate),
+            "2010-01-01T00:00:00Z"
+        )
+        self.assertEqual(
+            filter_node.data(2).toString(Qt.ISODate), "2010-01-01T00:00:00Z"
+        )
 
         filter_node.setData(
-            2, QDateTime.fromString("2015-01-01T00:00:00Z", Qt.ISODate))
-        self.assertEqual(filter_node.authorDateMax().toString(Qt.ISODate),
-                         "2015-01-01T00:00:00Z")
+            2, QDateTime.fromString("2015-01-01T00:00:00Z", Qt.ISODate)
+        )
         self.assertEqual(
-            filter_node.data(2).toString(Qt.ISODate), "2015-01-01T00:00:00Z")
+            filter_node.authorDateMax().toString(Qt.ISODate),
+            "2015-01-01T00:00:00Z"
+        )
+        self.assertEqual(
+            filter_node.data(2).toString(Qt.ISODate), "2015-01-01T00:00:00Z"
+        )
 
-        self.assertEqual(filter_node.resource(),
-                         ":/breeze/light/appointment-new.svg")
+        self.assertEqual(
+            filter_node.resource(), ":/breeze/light/appointment-new.svg"
+        )
 
     def test_commit_date_min_filter(self):
         filter_node = self.commit_date_min_filter
@@ -394,10 +440,14 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node._type, "CommitDateMinFilter")
 
         filter_node.setData(0, "name_2")
-        self.assertEqual(filter_node.name(), "CommitDateMinFilter",
-                         "Name should be read-only!")
-        self.assertEqual(filter_node.data(0), "CommitDateMinFilter",
-                         "Name should be read-only!")
+        self.assertEqual(
+            filter_node.name(), "CommitDateMinFilter",
+            "Name should be read-only!"
+        )
+        self.assertEqual(
+            filter_node.data(0), "CommitDateMinFilter",
+            "Name should be read-only!"
+        )
 
         self.assertEqual(filter_node.comment(), "comment")
         self.assertEqual(filter_node.data(1), "comment")
@@ -420,27 +470,39 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.childCount(), 0)
 
-        self.assertEqual(filter_node.commitDateMin().toString(Qt.ISODate),
-                         "2000-01-01T00:00:00Z")
         self.assertEqual(
-            filter_node.data(2).toString(Qt.ISODate), "2000-01-01T00:00:00Z")
+            filter_node.commitDateMin().toString(Qt.ISODate),
+            "2000-01-01T00:00:00Z"
+        )
+        self.assertEqual(
+            filter_node.data(2).toString(Qt.ISODate), "2000-01-01T00:00:00Z"
+        )
 
         filter_node.setCommitDateMin(
-            QDateTime.fromString("2010-01-01T00:00:00Z", Qt.ISODate))
-        self.assertEqual(filter_node.commitDateMin().toString(Qt.ISODate),
-                         "2010-01-01T00:00:00Z")
+            QDateTime.fromString("2010-01-01T00:00:00Z", Qt.ISODate)
+        )
         self.assertEqual(
-            filter_node.data(2).toString(Qt.ISODate), "2010-01-01T00:00:00Z")
+            filter_node.commitDateMin().toString(Qt.ISODate),
+            "2010-01-01T00:00:00Z"
+        )
+        self.assertEqual(
+            filter_node.data(2).toString(Qt.ISODate), "2010-01-01T00:00:00Z"
+        )
 
         filter_node.setData(
-            2, QDateTime.fromString("2015-01-01T00:00:00Z", Qt.ISODate))
-        self.assertEqual(filter_node.commitDateMin().toString(Qt.ISODate),
-                         "2015-01-01T00:00:00Z")
+            2, QDateTime.fromString("2015-01-01T00:00:00Z", Qt.ISODate)
+        )
         self.assertEqual(
-            filter_node.data(2).toString(Qt.ISODate), "2015-01-01T00:00:00Z")
+            filter_node.commitDateMin().toString(Qt.ISODate),
+            "2015-01-01T00:00:00Z"
+        )
+        self.assertEqual(
+            filter_node.data(2).toString(Qt.ISODate), "2015-01-01T00:00:00Z"
+        )
 
-        self.assertEqual(filter_node.resource(),
-                         ":/breeze/light/appointment-new.svg")
+        self.assertEqual(
+            filter_node.resource(), ":/breeze/light/appointment-new.svg"
+        )
 
     def test_commit_date_max_filter(self):
         filter_node = self.commit_date_max_filter
@@ -450,10 +512,14 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node._type, "CommitDateMaxFilter")
 
         filter_node.setData(0, "name_2")
-        self.assertEqual(filter_node.name(), "CommitDateMaxFilter",
-                         "Name should be read-only!")
-        self.assertEqual(filter_node.data(0), "CommitDateMaxFilter",
-                         "Name should be read-only!")
+        self.assertEqual(
+            filter_node.name(), "CommitDateMaxFilter",
+            "Name should be read-only!"
+        )
+        self.assertEqual(
+            filter_node.data(0), "CommitDateMaxFilter",
+            "Name should be read-only!"
+        )
 
         self.assertEqual(filter_node.comment(), "comment")
         self.assertEqual(filter_node.data(1), "comment")
@@ -476,27 +542,39 @@ class TestFilterTreeElements(unittest.TestCase):
 
         self.assertEqual(filter_node.childCount(), 0)
 
-        self.assertEqual(filter_node.commitDateMax().toString(Qt.ISODate),
-                         "2000-01-01T00:00:00Z")
         self.assertEqual(
-            filter_node.data(2).toString(Qt.ISODate), "2000-01-01T00:00:00Z")
+            filter_node.commitDateMax().toString(Qt.ISODate),
+            "2000-01-01T00:00:00Z"
+        )
+        self.assertEqual(
+            filter_node.data(2).toString(Qt.ISODate), "2000-01-01T00:00:00Z"
+        )
 
         filter_node.setCommitDateMax(
-            QDateTime.fromString("2010-01-01T00:00:00Z", Qt.ISODate))
-        self.assertEqual(filter_node.commitDateMax().toString(Qt.ISODate),
-                         "2010-01-01T00:00:00Z")
+            QDateTime.fromString("2010-01-01T00:00:00Z", Qt.ISODate)
+        )
         self.assertEqual(
-            filter_node.data(2).toString(Qt.ISODate), "2010-01-01T00:00:00Z")
+            filter_node.commitDateMax().toString(Qt.ISODate),
+            "2010-01-01T00:00:00Z"
+        )
+        self.assertEqual(
+            filter_node.data(2).toString(Qt.ISODate), "2010-01-01T00:00:00Z"
+        )
 
         filter_node.setData(
-            2, QDateTime.fromString("2015-01-01T00:00:00Z", Qt.ISODate))
-        self.assertEqual(filter_node.commitDateMax().toString(Qt.ISODate),
-                         "2015-01-01T00:00:00Z")
+            2, QDateTime.fromString("2015-01-01T00:00:00Z", Qt.ISODate)
+        )
         self.assertEqual(
-            filter_node.data(2).toString(Qt.ISODate), "2015-01-01T00:00:00Z")
+            filter_node.commitDateMax().toString(Qt.ISODate),
+            "2015-01-01T00:00:00Z"
+        )
+        self.assertEqual(
+            filter_node.data(2).toString(Qt.ISODate), "2015-01-01T00:00:00Z"
+        )
 
-        self.assertEqual(filter_node.resource(),
-                         ":/breeze/light/appointment-new.svg")
+        self.assertEqual(
+            filter_node.resource(), ":/breeze/light/appointment-new.svg"
+        )
 
     def test_author_date_delta_min_filter(self):
         filter_node = self.author_date_delta_min_filter
@@ -506,10 +584,14 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node._type, "AuthorDateDeltaMinFilter")
 
         filter_node.setData(0, "name_2")
-        self.assertEqual(filter_node.name(), "AuthorDateDeltaMinFilter",
-                         "Name should be read-only!")
-        self.assertEqual(filter_node.data(0), "AuthorDateDeltaMinFilter",
-                         "Name should be read-only!")
+        self.assertEqual(
+            filter_node.name(), "AuthorDateDeltaMinFilter",
+            "Name should be read-only!"
+        )
+        self.assertEqual(
+            filter_node.data(0), "AuthorDateDeltaMinFilter",
+            "Name should be read-only!"
+        )
 
         self.assertEqual(filter_node.comment(), "comment")
         self.assertEqual(filter_node.data(1), "comment")
@@ -543,8 +625,9 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node.authorDateDeltaMin(), "P42DT12H30M")
         self.assertEqual(filter_node.data(2), "P42DT12H30M")
 
-        self.assertEqual(filter_node.resource(),
-                         ":/breeze/light/chronometer.svg")
+        self.assertEqual(
+            filter_node.resource(), ":/breeze/light/chronometer.svg"
+        )
 
     def test_author_date_delta_max_filter(self):
         filter_node = self.author_date_delta_max_filter
@@ -554,10 +637,14 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node._type, "AuthorDateDeltaMaxFilter")
 
         filter_node.setData(0, "name_2")
-        self.assertEqual(filter_node.name(), "AuthorDateDeltaMaxFilter",
-                         "Name should be read-only!")
-        self.assertEqual(filter_node.data(0), "AuthorDateDeltaMaxFilter",
-                         "Name should be read-only!")
+        self.assertEqual(
+            filter_node.name(), "AuthorDateDeltaMaxFilter",
+            "Name should be read-only!"
+        )
+        self.assertEqual(
+            filter_node.data(0), "AuthorDateDeltaMaxFilter",
+            "Name should be read-only!"
+        )
 
         self.assertEqual(filter_node.comment(), "comment")
         self.assertEqual(filter_node.data(1), "comment")
@@ -591,8 +678,9 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node.authorDateDeltaMax(), "P42DT12H30M")
         self.assertEqual(filter_node.data(2), "P42DT12H30M")
 
-        self.assertEqual(filter_node.resource(),
-                         ":/breeze/light/chronometer.svg")
+        self.assertEqual(
+            filter_node.resource(), ":/breeze/light/chronometer.svg"
+        )
 
     def test_commit_date_delta_min_filter(self):
         filter_node = self.commit_date_delta_min_filter
@@ -602,10 +690,14 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node._type, "CommitDateDeltaMinFilter")
 
         filter_node.setData(0, "name_2")
-        self.assertEqual(filter_node.name(), "CommitDateDeltaMinFilter",
-                         "Name should be read-only!")
-        self.assertEqual(filter_node.data(0), "CommitDateDeltaMinFilter",
-                         "Name should be read-only!")
+        self.assertEqual(
+            filter_node.name(), "CommitDateDeltaMinFilter",
+            "Name should be read-only!"
+        )
+        self.assertEqual(
+            filter_node.data(0), "CommitDateDeltaMinFilter",
+            "Name should be read-only!"
+        )
 
         self.assertEqual(filter_node.comment(), "comment")
         self.assertEqual(filter_node.data(1), "comment")
@@ -639,8 +731,9 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node.commitDateDeltaMin(), "P42DT12H30M")
         self.assertEqual(filter_node.data(2), "P42DT12H30M")
 
-        self.assertEqual(filter_node.resource(),
-                         ":/breeze/light/chronometer.svg")
+        self.assertEqual(
+            filter_node.resource(), ":/breeze/light/chronometer.svg"
+        )
 
     def test_commit_date_delta_max_filter(self):
         filter_node = self.commit_date_delta_max_filter
@@ -650,10 +743,14 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node._type, "CommitDateDeltaMaxFilter")
 
         filter_node.setData(0, "name_2")
-        self.assertEqual(filter_node.name(), "CommitDateDeltaMaxFilter",
-                         "Name should be read-only!")
-        self.assertEqual(filter_node.data(0), "CommitDateDeltaMaxFilter",
-                         "Name should be read-only!")
+        self.assertEqual(
+            filter_node.name(), "CommitDateDeltaMaxFilter",
+            "Name should be read-only!"
+        )
+        self.assertEqual(
+            filter_node.data(0), "CommitDateDeltaMaxFilter",
+            "Name should be read-only!"
+        )
 
         self.assertEqual(filter_node.comment(), "comment")
         self.assertEqual(filter_node.data(1), "comment")
@@ -687,8 +784,9 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node.commitDateDeltaMax(), "P42DT12H30M")
         self.assertEqual(filter_node.data(2), "P42DT12H30M")
 
-        self.assertEqual(filter_node.resource(),
-                         ":/breeze/light/chronometer.svg")
+        self.assertEqual(
+            filter_node.resource(), ":/breeze/light/chronometer.svg"
+        )
 
     def test_and_operator(self):
         filter_node = self.and_operator
@@ -698,10 +796,12 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node._type, "AndOperator")
 
         filter_node.setData(0, "name_2")
-        self.assertEqual(filter_node.name(), "AndOperator",
-                         "Name should be read-only!")
-        self.assertEqual(filter_node.data(0), "AndOperator",
-                         "Name should be read-only!")
+        self.assertEqual(
+            filter_node.name(), "AndOperator", "Name should be read-only!"
+        )
+        self.assertEqual(
+            filter_node.data(0), "AndOperator", "Name should be read-only!"
+        )
 
         self.assertEqual(filter_node.comment(), "comment")
         self.assertEqual(filter_node.data(1), "comment")
@@ -770,10 +870,12 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node._type, "OrOperator")
 
         filter_node.setData(0, "name_2")
-        self.assertEqual(filter_node.name(), "OrOperator",
-                         "Name should be read-only!")
-        self.assertEqual(filter_node.data(0), "OrOperator",
-                         "Name should be read-only!")
+        self.assertEqual(
+            filter_node.name(), "OrOperator", "Name should be read-only!"
+        )
+        self.assertEqual(
+            filter_node.data(0), "OrOperator", "Name should be read-only!"
+        )
 
         self.assertEqual(filter_node.comment(), "comment")
         self.assertEqual(filter_node.data(1), "comment")
@@ -842,10 +944,12 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node._type, "NotOperator")
 
         filter_node.setData(0, "name_2")
-        self.assertEqual(filter_node.name(), "NotOperator",
-                         "Name should be read-only!")
-        self.assertEqual(filter_node.data(0), "NotOperator",
-                         "Name should be read-only!")
+        self.assertEqual(
+            filter_node.name(), "NotOperator", "Name should be read-only!"
+        )
+        self.assertEqual(
+            filter_node.data(0), "NotOperator", "Name should be read-only!"
+        )
 
         self.assertEqual(filter_node.comment(), "comment")
         self.assertEqual(filter_node.data(1), "comment")
@@ -898,10 +1002,12 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node._type, "SourceOperator")
 
         filter_node.setData(0, "name_2")
-        self.assertEqual(filter_node.name(), "SourceOperator",
-                         "Name should be read-only!")
-        self.assertEqual(filter_node.data(0), "SourceOperator",
-                         "Name should be read-only!")
+        self.assertEqual(
+            filter_node.name(), "SourceOperator", "Name should be read-only!"
+        )
+        self.assertEqual(
+            filter_node.data(0), "SourceOperator", "Name should be read-only!"
+        )
 
         self.assertEqual(filter_node.comment(), "comment")
         self.assertEqual(filter_node.data(1), "comment")
@@ -944,8 +1050,9 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertIs(filter_node.child(0), child2)
         self.assertIs(child2.parent(), filter_node)
 
-        self.assertEqual(filter_node.resource(),
-                         ":/operators/source-operator.svg")
+        self.assertEqual(
+            filter_node.resource(), ":/operators/source-operator.svg"
+        )
 
     def test_target_operator(self):
         filter_node = self.target_operator
@@ -955,10 +1062,12 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertEqual(filter_node._type, "TargetOperator")
 
         filter_node.setData(0, "name_2")
-        self.assertEqual(filter_node.name(), "TargetOperator",
-                         "Name should be read-only!")
-        self.assertEqual(filter_node.data(0), "TargetOperator",
-                         "Name should be read-only!")
+        self.assertEqual(
+            filter_node.name(), "TargetOperator", "Name should be read-only!"
+        )
+        self.assertEqual(
+            filter_node.data(0), "TargetOperator", "Name should be read-only!"
+        )
 
         self.assertEqual(filter_node.comment(), "comment")
         self.assertEqual(filter_node.data(1), "comment")
@@ -1001,8 +1110,9 @@ class TestFilterTreeElements(unittest.TestCase):
         self.assertIs(filter_node.child(0), child2)
         self.assertIs(child2.parent(), filter_node)
 
-        self.assertEqual(filter_node.resource(),
-                         ":/operators/target-operator.svg")
+        self.assertEqual(
+            filter_node.resource(), ":/operators/target-operator.svg"
+        )
 
 
 class TestFilterTreeYamlLoad(unittest.TestCase):
@@ -1012,8 +1122,9 @@ class TestFilterTreeYamlLoad(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        with mock.patch('builtins.open',
-                        new=mock.mock_open(read_data=YAML_DOC_1)):
+        with mock.patch(
+            'builtins.open', new=mock.mock_open(read_data=YAML_DOC_1)
+        ):
             root_node = yaml.load(open("path/to/open"), Loader=yaml.Loader)
             root_node.fixParentPointers()
             cls.root_node = root_node
@@ -1136,32 +1247,36 @@ class TestFilterTreeYamlLoad(unittest.TestCase):
         self.assertEqual(node14.comment(), "")
         self.assertIs(node14.parent(), node4)
         self.assertEqual(node14.childCount(), 0)
-        self.assertEqual(node14.authorDateMin().toString(Qt.ISODate),
-                         "2000-01-01T00:00:00Z")
+        self.assertEqual(
+            node14.authorDateMin().toString(Qt.ISODate), "2000-01-01T00:00:00Z"
+        )
 
         self.assertEqual(node15.name(), "AuthorDateMaxFilter")
         self.assertEqual(node15._type, "AuthorDateMaxFilter")
         self.assertEqual(node15.comment(), "")
         self.assertIs(node15.parent(), node5)
         self.assertEqual(node15.childCount(), 0)
-        self.assertEqual(node15.authorDateMax().toString(Qt.ISODate),
-                         "2001-01-01T00:00:00Z")
+        self.assertEqual(
+            node15.authorDateMax().toString(Qt.ISODate), "2001-01-01T00:00:00Z"
+        )
 
         self.assertEqual(node16.name(), "CommitDateMinFilter")
         self.assertEqual(node16._type, "CommitDateMinFilter")
         self.assertEqual(node16.comment(), "")
         self.assertIs(node16.parent(), node6)
         self.assertEqual(node16.childCount(), 0)
-        self.assertEqual(node16.commitDateMin().toString(Qt.ISODate),
-                         "2002-01-01T00:00:00Z")
+        self.assertEqual(
+            node16.commitDateMin().toString(Qt.ISODate), "2002-01-01T00:00:00Z"
+        )
 
         self.assertEqual(node17.name(), "CommitDateMaxFilter")
         self.assertEqual(node17._type, "CommitDateMaxFilter")
         self.assertEqual(node17.comment(), "")
         self.assertIs(node17.parent(), node7)
         self.assertEqual(node17.childCount(), 0)
-        self.assertEqual(node17.commitDateMax().toString(Qt.ISODate),
-                         "2003-01-01T00:00:00Z")
+        self.assertEqual(
+            node17.commitDateMax().toString(Qt.ISODate), "2003-01-01T00:00:00Z"
+        )
 
         node18 = node13.child(0)
 

@@ -65,8 +65,9 @@ class PhasarDefault(Experiment):  # type: ignore
 
         analysis_actions = []
         if not os.path.exists(
-                local.path(str(BB_CFG["varats"]["result"].value)) /
-                project.name + ".bc"):
+            local.path(str(BB_CFG["varats"]["result"].value)) / project.name +
+            ".bc"
+        ):
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(project))
 

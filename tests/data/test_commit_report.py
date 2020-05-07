@@ -91,8 +91,9 @@ class TestFunctionInfo(unittest.TestCase):
         """
         Load and parse function infos from yaml file.
         """
-        with mock.patch("builtins.open",
-                        new=mock.mock_open(read_data=YAML_DOC_2)):
+        with mock.patch(
+            "builtins.open", new=mock.mock_open(read_data=YAML_DOC_2)
+        ):
             with open("fake_file_path") as yaml_file:
                 yaml_doc = yaml.safe_load(yaml_file)
                 cls.finfos = {}
@@ -107,14 +108,16 @@ class TestFunctionInfo(unittest.TestCase):
         bi_init = self.finfos["bi_init"]
         self.assertEqual(bi_init.id, "bi_init")
         self.assertEqual(bi_init.id, bi_init.name)
-        self.assertEqual(bi_init.region_id,
-                         "b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+        self.assertEqual(
+            bi_init.region_id, "b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"
+        )
 
         send_bits = self.finfos["send_bits"]
         self.assertEqual(send_bits.id, "send_bits")
         self.assertEqual(send_bits.id, send_bits.name)
-        self.assertEqual(send_bits.region_id,
-                         "8ac1b3f73baceb4a16e99504807d23d38e5123b1")
+        self.assertEqual(
+            send_bits.region_id, "8ac1b3f73baceb4a16e99504807d23d38e5123b1"
+        )
 
 
 class TestRegionMapping(unittest.TestCase):
@@ -127,8 +130,9 @@ class TestRegionMapping(unittest.TestCase):
         """
         Load and parse region mappings from yaml file.
         """
-        with mock.patch("builtins.open",
-                        new=mock.mock_open(read_data=YAML_DOC_2)):
+        with mock.patch(
+            "builtins.open", new=mock.mock_open(read_data=YAML_DOC_2)
+        ):
             with open("fake_file_path") as yaml_file:
                 yaml_doc = yaml.safe_load(yaml_file)
                 cls.r_mappings = {}
@@ -142,11 +146,13 @@ class TestRegionMapping(unittest.TestCase):
         """
         self.assertEqual(
             self.r_mappings["8ac1b3f73baceb4a16e99504807d23d38e5123b1"].hash,
-            "8ac1b3f73baceb4a16e99504807d23d38e5123b1")
+            "8ac1b3f73baceb4a16e99504807d23d38e5123b1"
+        )
 
         self.assertEqual(
             self.r_mappings["38f87b03c2763bb2af05ae98905b0ac8ba55b3eb"].hash,
-            "38f87b03c2763bb2af05ae98905b0ac8ba55b3eb")
+            "38f87b03c2763bb2af05ae98905b0ac8ba55b3eb"
+        )
 
 
 class TestFunctionGraphEdges(unittest.TestCase):
@@ -159,8 +165,9 @@ class TestFunctionGraphEdges(unittest.TestCase):
         """
         Load and parse FunctionGraphEdges from yaml file.
         """
-        with mock.patch("builtins.open",
-                        new=mock.mock_open(read_data=YAML_DOC_3)):
+        with mock.patch(
+            "builtins.open", new=mock.mock_open(read_data=YAML_DOC_3)
+        ):
             with open("fake_file_path") as yaml_file:
                 yaml_doc = yaml.safe_load(yaml_file)
                 cls.edge_dict = {}
@@ -187,8 +194,10 @@ class TestFunctionGraphEdges(unittest.TestCase):
         Check if call-graph edges are parsed correctly.
         """
         bi_init = self.edge_dict['bi_init']
-        self.assertEqual(bi_init.cg_edges[0].region,
-                         "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5")
+        self.assertEqual(
+            bi_init.cg_edges[0].region,
+            "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5"
+        )
         self.assertEqual(bi_init.cg_edges[0].function, "llvm.dbg.value")
 
     def test_control_flow_edges(self):
@@ -196,30 +205,46 @@ class TestFunctionGraphEdges(unittest.TestCase):
         Check if control-flow edges are parsed correctly.
         """
         bi_init = self.edge_dict['bi_init']
-        self.assertEqual(bi_init.cf_edges[0].edge_from,
-                         "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5")
-        self.assertEqual(bi_init.cf_edges[0].edge_to,
-                         "b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+        self.assertEqual(
+            bi_init.cf_edges[0].edge_from,
+            "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5"
+        )
+        self.assertEqual(
+            bi_init.cf_edges[0].edge_to,
+            "b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"
+        )
 
-        self.assertEqual(bi_init.cf_edges[1].edge_from,
-                         "95ace546d3f6c5909a636017f141784105f9dab2")
-        self.assertEqual(bi_init.cf_edges[1].edge_to,
-                         "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5")
+        self.assertEqual(
+            bi_init.cf_edges[1].edge_from,
+            "95ace546d3f6c5909a636017f141784105f9dab2"
+        )
+        self.assertEqual(
+            bi_init.cf_edges[1].edge_to,
+            "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5"
+        )
 
     def test_data_flow_edges(self):
         """
         Check if data-flow edges are parsed correctly.
         """
         bi_init = self.edge_dict['bi_init']
-        self.assertEqual(bi_init.df_relations[0].edge_from,
-                         "b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
-        self.assertEqual(bi_init.df_relations[0].edge_to,
-                         "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5")
+        self.assertEqual(
+            bi_init.df_relations[0].edge_from,
+            "b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"
+        )
+        self.assertEqual(
+            bi_init.df_relations[0].edge_to,
+            "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5"
+        )
 
-        self.assertEqual(bi_init.df_relations[1].edge_from,
-                         "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5")
-        self.assertEqual(bi_init.df_relations[1].edge_to,
-                         "95ace546d3f6c5909a636017f141784105f9dab2")
+        self.assertEqual(
+            bi_init.df_relations[1].edge_from,
+            "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5"
+        )
+        self.assertEqual(
+            bi_init.df_relations[1].edge_to,
+            "95ace546d3f6c5909a636017f141784105f9dab2"
+        )
 
 
 class TestCommitReport(unittest.TestCase):
@@ -233,16 +258,21 @@ class TestCommitReport(unittest.TestCase):
         Setup file and CommitReport
         """
         file_content = YAML_DOC_1 + YAML_DOC_2 + YAML_DOC_3
-        with mock.patch('builtins.open',
-                        new=mock.mock_open(read_data=file_content)):
+        with mock.patch(
+            'builtins.open', new=mock.mock_open(read_data=file_content)
+        ):
             cls.commit_report = CommitReport("fake_file_path")
 
-        cls.success_filename = ("CR-foo-foo-7bb9ef5f8c_"
-                                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
-                                "success.yaml")
-        cls.fail_filename = ("CR-foo-foo-7bb9ef5f8c_"
-                             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be"
-                             "_failed.txt")
+        cls.success_filename = (
+            "CR-foo-foo-7bb9ef5f8c_"
+            "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
+            "success.yaml"
+        )
+        cls.fail_filename = (
+            "CR-foo-foo-7bb9ef5f8c_"
+            "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be"
+            "_failed.txt"
+        )
 
     def test_path(self):
         """
@@ -262,26 +292,34 @@ class TestCommitReport(unittest.TestCase):
         self.assertTrue(CommitReport.is_result_file(self.success_filename))
         self.assertTrue(CommitReport.is_result_file(self.fail_filename))
         self.assertFalse(
-            CommitReport.is_result_file(self.success_filename.replace("_", "")))
+            CommitReport.is_result_file(self.success_filename.replace("_", ""))
+        )
         self.assertFalse(
-            CommitReport.is_result_file(self.success_filename.replace("-", "")))
+            CommitReport.is_result_file(self.success_filename.replace("-", ""))
+        )
         self.assertFalse(
-            CommitReport.is_result_file(self.success_filename.replace(".",
-                                                                      "f")))
+            CommitReport.is_result_file(
+                self.success_filename.replace(".", "f")
+            )
+        )
 
     def test_file_status(self):
         """
         Check if the correct file status is returned for CommitReport names.
         """
         self.assertTrue(
-            CommitReport.result_file_has_status_success(self.success_filename))
+            CommitReport.result_file_has_status_success(self.success_filename)
+        )
         self.assertFalse(
-            CommitReport.result_file_has_status_success(self.fail_filename))
+            CommitReport.result_file_has_status_success(self.fail_filename)
+        )
 
         self.assertTrue(
-            CommitReport.result_file_has_status_failed(self.fail_filename))
+            CommitReport.result_file_has_status_failed(self.fail_filename)
+        )
         self.assertFalse(
-            CommitReport.result_file_has_status_failed(self.success_filename))
+            CommitReport.result_file_has_status_failed(self.success_filename)
+        )
 
     def test_get_commit(self):
         """
@@ -289,26 +327,33 @@ class TestCommitReport(unittest.TestCase):
         """
         self.assertEqual(
             CommitReport.get_commit_hash_from_result_file(
-                self.success_filename), "7bb9ef5f8c")
+                self.success_filename
+            ), "7bb9ef5f8c"
+        )
         self.assertEqual(
             CommitReport.get_commit_hash_from_result_file(self.fail_filename),
-            "7bb9ef5f8c")
+            "7bb9ef5f8c"
+        )
 
     def test_file_name_creation(self):
         """
          Check if file names are created correctly.
         """
         self.assertEqual(
-            CommitReport.get_file_name("foo", "foo", "7bb9ef5f8c",
-                                       "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                                       FileStatusExtension.Success),
-            self.success_filename)
+            CommitReport.get_file_name(
+                "foo", "foo", "7bb9ef5f8c",
+                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
+                FileStatusExtension.Success
+            ), self.success_filename
+        )
 
         self.assertEqual(
-            CommitReport.get_file_name("foo", "foo", "7bb9ef5f8c",
-                                       "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                                       FileStatusExtension.Failed, ".txt"),
-            self.fail_filename)
+            CommitReport.get_file_name(
+                "foo", "foo", "7bb9ef5f8c",
+                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
+                FileStatusExtension.Failed, ".txt"
+            ), self.fail_filename
+        )
 
 
 RAW_COMMIT_LOG = """20540be6186c159880dda3a49a5827722c1a0ac9
@@ -376,11 +421,14 @@ class TestCommitMap(unittest.TestCase):
         Test time id look up.
         """
         self.assertEqual(
-            self.cmap.time_id("ae332f2a5d2f6f3e0a23443f8a9bcb068c8af74d"), 1)
+            self.cmap.time_id("ae332f2a5d2f6f3e0a23443f8a9bcb068c8af74d"), 1
+        )
         self.assertEqual(
-            self.cmap.time_id("ef58a957a6c1887930cc70d6199ae7e48aa8d716"), 0)
+            self.cmap.time_id("ef58a957a6c1887930cc70d6199ae7e48aa8d716"), 0
+        )
         self.assertEqual(
-            self.cmap.time_id("20540be6186c159880dda3a49a5827722c1a0ac9"), 32)
+            self.cmap.time_id("20540be6186c159880dda3a49a5827722c1a0ac9"), 32
+        )
 
     def test_short_time_id(self):
         """
@@ -402,8 +450,9 @@ class TestCommitConnectionGenerators(unittest.TestCase):
         Setup file and CommitReport
         """
         file_content = YAML_DOC_1 + YAML_DOC_2 + YAML_DOC_3
-        with mock.patch('builtins.open',
-                        new=mock.mock_open(read_data=file_content)):
+        with mock.patch(
+            'builtins.open', new=mock.mock_open(read_data=file_content)
+        ):
             cls.commit_report = CommitReport("fake_file_path")
 
         cls.cmap = testing_gen_commit_map()
@@ -413,11 +462,13 @@ class TestCommitConnectionGenerators(unittest.TestCase):
         Test generation of interaction node
         """
         nodes = generate_interactions(self.commit_report, self.cmap)[0]
-        self.assertEqual(nodes.at[0, 'hash'],
-                         '38f87b03c2763bb2af05ae98905b0ac8ba55b3eb')
+        self.assertEqual(
+            nodes.at[0, 'hash'], '38f87b03c2763bb2af05ae98905b0ac8ba55b3eb'
+        )
         self.assertEqual(nodes.at[0, 'id'], 12)
-        self.assertEqual(nodes.at[3, 'hash'],
-                         '95ace546d3f6c5909a636017f141784105f9dab2')
+        self.assertEqual(
+            nodes.at[3, 'hash'], '95ace546d3f6c5909a636017f141784105f9dab2'
+        )
         self.assertEqual(nodes.at[3, 'id'], 9)
 
     def test_gen_interactions_links(self):
@@ -426,16 +477,20 @@ class TestCommitConnectionGenerators(unittest.TestCase):
         """
         links = generate_interactions(self.commit_report, self.cmap)[1]
         links = links.sort_values(by=['source']).reset_index(drop=True)
-        self.assertEqual(links.at[0, 'source'],
-                         "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5")
-        self.assertEqual(links.at[0, 'target'],
-                         "b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+        self.assertEqual(
+            links.at[0, 'source'], "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5"
+        )
+        self.assertEqual(
+            links.at[0, 'target'], "b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"
+        )
         self.assertEqual(links.at[0, 'value'], 1)
         self.assertEqual(links.at[0, 'src_id'], 10)
 
-        self.assertEqual(links.at[2, 'source'],
-                         "95ace546d3f6c5909a636017f141784105f9dab2")
-        self.assertEqual(links.at[2, 'target'],
-                         "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5")
+        self.assertEqual(
+            links.at[2, 'source'], "95ace546d3f6c5909a636017f141784105f9dab2"
+        )
+        self.assertEqual(
+            links.at[2, 'target'], "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5"
+        )
         self.assertEqual(links.at[2, 'value'], 1)
         self.assertEqual(links.at[2, 'src_id'], 9)

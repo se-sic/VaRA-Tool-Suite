@@ -17,10 +17,12 @@ from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
 
 
-@with_git("https://github.com/tmux/tmux.git",
-          refspec="HEAD",
-          shallow_clone=False,
-          version_filter=project_filter_generator("tmux"))
+@with_git(
+    "https://github.com/tmux/tmux.git",
+    refspec="HEAD",
+    shallow_clone=False,
+    version_filter=project_filter_generator("tmux")
+)
 class Tmux(Project, CVEProviderHook):  # type: ignore
     """Terminal multiplexer Tmux"""
 

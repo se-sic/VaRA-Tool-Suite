@@ -62,7 +62,8 @@ def mocked_create_lazy_commit_map_loader(
     project_name: str,  # pylint: disable=unused-argument
     cmap_path: tp.Optional[Path] = None,  # pylint: disable=unused-argument
     end: str = "HEAD",  # pylint: disable=unused-argument
-    start: tp.Optional[str] = None):  # pylint: disable=unused-argument
+    start: tp.Optional[str] = None
+):  # pylint: disable=unused-argument
     """
     Mock function to replace a lazy commit map loader callback.
 
@@ -130,15 +131,17 @@ class TestCaseStudy(unittest.TestCase):
         Check if certain revisions were loaded correctly.
         """
         self.assertTrue(
-            self.case_study.has_revision(
-                "b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"))
+            self.case_study.
+            has_revision("b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+        )
         self.assertTrue(self.case_study.has_revision("b8b25e7f15"))
         self.assertTrue(self.case_study.has_revision("a3db5806d01"))
         self.assertTrue(self.case_study.has_revision("a3"))
 
         self.assertFalse(
-            self.case_study.has_revision(
-                "42b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"))
+            self.case_study.
+            has_revision("42b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+        )
         self.assertFalse(self.case_study.has_revision("42"))
 
     def test_gen_filter(self):
@@ -147,11 +150,13 @@ class TestCaseStudy(unittest.TestCase):
         """
         revision_filter = self.case_study.get_revision_filter()
         self.assertTrue(
-            revision_filter("b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"))
+            revision_filter("b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+        )
         self.assertTrue(revision_filter("b8b25e7f15"))
 
         self.assertFalse(
-            revision_filter("42b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"))
+            revision_filter("42b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+        )
         self.assertFalse(revision_filter("42"))
 
 
@@ -175,17 +180,26 @@ class TestSampling(unittest.TestCase):
             len(
                 CS.sample_n(
                     CS.SamplingMethod.uniform.gen_distribution_function(), 5,
-                    self.base_list)), 5)
+                    self.base_list
+                )
+            ), 5
+        )
         self.assertEqual(
             len(
                 CS.sample_n(
                     CS.SamplingMethod.uniform.gen_distribution_function(), 1,
-                    self.base_list)), 1)
+                    self.base_list
+                )
+            ), 1
+        )
         self.assertEqual(
             len(
                 CS.sample_n(
                     CS.SamplingMethod.uniform.gen_distribution_function(), 7,
-                    self.base_list)), 7)
+                    self.base_list
+                )
+            ), 7
+        )
 
     def test_sample_more_than_max_amount(self):
         """
@@ -196,15 +210,19 @@ class TestSampling(unittest.TestCase):
             len(
                 CS.sample_n(
                     CS.SamplingMethod.uniform.gen_distribution_function(),
-                    len(self.base_list) + 1, self.base_list)),
-            len(self.base_list))
+                    len(self.base_list) + 1, self.base_list
+                )
+            ), len(self.base_list)
+        )
 
         self.assertEqual(
             len(
                 CS.sample_n(
                     CS.SamplingMethod.uniform.gen_distribution_function(),
-                    len(self.base_list) + 666, self.base_list)),
-            len(self.base_list))
+                    len(self.base_list) + 666, self.base_list
+                )
+            ), len(self.base_list)
+        )
 
     def test_sample_nothing(self):
         """
@@ -215,4 +233,7 @@ class TestSampling(unittest.TestCase):
             len(
                 CS.sample_n(
                     CS.SamplingMethod.uniform.gen_distribution_function(), 0,
-                    self.base_list)), 0)
+                    self.base_list
+                )
+            ), 0
+        )

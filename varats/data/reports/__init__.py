@@ -11,7 +11,8 @@ def discover() -> None:
     """
     __all__ = []
     for loader, module_name, _ in pkgutil.walk_packages(
-            __path__):  # type: ignore
+        __path__
+    ):  # type: ignore
         # Add subpath
         module_name = 'varats.data.reports.' + module_name
         __all__.append(module_name)

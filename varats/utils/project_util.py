@@ -41,19 +41,22 @@ def get_local_project_git_path(project_name: str) -> Path:
     """
     setup_config(BB_CFG, [str(CFG['benchbuild_root']) + "/.benchbuild.yml"])
 
-    project_git_path = Path(str(CFG['benchbuild_root'])) / str(
-        BB_CFG["tmp_dir"])
+    project_git_path = Path(str(CFG['benchbuild_root'])
+                           ) / str(BB_CFG["tmp_dir"])
     project_git_path /= project_name if project_name.endswith(
-        "-HEAD") else project_name + "-HEAD"
+        "-HEAD"
+    ) else project_name + "-HEAD"
 
     if not project_git_path.exists():
         project_cls = get_project_cls_by_name(project_name)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             with local.cwd(tmpdir):
-                Git(project_cls.repository,
+                Git(
+                    project_cls.repository,
                     project_cls.SRC_FILE,
-                    shallow_clone=False)
+                    shallow_clone=False
+                )
 
     return project_git_path
 
@@ -93,8 +96,11 @@ def get_all_revisions_between(c_start: str, c_end: str) -> tp.List[str]:
     """
     result = [c_start]
     result.extend(
-        git("log", "--pretty=%H", "--ancestry-path",
-            "{}..{}".format(c_start, c_end)).strip().split())
+        git(
+            "log", "--pretty=%H", "--ancestry-path",
+            "{}..{}".format(c_start, c_end)
+        ).strip().split()
+    )
     return result
 
 
@@ -155,10 +161,9 @@ class BlockedRevisionRange(AbstractRevisionBlocker):
     A range of blocked revisions.
     """
 
-    def __init__(self,
-                 id_start: str,
-                 id_end: str,
-                 reason: tp.Optional[str] = None):
+    def __init__(
+        self, id_start: str, id_end: str, reason: tp.Optional[str] = None
+    ):
         super().__init__(reason)
         self.__id_start = id_start
         self.__id_end = id_end
@@ -167,7 +172,8 @@ class BlockedRevisionRange(AbstractRevisionBlocker):
 
     def init_cache(self, project: str) -> None:
         self.__revision_list = get_all_revisions_between(
-            self.__id_start, self.__id_end)
+            self.__id_start, self.__id_end
+        )
 
     def __iter__(self) -> tp.Iterator[str]:
         if self.__revision_list is None:
@@ -180,10 +186,9 @@ class BugAndFixPair(AbstractRevisionBlocker):
     A set of revisions containing a certain buggy commit but not its fix.
     """
 
-    def __init__(self,
-                 id_bug: str,
-                 id_fix: str,
-                 reason: tp.Optional[str] = None):
+    def __init__(
+        self, id_bug: str, id_fix: str, reason: tp.Optional[str] = None
+    ):
         super().__init__(reason)
         self.__id_bug = id_bug
         self.__id_fix = id_fix
@@ -214,8 +219,9 @@ class BugAndFixPair(AbstractRevisionBlocker):
             UNKNOWN = FIXED | BUGGY
 
         def find_blocked_commits(
-                commit: pygit2.Commit, good: tp.List[pygit2.Commit],
-                bad: tp.List[pygit2.Commit]) -> tp.List[pygit2.Commit]:
+            commit: pygit2.Commit, good: tp.List[pygit2.Commit],
+            bad: tp.List[pygit2.Commit]
+        ) -> tp.List[pygit2.Commit]:
             """
             Find all buggy commits not yet fixed by performing a backwards
             search starting at commit.
@@ -250,8 +256,9 @@ class BugAndFixPair(AbstractRevisionBlocker):
                 # if all parents are already handled, determine whether
                 # the current commit is blocked or not.
                 if current_commit not in blocked.keys() and all(
-                        parent in blocked.keys()
-                        for parent in current_commit.parents):
+                    parent in blocked.keys()
+                    for parent in current_commit.parents
+                ):
                     blocked[current_commit] = CommitState.BOT
                     for parent in current_commit.parents:
                         if blocked[parent] & CommitState.FIXED:
@@ -280,8 +287,8 @@ class BugAndFixPair(AbstractRevisionBlocker):
         heads = git("show-ref", "--heads", "-s").strip().split("\n")
         for head in heads:
             self.__revision_list.extend([
-                str(commit.id) for commit in find_blocked_commits(
-                    repo.get(head), fix_commits, bug_commits)
+                str(commit.id) for commit in
+                find_blocked_commits(repo.get(head), fix_commits, bug_commits)
             ])
 
     def __iter__(self) -> tp.Iterator[str]:
@@ -307,7 +314,8 @@ def block_revisions(blocks: tp.List[AbstractRevisionBlocker]) -> tp.Any:
     def revision_blocker_decorator(cls: tp.Any) -> tp.Any:
 
         def is_blocked_revision_impl(
-                rev_id: str) -> tp.Tuple[bool, tp.Optional[str]]:
+            rev_id: str
+        ) -> tp.Tuple[bool, tp.Optional[str]]:
             """
             Checks whether a revision is blocked or not. Also returns the
             reason for the block if available.

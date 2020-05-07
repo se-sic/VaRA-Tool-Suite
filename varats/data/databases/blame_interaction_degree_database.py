@@ -39,17 +39,19 @@ class DegreeType(Enum):
 
 
 class BlameInteractionDegreeDatabase(
-        EvaluationDatabase,
-        cache_id="blame_interaction_degree_data",
-        columns=["degree_type", "degree", "amount", "fraction"]):
+    EvaluationDatabase,
+    cache_id="blame_interaction_degree_data",
+    columns=["degree_type", "degree", "amount", "fraction"]
+):
     """
     Provides access to blame interaction degree data.
     """
 
     @classmethod
-    def _load_dataframe(cls, project_name: str, commit_map: CommitMap,
-                        case_study: tp.Optional[CaseStudy],
-                        **kwargs: tp.Any) -> pd.DataFrame:
+    def _load_dataframe(
+        cls, project_name: str, commit_map: CommitMap,
+        case_study: tp.Optional[CaseStudy], **kwargs: tp.Any
+    ) -> pd.DataFrame:
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
@@ -64,66 +66,74 @@ class BlameInteractionDegreeDatabase(
             total = sum(amounts)
 
             list_of_author_degree_occurrences = generate_author_degree_tuples(
-                report, project_name)
+                report, project_name
+            )
             author_degrees, author_amounts = map(
-                list, zip(*list_of_author_degree_occurrences))
+                list, zip(*list_of_author_degree_occurrences)
+            )
             author_total = sum(author_amounts)
 
             list_of_max_time_deltas = generate_max_time_distribution_tuples(
-                report, project_name, MAX_TIME_BUCKET_SIZE)
+                report, project_name, MAX_TIME_BUCKET_SIZE
+            )
             max_time_buckets, max_time_amounts = map(
-                list, zip(*list_of_max_time_deltas))
+                list, zip(*list_of_max_time_deltas)
+            )
             total_max_time_amounts = sum(max_time_amounts)
 
             list_of_avg_time_deltas = generate_avg_time_distribution_tuples(
-                report, project_name, AVG_TIME_BUCKET_SIZE)
+                report, project_name, AVG_TIME_BUCKET_SIZE
+            )
             avg_time_buckets, avg_time_amounts = map(
-                list, zip(*list_of_avg_time_deltas))
+                list, zip(*list_of_avg_time_deltas)
+            )
             total_avg_time_amounts = sum(avg_time_amounts)
 
-            amount_of_entries = len(degrees + author_degrees +
-                                    max_time_buckets + avg_time_buckets)
+            amount_of_entries = len(
+                degrees + author_degrees + max_time_buckets + avg_time_buckets
+            )
 
-            return pd.DataFrame(
-                {
-                    'revision': [report.head_commit] * amount_of_entries,
-                    'time_id': [commit_map.short_time_id(report.head_commit)] *
-                               amount_of_entries,
-                    'degree_type':
-                        [DegreeType.interaction.value] * len(degrees) +
-                        [DegreeType.author.value] * len(author_degrees) +
-                        [DegreeType.max_time.value] * len(max_time_buckets) +
-                        [DegreeType.avg_time.value] * len(avg_time_buckets),
-                    'degree':
-                        degrees + author_degrees + max_time_buckets +
-                        avg_time_buckets,
-                    'amount':
-                        amounts + author_amounts + max_time_amounts +
-                        avg_time_amounts,
-                    'fraction':
-                        np.concatenate([
-                            np.divide(amounts, total),
-                            np.divide(author_amounts, author_total),
-                            np.divide(max_time_amounts, total_max_time_amounts),
-                            np.divide(avg_time_amounts, total_avg_time_amounts)
-                        ]),
-                },
-                index=range(0, amount_of_entries))
+            return pd.DataFrame({
+                'revision': [report.head_commit] * amount_of_entries,
+                'time_id': [commit_map.short_time_id(report.head_commit)] *
+                           amount_of_entries,
+                'degree_type':
+                    [DegreeType.interaction.value] * len(degrees) +
+                    [DegreeType.author.value] * len(author_degrees) +
+                    [DegreeType.max_time.value] * len(max_time_buckets) +
+                    [DegreeType.avg_time.value] * len(avg_time_buckets),
+                'degree':
+                    degrees + author_degrees + max_time_buckets +
+                    avg_time_buckets,
+                'amount':
+                    amounts + author_amounts + max_time_amounts +
+                    avg_time_amounts,
+                'fraction':
+                    np.concatenate([
+                        np.divide(amounts, total),
+                        np.divide(author_amounts, author_total),
+                        np.divide(max_time_amounts, total_max_time_amounts),
+                        np.divide(avg_time_amounts, total_avg_time_amounts)
+                    ]),
+            },
+                                index=range(0, amount_of_entries))
 
         report_files = get_processed_revisions_files(
             project_name, BlameReport,
-            get_case_study_file_name_filter(case_study))
+            get_case_study_file_name_filter(case_study)
+        )
 
         failed_report_files = get_failed_revisions_files(
             project_name, BlameReport,
-            get_case_study_file_name_filter(case_study))
+            get_case_study_file_name_filter(case_study)
+        )
 
         # cls.CACHE_ID is set by superclass
         # pylint: disable=E1101
-        data_frame = build_cached_report_table(cls.CACHE_ID, project_name,
-                                               create_dataframe_layout,
-                                               create_data_frame_for_report,
-                                               load_blame_report, report_files,
-                                               failed_report_files)
+        data_frame = build_cached_report_table(
+            cls.CACHE_ID, project_name, create_dataframe_layout,
+            create_data_frame_for_report, load_blame_report, report_files,
+            failed_report_files
+        )
 
         return data_frame

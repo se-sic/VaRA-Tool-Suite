@@ -49,7 +49,9 @@ class TestChurnConfig(unittest.TestCase):
         self.assertEqual(c_config.get_extensions_repr("|"), "c|h")
 
         c_style_config = ChurnConfig.create_c_style_languages_config()
-        self.assertEqual(c_style_config.get_extensions_repr(),
-                         "c, cpp, cxx, h, hpp, hxx")
-        self.assertEqual(c_style_config.get_extensions_repr("|"),
-                         "c|cpp|cxx|h|hpp|hxx")
+        self.assertEqual(
+            c_style_config.get_extensions_repr(), "c, cpp, cxx, h, hpp, hxx"
+        )
+        self.assertEqual(
+            c_style_config.get_extensions_repr("|"), "c|cpp|cxx|h|hpp|hxx"
+        )

@@ -82,19 +82,20 @@ class SecretYamlObject(yaml.YAMLObject):
             new_data.__dict__[item] = None
         for item in cls.removed_fields:
             del new_data.__dict__[item]
-        return dumper.represent_yaml_object(cls.yaml_tag,
-                                            new_data,
-                                            cls,
-                                            flow_style=cls.yaml_flow_style)
+        return dumper.represent_yaml_object(
+            cls.yaml_tag, new_data, cls, flow_style=cls.yaml_flow_style
+        )
 
 
 class InteractionFilter(SecretYamlObject):
     hidden_fields = ["_parent"]
     yaml_tag = u'!InteractionFilter'
 
-    def __init__(self,
-                 parent: tp.Optional['InteractionFilter'] = None,
-                 comment: tp.Optional[str] = None) -> None:
+    def __init__(
+        self,
+        parent: tp.Optional['InteractionFilter'] = None,
+        comment: tp.Optional[str] = None
+    ) -> None:
 
         self._comment: str = ""
         self._type = type(self).__name__
@@ -155,13 +156,15 @@ class InteractionFilter(SecretYamlObject):
         for i in range(num_children - 1):
             child = self.child(i)
             if child:
-                output += child.log(prefix + ("    " if is_tail else "│   "),
-                                    False)
+                output += child.log(
+                    prefix + ("    " if is_tail else "│   "), False
+                )
         if num_children > 0:
             child = self.child(num_children - 1)
             if child:
-                output += child.log(prefix + ("    " if is_tail else "│   "),
-                                    True)
+                output += child.log(
+                    prefix + ("    " if is_tail else "│   "), True
+                )
         return output
 
     def __repr__(self) -> str:
@@ -225,38 +228,46 @@ class InteractionFilter(SecretYamlObject):
 class ConcreteInteractionFilter(InteractionFilter):
     yaml_tag = u'!ConcreteInteractionFilter'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None) -> None:
+    def __init__(
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None
+    ) -> None:
         super().__init__(parent, comment)
 
 
 class UnaryInteractionFilter(ConcreteInteractionFilter):
     yaml_tag = u'!UnaryInteractionFilter'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None) -> None:
+    def __init__(
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None
+    ) -> None:
         super().__init__(parent, comment)
 
 
 class BinaryInteractionFilter(ConcreteInteractionFilter):
     yaml_tag = u'!BinaryInteractionFilter'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None) -> None:
+    def __init__(
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None
+    ) -> None:
         super().__init__(parent, comment)
 
 
 class AuthorFilter(UnaryInteractionFilter):
     yaml_tag = u'!AuthorFilter'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None,
-                 author_name: str = "",
-                 author_email: str = "") -> None:
+    def __init__(
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None,
+        author_name: str = "",
+        author_email: str = ""
+    ) -> None:
         super().__init__(parent, comment)
         self._author_name = author_name
         self._author_email = author_email
@@ -299,11 +310,13 @@ class AuthorFilter(UnaryInteractionFilter):
 class CommitterFilter(UnaryInteractionFilter):
     yaml_tag = u'!CommitterFilter'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None,
-                 committer_name: str = "",
-                 committer_email: str = "") -> None:
+    def __init__(
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None,
+        committer_name: str = "",
+        committer_email: str = ""
+    ) -> None:
         super().__init__(parent, comment)
         self._committer_name = committer_name
         self._committer_email = committer_email
@@ -346,10 +359,12 @@ class CommitterFilter(UnaryInteractionFilter):
 class AuthorDateMinFilter(UnaryInteractionFilter):
     yaml_tag = u'!AuthorDateMinFilter'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None,
-                 author_date_min: tp.Optional[str] = None) -> None:
+    def __init__(
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None,
+        author_date_min: tp.Optional[str] = None
+    ) -> None:
         super().__init__(parent, comment)
         if author_date_min:
             self._author_date_min = author_date_min
@@ -384,10 +399,12 @@ class AuthorDateMinFilter(UnaryInteractionFilter):
 class AuthorDateMaxFilter(UnaryInteractionFilter):
     yaml_tag = u'!AuthorDateMaxFilter'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None,
-                 author_date_max: tp.Optional[str] = None) -> None:
+    def __init__(
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None,
+        author_date_max: tp.Optional[str] = None
+    ) -> None:
         super().__init__(parent, comment)
         if author_date_max:
             self._author_date_max = author_date_max
@@ -422,10 +439,12 @@ class AuthorDateMaxFilter(UnaryInteractionFilter):
 class CommitDateMinFilter(UnaryInteractionFilter):
     yaml_tag = u'!CommitDateMinFilter'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None,
-                 commit_date_min: tp.Optional[str] = None) -> None:
+    def __init__(
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None,
+        commit_date_min: tp.Optional[str] = None
+    ) -> None:
         super().__init__(parent, comment)
         if commit_date_min:
             self._commit_date_min = commit_date_min
@@ -460,10 +479,12 @@ class CommitDateMinFilter(UnaryInteractionFilter):
 class CommitDateMaxFilter(UnaryInteractionFilter):
     yaml_tag = u'!CommitDateMaxFilter'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None,
-                 commit_date_max: tp.Optional[str] = None) -> None:
+    def __init__(
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None,
+        commit_date_max: tp.Optional[str] = None
+    ) -> None:
         super().__init__(parent, comment)
         if commit_date_max:
             self._commit_date_max = commit_date_max
@@ -498,10 +519,12 @@ class CommitDateMaxFilter(UnaryInteractionFilter):
 class AuthorDateDeltaMinFilter(BinaryInteractionFilter):
     yaml_tag = u'!AuthorDateDeltaMinFilter'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None,
-                 author_date_delta_min: tp.Optional[str] = None) -> None:
+    def __init__(
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None,
+        author_date_delta_min: tp.Optional[str] = None
+    ) -> None:
         super().__init__(parent, comment)
         self._author_date_delta_min = author_date_delta_min
 
@@ -533,10 +556,12 @@ class AuthorDateDeltaMinFilter(BinaryInteractionFilter):
 class AuthorDateDeltaMaxFilter(BinaryInteractionFilter):
     yaml_tag = u'!AuthorDateDeltaMaxFilter'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None,
-                 author_date_delta_max: tp.Optional[str] = None) -> None:
+    def __init__(
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None,
+        author_date_delta_max: tp.Optional[str] = None
+    ) -> None:
         super().__init__(parent, comment)
         self._author_date_delta_max = author_date_delta_max
 
@@ -568,10 +593,12 @@ class AuthorDateDeltaMaxFilter(BinaryInteractionFilter):
 class CommitDateDeltaMinFilter(BinaryInteractionFilter):
     yaml_tag = u'!CommitDateDeltaMinFilter'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None,
-                 commit_date_delta_min: tp.Optional[str] = None) -> None:
+    def __init__(
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None,
+        commit_date_delta_min: tp.Optional[str] = None
+    ) -> None:
         super().__init__(parent, comment)
         self._commit_date_delta_min = commit_date_delta_min
 
@@ -603,10 +630,12 @@ class CommitDateDeltaMinFilter(BinaryInteractionFilter):
 class CommitDateDeltaMaxFilter(BinaryInteractionFilter):
     yaml_tag = u'!CommitDateDeltaMaxFilter'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None,
-                 commit_date_delta_max: tp.Optional[str] = None) -> None:
+    def __init__(
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None,
+        commit_date_delta_max: tp.Optional[str] = None
+    ) -> None:
         super().__init__(parent, comment)
         self._commit_date_delta_max = commit_date_delta_max
 
@@ -638,9 +667,11 @@ class CommitDateDeltaMaxFilter(BinaryInteractionFilter):
 class FilterOperator(InteractionFilter):
     yaml_tag = u'!FilterOperator'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None) -> None:
+    def __init__(
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None
+    ) -> None:
         super().__init__(parent, comment)
 
 
@@ -648,10 +679,11 @@ class AndOperator(FilterOperator):
     yaml_tag = u'!AndOperator'
 
     def __init__(
-            self,
-            parent: tp.Optional[InteractionFilter] = None,
-            comment: tp.Optional[str] = None,
-            children: tp.Optional[tp.List[InteractionFilter]] = None) -> None:
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None,
+        children: tp.Optional[tp.List[InteractionFilter]] = None
+    ) -> None:
         super().__init__(parent, comment)
         self._children: tp.List[InteractionFilter] = []
         if children is not None:
@@ -672,8 +704,10 @@ class AndOperator(FilterOperator):
 
     def moveChild(self, sourceRow: int, destinationRow: int) -> bool:
         num_children = len(self._children)
-        if (sourceRow < 0 or sourceRow > num_children or destinationRow < 0 or
-                destinationRow > num_children):
+        if (
+            sourceRow < 0 or sourceRow > num_children or destinationRow < 0 or
+            destinationRow > num_children
+        ):
             return False
 
         if destinationRow > sourceRow:
@@ -708,10 +742,11 @@ class OrOperator(FilterOperator):
     yaml_tag = u'!OrOperator'
 
     def __init__(
-            self,
-            parent: tp.Optional[InteractionFilter] = None,
-            comment: tp.Optional[str] = None,
-            children: tp.Optional[tp.List[InteractionFilter]] = None) -> None:
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None,
+        children: tp.Optional[tp.List[InteractionFilter]] = None
+    ) -> None:
         super().__init__(parent, comment)
         self._children: tp.List[InteractionFilter] = []
         if children is not None:
@@ -732,8 +767,10 @@ class OrOperator(FilterOperator):
 
     def moveChild(self, sourceRow: int, destinationRow: int) -> bool:
         num_children = len(self._children)
-        if (sourceRow < 0 or sourceRow > num_children or destinationRow < 0 or
-                destinationRow > num_children):
+        if (
+            sourceRow < 0 or sourceRow > num_children or destinationRow < 0 or
+            destinationRow > num_children
+        ):
             return False
 
         if destinationRow > sourceRow:
@@ -767,10 +804,12 @@ class OrOperator(FilterOperator):
 class NotOperator(FilterOperator):
     yaml_tag = u'!NotOperator'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None,
-                 child: tp.Optional[InteractionFilter] = None) -> None:
+    def __init__(
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None,
+        child: tp.Optional[InteractionFilter] = None
+    ) -> None:
         super().__init__(parent, comment)
         self._child = child
 
@@ -817,10 +856,12 @@ class NotOperator(FilterOperator):
 class SourceOperator(FilterOperator):
     yaml_tag = u'!SourceOperator'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None,
-                 child: tp.Optional[InteractionFilter] = None) -> None:
+    def __init__(
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None,
+        child: tp.Optional[InteractionFilter] = None
+    ) -> None:
         super().__init__(parent, comment)
         self._child = child
 
@@ -867,10 +908,12 @@ class SourceOperator(FilterOperator):
 class TargetOperator(FilterOperator):
     yaml_tag = u'!TargetOperator'
 
-    def __init__(self,
-                 parent: tp.Optional[InteractionFilter] = None,
-                 comment: tp.Optional[str] = None,
-                 child: tp.Optional[InteractionFilter] = None) -> None:
+    def __init__(
+        self,
+        parent: tp.Optional[InteractionFilter] = None,
+        comment: tp.Optional[str] = None,
+        child: tp.Optional[InteractionFilter] = None
+    ) -> None:
         super().__init__(parent, comment)
         self._child = child
 

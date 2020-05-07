@@ -44,9 +44,11 @@ class RunWLLVM(base.Extension):  # type: ignore
         libs_path = path_to_list(getenv("LD_LIBRARY_PATH", ""))
         libs_path.extend(env.get("LD_LIBRARY_PATH", []))
 
-        wllvm = wllvm.with_env(LLVM_COMPILER="clang",
-                               PATH=list_to_path(path),
-                               LD_LIBRARY_PATH=list_to_path(libs_path))
+        wllvm = wllvm.with_env(
+            LLVM_COMPILER="clang",
+            PATH=list_to_path(path),
+            LD_LIBRARY_PATH=list_to_path(libs_path)
+        )
 
         return self.call_next(wllvm, *args, **kwargs)
 
@@ -88,14 +90,16 @@ class Extract(actions.Step):  # type: ignore
 
         bc_cache_folder = self.BC_CACHE_FOLDER_TEMPLATE.format(
             cache_dir=str(BB_CFG["varats"]["result"]),
-            project_name=str(project.name))
+            project_name=str(project.name)
+        )
         mkdir("-p", local.path() / bc_cache_folder)
 
         for binary in project.binaries:
             bc_cache_file = bc_cache_folder + self.BC_FILE_TEMPLATE.format(
                 project_name=str(project.name),
                 binary_name=str(binary.name),
-                project_version=str(project.version))
+                project_version=str(project.version)
+            )
 
             target_binary = Path(project.builddir) / project.SRC_FILE /\
                 binary

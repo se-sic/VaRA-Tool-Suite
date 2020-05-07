@@ -55,37 +55,50 @@ class TestBlameInstInteractions(unittest.TestCase):
         """
         Load and parse function infos from yaml file.
         """
-        with mock.patch("builtins.open",
-                        new=mock.mock_open(read_data=YAML_DOC_2)):
+        with mock.patch(
+            "builtins.open", new=mock.mock_open(read_data=YAML_DOC_2)
+        ):
             with open("fake_file_path") as yaml_file:
                 yaml_doc = yaml.safe_load(yaml_file)
                 insts_iter = iter(yaml_doc['result-map']['bool_exec']['insts'])
                 cls.blame_interaction_1 = BlameInstInteractions(
-                    next(insts_iter))
+                    next(insts_iter)
+                )
                 cls.blame_interaction_2 = BlameInstInteractions(
-                    next(insts_iter))
+                    next(insts_iter)
+                )
 
     def test_base_hash(self):
         """
         Test if base_hash is loaded correctly.
         """
-        self.assertEqual(self.blame_interaction_1.base_commit,
-                         '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
+        self.assertEqual(
+            self.blame_interaction_1.base_commit,
+            '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33'
+        )
 
-        self.assertEqual(self.blame_interaction_2.base_commit,
-                         '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
+        self.assertEqual(
+            self.blame_interaction_2.base_commit,
+            '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33'
+        )
 
     def test_interactions(self):
         """
         Test if interactions are loaded correctly.
         """
-        self.assertEqual(self.blame_interaction_1.interacting_commits[0],
-                         'a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
+        self.assertEqual(
+            self.blame_interaction_1.interacting_commits[0],
+            'a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9'
+        )
 
-        self.assertEqual(self.blame_interaction_2.interacting_commits[0],
-                         'a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
-        self.assertEqual(self.blame_interaction_2.interacting_commits[1],
-                         'e8999a84efbd9c3e739bff7af39500d14e61bfbc')
+        self.assertEqual(
+            self.blame_interaction_2.interacting_commits[0],
+            'a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9'
+        )
+        self.assertEqual(
+            self.blame_interaction_2.interacting_commits[1],
+            'e8999a84efbd9c3e739bff7af39500d14e61bfbc'
+        )
 
     def test_amount(self):
         """
@@ -105,15 +118,18 @@ class TestResultFunctionEntry(unittest.TestCase):
         """
         Load and parse function infos from yaml file.
         """
-        with mock.patch("builtins.open",
-                        new=mock.mock_open(read_data=YAML_DOC_2)):
+        with mock.patch(
+            "builtins.open", new=mock.mock_open(read_data=YAML_DOC_2)
+        ):
             with open("fake_file_path") as yaml_file:
                 yaml_doc = yaml.safe_load(yaml_file)
                 cls.func_entry_c = BlameResultFunctionEntry(
-                    'bool_exec', yaml_doc['result-map']['bool_exec'])
+                    'bool_exec', yaml_doc['result-map']['bool_exec']
+                )
 
                 cls.func_entry_cxx = BlameResultFunctionEntry(
-                    '_Z7doStuffii', yaml_doc['result-map']['_Z7doStuffii'])
+                    '_Z7doStuffii', yaml_doc['result-map']['_Z7doStuffii']
+                )
 
     def test_name(self):
         """
@@ -127,8 +143,9 @@ class TestResultFunctionEntry(unittest.TestCase):
         Test if demangled_name is saved correctly
         """
         self.assertEqual(self.func_entry_c.demangled_name, 'bool_exec')
-        self.assertEqual(self.func_entry_cxx.demangled_name,
-                         'doStuff(int, int)')
+        self.assertEqual(
+            self.func_entry_cxx.demangled_name, 'doStuff(int, int)'
+        )
 
     def test_found_interactions(self):
         """
@@ -136,11 +153,15 @@ class TestResultFunctionEntry(unittest.TestCase):
         """
         c_interaction_list = self.func_entry_c.interactions
         self.assertEqual(len(c_interaction_list), 2)
-        self.assertEqual(c_interaction_list[0].base_commit,
-                         '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
+        self.assertEqual(
+            c_interaction_list[0].base_commit,
+            '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33'
+        )
         self.assertEqual(c_interaction_list[0].amount, 22)
-        self.assertEqual(c_interaction_list[1].base_commit,
-                         '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
+        self.assertEqual(
+            c_interaction_list[1].base_commit,
+            '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33'
+        )
         self.assertEqual(c_interaction_list[1].amount, 5)
 
         cxx_interaction_list = self.func_entry_cxx.interactions
@@ -157,8 +178,10 @@ class TestBlameReport(unittest.TestCase):
         """
         Load and parse function infos from yaml file.
         """
-        with mock.patch("builtins.open",
-                        new=mock.mock_open(read_data=YAML_DOC_1 + YAML_DOC_2)):
+        with mock.patch(
+            "builtins.open",
+            new=mock.mock_open(read_data=YAML_DOC_1 + YAML_DOC_2)
+        ):
             loaded_report = BlameReport(Path('fake_file_path'))
             cls.report = loaded_report
 
@@ -173,14 +196,17 @@ class TestBlameReport(unittest.TestCase):
         Test if we get the correct function entry.
         """
         func_entry_1 = self.report.get_blame_result_function_entry(
-            'adjust_assignment_expression')
+            'adjust_assignment_expression'
+        )
         self.assertEqual(func_entry_1.name, 'adjust_assignment_expression')
-        self.assertEqual(func_entry_1.demangled_name,
-                         'adjust_assignment_expression')
+        self.assertEqual(
+            func_entry_1.demangled_name, 'adjust_assignment_expression'
+        )
         self.assertNotEqual(func_entry_1.name, 'bool_exec')
 
         func_entry_2 = self.report.get_blame_result_function_entry(
-            '_Z7doStuffii')
+            '_Z7doStuffii'
+        )
         self.assertEqual(func_entry_2.name, '_Z7doStuffii')
         self.assertEqual(func_entry_2.demangled_name, 'doStuff(int, int)')
         self.assertNotEqual(func_entry_2.name, 'bool_exec')
@@ -191,7 +217,8 @@ class TestBlameReport(unittest.TestCase):
         """
         func_entry_iter = iter(self.report.function_entries)
         self.assertEqual(
-            next(func_entry_iter).name, 'adjust_assignment_expression')
+            next(func_entry_iter).name, 'adjust_assignment_expression'
+        )
         self.assertEqual(next(func_entry_iter).name, 'bool_exec')
         self.assertEqual(next(func_entry_iter).name, '_Z7doStuffii')
 
@@ -206,8 +233,10 @@ class TestBlameReportHelperFunctions(unittest.TestCase):
         """
         Load and parse function infos from yaml file.
         """
-        with mock.patch("builtins.open",
-                        new=mock.mock_open(read_data=YAML_DOC_1 + YAML_DOC_2)):
+        with mock.patch(
+            "builtins.open",
+            new=mock.mock_open(read_data=YAML_DOC_1 + YAML_DOC_2)
+        ):
             loaded_report = BlameReport(Path('fake_file_path'))
             cls.report = loaded_report
 

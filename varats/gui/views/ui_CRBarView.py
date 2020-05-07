@@ -20,9 +20,10 @@ class Ui_Form(object):
         Form.resize(1022, 601)
         self.gridLayout = QtWidgets.QGridLayout(Form)
         self.gridLayout.setObjectName("gridLayout")
-        spacerItem = QtWidgets.QSpacerItem(40, 0,
-                                           QtWidgets.QSizePolicy.Expanding,
-                                           QtWidgets.QSizePolicy.Minimum)
+        spacerItem = QtWidgets.QSpacerItem(
+            40, 0, QtWidgets.QSizePolicy.Expanding,
+            QtWidgets.QSizePolicy.Minimum
+        )
         self.gridLayout.addItem(spacerItem, 3, 0, 1, 1)
         self.fileSlider = QtWidgets.QSlider(Form)
         self.fileSlider.setOrientation(QtCore.Qt.Horizontal)
@@ -34,12 +35,14 @@ class Ui_Form(object):
         self.loadCRButton.setObjectName("loadCRButton")
         self.gridLayout_2.addWidget(self.loadCRButton, 0, 0, 1, 1)
         self.optionsTree = OptionTreeWidget(Form)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum,
-                                           QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(
-            self.optionsTree.sizePolicy().hasHeightForWidth())
+            self.optionsTree.sizePolicy().hasHeightForWidth()
+        )
         self.optionsTree.setSizePolicy(sizePolicy)
         self.optionsTree.setAutoFillBackground(True)
         self.optionsTree.setObjectName("optionsTree")
@@ -48,39 +51,46 @@ class Ui_Form(object):
         self.optionsTree.header().setMinimumSectionSize(26)
         self.optionsTree.header().setStretchLastSection(False)
         self.gridLayout_2.addWidget(self.optionsTree, 1, 0, 1, 1)
-        spacerItem1 = QtWidgets.QSpacerItem(20, 40,
-                                            QtWidgets.QSizePolicy.Minimum,
-                                            QtWidgets.QSizePolicy.Expanding)
+        spacerItem1 = QtWidgets.QSpacerItem(
+            20, 40, QtWidgets.QSizePolicy.Minimum,
+            QtWidgets.QSizePolicy.Expanding
+        )
         self.gridLayout_2.addItem(spacerItem1, 2, 0, 1, 1)
         self.statusLabel = QtWidgets.QLabel(Form)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum,
-                                           QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(
-            self.statusLabel.sizePolicy().hasHeightForWidth())
+            self.statusLabel.sizePolicy().hasHeightForWidth()
+        )
         self.statusLabel.setSizePolicy(sizePolicy)
         self.statusLabel.setText("")
         self.statusLabel.setObjectName("statusLabel")
         self.gridLayout_2.addWidget(self.statusLabel, 4, 0, 1, 1)
         self.infoTree = InfoTreeWidget(Form)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum,
-                                           QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(
-            self.infoTree.sizePolicy().hasHeightForWidth())
+            self.infoTree.sizePolicy().hasHeightForWidth()
+        )
         self.infoTree.setSizePolicy(sizePolicy)
         self.infoTree.setObjectName("infoTree")
         self.gridLayout_2.addWidget(self.infoTree, 3, 0, 1, 1)
         self.gridLayout.addLayout(self.gridLayout_2, 0, 2, 4, 1)
         self.playerW = QtWidgets.QWidget(Form)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred,
-                                           QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(
-            self.playerW.sizePolicy().hasHeightForWidth())
+            self.playerW.sizePolicy().hasHeightForWidth()
+        )
         self.playerW.setSizePolicy(sizePolicy)
         self.playerW.setObjectName("playerW")
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.playerW)
@@ -95,22 +105,26 @@ class Ui_Form(object):
         self.horizontalLayout.addWidget(self.playButton)
         self.gridLayout.addWidget(self.playerW, 2, 1, 1, 1)
         self.plot_down = CRBarPlotWidget(Form)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding,
-                                           QtWidgets.QSizePolicy.Expanding)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(
-            self.plot_down.sizePolicy().hasHeightForWidth())
+            self.plot_down.sizePolicy().hasHeightForWidth()
+        )
         self.plot_down.setSizePolicy(sizePolicy)
         self.plot_down.setObjectName("plot_down")
         self.gridLayout.addWidget(self.plot_down, 1, 0, 1, 2)
         self.plot_up = CRBarPlotWidget(Form)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding,
-                                           QtWidgets.QSizePolicy.Expanding)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(
-            self.plot_up.sizePolicy().hasHeightForWidth())
+            self.plot_up.sizePolicy().hasHeightForWidth()
+        )
         self.plot_up.setSizePolicy(sizePolicy)
         self.plot_up.setObjectName("plot_up")
         self.gridLayout.addWidget(self.plot_up, 0, 0, 1, 2)

@@ -110,8 +110,10 @@ class CommitAnnotationReport(Experiment):  # type: ignore
             project.src_dir = project.src_dir / "out"
 
             with local.cwd(project_src):
-                prepare("-c", str(BB_CFG["env"]["path"][0]), "-t",
-                        str(BB_CFG["varats"]["prepare"].value))
+                prepare(
+                    "-c", str(BB_CFG["env"]["path"][0]), "-t",
+                    str(BB_CFG["varats"]["prepare"].value)
+                )
 
         def evaluate_extraction() -> None:
             """
@@ -123,7 +125,8 @@ class CommitAnnotationReport(Experiment):  # type: ignore
                 cp(
                     local.path(project_src / "out" / project.name + ".bc"),
                     local.path(str(BB_CFG["varats"]["result"].value)) /
-                    project.name + ".bc")
+                    project.name + ".bc"
+                )
 
         def evaluate_analysis() -> None:
             """
@@ -138,16 +141,17 @@ class CommitAnnotationReport(Experiment):  # type: ignore
             # analysis also the name and the unique id of the project of every
             # run.
             outfile = "-yaml-out-file={}".format(
-                BB_CFG["varats"]["outfile"].value) + "/" + str(
-                    project.name) + "-" + str(project.run_uuid) + ".yaml"
+                BB_CFG["varats"]["outfile"].value
+            ) + "/" + str(project.name) + "-" + str(project.run_uuid) + ".yaml"
             run_cmd = opt["-vara-CD", "-vara-CFR", outfile,
                           project_src / project.name + ".bc"]
             run_cmd()
 
         analysis_actions = []
         if not os.path.exists(
-                local.path(str(BB_CFG["varats"]["result"].value)) /
-                project.name + ".bc"):
+            local.path(str(BB_CFG["varats"]["result"].value)) / project.name +
+            ".bc"
+        ):
             analysis_actions.append(Prepare(self, evaluate_preparation))
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(self, evaluate_extraction))

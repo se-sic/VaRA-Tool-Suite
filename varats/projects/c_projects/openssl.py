@@ -17,9 +17,11 @@ from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
 
 
-@with_git("https://github.com/openssl/openssl.git",
-          refspec="HEAD",
-          version_filter=project_filter_generator("openssl"))
+@with_git(
+    "https://github.com/openssl/openssl.git",
+    refspec="HEAD",
+    version_filter=project_filter_generator("openssl")
+)
 class OpenSSL(Project, CVEProviderHook):  # type: ignore
     """TLS-framework OpenSSL (fetched by Git)"""
 

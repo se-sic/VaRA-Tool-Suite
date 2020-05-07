@@ -23,17 +23,23 @@ from varats.utils.project_util import (
 
 @block_revisions([
     # TODO: se-passau/VaRA#536
-    BugAndFixPair("a6238a4898e20422fe6ef03fce4891c5749b1553",
-                  "cf936efb8ae99dd297b6afb9c6a06beb81f5b0fb",
-                  "Needs flex <= 2.5.4 and >= 2.5.33"),
-    BugAndFixPair("093381b3fc6cc1e97f0e737feca04ebd0cfe538d",
-                  "cf936efb8ae99dd297b6afb9c6a06beb81f5b0fb",
-                  "Needs flex <= 2.5.4 and >= 2.5.33")
+    BugAndFixPair(
+        "a6238a4898e20422fe6ef03fce4891c5749b1553",
+        "cf936efb8ae99dd297b6afb9c6a06beb81f5b0fb",
+        "Needs flex <= 2.5.4 and >= 2.5.33"
+    ),
+    BugAndFixPair(
+        "093381b3fc6cc1e97f0e737feca04ebd0cfe538d",
+        "cf936efb8ae99dd297b6afb9c6a06beb81f5b0fb",
+        "Needs flex <= 2.5.4 and >= 2.5.33"
+    )
 ])
-@with_git("https://github.com/doxygen/doxygen.git",
-          refspec="HEAD",
-          shallow_clone=False,
-          version_filter=project_filter_generator("doxygen"))
+@with_git(
+    "https://github.com/doxygen/doxygen.git",
+    refspec="HEAD",
+    shallow_clone=False,
+    version_filter=project_filter_generator("doxygen")
+)
 class Doxygen(Project):  # type: ignore
     """Doxygen"""
 

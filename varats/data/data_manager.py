@@ -84,9 +84,10 @@ class FileLoader(QRunnable):
     Manages concurrent file loading in the background of the application.
     """
 
-    def __init__(self, func: tp.Callable[[Path, tp.Type[LoadableType]],
-                                         LoadableType], file_path: Path,
-                 class_type: tp.Type[LoadableType]) -> None:
+    def __init__(
+        self, func: tp.Callable[[Path, tp.Type[LoadableType]], LoadableType],
+        file_path: Path, class_type: tp.Type[LoadableType]
+    ) -> None:
         super(FileLoader, self).__init__()
         self.func = func
         self.file_path = file_path
@@ -115,8 +116,9 @@ class DataManager():
         self.thread_pool = QThreadPool()
         self.loader_lock = Lock()
 
-    def __load_data_class(self, file_path: Path,
-                          DataClassTy: tp.Type[LoadableType]) -> LoadableType:
+    def __load_data_class(
+        self, file_path: Path, DataClassTy: tp.Type[LoadableType]
+    ) -> LoadableType:
         # pylint: disable=invalid-name
         """
         Load a DataClass of type <DataClassTy> from a file.
@@ -137,8 +139,9 @@ class DataManager():
         return tp.cast(LoadableType, new_blob.data)
 
     def load_data_class(
-            self, file_path: Path, DataClassTy: tp.Type[LoadableType],
-            loaded_callback: tp.Callable[[LoadableType], None]) -> None:
+        self, file_path: Path, DataClassTy: tp.Type[LoadableType],
+        loaded_callback: tp.Callable[[LoadableType], None]
+    ) -> None:
         # pylint: disable=invalid-name
         """
         Load a DataClass of type <DataClassTy> from a file asynchronosly.
@@ -157,8 +160,8 @@ class DataManager():
         self.thread_pool.start(worker)
 
     def load_data_class_sync(
-            self, file_path: Path,
-            DataClassTy: tp.Type[LoadableType]) -> LoadableType:
+        self, file_path: Path, DataClassTy: tp.Type[LoadableType]
+    ) -> LoadableType:
         # pylint: disable=invalid-name
         """
         Load a DataClass of type <DataClassTy> from a file synchronosly.

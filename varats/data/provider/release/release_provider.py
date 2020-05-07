@@ -54,7 +54,8 @@ class ReleaseProviderHook():
 
     @classmethod
     def get_release_revisions(
-            cls, release_type: ReleaseType) -> tp.List[tp.Tuple[str, str]]:
+        cls, release_type: ReleaseType
+    ) -> tp.List[tp.Tuple[str, str]]:
         """
         Get a set of all release revisions for a project
 
@@ -74,23 +75,28 @@ class ReleaseProvider(Provider):
         if hasattr(project, "get_release_revisions"):
             self.hook = tp.cast(ReleaseProviderHook, project)
         else:
-            raise ValueError(f"Project {project} does not implement "
-                             f"ReleaseProviderHook.")
+            raise ValueError(
+                f"Project {project} does not implement "
+                f"ReleaseProviderHook."
+            )
 
     @classmethod
     def create_provider_for_project(
-            cls, project: tp.Type[Project]) -> tp.Optional['ReleaseProvider']:
+        cls, project: tp.Type[Project]
+    ) -> tp.Optional['ReleaseProvider']:
         if hasattr(project, "get_release_revisions"):
             return ReleaseProvider(project)
         return None
 
     @classmethod
-    def create_default_provider(cls,
-                                project: tp.Type[Project]) -> 'ReleaseProvider':
+    def create_default_provider(
+        cls, project: tp.Type[Project]
+    ) -> 'ReleaseProvider':
         return ReleaseDefaultProvider(project)
 
     def get_release_revisions(
-            self, release_type: ReleaseType) -> tp.List[tp.Tuple[str, str]]:
+        self, release_type: ReleaseType
+    ) -> tp.List[tp.Tuple[str, str]]:
         """
         Get all release revisions of this provider's project along with their
         version strings.
@@ -124,7 +130,8 @@ class ReleaseDefaultProvider(ReleaseProvider):
                          if isinstance(version, Version)]
 
     def get_release_revisions(
-            self, release_type: ReleaseType) -> tp.List[tp.Tuple[str, str]]:
+        self, release_type: ReleaseType
+    ) -> tp.List[tp.Tuple[str, str]]:
         if release_type is ReleaseType.patch:
             return [(commit, tag)
                     for commit, tag, version in self.releases

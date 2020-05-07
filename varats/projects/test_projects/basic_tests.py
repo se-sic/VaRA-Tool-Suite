@@ -8,9 +8,9 @@ from benchbuild.utils.run import run
 from plumbum import local
 
 
-@with_git("https://github.com/se-passau/vara-perf-tests.git",
-          limit=1,
-          refspec="HEAD")
+@with_git(
+    "https://github.com/se-passau/vara-perf-tests.git", limit=1, refspec="HEAD"
+)
 class BasicTests(prj.Project):  # type: ignore
     """
     Basic tests:

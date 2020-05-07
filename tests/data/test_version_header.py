@@ -26,8 +26,9 @@ Version:         3
 ...
 """
 
-        with mock.patch('builtins.open',
-                        new=mock.mock_open(read_data=file_content)):
+        with mock.patch(
+            'builtins.open', new=mock.mock_open(read_data=file_content)
+        ):
             with open('fake_file_path') as yaml_file:
                 docs = yaml.safe_load(yaml_file)
                 cls.version_header = vh.VersionHeader(docs)
@@ -46,10 +47,14 @@ Version:         3
         Exception checkers should throw expections in cases where we would
         expect other values.
         """
-        self.assertRaises(vh.WrongYamlFileType,
-                          self.version_header.raise_if_not_type, "FooReport")
-        self.assertRaises(vh.WrongYamlFileVersion,
-                          self.version_header.raise_if_version_is_less_than, 4)
+        self.assertRaises(
+            vh.WrongYamlFileType, self.version_header.raise_if_not_type,
+            "FooReport"
+        )
+        self.assertRaises(
+            vh.WrongYamlFileVersion,
+            self.version_header.raise_if_version_is_less_than, 4
+        )
 
     @unittest.mock.patch("builtins.open", create=True)
     def test_loading_of_wrong_yaml_doc(self, mock_open):

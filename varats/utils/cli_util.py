@@ -18,25 +18,29 @@ def cli_yn_choice(question: str, default: str = 'y') -> bool:
     """
     choices = 'Y/n' if default.lower() in ('y', 'yes') else 'y/N'
     choice: str = str(
-        input("{message} ({choices}) ".format(message=question,
-                                              choices=choices)))
+        input(
+            "{message} ({choices}) ".format(message=question, choices=choices)
+        )
+    )
     values: tp.Union[tp.Tuple[str, str],
                      tp.Tuple[str, str,
-                              str]] = ('y', 'yes',
-                                       '') if choices == 'Y/n' else ('y', 'yes')
+                              str]] = ('y', 'yes', ''
+                                      ) if choices == 'Y/n' else ('y', 'yes')
     return choice.strip().lower() in values
 
 
 ListType = tp.TypeVar("ListType")
 
 
-def cli_list_choice(question: str,
-                    choices: tp.List[ListType],
-                    choice_to_str: tp.Callable[[ListType], str],
-                    on_choice_callback: tp.Callable[[ListType], None],
-                    start_label: int = 0,
-                    default: int = 0,
-                    repeat: bool = False) -> None:
+def cli_list_choice(
+    question: str,
+    choices: tp.List[ListType],
+    choice_to_str: tp.Callable[[ListType], str],
+    on_choice_callback: tp.Callable[[ListType], None],
+    start_label: int = 0,
+    default: int = 0,
+    repeat: bool = False
+) -> None:
     """
     Ask the user to select an item from a list on the cli.
 
@@ -82,8 +86,9 @@ def initialize_logger_config() -> None:
 
 
 def get_research_tool(
-        name: str,
-        source_location: tp.Optional[Path] = None) -> ResearchTool[tp.Any]:
+    name: str,
+    source_location: tp.Optional[Path] = None
+) -> ResearchTool[tp.Any]:
     """
     Look up a research tool by name.
 
@@ -97,8 +102,10 @@ def get_research_tool(
         otherwise, raises LookupError
     """
     if name in ("VaRA", "vara"):
-        return VaRA(source_location if source_location is not None else Path(
-            CFG["vara"]["llvm_source_dir"].value))
+        return VaRA(
+            source_location if source_location is not None else
+            Path(CFG["vara"]["llvm_source_dir"].value)
+        )
 
     raise LookupError(f"Could not find research tool {name}")
 

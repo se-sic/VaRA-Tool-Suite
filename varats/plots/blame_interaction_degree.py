@@ -25,8 +25,9 @@ LOG = logging.getLogger(__name__)
 
 
 def _filter_data_frame(
-        degree_type: DegreeType, interaction_plot_df: pd.DataFrame,
-        commit_map: CommitMap) -> tp.Tuple[tp.List[str], tp.List[pd.Series]]:
+    degree_type: DegreeType, interaction_plot_df: pd.DataFrame,
+    commit_map: CommitMap
+) -> tp.Tuple[tp.List[str], tp.List[pd.Series]]:
     """
     Reduce data frame to rows that match the degree type
     """
@@ -36,12 +37,16 @@ def _filter_data_frame(
     degree_levels = sorted(np.unique(interaction_plot_df.degree))
     interaction_plot_df = interaction_plot_df.set_index(['revision', 'degree'])
     interaction_plot_df = interaction_plot_df.reindex(
-        pd.MultiIndex.from_product(interaction_plot_df.index.levels,
-                                   names=interaction_plot_df.index.names),
-        fill_value=0).reset_index()
+        pd.MultiIndex.from_product(
+            interaction_plot_df.index.levels,
+            names=interaction_plot_df.index.names
+        ),
+        fill_value=0
+    ).reset_index()
     # fix missing time_ids introduced by the product index
     interaction_plot_df['time_id'] = interaction_plot_df['revision'].apply(
-        commit_map.short_time_id)
+        commit_map.short_time_id
+    )
     interaction_plot_df.sort_values(by=['time_id'], inplace=True)
 
     sub_df_list = [
@@ -66,11 +71,13 @@ class BlameDegree(Plot):
     def show(self) -> None:
         """Show the current plot"""
 
-    def _degree_plot(self,
-                     view_mode: bool,
-                     degree_type: DegreeType,
-                     extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
-                     with_churn: bool = True) -> None:
+    def _degree_plot(
+        self,
+        view_mode: bool,
+        degree_type: DegreeType,
+        extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        with_churn: bool = True
+    ) -> None:
         plot_cfg = {
             'linewidth': 1 if view_mode else 0.25,
             'legend_size': 8 if view_mode else 2,
@@ -98,12 +105,14 @@ class BlameDegree(Plot):
             ], commit_map, case_study)
 
         if interaction_plot_df.empty or len(
-                np.unique(interaction_plot_df['revision'])) == 1:
+            np.unique(interaction_plot_df['revision'])
+        ) == 1:
             # Plot can only be build with more than one data point
             raise PlotDataEmpty
 
         unique_revisions, sub_df_list = _filter_data_frame(
-            degree_type, interaction_plot_df, commit_map)
+            degree_type, interaction_plot_df, commit_map
+        )
 
         fig = plt.figure()
         grid_spec = fig.add_gridspec(3, 1)
@@ -118,31 +127,40 @@ class BlameDegree(Plot):
             x_axis = main_axis
 
         fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
-        fig.suptitle(str(plot_cfg['fig_title']) +
-                     ' - Project {}'.format(self.plot_kwargs["project"]),
-                     fontsize=8)
+        fig.suptitle(
+            str(plot_cfg['fig_title']) +
+            ' - Project {}'.format(self.plot_kwargs["project"]),
+            fontsize=8
+        )
 
         main_axis.stackplot(
             unique_revisions,
             sub_df_list,
             edgecolor=plot_cfg['edgecolor'],
-            colors=reversed(plot_cfg['color_map'](np.linspace(
-                0, 1, len(sub_df_list)))),
+            colors=reversed(
+                plot_cfg['color_map'](np.linspace(0, 1, len(sub_df_list)))
+            ),
             # TODO (se-passau/VaRA#545): remove cast with plot config rework
             labels=map(
                 tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
-                sorted(np.unique(interaction_plot_df['degree']))),
-            linewidth=plot_cfg['linewidth'])
+                sorted(np.unique(interaction_plot_df['degree']))
+            ),
+            linewidth=plot_cfg['linewidth']
+        )
 
-        legend = main_axis.legend(title=plot_cfg['legend_title'],
-                                  loc='upper left',
-                                  prop={
-                                      'size': plot_cfg['legend_size'],
-                                      'family': 'monospace'
-                                  })
-        plt.setp(legend.get_title(),
-                 fontsize=plot_cfg['legend_size'],
-                 family='monospace')
+        legend = main_axis.legend(
+            title=plot_cfg['legend_title'],
+            loc='upper left',
+            prop={
+                'size': plot_cfg['legend_size'],
+                'family': 'monospace'
+            }
+        )
+        plt.setp(
+            legend.get_title(),
+            fontsize=plot_cfg['legend_size'],
+            family='monospace'
+        )
         legend.set_visible(plot_cfg['legend_visible'])
 
         # annotate CVEs
@@ -156,15 +174,19 @@ class BlameDegree(Plot):
 
         # draw churn subplot
         if with_churn:
-            draw_code_churn(churn_axis, self.plot_kwargs['project'],
-                            self.plot_kwargs['get_cmap'](),
-                            lambda x: x[:10] in unique_revisions)
+            draw_code_churn(
+                churn_axis, self.plot_kwargs['project'],
+                self.plot_kwargs['get_cmap'](),
+                lambda x: x[:10] in unique_revisions
+            )
 
         plt.setp(x_axis.get_yticklabels(), fontsize=8, fontfamily='monospace')
-        plt.setp(x_axis.get_xticklabels(),
-                 fontsize=plot_cfg['xtick_size'],
-                 fontfamily='monospace',
-                 rotation=270)
+        plt.setp(
+            x_axis.get_xticklabels(),
+            fontsize=plot_cfg['xtick_size'],
+            fontfamily='monospace',
+            rotation=270
+        )
 
 
 class BlameInteractionDegree(BlameDegree):

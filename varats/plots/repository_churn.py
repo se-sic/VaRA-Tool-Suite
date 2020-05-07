@@ -17,8 +17,9 @@ from varats.utils.git_util import ChurnConfig, calc_repo_code_churn
 from varats.utils.project_util import get_local_project_git
 
 
-def build_repo_churn_table(project_name: str,
-                           commit_map: CommitMap) -> pd.DataFrame:
+def build_repo_churn_table(
+    project_name: str, commit_map: CommitMap
+) -> pd.DataFrame:
     """
     Build a pandas data table that contains all churn related data for an
     repository.
@@ -32,9 +33,12 @@ def build_repo_churn_table(project_name: str,
     """
 
     def create_dataframe_layout() -> pd.DataFrame:
-        df_layout = pd.DataFrame(columns=[
-            "revision", "time_id", "insertions", "deletions", "changed_files"
-        ])
+        df_layout = pd.DataFrame(
+            columns=[
+                "revision", "time_id", "insertions", "deletions",
+                "changed_files"
+            ]
+        )
         df_layout.time_id = df_layout.time_id.astype('int32')
         df_layout.insertions = df_layout.insertions.astype('int64')
         df_layout.deletions = df_layout.deletions.astype('int64')
@@ -44,7 +48,8 @@ def build_repo_churn_table(project_name: str,
     repo = get_local_project_git(project_name)
     # By default we only look at c-style code files
     code_churn = calc_repo_code_churn(
-        repo, ChurnConfig.create_c_style_languages_config())
+        repo, ChurnConfig.create_c_style_languages_config()
+    )
     churn_data = pd.DataFrame({
         "revision": list(code_churn),
         "time_id": [commit_map.time_id(x) for x in code_churn],
@@ -83,13 +88,14 @@ def draw_code_churn(
     """
     code_churn = build_repo_churn_table(project_name, commit_map)
 
-    code_churn = code_churn[code_churn.apply(
-        lambda x: revision_selector(x['revision']), axis=1)]
+    code_churn = code_churn[
+        code_churn.apply(lambda x: revision_selector(x['revision']), axis=1)]
 
     code_churn = sort_df(code_churn)
 
     revisions = code_churn.time_id.astype(str) + '-' + code_churn.revision.map(
-        lambda x: x[:10])
+        lambda x: x[:10]
+    )
     clipped_insertions = [
         x if x < CODE_CHURN_INSERTION_LIMIT else 1.3 *
         CODE_CHURN_INSERTION_LIMIT for x in code_churn.insertions
@@ -106,7 +112,8 @@ def draw_code_churn(
         # we need a - here to visualize deletions as negative additions
         clipped_deletions,
         0,
-        facecolor='red')
+        facecolor='red'
+    )
 
 
 class RepoChurnPlot(Plot):
@@ -132,7 +139,8 @@ class RepoChurnPlot(Plot):
         _, axis = plt.subplots()
         draw_code_churn(
             axis, self.plot_kwargs['project'], self.plot_kwargs['get_cmap'](),
-            case_study.has_revision if case_study else lambda x: True)
+            case_study.has_revision if case_study else lambda x: True
+        )
 
         for x_label in axis.get_xticklabels():
             x_label.set_fontsize(plot_cfg['xtick_size'])

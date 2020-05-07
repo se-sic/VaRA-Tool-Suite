@@ -18,10 +18,12 @@ from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
 
 
-@with_git("https://github.com/git/git.git",
-          refspec="HEAD",
-          shallow_clone=False,
-          version_filter=project_filter_generator("git"))
+@with_git(
+    "https://github.com/git/git.git",
+    refspec="HEAD",
+    shallow_clone=False,
+    version_filter=project_filter_generator("git")
+)
 class Git(prj.Project, CVEProviderHook):  # type: ignore
     """Git"""
 

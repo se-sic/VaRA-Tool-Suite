@@ -40,25 +40,31 @@ class CVEProvider(Provider):
         if hasattr(project, "get_cve_product_info"):
             self.__cve_map = generate_cve_map(
                 get_local_project_git_path(project.NAME),
-                project.get_cve_product_info())
+                project.get_cve_product_info()
+            )
         else:
-            raise ValueError(f"Project {project} does not implement "
-                             f"CVEProviderHook.")
+            raise ValueError(
+                f"Project {project} does not implement "
+                f"CVEProviderHook."
+            )
 
     @classmethod
     def create_provider_for_project(
-            cls, project: tp.Type[Project]) -> tp.Optional['CVEProvider']:
+        cls, project: tp.Type[Project]
+    ) -> tp.Optional['CVEProvider']:
         if hasattr(project, "get_cve_product_info"):
             return CVEProvider(project)
         return None
 
     @classmethod
-    def create_default_provider(cls,
-                                project: tp.Type[Project]) -> 'CVEProvider':
+    def create_default_provider(
+        cls, project: tp.Type[Project]
+    ) -> 'CVEProvider':
         return CVEDefaultProvider(project)
 
     def get_revision_cve_tuples(
-            self) -> tp.Set[tp.Tuple[str, tp.FrozenSet[CVE]]]:
+        self
+    ) -> tp.Set[tp.Tuple[str, tp.FrozenSet[CVE]]]:
         """
         Get all CVEs associated with this provider's project along with the
         fixing commits/versions.
@@ -81,14 +87,15 @@ class CVEDefaultProvider(CVEProvider):
         super(CVEProvider, self).__init__(project)
 
     def get_revision_cve_tuples(
-            self) -> tp.Set[tp.Tuple[str, tp.FrozenSet[CVE]]]:
+        self
+    ) -> tp.Set[tp.Tuple[str, tp.FrozenSet[CVE]]]:
         return set()
 
 
 # TODO: remove below functions once we remove the cve driver
-def list_cve_for_projects(vendor: str,
-                          product: str,
-                          verbose: bool = False) -> None:
+def list_cve_for_projects(
+    vendor: str, product: str, verbose: bool = False
+) -> None:
     """
     List all CVE's for the given vendor/product combination.
     Call via vara-sec list-cve <vendor> <product>.

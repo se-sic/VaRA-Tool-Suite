@@ -14,7 +14,8 @@ class WrongYamlFileType(Exception):
 
     def __init__(self, expected_type: str, actual_type: str) -> None:
         super().__init__(
-            f"Expected FileType: '{expected_type}' but got '{actual_type}'")
+            f"Expected FileType: '{expected_type}' but got '{actual_type}'"
+        )
 
 
 class WrongYamlFileVersion(Exception):
@@ -23,8 +24,10 @@ class WrongYamlFileVersion(Exception):
     """
 
     def __init__(self, expected_version: int, actual_version: int):
-        super().__init__(f"Expected minimal version: '{expected_version}' " +
-                         f"but got version '{actual_version}'")
+        super().__init__(
+            f"Expected minimal version: '{expected_version}' " +
+            f"but got version '{actual_version}'"
+        )
 
 
 class NoVersionHeader(Exception):
@@ -59,8 +62,9 @@ class VersionHeader():
         return cls(yaml_doc)
 
     @classmethod
-    def from_version_number(cls, doc_type: str,
-                            version: int) -> 'VersionHeader':
+    def from_version_number(
+        cls, doc_type: str, version: int
+    ) -> 'VersionHeader':
         """
         Creates a new VersionHeader object from a ``doc_type`` string and a
         version number.

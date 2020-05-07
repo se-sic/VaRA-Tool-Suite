@@ -26,46 +26,54 @@ def main() -> None:
     """
     initialize_logger_config()
     parser = argparse.ArgumentParser("vara-plot")
-    parser.add_argument("plot_type",
-                        help="Plot to generate." +
-                        PlotRegistry.get_plot_types_help_string())
-    parser.add_argument("-r",
-                        "--result-output",
-                        help="Folder with result files")
+    parser.add_argument(
+        "plot_type",
+        help="Plot to generate." + PlotRegistry.get_plot_types_help_string()
+    )
+    parser.add_argument(
+        "-r", "--result-output", help="Folder with result files"
+    )
     parser.add_argument("-p", "--project", help="Project name")
-    parser.add_argument("-c",
-                        "--cmap",
-                        help="Path to commit map",
-                        default=None,
-                        type=Path)
-    parser.add_argument("-v",
-                        "--view",
-                        help="Show the plot instead of saving it",
-                        action='store_true',
-                        default=False)
+    parser.add_argument(
+        "-c", "--cmap", help="Path to commit map", default=None, type=Path
+    )
+    parser.add_argument(
+        "-v",
+        "--view",
+        help="Show the plot instead of saving it",
+        action='store_true',
+        default=False
+    )
     parser.add_argument("--cs-path", help="Path to case_study", default=None)
     parser.add_argument(
         "--paper-config",
         help="Generate plots for all case studies in the current paper config",
         action='store_true',
-        default=False)
+        default=False
+    )
     parser.add_argument(
         "--sep-stages",
         help="Separate different stages of case study in the plot.",
         action='store_true',
-        default=False)
-    parser.add_argument("--report-type",
-                        help="The report type to generate the plot for."
-                        "Plots may ignore this option.",
-                        default="EmptyReport")
+        default=False
+    )
+    parser.add_argument(
+        "--report-type",
+        help="The report type to generate the plot for."
+        "Plots may ignore this option.",
+        default="EmptyReport"
+    )
     parser.add_argument(
         "extra_args",
         metavar="KEY=VALUE",
         nargs=argparse.REMAINDER,
-        help=("Provide additional arguments that will be passed to the plot "
-              "class. (do not put spaces before or after the '=' sign). "
-              "If a value contains spaces, you should define it "
-              'with double quotes: foo="bar baz".'))
+        help=(
+            "Provide additional arguments that will be passed to the plot "
+            "class. (do not put spaces before or after the '=' sign). "
+            "If a value contains spaces, you should define it "
+            'with double quotes: foo="bar baz".'
+        )
+    )
 
     args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
 
@@ -100,17 +108,21 @@ def __plot(args: tp.Dict[str, tp.Any]) -> None:
             project_name = case_study.project_name
             args['project'] = project_name
             args['get_cmap'] = create_lazy_commit_map_loader(
-                project_name, args.get('cmap', None))
+                project_name, args.get('cmap', None)
+            )
             args['plot_case_study'] = case_study
             try:
                 build_plot(**args, **extra_args)
             except PlotDataEmpty:
-                LOG.error(f"Could not build plot for {project_name}: "
-                          f"There was no data.")
+                LOG.error(
+                    f"Could not build plot for {project_name}: "
+                    f"There was no data."
+                )
     else:
         if 'project' in args:
             args['get_cmap'] = create_lazy_commit_map_loader(
-                args['project'], args.get('cmap', None))
+                args['project'], args.get('cmap', None)
+            )
         if 'cs_path' in args:
             case_study_path = Path(args['cs_path'])
             args['plot_case_study'] = load_case_study_from_file(case_study_path)

@@ -31,8 +31,10 @@ class FunctionPEErrorWrapper():
         handler: function to handle exception
     """
 
-    def __init__(self, func: tp.Callable[..., tp.Any],
-                 handler: tp.Callable[[Exception], None]) -> None:
+    def __init__(
+        self, func: tp.Callable[..., tp.Any], handler: tp.Callable[[Exception],
+                                                                   None]
+    ) -> None:
         self.__func = func
         self.__handler = handler
 
@@ -44,8 +46,8 @@ class FunctionPEErrorWrapper():
 
 
 def exec_func_with_pe_error_handler(
-        func: tp.Callable[..., tp.Any], handler: tp.Callable[[Exception],
-                                                             None]) -> None:
+    func: tp.Callable[..., tp.Any], handler: tp.Callable[[Exception], None]
+) -> None:
     """
     Execute a function call with an exception handler.
 
@@ -61,12 +63,14 @@ class PEErrorHandler():
     Error handler for process execution errors
     """
 
-    def __init__(self,
-                 result_folder: str,
-                 error_file_name: str,
-                 run_cmd: tp.Optional[BoundCommand] = None,
-                 timeout_duration: tp.Optional[str] = None,
-                 delete_files: tp.Optional[tp.List[Path]] = None):
+    def __init__(
+        self,
+        result_folder: str,
+        error_file_name: str,
+        run_cmd: tp.Optional[BoundCommand] = None,
+        timeout_duration: tp.Optional[str] = None,
+        delete_files: tp.Optional[tp.List[Path]] = None
+    ):
         self.__result_folder = result_folder
         self.__error_file_name = error_file_name
         self.__run_cmd = run_cmd
@@ -81,8 +85,12 @@ class PEErrorHandler():
                 except FileNotFoundError:
                     pass
 
-        error_file = Path("{res_folder}/{res_file}".format(
-            res_folder=self.__result_folder, res_file=self.__error_file_name))
+        error_file = Path(
+            "{res_folder}/{res_file}".format(
+                res_folder=self.__result_folder,
+                res_file=self.__error_file_name
+            )
+        )
         if not os.path.exists(self.__result_folder):
             os.makedirs(self.__result_folder, exist_ok=True)
         with open(error_file, 'w') as outfile:
@@ -105,8 +113,9 @@ Timeout after: {timeout_duration}
 
 
 def get_default_compile_error_wrapped(
-        project: Project, report_type: tp.Type[BaseReport],
-        result_folder_template: str) -> FunctionPEErrorWrapper:
+    project: Project, report_type: tp.Type[BaseReport],
+    result_folder_template: str
+) -> FunctionPEErrorWrapper:
     """
     Setup the default project compile function with an error handler.
 
@@ -119,8 +128,9 @@ def get_default_compile_error_wrapped(
         project compilation function, wrapped with automatic error handling
     """
     result_dir = str(BB_CFG["varats"]["outfile"])
-    result_folder = result_folder_template.format(result_dir=result_dir,
-                                                  project_dir=str(project.name))
+    result_folder = result_folder_template.format(
+        result_dir=result_dir, project_dir=str(project.name)
+    )
     return FunctionPEErrorWrapper(
         project.compile,
         PEErrorHandler(
@@ -131,7 +141,10 @@ def get_default_compile_error_wrapped(
                 project_version=str(project.version),
                 project_uuid=str(project.run_uuid),
                 extension_type=FileStatusExtension.CompileError,
-                file_ext=".txt")))
+                file_ext=".txt"
+            )
+        )
+    )
 
 
 class UnlimitStackSize(Step):  # type: ignore
@@ -144,8 +157,8 @@ class UnlimitStackSize(Step):  # type: ignore
     DESCRIPTION = "Sets new resource limits."
 
     def __init__(self, project: Project):
-        super(UnlimitStackSize, self).__init__(obj=project,
-                                               action_fn=self.__call__)
+        super(UnlimitStackSize,
+              self).__init__(obj=project, action_fn=self.__call__)
 
     def __call__(self) -> StepResult:
         """
@@ -172,8 +185,9 @@ class VersionExperiment(Experiment):  # type: ignore
         sample_size = int(V_CFG["experiment"]["sample_limit"])
         versions = [
             versions[i] for i in sorted(
-                random.sample(range(len(versions)),
-                              min(sample_size, len(versions))))
+                random.
+                sample(range(len(versions)), min(sample_size, len(versions)))
+            )
         ]
         return versions
 
@@ -216,10 +230,12 @@ class VersionExperiment(Experiment):  # type: ignore
 
             if not hasattr(self, 'REPORT_TYPE'):
                 raise TypeError(
-                    "Experiment sub class does not implement REPORT_TYPE.")
+                    "Experiment sub class does not implement REPORT_TYPE."
+                )
 
             for revision, file_status in get_tagged_revisions(
-                    prj_cls, getattr(self, 'REPORT_TYPE')):
+                prj_cls, getattr(self, 'REPORT_TYPE')
+            ):
                 if file_status not in fs_good and revision in versions:
                     versions.remove(revision)
 

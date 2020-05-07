@@ -53,12 +53,14 @@ class SetupWorker(QRunnable):
         Run, initializes VaRA in a different thread.
         """
         try:
-            vara_manager.download_vara(self.path, self._update_progress,
-                                       self._update_text)
+            vara_manager.download_vara(
+                self.path, self._update_progress, self._update_text
+            )
 
             self._update_progress(7)
-            vara_manager.checkout_vara_version(self.path, True, CFG['version'],
-                                               True)
+            vara_manager.checkout_vara_version(
+                self.path, True, CFG['version'], True
+            )
 
             self._update_progress(8)
             self.signals.finished.emit()
@@ -80,8 +82,9 @@ class BuildWorker(QRunnable):
     BuildWorker to build an install VaRA.
     """
 
-    def __init__(self, path_to_llvm, install_prefix,
-                 build_type: vara_manager.BuildType):
+    def __init__(
+        self, path_to_llvm, install_prefix, build_type: vara_manager.BuildType
+    ):
         super(BuildWorker, self).__init__()
         self.signals = BuilderSignals()
         self.path_to_llvm = path_to_llvm
@@ -97,9 +100,10 @@ class BuildWorker(QRunnable):
         Run, build an installs VaRA in a diffrent thread.
         """
         try:
-            vara_manager.build_vara(Path(self.path_to_llvm),
-                                    self.install_prefix, self.build_type,
-                                    self._update_text)
+            vara_manager.build_vara(
+                Path(self.path_to_llvm), self.install_prefix, self.build_type,
+                self._update_text
+            )
             self.signals.finished.emit()
         except ProcessTerminatedError:
             print("Process was terminated")
@@ -116,13 +120,17 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         self.__quit_sc = QShortcut(QKeySequence("Ctrl+Q"), self)
         self.__quit_sc.activated.connect(self.close)
 
-        llvm_src_dir = get_value_or_default(CFG["vara"], "llvm_source_dir",
-                                            str(os.getcwd()) + "/vara-llvm/")
+        llvm_src_dir = get_value_or_default(
+            CFG["vara"], "llvm_source_dir",
+            str(os.getcwd()) + "/vara-llvm/"
+        )
         self.sourcePath.insert(llvm_src_dir)
         self.sourcePath.editingFinished.connect(self._update_source_dir)
 
-        llvm_install_dir = get_value_or_default(CFG["vara"], "llvm_install_dir",
-                                                str(os.getcwd()) + "/VaRA/")
+        llvm_install_dir = get_value_or_default(
+            CFG["vara"], "llvm_install_dir",
+            str(os.getcwd()) + "/VaRA/"
+        )
         self.installPath.insert(llvm_install_dir)
         self.installPath.editingFinished.connect(self._update_install_dir)
 
@@ -194,9 +202,10 @@ class BuildSetup(QWidget, Ui_BuildSetup):
     def _build_vara(self):
         self.statusLabel.setText("Building VaRA")
         if self.checkDev.isChecked():
-            worker = BuildWorker(self.__get_llvm_source_path(),
-                                 self.__get_install_path(),
-                                 vara_manager.BuildType.DEV)
+            worker = BuildWorker(
+                self.__get_llvm_source_path(), self.__get_install_path(),
+                vara_manager.BuildType.DEV
+            )
             worker.signals.finished.connect(self._build_done)
             worker.signals.text_update.connect(self._update_build_text)
             self.thread_pool.start(worker)

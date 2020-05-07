@@ -26,7 +26,8 @@ CFG = s.Configuration(
             "desc": "Result folder for collected results",
             "default": None,
         },
-    })
+    }
+)
 
 CFG["vara"] = {
     "version": {
@@ -89,18 +90,21 @@ CFG['db'] = {
 CFG['experiment'] = {
     "only_missing": {
         "default": True,
-        "desc": "Only run missing version [Deprecated]"
-                "This option is replaced by file_status_blacklist = [Success]"
+        "desc":
+            "Only run missing version [Deprecated]"
+            "This option is replaced by file_status_blacklist = [Success]"
     },
     "file_status_blacklist": {
         "default": ['Success', 'Blocked'],
-        "desc": "Do not include revision with these file status for benchbuild "
-                "processing"
+        "desc":
+            "Do not include revision with these file status for benchbuild "
+            "processing"
     },
     "file_status_whitelist": {
         "default": [],
-        "desc": "Only include revision with these file status for benchbuild "
-                "processing"
+        "desc":
+            "Only include revision with these file status for benchbuild "
+            "processing"
     },
     "random_order": {
         "default": False,
@@ -131,8 +135,9 @@ CFG['artefacts'] = {
 }
 
 
-def get_value_or_default(cfg: s.Configuration, varname: str,
-                         default: tp.Any) -> tp.Any:
+def get_value_or_default(
+    cfg: s.Configuration, varname: str, default: tp.Any
+) -> tp.Any:
     """
     Checks if the config variable has a value and if it is not None.
     Then the value is returned. Otherwise, the default value is
@@ -149,8 +154,9 @@ def create_missing_folders() -> None:
     Create folders that do not exist but were set in the config.
     """
 
-    def create_missing_folder_for_cfg(cfg_varname: str,
-                                      local_cfg: s.Configuration = CFG) -> None:
+    def create_missing_folder_for_cfg(
+        cfg_varname: str, local_cfg: s.Configuration = CFG
+    ) -> None:
         """
         Create missing folders for a specific config path.
         """
@@ -180,8 +186,9 @@ def save_config() -> None:
     if CFG["result_dir"].value is None:
         CFG["result_dir"] = path.dirname(str(CFG["config_file"])) + "/results"
     if CFG["plots"]["plot_dir"].value is None:
-        CFG["plots"]["plot_dir"] = path.dirname(str(
-            CFG["config_file"])) + "/plots"
+        CFG["plots"]["plot_dir"] = path.dirname(
+            str(CFG["config_file"])
+        ) + "/plots"
 
     create_missing_folders()
     CFG.store(config_file)
@@ -201,8 +208,9 @@ def get_varats_base_folder() -> Path:
     return Path(cfg_config_file).parent
 
 
-def generate_benchbuild_config(varats_cfg: s.Configuration,
-                               bb_config_path: str) -> None:
+def generate_benchbuild_config(
+    varats_cfg: s.Configuration, bb_config_path: str
+) -> None:
     """
     Generate a configuration file for benchbuild
     """
@@ -270,8 +278,9 @@ def generate_benchbuild_config(varats_cfg: s.Configuration,
         }
     }
 
-    def replace_bb_cwd_path(cfg_varname: str,
-                            cfg_node: s.Configuration = BB_CFG) -> None:
+    def replace_bb_cwd_path(
+        cfg_varname: str, cfg_node: s.Configuration = BB_CFG
+    ) -> None:
         cfg_node[cfg_varname] = str(varats_cfg["benchbuild_root"]) +\
             str(cfg_node[cfg_varname])[len(getcwd()):]
 

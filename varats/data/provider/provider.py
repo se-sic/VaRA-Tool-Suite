@@ -34,8 +34,8 @@ class Provider(ABC):
     @classmethod
     @abstractmethod
     def create_provider_for_project(
-            cls: tp.Type[ProviderType],
-            project: tp.Type[Project]) -> tp.Optional[ProviderType]:
+        cls: tp.Type[ProviderType], project: tp.Type[Project]
+    ) -> tp.Optional[ProviderType]:
         """
         Creates a provider instance for the given project if possible.
 
@@ -46,8 +46,9 @@ class Provider(ABC):
 
     @classmethod
     @abstractmethod
-    def create_default_provider(cls: tp.Type[ProviderType],
-                                project: tp.Type[Project]) -> ProviderType:
+    def create_default_provider(
+        cls: tp.Type[ProviderType], project: tp.Type[Project]
+    ) -> ProviderType:
         """
         Creates a default provider instance that can be used with any project
 
@@ -56,8 +57,9 @@ class Provider(ABC):
         """
 
     @classmethod
-    def get_provider_for_project(cls: tp.Type[ProviderType],
-                                 project: tp.Type[Project]) -> ProviderType:
+    def get_provider_for_project(
+        cls: tp.Type[ProviderType], project: tp.Type[Project]
+    ) -> ProviderType:
         """
         Factory function for creating providers.
 
@@ -76,6 +78,8 @@ class Provider(ABC):
         if provider is not None:
             return provider
 
-        LOG.warning(f"{str(cls)} does not support the project {project.NAME}. "
-                    f"Using default provider instance.")
+        LOG.warning(
+            f"{str(cls)} does not support the project {project.NAME}. "
+            f"Using default provider instance."
+        )
         return cls.create_default_provider(project)

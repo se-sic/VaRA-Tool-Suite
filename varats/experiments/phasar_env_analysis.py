@@ -61,12 +61,14 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
         # Set up cache directory for bitcode files.
         bc_cache_dir = Extract.BC_CACHE_FOLDER_TEMPLATE.format(
             cache_dir=str(BB_CFG["varats"]["result"]),
-            project_name=str(project.name))
+            project_name=str(project.name)
+        )
 
         # Define the output directory.
         result_folder = self.RESULT_FOLDER_TEMPLATE.format(
             result_dir=str(BB_CFG["varats"]["outfile"]),
-            project_dir=str(project.name))
+            project_dir=str(project.name)
+        )
 
         mkdir("-p", result_folder)
 
@@ -77,24 +79,27 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
             bc_target_file = Extract.BC_FILE_TEMPLATE.format(
                 project_name=str(project.name),
                 binary_name=str(binary.name),
-                project_version=str(project.version))
+                project_version=str(project.version)
+            )
 
             # Define result file.
-            result_file = ENVR.get_file_name(project_name=str(project.name),
-                                             binary_name=binary.name,
-                                             project_version=str(
-                                                 project.version),
-                                             project_uuid=str(project.run_uuid),
-                                             extension_type=FSE.Success)
+            result_file = ENVR.get_file_name(
+                project_name=str(project.name),
+                binary_name=binary.name,
+                project_version=str(project.version),
+                project_uuid=str(project.run_uuid),
+                extension_type=FSE.Success
+            )
 
             # Define output file name of failed runs
-            error_file = ENVR.get_file_name(project_name=str(project.name),
-                                            binary_name=binary.name,
-                                            project_version=str(
-                                                project.version),
-                                            project_uuid=str(project.run_uuid),
-                                            extension_type=FSE.Failed,
-                                            file_ext=".txt")
+            error_file = ENVR.get_file_name(
+                project_name=str(project.name),
+                binary_name=binary.name,
+                project_version=str(project.version),
+                project_uuid=str(project.run_uuid),
+                extension_type=FSE.Failed,
+                file_ext=".txt"
+            )
 
             # Put together the run command
             phasar_run_cmd = phasar[
@@ -107,8 +112,10 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
             # Run the phasar command with custom error handler and timeout
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration, phasar_run_cmd],
-                PEErrorHandler(result_folder, error_file, phasar_run_cmd,
-                               timeout_duration))
+                PEErrorHandler(
+                    result_folder, error_file, phasar_run_cmd, timeout_duration
+                )
+            )
 
 
 class PhasarEnvironmentTracing(Experiment):  # type: ignore
@@ -142,12 +149,17 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
             PEErrorHandler(
                 PhasarEnvIFDS.RESULT_FOLDER_TEMPLATE.format(
                     result_dir=str(BB_CFG["varats"]["outfile"]),
-                    project_dir=str(project.name)),
-                ENVR.get_file_name(project_name=str(project.name),
-                                   binary_name="all",
-                                   project_version=str(project.version),
-                                   project_uuid=str(project.run_uuid),
-                                   extension_type=FSE.CompileError)))
+                    project_dir=str(project.name)
+                ),
+                ENVR.get_file_name(
+                    project_name=str(project.name),
+                    binary_name="all",
+                    project_version=str(project.version),
+                    project_uuid=str(project.run_uuid),
+                    extension_type=FSE.CompileError
+                )
+            )
+        )
 
         analysis_actions = []
 
@@ -158,11 +170,14 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
                 local.path(
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
                         cache_dir=str(BB_CFG["varats"]["result"]),
-                        project_name=str(project.name)) +
-                    Extract.BC_FILE_TEMPLATE.format(
+                        project_name=str(project.name)
+                    ) + Extract.BC_FILE_TEMPLATE.format(
                         project_name=str(project.name),
                         binary_name=binary.name,
-                        project_version=str(project.version))))
+                        project_version=str(project.version)
+                    )
+                )
+            )
 
             if not all_cache_files_present:
                 analysis_actions.append(actions.Compile(project))

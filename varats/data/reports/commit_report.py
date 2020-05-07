@@ -111,7 +111,8 @@ class FunctionGraphEdges():
             for edge in cg_edges:
                 for callee in edge['to-functions']:
                     self.cg_edges.append(
-                        RegionToFunctionEdge(edge['from-region'], callee))
+                        RegionToFunctionEdge(edge['from-region'], callee)
+                    )
 
         self.cf_edges: tp.List[RegionToRegionEdge] = []
         cf_edges = raw_yaml['control-flow-edges']
@@ -185,15 +186,18 @@ class CommitReport(BaseReport):
         The current HEAD commit under which this CommitReport was created.
         """
         return CommitReport.get_commit_hash_from_result_file(
-            Path(self.path).name)
+            Path(self.path).name
+        )
 
     @staticmethod
-    def get_file_name(project_name: str,
-                      binary_name: str,
-                      project_version: str,
-                      project_uuid: str,
-                      extension_type: FileStatusExtension,
-                      file_ext: str = "yaml") -> str:
+    def get_file_name(
+        project_name: str,
+        binary_name: str,
+        project_version: str,
+        project_uuid: str,
+        extension_type: FileStatusExtension,
+        file_ext: str = "yaml"
+    ) -> str:
         """
         Generates a filename for a commit report with 'yaml'
         as file extension.
@@ -209,14 +213,16 @@ class CommitReport(BaseReport):
         Returns:
             name for the report file that can later be uniquly identified
         """
-        return MetaReport.get_file_name(CommitReport.SHORTHAND, project_name,
-                                        binary_name, project_version,
-                                        project_uuid, extension_type, file_ext)
+        return MetaReport.get_file_name(
+            CommitReport.SHORTHAND, project_name, binary_name, project_version,
+            project_uuid, extension_type, file_ext
+        )
 
     @staticmethod
-    def get_supplementary_file_name(project_name: str, binary_name: str,
-                                    project_version: str, project_uuid: str,
-                                    info_type: str, file_ext: str) -> str:
+    def get_supplementary_file_name(
+        project_name: str, binary_name: str, project_version: str,
+        project_uuid: str, info_type: str, file_ext: str
+    ) -> str:
         """
         Generates a filename for a commit report supplementary file.
 
@@ -232,11 +238,10 @@ class CommitReport(BaseReport):
             name for the supplementary report file that can later be uniquly
             identified
         """
-        return BaseReport.get_supplementary_file_name(CommitReport.SHORTHAND,
-                                                      project_name, binary_name,
-                                                      project_version,
-                                                      project_uuid, info_type,
-                                                      file_ext)
+        return BaseReport.get_supplementary_file_name(
+            CommitReport.SHORTHAND, project_name, binary_name, project_version,
+            project_uuid, info_type, file_ext
+        )
 
     def calc_max_cf_edges(self) -> int:
         """
@@ -276,8 +281,9 @@ class CommitReport(BaseReport):
     def __lt__(self, other: 'CommitReport') -> bool:
         return self.path < other.path
 
-    def init_cf_map_with_edges(self, cf_map: tp.Dict[str,
-                                                     tp.List[int]]) -> None:
+    def init_cf_map_with_edges(
+        self, cf_map: tp.Dict[str, tp.List[int]]
+    ) -> None:
         """
         Initialize control-flow map with edges and from/to counters.
 
@@ -323,8 +329,9 @@ class CommitReport(BaseReport):
 
         return (0, 0)
 
-    def init_df_map_with_edges(self, df_map: tp.Dict[str,
-                                                     tp.List[int]]) -> None:
+    def init_df_map_with_edges(
+        self, df_map: tp.Dict[str, tp.List[int]]
+    ) -> None:
         """
         Initialize data-flow map with edges and from/to counters.
 
@@ -389,10 +396,12 @@ class CommitReportMeta():
         """
         self.finfos.update(commit_report.finfos)
         self.region_mappings.update(commit_report.region_mappings)
-        self.__cf_ylimit = max(self.__cf_ylimit,
-                               commit_report.calc_max_cf_edges())
-        self.__df_ylimit = max(self.__df_ylimit,
-                               commit_report.calc_max_df_edges())
+        self.__cf_ylimit = max(
+            self.__cf_ylimit, commit_report.calc_max_cf_edges()
+        )
+        self.__df_ylimit = max(
+            self.__df_ylimit, commit_report.calc_max_df_edges()
+        )
 
     @property
     def cf_ylimit(self) -> int:
@@ -490,8 +499,9 @@ class CommitMap():
 
 
 def generate_inout_cfg_cf(
-        commit_report: CommitReport,
-        cr_meta: tp.Optional[CommitReportMeta] = None) -> pd.DataFrame:
+    commit_report: CommitReport,
+    cr_meta: tp.Optional[CommitReportMeta] = None
+) -> pd.DataFrame:
     """
     Generates a pandas dataframe that contains the commit
     region control-flow interaction information.
@@ -516,15 +526,19 @@ def generate_inout_cfg_cf(
         rows.append([item[0], item[1][0], "From", total])
         rows.append([item[0], item[1][1], "To", total])
 
-    rows.sort(key=lambda row:
-              (row[0], -tp.cast(int, row[3]), -tp.cast(int, row[1]), row[2]))
+    rows.sort(
+        key=lambda row:
+        (row[0], -tp.cast(int, row[3]), -tp.cast(int, row[1]), row[2])
+    )
 
-    return pd.DataFrame(rows,
-                        columns=['Region', 'Amount', 'Direction', 'TSort'])
+    return pd.DataFrame(
+        rows, columns=['Region', 'Amount', 'Direction', 'TSort']
+    )
 
 
-def generate_interactions(commit_report: CommitReport,
-                          c_map: CommitMap) -> pd.DataFrame:
+def generate_interactions(
+    commit_report: CommitReport, c_map: CommitMap
+) -> pd.DataFrame:
     """
     Converts the commit analysis interaction data from a ``CommitReport`` into
     a pandas data frame for plotting.
@@ -548,14 +562,16 @@ def generate_interactions(commit_report: CommitReport,
                 c_map.time_id(cf_edge.edge_from)
             ])
 
-    links = pd.DataFrame(link_rows,
-                         columns=['source', 'target', 'value', 'src_id'])
+    links = pd.DataFrame(
+        link_rows, columns=['source', 'target', 'value', 'src_id']
+    )
     return (nodes, links)
 
 
 def generate_inout_cfg_df(
-        commit_report: CommitReport,
-        cr_meta: tp.Optional[CommitReportMeta] = None) -> pd.DataFrame:
+    commit_report: CommitReport,
+    cr_meta: tp.Optional[CommitReportMeta] = None
+) -> pd.DataFrame:
     """
     Generates a pandas dataframe that contains the commit region
     data-flow interaction information.
@@ -579,8 +595,11 @@ def generate_inout_cfg_df(
         rows.append([item[0], item[1][0], "From", total])
         rows.append([item[0], item[1][1], "To", total])
 
-    rows.sort(key=lambda row:
-              (row[0], -tp.cast(int, row[3]), -tp.cast(int, row[1]), row[2]))
+    rows.sort(
+        key=lambda row:
+        (row[0], -tp.cast(int, row[3]), -tp.cast(int, row[1]), row[2])
+    )
 
-    return pd.DataFrame(rows,
-                        columns=['Region', 'Amount', 'Direction', 'TSort'])
+    return pd.DataFrame(
+        rows, columns=['Region', 'Amount', 'Direction', 'TSort']
+    )

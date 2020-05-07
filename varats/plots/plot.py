@@ -86,9 +86,9 @@ class Plot(metaclass=PlotRegistry):
     def show(self) -> None:
         """Show the current plot"""
 
-    def save(self,
-             path: tp.Optional[Path] = None,
-             filetype: str = 'svg') -> None:
+    def save(
+        self, path: tp.Optional[Path] = None, filetype: str = 'svg'
+    ) -> None:
         """
         Save the current plot to a file.
 
@@ -104,14 +104,18 @@ class Plot(metaclass=PlotRegistry):
             plot_dir = path
         project_name = self.plot_kwargs["project"]
 
-        plt.savefig(plot_dir /
-                    (project_name + "_{graph_name}{stages}.{filetype}".format(
-                        graph_name=self.name,
-                        stages='S' if self.plot_kwargs['sep_stages'] else '',
-                        filetype=filetype)),
-                    dpi=1200,
-                    bbox_inches="tight",
-                    format=filetype)
+        plt.savefig(
+            plot_dir / (
+                project_name + "_{graph_name}{stages}.{filetype}".format(
+                    graph_name=self.name,
+                    stages='S' if self.plot_kwargs['sep_stages'] else '',
+                    filetype=filetype
+                )
+            ),
+            dpi=1200,
+            bbox_inches="tight",
+            format=filetype
+        )
 
     @abc.abstractmethod
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:

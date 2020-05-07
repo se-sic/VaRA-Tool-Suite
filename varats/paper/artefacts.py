@@ -33,8 +33,9 @@ class Artefact(ABC):
         output_path: The output path for this artefact.
     """
 
-    def __init__(self, artefact_type: 'ArtefactType', name: str,
-                 output_path: Path) -> None:
+    def __init__(
+        self, artefact_type: 'ArtefactType', name: str, output_path: Path
+    ) -> None:
         self.__artefact_type = artefact_type
         self.__name = name
         self.__output_path = output_path
@@ -65,7 +66,8 @@ class Artefact(ABC):
         ``artefacts.artefacts_dir`` in the current varats config.
         """
         return Path(str(CFG['artefacts']['artefacts_dir'])) / Path(
-            str(CFG['paper_config']['current_config'])) / self.__output_path
+            str(CFG['paper_config']['current_config'])
+        ) / self.__output_path
 
     def get_dict(self) -> tp.Dict[str, str]:
         """
@@ -106,8 +108,10 @@ class PlotArtefact(Artefact):
         kwargs: additional arguments that will be passed to the plot class
     """
 
-    def __init__(self, name: str, output_path: Path, plot_type: str,
-                 file_format: str, **kwargs: tp.Any) -> None:
+    def __init__(
+        self, name: str, output_path: Path, plot_type: str, file_format: str,
+        **kwargs: tp.Any
+    ) -> None:
         super(PlotArtefact, self).__init__(ArtefactType.plot, name, output_path)
         self.__plot_type = plot_type
         self.__plot_type_class = PlotRegistry.get_class_for_plot_type(plot_type)
@@ -222,11 +226,14 @@ class Artefacts:
         Construct a dict from these artefacts for easy export to yaml.
         """
         return dict(
-            artefacts=[artefact.get_dict() for artefact in self.artefacts])
+            artefacts=[artefact.get_dict() for artefact in self.artefacts]
+        )
 
 
-def create_artefact(artefact_type: 'ArtefactType', name: str, output_path: Path,
-                    **kwargs: tp.Any) -> Artefact:
+def create_artefact(
+    artefact_type: 'ArtefactType', name: str, output_path: Path,
+    **kwargs: tp.Any
+) -> Artefact:
     """
     Create a new :class:`Artefact` from the provided parameters.
 
@@ -246,7 +253,8 @@ def create_artefact(artefact_type: 'ArtefactType', name: str, output_path: Path,
         return PlotArtefact(name, output_path, plot_type, file_format, **kwargs)
 
     raise AssertionError(
-        f"Missing create function for artefact type {artefact_type}")
+        f"Missing create function for artefact type {artefact_type}"
+    )
 
 
 def load_artefacts_from_file(file_path: Path) -> Artefacts:
@@ -272,10 +280,13 @@ def load_artefacts_from_file(file_path: Path) -> Artefacts:
         artefact_type = ArtefactType[raw_artefact.pop('artefact_type')]
         artefact_type_version = raw_artefact.pop('artefact_type_version')
         if artefact_type_version < artefact_type.value[1]:
-            print(f"WARNING: artefact {name} uses an old version of artefact "
-                  f"type {artefact_type.name}.")
+            print(
+                f"WARNING: artefact {name} uses an old version of artefact "
+                f"type {artefact_type.name}."
+            )
         artefacts.append(
-            create_artefact(artefact_type, name, output_path, **raw_artefact))
+            create_artefact(artefact_type, name, output_path, **raw_artefact)
+        )
 
     return Artefacts(artefacts)
 
@@ -293,8 +304,9 @@ def store_artefacts(artefacts: Artefacts, artefacts_location: Path) -> None:
     if artefacts_location.suffix == '.yaml':
         __store_artefacts_to_file(artefacts, artefacts_location)
     else:
-        __store_artefacts_to_file(artefacts,
-                                  artefacts_location / 'artefacts.yaml')
+        __store_artefacts_to_file(
+            artefacts, artefacts_location / 'artefacts.yaml'
+        )
 
 
 def __store_artefacts_to_file(artefacts: Artefacts, file_path: Path) -> None:
@@ -303,4 +315,5 @@ def __store_artefacts_to_file(artefacts: Artefacts, file_path: Path) -> None:
     """
     store_as_yaml(
         file_path,
-        [VersionHeader.from_version_number('Artefacts', 1), artefacts])
+        [VersionHeader.from_version_number('Artefacts', 1), artefacts]
+    )

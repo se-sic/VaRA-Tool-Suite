@@ -30,14 +30,17 @@ from varats.utils.project_util import (
 @block_revisions([
     # TODO (se-passau/VaRA#537): glibc < 2.28
     # see e.g. https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=915151
-    BlockedRevisionRange("6ef28aeb035af20818578b1a1bc537f797c27029",
-                         "203e40cc4558a80998d05eb74b373a51e796ca8b",
-                         "Needs glibc < 2.28")
+    BlockedRevisionRange(
+        "6ef28aeb035af20818578b1a1bc537f797c27029",
+        "203e40cc4558a80998d05eb74b373a51e796ca8b", "Needs glibc < 2.28"
+    )
 ])
-@with_git("https://git.savannah.gnu.org/git/gzip.git",
-          refspec="HEAD",
-          shallow_clone=False,
-          version_filter=project_filter_generator("gzip"))
+@with_git(
+    "https://git.savannah.gnu.org/git/gzip.git",
+    refspec="HEAD",
+    shallow_clone=False,
+    version_filter=project_filter_generator("gzip")
+)
 class Gzip(prj.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
     """Compression and decompression tool Gzip (fetched by Git)"""
 
@@ -73,7 +76,8 @@ class Gzip(prj.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
 
     @classmethod
     def get_release_revisions(
-            cls, release_type: ReleaseType) -> tp.List[tp.Tuple[str, str]]:
+        cls, release_type: ReleaseType
+    ) -> tp.List[tp.Tuple[str, str]]:
         major_release_regex = "^v[0-9]+\\.[0-9]+$"
         minor_release_regex = "^v[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
 

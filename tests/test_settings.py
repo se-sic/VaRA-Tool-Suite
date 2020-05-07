@@ -28,10 +28,9 @@ class BenchBuildConfig(unittest.TestCase):
     def tearDownClass(cls):
         cls.tmp_file.close()
 
-    def check_all_files_in_config_list(self,
-                                       folder,
-                                       config_list,
-                                       exclude_list=None):
+    def check_all_files_in_config_list(
+        self, folder, config_list, exclude_list=None
+    ):
         """
         Check if all python files in a folder are added to the
         benchbuild project config.
@@ -49,8 +48,10 @@ class BenchBuildConfig(unittest.TestCase):
                 plugin_python_path = (folder + plugin_file)\
                     .replace(".py", "")\
                     .replace("/", ".")
-                self.assertTrue(plugin_python_path in config_list,
-                                "Missing: " + plugin_python_path)
+                self.assertTrue(
+                    plugin_python_path in config_list,
+                    "Missing: " + plugin_python_path
+                )
 
     def test_if_all_nodes_have_been_created(self):
         """
@@ -77,10 +78,12 @@ class BenchBuildConfig(unittest.TestCase):
         ]
 
         loaded_plugins = BB_CFG["plugins"]["projects"].value
-        self.check_all_files_in_config_list("varats/projects/c_projects/",
-                                            loaded_plugins, excluded_projects)
-        self.check_all_files_in_config_list("varats/projects/cpp_projects/",
-                                            loaded_plugins, excluded_projects)
+        self.check_all_files_in_config_list(
+            "varats/projects/c_projects/", loaded_plugins, excluded_projects
+        )
+        self.check_all_files_in_config_list(
+            "varats/projects/cpp_projects/", loaded_plugins, excluded_projects
+        )
 
     def test_if_experiments_where_added(self):
         """
@@ -92,6 +95,6 @@ class BenchBuildConfig(unittest.TestCase):
         ]
 
         loaded_plugins = BB_CFG["plugins"]["experiments"].value
-        self.check_all_files_in_config_list("varats/experiments/",
-                                            loaded_plugins,
-                                            excluded_experiments)
+        self.check_all_files_in_config_list(
+            "varats/experiments/", loaded_plugins, excluded_experiments
+        )

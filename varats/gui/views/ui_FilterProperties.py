@@ -25,12 +25,14 @@ class Ui_FilterProperties(object):
         self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 277, 243))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(
-            self.scrollAreaWidgetContents)
+            self.scrollAreaWidgetContents
+        )
         self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_3.setSpacing(0)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.uiFilterProperties = QtWidgets.QGroupBox(
-            self.scrollAreaWidgetContents)
+            self.scrollAreaWidgetContents
+        )
         self.uiFilterProperties.setObjectName("uiFilterProperties")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.uiFilterProperties)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
@@ -43,9 +45,10 @@ class Ui_FilterProperties(object):
         self.layoutNodeWarning = QtWidgets.QHBoxLayout()
         self.layoutNodeWarning.setObjectName("layoutNodeWarning")
         self.verticalLayout_2.addLayout(self.layoutNodeWarning)
-        spacerItem = QtWidgets.QSpacerItem(20, 40,
-                                           QtWidgets.QSizePolicy.Minimum,
-                                           QtWidgets.QSizePolicy.Expanding)
+        spacerItem = QtWidgets.QSpacerItem(
+            20, 40, QtWidgets.QSizePolicy.Minimum,
+            QtWidgets.QSizePolicy.Expanding
+        )
         self.verticalLayout_2.addItem(spacerItem)
         self.verticalLayout_3.addWidget(self.uiFilterProperties)
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
@@ -58,7 +61,8 @@ class Ui_FilterProperties(object):
         _translate = QtCore.QCoreApplication.translate
         FilterProperties.setWindowTitle(_translate("FilterProperties", "Form"))
         self.uiFilterProperties.setTitle(
-            _translate("FilterProperties", "Properties"))
+            _translate("FilterProperties", "Properties")
+        )
 
 
 if __name__ == "__main__":

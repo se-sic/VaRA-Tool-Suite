@@ -45,14 +45,19 @@ class Ui_FilterNodeProperties(object):
     def retranslateUi(self, FilterNodeProperties):
         _translate = QtCore.QCoreApplication.translate
         FilterNodeProperties.setWindowTitle(
-            _translate("FilterNodeProperties", "Form"))
+            _translate("FilterNodeProperties", "Form")
+        )
         self.label.setText(_translate("FilterNodeProperties", "Name"))
         self.uiName.setToolTip(
-            _translate("FilterNodeProperties", "Type of the node"))
+            _translate("FilterNodeProperties", "Type of the node")
+        )
         self.label_2.setText(_translate("FilterNodeProperties", "Comment"))
         self.uiComment.setToolTip(
-            _translate("FilterNodeProperties",
-                       "Arbitrary user comment that describes the node"))
+            _translate(
+                "FilterNodeProperties",
+                "Arbitrary user comment that describes the node"
+            )
+        )
 
 
 if __name__ == "__main__":

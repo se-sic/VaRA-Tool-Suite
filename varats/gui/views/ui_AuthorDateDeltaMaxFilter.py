@@ -26,22 +26,27 @@ class Ui_AuthorDateDeltaMaxFilter(object):
         self.label.setObjectName("label")
         self.horizontalLayout.addWidget(self.label)
         self.uiAuthorDateDeltaMax = QtWidgets.QLineEdit(
-            AuthorDateDeltaMaxFilter)
+            AuthorDateDeltaMaxFilter
+        )
         self.uiAuthorDateDeltaMax.setObjectName("uiAuthorDateDeltaMax")
         self.horizontalLayout.addWidget(self.uiAuthorDateDeltaMax)
         self.uiHelp = QtWidgets.QPushButton(AuthorDateDeltaMaxFilter)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                           QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed
+        )
         sizePolicy.setHorizontalStretch(30)
         sizePolicy.setVerticalStretch(30)
         sizePolicy.setHeightForWidth(
-            self.uiHelp.sizePolicy().hasHeightForWidth())
+            self.uiHelp.sizePolicy().hasHeightForWidth()
+        )
         self.uiHelp.setSizePolicy(sizePolicy)
         self.uiHelp.setMaximumSize(QtCore.QSize(30, 30))
         self.uiHelp.setText("")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(":/breeze/light/help-about.svg"),
-                       QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(
+            QtGui.QPixmap(":/breeze/light/help-about.svg"), QtGui.QIcon.Normal,
+            QtGui.QIcon.Off
+        )
         self.uiHelp.setIcon(icon)
         self.uiHelp.setObjectName("uiHelp")
         self.horizontalLayout.addWidget(self.uiHelp)
@@ -53,9 +58,11 @@ class Ui_AuthorDateDeltaMaxFilter(object):
     def retranslateUi(self, AuthorDateDeltaMaxFilter):
         _translate = QtCore.QCoreApplication.translate
         AuthorDateDeltaMaxFilter.setWindowTitle(
-            _translate("AuthorDateDeltaMaxFilter", "Form"))
+            _translate("AuthorDateDeltaMaxFilter", "Form")
+        )
         self.label.setText(
-            _translate("AuthorDateDeltaMaxFilter", "AuthorDateDelta Maximum"))
+            _translate("AuthorDateDeltaMaxFilter", "AuthorDateDelta Maximum")
+        )
         self.uiHelp.setToolTip(_translate("AuthorDateDeltaMaxFilter", "Help"))
 
 

@@ -18,12 +18,12 @@ def main() -> None:
     parser = argparse.ArgumentParser("vara-gen-commitmap")
     parser.add_argument("project_name", help="Name of the project")
     parser.add_argument("--path", help="Path to git repository", default=None)
-    parser.add_argument("--end",
-                        help="End of the commit range (inclusive)",
-                        default="HEAD")
-    parser.add_argument("--start",
-                        help="Start of the commit range (exclusive)",
-                        default=None)
+    parser.add_argument(
+        "--end", help="End of the commit range (inclusive)", default="HEAD"
+    )
+    parser.add_argument(
+        "--start", help="Start of the commit range (exclusive)", default=None
+    )
     parser.add_argument("-o", "--output", help="Output filename")
 
     args = parser.parse_args()

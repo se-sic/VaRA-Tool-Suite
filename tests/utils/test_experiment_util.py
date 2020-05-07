@@ -78,12 +78,14 @@ class TestVersionExperiment(unittest.TestCase):
         Test if base_hash is loaded correctly.
         """
         self.assertEqual(EU.V_CFG["experiment"]["sample_limit"].value, None)
-        self.assertEqual(self.vers_expr._sample_num_versions(self.rev_list),
-                         self.rev_list)
+        self.assertEqual(
+            self.vers_expr._sample_num_versions(self.rev_list), self.rev_list
+        )
 
         EU.V_CFG["experiment"]["sample_limit"] = 3
         self.assertEqual(
-            len(self.vers_expr._sample_num_versions(self.rev_list)), 3)
+            len(self.vers_expr._sample_num_versions(self.rev_list)), 3
+        )
 
     def test_without_versions(self):
         """

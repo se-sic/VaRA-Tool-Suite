@@ -35,52 +35,68 @@ def main() -> None:
 
     # vara-art list
     sub_parsers.add_parser(
-        'list', help="List all artefacts of the current paper config.")
+        'list', help="List all artefacts of the current paper config."
+    )
 
     # vara-art show
     show_parser = sub_parsers.add_parser(
-        'show', help="Show detailed insformation about artefacts.")
-    show_parser.add_argument("names",
-                             nargs='+',
-                             help="The names of the artefacts to show.")
+        'show', help="Show detailed insformation about artefacts."
+    )
+    show_parser.add_argument(
+        "names", nargs='+', help="The names of the artefacts to show."
+    )
 
     # vara-art generate
     generate_parser = sub_parsers.add_parser(
         'generate',
-        help="Generate artefacts. By default, all artefacts are generated.")
+        help="Generate artefacts. By default, all artefacts are generated."
+    )
     generate_parser.add_argument(
         "--only",
         nargs='+',
-        help="Only generate artefacts with the given names.")
+        help="Only generate artefacts with the given names."
+    )
 
     # vara-art add
     add_parser = sub_parsers.add_parser(
         'add',
-        help=("Add a new artefact to the current paper config or edit an "
-              "existing artefacts."))
-    add_parser.add_argument("artefact_type",
-                            help="The type of the new artefact.",
-                            choices=ArtefactType,
-                            action=enum_action(ArtefactType))
+        help=(
+            "Add a new artefact to the current paper config or edit an "
+            "existing artefacts."
+        )
+    )
+    add_parser.add_argument(
+        "artefact_type",
+        help="The type of the new artefact.",
+        choices=ArtefactType,
+        action=enum_action(ArtefactType)
+    )
     add_parser.add_argument(
         "name",
         help="The name for the new artefact. "
         "If an artefact with this name already exists, it is overridden.",
-        type=str)
+        type=str
+    )
     add_parser.add_argument(
         "--output-path",
-        help=("The output file for the new artefact. This is relative to "
-              "`artefacts_dir/current_config` from the current `.varats.yml`."),
+        help=(
+            "The output file for the new artefact. This is relative to "
+            "`artefacts_dir/current_config` from the current `.varats.yml`."
+        ),
         type=str,
-        default=".")
+        default="."
+    )
     add_parser.add_argument(
         "extra_args",
         metavar="KEY=VALUE",
         nargs=argparse.REMAINDER,
-        help=("Provide additional arguments that will be passed to the class "
-              "that generates the artefact. (do not put spaces before or after "
-              "the '=' sign). If a value contains spaces, you should define it "
-              'with double quotes: foo="bar baz".'))
+        help=(
+            "Provide additional arguments that will be passed to the class "
+            "that generates the artefact. (do not put spaces before or after "
+            "the '=' sign). If a value contains spaces, you should define it "
+            'with double quotes: foo="bar baz".'
+        )
+    )
 
     args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
 
@@ -127,8 +143,10 @@ def __artefact_generate(args: tp.Dict[str, tp.Any]) -> None:
     else:
         artefacts = get_paper_config().get_all_artefacts()
     for artefact in artefacts:
-        LOG.info(f"Generating artefact {artefact.name} in location "
-                 f"{artefact.output_path}")
+        LOG.info(
+            f"Generating artefact {artefact.name} in location "
+            f"{artefact.output_path}"
+        )
         artefact.generate_artefact()
 
 
@@ -148,8 +166,9 @@ def __artefact_add(args: tp.Dict[str, tp.Any]) -> None:
         LOG.info(f"Updating existing artefact '{name}'.")
     else:
         LOG.info(f"Creating new artefact '{name}'.")
-    artefact = create_artefact(args['artefact_type'], name, args['output_path'],
-                               **extra_args)
+    artefact = create_artefact(
+        args['artefact_type'], name, args['output_path'], **extra_args
+    )
     paper_config.add_artefact(artefact)
     store_artefacts(paper_config.artefacts, paper_config.path)
 

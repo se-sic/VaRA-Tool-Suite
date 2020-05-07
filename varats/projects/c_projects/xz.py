@@ -23,17 +23,23 @@ from varats.utils.project_util import (
 
 
 @block_revisions([
-    BugAndFixPair("cf49f42a6bd40143f54a6b10d6e605599e958c0b",
-                  "4c7ad179c78f97f68ad548cb40a9dfa6871655ae",
-                  "missing file api/lzma/easy.h"),
-    BugAndFixPair("335fe260a81f61ec99ff5940df733b4c50aedb7c",
-                  "24e0406c0fb7494d2037dec033686faf1bf67068",
-                  "use of undeclared LZMA_THREADS_MAX"),
+    BugAndFixPair(
+        "cf49f42a6bd40143f54a6b10d6e605599e958c0b",
+        "4c7ad179c78f97f68ad548cb40a9dfa6871655ae",
+        "missing file api/lzma/easy.h"
+    ),
+    BugAndFixPair(
+        "335fe260a81f61ec99ff5940df733b4c50aedb7c",
+        "24e0406c0fb7494d2037dec033686faf1bf67068",
+        "use of undeclared LZMA_THREADS_MAX"
+    ),
 ])
-@with_git("https://github.com/xz-mirror/xz.git",
-          refspec="HEAD",
-          shallow_clone=False,
-          version_filter=project_filter_generator("xz"))
+@with_git(
+    "https://github.com/xz-mirror/xz.git",
+    refspec="HEAD",
+    shallow_clone=False,
+    version_filter=project_filter_generator("xz")
+)
 class Xz(Project, CVEProviderHook):  # type: ignore
     """Compression and decompression tool xz (fetched by Git)"""
 
@@ -62,7 +68,8 @@ class Xz(Project, CVEProviderHook):  # type: ignore
             version_id = git("rev-parse", "HEAD").strip()
             revisions_wo_dynamic_linking = get_all_revisions_between(
                 "5d018dc03549c1ee4958364712fb0c94e1bf2741",
-                "fda4724d8114fccfa31c1839c15479f350c2fb4c")
+                "fda4724d8114fccfa31c1839c15479f350c2fb4c"
+            )
 
         self.cflags += ["-fPIC"]
 
