@@ -51,7 +51,7 @@ class FileStatusExtension(Enum):
     def get_physical_file_statuses() -> tp.Set['FileStatusExtension']:
         """
         Returns the set of file status extensions that are associated with real
-        result files.        
+        result files.
         """
         return {
             FileStatusExtension.Success, FileStatusExtension.Failed,
@@ -62,7 +62,7 @@ class FileStatusExtension(Enum):
     def get_virtual_file_statuses() -> tp.Set['FileStatusExtension']:
         """
         Returns the set of file status extensions that are not associated with
-        real result files.        
+        real result files.
         """
         return {FileStatusExtension.Missing, FileStatusExtension.Blocked}
 
