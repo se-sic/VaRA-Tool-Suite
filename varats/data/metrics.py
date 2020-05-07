@@ -20,19 +20,34 @@ def lorenz_curve(data: pd.Series) -> pd.Series:
     return scaled_prefix_sum
 
 
-def gini_coefficient(lorenz_values: pd.Series) -> pd.Series:
+def gini_coefficient(distribution: pd.Series) -> float:
     """
     Calculates the
     `gini coefficient <https://en.wikipedia.org/wiki/Gini_coefficient>`_
-    for a lorenz curve.
+    of the data.
 
     Args:
-        lorenz_values: the values of a lorenz curve as optained by
-                       :func:`calculate_lorenz_curve()`
+        distribution: sorted series to calculate the gini coefficient for
 
     Returns:
-        the gini coefficient for the lorenz curve
+        the gini coefficient for the data
     """
-    return 0.5 * (
-        (np.abs(np.subtract.outer(lorenz_values, lorenz_values)).mean()) /
-        np.mean(lorenz_values))
+    dist_array = np.array(distribution)
+    return 0.5 * ((np.abs(np.subtract.outer(dist_array, dist_array)).mean()) /
+                  np.mean(dist_array))
+
+
+def normalized_gini_coefficient(distribution: pd.Series) -> float:
+    """
+    Calculates the normalized gini coefficient of the given data, , i.e.,
+    ``gini(data) * (n / n - 1)`` where ``n`` is the length of the data.
+
+    Args:
+        distribution: sorted series to calculate the normalized gini coefficient
+                      for
+
+    Returns:
+        the normalized gini coefficient for the data
+    """
+    n = float(len(distribution))
+    return gini_coefficient(distribution) * (n / (n - 1.0))

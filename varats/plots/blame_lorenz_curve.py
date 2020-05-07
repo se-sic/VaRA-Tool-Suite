@@ -230,26 +230,23 @@ def draw_gini_churn_over_time(axis: axes.SubplotBase, blame_data: pd.DataFrame,
     gini_churn = []
     for time_id in blame_data['time_id']:
         if consider_insertions and consider_deletions:
-            lorenz_values = np.array(
-                lorenz_curve(
-                    (churn_data[churn_data.time_id <= time_id].insertions +
-                     churn_data[churn_data.time_id <= time_id].deletions
-                    ).sort_values(ascending=True)))
+            distribution = (
+                churn_data[churn_data.time_id <= time_id].insertions +
+                churn_data[churn_data.time_id <= time_id].deletions
+            ).sort_values(ascending=True)
         elif consider_insertions:
-            lorenz_values = np.array(
-                lorenz_curve(churn_data[
-                    churn_data.time_id <= time_id].insertions.sort_values(
-                        ascending=True)))
+            distribution = churn_data[
+                churn_data.time_id <= time_id].insertions.sort_values(
+                    ascending=True)
         elif consider_deletions:
-            lorenz_values = np.array(
-                lorenz_curve(churn_data[
-                    churn_data.time_id <= time_id].deletions.sort_values(
-                        ascending=True)))
+            distribution = churn_data[
+                churn_data.time_id <= time_id].deletions.sort_values(
+                    ascending=True)
         else:
             raise AssertionError(
                 "At least one of the in/out interaction needs to be selected")
 
-        gini_churn.append(gini_coefficient(lorenz_values))
+        gini_churn.append(gini_coefficient(distribution))
     if consider_insertions and consider_deletions:
         linestyle = '-'
         label = 'Insertions + Deletions'
@@ -300,12 +297,11 @@ def draw_gini_blame_over_time(axis: axes.SubplotBase, blame_data: pd.DataFrame,
     gini_coefficients = []
 
     for time_id in blame_data.time_id:
-        lvalues = np.array(
-            lorenz_curve(
-                blame_data[blame_data.time_id <= time_id]
-                [data_selector].sort_values(ascending=True)))
+        distribution = blame_data[
+            blame_data.time_id <= time_id][data_selector].sort_values(
+                ascending=True)
 
-        gini_coefficients.append(gini_coefficient(lvalues))
+        gini_coefficients.append(gini_coefficient(distribution))
 
     axis.plot(blame_data.revision,
               gini_coefficients,
