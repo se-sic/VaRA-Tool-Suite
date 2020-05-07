@@ -1,14 +1,13 @@
-"""
-This module contains functions that calculate various metrics on data.
-"""
+"""This module contains functions that calculate various metrics on data."""
 import numpy as np
 import pandas as pd
 
 
 def lorenz_curve(data: pd.Series) -> pd.Series:
     """
-    Calculates the values for the
-    `lorenz curve <https://en.wikipedia.org/wiki/Lorenz_curve>`_ of the data.
+    Calculates the values for the `lorenz curve.
+
+    <https://en.wikipedia.org/wiki/Lorenz_curve>`_ of the data.
 
     Args:
         data: sorted series to calculate the lorenz curve for
@@ -22,9 +21,9 @@ def lorenz_curve(data: pd.Series) -> pd.Series:
 
 def gini_coefficient(distribution: pd.Series) -> float:
     """
-    Calculates the
-    `gini coefficient <https://en.wikipedia.org/wiki/Gini_coefficient>`_
-    of the data.
+    Calculates the `gini coefficient.
+
+    <https://en.wikipedia.org/wiki/Gini_coefficient>`_ of the data.
 
     Args:
         distribution: sorted series to calculate the gini coefficient for
@@ -35,12 +34,14 @@ def gini_coefficient(distribution: pd.Series) -> float:
     dist_array = np.array(distribution)
     return 0.5 * float(
         ((np.abs(np.subtract.outer(dist_array, dist_array)).mean()) /
-         np.mean(dist_array)))
+         np.mean(dist_array))
+    )
 
 
 def normalized_gini_coefficient(distribution: pd.Series) -> float:
     """
     Calculates the normalized gini coefficient of the given data, , i.e.,
+
     ``gini(data) * (n / n - 1)`` where ``n`` is the length of the data.
 
     Args:
