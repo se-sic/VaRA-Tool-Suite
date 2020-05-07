@@ -1,6 +1,4 @@
-"""
-Auto discover all plots.
-"""
+"""Auto discover all plots."""
 
 import pkgutil
 
@@ -9,9 +7,7 @@ import varats.plots.plot
 
 
 def discover() -> None:
-    """
-    Auto import all plots.
-    """
+    """Auto import all plots."""
     __all__ = []
     for loader, module_name, _ in pkgutil.walk_packages(
         __path__  # type: ignore

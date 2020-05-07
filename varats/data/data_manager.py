@@ -1,10 +1,11 @@
 """
 The DataManager module handles the loading, creation, and caching of data
-classes. With the DataManager in the background, we can load files from multiple
-locations within the tool suite, without loading the same file twice.
-In addition, this speeds up reloading of files, for example, in interactive
-plots, like in jupyter notebooks, where we sometimes re-execute triggers
-a file load.
+classes.
+
+With the DataManager in the background, we can load files from multiple
+locations within the tool suite, without loading the same file twice. In
+addition, this speeds up reloading of files, for example, in interactive plots,
+like in jupyter notebooks, where we sometimes re-execute triggers a file load.
 """
 
 import hashlib
@@ -41,8 +42,8 @@ def sha256_checksum(file_path: Path, block_size: int = 65536) -> str:
 
 class FileBlob():
     """
-    A FileBlob is a keyed data blob for everything that is loadable from a
-    file and can be converted to a VaRA DataClass.
+    A FileBlob is a keyed data blob for everything that is loadable from a file
+    and can be converted to a VaRA DataClass.
 
     Args:
         key: identifier for the file
@@ -72,17 +73,13 @@ class FileBlob():
 
 
 class FileSignal(QObject):
-    """
-    Emit signals after the file was loaded.
-    """
+    """Emit signals after the file was loaded."""
     finished = pyqtSignal(object)
     clean = pyqtSignal()
 
 
 class FileLoader(QRunnable):
-    """
-    Manages concurrent file loading in the background of the application.
-    """
+    """Manages concurrent file loading in the background of the application."""
 
     def __init__(
         self, func: tp.Callable[[Path, tp.Type[LoadableType]], LoadableType],
@@ -96,9 +93,7 @@ class FileLoader(QRunnable):
 
     @pyqtSlot()
     def run(self) -> None:
-        """
-        Run the file loading method.
-        """
+        """Run the file loading method."""
         loaded_data_class = self.func(self.file_path, self.class_type)
         self.signal.finished.emit(loaded_data_class)
         self.signal.clean.emit()
@@ -106,9 +101,10 @@ class FileLoader(QRunnable):
 
 class DataManager():
     """
-    Manages data over the lifetime of the tool suite. The DataManager handles
-    the concurrent file loading, creation of DataClasses and caching of
-    loaded files.
+    Manages data over the lifetime of the tool suite.
+
+    The DataManager handles the concurrent file loading, creation of DataClasses
+    and caching of loaded files.
     """
 
     def __init__(self) -> None:
@@ -120,9 +116,7 @@ class DataManager():
         self, file_path: Path, DataClassTy: tp.Type[LoadableType]
     ) -> LoadableType:
         # pylint: disable=invalid-name
-        """
-        Load a DataClass of type <DataClassTy> from a file.
-        """
+        """Load a DataClass of type <DataClassTy> from a file."""
         self.loader_lock.acquire()
 
         key = sha256_checksum(file_path)

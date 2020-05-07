@@ -1,6 +1,4 @@
-"""
-Test VaRA report.
-"""
+"""Test VaRA report."""
 
 import unittest
 
@@ -10,15 +8,11 @@ from varats.data.reports.empty_report import EmptyReport
 
 
 class TestMetaReport(unittest.TestCase):
-    """
-    Test basic CommitReport functionality.
-    """
+    """Test basic CommitReport functionality."""
 
     @classmethod
     def setUpClass(cls):
-        """
-        Setup file and CommitReport
-        """
+        """Setup file and CommitReport."""
         cls.success_filename_cr = (
             "CR-foo-foo-7bb9ef5f8c_"
             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
@@ -59,7 +53,7 @@ class TestMetaReport(unittest.TestCase):
         )
 
     def test_is_result_file(self):
-        """Check if the result file matcher works"""
+        """Check if the result file matcher works."""
         self.assertTrue(MetaReport.is_result_file(self.success_filename))
         self.assertTrue(MetaReport.is_result_file(self.fail_filename))
         self.assertFalse(
@@ -70,7 +64,7 @@ class TestMetaReport(unittest.TestCase):
         )
 
     def test_is_supplementary_result_file(self):
-        """Check if the supplementary result file matcher works"""
+        """Check if the supplementary result file matcher works."""
         self.assertTrue(
             MetaReport.is_result_file_supplementary(
                 self.supplementary_filename
@@ -84,9 +78,7 @@ class TestMetaReport(unittest.TestCase):
         self.assertFalse(MetaReport.is_result_file(self.supplementary_filename))
 
     def test_file_status(self):
-        """
-        Check if the correct file status is returned for MetaReport names.
-        """
+        """Check if the correct file status is returned for MetaReport names."""
         self.assertTrue(
             MetaReport.result_file_has_status_success(self.success_filename)
         )
@@ -102,9 +94,7 @@ class TestMetaReport(unittest.TestCase):
         )
 
     def test_get_commit(self):
-        """
-        Check if the correct commit hash is returned.
-        """
+        """Check if the correct commit hash is returned."""
         self.assertEqual(
             MetaReport.get_commit_hash_from_result_file(self.success_filename),
             "7bb9ef5f8c"
@@ -115,9 +105,7 @@ class TestMetaReport(unittest.TestCase):
         )
 
     def test_get_commit_supplementary(self):
-        """
-        Check if the correct commit hash is returned.
-        """
+        """Check if the correct commit hash is returned."""
         self.assertEqual(
             MetaReport.get_commit_hash_from_supplementary_result_file(
                 self.supplementary_filename
@@ -125,9 +113,7 @@ class TestMetaReport(unittest.TestCase):
         )
 
     def test_get_info_type_supplementary(self):
-        """
-        Check if the correct info_type is returned.
-        """
+        """Check if the correct info_type is returned."""
         self.assertEqual(
             MetaReport.get_info_type_from_supplementary_result_file(
                 self.supplementary_filename
@@ -135,9 +121,7 @@ class TestMetaReport(unittest.TestCase):
         )
 
     def test_file_name_creation(self):
-        """
-         Check if file names are created correctly.
-        """
+        """Check if file names are created correctly."""
         self.assertEqual(
             EmptyReport.get_file_name(
                 "foo", "foo", "7bb9ef5f8c",
@@ -155,9 +139,7 @@ class TestMetaReport(unittest.TestCase):
         )
 
     def test_supplementary_file_name_creation(self):
-        """
-         Check if file names are created correctly.
-        """
+        """Check if file names are created correctly."""
         self.assertEqual(
             CR.get_supplementary_file_name(
                 "foo", "foo", "7bb9ef5f8c",

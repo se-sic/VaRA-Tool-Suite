@@ -1,6 +1,8 @@
 """
-Driver module for `vara-art`. This module handles command-line parsing and maps
-the commands to tool suite internal functionality.
+Driver module for `vara-art`.
+
+This module handles command-line parsing and maps the commands to tool suite
+internal functionality.
 """
 import argparse
 import logging

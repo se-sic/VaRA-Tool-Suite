@@ -1,6 +1,7 @@
 """
-Provider interface module for projects.  Providers are a means to supply
-additional data for a project.
+Provider interface module for projects.
+
+Providers are a means to supply additional data for a project.
 """
 import logging
 import typing as tp
@@ -16,8 +17,8 @@ ProviderType = tp.TypeVar("ProviderType", bound="Provider")
 class Provider(ABC):
     """
     A provider allows access to additional information about a project, e.g.,
-    which revisions of a project are releases, or which CVE's are related to
-    a project.
+    which revisions of a project are releases, or which CVE's are related to a
+    project.
 
     Args:
         project: the project this provider is associated with
@@ -50,7 +51,7 @@ class Provider(ABC):
         cls: tp.Type[ProviderType], project: tp.Type[Project]
     ) -> ProviderType:
         """
-        Creates a default provider instance that can be used with any project
+        Creates a default provider instance that can be used with any project.
 
         Returns:
             a default provider instance

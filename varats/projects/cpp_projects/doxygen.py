@@ -1,6 +1,4 @@
-"""
-Project file for doxygen.
-"""
+"""Project file for doxygen."""
 import typing as tp
 from pathlib import Path
 
@@ -41,7 +39,7 @@ from varats.utils.project_util import (
     version_filter=project_filter_generator("doxygen")
 )
 class Doxygen(Project):  # type: ignore
-    """Doxygen"""
+    """Doxygen."""
 
     NAME = 'doxygen'
     GROUP = 'cpp_projects'

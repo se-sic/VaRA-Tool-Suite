@@ -27,8 +27,8 @@ class CVE:
     """
     CVE representation with the major fields.
 
-    Mainly a data object to store everything.
-    Uses the API at https://cve.circl.lu/api/search/ to find entries.
+    Mainly a data object to store everything. Uses the API at
+    https://cve.circl.lu/api/search/ to find entries.
     """
 
     def __init__(
@@ -296,7 +296,8 @@ __CWE_LIST: tp.Optional[tp.FrozenSet[CWE]] = None
 
 def find_all_cwe() -> tp.FrozenSet[CWE]:
     """
-    Create a set of all CWE's. The set with CWE numbers is downloaded from
+    Create a set of all CWE's. The set with CWE numbers is downloaded from.
+
     @https://cwe.mitre.org/data/downloads.html.
 
     Return:

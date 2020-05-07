@@ -1,6 +1,4 @@
-"""
-VaRA-TS MainWindow
-"""
+"""VaRA-TS MainWindow."""
 
 import typing as tp
 from os import path
@@ -21,9 +19,7 @@ from varats.settings import (
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
-    """
-    Manages the GUI state and manages the different active views.
-    """
+    """Manages the GUI state and manages the different active views."""
 
     def __init__(self) -> None:
         super(MainWindow, self).__init__()
@@ -62,18 +58,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
         self.tabWidget.addTab(new_tab, "CR-BarView")
 
     def _spawn_vara_build_setup(self) -> None:
-        """
-        Spawn a setup window to configure and build VaRA
-        """
+        """Spawn a setup window to configure and build VaRA."""
         self.bwg = BuildSetup()  # type: ignore
         if not isinstance(self.bwg, BuildSetup):
             raise AssertionError()
         self.bwg.show()
 
     def _spawn_filter_editor(self) -> None:
-        """
-        Spawn a filter editor window to configure interaction filters.
-        """
+        """Spawn a filter editor window to configure interaction filters."""
         self.filter_window = FilterWindow()  # type: ignore
         if not isinstance(self.filter_window, FilterWindow):
             raise AssertionError()
@@ -81,9 +73,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
 
     @staticmethod
     def _save_config() -> None:
-        """
-        Save current config to file.
-        """
+        """Save current config to file."""
         save_config()
 
     @staticmethod

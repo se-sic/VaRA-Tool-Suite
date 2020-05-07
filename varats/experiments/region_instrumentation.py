@@ -1,6 +1,4 @@
-"""
-Experiment that adds tracing markers for highlight regions.
-"""
+"""Experiment that adds tracing markers for highlight regions."""
 import typing as tp
 
 from benchbuild.experiment import Experiment
@@ -12,9 +10,7 @@ from varats.experiments.wllvm import RunWLLVM
 
 
 class RegionAnalyser(Experiment):  # type: ignore
-    """
-    Small region instrumentation experiment to test vara tracer.
-    """
+    """Small region instrumentation experiment to test vara tracer."""
 
     NAME = "RegionAnalyser"
 

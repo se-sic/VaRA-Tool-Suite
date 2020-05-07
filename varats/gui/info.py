@@ -1,14 +1,10 @@
-"""
-Info module, providing different ways to represent information in the GUI.
-"""
+"""Info module, providing different ways to represent information in the GUI."""
 
 from PyQt5.QtWidgets import QHeaderView, QTreeWidget, QTreeWidgetItem
 
 
 class InfoTreeWidget(QTreeWidget):
-    """
-    Info Widget to show additional informations for commit reports etc.
-    """
+    """Info Widget to show additional informations for commit reports etc."""
 
     def __init__(self, parent):
         super(InfoTreeWidget, self).__init__(parent)
@@ -30,9 +26,7 @@ class InfoTreeWidget(QTreeWidget):
 
     @property
     def c_hash(self):
-        """
-        Last commit hash of current CommitReport.
-        """
+        """Last commit hash of current CommitReport."""
         self.__c_hash.text(1)
 
     @c_hash.setter
@@ -41,9 +35,7 @@ class InfoTreeWidget(QTreeWidget):
 
     @property
     def h_id(self):
-        """
-        Commit history ID.
-        """
+        """Commit history ID."""
         return self.__h_id.text(1)
 
     @h_id.setter

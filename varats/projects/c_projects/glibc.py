@@ -1,6 +1,4 @@
-"""
-Project file for glibc.
-"""
+"""Project file for glibc."""
 import typing as tp
 from pathlib import Path
 
@@ -24,7 +22,7 @@ from varats.utils.project_util import wrap_paths_to_binaries
     version_filter=project_filter_generator("glibc")
 )
 class Glibc(Project, CVEProviderHook):  # type: ignore
-    """Standard GNU C-library"""
+    """Standard GNU C-library."""
 
     NAME = 'glibc'
     GROUP = 'c_projects'

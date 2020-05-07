@@ -1,8 +1,8 @@
 """
-Settings module for VaRA
+Settings module for VaRA.
 
-All settings are stored in a simple dictionary. Each
-setting should be modifiable via environment variable.
+All settings are stored in a simple dictionary. Each setting should be
+modifiable via environment variable.
 """
 
 import typing as tp
@@ -140,8 +140,9 @@ def get_value_or_default(
 ) -> tp.Any:
     """
     Checks if the config variable has a value and if it is not None.
-    Then the value is returned. Otherwise, the default value is
-    set and then returned.
+
+    Then the value is returned. Otherwise, the default value is set and then
+    returned.
     """
     config_node = cfg[varname]
     if not config_node.has_value or config_node.value is None:
@@ -150,16 +151,12 @@ def get_value_or_default(
 
 
 def create_missing_folders() -> None:
-    """
-    Create folders that do not exist but were set in the config.
-    """
+    """Create folders that do not exist but were set in the config."""
 
     def create_missing_folder_for_cfg(
         cfg_varname: str, local_cfg: s.Configuration = CFG
     ) -> None:
-        """
-        Create missing folders for a specific config path.
-        """
+        """Create missing folders for a specific config path."""
 
         config_node = local_cfg[cfg_varname]
         if config_node.has_value and\
@@ -175,9 +172,7 @@ def create_missing_folders() -> None:
 
 
 def save_config() -> None:
-    """
-    Persist VaRA config to a yaml file.
-    """
+    """Persist VaRA config to a yaml file."""
     if CFG["config_file"].value is None:
         config_file = ".varats.yaml"
     else:
@@ -211,9 +206,7 @@ def get_varats_base_folder() -> Path:
 def generate_benchbuild_config(
     varats_cfg: s.Configuration, bb_config_path: str
 ) -> None:
-    """
-    Generate a configuration file for benchbuild
-    """
+    """Generate a configuration file for benchbuild."""
     from benchbuild.settings import CFG as BB_CFG
 
     # Projects for VaRA

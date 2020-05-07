@@ -111,7 +111,8 @@ class FilterTreeModel(QAbstractItemModel):
         return self.createIndex(parent_node.row(), 0, parent_node)
 
     def index(self, row, column, parent):
-        """ Returns a QModelIndex that corresponds to the given row, column and parent node. """
+        """Returns a QModelIndex that corresponds to the given row, column and
+        parent node."""
         parent_node = self.getNode(parent)
         child_item = parent_node.child(row)
 

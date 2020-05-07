@@ -1,7 +1,5 @@
-"""
-A case study is used to pin down the exact set of revisions that
-should be analysed for a project.
-"""
+"""A case study is used to pin down the exact set of revisions that should be
+analysed for a project."""
 import random
 import typing as tp
 from collections import defaultdict
@@ -34,9 +32,7 @@ from varats.utils.yaml_util import load_yaml, store_as_yaml
 
 
 class ExtenderStrategy(Enum):
-    """
-    Enum for all currently supported extender strategies.
-    """
+    """Enum for all currently supported extender strategies."""
 
     mixed = -1
     simple_add = 1
@@ -47,9 +43,7 @@ class ExtenderStrategy(Enum):
 
 
 class SamplingMethod(Enum):
-    """
-    Enum for all currently supported sampling methods.
-    """
+    """Enum for all currently supported sampling methods."""
 
     uniform = 1
     half_norm = 2
@@ -83,10 +77,8 @@ class SamplingMethod(Enum):
 
 
 class HashIDTuple():
-    """
-    Combining a commit hash with a unique and ordered id, starting with 0 for
-    the first commit in the repository.
-    """
+    """Combining a commit hash with a unique and ordered id, starting with 0 for
+    the first commit in the repository."""
 
     def __init__(self, commit_hash: str, commit_id: int) -> None:
         self.__commit_hash = commit_hash
@@ -94,22 +86,16 @@ class HashIDTuple():
 
     @property
     def commit_hash(self) -> str:
-        """
-        A commit hash from the git repository.
-        """
+        """A commit hash from the git repository."""
         return self.__commit_hash
 
     @property
     def commit_id(self) -> int:
-        """
-        The order ID of the commit hash.
-        """
+        """The order ID of the commit hash."""
         return self.__commit_id
 
     def get_dict(self) -> tp.Dict[str, tp.Union[str, int]]:
-        """
-        Get a dict representation of this commit and id.
-        """
+        """Get a dict representation of this commit and id."""
         return dict(commit_hash=self.commit_hash, commit_id=self.commit_id)
 
     def __str(self) -> str:
@@ -125,8 +111,9 @@ class HashIDTuple():
 
 class CSStage():
     """
-    A stage in a case-study, i.e., a collection of revisions. Stages are used
-    to separate revisions into groups.
+    A stage in a case-study, i.e., a collection of revisions.
+
+    Stages are used to separate revisions into groups.
     """
 
     def __init__(
@@ -147,65 +134,47 @@ class CSStage():
 
     @property
     def revisions(self) -> tp.List[str]:
-        """
-        Project revisions that are part of this case study.
-        """
+        """Project revisions that are part of this case study."""
         return [x.commit_hash for x in self.__revisions]
 
     @property
     def name(self) -> tp.Optional[str]:
-        """
-        Name of the stage.
-        """
+        """Name of the stage."""
         return self.__name
 
     @name.setter
     def name(self, name: str) -> None:
-        """
-        Setter for the name of the stage.
-        """
+        """Setter for the name of the stage."""
         self.__name = name
 
     @property
     def extender_strategy(self) -> tp.Optional[ExtenderStrategy]:
-        """
-        The extender strategy used to create this stage.
-        """
+        """The extender strategy used to create this stage."""
         return self.__extender_strategy
 
     @extender_strategy.setter
     def extender_strategy(self, extender_strategy: ExtenderStrategy) -> None:
-        """
-        Setter for the extender strategy of the stage.
-        """
+        """Setter for the extender strategy of the stage."""
         self.__extender_strategy = extender_strategy
 
     @property
     def sampling_method(self) -> tp.Optional[SamplingMethod]:
-        """
-        The sampling method used for this stage.
-        """
+        """The sampling method used for this stage."""
         return self.__sampling_method
 
     @sampling_method.setter
     def sampling_method(self, sampling_method: SamplingMethod) -> None:
-        """
-        Setter for the sampling method of the stage.
-        """
+        """Setter for the sampling method of the stage."""
         self.__sampling_method = sampling_method
 
     @property
     def release_type(self) -> tp.Optional[ReleaseType]:
-        """
-        The sampling method used for this stage.
-        """
+        """The sampling method used for this stage."""
         return self.__release_type
 
     @release_type.setter
     def release_type(self, release_type: ReleaseType) -> None:
-        """
-        Setter for the sampling method of the stage.
-        """
+        """Setter for the sampling method of the stage."""
         self.__release_type = release_type
 
     def has_revision(self, revision: str) -> bool:
@@ -237,17 +206,13 @@ class CSStage():
             self.__revisions.append(HashIDTuple(revision, commit_id))
 
     def sort(self, reverse: bool = True) -> None:
-        """
-        Sort the revisions of the case study by commit ID inplace.
-        """
+        """Sort the revisions of the case study by commit ID inplace."""
         self.__revisions.sort(key=lambda x: x.commit_id, reverse=reverse)
 
     def get_dict(
         self
     ) -> tp.Dict[str, tp.Union[str, tp.List[tp.Dict[str, tp.Union[str, int]]]]]:
-        """
-        Get a dict representation of this stage.
-        """
+        """Get a dict representation of this stage."""
         stage_dict: tp.Dict[str,
                             tp.Union[str,
                                      tp.List[tp.Dict[str,
@@ -268,8 +233,8 @@ class CSStage():
 
 class CaseStudy():
     """
-    A case study persists a set of revisions of a project to allow
-    easy reevaluation.
+    A case study persists a set of revisions of a project to allow easy
+    reevaluation.
 
     Stored values:
      - name of the related benchbuild.project
@@ -290,6 +255,7 @@ class CaseStudy():
     def project_name(self) -> str:
         """
         Name of the related project.
+
         !! This name must match the name of the BB project !!
         """
         return self.__project_name
@@ -297,16 +263,15 @@ class CaseStudy():
     @property
     def version(self) -> int:
         """
-        Version ID for this case study. The version differentiates case studies
-        of the same project.
+        Version ID for this case study.
+
+        The version differentiates case studies of the same project.
         """
         return self.__version
 
     @property
     def revisions(self) -> tp.List[str]:
-        """
-        Project revisions that are part of this case study.
-        """
+        """Project revisions that are part of this case study."""
         return list(
             dict.fromkeys([
                 x for stage in self.__stages for x in stage.revisions
@@ -315,24 +280,19 @@ class CaseStudy():
 
     @property
     def stages(self) -> tp.List[CSStage]:
-        """
-        Get a list with all stages.
-        """
+        """Get a list with all stages."""
         # Return new list to forbid modification of the case-study
         return list(self.__stages)
 
     @property
     def num_stages(self) -> int:
-        """
-        Get nummer of stages.
-        """
+        """Get nummer of stages."""
         return len(self.__stages)
 
     def get_stage_by_name(self, stage_name: str) -> tp.Optional[CSStage]:
         """
-        Get a stage by its name.
-        Since multiple stages can have the same name, the first matching stage
-        is returned.
+        Get a stage by its name. Since multiple stages can have the same name,
+        the first matching stage is returned.
 
         Args:
             stage_name: name of the stage to lookup
@@ -348,9 +308,8 @@ class CaseStudy():
 
     def get_stage_index_by_name(self, stage_name: str) -> tp.Optional[int]:
         """
-        Get a stage's index by its name.
-        Since multiple stages can have the same name, the first matching stage
-        is returned.
+        Get a stage's index by its name. Since multiple stages can have the same
+        name, the first matching stage is returned.
 
         Args:
             stage_name: name of the stage to lookup
@@ -392,8 +351,8 @@ class CaseStudy():
 
     def shift_stage(self, from_index: int, offset: int) -> None:
         """
-        Shift a stage in the case-studie's stage list by an offset.
-        Beware that shifts to the left (offset<0) will destroy stages.
+        Shift a stage in the case-studie's stage list by an offset. Beware that
+        shifts to the left (offset<0) will destroy stages.
 
         Args:
             from_index: index of the first stage to shift
@@ -415,9 +374,8 @@ class CaseStudy():
 
     def insert_empty_stage(self, pos: int) -> CSStage:
         """
-        Insert a new stage at the given index, shifting the list elements
-        to the right.
-        The newly created stage is returned.
+        Insert a new stage at the given index, shifting the list elements to the
+        right. The newly created stage is returned.
 
         Args:
             pos: index position to insert an empty stage
@@ -517,8 +475,8 @@ class CaseStudy():
 
     def get_revision_filter(self) -> tp.Callable[[str], bool]:
         """
-        Generate a case study specific revision filter that only allows
-        revision that are part of the case study.
+        Generate a case study specific revision filter that only allows revision
+        that are part of the case study.
 
         Returns:
             a callable filter function
@@ -633,9 +591,7 @@ class CaseStudy():
         self
     ) -> tp.Dict[str, tp.Union[str, int, tp.List[tp.Dict[str, tp.Union[
         str, tp.List[tp.Dict[str, tp.Union[str, int]]]]]]]]:
-        """
-        Get a dict representation of this case study.
-        """
+        """Get a dict representation of this case study."""
         return dict(
             project_name=self.project_name,
             version=self.version,
@@ -705,9 +661,7 @@ def store_case_study(case_study: CaseStudy, case_study_location: Path) -> None:
 
 
 def __store_case_study_to_file(case_study: CaseStudy, file_path: Path) -> None:
-    """
-    Store case study to file.
-    """
+    """Store case study to file."""
     store_as_yaml(
         file_path,
         [VersionHeader.from_version_number('CaseStudy', 1), case_study]
@@ -858,8 +812,8 @@ def extend_with_extra_revs(
     case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
 ) -> None:
     """
-    Extend a case_study with extra revisions, specified by the caller
-    with kwargs['extra_revs'].
+    Extend a case_study with extra revisions, specified by the caller with
+    kwargs['extra_revs'].
 
     Args:
         case_study: to extend
@@ -994,9 +948,8 @@ def sample_n(
     list_to_sample: tp.List[tp.Tuple[str, int]]
 ) -> tp.List[tp.Tuple[str, int]]:
     """
-    Return a list of n unique samples.
-    If the list to sample is smaller than the number of samples the full list
-    is returned.
+    Return a list of n unique samples. If the list to sample is smaller than the
+    number of samples the full list is returned.
 
     Args:
         distrib_func: Distribution function with
@@ -1025,9 +978,9 @@ def extend_with_smooth_revs(
     case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
 ) -> None:
     """
-    Extend a case study with extra revisions that could smooth plot curves.
-    This can remove steep gradients that result from missing certain revisions
-    when sampling.
+    Extend a case study with extra revisions that could smooth plot curves. This
+    can remove steep gradients that result from missing certain revisions when
+    sampling.
 
     Args:
         case_study: to extend
@@ -1066,8 +1019,8 @@ def extend_with_release_revs(
     case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
 ) -> None:
     """
-    Extend a case study with revisions marked as a release.
-    This extender relies on the project to determine appropriate revisions.
+    Extend a case study with revisions marked as a release. This extender relies
+    on the project to determine appropriate revisions.
 
     Args:
         case_study: to extend

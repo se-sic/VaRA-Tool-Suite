@@ -1,6 +1,4 @@
-"""
-Test paper config manager
-"""
+"""Test paper config manager."""
 
 import typing as tp
 import unittest
@@ -20,15 +18,11 @@ from varats.projects.c_projects.gzip import Gzip
 
 
 class TestPaperConfigManager(unittest.TestCase):
-    """
-    Test basic PaperConfigManager functionality.
-    """
+    """Test basic PaperConfigManager functionality."""
 
     @classmethod
     def setUpClass(cls):
-        """
-        Setup case study from yaml doc.
-        """
+        """Setup case study from yaml doc."""
         with NamedTemporaryFile('w') as yaml_file:
             yaml_file.write(YAML_CASE_STUDY)
             yaml_file.seek(0)
@@ -51,9 +45,7 @@ class TestPaperConfigManager(unittest.TestCase):
 
     @mock.patch('varats.paper.case_study.get_tagged_revisions')
     def test_short_status(self, mock_get_tagged_revisions):
-        """
-        Check if the case study can show a short status.
-        """
+        """Check if the case study can show a short status."""
 
         def is_blocked_revision(rev: str):
             if rev == "7620b81735":
@@ -85,8 +77,8 @@ class TestPaperConfigManager(unittest.TestCase):
         """
         Check if the case study can show a short status.
 
-        Currently this only checks if the output is correctly generated but
-        not if the colors are present.
+        Currently this only checks if the output is correctly generated but not
+        if the colors are present.
         """
         # Revision not in set
         mock_get_tagged_revisions.return_value = [
@@ -113,9 +105,7 @@ class TestPaperConfigManager(unittest.TestCase):
     @mock.patch('varats.paper.case_study.get_tagged_revisions')
     def test_status(self, mock_get_tagged_revisions, mock_cmap_loader):
         # pylint: disable=unused-argument
-        """
-        Check if the case study can show a short status.
-        """
+        """Check if the case study can show a short status."""
         # Revision not in set
         mock_get_tagged_revisions.return_value = [
             ('42b25e7f15', FileStatusExtension.Success)
@@ -197,9 +187,7 @@ class TestPaperConfigManager(unittest.TestCase):
         self, mock_get_tagged_revisions, mock_cmap_loader
     ):
         # pylint: disable=unused-argument
-        """
-        Check if the case study can show a short status.
-        """
+        """Check if the case study can show a short status."""
         # Revision not in set
         mock_get_tagged_revisions.return_value = [
             ('42b25e7f15', FileStatusExtension.Success)
@@ -286,8 +274,8 @@ class TestPaperConfigManager(unittest.TestCase):
         """
         Check if the case study can show a short status.
 
-        Currently this only checks if the output is correctly generated but
-        not if the colors are present.
+        Currently this only checks if the output is correctly generated but not
+        if the colors are present.
         """
         # Revision not in set
         mock_get_tagged_revisions.return_value = [
@@ -344,8 +332,8 @@ class TestPaperConfigManager(unittest.TestCase):
         """
         Check if the paper manager produces the correct legend.
 
-        Currently this only checks if the output is correctly generated but
-        not if the colors are present.
+        Currently this only checks if the output is correctly generated but not
+        if the colors are present.
         """
         # pylint: disable=line-too-long
         self.assertEqual(
@@ -362,9 +350,7 @@ class TestPaperConfigManager(unittest.TestCase):
 
     @mock.patch('varats.paper.case_study.get_tagged_revisions')
     def test_total_status_color(self, mock_get_tagged_revisions):
-        """
-        Check if the total status is correctly generated.
-        """
+        """Check if the total status is correctly generated."""
         total_status_occurrences: tp.DefaultDict[
             FileStatusExtension, tp.Set[str]] = defaultdict(set)
         # Revision not in set

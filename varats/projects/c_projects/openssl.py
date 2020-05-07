@@ -1,6 +1,4 @@
-"""
-Project file for openssl.
-"""
+"""Project file for openssl."""
 import typing as tp
 from pathlib import Path
 

@@ -1,6 +1,4 @@
-"""
-Module for the base Database class
-"""
+"""Module for the base Database class."""
 import abc
 import typing as tp
 
@@ -83,10 +81,8 @@ class EvaluationDatabase(abc.ABC):
             )
 
         def cs_filter(data_frame: pd.DataFrame) -> pd.DataFrame:
-            """
-            Filter out all commits that are not in the case study if one was
-            selected.
-            """
+            """Filter out all commits that are not in the case study if one was
+            selected."""
             if case_study is None or data_frame.empty:
                 return data_frame
             return data_frame[data_frame.apply(

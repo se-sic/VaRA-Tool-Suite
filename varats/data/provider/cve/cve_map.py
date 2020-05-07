@@ -135,8 +135,8 @@ def __collect_via_version(
     commits: tp.List[str], cve_list: tp.FrozenSet[CVE]
 ) -> tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[CVE, CWE]]]]:
     """
-    Collect data about resolved CVE's using the tagged versions
-    and the vulnerable version list in the CVE's.
+    Collect data about resolved CVE's using the tagged versions and the
+    vulnerable version list in the CVE's.
 
     Args:
         commits: a list of commits in textual form

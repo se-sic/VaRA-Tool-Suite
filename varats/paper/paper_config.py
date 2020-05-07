@@ -1,10 +1,11 @@
 """
 The PaperConfig pins down a specific set of case studies, one or more for each
-project, where each encaspulates a fixed set of revision to evaluate. This
-allows users to specify which revisions of what project have to be analyzed.
-Furthermore, it allows other users to reproduce the exact same set of projects
-and revisions, either with the old experiment automatically or with a new
-experiment to compare the results.
+project, where each encaspulates a fixed set of revision to evaluate.
+
+This allows users to specify which revisions of what project have to be
+analyzed. Furthermore, it allows other users to reproduce the exact same set of
+projects and revisions, either with the old experiment automatically or with a
+new experiment to compare the results.
 """
 
 import typing as tp
@@ -54,16 +55,12 @@ class PaperConfig():
 
     @property
     def path(self) -> Path:
-        """
-        Path to the paper config folder
-        """
+        """Path to the paper config folder."""
         return self.__path
 
     @property
     def artefacts(self) -> Artefacts:
-        """
-        The artefacts of this paper config.
-        """
+        """The artefacts of this paper config."""
         return self.__artefacts
 
     def get_case_studies(self, cs_name: str) -> tp.List[CaseStudy]:
@@ -91,9 +88,7 @@ class PaperConfig():
         ]
 
     def get_all_artefacts(self) -> tp.Iterable[Artefact]:
-        """
-        Returns an iterable of the artefacts of this paper config.
-        """
+        """Returns an iterable of the artefacts of this paper config."""
         if self.__artefacts:
             return self.__artefacts
         return []
@@ -113,10 +108,10 @@ class PaperConfig():
     def get_filter_for_case_study(self,
                                   cs_name: str) -> tp.Callable[[str], bool]:
         """
-        Return a case study specific revision filter. If one case study
-        includes a revision the filter function will return ``True``.
-        This can be used to automatically filter out revisions that are not
-        part of a case study, loaded by this paper config.
+        Return a case study specific revision filter. If one case study includes
+        a revision the filter function will return ``True``. This can be used to
+        automatically filter out revisions that are not part of a case study,
+        loaded by this paper config.
 
         Args:
             cs_name: name of the case study
@@ -160,10 +155,8 @@ class PaperConfig():
         self.__artefacts.add_artefact(artefact)
 
     def store(self) -> None:
-        """
-        Persist the current state of the paper config saving all case studies
-        to their corresponding files in the paper config path.
-        """
+        """Persist the current state of the paper config saving all case studies
+        to their corresponding files in the paper config path."""
         for case_study_list in self.__case_studies.values():
             for case_study in case_study_list:
                 store_case_study(case_study, self.__path)
@@ -184,6 +177,7 @@ __G_PAPER_CONFIG: tp.Optional[PaperConfig] = None
 def project_filter_generator(project_name: str) -> tp.Callable[[str], bool]:
     """
     Generate project specific revision filters.
+
     - if no paper config is loaded, we allow all revisions
     - otherwise the paper config generates a specific revision filter
 

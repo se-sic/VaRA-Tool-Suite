@@ -1,6 +1,4 @@
-"""
-Module for different CommitReport plots
-"""
+"""Module for different CommitReport plots."""
 
 import typing as tp
 
@@ -18,9 +16,7 @@ from varats.data.reports.commit_report import (
 
 
 class CRBarPlotWidget(QWidget):
-    """
-    Bar plotting widget for CommitReports
-    """
+    """Bar plotting widget for CommitReports."""
 
     def __init__(self, parent: QWidget) -> None:
         super(CRBarPlotWidget, self).__init__(parent)
@@ -38,17 +34,13 @@ class CRBarPlotWidget(QWidget):
         self.setLayout(layout)
 
     def __del__(self) -> None:
-        """
-        Clean up matplotlib figures.
-        """
+        """Clean up matplotlib figures."""
         if self.fig is not None:
             plt.close(self.fig)
 
     def set_cf_plot(self, is_cf_plot: bool) -> None:
-        """
-        Sets if the plot widget shows a control-flow graph
-        or a data-flow graph
-        """
+        """Sets if the plot widget shows a control-flow graph or a data-flow
+        graph."""
         self.cf_plot = is_cf_plot
 
     def update_plot(
@@ -56,9 +48,7 @@ class CRBarPlotWidget(QWidget):
         commit_report: CommitReport,
         cr_meta: tp.Optional[CommitReportMeta] = None
     ) -> None:
-        """
-        Update the canvas with a new plot, generated from updated data.
-        """
+        """Update the canvas with a new plot, generated from updated data."""
         plot_cfg_barplot(self.fig, commit_report, self.cf_plot, cr_meta)
         self.canvas.draw()
 
@@ -67,10 +57,8 @@ def plot_cfg_barplot(
     fig: plt.Figure, commit_report: tp.Optional[CommitReport], draw_cf: bool,
     cr_meta: tp.Optional[CommitReportMeta]
 ) -> None:
-    """
-    Generates a bar plot that visualizes the IN/OUT
-    control-flow/data-flow edges of regions.
-    """
+    """Generates a bar plot that visualizes the IN/OUT control-flow/data-flow
+    edges of regions."""
     if commit_report is None:
         return
 

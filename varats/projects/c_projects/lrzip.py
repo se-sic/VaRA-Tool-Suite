@@ -1,6 +1,4 @@
-"""
-Project file for lrzip.
-"""
+"""Project file for lrzip."""
 import typing as tp
 from pathlib import Path
 

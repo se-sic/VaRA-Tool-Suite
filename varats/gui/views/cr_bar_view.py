@@ -1,6 +1,4 @@
-"""
-Module to manage the CommitReport BarView
-"""
+"""Module to manage the CommitReport BarView."""
 
 from os import path
 
@@ -18,9 +16,7 @@ from varats.gui.views.ui_CRBarView import Ui_Form
 
 
 class CRBarView(QWidget, Ui_Form):
-    """
-    Bar view for commit reports
-    """
+    """Bar view for commit reports."""
 
     def __init__(self):
         super(CRBarView, self).__init__()
@@ -54,9 +50,7 @@ class CRBarView(QWidget, Ui_Form):
 
     @property
     def current_report(self):
-        """
-        Current shown commit report.
-        """
+        """Current shown commit report."""
         return self.__current_report
 
     @current_report.setter
@@ -68,9 +62,7 @@ class CRBarView(QWidget, Ui_Form):
             self.infoTree.h_id = self.c_map.time_id(c_hash)
 
     def load_commit_report(self):
-        """
-        Load new CommitReport from file_path.
-        """
+        """Load new CommitReport from file_path."""
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         file_paths, _ = QFileDialog.getOpenFileNames(
@@ -181,9 +173,7 @@ class CRBarView(QWidget, Ui_Form):
             self._draw_plots()
 
     def enable_cf_plot(self, state: int) -> None:
-        """
-        Enable control-flow plot
-        """
+        """Enable control-flow plot."""
         if state == Qt.Unchecked:  # turned off
             self.plot_up.hide()
         else:
@@ -191,9 +181,7 @@ class CRBarView(QWidget, Ui_Form):
             self.plot_up.show()
 
     def enable_df_plot(self, state: int):
-        """
-        Enable data-flow plot
-        """
+        """Enable data-flow plot."""
         if state == Qt.Unchecked:  # turned off
             self.plot_down.hide()
         else:

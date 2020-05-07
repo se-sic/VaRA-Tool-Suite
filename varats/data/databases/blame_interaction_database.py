@@ -1,6 +1,4 @@
-"""
-Module for the base BlameInteractionDatabase class
-"""
+"""Module for the base BlameInteractionDatabase class."""
 import typing as tp
 
 import pandas as pd
@@ -28,9 +26,7 @@ class BlameInteractionDatabase(
         "IN_HEAD_Interactions", "OUT_HEAD_Interactions", "HEAD_Interactions"
     ]
 ):
-    """
-    Provides access to blame interaction data.
-    """
+    """Provides access to blame interaction data."""
 
     @classmethod
     def _load_dataframe(

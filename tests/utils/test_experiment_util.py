@@ -1,6 +1,4 @@
-"""
-Test VaRA Experiment utilities
-"""
+"""Test VaRA Experiment utilities."""
 import typing as tp
 import unittest
 import unittest.mock as mock
@@ -24,15 +22,11 @@ class MockExperiment(EU.VersionExperiment):
 
 
 class TestVersionExperiment(unittest.TestCase):
-    """
-    Test VersionExperiments sampling behaviour.
-    """
+    """Test VersionExperiments sampling behaviour."""
 
     @classmethod
     def setUpClass(cls):
-        """
-        Load and parse function infos from yaml file.
-        """
+        """Load and parse function infos from yaml file."""
         EU.V_CFG = s.Configuration("vara", node={})
         EU.V_CFG['experiment'] = {
             "file_status_blacklist": {
@@ -64,9 +58,7 @@ class TestVersionExperiment(unittest.TestCase):
     @staticmethod
     def generate_get_tagged_revisions_output(
     ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
-        """
-        Generate get_tagged_revisions output for mocking.
-        """
+        """Generate get_tagged_revisions output for mocking."""
         return [('rev1', FileStatusExtension.Success),
                 ('rev2', FileStatusExtension.Blocked),
                 ('rev3', FileStatusExtension.CompileError),
@@ -74,9 +66,7 @@ class TestVersionExperiment(unittest.TestCase):
                 ('rev5', FileStatusExtension.Missing)]
 
     def test_sample_limit(self):
-        """
-        Test if base_hash is loaded correctly.
-        """
+        """Test if base_hash is loaded correctly."""
         self.assertEqual(EU.V_CFG["experiment"]["sample_limit"].value, None)
         self.assertEqual(
             self.vers_expr._sample_num_versions(self.rev_list), self.rev_list
@@ -88,10 +78,8 @@ class TestVersionExperiment(unittest.TestCase):
         )
 
     def test_without_versions(self):
-        """
-        Test if we get the correct revision if no VaRA modifications are
-        enabled.
-        """
+        """Test if we get the correct revision if no VaRA modifications are
+        enabled."""
         prj = EmptyProject(self.vers_expr)
         sample_gen = self.vers_expr.sample(prj, self.rev_list)
         self.assertEqual(next(sample_gen), "rev1")
@@ -100,9 +88,7 @@ class TestVersionExperiment(unittest.TestCase):
 
     @mock.patch('varats.utils.experiment_util.get_tagged_revisions')
     def test_only_whitelisting_one(self, mock_get_tagged_revisions):
-        """
-        Test if we can whitelist file status
-        """
+        """Test if we can whitelist file status."""
         EU.BB_CFG["versions"]["full"] = True
         # Revision not in set
         mock_get_tagged_revisions.return_value = \
@@ -120,9 +106,7 @@ class TestVersionExperiment(unittest.TestCase):
 
     @mock.patch('varats.utils.experiment_util.get_tagged_revisions')
     def test_only_whitelisting_many(self, mock_get_tagged_revisions):
-        """
-        Test if we can whitelist file status
-        """
+        """Test if we can whitelist file status."""
         EU.BB_CFG["versions"]["full"] = True
         # Revision not in set
         mock_get_tagged_revisions.return_value = \
@@ -144,9 +128,7 @@ class TestVersionExperiment(unittest.TestCase):
 
     @mock.patch('varats.utils.experiment_util.get_tagged_revisions')
     def test_only_blacklisting_one(self, mock_get_tagged_revisions):
-        """
-        Test if we can blacklist file status
-        """
+        """Test if we can blacklist file status."""
         EU.BB_CFG["versions"]["full"] = True
         # Revision not in set
         mock_get_tagged_revisions.return_value = \
@@ -167,9 +149,7 @@ class TestVersionExperiment(unittest.TestCase):
 
     @mock.patch('varats.utils.experiment_util.get_tagged_revisions')
     def test_only_blacklisting_many(self, mock_get_tagged_revisions):
-        """
-        Test if we can blacklist file status
-        """
+        """Test if we can blacklist file status."""
         EU.BB_CFG["versions"]["full"] = True
         # Revision not in set
         mock_get_tagged_revisions.return_value = \
@@ -190,9 +170,7 @@ class TestVersionExperiment(unittest.TestCase):
 
     @mock.patch('varats.utils.experiment_util.get_tagged_revisions')
     def test_white_overwrite_blacklisting(self, mock_get_tagged_revisions):
-        """
-        Test if whitelist overwrites blacklist
-        """
+        """Test if whitelist overwrites blacklist."""
         EU.BB_CFG["versions"]["full"] = True
         # Revision not in set
         mock_get_tagged_revisions.return_value = \

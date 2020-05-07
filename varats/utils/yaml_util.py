@@ -1,6 +1,4 @@
-"""
-Module for yaml utility tools, e.g., storing and loading yamls from files.
-"""
+"""Module for yaml utility tools, e.g., storing and loading yamls from files."""
 import errno
 import os
 import typing as tp

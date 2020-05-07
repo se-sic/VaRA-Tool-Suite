@@ -1,6 +1,4 @@
-"""
-Module for the base CommitInteractionDatabase class
-"""
+"""Module for the base CommitInteractionDatabase class."""
 import typing as tp
 
 import pandas as pd
@@ -24,9 +22,7 @@ class CommitInteractionDatabase(
         "HEAD DF Interactions"
     ]
 ):
-    """
-    Provides access to commit interaction data.
-    """
+    """Provides access to commit interaction data."""
 
     @classmethod
     def _load_dataframe(

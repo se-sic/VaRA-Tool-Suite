@@ -1,6 +1,4 @@
-"""
-Project file for x264.
-"""
+"""Project file for x264."""
 import typing as tp
 from pathlib import Path
 

@@ -1,6 +1,4 @@
-"""
-Compile a collection of representing examples for the taint analysis.
-"""
+"""Compile a collection of representing examples for the taint analysis."""
 import typing as tp
 from pathlib import Path
 
@@ -21,7 +19,8 @@ from varats.utils.project_util import wrap_paths_to_binaries
 class TaintTests(prj.Project):  # type: ignore
     """
     Taint tests:
-        Different small test files for taint propagation
+
+    Different small test files for taint propagation
     """
 
     NAME = 'taint-tests'

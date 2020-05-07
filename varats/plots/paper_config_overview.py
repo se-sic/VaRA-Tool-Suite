@@ -1,6 +1,4 @@
-"""
-Generate graphs that show an overview of the state of all case-studies.
-"""
+"""Generate graphs that show an overview of the state of all case-studies."""
 
 import typing as tp
 from collections import OrderedDict, defaultdict
@@ -83,9 +81,7 @@ def _load_projects_ordered_by_year(
 
 
 def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
-    """
-    Generate the data for the PaperConfigOverviewPlot.
-    """
+    """Generate the data for the PaperConfigOverviewPlot."""
     current_config = PC.get_paper_config()
 
     if 'report_type' in kwargs:
@@ -148,7 +144,7 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
 
 def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
     """
-    Create a plot that shows an overview of all case-studies of a paper-config
+    Create a plot that shows an overview of all case-studies of a paper- config
     about how many revisions are successful per project/year.
 
     Args:
@@ -254,9 +250,7 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
 
 
 class PaperConfigOverviewPlot(Plot):
-    """
-    Plot showing an overview of all case-studies.
-    """
+    """Plot showing an overview of all case-studies."""
 
     NAME = 'paper_config_overview_plot'
 

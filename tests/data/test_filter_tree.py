@@ -1,6 +1,4 @@
-"""
-Test VaRA filter tree.
-"""
+"""Test VaRA filter tree."""
 
 import unittest
 import unittest.mock as mock
@@ -120,15 +118,11 @@ _type: AndOperator
 
 
 class TestFilterTreeElements(unittest.TestCase):
-    """
-    Test filter tree node types
-    """
+    """Test filter tree node types."""
 
     @classmethod
     def setUpClass(cls):
-        """
-        Setup file and CommitReport
-        """
+        """Setup file and CommitReport."""
         cls.parent_dummy = AndOperator()
 
         cls.author_filter = AuthorFilter(
@@ -1116,9 +1110,7 @@ class TestFilterTreeElements(unittest.TestCase):
 
 
 class TestFilterTreeYamlLoad(unittest.TestCase):
-    """
-    Test filter tree loading from yaml file.
-    """
+    """Test filter tree loading from yaml file."""
 
     @classmethod
     def setUpClass(cls):

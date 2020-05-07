@@ -1,6 +1,4 @@
-"""
-Setup BenchBuild plugins
-"""
+"""Setup BenchBuild plugins."""
 
 from . import plots as __PLOTS__
 from . import projects as __PROJECTS__

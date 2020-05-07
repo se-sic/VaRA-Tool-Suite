@@ -1,7 +1,5 @@
-"""
-Implements the base blame experiment, making it easier to create different
-blame experiments that have a similar experiment setup.
-"""
+"""Implements the base blame experiment, making it easier to create different
+blame experiments that have a similar experiment setup."""
 
 import typing as tp
 from os import path
@@ -24,10 +22,11 @@ def setup_basic_blame_experiment(
 ) -> None:
     """
     Setup the project for a blame experiment.
-        - run time extensions
-        - compile time extensions
-        - prepare compiler
-        - configure C/CXX flags
+
+    - run time extensions
+    - compile time extensions
+    - prepare compiler
+    - configure C/CXX flags
     """
     # Add the required runtime extensions to the project(s).
     project.runtime_extension = run.RuntimeExtension(project, experiment) \
@@ -53,8 +52,9 @@ def generate_basic_blame_experiment_actions(
 ) -> tp.List[actions.Step]:
     """
     Generate the basic actions for a blame experiment.
-        - handle caching of BC files
-        - compile project, if needed
+
+    - handle caching of BC files
+    - compile project, if needed
     """
     analysis_actions = []
 

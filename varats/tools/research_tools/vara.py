@@ -1,7 +1,5 @@
-"""
-Module for the research tool VaRA that describes the VaRA code base layout and
-how to configure and setup VaRA.
-"""
+"""Module for the research tool VaRA that describes the VaRA code base layout
+and how to configure and setup VaRA."""
 import logging
 import os
 import shutil
@@ -32,10 +30,8 @@ LOG = logging.getLogger(__name__)
 
 
 class VaRACodeBase(CodeBase):
-    """
-    Layout of the VaRA code base: setting up vara-llvm-project fork, VaRA, and
-    optinaly phasar for static analysis.
-    """
+    """Layout of the VaRA code base: setting up vara-llvm-project fork, VaRA,
+    and optinaly phasar for static analysis."""
 
     def __init__(self, base_dir: Path) -> None:
         sub_projects = [
@@ -60,17 +56,15 @@ class VaRACodeBase(CodeBase):
         super().__init__(base_dir, sub_projects)
 
     def setup_vara_remotes(self) -> None:
-        """
-        Sets up VaRA specific upstream remotes for projects that were forked.
-        """
+        """Sets up VaRA specific upstream remotes for projects that were
+        forked."""
         self.get_sub_project("vara-llvm-project").add_remote(
             "origin", "git@github.com:se-passau/vara-llvm-project.git"
         )
 
     def setup_build_link(self) -> None:
-        """
-        Setup build-config folder link for VaRA's default build setup scripts.
-        """
+        """Setup build-config folder link for VaRA's default build setup
+        scripts."""
         llvm_project_dir = self.base_dir / self.get_sub_project(
             "vara-llvm-project"
         ).path
@@ -98,16 +92,12 @@ class VaRACodeBase(CodeBase):
         self.get_sub_project("VaRA").checkout_branch(f"vara" + dev_suffix)
 
     def setup_submodules(self) -> None:
-        """
-        Set up the git submodules of all sub projects.
-        """
+        """Set up the git submodules of all sub projects."""
         self.get_sub_project("vara-llvm-project").init_and_update_submodules()
         self.get_sub_project("phasar").init_and_update_submodules()
 
     def pull(self) -> None:
-        """
-        Pull and update all ``SubProject`` s.
-        """
+        """Pull and update all ``SubProject`` s."""
         self.map_sub_projects(lambda prj: prj.pull())
         self.setup_submodules()
 
@@ -115,6 +105,7 @@ class VaRACodeBase(CodeBase):
 class VaRA(ResearchTool[VaRACodeBase]):
     """
     Research tool implementation for VaRA.
+
     Find the main repo online on github: https://github.com/se-passau/VaRA
     """
 
@@ -156,9 +147,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         self.code_base.setup_build_link()
 
     def upgrade(self) -> None:
-        """
-        Upgrade the research tool to a newer version.
-        """
+        """Upgrade the research tool to a newer version."""
         version = 100
 
         # TODO (se-passau/VaRA#640): version upgrade

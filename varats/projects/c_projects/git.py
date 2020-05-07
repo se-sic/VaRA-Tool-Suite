@@ -1,6 +1,4 @@
-"""
-Project file for git.
-"""
+"""Project file for git."""
 import typing as tp
 from pathlib import Path
 
@@ -25,7 +23,7 @@ from varats.utils.project_util import wrap_paths_to_binaries
     version_filter=project_filter_generator("git")
 )
 class Git(prj.Project, CVEProviderHook):  # type: ignore
-    """Git"""
+    """Git."""
 
     NAME = 'git'
     GROUP = 'c_projects'

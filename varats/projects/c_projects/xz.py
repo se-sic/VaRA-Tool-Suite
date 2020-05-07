@@ -1,6 +1,4 @@
-"""
-Project file for xz.
-"""
+"""Project file for xz."""
 import typing as tp
 from pathlib import Path
 

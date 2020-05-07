@@ -1,8 +1,9 @@
 """
-This module allows to attach :class:`artefact definitions<Artefact>`
-to a :class:`paper config<varats.paper.paper_config>`.
-This way, the artefacts, like :class:`plots<PlotArtefact>` or result tables,
-can be generated from result files automatically.
+This module allows to attach :class:`artefact definitions<Artefact>` to a.
+
+:class:`paper config<varats.paper.paper_config>`. This way, the artefacts, like
+:class:`plots<PlotArtefact>` or result tables, can be generated from result
+files automatically.
 
 Typically, a paper config has a file ``artefacts.yaml`` that manages artefact
 definitions.
@@ -22,9 +23,8 @@ from varats.utils.yaml_util import load_yaml, store_as_yaml
 
 class Artefact(ABC):
     """
-    An ``Artefact`` contains all information that is necessary to generate
-    a certain artefact.
-    Subclasses of this class specify concrete artefact types,
+    An ``Artefact`` contains all information that is necessary to generate a
+    certain artefact. Subclasses of this class specify concrete artefact types,
     like :class:`plots<PlotArtefact>`, that require additional attributes.
 
     Args:
@@ -42,9 +42,7 @@ class Artefact(ABC):
 
     @property
     def artefact_type(self) -> 'ArtefactType':
-        """
-        The :class:`type<ArtefactType>` of this artefact.
-        """
+        """The :class:`type<ArtefactType>` of this artefact."""
         return self.__artefact_type
 
     @property
@@ -88,9 +86,7 @@ class Artefact(ABC):
 
     @abc.abstractmethod
     def generate_artefact(self) -> None:
-        """
-        Generate the specified artefact.
-        """
+        """Generate the specified artefact."""
 
 
 class PlotArtefact(Artefact):
@@ -120,31 +116,23 @@ class PlotArtefact(Artefact):
 
     @property
     def plot_type(self) -> str:
-        """
-        The :attr:`type of plot<varats.plots.plots.PlotRegistry.plots>` that
-        will be generated.
-        """
+        """The :attr:`type of plot<varats.plots.plots.PlotRegistry.plots>` that
+        will be generated."""
         return self.__plot_type
 
     @property
     def plot_type_class(self) -> tp.Type[Plot]:
-        """
-        The class associated with :func:`plot_type`.
-        """
+        """The class associated with :func:`plot_type`."""
         return self.__plot_type_class
 
     @property
     def file_format(self) -> str:
-        """
-        The file format of the generated plot.
-        """
+        """The file format of the generated plot."""
         return self.__file_format
 
     @property
     def plot_kwargs(self) -> tp.Any:
-        """
-        Additional arguments that will be passed to the plot_type_class.
-        """
+        """Additional arguments that will be passed to the plot_type_class."""
         return self.__plot_kwargs
 
     def get_dict(self) -> tp.Dict[str, str]:
@@ -155,9 +143,7 @@ class PlotArtefact(Artefact):
         return artefact_dict
 
     def generate_artefact(self) -> None:
-        """
-        Generate the specified plot.
-        """
+        """Generate the specified plot."""
         if not self.output_path.exists():
             self.output_path.mkdir(parents=True)
 
@@ -172,10 +158,9 @@ class ArtefactType(Enum):
     Enum for the different artefact types.
 
     The name is used in the ``artefacts.yaml`` to identify what kind of artefact
-    is described.
-    The values are tuples ``(artefact_class, version)`` consisting of the class
-    responsible for that kind of artefact and a version number to allow
-    evolution of artefacts.
+    is described. The values are tuples ``(artefact_class, version)`` consisting
+    of the class responsible for that kind of artefact and a version number to
+    allow evolution of artefacts.
     """
     plot = (PlotArtefact, 1)
 
@@ -222,9 +207,7 @@ class Artefacts:
         return self.__artefacts.values().__iter__()
 
     def get_dict(self) -> tp.Dict[str, tp.List[tp.Dict[str, str]]]:
-        """
-        Construct a dict from these artefacts for easy export to yaml.
-        """
+        """Construct a dict from these artefacts for easy export to yaml."""
         return dict(
             artefacts=[artefact.get_dict() for artefact in self.artefacts]
         )
@@ -310,9 +293,7 @@ def store_artefacts(artefacts: Artefacts, artefacts_location: Path) -> None:
 
 
 def __store_artefacts_to_file(artefacts: Artefacts, file_path: Path) -> None:
-    """
-    Store artefacts to file.
-    """
+    """Store artefacts to file."""
     store_as_yaml(
         file_path,
         [VersionHeader.from_version_number('Artefacts', 1), artefacts]

@@ -2,8 +2,7 @@
 Implements the commit-flow report with annotating over git blame.
 
 This class implements the commit-flow report (CFR) analysis of the variability-
-aware region analyzer (VaRA).
-For annotation we use the git-blame data of git.
+aware region analyzer (VaRA). For annotation we use the git-blame data of git.
 """
 
 import typing as tp
@@ -29,9 +28,7 @@ from varats.utils.experiment_util import (
 
 
 class CRAnalysis(actions.Step):  # type: ignore
-    """
-    Analyse a project with VaRA and generate a Commit Report.
-    """
+    """Analyse a project with VaRA and generate a Commit Report."""
 
     NAME = "CRAnalysis"
     DESCRIPTION = "Analyses the bitcode with CR of VaRA."
@@ -151,17 +148,15 @@ class CRAnalysis(actions.Step):  # type: ignore
 
 
 class CommitReportExperiment(VersionExperiment):
-    """
-    Generates a commit report (CR) of the project(s) specified in the
-    call.
-    """
+    """Generates a commit report (CR) of the project(s) specified in the
+    call."""
 
     NAME = "GenerateCommitReport"
     REPORT_TYPE = CR
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
-        """Returns the specified steps to run the project(s) specified in
-        the call in a fixed order."""
+        """Returns the specified steps to run the project(s) specified in the
+        call in a fixed order."""
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \

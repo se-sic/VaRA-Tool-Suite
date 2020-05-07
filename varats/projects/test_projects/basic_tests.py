@@ -1,6 +1,4 @@
-"""
-Small test project to run basic vara tests
-"""
+"""Small test project to run basic vara tests."""
 import benchbuild.project as prj
 from benchbuild.utils.compiler import cxx
 from benchbuild.utils.download import with_git
@@ -14,7 +12,8 @@ from plumbum import local
 class BasicTests(prj.Project):  # type: ignore
     """
     Basic tests:
-        Different small test files
+
+    Different small test files
     """
 
     NAME = 'basic-tests'

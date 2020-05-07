@@ -1,6 +1,5 @@
-"""
-Generate plots that show a detailed overview of the state of one case-studiy.
-"""
+"""Generate plots that show a detailed overview of the state of one case-
+studiy."""
 
 import typing as tp
 from distutils.util import strtobool
@@ -92,9 +91,7 @@ def _gen_overview_data(tag_blocked: bool,
 
 
 class PaperConfigOverviewPlot(Plot):
-    """
-    Plot showing an overview of all case-studies.
-    """
+    """Plot showing an overview of all case-studies."""
 
     NAME = 'case_study_overview_plot'
 

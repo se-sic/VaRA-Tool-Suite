@@ -1,11 +1,10 @@
 """
-This file defines all available (commit interaction) filters.
-When evaluated, a filter returns either KEEP or REMOVE for a given commit
-interaction, depending on wheter the interaction matches the specific filter
-or not. KEEP means that the interaction matches the filters and should be kept.
-REMOVE means the opposite.
-The filters can be arranged in a tree structure.
-The two basic kinds of filters are ConcreteInteractionFilter and FilterOperator.
+This file defines all available (commit interaction) filters. When evaluated, a
+filter returns either KEEP or REMOVE for a given commit interaction, depending
+on wheter the interaction matches the specific filter or not. KEEP means that
+the interaction matches the filters and should be kept. REMOVE means the
+opposite. The filters can be arranged in a tree structure. The two basic kinds
+of filters are ConcreteInteractionFilter and FilterOperator.
 
 ConcreteInteractionFilters represent the "actual" commit interaction filters.
 These types of filters cannot have children, they can only appear as leaf-nodes
@@ -204,10 +203,8 @@ class InteractionFilter(SecretYamlObject):
                 child.__fixParentPointersHelper(self)
 
     def hasFilterTypeAsParent(self, parent_type: tp.Any) -> bool:
-        """
-        Checks if there is a node of type parent_type on the path from the
-        current node to the root.
-        """
+        """Checks if there is a node of type parent_type on the path from the
+        current node to the root."""
         parent = self.parent()
         while parent is not None:
             if isinstance(parent, parent_type):

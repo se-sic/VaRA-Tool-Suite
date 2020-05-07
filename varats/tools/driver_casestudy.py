@@ -1,6 +1,4 @@
-"""
-Driver module for `vara-cs`.
-"""
+"""Driver module for `vara-cs`."""
 
 import logging
 import os
@@ -32,9 +30,7 @@ LOG = logging.getLogger(__name__)
 
 
 def main() -> None:
-    """
-    Allow easier management of case studies
-    """
+    """Allow easier management of case studies."""
     initialize_logger_config()
     parser = ArgumentParser("vara-cs")
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
@@ -127,9 +123,7 @@ def __create_status_parser(sub_parsers: _SubParsersAction) -> None:
 
 
 def __add_common_args(sub_parser: ArgumentParser) -> None:
-    """
-    Group common args to provide all args on different sub parsers.
-    """
+    """Group common args to provide all args on different sub parsers."""
     sub_parser.add_argument(
         "--git-path", help="Path to git repository", default=None
     )

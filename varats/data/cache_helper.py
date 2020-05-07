@@ -1,7 +1,5 @@
-"""
-Utility functions and class to allow easier caching of pandas dataframes and
-other data.
-"""
+"""Utility functions and class to allow easier caching of pandas dataframes and
+other data."""
 import logging
 import typing as tp
 from pathlib import Path
@@ -99,7 +97,7 @@ def build_cached_report_table(
     failed_report_files: tp.List[Path]
 ) -> pd.DataFrame:
     """
-    Build up an automatically cache dataframe
+    Build up an automatically cache dataframe.
 
     Args:
         data_id: graph cache identifier

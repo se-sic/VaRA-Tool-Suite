@@ -1,6 +1,4 @@
-"""
-Driver module for `vara-develop` and its alias `vd`.
-"""
+"""Driver module for `vara-develop` and its alias `vd`."""
 
 import argparse
 import typing as tp
@@ -19,9 +17,7 @@ def __sub_project_choices() -> tp.List[str]:
 
 
 def main() -> None:
-    """
-    Handle and simplify common developer interactions with the project.
-    """
+    """Handle and simplify common developer interactions with the project."""
     initialize_logger_config()
     parser = argparse.ArgumentParser("vara-develop")
     parser.add_argument(

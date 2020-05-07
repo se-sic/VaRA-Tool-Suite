@@ -3,9 +3,9 @@ Module to provide WLLVM support for project compilation and extracing bc files
 from generated binaries.
 
 WLLVM is a compiler replacement/hook to compile projects with clang, producing
-LLVM-IR files on the side. This allows us to hook into the build process and
-to add additional passes/flags, without modifying build files, and later use
-the generated bc files with LLVM.
+LLVM-IR files on the side. This allows us to hook into the build process and to
+add additional passes/flags, without modifying build files, and later use the
+generated bc files with LLVM.
 """
 
 import typing as tp
@@ -66,9 +66,7 @@ BB_CFG["varats"] = {
 
 
 class Extract(actions.Step):  # type: ignore
-    """
-    Extract step to extract a llvm bitcode file(.bc) from the project.
-    """
+    """Extract step to extract a llvm bitcode file(.bc) from the project."""
 
     NAME = "EXTRACT"
     DESCRIPTION = "Extract bitcode out of the execution file."
@@ -80,10 +78,8 @@ class Extract(actions.Step):  # type: ignore
         super(Extract, self).__init__(obj=project, action_fn=self.extract)
 
     def extract(self) -> actions.StepResult:
-        """
-        This step extracts the bitcode of the executable of the project
-        into one file.
-        """
+        """This step extracts the bitcode of the executable of the project into
+        one file."""
         if not self.obj:
             return
         project = self.obj

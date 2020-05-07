@@ -1,14 +1,10 @@
-"""
-Report that simply takes the output of an phasar analysis.
-"""
+"""Report that simply takes the output of an phasar analysis."""
 
 from varats.data.report import BaseReport, FileStatusExtension, MetaReport
 
 
 class EnvTraceReport(BaseReport):
-    """
-    The phasar report produces json files with the output for each file.
-    """
+    """The phasar report produces json files with the output for each file."""
 
     SHORTHAND = "ENV-TRACE"
     FILETYPE = "json"

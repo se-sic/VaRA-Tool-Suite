@@ -1,6 +1,4 @@
-"""
-Project file for tmux.
-"""
+"""Project file for tmux."""
 import typing as tp
 from pathlib import Path
 
@@ -24,7 +22,7 @@ from varats.utils.project_util import wrap_paths_to_binaries
     version_filter=project_filter_generator("tmux")
 )
 class Tmux(Project, CVEProviderHook):  # type: ignore
-    """Terminal multiplexer Tmux"""
+    """Terminal multiplexer Tmux."""
 
     NAME = 'tmux'
     GROUP = 'c_projects'

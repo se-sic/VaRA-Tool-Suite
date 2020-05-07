@@ -1,6 +1,4 @@
-"""
-Module for the :class:`ReleaseProvider`.
-"""
+"""Module for the :class:`ReleaseProvider`."""
 import typing as tp
 from enum import Enum
 
@@ -27,9 +25,8 @@ class ReleaseType(Enum):
 
     def merge(self, other: tp.Optional["ReleaseType"]) -> "ReleaseType":
         """
-        Merges two release type.
-        It is assumed that minor releases include major releases
-        and patch releases include minor releases.
+        Merges two release type. It is assumed that minor releases include major
+        releases and patch releases include minor releases.
 
         >>> ReleaseType.minor.merge(ReleaseType.major)
         <ReleaseType.minor: 2>
@@ -57,7 +54,7 @@ class ReleaseProviderHook():
         cls, release_type: ReleaseType
     ) -> tp.List[tp.Tuple[str, str]]:
         """
-        Get a set of all release revisions for a project
+        Get a set of all release revisions for a project.
 
         Returns:
             a list of tuples of hashes and version strings of release commits
@@ -66,9 +63,7 @@ class ReleaseProviderHook():
 
 
 class ReleaseProvider(Provider):
-    """
-    Provides access to release revisions of a project.
-    """
+    """Provides access to release revisions of a project."""
 
     def __init__(self, project: tp.Type[Project]) -> None:
         super().__init__(project)
@@ -112,10 +107,11 @@ class ReleaseProvider(Provider):
 
 class ReleaseDefaultProvider(ReleaseProvider):
     """
-    Default implementation of the :class:`ReleaseProvider` for projects that
-    do not need or support their own implementation. This implementation looks
-    for commits with tags that are
-    `PEP 440 <https://www.python.org/dev/peps/pep-0440/>`_ versions.
+    Default implementation of the :class:`ReleaseProvider` for projects that do
+    not need or support their own implementation.
+
+    This implementation looks for commits with tags that are `PEP 440
+    <https://www.python.org/dev/peps/pep-0440/>`_ versions.
     """
 
     def __init__(self, project: tp.Type[Project]) -> None:

@@ -1,6 +1,4 @@
-"""
-Test module for settings.
-"""
+"""Test module for settings."""
 import os
 import tempfile
 import unittest
@@ -11,15 +9,11 @@ from varats.settings import CFG, generate_benchbuild_config
 
 
 class BenchBuildConfig(unittest.TestCase):
-    """
-    Test BenchBuild config.
-    """
+    """Test BenchBuild config."""
 
     @classmethod
     def setUpClass(cls):
-        """
-        Setup and generate the benchbuild config file.
-        """
+        """Setup and generate the benchbuild config file."""
         cls.tmp_file = tempfile.NamedTemporaryFile()
         generate_benchbuild_config(CFG, cls.tmp_file.name)
         BB_CFG.load(cls.tmp_file.name)
@@ -31,10 +25,8 @@ class BenchBuildConfig(unittest.TestCase):
     def check_all_files_in_config_list(
         self, folder, config_list, exclude_list=None
     ):
-        """
-        Check if all python files in a folder are added to the
-        benchbuild project config.
-        """
+        """Check if all python files in a folder are added to the benchbuild
+        project config."""
         if exclude_list is None:
             exclude_list = []
 
@@ -54,25 +46,20 @@ class BenchBuildConfig(unittest.TestCase):
                 )
 
     def test_if_all_nodes_have_been_created(self):
-        """
-        Test if all the benchbuild config was created with all expected nodes.
-        """
+        """Test if all the benchbuild config was created with all expected
+        nodes."""
 
         self.assertTrue(BB_CFG["varats"].__contains__("outfile"))
         self.assertTrue(BB_CFG["varats"].__contains__("result"))
 
     def test_if_slurm_config_was_added(self):
-        """
-        Test if all the benchbuild slurm config was created.
-        """
+        """Test if all the benchbuild slurm config was created."""
 
         self.assertTrue(BB_CFG["slurm"].__contains__("account"))
         self.assertTrue(BB_CFG["slurm"].__contains__("partition"))
 
     def test_if_projects_where_added(self):
-        """
-        Test if all projects where added to the benchbuild config.
-        """
+        """Test if all projects where added to the benchbuild config."""
         excluded_projects = [
             "llvm-all.py", "llvm-min.py", "llvm.py", "glibc.py"
         ]
@@ -86,9 +73,7 @@ class BenchBuildConfig(unittest.TestCase):
         )
 
     def test_if_experiments_where_added(self):
-        """
-        Test if all projects where added to the benchbuild config.
-        """
+        """Test if all projects where added to the benchbuild config."""
         excluded_experiments = [
             "wllvm.py", "phasar.py", "region_instrumentation.py",
             "commit_annotation_report.py", "blame_experiment.py"

@@ -1,6 +1,4 @@
-"""
-Utility module for BenchBuild project handling.
-"""
+"""Utility module for BenchBuild project handling."""
 import abc
 import tempfile
 import typing as tp
@@ -19,9 +17,7 @@ from varats.settings import CFG
 
 
 def get_project_cls_by_name(project_name: str) -> tp.Type[Project]:
-    """
-    Look up a BenchBuild project by it's name.
-    """
+    """Look up a BenchBuild project by it's name."""
     for proj in ProjectRegistry.projects:
         if proj.endswith('gentoo') or proj.endswith("benchbuild"):
             # currently we only support vara provided projects
@@ -35,10 +31,8 @@ def get_project_cls_by_name(project_name: str) -> tp.Type[Project]:
 
 
 def get_local_project_git_path(project_name: str) -> Path:
-    """
-    Get the path to the local download location of git repository
-    for a given benchbuild project.
-    """
+    """Get the path to the local download location of git repository for a given
+    benchbuild project."""
     setup_config(BB_CFG, [str(CFG['benchbuild_root']) + "/.benchbuild.yml"])
 
     project_git_path = Path(str(CFG['benchbuild_root'])
@@ -62,18 +56,14 @@ def get_local_project_git_path(project_name: str) -> Path:
 
 
 def get_local_project_git(project_name: str) -> pygit2.Repository:
-    """
-    Get the git repository for a given benchbuild project.
-    """
+    """Get the git repository for a given benchbuild project."""
     git_path = get_local_project_git_path(project_name)
     repo_path = pygit2.discover_repository(str(git_path))
     return pygit2.Repository(repo_path)
 
 
 def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
-    """
-    Get a list of all tagged commits along with their respective tags.
-    """
+    """Get a list of all tagged commits along with their respective tags."""
     repo_loc = get_local_project_git_path(project_name)
     with local.cwd(repo_loc):
         # --dereference resolves tag IDs into commits
@@ -92,6 +82,7 @@ def get_all_revisions_between(c_start: str, c_end: str) -> tp.List[str]:
     """
     Returns a list of all revisions between two commits c_start and c_end
     (inclusive), where c_start comes before c_end.
+
     It is assumed that the current working directory is the git repository.
     """
     result = [c_start]
@@ -118,18 +109,14 @@ def wrap_paths_to_binaries(binaries: tp.List[str]) -> tp.List[Path]:
 
 
 class AbstractRevisionBlocker(abc.ABC):
-    """
-    A set of revisions that is marked as blocked.
-    """
+    """A set of revisions that is marked as blocked."""
 
     def __init__(self, reason: tp.Optional[str] = None):
         self.__reason = reason
 
     @property
     def reason(self) -> tp.Optional[str]:
-        """
-        The reason for this block.
-        """
+        """The reason for this block."""
         return self.__reason
 
     @abc.abstractmethod
@@ -137,16 +124,12 @@ class AbstractRevisionBlocker(abc.ABC):
         pass
 
     def init_cache(self, project: str) -> None:
-        """
-        Subclasses relying on complex functionality for determining their set
-        of blocked revisions can use this method to initialize a cache.
-        """
+        """Subclasses relying on complex functionality for determining their set
+        of blocked revisions can use this method to initialize a cache."""
 
 
 class BlockedRevision(AbstractRevisionBlocker):
-    """
-    A single blocked revision.
-    """
+    """A single blocked revision."""
 
     def __init__(self, rev_id: str, reason: tp.Optional[str] = None):
         super().__init__(reason)
@@ -157,9 +140,7 @@ class BlockedRevision(AbstractRevisionBlocker):
 
 
 class BlockedRevisionRange(AbstractRevisionBlocker):
-    """
-    A range of blocked revisions.
-    """
+    """A range of blocked revisions."""
 
     def __init__(
         self, id_start: str, id_end: str, reason: tp.Optional[str] = None
@@ -182,9 +163,7 @@ class BlockedRevisionRange(AbstractRevisionBlocker):
 
 
 class BugAndFixPair(AbstractRevisionBlocker):
-    """
-    A set of revisions containing a certain buggy commit but not its fix.
-    """
+    """A set of revisions containing a certain buggy commit but not its fix."""
 
     def __init__(
         self, id_bug: str, id_fix: str, reason: tp.Optional[str] = None
@@ -200,9 +179,8 @@ class BugAndFixPair(AbstractRevisionBlocker):
         repo = get_local_project_git(project)
 
         def get_identical_commits(rev_id: str) -> tp.List[str]:
-            """
-            Returns commits that are identical (same diff) to the given commit.
-            """
+            """Returns commits that are identical (same diff) to the given
+            commit."""
             marked_revs = git("--no-pager", "log", "--cherry-mark",
                               rev_id).strip().split("\n")
             identical_ids = []
@@ -317,8 +295,9 @@ def block_revisions(blocks: tp.List[AbstractRevisionBlocker]) -> tp.Any:
             rev_id: str
         ) -> tp.Tuple[bool, tp.Optional[str]]:
             """
-            Checks whether a revision is blocked or not. Also returns the
-            reason for the block if available.
+            Checks whether a revision is blocked or not.
+
+            Also returns the reason for the block if available.
             """
             # trigger caching for BlockedRevisionRanges
             if not cls.blocked_revisions_initialized:

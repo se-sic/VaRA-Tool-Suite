@@ -1,6 +1,4 @@
-"""
-Plot module for util functionality.
-"""
+"""Plot module for util functionality."""
 
 import functools
 import typing as tp
@@ -12,9 +10,8 @@ from varats.data.reports.commit_report import CommitMap
 def __check_required_args_impl(
     required_args: tp.List[str], kwargs: tp.Dict[str, tp.Any]
 ) -> None:
-    """
-    Implementation to check if all required graph args are passed by the user.
-    """
+    """Implementation to check if all required graph args are passed by the
+    user."""
     for arg in required_args:
         if arg not in kwargs:
             raise AssertionError(
@@ -26,9 +23,7 @@ def __check_required_args_impl(
 def check_required_args(
     required_args: tp.List[str]
 ) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Callable[..., tp.Any]]:
-    """
-    Check if all required graph args are passed by the user.
-    """
+    """Check if all required graph args are passed by the user."""
 
     def decorator_pp(
         func: tp.Callable[..., tp.Any]
@@ -52,10 +47,8 @@ def find_missing_revisions(
                                 str], are_neighbours: tp.Callable[[str, str],
                                                                   bool]
 ) -> tp.Set[str]:
-    """
-    Calculate a set of revisions that could be missing because the changes
-    between certain points are to steep.
-    """
+    """Calculate a set of revisions that could be missing because the changes
+    between certain points are to steep."""
     new_revs: tp.Set[str] = set()
 
     _, last_row = next(data)

@@ -1,6 +1,4 @@
-"""
-Driver module for `vara-cve`.
-"""
+"""Driver module for `vara-cve`."""
 
 import argparse
 

@@ -1,6 +1,4 @@
-"""
-Command line utilities.
-"""
+"""Command line utilities."""
 
 import logging
 import os
@@ -13,9 +11,7 @@ from varats.tools.research_tools.vara import VaRA
 
 
 def cli_yn_choice(question: str, default: str = 'y') -> bool:
-    """
-    Ask the user to make a y/n decision on the cli.
-    """
+    """Ask the user to make a y/n decision on the cli."""
     choices = 'Y/n' if default.lower() in ('y', 'yes') else 'y/N'
     choice: str = str(
         input(
@@ -77,10 +73,8 @@ def cli_list_choice(
 
 
 def initialize_logger_config() -> None:
-    """
-    Initializes the logging framework with a basic config, allowing the user to
-    pass the warning level via an environment variable ``LOG_LEVEL``.
-    """
+    """Initializes the logging framework with a basic config, allowing the user
+    to pass the warning level via an environment variable ``LOG_LEVEL``."""
     log_level = os.environ.get('LOG_LEVEL', "WARNING").upper()
     logging.basicConfig(level=log_level)
 
@@ -111,7 +105,5 @@ def get_research_tool(
 
 
 def get_supported_research_tool_names() -> tp.List[str]:
-    """
-    Returns a list of all supported research tools.
-    """
+    """Returns a list of all supported research tools."""
     return ["VaRA", "vara"]

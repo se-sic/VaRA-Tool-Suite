@@ -75,8 +75,8 @@ def draw_code_churn(
         pd.DataFrame] = lambda data: data.sort_values(by=['time_id'])
 ) -> None:
     """
-    Draws a churn plot onto an axis, showing insertions with green and
-    deletions with red.
+    Draws a churn plot onto an axis, showing insertions with green and deletions
+    with red.
 
     Args:
         axis: axis to plot on
@@ -117,9 +117,7 @@ def draw_code_churn(
 
 
 class RepoChurnPlot(Plot):
-    """
-    Plot to visualize code churn for a git repository.
-    """
+    """Plot to visualize code churn for a git repository."""
 
     NAME = 'repo_churn'
 

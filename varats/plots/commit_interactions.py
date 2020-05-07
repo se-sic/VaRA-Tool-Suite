@@ -1,6 +1,4 @@
-"""
-Generate commit interaction graphs.
-"""
+"""Generate commit interaction graphs."""
 
 import typing as tp
 from pathlib import Path
@@ -21,10 +19,8 @@ from varats.plots.plot_utils import check_required_args
 
 @check_required_args(["project", "get_cmap"])
 def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
-    """
-    Generate a DataFrame, containing the amount of interactions between commits
-    and interactions between the HEAD commit and all others.
-    """
+    """Generate a DataFrame, containing the amount of interactions between
+    commits and interactions between the HEAD commit and all others."""
     commit_map = kwargs['get_cmap']()
     case_study = kwargs.get('plot_case_study', None)  # can be None
     project_name = str(kwargs["project"])
@@ -44,10 +40,8 @@ def _plot_interaction_graph(
     stages: tp.Optional[tp.List[CSStage]] = None,
     view_mode: bool = True
 ) -> None:
-    """
-    Plot a plot, showing the amount of interactions between commits and
-    interactions between the HEAD commit and all others.
-    """
+    """Plot a plot, showing the amount of interactions between commits and
+    interactions between the HEAD commit and all others."""
     plot_cfg = {
         'linewidth': 2 if view_mode else 1,
         'legend_size': 8 if view_mode else 4,
@@ -175,9 +169,7 @@ def _plot_interaction_graph(
 
 
 class InteractionPlot(Plot):
-    """
-    Plot showing the total amount of commit interactions.
-    """
+    """Plot showing the total amount of commit interactions."""
 
     NAME = 'interaction_graph'
 
@@ -194,8 +186,9 @@ class InteractionPlot(Plot):
         def cs_filter(data_frame: pd.DataFrame) -> pd.DataFrame:
             """
             Filter out all commit that are not in the case study, if one was
-            selected. This allows us to only load file related to the
-            case-study.
+            selected.
+
+            This allows us to only load file related to the case-study.
             """
             if self.plot_kwargs['plot_case_study'] is None:
                 return data_frame

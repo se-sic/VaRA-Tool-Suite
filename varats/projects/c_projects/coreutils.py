@@ -1,6 +1,4 @@
-"""
-Project file for the GNU coreutils.
-"""
+"""Project file for the GNU coreutils."""
 import typing as tp
 from pathlib import Path
 

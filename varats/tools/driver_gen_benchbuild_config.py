@@ -1,6 +1,4 @@
-"""
-Driver module for `vara-gen-bbconfig`.
-"""
+"""Driver module for `vara-gen-bbconfig`."""
 
 import argparse
 import logging

@@ -1,7 +1,5 @@
-"""
-The Report module implements basic report functionalities and provides a
-minimal interface ``BaseReport`` to implement own reports.
-"""
+"""The Report module implements basic report functionalities and provides a
+minimal interface ``BaseReport`` to implement own reports."""
 
 import re
 import typing as tp
@@ -18,6 +16,7 @@ from varats.data import reports as __REPORTS__
 class FileStatusExtension(Enum):
     """
     Enum to abstract the status of a file.
+
     Specific report files can map these to their own specific representation.
     """
 
@@ -28,31 +27,23 @@ class FileStatusExtension(Enum):
     Blocked = ("blocked", colors.blue)
 
     def get_status_extension(self) -> str:
-        """
-        Returns the corresponding file ending to the status.
-        """
+        """Returns the corresponding file ending to the status."""
         return str(self.value[0])
 
     @property
     def status_color(self) -> Color:
-        """
-        Returns the corresponding color to the status.
-        """
+        """Returns the corresponding color to the status."""
         return self.value[1]
 
     def get_colored_status(self) -> str:
-        """
-        Returns the corresponding file status, colored
-        in the specific status color.
-        """
+        """Returns the corresponding file status, colored in the specific status
+        color."""
         return tp.cast(str, self.status_color[self.name])
 
     @staticmethod
     def get_physical_file_statuses() -> tp.Set['FileStatusExtension']:
-        """
-        Returns the set of file status extensions that are associated with real
-        result files.
-        """
+        """Returns the set of file status extensions that are associated with
+        real result files."""
         return {
             FileStatusExtension.Success, FileStatusExtension.Failed,
             FileStatusExtension.CompileError
@@ -60,17 +51,13 @@ class FileStatusExtension(Enum):
 
     @staticmethod
     def get_virtual_file_statuses() -> tp.Set['FileStatusExtension']:
-        """
-        Returns the set of file status extensions that are not associated with
-        real result files.
-        """
+        """Returns the set of file status extensions that are not associated
+        with real result files."""
         return {FileStatusExtension.Missing, FileStatusExtension.Blocked}
 
     @staticmethod
     def get_regex_grp() -> str:
-        """
-        Returns a regex group that can match all file stati.
-        """
+        """Returns a regex group that can match all file stati."""
         regex_grp = r"(?P<status_ext>("
         for status in FileStatusExtension:
             regex_grp += r"{status_ext}".format(
@@ -111,10 +98,8 @@ class FileStatusExtension(Enum):
 
 
 class MetaReport(type):
-    """
-    Meta class for report to manage all reports and implement the basic static
-    functionality for handling report-file names.
-    """
+    """Meta class for report to manage all reports and implement the basic
+    static functionality for handling report-file names."""
 
     REPORT_TYPES: tp.Dict[str, 'MetaReport'] = dict()
 
@@ -514,9 +499,8 @@ class MetaReport(type):
 
 
 class BaseReport(metaclass=MetaReport):
-    """
-    Report base class to add general report properties and helper functions.
-    """
+    """Report base class to add general report properties and helper
+    functions."""
 
     def __init__(self, path: Path) -> None:
         self.__path = path
@@ -548,9 +532,7 @@ class BaseReport(metaclass=MetaReport):
 
     @property
     def path(self) -> Path:
-        """
-        Path to the report file.
-        """
+        """Path to the report file."""
         return self.__path
 
 

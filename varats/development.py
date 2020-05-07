@@ -1,7 +1,5 @@
-"""
-The development module provides different utility function to ease the
-development for VaRA.
-"""
+"""The development module provides different utility function to ease the
+development for VaRA."""
 
 import logging
 import re
@@ -67,9 +65,7 @@ def __quickfix_dev_branches(branch_name: str, sub_project: SubProject) -> str:
 def create_new_branch_for_projects(
     branch_name: str, sub_projects: tp.List[SubProject]
 ) -> None:
-    """
-    Create a new branch on all needed projects.
-    """
+    """Create a new branch on all needed projects."""
     branch_name = __convert_to_vara_branch_naming_schema(branch_name)
 
     for sub_project in sub_projects:
@@ -83,9 +79,7 @@ def create_new_branch_for_projects(
 def checkout_remote_branch_for_projects(
     branch_name: str, sub_projects: tp.List[SubProject]
 ) -> None:
-    """
-    Checkout a remote branch on all projects.
-    """
+    """Checkout a remote branch on all projects."""
     for sub_project in sub_projects:
         fixed_branch_name = __quickfix_dev_branches(branch_name, sub_project)
         if sub_project.has_branch(fixed_branch_name):
@@ -162,15 +156,12 @@ def show_status_for_projects(sub_projects: tp.List[SubProject]) -> None:
 
 
 def show_dev_branches(code_base: CodeBase) -> None:
-    """
-    Show all dev dev branches.
-    """
+    """Show all dev dev branches."""
     found_branches: tp.DefaultDict[str, tp.List[str]] = defaultdict(list)
     max_branch_chars = 0
 
     def __handle_sub_project(sub_project: SubProject) -> None:
-        """
-        """
+        """"""
         nonlocal max_branch_chars
         sub_project.fetch("origin", extra_args=["--prune"])
         for full_branch in sub_project.get_branches(extra_args=["-r"]):

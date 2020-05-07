@@ -1,6 +1,4 @@
-"""
-Project file for libvpx.
-"""
+"""Project file for libvpx."""
 import typing as tp
 from pathlib import Path
 

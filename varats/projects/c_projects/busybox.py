@@ -1,6 +1,4 @@
-"""
-Project file for busybox.
-"""
+"""Project file for busybox."""
 import typing as tp
 from pathlib import Path
 
@@ -24,7 +22,7 @@ from varats.utils.project_util import wrap_paths_to_binaries
     version_filter=project_filter_generator("busybox")
 )
 class Busybox(Project, CVEProviderHook):  # type: ignore
-    """UNIX utility wrapper BusyBox"""
+    """UNIX utility wrapper BusyBox."""
 
     NAME = 'busybox'
     GROUP = 'c_projects'

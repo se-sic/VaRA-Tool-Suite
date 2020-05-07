@@ -1,15 +1,11 @@
-"""
-Test VaRA git utilities
-"""
+"""Test VaRA git utilities."""
 import unittest
 
 from varats.utils.git_util import ChurnConfig
 
 
 class TestChurnConfig(unittest.TestCase):
-    """
-    Test if ChurnConfig sets languages correctly.
-    """
+    """Test if ChurnConfig sets languages correctly."""
 
     def test_enable_language(self):
         init_config = ChurnConfig.create_default_config()

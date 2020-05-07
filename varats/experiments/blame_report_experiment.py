@@ -1,6 +1,8 @@
 """
-Implements the basic blame report experiment. The experiment analyses a project
-with VaRA's blame analysis and generates a BlameReport.
+Implements the basic blame report experiment.
+
+The experiment analyses a project with VaRA's blame analysis and generates a
+BlameReport.
 """
 
 import typing as tp
@@ -24,9 +26,7 @@ from varats.utils.experiment_util import (
 
 
 class BlameReportGeneration(actions.Step):  # type: ignore
-    """
-    Analyse a project with VaRA and generate a BlameReport.
-    """
+    """Analyse a project with VaRA and generate a BlameReport."""
 
     NAME = "BlameReportGeneration"
     DESCRIPTION = "Analyses the bitcode with -vara-BR of VaRA."
@@ -116,10 +116,8 @@ class BlameReportGeneration(actions.Step):  # type: ignore
 
 
 class BlameReportExperiment(VersionExperiment):
-    """
-    Generates a commit flow report (CFR) of the project(s) specified in the
-    call.
-    """
+    """Generates a commit flow report (CFR) of the project(s) specified in the
+    call."""
 
     NAME = "GenerateBlameReport"
 
@@ -127,8 +125,8 @@ class BlameReportExperiment(VersionExperiment):
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """
-        Returns the specified steps to run the project(s) specified in
-        the call in a fixed order.
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
 
         Args:
             project: to analyze

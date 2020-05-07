@@ -1,6 +1,8 @@
 """
-Driver module for `vara-config`. This module handles command-line parsing and
-maps the commands to tool suite internal functionality.
+Driver module for `vara-config`.
+
+This module handles command-line parsing and maps the commands to tool suite
+internal functionality.
 """
 import argparse
 import copy

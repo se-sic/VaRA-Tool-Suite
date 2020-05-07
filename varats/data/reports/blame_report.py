@@ -1,6 +1,4 @@
-"""
-Module for BlameReport, a collection of blame interactions.
-"""
+"""Module for BlameReport, a collection of blame interactions."""
 
 import typing as tp
 from collections import defaultdict
@@ -18,9 +16,11 @@ from varats.utils.git_util import create_commit_lookup_helper, map_commits
 
 class BlameInstInteractions():
     """
-    An interaction between a base commit, attached to an instruction, and
-    other commits. For the blame analysis, these commits stem from data flows
-    into the instruction.
+    An interaction between a base commit, attached to an instruction, and other
+    commits.
+
+    For the blame analysis, these commits stem from data flows into the
+    instruction.
     """
 
     def __init__(self, raw_inst_entry: tp.Dict[str, tp.Any]) -> None:
@@ -32,23 +32,17 @@ class BlameInstInteractions():
 
     @property
     def base_commit(self) -> str:
-        """
-        Base hash of the analyzed instruction.
-        """
+        """Base hash of the analyzed instruction."""
         return self.__base_hash
 
     @property
     def interacting_commits(self) -> tp.List[str]:
-        """
-        List of hashes that interact with the base.
-        """
+        """List of hashes that interact with the base."""
         return self.__interacting_hashes
 
     @property
     def amount(self) -> int:
-        """
-        Number of same interactions found in this function.
-        """
+        """Number of same interactions found in this function."""
         return self.__amount
 
     def __str__(self) -> str:
@@ -64,9 +58,7 @@ class BlameInstInteractions():
 
 
 class BlameResultFunctionEntry():
-    """
-    Collection of all interactions for a specific function.
-    """
+    """Collection of all interactions for a specific function."""
 
     def __init__(
         self, name: str, raw_function_entry: tp.Dict[str, tp.Any]
@@ -80,23 +72,21 @@ class BlameResultFunctionEntry():
     @property
     def name(self) -> str:
         """
-        Name of the function. The name is manged for C++ code, either with
-        the itanium or windows mangling schema.
+        Name of the function.
+
+        The name is manged for C++ code, either with the itanium or windows
+        mangling schema.
         """
         return self.__name
 
     @property
     def demangled_name(self) -> str:
-        """
-        Demangled name of the function.
-        """
+        """Demangled name of the function."""
         return self.__demangled_name
 
     @property
     def interactions(self) -> tp.List[BlameInstInteractions]:
-        """
-        List of found instruction blame-interactions.
-        """
+        """List of found instruction blame-interactions."""
         return self.__inst_list
 
     def __str__(self) -> str:
@@ -109,9 +99,7 @@ class BlameResultFunctionEntry():
 
 
 class BlameReport(BaseReport):
-    """
-    Full blame report containing all blame interactions.
-    """
+    """Full blame report containing all blame interactions."""
 
     SHORTHAND = "BR"
     FILE_TYPE = "yaml"
@@ -149,16 +137,12 @@ class BlameReport(BaseReport):
 
     @property
     def function_entries(self) -> tp.ValuesView[BlameResultFunctionEntry]:
-        """
-        Iterate over all function entries.
-        """
+        """Iterate over all function entries."""
         return self.__function_entries.values()
 
     @property
     def head_commit(self) -> str:
-        """
-        The current HEAD commit under which this CommitReport was created.
-        """
+        """The current HEAD commit under which this CommitReport was created."""
         return BlameReport.get_commit_hash_from_result_file(self.path.name)
 
     @staticmethod
@@ -171,8 +155,7 @@ class BlameReport(BaseReport):
         file_ext: str = "yaml"
     ) -> str:
         """
-        Generates a filename for a commit report with 'yaml'
-        as file extension.
+        Generates a filename for a commit report with 'yaml' as file extension.
 
         Args:
             project_name: name of the project for which the report was generated
@@ -201,8 +184,8 @@ def generate_degree_tuples(report: BlameReport) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples (degree, amount) where degree is the interaction
     degree of a blame interaction, e.g., the number of incoming interactions,
-    and amount is the number of times an interaction with this degree was
-    found in the report.
+    and amount is the number of times an interaction with this degree was found
+    in the report.
 
     Args:
         report: the blame report
@@ -263,8 +246,8 @@ def generate_time_delta_distribution_tuples(
     Generates a list of tuples that represent the distribution of time delta
     interactions. The first value in the tuple represents the degree of the time
     delta, bucketed according to ``bucket_size``. The second value is the time
-    delta, aggregated over all interacting commits by the
-    passed ``aggregate_function``.
+    delta, aggregated over all interacting commits by the passed
+    ``aggregate_function``.
 
     Args:
         report: to analyze

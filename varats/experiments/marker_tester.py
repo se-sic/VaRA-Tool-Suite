@@ -1,6 +1,5 @@
-"""
-Instrument the generated binary with print markers to show region entry/exits.
-"""
+"""Instrument the generated binary with print markers to show region
+entry/exits."""
 
 import typing as tp
 
@@ -15,9 +14,7 @@ from plumbum.commands.base import BoundCommand
 
 
 class TraceBinaryCreator(base.Extension):  # type: ignore
-    """
-    Create an additional binary with trace markers.
-    """
+    """Create an additional binary with trace markers."""
 
     def __init__(
         self,
@@ -87,9 +84,7 @@ class TraceBinaryCreator(base.Extension):  # type: ignore
 
 
 class PrintMarkerInstTest(Experiment):  # type: ignore
-    """
-    Instrument all highlight regions with print markers.
-    """
+    """Instrument all highlight regions with print markers."""
 
     NAME = "PrintMarkerInstTest"
 
@@ -108,9 +103,7 @@ class PrintMarkerInstTest(Experiment):  # type: ignore
 
 
 class PapiMarkerInstTest(Experiment):  # type: ignore
-    """
-    Instrument all highlight regions with papi markers.
-    """
+    """Instrument all highlight regions with papi markers."""
 
     NAME = "PapiMarkerInstTest"
 
@@ -134,9 +127,7 @@ class PapiMarkerInstTest(Experiment):  # type: ignore
 
 
 class CheckMarkerInstTest(Experiment):  # type: ignore
-    """
-    Instrument all highlight regions with check markers.
-    """
+    """Instrument all highlight regions with check markers."""
 
     NAME = "CheckMarkerInstTest"
 

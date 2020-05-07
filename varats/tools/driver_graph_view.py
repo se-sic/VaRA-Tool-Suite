@@ -11,9 +11,7 @@ from varats.vara_manager import ProcessManager
 
 
 class VaRATSGui:
-    """
-    Start VaRA-TS grafical user interface for graphs.
-    """
+    """Start VaRA-TS grafical user interface for graphs."""
 
     def __init__(self) -> None:
         if hasattr(Qt, 'AA_EnableHighDpiScaling'):
@@ -47,16 +45,14 @@ class VaRATSGui:
         self.main_window = MainWindow()
 
     def main(self) -> None:
-        """Setup and Run Qt application"""
+        """Setup and Run Qt application."""
         ret = self.app.exec_()
         ProcessManager.shutdown()
         sys.exit(ret)
 
 
 def main() -> None:
-    """
-    Start VaRA-TS driver and run application.
-    """
+    """Start VaRA-TS driver and run application."""
     initialize_logger_config()
     driver = VaRATSGui()
     driver.main()

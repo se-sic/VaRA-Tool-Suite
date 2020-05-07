@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
 This module handels the status of VaRA.
-Setting up the tooling, keeping it up to date,
-and providing necessary information.
+
+Setting up the tooling, keeping it up to date, and providing necessary
+information.
 """
 
 import os
@@ -30,9 +31,7 @@ from varats.utils.exceptions import ProcessTerminatedError
 
 
 class LLVMProject():
-    """
-    A sub project of LLVM.
-    """
+    """A sub project of LLVM."""
 
     def __init__(self, name: str, URL: str, remote: str, sub_path: str):
         self.__name = name
@@ -42,30 +41,22 @@ class LLVMProject():
 
     @property
     def name(self) -> str:
-        """
-        Name of the project
-        """
+        """Name of the project."""
         return self.__name
 
     @property
     def url(self) -> str:
-        """
-        Repository URL
-        """
+        """Repository URL."""
         return self.__url
 
     @property
     def remote(self) -> str:
-        """
-        Git remote
-        """
+        """Git remote."""
         return self.__remote
 
     @property
     def path(self) -> Path:
-        """
-        Path to the project folder within llvm.
-        """
+        """Path to the project folder within llvm."""
         return self.__sub_path
 
     def __str__(self) -> str:
@@ -75,9 +66,7 @@ class LLVMProject():
 
 
 class LLVMProjects(Enum):
-    """
-    Mapping of all LLVM projects to paths.
-    """
+    """Mapping of all LLVM projects to paths."""
     llvm = LLVMProject(
         "llvm", "https://git.llvm.org/git/llvm.git", "upstream", ""
     )
@@ -121,52 +110,38 @@ class LLVMProjects(Enum):
 
     @property
     def project(self) -> LLVMProject:
-        """
-        The actual project
-        """
+        """The actual project."""
         if not isinstance(self.value, LLVMProject):
             raise AssertionError()
         return self.value
 
     @property
     def project_name(self) -> str:
-        """
-        Name of the project
-        """
+        """Name of the project."""
         return self.project.name
 
     @property
     def url(self) -> str:
-        """
-        Repository URL
-        """
+        """Repository URL."""
         return self.project.url
 
     @property
     def remote(self) -> str:
-        """
-        Git remote
-        """
+        """Git remote."""
         return self.project.remote
 
     @property
     def path(self) -> Path:
-        """
-        Path to the project within llvm.
-        """
+        """Path to the project within llvm."""
         return self.project.path
 
     def is_vara_project(self) -> bool:
-        """
-        Checks if this a VaRA controled projected.
-        """
+        """Checks if this a VaRA controled projected."""
         return self is LLVMProjects.llvm or self is LLVMProjects.clang or\
             self is LLVMProjects.vara
 
     def is_extra_project(self) -> bool:
-        """
-        Checks wether this is an external llvm project.
-        """
+        """Checks wether this is an external llvm project."""
         return not self.is_vara_project()
 
 
@@ -199,17 +174,13 @@ def convert_to_llvmprojects_enum(
 
 
 def generate_full_list_of_llvmprojects() -> tp.List[LLVMProjects]:
-    """
-    Generates a list of all LLVM projects.
-    """
+    """Generates a list of all LLVM projects."""
     return list(LLVMProjects)
 
 
 class VaRAProjectsIter():
-    """
-    Iterator over vara projects, meaning projects that are modfified to work
-    with VaRA.
-    """
+    """Iterator over vara projects, meaning projects that are modfified to work
+    with VaRA."""
 
     def __init__(self) -> None:
         self.__llvm_project_iter = iter(LLVMProjects)
@@ -225,16 +196,13 @@ class VaRAProjectsIter():
 
 
 def generate_vara_list_of_llvmprojects() -> tp.List[LLVMProjects]:
-    """
-    Generates a list of all VaRA llvm projects.
-    """
+    """Generates a list of all VaRA llvm projects."""
     return list(VaRAProjectsIter())
 
 
 class VaRAExtraProjectsIter():
-    """
-    Iterator over all additional projects without VaRAs own mofified projects.
-    """
+    """Iterator over all additional projects without VaRAs own mofified
+    projects."""
 
     def __init__(self) -> None:
         self.__llvm_project_iter = iter(LLVMProjects)
@@ -253,9 +221,7 @@ def run_process_with_output(
     process: QProcess,
     post_out: tp.Callable[[str], None] = lambda x: None
 ) -> None:
-    """
-    Run a process and forward stdout to a post_out function.
-    """
+    """Run a process and forward stdout to a post_out function."""
     output = str(process.readAllStandardOutput().data().decode('utf-8'))
     for line in output.splitlines(True):
         post_out(line)
@@ -268,9 +234,7 @@ def download_repo(
     remote_name: tp.Optional[str] = None,
     post_out: tp.Callable[[str], None] = lambda x: None
 ) -> None:
-    """
-    Download a repo into the specified folder.
-    """
+    """Download a repo into the specified folder."""
     if not dl_folder.exists():
         raise Exception(
             "Could not find download folder  {dl_folder}".format(
@@ -295,9 +259,7 @@ def download_repo(
 
 
 class BuildType(Enum):
-    """
-    This enum contains all VaRA prepared Build configurations.
-    """
+    """This enum contains all VaRA prepared Build configurations."""
     DBG = 1
     DEV = 2
     OPT = 3
@@ -319,7 +281,7 @@ class BuildType(Enum):
         raise AssertionError("Unknown build type")
 
     def build_folder(self) -> Path:
-        """Get build type specific buildfolder"""
+        """Get build type specific buildfolder."""
         return Path(str(self))
 
 
@@ -335,9 +297,7 @@ def setup_vara(
     build_type: BuildType,
     post_out: tp.Callable[[str], None] = lambda x: None
 ) -> None:
-    """
-    Sets up VaRA over cli.
-    """
+    """Sets up VaRA over cli."""
     CFG["vara"]["llvm_source_dir"] = str(llvm_folder)
     CFG["vara"]["llvm_install_dir"] = install_prefix
     save_config()
@@ -413,9 +373,7 @@ def setup_vara(
 
 
 def add_remote(repo_folder: Path, remote: str, url: str) -> None:
-    """
-    Adds new remote to the repository.
-    """
+    """Adds new remote to the repository."""
     with ProcessManager.create_process(
         "git", ["remote", "add", remote, url], workdir=repo_folder
     ):
@@ -423,9 +381,7 @@ def add_remote(repo_folder: Path, remote: str, url: str) -> None:
 
 
 def show_status(repo_folder: Path) -> None:
-    """
-    Show git status.
-    """
+    """Show git status."""
     with local.cwd(repo_folder):
         git["status"].run_fg()
 
@@ -433,9 +389,7 @@ def show_status(repo_folder: Path) -> None:
 def get_branches(
     repo_folder: Path, extra_args: tp.Optional[tp.List[str]] = None
 ) -> str:
-    """
-    Show git branches.
-    """
+    """Show git branches."""
     extra_args = [] if extra_args is None else extra_args
 
     args = ["branch"]
@@ -450,9 +404,7 @@ def fetch_remote(
     repo_folder: tp.Optional[Path] = None,
     extra_args: tp.Optional[tp.List[str]] = None
 ) -> None:
-    """
-    Fetches the new changes from the remote.
-    """
+    """Fetches the new changes from the remote."""
     extra_args = [] if extra_args is None else extra_args
 
     args = ["fetch"]
@@ -465,9 +417,7 @@ def fetch_remote(
 
 
 def init_all_submodules(folder: Path) -> None:
-    """
-    Inits all submodules.
-    """
+    """Inits all submodules."""
     with ProcessManager.create_process(
         "git", ["submodule", "init"], workdir=folder
     ):
@@ -475,9 +425,7 @@ def init_all_submodules(folder: Path) -> None:
 
 
 def update_all_submodules(folder: Path, recursive: bool = True) -> None:
-    """
-    Updates all submodules.
-    """
+    """Updates all submodules."""
     git_params = ["submodule", "update"]
     if recursive:
         git_params.append("--recursive")
@@ -487,9 +435,7 @@ def update_all_submodules(folder: Path, recursive: bool = True) -> None:
 
 
 def pull_current_branch(repo_folder: tp.Optional[Path] = None) -> None:
-    """
-    Pull in changes in a certain branch.
-    """
+    """Pull in changes in a certain branch."""
     with ProcessManager.create_process("git", ["pull"], workdir=repo_folder):
         pass
 
@@ -499,9 +445,7 @@ def push_current_branch(
     upstream: tp.Optional[str] = None,
     branch_name: tp.Optional[str] = None
 ) -> None:
-    """
-    Push in changes in a certain branch.
-    """
+    """Push in changes in a certain branch."""
     cmd_args = ["push"]
 
     if upstream is not None:
@@ -520,17 +464,13 @@ def push_current_branch(
 
 
 def fetch_repository(repo_folder: tp.Optional[Path] = None) -> None:
-    """
-    Pull in changes in a certain branch.
-    """
+    """Pull in changes in a certain branch."""
     with ProcessManager.create_process("git", ["fetch"], workdir=repo_folder):
         pass
 
 
 def checkout_branch(repo_folder: Path, branch: str) -> None:
-    """
-    Checks out a branch in the repository.
-    """
+    """Checks out a branch in the repository."""
     with ProcessManager.create_process(
         "git", ["checkout", branch], workdir=repo_folder
     ):
@@ -542,9 +482,7 @@ def checkout_new_branch(
     branch: str,
     remote_branch: tp.Optional[str] = None
 ) -> None:
-    """
-    Checks out a new branch in the repository.
-    """
+    """Checks out a new branch in the repository."""
     args = ["checkout", "-b", branch]
     if remote_branch is not None:
         args.append(remote_branch)
@@ -553,9 +491,7 @@ def checkout_new_branch(
 
 
 def get_current_branch(repo_folder: tp.Optional[Path]) -> str:
-    """
-    Get the current branch of a repository, e.g., HEAD.
-    """
+    """Get the current branch of a repository, e.g., HEAD."""
     if repo_folder is None or repo_folder == Path(''):
         return tp.cast(str, git("rev-parse", "--abbrev-ref", "HEAD").strip())
 
@@ -564,18 +500,14 @@ def get_current_branch(repo_folder: tp.Optional[Path]) -> str:
 
 
 def has_branch(repo_folder: Path, branch_name: str) -> bool:
-    """
-    Checks if a branch exists in the local repository.
-    """
+    """Checks if a branch exists in the local repository."""
     with local.cwd(repo_folder):
         exit_code = git["rev-parse", "--verify", branch_name] & TF
         return tp.cast(bool, exit_code)
 
 
 def has_remote_branch(repo_folder: Path, branch_name: str, remote: str) -> bool:
-    """
-    Checks if a remote branch of a repository exists.
-    """
+    """Checks if a remote branch of a repository exists."""
     with local.cwd(repo_folder):
         exit_code = (
             git["ls-remote", "--heads", remote, branch_name] | grep[branch_name]
@@ -586,9 +518,7 @@ def has_remote_branch(repo_folder: Path, branch_name: str, remote: str) -> bool:
 def branch_has_upstream(
     repo_folder: Path, branch_name: str, upstream: str = 'origin'
 ) -> bool:
-    """
-    Check if a branch has an upstream remote.
-    """
+    """Check if a branch has an upstream remote."""
     with local.cwd(repo_folder):
         exit_code = (
             git["rev-parse", "--abbrev-ref", branch_name + "@{upstream}"] |
@@ -599,8 +529,9 @@ def branch_has_upstream(
 
 def get_download_steps() -> int:
     """
-    Returns the amount of steps it takes to download VaRA. This can be used to
-    track the progress during the long download phase.
+    Returns the amount of steps it takes to download VaRA.
+
+    This can be used to track the progress during the long download phase.
     """
     return 6
 
@@ -610,9 +541,7 @@ def download_vara(
     progress_func: tp.Callable[[int], None] = lambda x: None,
     post_out: tp.Callable[[str], None] = lambda x: None
 ) -> None:
-    """
-    Downloads VaRA an all other necessary repos from github.
-    """
+    """Downloads VaRA an all other necessary repos from github."""
     dl_counter = 0
     dl_folder = Path(os.path.normpath(llvm_source_folder))
 
@@ -694,9 +623,7 @@ def checkout_vara_version(
 
 
 def get_cmake_var(var_name: str) -> bool:
-    """
-    Fetch the value of a cmake variable from the current cmake config.
-    """
+    """Fetch the value of a cmake variable from the current cmake config."""
     for line in iter(cmake("-LA", "-N", "CMakeLists.txt").splitlines()):
         if var_name not in line:
             continue
@@ -709,9 +636,7 @@ def set_cmake_var(
     value: str,
     post_out: tp.Callable[[str], None] = lambda x: None
 ) -> None:
-    """
-    Sets a cmake variable in the current cmake config.
-    """
+    """Sets a cmake variable in the current cmake config."""
     with ProcessManager.create_process(
         "cmake", ["-D" + var_name + "=" + value, "."]
     ) as proc:
@@ -726,9 +651,7 @@ def init_vara_build(
     build_type: BuildType,
     post_out: tp.Callable[[str], None] = lambda x: None
 ) -> None:
-    """
-    Initialize a VaRA build config.
-    """
+    """Initialize a VaRA build config."""
     full_path = path_to_llvm / "build/"
     if not os.path.exists(full_path):
         os.makedirs(full_path)
@@ -749,6 +672,7 @@ def verify_build_structure(
 ) -> None:
     """
     Verify the build strucutre of VaRA:
+
         - ensure status of submodules
         - update submodules
 
@@ -773,9 +697,7 @@ def build_vara(
     build_type: BuildType,
     post_out: tp.Callable[[str], None] = lambda x: None
 ) -> None:
-    """
-    Builds a VaRA configuration
-    """
+    """Builds a VaRA configuration."""
     own_libgit = bool(CFG["vara"]["own_libgit2"])
     include_phasar = bool(CFG["vara"]["with_phasar"])
     full_path = path_to_llvm / "build/"
@@ -806,9 +728,7 @@ def set_vara_cmake_variables(
     install_prefix: str,
     post_out: tp.Callable[[str], None] = lambda x: None
 ) -> None:
-    """
-    Set all wanted/needed cmake flags.
-    """
+    """Set all wanted/needed cmake flags."""
     set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix, post_out)
 
 
@@ -818,18 +738,14 @@ def set_vara_cmake_variables(
 
 
 class GitState(Enum):
-    """
-    Represent the direct state of a branch.
-    """
+    """Represent the direct state of a branch."""
     OK = 1
     BEHIND = 2
     ERROR = 3
 
 
 class GitStatus():
-    """
-    Represents the current update status of a git repository.
-    """
+    """Represents the current update status of a git repository."""
 
     def __init__(self, state: GitState, msg: str = "") -> None:
         self.__state = state
@@ -837,16 +753,12 @@ class GitStatus():
 
     @property
     def state(self) -> GitState:
-        """
-        Current state of the git.
-        """
+        """Current state of the git."""
         return self.__state
 
     @property
     def msg(self) -> str:
-        """
-        Additional msg.
-        """
+        """Additional msg."""
         return self.__msg
 
     def __str__(self) -> str:
@@ -860,9 +772,7 @@ class GitStatus():
 def get_llvm_project_status(
     llvm_folder: Path, project_folder: str = ""
 ) -> GitStatus:
-    """
-    Retrieve the git status of a llvm project.
-    """
+    """Retrieve the git status of a llvm project."""
     try:
         with local.cwd(llvm_folder / project_folder):
             fetch_remote('origin')
@@ -881,9 +791,7 @@ def get_llvm_project_status(
 
 
 def get_vara_status(llvm_folder: Path) -> GitStatus:
-    """
-    Retrieve the git status of VaRA.
-    """
+    """Retrieve the git status of VaRA."""
     try:
         with local.cwd(llvm_folder / LLVMProjects.vara.path):
             fetch_remote('origin')
@@ -907,23 +815,17 @@ def get_vara_status(llvm_folder: Path) -> GitStatus:
 
 
 class GitStateSignals(QObject):
-    """
-    GitStateSignals to send state update to the GUI.
-    """
+    """GitStateSignals to send state update to the GUI."""
     status_update = pyqtSignal(object, object, object)
 
 
 class CheckStateSignal(QObject):
-    """
-    This signal is emited when the state could have changed.
-    """
+    """This signal is emited when the state could have changed."""
     possible_state_change = pyqtSignal()
 
 
 class GitStateChecker(QRunnable):
-    """
-    GitStateChecker to fetch and verify the git status.
-    """
+    """GitStateChecker to fetch and verify the git status."""
 
     def __init__(
         self, state_signal: GitStateSignals, path_to_llvm: Path
@@ -934,9 +836,7 @@ class GitStateChecker(QRunnable):
 
     @pyqtSlot()
     def run(self) -> None:
-        """
-        Retrieve status updates for llvm,clang, and VaRA
-        """
+        """Retrieve status updates for llvm,clang, and VaRA."""
         llvm_status = get_llvm_project_status(self.path_to_llvm)
         clang_status = get_llvm_project_status(
             self.path_to_llvm, str(LLVMProjects.clang.path)
@@ -947,9 +847,7 @@ class GitStateChecker(QRunnable):
 
 
 class PullWorker(QRunnable):
-    """
-    QtWorker to update repositories.
-    """
+    """QtWorker to update repositories."""
 
     def __init__(self, llvm_folder: Path) -> None:
         super(PullWorker, self).__init__()
@@ -958,9 +856,7 @@ class PullWorker(QRunnable):
 
     @pyqtSlot()
     def run(self) -> None:
-        """
-        Pull changes and update the current branch.
-        """
+        """Pull changes and update the current branch."""
         pull_current_branch(self.llvm_folder)
         pull_current_branch(self.llvm_folder / LLVMProjects.clang.path)
         pull_current_branch(self.llvm_folder / LLVMProjects.vara.path)
@@ -978,12 +874,10 @@ class ProcessManager():
         workdir: tp.Optional[tp.Union[str, Path]] = None
     ) -> tp.Iterator[QProcess]:
         """
-        Creates a new process.
-        The method does not return immediately. Instead it waits until the
-        process finishes.
-        If the process gets interrupted by the user (e.g. by calling the
-        ProcessManager's shutdown() method), the ProcessTerminatedError
-        exception gets raised.
+        Creates a new process. The method does not return immediately. Instead
+        it waits until the process finishes. If the process gets interrupted by
+        the user (e.g. by calling the ProcessManager's shutdown() method), the
+        ProcessTerminatedError exception gets raised.
 
         Example usage:
 
@@ -1010,7 +904,7 @@ class ProcessManager():
 
     @staticmethod
     def get_instance() -> 'ProcessManager':
-        """Get access to the ProcessManager"""
+        """Get access to the ProcessManager."""
         if ProcessManager.__instance is None:
             ProcessManager()
         if ProcessManager.__instance is None:
@@ -1027,8 +921,10 @@ class ProcessManager():
     ) -> None:
         """
         Starts a QProcess object.
-        This method returns immediately and does not wait for the process
-        to finish."""
+
+        This method returns immediately and does not wait for the process to
+        finish.
+        """
         args = [] if args is None else args
         # pylint: disable=protected-access
         ProcessManager.get_instance().__start_process(process, program, args)
@@ -1094,8 +990,7 @@ class ProcessManager():
 
 
 class VaRAStateManager():
-    """
-    """
+    """"""
 
     def __init__(self, llvm_folder: Path) -> None:
         if not llvm_folder.exists():
@@ -1107,22 +1002,16 @@ class VaRAStateManager():
         self.thread_pool = QThreadPool()
 
     def change_llvm_source_folder(self, llvm_folder: Path) -> None:
-        """
-        Change the current llvm source folder.
-        """
+        """Change the current llvm source folder."""
         self.llvm_folder = llvm_folder
 
     def check_repo_state(self) -> None:
-        """
-        Check the state of the three VaRA repos.
-        """
+        """Check the state of the three VaRA repos."""
         worker = GitStateChecker(self.state_signal, self.llvm_folder)
         self.thread_pool.start(worker)
 
     def update_current_branch(self) -> None:
-        """
-        Update the current branches of the VaRA setup.
-        """
+        """Update the current branches of the VaRA setup."""
         worker = PullWorker(self.llvm_folder)
         worker.check_state.possible_state_change.connect(self.check_repo_state)
         self.thread_pool.start(worker)

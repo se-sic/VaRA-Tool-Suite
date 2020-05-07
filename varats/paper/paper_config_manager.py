@@ -1,8 +1,6 @@
-"""
-Module for interacting and managing paper configs and case studies, e.g.,
-this modules provides functionality to visualize the status of case studies
-or to package a whole paper config into a zip folder.
-"""
+"""Module for interacting and managing paper configs and case studies, e.g.,
+this modules provides functionality to visualize the status of case studies or
+to package a whole paper config into a zip folder."""
 
 import re
 import typing as tp
@@ -89,9 +87,8 @@ def show_status_of_case_studies(
 
 
 def get_revision_list(case_study: CaseStudy) -> str:
-    """
-    Returns a string with a list of revsion from the case-study,
-    group by case-study stages.
+    """Returns a string with a list of revsion from the case-study, group by
+    case- study stages.
 
     Args:
         case_study: to print revisions for
@@ -273,8 +270,8 @@ def get_status(
                                                          tp.Set[str]]] = None
 ) -> str:
     """
-    Return a string representation that describes the current status of
-    the case study.
+    Return a string representation that describes the current status of the case
+    study.
 
     Args:
         case_study: to print the status for

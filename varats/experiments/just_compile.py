@@ -1,6 +1,4 @@
-"""
-Implements an empty experiment that just compiles the project.
-"""
+"""Implements an empty experiment that just compiles the project."""
 
 import typing as tp
 
@@ -23,9 +21,7 @@ from varats.utils.experiment_util import (
 
 # Please take care when changing this file, see docs experiments/just_compile
 class EmptyAnalysis(actions.Step):  # type: ignore
-    """
-    Empty analysis step for testing.
-    """
+    """Empty analysis step for testing."""
 
     NAME = "EmptyAnslysis"
     DESCRIPTION = "Analyses nothing."
@@ -36,9 +32,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
         super(EmptyAnalysis, self).__init__(obj=project, action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
-        """
-        Only create a report file.
-        """
+        """Only create a report file."""
         if not self.obj:
             return
         project = self.obj
@@ -83,17 +77,15 @@ class EmptyAnalysis(actions.Step):  # type: ignore
 
 # Please take care when changing this file, see docs experiments/just_compile
 class JustCompileReport(VersionExperiment):
-    """
-    Generates empty report file.
-    """
+    """Generates empty report file."""
 
     NAME = "JustCompile"
 
     REPORT_TYPE = EmptyReport
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
-        """Returns the specified steps to run the project(s) specified in
-        the call in a fixed order."""
+        """Returns the specified steps to run the project(s) specified in the
+        call in a fixed order."""
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \

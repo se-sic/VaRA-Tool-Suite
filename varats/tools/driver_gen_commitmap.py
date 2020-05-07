@@ -1,6 +1,4 @@
-"""
-Driver module for `vara-gen-commitmap`.
-"""
+"""Driver module for `vara-gen-commitmap`."""
 
 import argparse
 from pathlib import Path
@@ -11,9 +9,7 @@ from varats.utils.cli_util import initialize_logger_config
 
 
 def main() -> None:
-    """
-    Create a commit map for a repository.
-    """
+    """Create a commit map for a repository."""
     initialize_logger_config()
     parser = argparse.ArgumentParser("vara-gen-commitmap")
     parser.add_argument("project_name", help="Name of the project")

@@ -1,6 +1,4 @@
-"""
-Utility module for BenchBuild experiments.
-"""
+"""Utility module for BenchBuild experiments."""
 
 import os
 import random
@@ -59,9 +57,7 @@ def exec_func_with_pe_error_handler(
 
 
 class PEErrorHandler():
-    """
-    Error handler for process execution errors
-    """
+    """Error handler for process execution errors."""
 
     def __init__(
         self,
@@ -150,6 +146,7 @@ def get_default_compile_error_wrapped(
 class UnlimitStackSize(Step):  # type: ignore
     """
     Set higher user limits on stack size for RAM intense experiments.
+
     Basically the same as calling the shell built-in ulimit.
     """
 
@@ -161,17 +158,13 @@ class UnlimitStackSize(Step):  # type: ignore
               self).__init__(obj=project, action_fn=self.__call__)
 
     def __call__(self) -> StepResult:
-        """
-        Same as 'ulimit -s 16777216' in a shell.
-        """
+        """Same as 'ulimit -s 16777216' in a shell."""
         resource.setrlimit(resource.RLIMIT_STACK, (16777216, 16777216))
 
 
 class VersionExperiment(Experiment):  # type: ignore
-    """
-    Base class for experiments that want to analyze different project
-    revisions.
-    """
+    """Base class for experiments that want to analyze different project
+    revisions."""
 
     @abstractmethod
     def actions_for_project(self, project: Project) -> tp.List[Step]:

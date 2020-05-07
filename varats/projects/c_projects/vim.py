@@ -1,6 +1,4 @@
-"""
-Project file for vim.
-"""
+"""Project file for vim."""
 import typing as tp
 from pathlib import Path
 
@@ -23,7 +21,7 @@ from varats.utils.project_util import wrap_paths_to_binaries
     version_filter=project_filter_generator("vim")
 )
 class Vim(Project):  # type: ignore
-    """Text processing tool vim"""
+    """Text processing tool vim."""
 
     NAME = 'vim'
     GROUP = 'c_projects'

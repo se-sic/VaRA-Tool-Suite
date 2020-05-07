@@ -1,10 +1,11 @@
 """
 Execute showcase cpp examples with Phasar's tracing of environment variables.
-This class implements the environment tracing data flow analysis of Phasar.
-We run the analysis on exemplary cpp files. The cpp examples can be
-found in the https://github.com/se-passau/vara-perf-tests repository.
-The results of each analysis get written into a PhasarReport, which lists, what
-examples produced a valid json result and which ones failed.
+
+This class implements the environment tracing data flow analysis of Phasar. We
+run the analysis on exemplary cpp files. The cpp examples can be found in the
+https://github.com/se-passau/vara-perf-tests repository. The results of each
+analysis get written into a PhasarReport, which lists, what examples produced a
+valid json result and which ones failed.
 """
 
 import typing as tp
@@ -30,10 +31,8 @@ from varats.utils.experiment_util import (
 
 
 class PhasarEnvIFDS(actions.Step):  # type: ignore
-    """
-    Analyse a project with Phasar's IFDS that traces environment variables
-    inside a project.
-    """
+    """Analyse a project with Phasar's IFDS that traces environment variables
+    inside a project."""
 
     NAME = "PhasarEnvIFDS"
     DESCRIPTION = "Calls the environment tracing analysis of phasar and "\
@@ -119,20 +118,16 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
 
 
 class PhasarEnvironmentTracing(Experiment):  # type: ignore
-    """
-    Generates a inter-procedural data flow analysis (IFDS) on a project's
-    binaries and traces environment variables.
-    """
+    """Generates a inter-procedural data flow analysis (IFDS) on a project's
+    binaries and traces environment variables."""
 
     NAME = "PhasarEnvironmentTracing"
 
     REPORT_TYPE = ENVR
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
-        """
-        Returns the specified steps to run the project(s) specified in
-        the call in a fixed order.
-        """
+        """Returns the specified steps to run the project(s) specified in the
+        call in a fixed order."""
 
         # Add the required runtime extensions to the project(s)
         project.runtime_extension = run.RuntimeExtension(project, self) \

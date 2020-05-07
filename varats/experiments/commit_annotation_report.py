@@ -2,10 +2,9 @@
 Implements the commit-flow report with an annotation-script.
 
 This class implements the commit-flow report (CFR) analysis of the variability-
-aware region analyzer (VaRA).
-For annotation we use the annotation script by Florian Niederhuber, which can
-be accessed via the site-packages folder due to the installation via the
-Package manager pip.
+aware region analyzer (VaRA). For annotation we use the annotation script by
+Florian Niederhuber, which can be accessed via the site-packages folder due to
+the installation via the Package manager pip.
 """
 
 import os
@@ -42,9 +41,7 @@ BB_CFG["varats"] = {
 
 
 class Prepare(Step):  # type: ignore
-    """
-    Benchbuild prepare step to setup projects for later analysis.
-    """
+    """Benchbuild prepare step to setup projects for later analysis."""
     NAME = "PREPARE"
     DESCRIPTION = "Prepares the analysis by annotating the project with the \
         annotation-script of Florian Niederhuber that is provided through \
@@ -52,32 +49,26 @@ class Prepare(Step):  # type: ignore
 
 
 class Extract(Step):  # type: ignore
-    """
-    Extract step to extract a llvm bitcode file (.bc) from the project.
-    """
+    """Extract step to extract a llvm bitcode file (.bc) from the project."""
     NAME = "EXTRACT"
     DESCRIPTION = "Extract bitcode out of the execution file."
 
 
 class Analyse(Step):  # type: ignore
-    """
-    Analysis step to run vara's commit annotation report pass.
-    """
+    """Analysis step to run vara's commit annotation report pass."""
     NAME = "ANALYSE"
     DESCRIPTION = "Analyses the bitcode with CFR of VaRA."
 
 
 class CommitAnnotationReport(Experiment):  # type: ignore
-    """
-    Generates a commit flow report (CFR) of the project(s) specified in the
-    call.
-    """
+    """Generates a commit flow report (CFR) of the project(s) specified in the
+    call."""
 
     NAME = "CommitAnnotationReport"
 
     def actions_for_project(self, project: Project) -> tp.List[Step]:
-        """Returns the specified steps to run the project(s) specified in
-        the call in a fixed order."""
+        """Returns the specified steps to run the project(s) specified in the
+        call in a fixed order."""
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
@@ -99,6 +90,7 @@ class CommitAnnotationReport(Experiment):  # type: ignore
             """
             This step annotates the project with the annotation script of
             Florian Niederhuber provided in the prepare-script (prepare.sh).
+
             prepare.sh can be accessed via the site-packages folder of all
             python packages installed via pip.
             """
@@ -116,10 +108,8 @@ class CommitAnnotationReport(Experiment):  # type: ignore
                 )
 
         def evaluate_extraction() -> None:
-            """
-            This step extracts the bitcode of the executable of the project
-            into one file.
-            """
+            """This step extracts the bitcode of the executable of the project
+            into one file."""
             with local.cwd(project_src / "out"):
                 extract_bc(project.name)
                 cp(

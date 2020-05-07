@@ -1,6 +1,4 @@
-"""
-Project file for qemu.
-"""
+"""Project file for qemu."""
 import typing as tp
 from pathlib import Path
 
@@ -24,7 +22,11 @@ from varats.utils.project_util import wrap_paths_to_binaries
     version_filter=project_filter_generator("qemu")
 )
 class Qemu(Project, CVEProviderHook):  # type: ignore
-    """QEMU, the FAST! processor emulator."""
+    """
+    QEMU, the FAST!
+
+    processor emulator.
+    """
 
     NAME = 'qemu'
     GROUP = 'c_projects'

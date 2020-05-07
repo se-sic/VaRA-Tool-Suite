@@ -1,6 +1,4 @@
-"""
-Module for the :class:`CVEProvider`.
-"""
+"""Module for the :class:`CVEProvider`."""
 import typing as tp
 
 from benchbuild.project import Project
@@ -31,9 +29,7 @@ class CVEProviderHook():
 
 
 class CVEProvider(Provider):
-    """
-    Provides CVE and CWE information for a project.
-    """
+    """Provides CVE and CWE information for a project."""
 
     def __init__(self, project: tp.Type[Project]) -> None:
         super().__init__(project)
@@ -77,10 +73,8 @@ class CVEProvider(Provider):
 
 
 class CVEDefaultProvider(CVEProvider):
-    """
-    Default implementation of the :class:`CVE provider` for projects that
-    do not (yet) support CVEs.
-    """
+    """Default implementation of the :class:`CVE provider` for projects that do
+    not (yet) support CVEs."""
 
     def __init__(self, project: tp.Type[Project]) -> None:
         # pylint: disable=E1003
@@ -98,6 +92,7 @@ def list_cve_for_projects(
 ) -> None:
     """
     List all CVE's for the given vendor/product combination.
+
     Call via vara-sec list-cve <vendor> <product>.
     """
     print(f"Listing CVE's for {vendor}/{product}:")
@@ -112,9 +107,7 @@ def list_cve_for_projects(
 
 
 def info(search: str, verbose: bool = False) -> None:
-    """
-    Search for matching CVE/CWE and print its data.
-    """
+    """Search for matching CVE/CWE and print its data."""
     print(f"Fetching information for {search}:")
 
     if search.lower().startswith('cve-'):

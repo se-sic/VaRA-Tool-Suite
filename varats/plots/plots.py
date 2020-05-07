@@ -1,6 +1,4 @@
-"""
-General plots module.
-"""
+"""General plots module."""
 import re
 import sys
 import typing as tp
@@ -12,9 +10,7 @@ if tp.TYPE_CHECKING:
 
 
 class PlotRegistry(type):
-    """
-    Registry for all supported plots.
-    """
+    """Registry for all supported plots."""
 
     to_snake_case_pattern = re.compile(r'(?<!^)(?=[A-Z])')
 
@@ -71,9 +67,7 @@ class PlotRegistry(type):
 
 @check_required_args(['plot_type', 'view', 'sep_stages'])
 def build_plot(**kwargs: tp.Any) -> None:
-    """
-    Build the specified graph.
-    """
+    """Build the specified graph."""
     plot_type = PlotRegistry.get_class_for_plot_type(kwargs['plot_type'])
 
     if (kwargs['sep_stages'] and not plot_type.supports_stage_separation()):

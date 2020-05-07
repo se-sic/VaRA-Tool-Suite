@@ -1,6 +1,4 @@
-"""
-Driver module for `vara-buildsetup`.
-"""
+"""Driver module for `vara-buildsetup`."""
 
 import argparse
 import os
@@ -26,9 +24,7 @@ from varats.vara_manager import BuildType
 
 
 class VaRATSSetup:
-    """
-    Start VaRA-TS grafical user interface for setting up VaRA.
-    """
+    """Start VaRA-TS grafical user interface for setting up VaRA."""
 
     def __init__(self) -> None:
         if hasattr(Qt, 'AA_EnableHighDpiScaling'):
@@ -40,9 +36,7 @@ class VaRATSSetup:
         self.main_window = BuildSetup()
 
     def main(self) -> None:
-        """
-        Start VaRA setup GUI
-        """
+        """Start VaRA setup GUI."""
         sys.exit(self.app.exec_())
 
 
@@ -66,7 +60,7 @@ def update_term(text: str, enable_inline: bool = False) -> None:
 
 def parse_string_to_build_type(build_type: str) -> BuildType:
     """
-    Convert a string into a BuildType
+    Convert a string into a BuildType.
 
     Args:
         build_type: VaRA build configuration
@@ -109,9 +103,7 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
 
 
 def main() -> None:
-    """
-    Build VaRA on cli.
-    """
+    """Build VaRA on cli."""
     initialize_logger_config()
     parser = argparse.ArgumentParser("vara-buildsetup")
 

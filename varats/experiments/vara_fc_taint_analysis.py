@@ -1,9 +1,10 @@
 """
 Execute showcase cpp examples with VaRA's taint analysis.
-We run the analysis on exemplary cpp files. The cpp examples can be
-found in the https://github.com/se-passau/vara-perf-tests repository.
-The result LLVM IR is then parsed into an file contaning only the
-instructions tainted by the commit regions of the cpp file.
+
+We run the analysis on exemplary cpp files. The cpp examples can be found in the
+https://github.com/se-passau/vara-perf-tests repository. The result LLVM IR is
+then parsed into an file contaning only the instructions tainted by the commit
+regions of the cpp file.
 """
 
 import typing as tp
@@ -25,9 +26,7 @@ from varats.utils.experiment_util import (
 
 
 class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
-    """
-    Read the LLVM IR, store the tainted ones and pipe them into FileCheck.
-    """
+    """Read the LLVM IR, store the tainted ones and pipe them into FileCheck."""
 
     NAME = "ParseAndValidateVaRAOutput"
     DESCRIPTION = "Parses VaRA's LLVM IR into only the tainted instructions."\
@@ -45,6 +44,7 @@ class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
     def filecheck(self) -> actions.StepResult:
         """
         Compare the generated results against the expected result.
+
         First the result files are read, printed and piped into FileCheck.
         """
 
@@ -156,9 +156,11 @@ class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
 class VaRAFileCheckTaintPropagation(VaRATaintPropagation):
     """
     Generates a inter-procedural data flow analysis (IFDS) on a project's
-    binaries and propagates commit regions similar to the
-    VaraTaintPropagation experiment. The result however gets parsed, that
-    FileCheck can validate the propagation against the expected result.
+    binaries and propagates commit regions similar to the VaraTaintPropagation
+    experiment.
+
+    The result however gets parsed, that FileCheck can validate the propagation
+    against the expected result.
     """
 
     NAME = "VaRAFileCheckTaintPropagation"
@@ -166,10 +168,8 @@ class VaRAFileCheckTaintPropagation(VaRATaintPropagation):
     REPORT_TYPE = TPR
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
-        """
-        Returns the specified steps to run the project(s) specified in
-        the call in a fixed order.
-        """
+        """Returns the specified steps to run the project(s) specified in the
+        call in a fixed order."""
         analysis_actions = super().actions_for_project(project)
 
         # remove the clean step from the other experiment

@@ -1,6 +1,4 @@
-"""
-Empty report implementation for testing.
-"""
+"""Empty report implementation for testing."""
 
 from varats.data.report import BaseReport, FileStatusExtension, MetaReport
 
@@ -8,6 +6,7 @@ from varats.data.report import BaseReport, FileStatusExtension, MetaReport
 class EmptyReport(BaseReport):
     """
     An empty report for testing.
+
     Nothing gets printed into the report and the result file has no file type.
     """
 

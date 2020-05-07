@@ -1,6 +1,4 @@
-"""
-Generate plots for the degree of blame interactions.
-"""
+"""Generate plots for the degree of blame interactions."""
 import abc
 import logging
 import typing as tp
@@ -28,9 +26,7 @@ def _filter_data_frame(
     degree_type: DegreeType, interaction_plot_df: pd.DataFrame,
     commit_map: CommitMap
 ) -> tp.Tuple[tp.List[str], tp.List[pd.Series]]:
-    """
-    Reduce data frame to rows that match the degree type
-    """
+    """Reduce data frame to rows that match the degree type."""
     interaction_plot_df = interaction_plot_df[interaction_plot_df.degree_type ==
                                               degree_type.value]
 
@@ -59,17 +55,15 @@ def _filter_data_frame(
 
 
 class BlameDegree(Plot):
-    """
-    Base plot for blame degree plots.
-    """
+    """Base plot for blame degree plots."""
 
     @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
-        """Plot the current plot to a file"""
+        """Plot the current plot to a file."""
 
     @abc.abstractmethod
     def show(self) -> None:
-        """Show the current plot"""
+        """Show the current plot."""
 
     def _degree_plot(
         self,
@@ -190,9 +184,7 @@ class BlameDegree(Plot):
 
 
 class BlameInteractionDegree(BlameDegree):
-    """
-    Plotting the degree of blame interactions.
-    """
+    """Plotting the degree of blame interactions."""
 
     NAME = 'b_interaction_degree'
 
@@ -215,9 +207,7 @@ class BlameInteractionDegree(BlameDegree):
 
 
 class BlameAuthorDegree(BlameDegree):
-    """
-    Plotting the degree of authors for all blame interactions.
-    """
+    """Plotting the degree of authors for all blame interactions."""
 
     NAME = 'b_author_degree'
 
@@ -240,9 +230,8 @@ class BlameAuthorDegree(BlameDegree):
 
 
 class BlameMaxTimeDistribution(BlameDegree):
-    """
-    Plotting the degree of max times differences for all blame interactions.
-    """
+    """Plotting the degree of max times differences for all blame
+    interactions."""
 
     NAME = 'b_maxtime_distribution'
 
@@ -266,9 +255,8 @@ class BlameMaxTimeDistribution(BlameDegree):
 
 
 class BlameAvgTimeDistribution(BlameDegree):
-    """
-    Plotting the degree of avg times differences for all blame interactions.
-    """
+    """Plotting the degree of avg times differences for all blame
+    interactions."""
 
     NAME = 'b_avgtime_distribution'
 

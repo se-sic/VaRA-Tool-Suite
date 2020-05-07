@@ -3,12 +3,11 @@ Execute showcase cpp examples with VaRA to compare the taint analysis to other
 statically analysis frameworks.
 
 This class implements the full commit taint flow analysis (MTFA) graph
-generation of the variability-aware region analyzer (VaRA).
-We run the analyses on exemplary cpp files.
-The cpp examples can be found in the
-https://github.com/se-passau/vara-perf-tests repository.
-The output LLVM IR files with annotated meta data are written into the result
-files for each executed binary.
+generation of the variability-aware region analyzer (VaRA). We run the analyses
+on exemplary cpp files. The cpp examples can be found in the
+https://github.com/se-passau/vara-perf-tests repository. The output LLVM IR
+files with annotated meta data are written into the result files for each
+executed binary.
 """
 
 import typing as tp
@@ -33,10 +32,8 @@ from varats.utils.experiment_util import (
 
 
 class VaraMTFACheck(actions.Step):  # type: ignore
-    """
-    Analyse a project with VaRA and generate the output of the
-    taint flow analysis.
-    """
+    """Analyse a project with VaRA and generate the output of the taint flow
+    analysis."""
 
     NAME = "VaraMTFACheck"
     DESCRIPTION = "Generate a full MTFA on the exemplary taint test files."
@@ -120,19 +117,15 @@ class VaraMTFACheck(actions.Step):  # type: ignore
 
 
 class VaRATaintPropagation(VersionExperiment):
-    """
-    Generates a taint flow analysis (MTFA) of the project(s) specified in the
-    call.
-    """
+    """Generates a taint flow analysis (MTFA) of the project(s) specified in the
+    call."""
 
     NAME = "VaRATaintPropagation"
     REPORT_TYPE = TPR
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
-        """
-        Returns the specified steps to run the project(s) specified in
-        the call in a fixed order.
-        """
+        """Returns the specified steps to run the project(s) specified in the
+        call in a fixed order."""
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \

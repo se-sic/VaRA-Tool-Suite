@@ -1,6 +1,4 @@
-"""
-Test VaRA blame reports.
-"""
+"""Test VaRA blame reports."""
 
 import unittest
 import unittest.mock as mock
@@ -46,15 +44,12 @@ result-map:
 
 
 class TestBlameInstInteractions(unittest.TestCase):
-    """
-    Test if a blame inst interactions are correctly reconstruction from yaml.
-    """
+    """Test if a blame inst interactions are correctly reconstruction from
+    yaml."""
 
     @classmethod
     def setUpClass(cls):
-        """
-        Load and parse function infos from yaml file.
-        """
+        """Load and parse function infos from yaml file."""
         with mock.patch(
             "builtins.open", new=mock.mock_open(read_data=YAML_DOC_2)
         ):
@@ -69,9 +64,7 @@ class TestBlameInstInteractions(unittest.TestCase):
                 )
 
     def test_base_hash(self):
-        """
-        Test if base_hash is loaded correctly.
-        """
+        """Test if base_hash is loaded correctly."""
         self.assertEqual(
             self.blame_interaction_1.base_commit,
             '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33'
@@ -83,9 +76,7 @@ class TestBlameInstInteractions(unittest.TestCase):
         )
 
     def test_interactions(self):
-        """
-        Test if interactions are loaded correctly.
-        """
+        """Test if interactions are loaded correctly."""
         self.assertEqual(
             self.blame_interaction_1.interacting_commits[0],
             'a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9'
@@ -101,23 +92,17 @@ class TestBlameInstInteractions(unittest.TestCase):
         )
 
     def test_amount(self):
-        """
-        Test if amount is loaded correctly.
-        """
+        """Test if amount is loaded correctly."""
         self.assertEqual(self.blame_interaction_1.amount, 22)
         self.assertEqual(self.blame_interaction_2.amount, 5)
 
 
 class TestResultFunctionEntry(unittest.TestCase):
-    """
-    Test if a result function entry is correctly reconstruction from yaml.
-    """
+    """Test if a result function entry is correctly reconstruction from yaml."""
 
     @classmethod
     def setUpClass(cls):
-        """
-        Load and parse function infos from yaml file.
-        """
+        """Load and parse function infos from yaml file."""
         with mock.patch(
             "builtins.open", new=mock.mock_open(read_data=YAML_DOC_2)
         ):
@@ -132,25 +117,19 @@ class TestResultFunctionEntry(unittest.TestCase):
                 )
 
     def test_name(self):
-        """
-        Test if name is saved correctly
-        """
+        """Test if name is saved correctly."""
         self.assertEqual(self.func_entry_c.name, "bool_exec")
         self.assertEqual(self.func_entry_cxx.name, "_Z7doStuffii")
 
     def test_demangled_name(self):
-        """
-        Test if demangled_name is saved correctly
-        """
+        """Test if demangled_name is saved correctly."""
         self.assertEqual(self.func_entry_c.demangled_name, 'bool_exec')
         self.assertEqual(
             self.func_entry_cxx.demangled_name, 'doStuff(int, int)'
         )
 
     def test_found_interactions(self):
-        """
-        Test if all interactions where found.
-        """
+        """Test if all interactions where found."""
         c_interaction_list = self.func_entry_c.interactions
         self.assertEqual(len(c_interaction_list), 2)
         self.assertEqual(
@@ -169,15 +148,11 @@ class TestResultFunctionEntry(unittest.TestCase):
 
 
 class TestBlameReport(unittest.TestCase):
-    """
-    Test if a blame report is correctly reconstructed from yaml.
-    """
+    """Test if a blame report is correctly reconstructed from yaml."""
 
     @classmethod
     def setUpClass(cls):
-        """
-        Load and parse function infos from yaml file.
-        """
+        """Load and parse function infos from yaml file."""
         with mock.patch(
             "builtins.open",
             new=mock.mock_open(read_data=YAML_DOC_1 + YAML_DOC_2)
@@ -186,15 +161,11 @@ class TestBlameReport(unittest.TestCase):
             cls.report = loaded_report
 
     def test_path(self):
-        """
-        Test if the path is saved correctly.
-        """
+        """Test if the path is saved correctly."""
         self.assertEqual(self.report.path, Path("fake_file_path"))
 
     def test_get_function_entry(self):
-        """
-        Test if we get the correct function entry.
-        """
+        """Test if we get the correct function entry."""
         func_entry_1 = self.report.get_blame_result_function_entry(
             'adjust_assignment_expression'
         )
@@ -212,9 +183,7 @@ class TestBlameReport(unittest.TestCase):
         self.assertNotEqual(func_entry_2.name, 'bool_exec')
 
     def test_iter_function_entries(self):
-        """
-        Test if we can iterate over all function entries.
-        """
+        """Test if we can iterate over all function entries."""
         func_entry_iter = iter(self.report.function_entries)
         self.assertEqual(
             next(func_entry_iter).name, 'adjust_assignment_expression'
@@ -224,15 +193,11 @@ class TestBlameReport(unittest.TestCase):
 
 
 class TestBlameReportHelperFunctions(unittest.TestCase):
-    """
-    Test if a blame report is correctly reconstruction from yaml.
-    """
+    """Test if a blame report is correctly reconstruction from yaml."""
 
     @classmethod
     def setUpClass(cls):
-        """
-        Load and parse function infos from yaml file.
-        """
+        """Load and parse function infos from yaml file."""
         with mock.patch(
             "builtins.open",
             new=mock.mock_open(read_data=YAML_DOC_1 + YAML_DOC_2)
@@ -241,9 +206,7 @@ class TestBlameReportHelperFunctions(unittest.TestCase):
             cls.report = loaded_report
 
     def test_generate_degree_tuple(self):
-        """
-        Test if degree tuple generation works.
-        """
+        """Test if degree tuple generation works."""
         degree_tuples = generate_degree_tuples(self.report)
         self.assertEqual(degree_tuples[0], (1, 22))
         self.assertEqual(degree_tuples[1], (2, 5))

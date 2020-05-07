@@ -1,6 +1,4 @@
-"""
-Project file for gravity.
-"""
+"""Project file for gravity."""
 import typing as tp
 from pathlib import Path
 
@@ -65,7 +63,7 @@ from varats.utils.project_util import (
     version_filter=project_filter_generator("gravity")
 )
 class Gravity(Project, CVEProviderHook):  # type: ignore
-    """Programming language Gravity"""
+    """Programming language Gravity."""
 
     NAME = 'gravity'
     GROUP = 'c_projects'

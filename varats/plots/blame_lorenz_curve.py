@@ -1,7 +1,5 @@
-"""
-Generate a plot to visualize revision impact inequality based on data-flow
-interactions.
-"""
+"""Generate a plot to visualize revision impact inequality based on data-flow
+interactions."""
 import typing as tp
 
 import matplotlib.axes as axes
@@ -68,8 +66,8 @@ def draw_perfect_lorenz_curve(
     axis: axes.SubplotBase, data: pd.DataFrame, plot_cfg: tp.Dict[str, tp.Any]
 ) -> None:
     """
-    Draws a perfect lorenz curve onto the given axis, i.e., a straight line
-    from the point of origin to the right upper corner.
+    Draws a perfect lorenz curve onto the given axis, i.e., a straight line from
+    the point of origin to the right upper corner.
 
     Args:
         axis: axis to draw to
@@ -102,7 +100,7 @@ def draw_interaction_code_churn(
     unique_revs = data['revision'].unique()
 
     def remove_revisions_without_data(revision: str) -> bool:
-        """Removes all churn data where this plot has no data"""
+        """Removes all churn data where this plot has no data."""
         return revision[:10] in unique_revs
 
     def apply_sorting(churn_data: pd.DataFrame) -> pd.DataFrame:
@@ -141,9 +139,7 @@ def filter_non_code_changes(
 
 
 class BlameLorenzCurve(Plot):
-    """
-    Plots the lorenz curve for IN/OUT interactions for a given project.
-    """
+    """Plots the lorenz curve for IN/OUT interactions for a given project."""
 
     NAME = 'b_lorenz_curve'
 
@@ -221,7 +217,7 @@ class BlameLorenzCurve(Plot):
 def gini(lorenz_values: pd.Series) -> pd.Series:
     """
     Calculates the gini coefficient:  half of the relative mean absolute
-    difference between the lorenz values
+    difference between the lorenz values.
 
     Args:
         lorenz_values: the scaled prefix sum of an ordered values range
@@ -254,7 +250,7 @@ def draw_gini_churn_over_time(
     unique_revs = blame_data['revision'].unique()
 
     def remove_revisions_without_data(revision: str) -> bool:
-        """Removes all churn data where this plot has no data"""
+        """Removes all churn data where this plot has no data."""
         return revision[:10] in unique_revs
 
     churn_data = churn_data[churn_data.apply(
@@ -371,6 +367,7 @@ def draw_gini_blame_over_time(
 class BlameGiniOverTime(Plot):
     """
     Plots the gini coefficient over time for a project.
+
     This shows how the distribution of the interactions/churn changes of time.
     """
 

@@ -1,6 +1,4 @@
-"""
-Test the security utilities eg CVE, CWE stuff.
-"""
+"""Test the security utilities eg CVE, CWE stuff."""
 
 import typing as tp
 import unittest
@@ -19,9 +17,7 @@ from varats.data.provider.cve.cve import (
 
 
 class TestSecurity(unittest.TestCase):
-    """
-    Security tests.
-    """
+    """Security tests."""
 
     REFERENCE_CVE_DATA = {
         'cve_id':
@@ -47,6 +43,7 @@ class TestSecurity(unittest.TestCase):
         """
         Check if the Heartbleed's CVE-2014-0160 can be properly retrieved and
         parsed.
+
         https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-2601
         """
         with requests_cache.disabled():
@@ -61,6 +58,7 @@ class TestSecurity(unittest.TestCase):
         """
         Get all OpenSSL CVE's and check if the Heartbleed CVE-2014-0160 is
         contained.
+
         @https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-2601
         """
         with requests_cache.disabled():
@@ -82,7 +80,8 @@ class TestSecurity(unittest.TestCase):
     @unittest.skip("Disable CWE tests for now.")
     def test_find_single_cwe(self):
         """
-        Find a CWE which should be in the list
+        Find a CWE which should be in the list.
+
         @https://cwe.mitre.org/data/definitions/478.html
         """
         self.assertTrue(len(find_all_cwe()) != 0)
@@ -96,7 +95,8 @@ class TestSecurity(unittest.TestCase):
     @unittest.skip("Disable CWE tests for now.")
     def test_find_all_cwe(self):
         """
-        Find a CWE which should be in the list
+        Find a CWE which should be in the list.
+
         @https://cwe.mitre.org/data/definitions/478.html
         """
         cwe_list: tp.FrozenSet[CWE] = find_all_cwe()

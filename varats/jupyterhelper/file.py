@@ -1,7 +1,5 @@
-"""
-This module provides different jupyther helpers to allow easier interaction
-with varas file handling APIs.
-"""
+"""This module provides different jupyther helpers to allow easier interaction
+with varas file handling APIs."""
 
 from pathlib import Path
 

@@ -1,6 +1,4 @@
-"""
-Annotate CVE/CWE data to a plot.
-"""
+"""Annotate CVE/CWE data to a plot."""
 import typing as tp
 
 from benchbuild.project import Project

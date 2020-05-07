@@ -1,8 +1,6 @@
-"""
-This modules provides the base classes for research tools that allow developers
-to setup and configure their own research tool by inheriting and implementing
-the base classes ``ResearchTool`` and ``CodeBase``.
-"""
+"""This modules provides the base classes for research tools that allow
+developers to setup and configure their own research tool by inheriting and
+implementing the base classes ``ResearchTool`` and ``CodeBase``."""
 import abc
 import logging
 import typing as tp
@@ -31,10 +29,8 @@ from varats.vara_manager import (
 
 
 class SubProject():
-    """
-    Encapsulates a sub project, e.g., a library or tool, defining how it can be
-    downloaded and integrated inside a ``CodeBase``.
-    """
+    """Encapsulates a sub project, e.g., a library or tool, defining how it can
+    be downloaded and integrated inside a ``CodeBase``."""
 
     def __init__(
         self,
@@ -54,23 +50,17 @@ class SubProject():
 
     @property
     def name(self) -> str:
-        """
-        Name of the sub project
-        """
+        """Name of the sub project."""
         return self.__name
 
     @property
     def url(self) -> str:
-        """
-        Repository URL
-        """
+        """Repository URL."""
         return self.__url
 
     @property
     def remote(self) -> str:
-        """
-        Git remote, for interacting with upstream repositories.
-        """
+        """Git remote, for interacting with upstream repositories."""
         return self.__remote
 
     @property
@@ -107,10 +97,8 @@ class SubProject():
         update_all_submodules(self.__parent_code_base.base_dir / self.path)
 
     def clone(self) -> None:
-        """
-        Clone the sub project into the specified folder relative to the base
-        dir of the ``CodeBase``.
-        """
+        """Clone the sub project into the specified folder relative to the base
+        dir of the ``CodeBase``."""
         print(f"Cloning {self.name} into {self.__parent_code_base.base_dir}")
         if (self.__parent_code_base.base_dir / self.path).exists():
             raise FolderAlreadyPresentError(
@@ -127,8 +115,8 @@ class SubProject():
         remote_to_check: tp.Optional[str] = None
     ) -> bool:
         """
-        Check if the sub project has a branch with the
-        specified ``branch name``.
+        Check if the sub project has a branch with the specified ``branch
+        name``.
 
         Args:
             branch_name: name of the branch
@@ -162,7 +150,7 @@ class SubProject():
 
     def add_remote(self, remote: str, url: str) -> None:
         """
-        Add a new remote to the sub project
+        Add a new remote to the sub project.
 
         Args:
             remote: name of the new remote
@@ -201,23 +189,18 @@ class SubProject():
         remote: tp.Optional[str] = None,
         extra_args: tp.Optional[tp.List[str]] = None
     ) -> None:
-        """
-        Fetch updates from the remote.
-        """
+        """Fetch updates from the remote."""
         fetch_remote(
             remote, self.__parent_code_base.base_dir / self.path, extra_args
         )
 
     def pull(self) -> None:
-        """
-        Pull updates from the remote of the current branch into the sub project.
-        """
+        """Pull updates from the remote of the current branch into the sub
+        project."""
         pull_current_branch(self.__parent_code_base.base_dir / self.path)
 
     def push(self) -> None:
-        """
-        Push updates from the current branch to the remote branch.
-        """
+        """Push updates from the current branch to the remote branch."""
         absl_repo_path = self.__parent_code_base.base_dir / self.path
         branch_name = get_current_branch(absl_repo_path)
         if branch_has_upstream(absl_repo_path, branch_name):
@@ -226,9 +209,7 @@ class SubProject():
             push_current_branch(absl_repo_path, "origin", branch_name)
 
     def show_status(self) -> None:
-        """
-        Show the current status of the sub project.
-        """
+        """Show the current status of the sub project."""
         show_status(self.__parent_code_base.base_dir / self.path)
 
     def __str__(self) -> str:
@@ -240,9 +221,10 @@ class SubProject():
 class CodeBase():
     """
     A ``CodeBase`` depicts the layout of a project, specifying where the a
-    research tool lives and how different sub projects should be cloned. In
-    addition, it allows access to the sub projects, e.g., for checkout or other
-    repository manipulations.
+    research tool lives and how different sub projects should be cloned.
+
+    In addition, it allows access to the sub projects, e.g., for checkout or
+    other repository manipulations.
     """
 
     def __init__(self, base_dir: Path, sub_projects: tp.List[SubProject]):
@@ -293,11 +275,9 @@ SpecificCodeBase = tp.TypeVar("SpecificCodeBase", bound=CodeBase)
 
 
 class ResearchTool(tp.Generic[SpecificCodeBase]):
-    """
-    ResearchTool is an abstract base class for specifying research tools that
+    """ResearchTool is an abstract base class for specifying research tools that
     are set up by VaRA-TS and usable through the tool suites experiments and
-    tools.
-    """
+    tools."""
 
     def __init__(
         self, tool_name: str, supported_build_types: tp.List[BuildType],
@@ -332,9 +312,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
 
     @abc.abstractmethod
     def upgrade(self) -> None:
-        """
-        Upgrade the research tool to a newer version.
-        """
+        """Upgrade the research tool to a newer version."""
 
     @abc.abstractmethod
     def build(self, build_type: BuildType, install_location: Path) -> None:

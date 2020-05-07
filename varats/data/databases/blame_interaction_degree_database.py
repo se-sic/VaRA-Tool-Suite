@@ -1,6 +1,4 @@
-"""
-Module for the base BlameInteractionDegreeDatabase class
-"""
+"""Module for the base BlameInteractionDegreeDatabase class."""
 import typing as tp
 from enum import Enum
 
@@ -29,9 +27,7 @@ AVG_TIME_BUCKET_SIZE = 1
 
 
 class DegreeType(Enum):
-    """
-    Degree types of blame interaction data.
-    """
+    """Degree types of blame interaction data."""
     interaction = "interaction"
     author = "author"
     max_time = "max_time"
@@ -43,9 +39,7 @@ class BlameInteractionDegreeDatabase(
     cache_id="blame_interaction_degree_data",
     columns=["degree_type", "degree", "amount", "fraction"]
 ):
-    """
-    Provides access to blame interaction degree data.
-    """
+    """Provides access to blame interaction degree data."""
 
     @classmethod
     def _load_dataframe(

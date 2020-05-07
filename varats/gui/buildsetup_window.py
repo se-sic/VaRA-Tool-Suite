@@ -1,6 +1,4 @@
-"""
-A module that manages the building of VaRa.
-"""
+"""A module that manages the building of VaRa."""
 import os
 import re
 from pathlib import Path
@@ -16,18 +14,14 @@ from varats.utils.exceptions import ProcessTerminatedError
 
 
 class WorkerSignals(QObject):
-    """
-    Worker signal to communicate information back to the GUI.
-    """
+    """Worker signal to communicate information back to the GUI."""
     finished = pyqtSignal()
     update = pyqtSignal(object)
     text_update = pyqtSignal(object)
 
 
 class SetupWorker(QRunnable):
-    """
-    Setup worker to handle the setup of VaRA.
-    """
+    """Setup worker to handle the setup of VaRA."""
 
     def __init__(self, path):
         super(SetupWorker, self).__init__()
@@ -42,16 +36,12 @@ class SetupWorker(QRunnable):
         self.signals.text_update.emit(text)
 
     def get_steps(self):
-        """
-        Get the amount of sets to init VaRA.
-        """
+        """Get the amount of sets to init VaRA."""
         return self.steps
 
     @pyqtSlot()
     def run(self):
-        """
-        Run, initializes VaRA in a different thread.
-        """
+        """Run, initializes VaRA in a different thread."""
         try:
             vara_manager.download_vara(
                 self.path, self._update_progress, self._update_text
@@ -69,18 +59,14 @@ class SetupWorker(QRunnable):
 
 
 class BuilderSignals(QObject):
-    """
-    Builder singals to communicate information back to the GUI.
-    """
+    """Builder singals to communicate information back to the GUI."""
     finished = pyqtSignal()
     update = pyqtSignal(object)
     text_update = pyqtSignal(object)
 
 
 class BuildWorker(QRunnable):
-    """
-    BuildWorker to build an install VaRA.
-    """
+    """BuildWorker to build an install VaRA."""
 
     def __init__(
         self, path_to_llvm, install_prefix, build_type: vara_manager.BuildType
@@ -96,9 +82,7 @@ class BuildWorker(QRunnable):
 
     @pyqtSlot()
     def run(self):
-        """
-        Run, build an installs VaRA in a diffrent thread.
-        """
+        """Run, build an installs VaRA in a diffrent thread."""
         try:
             vara_manager.build_vara(
                 Path(self.path_to_llvm), self.install_prefix, self.build_type,
@@ -110,9 +94,7 @@ class BuildWorker(QRunnable):
 
 
 class BuildSetup(QWidget, Ui_BuildSetup):
-    """
-    Window to control the setup and status of the local VaRA installation.
-    """
+    """Window to control the setup and status of the local VaRA installation."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -178,9 +160,7 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         self.textOutput.moveCursor(QTextCursor.End)
 
     def _setup_vara(self):
-        """
-        Downloads VaRA to the current working directory.
-        """
+        """Downloads VaRA to the current working directory."""
         self.statusLabel.setText("Setting up VaRA...")
         self.statusLabel.show()
         path = self.__get_llvm_source_path()

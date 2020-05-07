@@ -1,6 +1,4 @@
-"""
-Driver module for `vara-plot`.
-"""
+"""Driver module for `vara-plot`."""
 
 import argparse
 import logging

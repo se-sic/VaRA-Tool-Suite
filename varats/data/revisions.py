@@ -1,8 +1,10 @@
 """
-Module for handling revision specific files.  When analyzing a project, result
-files are generated for specific project revisions.  This module provides
-functionality to manage and access these revision specific files, e.g., to get all
-files of a specific report that have been process successfully.
+Module for handling revision specific files.
+
+When analyzing a project, result files are generated for specific project
+revisions.  This module provides functionality to manage and access these
+revision specific files, e.g., to get all files of a specific report that have
+been process successfully.
 """
 
 import typing as tp
@@ -57,10 +59,9 @@ def __get_supplementary_result_files_dict(
     revision: tp.Optional[str] = None,
 ) -> tp.Dict[tp.Tuple[str, str], tp.List[Path]]:
     """
-    Returns a dict that maps the commit_hash and the info_type to a list
-    of all supplementary result files for that commit and info_type.
-    If an (optional) revision is specified the nonly result files for that
-    commit are returned.
+    Returns a dict that maps the commit_hash and the info_type to a list of all
+    supplementary result files for that commit and info_type. If an (optional)
+    revision is specified the nonly result files for that commit are returned.
 
     Args:
         project_name: target project
@@ -218,8 +219,8 @@ def get_failed_revisions_files(
 def get_processed_revisions(project_name: str,
                             result_file_type: MetaReport) -> tp.List[str]:
     """
-    Calculates a list of revisions of a project that have already
-    been processed successfully.
+    Calculates a list of revisions of a project that have already been processed
+    successfully.
 
     Args:
         project_name: target project
@@ -296,8 +297,8 @@ def get_tagged_revisions(
     tag_blocked: bool = True
 ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
     """
-    Calculates a list of revisions of a project tagged with the file status.
-    If two files exists the newest is considered for detecting the status.
+    Calculates a list of revisions of a project tagged with the file status. If
+    two files exists the newest is considered for detecting the status.
 
     Args:
         project_cls: target project
@@ -325,8 +326,8 @@ def get_tagged_revision(
     revision: str, project_name: str, result_file_type: MetaReport
 ) -> FileStatusExtension:
     """
-    Calculates the file status for a revision.
-    If two files exists the newest is considered for detecting the status.
+    Calculates the file status for a revision. If two files exists the newest is
+    considered for detecting the status.
 
     Args:
         revision: the revision to get the status for
@@ -354,9 +355,8 @@ def get_supplementary_result_files(
 ) -> tp.List[tp.Tuple[Path, str, str]]:
     """
     Returns the current supplementary result files for a given project and
-    report type.
-    If a specific revision is specified then only the result files for the
-    passed revision are returned, otherwise all files for all available
+    report type. If a specific revision is specified then only the result files
+    for the passed revision are returned, otherwise all files for all available
     revisions are returned.
 
     Args:
