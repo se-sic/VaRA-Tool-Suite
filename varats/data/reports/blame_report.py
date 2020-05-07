@@ -161,7 +161,7 @@ def _calc_diff_between_func_entries(
     for base_inter in base_interactions:
         if base_inter in prev_interactions:
             prev_inter_idx = prev_interactions.index(base_inter)
-            prev_inter = prev_interactions[prev_inter_idx]
+            prev_inter = prev_interactions.pop(prev_inter_idx)
             # create new blame inst interaction with the absolute differente
             # between base and prev
             difference = base_inter.amount - prev_inter.amount
@@ -170,7 +170,6 @@ def _calc_diff_between_func_entries(
                     BlameInstInteractions(
                         base_inter.base_commit,
                         deepcopy(base_inter.interacting_commits), difference))
-            del prev_interactions[prev_inter_idx]
         else:
             # append new interaction from base report
             diff_interactions.append(deepcopy(base_inter))
@@ -270,24 +269,24 @@ class BlameReport(BaseReport):
 
 class BlameReportDiff():
     """
-    Diff class that contains all interactions that changed between to report
+    Diff class that contains all interactions that changed between two report
     revisions.
     """
 
     def __init__(self, base_report: BlameReport,
-                 pred_report: BlameReport) -> None:
+                 prev_report: BlameReport) -> None:
         self.__function_entries: tp.Dict[str, BlameResultFunctionEntry] = dict()
         self.__base_head = base_report.head_commit
-        self.__pred_head = pred_report.head_commit
-        self.__calc_diff_br(base_report, pred_report)
+        self.__prev_head = prev_report.head_commit
+        self.__calc_diff_br(base_report, prev_report)
 
     @property
     def base_head_commit(self) -> str:
         return self.__base_head
 
     @property
-    def pred_head_commit(self) -> str:
-        return self.__pred_head
+    def prev_head_commit(self) -> str:
+        return self.__prev_head
 
     @property
     def function_entries(self) -> tp.ValuesView[BlameResultFunctionEntry]:
@@ -310,17 +309,17 @@ class BlameReportDiff():
         return mangled_function_name in self.__function_entries
 
     def __calc_diff_br(self, base_report: BlameReport,
-                       pred_report: BlameReport) -> None:
+                       prev_report: BlameReport) -> None:
         function_names = {
             base_func_entry.name
             for base_func_entry in base_report.function_entries
         } | {
-            pred_func_entry.name
-            for pred_func_entry in pred_report.function_entries
+            prev_func_entry.name
+            for prev_func_entry in prev_report.function_entries
         }
         for func_name in function_names:
             base_func_entry = None
-            pred_func_entry = None
+            prev_func_entry = None
             try:
                 base_func_entry = base_report.get_blame_result_function_entry(
                     func_name)
@@ -328,27 +327,27 @@ class BlameReportDiff():
                 pass
 
             try:
-                pred_func_entry = pred_report.get_blame_result_function_entry(
+                prev_func_entry = prev_report.get_blame_result_function_entry(
                     func_name)
             except LookupError:
                 pass
 
             # Only base report has the function
-            if pred_func_entry is None and base_func_entry is not None:
+            if prev_func_entry is None and base_func_entry is not None:
                 if base_func_entry.interactions:
                     self.__function_entries[func_name] = deepcopy(
                         base_func_entry)
 
-            # Only pred report has the function
-            elif base_func_entry is None and pred_func_entry is not None:
-                if pred_func_entry.interactions:
+            # Only prev report has the function
+            elif base_func_entry is None and prev_func_entry is not None:
+                if prev_func_entry.interactions:
                     self.__function_entries[func_name] = deepcopy(
-                        pred_func_entry)
+                        prev_func_entry)
 
             # Both reports have the same function
-            elif base_func_entry is not None and pred_func_entry is not None:
+            elif base_func_entry is not None and prev_func_entry is not None:
                 diff_entry = _calc_diff_between_func_entries(
-                    base_func_entry, pred_func_entry)
+                    base_func_entry, prev_func_entry)
 
                 if diff_entry.interactions:
                     self.__function_entries[func_name] = diff_entry
