@@ -52,4 +52,7 @@ def normalized_gini_coefficient(distribution: pd.Series) -> float:
         the normalized gini coefficient for the data
     """
     n = float(len(distribution))
+    if n <= 1:
+        return gini_coefficient(distribution)
+
     return gini_coefficient(distribution) * (n / (n - 1.0))
