@@ -3,8 +3,9 @@
 import typing as tp
 from collections import defaultdict
 from datetime import datetime
-from pathlib import Path
+from copy import deepcopy
 
+import yaml
 import numpy as np
 import pygit2
 import yaml
@@ -23,12 +24,25 @@ class BlameInstInteractions():
     instruction.
     """
 
-    def __init__(self, raw_inst_entry: tp.Dict[str, tp.Any]) -> None:
-        self.__base_hash = str(raw_inst_entry['base-hash'])
-        self.__interacting_hashes: tp.List[str] = []
+    def __init__(self, base_hash: str, interacting_hashes: tp.List[str],
+                 amount: int) -> None:
+        self.__base_hash = base_hash
+        self.__interacting_hashes = interacting_hashes
+        self.__amount = amount
+
+    @staticmethod
+    def create_blame_inst_interactions(
+            raw_inst_entry: tp.Dict[str, tp.Any]) -> 'BlameInstInteractions':
+        """
+        Creates a `BlameInstInteractions` entry from the corresponding yaml
+        document section.
+        """
+        base_hash = str(raw_inst_entry['base-hash'])
+        interacting_hashes: tp.List[str] = []
         for raw_inst_hash in raw_inst_entry['interacting-hashes']:
-            self.__interacting_hashes.append(str(raw_inst_hash))
-        self.__amount = int(raw_inst_entry['amount'])
+            interacting_hashes.append(str(raw_inst_hash))
+        amount = int(raw_inst_entry['amount'])
+        return BlameInstInteractions(base_hash, interacting_hashes, amount)
 
     @property
     def base_commit(self) -> str:
@@ -56,18 +70,49 @@ class BlameInstInteractions():
         str_representation += "]\n"
         return str_representation
 
+    def __eq__(self, other: tp.Any) -> bool:
+        if isinstance(other, BlameInstInteractions):
+            if self.base_commit == other.base_commit:
+                return sorted(self.interacting_commits) == sorted(
+                    other.interacting_commits)
+
+        return False
+
+    def __lt__(self, other: tp.Any) -> bool:
+        if isinstance(other, BlameInstInteractions):
+            if self.base_commit < other.base_commit:
+                return True
+            return sorted(self.interacting_commits) < sorted(
+                other.interacting_commits)
+
+        return False
+
 
 class BlameResultFunctionEntry():
     """Collection of all interactions for a specific function."""
 
-    def __init__(
-        self, name: str, raw_function_entry: tp.Dict[str, tp.Any]
-    ) -> None:
+    def __init__(self, name: str, demangled_name: str,
+                 blame_insts: tp.List[BlameInstInteractions]) -> None:
         self.__name = name
-        self.__demangled_name = str(raw_function_entry['demangled-name'])
-        self.__inst_list: tp.List[BlameInstInteractions] = []
+        self.__demangled_name = demangled_name
+        self.__inst_list = blame_insts
+
+    @staticmethod
+    def create_blame_result_function_entry(
+            name: str,
+            raw_function_entry: tp.Dict[str,
+                                        tp.Any]) -> 'BlameResultFunctionEntry':
+        """
+        Creates a `BlameResultFunctionEntry` from the corresponding yaml
+        document section.
+        """
+        demangled_name = str(raw_function_entry['demangled-name'])
+        inst_list: tp.List[BlameInstInteractions] = []
         for raw_inst_entry in raw_function_entry['insts']:
-            self.__inst_list.append(BlameInstInteractions(raw_inst_entry))
+            inst_list.append(
+                BlameInstInteractions.create_blame_inst_interactions(
+                    raw_inst_entry))
+        return BlameResultFunctionEntry(name, demangled_name, inst_list)
 
     @property
     def name(self) -> str:
@@ -98,6 +143,38 @@ class BlameResultFunctionEntry():
         return str_representation
 
 
+def _calc_diff_between_func_entries(
+        base_func_entry: BlameResultFunctionEntry,
+        prev_func_entry: BlameResultFunctionEntry) -> BlameResultFunctionEntry:
+    diff_interactions: tp.List[BlameInstInteractions] = []
+
+    base_interactions = sorted(base_func_entry.interactions)
+    prev_interactions = sorted(prev_func_entry.interactions)
+
+    for base_inter in base_interactions:
+        if base_inter in prev_interactions:
+            prev_inter_idx = prev_interactions.index(base_inter)
+            prev_inter = prev_interactions.pop(prev_inter_idx)
+            # create new blame inst interaction with the absolute differente
+            # between base and prev
+            difference = base_inter.amount - prev_inter.amount
+            if difference != 0:
+                diff_interactions.append(
+                    BlameInstInteractions(
+                        base_inter.base_commit,
+                        deepcopy(base_inter.interacting_commits), difference))
+        else:
+            # append new interaction from base report
+            diff_interactions.append(deepcopy(base_inter))
+
+    # append left over interactions from previous blame report
+    diff_interactions += prev_interactions
+
+    return BlameResultFunctionEntry(base_func_entry.name,
+                                    base_func_entry.demangled_name,
+                                    diff_interactions)
+
+
 class BlameReport(BaseReport):
     """Full blame report containing all blame interactions."""
 
@@ -117,12 +194,12 @@ class BlameReport(BaseReport):
                                              BlameResultFunctionEntry] = dict()
             raw_blame_report = next(documents)
             for raw_func_entry in raw_blame_report['result-map']:
-                new_function_entry = BlameResultFunctionEntry(
-                    raw_func_entry,
-                    raw_blame_report['result-map'][raw_func_entry]
-                )
-                self.__function_entries[new_function_entry.name
-                                       ] = new_function_entry
+                new_function_entry = (
+                    BlameResultFunctionEntry.create_blame_result_function_entry(
+                        raw_func_entry,
+                        raw_blame_report['result-map'][raw_func_entry]))
+                self.__function_entries[
+                    new_function_entry.name] = new_function_entry
 
     def get_blame_result_function_entry(
         self, mangled_function_name: str
@@ -172,6 +249,103 @@ class BlameReport(BaseReport):
             BlameReport.SHORTHAND, project_name, binary_name, project_version,
             project_uuid, extension_type, file_ext
         )
+
+    def __str__(self) -> str:
+        str_representation = ""
+        for function in self.__function_entries.values():
+            str_representation += str(function) + "\n"
+        return str_representation
+
+
+class BlameReportDiff():
+    """
+    Diff class that contains all interactions that changed between two report
+    revisions.
+    """
+
+    def __init__(self, base_report: BlameReport,
+                 prev_report: BlameReport) -> None:
+        self.__function_entries: tp.Dict[str, BlameResultFunctionEntry] = dict()
+        self.__base_head = base_report.head_commit
+        self.__prev_head = prev_report.head_commit
+        self.__calc_diff_br(base_report, prev_report)
+
+    @property
+    def base_head_commit(self) -> str:
+        return self.__base_head
+
+    @property
+    def prev_head_commit(self) -> str:
+        return self.__prev_head
+
+    @property
+    def function_entries(self) -> tp.ValuesView[BlameResultFunctionEntry]:
+        """
+        Iterate over all function entries in the diff.
+        """
+        return self.__function_entries.values()
+
+    def get_blame_result_function_entry(
+            self, mangled_function_name: str) -> BlameResultFunctionEntry:
+        """
+        Get the result entry for a specific function in the diff.
+
+        Args:
+            mangled_function_name: mangled name of the function to look up
+        """
+        return self.__function_entries[mangled_function_name]
+
+    def has_function(self, mangled_function_name: str) -> bool:
+        return mangled_function_name in self.__function_entries
+
+    def __calc_diff_br(self, base_report: BlameReport,
+                       prev_report: BlameReport) -> None:
+        function_names = {
+            base_func_entry.name
+            for base_func_entry in base_report.function_entries
+        } | {
+            prev_func_entry.name
+            for prev_func_entry in prev_report.function_entries
+        }
+        for func_name in function_names:
+            base_func_entry = None
+            prev_func_entry = None
+            try:
+                base_func_entry = base_report.get_blame_result_function_entry(
+                    func_name)
+            except LookupError:
+                pass
+
+            try:
+                prev_func_entry = prev_report.get_blame_result_function_entry(
+                    func_name)
+            except LookupError:
+                pass
+
+            # Only base report has the function
+            if prev_func_entry is None and base_func_entry is not None:
+                if base_func_entry.interactions:
+                    self.__function_entries[func_name] = deepcopy(
+                        base_func_entry)
+
+            # Only prev report has the function
+            elif base_func_entry is None and prev_func_entry is not None:
+                if prev_func_entry.interactions:
+                    self.__function_entries[func_name] = deepcopy(
+                        prev_func_entry)
+
+            # Both reports have the same function
+            elif base_func_entry is not None and prev_func_entry is not None:
+                diff_entry = _calc_diff_between_func_entries(
+                    base_func_entry, prev_func_entry)
+
+                if diff_entry.interactions:
+                    self.__function_entries[func_name] = diff_entry
+
+            else:
+                raise AssertionError(
+                    "The function name should be at least in one of the reports"
+                )
 
     def __str__(self) -> str:
         str_representation = ""
