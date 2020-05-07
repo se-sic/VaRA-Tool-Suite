@@ -8,7 +8,9 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_AuthorFilterProperties(object):
+
     def setupUi(self, AuthorFilterProperties):
         AuthorFilterProperties.setObjectName("AuthorFilterProperties")
         AuthorFilterProperties.resize(266, 84)
@@ -43,9 +45,13 @@ class Ui_AuthorFilterProperties(object):
 
     def retranslateUi(self, AuthorFilterProperties):
         _translate = QtCore.QCoreApplication.translate
-        AuthorFilterProperties.setWindowTitle(_translate("AuthorFilterProperties", "Form"))
+        AuthorFilterProperties.setWindowTitle(
+            _translate("AuthorFilterProperties", "Form")
+        )
         self.label.setText(_translate("AuthorFilterProperties", "Author Name"))
-        self.label_2.setText(_translate("AuthorFilterProperties", "Author Email"))
+        self.label_2.setText(
+            _translate("AuthorFilterProperties", "Author Email")
+        )
 
 
 if __name__ == "__main__":
@@ -56,4 +62,3 @@ if __name__ == "__main__":
     ui.setupUi(AuthorFilterProperties)
     AuthorFilterProperties.show()
     sys.exit(app.exec_())
-

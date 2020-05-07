@@ -8,7 +8,9 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_FilterUnaryWarning(object):
+
     def setupUi(self, FilterUnaryWarning):
         FilterUnaryWarning.setObjectName("FilterUnaryWarning")
         FilterUnaryWarning.resize(716, 121)
@@ -25,8 +27,15 @@ class Ui_FilterUnaryWarning(object):
 
     def retranslateUi(self, FilterUnaryWarning):
         _translate = QtCore.QCoreApplication.translate
-        FilterUnaryWarning.setWindowTitle(_translate("FilterUnaryWarning", "Form"))
-        self.uiWarningLabel.setText(_translate("FilterUnaryWarning", "<html><head/><body><p><span style=\" font-weight:600;\">Currently, this filter applies to source and target, therefore, only interactions where both satisfy the filter are included.</span></p></body></html>"))
+        FilterUnaryWarning.setWindowTitle(
+            _translate("FilterUnaryWarning", "Form")
+        )
+        self.uiWarningLabel.setText(
+            _translate(
+                "FilterUnaryWarning",
+                "<html><head/><body><p><span style=\" font-weight:600;\">Currently, this filter applies to source and target, therefore, only interactions where both satisfy the filter are included.</span></p></body></html>"
+            )
+        )
 
 
 if __name__ == "__main__":
@@ -37,4 +46,3 @@ if __name__ == "__main__":
     ui.setupUi(FilterUnaryWarning)
     FilterUnaryWarning.show()
     sys.exit(app.exec_())
-

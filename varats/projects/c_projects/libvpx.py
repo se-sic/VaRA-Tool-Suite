@@ -1,6 +1,4 @@
-"""
-Project file for libvpx.
-"""
+"""Project file for libvpx."""
 import typing as tp
 from pathlib import Path
 
@@ -10,7 +8,6 @@ from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
-
 from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
@@ -18,10 +15,12 @@ from varats.paper.paper_config import project_filter_generator
 from varats.utils.project_util import wrap_paths_to_binaries
 
 
-@with_git("https://github.com/webmproject/libvpx.git",
-          refspec="HEAD",
-          shallow_clone=False,
-          version_filter=project_filter_generator("libvpx"))
+@with_git(
+    "https://github.com/webmproject/libvpx.git",
+    refspec="HEAD",
+    shallow_clone=False,
+    version_filter=project_filter_generator("libvpx")
+)
 class Libvpx(Project, CVEProviderHook):  # type: ignore
     """Codec SDK libvpx (fetched by Git)"""
 

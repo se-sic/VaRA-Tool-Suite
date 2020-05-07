@@ -1,17 +1,19 @@
-"""
-Option module, providing different options to manage user modifications.
-"""
+"""Option module, providing different options to manage user modifications."""
 
-from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QHeaderView,\
-                            QComboBox, QFileDialog, QLineEdit
-from PyQt5.QtGui import QIntValidator
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIntValidator
+from PyQt5.QtWidgets import (
+    QComboBox,
+    QFileDialog,
+    QHeaderView,
+    QLineEdit,
+    QTreeWidget,
+    QTreeWidgetItem,
+)
 
 
 class OptionTreeWidget(QTreeWidget):  # type: ignore
-    """
-    A Widget to manage different user options.
-    """
+    """A Widget to manage different user options."""
     GRP_CR = "CommitReport"
     OPT_CR_MR = "Merge reports"
     OPT_CR_RORDER = "Report Order"
@@ -72,43 +74,31 @@ class OptionTreeWidget(QTreeWidget):  # type: ignore
 
     @property
     def merge_report_checkstate(self):
-        """
-        Check state of merge report option.
-        """
+        """Check state of merge report option."""
         return self.__mr.checkState(1)
 
     @property
     def show_cf_checkstate(self):
-        """
-        Check state of show cf plot option.
-        """
+        """Check state of show cf plot option."""
         return self.__scf.checkState(1)
 
     @property
     def show_df_checkstate(self):
-        """
-        Check state of show df plot option.
-        """
+        """Check state of show df plot option."""
         return self.__sdf.checkState(1)
 
     @property
     def report_order(self):
-        """
-        Get current combo box selection.
-        """
+        """Get current combo box selection."""
         return self.__combo_box.currentText()
 
     @property
     def play_time(self):
-        """
-        Get current play time.
-        """
+        """Get current play time."""
         return int(self.__pt_lineedit.text())
 
     def connect_cb_cic(self, func):
-        """
-        Register a callback for the combo box currentIndexChanged signal.
-        """
+        """Register a callback for the combo box currentIndexChanged signal."""
         self.__combo_box.currentIndexChanged.connect(func)
 
     def _handle_item_double_click(self, item, col):
@@ -120,6 +110,10 @@ class OptionTreeWidget(QTreeWidget):  # type: ignore
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Load CommitReport file", "",
-            "All Files (*)", options=options)
+            self,
+            "Load CommitReport file",
+            "",
+            "All Files (*)",
+            options=options
+        )
         return file_path

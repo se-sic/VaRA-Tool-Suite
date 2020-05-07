@@ -1,19 +1,27 @@
 """
 The PaperConfig pins down a specific set of case studies, one or more for each
-project, where each encaspulates a fixed set of revision to evaluate. This
-allows users to specify which revisions of what project have to be analyzed.
-Furthermore, it allows other users to reproduce the exact same set of projects
-and revisions, either with the old experiment automatically or with a new
-experiment to compare the results.
+project, where each encaspulates a fixed set of revision to evaluate.
+
+This allows users to specify which revisions of what project have to be
+analyzed. Furthermore, it allows other users to reproduce the exact same set of
+projects and revisions, either with the old experiment automatically or with a
+new experiment to compare the results.
 """
 
 import typing as tp
 from pathlib import Path
 
-from varats.paper.artefacts import Artefacts, load_artefacts_from_file, \
-    store_artefacts, Artefact
-from varats.paper.case_study import (load_case_study_from_file,
-                                     store_case_study, CaseStudy)
+from varats.paper.artefacts import (
+    Artefact,
+    Artefacts,
+    load_artefacts_from_file,
+    store_artefacts,
+)
+from varats.paper.case_study import (
+    CaseStudy,
+    load_case_study_from_file,
+    store_case_study,
+)
 from varats.settings import CFG
 
 
@@ -39,23 +47,20 @@ class PaperConfig():
             else:
                 self.__case_studies[case_study.project_name] = [case_study]
         if (self.__path / 'artefacts.yaml').exists():
-            self.__artefacts = load_artefacts_from_file(self.__path /
-                                                        'artefacts.yaml')
+            self.__artefacts = load_artefacts_from_file(
+                self.__path / 'artefacts.yaml'
+            )
         else:
             self.__artefacts = Artefacts([])
 
     @property
     def path(self) -> Path:
-        """
-        Path to the paper config folder
-        """
+        """Path to the paper config folder."""
         return self.__path
 
     @property
     def artefacts(self) -> Artefacts:
-        """
-        The artefacts of this paper config.
-        """
+        """The artefacts of this paper config."""
         return self.__artefacts
 
     def get_case_studies(self, cs_name: str) -> tp.List[CaseStudy]:
@@ -83,9 +88,7 @@ class PaperConfig():
         ]
 
     def get_all_artefacts(self) -> tp.Iterable[Artefact]:
-        """
-        Returns an iterable of the artefacts of this paper config.
-        """
+        """Returns an iterable of the artefacts of this paper config."""
         if self.__artefacts:
             return self.__artefacts
         return []
@@ -105,10 +108,10 @@ class PaperConfig():
     def get_filter_for_case_study(self,
                                   cs_name: str) -> tp.Callable[[str], bool]:
         """
-        Return a case study specific revision filter. If one case study
-        includes a revision the filter function will return ``True``.
-        This can be used to automatically filter out revisions that are not
-        part of a case study, loaded by this paper config.
+        Return a case study specific revision filter. If one case study includes
+        a revision the filter function will return ``True``. This can be used to
+        automatically filter out revisions that are not part of a case study,
+        loaded by this paper config.
 
         Args:
             cs_name: name of the case study
@@ -152,10 +155,8 @@ class PaperConfig():
         self.__artefacts.add_artefact(artefact)
 
     def store(self) -> None:
-        """
-        Persist the current state of the paper config saving all case studies
-        to their corresponding files in the paper config path.
-        """
+        """Persist the current state of the paper config saving all case studies
+        to their corresponding files in the paper config path."""
         for case_study_list in self.__case_studies.values():
             for case_study in case_study_list:
                 store_case_study(case_study, self.__path)
@@ -176,6 +177,7 @@ __G_PAPER_CONFIG: tp.Optional[PaperConfig] = None
 def project_filter_generator(project_name: str) -> tp.Callable[[str], bool]:
     """
     Generate project specific revision filters.
+
     - if no paper config is loaded, we allow all revisions
     - otherwise the paper config generates a specific revision filter
 
@@ -193,7 +195,9 @@ def project_filter_generator(project_name: str) -> tp.Callable[[str], bool]:
         load_paper_config(
             Path(
                 str(CFG["paper_config"]["folder"]) + "/" +
-                str(CFG["paper_config"]["current_config"])))
+                str(CFG["paper_config"]["current_config"])
+            )
+        )
 
     return get_paper_config().get_filter_for_case_study(project_name)
 
@@ -235,13 +239,16 @@ def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
     """
     if config_path is None:
         if CFG["paper_config"]["folder"].value is None or CFG["paper_config"][
-                "current_config"].value is None:
+            "current_config"].value is None:
             raise Exception(
                 "No paper config was set in VaRA config file {}".format(
-                    CFG['config_file']))
+                    CFG['config_file']
+                )
+            )
         config_path = Path(
             str(CFG["paper_config"]["folder"]) + "/" +
-            str(CFG["paper_config"]["current_config"]))
+            str(CFG["paper_config"]["current_config"])
+        )
 
     global __G_PAPER_CONFIG  # pylint: disable=global-statement
     __G_PAPER_CONFIG = PaperConfig(config_path)

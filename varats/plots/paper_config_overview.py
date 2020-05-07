@@ -1,33 +1,33 @@
-"""
-Generate graphs that show an overview of the state of all case-studies.
-"""
+"""Generate graphs that show an overview of the state of all case-studies."""
 
+import typing as tp
 from collections import OrderedDict, defaultdict
 from datetime import datetime
 from pathlib import Path
-import typing as tp
 
 import matplotlib.pyplot as plt
 import matplotlib.style as style
-import pandas as pd
 import numpy as np
+import pandas as pd
 import seaborn as sb
 from matplotlib.patches import Patch
 
+import varats.paper.paper_config as PC
 from varats.data.databases.file_status_database import FileStatusDatabase
+from varats.data.report import FileStatusExtension, MetaReport
 from varats.data.reports.commit_report import CommitMap
-from varats.data.report import MetaReport, FileStatusExtension
 from varats.data.reports.empty_report import EmptyReport
 from varats.plots.plot import Plot
 from varats.plots.plot_utils import check_required_args, find_missing_revisions
-import varats.paper.paper_config as PC
 from varats.utils.project_util import get_local_project_git
 
 # colors taken from seaborn's default palette
 SUCCESS_COLOR = np.asarray(
-    (0.5568627450980392, 0.7294117647058823, 0.25882352941176473))
+    (0.5568627450980392, 0.7294117647058823, 0.25882352941176473)
+)
 BLOCKED_COLOR = np.asarray(
-    (0.20392156862745098, 0.5411764705882353, 0.7411764705882353))
+    (0.20392156862745098, 0.5411764705882353, 0.7411764705882353)
+)
 FAILED_COLOR = np.asarray((0.8862745098039215, 0.2901960784313726, 0.2))
 
 
@@ -48,7 +48,8 @@ def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
         cmap,
         *current_config.get_case_studies(project),
         result_file_type=result_file_type,
-        tag_blocked=True)
+        tag_blocked=True
+    )
     return frame
 
 
@@ -58,8 +59,10 @@ def _load_projects_ordered_by_year(
     projects: tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[
         str, FileStatusExtension]]]] = OrderedDict()
 
-    for case_study in sorted(current_config.get_all_case_studies(),
-                             key=lambda cs: (cs.project_name, cs.version)):
+    for case_study in sorted(
+        current_config.get_all_case_studies(),
+        key=lambda cs: (cs.project_name, cs.version)
+    ):
         processed_revisions = case_study.get_revisions_status(result_file_type)
 
         repo = get_local_project_git(case_study.project_name)
@@ -78,9 +81,7 @@ def _load_projects_ordered_by_year(
 
 
 def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
-    """
-    Generate the data for the PaperConfigOverviewPlot.
-    """
+    """Generate the data for the PaperConfigOverviewPlot."""
     current_config = PC.get_paper_config()
 
     if 'report_type' in kwargs:
@@ -143,7 +144,7 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
 
 def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
     """
-    Create a plot that shows an overview of all case-studies of a paper-config
+    Create a plot that shows an overview of all case-studies of a paper- config
     about how many revisions are successful per project/year.
 
     Args:
@@ -164,32 +165,40 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
 
     # the +0.5 is needed to prevent floating point precision issues
     revs_success_ratio = np.asarray([
-        i + 0.5 if t > 0 else np.nan for i, t in enumerate(revs_total.flatten())
+        i + 0.5 if t > 0 else np.nan
+        for i, t in enumerate(revs_total.flatten())
     ])
     revs_success_ratio = revs_success_ratio / len(revs_success_ratio)
     revs_success_ratio = revs_success_ratio.reshape(num_projects, num_years)
 
-    def to_color(n_success: float, n_blocked: float,
-                 n_total: float) -> np.ndarray:
+    def to_color(
+        n_success: float, n_blocked: float, n_total: float
+    ) -> np.ndarray:
         f_success = n_success / float(n_total)
         f_blocked = n_blocked / float(n_total)
         f_failed = 1.0 - f_success - f_blocked
-        return (f_success * SUCCESS_COLOR + f_blocked * BLOCKED_COLOR +
-                f_failed * FAILED_COLOR)
+        return (
+            f_success * SUCCESS_COLOR + f_blocked * BLOCKED_COLOR +
+            f_failed * FAILED_COLOR
+        )
 
     colors = [
         to_color(revs_successful, revs_blocked, revs_total)
         for revs_successful, revs_blocked, revs_total in zip(
             revs_successful.flatten(), revs_blocked.flatten(),
-            revs_total.flatten())
+            revs_total.flatten()
+        )
     ]
 
-    labels = (np.asarray([
-        f"{revs_successful:1.0f}/{revs_blocked:1.0f}\n{revs_total:1.0f}"
-        for revs_successful, revs_blocked, revs_total in zip(
-            revs_successful.flatten(), revs_blocked.flatten(),
-            revs_total.flatten())
-    ])).reshape(num_projects, num_years)
+    labels = (
+        np.asarray([
+            f"{revs_successful:1.0f}/{revs_blocked:1.0f}\n{revs_total:1.0f}"
+            for revs_successful, revs_blocked, revs_total in zip(
+                revs_successful.flatten(), revs_blocked.flatten(),
+                revs_total.flatten()
+            )
+        ])
+    ).reshape(num_projects, num_years)
 
     # Note: See the following URL for this size calculation:
     # https://stackoverflow.com/questions/51144934/how-to-increase-the-cell-size-for-annotation-in-seaborn-heatmap
@@ -208,36 +217,40 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
     figure_height = matrix_height_in / (1 - top_margin - bottom_margin)
 
     # build the figure instance with the desired height
-    plt.subplots(figsize=(18, figure_height),
-                 gridspec_kw=dict(top=(1 - top_margin), bottom=bottom_margin))
+    plt.subplots(
+        figsize=(18, figure_height),
+        gridspec_kw=dict(top=(1 - top_margin), bottom=bottom_margin)
+    )
 
-    ax = sb.heatmap(revs_success_ratio,
-                    annot=labels,
-                    fmt='',
-                    cmap=colors,
-                    xticklabels=results['year_range'],
-                    yticklabels=results['project_names'],
-                    linewidths=.5,
-                    vmin=0,
-                    vmax=1,
-                    cbar=False,
-                    square=True)
+    ax = sb.heatmap(
+        revs_success_ratio,
+        annot=labels,
+        fmt='',
+        cmap=colors,
+        xticklabels=results['year_range'],
+        yticklabels=results['project_names'],
+        linewidths=.5,
+        vmin=0,
+        vmax=1,
+        cbar=False,
+        square=True
+    )
 
     legend_entries = [
         Patch(facecolor=SUCCESS_COLOR),
         Patch(facecolor=BLOCKED_COLOR),
         Patch(facecolor=FAILED_COLOR),
     ]
-    ax.legend(legend_entries,
-              ['Success (top left)', 'Blocked (top right)', 'Failed (bottom)'],
-              loc='upper left',
-              bbox_to_anchor=(1, 1))
+    ax.legend(
+        legend_entries,
+        ['Success (top left)', 'Blocked (top right)', 'Failed (bottom)'],
+        loc='upper left',
+        bbox_to_anchor=(1, 1)
+    )
 
 
 class PaperConfigOverviewPlot(Plot):
-    """
-    Plot showing an overview of all case-studies.
-    """
+    """Plot showing an overview of all case-studies."""
 
     NAME = 'paper_config_overview_plot'
 
@@ -252,9 +265,9 @@ class PaperConfigOverviewPlot(Plot):
         self.plot(True)
         plt.show()
 
-    def save(self,
-             path: tp.Optional[Path] = None,
-             filetype: str = 'svg') -> None:
+    def save(
+        self, path: tp.Optional[Path] = None, filetype: str = 'svg'
+    ) -> None:
         self.plot(False)
 
         if path is None:
@@ -263,9 +276,9 @@ class PaperConfigOverviewPlot(Plot):
             plot_dir = path
 
         # TODO (se-passau/VaRA#545): refactor dpi into plot_config. see.
-        plt.savefig(plot_dir / f"{self.name}.{filetype}",
-                    dpi=1200,
-                    format=filetype)
+        plt.savefig(
+            plot_dir / f"{self.name}.{filetype}", dpi=1200, format=filetype
+        )
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         revisions = _gen_overview_plot_for_project(**self.plot_kwargs)
@@ -282,7 +295,7 @@ class PaperConfigOverviewPlot(Plot):
         def get_commit_hash(row: tp.Any) -> str:
             return str(row["commit_hash"])
 
-        return find_missing_revisions(revisions.iterrows(),
-                                      Path(self.plot_kwargs['git_path']), cmap,
-                                      should_insert_revision, get_commit_hash,
-                                      head_cm_neighbours)
+        return find_missing_revisions(
+            revisions.iterrows(), Path(self.plot_kwargs['git_path']), cmap,
+            should_insert_revision, get_commit_hash, head_cm_neighbours
+        )
