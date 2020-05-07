@@ -1,10 +1,11 @@
 Data handling
 =============
 
-* :ref:`reports`
+* :ref:`Reports`
 * :ref:`Handling utilities for generated report files`
-* :ref:`data management`
+* :ref:`Data management`
 * :ref:`Data providers`
+* :ref:`Metrics`
 
 Reports
 -------
@@ -131,6 +132,21 @@ Provider module
 ...............
 
 .. automodule:: varats.data.provider.provider
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Metrics
+-------
+
+During data evaluation, one might wish to calculate different metrics for the data at hand.
+We collect the code for such metrics in a separate module to make these metrics reusable, e.g., in different plots.
+
+Metrics module
+...............
+
+.. automodule:: varats.data.metrics
     :members:
     :undoc-members:
     :show-inheritance:
