@@ -1,6 +1,4 @@
-"""
-Module for yaml utility tools, e.g., storing and loading yamls from files.
-"""
+"""Module for yaml utility tools, e.g., storing and loading yamls from files."""
 import errno
 import os
 import typing as tp
@@ -37,5 +35,6 @@ def load_yaml(file_path: Path) -> tp.Iterator[tp.Any]:
             return list(yaml.load_all(yaml_file,
                                       Loader=yaml.CLoader)).__iter__()
 
-    raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
-                            str(file_path))
+    raise FileNotFoundError(
+        errno.ENOENT, os.strerror(errno.ENOENT), str(file_path)
+    )

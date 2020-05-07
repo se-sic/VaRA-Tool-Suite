@@ -1,26 +1,21 @@
-"""
-Experiment module for phasa analyses.
-"""
+"""Experiment module for phasa analyses."""
 
-import typing as tp
 import os
+import typing as tp
 
-from plumbum import local
-
+import benchbuild.utils.actions as actions
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
 from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import opt
-import benchbuild.utils.actions as actions
+from plumbum import local
 
-from varats.experiments.wllvm import RunWLLVM, Extract
+from varats.experiments.wllvm import Extract, RunWLLVM
 
 
 class DefaultAnalysis(actions.Step):  # type: ignore
-    """
-    Analyse a project with Phasar's default analysis.
-    """
+    """Analyse a project with Phasar's default analysis."""
     NAME = "ANALYSE"
     DESCRIPTION = "Analyses llvm bitcode with phasar."
 
@@ -29,9 +24,7 @@ class DefaultAnalysis(actions.Step):  # type: ignore
         "PhasarPass/libphasar_passd.so"
 
     def __call__(self) -> actions.Step:
-        """
-        This step performs the analysis.
-        """
+        """This step performs the analysis."""
         if not self.obj:
             return
         project = self.obj
@@ -45,15 +38,13 @@ class DefaultAnalysis(actions.Step):  # type: ignore
 
 
 class PhasarDefault(Experiment):  # type: ignore
-    """
-    Runs the default Phasar analysis on an project.
-    """
+    """Runs the default Phasar analysis on an project."""
 
     NAME = "PhasarDefault"
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
-        """Returns the specified steps to run the project(s) specified in
-        the call in a fixed order."""
+        """Returns the specified steps to run the project(s) specified in the
+        call in a fixed order."""
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
@@ -66,8 +57,9 @@ class PhasarDefault(Experiment):  # type: ignore
 
         analysis_actions = []
         if not os.path.exists(
-                local.path(str(BB_CFG["varats"]["result"].value)) /
-                project.name + ".bc"):
+            local.path(str(BB_CFG["varats"]["result"].value)) / project.name +
+            ".bc"
+        ):
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(project))
 

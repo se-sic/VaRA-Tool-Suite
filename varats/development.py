@@ -1,15 +1,13 @@
-"""
-The development module provides different utility function to ease the
-development for VaRA.
-"""
+"""The development module provides different utility function to ease the
+development for VaRA."""
 
-import typing as tp
 import logging
 import re
+import typing as tp
 from collections import defaultdict
 
 from varats.settings import CFG
-from varats.tools.research_tools.research_tool import SubProject, CodeBase
+from varats.tools.research_tools.research_tool import CodeBase, SubProject
 
 LOG = logging.getLogger(__name__)
 
@@ -64,11 +62,10 @@ def __quickfix_dev_branches(branch_name: str, sub_project: SubProject) -> str:
     return branch_name
 
 
-def create_new_branch_for_projects(branch_name: str,
-                                   sub_projects: tp.List[SubProject]) -> None:
-    """
-    Create a new branch on all needed projects.
-    """
+def create_new_branch_for_projects(
+    branch_name: str, sub_projects: tp.List[SubProject]
+) -> None:
+    """Create a new branch on all needed projects."""
     branch_name = __convert_to_vara_branch_naming_schema(branch_name)
 
     for sub_project in sub_projects:
@@ -79,30 +76,35 @@ def create_new_branch_for_projects(branch_name: str,
             print(f"Branch {branch_name} does already exist.")
 
 
-def checkout_remote_branch_for_projects(branch_name: str,
-                                        sub_projects: tp.List[SubProject]
-                                       ) -> None:
-    """
-    Checkout a remote branch on all projects.
-    """
+def checkout_remote_branch_for_projects(
+    branch_name: str, sub_projects: tp.List[SubProject]
+) -> None:
+    """Checkout a remote branch on all projects."""
     for sub_project in sub_projects:
         fixed_branch_name = __quickfix_dev_branches(branch_name, sub_project)
         if sub_project.has_branch(fixed_branch_name):
             sub_project.checkout_branch(fixed_branch_name)
-            print(f"Checked out existing branch {fixed_branch_name} "
-                  f"for sub project {sub_project.name}")
+            print(
+                f"Checked out existing branch {fixed_branch_name} "
+                f"for sub project {sub_project.name}"
+            )
             continue
 
         sub_project.fetch()
         if sub_project.has_branch(fixed_branch_name, "origin"):
-            sub_project.checkout_new_branch(fixed_branch_name,
-                                            f"origin/{fixed_branch_name}")
-            print(f"Checked out new branch {fixed_branch_name} "
-                  f"(tracking origin/{fixed_branch_name}) "
-                  f"for sub project {sub_project.name}")
+            sub_project.checkout_new_branch(
+                fixed_branch_name, f"origin/{fixed_branch_name}"
+            )
+            print(
+                f"Checked out new branch {fixed_branch_name} "
+                f"(tracking origin/{fixed_branch_name}) "
+                f"for sub project {sub_project.name}"
+            )
         else:
-            print(f"No branch {fixed_branch_name} on remote origin for project "
-                  f"{sub_project.name}")
+            print(
+                f"No branch {fixed_branch_name} on remote origin for project "
+                f"{sub_project.name}"
+            )
 
 
 def pull_projects(sub_projects: tp.List[SubProject]) -> None:
@@ -143,24 +145,23 @@ def show_status_for_projects(sub_projects: tp.List[SubProject]) -> None:
 
     dlim = "#" * 80
     for sub_project in sub_projects:
-        print("""
+        print(
+            """
 {dlim}
 # Project: {name:67s} #
-{dlim}""".format(dlim=dlim, name=sub_project.name))
+{dlim}""".format(dlim=dlim, name=sub_project.name)
+        )
 
         sub_project.show_status()
 
 
 def show_dev_branches(code_base: CodeBase) -> None:
-    """
-    Show all dev dev branches.
-    """
+    """Show all dev dev branches."""
     found_branches: tp.DefaultDict[str, tp.List[str]] = defaultdict(list)
     max_branch_chars = 0
 
     def __handle_sub_project(sub_project: SubProject) -> None:
-        """
-        """
+        """"""
         nonlocal max_branch_chars
         sub_project.fetch("origin", extra_args=["--prune"])
         for full_branch in sub_project.get_branches(extra_args=["-r"]):
@@ -176,5 +177,6 @@ def show_dev_branches(code_base: CodeBase) -> None:
     print("Feature Branches:")
     for branch_name in found_branches.keys():
         print(("  {branch_name:" + str(max_branch_chars + 4) +
-               "s} {repos}").format(branch_name=branch_name,
-                                    repos=found_branches[branch_name]))
+               "s} {repos}").format(
+                   branch_name=branch_name, repos=found_branches[branch_name]
+               ))
