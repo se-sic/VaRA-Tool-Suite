@@ -14,7 +14,10 @@ import pygit2
 from benchbuild.project import Project
 from scipy.stats import halfnorm
 
-from varats.data.provider.release.release_provider import ReleaseProvider, ReleaseType
+from varats.data.provider.release.release_provider import (
+    ReleaseProvider,
+    ReleaseType,
+)
 from varats.data.report import FileStatusExtension, MetaReport
 from varats.data.reports.commit_report import CommitMap
 from varats.data.revisions import (
