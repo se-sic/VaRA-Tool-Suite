@@ -8,4 +8,3 @@ Passes
 
     passes/blame_verifier
     passes/MDRewriter
-

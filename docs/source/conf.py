@@ -16,6 +16,9 @@
 
 # pylint: skip-file
 
+import logging
+
+import benchbuild.utils
 # -- Project information -----------------------------------------------------
 from pkg_resources import DistributionNotFound, get_distribution
 
@@ -77,8 +80,5 @@ add_module_names = True
 set_type_checking_flag = True
 
 # -- Prevent import warnings -------------------------------------------------
-
-import logging
-import benchbuild.utils
 
 benchbuild.utils.LOG.setLevel(logging.ERROR)

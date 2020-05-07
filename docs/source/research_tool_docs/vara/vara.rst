@@ -31,4 +31,3 @@ VaRA API Reference
    :caption: Contents:
 
    vara-api/analyses
-

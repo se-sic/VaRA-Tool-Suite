@@ -1,14 +1,12 @@
-"""
-Utility module for handling git repos.
-"""
+"""Utility module for handling git repos."""
 
-import typing as tp
 import re
+import typing as tp
 from enum import Enum
 
 import pygit2
-from plumbum.cmd import git
 from plumbum import local
+from plumbum.cmd import git
 
 from varats.utils.project_util import get_local_project_git
 
@@ -16,10 +14,11 @@ from varats.utils.project_util import get_local_project_git
 class ChurnConfig():
     """
     The churn config allows the user to change how code churn is calculated.
-    Churn is by default calulcated considering all files in a repository.
-    Users can select a specific set of file extensions to only be considered
-    in the code churn, e.g., by selecting `h` and `c` only C related files
-    will be used to compute the code churn.
+
+    Churn is by default calulcated considering all files in a repository. Users
+    can select a specific set of file extensions to only be considered in the
+    code churn, e.g., by selecting `h` and `c` only C related files will be used
+    to compute the code churn.
     """
 
     class Language(Enum):
@@ -32,35 +31,30 @@ class ChurnConfig():
 
     @staticmethod
     def create_default_config() -> 'ChurnConfig':
-        """
-        Create a default configuration that includes all files in the code
-        churn, e.g., enabling all languages/file extensions.
-        """
+        """Create a default configuration that includes all files in the code
+        churn, e.g., enabling all languages/file extensions."""
         return ChurnConfig()
 
     @staticmethod
     def create_c_language_config() -> 'ChurnConfig':
-        """
-        Create a config that only allows C related files, e.g., headers and
-        source files.
-        """
+        """Create a config that only allows C related files, e.g., headers and
+        source files."""
         config = ChurnConfig()
         config.enable_language(ChurnConfig.Language.C)
         return config
 
     @staticmethod
     def create_c_style_languages_config() -> 'ChurnConfig':
-        """
-        Create a config that allows all files related to C-style
-        languages, i.e., C/CPP.
-        """
+        """Create a config that allows all files related to C-style languages,
+        i.e., C/CPP."""
         config = ChurnConfig.create_c_language_config()
         config.enable_language(ChurnConfig.Language.CPP)
         return config
 
     @staticmethod
     def init_as_default_if_none(
-            config: tp.Optional['ChurnConfig']) -> 'ChurnConfig':
+        config: tp.Optional['ChurnConfig']
+    ) -> 'ChurnConfig':
         """
         Returns a default initialized config or the passed one.
 
@@ -86,9 +80,7 @@ class ChurnConfig():
 
     @property
     def enabled_languages(self) -> tp.List['ChurnConfig.Language']:
-        """
-        Returns a list of specifically enabled languages.
-        """
+        """Returns a list of specifically enabled languages."""
         return self.__enabled_languages
 
     def is_enabled(self, file_extension: str) -> bool:
@@ -129,7 +121,7 @@ class ChurnConfig():
     def get_extensions_repr(self, sep: str = ", ") -> str:
         """
         Returns a string that containts all file extensions from all enabled
-        languages
+        languages.
 
         Args:
             sep: separator inserted between file extensions
@@ -139,8 +131,9 @@ class ChurnConfig():
         """
         concat_str = ""
         tmp_sep = ""
-        for ext in sorted(
-            {ext for lang in self.enabled_languages for ext in lang.value}):
+        for ext in sorted({
+            ext for lang in self.enabled_languages for ext in lang.value
+        }):
             concat_str += tmp_sep
             tmp_sep = sep
             concat_str += ext
@@ -149,10 +142,9 @@ class ChurnConfig():
 
 
 def create_commit_lookup_helper(
-        project_name: str) -> tp.Callable[[str], pygit2.Commit]:
-    """
-    Creates a commit lookup function for a specific repository.
-    """
+    project_name: str
+) -> tp.Callable[[str], pygit2.Commit]:
+    """Creates a commit lookup function for a specific repository."""
 
     cache_dict: tp.Dict[str, pygit2.Commit] = {}
     repo = get_local_project_git(project_name)
@@ -165,7 +157,9 @@ def create_commit_lookup_helper(
         if commit is None:
             raise LookupError(
                 "Could not find commit {commit} in {project}".format(
-                    commit=c_hash, project=project_name))
+                    commit=c_hash, project=project_name
+                )
+            )
 
         cache_dict[c_hash] = commit
         return commit
@@ -188,10 +182,11 @@ def map_commits(
     ]
 
 
-GIT_LOG_MATCHER = re.compile(r"\'(?P<hash>.*)\'\n?" +
-                             r"( (?P<files>\d*) files? changed)?" +
-                             r"(, (?P<insertions>\d*) insertions?\(\+\))?" +
-                             r"(, (?P<deletions>\d*) deletions?\(-\))?")
+GIT_LOG_MATCHER = re.compile(
+    r"\'(?P<hash>.*)\'\n?" + r"( (?P<files>\d*) files? changed)?" +
+    r"(, (?P<insertions>\d*) insertions?\(\+\))?" +
+    r"(, (?P<deletions>\d*) deletions?\(-\))?"
+)
 
 
 def __calc_code_churn_range_impl(
@@ -201,9 +196,10 @@ def __calc_code_churn_range_impl(
     end_range: tp.Optional[str] = None
 ) -> tp.Dict[str, tp.Tuple[int, int, int]]:
     """
-    Calculates all churn values for the commits in the specified
-    range [start..end]. If no range is supplied, the churn values of all
-    commits are calculated.
+    Calculates all churn values for the commits in the specified range.
+
+    [start..end]. If no range is supplied, the churn values of all commits are
+    calculated.
 
     git log --pretty=format:'%H' --date=short --shortstat -- ':*.[enabled_exts]'
 
@@ -237,8 +233,9 @@ def __calc_code_churn_range_impl(
         if not churn_config.include_everything:
             diff_base_params.append("--")
             # builds a regrex to select files that git includes into churn calc
-            diff_base_params.append(":*.[" +
-                                    churn_config.get_extensions_repr('|') + "]")
+            diff_base_params.append(
+                ":*.[" + churn_config.get_extensions_repr('|') + "]"
+            )
 
         if revision_range:
             stdout = git(diff_base_params)
@@ -254,7 +251,8 @@ def __calc_code_churn_range_impl(
             commit_hash = match.group('hash')
             files_changed_m = match.group('files')
             files_changed = int(
-                files_changed_m) if files_changed_m is not None else 0
+                files_changed_m
+            ) if files_changed_m is not None else 0
             insertions_m = match.group('insertions')
             insertions = int(insertions_m) if insertions_m is not None else 0
             deletions_m = match.group('deletions')
@@ -271,9 +269,10 @@ def calc_code_churn_range(
     end_range: tp.Optional[tp.Union[pygit2.Commit, str]] = None
 ) -> tp.Dict[str, tp.Tuple[int, int, int]]:
     """
-    Calculates all churn values for the commits in the specified
-    range [start..end]. If no range is supplied, the churn values of all
-    commits are calculated.
+    Calculates all churn values for the commits in the specified range.
+
+    [start..end]. If no range is supplied, the churn values of all commits are
+    calculated.
 
     Args:
         repo: git repository
@@ -288,7 +287,8 @@ def calc_code_churn_range(
         repo.path if isinstance(repo, pygit2.Repository) else repo,
         churn_config, start_range.id
         if isinstance(start_range, pygit2.Commit) else start_range,
-        end_range.id if isinstance(end_range, pygit2.Commit) else end_range)
+        end_range.id if isinstance(end_range, pygit2.Commit) else end_range
+    )
 
 
 def calc_commit_code_churn(
@@ -332,11 +332,10 @@ def calc_repo_code_churn(
 
 
 def __print_calc_repo_code_churn(
-        repo: pygit2.Repository,
-        churn_config: tp.Optional[ChurnConfig] = None) -> None:
-    """
-    Prints calc repo code churn data like git log would do.
-    """
+    repo: pygit2.Repository,
+    churn_config: tp.Optional[ChurnConfig] = None
+) -> None:
+    """Prints calc repo code churn data like git log would do."""
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
     churn_map = calc_repo_code_churn(repo, churn_config)
 

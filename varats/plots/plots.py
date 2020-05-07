@@ -1,26 +1,24 @@
-"""
-General plots module.
-"""
+"""General plots module."""
 import re
 import sys
 import typing as tp
 
+from varats.plots.plot_utils import check_required_args
+
 if tp.TYPE_CHECKING:
     import varats.plots.plot as plot
-from varats.plots.plot_utils import check_required_args
 
 
 class PlotRegistry(type):
-    """
-    Registry for all supported plots.
-    """
+    """Registry for all supported plots."""
 
     to_snake_case_pattern = re.compile(r'(?<!^)(?=[A-Z])')
 
     plots: tp.Dict[str, tp.Type[tp.Any]] = {}
 
-    def __init__(cls, name: str, bases: tp.Tuple[tp.Any],
-                 attrs: tp.Dict[tp.Any, tp.Any]):
+    def __init__(
+        cls, name: str, bases: tp.Tuple[tp.Any], attrs: tp.Dict[tp.Any, tp.Any]
+    ):
         super(PlotRegistry, cls).__init__(name, bases, attrs)
         if hasattr(cls, 'NAME'):
             key = getattr(cls, 'NAME')
@@ -36,8 +34,9 @@ class PlotRegistry(type):
         Returns:
             a help string that contains all available plot names.
         """
-        return "The following plots are available:\n  " + "\n  ".join(
-            [key for key in PlotRegistry.plots if key != "plot"])
+        return "The following plots are available:\n  " + "\n  ".join([
+            key for key in PlotRegistry.plots if key != "plot"
+        ])
 
     @staticmethod
     def get_class_for_plot_type(plot: str) -> tp.Type['plot.Plot']:
@@ -55,8 +54,10 @@ class PlotRegistry(type):
         """
         from varats.plots.plot import Plot
         if plot not in PlotRegistry.plots:
-            sys.exit(f"Unknown plot '{plot}'.\n" +
-                     PlotRegistry.get_plot_types_help_string())
+            sys.exit(
+                f"Unknown plot '{plot}'.\n" +
+                PlotRegistry.get_plot_types_help_string()
+            )
 
         plot_cls = PlotRegistry.plots[plot]
         if not issubclass(plot_cls, Plot):
@@ -66,14 +67,14 @@ class PlotRegistry(type):
 
 @check_required_args(['plot_type', 'view', 'sep_stages'])
 def build_plot(**kwargs: tp.Any) -> None:
-    """
-    Build the specified graph.
-    """
+    """Build the specified graph."""
     plot_type = PlotRegistry.get_class_for_plot_type(kwargs['plot_type'])
 
     if (kwargs['sep_stages'] and not plot_type.supports_stage_separation()):
-        print(f"Warning: {kwargs['plot_type']} does not support stage " +
-              "separation but separation flag '--sep-stages' was set.")
+        print(
+            f"Warning: {kwargs['plot_type']} does not support stage " +
+            "separation but separation flag '--sep-stages' was set."
+        )
 
     plot = plot_type(**kwargs)
     plot.style = "ggplot"

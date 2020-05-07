@@ -1,25 +1,22 @@
-"""
-Module for different CommitReport plots
-"""
+"""Module for different CommitReport plots."""
 
 import typing as tp
-import seaborn as sns
-
-from PyQt5.QtWidgets import QWidget, QGridLayout, QSizePolicy
 
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg \
-    as FigureCanvas
+import seaborn as sns
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from PyQt5.QtWidgets import QGridLayout, QSizePolicy, QWidget
 
 from varats.data.reports.commit_report import (
-    CommitReport, generate_inout_cfg_cf, generate_inout_cfg_df,
-    CommitReportMeta)
+    CommitReport,
+    CommitReportMeta,
+    generate_inout_cfg_cf,
+    generate_inout_cfg_df,
+)
 
 
 class CRBarPlotWidget(QWidget):
-    """
-    Bar plotting widget for CommitReports
-    """
+    """Bar plotting widget for CommitReports."""
 
     def __init__(self, parent: QWidget) -> None:
         super(CRBarPlotWidget, self).__init__(parent)
@@ -37,36 +34,31 @@ class CRBarPlotWidget(QWidget):
         self.setLayout(layout)
 
     def __del__(self) -> None:
-        """
-        Clean up matplotlib figures.
-        """
+        """Clean up matplotlib figures."""
         if self.fig is not None:
             plt.close(self.fig)
 
     def set_cf_plot(self, is_cf_plot: bool) -> None:
-        """
-        Sets if the plot widget shows a control-flow graph
-        or a data-flow graph
-        """
+        """Sets if the plot widget shows a control-flow graph or a data-flow
+        graph."""
         self.cf_plot = is_cf_plot
 
-    def update_plot(self,
-                    commit_report: CommitReport,
-                    cr_meta: tp.Optional[CommitReportMeta] = None) -> None:
-        """
-        Update the canvas with a new plot, generated from updated data.
-        """
+    def update_plot(
+        self,
+        commit_report: CommitReport,
+        cr_meta: tp.Optional[CommitReportMeta] = None
+    ) -> None:
+        """Update the canvas with a new plot, generated from updated data."""
         plot_cfg_barplot(self.fig, commit_report, self.cf_plot, cr_meta)
         self.canvas.draw()
 
 
-def plot_cfg_barplot(fig: plt.Figure, commit_report: tp.Optional[CommitReport],
-                     draw_cf: bool,
-                     cr_meta: tp.Optional[CommitReportMeta]) -> None:
-    """
-    Generates a bar plot that visualizes the IN/OUT
-    control-flow/data-flow edges of regions.
-    """
+def plot_cfg_barplot(
+    fig: plt.Figure, commit_report: tp.Optional[CommitReport], draw_cf: bool,
+    cr_meta: tp.Optional[CommitReportMeta]
+) -> None:
+    """Generates a bar plot that visualizes the IN/OUT control-flow/data-flow
+    edges of regions."""
     if commit_report is None:
         return
 
@@ -93,8 +85,13 @@ def plot_cfg_barplot(fig: plt.Figure, commit_report: tp.Optional[CommitReport],
     plt.clf()
     if ylimit is not None:
         plt.ylim(0, ylimit)
-    bar_p = sns.barplot(x="Region", y="Amount",
-                        hue="Direction", data=data, palette=color_palette)
+    bar_p = sns.barplot(
+        x="Region",
+        y="Amount",
+        hue="Direction",
+        data=data,
+        palette=color_palette
+    )
 
     for label in bar_p.get_xticklabels():
         label.set_rotation(90)

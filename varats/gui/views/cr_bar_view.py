@@ -1,23 +1,22 @@
-"""
-Module to manage the CommitReport BarView
-"""
+"""Module to manage the CommitReport BarView."""
 
 from os import path
 
-from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox
 from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget
 
-from varats.gui.views.ui_CRBarView import Ui_Form
 from varats.data.data_manager import VDM
-from varats.data.reports.commit_report import (CommitReport, CommitReportMeta,
-                                               CommitMap)
+from varats.data.reports.commit_report import (
+    CommitMap,
+    CommitReport,
+    CommitReportMeta,
+)
 from varats.gui.options import OptionTreeWidget
+from varats.gui.views.ui_CRBarView import Ui_Form
 
 
 class CRBarView(QWidget, Ui_Form):
-    """
-    Bar view for commit reports
-    """
+    """Bar view for commit reports."""
 
     def __init__(self):
         super(CRBarView, self).__init__()
@@ -51,9 +50,7 @@ class CRBarView(QWidget, Ui_Form):
 
     @property
     def current_report(self):
-        """
-        Current shown commit report.
-        """
+        """Current shown commit report."""
         return self.__current_report
 
     @current_report.setter
@@ -65,14 +62,16 @@ class CRBarView(QWidget, Ui_Form):
             self.infoTree.h_id = self.c_map.time_id(c_hash)
 
     def load_commit_report(self):
-        """
-        Load new CommitReport from file_path.
-        """
+        """Load new CommitReport from file_path."""
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         file_paths, _ = QFileDialog.getOpenFileNames(
-            self, "Load CommitReport file", "",
-            "Yaml Files (*.yaml *.yml);;All Files (*)", options=options)
+            self,
+            "Load CommitReport file",
+            "",
+            "Yaml Files (*.yaml *.yml);;All Files (*)",
+            options=options
+        )
 
         for file_path in file_paths:
             if not path.isfile(file_path):
@@ -84,8 +83,7 @@ class CRBarView(QWidget, Ui_Form):
                 err.exec_()
                 return
 
-            if not (file_path.endswith(".yaml")
-                    or file_path.endswith(".yml")):
+            if not (file_path.endswith(".yaml") or file_path.endswith(".yml")):
                 err = QMessageBox()
                 err.setIcon(QMessageBox.Warning)
                 err.setWindowTitle("Wrong File ending.")
@@ -104,10 +102,12 @@ class CRBarView(QWidget, Ui_Form):
             if skip:
                 continue
             self.loading_files += 1
-            self.statusLabel.setText("Loading files... " +
-                                     str(self.loading_files))
-            VDM.load_data_class(file_path, CommitReport,
-                                self._set_new_commit_report)
+            self.statusLabel.setText(
+                "Loading files... " + str(self.loading_files)
+            )
+            VDM.load_data_class(
+                file_path, CommitReport, self._set_new_commit_report
+            )
 
     def _update_option(self, item, col):
         text = item.text(0)
@@ -144,8 +144,9 @@ class CRBarView(QWidget, Ui_Form):
         if self.loading_files == 0:
             self.statusLabel.setText("")
         else:
-            self.statusLabel.setText("Loading files... " +
-                                     str(self.loading_files))
+            self.statusLabel.setText(
+                "Loading files... " + str(self.loading_files)
+            )
 
         self._update_report_order()
 
@@ -172,9 +173,7 @@ class CRBarView(QWidget, Ui_Form):
             self._draw_plots()
 
     def enable_cf_plot(self, state: int) -> None:
-        """
-        Enable control-flow plot
-        """
+        """Enable control-flow plot."""
         if state == Qt.Unchecked:  # turned off
             self.plot_up.hide()
         else:
@@ -182,9 +181,7 @@ class CRBarView(QWidget, Ui_Form):
             self.plot_up.show()
 
     def enable_df_plot(self, state: int):
-        """
-        Enable data-flow plot
-        """
+        """Enable data-flow plot."""
         if state == Qt.Unchecked:  # turned off
             self.plot_down.hide()
         else:
@@ -195,6 +192,7 @@ class CRBarView(QWidget, Ui_Form):
         text = self.optionsTree.report_order
 
         if text == 'Linear History':
+
             def order_func(x):
                 file_path = x.path
                 filename = path.basename(file_path)
@@ -203,6 +201,7 @@ class CRBarView(QWidget, Ui_Form):
                     return self.c_map.time_id(c_hash)
                 return c_hash
         else:
+
             def order_func(x):
                 return x
 

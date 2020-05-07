@@ -1,13 +1,11 @@
-"""
-Test case study
-"""
-import unittest
+"""Test case study."""
 import typing as tp
+import unittest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from varats.data.reports.commit_report import CommitMap
 import varats.paper.case_study as CS
+from varats.data.reports.commit_report import CommitMap
 
 YAML_CASE_STUDY = """---
 DocType: CaseStudy
@@ -59,10 +57,11 @@ b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"""
 
 
 def mocked_create_lazy_commit_map_loader(
-        project_name: str,  # pylint: disable=unused-argument
-        cmap_path: tp.Optional[Path] = None,  # pylint: disable=unused-argument
-        end: str = "HEAD",  # pylint: disable=unused-argument
-        start: tp.Optional[str] = None):  # pylint: disable=unused-argument
+    project_name: str,  # pylint: disable=unused-argument
+    cmap_path: tp.Optional[Path] = None,  # pylint: disable=unused-argument
+    end: str = "HEAD",  # pylint: disable=unused-argument
+    start: tp.Optional[str] = None
+):  # pylint: disable=unused-argument
     """
     Mock function to replace a lazy commit map loader callback.
 
@@ -85,15 +84,11 @@ def mocked_create_lazy_commit_map_loader(
 
 
 class TestCaseStudy(unittest.TestCase):
-    """
-    Test basic CaseStudy functionality.
-    """
+    """Test basic CaseStudy functionality."""
 
     @classmethod
     def setUpClass(cls):
-        """
-        Setup case study from yaml doc.
-        """
+        """Setup case study from yaml doc."""
 
         with NamedTemporaryFile('w') as yaml_file:
             yaml_file.write(YAML_CASE_STUDY)
@@ -101,118 +96,116 @@ class TestCaseStudy(unittest.TestCase):
             cls.case_study = CS.load_case_study_from_file(Path(yaml_file.name))
 
     def test_project_name(self):
-        """
-        Check if project name is loaded correctly.
-        """
+        """Check if project name is loaded correctly."""
         self.assertEqual(self.case_study.project_name, "gzip")
 
     def test_num_revisions(self):
-        """
-        Check if all revisions were loaded correctly.
-        """
+        """Check if all revisions were loaded correctly."""
         self.assertEqual(len(self.case_study.revisions), 10)
 
     def test_stage_name(self):
-        """
-        Check if the name of the stage is loaded correctly.
-        """
+        """Check if the name of the stage is loaded correctly."""
         self.assertEqual(self.case_study.stages[0].name, "stage_0")
         self.assertEqual(self.case_study.stages[1].name, None)
 
     def test_version(self):
-        """
-        Check if all revisions were loaded correctly.
-        """
+        """Check if all revisions were loaded correctly."""
         self.assertEqual(self.case_study.version, 1)
 
     def test_has_revisions(self):
-        """
-        Check if certain revisions were loaded correctly.
-        """
+        """Check if certain revisions were loaded correctly."""
         self.assertTrue(
-            self.case_study.has_revision(
-                "b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"))
+            self.case_study.
+            has_revision("b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+        )
         self.assertTrue(self.case_study.has_revision("b8b25e7f15"))
         self.assertTrue(self.case_study.has_revision("a3db5806d01"))
         self.assertTrue(self.case_study.has_revision("a3"))
 
         self.assertFalse(
-            self.case_study.has_revision(
-                "42b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"))
+            self.case_study.
+            has_revision("42b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+        )
         self.assertFalse(self.case_study.has_revision("42"))
 
     def test_gen_filter(self):
-        """
-        Check if the project generates a revision filter.
-        """
+        """Check if the project generates a revision filter."""
         revision_filter = self.case_study.get_revision_filter()
         self.assertTrue(
-            revision_filter("b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"))
+            revision_filter("b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+        )
         self.assertTrue(revision_filter("b8b25e7f15"))
 
         self.assertFalse(
-            revision_filter("42b25e7f1593f6dcc20660ff9fb1ed59ede15b7a"))
+            revision_filter("42b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+        )
         self.assertFalse(revision_filter("42"))
 
 
 class TestSampling(unittest.TestCase):
-    """
-    Test basic sampling test.
-    """
+    """Test basic sampling test."""
 
     @classmethod
     def setUpClass(cls):
-        """
-        Setup case study from yaml doc.
-        """
+        """Setup case study from yaml doc."""
         cls.base_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
     def test_sample_amount(self):
-        """
-        Check if sampling function produces the correct amount of sample.
-        """
+        """Check if sampling function produces the correct amount of sample."""
         self.assertEqual(
             len(
                 CS.sample_n(
                     CS.SamplingMethod.uniform.gen_distribution_function(), 5,
-                    self.base_list)), 5)
+                    self.base_list
+                )
+            ), 5
+        )
         self.assertEqual(
             len(
                 CS.sample_n(
                     CS.SamplingMethod.uniform.gen_distribution_function(), 1,
-                    self.base_list)), 1)
+                    self.base_list
+                )
+            ), 1
+        )
         self.assertEqual(
             len(
                 CS.sample_n(
                     CS.SamplingMethod.uniform.gen_distribution_function(), 7,
-                    self.base_list)), 7)
+                    self.base_list
+                )
+            ), 7
+        )
 
     def test_sample_more_than_max_amount(self):
-        """
-        Check if sampling function produces the correct amount of sample if we
-        sample more than in the initial list.
-        """
+        """Check if sampling function produces the correct amount of sample if
+        we sample more than in the initial list."""
         self.assertEqual(
             len(
                 CS.sample_n(
                     CS.SamplingMethod.uniform.gen_distribution_function(),
-                    len(self.base_list) + 1, self.base_list)),
-            len(self.base_list))
+                    len(self.base_list) + 1, self.base_list
+                )
+            ), len(self.base_list)
+        )
 
         self.assertEqual(
             len(
                 CS.sample_n(
                     CS.SamplingMethod.uniform.gen_distribution_function(),
-                    len(self.base_list) + 666, self.base_list)),
-            len(self.base_list))
+                    len(self.base_list) + 666, self.base_list
+                )
+            ), len(self.base_list)
+        )
 
     def test_sample_nothing(self):
-        """
-        Check if sampling function produces the correct amount of sample if we
-        want nothing.
-        """
+        """Check if sampling function produces the correct amount of sample if
+        we want nothing."""
         self.assertEqual(
             len(
                 CS.sample_n(
                     CS.SamplingMethod.uniform.gen_distribution_function(), 0,
-                    self.base_list)), 0)
+                    self.base_list
+                )
+            ), 0
+        )
