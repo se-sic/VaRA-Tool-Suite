@@ -82,3 +82,10 @@ class TestNormalizedGiniCoefficient(unittest.TestCase):
         expected = 1
 
         self.assertEqual(expected, normalized_gini_coefficient(data))
+
+    def test_normalized_gini_for_one_value(self):
+        """Test if normalized gini works if we only have one value."""
+        data_only_one = pd.Series([42])
+        expected = 0
+
+        self.assertEqual(expected, normalized_gini_coefficient(data_only_one))
