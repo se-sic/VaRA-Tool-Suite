@@ -11,6 +11,7 @@ import pandas as pd
 from varats.data.databases.blame_interaction_database import (
     BlameInteractionDatabase,
 )
+from varats.data.metrics import gini_coefficient, lorenz_curve
 from varats.data.reports.commit_report import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plots.plot import Plot
@@ -20,17 +21,6 @@ from varats.plots.repository_churn import (
 )
 from varats.utils.git_util import ChurnConfig, calc_repo_code_churn
 from varats.utils.project_util import get_local_project_git
-
-
-def _transform_to_lorenz_values(data: pd.Series) -> pd.Series:
-    """
-    Calucaltes the values for lorenz curve, i.e., the scaled prefix sum.
-
-    Args:
-        data: data range to calc scaled-prefix sum on
-    """
-    scaled_prefix_sum = data.cumsum() / data.sum()
-    return scaled_prefix_sum
 
 
 def draw_interaction_lorenz_curve(
@@ -56,7 +46,7 @@ def draw_interaction_lorenz_curve(
         )
 
     data.sort_values(by=[data_selector, 'revision'], inplace=True)
-    lor = _transform_to_lorenz_values(data[data_selector])
+    lor = lorenz_curve(data[data_selector])
     axis.plot(
         data['revision'], lor, color='#cc0099', linewidth=plot_cfg['linewidth']
     )
@@ -214,20 +204,6 @@ class BlameLorenzCurve(Plot):
         raise NotImplementedError
 
 
-def gini(lorenz_values: pd.Series) -> pd.Series:
-    """
-    Calculates the gini coefficient:  half of the relative mean absolute
-    difference between the lorenz values.
-
-    Args:
-        lorenz_values: the scaled prefix sum of an ordered values range
-    """
-    return 0.5 * (
-        (np.abs(np.subtract.outer(lorenz_values, lorenz_values)).mean()) /
-        np.mean(lorenz_values)
-    )
-
-
 def draw_gini_churn_over_time(
     axis: axes.SubplotBase, blame_data: pd.DataFrame, project_name: str,
     commit_map: CommitMap, consider_insertions: bool, consider_deletions: bool,
@@ -265,32 +241,22 @@ def draw_gini_churn_over_time(
     gini_churn = []
     for time_id in blame_data['time_id']:
         if consider_insertions and consider_deletions:
-            lorenz_values = np.array(
-                _transform_to_lorenz_values((
-                    churn_data[churn_data.time_id <= time_id].insertions +
-                    churn_data[churn_data.time_id <= time_id].deletions
-                ).sort_values(ascending=True))
-            )
+            distribution = (
+                churn_data[churn_data.time_id <= time_id].insertions +
+                churn_data[churn_data.time_id <= time_id].deletions
+            ).sort_values(ascending=True)
         elif consider_insertions:
-            lorenz_values = np.array(
-                _transform_to_lorenz_values(
-                    churn_data[churn_data.time_id <= time_id
-                              ].insertions.sort_values(ascending=True)
-                )
-            )
+            distribution = churn_data[churn_data.time_id <= time_id
+                                     ].insertions.sort_values(ascending=True)
         elif consider_deletions:
-            lorenz_values = np.array(
-                _transform_to_lorenz_values(
-                    churn_data[churn_data.time_id <= time_id
-                              ].deletions.sort_values(ascending=True)
-                )
-            )
+            distribution = churn_data[churn_data.time_id <= time_id
+                                     ].deletions.sort_values(ascending=True)
         else:
             raise AssertionError(
                 "At least one of the in/out interaction needs to be selected"
             )
 
-        gini_churn.append(gini(lorenz_values))
+        gini_churn.append(gini_coefficient(distribution))
     if consider_insertions and consider_deletions:
         linestyle = '-'
         label = 'Insertions + Deletions'
@@ -345,14 +311,10 @@ def draw_gini_blame_over_time(
     gini_coefficients = []
 
     for time_id in blame_data.time_id:
-        lvalues = np.array(
-            _transform_to_lorenz_values(
-                blame_data[blame_data.time_id <= time_id]
-                [data_selector].sort_values(ascending=True)
-            )
-        )
+        distribution = blame_data[blame_data.time_id <= time_id
+                                 ][data_selector].sort_values(ascending=True)
 
-        gini_coefficients.append(gini(lvalues))
+        gini_coefficients.append(gini_coefficient(distribution))
 
     axis.plot(
         blame_data.revision,
