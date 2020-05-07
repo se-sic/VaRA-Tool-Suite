@@ -33,8 +33,9 @@ def gini_coefficient(distribution: pd.Series) -> float:
         the gini coefficient for the data
     """
     dist_array = np.array(distribution)
-    return 0.5 * ((np.abs(np.subtract.outer(dist_array, dist_array)).mean()) /
-                  np.mean(dist_array))
+    return 0.5 * float(
+        ((np.abs(np.subtract.outer(dist_array, dist_array)).mean()) /
+         np.mean(dist_array)))
 
 
 def normalized_gini_coefficient(distribution: pd.Series) -> float:
