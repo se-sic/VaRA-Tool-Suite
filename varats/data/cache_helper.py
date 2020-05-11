@@ -81,7 +81,7 @@ def __create_cache_entry(
         new_df = create_df_from_report(create_report(file_path))
         new_df[CACHE_REVISION_COL] = \
             MetaReport.get_commit_hash_from_result_file(file_path.name)
-        new_df[CACHE_TIMESTAMP_COL] = file_path.stat().st_mtime
+        new_df[CACHE_TIMESTAMP_COL] = file_path.stat().st_mtime_ns
         return new_df
     except KeyError:
         LOG.error(f"KeyError: {file_path}")
@@ -132,7 +132,7 @@ def build_cached_report_table(
         )
         return tp.cast(
             bool, (
-                report_file.stat().st_mtime >
+                report_file.stat().st_mtime_ns >
                 cached_df[cached_df[CACHE_REVISION_COL] == commit_hash
                          ][CACHE_TIMESTAMP_COL]
             ).any()
