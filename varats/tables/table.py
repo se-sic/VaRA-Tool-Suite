@@ -68,7 +68,7 @@ class Table(metaclass=TableRegistry):
 
         Test:
         >>> Table('test').format
-        <TableFormat.latex_booktabs>
+        <TableFormat.latex_booktabs: 'latex_booktabs'>
         """
         return self.__format
 
