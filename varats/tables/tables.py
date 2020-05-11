@@ -4,7 +4,7 @@ import sys
 import typing as tp
 
 if tp.TYPE_CHECKING:
-    from varats.tables.table import Table
+    import varats.tables.table as table
 
 
 class TableRegistry(type):
@@ -37,7 +37,7 @@ class TableRegistry(type):
         ])
 
     @staticmethod
-    def get_class_for_table_type(table: str) -> tp.Type['Table']:
+    def get_class_for_table_type(table: str) -> tp.Type['table.Table']:
         """
         Get the class for ``table`` from the table registry.
 
@@ -61,7 +61,7 @@ class TableRegistry(type):
 
 
 def build_table(**kwargs: tp.Any) -> None:
-    """Build the specified graph."""
+    """Build the specified table."""
     table_type = TableRegistry.get_class_for_table_type(kwargs['table_type'])
     table = table_type(**kwargs)
 
