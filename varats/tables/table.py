@@ -103,7 +103,6 @@ class Table(metaclass=TableRegistry):
     def save(
         self,
         path: tp.Optional[Path] = None,
-        file_name: tp.Optional[str] = None
     ) -> None:
         """
         Save the current table to a file.
@@ -120,14 +119,13 @@ class Table(metaclass=TableRegistry):
         else:
             table_dir = path
 
-        if file_name is None:
-            project_name = self.table_kwargs["project"]
-            file_name = (
-                project_name + "_{table_name}{stages}".format(
-                    table_name=self.name,
-                    stages='S' if self.table_kwargs['sep_stages'] else '',
-                )
+        project_name = self.table_kwargs["project"]
+        file_name = (
+            project_name + "_{table_name}{stages}".format(
+                table_name=self.name,
+                stages='S' if self.table_kwargs['sep_stages'] else '',
             )
+        )
 
         table = self.tabulate()
         with open(table_dir / f"{file_name}.{filetype}", "w") as outfile:
