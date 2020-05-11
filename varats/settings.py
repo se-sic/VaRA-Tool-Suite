@@ -127,6 +127,17 @@ CFG['plots'] = {
     },
 }
 
+CFG['tables'] = {
+    "data_cache": {
+        "default": "data_cache",
+        "desc": "Local data cache to store preprocessed files."
+    },
+    "table_dir": {
+        "desc": "Folder for generated plots",
+        "default": None,
+    },
+}
+
 CFG['artefacts'] = {
     "artefacts_dir": {
         "desc": "Folder for generated artefacts",

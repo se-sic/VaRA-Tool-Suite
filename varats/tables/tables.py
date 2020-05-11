@@ -64,4 +64,10 @@ def build_table(**kwargs: tp.Any) -> None:
     """Build the specified graph."""
     table_type = TableRegistry.get_class_for_table_type(kwargs['table_type'])
     table = table_type(**kwargs)
-    table.save()
+
+    if kwargs["view"]:
+        from varats.tables.table import TableFormat
+        table.format = TableFormat.fancy_grid
+        print(table.tabulate())
+    else:
+        table.save()
