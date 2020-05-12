@@ -1,8 +1,9 @@
 """
-This module allows to attach :class:`artefact definitions<Artefact>`
-to a :class:`paper config<varats.paper.paper_config>`.
-This way, the artefacts, like :class:`plots<PlotArtefact>` or result tables,
-can be generated from result files automatically.
+This module allows to attach :class:`artefact definitions<Artefact>` to a.
+
+:class:`paper config<varats.paper.paper_config>`. This way, the artefacts, like
+:class:`plots<PlotArtefact>` or result tables, can be generated from result
+files automatically.
 
 Typically, a paper config has a file ``artefacts.yaml`` that manages artefact
 definitions.
@@ -17,14 +18,13 @@ from varats.data.version_header import VersionHeader
 from varats.plots.plot import Plot
 from varats.plots.plots import PlotRegistry
 from varats.settings import CFG
-from varats.utils.yaml_util import store_as_yaml, load_yaml
+from varats.utils.yaml_util import load_yaml, store_as_yaml
 
 
 class Artefact(ABC):
     """
-    An ``Artefact`` contains all information that is necessary to generate
-    a certain artefact.
-    Subclasses of this class specify concrete artefact types,
+    An ``Artefact`` contains all information that is necessary to generate a
+    certain artefact. Subclasses of this class specify concrete artefact types,
     like :class:`plots<PlotArtefact>`, that require additional attributes.
 
     Args:
@@ -33,17 +33,16 @@ class Artefact(ABC):
         output_path: The output path for this artefact.
     """
 
-    def __init__(self, artefact_type: 'ArtefactType', name: str,
-                 output_path: Path) -> None:
+    def __init__(
+        self, artefact_type: 'ArtefactType', name: str, output_path: Path
+    ) -> None:
         self.__artefact_type = artefact_type
         self.__name = name
         self.__output_path = output_path
 
     @property
     def artefact_type(self) -> 'ArtefactType':
-        """
-        The :class:`type<ArtefactType>` of this artefact.
-        """
+        """The :class:`type<ArtefactType>` of this artefact."""
         return self.__artefact_type
 
     @property
@@ -65,7 +64,8 @@ class Artefact(ABC):
         ``artefacts.artefacts_dir`` in the current varats config.
         """
         return Path(str(CFG['artefacts']['artefacts_dir'])) / Path(
-            str(CFG['paper_config']['current_config'])) / self.__output_path
+            str(CFG['paper_config']['current_config'])
+        ) / self.__output_path
 
     def get_dict(self) -> tp.Dict[str, str]:
         """
@@ -86,9 +86,7 @@ class Artefact(ABC):
 
     @abc.abstractmethod
     def generate_artefact(self) -> None:
-        """
-        Generate the specified artefact.
-        """
+        """Generate the specified artefact."""
 
 
 class PlotArtefact(Artefact):
@@ -106,8 +104,10 @@ class PlotArtefact(Artefact):
         kwargs: additional arguments that will be passed to the plot class
     """
 
-    def __init__(self, name: str, output_path: Path, plot_type: str,
-                 file_format: str, **kwargs: tp.Any) -> None:
+    def __init__(
+        self, name: str, output_path: Path, plot_type: str, file_format: str,
+        **kwargs: tp.Any
+    ) -> None:
         super(PlotArtefact, self).__init__(ArtefactType.plot, name, output_path)
         self.__plot_type = plot_type
         self.__plot_type_class = PlotRegistry.get_class_for_plot_type(plot_type)
@@ -116,31 +116,23 @@ class PlotArtefact(Artefact):
 
     @property
     def plot_type(self) -> str:
-        """
-        The :attr:`type of plot<varats.plots.plots.PlotRegistry.plots>` that
-        will be generated.
-        """
+        """The :attr:`type of plot<varats.plots.plots.PlotRegistry.plots>` that
+        will be generated."""
         return self.__plot_type
 
     @property
     def plot_type_class(self) -> tp.Type[Plot]:
-        """
-        The class associated with :func:`plot_type`.
-        """
+        """The class associated with :func:`plot_type`."""
         return self.__plot_type_class
 
     @property
     def file_format(self) -> str:
-        """
-        The file format of the generated plot.
-        """
+        """The file format of the generated plot."""
         return self.__file_format
 
     @property
     def plot_kwargs(self) -> tp.Any:
-        """
-        Additional arguments that will be passed to the plot_type_class.
-        """
+        """Additional arguments that will be passed to the plot_type_class."""
         return self.__plot_kwargs
 
     def get_dict(self) -> tp.Dict[str, str]:
@@ -151,9 +143,7 @@ class PlotArtefact(Artefact):
         return artefact_dict
 
     def generate_artefact(self) -> None:
-        """
-        Generate the specified plot.
-        """
+        """Generate the specified plot."""
         if not self.output_path.exists():
             self.output_path.mkdir(parents=True)
 
@@ -168,10 +158,9 @@ class ArtefactType(Enum):
     Enum for the different artefact types.
 
     The name is used in the ``artefacts.yaml`` to identify what kind of artefact
-    is described.
-    The values are tuples ``(artefact_class, version)`` consisting of the class
-    responsible for that kind of artefact and a version number to allow
-    evolution of artefacts.
+    is described. The values are tuples ``(artefact_class, version)`` consisting
+    of the class responsible for that kind of artefact and a version number to
+    allow evolution of artefacts.
     """
     plot = (PlotArtefact, 1)
 
@@ -218,15 +207,16 @@ class Artefacts:
         return self.__artefacts.values().__iter__()
 
     def get_dict(self) -> tp.Dict[str, tp.List[tp.Dict[str, str]]]:
-        """
-        Construct a dict from these artefacts for easy export to yaml.
-        """
+        """Construct a dict from these artefacts for easy export to yaml."""
         return dict(
-            artefacts=[artefact.get_dict() for artefact in self.artefacts])
+            artefacts=[artefact.get_dict() for artefact in self.artefacts]
+        )
 
 
-def create_artefact(artefact_type: 'ArtefactType', name: str, output_path: Path,
-                    **kwargs: tp.Any) -> Artefact:
+def create_artefact(
+    artefact_type: 'ArtefactType', name: str, output_path: Path,
+    **kwargs: tp.Any
+) -> Artefact:
     """
     Create a new :class:`Artefact` from the provided parameters.
 
@@ -246,7 +236,8 @@ def create_artefact(artefact_type: 'ArtefactType', name: str, output_path: Path,
         return PlotArtefact(name, output_path, plot_type, file_format, **kwargs)
 
     raise AssertionError(
-        f"Missing create function for artefact type {artefact_type}")
+        f"Missing create function for artefact type {artefact_type}"
+    )
 
 
 def load_artefacts_from_file(file_path: Path) -> Artefacts:
@@ -272,10 +263,13 @@ def load_artefacts_from_file(file_path: Path) -> Artefacts:
         artefact_type = ArtefactType[raw_artefact.pop('artefact_type')]
         artefact_type_version = raw_artefact.pop('artefact_type_version')
         if artefact_type_version < artefact_type.value[1]:
-            print(f"WARNING: artefact {name} uses an old version of artefact "
-                  f"type {artefact_type.name}.")
+            print(
+                f"WARNING: artefact {name} uses an old version of artefact "
+                f"type {artefact_type.name}."
+            )
         artefacts.append(
-            create_artefact(artefact_type, name, output_path, **raw_artefact))
+            create_artefact(artefact_type, name, output_path, **raw_artefact)
+        )
 
     return Artefacts(artefacts)
 
@@ -293,14 +287,14 @@ def store_artefacts(artefacts: Artefacts, artefacts_location: Path) -> None:
     if artefacts_location.suffix == '.yaml':
         __store_artefacts_to_file(artefacts, artefacts_location)
     else:
-        __store_artefacts_to_file(artefacts,
-                                  artefacts_location / 'artefacts.yaml')
+        __store_artefacts_to_file(
+            artefacts, artefacts_location / 'artefacts.yaml'
+        )
 
 
 def __store_artefacts_to_file(artefacts: Artefacts, file_path: Path) -> None:
-    """
-    Store artefacts to file.
-    """
+    """Store artefacts to file."""
     store_as_yaml(
         file_path,
-        [VersionHeader.from_version_number('Artefacts', 1), artefacts])
+        [VersionHeader.from_version_number('Artefacts', 1), artefacts]
+    )

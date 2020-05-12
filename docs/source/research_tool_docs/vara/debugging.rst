@@ -1,6 +1,6 @@
-*********
-Debugging
-*********
+**************
+Debugging VaRA
+**************
 
 A quick guide on how to test and debug VaRA.
 

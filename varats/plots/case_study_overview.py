@@ -1,6 +1,5 @@
-"""
-Generate plots that show a detailed overview of the state of one case-studiy.
-"""
+"""Generate plots that show a detailed overview of the state of one case-
+studiy."""
 
 import typing as tp
 from distutils.util import strtobool
@@ -8,7 +7,8 @@ from distutils.util import strtobool
 import matplotlib.pyplot as plt
 import matplotlib.style as style
 
-from varats.data.report import MetaReport, FileStatusExtension
+from varats.data.databases.file_status_database import FileStatusDatabase
+from varats.data.report import FileStatusExtension, MetaReport
 from varats.data.reports.commit_report import CommitMap
 from varats.data.reports.empty_report import EmptyReport
 from varats.paper.case_study import CaseStudy
@@ -55,46 +55,59 @@ def _gen_overview_data(tag_blocked: bool,
                       ) and project.is_blocked_revision(c_hash)[0]:
                 positions["blocked_all"].append(index)
 
-    processed_revisions = case_study.get_revisions_status(
-        result_file_type, tag_blocked=tag_blocked)
-    for rev, status in processed_revisions:
-        index = commit_map.short_time_id(rev)
-        if status is FileStatusExtension.Success:
-            positions["success"].append(index)
-        elif status is FileStatusExtension.Failed:
-            positions["failed"].append(index)
-        elif status is FileStatusExtension.Blocked:
-            positions["blocked"].append(index)
-            positions["blocked_all"].append(index)
-        elif status is FileStatusExtension.Missing:
-            positions["missing"].append(index)
-        elif status is FileStatusExtension.CompileError:
-            positions["compile_error"].append(index)
-        else:
-            positions["background"].append(index)
+    revisions = FileStatusDatabase.get_data_for_project(
+        project_name, ["revision", "time_id", "file_status"],
+        commit_map,
+        case_study,
+        result_file_type=result_file_type,
+        tag_blocked=tag_blocked
+    )
+    positions["success"] = (
+        revisions[revisions["file_status"] ==
+                  FileStatusExtension.Success.get_status_extension()]
+    )["time_id"].tolist()
+    positions["failed"] = (
+        revisions[revisions["file_status"] ==
+                  FileStatusExtension.Failed.get_status_extension()]
+    )["time_id"].tolist()
+    positions["blocked"] = (
+        revisions[revisions["file_status"] ==
+                  FileStatusExtension.Blocked.get_status_extension()]
+    )["time_id"].tolist()
+    positions["blocked_all"].extend((
+        revisions[revisions["file_status"] ==
+                  FileStatusExtension.Blocked.get_status_extension()]
+    )["time_id"].tolist())
+    positions["missing"] = (
+        revisions[revisions["file_status"] ==
+                  FileStatusExtension.Missing.get_status_extension()]
+    )["time_id"].tolist()
+    positions["compile_error"] = (
+        revisions[revisions["file_status"] ==
+                  FileStatusExtension.CompileError.get_status_extension()]
+    )["time_id"].tolist()
 
     return positions
 
 
 class PaperConfigOverviewPlot(Plot):
-    """
-    Plot showing an overview of all case-studies.
-    """
+    """Plot showing an overview of all case-studies."""
 
     NAME = 'case_study_overview_plot'
 
     def __init__(self, **kwargs: tp.Any) -> None:
-        super(PaperConfigOverviewPlot,
-              self).__init__("paper_config_overview_plot", **kwargs)
+        super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         style.use(self.style)
 
         commit_map: CommitMap = self.plot_kwargs["get_cmap"]()
         show_blocked: bool = strtobool(
-            self.plot_kwargs.get("show_blocked", "True"))
+            self.plot_kwargs.get("show_blocked", "True")
+        )
         show_all_blocked: bool = strtobool(
-            self.plot_kwargs.get("show_all_blocked", "False"))
+            self.plot_kwargs.get("show_all_blocked", "False")
+        )
 
         data = _gen_overview_data(show_blocked, **self.plot_kwargs)
 
@@ -104,33 +117,36 @@ class PaperConfigOverviewPlot(Plot):
 
         _, axis = plt.subplots(1, 1, figsize=(fig_width, 1))
 
-        linewidth = (fig_width /
-                     len(commit_map.mapping_items())) / dot_to_inch * line_width
+        linewidth = (
+            fig_width / len(commit_map.mapping_items())
+        ) / dot_to_inch * line_width
 
-        axis.eventplot(data["background"],
-                       linewidths=linewidth,
-                       colors=BACKGROUND_COLOR)
-        axis.eventplot(data["success"],
-                       linewidths=linewidth,
-                       colors=SUCCESS_COLOR)
-        axis.eventplot(data["failed"],
-                       linewidths=linewidth,
-                       colors=FAILED_COLOR)
-        axis.eventplot(data["missing"],
-                       linewidths=linewidth,
-                       colors=MISSING_COLOR)
-        axis.eventplot(data["compile_error"],
-                       linewidths=linewidth,
-                       colors=COMPILE_ERROR_COLOR)
+        axis.eventplot(
+            data["background"], linewidths=linewidth, colors=BACKGROUND_COLOR
+        )
+        axis.eventplot(
+            data["success"], linewidths=linewidth, colors=SUCCESS_COLOR
+        )
+        axis.eventplot(
+            data["failed"], linewidths=linewidth, colors=FAILED_COLOR
+        )
+        axis.eventplot(
+            data["missing"], linewidths=linewidth, colors=MISSING_COLOR
+        )
+        axis.eventplot(
+            data["compile_error"],
+            linewidths=linewidth,
+            colors=COMPILE_ERROR_COLOR
+        )
 
         if show_all_blocked:
-            axis.eventplot(data["blocked_all"],
-                           linewidths=linewidth,
-                           colors=BLOCKED_COLOR)
+            axis.eventplot(
+                data["blocked_all"], linewidths=linewidth, colors=BLOCKED_COLOR
+            )
         else:
-            axis.eventplot(data["blocked"],
-                           linewidths=linewidth,
-                           colors=BLOCKED_COLOR)
+            axis.eventplot(
+                data["blocked"], linewidths=linewidth, colors=BLOCKED_COLOR
+            )
 
         axis.set_axis_off()
 

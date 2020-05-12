@@ -7,6 +7,11 @@ This tool can be used to easily create and select
 .. program-output:: vara-pc -h
     :nostderr:
 
+List all available paper configs with the subcommand `vara-pc list`.
+
+.. program-output:: vara-pc list -h
+    :nostderr:
+
 You can create a new paper config with the subcommand `vara-pc create`.
 
 .. program-output:: vara-pc create -h

@@ -1,29 +1,30 @@
-"""
-Driver module for `vara-buildsetup`.
-"""
+"""Driver module for `vara-buildsetup`."""
 
-import typing as tp
 import argparse
 import os
 import sys
+import typing as tp
 from pathlib import Path
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 
 from varats.gui.buildsetup_window import BuildSetup
-from varats.settings import get_value_or_default, CFG, save_config
+from varats.settings import CFG, get_value_or_default, save_config
+from varats.tools.research_tools.research_tool import (
+    ResearchTool,
+    SpecificCodeBase,
+)
+from varats.utils.cli_util import (
+    get_research_tool,
+    get_supported_research_tool_names,
+    initialize_logger_config,
+)
 from varats.vara_manager import BuildType
-from varats.utils.cli_util import (initialize_logger_config, get_research_tool,
-                                   get_supported_research_tool_names)
-from varats.tools.research_tools.research_tool import (ResearchTool,
-                                                       SpecificCodeBase)
 
 
 class VaRATSSetup:
-    """
-    Start VaRA-TS grafical user interface for setting up VaRA.
-    """
+    """Start VaRA-TS grafical user interface for setting up VaRA."""
 
     def __init__(self) -> None:
         if hasattr(Qt, 'AA_EnableHighDpiScaling'):
@@ -35,9 +36,7 @@ class VaRATSSetup:
         self.main_window = BuildSetup()
 
     def main(self) -> None:
-        """
-        Start VaRA setup GUI
-        """
+        """Start VaRA setup GUI."""
         sys.exit(self.app.exec_())
 
 
@@ -61,7 +60,7 @@ def update_term(text: str, enable_inline: bool = False) -> None:
 
 def parse_string_to_build_type(build_type: str) -> BuildType:
     """
-    Convert a string into a BuildType
+    Convert a string into a BuildType.
 
     Args:
         build_type: VaRA build configuration
@@ -104,71 +103,86 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
 
 
 def main() -> None:
-    """
-    Build VaRA on cli.
-    """
+    """Build VaRA on cli."""
     initialize_logger_config()
     parser = argparse.ArgumentParser("vara-buildsetup")
 
-    parser.add_argument("-c",
-                        "--config",
-                        action="store_true",
-                        default=False,
-                        help="Only create a VaRA config file.")
-    parser.add_argument("-i",
-                        "--init",
-                        action="store_true",
-                        default=False,
-                        help="Initializes VaRA and all components.")
-    parser.add_argument("-u",
-                        "--update",
-                        action="store_true",
-                        default=False,
-                        help="Updates VaRA and all components.")
-    parser.add_argument("-b",
-                        "--build",
-                        help="Builds VaRA and all components.",
-                        action="store_true",
-                        default=False)
+    parser.add_argument(
+        "-c",
+        "--config",
+        action="store_true",
+        default=False,
+        help="Only create a VaRA config file."
+    )
+    parser.add_argument(
+        "-i",
+        "--init",
+        action="store_true",
+        default=False,
+        help="Initializes VaRA and all components."
+    )
+    parser.add_argument(
+        "-u",
+        "--update",
+        action="store_true",
+        default=False,
+        help="Updates VaRA and all components."
+    )
+    parser.add_argument(
+        "-b",
+        "--build",
+        help="Builds VaRA and all components.",
+        action="store_true",
+        default=False
+    )
     parser.add_argument(
         "--buildtype",
         default="dev",
         choices=['dev', 'opt', 'pgo', 'dbg', 'dev-san'],
         nargs="?",
-        help="Build type to use for the tool build configuration.")
-    parser.add_argument("researchtool",
-                        help="The research tool one wants to setup",
-                        choices=get_supported_research_tool_names())
-    parser.add_argument("sourcelocation",
-                        help="Folder to store tool sources. (Optional)",
-                        nargs='?',
-                        default=None)
-    parser.add_argument("installprefix",
-                        default=None,
-                        nargs='?',
-                        help="Folder to install LLVM. (Optional)")
-    parser.add_argument("--version",
-                        default=None,
-                        nargs="?",
-                        help="Version to download.")
+        help="Build type to use for the tool build configuration."
+    )
+    parser.add_argument(
+        "researchtool",
+        help="The research tool one wants to setup",
+        choices=get_supported_research_tool_names()
+    )
+    parser.add_argument(
+        "sourcelocation",
+        help="Folder to store tool sources. (Optional)",
+        nargs='?',
+        default=None
+    )
+    parser.add_argument(
+        "installprefix",
+        default=None,
+        nargs='?',
+        help="Folder to install LLVM. (Optional)"
+    )
+    parser.add_argument(
+        "--version", default=None, nargs="?", help="Version to download."
+    )
 
     args = parser.parse_args()
 
     if not (args.config or args.init or args.update or args.build):
         parser.error(
             "At least one argument of --config, --init, --update or --build " +
-            "must be given.")
+            "must be given."
+        )
 
     if args.config:
         save_config()
         return
 
-    tool = get_research_tool(args.researchtool,
-                             __get_source_location(args.sourcelocation))
+    tool = get_research_tool(
+        args.researchtool, __get_source_location(args.sourcelocation)
+    )
 
     if args.init:
-        __build_setup_init(tool, args.sourcelocation, args.installprefix,
-                           args.version)
+        __build_setup_init(
+            tool, args.sourcelocation, args.installprefix, args.version
+        )
     if args.update:
         tool.upgrade()
     if args.build:
@@ -180,21 +194,26 @@ def main() -> None:
             print(f"Could not install {tool.name} correctly.")
 
 
-def __build_setup_init(tool: ResearchTool[SpecificCodeBase],
-                       raw_source_location: tp.Optional[str],
-                       raw_install_prefix: tp.Optional[str],
-                       version: tp.Optional[int]) -> None:
+def __build_setup_init(
+    tool: ResearchTool[SpecificCodeBase], raw_source_location: tp.Optional[str],
+    raw_install_prefix: tp.Optional[str], version: tp.Optional[int]
+) -> None:
 
-    tool.setup(__get_source_location(raw_source_location),
-               install_prefix=__get_install_prefix(tool, raw_install_prefix),
-               version=version)
+    tool.setup(
+        __get_source_location(raw_source_location),
+        install_prefix=__get_install_prefix(tool, raw_install_prefix),
+        version=version
+    )
 
 
 def __get_source_location(raw_source_location: tp.Optional[str]) -> Path:
     if raw_source_location is None:
         src_folder = Path(
-            get_value_or_default(CFG["vara"], "llvm_source_dir",
-                                 str(os.getcwd()) + "/tools_src/"))
+            get_value_or_default(
+                CFG["vara"], "llvm_source_dir",
+                str(os.getcwd()) + "/tools_src/"
+            )
+        )
     else:
         src_folder = Path(raw_source_location)
 
@@ -204,12 +223,16 @@ def __get_source_location(raw_source_location: tp.Optional[str]) -> Path:
     return src_folder
 
 
-def __get_install_prefix(tool: ResearchTool[SpecificCodeBase],
-                         raw_install_prefix: tp.Optional[str]) -> Path:
+def __get_install_prefix(
+    tool: ResearchTool[SpecificCodeBase], raw_install_prefix: tp.Optional[str]
+) -> Path:
     if raw_install_prefix is None:
         install_prefix = Path(
-            get_value_or_default(CFG["vara"], "llvm_install_dir",
-                                 str(os.getcwd()) + f"/tools/{tool.name}/"))
+            get_value_or_default(
+                CFG["vara"], "llvm_install_dir",
+                str(os.getcwd()) + f"/tools/{tool.name}/"
+            )
+        )
     else:
         install_prefix = Path(raw_install_prefix)
 

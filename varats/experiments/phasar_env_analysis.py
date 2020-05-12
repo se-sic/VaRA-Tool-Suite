@@ -1,38 +1,38 @@
 """
 Execute showcase cpp examples with Phasar's tracing of environment variables.
-This class implements the environment tracing data flow analysis of Phasar.
-We run the analysis on exemplary cpp files. The cpp examples can be
-found in the https://github.com/se-passau/vara-perf-tests repository.
-The results of each analysis get written into a PhasarReport, which lists, what
-examples produced a valid json result and which ones failed.
+
+This class implements the environment tracing data flow analysis of Phasar. We
+run the analysis on exemplary cpp files. The cpp examples can be found in the
+https://github.com/se-passau/vara-perf-tests repository. The results of each
+analysis get written into a PhasarReport, which lists, what examples produced a
+valid json result and which ones failed.
 """
 
 import typing as tp
 from os import path
-import resource
 
+import benchbuild.utils.actions as actions
+from benchbuild.experiment import Experiment
+from benchbuild.extensions import compiler, run, time
+from benchbuild.project import Project
+from benchbuild.settings import CFG as BB_CFG
+from benchbuild.utils.cmd import mkdir, phasar, timeout
 from plumbum import local
 
-from benchbuild.extensions import compiler, run, time
-from benchbuild.settings import CFG as BB_CFG
-from benchbuild.project import Project
-from benchbuild.experiment import Experiment
-import benchbuild.utils.actions as actions
-from benchbuild.utils.cmd import phasar, mkdir, timeout
-
-from varats.data.reports.env_trace_report import EnvTraceReport as ENVR
 from varats.data.report import FileStatusExtension as FSE
-from varats.experiments.wllvm import RunWLLVM, Extract
-from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
-                                          FunctionPEErrorWrapper,
-                                          PEErrorHandler)
+from varats.data.reports.env_trace_report import EnvTraceReport as ENVR
+from varats.experiments.wllvm import Extract, RunWLLVM
+from varats.utils.experiment_util import (
+    FunctionPEErrorWrapper,
+    PEErrorHandler,
+    UnlimitStackSize,
+    exec_func_with_pe_error_handler,
+)
 
 
 class PhasarEnvIFDS(actions.Step):  # type: ignore
-    """
-    Analyse a project with Phasar's IFDS that traces environment variables
-    inside a project.
-    """
+    """Analyse a project with Phasar's IFDS that traces environment variables
+    inside a project."""
 
     NAME = "PhasarEnvIFDS"
     DESCRIPTION = "Calls the environment tracing analysis of phasar and "\
@@ -60,12 +60,14 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
         # Set up cache directory for bitcode files.
         bc_cache_dir = Extract.BC_CACHE_FOLDER_TEMPLATE.format(
             cache_dir=str(BB_CFG["varats"]["result"]),
-            project_name=str(project.name))
+            project_name=str(project.name)
+        )
 
         # Define the output directory.
         result_folder = self.RESULT_FOLDER_TEMPLATE.format(
             result_dir=str(BB_CFG["varats"]["outfile"]),
-            project_dir=str(project.name))
+            project_dir=str(project.name)
+        )
 
         mkdir("-p", result_folder)
 
@@ -76,24 +78,27 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
             bc_target_file = Extract.get_bc_file_name(
                 project_name=str(project.name),
                 binary_name=str(binary.name),
-                project_version=str(project.version))
+                project_version=str(project.version)
+            )
 
             # Define result file.
-            result_file = ENVR.get_file_name(project_name=str(project.name),
-                                             binary_name=binary.name,
-                                             project_version=str(
-                                                 project.version),
-                                             project_uuid=str(project.run_uuid),
-                                             extension_type=FSE.Success)
+            result_file = ENVR.get_file_name(
+                project_name=str(project.name),
+                binary_name=binary.name,
+                project_version=str(project.version),
+                project_uuid=str(project.run_uuid),
+                extension_type=FSE.Success
+            )
 
             # Define output file name of failed runs
-            error_file = ENVR.get_file_name(project_name=str(project.name),
-                                            binary_name=binary.name,
-                                            project_version=str(
-                                                project.version),
-                                            project_uuid=str(project.run_uuid),
-                                            extension_type=FSE.Failed,
-                                            file_ext=".txt")
+            error_file = ENVR.get_file_name(
+                project_name=str(project.name),
+                binary_name=binary.name,
+                project_version=str(project.version),
+                project_uuid=str(project.run_uuid),
+                extension_type=FSE.Failed,
+                file_ext=".txt"
+            )
 
             # Put together the run command
             phasar_run_cmd = phasar[
@@ -106,13 +111,16 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
             # Run the phasar command with custom error handler and timeout
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration, phasar_run_cmd],
-                PEErrorHandler(result_folder, error_file, phasar_run_cmd,
-                               timeout_duration))
+                PEErrorHandler(
+                    result_folder, error_file, phasar_run_cmd, timeout_duration
+                )
+            )
 
 
 class UnlimitStackSize(actions.Step):  # type: ignore
     """
     Set higher user limits on stack size for RAM intense experiments.
+
     Basically the same as calling the shell built-in ulimit.
     """
 
@@ -120,31 +128,25 @@ class UnlimitStackSize(actions.Step):  # type: ignore
     DESCRIPTION = "Sets new resource limits."
 
     def __init__(self, project: Project):
-        super(UnlimitStackSize, self).__init__(obj=project,
-                                               action_fn=self.__call__)
+        super(UnlimitStackSize,
+              self).__init__(obj=project, action_fn=self.__call__)
 
     def __call__(self) -> actions.StepResult:
-        """
-        Same as 'ulimit -s 16777216' in a shell.
-        """
+        """Same as 'ulimit -s 16777216' in a shell."""
         resource.setrlimit(resource.RLIMIT_STACK, (16777216, 16777216))
 
 
 class PhasarEnvironmentTracing(Experiment):  # type: ignore
-    """
-    Generates a inter-procedural data flow analysis (IFDS) on a project's
-    binaries and traces environment variables.
-    """
+    """Generates a inter-procedural data flow analysis (IFDS) on a project's
+    binaries and traces environment variables."""
 
     NAME = "PhasarEnvironmentTracing"
 
     REPORT_TYPE = ENVR
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
-        """
-        Returns the specified steps to run the project(s) specified in
-        the call in a fixed order.
-        """
+        """Returns the specified steps to run the project(s) specified in the
+        call in a fixed order."""
 
         # Add the required runtime extensions to the project(s)
         project.runtime_extension = run.RuntimeExtension(project, self) \
@@ -161,12 +163,17 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
             PEErrorHandler(
                 PhasarEnvIFDS.RESULT_FOLDER_TEMPLATE.format(
                     result_dir=str(BB_CFG["varats"]["outfile"]),
-                    project_dir=str(project.name)),
-                ENVR.get_file_name(project_name=str(project.name),
-                                   binary_name="all",
-                                   project_version=str(project.version),
-                                   project_uuid=str(project.run_uuid),
-                                   extension_type=FSE.CompileError)))
+                    project_dir=str(project.name)
+                ),
+                ENVR.get_file_name(
+                    project_name=str(project.name),
+                    binary_name="all",
+                    project_version=str(project.version),
+                    project_uuid=str(project.run_uuid),
+                    extension_type=FSE.CompileError
+                )
+            )
+        )
 
         analysis_actions = []
 
@@ -177,11 +184,14 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
                 local.path(
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
                         cache_dir=str(BB_CFG["varats"]["result"]),
-                        project_name=str(project.name)) +
-                    Extract.get_bc_file_name(project_name=str(project.name),
-                                             binary_name=binary.name,
-                                             project_version=str(
-                                                 project.version))))
+                        project_name=str(project.name)
+                    ) + Extract.get_bc_file_name(
+                        project_name=str(project.name),
+                        binary_name=binary.name,
+                        project_version=str(project.version)
+                    )
+                )
+            )
 
             if not all_cache_files_present:
                 analysis_actions.append(actions.Compile(project))

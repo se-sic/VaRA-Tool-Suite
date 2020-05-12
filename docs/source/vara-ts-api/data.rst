@@ -1,10 +1,11 @@
 Data handling
 =============
 
-* :ref:`reports`
+* :ref:`Reports`
 * :ref:`Handling utilities for generated report files`
-* :ref:`data management`
+* :ref:`Data management`
 * :ref:`Data providers`
+* :ref:`Metrics`
 
 Reports
 -------
@@ -61,12 +62,13 @@ You can add new database classes by creating a subclass of :class:`~varats.data.
     data_databases/blame_interaction_database
     data_databases/blame_interaction_degree_database
     data_databases/commit_interaction_database
+    data_databases/file_status_database
 
 
 Module: database
 ....................
 
-.. automodule:: varats.data.databases.database
+.. automodule:: varats.data.databases.evaluationdatabase
     :members:
     :undoc-members:
     :show-inheritance:
@@ -124,11 +126,27 @@ For an example provider implementation take a look at the :ref:`CVE provider`.
     :caption: List of supported providers
 
     data_providers/cve_provider
+    data_providers/release_provider
 
 Provider module
 ...............
 
 .. automodule:: varats.data.provider.provider
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Metrics
+-------
+
+During data evaluation, one might wish to calculate different metrics for the data at hand.
+We collect the code for such metrics in a separate module to make these metrics reusable, e.g., in different plots.
+
+Metrics module
+...............
+
+.. automodule:: varats.data.metrics
     :members:
     :undoc-members:
     :show-inheritance:

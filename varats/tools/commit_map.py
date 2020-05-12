@@ -1,6 +1,4 @@
-"""
-Commit map module.
-"""
+"""Commit map module."""
 
 import typing as tp
 from pathlib import Path
@@ -12,11 +10,13 @@ from varats.data.reports.commit_report import CommitMap
 from varats.utils.project_util import get_local_project_git_path
 
 
-def generate_commit_map(path: Path,
-                        end: str = "HEAD",
-                        start: tp.Optional[str] = None) -> CommitMap:
+def generate_commit_map(
+    path: Path, end: str = "HEAD", start: tp.Optional[str] = None
+) -> CommitMap:
     """
-    Generate a commit map for a repository including the commits ]start..end]
+    Generate a commit map for a repository including the commits.
+
+    ]start..end]
     """
     search_range = ""
     if start is not None:
@@ -25,8 +25,9 @@ def generate_commit_map(path: Path,
 
     with local.cwd(path):
         full_out = git("--no-pager", "log", "--pretty=format:'%H'")
-        wanted_out = git("--no-pager", "log", "--pretty=format:'%H'",
-                         search_range)
+        wanted_out = git(
+            "--no-pager", "log", "--pretty=format:'%H'", search_range
+        )
 
         def format_stream() -> tp.Generator[str, None, None]:
             wanted_cm = set()
@@ -42,9 +43,7 @@ def generate_commit_map(path: Path,
 
 
 def store_commit_map(cmap: CommitMap, output_file_path: str) -> None:
-    """
-    Store commit map to file.
-    """
+    """Store commit map to file."""
     mkdir("-p", Path(output_file_path).parent)
 
     with open(output_file_path, "w") as c_map_file:
@@ -52,20 +51,18 @@ def store_commit_map(cmap: CommitMap, output_file_path: str) -> None:
 
 
 def load_commit_map_from_path(cmap_path: Path) -> CommitMap:
-    """
-    Load a commit map from a given `.cmap` file path.
-    """
+    """Load a commit map from a given `.cmap` file path."""
     with open(cmap_path, "r") as c_map_file:
         return CommitMap(c_map_file.readlines())
 
 
-def get_commit_map(project_name: str,
-                   cmap_path: tp.Optional[Path] = None,
-                   end: str = "HEAD",
-                   start: tp.Optional[str] = None) -> CommitMap:
-    """
-    Get a commit map for a project.
-    """
+def get_commit_map(
+    project_name: str,
+    cmap_path: tp.Optional[Path] = None,
+    end: str = "HEAD",
+    start: tp.Optional[str] = None
+) -> CommitMap:
+    """Get a commit map for a project."""
     if cmap_path is None:
         project_git_path = get_local_project_git_path(project_name)
 
@@ -75,20 +72,20 @@ def get_commit_map(project_name: str,
 
 
 def create_lazy_commit_map_loader(
-        project_name: str,
-        cmap_path: tp.Optional[Path] = None,
-        end: str = "HEAD",
-        start: tp.Optional[str] = None) -> tp.Callable[[], CommitMap]:
-    """
-    Create a generator function that lazy loads a CommitMap.
-    """
+    project_name: str,
+    cmap_path: tp.Optional[Path] = None,
+    end: str = "HEAD",
+    start: tp.Optional[str] = None
+) -> tp.Callable[[], CommitMap]:
+    """Create a generator function that lazy loads a CommitMap."""
     lazy_cached_cmap = None
 
     def get_cmap_lazy() -> CommitMap:
         nonlocal lazy_cached_cmap
         if lazy_cached_cmap is None:
-            lazy_cached_cmap = get_commit_map(project_name, cmap_path, end,
-                                              start)
+            lazy_cached_cmap = get_commit_map(
+                project_name, cmap_path, end, start
+            )
 
         return lazy_cached_cmap
 
