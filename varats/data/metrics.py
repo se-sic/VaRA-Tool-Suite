@@ -5,9 +5,10 @@ import pandas as pd
 
 def lorenz_curve(data: pd.Series) -> pd.Series:
     """
-    Calculates the values for the `lorenz curve.
+    Calculates the values for the lorenz curve of the data.
 
-    <https://en.wikipedia.org/wiki/Lorenz_curve>`_ of the data.
+    For more information see online `lorenz curve
+    <https://en.wikipedia.org/wiki/Lorenz_curve>`_.
 
     Args:
         data: sorted series to calculate the lorenz curve for
@@ -21,9 +22,10 @@ def lorenz_curve(data: pd.Series) -> pd.Series:
 
 def gini_coefficient(distribution: pd.Series) -> float:
     """
-    Calculates the `gini coefficient.
+    Calculates the gini coefficient of the data.
 
-    <https://en.wikipedia.org/wiki/Gini_coefficient>`_ of the data.
+    For more information see online `gini coefficient
+    <https://en.wikipedia.org/wiki/Gini_coefficient>`_.
 
     Args:
         distribution: sorted series to calculate the gini coefficient for
