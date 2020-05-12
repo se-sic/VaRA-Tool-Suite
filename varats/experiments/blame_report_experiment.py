@@ -21,6 +21,7 @@ from varats.utils.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     PEErrorHandler,
+    UnlimitStackSize,
 )
 
 
@@ -132,8 +133,7 @@ class BlameReportExperiment(VersionExperiment):
         """
 
         BE.setup_basic_blame_experiment(
-            self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE,
-            False
+            self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE
         )
 
         analysis_actions = BE.generate_basic_blame_experiment_actions(project)
