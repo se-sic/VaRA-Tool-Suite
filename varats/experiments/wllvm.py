@@ -11,6 +11,7 @@ the generated bc files with LLVM.
 import typing as tp
 from os import getenv
 from pathlib import Path
+from enum import Enum
 
 from plumbum import local
 
@@ -21,6 +22,13 @@ from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import extract_bc, cp, mkdir
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.path import list_to_path, path_to_list
+
+BC_FILE_TEMPLATE = "{project_name}-{binary_name}-{project_version}{" \
+                   "extensions}.bc"
+
+
+class Extensions(Enum):
+    DEBUG = 'dbg'
 
 
 class RunWLLVM(base.Extension):  # type: ignore
@@ -76,17 +84,26 @@ class Extract(actions.Step):  # type: ignore
 
     @staticmethod
     def get_bc_file_name(project_name: str, binary_name: str,
-                         project_version: str, dbg: bool = False):
-        if dbg:
-            dbg = "_dbg"
+                         project_version: str, extensions: list):
+
+        if extensions:
+            project_extensions = '-'
+
+            for ext in extensions[:-1]:
+                project_extensions += (ext.value + '_')
+
+            project_extensions += extensions[-1].value
         else:
-            dbg = ""
+            project_extensions = ''
 
-        return "%s-%s-%s%s.bc" % (project_name, binary_name,
-                                  project_version, dbg)
+        return BC_FILE_TEMPLATE.format(project_name=project_name,
+                                       binary_name=binary_name,
+                                       project_version=project_version,
+                                       extensions=project_extensions)
 
-    def __init__(self, project: Project) -> None:
+    def __init__(self, project: Project, extensions: list) -> None:
         super(Extract, self).__init__(obj=project, action_fn=self.extract)
+        self.extensions = extensions
 
     def extract(self) -> actions.StepResult:
         """
@@ -106,7 +123,8 @@ class Extract(actions.Step):  # type: ignore
             bc_cache_file = bc_cache_folder + self.get_bc_file_name(
                 project_name=str(project.name),
                 binary_name=str(binary.name),
-                project_version=str(project.version))
+                project_version=str(project.version),
+                extensions=self.extensions)
 
             target_binary = Path(project.builddir) / project.SRC_FILE /\
                 binary

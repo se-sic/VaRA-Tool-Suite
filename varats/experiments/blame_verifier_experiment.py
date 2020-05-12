@@ -7,17 +7,15 @@ BlameVerifierReport.
 
 import typing as tp
 
-from benchbuild import project
-from plumbum import local
-
+import benchbuild.utils.actions as actions
+import varats.experiments.blame_experiment as BE
 from benchbuild.project import Project
 from benchbuild.settings import CFG as BB_CFG
-import benchbuild.utils.actions as actions
 from benchbuild.utils.cmd import opt, mkdir, timeout
-
-from varats.data.reports.blame_verifier_report import BlameVerifierReport as BVR
-import varats.experiments.blame_experiment as BE
+from plumbum import local
 from varats.data.report import FileStatusExtension as FSE
+from varats.data.reports.blame_verifier_report import BlameVerifierReport as BVR
+from varats.experiments.wllvm import Extensions
 from varats.experiments.wllvm import Extract
 from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
                                           VersionExperiment, PEErrorHandler)
@@ -34,14 +32,10 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
-    def __init__(
-            self,
-            project: Project
-    ):
-        super(BlameVerifierReportGeneration, self).__init__(
-            obj=project,
-            action_fn=self.analyze
-        )
+    def __init__(self, project: Project, extensions: list):
+        super(BlameVerifierReportGeneration,
+              self).__init__(obj=project, action_fn=self.analyze)
+        self.extensions = extensions
 
     def analyze(self) -> actions.StepResult:
         """
@@ -75,24 +69,25 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
         mkdir("-p", vara_result_folder)
 
         for binary in project.binaries:
-            result_file = BVR.get_file_name(
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_version=str(project.version),
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.Success)
+            result_file = BVR.get_file_name(project_name=str(project.name),
+                                            binary_name=binary.name,
+                                            project_version=str(
+                                                project.version),
+                                            project_uuid=str(project.run_uuid),
+                                            extension_type=FSE.Success)
 
             opt_params = [
-                "-vara-BD", "-vara-init-commits",
-                "-vara-verify-blameMD", "-vara-verifier-options=Status".format(
+                "-vara-BD", "-vara-init-commits", "-vara-verify-blameMD",
+                "-vara-verifier-options=Status".format(
                     res_folder=vara_result_folder, res_file=result_file)
             ]
 
-            opt_params.append(bc_cache_folder / Extract.get_bc_file_name(
-                project_name=project.name,
-                binary_name=binary.name,
-                project_version=project.version,
-                dbg=True))
+            opt_params.append(
+                bc_cache_folder /
+                Extract.get_bc_file_name(project_name=project.name,
+                                         binary_name=binary.name,
+                                         project_version=project.version,
+                                         extensions=self.extensions))
 
             run_cmd = opt[opt_params]
 
@@ -121,11 +116,15 @@ class BlameVerifierReportExperiment(VersionExperiment):
 
     REPORT_TYPE = BVR
 
+    extensions = [Extensions.DEBUG]
+
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in
         the call in a fixed order.
         """
+
+        extensions = [Extensions.DEBUG]
 
         BE.setup_basic_blame_experiment(
             self, project, BVR,
@@ -133,9 +132,10 @@ class BlameVerifierReportExperiment(VersionExperiment):
         project.cflags.append("-g")
 
         analysis_actions = BE.generate_basic_blame_experiment_actions(
-            project, True)
+            project, extensions)
 
-        analysis_actions.append(BlameVerifierReportGeneration(project))
+        analysis_actions.append(
+            BlameVerifierReportGeneration(project, extensions))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions

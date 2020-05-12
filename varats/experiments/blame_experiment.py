@@ -48,7 +48,7 @@ def setup_basic_blame_experiment(experiment: Experiment, project: Project,
 
 
 def generate_basic_blame_experiment_actions(
-        project: Project, dbg: bool = False) -> tp.List[actions.Step]:
+        project: Project, extensions: list) -> tp.List[actions.Step]:
     """
     Generate the basic actions for a blame experiment.
         - handle caching of BC files
@@ -67,12 +67,11 @@ def generate_basic_blame_experiment_actions(
                     project_name=str(project.name)) +
                 Extract.get_bc_file_name(project_name=str(project.name),
                                          binary_name=binary.name,
-                                         project_version=str(
-                                             project.version),
-                                         dbg=dbg)))
+                                         project_version=str(project.version),
+                                         extensions=extensions)))
 
     if not all_files_present:
         analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(Extract(project))
+        analysis_actions.append(Extract(project, extensions))
 
     return analysis_actions
