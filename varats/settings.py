@@ -133,7 +133,7 @@ CFG['tables'] = {
         "desc": "Local data cache to store preprocessed files."
     },
     "table_dir": {
-        "desc": "Folder for generated plots",
+        "desc": "Folder for generated tables",
         "default": None,
     },
 }

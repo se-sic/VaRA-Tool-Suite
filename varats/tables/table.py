@@ -120,12 +120,8 @@ class Table(metaclass=TableRegistry):
             table_dir = path
 
         project_name = self.table_kwargs["project"]
-        file_name = (
-            project_name + "_{table_name}{stages}".format(
-                table_name=self.name,
-                stages='S' if self.table_kwargs['sep_stages'] else '',
-            )
-        )
+        stages = 'S' if self.table_kwargs['sep_stages'] else ''
+        file_name = f"{project_name}_{self.name}{stages}"
 
         table = self.tabulate()
         with open(table_dir / f"{file_name}.{filetype}", "w") as outfile:
