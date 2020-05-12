@@ -28,6 +28,8 @@ BC_FILE_TEMPLATE = "{project_name}-{binary_name}-{project_version}{" \
 
 class Extensions(Enum):
     DEBUG = 'dbg'
+    NO_OPT = 'O0'
+    OPT = 'O2'
 
 
 class RunWLLVM(base.Extension):  # type: ignore
