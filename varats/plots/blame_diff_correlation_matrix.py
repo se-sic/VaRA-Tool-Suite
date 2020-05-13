@@ -57,21 +57,29 @@ class BlameDiffCorrelationMatrix(Plot):
         df = BlameDiffMetricsDatabase.get_data_for_project(
             project_name, [
                 "revision", "churn_total", "diff_ci_total", "ci_degree_mean",
-                "author_mean", "avg_time_mean", "year"
+                "author_mean", "avg_time_mean", "ci_degree_max", "author_max",
+                "avg_time_max", "year"
             ], commit_map, case_study
         )
         df.set_index('revision', inplace=True)
 
         df.drop(df[df.churn_total == 0].index, inplace=True)
 
-        g = sns.pairplot(
-            df,  #hue="year",
+        vars_1 = [
+            "churn_total", "diff_ci_total", "ci_degree_mean", "author_mean",
+            "avg_time_mean", "year"
+        ]
+        # vars_2 = [
+        #     "churn_total", "diff_ci_total", "ci_degree_max", "author_max",
+        #     "avg_time_max", "year"
+        # ]
+
+        grid = sns.pairplot(
+            df,  # hue="year",
+            vars=vars_1,
             diag_kind="hist"
-        )  # , vars=["churn_total", "diff_ci_total"])
-        g.map_lower(annotate_correlation)
-        # grid = sns.PairGrid(df,
-        #                     x_vars=["churn_total", "diff_ci_total"],
-        #                     y_vars=["churn_total", "diff_ci_total"])
+        )
+        grid.map_lower(annotate_correlation)
 
     def show(self) -> None:
         """Show the current plot."""

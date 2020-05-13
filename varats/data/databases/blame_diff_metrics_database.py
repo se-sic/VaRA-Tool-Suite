@@ -14,8 +14,7 @@ from varats.data.reports.blame_report import (
     generate_degree_tuples,
     generate_author_degree_tuples,
     generate_avg_time_distribution_tuples,
-    generate_in_head_interactions,
-    generate_out_head_interactions,
+    generate_max_time_distribution_tuples,
 )
 from varats.data.reports.commit_report import CommitMap
 from varats.data.revisions import (
@@ -33,7 +32,7 @@ class BlameDiffMetricsDatabase(
     cache_id="blame_diff_metrics_data",
     columns=[
         "churn_total", "diff_ci_total", "ci_degree_mean", "author_mean",
-        "avg_time_mean", "year"
+        "avg_time_mean", "ci_degree_max", "author_max", "avg_time_max", "year"
     ]
 ):
     """Metrics database that contains all different blame-interaction metrics
@@ -73,6 +72,9 @@ class BlameDiffMetricsDatabase(
                     "ci_degree_mean": 0.0,
                     "author_mean": 0.0,
                     "avg_time_mean": 0.0,
+                    "ci_degree_max": 0.0,
+                    "author_max": 0.0,
+                    "avg_time_max": 0.0,
                     'year': commit_date.year,
                 },
                                     index=[0])
@@ -120,7 +122,6 @@ class BlameDiffMetricsDatabase(
                 ]
             )
 
-            # TODO: rework to metrics
             def weighted_avg(tuples: tp.List[tp.Tuple[int, int]]) -> float:
                 total_sum = 0
                 degree_sum = 0
@@ -129,6 +130,11 @@ class BlameDiffMetricsDatabase(
                     total_sum += (degree * amount)
 
                 return total_sum / max(1, degree_sum)
+
+            def combine_max(tuples: tp.List[tp.Tuple[int, int]]) -> float:
+                if tuples:
+                    return max([x for x, y in tuples])
+                return 0
 
             return pd.DataFrame({
                 'revision':
@@ -153,17 +159,28 @@ class BlameDiffMetricsDatabase(
                             diff_between_head_pred, project_name, 1
                         )
                     ),
+                "ci_degree_max":
+                    combine_max(generate_degree_tuples(diff_between_head_pred)),
+                "author_max":
+                    combine_max(
+                        generate_avg_time_distribution_tuples(
+                            diff_between_head_pred, project_name, 1
+                        )
+                    ),
+                "avg_time_max":
+                    combine_max(
+                        generate_max_time_distribution_tuples(
+                            diff_between_head_pred, project_name, 1
+                        )
+                    ),
                 'year':
                     commit_date.year,
             },
                                 index=[0])
 
         report_files = get_processed_revisions_files(
-            project_name,
-            BlameReport,
-            # TODO: @boehm is passing here only_newest report_files ok?
-            get_case_study_file_name_filter(case_study),
-            False
+            project_name, BlameReport,
+            get_case_study_file_name_filter(case_study)
         )
 
         failed_report_files = get_failed_revisions_files(
