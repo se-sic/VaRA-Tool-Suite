@@ -20,6 +20,7 @@ from varats.data.reports.commit_report import CommitMap
 from varats.data.revisions import (
     get_processed_revisions_files,
     get_failed_revisions_files,
+    get_processed_revisions,
 )
 from varats.jupyterhelper.file import load_blame_report
 from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
@@ -58,11 +59,10 @@ class BlameDiffMetricsDatabase(
             commit_date = datetime.utcfromtimestamp(commit.commit_time)
             commit_time_id = commit_map.short_time_id(report.head_commit)
 
-            # TODO: if no case study -> fucked
-            # Idea find pred with all avail report types
-            pred_commits = [(commit_map.short_time_id(rev), rev)
-                            for rev in case_study.revisions
-                            if commit_map.short_time_id(rev) < commit_time_id]
+            pred_commits = [(commit_map.short_time_id(rev), rev) for rev in (
+                case_study.revisions if case_study else
+                get_processed_revisions(project_name, BlameReport)
+            ) if commit_map.short_time_id(rev) < commit_time_id]
 
             def empty_data_frame() -> pd.DataFrame:
                 return pd.DataFrame({
