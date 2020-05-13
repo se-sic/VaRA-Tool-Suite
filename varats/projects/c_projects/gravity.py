@@ -1,53 +1,70 @@
-"""
-Project file for gravity.
-"""
+"""Project file for gravity."""
 import typing as tp
 from pathlib import Path
 
-from benchbuild.settings import CFG as BB_CFG
-from benchbuild.utils.compiler import cc
-from benchbuild.utils.run import run
 from benchbuild.project import Project
-from benchbuild.utils.cmd import make, cmake, git
+from benchbuild.settings import CFG as BB_CFG
+from benchbuild.utils.cmd import cmake, git, make
+from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
-
+from benchbuild.utils.run import run
 from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import (get_all_revisions_between,
-                                       wrap_paths_to_binaries,
-                                       ProjectBinaryWrapper, block_revisions,
-                                       BlockedRevisionRange, BugAndFixPair,
-                                       BlockedRevision)
+from varats.utils.project_util import (
+    BlockedRevision,
+    BlockedRevisionRange,
+    ProjectBinaryWrapper,
+    BugAndFixPair,
+    block_revisions,
+    get_all_revisions_between,
+    wrap_paths_to_binaries,
+)
 
 
 @block_revisions([
-    BlockedRevisionRange("0b8e0e047fc3d5e18ead3221ad54920f1ad0eedc",
-                         "8f417752dd14deea64249b5d32b6138ebc877fa9",
-                         "nothing to build"),
-    BugAndFixPair("e8999a84efbd9c3e739bff7af39500d14e61bfbc",
-                  "0e918ce0798407dd6c981e1cd26b4ba138d22fab", "missing -lm"),
-    BugAndFixPair("244c5aa91358a5b2472d351e6c7f38ba7da94ef6",
-                  "371152de2f38534d4da332349d1def83fc66d5bc",
-                  "Visual studio project breaks makefile"),
-    BugAndFixPair("112be515b5ef3b67011c7272e5a50ac3a1fcadc4",
-                  "b9a62dfad41ae06d029493cf4d5757de2a0281b2", "bug in gravity"),
-    BlockedRevision("e207f0cc87bf57e9ccb6f0d18ff4fe4d6ef0c096",
-                    "bug in gravity"),
-    BugAndFixPair("d2a04f92347fb5f2b6fd23bea9b0e12817cd6d8e",
-                  "e8fbd6a4a2a9618456f1460dc9138b617dc7af4b", "bug in gravity"),
-    BugAndFixPair("968534c5d4f28501b7f34da48cab2c153ae7449b",
-                  "0caf15328bda90ffb1911077e03b28ea9970208b", "bug in gravity"),
-    BugAndFixPair("e4f95e669a4c5cf2d142d5b0b72a11c117f7092f",
-                  "09e59da4deff9b35224f4784fae9d0f132be9cea", "missing -lbsd"),
+    BlockedRevisionRange(
+        "0b8e0e047fc3d5e18ead3221ad54920f1ad0eedc",
+        "8f417752dd14deea64249b5d32b6138ebc877fa9", "nothing to build"
+    ),
+    BugAndFixPair(
+        "e8999a84efbd9c3e739bff7af39500d14e61bfbc",
+        "0e918ce0798407dd6c981e1cd26b4ba138d22fab", "missing -lm"
+    ),
+    BugAndFixPair(
+        "244c5aa91358a5b2472d351e6c7f38ba7da94ef6",
+        "371152de2f38534d4da332349d1def83fc66d5bc",
+        "Visual studio project breaks makefile"
+    ),
+    BugAndFixPair(
+        "112be515b5ef3b67011c7272e5a50ac3a1fcadc4",
+        "b9a62dfad41ae06d029493cf4d5757de2a0281b2", "bug in gravity"
+    ),
+    BlockedRevision(
+        "e207f0cc87bf57e9ccb6f0d18ff4fe4d6ef0c096", "bug in gravity"
+    ),
+    BugAndFixPair(
+        "d2a04f92347fb5f2b6fd23bea9b0e12817cd6d8e",
+        "e8fbd6a4a2a9618456f1460dc9138b617dc7af4b", "bug in gravity"
+    ),
+    BugAndFixPair(
+        "968534c5d4f28501b7f34da48cab2c153ae7449b",
+        "0caf15328bda90ffb1911077e03b28ea9970208b", "bug in gravity"
+    ),
+    BugAndFixPair(
+        "e4f95e669a4c5cf2d142d5b0b72a11c117f7092f",
+        "09e59da4deff9b35224f4784fae9d0f132be9cea", "missing -lbsd"
+    ),
 ])
-@with_git("https://github.com/marcobambini/gravity.git",
-          refspec="HEAD",
-          shallow_clone=False,
-          version_filter=project_filter_generator("gravity"))
+@with_git(
+    "https://github.com/marcobambini/gravity.git",
+    refspec="HEAD",
+    shallow_clone=False,
+    version_filter=project_filter_generator("gravity")
+)
 class Gravity(Project, CVEProviderHook):  # type: ignore
-    """Programming language Gravity"""
+    """Programming language Gravity."""
 
     NAME = 'gravity'
     GROUP = 'c_projects'
@@ -72,7 +89,8 @@ class Gravity(Project, CVEProviderHook):  # type: ignore
         with local.cwd(self.SRC_FILE):
             version_id = git("rev-parse", "HEAD").strip()
             cmake_revisions = get_all_revisions_between(
-                "dbb4d61fc2ebb9aca44e8e6bb978efac4a6def87", "master")
+                "dbb4d61fc2ebb9aca44e8e6bb978efac4a6def87", "master"
+            )
 
         if version_id in cmake_revisions:
             self.__compile_cmake()

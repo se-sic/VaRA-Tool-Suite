@@ -124,7 +124,7 @@ VaRA-TS allows the user to extend it with different projects, experiments, and d
 ```
 
 ### Running tests
-Running all python tests: 
+Running all python tests:
 ```bash
     python setup.py test
 ```

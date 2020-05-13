@@ -1,6 +1,4 @@
-"""
-Project file for glibc.
-"""
+"""Project file for glibc."""
 import typing as tp
 
 from benchbuild.project import Project
@@ -9,21 +7,24 @@ from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
-
 from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import (wrap_paths_to_binaries,
-                                       ProjectBinaryWrapper)
+from varats.utils.project_util import (
+    wrap_paths_to_binaries,
+    ProjectBinaryWrapper,
+)
 
 
-@with_git("git://sourceware.org/git/glibc.git",
-          refspec="HEAD",
-          shallow_clone=False,
-          version_filter=project_filter_generator("glibc"))
+@with_git(
+    "git://sourceware.org/git/glibc.git",
+    refspec="HEAD",
+    shallow_clone=False,
+    version_filter=project_filter_generator("glibc")
+)
 class Glibc(Project, CVEProviderHook):  # type: ignore
-    """Standard GNU C-library"""
+    """Standard GNU C-library."""
 
     NAME = 'glibc'
     GROUP = 'c_projects'

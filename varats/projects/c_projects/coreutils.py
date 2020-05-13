@@ -1,28 +1,29 @@
-"""
-Project file for the GNU coreutils.
-"""
+"""Project file for the GNU coreutils."""
 import typing as tp
 from pathlib import Path
 
+import benchbuild.project as prj
 from benchbuild.settings import CFG as BB_CFG
-from benchbuild.utils.cmd import make, git
+from benchbuild.utils.cmd import git, make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
-import benchbuild.project as prj
-
 from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import (wrap_paths_to_binaries,
-                                       ProjectBinaryWrapper)
+from varats.utils.project_util import (
+    wrap_paths_to_binaries,
+    ProjectBinaryWrapper,
+)
 
 
-@with_git("https://github.com/coreutils/coreutils.git",
-          refspec="HEAD",
-          shallow_clone=False,
-          version_filter=project_filter_generator("coreutils"))
+@with_git(
+    "https://github.com/coreutils/coreutils.git",
+    refspec="HEAD",
+    shallow_clone=False,
+    version_filter=project_filter_generator("coreutils")
+)
 class Coreutils(prj.Project, CVEProviderHook):  # type: ignore
     """GNU coretuils / UNIX command-line tools (fetched by Git)"""
 

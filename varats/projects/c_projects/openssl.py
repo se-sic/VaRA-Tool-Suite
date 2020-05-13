@@ -1,6 +1,4 @@
-"""
-Project file for openssl.
-"""
+"""Project file for openssl."""
 import typing as tp
 
 from benchbuild.project import Project
@@ -9,18 +7,21 @@ from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
-
 from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import (wrap_paths_to_binaries,
-                                       ProjectBinaryWrapper)
+from varats.utils.project_util import (
+    wrap_paths_to_binaries,
+    ProjectBinaryWrapper,
+)
 
 
-@with_git("https://github.com/openssl/openssl.git",
-          refspec="HEAD",
-          version_filter=project_filter_generator("openssl"))
+@with_git(
+    "https://github.com/openssl/openssl.git",
+    refspec="HEAD",
+    version_filter=project_filter_generator("openssl")
+)
 class OpenSSL(Project, CVEProviderHook):  # type: ignore
     """TLS-framework OpenSSL (fetched by Git)"""
 

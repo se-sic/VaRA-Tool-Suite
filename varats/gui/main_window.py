@@ -1,25 +1,25 @@
-"""
-VaRA-TS MainWindow
-"""
+"""VaRA-TS MainWindow."""
 
 import typing as tp
 from os import path
 
 from PyQt5.QtWidgets import QMainWindow, QWidget
 
-from varats.settings import CFG, save_config, generate_benchbuild_config,\
-    create_missing_folders
-from varats.gui.ui_MainWindow import Ui_MainWindow
-from varats.gui.views.example_view import ExampleView
-from varats.gui.views.cr_bar_view import CRBarView
 from varats.gui.buildsetup_window import BuildSetup
 from varats.gui.filtertree_window import FilterWindow
+from varats.gui.ui_MainWindow import Ui_MainWindow
+from varats.gui.views.cr_bar_view import CRBarView
+from varats.gui.views.example_view import ExampleView
+from varats.settings import (
+    CFG,
+    create_missing_folders,
+    generate_benchbuild_config,
+    save_config,
+)
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
-    """
-    Manages the GUI state and manages the different active views.
-    """
+    """Manages the GUI state and manages the different active views."""
 
     def __init__(self) -> None:
         super(MainWindow, self).__init__()
@@ -34,10 +34,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
         # Signals for menubar
         self.actionVaRA_Setup.triggered.connect(self._spawn_vara_build_setup)
         self.actionInteractionFilter_Editor.triggered.connect(
-            self._spawn_filter_editor)
+            self._spawn_filter_editor
+        )
         self.actionSave_Config.triggered.connect(self._save_config)
         self.actionCreate_BenchBuild_Config.triggered.connect(
-            self._create_benchbuild_config)
+            self._create_benchbuild_config
+        )
 
         self.tabWidget.tabCloseRequested.connect(self.__remove_tab)
 
@@ -56,18 +58,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
         self.tabWidget.addTab(new_tab, "CR-BarView")
 
     def _spawn_vara_build_setup(self) -> None:
-        """
-        Spawn a setup window to configure and build VaRA
-        """
+        """Spawn a setup window to configure and build VaRA."""
         self.bwg = BuildSetup()  # type: ignore
         if not isinstance(self.bwg, BuildSetup):
             raise AssertionError()
         self.bwg.show()
 
     def _spawn_filter_editor(self) -> None:
-        """
-        Spawn a filter editor window to configure interaction filters.
-        """
+        """Spawn a filter editor window to configure interaction filters."""
         self.filter_window = FilterWindow()  # type: ignore
         if not isinstance(self.filter_window, FilterWindow):
             raise AssertionError()
@@ -75,16 +73,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
 
     @staticmethod
     def _save_config() -> None:
-        """
-        Save current config to file.
-        """
+        """Save current config to file."""
         save_config()
 
     @staticmethod
     def _create_benchbuild_config() -> None:
         if CFG["config_file"].value is None:
-            print("No VaRA config found, please initialize a " +
-                  "VaRA config first.")
+            print(
+                "No VaRA config found, please initialize a " +
+                "VaRA config first."
+            )
             return
 
         if CFG["benchbuild_root"].value is None:
@@ -94,7 +92,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
 
         generate_benchbuild_config(
             CFG,
-            str(CFG["benchbuild_root"]) + "/.benchbuild.yml")
+            str(CFG["benchbuild_root"]) + "/.benchbuild.yml"
+        )
 
     def __remove_tab(self, index: int) -> None:
         tab = self.tabWidget.widget(index)

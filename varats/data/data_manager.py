@@ -1,20 +1,20 @@
 """
 The DataManager module handles the loading, creation, and caching of data
-classes. With the DataManager in the background, we can load files from multiple
-locations within the tool suite, without loading the same file twice.
-In addition, this speeds up reloading of files, for example, in interactive
-plots, like in jupyter notebooks, where we sometimes re-execute triggers
-a file load.
+classes.
+
+With the DataManager in the background, we can load files from multiple
+locations within the tool suite, without loading the same file twice. In
+addition, this speeds up reloading of files, for example, in interactive plots,
+like in jupyter notebooks, where we sometimes re-execute triggers a file load.
 """
 
-import typing as tp
 import hashlib
 import os
+import typing as tp
 from pathlib import Path
-
 from threading import Lock
 
-from PyQt5.QtCore import QRunnable, QThreadPool, QObject, pyqtSlot, pyqtSignal
+from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal, pyqtSlot
 
 from varats.data.report import BaseReport
 
@@ -42,8 +42,8 @@ def sha256_checksum(file_path: Path, block_size: int = 65536) -> str:
 
 class FileBlob():
     """
-    A FileBlob is a keyed data blob for everything that is loadable from a
-    file and can be converted to a VaRA DataClass.
+    A FileBlob is a keyed data blob for everything that is loadable from a file
+    and can be converted to a VaRA DataClass.
 
     Args:
         key: identifier for the file
@@ -73,21 +73,18 @@ class FileBlob():
 
 
 class FileSignal(QObject):
-    """
-    Emit signals after the file was loaded.
-    """
+    """Emit signals after the file was loaded."""
     finished = pyqtSignal(object)
     clean = pyqtSignal()
 
 
 class FileLoader(QRunnable):
-    """
-    Manages concurrent file loading in the background of the application.
-    """
+    """Manages concurrent file loading in the background of the application."""
 
-    def __init__(self, func: tp.Callable[[Path, tp.Type[LoadableType]],
-                                         LoadableType], file_path: Path,
-                 class_type: tp.Type[LoadableType]) -> None:
+    def __init__(
+        self, func: tp.Callable[[Path, tp.Type[LoadableType]], LoadableType],
+        file_path: Path, class_type: tp.Type[LoadableType]
+    ) -> None:
         super(FileLoader, self).__init__()
         self.func = func
         self.file_path = file_path
@@ -96,9 +93,7 @@ class FileLoader(QRunnable):
 
     @pyqtSlot()
     def run(self) -> None:
-        """
-        Run the file loading method.
-        """
+        """Run the file loading method."""
         loaded_data_class = self.func(self.file_path, self.class_type)
         self.signal.finished.emit(loaded_data_class)
         self.signal.clean.emit()
@@ -106,9 +101,10 @@ class FileLoader(QRunnable):
 
 class DataManager():
     """
-    Manages data over the lifetime of the tool suite. The DataManager handles
-    the concurrent file loading, creation of DataClasses and caching of
-    loaded files.
+    Manages data over the lifetime of the tool suite.
+
+    The DataManager handles the concurrent file loading, creation of DataClasses
+    and caching of loaded files.
     """
 
     def __init__(self) -> None:
@@ -116,12 +112,11 @@ class DataManager():
         self.thread_pool = QThreadPool()
         self.loader_lock = Lock()
 
-    def __load_data_class(self, file_path: Path,
-                          DataClassTy: tp.Type[LoadableType]) -> LoadableType:
+    def __load_data_class(
+        self, file_path: Path, DataClassTy: tp.Type[LoadableType]
+    ) -> LoadableType:
         # pylint: disable=invalid-name
-        """
-        Load a DataClass of type <DataClassTy> from a file.
-        """
+        """Load a DataClass of type <DataClassTy> from a file."""
         self.loader_lock.acquire()
 
         key = sha256_checksum(file_path)
@@ -138,8 +133,9 @@ class DataManager():
         return tp.cast(LoadableType, new_blob.data)
 
     def load_data_class(
-            self, file_path: Path, DataClassTy: tp.Type[LoadableType],
-            loaded_callback: tp.Callable[[LoadableType], None]) -> None:
+        self, file_path: Path, DataClassTy: tp.Type[LoadableType],
+        loaded_callback: tp.Callable[[LoadableType], None]
+    ) -> None:
         # pylint: disable=invalid-name
         """
         Load a DataClass of type <DataClassTy> from a file asynchronosly.
@@ -158,8 +154,8 @@ class DataManager():
         self.thread_pool.start(worker)
 
     def load_data_class_sync(
-            self, file_path: Path,
-            DataClassTy: tp.Type[LoadableType]) -> LoadableType:
+        self, file_path: Path, DataClassTy: tp.Type[LoadableType]
+    ) -> LoadableType:
         # pylint: disable=invalid-name
         """
         Load a DataClass of type <DataClassTy> from a file synchronosly.

@@ -1,6 +1,4 @@
-"""
-Project file for lrzip.
-"""
+"""Project file for lrzip."""
 import typing as tp
 
 from benchbuild.project import Project
@@ -9,19 +7,22 @@ from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
-
 from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import (wrap_paths_to_binaries,
-                                       ProjectBinaryWrapper)
+from varats.utils.project_util import (
+    wrap_paths_to_binaries,
+    ProjectBinaryWrapper,
+)
 
 
-@with_git("https://github.com/ckolivas/lrzip.git",
-          refspec="HEAD",
-          shallow_clone=False,
-          version_filter=project_filter_generator("lrzip"))
+@with_git(
+    "https://github.com/ckolivas/lrzip.git",
+    refspec="HEAD",
+    shallow_clone=False,
+    version_filter=project_filter_generator("lrzip")
+)
 class Lrzip(Project, CVEProviderHook):  # type: ignore
     """Compression and decompression tool lrzip (fetched by Git)"""
 

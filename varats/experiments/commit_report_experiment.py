@@ -2,34 +2,33 @@
 Implements the commit-flow report with annotating over git blame.
 
 This class implements the commit-flow report (CFR) analysis of the variability-
-aware region analyzer (VaRA).
-For annotation we use the git-blame data of git.
+aware region analyzer (VaRA). For annotation we use the git-blame data of git.
 """
 
 import typing as tp
 from os import path
 from pathlib import Path
 
+import benchbuild.utils.actions as actions
+from benchbuild.extensions import compiler, run, time
+from benchbuild.project import Project
+from benchbuild.settings import CFG as BB_CFG
+from benchbuild.utils.cmd import mkdir, opt
 from plumbum import local
 
-from benchbuild.project import Project
-from benchbuild.extensions import compiler, run, time
-from benchbuild.settings import CFG as BB_CFG
-from benchbuild.utils.cmd import opt, mkdir
-import benchbuild.utils.actions as actions
-
-from varats.data.reports.commit_report import CommitReport as CR
 from varats.data.report import FileStatusExtension as FSE
-from varats.experiments.wllvm import RunWLLVM, Extract
-from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
-                                          VersionExperiment, PEErrorHandler,
-                                          get_default_compile_error_wrapped)
+from varats.data.reports.commit_report import CommitReport as CR
+from varats.experiments.wllvm import Extract, RunWLLVM
+from varats.utils.experiment_util import (
+    PEErrorHandler,
+    VersionExperiment,
+    exec_func_with_pe_error_handler,
+    get_default_compile_error_wrapped,
+)
 
 
 class CRAnalysis(actions.Step):  # type: ignore
-    """
-    Analyse a project with VaRA and generate a Commit Report.
-    """
+    """Analyse a project with VaRA and generate a Commit Report."""
 
     NAME = "CRAnalysis"
     DESCRIPTION = "Analyses the bitcode with CR of VaRA."
@@ -39,9 +38,11 @@ class CRAnalysis(actions.Step):  # type: ignore
     INTERACTION_FILTER_TEMPLATE = \
         "InteractionFilter-{experiment}-{project}.yaml"
 
-    def __init__(self,
-                 project: Project,
-                 interaction_filter_experiment_name: tp.Optional[str] = None):
+    def __init__(
+        self,
+        project: Project,
+        interaction_filter_experiment_name: tp.Optional[str] = None
+    ):
         super(CRAnalysis, self).__init__(obj=project, action_fn=self.analyze)
         self.__interaction_filter_experiment_name = \
             interaction_filter_experiment_name
@@ -61,51 +62,69 @@ class CRAnalysis(actions.Step):  # type: ignore
             interaction_filter_file = Path(
                 self.INTERACTION_FILTER_TEMPLATE.format(
                     experiment="CommitReportExperiment",
-                    project=str(project.name)))
+                    project=str(project.name)
+                )
+            )
         else:
             interaction_filter_file = Path(
                 self.INTERACTION_FILTER_TEMPLATE.format(
                     experiment=self.__interaction_filter_experiment_name,
-                    project=str(project.name)))
+                    project=str(project.name)
+                )
+            )
             if not interaction_filter_file.is_file():
-                raise Exception("Could not load interaction filter file \"" +
-                                str(interaction_filter_file) + "\"")
+                raise Exception(
+                    "Could not load interaction filter file \"" +
+                    str(interaction_filter_file) + "\""
+                )
 
         bc_cache_folder = local.path(
             Extract.BC_CACHE_FOLDER_TEMPLATE.format(
                 cache_dir=str(BB_CFG["varats"]["result"]),
-                project_name=str(project.name)))
+                project_name=str(project.name)
+            )
+        )
 
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
             result_dir=str(BB_CFG["varats"]["outfile"]),
-            project_dir=str(project.name))
+            project_dir=str(project.name)
+        )
 
         mkdir("-p", vara_result_folder)
 
         for binary in project.binaries:
-            result_file = CR.get_file_name(project_name=str(project.name),
-                                           binary_name=binary.name,
-                                           project_version=str(project.version),
-                                           project_uuid=str(project.run_uuid),
-                                           extension_type=FSE.Success)
+            result_file = CR.get_file_name(
+                project_name=str(project.name),
+                binary_name=binary.name,
+                project_version=str(project.version),
+                project_uuid=str(project.run_uuid),
+                extension_type=FSE.Success
+            )
 
             opt_params = [
                 "-vara-BD", "-vara-CR", "-vara-init-commits",
                 "-vara-report-outfile={res_folder}/{res_file}".format(
-                    res_folder=vara_result_folder, res_file=result_file)
+                    res_folder=vara_result_folder, res_file=result_file
+                )
             ]
 
             if interaction_filter_file.is_file():
-                opt_params.append("-vara-cf-interaction-filter={}".format(
-                    str(interaction_filter_file)))
+                opt_params.append(
+                    "-vara-cf-interaction-filter={}".format(
+                        str(interaction_filter_file)
+                    )
+                )
 
-            opt_params.append(bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
-                project_name=project.name,
-                binary_name=binary.name,
-                project_version=project.version))
+            opt_params.append(
+                bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
+                    project_name=project.name,
+                    binary_name=binary.name,
+                    project_version=project.version
+                )
+            )
 
             run_cmd = opt[opt_params]
 
@@ -116,27 +135,28 @@ class CRAnalysis(actions.Step):  # type: ignore
                 timeout[timeout_duration, run_cmd],
                 PEErrorHandler(
                     vara_result_folder,
-                    CR.get_file_name(project_name=str(project.name),
-                                     binary_name=binary.name,
-                                     project_version=str(project.version),
-                                     project_uuid=str(project.run_uuid),
-                                     extension_type=FSE.Failed,
-                                     file_ext=".txt"), run_cmd,
-                    timeout_duration))
+                    CR.get_file_name(
+                        project_name=str(project.name),
+                        binary_name=binary.name,
+                        project_version=str(project.version),
+                        project_uuid=str(project.run_uuid),
+                        extension_type=FSE.Failed,
+                        file_ext=".txt"
+                    ), run_cmd, timeout_duration
+                )
+            )
 
 
 class CommitReportExperiment(VersionExperiment):
-    """
-    Generates a commit report (CR) of the project(s) specified in the
-    call.
-    """
+    """Generates a commit report (CR) of the project(s) specified in the
+    call."""
 
     NAME = "GenerateCommitReport"
     REPORT_TYPE = CR
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
-        """Returns the specified steps to run the project(s) specified in
-        the call in a fixed order."""
+        """Returns the specified steps to run the project(s) specified in the
+        call in a fixed order."""
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
@@ -149,7 +169,8 @@ class CommitReportExperiment(VersionExperiment):
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            project, CR, CRAnalysis.RESULT_FOLDER_TEMPLATE)
+            project, CR, CRAnalysis.RESULT_FOLDER_TEMPLATE
+        )
 
         # This c-flag is provided by VaRA and it suggests to use the git-blame
         # annotation.
@@ -164,11 +185,14 @@ class CommitReportExperiment(VersionExperiment):
                 local.path(
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
                         cache_dir=str(BB_CFG["varats"]["result"]),
-                        project_name=str(project.name)) +
-                    Extract.BC_FILE_TEMPLATE.format(
+                        project_name=str(project.name)
+                    ) + Extract.BC_FILE_TEMPLATE.format(
                         project_name=str(project.name),
                         binary_name=binary.name,
-                        project_version=str(project.version))))
+                        project_version=str(project.version)
+                    )
+                )
+            )
 
         if not all_files_present:
             analysis_actions.append(actions.Compile(project))

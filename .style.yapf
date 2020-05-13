@@ -1,2 +1,5 @@
 [style]
 based_on_style = google
+coalesce_brackets = true
+join_multiple_lines = false
+dedent_closing_brackets = true

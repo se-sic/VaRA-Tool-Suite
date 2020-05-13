@@ -1,14 +1,15 @@
-"""
-Driver module for `vara-develop` and its alias `vd`.
-"""
+"""Driver module for `vara-develop` and its alias `vd`."""
 
 import argparse
 import typing as tp
 
 from varats import development as dev
-from varats.utils.cli_util import (initialize_logger_config, get_research_tool,
-                                   get_supported_research_tool_names)
 from varats.tools.research_tools.research_tool import SubProject
+from varats.utils.cli_util import (
+    get_research_tool,
+    get_supported_research_tool_names,
+    initialize_logger_config,
+)
 
 
 def __sub_project_choices() -> tp.List[str]:
@@ -16,53 +17,61 @@ def __sub_project_choices() -> tp.List[str]:
 
 
 def main() -> None:
-    """
-    Handle and simplify common developer interactions with the project.
-    """
+    """Handle and simplify common developer interactions with the project."""
     initialize_logger_config()
     parser = argparse.ArgumentParser("vara-develop")
-    parser.add_argument("researchtool",
-                        help="The research tool one wants to setup",
-                        choices=get_supported_research_tool_names())
+    parser.add_argument(
+        "researchtool",
+        help="The research tool one wants to setup",
+        choices=get_supported_research_tool_names()
+    )
     sub_parsers = parser.add_subparsers(help="Sub commands", dest="command")
 
     # new-branch
     new_branch_parser = sub_parsers.add_parser('new-branch')
-    new_branch_parser.add_argument('branch_name',
-                                   type=str,
-                                   help='Name of the new branch')
-    new_branch_parser.add_argument('projects',
-                                   nargs='*',
-                                   action='store',
-                                   default=None,
-                                   help="Projects to work on.")
+    new_branch_parser.add_argument(
+        'branch_name', type=str, help='Name of the new branch'
+    )
+    new_branch_parser.add_argument(
+        'projects',
+        nargs='*',
+        action='store',
+        default=None,
+        help="Projects to work on."
+    )
 
     # checkout
     checkout_parser = sub_parsers.add_parser('checkout')
-    checkout_parser.add_argument('branch_name',
-                                 type=str,
-                                 help='Name of the new branch')
-    checkout_parser.add_argument('projects',
-                                 nargs='*',
-                                 action='store',
-                                 default=None,
-                                 help="Projects to work on.")
+    checkout_parser.add_argument(
+        'branch_name', type=str, help='Name of the new branch'
+    )
+    checkout_parser.add_argument(
+        'projects',
+        nargs='*',
+        action='store',
+        default=None,
+        help="Projects to work on."
+    )
 
     # git pull
     pull_parser = sub_parsers.add_parser('pull')
-    pull_parser.add_argument('projects',
-                             nargs='*',
-                             action='store',
-                             default=None,
-                             help="Projects to work on.")
+    pull_parser.add_argument(
+        'projects',
+        nargs='*',
+        action='store',
+        default=None,
+        help="Projects to work on."
+    )
 
     # git push
     push_parser = sub_parsers.add_parser('push')
-    push_parser.add_argument('projects',
-                             nargs='*',
-                             action='store',
-                             default=None,
-                             help="Projects to work on.")
+    push_parser.add_argument(
+        'projects',
+        nargs='*',
+        action='store',
+        default=None,
+        help="Projects to work on."
+    )
 
     # git status
     status_parser = sub_parsers.add_parser('status')
@@ -71,11 +80,13 @@ def main() -> None:
         nargs='*',
         action='store',
         default=None,
-        help="Projects to work on. Or all/all-vara for all projects.")
+        help="Projects to work on. Or all/all-vara for all projects."
+    )
 
     # list dev-branches
-    sub_parsers.add_parser('f-branches',
-                           help="List all remote feature branches")
+    sub_parsers.add_parser(
+        'f-branches', help="List all remote feature branches"
+    )
 
     args = parser.parse_args()
 
