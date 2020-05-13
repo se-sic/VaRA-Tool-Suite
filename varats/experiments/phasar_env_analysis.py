@@ -117,25 +117,6 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
             )
 
 
-class UnlimitStackSize(actions.Step):  # type: ignore
-    """
-    Set higher user limits on stack size for RAM intense experiments.
-
-    Basically the same as calling the shell built-in ulimit.
-    """
-
-    NAME = "Unlimit stack size"
-    DESCRIPTION = "Sets new resource limits."
-
-    def __init__(self, project: Project):
-        super(UnlimitStackSize,
-              self).__init__(obj=project, action_fn=self.__call__)
-
-    def __call__(self) -> actions.StepResult:
-        """Same as 'ulimit -s 16777216' in a shell."""
-        resource.setrlimit(resource.RLIMIT_STACK, (16777216, 16777216))
-
-
 class PhasarEnvironmentTracing(Experiment):  # type: ignore
     """Generates a inter-procedural data flow analysis (IFDS) on a project's
     binaries and traces environment variables."""
