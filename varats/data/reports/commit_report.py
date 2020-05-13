@@ -459,6 +459,9 @@ class CommitMap():
         for item in self.__hash_to_id.items():
             target_file.write("{}, {}\n".format(item[1], item[0]))
 
+    def __str__(self) -> str:
+        return str(self.__hash_to_id)
+
 
 ###############################################################################
 # Connection Generators
