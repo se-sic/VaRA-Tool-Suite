@@ -6,6 +6,7 @@ Module for drawing commit-data metrics plots.
 import abc
 import typing as tp
 
+import matplotlib.axes as axes
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import pearsonr, spearmanr
@@ -17,18 +18,23 @@ from varats.data.reports.commit_report import CommitMap
 from varats.plots.plot import Plot
 
 
-def annotate_correlation(x, y, ax=None, **kws) -> None:
+def annotate_correlation(
+    x_values: tp.List[int],
+    y_values: tp.List[int],
+    ax: axes.SubplotBase = None,
+    **kwargs: tp.Any
+) -> None:
     """Plot the correlation coefficient in the top right hand corner of a
     plot."""
     ax = ax or plt.gca()
-    pearson_rho, _ = pearsonr(x, y)
+    pearson_rho, _ = pearsonr(x_values, y_values)
     ax.annotate(
         f'$\mathit{{\\rho_p}}$ = {pearson_rho:.2f}',
         xy=(.6, .9),
         xycoords=ax.transAxes
     )
 
-    spearman_rho, _ = spearmanr(x, y)
+    spearman_rho, _ = spearmanr(x_values, y_values)
     ax.annotate(
         f'$\mathit{{\\rho_s}}$ = {spearman_rho:.2f}',
         xy=(.6, .77),
