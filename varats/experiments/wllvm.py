@@ -98,8 +98,8 @@ class Extract(actions.Step):  # type: ignore
                 binary_name=str(binary.name),
                 project_version=str(project.version))
 
-            target_binary = Path(project.builddir) / project.SRC_FILE /\
-                binary
+            target_binary = Path(
+                project.builddir) / project.SRC_FILE / binary.path
 
             extract_bc(target_binary)
             cp(str(target_binary) + ".bc", local.path() / bc_cache_file)
