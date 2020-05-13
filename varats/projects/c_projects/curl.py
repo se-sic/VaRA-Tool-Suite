@@ -1,6 +1,4 @@
-"""
-Project file for curl.
-"""
+"""Project file for curl."""
 import typing as tp
 
 from benchbuild.project import Project
@@ -9,22 +7,26 @@ from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
-
 from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import (wrap_paths_to_binaries,
-                                       ProjectBinaryWrapper)
+from varats.utils.project_util import (
+    wrap_paths_to_binaries,
+    ProjectBinaryWrapper,
+)
 
 
-@with_git("https://github.com/curl/curl.git",
-          refspec="HEAD",
-          shallow_clone=False,
-          version_filter=project_filter_generator("curl"))
+@with_git(
+    "https://github.com/curl/curl.git",
+    refspec="HEAD",
+    shallow_clone=False,
+    version_filter=project_filter_generator("curl")
+)
 class Curl(Project, CVEProviderHook):  # type: ignore
     """
     Curl is a command-line tool for transferring data specified with URL syntax.
+
     (fetched by Git)
     """
 
