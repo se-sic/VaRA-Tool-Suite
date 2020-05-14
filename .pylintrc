@@ -256,7 +256,8 @@ good-names=i,
            ax,
            ex,
            Run,
-           _
+           _,
+           df
 
 # Include a hint for the correct naming format with invalid-name.
 include-naming-hint=no
