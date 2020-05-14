@@ -237,6 +237,7 @@ def generate_benchbuild_config(
     ]
     projects_conf.value[:] += ['varats.projects.cpp_projects.doxygen']
     projects_conf.value[:] += ['varats.projects.test_projects.basic_tests']
+    projects_conf.value[:] += ['varats.projects.test_projects.linker_check']
     projects_conf.value[:] += ['varats.projects.test_projects.taint_tests']
 
     # Experiments for VaRA
