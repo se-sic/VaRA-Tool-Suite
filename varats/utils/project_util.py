@@ -6,7 +6,7 @@ from enum import IntFlag
 from pathlib import Path
 
 import pygit2
-from benchbuild.project import Project, ProjectRegistry
+from benchbuild.project import ProjectRegistry, Project
 from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import git
 from benchbuild.utils.download import Git
@@ -95,17 +95,63 @@ def get_all_revisions_between(c_start: str, c_end: str) -> tp.List[str]:
     return result
 
 
-def wrap_paths_to_binaries(binaries: tp.List[str]) -> tp.List[Path]:
+class ProjectBinaryWrapper():
+    """
+    Wraps project binaries which get generated during compilation.
+
+    >>> ProjectBinaryWrapper("binary_name", "path/to/binary")
+    (binary_name: path/to/binary)
+    """
+
+    def __init__(self, binary_name: str, path_to_binary: Path) -> None:
+        self.__binary_name = binary_name
+        self.__binary_path = path_to_binary
+
+    @property
+    def name(self) -> str:
+        return self.__binary_name
+
+    @property
+    def path(self) -> Path:
+        return self.__binary_path
+
+    def __str__(self) -> str:
+        return f"{self.name}: {self.path}"
+
+    def __repr__(self) -> str:
+        return f"({str(self)})"
+
+
+def wrap_paths_to_binaries_with_name(
+    binaries: tp.List[tp.Tuple[str, str]]
+) -> tp.List[ProjectBinaryWrapper]:
+    """
+    Generates a wrapper for project binaries.
+
+    >>> wrap_paths_to_binaries_with_name([("fooer", "src/foo")])
+    [(fooer: src/foo)]
+
+    >>> wrap_paths_to_binaries_with_name([("fooer", "src/foo"), \
+                                          ("barer", "src/bar")])
+    [(fooer: src/foo), (barer: src/bar)]
+    """
+    return [ProjectBinaryWrapper(x[0], Path(x[1])) for x in binaries]
+
+
+def wrap_paths_to_binaries(
+    binaries: tp.List[str]
+) -> tp.List[ProjectBinaryWrapper]:
     """
     Generates a wrapper for project binaries.
 
     >>> wrap_paths_to_binaries(["src/foo"])
-    [PosixPath('src/foo')]
+    [(foo: src/foo)]
 
     >>> wrap_paths_to_binaries(["src/foo", "src/bar"])
-    [PosixPath('src/foo'), PosixPath('src/bar')]
+    [(foo: src/foo), (bar: src/bar)]
     """
-    return [Path(x) for x in binaries]
+    return wrap_paths_to_binaries_with_name([(Path(x).name, x) for x in binaries
+                                            ])
 
 
 class AbstractRevisionBlocker(abc.ABC):
