@@ -119,7 +119,7 @@ class CRAnalysis(actions.Step):  # type: ignore
                 )
 
             opt_params.append(
-                bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
+                bc_cache_folder / Extract.get_bc_file_name(
                     project_name=project.name,
                     binary_name=binary.name,
                     project_version=project.version
@@ -186,7 +186,7 @@ class CommitReportExperiment(VersionExperiment):
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
                         cache_dir=str(BB_CFG["varats"]["result"]),
                         project_name=str(project.name)
-                    ) + Extract.BC_FILE_TEMPLATE.format(
+                    ) + Extract.get_bc_file_name(
                         project_name=str(project.name),
                         binary_name=binary.name,
                         project_version=str(project.version)

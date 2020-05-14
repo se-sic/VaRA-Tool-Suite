@@ -23,10 +23,10 @@ from benchbuild.utils.path import list_to_path, path_to_list
 from plumbum import local
 
 BC_FILE_TEMPLATE = "{project_name}-{binary_name}-{project_version}{" \
-                   "extensions}.bc"
+                   "bc_file_extensions}.bc"
 
 
-class Extensions(Enum):
+class BCFileExtensions(Enum):
     DEBUG = 'dbg'
     NO_OPT = 'O0'
     OPT = 'O2'
@@ -86,29 +86,33 @@ class Extract(actions.Step):  # type: ignore
     @staticmethod
     def get_bc_file_name(
         project_name: str, binary_name: str, project_version: str,
-        extensions: list
+        bc_file_extensions: tp.List[BCFileExtensions]
     ):
+        """Parses parameter information into a filename template to name a
+        bitcode file."""
 
-        if extensions:
-            project_extensions = '-'
+        if bc_file_extensions:
+            project_bc_file_ext = '-'
 
-            for ext in extensions[:-1]:
-                project_extensions += (ext.value + '_')
+            for ext in bc_file_extensions[:-1]:
+                project_bc_file_ext += (ext.value + '_')
 
-            project_extensions += extensions[-1].value
+            project_bc_file_ext += bc_file_extensions[-1].value
         else:
-            project_extensions = ''
+            project_bc_file_ext = ''
 
         return BC_FILE_TEMPLATE.format(
             project_name=project_name,
             binary_name=binary_name,
             project_version=project_version,
-            extensions=project_extensions
+            bc_file_extensions=project_bc_file_ext
         )
 
-    def __init__(self, project: Project, extensions: list) -> None:
+    def __init__(
+        self, project: Project, bc_file_extensions: tp.List[BCFileExtensions]
+    ) -> None:
         super(Extract, self).__init__(obj=project, action_fn=self.extract)
-        self.extensions = extensions
+        self.bc_file_extensions = bc_file_extensions
 
     def extract(self) -> actions.StepResult:
         """This step extracts the bitcode of the executable of the project into
@@ -128,7 +132,7 @@ class Extract(actions.Step):  # type: ignore
                 project_name=str(project.name),
                 binary_name=str(binary.name),
                 project_version=str(project.version),
-                extensions=self.extensions
+                bc_file_extensions=self.bc_file_extensions
             )
 
             target_binary = Path(project.builddir) / project.SRC_FILE /\

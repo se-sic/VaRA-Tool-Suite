@@ -18,7 +18,7 @@ from plumbum import local
 import varats.experiments.blame_experiment as BE
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.blame_verifier_report import BlameVerifierReport as BVR
-from varats.experiments.wllvm import Extensions, Extract
+from varats.experiments.wllvm import BCFileExtensions, Extract
 from varats.utils.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
@@ -36,10 +36,12 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
-    def __init__(self, project: Project, extensions: list):
+    def __init__(
+        self, project: Project, bc_file_extensions: tp.List[BCFileExtensions]
+    ):
         super(BlameVerifierReportGeneration,
               self).__init__(obj=project, action_fn=self.analyze)
-        self.extensions = extensions
+        self.bc_file_extensions = bc_file_extensions
 
     def analyze(self) -> actions.StepResult:
         """
@@ -96,7 +98,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
                     project_name=project.name,
                     binary_name=binary.name,
                     project_version=project.version,
-                    extensions=self.extensions
+                    bc_file_extensions=self.bc_file_extensions
                 )
             )
 
@@ -131,7 +133,7 @@ class BlameVerifierReportExperiment(VersionExperiment):
 
 class BlameVerifierReportExperimentNoOpt(BlameVerifierReportExperiment):
     """Generates a Blame Verifier Report (BVR) of the project(s) specified in
-    the call without any optimization."""
+    the call without any optimization (-O0)."""
 
     NAME = "GenerateBlameVerifierReportNoOpt"
 
@@ -141,7 +143,7 @@ class BlameVerifierReportExperimentNoOpt(BlameVerifierReportExperiment):
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
 
-        extensions = [Extensions.DEBUG, Extensions.NO_OPT]
+        bc_file_extensions = [BCFileExtensions.DEBUG, BCFileExtensions.NO_OPT]
 
         BE.setup_basic_blame_experiment(
             self, project, BVR,
@@ -151,11 +153,11 @@ class BlameVerifierReportExperimentNoOpt(BlameVerifierReportExperiment):
         project.cflags.append("-O0")
 
         analysis_actions = BE.generate_basic_blame_experiment_actions(
-            project, extensions
+            project, bc_file_extensions
         )
 
         analysis_actions.append(
-            BlameVerifierReportGeneration(project, extensions)
+            BlameVerifierReportGeneration(project, bc_file_extensions)
         )
         analysis_actions.append(actions.Clean(project))
 
@@ -164,7 +166,7 @@ class BlameVerifierReportExperimentNoOpt(BlameVerifierReportExperiment):
 
 class BlameVerifierReportExperimentOpt(BlameVerifierReportExperiment):
     """Generates a Blame Verifier Report (BVR) of the project(s) specified in
-    the call with optimization."""
+    the call with optimization (-O2)."""
 
     NAME = "GenerateBlameVerifierReportOpt"
 
@@ -174,7 +176,7 @@ class BlameVerifierReportExperimentOpt(BlameVerifierReportExperiment):
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
 
-        extensions = [Extensions.DEBUG, Extensions.OPT]
+        bc_file_extensions = [BCFileExtensions.DEBUG, BCFileExtensions.OPT]
 
         BE.setup_basic_blame_experiment(
             self, project, BVR,
@@ -184,11 +186,11 @@ class BlameVerifierReportExperimentOpt(BlameVerifierReportExperiment):
         project.cflags.append("-O2")
 
         analysis_actions = BE.generate_basic_blame_experiment_actions(
-            project, extensions
+            project, bc_file_extensions
         )
 
         analysis_actions.append(
-            BlameVerifierReportGeneration(project, extensions)
+            BlameVerifierReportGeneration(project, bc_file_extensions)
         )
         analysis_actions.append(actions.Clean(project))
 

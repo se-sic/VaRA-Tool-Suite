@@ -12,7 +12,7 @@ from benchbuild.settings import CFG as BB_CFG
 from plumbum import local
 
 from varats.data.report import BaseReport
-from varats.experiments.wllvm import RunWLLVM, Extract
+from varats.experiments.wllvm import RunWLLVM, Extract, BCFileExtensions
 from varats.utils.experiment_util import get_default_compile_error_wrapped
 
 
@@ -48,7 +48,7 @@ def setup_basic_blame_experiment(
 
 
 def generate_basic_blame_experiment_actions(
-    project: Project, extensions: list
+    project: Project, bc_file_extensions: tp.List[BCFileExtensions]
 ) -> tp.List[actions.Step]:
     """
     Generate the basic actions for a blame experiment.
@@ -71,13 +71,13 @@ def generate_basic_blame_experiment_actions(
                     project_name=str(project.name),
                     binary_name=binary.name,
                     project_version=str(project.version),
-                    extensions=extensions
+                    bc_file_extensions=bc_file_extensions
                 )
             )
         )
 
     if not all_files_present:
         analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(Extract(project, extensions))
+        analysis_actions.append(Extract(project, bc_file_extensions))
 
     return analysis_actions
