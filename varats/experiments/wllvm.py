@@ -135,8 +135,9 @@ class Extract(actions.Step):  # type: ignore
                 bc_file_extensions=self.bc_file_extensions
             )
 
-            target_binary = Path(project.builddir) / project.SRC_FILE /\
-                binary
+            target_binary = Path(
+                project.builddir
+            ) / project.SRC_FILE / binary.path
 
             extract_bc(target_binary)
             cp(str(target_binary) + ".bc", local.path() / bc_cache_file)
