@@ -9,6 +9,7 @@ Typically, a paper config has a file ``artefacts.yaml`` that manages artefact
 definitions.
 """
 import abc
+import logging
 import typing as tp
 from abc import ABC
 from enum import Enum
@@ -19,6 +20,8 @@ from varats.plots.plot import Plot
 from varats.plots.plots import PlotRegistry
 from varats.settings import CFG
 from varats.utils.yaml_util import load_yaml, store_as_yaml
+
+LOG = logging.getLogger(__name__)
 
 
 class Artefact(ABC):
@@ -263,8 +266,8 @@ def load_artefacts_from_file(file_path: Path) -> Artefacts:
         artefact_type = ArtefactType[raw_artefact.pop('artefact_type')]
         artefact_type_version = raw_artefact.pop('artefact_type_version')
         if artefact_type_version < artefact_type.value[1]:
-            print(
-                f"WARNING: artefact {name} uses an old version of artefact "
+            LOG.warning(
+                f"artefact {name} uses an old version of artefact "
                 f"type {artefact_type.name}."
             )
         artefacts.append(
