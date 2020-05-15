@@ -229,11 +229,15 @@ def generate_benchbuild_config(
     projects_conf.value[:] += [
         'varats.projects.c_projects.busybox',
         'varats.projects.c_projects.coreutils',
+        'varats.projects.c_projects.curl',
         'varats.projects.c_projects.git',
         'varats.projects.c_projects.gravity',
         'varats.projects.c_projects.gzip',
+        'varats.projects.c_projects.htop',
         'varats.projects.c_projects.libvpx',
         'varats.projects.c_projects.lrzip',
+        'varats.projects.c_projects.lz4',
+        'varats.projects.c_projects.redis',
         'varats.projects.c_projects.openssl',
         'varats.projects.c_projects.opus',
         'varats.projects.c_projects.qemu',
@@ -244,6 +248,7 @@ def generate_benchbuild_config(
     ]
     projects_conf.value[:] += ['varats.projects.cpp_projects.doxygen']
     projects_conf.value[:] += ['varats.projects.test_projects.basic_tests']
+    projects_conf.value[:] += ['varats.projects.test_projects.linker_check']
     projects_conf.value[:] += ['varats.projects.test_projects.taint_tests']
 
     # Experiments for VaRA
