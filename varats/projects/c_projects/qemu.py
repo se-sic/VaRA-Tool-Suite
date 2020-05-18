@@ -7,6 +7,7 @@ from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc, cxx
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
+from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
@@ -63,7 +64,7 @@ class Qemu(Project, CVEProviderHook):  # type: ignore
                     local["../configure"]["--disable-debug-info",
                                           "--target-list=x86_64-softmmu"]
                 )
-                run(make["-j", int(BB_CFG["jobs"])])
+                run(make["-j", get_number_of_jobs(BB_CFG)])
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
