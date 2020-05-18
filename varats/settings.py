@@ -22,6 +22,10 @@ CFG = s.Configuration(
             "desc": "Root folder to run BenchBuild in",
             "default": None,
         },
+        "data_cache": {
+            "default": "data_cache",
+            "desc": "Local data cache to store preprocessed files."
+        },
         "result_dir": {
             "desc": "Result folder for collected results",
             "default": None,
@@ -117,10 +121,6 @@ CFG['experiment'] = {
 }
 
 CFG['plots'] = {
-    "data_cache": {
-        "default": "data_cache",
-        "desc": "Local data cache to store preprocessed files."
-    },
     "plot_dir": {
         "desc": "Folder for generated plots",
         "default": None,
@@ -128,10 +128,6 @@ CFG['plots'] = {
 }
 
 CFG['tables'] = {
-    "data_cache": {
-        "default": "data_cache",
-        "desc": "Local data cache to store preprocessed files."
-    },
     "table_dir": {
         "desc": "Folder for generated tables",
         "default": None,
@@ -179,6 +175,7 @@ def create_missing_folders() -> None:
     create_missing_folder_for_cfg("result_dir")
     create_missing_folder_for_cfg("data_cache", CFG["plots"])
     create_missing_folder_for_cfg("plot_dir", CFG["plots"])
+    create_missing_folder_for_cfg("table_dir", CFG["tables"])
     create_missing_folder_for_cfg("artefacts_dir", CFG["artefacts"])
 
 
@@ -195,6 +192,10 @@ def save_config() -> None:
         CFG["plots"]["plot_dir"] = path.dirname(
             str(CFG["config_file"])
         ) + "/plots"
+    if CFG["tables"]["table_dir"].value is None:
+        CFG["tables"]["table_dir"] = path.dirname(
+            str(CFG["config_file"])
+        ) + "/tables"
 
     create_missing_folders()
     CFG.store(config_file)
