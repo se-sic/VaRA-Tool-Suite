@@ -7,6 +7,7 @@ from tabulate import tabulate
 from varats.data.databases.blame_diff_metrics_database import (
     BlameDiffMetricsDatabase,
 )
+from varats.paper.case_study import get_unique_cs_name
 from varats.paper.paper_config import get_paper_config
 from varats.tables.table import Table, TableFormat
 from varats.tools.commit_map import create_lazy_commit_map_loader
@@ -45,9 +46,7 @@ class DiffCorrelationOverviewTable(Table):
         corelations = [data[vars_1].corr(method="pearson") for data in cs_data]
 
         df = pd.concat(
-            corelations,
-            axis=1,
-            keys=[case_study.project_name for case_study in case_studies]
+            corelations, axis=1, keys=get_unique_cs_name(case_studies)
         )
 
         if self.format in [
