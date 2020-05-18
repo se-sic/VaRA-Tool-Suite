@@ -14,7 +14,7 @@ from varats.tools.commit_map import create_lazy_commit_map_loader
 
 class OverviewTable(Table):
 
-    NAME = "overview"
+    NAME = "b_diff_correlation_overview"
 
     def __init__(self, **kwargs: tp.Any) -> None:
         super().__init__(self.NAME, **kwargs)
