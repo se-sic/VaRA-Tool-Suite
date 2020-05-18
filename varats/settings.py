@@ -173,7 +173,7 @@ def create_missing_folders() -> None:
 
     create_missing_folder_for_cfg("benchbuild_root")
     create_missing_folder_for_cfg("result_dir")
-    create_missing_folder_for_cfg("data_cache", CFG["plots"])
+    create_missing_folder_for_cfg("data_cache", CFG)
     create_missing_folder_for_cfg("plot_dir", CFG["plots"])
     create_missing_folder_for_cfg("table_dir", CFG["tables"])
     create_missing_folder_for_cfg("artefacts_dir", CFG["artefacts"])
