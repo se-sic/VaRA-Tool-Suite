@@ -10,6 +10,8 @@ pre-commit>=2.3.0
 pygit2>=0.28.2
 PyQt5-stubs>=5.10.0,<5.14.0
 PyQt5>=5.10.0,<5.14.0
+pytest
+pytest-cov
 PyYAML>=3.12
 pyzmq>=19.0.0
 requests>=2.23.0
