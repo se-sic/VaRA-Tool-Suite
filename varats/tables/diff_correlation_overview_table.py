@@ -52,7 +52,8 @@ class DiffCorrelationOverviewTable(Table):
         if self.format in [
             TableFormat.latex, TableFormat.latex_booktabs, TableFormat.latex_raw
         ]:
-            return df.to_latex(bold_rows=True, multicolumn_format="c")
+            table = df.to_latex(bold_rows=True, multicolumn_format="c")
+            return str(table) if table else ""
         return tabulate(df, df.columns, self.format.value)
 
     def save(self, path: tp.Optional[Path] = None) -> None:
