@@ -9,6 +9,7 @@ import logging
 import typing as tp
 from pathlib import Path
 
+from varats.paper.paper_config import get_loaded_paper_config
 from varats.settings import (
     CFG,
     get_value_or_default,
@@ -147,9 +148,10 @@ def __pc_set(args: tp.Dict[str, tp.Any]) -> None:
             raw_pc_path = choice
 
         try:
+            current_config = get_loaded_paper_config().path.name
             cli_list_choice(
                 "Choose a number to select a paper config", paper_configs,
-                lambda x: x, set_pc_path
+                lambda x: f"{x} *" if x == current_config else x, set_pc_path
             )
         except EOFError:
             return
@@ -193,7 +195,11 @@ def __pc_list(args: tp.Dict[str, tp.Any]) -> None:
 
     print("Found the following paper_configs:")
     for paper_config in __get_paper_configs(pc_folder_path):
-        print(paper_config)
+        current_config = get_loaded_paper_config().path.name
+        if paper_config == current_config:
+            print(f"{paper_config} *")
+        else:
+            print(paper_config)
 
 
 if __name__ == '__main__':
