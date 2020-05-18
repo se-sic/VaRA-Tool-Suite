@@ -26,25 +26,33 @@ Example Output::
     }
 """
 import logging
+import re
 import typing as tp
 from collections import defaultdict
 from pathlib import Path
-import re
 
-from packaging.version import parse as parse_version, Version, LegacyVersion
-
+from packaging.version import LegacyVersion, Version
+from packaging.version import parse as parse_version
 from plumbum import local
 from plumbum.cmd import git
 
-from varats.data.provider.cve.cve import (CVE, CWE_LIST, find_cve, find_cwe,
-                                          find_all_cve, CWE)
+from varats.data.provider.cve.cve import (
+    CVE,
+    CWE,
+    find_all_cve,
+    find_all_cwe,
+    find_cve,
+    find_cwe,
+)
 
 LOG = logging.getLogger(__name__)
 
 
-def __n_grams(text: str,
-              filter_reg: str = r'[^a-zA-Z0-9]',
-              filter_len: int = 3) -> tp.Set[str]:
+def __n_grams(
+    text: str,
+    filter_reg: str = r'[^a-zA-Z0-9]',
+    filter_len: int = 3
+) -> tp.Set[str]:
     """
     Divide some text into character-level n-grams.
 
@@ -107,12 +115,12 @@ def __collect_via_commit_mgs(
                     LOG.error(error_msg)
             # Check commit message whether it contains any name or description
             # from the CWE entries
-            for cwe in CWE_LIST:
+            for cwe in find_all_cwe():
                 if cwe.name in message or cwe.description in message:
                     cwe_data.append(cwe)
             # Compare commit messages with CWE list using n-grams
             message_parts = __n_grams(text=message)
-            for cwe in CWE_LIST:
+            for cwe in find_all_cwe():
                 if not __n_grams(text=cwe.name) ^ message_parts or \
                    not __n_grams(text=cwe.description) ^ message_parts:
                     cwe_data.append(cwe)
@@ -127,8 +135,8 @@ def __collect_via_version(
     commits: tp.List[str], cve_list: tp.FrozenSet[CVE]
 ) -> tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[CVE, CWE]]]]:
     """
-    Collect data about resolved CVE's using the tagged versions
-    and the vulnerable version list in the CVE's.
+    Collect data about resolved CVE's using the tagged versions and the
+    vulnerable version list in the CVE's.
 
     Args:
         commits: a list of commits in textual form
@@ -148,8 +156,9 @@ def __collect_via_version(
         commit, message = line_parts[0], ' '.join(line_parts[1:])
         tag = re.findall(r'\(tag:\s*.*\)', message, re.IGNORECASE)
         if tag:
-            parsed_tag = parse_version(tag[0].split(' ')[1].replace(
-                ',', '').replace(')', ''))
+            parsed_tag = parse_version(
+                tag[0].split(' ')[1].replace(',', '').replace(')', '')
+            )
             tag_list[parsed_tag] = {'number': number, 'commit': commit}
 
     # Check versions
@@ -163,8 +172,9 @@ def __collect_via_version(
 
 
 def __collect_via_references(
-        commits: tp.List[str], cve_list: tp.FrozenSet[CVE], vendor: str,
-        product: str) -> tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[CVE, CWE]]]]:
+    commits: tp.List[str], cve_list: tp.FrozenSet[CVE], vendor: str,
+    product: str
+) -> tp.Dict[str, tp.Dict[str, tp.Set[tp.Union[CVE, CWE]]]]:
     """
     Collect data about resolved CVE' using the reference list in each CVE's.
 
@@ -256,8 +266,9 @@ def generate_cve_map(
     search_range += end
 
     with local.cwd(path):
-        commits = git("--no-pager", "log", "--pretty=format:'%H %d %s'",
-                      search_range)
+        commits = git(
+            "--no-pager", "log", "--pretty=format:'%H %d %s'", search_range
+        )
         wanted_out = [x[1:-1] for x in commits.split('\n')]
 
         def get_results_for_product(
@@ -266,15 +277,19 @@ def generate_cve_map(
             cve_list = find_all_cve(vendor=vendor, product=product)
             cve_maps = [
                 __collect_via_commit_mgs(commits=wanted_out),
-                __collect_via_references(commits=wanted_out,
-                                         cve_list=cve_list,
-                                         vendor=vendor,
-                                         product=product)
+                __collect_via_references(
+                    commits=wanted_out,
+                    cve_list=cve_list,
+                    vendor=vendor,
+                    product=product
+                )
             ]
             if not only_precise:
                 cve_maps.append(
-                    __collect_via_version(commits=wanted_out,
-                                          cve_list=cve_list),)
+                    __collect_via_version(
+                        commits=wanted_out, cve_list=cve_list
+                    ),
+                )
             return __merge_results(cve_maps)
 
         return __merge_results([

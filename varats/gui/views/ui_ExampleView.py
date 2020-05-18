@@ -10,6 +10,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class Ui_example_view(object):
+
     def setupUi(self, example_view):
         example_view.setObjectName("example_view")
         example_view.resize(640, 480)
@@ -26,8 +27,6 @@ class Ui_example_view(object):
     def retranslateUi(self, example_view):
         _translate = QtCore.QCoreApplication.translate
         example_view.setWindowTitle(_translate("example_view", "Form"))
-
-
 
 
 if __name__ == "__main__":

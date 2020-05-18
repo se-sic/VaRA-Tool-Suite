@@ -1,37 +1,46 @@
-"""
-This modules provides the base classes for research tools that allow developers
-to setup and configure their own research tool by inheriting and implementing
-the base classes ``ResearchTool`` and ``CodeBase``.
-"""
-import typing as tp
+"""This modules provides the base classes for research tools that allow
+developers to setup and configure their own research tool by inheriting and
+implementing the base classes ``ResearchTool`` and ``CodeBase``."""
 import abc
 import logging
+import typing as tp
 from pathlib import Path
 
-from varats.vara_manager import (
-    BuildType, download_repo, add_remote, checkout_branch, checkout_new_branch,
-    fetch_remote, init_all_submodules, update_all_submodules,
-    pull_current_branch, show_status, branch_has_upstream, push_current_branch,
-    get_current_branch, has_branch, has_remote_branch, get_branches)
-from varats.utils.logger_util import log_without_linsep
 from varats.utils.filesystem_util import FolderAlreadyPresentError
-
-LOG = logging.getLogger(__name__)
+from varats.utils.logger_util import log_without_linesep
+from varats.vara_manager import (
+    BuildType,
+    add_remote,
+    branch_has_upstream,
+    checkout_branch,
+    checkout_new_branch,
+    download_repo,
+    fetch_remote,
+    get_branches,
+    get_current_branch,
+    has_branch,
+    has_remote_branch,
+    init_all_submodules,
+    pull_current_branch,
+    push_current_branch,
+    show_status,
+    update_all_submodules,
+)
 
 
 class SubProject():
-    """
-    Encapsulates a sub project, e.g., a library or tool, defining how it can be
-    downloaded and integrated inside a ``CodeBase``.
-    """
+    """Encapsulates a sub project, e.g., a library or tool, defining how it can
+    be downloaded and integrated inside a ``CodeBase``."""
 
-    def __init__(self,
-                 parent_code_base: 'CodeBase',
-                 name: str,
-                 URL: str,
-                 remote: str,
-                 sub_path: str,
-                 auto_clone: bool = True):
+    def __init__(
+        self,
+        parent_code_base: 'CodeBase',
+        name: str,
+        URL: str,
+        remote: str,
+        sub_path: str,
+        auto_clone: bool = True
+    ):
         self.__name = name
         self.__parent_code_base = parent_code_base
         self.__url = URL
@@ -41,23 +50,17 @@ class SubProject():
 
     @property
     def name(self) -> str:
-        """
-        Name of the sub project
-        """
+        """Name of the sub project."""
         return self.__name
 
     @property
     def url(self) -> str:
-        """
-        Repository URL
-        """
+        """Repository URL."""
         return self.__url
 
     @property
     def remote(self) -> str:
-        """
-        Git remote, for interacting with upstream repositories.
-        """
+        """Git remote, for interacting with upstream repositories."""
         return self.__remote
 
     @property
@@ -94,24 +97,26 @@ class SubProject():
         update_all_submodules(self.__parent_code_base.base_dir / self.path)
 
     def clone(self) -> None:
-        """
-        Clone the sub project into the specified folder relative to the base
-        dir of the ``CodeBase``.
-        """
-        LOG.info(f"Cloning {self.name} into {self.__parent_code_base.base_dir}")
+        """Clone the sub project into the specified folder relative to the base
+        dir of the ``CodeBase``."""
+        print(f"Cloning {self.name} into {self.__parent_code_base.base_dir}")
         if (self.__parent_code_base.base_dir / self.path).exists():
-            raise FolderAlreadyPresentError(self.__parent_code_base.base_dir /
-                                            self.path)
-        download_repo(self.__parent_code_base.base_dir / self.path.parent,
-                      self.url, self.path.name, self.remote,
-                      log_without_linsep(LOG.info))
+            raise FolderAlreadyPresentError(
+                self.__parent_code_base.base_dir / self.path
+            )
+        download_repo(
+            self.__parent_code_base.base_dir / self.path.parent, self.url,
+            self.path.name, self.remote, log_without_linesep(print)
+        )
 
-    def has_branch(self,
-                   branch_name: str,
-                   remote_to_check: tp.Optional[str] = None) -> bool:
+    def has_branch(
+        self,
+        branch_name: str,
+        remote_to_check: tp.Optional[str] = None
+    ) -> bool:
         """
-        Check if the sub project has a branch with the
-        specified ``branch name``.
+        Check if the sub project has a branch with the specified ``branch
+        name``.
 
         Args:
             branch_name: name of the branch
@@ -128,8 +133,8 @@ class SubProject():
         return has_remote_branch(absl_repo_path, branch_name, remote_to_check)
 
     def get_branches(self,
-                     extra_args: tp.Optional[tp.List[str]] = None
-                    ) -> tp.List[str]:
+                     extra_args: tp.Optional[tp.List[str]
+                                            ] = None) -> tp.List[str]:
         """
         Get branch names from this sub project.
 
@@ -139,12 +144,13 @@ class SubProject():
         Returns:
             list of branch names
         """
-        return get_branches(self.__parent_code_base.base_dir / self.path,
-                            extra_args).split()
+        return get_branches(
+            self.__parent_code_base.base_dir / self.path, extra_args
+        ).split()
 
     def add_remote(self, remote: str, url: str) -> None:
         """
-        Add a new remote to the sub project
+        Add a new remote to the sub project.
 
         Args:
             remote: name of the new remote
@@ -160,40 +166,41 @@ class SubProject():
         Args:
             branch_name: name of the branch, should exists in the repo
         """
-        checkout_branch(self.__parent_code_base.base_dir / self.path,
-                        branch_name)
+        checkout_branch(
+            self.__parent_code_base.base_dir / self.path, branch_name
+        )
 
-    def checkout_new_branch(self,
-                            branch_name: str,
-                            remote_branch: tp.Optional[str] = None) -> None:
+    def checkout_new_branch(
+        self, branch_name: str, remote_branch: tp.Optional[str] = None
+    ) -> None:
         """
         Create and checkout out a new branch in the sub project.
 
         Args:
             branch_name: name of the new branch, should not exists in the repo
         """
-        checkout_new_branch(self.__parent_code_base.base_dir / self.path,
-                            branch_name, remote_branch)
+        checkout_new_branch(
+            self.__parent_code_base.base_dir / self.path, branch_name,
+            remote_branch
+        )
 
-    def fetch(self,
-              remote: tp.Optional[str] = None,
-              extra_args: tp.Optional[tp.List[str]] = None) -> None:
-        """
-        Fetch updates from the remote.
-        """
-        fetch_remote(remote, self.__parent_code_base.base_dir / self.path,
-                     extra_args)
+    def fetch(
+        self,
+        remote: tp.Optional[str] = None,
+        extra_args: tp.Optional[tp.List[str]] = None
+    ) -> None:
+        """Fetch updates from the remote."""
+        fetch_remote(
+            remote, self.__parent_code_base.base_dir / self.path, extra_args
+        )
 
     def pull(self) -> None:
-        """
-        Pull updates from the remote of the current branch into the sub project.
-        """
+        """Pull updates from the remote of the current branch into the sub
+        project."""
         pull_current_branch(self.__parent_code_base.base_dir / self.path)
 
     def push(self) -> None:
-        """
-        Push updates from the current branch to the remote branch.
-        """
+        """Push updates from the current branch to the remote branch."""
         absl_repo_path = self.__parent_code_base.base_dir / self.path
         branch_name = get_current_branch(absl_repo_path)
         if branch_has_upstream(absl_repo_path, branch_name):
@@ -202,24 +209,22 @@ class SubProject():
             push_current_branch(absl_repo_path, "origin", branch_name)
 
     def show_status(self) -> None:
-        """
-        Show the current status of the sub project.
-        """
+        """Show the current status of the sub project."""
         show_status(self.__parent_code_base.base_dir / self.path)
 
     def __str__(self) -> str:
-        return "{name} [{url}:{remote}] {folder}".format(name=self.name,
-                                                         url=self.url,
-                                                         remote=self.remote,
-                                                         folder=self.path)
+        return "{name} [{url}:{remote}] {folder}".format(
+            name=self.name, url=self.url, remote=self.remote, folder=self.path
+        )
 
 
 class CodeBase():
     """
     A ``CodeBase`` depicts the layout of a project, specifying where the a
-    research tool lives and how different sub projects should be cloned. In
-    addition, it allows access to the sub projects, e.g., for checkout or other
-    repository manipulations.
+    research tool lives and how different sub projects should be cloned.
+
+    In addition, it allows access to the sub projects, e.g., for checkout or
+    other repository manipulations.
     """
 
     def __init__(self, base_dir: Path, sub_projects: tp.List[SubProject]):
@@ -270,15 +275,14 @@ SpecificCodeBase = tp.TypeVar("SpecificCodeBase", bound=CodeBase)
 
 
 class ResearchTool(tp.Generic[SpecificCodeBase]):
-    """
-    ResearchTool is an abstract base class for specifying research tools that
+    """ResearchTool is an abstract base class for specifying research tools that
     are set up by VaRA-TS and usable through the tool suites experiments and
-    tools.
-    """
+    tools."""
 
-    def __init__(self, tool_name: str,
-                 supported_build_types: tp.List[BuildType],
-                 code_base: SpecificCodeBase) -> None:
+    def __init__(
+        self, tool_name: str, supported_build_types: tp.List[BuildType],
+        code_base: SpecificCodeBase
+    ) -> None:
         self.__name = tool_name
         self.__supported_build_types = supported_build_types
         self.__code_base = code_base
@@ -308,9 +312,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
 
     @abc.abstractmethod
     def upgrade(self) -> None:
-        """
-        Upgrade the research tool to a newer version.
-        """
+        """Upgrade the research tool to a newer version."""
 
     @abc.abstractmethod
     def build(self, build_type: BuildType, install_location: Path) -> None:

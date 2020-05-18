@@ -1,11 +1,9 @@
-"""
-Module for the :class:`CVEProvider`.
-"""
+"""Module for the :class:`CVEProvider`."""
 import typing as tp
 
 from benchbuild.project import Project
 
-from varats.data.provider.cve.cve import (find_all_cve, find_cve, find_cwe, CVE)
+from varats.data.provider.cve.cve import CVE, find_all_cve, find_cve, find_cwe
 from varats.data.provider.cve.cve_map import generate_cve_map
 from varats.data.provider.provider import Provider
 from varats.utils.project_util import get_local_project_git_path
@@ -31,34 +29,38 @@ class CVEProviderHook():
 
 
 class CVEProvider(Provider):
-    """
-    Provides CVE and CWE information for a project.
-    """
+    """Provides CVE and CWE information for a project."""
 
     def __init__(self, project: tp.Type[Project]) -> None:
         super().__init__(project)
         if hasattr(project, "get_cve_product_info"):
             self.__cve_map = generate_cve_map(
                 get_local_project_git_path(project.NAME),
-                project.get_cve_product_info())
+                project.get_cve_product_info()
+            )
         else:
-            raise ValueError(f"Project {project} does not implement "
-                             f"CVEProviderHook.")
+            raise ValueError(
+                f"Project {project} does not implement "
+                f"CVEProviderHook."
+            )
 
     @classmethod
     def create_provider_for_project(
-            cls, project: tp.Type[Project]) -> tp.Optional['CVEProvider']:
+        cls, project: tp.Type[Project]
+    ) -> tp.Optional['CVEProvider']:
         if hasattr(project, "get_cve_product_info"):
             return CVEProvider(project)
         return None
 
     @classmethod
-    def create_default_provider(cls,
-                                project: tp.Type[Project]) -> 'CVEProvider':
+    def create_default_provider(
+        cls, project: tp.Type[Project]
+    ) -> 'CVEProvider':
         return CVEDefaultProvider(project)
 
     def get_revision_cve_tuples(
-            self) -> tp.Set[tp.Tuple[str, tp.FrozenSet[CVE]]]:
+        self
+    ) -> tp.Set[tp.Tuple[str, tp.FrozenSet[CVE]]]:
         """
         Get all CVEs associated with this provider's project along with the
         fixing commits/versions.
@@ -71,26 +73,26 @@ class CVEProvider(Provider):
 
 
 class CVEDefaultProvider(CVEProvider):
-    """
-    Default implementation of the :class:`CVE provider` for projects that
-    do not (yet) support CVEs.
-    """
+    """Default implementation of the :class:`CVE provider` for projects that do
+    not (yet) support CVEs."""
 
     def __init__(self, project: tp.Type[Project]) -> None:
         # pylint: disable=E1003
         super(CVEProvider, self).__init__(project)
 
     def get_revision_cve_tuples(
-            self) -> tp.Set[tp.Tuple[str, tp.FrozenSet[CVE]]]:
+        self
+    ) -> tp.Set[tp.Tuple[str, tp.FrozenSet[CVE]]]:
         return set()
 
 
 # TODO: remove below functions once we remove the cve driver
-def list_cve_for_projects(vendor: str,
-                          product: str,
-                          verbose: bool = False) -> None:
+def list_cve_for_projects(
+    vendor: str, product: str, verbose: bool = False
+) -> None:
     """
     List all CVE's for the given vendor/product combination.
+
     Call via vara-sec list-cve <vendor> <product>.
     """
     print(f"Listing CVE's for {vendor}/{product}:")
@@ -105,9 +107,7 @@ def list_cve_for_projects(vendor: str,
 
 
 def info(search: str, verbose: bool = False) -> None:
-    """
-    Search for matching CVE/CWE and print its data.
-    """
+    """Search for matching CVE/CWE and print its data."""
     print(f"Fetching information for {search}:")
 
     if search.lower().startswith('cve-'):

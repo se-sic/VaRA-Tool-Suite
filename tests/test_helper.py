@@ -1,6 +1,4 @@
-"""
-Small helper classes for testing
-"""
+"""Small helper classes for testing."""
 
 from benchbuild.project import Project
 

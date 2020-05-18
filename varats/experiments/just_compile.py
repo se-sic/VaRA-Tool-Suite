@@ -1,6 +1,4 @@
-"""
-Implements an empty experiment that just compiles the project.
-"""
+"""Implements an empty experiment that just compiles the project."""
 
 import typing as tp
 
@@ -10,19 +8,20 @@ from benchbuild.project import Project
 from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import mkdir, touch
 
-from varats.experiments.wllvm import RunWLLVM
-from varats.utils.experiment_util import (exec_func_with_pe_error_handler,
-                                          PEErrorHandler, VersionExperiment,
-                                          get_default_compile_error_wrapped)
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.empty_report import EmptyReport
+from varats.experiments.wllvm import RunWLLVM
+from varats.utils.experiment_util import (
+    PEErrorHandler,
+    VersionExperiment,
+    exec_func_with_pe_error_handler,
+    get_default_compile_error_wrapped,
+)
 
 
 # Please take care when changing this file, see docs experiments/just_compile
 class EmptyAnalysis(actions.Step):  # type: ignore
-    """
-    Empty analysis step for testing.
-    """
+    """Empty analysis step for testing."""
 
     NAME = "EmptyAnslysis"
     DESCRIPTION = "Analyses nothing."
@@ -33,9 +32,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
         super(EmptyAnalysis, self).__init__(obj=project, action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
-        """
-        Only create a report file.
-        """
+        """Only create a report file."""
         if not self.obj:
             return
         project = self.obj
@@ -45,7 +42,8 @@ class EmptyAnalysis(actions.Step):  # type: ignore
         # run.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
             result_dir=str(BB_CFG["varats"]["outfile"]),
-            project_dir=str(project.name))
+            project_dir=str(project.name)
+        )
 
         mkdir("-p", vara_result_folder)
 
@@ -55,10 +53,12 @@ class EmptyAnalysis(actions.Step):  # type: ignore
                 binary_name=binary.name,
                 project_version=str(project.version),
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.Success)
+                extension_type=FSE.Success
+            )
 
             run_cmd = touch["{res_folder}/{res_file}".format(
-                res_folder=vara_result_folder, res_file=result_file)]
+                res_folder=vara_result_folder, res_file=result_file
+            )]
 
             exec_func_with_pe_error_handler(
                 run_cmd,
@@ -69,22 +69,23 @@ class EmptyAnalysis(actions.Step):  # type: ignore
                         binary_name="all",
                         project_version=str(project.version),
                         project_uuid=str(project.run_uuid),
-                        extension_type=FSE.Failed), run_cmd))
+                        extension_type=FSE.Failed
+                    ), run_cmd
+                )
+            )
 
 
 # Please take care when changing this file, see docs experiments/just_compile
 class JustCompileReport(VersionExperiment):
-    """
-    Generates empty report file.
-    """
+    """Generates empty report file."""
 
     NAME = "JustCompile"
 
     REPORT_TYPE = EmptyReport
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
-        """Returns the specified steps to run the project(s) specified in
-        the call in a fixed order."""
+        """Returns the specified steps to run the project(s) specified in the
+        call in a fixed order."""
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
@@ -96,7 +97,8 @@ class JustCompileReport(VersionExperiment):
             << run.WithTimeout()
 
         project.compile = get_default_compile_error_wrapped(
-            project, EmptyReport, EmptyAnalysis.RESULT_FOLDER_TEMPLATE)
+            project, EmptyReport, EmptyAnalysis.RESULT_FOLDER_TEMPLATE
+        )
 
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))

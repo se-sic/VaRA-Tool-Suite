@@ -1,21 +1,19 @@
-"""
-Small test project to run basic vara tests
-"""
-from plumbum import local
-
-from benchbuild.utils.run import run
+"""Small test project to run basic vara tests."""
+import benchbuild.project as prj
 from benchbuild.utils.compiler import cxx
 from benchbuild.utils.download import with_git
-import benchbuild.project as prj
+from benchbuild.utils.run import run
+from plumbum import local
 
 
-@with_git("https://github.com/se-passau/vara-perf-tests.git",
-          limit=1,
-          refspec="HEAD")
+@with_git(
+    "https://github.com/se-passau/vara-perf-tests.git", limit=1, refspec="HEAD"
+)
 class BasicTests(prj.Project):  # type: ignore
     """
     Basic tests:
-        Different small test files
+
+    Different small test files
     """
 
     NAME = 'basic-tests'

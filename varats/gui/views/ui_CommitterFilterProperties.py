@@ -8,7 +8,9 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_CommitterFilterProperties(object):
+
     def setupUi(self, CommitterFilterProperties):
         CommitterFilterProperties.setObjectName("CommitterFilterProperties")
         CommitterFilterProperties.resize(266, 84)
@@ -43,9 +45,15 @@ class Ui_CommitterFilterProperties(object):
 
     def retranslateUi(self, CommitterFilterProperties):
         _translate = QtCore.QCoreApplication.translate
-        CommitterFilterProperties.setWindowTitle(_translate("CommitterFilterProperties", "Form"))
-        self.label.setText(_translate("CommitterFilterProperties", "Committer Name"))
-        self.label_2.setText(_translate("CommitterFilterProperties", "Committer Email"))
+        CommitterFilterProperties.setWindowTitle(
+            _translate("CommitterFilterProperties", "Form")
+        )
+        self.label.setText(
+            _translate("CommitterFilterProperties", "Committer Name")
+        )
+        self.label_2.setText(
+            _translate("CommitterFilterProperties", "Committer Email")
+        )
 
 
 if __name__ == "__main__":
@@ -56,4 +64,3 @@ if __name__ == "__main__":
     ui.setupUi(CommitterFilterProperties)
     CommitterFilterProperties.show()
     sys.exit(app.exec_())
-
