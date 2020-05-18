@@ -12,7 +12,7 @@ from varats.tables.table import Table, TableFormat
 from varats.tools.commit_map import create_lazy_commit_map_loader
 
 
-class OverviewTable(Table):
+class DiffCorrelationOverviewTable(Table):
 
     NAME = "b_diff_correlation_overview"
 
