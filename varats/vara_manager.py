@@ -6,6 +6,7 @@ Setting up the tooling, keeping it up to date, and providing necessary
 information.
 """
 
+import logging
 import os
 import re
 import shutil
@@ -28,6 +29,8 @@ from PyQt5.QtCore import (
 
 from varats.settings import CFG, save_config
 from varats.utils.exceptions import ProcessTerminatedError
+
+LOG = logging.getLogger(__name__)
 
 
 class LLVMProject():
@@ -165,9 +168,8 @@ def convert_to_llvmprojects_enum(
 
     if projects_names:
         for project_name in projects_names:
-            print(
-                "Warning: {} is not a supported project name".
-                format(project_name)
+            LOG.warning(
+                f"Warning: {project_name} is not a supported project name"
             )
 
     return enum_list
@@ -321,8 +323,8 @@ def setup_vara(
                 update_all_submodules(llvm_folder / LLVMProjects.phasar.path)
 
     if not os.path.exists(llvm_folder):
-        print(
-            "LLVM was not initialized. Please initialize LLVM with VaRA, " +
+        LOG.warning(
+            "LLVM was not initialized. Please initialize LLVM with VaRA, "
             "for example, with 'vara-buildsetup -i'."
         )
     else:
