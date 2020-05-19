@@ -1,4 +1,5 @@
 """General plots module."""
+import logging
 import re
 import sys
 import typing as tp
@@ -7,6 +8,8 @@ from varats.plots.plot_utils import check_required_args
 
 if tp.TYPE_CHECKING:
     import varats.plots.plot as plot
+
+LOG = logging.getLogger(__name__)
 
 
 class PlotRegistry(type):
@@ -71,8 +74,8 @@ def build_plot(**kwargs: tp.Any) -> None:
     plot_type = PlotRegistry.get_class_for_plot_type(kwargs['plot_type'])
 
     if (kwargs['sep_stages'] and not plot_type.supports_stage_separation()):
-        print(
-            f"Warning: {kwargs['plot_type']} does not support stage " +
+        LOG.warning(
+            f"{kwargs['plot_type']} does not support stage "
             "separation but separation flag '--sep-stages' was set."
         )
 
