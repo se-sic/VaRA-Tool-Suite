@@ -1,5 +1,6 @@
 """VaRA-TS MainWindow."""
 
+import logging
 import typing as tp
 from os import path
 
@@ -16,6 +17,8 @@ from varats.settings import (
     generate_benchbuild_config,
     save_config,
 )
+
+LOG = logging.getLogger(__name__)
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
@@ -79,8 +82,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
     @staticmethod
     def _create_benchbuild_config() -> None:
         if CFG["config_file"].value is None:
-            print(
-                "No VaRA config found, please initialize a " +
+            LOG.warning(
+                "No VaRA config found, please initialize a "
                 "VaRA config first."
             )
             return
