@@ -11,10 +11,11 @@ from varats.gui.ui_MainWindow import Ui_MainWindow
 from varats.gui.views.cr_bar_view import CRBarView
 from varats.gui.views.example_view import ExampleView
 from varats.settings import (
-    CFG,
+    __CFG,
     create_missing_folders,
     generate_benchbuild_config,
     save_config,
+    get_vara_config,
 )
 
 
@@ -78,21 +79,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
 
     @staticmethod
     def _create_benchbuild_config() -> None:
-        if CFG["config_file"].value is None:
+        cfg = get_vara_config()
+        if cfg["config_file"].value is None:
             print(
                 "No VaRA config found, please initialize a " +
                 "VaRA config first."
             )
             return
 
-        if CFG["benchbuild_root"].value is None:
-            CFG["benchbuild_root"] = path.dirname(str(CFG["config_file"]))\
-                                                  + "/benchbuild"
+        if cfg["benchbuild_root"].value is None:
+            cfg["benchbuild_root"] = path.dirname(str(cfg["config_file"])) \
+                                       + "/benchbuild"
         create_missing_folders()
 
         generate_benchbuild_config(
-            CFG,
-            str(CFG["benchbuild_root"]) + "/.benchbuild.yml"
+            cfg,
+            str(cfg["benchbuild_root"]) + "/.benchbuild.yml"
         )
 
     def __remove_tab(self, index: int) -> None:

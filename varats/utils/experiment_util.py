@@ -17,7 +17,7 @@ from plumbum.commands.base import BoundCommand
 
 from varats.data.report import BaseReport, FileStatusExtension
 from varats.data.revisions import get_tagged_revisions
-from varats.settings import CFG as V_CFG
+from varats.settings import __CFG as V_CFG
 
 
 class FunctionPEErrorWrapper():

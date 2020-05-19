@@ -26,7 +26,7 @@ from PyQt5.QtCore import (
     pyqtSlot,
 )
 
-from varats.settings import CFG, save_config
+from varats.settings import get_vara_config, save_config
 from varats.utils.exceptions import ProcessTerminatedError
 
 
@@ -298,8 +298,9 @@ def setup_vara(
     post_out: tp.Callable[[str], None] = lambda x: None
 ) -> None:
     """Sets up VaRA over cli."""
-    CFG["vara"]["llvm_source_dir"] = str(llvm_folder)
-    CFG["vara"]["llvm_install_dir"] = install_prefix
+    cfg = get_vara_config()
+    cfg["vara"]["llvm_source_dir"] = str(llvm_folder)
+    cfg["vara"]["llvm_install_dir"] = install_prefix
     save_config()
 
     use_dev_branches = True
@@ -327,7 +328,7 @@ def setup_vara(
         )
     else:
         if update:
-            if str(CFG["vara"]["version"]) != str(version):
+            if str(cfg["vara"]["version"]) != str(version):
                 for project in LLVMProjects:
                     fetch_repository(llvm_folder / project.path)
 
@@ -350,7 +351,7 @@ def setup_vara(
                         llvm_folder / project.path, "release_" + str(version)
                     )
 
-                CFG["vara"]["version"] = int(version)
+                cfg["vara"]["version"] = int(version)
                 save_config()
 
             pull_current_branch(llvm_folder)
@@ -698,8 +699,9 @@ def build_vara(
     post_out: tp.Callable[[str], None] = lambda x: None
 ) -> None:
     """Builds a VaRA configuration."""
-    own_libgit = bool(CFG["vara"]["own_libgit2"])
-    include_phasar = bool(CFG["vara"]["with_phasar"])
+    cfg = get_vara_config()
+    own_libgit = bool(cfg["vara"]["own_libgit2"])
+    include_phasar = bool(cfg["vara"]["with_phasar"])
     full_path = path_to_llvm / "build/"
     full_path /= build_type.build_folder()
 
@@ -779,7 +781,9 @@ def get_llvm_project_status(
             git_status = git['status']
             stdout = git_status('-sb')
             for line in stdout.split('\n'):
-                if line.startswith('## vara-' + str(CFG['version']) + '-dev'):
+                if line.startswith(
+                    '## vara-' + str(get_vara_config()['version']) + '-dev'
+                ):
                     match = re.match(r".*\[(.*)\]", line)
                     if match is not None:
                         return GitStatus(GitState.BEHIND, match.group(1))

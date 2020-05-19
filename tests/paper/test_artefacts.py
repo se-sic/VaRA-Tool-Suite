@@ -9,7 +9,7 @@ from varats.paper.artefacts import (
     load_artefacts_from_file,
 )
 from varats.plots.paper_config_overview import PaperConfigOverviewPlot
-from varats.settings import CFG
+from varats.settings import get_vara_config
 
 YAML_ARTEFACTS = """DocType: Artefacts
 Version: 1
@@ -50,6 +50,7 @@ class TestArtefacts(unittest.TestCase):
 
     def test_artefact_output_path(self):
         """Check if artefact output_path is loaded correctly."""
+        CFG = get_vara_config()
         self.assertEqual(
             self.artefact.output_path,
             Path(str(CFG['artefacts']['artefacts_dir'])) /

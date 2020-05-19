@@ -22,7 +22,7 @@ from varats.paper.case_study import (
     load_case_study_from_file,
     store_case_study,
 )
-from varats.settings import CFG
+from varats.settings import get_vara_config
 
 
 class PaperConfig():
@@ -188,14 +188,15 @@ def project_filter_generator(project_name: str) -> tp.Callable[[str], bool]:
         a filter function that returns ``True`` if a revision of the specified
         project is included in one of the related case studies.
     """
-    if CFG["paper_config"]["current_config"].value is None:
+    cfg = get_vara_config()
+    if cfg["paper_config"]["current_config"].value is None:
         return lambda x: True
 
     if not is_paper_config_loaded():
         load_paper_config(
             Path(
-                str(CFG["paper_config"]["folder"]) + "/" +
-                str(CFG["paper_config"]["current_config"])
+                str(cfg["paper_config"]["folder"]) + "/" +
+                str(cfg["paper_config"]["current_config"])
             )
         )
 
@@ -237,17 +238,18 @@ def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
     Args:
         config_path: path to a paper config folder
     """
+    cfg = get_vara_config()
     if config_path is None:
-        if CFG["paper_config"]["folder"].value is None or CFG["paper_config"][
+        if cfg["paper_config"]["folder"].value is None or cfg["paper_config"][
             "current_config"].value is None:
             raise Exception(
                 "No paper config was set in VaRA config file {}".format(
-                    CFG['config_file']
+                    cfg['config_file']
                 )
             )
         config_path = Path(
-            str(CFG["paper_config"]["folder"]) + "/" +
-            str(CFG["paper_config"]["current_config"])
+            str(cfg["paper_config"]["folder"]) + "/" +
+            str(cfg["paper_config"]["current_config"])
         )
 
     global __G_PAPER_CONFIG  # pylint: disable=global-statement

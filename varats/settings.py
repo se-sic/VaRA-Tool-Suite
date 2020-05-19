@@ -11,7 +11,7 @@ from pathlib import Path
 
 import benchbuild.utils.settings as s
 
-CFG = s.Configuration(
+__CFG = s.Configuration(
     "varats",
     node={
         "config_file": {
@@ -33,7 +33,7 @@ CFG = s.Configuration(
     }
 )
 
-CFG["vara"] = {
+__CFG["vara"] = {
     "version": {
         "desc": "VaRA version.",
         "default": 100,
@@ -60,7 +60,7 @@ CFG["vara"] = {
     },
 }
 
-CFG["paper_config"] = {
+__CFG["paper_config"] = {
     "folder": {
         "desc": "Folder with paper configs.",
         "default": None,
@@ -71,12 +71,12 @@ CFG["paper_config"] = {
     },
 }
 
-CFG["env"] = {
+__CFG["env"] = {
     "default": {},
     "desc": "The environment benchbuild's commands should operate in."
 }
 
-CFG['db'] = {
+__CFG['db'] = {
     "connect_string": {
         "desc": "sqlalchemy connect string",
         "default": "sqlite://"
@@ -91,7 +91,7 @@ CFG['db'] = {
     }
 }
 
-CFG['experiment'] = {
+__CFG['experiment'] = {
     "only_missing": {
         "default": True,
         "desc":
@@ -120,26 +120,30 @@ CFG['experiment'] = {
     },
 }
 
-CFG['plots'] = {
+__CFG['plots'] = {
     "plot_dir": {
         "desc": "Folder for generated plots",
         "default": None,
     },
 }
 
-CFG['tables'] = {
+__CFG['tables'] = {
     "table_dir": {
         "desc": "Folder for generated tables",
         "default": None,
     },
 }
 
-CFG['artefacts'] = {
+__CFG['artefacts'] = {
     "artefacts_dir": {
         "desc": "Folder for generated artefacts",
         "default": None,
     },
 }
+
+
+def get_vara_config() -> s.Configuration:
+    return __CFG
 
 
 def get_value_or_default(
@@ -161,7 +165,7 @@ def create_missing_folders() -> None:
     """Create folders that do not exist but were set in the config."""
 
     def create_missing_folder_for_cfg(
-        cfg_varname: str, local_cfg: s.Configuration = CFG
+        cfg_varname: str, local_cfg: s.Configuration = __CFG
     ) -> None:
         """Create missing folders for a specific config path."""
 
@@ -173,32 +177,34 @@ def create_missing_folders() -> None:
 
     create_missing_folder_for_cfg("benchbuild_root")
     create_missing_folder_for_cfg("result_dir")
-    create_missing_folder_for_cfg("data_cache", CFG)
-    create_missing_folder_for_cfg("plot_dir", CFG["plots"])
-    create_missing_folder_for_cfg("table_dir", CFG["tables"])
-    create_missing_folder_for_cfg("artefacts_dir", CFG["artefacts"])
+    create_missing_folder_for_cfg("data_cache", __CFG)
+    create_missing_folder_for_cfg("plot_dir", __CFG["plots"])
+    create_missing_folder_for_cfg("table_dir", __CFG["tables"])
+    create_missing_folder_for_cfg("artefacts_dir", __CFG["artefacts"])
 
 
 def save_config() -> None:
     """Persist VaRA config to a yaml file."""
-    if CFG["config_file"].value is None:
+    if __CFG["config_file"].value is None:
         config_file = ".varats.yaml"
     else:
-        config_file = str(CFG["config_file"])
-    CFG["config_file"] = path.abspath(config_file)
-    if CFG["result_dir"].value is None:
-        CFG["result_dir"] = path.dirname(str(CFG["config_file"])) + "/results"
-    if CFG["plots"]["plot_dir"].value is None:
-        CFG["plots"]["plot_dir"] = path.dirname(
-            str(CFG["config_file"])
+        config_file = str(__CFG["config_file"])
+    __CFG["config_file"] = path.abspath(config_file)
+    if __CFG["result_dir"].value is None:
+        __CFG["result_dir"] = path.dirname(
+            str(__CFG["config_file"])
+        ) + "/results"
+    if __CFG["plots"]["plot_dir"].value is None:
+        __CFG["plots"]["plot_dir"] = path.dirname(
+            str(__CFG["config_file"])
         ) + "/plots"
-    if CFG["tables"]["table_dir"].value is None:
-        CFG["tables"]["table_dir"] = path.dirname(
-            str(CFG["config_file"])
+    if __CFG["tables"]["table_dir"].value is None:
+        __CFG["tables"]["table_dir"] = path.dirname(
+            str(__CFG["config_file"])
         ) + "/tables"
 
     create_missing_folders()
-    CFG.store(config_file)
+    __CFG.store(config_file)
 
 
 def get_varats_base_folder() -> Path:
@@ -209,7 +215,7 @@ def get_varats_base_folder() -> Path:
     Returns:
         path to base folder
     """
-    cfg_config_file = CFG["config_file"].value
+    cfg_config_file = __CFG["config_file"].value
     if cfg_config_file is None:
         raise ValueError("No config file found.")
     return Path(cfg_config_file).parent
@@ -308,5 +314,5 @@ def generate_benchbuild_config(
     BB_CFG.store(bb_config_path)
 
 
-s.setup_config(CFG, ['.varats.yaml', '.varats.yml'], "VARATS_CONFIG_FILE")
-s.update_env(CFG)
+s.setup_config(__CFG, ['.varats.yaml', '.varats.yml'], "VARATS_CONFIG_FILE")
+s.update_env(__CFG)

@@ -5,7 +5,7 @@ import unittest
 
 from benchbuild.settings import CFG as BB_CFG
 
-from varats.settings import CFG, generate_benchbuild_config
+from varats.settings import generate_benchbuild_config, get_vara_config
 
 
 class BenchBuildConfig(unittest.TestCase):
@@ -15,6 +15,7 @@ class BenchBuildConfig(unittest.TestCase):
     def setUpClass(cls):
         """Setup and generate the benchbuild config file."""
         cls.tmp_file = tempfile.NamedTemporaryFile()
+        CFG = get_vara_config()
         generate_benchbuild_config(CFG, cls.tmp_file.name)
         BB_CFG.load(cls.tmp_file.name)
 

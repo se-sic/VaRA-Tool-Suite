@@ -9,7 +9,7 @@ from varats.paper.case_study import load_case_study_from_file
 from varats.paper.paper_config import get_paper_config
 from varats.plots.plot import PlotDataEmpty
 from varats.plots.plots import PlotRegistry, build_plot
-from varats.settings import CFG
+from varats.settings import get_vara_config
 from varats.tools.commit_map import create_lazy_commit_map_loader
 from varats.utils.cli_util import initialize_logger_config
 
@@ -89,7 +89,7 @@ def __plot(args: tp.Dict[str, tp.Any]) -> None:
 
     # Setup default result folder
     if 'result_output' not in args:
-        args['plot_dir'] = str(CFG['plots']['plot_dir'])
+        args['plot_dir'] = str(get_vara_config()['plots']['plot_dir'])
     else:
         args['plot_dir'] = args['result_output']
         del args['result_output']  # clear parameter
