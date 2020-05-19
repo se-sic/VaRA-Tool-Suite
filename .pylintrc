@@ -139,7 +139,8 @@ disable=print-statement,
         deprecated-sys-function,
         exception-escape,
         comprehension-escape,
-        bad-continuation
+        bad-continuation,
+        logging-fstring-interpolation
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -253,11 +254,13 @@ function-naming-style=snake_case
 good-names=i,
            j,
            k,
+           n,
            ax,
            ex,
            Run,
            _,
-           df
+           df,
+           id
 
 # Include a hint for the correct naming format with invalid-name.
 include-naming-hint=no
@@ -473,7 +476,7 @@ redefining-builtins-modules=six.moves,past.builtins,future.builtins,builtins,io
 
 # Format style used to check logging format string. `old` means using %
 # formatting, `new` is for `{}` formatting,and `fstr` is for f-strings.
-logging-format-style=fstr
+logging-format-style=new
 
 # Logging modules to check that the string format arguments are in logging
 # function parameter format.

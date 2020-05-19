@@ -21,7 +21,7 @@ from varats.utils.cli_util import cli_list_choice, initialize_logger_config
 LOG = logging.getLogger(__name__)
 
 
-def set_paper_config_parser_arg(
+def _set_paper_config_parser_arg(
     parser: argparse.ArgumentParser, opt: bool = False
 ) -> None:
     config_opt_name = "paper_config" if not opt else "--paper-config"
@@ -49,13 +49,13 @@ def main() -> None:
     create_parser = sub_parsers.add_parser(
         'create', help="Create a new paper config."
     )
-    set_paper_config_parser_arg(create_parser)
+    _set_paper_config_parser_arg(create_parser)
 
     # vara-pc set
     set_parser = sub_parsers.add_parser(
         'select', help="Select the current paper config."
     )
-    set_paper_config_parser_arg(set_parser, True)
+    _set_paper_config_parser_arg(set_parser, True)
 
     # vara-pc list
     list_parser = sub_parsers.add_parser(

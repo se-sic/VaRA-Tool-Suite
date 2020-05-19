@@ -89,7 +89,7 @@ class VaRACodeBase(CodeBase):
                             ).checkout_branch(f"vara-{version}" + dev_suffix)
 
         # TODO (sattlerf): make different checkout for older versions
-        self.get_sub_project("VaRA").checkout_branch(f"vara" + dev_suffix)
+        self.get_sub_project("VaRA").checkout_branch(f"vara{dev_suffix}")
 
     def setup_submodules(self) -> None:
         """Set up the git submodules of all sub projects."""
