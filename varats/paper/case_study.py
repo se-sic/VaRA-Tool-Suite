@@ -892,6 +892,7 @@ def extend_with_revs_per_year(
         commits[commit_date.year].append(str(commit.id))
 
     new_rev_items = []  # new revisions that get added to to case_study
+    project_cls = get_project_cls_by_name(case_study.project_name)
     for year, commits_in_year in commits.items():
         samples = min(len(commits_in_year), kwargs['revs_per_year'])
         sample_commit_indices = sorted(
@@ -901,7 +902,7 @@ def extend_with_revs_per_year(
         for commit_index in sample_commit_indices:
             commit_hash = commits_in_year[commit_index]
             if kwargs["ignore_blocked"] and is_revision_blocked(
-                commit_hash, get_project_cls_by_name(case_study.project_name)
+                commit_hash, project_cls
             ):
                 continue
             time_id = cmap.time_id(commit_hash)
@@ -936,14 +937,13 @@ def extend_with_distrib_sampling(
 
     # Needs to be sorted so the propability distribution over the length
     # of the list is the same as the distribution over the commits age history
+    project_cls = get_project_cls_by_name(case_study.project_name)
     revision_list = [
         rev_item
         for rev_item in sorted(list(cmap.mapping_items()), key=lambda x: x[1])
         if not case_study.
         has_revision_in_stage(rev_item[0], kwargs['merge_stage']) and
-        not is_blocked(
-            rev_item[0], get_project_cls_by_name(case_study.project_name)
-        )
+        not is_blocked(rev_item[0], project_cls)
     ]
 
     distribution_function = kwargs['distribution'].gen_distribution_function()
