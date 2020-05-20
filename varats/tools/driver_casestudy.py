@@ -405,7 +405,7 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
             print("Could not find processed commit hash.")
             raise LookupError
         return commit_hash
-    return args["commit_hash"]
+    return tp.cast(str, args["commit_hash"])
 
 
 def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
