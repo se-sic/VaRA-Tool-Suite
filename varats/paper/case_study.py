@@ -361,7 +361,8 @@ class CaseStudy():
             from_index: index of the first stage to shift
             offset: amount to stages should be shifted
         """
-        if not (0 <= from_index < len(self.__stages)):
+        # keep parens for clarification
+        if not (0 <= from_index < len(self.__stages)):  # pylint: disable=C0325
             raise AssertionError("from_index out of bounds")
         if (from_index + offset) < 0:
             raise AssertionError("Shifting out of bounds")

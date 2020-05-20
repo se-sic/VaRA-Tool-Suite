@@ -219,7 +219,7 @@ def generate_benchbuild_config(
     varats_cfg: s.Configuration, bb_config_path: str
 ) -> None:
     """Generate a configuration file for benchbuild."""
-    from benchbuild.settings import CFG as BB_CFG
+    from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
 
     # Projects for VaRA
     projects_conf = BB_CFG["plugins"]["projects"]
@@ -300,10 +300,10 @@ def generate_benchbuild_config(
     replace_bb_cwd_path("node_dir", BB_CFG["slurm"])
 
     # Create caching folder for .bc files
-    BC_cache_path = str(varats_cfg["benchbuild_root"])
-    BC_cache_path += "/" + str(BB_CFG["varats"]["result"])
-    if not path.isdir(BC_cache_path):
-        makedirs(BC_cache_path)
+    bc_cache_path = str(varats_cfg["benchbuild_root"])
+    bc_cache_path += "/" + str(BB_CFG["varats"]["result"])
+    if not path.isdir(bc_cache_path):
+        makedirs(bc_cache_path)
 
     BB_CFG.store(bb_config_path)
 
