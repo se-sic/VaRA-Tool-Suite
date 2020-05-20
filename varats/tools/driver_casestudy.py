@@ -21,6 +21,7 @@ from varats.paper.case_study import (
     load_case_study_from_file,
     store_case_study,
 )
+from varats.paper.paper_config import get_paper_config
 from varats.settings import CFG
 from varats.tools.commit_map import create_lazy_commit_map_loader
 from varats.utils.cli_util import cli_list_choice, initialize_logger_config
@@ -261,7 +262,7 @@ def __create_view_parser(sub_parsers: _SubParsersAction) -> None:
         "project", help="Project to view result files for."
     )
     view_parser.add_argument(
-        "commit_hash", help="Commit hash to view result files for."
+        "commit_hash", help="Commit hash to view result files for.", nargs='?'
     )
     view_parser.add_argument(
         "--newest-only",
@@ -370,10 +371,57 @@ def __casestudy_package(
         )
 
 
+def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
+    result_file_type = MetaReport.REPORT_TYPES[args["report_type"]]
+    project_name = args["project"]
+    if "commit_hash" not in args:  # args["commit_hash"] is None:
+        # Ask the user to provide a commit hash
+        print("No commit hash was provided.")
+        commit_hash = ""
+        paper_config = get_paper_config()
+
+        available_commit_hashes = []
+        for case_study in paper_config.get_case_studies(project_name):
+            available_commit_hashes.extend(
+                case_study.processed_revisions(result_file_type)
+            )
+        max_num_hashes = 42
+        if len(available_commit_hashes) > max_num_hashes:
+            print("Found to many commit hashes, truncating selection...")
+
+        def set_commit_hash(choice: str) -> None:
+            nonlocal commit_hash
+            commit_hash = choice[:10]
+
+        try:
+            cli_list_choice(
+                "Please select a hash:",
+                available_commit_hashes[:max_num_hashes],
+                lambda x: x[:10],
+                set_commit_hash,
+                start_label=1,
+                default=1,
+            )
+        except EOFError:
+            raise LookupError
+        if commit_hash == "":
+            print("Could not find processed commit hash.")
+            raise LookupError
+        return commit_hash
+    return tp.cast(str, args["commit_hash"])
+
+
 def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
     result_file_type = MetaReport.REPORT_TYPES[args["report_type"]]
+    project_name = args["project"]
+
+    try:
+        commit_hash = __init_commit_hash(args)
+    except LookupError:
+        return
+
     result_files = PCM.get_result_files(
-        result_file_type, args["project"], args["commit_hash"],
+        result_file_type, project_name, commit_hash,
         args.get("newest-only", False)
     )
 
