@@ -20,6 +20,7 @@ creating plots, configuring the tool-suite itself and more.
     tools/vara-pc
     tools/vara-cs
     tools/vara-plot
+    tools/vara-table
     tools/vara-art
 
 .. toctree::

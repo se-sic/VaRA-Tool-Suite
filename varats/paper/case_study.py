@@ -5,6 +5,7 @@ import typing as tp
 from collections import defaultdict
 from datetime import datetime
 from enum import Enum
+from itertools import groupby
 from pathlib import Path
 
 import numpy as np
@@ -733,6 +734,43 @@ def get_case_study_file_name_filter(
         return not case_study.has_revision(commit_hash)
 
     return cs_filter
+
+
+def get_unique_cs_name(case_studies: tp.List[CaseStudy]) -> tp.List[str]:
+    """
+    Create a list of unique names for the given case studies.
+
+    If a case studie's project ocurrs only in one case study in the list, choose
+    the project name as the name, otherwise, add the case studie's version to
+    the name.
+
+    Args:
+        case_studies: the list of case studies to generate names for
+
+    Returns:
+        a list of unique names for the given case studies in the same order
+
+    Test:
+    >>> get_unique_cs_name([CaseStudy("xz", 1), CaseStudy("gzip", 1)])
+    ['xz', 'gzip']
+
+    >>> get_unique_cs_name([CaseStudy("xz", 1), CaseStudy("xz", 2)])
+    ['xz_1', 'xz_2']
+
+    Test:
+    >>> get_unique_cs_name([CaseStudy("xz", 1), CaseStudy("gzip", 1), \
+        CaseStudy("xz", 2)])
+    ['xz_1', 'gzip', 'xz_2']
+    """
+    sorted_cs = sorted(case_studies, key=lambda cs: cs.project_name)
+    cs_names = dict(
+        (k, list(v)) for k, v in groupby(sorted_cs, lambda cs: cs.project_name)
+    )
+
+    return [
+        cs.project_name if len(cs_names[cs.project_name]) == 1 else
+        f"{cs.project_name}_{cs.version}" for cs in case_studies
+    ]
 
 
 ###############################################################################

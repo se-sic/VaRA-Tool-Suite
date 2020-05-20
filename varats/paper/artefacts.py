@@ -19,6 +19,8 @@ from varats.data.version_header import VersionHeader
 from varats.plots.plot import Plot
 from varats.plots.plots import PlotRegistry
 from varats.settings import CFG
+from varats.tables.table import TableFormat, Table
+from varats.tables.tables import TableRegistry
 from varats.utils.yaml_util import load_yaml, store_as_yaml
 
 LOG = logging.getLogger(__name__)
@@ -111,7 +113,7 @@ class PlotArtefact(Artefact):
         self, name: str, output_path: Path, plot_type: str, file_format: str,
         **kwargs: tp.Any
     ) -> None:
-        super(PlotArtefact, self).__init__(ArtefactType.plot, name, output_path)
+        super().__init__(ArtefactType.plot, name, output_path)
         self.__plot_type = plot_type
         self.__plot_type_class = PlotRegistry.get_class_for_plot_type(plot_type)
         self.__file_format = file_format
@@ -156,6 +158,71 @@ class PlotArtefact(Artefact):
         plot.save(self.output_path, self.file_format)
 
 
+class TableArtefact(Artefact):
+    """
+    An artefact defining a :class:`table<varats.tables.table.Table>`.
+
+    Args:
+        name: The name of this artefact.
+        output_path: the path where the table this artefact produces will be
+                     stored
+        table_type: the :attr:`type of table
+                    <varats.tables.tables.TableRegistry.tables>`
+                    that will be generated
+        table_format: the format of the generated table
+        kwargs: additional arguments that will be passed to the table class
+    """
+
+    def __init__(
+        self, name: str, output_path: Path, table_type: str,
+        table_format: TableFormat, **kwargs: tp.Any
+    ) -> None:
+        super().__init__(ArtefactType.table, name, output_path)
+        self.__table_type = table_type
+        self.__table_type_class = TableRegistry.get_class_for_table_type(
+            table_type
+        )
+        self.__table_format = table_format
+        self.__table_kwargs = kwargs
+
+    @property
+    def table_type(self) -> str:
+        """The :attr:`type of plot<varats.plots.plots.PlotRegistry.plots>` that
+        will be generated."""
+        return self.__table_type
+
+    @property
+    def table_type_class(self) -> tp.Type[Table]:
+        """The class associated with :func:`plot_type`."""
+        return self.__table_type_class
+
+    @property
+    def file_format(self) -> TableFormat:
+        """The file format of the generated plot."""
+        return self.__table_format
+
+    @property
+    def table_kwargs(self) -> tp.Any:
+        """Additional arguments that will be passed to the plot_type_class."""
+        return self.__table_kwargs
+
+    def get_dict(self) -> tp.Dict[str, str]:
+        artefact_dict = super().get_dict()
+        artefact_dict['table_type'] = self.__table_type
+        artefact_dict['table_format'] = self.__table_format.name
+        artefact_dict = {**self.__table_kwargs, **artefact_dict}
+        return artefact_dict
+
+    def generate_artefact(self) -> None:
+        """Generate the specified table."""
+        if not self.output_path.exists():
+            self.output_path.mkdir(parents=True)
+
+        # pylint: disable=not-callable
+        table = self.table_type_class(**self.table_kwargs)
+        table.save(self.output_path)
+
+
 class ArtefactType(Enum):
     """
     Enum for the different artefact types.
@@ -166,6 +233,7 @@ class ArtefactType(Enum):
     allow evolution of artefacts.
     """
     plot = (PlotArtefact, 1)
+    table = (TableArtefact, 1)
 
 
 class Artefacts:
@@ -237,6 +305,12 @@ def create_artefact(
         plot_type = kwargs.pop('plot_type')
         file_format = kwargs.pop('file_format', 'png')
         return PlotArtefact(name, output_path, plot_type, file_format, **kwargs)
+    if artefact_type is ArtefactType.table:
+        table_type = kwargs.pop('table_type')
+        table_format = TableFormat[kwargs.pop('file_format', 'latex_booktabs')]
+        return TableArtefact(
+            name, output_path, table_type, table_format, **kwargs
+        )
 
     raise AssertionError(
         f"Missing create function for artefact type {artefact_type}"
