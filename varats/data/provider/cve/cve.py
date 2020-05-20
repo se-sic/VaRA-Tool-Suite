@@ -337,6 +337,6 @@ def find_cwe(
 
 # Cache all requests to limit external requests for a week
 requests_cache.install_cache(
-    f"{str(get_vara_config()['plots']['data_cache'])}/requests_cache",
+    f"{str(get_vara_config()['data_cache'])}/requests_cache",
     expire_after=604800
 )
