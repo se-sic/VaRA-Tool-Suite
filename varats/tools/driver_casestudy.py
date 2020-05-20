@@ -161,6 +161,12 @@ def __add_common_args(sub_parser: ArgumentParser) -> None:
         default=10,
         help="Number of revisions to select."
     )
+    sub_parser.add_argument(
+        "--ignore-blocked",
+        action="store_true",
+        default=False,
+        help="Ignore revisions that are marked as blocked."
+    )
 
 
 def __create_gen_parser(sub_parsers: _SubParsersAction) -> None:

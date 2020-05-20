@@ -9,6 +9,7 @@ import logging
 import typing as tp
 from pathlib import Path
 
+from varats.paper.paper_config import get_loaded_paper_config
 from varats.settings import (
     CFG,
     get_value_or_default,
@@ -20,7 +21,7 @@ from varats.utils.cli_util import cli_list_choice, initialize_logger_config
 LOG = logging.getLogger(__name__)
 
 
-def set_paper_config_parser_arg(
+def _set_paper_config_parser_arg(
     parser: argparse.ArgumentParser, opt: bool = False
 ) -> None:
     config_opt_name = "paper_config" if not opt else "--paper-config"
@@ -48,13 +49,13 @@ def main() -> None:
     create_parser = sub_parsers.add_parser(
         'create', help="Create a new paper config."
     )
-    set_paper_config_parser_arg(create_parser)
+    _set_paper_config_parser_arg(create_parser)
 
     # vara-pc set
     set_parser = sub_parsers.add_parser(
         'select', help="Select the current paper config."
     )
-    set_paper_config_parser_arg(set_parser, True)
+    _set_paper_config_parser_arg(set_parser, True)
 
     # vara-pc list
     list_parser = sub_parsers.add_parser(
@@ -147,9 +148,10 @@ def __pc_set(args: tp.Dict[str, tp.Any]) -> None:
             raw_pc_path = choice
 
         try:
+            current_config = get_loaded_paper_config().path.name
             cli_list_choice(
                 "Choose a number to select a paper config", paper_configs,
-                lambda x: x, set_pc_path
+                lambda x: f"{x} *" if x == current_config else x, set_pc_path
             )
         except EOFError:
             return
@@ -193,7 +195,11 @@ def __pc_list(args: tp.Dict[str, tp.Any]) -> None:
 
     print("Found the following paper_configs:")
     for paper_config in __get_paper_configs(pc_folder_path):
-        print(paper_config)
+        current_config = get_loaded_paper_config().path.name
+        if paper_config == current_config:
+            print(f"{paper_config} *")
+        else:
+            print(paper_config)
 
 
 if __name__ == '__main__':

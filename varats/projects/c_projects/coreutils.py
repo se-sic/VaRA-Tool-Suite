@@ -171,7 +171,7 @@ class Coreutils(prj.Project, CVEProviderHook):  # type: ignore
             run(make["-j", get_number_of_jobs(BB_CFG)])
             for binary in self.binaries:
                 if not Path("{binary}".format(binary=binary)).exists():
-                    print("Shit is fucked up ", binary)
+                    print("Could not find {binary}")
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
