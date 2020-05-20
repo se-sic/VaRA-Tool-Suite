@@ -86,7 +86,7 @@ class VaRACodeBase(CodeBase):
         print(f"Checking out VaRA version {str(version) + dev_suffix}")
 
         self.get_sub_project("vara-llvm-project"
-                            ).checkout_branch(f"vara-{version}" + dev_suffix)
+                            ).checkout_branch(f"vara-{dev_suffix}")
 
         # TODO (sattlerf): make different checkout for older versions
         self.get_sub_project("VaRA").checkout_branch(f"vara{dev_suffix}")
