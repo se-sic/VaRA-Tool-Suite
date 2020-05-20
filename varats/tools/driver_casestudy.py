@@ -385,6 +385,9 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
             available_commit_hashes.extend(
                 case_study.processed_revisions(result_file_type)
             )
+        max_num_hashes = 42
+        if len(available_commit_hashes) > max_num_hashes:
+            print("Found to many commit hashes, truncating selection...")
 
         def set_commit_hash(choice: str) -> None:
             nonlocal commit_hash
@@ -393,7 +396,7 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
         try:
             cli_list_choice(
                 "Please select a hash:",
-                available_commit_hashes,
+                available_commit_hashes[:max_num_hashes],
                 lambda x: x[:10],
                 set_commit_hash,
                 start_label=1,
