@@ -7,7 +7,7 @@ import typing as tp
 from varats.plots.plot_utils import check_required_args
 
 if tp.TYPE_CHECKING:
-    import varats.plots.plot    # pylint: disable=W0611
+    import varats.plots.plot  # pylint: disable=W0611
 
 LOG = logging.getLogger(__name__)
 
