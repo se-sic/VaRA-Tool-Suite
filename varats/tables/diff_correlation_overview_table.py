@@ -1,3 +1,4 @@
+"""Module for writing commit-data metrics tables."""
 import typing as tp
 from pathlib import Path
 
