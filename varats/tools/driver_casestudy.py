@@ -374,30 +374,51 @@ def __casestudy_package(
 def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
     result_file_type = MetaReport.REPORT_TYPES[args["report_type"]]
     project_name = args["project"]
-    if "commit_hash" not in args:  # args["commit_hash"] is None:
+    if "commit_hash" not in args:
         # Ask the user to provide a commit hash
         print("No commit hash was provided.")
         commit_hash = ""
         paper_config = get_paper_config()
 
         available_commit_hashes = []
+        # Compute available commit hashes
         for case_study in paper_config.get_case_studies(project_name):
             available_commit_hashes.extend(
-                case_study.processed_revisions(result_file_type)
+                case_study.get_revisions_status(
+                    result_file_type, tag_blocked=False
+                )
             )
+
         max_num_hashes = 42
         if len(available_commit_hashes) > max_num_hashes:
             print("Found to many commit hashes, truncating selection...")
 
-        def set_commit_hash(choice: str) -> None:
+        # Create call backs for cli choice
+        def set_commit_hash(
+            choice_pair: tp.Tuple[str, FileStatusExtension]
+        ) -> None:
             nonlocal commit_hash
-            commit_hash = choice[:10]
+            commit_hash = choice_pair[0][:10]
 
+        longest_file_status_extension = max([
+            len(status.get_colored_status())
+            for status in FileStatusExtension.get_physical_file_statuses()
+        ])
+
+        def result_file_to_list_entry(
+            commit_status_pair: tp.Tuple[str, FileStatusExtension]
+        ) -> str:
+            status = commit_status_pair[1].get_colored_status().rjust(
+                longest_file_status_extension, " "
+            )
+            return f"[{status}] {commit_status_pair[0][:10]}"
+
+        # Ask user which commit we should use
         try:
             cli_list_choice(
                 "Please select a hash:",
                 available_commit_hashes[:max_num_hashes],
-                lambda x: x[:10],
+                result_file_to_list_entry,
                 set_commit_hash,
                 start_label=1,
                 default=1,
