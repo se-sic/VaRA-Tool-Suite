@@ -11,7 +11,7 @@ from plumbum.cmd import ln, mkdir
 from PyQt5.QtCore import QProcess
 
 from varats.plots.plot_utils import check_required_args
-from varats.settings import __CFG, save_config
+from varats.settings import save_config, get_vara_config
 from varats.tools.research_tools.research_tool import (
     CodeBase,
     ResearchTool,
@@ -126,19 +126,20 @@ class VaRA(ResearchTool[VaRACodeBase]):
                       * version
                       * install_prefix
         """
-        __CFG["vara"]["llvm_source_dir"] = str(source_folder)
-        __CFG["vara"]["llvm_install_dir"] = str(kwargs["install_prefix"])
+        cfg = get_vara_config()
+        cfg["vara"]["llvm_source_dir"] = str(source_folder)
+        cfg["vara"]["llvm_install_dir"] = str(kwargs["install_prefix"])
         version = kwargs.get("version")
         if version:
             version = int(tp.cast(int, version))
-            __CFG["vara"]["version"] = version
+            cfg["vara"]["version"] = version
         else:
-            version = __CFG["vara"]["version"].value
+            version = cfg["vara"]["version"].value
 
         print(f"Setting up VaRA at {source_folder}")
         save_config()
 
-        use_dev_branches = __CFG["vara"]["developer_version"].value
+        use_dev_branches = cfg["vara"]["developer_version"].value
 
         self.code_base.clone(source_folder)
         self.code_base.setup_vara_remotes()
@@ -151,7 +152,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         version = 100
 
         # TODO (se-passau/VaRA#640): version upgrade
-        if str(__CFG["vara"]["version"]) != str(version):
+        if str(get_vara_config()["vara"]["version"]) != str(version):
             raise NotImplementedError
 
         self.code_base.pull()
@@ -199,7 +200,8 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
         # Set install prefix in cmake
         with local.cwd(full_path):
-            __CFG["vara"]["llvm_install_dir"] = str(install_location)
+            get_vara_config(
+            )["vara"]["llvm_install_dir"] = str(install_location)
             set_vara_cmake_variables(
                 str(install_location), log_without_linesep(print)
             )

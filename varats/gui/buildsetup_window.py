@@ -9,12 +9,7 @@ from PyQt5.QtWidgets import QShortcut, QWidget
 
 from varats import vara_manager
 from varats.gui.views.ui_BuildMenu import Ui_BuildSetup
-from varats.settings import (
-    __CFG,
-    get_value_or_default,
-    save_config,
-    get_vara_config,
-)
+from varats.settings import get_value_or_default, save_config, get_vara_config
 from varats.utils.exceptions import ProcessTerminatedError
 
 

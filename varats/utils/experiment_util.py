@@ -17,7 +17,7 @@ from plumbum.commands.base import BoundCommand
 
 from varats.data.report import BaseReport, FileStatusExtension
 from varats.data.revisions import get_tagged_revisions
-from varats.settings import __CFG as V_CFG
+from varats.settings import get_vara_config
 
 
 class FunctionPEErrorWrapper():
@@ -172,10 +172,11 @@ class VersionExperiment(Experiment):  # type: ignore
 
     @staticmethod
     def _sample_num_versions(versions: tp.List[str]) -> tp.List[str]:
-        if V_CFG["experiment"]["sample_limit"].value is None:
+        vara_cfg = get_vara_config()
+        if vara_cfg["experiment"]["sample_limit"].value is None:
             return versions
 
-        sample_size = int(V_CFG["experiment"]["sample_limit"])
+        sample_size = int(vara_cfg["experiment"]["sample_limit"])
         versions = [
             versions[i] for i in sorted(
                 random.
@@ -203,11 +204,12 @@ class VersionExperiment(Experiment):  # type: ignore
         if versions is None:
             versions = []
 
-        if bool(V_CFG["experiment"]["random_order"]):
+        vara_cfg = get_vara_config()
+        if bool(vara_cfg["experiment"]["random_order"]):
             random.shuffle(versions)
 
-        fs_blacklist = V_CFG["experiment"]["file_status_blacklist"].value
-        fs_whitelist = V_CFG["experiment"]["file_status_whitelist"].value
+        fs_blacklist = vara_cfg["experiment"]["file_status_blacklist"].value
+        fs_whitelist = vara_cfg["experiment"]["file_status_whitelist"].value
 
         if fs_blacklist or fs_whitelist:
             fs_good = set(FileStatusExtension) if not fs_whitelist else set()

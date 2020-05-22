@@ -231,7 +231,7 @@ def __create_package_parser(sub_parsers: _SubParsersAction) -> None:
         default=".*"
     )
     package_parser.add_argument(
-        "--report_names",
+        "--report-names",
         help=(
             "Provide a report name to "
             "select which files are considered for the status"
