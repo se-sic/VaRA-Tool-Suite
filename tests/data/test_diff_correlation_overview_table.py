@@ -22,4 +22,4 @@ class TestDiffCorrelationOverviewTable(unittest.TestCase):
         with open(
             TEST_INPUTS_DIR / "tables" / "b_diff_correlation_overview.tex"
         ) as expected:
-            self.assertEquals(table, expected.read())
+            self.assertEqual(table, expected.read())
