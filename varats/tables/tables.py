@@ -10,7 +10,7 @@ if tp.TYPE_CHECKING:
 class TableRegistry(type):
     """Registry for all supported tables."""
 
-    to_snake_case_pattern = re.compile(r'(?<!^)(?=[A-Z])')
+    TO_SNAKE_CASE_PATTERN = re.compile(r'(?<!^)(?=[A-Z])')
 
     tables: tp.Dict[str, tp.Type[tp.Any]] = {}
 
@@ -21,7 +21,7 @@ class TableRegistry(type):
         if hasattr(cls, 'NAME'):
             key = getattr(cls, 'NAME')
         else:
-            key = TableRegistry.to_snake_case_pattern.sub('_', name).lower()
+            key = TableRegistry.TO_SNAKE_CASE_PATTERN.sub('_', name).lower()
         TableRegistry.tables[key] = cls
 
     @staticmethod

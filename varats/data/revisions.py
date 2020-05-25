@@ -18,6 +18,40 @@ from varats.settings import get_vara_config
 from varats.utils.project_util import get_project_cls_by_name
 
 
+def is_revision_blocked(revision: str, project_cls: tp.Type[Project]) -> bool:
+    """
+    Checks if a revision is blocked on a given project.
+
+    Args:
+        revision: the revision
+        project_cls: the project class the revision belongs to
+
+    Returns:
+        filtered revision list
+    """
+    if hasattr(project_cls, "is_blocked_revision"):
+        return tp.cast(bool, project_cls.is_blocked_revision(revision)[0])
+    return False
+
+
+def filter_blocked_revisions(
+    revisions: tp.List[str], project_cls: tp.Type[Project]
+) -> tp.List[str]:
+    """
+    Filter out all blocked revisions.
+
+    Args:
+        revisions: list of revisions
+        project_cls: the project class the revisions belong to
+
+    Returns:
+        filtered revision list
+    """
+    return [
+        rev for rev in revisions if not is_revision_blocked(rev, project_cls)
+    ]
+
+
 def __get_result_files_dict(
     project_name: str, result_file_type: MetaReport
 ) -> tp.Dict[str, tp.List[Path]]:
@@ -273,9 +307,7 @@ def __get_tag_for_revision(
     Returns:
         the status for the revision
     """
-    if tag_blocked and hasattr(
-        project_cls, "is_blocked_revision"
-    ) and project_cls.is_blocked_revision(revision)[0]:
+    if tag_blocked and is_revision_blocked(revision, project_cls):
         return FileStatusExtension.Blocked
 
     newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
