@@ -52,7 +52,7 @@ def setup_basic_blame_experiment(
 
 def generate_basic_blame_experiment_actions(
     project: Project,
-    extraction_error_handler: PEErrorHandler = None
+    extraction_error_handler: tp.Optional[PEErrorHandler] = None
 ) -> tp.List[actions.Step]:
     """
     Generate the basic actions for a blame experiment.
