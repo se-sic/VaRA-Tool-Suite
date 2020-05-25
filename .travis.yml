@@ -29,7 +29,6 @@ script:
   - pre-commit run --from-ref origin/vara-dev --to-ref HEAD
   - mkdir -p paper_configs/test/
   - mkdir -p benchbuild
-  - export BB_CONFIG_FILE=benchbuild/.benchbuild.yml
   - export BB_TMP_DIR=benchbuild/tmp
   - pytest --cov=./ varats tests
   - ./run_extra_tests.sh
