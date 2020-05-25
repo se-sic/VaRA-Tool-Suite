@@ -1,0 +1,109 @@
+DocType: CaseStudy
+Version: 1
+---
+project_name: xz
+stages:
+- extender_strategy: distrib_add
+  revisions:
+  - commit_hash: 15a133b6d1a3eab4faf6eb52a71fdc56bd65846f
+    commit_id: 1222
+  - commit_hash: fd47fd62bbb1bfd13ab63869137971d8b390025f
+    commit_id: 1216
+  - commit_hash: 4ae9ab70cd3214395756435d13d8d000368ca2cb
+    commit_id: 1212
+  - commit_hash: ac0b4212656a48ef0c187c0c941d40ac9489ae36
+    commit_id: 1203
+  - commit_hash: 8ce679125dbd0e2058d8f886e738d7f19a45cab5
+    commit_id: 1200
+  - commit_hash: 1b4675cebf7471f7cc9b7072c950e3de97147063
+    commit_id: 1195
+  - commit_hash: 2f4281a1001dcf7fdf1418c0c0d246c16561fb65
+    commit_id: 1164
+  - commit_hash: b55d79461d1f6aeaac03c7dae84481e5eb8bea4c
+    commit_id: 1153
+  - commit_hash: 6a36d0d5f49e0080ff64dd9ef250abd489bea2ad
+    commit_id: 1151
+  - commit_hash: 9eca51ef805ed8002a851df1b4995d71826c8b6e
+    commit_id: 1150
+  - commit_hash: bc577d35c2d0ed17f554d2d8107b2a2a9abbac76
+    commit_id: 1136
+  - commit_hash: 95d563db3ee497b223e522b699c4d4c29943eef0
+    commit_id: 1131
+  - commit_hash: c28f0b3d00af87b92dda229831548d8eb0067d1d
+    commit_id: 1118
+  - commit_hash: 4cc584985c0b7a13901da1b7a64ef9f7cc36e8ab
+    commit_id: 1090
+  - commit_hash: 09f395b6b360c0b13e8559eece1d179b908ebd3a
+    commit_id: 1082
+  - commit_hash: cbafa710918195dbba3db02c3fab4f0538235206
+    commit_id: 1027
+  - commit_hash: 544aaa3d13554e8640f9caf7db717a96360ec0f6
+    commit_id: 962
+  - commit_hash: f48fce093b07aeda95c18850f5e086d9f2383380
+    commit_id: 961
+  - commit_hash: 381ac14ed79e5d38809f251705be8b3193bba417
+    commit_id: 950
+  - commit_hash: 1555a9c5664afc7893a2b75e9970105437f01ef1
+    commit_id: 939
+  - commit_hash: 69fd4e1c932c7975476a0143c86e45d81b60d3f9
+    commit_id: 930
+  - commit_hash: d1cd8b1cb824b72421d1ee370e628024d2fcbec4
+    commit_id: 923
+  - commit_hash: 1403707fc64a70976aebe66f8d9a9bd12f73a2c5
+    commit_id: 841
+  - commit_hash: eccd8017ffe2c5de473222c4963ec53c62f7fda2
+    commit_id: 840
+  - commit_hash: e9ed88126eee86e2511fa42681a5c7104820cf0a
+    commit_id: 799
+  - commit_hash: 48053e8a4550233af46359024538bff90c870ab1
+    commit_id: 787
+  - commit_hash: 4161d7634965a7a287bf208dcd79f6185f448fe8
+    commit_id: 785
+  - commit_hash: de678e0c924aa79a19293a8a6ed82e8cb6572a42
+    commit_id: 764
+  - commit_hash: 7bd0a5e7ccc354f7c2e95c8bc27569c820f6a136
+    commit_id: 715
+  - commit_hash: 33c1c0e102eb529588503b8beea0903a45488fad
+    commit_id: 687
+  - commit_hash: 084c60d318f2dbaef4078d9b100b4a373d0c3a7f
+    commit_id: 666
+  - commit_hash: 84af9d8770451339a692e9b70f96cf56156a6069
+    commit_id: 655
+  - commit_hash: 31575a449ac64c523da3bab8d0c0b522cdc7c780
+    commit_id: 654
+  - commit_hash: ce6dc3c0a891f23a862f80ec08d3b6f0beb2a562
+    commit_id: 603
+  - commit_hash: 9886d436ff5615fc70eef32ff757b1e934069621
+    commit_id: 579
+  - commit_hash: 097bad000363e0bf29f8274ad2d7ab59f7dbf644
+    commit_id: 534
+  - commit_hash: 4a84d1adfda35e4fb4d41ecf0feb8223b100517a
+    commit_id: 497
+  - commit_hash: fd7618611a22f42a6913bc8d518c9bbc9252d6b4
+    commit_id: 461
+  - commit_hash: e1ce2291e759b50ebfcf7cbbcc04cd098f1705a4
+    commit_id: 438
+  - commit_hash: 449c634674f35336a4815d398172e447659a135e
+    commit_id: 399
+  - commit_hash: 792db79f27ad9ab1fb977e23be65c7761f545752
+    commit_id: 398
+  - commit_hash: fe378d47074b16c52b00fe184d119287c68ce2e7
+    commit_id: 389
+  - commit_hash: e79c42d854657ae7f75613bd80c1a35ff7c525cb
+    commit_id: 353
+  - commit_hash: 4d00652e75dd2736aedc3a3a8baff3dd0ea38074
+    commit_id: 257
+  - commit_hash: 0a31ed9d5e3cde4feb094b66f3a8b2c074605d84
+    commit_id: 187
+  - commit_hash: b09464bf9ae694afc2d1dc26188ac4e2e8af0a63
+    commit_id: 163
+  - commit_hash: 4441e004185cd4c61bda184010eca5924c9dec87
+    commit_id: 116
+  - commit_hash: 5b5b13c7bb8fde6331064d21f3ebde41072480c4
+    commit_id: 75
+  - commit_hash: 9bc33a54cbf83952130adbcb1be32c6882485416
+    commit_id: 73
+  - commit_hash: 7054c5f5888ac6a7178cd43dc9583ce6c7e78c9f
+    commit_id: 46
+  sampling_method: uniform
+version: 0
