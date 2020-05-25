@@ -70,7 +70,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
                         project_version=str(project.version),
                         project_uuid=str(project.run_uuid),
                         extension_type=FSE.Failed
-                    ), run_cmd
+                    )
                 )
             )
 

@@ -13,7 +13,10 @@ from plumbum import local
 
 from varats.data.report import BaseReport
 from varats.experiments.wllvm import Extract, RunWLLVM
-from varats.utils.experiment_util import get_default_compile_error_wrapped
+from varats.utils.experiment_util import (
+    get_default_compile_error_wrapped,
+    PEErrorHandler,
+)
 
 
 def setup_basic_blame_experiment(
@@ -48,13 +51,19 @@ def setup_basic_blame_experiment(
 
 
 def generate_basic_blame_experiment_actions(
-    project: Project
+    project: Project,
+    extraction_error_handler: PEErrorHandler = None
 ) -> tp.List[actions.Step]:
     """
     Generate the basic actions for a blame experiment.
 
     - handle caching of BC files
     - compile project, if needed
+
+    Args:
+        project: reference to the BB project
+        extraction_error_handler: handler to manage errors during the
+                                  extraction process
     """
     analysis_actions = []
 
@@ -73,9 +82,10 @@ def generate_basic_blame_experiment_actions(
                 )
             )
         )
-
     if not all_files_present:
         analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(Extract(project))
+        analysis_actions.append(
+            Extract(project, handler=extraction_error_handler)
+        )
 
     return analysis_actions
