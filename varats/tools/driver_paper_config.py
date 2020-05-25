@@ -76,9 +76,10 @@ def main() -> None:
         parser.print_help()
         return
 
-    if CFG["paper_config"]["folder"].value is None:
+    cfg = get_vara_config()
+    if cfg["paper_config"]["folder"].value is None:
         # Setup default paper config path when none exists
-        CFG["paper_config"]["folder"] = str(Path('paper_configs').absolute())
+        cfg["paper_config"]["folder"] = str(Path('paper_configs').absolute())
         save_config()
 
     if args['subcommand'] == 'create':

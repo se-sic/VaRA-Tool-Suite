@@ -1,3 +1,4 @@
+"""Test the DiffCorrelationOverviewTable class."""
 import unittest
 
 import pytest
@@ -7,10 +8,12 @@ from varats.tables import diff_correlation_overview_table
 
 
 class TestDiffCorrelationOverviewTable(unittest.TestCase):
+    """Test the DiffCorrelationOverviewTable class."""
 
     @pytest.mark.slow
     @replace_config()
-    def test_table_tex_output2(self, config):
+    def test_table_tex_output(self, config):
+        """Check whether the table produces the correct tex output."""
         config["paper_config"]["current_config"
                               ] = "test_diff_correlation_overview_table"
         table = diff_correlation_overview_table.DiffCorrelationOverviewTable(
@@ -19,4 +22,4 @@ class TestDiffCorrelationOverviewTable(unittest.TestCase):
         with open(
             TEST_INPUTS_DIR / "tables" / "b_diff_correlation_overview.tex"
         ) as expected:
-            assert table == expected.read()
+            self.assertEquals(table, expected.read())

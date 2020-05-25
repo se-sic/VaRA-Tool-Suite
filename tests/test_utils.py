@@ -27,7 +27,7 @@ def get_test_config(tmp_path: Path) -> benchbuild.utils.settings.Configuration:
     Returns:
         a (deep)copy of the current vara config suitable for testing
     """
-    test_config = deepcopy(settings._CFG)
+    test_config = deepcopy(settings._CFG)  # pylint: disable=W0212
 
     # setup test input dir
     test_config["config_file"] = None
@@ -44,7 +44,7 @@ def get_test_config(tmp_path: Path) -> benchbuild.utils.settings.Configuration:
     return test_config
 
 
-class _replace_config():
+class _ReplaceConfig():
 
     def __init__(
         self,
@@ -55,21 +55,21 @@ class _replace_config():
             self.tmp_path = tempfile.TemporaryDirectory()
             tmp_path = Path(self.tmp_path.name)
 
-        self.old_config = settings._CFG
+        self.old_config = settings._CFG  # pylint: disable=W0212
         if config:
             self.new_config = config
         else:
             self.new_config = get_test_config(tmp_path)
 
     @contextlib.contextmanager
-    def decoration_helper(self, args: tp.Any, kwargs: tp.Any) -> tp.Any:
-        settings._CFG = self.new_config
+    def _decoration_helper(self, args: tp.Any, kwargs: tp.Any) -> tp.Any:
+        settings._CFG = self.new_config  # pylint: disable=W0212
         settings.create_missing_folders()
         args += (self.new_config,)
         try:
             yield args, kwargs
         finally:
-            settings._CFG = self.old_config
+            settings._CFG = self.old_config  # pylint: disable=W0212
             if self.tmp_path:
                 self.tmp_path.cleanup()
 
@@ -77,7 +77,7 @@ class _replace_config():
 
         @wraps(func)
         def wrapper(*args: tp.Any, **kwargs: tp.Any) -> tp.Any:
-            with self.decoration_helper(args, kwargs) as (newargs, newkwargs):
+            with self._decoration_helper(args, kwargs) as (newargs, newkwargs):
                 return func(*newargs, **newkwargs)
 
         return wrapper
@@ -120,4 +120,4 @@ def replace_config(
         the wrapped function
     """
 
-    return _replace_config(tmp_path, config)
+    return _ReplaceConfig(tmp_path, config)

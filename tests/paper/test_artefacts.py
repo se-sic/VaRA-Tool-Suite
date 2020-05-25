@@ -50,11 +50,11 @@ class TestArtefacts(unittest.TestCase):
 
     def test_artefact_output_path(self):
         """Check if artefact output_path is loaded correctly."""
-        CFG = get_vara_config()
+        cfg = get_vara_config()
         self.assertEqual(
             self.artefact.output_path,
-            Path(str(CFG['artefacts']['artefacts_dir'])) /
-            Path(str(CFG['paper_config']['current_config'])) / 'some/path'
+            Path(str(cfg['artefacts']['artefacts_dir'])) /
+            Path(str(cfg['paper_config']['current_config'])) / 'some/path'
         )
 
     def test_artefact_to_dict(self):

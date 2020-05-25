@@ -15,8 +15,7 @@ class BenchBuildConfig(unittest.TestCase):
     def setUpClass(cls):
         """Setup and generate the benchbuild config file."""
         cls.tmp_file = tempfile.NamedTemporaryFile()
-        CFG = get_vara_config()
-        generate_benchbuild_config(CFG, cls.tmp_file.name)
+        generate_benchbuild_config(get_vara_config(), cls.tmp_file.name)
         BB_CFG.load(cls.tmp_file.name)
 
     @classmethod
