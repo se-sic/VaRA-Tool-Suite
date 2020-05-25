@@ -13,10 +13,6 @@ addons:
       - libgit2-dev
       - ninja-build
 
-cache:
-  directories:
-    - benchbuild
-
 install:
   - pip install .
   - pip install -r requirements.txt
@@ -27,10 +23,10 @@ install:
 
 script:
   - pre-commit run --from-ref origin/vara-dev --to-ref HEAD
-  - mkdir -p paper_configs/test/
   - mkdir -p benchbuild
   - export BB_TMP_DIR=benchbuild/tmp
   - pytest --cov=./ varats tests
+  - rm -r benchbuild
   - ./run_extra_tests.sh
   - coverage combine -a
   - coverage report
