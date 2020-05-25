@@ -21,6 +21,8 @@ from benchbuild.utils.compiler import cc
 from benchbuild.utils.path import list_to_path, path_to_list
 from plumbum import local
 
+from varats.utils.experiment_util import FunctionPEErrorWrapper, PEErrorHandler
+
 
 class RunWLLVM(base.Extension):  # type: ignore
     """
@@ -74,8 +76,16 @@ class Extract(actions.Step):  # type: ignore
     BC_CACHE_FOLDER_TEMPLATE = "{cache_dir}/{project_name}/"
     BC_FILE_TEMPLATE = "{project_name}-{binary_name}-{project_version}.bc"
 
-    def __init__(self, project: Project) -> None:
-        super(Extract, self).__init__(obj=project, action_fn=self.extract)
+    def __init__(
+        self,
+        project: Project,
+        handler: tp.Optional[PEErrorHandler] = None
+    ) -> None:
+        super().__init__(
+            obj=project,
+            action_fn=FunctionPEErrorWrapper(self.extract, handler)
+            if handler else self.extract
+        )
 
     def extract(self) -> actions.StepResult:
         """This step extracts the bitcode of the executable of the project into

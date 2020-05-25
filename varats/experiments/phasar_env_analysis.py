@@ -111,9 +111,7 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
             # Run the phasar command with custom error handler and timeout
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration, phasar_run_cmd],
-                PEErrorHandler(
-                    result_folder, error_file, phasar_run_cmd, timeout_duration
-                )
+                PEErrorHandler(result_folder, error_file, timeout_duration)
             )
 
 

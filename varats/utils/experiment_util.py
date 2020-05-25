@@ -13,47 +13,10 @@ from benchbuild.project import Project
 from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.actions import Step, StepResult
 from plumbum.commands import ProcessExecutionError
-from plumbum.commands.base import BoundCommand
 
 from varats.data.report import BaseReport, FileStatusExtension
 from varats.data.revisions import get_tagged_revisions
 from varats.settings import CFG as V_CFG
-
-
-class FunctionPEErrorWrapper():
-    """
-    Wrap a function call with an exception handler.
-
-    Args:
-        func: function to be executed
-        handler: function to handle exception
-    """
-
-    def __init__(
-        self, func: tp.Callable[..., tp.Any], handler: tp.Callable[[Exception],
-                                                                   None]
-    ) -> None:
-        self.__func = func
-        self.__handler = handler
-
-    def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
-        try:
-            return self.__func(*args, **kwargs)
-        except Exception as ex:  # pylint: disable=broad-except
-            self.__handler(ex)
-
-
-def exec_func_with_pe_error_handler(
-    func: tp.Callable[..., tp.Any], handler: tp.Callable[[Exception], None]
-) -> None:
-    """
-    Execute a function call with an exception handler.
-
-    Args:
-        func: function to be executed
-        handler: function to handle exception
-    """
-    FunctionPEErrorWrapper(func, handler)()
 
 
 class PEErrorHandler():
@@ -63,17 +26,15 @@ class PEErrorHandler():
         self,
         result_folder: str,
         error_file_name: str,
-        run_cmd: tp.Optional[BoundCommand] = None,
         timeout_duration: tp.Optional[str] = None,
         delete_files: tp.Optional[tp.List[Path]] = None
     ):
         self.__result_folder = result_folder
         self.__error_file_name = error_file_name
-        self.__run_cmd = run_cmd
         self.__timeout_duration = timeout_duration
         self.__delete_files = delete_files
 
-    def __call__(self, ex: Exception) -> None:
+    def __call__(self, ex: Exception, func: tp.Callable[..., tp.Any]) -> None:
         if self.__delete_files is not None:
             for delete_file in self.__delete_files:
                 try:
@@ -92,10 +53,9 @@ class PEErrorHandler():
         with open(error_file, 'w') as outfile:
             if isinstance(ex, ProcessExecutionError):
                 if ex.retcode == 124:
-                    cmd = str(self.__run_cmd)
                     timeout_duration = str(self.__timeout_duration)
                     extra_error = f"""Command:
-{cmd}
+{str(func)}
 Timeout after: {timeout_duration}
 
 """
@@ -106,6 +66,41 @@ Timeout after: {timeout_duration}
             traceback.print_exc(file=outfile)
 
         raise ex
+
+
+class FunctionPEErrorWrapper():
+    """
+    Wrap a function call with an exception handler.
+
+    Args:
+        func: function to be executed
+        handler: function to handle exception
+    """
+
+    def __init__(
+        self, func: tp.Callable[..., tp.Any], handler: PEErrorHandler
+    ) -> None:
+        self.__func = func
+        self.__handler = handler
+
+    def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
+        try:
+            return self.__func(*args, **kwargs)
+        except Exception as ex:  # pylint: disable=broad-except
+            self.__handler(ex, self.__func)
+
+
+def exec_func_with_pe_error_handler(
+    func: tp.Callable[..., tp.Any], handler: PEErrorHandler
+) -> None:
+    """
+    Execute a function call with an exception handler.
+
+    Args:
+        func: function to be executed
+        handler: function to handle exception
+    """
+    FunctionPEErrorWrapper(func, handler)()
 
 
 def get_default_compile_error_wrapped(

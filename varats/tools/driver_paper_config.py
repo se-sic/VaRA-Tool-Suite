@@ -9,7 +9,10 @@ import logging
 import typing as tp
 from pathlib import Path
 
-from varats.paper.paper_config import get_loaded_paper_config
+from varats.paper.paper_config import (
+    get_loaded_paper_config,
+    is_paper_config_loaded,
+)
 from varats.settings import (
     CFG,
     get_value_or_default,
@@ -72,6 +75,11 @@ def main() -> None:
     if 'subcommand' not in args:
         parser.print_help()
         return
+
+    if CFG["paper_config"]["folder"].value is None:
+        # Setup default paper config path when none exists
+        CFG["paper_config"]["folder"] = str(Path('paper_configs').absolute())
+        save_config()
 
     if args['subcommand'] == 'create':
         __pc_create(args)
@@ -148,10 +156,16 @@ def __pc_set(args: tp.Dict[str, tp.Any]) -> None:
             raw_pc_path = choice
 
         try:
-            current_config = get_loaded_paper_config().path.name
+            if is_paper_config_loaded():
+                current_config: tp.Optional[str] = get_loaded_paper_config(
+                ).path.name
+            else:
+                current_config = None
+
             cli_list_choice(
                 "Choose a number to select a paper config", paper_configs,
-                lambda x: f"{x} *" if x == current_config else x, set_pc_path
+                lambda x: f"{x} *"
+                if current_config and x == current_config else x, set_pc_path
             )
         except EOFError:
             return
@@ -194,9 +208,13 @@ def __pc_list(args: tp.Dict[str, tp.Any]) -> None:
         return
 
     print("Found the following paper_configs:")
+    if is_paper_config_loaded():
+        current_config: tp.Optional[str] = get_loaded_paper_config().path.name
+    else:
+        current_config = None
+
     for paper_config in __get_paper_configs(pc_folder_path):
-        current_config = get_loaded_paper_config().path.name
-        if paper_config == current_config:
+        if current_config and paper_config == current_config:
             print(f"{paper_config} *")
         else:
             print(paper_config)
