@@ -142,7 +142,7 @@ class CRAnalysis(actions.Step):  # type: ignore
                         project_uuid=str(project.run_uuid),
                         extension_type=FSE.Failed,
                         file_ext=".txt"
-                    ), run_cmd, timeout_duration
+                    ), timeout_duration
                 )
             )
 

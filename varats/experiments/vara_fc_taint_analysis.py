@@ -140,9 +140,7 @@ class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
             try:
                 exec_func_with_pe_error_handler(
                     cmd_chain,
-                    PEErrorHandler(
-                        result_folder, error_file, cmd_chain, timeout_duration
-                    )
+                    PEErrorHandler(result_folder, error_file, timeout_duration)
                 )
             # remove the success file on error in the filecheck.
             except ProcessExecutionError:
