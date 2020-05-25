@@ -32,7 +32,7 @@ def get_test_config(tmp_path: Path) -> benchbuild.utils.settings.Configuration:
     # setup test input dir
     test_config["config_file"] = None
     test_config["result_dir"] = TEST_INPUTS_DIR / "results"
-    test_config["paper_config"]["folder"] = TEST_INPUTS_DIR / "paper_config"
+    test_config["paper_config"]["folder"] = TEST_INPUTS_DIR / "paper_configs"
     test_config["paper_config"]["current_config"] = None
 
     # let output config options point to test env.
