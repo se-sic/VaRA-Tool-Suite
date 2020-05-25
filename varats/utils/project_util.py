@@ -1,5 +1,6 @@
 """Utility module for BenchBuild project handling."""
 import abc
+import os
 import tempfile
 import typing as tp
 from enum import IntFlag
@@ -38,6 +39,8 @@ def get_local_project_git_path(project_name: str) -> Path:
     """Get the path to the local download location of git repository for a given
     benchbuild project."""
     cfg = get_vara_config()
+    for a in os.environ:
+        print('Var: ', a, 'Value: ', os.getenv(a))
     project_git_path = Path(str(cfg['benchbuild_root'])
                            ) / str(BB_CFG["tmp_dir"])
     project_git_path /= project_name if project_name.endswith(
