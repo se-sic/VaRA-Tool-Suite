@@ -2,7 +2,6 @@
 import typing as tp
 
 from benchbuild.project import Project
-from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
@@ -11,6 +10,7 @@ from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
+from varats.settings import get_benchbuild_config
 from varats.utils.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
@@ -49,7 +49,7 @@ class Glibc(Project, CVEProviderHook):  # type: ignore
         with local.cwd(self.SRC_FILE + "/" + "build"):
             with local.env(CC=str(clang)):
                 run(local["./../configure"])
-            run(make["-j", int(BB_CFG["jobs"])])
+            run(make["-j", int(get_benchbuild_config()["jobs"])])
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

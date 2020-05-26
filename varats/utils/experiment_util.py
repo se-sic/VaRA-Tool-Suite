@@ -10,13 +10,12 @@ from pathlib import Path
 
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
-from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.actions import Step, StepResult
 from plumbum.commands import ProcessExecutionError
 
 from varats.data.report import BaseReport, FileStatusExtension
 from varats.data.revisions import get_tagged_revisions
-from varats.settings import get_vara_config
+from varats.settings import get_vara_config, get_benchbuild_config
 
 
 class PEErrorHandler():
@@ -118,7 +117,7 @@ def get_default_compile_error_wrapped(
     Returns:
         project compilation function, wrapped with automatic error handling
     """
-    result_dir = str(BB_CFG["varats"]["outfile"])
+    result_dir = str(get_benchbuild_config()["varats"]["outfile"])
     result_folder = result_folder_template.format(
         result_dir=result_dir, project_dir=str(project.name)
     )
@@ -235,7 +234,7 @@ class VersionExperiment(Experiment):  # type: ignore
 
             head, *tail = self._sample_num_versions(versions)
             yield head
-            if bool(BB_CFG["versions"]["full"]):
+            if bool(get_benchbuild_config()["versions"]["full"]):
                 for version in tail:
                     yield version
         else:

@@ -7,11 +7,11 @@ import benchbuild.utils.actions as actions
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
-from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import opt
 from plumbum import local
 
 from varats.experiments.wllvm import Extract, RunWLLVM
+from varats.settings import get_benchbuild_config
 
 
 class DefaultAnalysis(actions.Step):  # type: ignore
@@ -29,7 +29,9 @@ class DefaultAnalysis(actions.Step):  # type: ignore
             return
         project = self.obj
 
-        project_src = local.path(str(BB_CFG["varats"]["result"]))
+        project_src = local.path(
+            str(get_benchbuild_config()["varats"]["result"])
+        )
 
         run_cmd = opt["-load", self.PATH_TO_PHASAR_PASS_LIB, "-phasar",
                       "--entry-points", "main"]
@@ -57,8 +59,8 @@ class PhasarDefault(Experiment):  # type: ignore
 
         analysis_actions = []
         if not os.path.exists(
-            local.path(str(BB_CFG["varats"]["result"].value)) / project.name +
-            ".bc"
+            local.path(str(get_benchbuild_config()["varats"]["result"].value)) /
+            project.name + ".bc"
         ):
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(project))

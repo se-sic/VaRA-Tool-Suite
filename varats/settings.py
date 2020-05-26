@@ -146,6 +146,17 @@ def get_vara_config() -> s.Configuration:
     return _CFG
 
 
+_BB_CFG: tp.Optional[s.Configuration] = None
+
+
+def get_benchbuild_config() -> s.Configuration:
+    global _BB_CFG
+    if not _BB_CFG:
+        from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
+        _BB_CFG = BB_CFG
+    return _BB_CFG
+
+
 def get_value_or_default(
     cfg: s.Configuration, varname: str, default: tp.Any
 ) -> tp.Any:
