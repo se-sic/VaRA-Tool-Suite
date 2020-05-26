@@ -96,19 +96,15 @@ class Extract(actions.Step):  # type: ignore
         if bc_file_extensions:
             experiment_bc_file_ext = '-'
 
-            for ext in bc_file_extensions[:-1]:
-                experiment_bc_file_ext += (ext.value + '_')
-
-            experiment_bc_file_ext += bc_file_extensions[-1].value
+            ext_sep = ""
+            for ext in bc_file_extensions:
+                experiment_bc_file_ext += (ext_sep + ext.value)
+                ext_sep = '_'
         else:
             experiment_bc_file_ext = ''
 
-        return Extract.__BC_FILE_TEMPLATE.format(
-            project_name=project_name,
-            binary_name=binary_name,
-            project_version=project_version,
-            bc_file_extensions=experiment_bc_file_ext
-        )
+        return f"{project_name}-{binary_name}-{project_version}" \
+               f"{experiment_bc_file_ext}.bc"
 
     def __init__(
         self, project: Project, bc_file_extensions: tp.List[BCFileExtensions]
@@ -137,8 +133,9 @@ class Extract(actions.Step):  # type: ignore
                 bc_file_extensions=self.bc_file_extensions
             )
 
-            target_binary = Path(project.builddir) / project.SRC_FILE /\
-                binary
+            target_binary = Path(
+                project.builddir
+            ) / project.SRC_FILE / binary.path
 
             extract_bc(target_binary)
             cp(str(target_binary) + ".bc", local.path() / bc_cache_file)
