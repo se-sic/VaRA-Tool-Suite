@@ -22,9 +22,6 @@ from benchbuild.utils.compiler import cc
 from benchbuild.utils.path import list_to_path, path_to_list
 from plumbum import local
 
-BC_FILE_TEMPLATE = "{project_name}-{binary_name}-{project_version}{" \
-                   "bc_file_extensions}.bc"
-
 
 class BCFileExtensions(Enum):
     DEBUG = 'dbg'
@@ -83,6 +80,9 @@ class Extract(actions.Step):  # type: ignore
 
     BC_CACHE_FOLDER_TEMPLATE = "{cache_dir}/{project_name}/"
 
+    __BC_FILE_TEMPLATE = "{project_name}-{binary_name}-{project_version}{" \
+                       "bc_file_extensions}.bc"
+
     @staticmethod
     def get_bc_file_name(
         project_name: str,
@@ -103,7 +103,7 @@ class Extract(actions.Step):  # type: ignore
         else:
             experiment_bc_file_ext = ''
 
-        return BC_FILE_TEMPLATE.format(
+        return Extract.__BC_FILE_TEMPLATE.format(
             project_name=project_name,
             binary_name=binary_name,
             project_version=project_version,
