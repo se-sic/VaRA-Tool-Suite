@@ -94,10 +94,10 @@ class Extract(actions.Step):  # type: ignore
         if bc_file_extensions:
             project_bc_file_ext = '-'
 
-            for ext in bc_file_extensions[:-1]:
-                project_bc_file_ext += (ext.value + '_')
-
-            project_bc_file_ext += bc_file_extensions[-1].value
+            ext_sep = ""
+            for ext in bc_file_extensions:
+                project_bc_file_ext += (ext_sep + ext.value)
+                ext_sep =  '_'
         else:
             project_bc_file_ext = ''
 
