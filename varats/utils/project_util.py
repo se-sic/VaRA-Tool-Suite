@@ -16,14 +16,6 @@ from plumbum import local
 
 from varats.settings import get_vara_config
 
-print(f"os.getenv('BB_TMP_DIR') = {os.getenv('BB_TMP_DIR')}")
-print(f"BB_CFG['tmp_dir'] = {BB_CFG['tmp_dir']}")
-setup_config(
-    BB_CFG, [str(get_vara_config()['benchbuild_root']) + "/.benchbuild.yml"]
-)
-print(f"os.getenv('BB_TMP_DIR') = {os.getenv('BB_TMP_DIR')}")
-print(f"BB_CFG['tmp_dir'] = {BB_CFG['tmp_dir']}")
-
 
 def get_project_cls_by_name(project_name: str) -> tp.Type[Project]:
     """Look up a BenchBuild project by it's name."""
@@ -43,6 +35,15 @@ def get_local_project_git_path(project_name: str) -> Path:
     """Get the path to the local download location of git repository for a given
     benchbuild project."""
     cfg = get_vara_config()
+    print(f"os.getenv('BB_TMP_DIR') = {os.getenv('BB_TMP_DIR')}")
+    print(f"BB_CFG['tmp_dir'] = {BB_CFG['tmp_dir']}")
+    setup_config(
+        BB_CFG,
+        [str(get_vara_config()['benchbuild_root']) + "/.benchbuild.yml"]
+    )
+    print(f"os.getenv('BB_TMP_DIR') = {os.getenv('BB_TMP_DIR')}")
+    print(f"BB_CFG['tmp_dir'] = {BB_CFG['tmp_dir']}")
+
     project_git_path = Path(str(cfg['benchbuild_root'])
                            ) / str(BB_CFG["tmp_dir"])
     project_git_path /= project_name if project_name.endswith(
