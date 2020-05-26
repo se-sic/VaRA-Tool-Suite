@@ -7,7 +7,6 @@ order to generate a BlameVerifierReport.
 """
 
 import typing as tp
-from abc import abstractmethod
 
 import benchbuild.utils.actions as actions
 from benchbuild.project import Project
@@ -18,6 +17,12 @@ from plumbum import local
 import varats.experiments.blame_experiment as BE
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.blame_verifier_report import BlameVerifierReport as BVR
+from varats.data.reports.blame_verifier_report import (
+    BlameVerifierReportNoOpt as BVR_NoOpt,
+)
+from varats.data.reports.blame_verifier_report import (
+    BlameVerifierReportOpt as BVR_Opt,
+)
 from varats.experiments.wllvm import BCFileExtensions, Extract
 from varats.utils.experiment_util import (
     exec_func_with_pe_error_handler,
@@ -31,7 +36,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
     BlameVerifierReport."""
 
     NAME = "BlameVerifierReportGeneration"
-    DESCRIPTION = "Compares and analyses VaRA-commit-hashes and " \
+    DESCRIPTION = "Compares and analyses VaRA-commit-hashes with " \
                   "debug-commit-hashes."
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
@@ -123,75 +128,69 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
 
 
 class BlameVerifierReportExperiment(VersionExperiment):
-    """Abstract Blame Verifier Report used for different optimization levels in
-    the compilation."""
+    """
+    BlameVerifierReportExperiment used as base class for different compilation
+    optimizations.
 
-    @abstractmethod
+    Only its subclasses should be instantiated.
+    """
+
+    def __init__(self, project, opt_flag, bc_file_extensions, report_type):
+        super().__init__()
+        self.projects = project
+        self.__opt_flag = opt_flag
+        self.__bc_file_extensions = bc_file_extensions
+        self.__report_type = report_type
+
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
-        pass
+        """Returns the specified steps to run the project(s) specified in the
+        call in a fixed order."""
+
+        BE.setup_basic_blame_experiment(
+            self, project, self.__report_type,
+            BlameVerifierReportGeneration.RESULT_FOLDER_TEMPLATE
+        )
+
+        project.cflags.append('-g')
+        project.cflags.append(self.__opt_flag)
+
+        analysis_actions = BE.generate_basic_blame_experiment_actions(
+            project, self.__bc_file_extensions
+        )
+
+        analysis_actions.append(
+            BlameVerifierReportGeneration(project, self.__bc_file_extensions)
+        )
+        analysis_actions.append(actions.Clean(project))
+
+        return analysis_actions
 
 
 class BlameVerifierReportExperimentNoOpt(BlameVerifierReportExperiment):
-    """Generates a Blame Verifier Report (BVR) of the project(s) specified in
-    the call without any optimization (-O0)."""
+    """Generates a Blame Verifier Report of the project(s) specified in the call
+    without any optimization (BVR_NoOpt)."""
 
     NAME = "GenerateBlameVerifierReportNoOpt"
 
-    REPORT_TYPE = BVR
+    REPORT_TYPE = BVR_NoOpt
 
-    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
-        """Returns the specified steps to run the project(s) specified in the
-        call in a fixed order."""
-
-        bc_file_extensions = [BCFileExtensions.DEBUG, BCFileExtensions.NO_OPT]
-
-        BE.setup_basic_blame_experiment(
-            self, project, BVR,
-            BlameVerifierReportGeneration.RESULT_FOLDER_TEMPLATE
+    def __init__(self, projects: Project) -> None:
+        super().__init__(
+            projects, '-O0', [BCFileExtensions.DEBUG, BCFileExtensions.NO_OPT],
+            BVR_NoOpt
         )
-        project.cflags.append("-g")
-        project.cflags.append("-O0")
-
-        analysis_actions = BE.generate_basic_blame_experiment_actions(
-            project, bc_file_extensions
-        )
-
-        analysis_actions.append(
-            BlameVerifierReportGeneration(project, bc_file_extensions)
-        )
-        analysis_actions.append(actions.Clean(project))
-
-        return analysis_actions
 
 
 class BlameVerifierReportExperimentOpt(BlameVerifierReportExperiment):
-    """Generates a Blame Verifier Report (BVR) of the project(s) specified in
-    the call with optimization (-O2)."""
+    """Generates a Blame Verifier Report of the project(s) specified in the call
+    with optimization (BVR_Opt)."""
 
     NAME = "GenerateBlameVerifierReportOpt"
 
-    REPORT_TYPE = BVR
+    REPORT_TYPE = BVR_Opt
 
-    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
-        """Returns the specified steps to run the project(s) specified in the
-        call in a fixed order."""
-
-        bc_file_extensions = [BCFileExtensions.DEBUG, BCFileExtensions.OPT]
-
-        BE.setup_basic_blame_experiment(
-            self, project, BVR,
-            BlameVerifierReportGeneration.RESULT_FOLDER_TEMPLATE
+    def __init__(self, projects: Project) -> None:
+        super().__init__(
+            projects, '-O2', [BCFileExtensions.DEBUG, BCFileExtensions.OPT],
+            BVR_Opt
         )
-        project.cflags.append("-g")
-        project.cflags.append("-O2")
-
-        analysis_actions = BE.generate_basic_blame_experiment_actions(
-            project, bc_file_extensions
-        )
-
-        analysis_actions.append(
-            BlameVerifierReportGeneration(project, bc_file_extensions)
-        )
-        analysis_actions.append(actions.Clean(project))
-
-        return analysis_actions

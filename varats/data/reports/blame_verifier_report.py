@@ -1,27 +1,30 @@
-"""
-Module for a BlameVerifierReport.
-"""
+"""Module for a BlameVerifierReport."""
 
 from varats.data.report import BaseReport, MetaReport, FileStatusExtension
 
 
 class BlameVerifierReport(BaseReport):
     """
-    TODO: Add further description (Currently empty report)
-    Full BlameVerifier report.
+    Base class of a report containing the filtered results of the chosen
+    verifier-options, e.g. the diff of VaRA-hashes and debug-hashes.
+
+    Only its subclasses should be instantiated.
     """
 
-    SHORTHAND = "BVR"
+    SHORTHAND = 'BVR'
 
     @staticmethod
-    def get_file_name(project_name: str,
-                      binary_name: str,
-                      project_version: str,
-                      project_uuid: str,
-                      extension_type: FileStatusExtension,
-                      file_ext: str = ".txt") -> str:
+    def get_file_name(
+        project_name: str,
+        binary_name: str,
+        project_version: str,
+        project_uuid: str,
+        extension_type: FileStatusExtension,
+        file_ext: str = ".txt"
+    ) -> str:
         """
-        Generates a filename for a commit report without any file ending.
+        Generates a filename for a blame verifier report without any file
+        ending.
 
         Args:
             project_name: name of the project for which the report was generated
@@ -34,7 +37,23 @@ class BlameVerifierReport(BaseReport):
         Returns:
             name for the report file that can later be uniquely identified
         """
-        return MetaReport.get_file_name(BlameVerifierReport.SHORTHAND,
-                                        project_name,
-                                        binary_name, project_version,
-                                        project_uuid, extension_type, file_ext)
+        return MetaReport.get_file_name(
+            BlameVerifierReport.SHORTHAND, project_name, binary_name,
+            project_version, project_uuid, extension_type, file_ext
+        )
+
+
+class BlameVerifierReportNoOpt(BlameVerifierReport):
+    """A BlameVerifierReport containing the filtered results of the chosen
+    verifier-options, e.g. the diff of VaRA-hashes and debug-hashes, without any
+    compilation optimization."""
+
+    SHORTHAND = 'BVR_NoOpt'
+
+
+class BlameVerifierReportOpt(BlameVerifierReport):
+    """A BlameVerifierReport containing the filtered results of the chosen
+    verifier-options, e.g. the diff of VaRA-hashes and debug-hashes, with
+    compilation optimization."""
+
+    SHORTHAND = 'BVR_Opt'

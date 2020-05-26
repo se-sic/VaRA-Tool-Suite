@@ -48,7 +48,8 @@ def setup_basic_blame_experiment(
 
 
 def generate_basic_blame_experiment_actions(
-    project: Project, bc_file_extensions: tp.List[BCFileExtensions]
+    project: Project,
+    bc_file_extensions: tp.List[BCFileExtensions] = None
 ) -> tp.List[actions.Step]:
     """
     Generate the basic actions for a blame experiment.
@@ -57,6 +58,9 @@ def generate_basic_blame_experiment_actions(
     - compile project, if needed
     """
     analysis_actions = []
+
+    if bc_file_extensions is None:
+        bc_file_extensions = []
 
     # Check if all binaries have corresponding BC files
     all_files_present = True

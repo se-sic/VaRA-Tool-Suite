@@ -85,27 +85,29 @@ class Extract(actions.Step):  # type: ignore
 
     @staticmethod
     def get_bc_file_name(
-        project_name: str, binary_name: str, project_version: str,
-        bc_file_extensions: tp.List[BCFileExtensions]
+        project_name: str,
+        binary_name: str,
+        project_version: str,
+        bc_file_extensions: tp.List[BCFileExtensions] = None
     ):
         """Parses parameter information into a filename template to name a
         bitcode file."""
 
         if bc_file_extensions:
-            project_bc_file_ext = '-'
+            experiment_bc_file_ext = '-'
 
             for ext in bc_file_extensions[:-1]:
-                project_bc_file_ext += (ext.value + '_')
+                experiment_bc_file_ext += (ext.value + '_')
 
-            project_bc_file_ext += bc_file_extensions[-1].value
+            experiment_bc_file_ext += bc_file_extensions[-1].value
         else:
-            project_bc_file_ext = ''
+            experiment_bc_file_ext = ''
 
         return BC_FILE_TEMPLATE.format(
             project_name=project_name,
             binary_name=binary_name,
             project_version=project_version,
-            bc_file_extensions=project_bc_file_ext
+            bc_file_extensions=experiment_bc_file_ext
         )
 
     def __init__(
