@@ -445,6 +445,9 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
         result_file_type, project_name, commit_hash,
         args.get("newest-only", False)
     )
+    result_files.sort(
+        key=lambda report_file: report_file.stat().st_mtime_ns, reverse=True
+    )
 
     if not result_files:
         print("No matching result files found.")
