@@ -443,7 +443,7 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
 
     result_files = PCM.get_result_files(
         result_file_type, project_name, commit_hash,
-        args.get("newest-only", False)
+        args.get("newest_only", False)
     )
     result_files.sort(
         key=lambda report_file: report_file.stat().st_mtime_ns, reverse=True
