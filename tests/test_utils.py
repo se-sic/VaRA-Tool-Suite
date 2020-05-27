@@ -27,7 +27,7 @@ def get_test_config(tmp_path: Path) -> benchbuild.utils.settings.Configuration:
     Returns:
         a (deep)copy of the current vara config suitable for testing
     """
-    test_config = deepcopy(settings._CFG)  # pylint: disable=W0212
+    test_config = deepcopy(settings._CFG)  # pylint: disable=protected-access
 
     # setup test input dir
     test_config["config_file"] = None
@@ -47,7 +47,7 @@ def get_test_config(tmp_path: Path) -> benchbuild.utils.settings.Configuration:
 
 
 def get_bb_test_config() -> benchbuild.utils.settings.Configuration:
-    return deepcopy(settings.get_benchbuild_config())  # pylint: disable=W0212
+    return deepcopy(settings.get_benchbuild_config())
 
 
 class _ReplaceConfig():
@@ -62,7 +62,8 @@ class _ReplaceConfig():
     ) -> None:
         self.replace_bb_config = replace_bb_config
         if self.replace_bb_config:
-            self.old_bb_config = settings._BB_CFG  # pylint: disable=W0212
+            # pylint: disable=protected-access
+            self.old_bb_config = settings._BB_CFG
             if bb_config:
                 self.new_bb_config = bb_config
             else:
@@ -72,7 +73,8 @@ class _ReplaceConfig():
             self.tmp_path = tempfile.TemporaryDirectory()
             tmp_path = Path(self.tmp_path.name)
 
-        self.old_config = settings._CFG  # pylint: disable=W0212
+        # pylint: disable=protected-access
+        self.old_config = settings._CFG
         if vara_config:
             self.new_config = vara_config
         else:
@@ -80,17 +82,21 @@ class _ReplaceConfig():
 
     @contextlib.contextmanager
     def _decoration_helper(self, args: tp.Any, kwargs: tp.Any) -> tp.Any:
+        # pylint: disable=protected-access
         settings._CFG = self.new_config
         settings.create_missing_folders()
         args += (self.new_config,)
         if self.replace_bb_config:
+            # pylint: disable=protected-access
             settings._BB_CFG = self.new_bb_config
             args += (self.new_bb_config,)
         try:
             yield args, kwargs
         finally:
+            # pylint: disable=protected-access
             settings._CFG = self.old_config
             if self.replace_bb_config:
+                # pylint: disable=protected-access
                 settings._BB_CFG = self.old_bb_config
             if self.tmp_path:
                 self.tmp_path.cleanup()
@@ -105,16 +111,20 @@ class _ReplaceConfig():
         return wrapper
 
     def __enter__(self):
+        # pylint: disable=protected-access
         settings._CFG = self.new_config
         settings.create_missing_folders()
         if self.replace_bb_config:
+            # pylint: disable=protected-access
             settings._BB_CFG = self.new_bb_config
             return self.new_config, self.new_bb_config
         return self.new_config
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        # pylint: disable=protected-access
         settings._CFG = self.old_config
         if self.replace_bb_config:
+            # pylint: disable=protected-access
             settings._BB_CFG = self.old_bb_config
         if self.tmp_path:
             self.tmp_path.cleanup()

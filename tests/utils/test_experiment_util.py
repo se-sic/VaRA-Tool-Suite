@@ -81,6 +81,7 @@ class TestVersionExperiment(unittest.TestCase):
         with replace_config(vara_config=self.test_config) as config:
             self.assertEqual(config["experiment"]["sample_limit"].value, None)
             self.assertEqual(
+                # pylint: disable=protected-access
                 self.vers_expr._sample_num_versions(self.rev_list),
                 self.rev_list
             )

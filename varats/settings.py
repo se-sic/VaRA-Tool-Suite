@@ -144,6 +144,7 @@ _CFG['artefacts'] = {
 
 
 def get_vara_config() -> s.Configuration:
+    """Get the current vara config."""
     return _CFG
 
 
@@ -151,7 +152,8 @@ _BB_CFG: tp.Optional[s.Configuration] = None
 
 
 def get_benchbuild_config() -> s.Configuration:
-    global _BB_CFG
+    """Get the current behcnbuild config."""
+    global _BB_CFG  # pylint: disable=global-statement
     if not _BB_CFG:
         from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
         _BB_CFG = BB_CFG
