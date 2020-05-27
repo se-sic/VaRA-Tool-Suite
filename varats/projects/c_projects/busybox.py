@@ -10,7 +10,7 @@ from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
-from varats.settings import get_benchbuild_config
+from varats.settings import bb_cfg
 from varats.utils.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
@@ -48,7 +48,7 @@ class Busybox(Project, CVEProviderHook):  # type: ignore
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
                 run(make["defconfig"])
-                run(make["-j", int(get_benchbuild_config()["jobs"])])
+                run(make["-j", int(bb_cfg()["jobs"])])
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

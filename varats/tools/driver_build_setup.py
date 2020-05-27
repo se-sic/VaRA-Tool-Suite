@@ -10,7 +10,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 
 from varats.gui.buildsetup_window import BuildSetup
-from varats.settings import get_value_or_default, save_config, get_vara_config
+from varats.settings import get_value_or_default, save_config, vara_cfg
 from varats.tools.research_tools.research_tool import (
     ResearchTool,
     SpecificCodeBase,
@@ -210,7 +210,7 @@ def __get_source_location(raw_source_location: tp.Optional[str]) -> Path:
     if raw_source_location is None:
         src_folder = Path(
             get_value_or_default(
-                get_vara_config()["vara"], "llvm_source_dir",
+                vara_cfg()["vara"], "llvm_source_dir",
                 str(os.getcwd()) + "/tools_src/"
             )
         )
@@ -229,7 +229,7 @@ def __get_install_prefix(
     if raw_install_prefix is None:
         install_prefix = Path(
             get_value_or_default(
-                get_vara_config()["vara"], "llvm_install_dir",
+                vara_cfg()["vara"], "llvm_install_dir",
                 str(os.getcwd()) + f"/tools/{tool.name}/"
             )
         )

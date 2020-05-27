@@ -47,7 +47,7 @@ def get_test_config(tmp_path: Path) -> benchbuild.utils.settings.Configuration:
 
 
 def get_bb_test_config() -> benchbuild.utils.settings.Configuration:
-    return deepcopy(settings.get_benchbuild_config())
+    return deepcopy(settings.bb_cfg())
 
 
 class _ReplaceConfig():

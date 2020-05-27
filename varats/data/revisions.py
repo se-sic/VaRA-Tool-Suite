@@ -14,7 +14,7 @@ from pathlib import Path
 from benchbuild.project import Project
 
 from varats.data.report import FileStatusExtension, MetaReport
-from varats.settings import get_vara_config
+from varats.settings import vara_cfg
 from varats.utils.project_util import get_project_cls_by_name
 
 
@@ -63,7 +63,7 @@ def __get_result_files_dict(
         project_name: target project
         result_file_type: the type of the result file
     """
-    res_dir = Path(f"{get_vara_config()['result_dir']}/{project_name}/")
+    res_dir = Path(f"{vara_cfg()['result_dir']}/{project_name}/")
 
     result_files: tp.DefaultDict[str, tp.List[Path]] = defaultdict(
         list
@@ -102,7 +102,7 @@ def __get_supplementary_result_files_dict(
     Returns:
         Dict that maps (commit_hash, info_type) to list of result files
     """
-    res_dir = Path(f"{get_vara_config()['result_dir']}/{project_name}/")
+    res_dir = Path(f"{vara_cfg()['result_dir']}/{project_name}/")
 
     result_files: tp.DefaultDict[tp.Tuple[
         str, str], tp.List[Path]] = defaultdict(

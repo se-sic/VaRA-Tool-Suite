@@ -18,7 +18,7 @@ from plumbum import ProcessExecutionError
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.experiments.vara_full_mtfa import VaRATaintPropagation
-from varats.settings import get_benchbuild_config
+from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     PEErrorHandler,
     exec_func_with_pe_error_handler,
@@ -51,17 +51,15 @@ class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
         if not self.obj:
             return
         project = self.obj
-        bb_cfg = get_benchbuild_config()
-
         # Define the output directory.
         result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(bb_cfg["varats"]["outfile"]),
+            result_dir=str(bb_cfg()["varats"]["outfile"]),
             project_dir=str(project.name)
         )
 
         # The temporary directory the project is stored under
         tmp_repo_dir = self.FC_FILE_SOURCE_DIR.format(
-            tmp_dir=str(bb_cfg["tmp_dir"]),
+            tmp_dir=str(bb_cfg()["tmp_dir"]),
             project_src=str(project.SRC_FILE),
             project_name=str(project.name)
         )

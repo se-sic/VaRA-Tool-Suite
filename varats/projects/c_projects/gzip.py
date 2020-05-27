@@ -15,7 +15,7 @@ from varats.data.provider.release.release_provider import (
     ReleaseType,
 )
 from varats.paper.paper_config import project_filter_generator
-from varats.settings import get_benchbuild_config
+from varats.settings import bb_cfg
 from varats.utils.project_util import (
     get_tagged_commits,
     wrap_paths_to_binaries,
@@ -70,7 +70,7 @@ class Gzip(prj.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
             with local.env(CC=str(clang)):
                 run(local["./bootstrap"])
                 run(local["./configure"])
-            run(make["-j", int(get_benchbuild_config()["jobs"])])
+            run(make["-j", int(bb_cfg()["jobs"])])
 
     @classmethod
     def get_release_revisions(

@@ -5,7 +5,7 @@ import os
 import typing as tp
 from pathlib import Path
 
-from varats.settings import get_vara_config
+from varats.settings import vara_cfg
 from varats.tools.research_tools.research_tool import ResearchTool
 from varats.tools.research_tools.vara import VaRA
 
@@ -98,7 +98,7 @@ def get_research_tool(
     if name in ("VaRA", "vara"):
         return VaRA(
             source_location if source_location is not None else
-            Path(get_vara_config()["vara"]["llvm_source_dir"].value)
+            Path(vara_cfg()["vara"]["llvm_source_dir"].value)
         )
 
     raise LookupError(f"Could not find research tool {name}")

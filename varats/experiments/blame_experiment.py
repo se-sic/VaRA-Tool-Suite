@@ -12,7 +12,7 @@ from plumbum import local
 
 from varats.data.report import BaseReport
 from varats.experiments.wllvm import Extract, RunWLLVM
-from varats.settings import get_benchbuild_config
+from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     get_default_compile_error_wrapped,
     PEErrorHandler,
@@ -73,7 +73,7 @@ def generate_basic_blame_experiment_actions(
         all_files_present &= path.exists(
             local.path(
                 Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                    cache_dir=str(get_benchbuild_config()["varats"]["result"]),
+                    cache_dir=str(bb_cfg()["varats"]["result"]),
                     project_name=str(project.name)
                 ) + Extract.BC_FILE_TEMPLATE.format(
                     project_name=str(project.name),

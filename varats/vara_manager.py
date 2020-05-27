@@ -27,7 +27,7 @@ from PyQt5.QtCore import (
     pyqtSlot,
 )
 
-from varats.settings import get_vara_config, save_config
+from varats.settings import vara_cfg, save_config
 from varats.utils.exceptions import ProcessTerminatedError
 
 LOG = logging.getLogger(__name__)
@@ -300,9 +300,8 @@ def setup_vara(
     post_out: tp.Callable[[str], None] = lambda x: None
 ) -> None:
     """Sets up VaRA over cli."""
-    cfg = get_vara_config()
-    cfg["vara"]["llvm_source_dir"] = str(llvm_folder)
-    cfg["vara"]["llvm_install_dir"] = install_prefix
+    vara_cfg()["vara"]["llvm_source_dir"] = str(llvm_folder)
+    vara_cfg()["vara"]["llvm_install_dir"] = install_prefix
     save_config()
 
     use_dev_branches = True
@@ -330,7 +329,7 @@ def setup_vara(
         )
     else:
         if update:
-            if str(cfg["vara"]["version"]) != str(version):
+            if str(vara_cfg()["vara"]["version"]) != str(version):
                 for project in LLVMProjects:
                     fetch_repository(llvm_folder / project.path)
 
@@ -353,7 +352,7 @@ def setup_vara(
                         llvm_folder / project.path, "release_" + str(version)
                     )
 
-                cfg["vara"]["version"] = int(version)
+                vara_cfg()["vara"]["version"] = int(version)
                 save_config()
 
             pull_current_branch(llvm_folder)
@@ -701,9 +700,8 @@ def build_vara(
     post_out: tp.Callable[[str], None] = lambda x: None
 ) -> None:
     """Builds a VaRA configuration."""
-    cfg = get_vara_config()
-    own_libgit = bool(cfg["vara"]["own_libgit2"])
-    include_phasar = bool(cfg["vara"]["with_phasar"])
+    own_libgit = bool(vara_cfg()["vara"]["own_libgit2"])
+    include_phasar = bool(vara_cfg()["vara"]["with_phasar"])
     full_path = path_to_llvm / "build/"
     full_path /= build_type.build_folder()
 
@@ -784,7 +782,7 @@ def get_llvm_project_status(
             stdout = git_status('-sb')
             for line in stdout.split('\n'):
                 if line.startswith(
-                    '## vara-' + str(get_vara_config()['version']) + '-dev'
+                    '## vara-' + str(vara_cfg()['version']) + '-dev'
                 ):
                     match = re.match(r".*\[(.*)\]", line)
                     if match is not None:

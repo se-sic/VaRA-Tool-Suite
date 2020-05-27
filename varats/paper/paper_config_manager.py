@@ -17,7 +17,7 @@ from varats.paper.case_study import (
     CaseStudy,
     get_newest_result_files_for_case_study,
 )
-from varats.settings import get_vara_config
+from varats.settings import vara_cfg
 from varats.tools.commit_map import create_lazy_commit_map_loader
 
 
@@ -367,9 +367,8 @@ def package_paper_config(
                          case studies to be included in the zip archive
         report_names: list of report names that should be added
     """
-    cfg = get_vara_config()
     current_config = PC.get_paper_config()
-    result_dir = Path(str(cfg['result_dir']))
+    result_dir = Path(str(vara_cfg()['result_dir']))
     report_types = [
         MetaReport.REPORT_TYPES[report_name] for report_name in report_names
     ] if report_names else list(MetaReport.REPORT_TYPES.values())
@@ -395,7 +394,7 @@ def package_paper_config(
         if match is not None:
             case_study_files_to_include.append(cs_file)
 
-    vara_root = Path(str(cfg['config_file'])).parent
+    vara_root = Path(str(vara_cfg()['config_file'])).parent
     # TODO(python3.7): add ZipFile(compresslevel=9)
     with ZipFile(output_file, "w", compression=ZIP_DEFLATED) as pc_zip:
         for file_path in files_to_store:

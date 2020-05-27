@@ -10,7 +10,7 @@ from benchbuild.utils.cmd import mkdir, touch
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.empty_report import EmptyReport
 from varats.experiments.wllvm import RunWLLVM
-from varats.settings import get_benchbuild_config
+from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     PEErrorHandler,
     VersionExperiment,
@@ -41,7 +41,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
         # analysis also the name and the unique id of the project of every
         # run.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(get_benchbuild_config()["varats"]["outfile"]),
+            result_dir=str(bb_cfg()["varats"]["outfile"]),
             project_dir=str(project.name)
         )
 

@@ -20,7 +20,7 @@ from benchbuild.utils.compiler import cc
 from benchbuild.utils.path import list_to_path, path_to_list
 from plumbum import local
 
-from varats.settings import get_benchbuild_config
+from varats.settings import bb_cfg
 from varats.utils.experiment_util import FunctionPEErrorWrapper, PEErrorHandler
 
 
@@ -39,7 +39,7 @@ class RunWLLVM(base.Extension):  # type: ignore
         else:
             wllvm = local["wllvm"]
 
-        env = get_benchbuild_config()["env"].value
+        env = bb_cfg()["env"].value
         path = path_to_list(getenv("PATH", ""))
         path.extend(env.get("PATH", []))
 
@@ -55,7 +55,7 @@ class RunWLLVM(base.Extension):  # type: ignore
         return self.call_next(wllvm, *args, **kwargs)
 
 
-get_benchbuild_config()["varats"] = {
+bb_cfg()["varats"] = {
     "outfile": {
         "default": "",
         "desc": "Path to store results of VaRA CFR analysis."
@@ -95,7 +95,7 @@ class Extract(actions.Step):  # type: ignore
         project = self.obj
 
         bc_cache_folder = self.BC_CACHE_FOLDER_TEMPLATE.format(
-            cache_dir=str(get_benchbuild_config()["varats"]["result"]),
+            cache_dir=str(bb_cfg()["varats"]["result"]),
             project_name=str(project.name)
         )
         mkdir("-p", local.path() / bc_cache_folder)

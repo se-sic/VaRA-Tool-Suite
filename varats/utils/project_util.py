@@ -11,7 +11,7 @@ from benchbuild.utils.cmd import git
 from benchbuild.utils.download import Git
 from plumbum import local
 
-from varats.settings import get_vara_config, get_benchbuild_config
+from varats.settings import vara_cfg, bb_cfg
 
 
 def get_project_cls_by_name(project_name: str) -> tp.Type[Project]:
@@ -31,10 +31,8 @@ def get_project_cls_by_name(project_name: str) -> tp.Type[Project]:
 def get_local_project_git_path(project_name: str) -> Path:
     """Get the path to the local download location of git repository for a given
     benchbuild project."""
-    cfg = get_vara_config()
-    bb_cfg = get_benchbuild_config()
-    project_git_path = Path(str(cfg['benchbuild_root'])
-                           ) / str(bb_cfg["tmp_dir"])
+    project_git_path = Path(str(vara_cfg()['benchbuild_root'])
+                           ) / str(bb_cfg()["tmp_dir"])
     project_git_path /= project_name if project_name.endswith(
         "-HEAD"
     ) else project_name + "-HEAD"

@@ -22,9 +22,9 @@ from varats.experiments.wllvm import RunWLLVM
 # These two new config parameters are needed to include Niederhuber's prepare-
 # script and to make the folder in which the results of the analyses are
 # stored user-defined.
-from varats.settings import get_benchbuild_config
+from varats.settings import bb_cfg
 
-get_benchbuild_config()["varats"] = {
+bb_cfg()["varats"] = {
     "prepare": {
         "default": "",
         "desc": "Path to the prepare script of Niederhuber in VaRA"
@@ -69,8 +69,6 @@ class CommitAnnotationReport(Experiment):  # type: ignore
     def actions_for_project(self, project: Project) -> tp.List[Step]:
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
-        bb_cfg = get_benchbuild_config()
-
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
             << time.RunWithTime()
@@ -140,7 +138,7 @@ class CommitAnnotationReport(Experiment):  # type: ignore
 
         analysis_actions = []
         if not os.path.exists(
-            local.path(str(bb_cfg["varats"]["result"].value)) / project.name +
+            local.path(str(bb_cfg()["varats"]["result"].value)) / project.name +
             ".bc"
         ):
             analysis_actions.append(Prepare(self, evaluate_preparation))

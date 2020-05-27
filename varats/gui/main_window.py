@@ -15,7 +15,7 @@ from varats.settings import (
     create_missing_folders,
     generate_benchbuild_config,
     save_config,
-    get_vara_config,
+    vara_cfg,
 )
 
 LOG = logging.getLogger(__name__)
@@ -81,22 +81,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
 
     @staticmethod
     def _create_benchbuild_config() -> None:
-        cfg = get_vara_config()
-        if cfg["config_file"].value is None:
+        if vara_cfg()["config_file"].value is None:
             LOG.warning(
                 "No VaRA config found, please initialize a "
                 "VaRA config first."
             )
             return
 
-        if cfg["benchbuild_root"].value is None:
-            cfg["benchbuild_root"] = path.dirname(str(cfg["config_file"])) \
-                                       + "/benchbuild"
+        if vara_cfg()["benchbuild_root"].value is None:
+            vara_cfg()["benchbuild_root"] = path.dirname(
+                str(vara_cfg()["config_file"])
+            ) + "/benchbuild"
         create_missing_folders()
 
         generate_benchbuild_config(
-            cfg,
-            str(cfg["benchbuild_root"]) + "/.benchbuild.yml"
+            vara_cfg(),
+            str(vara_cfg()["benchbuild_root"]) + "/.benchbuild.yml"
         )
 
     def __remove_tab(self, index: int) -> None:

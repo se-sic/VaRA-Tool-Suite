@@ -15,7 +15,7 @@ from plumbum.commands import ProcessExecutionError
 
 from varats.data.report import BaseReport, FileStatusExtension
 from varats.data.revisions import get_tagged_revisions
-from varats.settings import get_vara_config, get_benchbuild_config
+from varats.settings import vara_cfg, bb_cfg
 
 
 class PEErrorHandler():
@@ -117,7 +117,7 @@ def get_default_compile_error_wrapped(
     Returns:
         project compilation function, wrapped with automatic error handling
     """
-    result_dir = str(get_benchbuild_config()["varats"]["outfile"])
+    result_dir = str(bb_cfg()["varats"]["outfile"])
     result_folder = result_folder_template.format(
         result_dir=result_dir, project_dir=str(project.name)
     )
@@ -166,11 +166,10 @@ class VersionExperiment(Experiment):  # type: ignore
 
     @staticmethod
     def _sample_num_versions(versions: tp.List[str]) -> tp.List[str]:
-        vara_cfg = get_vara_config()
-        if vara_cfg["experiment"]["sample_limit"].value is None:
+        if vara_cfg()["experiment"]["sample_limit"].value is None:
             return versions
 
-        sample_size = int(vara_cfg["experiment"]["sample_limit"])
+        sample_size = int(vara_cfg()["experiment"]["sample_limit"])
         versions = [
             versions[i] for i in sorted(
                 random.
@@ -198,12 +197,11 @@ class VersionExperiment(Experiment):  # type: ignore
         if versions is None:
             versions = []
 
-        vara_cfg = get_vara_config()
-        if bool(vara_cfg["experiment"]["random_order"]):
+        if bool(vara_cfg()["experiment"]["random_order"]):
             random.shuffle(versions)
 
-        fs_blacklist = vara_cfg["experiment"]["file_status_blacklist"].value
-        fs_whitelist = vara_cfg["experiment"]["file_status_whitelist"].value
+        fs_blacklist = vara_cfg()["experiment"]["file_status_blacklist"].value
+        fs_whitelist = vara_cfg()["experiment"]["file_status_whitelist"].value
 
         if fs_blacklist or fs_whitelist:
             fs_good = set(FileStatusExtension) if not fs_whitelist else set()
@@ -234,7 +232,7 @@ class VersionExperiment(Experiment):  # type: ignore
 
             head, *tail = self._sample_num_versions(versions)
             yield head
-            if bool(get_benchbuild_config()["versions"]["full"]):
+            if bool(bb_cfg()["versions"]["full"]):
                 for version in tail:
                     yield version
         else:

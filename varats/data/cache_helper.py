@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 
 from varats.data.report import BaseReport, MetaReport
-from varats.settings import get_vara_config
+from varats.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
 
@@ -31,8 +31,9 @@ def get_data_file_path(data_id: str, project_name: str) -> Path:
     >>> isinstance(get_data_file_path("foo.csv", "tmux"), Path)
     True
     """
-    cfg = get_vara_config()
-    return Path(str(cfg["data_cache"])) / f"{data_id}-{project_name}.csv.gz"
+    return Path(
+        str(vara_cfg()["data_cache"])
+    ) / f"{data_id}-{project_name}.csv.gz"
 
 
 def load_cached_df_or_none(data_id: str,

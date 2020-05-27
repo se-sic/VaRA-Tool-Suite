@@ -21,7 +21,7 @@ class VaRATSGui:
 
         self.app = QApplication(sys.argv)
 
-        if settings.get_vara_config()["config_file"].value is None:
+        if settings.vara_cfg()["config_file"].value is None:
             err = QMessageBox()
             err.setIcon(QMessageBox.Warning)
             err.setWindowTitle("Missing config file.")

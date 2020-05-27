@@ -18,7 +18,7 @@ from plumbum import local
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.experiments.wllvm import Extract, RunWLLVM
-from varats.settings import get_benchbuild_config
+from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     PEErrorHandler,
     VersionExperiment,
@@ -57,8 +57,6 @@ class CRAnalysis(actions.Step):  # type: ignore
         if not self.obj:
             return
         project = self.obj
-        bb_cfg = get_benchbuild_config()
-
         if self.__interaction_filter_experiment_name is None:
             interaction_filter_file = Path(
                 self.INTERACTION_FILTER_TEMPLATE.format(
@@ -81,7 +79,7 @@ class CRAnalysis(actions.Step):  # type: ignore
 
         bc_cache_folder = local.path(
             Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                cache_dir=str(bb_cfg["varats"]["result"]),
+                cache_dir=str(bb_cfg()["varats"]["result"]),
                 project_name=str(project.name)
             )
         )
@@ -90,7 +88,7 @@ class CRAnalysis(actions.Step):  # type: ignore
         # analysis also the name and the unique id of the project of every
         # run.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(bb_cfg["varats"]["outfile"]),
+            result_dir=str(bb_cfg()["varats"]["outfile"]),
             project_dir=str(project.name)
         )
 
@@ -185,9 +183,7 @@ class CommitReportExperiment(VersionExperiment):
             all_files_present &= path.exists(
                 local.path(
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                        cache_dir=str(
-                            get_benchbuild_config()["varats"]["result"]
-                        ),
+                        cache_dir=str(bb_cfg()["varats"]["result"]),
                         project_name=str(project.name)
                     ) + Extract.BC_FILE_TEMPLATE.format(
                         project_name=str(project.name),

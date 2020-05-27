@@ -4,11 +4,7 @@ import tempfile
 import unittest
 from copy import deepcopy
 
-from varats.settings import (
-    generate_benchbuild_config,
-    get_vara_config,
-    get_benchbuild_config,
-)
+from varats.settings import generate_benchbuild_config, vara_cfg, bb_cfg
 
 
 class BenchBuildConfig(unittest.TestCase):
@@ -18,8 +14,8 @@ class BenchBuildConfig(unittest.TestCase):
     def setUpClass(cls):
         """Setup and generate the benchbuild config file."""
         cls.tmp_file = tempfile.NamedTemporaryFile()
-        generate_benchbuild_config(get_vara_config(), cls.tmp_file.name)
-        cls.bb_cfg = deepcopy(get_benchbuild_config())
+        generate_benchbuild_config(vara_cfg(), cls.tmp_file.name)
+        cls.bb_cfg = deepcopy(bb_cfg())
         cls.bb_cfg.load(cls.tmp_file.name)
 
     @classmethod

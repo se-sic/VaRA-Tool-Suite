@@ -11,7 +11,7 @@ from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
-from varats.settings import get_benchbuild_config
+from varats.settings import bb_cfg
 from varats.utils.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
@@ -155,7 +155,7 @@ class Coreutils(prj.Project, CVEProviderHook):  # type: ignore
 
     def run_tests(self, runner: run) -> None:
         with local.cwd(self.SRC_FILE):
-            run(make["-j", int(get_benchbuild_config()["jobs"]), "check"])
+            run(make["-j", int(bb_cfg()["jobs"]), "check"])
 
     def compile(self) -> None:
         self.download()
@@ -167,7 +167,7 @@ class Coreutils(prj.Project, CVEProviderHook):  # type: ignore
                 run(local["./bootstrap"])
                 run(local["./configure"]["--disable-gcc-warnings"])
 
-            run(make["-j", int(get_benchbuild_config()["jobs"])])
+            run(make["-j", int(bb_cfg()["jobs"])])
             for binary in self.binaries:
                 if not Path("{binary}".format(binary=binary)).exists():
                     print("Could not find {binary}")

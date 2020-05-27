@@ -6,7 +6,7 @@ import re
 import typing as tp
 from collections import defaultdict
 
-from varats.settings import get_vara_config
+from varats.settings import vara_cfg
 from varats.tools.research_tools.research_tool import CodeBase, SubProject
 
 LOG = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ def __quickfix_dev_branches(branch_name: str, sub_project: SubProject) -> str:
     'vara-dev'
     """
     if sub_project.name == "vara-llvm-project":
-        version = str(get_vara_config()['vara']['version'])
+        version = str(vara_cfg()['vara']['version'])
         if branch_name == 'vara-dev':
             return f"vara-{version}-dev"
         if branch_name == 'vara':

@@ -16,7 +16,7 @@ import varats.experiments.blame_experiment as BE
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.blame_report import BlameReport as BR
 from varats.experiments.wllvm import Extract
-from varats.settings import get_benchbuild_config
+from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     PEErrorHandler,
     UnlimitStackSize,
@@ -52,11 +52,9 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         if not self.obj:
             return
         project = self.obj
-        bb_cfg = get_benchbuild_config()
-
         bc_cache_folder = local.path(
             Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                cache_dir=str(bb_cfg["varats"]["result"]),
+                cache_dir=str(bb_cfg()["varats"]["result"]),
                 project_name=str(project.name)
             )
         )
@@ -65,7 +63,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         # analysis also the name and the unique id of the project of every
         # run.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(bb_cfg["varats"]["outfile"]),
+            result_dir=str(bb_cfg()["varats"]["outfile"]),
             project_dir=str(project.name)
         )
 
@@ -133,7 +131,7 @@ class BlameReportExperiment(VersionExperiment):
         )
 
         vara_result_folder = \
-            f"{get_benchbuild_config()['varats']['outfile']}/{project.name}"
+            f"{bb_cfg()['varats']['outfile']}/{project.name}"
         error_handler = PEErrorHandler(
             vara_result_folder,
             BR.get_file_name(

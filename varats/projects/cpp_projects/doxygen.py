@@ -10,7 +10,7 @@ from plumbum import local
 from plumbum.path.utils import delete
 
 from varats.paper.paper_config import project_filter_generator
-from varats.settings import get_benchbuild_config
+from varats.settings import bb_cfg
 from varats.utils.project_util import (
     BugAndFixPair,
     block_revisions,
@@ -64,7 +64,7 @@ class Doxygen(Project):  # type: ignore
             with local.env(CXX=str(clangxx)):
                 delete("CMakeCache.txt")
                 cmake("-G", "Unix Makefiles", ".")
-            run(make["-j", int(get_benchbuild_config()["jobs"])])
+            run(make["-j", int(bb_cfg()["jobs"])])
 
             cp("bin/doxygen", ".")
 
