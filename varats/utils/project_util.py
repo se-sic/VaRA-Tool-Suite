@@ -75,12 +75,19 @@ def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
         return refs
 
 
-def get_all_revisions_between(c_start: str, c_end: str) -> tp.List[str]:
+def get_all_revisions_between(c_start: str,
+                              c_end: str,
+                              short: bool = False) -> tp.List[str]:
     """
     Returns a list of all revisions between two commits c_start and c_end
     (inclusive), where c_start comes before c_end.
 
     It is assumed that the current working directory is the git repository.
+
+    Args:
+        c_start: first commit of the range
+        c_end: last commit of the range
+        short: shorten revision hashes
     """
     result = [c_start]
     result.extend(
@@ -89,7 +96,7 @@ def get_all_revisions_between(c_start: str, c_end: str) -> tp.List[str]:
             "{}..{}".format(c_start, c_end)
         ).strip().split()
     )
-    return result
+    return list(map(lambda rev: rev[:10], result)) if short else result
 
 
 class ProjectBinaryWrapper():
