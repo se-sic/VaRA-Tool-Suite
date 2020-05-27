@@ -11,7 +11,7 @@ from benchbuild.project import Project
 
 import varats.utils.experiment_util as EU
 from tests.test_helper import EmptyProject
-from tests.test_utils import get_test_config, replace_config
+from tests.test_utils import get_test_config, replace_config, get_bb_test_config
 from varats.data.report import FileStatusExtension
 from varats.data.reports.commit_report import CommitReport as CR
 
@@ -49,6 +49,7 @@ class TestVersionExperiment(unittest.TestCase):
             },
         }
         s.setup_config(cls.test_config)
+        cls.test_bb_config = get_bb_test_config()
         cls.vers_expr = MockExperiment()
         cls.rev_list = ['rev1', 'rev2', 'rev3', 'rev4', 'rev5']
 
@@ -62,7 +63,7 @@ class TestVersionExperiment(unittest.TestCase):
         self.test_config["experiment"]["random_order"] = False
         self.test_config["experiment"]["file_status_whitelist"] = []
         self.test_config["experiment"]["file_status_blacklist"] = []
-        EU.BB_CFG["versions"]["full"] = False
+        self.test_bb_config["versions"]["full"] = False
         self.rev_list = ['rev1', 'rev2', 'rev3', 'rev4', 'rev5']
 
     @staticmethod
@@ -77,7 +78,7 @@ class TestVersionExperiment(unittest.TestCase):
 
     def test_sample_limit(self):
         """Test if base_hash is loaded correctly."""
-        with replace_config(config=self.test_config) as config:
+        with replace_config(vara_config=self.test_config) as config:
             self.assertEqual(config["experiment"]["sample_limit"].value, None)
             self.assertEqual(
                 self.vers_expr._sample_num_versions(self.rev_list),
@@ -101,8 +102,10 @@ class TestVersionExperiment(unittest.TestCase):
     @mock.patch('varats.utils.experiment_util.get_tagged_revisions')
     def test_only_whitelisting_one(self, mock_get_tagged_revisions):
         """Test if we can whitelist file status."""
-        with replace_config(config=self.test_config) as config:
-            EU.BB_CFG["versions"]["full"] = True
+        with replace_config(
+            replace_bb_config=True, vara_config=self.test_config
+        ) as (config, bb_config):
+            bb_config["versions"]["full"] = True
             # Revision not in set
             mock_get_tagged_revisions.return_value = \
                 self.generate_get_tagged_revisions_output()
@@ -120,8 +123,10 @@ class TestVersionExperiment(unittest.TestCase):
     @mock.patch('varats.utils.experiment_util.get_tagged_revisions')
     def test_only_whitelisting_many(self, mock_get_tagged_revisions):
         """Test if we can whitelist file status."""
-        with replace_config(config=self.test_config) as config:
-            EU.BB_CFG["versions"]["full"] = True
+        with replace_config(
+            replace_bb_config=True, vara_config=self.test_config
+        ) as (config, bb_config):
+            bb_config["versions"]["full"] = True
             # Revision not in set
             mock_get_tagged_revisions.return_value = \
                 self.generate_get_tagged_revisions_output()
@@ -143,8 +148,10 @@ class TestVersionExperiment(unittest.TestCase):
     @mock.patch('varats.utils.experiment_util.get_tagged_revisions')
     def test_only_blacklisting_one(self, mock_get_tagged_revisions):
         """Test if we can blacklist file status."""
-        with replace_config(config=self.test_config) as config:
-            EU.BB_CFG["versions"]["full"] = True
+        with replace_config(
+            replace_bb_config=True, vara_config=self.test_config
+        ) as (config, bb_config):
+            bb_config["versions"]["full"] = True
             # Revision not in set
             mock_get_tagged_revisions.return_value = \
                 self.generate_get_tagged_revisions_output()
@@ -165,8 +172,10 @@ class TestVersionExperiment(unittest.TestCase):
     @mock.patch('varats.utils.experiment_util.get_tagged_revisions')
     def test_only_blacklisting_many(self, mock_get_tagged_revisions):
         """Test if we can blacklist file status."""
-        with replace_config(config=self.test_config) as config:
-            EU.BB_CFG["versions"]["full"] = True
+        with replace_config(
+            replace_bb_config=True, vara_config=self.test_config
+        ) as (config, bb_config):
+            bb_config["versions"]["full"] = True
             # Revision not in set
             mock_get_tagged_revisions.return_value = \
                 self.generate_get_tagged_revisions_output()
@@ -187,8 +196,10 @@ class TestVersionExperiment(unittest.TestCase):
     @mock.patch('varats.utils.experiment_util.get_tagged_revisions')
     def test_white_overwrite_blacklisting(self, mock_get_tagged_revisions):
         """Test if whitelist overwrites blacklist."""
-        with replace_config(config=self.test_config) as config:
-            EU.BB_CFG["versions"]["full"] = True
+        with replace_config(
+            replace_bb_config=True, vara_config=self.test_config
+        ) as (config, bb_config):
+            bb_config["versions"]["full"] = True
             # Revision not in set
             mock_get_tagged_revisions.return_value = \
                 self.generate_get_tagged_revisions_output()

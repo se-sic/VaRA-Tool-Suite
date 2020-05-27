@@ -46,32 +46,52 @@ def get_test_config(tmp_path: Path) -> benchbuild.utils.settings.Configuration:
     return test_config
 
 
+def get_bb_test_config() -> benchbuild.utils.settings.Configuration:
+    return deepcopy(settings.get_benchbuild_config())  # pylint: disable=W0212
+
+
 class _ReplaceConfig():
 
     def __init__(
         self,
-        tmp_path: tp.Optional[Path],
-        config: tp.Optional[benchbuild.utils.settings.Configuration] = None
+        replace_bb_config: bool = False,
+        tmp_path: tp.Optional[Path] = None,
+        vara_config: tp.Optional[benchbuild.utils.settings.Configuration
+                                ] = None,
+        bb_config: tp.Optional[benchbuild.utils.settings.Configuration] = None,
     ) -> None:
+        self.replace_bb_config = replace_bb_config
+        if self.replace_bb_config:
+            self.old_bb_config = settings._BB_CFG  # pylint: disable=W0212
+            if bb_config:
+                self.new_bb_config = bb_config
+            else:
+                self.new_bb_config = deepcopy(self.old_bb_config)
+
         if not tmp_path:
             self.tmp_path = tempfile.TemporaryDirectory()
             tmp_path = Path(self.tmp_path.name)
 
         self.old_config = settings._CFG  # pylint: disable=W0212
-        if config:
-            self.new_config = config
+        if vara_config:
+            self.new_config = vara_config
         else:
             self.new_config = get_test_config(tmp_path)
 
     @contextlib.contextmanager
     def _decoration_helper(self, args: tp.Any, kwargs: tp.Any) -> tp.Any:
-        settings._CFG = self.new_config  # pylint: disable=W0212
+        settings._CFG = self.new_config
         settings.create_missing_folders()
         args += (self.new_config,)
+        if self.replace_bb_config:
+            settings._BB_CFG = self.new_bb_config
+            args += (self.new_bb_config,)
         try:
             yield args, kwargs
         finally:
-            settings._CFG = self.old_config  # pylint: disable=W0212
+            settings._CFG = self.old_config
+            if self.replace_bb_config:
+                settings._BB_CFG = self.old_bb_config
             if self.tmp_path:
                 self.tmp_path.cleanup()
 
@@ -87,25 +107,31 @@ class _ReplaceConfig():
     def __enter__(self):
         settings._CFG = self.new_config
         settings.create_missing_folders()
+        if self.replace_bb_config:
+            settings._BB_CFG = self.new_bb_config
+            return self.new_config, self.new_bb_config
         return self.new_config
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         settings._CFG = self.old_config
+        if self.replace_bb_config:
+            settings._BB_CFG = self.old_bb_config
         if self.tmp_path:
             self.tmp_path.cleanup()
 
 
 def replace_config(
+    replace_bb_config: bool = False,
     tmp_path: tp.Optional[Path] = None,
-    config: tp.Optional[benchbuild.utils.settings.Configuration] = None
+    vara_config: tp.Optional[benchbuild.utils.settings.Configuration] = None,
+    bb_config: tp.Optional[benchbuild.utils.settings.Configuration] = None
 ) -> tp.Any:
     """
-    Replace the vara config while executing a function.
+    Replace the vara and benchbuild config while executing a (test) function.
 
     This function can be used as a decorator or a context manager.
-    It replaces the current vara configuration with a
-    :func:`test config<get_test_config()>` or
-    a given config.
+    It replaces the current vara or benchbuild configuration with a
+    :func:`test config<get_test_config()>` or a given config.
 
     If used as a decorator, the replaced config is passed as an additional
     argument to the function.
@@ -113,13 +139,17 @@ def replace_config(
     after the `as`.
 
     Args:
+        replace_bb_config: whether to also replace the benchbuild config
         tmp_path: path to put files that may be written during test execution.
                   If absent, the wrapper will create a temporary directory that
                   is deleted after restoring the config.
-        config: if given, use this config instead of a copy of the current one
+        vara_config: if given, use this as the new vara config instead of a copy
+                     of the current one
+        bb_config: if given, use this as the new benchbuild config instead of a
+                   copy of the current one
 
     Returns:
         the wrapped function
     """
 
-    return _ReplaceConfig(tmp_path, config)
+    return _ReplaceConfig(replace_bb_config, tmp_path, vara_config, bb_config)
