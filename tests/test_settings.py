@@ -3,7 +3,6 @@ import os
 import tempfile
 import unittest
 from copy import deepcopy
-from typing import IO
 
 from varats.settings import (
     generate_benchbuild_config,
