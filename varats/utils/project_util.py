@@ -32,8 +32,9 @@ def get_local_project_git_path(project_name: str) -> Path:
     """Get the path to the local download location of git repository for a given
     benchbuild project."""
     cfg = get_vara_config()
+    bb_cfg = get_benchbuild_config()
     project_git_path = Path(str(cfg['benchbuild_root'])
-                           ) / str(get_benchbuild_config()["tmp_dir"])
+                           ) / str(bb_cfg["tmp_dir"])
     project_git_path /= project_name if project_name.endswith(
         "-HEAD"
     ) else project_name + "-HEAD"
