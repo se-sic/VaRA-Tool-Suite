@@ -102,8 +102,8 @@ class CommitAnnotationReport(Experiment):  # type: ignore
 
             with local.cwd(project_src):
                 prepare(
-                    "-c", str(bb_cfg["env"]["path"][0]), "-t",
-                    str(bb_cfg["varats"]["prepare"].value)
+                    "-c", str(bb_cfg()["env"]["path"][0]), "-t",
+                    str(bb_cfg()["varats"]["prepare"].value)
                 )
 
         def evaluate_extraction() -> None:
@@ -113,7 +113,7 @@ class CommitAnnotationReport(Experiment):  # type: ignore
                 extract_bc(project.name)
                 cp(
                     local.path(project_src / "out" / project.name + ".bc"),
-                    local.path(str(bb_cfg["varats"]["result"].value)) /
+                    local.path(str(bb_cfg()["varats"]["result"].value)) /
                     project.name + ".bc"
                 )
 
@@ -124,13 +124,13 @@ class CommitAnnotationReport(Experiment):  # type: ignore
                 -vara-CFR: to run a commit flow report
                 -yaml-out-file=<path>: specify the path to store the results
             """
-            project_src = local.path(bb_cfg["varats"]["result"].value)
+            project_src = local.path(bb_cfg()["varats"]["result"].value)
 
             # Add to the user-defined path for saving the results of the
             # analysis also the name and the unique id of the project of every
             # run.
             outfile = "-yaml-out-file={}".format(
-                bb_cfg["varats"]["outfile"].value
+                bb_cfg()["varats"]["outfile"].value
             ) + "/" + str(project.name) + "-" + str(project.run_uuid) + ".yaml"
             run_cmd = opt["-vara-CD", "-vara-CFR", outfile,
                           project_src / project.name + ".bc"]

@@ -238,10 +238,10 @@ def generate_benchbuild_config(
 ) -> None:
     """Generate a configuration file for benchbuild."""
     from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
-    bb_cfg = deepcopy(BB_CFG)
+    new_bb_cfg = deepcopy(BB_CFG)
 
     # Projects for VaRA
-    projects_conf = bb_cfg["plugins"]["projects"]
+    projects_conf = new_bb_cfg["plugins"]["projects"]
     # If we want later to use default BB projects
     # projects_conf.value[:] = [ x for x in projects_conf.value
     #                           if not x.endswith('gzip')]
@@ -272,7 +272,7 @@ def generate_benchbuild_config(
     projects_conf.value[:] += ['varats.projects.test_projects.taint_tests']
 
     # Experiments for VaRA
-    projects_conf = bb_cfg["plugins"]["experiments"]
+    projects_conf = new_bb_cfg["plugins"]["experiments"]
     projects_conf.value[:] = []
     projects_conf.value[:] += [
         'varats.experiments.commit_report_experiment',
@@ -284,17 +284,17 @@ def generate_benchbuild_config(
     ]
 
     # Slurm Cluster Configuration
-    bb_cfg["slurm"]["account"] = "anywhere"
-    bb_cfg["slurm"]["partition"] = "anywhere"
+    new_bb_cfg["slurm"]["account"] = "anywhere"
+    new_bb_cfg["slurm"]["partition"] = "anywhere"
 
-    bb_cfg["env"] = {
+    new_bb_cfg["env"] = {
         "PATH": [
             str(Path(str(varats_cfg["vara"]["llvm_install_dir"])) / "bin/")
         ]
     }
 
     # Add VaRA experiment config variables
-    bb_cfg["varats"] = {
+    new_bb_cfg["varats"] = {
         "outfile": {
             "default": "",
             "desc": "Path to store results of VaRA CFR analysis.",
@@ -308,7 +308,7 @@ def generate_benchbuild_config(
     }
 
     def replace_bb_cwd_path(
-        cfg_varname: str, cfg_node: s.Configuration = bb_cfg
+        cfg_varname: str, cfg_node: s.Configuration = new_bb_cfg
     ) -> None:
         cfg_node[cfg_varname] = str(varats_cfg["benchbuild_root"]) +\
             str(cfg_node[cfg_varname])[len(getcwd()):]
@@ -316,15 +316,15 @@ def generate_benchbuild_config(
     replace_bb_cwd_path("build_dir")
     replace_bb_cwd_path("tmp_dir")
     replace_bb_cwd_path("test_dir")
-    replace_bb_cwd_path("node_dir", bb_cfg["slurm"])
+    replace_bb_cwd_path("node_dir", new_bb_cfg["slurm"])
 
     # Create caching folder for .bc files
     bc_cache_path = str(varats_cfg["benchbuild_root"])
-    bc_cache_path += "/" + str(bb_cfg["varats"]["result"])
+    bc_cache_path += "/" + str(new_bb_cfg["varats"]["result"])
     if not path.isdir(bc_cache_path):
         makedirs(bc_cache_path)
 
-    bb_cfg.store(bb_config_path)
+    new_bb_cfg.store(bb_config_path)
 
 
 s.setup_config(_CFG, ['.varats.yaml', '.varats.yml'], "VARATS_CONFIG_FILE")
