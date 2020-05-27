@@ -1,4 +1,5 @@
 """Module for a BlameVerifierReport."""
+from plumbum import Path
 
 from varats.data.report import BaseReport, MetaReport, FileStatusExtension
 
@@ -13,6 +14,10 @@ class BlameVerifierReport(BaseReport):
 
     SHORTHAND = 'BVR'
 
+    def __init__(self, shorthand: str, path: Path):
+        super().__init__(path)
+        self.SHORTHAND = shorthand
+
     @staticmethod
     def get_file_name(
         project_name: str,
@@ -23,8 +28,7 @@ class BlameVerifierReport(BaseReport):
         file_ext: str = ".txt"
     ) -> str:
         """
-        Generates a filename for a blame verifier report without any file
-        ending.
+        Generates a filename for a blame verifier report .txt as file extension.
 
         Args:
             project_name: name of the project for which the report was generated
@@ -50,6 +54,9 @@ class BlameVerifierReportNoOpt(BlameVerifierReport):
 
     SHORTHAND = 'BVR_NoOpt'
 
+    def __init__(self, path: Path):
+        super().__init__(self.SHORTHAND, path=path)
+
 
 class BlameVerifierReportOpt(BlameVerifierReport):
     """A BlameVerifierReport containing the filtered results of the chosen
@@ -57,3 +64,6 @@ class BlameVerifierReportOpt(BlameVerifierReport):
     compilation optimization."""
 
     SHORTHAND = 'BVR_Opt'
+
+    def __init__(self, path: Path):
+        super().__init__(self.SHORTHAND, path=path)
