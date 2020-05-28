@@ -52,7 +52,7 @@ def setup_basic_blame_experiment(
 
 def generate_basic_blame_experiment_actions(
     project: Project,
-    bc_file_extensions: tp.List[BCFileExtensions] = tp.List[BCFileExtensions],
+    bc_file_extensions: tp.List[BCFileExtensions] = [],
     extraction_error_handler: tp.Optional[PEErrorHandler] = None
 ) -> tp.List[actions.Step]:
     """

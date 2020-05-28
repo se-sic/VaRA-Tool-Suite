@@ -9,7 +9,7 @@ class TestExtract(unittest.TestCase):
     """Test if the extraction of a llvm bitcode file from the project is
     correct."""
 
-    def testGetBCFileNameOpt(self):
+    def test_get_bc_file_name_opt(self):
         """Test if the bc file name is correctly parsed."""
 
         # Arrange
@@ -30,7 +30,7 @@ class TestExtract(unittest.TestCase):
         # Assert
         self.assertEqual(mock_bc_file_name, actual)
 
-    def testGetBCFileNameNoOpt(self):
+    def test_get_bc_file_name_no_opt(self):
         """Test if the bc file name is correctly parsed."""
 
         # Arrange

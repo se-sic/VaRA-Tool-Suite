@@ -16,7 +16,7 @@ from plumbum import local
 import varats.experiments.blame_experiment as BE
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.blame_report import BlameReport as BR
-from varats.experiments.wllvm import Extract
+from varats.experiments.wllvm import BCFileExtensions, Extract
 from varats.utils.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
@@ -148,7 +148,7 @@ class BlameReportExperiment(VersionExperiment):
                 file_ext=".txt"
             )
         )
-        bc_file_extensions = []
+        bc_file_extensions = tp.List[BCFileExtensions]
         analysis_actions = BE.generate_basic_blame_experiment_actions(
             project, bc_file_extensions, error_handler
         )

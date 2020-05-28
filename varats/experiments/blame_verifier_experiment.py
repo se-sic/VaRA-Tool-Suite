@@ -136,8 +136,13 @@ class BlameVerifierReportExperiment(VersionExperiment):
     Only its subclasses should be instantiated.
     """
 
-    def __init__(self, project, opt_flag, bc_file_extensions, report_type) ->\
-            None:
+    def __init__(
+        self,
+        project,
+        opt_flag,
+        report_type,
+        bc_file_extensions: tp.List[BCFileExtensions] = []
+    ) -> None:
         super().__init__()
         self.projects = project
         self.__opt_flag = opt_flag
@@ -178,8 +183,8 @@ class BlameVerifierReportExperimentNoOpt(BlameVerifierReportExperiment):
 
     def __init__(self, projects: Project) -> None:
         super().__init__(
-            projects, '-O0', [BCFileExtensions.DEBUG, BCFileExtensions.NO_OPT],
-            BVR_NoOpt
+            projects, '-O0', BVR_NoOpt,
+            [BCFileExtensions.DEBUG, BCFileExtensions.NO_OPT]
         )
 
 
@@ -193,6 +198,6 @@ class BlameVerifierReportExperimentOpt(BlameVerifierReportExperiment):
 
     def __init__(self, projects: Project) -> None:
         super().__init__(
-            projects, '-O2', [BCFileExtensions.DEBUG, BCFileExtensions.OPT],
-            BVR_Opt
+            projects, '-O2', BVR_Opt,
+            [BCFileExtensions.DEBUG, BCFileExtensions.OPT]
         )
