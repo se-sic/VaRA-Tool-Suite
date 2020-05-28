@@ -16,7 +16,6 @@ from plumbum import local
 
 import varats.experiments.blame_experiment as BE
 from varats.data.report import FileStatusExtension as FSE
-from varats.data.reports.blame_verifier_report import BlameVerifierReport as BVR
 from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportNoOpt as BVR_NoOpt,
 )
@@ -83,7 +82,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
         mkdir("-p", vara_result_folder)
 
         for binary in project.binaries:
-            result_file = BVR.get_file_name(
+            result_file = BVR_NoOpt.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
                 project_version=str(project.version),
@@ -115,7 +114,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
                 timeout[timeout_duration, run_cmd],
                 PEErrorHandler(
                     vara_result_folder,
-                    BVR.get_file_name(
+                    BVR_NoOpt.get_file_name(
                         project_name=str(project.name),
                         binary_name=binary.name,
                         project_version=str(project.version),
