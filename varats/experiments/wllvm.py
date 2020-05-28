@@ -90,8 +90,9 @@ class Extract(actions.Step):  # type: ignore
         project_name: str,
         binary_name: str,
         project_version: str,
-        bc_file_extensions: tp.List[BCFileExtensions] = None
-    ):
+        bc_file_extensions: tp.List[BCFileExtensions] = tp.
+        List[BCFileExtensions]
+    ) -> str:
         """Parses parameter information into a filename template to name a
         bitcode file."""
 
@@ -111,14 +112,15 @@ class Extract(actions.Step):  # type: ignore
     def __init__(
         self,
         project: Project,
-        bc_file_extensions: tp.List[BCFileExtensions],
+        bc_file_extensions: tp.List[BCFileExtensions] = tp.
+        List[BCFileExtensions],
         handler: tp.Optional[PEErrorHandler] = None
     ) -> None:
         super().__init__(
             obj=project,
             action_fn=FunctionPEErrorWrapper(self.extract, handler)
             if handler else self.extract
-        ),
+        )
         self.bc_file_extensions = bc_file_extensions
 
     def extract(self) -> actions.StepResult:

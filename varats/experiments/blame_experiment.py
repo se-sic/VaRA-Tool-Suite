@@ -52,7 +52,7 @@ def setup_basic_blame_experiment(
 
 def generate_basic_blame_experiment_actions(
     project: Project,
-    bc_file_extensions: tp.List[BCFileExtensions] = None,
+    bc_file_extensions: tp.List[BCFileExtensions] = tp.List[BCFileExtensions],
     extraction_error_handler: tp.Optional[PEErrorHandler] = None
 ) -> tp.List[actions.Step]:
     """
@@ -68,9 +68,6 @@ def generate_basic_blame_experiment_actions(
                                   extraction process
     """
     analysis_actions = []
-
-    if bc_file_extensions is None:
-        bc_file_extensions = []
 
     # Check if all binaries have corresponding BC files
     all_files_present = True

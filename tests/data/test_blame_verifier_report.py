@@ -9,7 +9,8 @@ from varats.data.reports import blame_verifier_report as BVR
 class TestBlameVerifierReport(unittest.TestCase):
     """Test if a blame verifier report is correctly reconstructed from .txt."""
 
-    def test_get_file_name_Opt(self):
+    def testGetFileNameOpt(self):
+        """Test if the file name is correctly built with the opt extension."""
         # Arrange
         test_shorthand = "BVR_Opt"
         test_project_name = "testProject"
@@ -37,7 +38,9 @@ class TestBlameVerifierReport(unittest.TestCase):
         # Assert
         self.assertEqual(mock_file_name, actual)
 
-    def test_get_file_name_NoOpt(self):
+    def testGetFileNameNoOpt(self):
+        """Test if the file name is correctly built without the opt
+        extension."""
         # Arrange
         test_shorthand = "BVR_NoOpt"
         test_project_name = "testProject"

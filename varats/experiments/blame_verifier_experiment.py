@@ -59,6 +59,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
             * -vara-verify-blameMD: activate BlameMDVerifier
             * -vara-verifier-options=: chooses between multiple print options
                 * Status: prints if the module as a whole passed or failed
+            * -vara-report-outfile=<path>: specify the path to store the results
         """
         if not self.obj:
             return
@@ -92,7 +93,8 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
 
             opt_params = [
                 "-vara-BD", "-vara-init-commits", "-vara-verify-blameMD",
-                "-vara-verifier-options=Status".format(
+                "-vara-verifier-options=Status",
+                "-vara-report-outfile={res_folder}/{res_file}".format(
                     res_folder=vara_result_folder, res_file=result_file
                 )
             ]
@@ -121,7 +123,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
                         project_uuid=str(project.run_uuid),
                         extension_type=FSE.Failed,
                         file_ext=".txt"
-                    ), run_cmd, timeout_duration
+                    ), timeout_duration
                 )
             )
 
@@ -134,7 +136,8 @@ class BlameVerifierReportExperiment(VersionExperiment):
     Only its subclasses should be instantiated.
     """
 
-    def __init__(self, project, opt_flag, bc_file_extensions, report_type):
+    def __init__(self, project, opt_flag, bc_file_extensions, report_type) ->\
+            None:
         super().__init__()
         self.projects = project
         self.__opt_flag = opt_flag

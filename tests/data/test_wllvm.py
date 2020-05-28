@@ -6,8 +6,10 @@ from varats.experiments.wllvm import Extract, BCFileExtensions
 
 
 class TestExtract(unittest.TestCase):
+    """Test if the extraction of a llvm bitcode file from the project is
+    correct."""
 
-    def test_get_bc_file_name_correct_opt(self):
+    def testGetBCFileNameOpt(self):
         """Test if the bc file name is correctly parsed."""
 
         # Arrange
@@ -28,7 +30,7 @@ class TestExtract(unittest.TestCase):
         # Assert
         self.assertEqual(mock_bc_file_name, actual)
 
-    def test_get_bc_file_name_correct_NoOpt(self):
+    def testGetBCFileNameNoOpt(self):
         """Test if the bc file name is correctly parsed."""
 
         # Arrange
