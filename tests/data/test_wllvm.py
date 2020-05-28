@@ -1,7 +1,6 @@
 """Test wllvm module."""
 
 import unittest
-import unittest.mock as mock
 
 from varats.experiments.wllvm import Extract, BCFileExtensions
 
@@ -27,7 +26,7 @@ class TestExtract(unittest.TestCase):
         )
 
         # Assert
-        self.assertEqual(actual, mock_bc_file_name)
+        self.assertEqual(mock_bc_file_name, actual)
 
     def test_get_bc_file_name_correct_NoOpt(self):
         """Test if the bc file name is correctly parsed."""
