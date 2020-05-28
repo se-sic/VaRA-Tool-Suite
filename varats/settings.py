@@ -22,6 +22,10 @@ CFG = s.Configuration(
             "desc": "Root folder to run BenchBuild in",
             "default": None,
         },
+        "data_cache": {
+            "default": "data_cache",
+            "desc": "Local data cache to store preprocessed files."
+        },
         "result_dir": {
             "desc": "Result folder for collected results",
             "default": None,
@@ -117,12 +121,15 @@ CFG['experiment'] = {
 }
 
 CFG['plots'] = {
-    "data_cache": {
-        "default": "data_cache",
-        "desc": "Local data cache to store preprocessed files."
-    },
     "plot_dir": {
         "desc": "Folder for generated plots",
+        "default": None,
+    },
+}
+
+CFG['tables'] = {
+    "table_dir": {
+        "desc": "Folder for generated tables",
         "default": None,
     },
 }
@@ -166,8 +173,9 @@ def create_missing_folders() -> None:
 
     create_missing_folder_for_cfg("benchbuild_root")
     create_missing_folder_for_cfg("result_dir")
-    create_missing_folder_for_cfg("data_cache", CFG["plots"])
+    create_missing_folder_for_cfg("data_cache", CFG)
     create_missing_folder_for_cfg("plot_dir", CFG["plots"])
+    create_missing_folder_for_cfg("table_dir", CFG["tables"])
     create_missing_folder_for_cfg("artefacts_dir", CFG["artefacts"])
 
 
@@ -184,6 +192,10 @@ def save_config() -> None:
         CFG["plots"]["plot_dir"] = path.dirname(
             str(CFG["config_file"])
         ) + "/plots"
+    if CFG["tables"]["table_dir"].value is None:
+        CFG["tables"]["table_dir"] = path.dirname(
+            str(CFG["config_file"])
+        ) + "/tables"
 
     create_missing_folders()
     CFG.store(config_file)
@@ -207,7 +219,7 @@ def generate_benchbuild_config(
     varats_cfg: s.Configuration, bb_config_path: str
 ) -> None:
     """Generate a configuration file for benchbuild."""
-    from benchbuild.settings import CFG as BB_CFG
+    from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
 
     # Projects for VaRA
     projects_conf = BB_CFG["plugins"]["projects"]
@@ -289,10 +301,10 @@ def generate_benchbuild_config(
     replace_bb_cwd_path("node_dir", BB_CFG["slurm"])
 
     # Create caching folder for .bc files
-    BC_cache_path = str(varats_cfg["benchbuild_root"])
-    BC_cache_path += "/" + str(BB_CFG["varats"]["result"])
-    if not path.isdir(BC_cache_path):
-        makedirs(BC_cache_path)
+    bc_cache_path = str(varats_cfg["benchbuild_root"])
+    bc_cache_path += "/" + str(BB_CFG["varats"]["result"])
+    if not path.isdir(bc_cache_path):
+        makedirs(bc_cache_path)
 
     BB_CFG.store(bb_config_path)
 

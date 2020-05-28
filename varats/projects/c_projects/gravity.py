@@ -1,6 +1,5 @@
 """Project file for gravity."""
 import typing as tp
-from pathlib import Path
 
 from benchbuild.project import Project
 from benchbuild.settings import CFG as BB_CFG

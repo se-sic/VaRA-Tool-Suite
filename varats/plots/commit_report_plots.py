@@ -1,5 +1,6 @@
 """Module for different CommitReport plots."""
 
+import logging
 import typing as tp
 
 import matplotlib.pyplot as plt
@@ -13,6 +14,8 @@ from varats.data.reports.commit_report import (
     generate_inout_cfg_cf,
     generate_inout_cfg_df,
 )
+
+LOG = logging.getLogger(__name__)
 
 
 class CRBarPlotWidget(QWidget):
@@ -75,8 +78,7 @@ def plot_cfg_barplot(
             ylimit = cr_meta.df_ylimit
 
     if data.empty:
-        # TODO(se-passau/VaRA#589): add logging
-        print("Error: CommitReport has no CF interactions")
+        LOG.error("CommitReport has no CF interactions")
         return
 
     data['Region'] = data['Region'].apply(lambda x: x[0:6])

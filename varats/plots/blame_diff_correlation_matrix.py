@@ -29,14 +29,14 @@ def annotate_correlation(
     ax = ax or plt.gca()
     pearson_rho, _ = pearsonr(x_values, y_values)
     ax.annotate(
-        f'$\mathit{{\\rho_p}}$ = {pearson_rho:.2f}',
+        f'$\\mathit{{\\rho_p}}$ = {pearson_rho:.2f}',
         xy=(.6, .9),
         xycoords=ax.transAxes
     )
 
     spearman_rho, _ = spearmanr(x_values, y_values)
     ax.annotate(
-        f'$\mathit{{\\rho_s}}$ = {spearman_rho:.2f}',
+        f'$\\mathit{{\\rho_s}}$ = {spearman_rho:.2f}',
         xy=(.6, .77),
         xycoords=ax.transAxes
     )

@@ -22,6 +22,8 @@ from benchbuild.utils.compiler import cc
 from benchbuild.utils.path import list_to_path, path_to_list
 from plumbum import local
 
+from varats.utils.experiment_util import FunctionPEErrorWrapper, PEErrorHandler
+
 
 class BCFileExtensions(Enum):
     DEBUG = 'dbg'
@@ -80,8 +82,8 @@ class Extract(actions.Step):  # type: ignore
 
     BC_CACHE_FOLDER_TEMPLATE = "{cache_dir}/{project_name}/"
 
-    __BC_FILE_TEMPLATE = "{project_name}-{binary_name}-{project_version}{" \
-                       "bc_file_extensions}.bc"
+    __BC_FILE_TEMPLATE = "{project_name}-{binary_name}-{project_version}" \
+                         "{bc_file_extensions}.bc"
 
     @staticmethod
     def get_bc_file_name(
@@ -107,9 +109,16 @@ class Extract(actions.Step):  # type: ignore
                f"{experiment_bc_file_ext}.bc"
 
     def __init__(
-        self, project: Project, bc_file_extensions: tp.List[BCFileExtensions]
+        self,
+        project: Project,
+        bc_file_extensions: tp.List[BCFileExtensions],
+        handler: tp.Optional[PEErrorHandler] = None
     ) -> None:
-        super(Extract, self).__init__(obj=project, action_fn=self.extract)
+        super().__init__(
+            obj=project,
+            action_fn=FunctionPEErrorWrapper(self.extract, handler)
+            if handler else self.extract
+        ),
         self.bc_file_extensions = bc_file_extensions
 
     def extract(self) -> actions.StepResult:

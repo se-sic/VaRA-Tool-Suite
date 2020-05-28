@@ -49,6 +49,7 @@ VaRA-TS API Reference
    vara-ts-api/paper
    vara-ts-api/tools
    vara-ts-api/plots
+   vara-ts-api/tables
    vara-ts-api/data
    vara-ts-api/utils.rst
 

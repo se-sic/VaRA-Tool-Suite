@@ -31,9 +31,7 @@ def get_data_file_path(data_id: str, project_name: str) -> Path:
     >>> isinstance(get_data_file_path("foo.csv", "tmux"), Path)
     True
     """
-    return Path(
-        str(CFG["plots"]["data_cache"])
-    ) / f"{data_id}-{project_name}.csv.gz"
+    return Path(str(CFG["data_cache"])) / f"{data_id}-{project_name}.csv.gz"
 
 
 def load_cached_df_or_none(data_id: str,

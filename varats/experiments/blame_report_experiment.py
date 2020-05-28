@@ -110,7 +110,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                         project_uuid=str(project.run_uuid),
                         extension_type=FSE.Failed,
                         file_ext=".txt"
-                    ), run_cmd, timeout_duration
+                    ), timeout_duration
                 )
             )
 
@@ -136,7 +136,21 @@ class BlameReportExperiment(VersionExperiment):
             self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE
         )
 
-        analysis_actions = BE.generate_basic_blame_experiment_actions(project)
+        vara_result_folder = f"{BB_CFG['varats']['outfile']}/{project.name}"
+        error_handler = PEErrorHandler(
+            vara_result_folder,
+            BR.get_file_name(
+                project_name=str(project.name),
+                binary_name="all",
+                project_version=str(project.version),
+                project_uuid=str(project.run_uuid),
+                extension_type=FSE.CompileError,
+                file_ext=".txt"
+            )
+        )
+        analysis_actions = BE.generate_basic_blame_experiment_actions(
+            project, error_handler
+        )
 
         analysis_actions.append(UnlimitStackSize(project))
         analysis_actions.append(BlameReportGeneration(project))

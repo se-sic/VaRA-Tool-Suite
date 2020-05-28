@@ -21,6 +21,7 @@ from varats.paper.case_study import (
     load_case_study_from_file,
     store_case_study,
 )
+from varats.paper.paper_config import get_paper_config
 from varats.settings import CFG
 from varats.tools.commit_map import create_lazy_commit_map_loader
 from varats.utils.cli_util import cli_list_choice, initialize_logger_config
@@ -161,6 +162,12 @@ def __add_common_args(sub_parser: ArgumentParser) -> None:
         default=10,
         help="Number of revisions to select."
     )
+    sub_parser.add_argument(
+        "--ignore-blocked",
+        action="store_true",
+        default=False,
+        help="Ignore revisions that are marked as blocked."
+    )
 
 
 def __create_gen_parser(sub_parsers: _SubParsersAction) -> None:
@@ -255,7 +262,7 @@ def __create_view_parser(sub_parsers: _SubParsersAction) -> None:
         "project", help="Project to view result files for."
     )
     view_parser.add_argument(
-        "commit_hash", help="Commit hash to view result files for."
+        "commit_hash", help="Commit hash to view result files for.", nargs='?'
     )
     view_parser.add_argument(
         "--newest-only",
@@ -364,11 +371,82 @@ def __casestudy_package(
         )
 
 
+def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
+    result_file_type = MetaReport.REPORT_TYPES[args["report_type"]]
+    project_name = args["project"]
+    if "commit_hash" not in args:
+        # Ask the user to provide a commit hash
+        print("No commit hash was provided.")
+        commit_hash = ""
+        paper_config = get_paper_config()
+
+        available_commit_hashes = []
+        # Compute available commit hashes
+        for case_study in paper_config.get_case_studies(project_name):
+            available_commit_hashes.extend(
+                case_study.get_revisions_status(
+                    result_file_type, tag_blocked=False
+                )
+            )
+
+        max_num_hashes = 42
+        if len(available_commit_hashes) > max_num_hashes:
+            print("Found to many commit hashes, truncating selection...")
+
+        # Create call backs for cli choice
+        def set_commit_hash(
+            choice_pair: tp.Tuple[str, FileStatusExtension]
+        ) -> None:
+            nonlocal commit_hash
+            commit_hash = choice_pair[0][:10]
+
+        longest_file_status_extension = max([
+            len(status.get_colored_status())
+            for status in FileStatusExtension.get_physical_file_statuses()
+        ])
+
+        def result_file_to_list_entry(
+            commit_status_pair: tp.Tuple[str, FileStatusExtension]
+        ) -> str:
+            status = commit_status_pair[1].get_colored_status().rjust(
+                longest_file_status_extension, " "
+            )
+            return f"[{status}] {commit_status_pair[0][:10]}"
+
+        # Ask user which commit we should use
+        try:
+            cli_list_choice(
+                "Please select a hash:",
+                available_commit_hashes[:max_num_hashes],
+                result_file_to_list_entry,
+                set_commit_hash,
+                start_label=1,
+                default=1,
+            )
+        except EOFError:
+            raise LookupError
+        if commit_hash == "":
+            print("Could not find processed commit hash.")
+            raise LookupError
+        return commit_hash
+    return tp.cast(str, args["commit_hash"])
+
+
 def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
     result_file_type = MetaReport.REPORT_TYPES[args["report_type"]]
+    project_name = args["project"]
+
+    try:
+        commit_hash = __init_commit_hash(args)
+    except LookupError:
+        return
+
     result_files = PCM.get_result_files(
-        result_file_type, args["project"], args["commit_hash"],
-        args.get("newest-only", False)
+        result_file_type, project_name, commit_hash,
+        args.get("newest_only", False)
+    )
+    result_files.sort(
+        key=lambda report_file: report_file.stat().st_mtime_ns, reverse=True
     )
 
     if not result_files:
