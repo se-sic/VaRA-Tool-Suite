@@ -12,13 +12,13 @@ from pathlib import Path
 import benchbuild.utils.actions as actions
 from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
-from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import mkdir, opt
 from plumbum import local
 
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.experiments.wllvm import Extract, RunWLLVM
+from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     PEErrorHandler,
     VersionExperiment,
@@ -57,7 +57,6 @@ class CRAnalysis(actions.Step):  # type: ignore
         if not self.obj:
             return
         project = self.obj
-
         if self.__interaction_filter_experiment_name is None:
             interaction_filter_file = Path(
                 self.INTERACTION_FILTER_TEMPLATE.format(
@@ -80,7 +79,7 @@ class CRAnalysis(actions.Step):  # type: ignore
 
         bc_cache_folder = local.path(
             Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                cache_dir=str(BB_CFG["varats"]["result"]),
+                cache_dir=str(bb_cfg()["varats"]["result"]),
                 project_name=str(project.name)
             )
         )
@@ -89,7 +88,7 @@ class CRAnalysis(actions.Step):  # type: ignore
         # analysis also the name and the unique id of the project of every
         # run.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(BB_CFG["varats"]["outfile"]),
+            result_dir=str(bb_cfg()["varats"]["outfile"]),
             project_dir=str(project.name)
         )
 
@@ -184,7 +183,7 @@ class CommitReportExperiment(VersionExperiment):
             all_files_present &= path.exists(
                 local.path(
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                        cache_dir=str(BB_CFG["varats"]["result"]),
+                        cache_dir=str(bb_cfg()["varats"]["result"]),
                         project_name=str(project.name)
                     ) + Extract.BC_FILE_TEMPLATE.format(
                         project_name=str(project.name),

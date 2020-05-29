@@ -18,7 +18,7 @@ from pathlib import Path
 from varats.data.version_header import VersionHeader
 from varats.plots.plot import Plot
 from varats.plots.plots import PlotRegistry
-from varats.settings import CFG
+from varats.settings import vara_cfg
 from varats.tables.table import TableFormat, Table
 from varats.tables.tables import TableRegistry
 from varats.utils.yaml_util import load_yaml, store_as_yaml
@@ -68,8 +68,8 @@ class Artefact(ABC):
         The output path is relative to the directory specified as
         ``artefacts.artefacts_dir`` in the current varats config.
         """
-        return Path(str(CFG['artefacts']['artefacts_dir'])) / Path(
-            str(CFG['paper_config']['current_config'])
+        return Path(str(vara_cfg()['artefacts']['artefacts_dir'])) / Path(
+            str(vara_cfg()['paper_config']['current_config'])
         ) / self.__output_path
 
     def get_dict(self) -> tp.Dict[str, str]:

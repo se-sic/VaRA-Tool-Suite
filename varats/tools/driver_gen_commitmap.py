@@ -3,7 +3,7 @@
 import argparse
 from pathlib import Path
 
-from varats.settings import CFG
+from varats.settings import vara_cfg
 from varats.tools.commit_map import get_commit_map, store_commit_map
 from varats.utils.cli_util import initialize_logger_config
 
@@ -44,7 +44,7 @@ def main() -> None:
 
         output_name = "{result_folder}/{project_name}/{file_name}.cmap" \
             .format(
-            result_folder=CFG["result_dir"],
+            result_folder=vara_cfg()["result_dir"],
             project_name=default_name,
             file_name=default_name)
     else:

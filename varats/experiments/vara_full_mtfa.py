@@ -16,13 +16,13 @@ from os import path
 import benchbuild.utils.actions as actions
 from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
-from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import mkdir, opt, timeout
 from plumbum import local
 
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.experiments.wllvm import Extract, RunWLLVM
+from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     FunctionPEErrorWrapper,
     PEErrorHandler,
@@ -54,16 +54,15 @@ class VaraMTFACheck(actions.Step):  # type: ignore
         if not self.obj:
             return
         project = self.obj
-
         # Set up cache directory for bitcode files
         bc_cache_dir = Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-            cache_dir=str(BB_CFG["varats"]["result"]),
+            cache_dir=str(bb_cfg()["varats"]["result"]),
             project_name=str(project.name)
         )
 
         # Define the output directory.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(BB_CFG["varats"]["outfile"]),
+            result_dir=str(bb_cfg()["varats"]["outfile"]),
             project_dir=str(project.name)
         )
         mkdir("-p", vara_result_folder)
@@ -125,7 +124,6 @@ class VaRATaintPropagation(VersionExperiment):
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
-
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
             << time.RunWithTime()
@@ -140,7 +138,7 @@ class VaRATaintPropagation(VersionExperiment):
             project.compile,
             PEErrorHandler(
                 VaraMTFACheck.RESULT_FOLDER_TEMPLATE.format(
-                    result_dir=str(BB_CFG["varats"]["outfile"]),
+                    result_dir=str(bb_cfg()["varats"]["outfile"]),
                     project_dir=str(project.name)
                 ),
                 TPR.get_file_name(
@@ -163,7 +161,7 @@ class VaRATaintPropagation(VersionExperiment):
             all_cache_files_present &= path.exists(
                 local.path(
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                        cache_dir=str(BB_CFG["varats"]["result"]),
+                        cache_dir=str(bb_cfg()["varats"]["result"]),
                         project_name=str(project.name)
                     ) + Extract.BC_FILE_TEMPLATE.format(
                         project_name=str(project.name),

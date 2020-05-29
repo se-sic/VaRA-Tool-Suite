@@ -22,7 +22,7 @@ from varats.paper.case_study import (
     store_case_study,
 )
 from varats.paper.paper_config import get_paper_config
-from varats.settings import CFG
+from varats.settings import vara_cfg
 from varats.tools.commit_map import create_lazy_commit_map_loader
 from varats.utils.cli_util import cli_list_choice, initialize_logger_config
 from varats.utils.project_util import get_local_project_git_path
@@ -238,7 +238,7 @@ def __create_package_parser(sub_parsers: _SubParsersAction) -> None:
         default=".*"
     )
     package_parser.add_argument(
-        "--report_names",
+        "--report-names",
         help=(
             "Provide a report name to "
             "select which files are considered for the status"
@@ -278,7 +278,7 @@ def __casestudy_status(
     if args.get("force_color", False):
         colors.use_color = True
     if 'paper_config' in args:
-        CFG['paper_config']['current_config'] = args['paper_config']
+        vara_cfg()['paper_config']['current_config'] = args['paper_config']
     if args['short'] and args['list_revs']:
         parser.error(
             "At most one argument of: --short, --list-revs can be used."
@@ -324,7 +324,7 @@ def __casestudy_create_or_extend(
         if 'result_folder' not in args and args[
             'strategy'] is ExtenderStrategy.smooth_plot:
             args['project'] = case_study.project_name
-            args['result_folder'] = str(CFG['result_dir']
+            args['result_folder'] = str(vara_cfg()['result_dir']
                                        ) + "/" + args['project']
             LOG.info(f"Result folder defaults to: {args['result_folder']}")
 
@@ -353,7 +353,7 @@ def __casestudy_package(
     if output_path.suffix == '':
         output_path = Path(str(output_path) + ".zip")
     if output_path.suffix == '.zip':
-        vara_root = Path(str(CFG["config_file"])).parent
+        vara_root = Path(str(vara_cfg()["config_file"])).parent
         if Path(os.getcwd()) != vara_root:
             LOG.info(
                 f"Packaging needs to be called from VaRA root dir, "

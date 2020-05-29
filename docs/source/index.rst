@@ -36,6 +36,7 @@ VaRA-TS Docs
 
    vara-ts/vara-buildsetup
    vara-ts/benchbuild
+   vara-ts/testing
 
 VaRA-TS API Reference
 =====================
