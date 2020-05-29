@@ -64,9 +64,7 @@ class Xz(Project, CVEProviderHook):  # type: ignore
                 "b2172cf823d3be34cb0246cb4cb32d105e2a34c9",
                 short=True
             )
-            print(f"{self.version} in {old_xz_location}")
             if self.version in old_xz_location:
-                print("true")
                 return wrap_paths_to_binaries(['src/xz/xz'])
 
         return wrap_paths_to_binaries(['src/xz/.libs/xz'])
