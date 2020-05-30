@@ -10,7 +10,8 @@ class TestBlameVerifierReport(unittest.TestCase):
     """Test if a blame verifier report is correctly reconstructed from .txt."""
 
     @classmethod
-    def setUpClass(cls) -> None:
+    def setUpClass(cls):
+        """Setup example file name."""
         cls.test_project_name = "testProject"
         cls.test_binary_name = "testBinary"
         cls.test_project_version = "testProjectVersion1"
