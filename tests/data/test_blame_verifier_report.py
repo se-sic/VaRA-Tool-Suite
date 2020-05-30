@@ -55,7 +55,7 @@ class TestBlameVerifierReport(unittest.TestCase):
                          f"{test_project_uuid}_{test_extension_type}" \
                          f"{test_file_ext}"
 
-        # Act
+        # When
         actual = BVR.BlameVerifierReportNoOpt.get_file_name(
             project_name=test_project_name,
             binary_name=test_binary_name,
