@@ -41,7 +41,7 @@ class TestBlameVerifierReport(unittest.TestCase):
     def test_get_file_name_no_opt(self):
         """Test if the file name is correctly built without the opt
         extension."""
-        # Arrange
+        # Given
         test_shorthand = "BVR_NoOpt"
         test_project_name = "testProject"
         test_binary_name = "testBinary"
