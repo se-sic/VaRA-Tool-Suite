@@ -44,7 +44,7 @@ class TestExtract(unittest.TestCase):
         mock_bc_file_name = f"{test_project_name}-{test_binary_name}-" \
                             f"{test_project_version}-dbg_O0.bc"
 
-        # Act
+        # When
         actual = Extract.get_bc_file_name(
             test_project_name, test_binary_name, test_project_version,
             test_bc_file_extensions
