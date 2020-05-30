@@ -132,8 +132,6 @@ class BlameVerifierReportExperiment(VersionExperiment):
     """
     BlameVerifierReportExperiment generalizes the implementation and usage over different
     optimization levels.
-
-    Only its subclasses should be instantiated.
     """
 
     def __init__(
