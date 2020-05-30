@@ -33,7 +33,7 @@ class TestExtract(unittest.TestCase):
     def test_get_bc_file_name_no_opt(self):
         """Test if the bc file name is correctly parsed."""
 
-        # Arrange
+        # Given
         test_project_name = "testProject"
         test_binary_name = "testBinary"
         test_project_version = "testProjectVersion1"
