@@ -111,9 +111,31 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
     def __init__(self, base_dir: Path) -> None:
         super().__init__("VaRA", [BuildType.DEV], VaRACodeBase(base_dir))
+        vara_cfg()["vara"]["llvm_source_dir"] = str(base_dir)
+        save_config()
 
-    @check_required_args(["install_prefix"])
-    def setup(self, source_folder: Path, **kwargs: tp.Any) -> None:
+    @staticmethod
+    def source_location() -> Path:
+        """Returns the source location of the research tool."""
+        return Path(vara_cfg()["vara"]["llvm_source_dir"].value)
+
+    @staticmethod
+    def has_source_location() -> bool:
+        """Checks if a source location of the research tool is configured."""
+        return vara_cfg()["vara"]["llvm_source_dir"].value is not None
+
+    @staticmethod
+    def install_location() -> Path:
+        """Returns the install location of the research tool."""
+        return Path(vara_cfg()["vara"]["llvm_install_dir"].value)
+
+    @staticmethod
+    def has_install_location() -> bool:
+        """Checks if a install location of the research tool is configured."""
+        return vara_cfg()["vara"]["llvm_install_dir"].value is not None
+
+    @check_required_args(["install_prefix", "version"])
+    def setup(self, source_folder: tp.Optional[Path], **kwargs: tp.Any) -> None:
         """
         Setup the research tool VaRA with it's code base. This method sets up
         all relevant config variables, downloads repositories via the
@@ -127,7 +149,8 @@ class VaRA(ResearchTool[VaRACodeBase]):
                       * install_prefix
         """
         cfg = vara_cfg()
-        cfg["vara"]["llvm_source_dir"] = str(source_folder)
+        if source_folder:
+            cfg["vara"]["llvm_source_dir"] = str(source_folder)
         cfg["vara"]["llvm_install_dir"] = str(kwargs["install_prefix"])
         version = kwargs.get("version")
         if version:
@@ -135,13 +158,13 @@ class VaRA(ResearchTool[VaRACodeBase]):
             cfg["vara"]["version"] = version
         else:
             version = cfg["vara"]["version"].value
-
-        print(f"Setting up VaRA at {source_folder}")
         save_config()
+
+        print(f"Setting up VaRA in {self.source_location()}")
 
         use_dev_branches = cfg["vara"]["developer_version"].value
 
-        self.code_base.clone(source_folder)
+        self.code_base.clone(self.source_location())
         self.code_base.setup_vara_remotes()
         self.code_base.checkout_vara_version(version, use_dev_branches)
         self.code_base.setup_submodules()

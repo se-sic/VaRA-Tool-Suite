@@ -61,6 +61,21 @@ _CFG["vara"] = {
     },
 }
 
+_CFG["phasar"] = {
+    "source_dir": {
+        "desc": "Phasar source directory",
+        "default": None
+    },
+    "install_dir": {
+        "desc": "Phasar install directory",
+        "default": None
+    },
+    "developer_version": {
+        "desc": "Setup phasar as development build.",
+        "default": True,
+    },
+}
+
 _CFG["paper_config"] = {
     "folder": {
         "desc": "Folder with paper configs.",

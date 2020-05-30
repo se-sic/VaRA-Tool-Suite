@@ -297,8 +297,28 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
     def is_build_type_supported(self, build_type: BuildType) -> bool:
         return build_type in self.__supported_build_types
 
+    @staticmethod
+    @abc.abstractstaticmethod
+    def source_location() -> Path:
+        """Returns the source location of the research tool."""
+
+    @staticmethod
+    @abc.abstractstaticmethod
+    def has_source_location() -> bool:
+        """Checks if a source location of the research tool is configured."""
+
+    @staticmethod
+    @abc.abstractstaticmethod
+    def install_location() -> Path:
+        """Returns the install location of the research tool."""
+
+    @staticmethod
+    @abc.abstractstaticmethod
+    def has_install_location() -> bool:
+        """Checks if a install location of the research tool is configured."""
+
     @abc.abstractmethod
-    def setup(self, source_folder: Path, **kwargs: tp.Any) -> None:
+    def setup(self, source_folder: tp.Optional[Path], **kwargs: tp.Any) -> None:
         """
         Setup a research tool with it's code base. This method sets up all
         relevant config variables, downloads repositories via the ``CodeBase``,
