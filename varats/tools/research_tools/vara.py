@@ -6,8 +6,8 @@ import shutil
 import typing as tp
 from pathlib import Path
 
+from benchbuild.utils.cmd import ln, mkdir
 from plumbum import local
-from plumbum.cmd import ln, mkdir
 from PyQt5.QtCore import QProcess
 
 from varats.plots.plot_utils import check_required_args
