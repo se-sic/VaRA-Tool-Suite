@@ -50,5 +50,5 @@ class TestExtract(unittest.TestCase):
             test_bc_file_extensions
         )
 
-        # Assert
+        # Then
         self.assertEqual(actual, mock_bc_file_name)
