@@ -27,7 +27,7 @@ class TestExtract(unittest.TestCase):
             test_bc_file_extensions
         )
 
-        # Assert
+        # Then
         self.assertEqual(mock_bc_file_name, actual)
 
     def test_get_bc_file_name_no_opt(self):
