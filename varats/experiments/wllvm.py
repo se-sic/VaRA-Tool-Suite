@@ -82,9 +82,6 @@ class Extract(actions.Step):  # type: ignore
 
     BC_CACHE_FOLDER_TEMPLATE = "{cache_dir}/{project_name}/"
 
-    __BC_FILE_TEMPLATE = "{project_name}-{binary_name}-{project_version}" \
-                         "{bc_file_extensions}.bc"
-
     @staticmethod
     def get_bc_file_name(
         project_name: str,
