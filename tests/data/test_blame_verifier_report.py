@@ -11,7 +11,7 @@ class TestBlameVerifierReport(unittest.TestCase):
 
     def test_get_file_name_opt(self):
         """Test if the file name is correctly built with the opt extension."""
-        # Arrange
+        # Given
         test_shorthand = "BVR_Opt"
         test_project_name = "testProject"
         test_binary_name = "testBinary"
@@ -25,7 +25,7 @@ class TestBlameVerifierReport(unittest.TestCase):
                          f"{test_project_uuid}_{test_extension_type}" \
                          f"{test_file_ext}"
 
-        # Act
+        # When
         actual = BVR.BlameVerifierReportOpt.get_file_name(
             project_name=test_project_name,
             binary_name=test_binary_name,
@@ -35,13 +35,13 @@ class TestBlameVerifierReport(unittest.TestCase):
             file_ext=test_file_ext
         )
 
-        # Assert
+        # Then
         self.assertEqual(mock_file_name, actual)
 
     def test_get_file_name_no_opt(self):
         """Test if the file name is correctly built without the opt
         extension."""
-        # Arrange
+        # Given
         test_shorthand = "BVR_NoOpt"
         test_project_name = "testProject"
         test_binary_name = "testBinary"
@@ -55,7 +55,7 @@ class TestBlameVerifierReport(unittest.TestCase):
                          f"{test_project_uuid}_{test_extension_type}" \
                          f"{test_file_ext}"
 
-        # Act
+        # When
         actual = BVR.BlameVerifierReportNoOpt.get_file_name(
             project_name=test_project_name,
             binary_name=test_binary_name,
@@ -65,5 +65,5 @@ class TestBlameVerifierReport(unittest.TestCase):
             file_ext=test_file_ext
         )
 
-        # Assert
+        # Then
         self.assertEqual(mock_file_name, actual)
