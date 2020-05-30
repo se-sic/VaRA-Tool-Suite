@@ -35,7 +35,7 @@ class TestBlameVerifierReport(unittest.TestCase):
             file_ext=test_file_ext
         )
 
-        # Assert
+        # Then
         self.assertEqual(mock_file_name, actual)
 
     def test_get_file_name_no_opt(self):
