@@ -130,8 +130,8 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
 
 class BlameVerifierReportExperiment(VersionExperiment):
     """
-    BlameVerifierReportExperiment used as base class for different compilation
-    optimizations.
+    BlameVerifierReportExperiment generalizes the implementation and usage over different
+    optimization levels.
 
     Only its subclasses should be instantiated.
     """
