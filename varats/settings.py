@@ -290,12 +290,13 @@ def generate_benchbuild_config(
     projects_conf = new_bb_cfg["plugins"]["experiments"]
     projects_conf.value[:] = []
     projects_conf.value[:] += [
-        'varats.experiments.commit_report_experiment',
-        'varats.experiments.marker_tester', 'varats.experiments.just_compile',
-        'varats.experiments.vara_full_mtfa',
-        'varats.experiments.vara_fc_taint_analysis',
-        'varats.experiments.phasar_env_analysis',
-        'varats.experiments.blame_report_experiment'
+        'varats.experiments.base.just_compile',
+        'varats.experiments.vara.phasar_env_analysis',
+        'varats.experiments.vara.blame_report_experiment'
+        'varats.experiments.vara.commit_report_experiment',
+        'varats.experiments.vara.marker_tester',
+        'varats.experiments.vara.vara_fc_taint_analysis',
+        'varats.experiments.vara.vara_full_mtfa',
     ]
 
     # Slurm Cluster Configuration

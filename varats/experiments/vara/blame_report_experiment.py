@@ -132,6 +132,7 @@ class BlameReportExperiment(VersionExperiment):
 
         vara_result_folder = \
             f"{bb_cfg()['varats']['outfile']}/{project.name}"
+
         error_handler = PEErrorHandler(
             vara_result_folder,
             BR.get_file_name(
