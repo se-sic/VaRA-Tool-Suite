@@ -82,7 +82,9 @@ def initialize_logger_config() -> None:
     logging.basicConfig(level=log_level)
 
 
-def get_research_tool_type(name: str) -> tp.Type[ResearchTool[tp.Any]]:
+def get_research_tool_type(
+    name: str
+) -> tp.Union[tp.Type[VaRA], tp.Type[Phasar]]:
     """
     Look up the type of a research tool by name.
 
