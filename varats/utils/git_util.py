@@ -5,8 +5,8 @@ import typing as tp
 from enum import Enum
 
 import pygit2
+from benchbuild.utils.cmd import git
 from plumbum import local
-from plumbum.cmd import git
 
 from varats.utils.project_util import get_local_project_git
 
