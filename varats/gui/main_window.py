@@ -11,12 +11,8 @@ from varats.gui.filtertree_window import FilterWindow
 from varats.gui.ui_MainWindow import Ui_MainWindow
 from varats.gui.views.cr_bar_view import CRBarView
 from varats.gui.views.example_view import ExampleView
-from varats.settings import (
-    create_missing_folders,
-    generate_benchbuild_config,
-    save_config,
-    vara_cfg,
-)
+from varats.settings import create_missing_folders, save_config, vara_cfg
+from varats.utils.bb_config import generate_benchbuild_config
 
 LOG = logging.getLogger(__name__)
 

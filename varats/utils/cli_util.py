@@ -135,4 +135,4 @@ def get_research_tool(
 
 def get_supported_research_tool_names() -> tp.List[str]:
     """Returns a list of all supported research tools."""
-    return ["vara", "phasar"]
+    return ["phasar", "vara"]
