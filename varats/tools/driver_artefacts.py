@@ -70,7 +70,6 @@ def main() -> None:
     add_parser.add_argument(
         "artefact_type",
         help="The type of the new artefact.",
-        choices=ArtefactType,
         action=enum_action(ArtefactType)
     )
     add_parser.add_argument(
