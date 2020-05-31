@@ -82,12 +82,7 @@ def initialize_logger_config() -> None:
     logging.basicConfig(level=log_level)
 
 
-ConcreteResearchTool = tp.TypeVar(
-    "ConcreteResearchTool", bound=ResearchTool[SpecificCodeBase]
-)
-
-
-def get_research_tool_type(name: str) -> tp.Type[ConcreteResearchTool]:
+def get_research_tool_type(name: str) -> tp.Type[ResearchTool[tp.Any]]:
     """
     Look up the type of a research tool by name.
 
@@ -138,4 +133,4 @@ def get_research_tool(
 
 def get_supported_research_tool_names() -> tp.List[str]:
     """Returns a list of all supported research tools."""
-    return ["VaRA", "vara", "phasar"]
+    return ["vara", "phasar"]

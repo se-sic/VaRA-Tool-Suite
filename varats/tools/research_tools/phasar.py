@@ -40,7 +40,7 @@ class PhasarCodeBase(CodeBase):
 
     def checkout_phasar_version(self, use_dev_branche: bool) -> None:
         """
-        Checkout out a specific version of VaRA.
+        Checkout out a specific version of phasar.
 
         Args:
             use_dev_branche: true, if one wants the current development version
@@ -100,7 +100,7 @@ class Phasar(ResearchTool[PhasarCodeBase]):
     @check_required_args(["install_prefix", "version"])
     def setup(self, source_folder: tp.Optional[Path], **kwargs: tp.Any) -> None:
         """
-        Setup the research tool VaRA with it's code base. This method sets up
+        Setup the research tool phasar with it's code base. This method sets up
         all relevant config variables, downloads repositories via the
         ``CodeBase``, checkouts the correct branches and prepares the research
         tool to be built.
