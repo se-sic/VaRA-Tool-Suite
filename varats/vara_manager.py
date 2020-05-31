@@ -16,8 +16,8 @@ from enum import Enum
 from pathlib import Path
 from threading import RLock
 
+from benchbuild.utils.cmd import cmake, git, grep, ln, mkdir
 from plumbum import RETCODE, TF, local
-from plumbum.cmd import cmake, git, grep, ln, mkdir
 from PyQt5.QtCore import (
     QObject,
     QProcess,

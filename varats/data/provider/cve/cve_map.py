@@ -31,10 +31,10 @@ import typing as tp
 from collections import defaultdict
 from pathlib import Path
 
+from benchbuild.utils.cmd import git
 from packaging.version import LegacyVersion, Version
 from packaging.version import parse as parse_version
 from plumbum import local
-from plumbum.cmd import git
 
 from varats.data.provider.cve.cve import (
     CVE,
