@@ -38,14 +38,14 @@ class PhasarCodeBase(CodeBase):
         ]
         super().__init__(base_dir, sub_projects)
 
-    def checkout_phasar_version(self, use_dev_branche: bool) -> None:
+    def checkout_phasar_version(self, use_dev_branch: bool) -> None:
         """
         Checkout out a specific version of phasar.
 
         Args:
             use_dev_branche: true, if one wants the current development version
         """
-        if use_dev_branche:
+        if use_dev_branch:
             branch_name = "development"
         else:
             branch_name = "master"
@@ -119,10 +119,10 @@ class Phasar(ResearchTool[PhasarCodeBase]):
 
         print(f"Setting up phasar in {self.source_location()}")
 
-        use_dev_branche = cfg["phasar"]["developer_version"].value
+        use_dev_branch = cfg["phasar"]["developer_version"].value
 
         self.code_base.clone(self.source_location())
-        self.code_base.checkout_phasar_version(use_dev_branche)
+        self.code_base.checkout_phasar_version(use_dev_branch)
         self.code_base.setup_submodules()
 
     def upgrade(self) -> None:

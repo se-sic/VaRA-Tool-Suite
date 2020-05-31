@@ -298,22 +298,22 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         return build_type in self.__supported_build_types
 
     @staticmethod
-    @abc.abstractstaticmethod
+    @abc.abstractmethod
     def source_location() -> Path:
         """Returns the source location of the research tool."""
 
     @staticmethod
-    @abc.abstractstaticmethod
+    @abc.abstractmethod
     def has_source_location() -> bool:
         """Checks if a source location of the research tool is configured."""
 
     @staticmethod
-    @abc.abstractstaticmethod
+    @abc.abstractmethod
     def install_location() -> Path:
         """Returns the install location of the research tool."""
 
     @staticmethod
-    @abc.abstractstaticmethod
+    @abc.abstractmethod
     def has_install_location() -> bool:
         """Checks if a install location of the research tool is configured."""
 
