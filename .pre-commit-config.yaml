@@ -29,3 +29,4 @@ repos:
     rev: 'v0.29.0'  # Use the sha / tag you want to point at
     hooks:
     -   id: yapf
+exclude: ^tests/TEST_INPUTS/.*$

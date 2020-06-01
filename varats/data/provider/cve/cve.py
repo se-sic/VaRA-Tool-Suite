@@ -20,7 +20,7 @@ from packaging.version import LegacyVersion, Version
 from packaging.version import parse as version_parse
 from tabulate import tabulate
 
-from varats.settings import CFG
+from varats.settings import vara_cfg
 
 
 class CVE:
@@ -337,5 +337,5 @@ def find_cwe(
 
 # Cache all requests to limit external requests for a week
 requests_cache.install_cache(
-    f"{str(CFG['plots']['data_cache'])}/requests_cache", expire_after=604800
+    f"{str(vara_cfg()['data_cache'])}/requests_cache", expire_after=604800
 )

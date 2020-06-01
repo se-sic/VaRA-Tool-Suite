@@ -5,12 +5,12 @@ import typing as tp
 import benchbuild.utils.actions as actions
 from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
-from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import mkdir, touch
 
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.empty_report import EmptyReport
 from varats.experiments.wllvm import RunWLLVM
+from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     PEErrorHandler,
     VersionExperiment,
@@ -41,7 +41,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
         # analysis also the name and the unique id of the project of every
         # run.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(BB_CFG["varats"]["outfile"]),
+            result_dir=str(bb_cfg()["varats"]["outfile"]),
             project_dir=str(project.name)
         )
 
@@ -70,7 +70,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
                         project_version=str(project.version),
                         project_uuid=str(project.run_uuid),
                         extension_type=FSE.Failed
-                    ), run_cmd
+                    )
                 )
             )
 

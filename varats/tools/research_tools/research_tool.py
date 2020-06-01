@@ -2,7 +2,6 @@
 developers to setup and configure their own research tool by inheriting and
 implementing the base classes ``ResearchTool`` and ``CodeBase``."""
 import abc
-import logging
 import typing as tp
 from pathlib import Path
 

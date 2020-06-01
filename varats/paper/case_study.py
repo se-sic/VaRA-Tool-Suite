@@ -5,6 +5,7 @@ import typing as tp
 from collections import defaultdict
 from datetime import datetime
 from enum import Enum
+from itertools import groupby
 from pathlib import Path
 
 import numpy as np
@@ -23,6 +24,8 @@ from varats.data.revisions import (
     get_processed_revisions,
     get_tagged_revision,
     get_tagged_revisions,
+    filter_blocked_revisions,
+    is_revision_blocked,
 )
 from varats.data.version_header import VersionHeader
 from varats.plots.plot_utils import check_required_args
@@ -358,7 +361,8 @@ class CaseStudy():
             from_index: index of the first stage to shift
             offset: amount to stages should be shifted
         """
-        if not (0 <= from_index < len(self.__stages)):
+        # keep parens for clarification
+        if not (0 <= from_index < len(self.__stages)):  # pylint: disable=C0325
             raise AssertionError("from_index out of bounds")
         if (from_index + offset) < 0:
             raise AssertionError("Shifting out of bounds")
@@ -732,6 +736,43 @@ def get_case_study_file_name_filter(
     return cs_filter
 
 
+def get_unique_cs_name(case_studies: tp.List[CaseStudy]) -> tp.List[str]:
+    """
+    Create a list of unique names for the given case studies.
+
+    If a case studie's project ocurrs only in one case study in the list, choose
+    the project name as the name, otherwise, add the case studie's version to
+    the name.
+
+    Args:
+        case_studies: the list of case studies to generate names for
+
+    Returns:
+        a list of unique names for the given case studies in the same order
+
+    Test:
+    >>> get_unique_cs_name([CaseStudy("xz", 1), CaseStudy("gzip", 1)])
+    ['xz', 'gzip']
+
+    >>> get_unique_cs_name([CaseStudy("xz", 1), CaseStudy("xz", 2)])
+    ['xz_1', 'xz_2']
+
+    Test:
+    >>> get_unique_cs_name([CaseStudy("xz", 1), CaseStudy("gzip", 1), \
+        CaseStudy("xz", 2)])
+    ['xz_1', 'gzip', 'xz_2']
+    """
+    sorted_cs = sorted(case_studies, key=lambda cs: cs.project_name)
+    cs_names = dict(
+        (k, list(v)) for k, v in groupby(sorted_cs, lambda cs: cs.project_name)
+    )
+
+    return [
+        cs.project_name if len(cs_names[cs.project_name]) == 1 else
+        f"{cs.project_name}_{cs.version}" for cs in case_studies
+    ]
+
+
 ###############################################################################
 # Case-study generation
 ###############################################################################
@@ -890,6 +931,7 @@ def extend_with_revs_per_year(
         commits[commit_date.year].append(str(commit.id))
 
     new_rev_items = []  # new revisions that get added to to case_study
+    project_cls = get_project_cls_by_name(case_study.project_name)
     for year, commits_in_year in commits.items():
         samples = min(len(commits_in_year), kwargs['revs_per_year'])
         sample_commit_indices = sorted(
@@ -898,6 +940,10 @@ def extend_with_revs_per_year(
 
         for commit_index in sample_commit_indices:
             commit_hash = commits_in_year[commit_index]
+            if kwargs["ignore_blocked"] and is_revision_blocked(
+                commit_hash, project_cls
+            ):
+                continue
             time_id = cmap.time_id(commit_hash)
             new_rev_items.append((commit_hash, time_id))
 
@@ -924,13 +970,19 @@ def extend_with_distrib_sampling(
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
     """
+    is_blocked: tp.Callable[[str, tp.Type[tp.Any]], bool] = lambda rev, _: False
+    if kwargs["ignore_blocked"]:
+        is_blocked = is_revision_blocked
+
     # Needs to be sorted so the propability distribution over the length
     # of the list is the same as the distribution over the commits age history
+    project_cls = get_project_cls_by_name(case_study.project_name)
     revision_list = [
         rev_item
         for rev_item in sorted(list(cmap.mapping_items()), key=lambda x: x[1])
         if not case_study.
-        has_revision_in_stage(rev_item[0], kwargs['merge_stage'])
+        has_revision_in_stage(rev_item[0], kwargs['merge_stage']) and
+        not is_blocked(rev_item[0], project_cls)
     ]
 
     distribution_function = kwargs['distribution'].gen_distribution_function()
@@ -996,6 +1048,14 @@ def extend_with_smooth_revs(
     print("Using boundary gradient: ", boundary_gradient)
     new_revisions = plot.calc_missing_revisions(boundary_gradient)
 
+    if kwargs["ignore_blocked"]:
+        new_revisions = set(
+            filter_blocked_revisions(
+                list(new_revisions),
+                get_project_cls_by_name(case_study.project_name)
+            )
+        )
+
     # Remove revision that are already present in another stage.
     new_revisions = {
         rev for rev in new_revisions if not case_study.has_revision(rev)
@@ -1026,12 +1086,18 @@ def extend_with_release_revs(
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
     """
-    project: tp.Type[Project] = get_project_cls_by_name(kwargs['project'])
-    release_provider = ReleaseProvider.get_provider_for_project(project)
+    project_cls: tp.Type[Project] = get_project_cls_by_name(kwargs['project'])
+    release_provider = ReleaseProvider.get_provider_for_project(project_cls)
     release_revisions: tp.List[str] = [
         revision for revision, release in
         release_provider.get_release_revisions(kwargs['release_type'])
     ]
+
+    if kwargs["ignore_blocked"]:
+        release_revisions = filter_blocked_revisions(
+            release_revisions, project_cls
+        )
+
     case_study.include_revisions([
         (rev, cmap.time_id(rev)) for rev in release_revisions
     ],

@@ -15,11 +15,13 @@ from pathlib import Path
 import benchbuild.utils.actions as actions
 from benchbuild.extensions import base
 from benchbuild.project import Project
-from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import cp, extract_bc, mkdir
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.path import list_to_path, path_to_list
 from plumbum import local
+
+from varats.settings import bb_cfg
+from varats.utils.experiment_util import FunctionPEErrorWrapper, PEErrorHandler
 
 
 class RunWLLVM(base.Extension):  # type: ignore
@@ -37,7 +39,7 @@ class RunWLLVM(base.Extension):  # type: ignore
         else:
             wllvm = local["wllvm"]
 
-        env = BB_CFG["env"].value
+        env = bb_cfg()["env"].value
         path = path_to_list(getenv("PATH", ""))
         path.extend(env.get("PATH", []))
 
@@ -53,7 +55,7 @@ class RunWLLVM(base.Extension):  # type: ignore
         return self.call_next(wllvm, *args, **kwargs)
 
 
-BB_CFG["varats"] = {
+bb_cfg()["varats"] = {
     "outfile": {
         "default": "",
         "desc": "Path to store results of VaRA CFR analysis."
@@ -74,8 +76,16 @@ class Extract(actions.Step):  # type: ignore
     BC_CACHE_FOLDER_TEMPLATE = "{cache_dir}/{project_name}/"
     BC_FILE_TEMPLATE = "{project_name}-{binary_name}-{project_version}.bc"
 
-    def __init__(self, project: Project) -> None:
-        super(Extract, self).__init__(obj=project, action_fn=self.extract)
+    def __init__(
+        self,
+        project: Project,
+        handler: tp.Optional[PEErrorHandler] = None
+    ) -> None:
+        super().__init__(
+            obj=project,
+            action_fn=FunctionPEErrorWrapper(self.extract, handler)
+            if handler else self.extract
+        )
 
     def extract(self) -> actions.StepResult:
         """This step extracts the bitcode of the executable of the project into
@@ -85,7 +95,7 @@ class Extract(actions.Step):  # type: ignore
         project = self.obj
 
         bc_cache_folder = self.BC_CACHE_FOLDER_TEMPLATE.format(
-            cache_dir=str(BB_CFG["varats"]["result"]),
+            cache_dir=str(bb_cfg()["varats"]["result"]),
             project_name=str(project.name)
         )
         mkdir("-p", local.path() / bc_cache_folder)

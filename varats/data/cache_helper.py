@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 
 from varats.data.report import BaseReport, MetaReport
-from varats.settings import CFG
+from varats.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ def get_data_file_path(data_id: str, project_name: str) -> Path:
     True
     """
     return Path(
-        str(CFG["plots"]["data_cache"])
+        str(vara_cfg()["data_cache"])
     ) / f"{data_id}-{project_name}.csv.gz"
 
 

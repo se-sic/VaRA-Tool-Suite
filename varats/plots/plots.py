@@ -1,4 +1,5 @@
 """General plots module."""
+import logging
 import re
 import sys
 import typing as tp
@@ -6,7 +7,9 @@ import typing as tp
 from varats.plots.plot_utils import check_required_args
 
 if tp.TYPE_CHECKING:
-    import varats.plots.plot as plot
+    import varats.plots.plot  # pylint: disable=W0611
+
+LOG = logging.getLogger(__name__)
 
 
 class PlotRegistry(type):
@@ -39,7 +42,9 @@ class PlotRegistry(type):
         ])
 
     @staticmethod
-    def get_class_for_plot_type(plot: str) -> tp.Type['plot.Plot']:
+    def get_class_for_plot_type(
+        plot_type: str
+    ) -> tp.Type['varats.plots.plot.Plot']:
         """
         Get the class for plot from the plot registry.
 
@@ -48,18 +53,18 @@ class PlotRegistry(type):
         <class 'varats.plots.paper_config_overview.PaperConfigOverviewPlot'>
 
         Args:
-            plot: The name of the plot.
+            plot_type: The name of the plot.
 
         Returns: The class implementing the plot.
         """
         from varats.plots.plot import Plot
-        if plot not in PlotRegistry.plots:
+        if plot_type not in PlotRegistry.plots:
             sys.exit(
-                f"Unknown plot '{plot}'.\n" +
+                f"Unknown plot '{plot_type}'.\n" +
                 PlotRegistry.get_plot_types_help_string()
             )
 
-        plot_cls = PlotRegistry.plots[plot]
+        plot_cls = PlotRegistry.plots[plot_type]
         if not issubclass(plot_cls, Plot):
             raise AssertionError()
         return plot_cls
@@ -70,9 +75,9 @@ def build_plot(**kwargs: tp.Any) -> None:
     """Build the specified graph."""
     plot_type = PlotRegistry.get_class_for_plot_type(kwargs['plot_type'])
 
-    if (kwargs['sep_stages'] and not plot_type.supports_stage_separation()):
-        print(
-            f"Warning: {kwargs['plot_type']} does not support stage " +
+    if kwargs['sep_stages'] and not plot_type.supports_stage_separation():
+        LOG.warning(
+            f"{kwargs['plot_type']} does not support stage "
             "separation but separation flag '--sep-stages' was set."
         )
 

@@ -19,7 +19,7 @@ setup(
         "benchbuild>=4.0.1",
         "plumbum>=1.6.6",
         "wllvm>=1.1.4",
-        "argparse-utils>=1.2.0,<1.3.0",
+        "argparse-utils>=1.2.0",
         "pygit2>=0.28.2",
         "pyzmq>=19.0.0",
         "PyGithub>=1.47",
@@ -46,6 +46,7 @@ setup(
             'vara-gen-commitmap = varats.tools.driver_gen_commitmap:main',
             'vara-pc = varats.tools.driver_paper_config:main',
             'vara-plot = varats.tools.driver_plot:main',
+            'vara-table = varats.tools.driver_table:main',
             'vara-cve = varats.tools.driver_cve:main',
         ]
     },

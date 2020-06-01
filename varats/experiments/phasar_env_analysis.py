@@ -15,13 +15,13 @@ import benchbuild.utils.actions as actions
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
-from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import mkdir, phasar, timeout
 from plumbum import local
 
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.env_trace_report import EnvTraceReport as ENVR
 from varats.experiments.wllvm import Extract, RunWLLVM
+from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     FunctionPEErrorWrapper,
     PEErrorHandler,
@@ -56,16 +56,15 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
         if not self.obj:
             return
         project = self.obj
-
         # Set up cache directory for bitcode files.
         bc_cache_dir = Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-            cache_dir=str(BB_CFG["varats"]["result"]),
+            cache_dir=str(bb_cfg()["varats"]["result"]),
             project_name=str(project.name)
         )
 
         # Define the output directory.
         result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(BB_CFG["varats"]["outfile"]),
+            result_dir=str(bb_cfg()["varats"]["outfile"]),
             project_dir=str(project.name)
         )
 
@@ -111,9 +110,7 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
             # Run the phasar command with custom error handler and timeout
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration, phasar_run_cmd],
-                PEErrorHandler(
-                    result_folder, error_file, phasar_run_cmd, timeout_duration
-                )
+                PEErrorHandler(result_folder, error_file, timeout_duration)
             )
 
 
@@ -143,7 +140,7 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
             project.compile,
             PEErrorHandler(
                 PhasarEnvIFDS.RESULT_FOLDER_TEMPLATE.format(
-                    result_dir=str(BB_CFG["varats"]["outfile"]),
+                    result_dir=str(bb_cfg()["varats"]["outfile"]),
                     project_dir=str(project.name)
                 ),
                 ENVR.get_file_name(
@@ -164,7 +161,7 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
             all_cache_files_present &= path.exists(
                 local.path(
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                        cache_dir=str(BB_CFG["varats"]["result"]),
+                        cache_dir=str(bb_cfg()["varats"]["result"]),
                         project_name=str(project.name)
                     ) + Extract.BC_FILE_TEMPLATE.format(
                         project_name=str(project.name),

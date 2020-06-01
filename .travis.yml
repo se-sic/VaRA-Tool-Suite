@@ -13,6 +13,9 @@ addons:
       - libgit2-dev
       - ninja-build
 
+env:
+  - BB_TMP_DIR=$TRAVIS_BUILD_DIR/benchbuild/tmp
+
 install:
   - pip install .
   - pip install -r requirements.txt
@@ -23,8 +26,9 @@ install:
 
 script:
   - pre-commit run --from-ref origin/vara-dev --to-ref HEAD
-  - mkdir -p paper_configs/test/
+  - mkdir -p benchbuild
   - pytest --cov=./ varats tests
+  - rm -rf benchbuild
   - ./run_extra_tests.sh
   - coverage combine -a
   - coverage report

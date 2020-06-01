@@ -9,18 +9,22 @@ import logging
 import typing as tp
 from pathlib import Path
 
+from varats.paper.paper_config import (
+    get_loaded_paper_config,
+    is_paper_config_loaded,
+)
 from varats.settings import (
-    CFG,
     get_value_or_default,
     get_varats_base_folder,
     save_config,
+    vara_cfg,
 )
 from varats.utils.cli_util import cli_list_choice, initialize_logger_config
 
 LOG = logging.getLogger(__name__)
 
 
-def set_paper_config_parser_arg(
+def _set_paper_config_parser_arg(
     parser: argparse.ArgumentParser, opt: bool = False
 ) -> None:
     config_opt_name = "paper_config" if not opt else "--paper-config"
@@ -48,13 +52,13 @@ def main() -> None:
     create_parser = sub_parsers.add_parser(
         'create', help="Create a new paper config."
     )
-    set_paper_config_parser_arg(create_parser)
+    _set_paper_config_parser_arg(create_parser)
 
     # vara-pc set
     set_parser = sub_parsers.add_parser(
         'select', help="Select the current paper config."
     )
-    set_paper_config_parser_arg(set_parser, True)
+    _set_paper_config_parser_arg(set_parser, True)
 
     # vara-pc list
     list_parser = sub_parsers.add_parser(
@@ -71,6 +75,13 @@ def main() -> None:
     if 'subcommand' not in args:
         parser.print_help()
         return
+
+    if vara_cfg()["paper_config"]["folder"].value is None:
+        # Setup default paper config path when none exists
+        vara_cfg()["paper_config"]["folder"] = str(
+            Path('paper_configs').absolute()
+        )
+        save_config()
 
     if args['subcommand'] == 'create':
         __pc_create(args)
@@ -89,12 +100,11 @@ def __get_paper_configs(pc_folder_path: Path) -> tp.List[str]:
 
 def __pc_create(args: tp.Dict[str, tp.Any]) -> None:
     pc_path = Path(args['paper_config'])
-
     if not pc_path.is_absolute():
-        current_folder = CFG["paper_config"]["folder"].value
+        current_folder = vara_cfg()["paper_config"]["folder"].value
         if current_folder is None:
             pc_path = Path(
-                CFG["config_file"].value
+                vara_cfg()["config_file"].value
             ).parent / "paper_configs" / pc_path
         else:
             pc_path = Path(current_folder) / pc_path
@@ -114,8 +124,8 @@ def __pc_create(args: tp.Dict[str, tp.Any]) -> None:
     )
     pc_path.mkdir(parents=True)
 
-    CFG["paper_config"]["folder"] = str(folder)
-    CFG["paper_config"]["current_config"] = str(current_config)
+    vara_cfg()["paper_config"]["folder"] = str(folder)
+    vara_cfg()["paper_config"]["current_config"] = str(current_config)
     save_config()
 
 
@@ -125,7 +135,8 @@ def __pc_set(args: tp.Dict[str, tp.Any]) -> None:
     else:
         pc_folder_path = Path(
             get_value_or_default(
-                CFG["paper_config"], "folder", str(get_varats_base_folder())
+                vara_cfg()["paper_config"], "folder",
+                str(get_varats_base_folder())
             )
         )
         if not (pc_folder_path.exists() and pc_folder_path.is_dir()):
@@ -147,9 +158,16 @@ def __pc_set(args: tp.Dict[str, tp.Any]) -> None:
             raw_pc_path = choice
 
         try:
+            if is_paper_config_loaded():
+                current_config: tp.Optional[str] = get_loaded_paper_config(
+                ).path.name
+            else:
+                current_config = None
+
             cli_list_choice(
                 "Choose a number to select a paper config", paper_configs,
-                lambda x: x, set_pc_path
+                lambda x: f"{x} *"
+                if current_config and x == current_config else x, set_pc_path
             )
         except EOFError:
             return
@@ -158,7 +176,7 @@ def __pc_set(args: tp.Dict[str, tp.Any]) -> None:
         pc_path = Path(raw_pc_path)
 
     if not pc_path.is_absolute():
-        pc_path = Path(CFG["paper_config"]["folder"].value) / pc_path
+        pc_path = Path(vara_cfg()["paper_config"]["folder"].value) / pc_path
 
     if not (pc_path.exists() and pc_path.is_dir()):
         LOG.error(
@@ -173,8 +191,8 @@ def __pc_set(args: tp.Dict[str, tp.Any]) -> None:
     LOG.info(
         f"Current paper config is now {current_config} at location {folder}."
     )
-    CFG["paper_config"]["folder"] = str(folder)
-    CFG["paper_config"]["current_config"] = str(current_config)
+    vara_cfg()["paper_config"]["folder"] = str(folder)
+    vara_cfg()["paper_config"]["current_config"] = str(current_config)
     save_config()
 
 
@@ -182,7 +200,7 @@ def __pc_list(args: tp.Dict[str, tp.Any]) -> None:
     if "paper_config_path" in args:
         pc_folder_path = Path(args['paper_config_path'])
     else:
-        pc_folder_path = Path(CFG["paper_config"]["folder"].value)
+        pc_folder_path = Path(vara_cfg()["paper_config"]["folder"].value)
 
     if not (pc_folder_path.exists() and pc_folder_path.is_dir()):
         LOG.error(
@@ -192,8 +210,16 @@ def __pc_list(args: tp.Dict[str, tp.Any]) -> None:
         return
 
     print("Found the following paper_configs:")
+    if is_paper_config_loaded():
+        current_config: tp.Optional[str] = get_loaded_paper_config().path.name
+    else:
+        current_config = None
+
     for paper_config in __get_paper_configs(pc_folder_path):
-        print(paper_config)
+        if current_config and paper_config == current_config:
+            print(f"{paper_config} *")
+        else:
+            print(paper_config)
 
 
 if __name__ == '__main__':

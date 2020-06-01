@@ -21,7 +21,8 @@ from varats.paper.case_study import (
     load_case_study_from_file,
     store_case_study,
 )
-from varats.settings import CFG
+from varats.paper.paper_config import get_paper_config
+from varats.settings import vara_cfg
 from varats.tools.commit_map import create_lazy_commit_map_loader
 from varats.utils.cli_util import cli_list_choice, initialize_logger_config
 from varats.utils.project_util import get_local_project_git_path
@@ -161,6 +162,12 @@ def __add_common_args(sub_parser: ArgumentParser) -> None:
         default=10,
         help="Number of revisions to select."
     )
+    sub_parser.add_argument(
+        "--ignore-blocked",
+        action="store_true",
+        default=False,
+        help="Ignore revisions that are marked as blocked."
+    )
 
 
 def __create_gen_parser(sub_parsers: _SubParsersAction) -> None:
@@ -194,8 +201,13 @@ def __create_ext_parser(sub_parsers: _SubParsersAction) -> None:
         "--merge-stage",
         default=-1,
         type=int,
-        help="Merge the new revision into stage `n`, defaults to last stage. " +
-        "Use '+' to add a new stage."
+        help="Merge the new revision(s) into stage `n`; defaults to last stage."
+    )
+    ext_parser.add_argument(
+        "--new-stage",
+        help="Add the new revision(s) to a new stage.",
+        default=False,
+        action='store_true'
     )
     ext_parser.add_argument(
         "--boundary-gradient",
@@ -231,7 +243,7 @@ def __create_package_parser(sub_parsers: _SubParsersAction) -> None:
         default=".*"
     )
     package_parser.add_argument(
-        "--report_names",
+        "--report-names",
         help=(
             "Provide a report name to "
             "select which files are considered for the status"
@@ -255,7 +267,7 @@ def __create_view_parser(sub_parsers: _SubParsersAction) -> None:
         "project", help="Project to view result files for."
     )
     view_parser.add_argument(
-        "commit_hash", help="Commit hash to view result files for."
+        "commit_hash", help="Commit hash to view result files for.", nargs='?'
     )
     view_parser.add_argument(
         "--newest-only",
@@ -271,7 +283,7 @@ def __casestudy_status(
     if args.get("force_color", False):
         colors.use_color = True
     if 'paper_config' in args:
-        CFG['paper_config']['current_config'] = args['paper_config']
+        vara_cfg()['paper_config']['current_config'] = args['paper_config']
     if args['short'] and args['list_revs']:
         parser.error(
             "At most one argument of: --short, --list-revs can be used."
@@ -310,14 +322,14 @@ def __casestudy_create_or_extend(
         if args['merge_stage'] == -1:
             args['merge_stage'] = max(case_study.num_stages - 1, 0)
         # If + was specified we add a new stage
-        if args['merge_stage'] == '+':
+        if args['new_stage']:
             args['merge_stage'] = case_study.num_stages
 
         # Setup default result folder
         if 'result_folder' not in args and args[
             'strategy'] is ExtenderStrategy.smooth_plot:
             args['project'] = case_study.project_name
-            args['result_folder'] = str(CFG['result_dir']
+            args['result_folder'] = str(vara_cfg()['result_dir']
                                        ) + "/" + args['project']
             LOG.info(f"Result folder defaults to: {args['result_folder']}")
 
@@ -346,7 +358,7 @@ def __casestudy_package(
     if output_path.suffix == '':
         output_path = Path(str(output_path) + ".zip")
     if output_path.suffix == '.zip':
-        vara_root = Path(str(CFG["config_file"])).parent
+        vara_root = Path(str(vara_cfg()["config_file"])).parent
         if Path(os.getcwd()) != vara_root:
             LOG.info(
                 f"Packaging needs to be called from VaRA root dir, "
@@ -364,11 +376,82 @@ def __casestudy_package(
         )
 
 
+def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
+    result_file_type = MetaReport.REPORT_TYPES[args["report_type"]]
+    project_name = args["project"]
+    if "commit_hash" not in args:
+        # Ask the user to provide a commit hash
+        print("No commit hash was provided.")
+        commit_hash = ""
+        paper_config = get_paper_config()
+
+        available_commit_hashes = []
+        # Compute available commit hashes
+        for case_study in paper_config.get_case_studies(project_name):
+            available_commit_hashes.extend(
+                case_study.get_revisions_status(
+                    result_file_type, tag_blocked=False
+                )
+            )
+
+        max_num_hashes = 42
+        if len(available_commit_hashes) > max_num_hashes:
+            print("Found to many commit hashes, truncating selection...")
+
+        # Create call backs for cli choice
+        def set_commit_hash(
+            choice_pair: tp.Tuple[str, FileStatusExtension]
+        ) -> None:
+            nonlocal commit_hash
+            commit_hash = choice_pair[0][:10]
+
+        longest_file_status_extension = max([
+            len(status.get_colored_status())
+            for status in FileStatusExtension.get_physical_file_statuses()
+        ])
+
+        def result_file_to_list_entry(
+            commit_status_pair: tp.Tuple[str, FileStatusExtension]
+        ) -> str:
+            status = commit_status_pair[1].get_colored_status().rjust(
+                longest_file_status_extension, " "
+            )
+            return f"[{status}] {commit_status_pair[0][:10]}"
+
+        # Ask user which commit we should use
+        try:
+            cli_list_choice(
+                "Please select a hash:",
+                available_commit_hashes[:max_num_hashes],
+                result_file_to_list_entry,
+                set_commit_hash,
+                start_label=1,
+                default=1,
+            )
+        except EOFError:
+            raise LookupError
+        if commit_hash == "":
+            print("Could not find processed commit hash.")
+            raise LookupError
+        return commit_hash
+    return tp.cast(str, args["commit_hash"])
+
+
 def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
     result_file_type = MetaReport.REPORT_TYPES[args["report_type"]]
+    project_name = args["project"]
+
+    try:
+        commit_hash = __init_commit_hash(args)
+    except LookupError:
+        return
+
     result_files = PCM.get_result_files(
-        result_file_type, args["project"], args["commit_hash"],
-        args.get("newest-only", False)
+        result_file_type, project_name, commit_hash,
+        args.get("newest_only", False)
+    )
+    result_files.sort(
+        key=lambda report_file: report_file.stat().st_mtime_ns, reverse=True
     )
 
     if not result_files:

@@ -6,6 +6,7 @@ Setting up the tooling, keeping it up to date, and providing necessary
 information.
 """
 
+import logging
 import os
 import re
 import shutil
@@ -15,8 +16,8 @@ from enum import Enum
 from pathlib import Path
 from threading import RLock
 
+from benchbuild.utils.cmd import cmake, git, grep, ln, mkdir
 from plumbum import RETCODE, TF, local
-from plumbum.cmd import cmake, git, grep, ln, mkdir
 from PyQt5.QtCore import (
     QObject,
     QProcess,
@@ -26,8 +27,10 @@ from PyQt5.QtCore import (
     pyqtSlot,
 )
 
-from varats.settings import CFG, save_config
+from varats.settings import vara_cfg, save_config
 from varats.utils.exceptions import ProcessTerminatedError
+
+LOG = logging.getLogger(__name__)
 
 
 class LLVMProject():
@@ -165,9 +168,8 @@ def convert_to_llvmprojects_enum(
 
     if projects_names:
         for project_name in projects_names:
-            print(
-                "Warning: {} is not a supported project name".
-                format(project_name)
+            LOG.warning(
+                f"Warning: {project_name} is not a supported project name"
             )
 
     return enum_list
@@ -298,8 +300,8 @@ def setup_vara(
     post_out: tp.Callable[[str], None] = lambda x: None
 ) -> None:
     """Sets up VaRA over cli."""
-    CFG["vara"]["llvm_source_dir"] = str(llvm_folder)
-    CFG["vara"]["llvm_install_dir"] = install_prefix
+    vara_cfg()["vara"]["llvm_source_dir"] = str(llvm_folder)
+    vara_cfg()["vara"]["llvm_install_dir"] = install_prefix
     save_config()
 
     use_dev_branches = True
@@ -321,13 +323,13 @@ def setup_vara(
                 update_all_submodules(llvm_folder / LLVMProjects.phasar.path)
 
     if not os.path.exists(llvm_folder):
-        print(
-            "LLVM was not initialized. Please initialize LLVM with VaRA, " +
+        LOG.warning(
+            "LLVM was not initialized. Please initialize LLVM with VaRA, "
             "for example, with 'vara-buildsetup -i'."
         )
     else:
         if update:
-            if str(CFG["vara"]["version"]) != str(version):
+            if str(vara_cfg()["vara"]["version"]) != str(version):
                 for project in LLVMProjects:
                     fetch_repository(llvm_folder / project.path)
 
@@ -350,7 +352,7 @@ def setup_vara(
                         llvm_folder / project.path, "release_" + str(version)
                     )
 
-                CFG["vara"]["version"] = int(version)
+                vara_cfg()["vara"]["version"] = int(version)
                 save_config()
 
             pull_current_branch(llvm_folder)
@@ -698,8 +700,8 @@ def build_vara(
     post_out: tp.Callable[[str], None] = lambda x: None
 ) -> None:
     """Builds a VaRA configuration."""
-    own_libgit = bool(CFG["vara"]["own_libgit2"])
-    include_phasar = bool(CFG["vara"]["with_phasar"])
+    own_libgit = bool(vara_cfg()["vara"]["own_libgit2"])
+    include_phasar = bool(vara_cfg()["vara"]["with_phasar"])
     full_path = path_to_llvm / "build/"
     full_path /= build_type.build_folder()
 
@@ -779,7 +781,9 @@ def get_llvm_project_status(
             git_status = git['status']
             stdout = git_status('-sb')
             for line in stdout.split('\n'):
-                if line.startswith('## vara-' + str(CFG['version']) + '-dev'):
+                if line.startswith(
+                    '## vara-' + str(vara_cfg()['version']) + '-dev'
+                ):
                     match = re.match(r".*\[(.*)\]", line)
                     if match is not None:
                         return GitStatus(GitState.BEHIND, match.group(1))

@@ -1,5 +1,6 @@
 """VaRA-TS MainWindow."""
 
+import logging
 import typing as tp
 from os import path
 
@@ -11,11 +12,13 @@ from varats.gui.ui_MainWindow import Ui_MainWindow
 from varats.gui.views.cr_bar_view import CRBarView
 from varats.gui.views.example_view import ExampleView
 from varats.settings import (
-    CFG,
     create_missing_folders,
     generate_benchbuild_config,
     save_config,
+    vara_cfg,
 )
+
+LOG = logging.getLogger(__name__)
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
@@ -78,21 +81,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
 
     @staticmethod
     def _create_benchbuild_config() -> None:
-        if CFG["config_file"].value is None:
-            print(
-                "No VaRA config found, please initialize a " +
+        if vara_cfg()["config_file"].value is None:
+            LOG.warning(
+                "No VaRA config found, please initialize a "
                 "VaRA config first."
             )
             return
 
-        if CFG["benchbuild_root"].value is None:
-            CFG["benchbuild_root"] = path.dirname(str(CFG["config_file"]))\
-                                                  + "/benchbuild"
+        if vara_cfg()["benchbuild_root"].value is None:
+            vara_cfg()["benchbuild_root"] = path.dirname(
+                str(vara_cfg()["config_file"])
+            ) + "/benchbuild"
         create_missing_folders()
 
         generate_benchbuild_config(
-            CFG,
-            str(CFG["benchbuild_root"]) + "/.benchbuild.yml"
+            vara_cfg(),
+            str(vara_cfg()["benchbuild_root"]) + "/.benchbuild.yml"
         )
 
     def __remove_tab(self, index: int) -> None:

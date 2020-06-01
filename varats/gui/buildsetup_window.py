@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QShortcut, QWidget
 
 from varats import vara_manager
 from varats.gui.views.ui_BuildMenu import Ui_BuildSetup
-from varats.settings import CFG, get_value_or_default, save_config
+from varats.settings import get_value_or_default, save_config, vara_cfg
 from varats.utils.exceptions import ProcessTerminatedError
 
 
@@ -49,7 +49,8 @@ class SetupWorker(QRunnable):
 
             self._update_progress(7)
             vara_manager.checkout_vara_version(
-                self.path, True, CFG['version'], True
+                self.path, True,
+                vara_cfg()['vara']['version'], True
             )
 
             self._update_progress(8)
@@ -103,14 +104,14 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         self.__quit_sc.activated.connect(self.close)
 
         llvm_src_dir = get_value_or_default(
-            CFG["vara"], "llvm_source_dir",
+            vara_cfg()["vara"], "llvm_source_dir",
             str(os.getcwd()) + "/vara-llvm/"
         )
         self.sourcePath.insert(llvm_src_dir)
         self.sourcePath.editingFinished.connect(self._update_source_dir)
 
         llvm_install_dir = get_value_or_default(
-            CFG["vara"], "llvm_install_dir",
+            vara_cfg()["vara"], "llvm_install_dir",
             str(os.getcwd()) + "/VaRA/"
         )
         self.installPath.insert(llvm_install_dir)
@@ -264,12 +265,12 @@ class BuildSetup(QWidget, Ui_BuildSetup):
             self.varaStatus.setStyleSheet("QLabel { color : orange; }")
 
     def _update_source_dir(self):
-        CFG["vara"]["llvm_source_dir"] = self.__get_llvm_source_path()
+        vara_cfg()["vara"]["llvm_source_dir"] = self.__get_llvm_source_path()
         save_config()
         self._check_state()
 
     def _update_install_dir(self):
-        CFG["vara"]["llvm_install_dir"] = self.__get_install_path()
+        vara_cfg()["vara"]["llvm_install_dir"] = self.__get_install_path()
         save_config()
 
     def __get_llvm_source_path(self):

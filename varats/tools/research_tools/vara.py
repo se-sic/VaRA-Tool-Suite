@@ -6,12 +6,12 @@ import shutil
 import typing as tp
 from pathlib import Path
 
+from benchbuild.utils.cmd import ln, mkdir
 from plumbum import local
-from plumbum.cmd import ln, mkdir
 from PyQt5.QtCore import QProcess
 
 from varats.plots.plot_utils import check_required_args
-from varats.settings import CFG, save_config
+from varats.settings import save_config, vara_cfg
 from varats.tools.research_tools.research_tool import (
     CodeBase,
     ResearchTool,
@@ -86,10 +86,10 @@ class VaRACodeBase(CodeBase):
         print(f"Checking out VaRA version {str(version) + dev_suffix}")
 
         self.get_sub_project("vara-llvm-project"
-                            ).checkout_branch(f"vara-{version}" + dev_suffix)
+                            ).checkout_branch(f"vara-{version}{dev_suffix}")
 
         # TODO (sattlerf): make different checkout for older versions
-        self.get_sub_project("VaRA").checkout_branch(f"vara" + dev_suffix)
+        self.get_sub_project("VaRA").checkout_branch(f"vara{dev_suffix}")
 
     def setup_submodules(self) -> None:
         """Set up the git submodules of all sub projects."""
@@ -126,19 +126,20 @@ class VaRA(ResearchTool[VaRACodeBase]):
                       * version
                       * install_prefix
         """
-        CFG["vara"]["llvm_source_dir"] = str(source_folder)
-        CFG["vara"]["llvm_install_dir"] = str(kwargs["install_prefix"])
+        cfg = vara_cfg()
+        cfg["vara"]["llvm_source_dir"] = str(source_folder)
+        cfg["vara"]["llvm_install_dir"] = str(kwargs["install_prefix"])
         version = kwargs.get("version")
         if version:
             version = int(tp.cast(int, version))
-            CFG["vara"]["version"] = version
+            cfg["vara"]["version"] = version
         else:
-            version = CFG["vara"]["version"].value
+            version = cfg["vara"]["version"].value
 
         print(f"Setting up VaRA at {source_folder}")
         save_config()
 
-        use_dev_branches = CFG["vara"]["developer_version"].value
+        use_dev_branches = cfg["vara"]["developer_version"].value
 
         self.code_base.clone(source_folder)
         self.code_base.setup_vara_remotes()
@@ -151,7 +152,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         version = 100
 
         # TODO (se-passau/VaRA#640): version upgrade
-        if str(CFG["vara"]["version"]) != str(version):
+        if str(vara_cfg()["vara"]["version"]) != str(version):
             raise NotImplementedError
 
         self.code_base.pull()
@@ -199,7 +200,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
         # Set install prefix in cmake
         with local.cwd(full_path):
-            CFG["vara"]["llvm_install_dir"] = str(install_location)
+            vara_cfg()["vara"]["llvm_install_dir"] = str(install_location)
             set_vara_cmake_variables(
                 str(install_location), log_without_linesep(print)
             )
