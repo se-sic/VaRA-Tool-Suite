@@ -5,11 +5,9 @@ import os
 import typing as tp
 from pathlib import Path
 
+from varats.settings import vara_cfg
 from varats.tools.research_tools.phasar import Phasar
-from varats.tools.research_tools.research_tool import (
-    ResearchTool,
-    SpecificCodeBase,
-)
+from varats.tools.research_tools.research_tool import ResearchTool
 from varats.tools.research_tools.vara import VaRA
 
 
@@ -125,7 +123,8 @@ def get_research_tool(
     elif rs_type.has_source_location():
         src_folder = rs_type.source_location()
     else:
-        src_folder = Path(os.getcwd()) / "tools_src/"
+        config_root_path = Path(str(vara_cfg()["config_file"])).parent
+        src_folder = config_root_path / "tools_src/"
 
     if not src_folder.exists():
         src_folder.mkdir(parents=True)
