@@ -6,7 +6,7 @@ import pygit2
 
 
 class PygitBug:
-    """Bug representation using the pygit2 Commit Class."""
+    """Bug representation using the ``pygit2.Commit`` class."""
 
     def __init__(
         self, fixing_commit: pygit2.Commit,
