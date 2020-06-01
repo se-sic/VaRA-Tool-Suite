@@ -26,7 +26,7 @@ class PygitBug:
         return self.__introducing_commits
 
 
-class HashBug:
+class RawBug:
     """Bug representation using the Commit Hashes as Strings."""
 
     def __init__(self, fixing_commit: str, introducing_commits: tp.List[str]):
@@ -58,14 +58,14 @@ def find_all_pygit_bugs() -> tp.FrozenSet[PygitBug]:
     return frozenset(pygit_bugs)
 
 
-def find_all_hash_bugs() -> tp.FrozenSet[HashBug]:
+def find_all_raw_bugs() -> tp.FrozenSet[RawBug]:
     """
     Create a set of all bugs.
 
     :return:
-        A set of HashBug Objects.
+        A set of RawBug Objects.
     """
-    hash_bugs: tp.Set[HashBug] = set()
+    hash_bugs: tp.Set[RawBug] = set()
 
     # TODO implement
 
@@ -87,14 +87,14 @@ def find_pygit_bug_by_fix(fixing_commit: str) -> tp.Optional[PygitBug]:
     return None
 
 
-def find_hash_bug_by_fix(fixing_commit: str) -> tp.Optional[HashBug]:
+def find_raw_bug_by_fix(fixing_commit: str) -> tp.Optional[RawBug]:
     """
     Find the bug associated to some fixing commit, if there is any.
 
     :param fixing_commit:
         Commit Hash of the potentially fixing commit
     :return:
-        A HashBug Object, if there is such a bug
+        A RawBug Object, if there is such a bug
         None, if there is no such bug
     """
     # TODO implement
@@ -118,14 +118,14 @@ def find_pygit_bug_by_introduction(
     return []
 
 
-def find_hash_bug_by_introduction(introducing_commit: str) -> tp.List[HashBug]:
+def find_raw_bug_by_introduction(introducing_commit: str) -> tp.List[RawBug]:
     """
     Create a (potentially empty) list of bugs introduced by a certain commit.
 
     :param introducing_commit:
         Commit Hash of the introducing commit to look for
     :return:
-        A list of HashBug Objects
+        A list of RawBug Objects
     """
     # TODO implement
 
