@@ -13,6 +13,10 @@ Available plots
 Paper config overview plot
 ..........................
 
+.. autoclass:: varats.plots.paper_config_overview.PaperConfigOverviewPlot
+    :members: NAME
+    :undoc-members:
+
 This plot gives an overview of the status of the experiment runs for the current :ref:`paper config<How to use paper configs>`.
 The information in this plot is similar to what you get from :ref:`vara-cs status`.
 
