@@ -201,8 +201,13 @@ def __create_ext_parser(sub_parsers: _SubParsersAction) -> None:
         "--merge-stage",
         default=-1,
         type=int,
-        help="Merge the new revision into stage `n`, defaults to last stage. " +
-        "Use '+' to add a new stage."
+        help="Merge the new revision(s) into stage `n`; defaults to last stage."
+    )
+    ext_parser.add_argument(
+        "--new-stage",
+        help="Add the new revision(s) to a new stage.",
+        default=False,
+        action='store_true'
     )
     ext_parser.add_argument(
         "--boundary-gradient",
@@ -317,7 +322,7 @@ def __casestudy_create_or_extend(
         if args['merge_stage'] == -1:
             args['merge_stage'] = max(case_study.num_stages - 1, 0)
         # If + was specified we add a new stage
-        if args['merge_stage'] == '+':
+        if args['new_stage']:
             args['merge_stage'] = case_study.num_stages
 
         # Setup default result folder
