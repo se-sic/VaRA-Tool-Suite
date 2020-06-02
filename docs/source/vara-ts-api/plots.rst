@@ -1,7 +1,8 @@
 Plots
 =====
 
-Plots are used to visualize data from one or more reports. VaRA-TS comes with its own plot abstraction that uses pyplot, seaborn and similar for plotting.
+Plots are used to visualize data from one or more reports.
+VaRA-TS comes with its own plot abstraction that uses pyplot, seaborn and similar for plotting, which can tie plot and research data together to be automatically generated.
 
 
 How to plot your data with VaRA-TS
