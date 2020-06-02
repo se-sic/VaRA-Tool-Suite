@@ -21,6 +21,7 @@ VaRA-TS gives convenient access to a list of different research tools, which can
    :caption: List of provided research tools:
 
    research_tool_docs/vara/vara
+   research_tool_docs/phasar/phasar
 
 
 Tool-Suite Overview
