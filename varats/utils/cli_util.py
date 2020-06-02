@@ -7,7 +7,6 @@ from pathlib import Path
 
 from rich.traceback import install
 
-from varats.settings import vara_cfg
 from varats.tools.research_tools.phasar import Phasar
 from varats.tools.research_tools.research_tool import ResearchTool
 from varats.tools.research_tools.vara import VaRA
