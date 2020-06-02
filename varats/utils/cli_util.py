@@ -6,10 +6,7 @@ import typing as tp
 from pathlib import Path
 
 from varats.tools.research_tools.phasar import Phasar
-from varats.tools.research_tools.research_tool import (
-    ResearchTool,
-    SpecificCodeBase,
-)
+from varats.tools.research_tools.research_tool import ResearchTool
 from varats.tools.research_tools.vara import VaRA
 
 
