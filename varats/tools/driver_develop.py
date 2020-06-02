@@ -8,7 +8,7 @@ from varats.tools.research_tools.research_tool import SubProject
 from varats.utils.cli_util import (
     get_research_tool,
     get_supported_research_tool_names,
-    initialize_logger_config,
+    initialize_cli_tool,
 )
 
 
@@ -18,7 +18,7 @@ def __sub_project_choices() -> tp.List[str]:
 
 def main() -> None:
     """Handle and simplify common developer interactions with the project."""
-    initialize_logger_config()
+    initialize_cli_tool()
     parser = argparse.ArgumentParser("vara-develop")
     parser.add_argument(
         "researchtool",

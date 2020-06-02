@@ -26,6 +26,7 @@ setup(
         "requests>=2.23.0",
         "requests_cache>=0.5.2",
         "tabulate>=0.8.6",
+        "rich>=1.3.1",
     ],
     author="Florian Sattler",
     author_email="sattlerf@cs.uni-saarland.de",

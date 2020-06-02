@@ -5,6 +5,9 @@ import os
 import typing as tp
 from pathlib import Path
 
+from rich.traceback import install
+
+from varats.settings import vara_cfg
 from varats.tools.research_tools.phasar import Phasar
 from varats.tools.research_tools.research_tool import ResearchTool
 from varats.tools.research_tools.vara import VaRA
@@ -70,6 +73,12 @@ def cli_list_choice(
         if not repeat:
             return
         user_choice = input(prompt)
+
+
+def initialize_cli_tool() -> None:
+    """Initializes all relevant context and tools for varats cli tools."""
+    install(width=120)
+    initialize_logger_config()
 
 
 def initialize_logger_config() -> None:
