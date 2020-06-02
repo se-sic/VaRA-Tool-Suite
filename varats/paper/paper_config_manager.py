@@ -38,7 +38,6 @@ def show_status_of_case_studies(
         sep_stages: print each stage separeted
         print_legend: print a legend for the different types
     """
-    None.print()
     current_config = PC.get_paper_config()
 
     longest_cs_name = 0
