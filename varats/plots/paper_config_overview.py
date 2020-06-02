@@ -144,7 +144,7 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
 
 def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
     """
-    Create a plot that shows an overview of all case-studies of a paper- config
+    Create a plot that shows an overview of all case-studies of a paper-config
     about how many revisions are successful per project/year.
 
     Args:
@@ -243,14 +243,26 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
     ]
     ax.legend(
         legend_entries,
-        ['Success (top left)', 'Blocked (top right)', 'Failed (bottom)'],
+        ['Success (top left)', 'Blocked (top right)', 'Failed/Missing'],
         loc='upper left',
         bbox_to_anchor=(1, 1)
     )
 
 
 class PaperConfigOverviewPlot(Plot):
-    """Plot showing an overview of all case-studies."""
+    """
+    Plot showing an overview of current experiment results for the current paper
+    config.
+
+    Plots a matrix with the analyzed projects as rows and the sampled revisions
+    grouped by year as columns. Each cell represents the sampled revisions for a
+    project in a specific year. The numbers in the cell are the number of
+    successfully analyzed (top left), blocked (top right), and total number of
+    sampled revisions (bottom). The color of the cell indicates the ratio
+    between these three values. The greener a cell, the more revisions were
+    successfully analyzed, analogous for red (failed or missing) and blue
+    (blocked).
+    """
 
     NAME = 'paper_config_overview_plot'
 
