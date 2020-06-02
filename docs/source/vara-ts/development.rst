@@ -1,11 +1,20 @@
+Developing with VaRA-TS
+=======================
+
+First, take a look at our :ref:`install guide<Build VaRA with vara-buildsetup>` to learn how to set up the tool suite.
+
+The :ref:`VaRA-TS API Reference` contains information about how to :ref:`work with the tool-suite<Tools>`, as well as how to add your own :ref:`research tools<Research Tool API>`, :ref:`experiments`, :ref:`reports`, :ref:`plots`, and more.
+
+For further information about `benchbuild <https://github.com/PolyJIT/benchbuild>`_ related concepts, like `Experiments` or `Projects`, take a look at the  `benchbuild documentation <https://pprof-study.readthedocs.io/en/master/>`_.
+
 Testing
-=======
+-------
 
 Tests for the VaRA tool suite are located in the ``tests`` directory.
 The tests are run using `pytest` but most of the tests are written using `unittest` syntax.
 
 Mocking the vara configuration
-------------------------------
+..............................
 
 To ensure a flawless test execution, it is important that the order of test execution does not matter, i.e. each single test is idempotent and does not modify the environment.
 One common problem with this are the vara and benchbuild configurations, as they are stored in a single global object.
@@ -13,7 +22,7 @@ We therefore provide a helper function :func:`~tests.test_utils.replace_config()
 This function can be either used as a decorator similar to ``unittest.mock`` or as a context manager.
 
 Test resources
---------------
+..............
 
 Test resources, like report files or case studies, can be stored in the ``tests/TEST_INPUTS`` directory.
 This directory follows the same structure one would also use for the tool-suites installation environment.

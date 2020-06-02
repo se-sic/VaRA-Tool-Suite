@@ -17,6 +17,7 @@ The table will then be available under the name you declare in the class-level f
 Each table class must override the abstract function :func:`~varats.tables.table.Table.tabulate()` that returns a string of the rendered table.
 By convention, the returned string should be produced by `python-tabulate`'s ``tabulate()`` function using the table class' :attr:`~varats.tables.table.Table.format` attribute.
 
+The data for tables should be retrieved using our :ref:`data storage abstraction<Data management>`.
 
 Table helper modules
 --------------------

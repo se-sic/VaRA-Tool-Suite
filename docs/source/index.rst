@@ -36,23 +36,8 @@ VaRA-TS Docs
 
    vara-ts/vara-buildsetup
    vara-ts/benchbuild
-   vara-ts/testing
-
-VaRA-TS API Reference
-=====================
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-   vara-ts-api/tools/research_tools
-   vara-ts-api/experiments
-   vara-ts-api/projects
-   vara-ts-api/paper
-   vara-ts-api/tools
-   vara-ts-api/plots
-   vara-ts-api/tables
-   vara-ts-api/data
-   vara-ts-api/utils.rst
+   vara-ts/development
+   vara-ts-api/vara-ts-api-reference
 
 
 Indices and tables
