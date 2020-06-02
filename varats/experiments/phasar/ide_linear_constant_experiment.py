@@ -1,3 +1,4 @@
+"""Module for phasar LinearConstantAnalysis analyses."""
 import typing as tp
 from os import path
 
@@ -15,13 +16,15 @@ from varats.utils.experiment_util import (
     UnlimitStackSize,
     VersionExperiment,
     get_default_compile_error_wrapped,
+    exec_func_with_pe_error_handler,
 )
 
 
-class PhasarTestAnalysis(actions.Step):  # type: ignore
+class IDELinearConstantAnalysis(actions.Step):  # type: ignore
+    """Analysis step to run phasars IDELinearConstantAnalysis on a project."""
 
-    NAME = "PhasarTestAnalysis"
-    DESCRIPTION = "TODO"
+    NAME = "IDELinearConstantAnalysis"
+    DESCRIPTION = "TODO"  # TODO (@pdschubert): please add
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
@@ -32,20 +35,55 @@ class PhasarTestAnalysis(actions.Step):  # type: ignore
         super().__init__(obj=project, action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
-        print("""
-Wuhu running phasar
+        """Run phasars IDELinearConstantAnalysis analysis."""
+        if not self.obj:
+            return
+        project = self.obj
 
-
-""")
-        print(local.env["PATH"])
+        bc_cache_folder = local.path(
+            Extract.BC_CACHE_FOLDER_TEMPLATE.format(
+                cache_dir=str(bb_cfg()["varats"]["result"]),
+                project_name=str(project.name)
+            )
+        )
+        # Add to the user-defined path for saving the results of the
+        # analysis also the name and the unique id of the project of every
+        # run.
+        varats_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
+            result_dir=str(bb_cfg()["varats"]["outfile"]),
+            project_dir=str(project.name)
+        )
 
         phasar = local["phasar-llvm"]
-        print(phasar("--help"))
+        for binary in project.binaries:
+            bc_file = bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
+                project_name=project.name,
+                binary_name=binary.name,
+                project_version=project.version
+            )
+            phasar_params = ["-m", bc_file, "-C", "CHA", "-D", "ide-lca"]
+
+            exec_func_with_pe_error_handler(
+                phasar[phasar_params],
+                PEErrorHandler(
+                    varats_result_folder,
+                    EmptyReport.get_file_name(
+                        project_name=str(project.name),
+                        binary_name=binary.name,
+                        project_version=str(project.version),
+                        project_uuid=str(project.run_uuid),
+                        extension_type=FSE.Failed,
+                        file_ext=".txt"
+                    )
+                )
+            )
 
 
-class PhasarTest(VersionExperiment):
+class IDELinearConstantAnalysisExperiment(VersionExperiment):
+    """Experiment class to build and analyse a project with an
+    IDELinearConstantAnalysis."""
 
-    NAME = "TestPhasar"
+    NAME = "PhasarIDELinearConstantAnalysis"
 
     REPORT_TYPE = EmptyReport
 
@@ -69,14 +107,15 @@ class PhasarTest(VersionExperiment):
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            project, EmptyReport, PhasarTestAnalysis.RESULT_FOLDER_TEMPLATE
+            project, EmptyReport,
+            IDELinearConstantAnalysis.RESULT_FOLDER_TEMPLATE
         )
 
-        vara_result_folder = \
+        varats_result_folder = \
             f"{bb_cfg()['varats']['outfile']}/{project.name}"
 
         error_handler = PEErrorHandler(
-            vara_result_folder,
+            varats_result_folder,
             EmptyReport.get_file_name(
                 project_name=str(project.name),
                 binary_name="all",
@@ -109,7 +148,7 @@ class PhasarTest(VersionExperiment):
             analysis_actions.append(Extract(project, handler=error_handler))
 
         analysis_actions.append(UnlimitStackSize(project))
-        analysis_actions.append(PhasarTestAnalysis(project))
+        analysis_actions.append(IDELinearConstantAnalysis(project))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
