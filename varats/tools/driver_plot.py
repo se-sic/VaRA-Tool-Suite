@@ -11,7 +11,7 @@ from varats.plots.plot import PlotDataEmpty
 from varats.plots.plots import PlotRegistry, build_plot
 from varats.settings import vara_cfg
 from varats.tools.commit_map import create_lazy_commit_map_loader
-from varats.utils.cli_util import initialize_logger_config
+from varats.utils.cli_util import initialize_cli_tool
 
 LOG = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ def main() -> None:
 
     `vara-plot`
     """
-    initialize_logger_config()
+    initialize_cli_tool()
     parser = argparse.ArgumentParser("vara-plot")
     parser.add_argument(
         "plot_type",
