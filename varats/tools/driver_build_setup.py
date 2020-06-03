@@ -18,7 +18,7 @@ from varats.tools.research_tools.research_tool import (
 from varats.utils.cli_util import (
     get_research_tool,
     get_supported_research_tool_names,
-    initialize_logger_config,
+    initialize_cli_tool,
 )
 from varats.vara_manager import BuildType
 
@@ -104,7 +104,7 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
 
 def main() -> None:
     """Build VaRA on cli."""
-    initialize_logger_config()
+    initialize_cli_tool()
     parser = argparse.ArgumentParser("vara-buildsetup")
 
     parser.add_argument(
