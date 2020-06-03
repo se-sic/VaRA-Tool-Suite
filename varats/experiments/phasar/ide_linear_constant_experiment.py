@@ -61,10 +61,22 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
                 binary_name=binary.name,
                 project_version=project.version
             )
+
+            result_file = EmptyReport.get_file_name(
+                project_name=str(project.name),
+                binary_name=binary.name,
+                project_version=str(project.version),
+                project_uuid=str(project.run_uuid),
+                extension_type=FSE.Success
+            )
+
             phasar_params = ["-m", bc_file, "-C", "CHA", "-D", "ide-lca"]
+            run_cmd = (
+                phasar[phasar_params] > f'{varats_result_folder}/{result_file}'
+            )
 
             exec_func_with_pe_error_handler(
-                phasar[phasar_params],
+                run_cmd,
                 PEErrorHandler(
                     varats_result_folder,
                     EmptyReport.get_file_name(
