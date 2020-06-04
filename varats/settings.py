@@ -6,12 +6,13 @@ modifiable via environment variable.
 """
 
 import typing as tp
+from copy import deepcopy
 from os import getcwd, makedirs, path
 from pathlib import Path
 
 import benchbuild.utils.settings as s
 
-CFG = s.Configuration(
+_CFG = s.Configuration(
     "varats",
     node={
         "config_file": {
@@ -33,7 +34,7 @@ CFG = s.Configuration(
     }
 )
 
-CFG["vara"] = {
+_CFG["vara"] = {
     "version": {
         "desc": "VaRA version.",
         "default": 100,
@@ -60,7 +61,22 @@ CFG["vara"] = {
     },
 }
 
-CFG["paper_config"] = {
+_CFG["phasar"] = {
+    "source_dir": {
+        "desc": "Phasar source directory",
+        "default": None
+    },
+    "install_dir": {
+        "desc": "Phasar install directory",
+        "default": None
+    },
+    "developer_version": {
+        "desc": "Setup phasar as development build.",
+        "default": True,
+    },
+}
+
+_CFG["paper_config"] = {
     "folder": {
         "desc": "Folder with paper configs.",
         "default": None,
@@ -71,12 +87,12 @@ CFG["paper_config"] = {
     },
 }
 
-CFG["env"] = {
+_CFG["env"] = {
     "default": {},
     "desc": "The environment benchbuild's commands should operate in."
 }
 
-CFG['db'] = {
+_CFG['db'] = {
     "connect_string": {
         "desc": "sqlalchemy connect string",
         "default": "sqlite://"
@@ -91,7 +107,7 @@ CFG['db'] = {
     }
 }
 
-CFG['experiment'] = {
+_CFG['experiment'] = {
     "only_missing": {
         "default": True,
         "desc":
@@ -120,26 +136,43 @@ CFG['experiment'] = {
     },
 }
 
-CFG['plots'] = {
+_CFG['plots'] = {
     "plot_dir": {
         "desc": "Folder for generated plots",
         "default": None,
     },
 }
 
-CFG['tables'] = {
+_CFG['tables'] = {
     "table_dir": {
         "desc": "Folder for generated tables",
         "default": None,
     },
 }
 
-CFG['artefacts'] = {
+_CFG['artefacts'] = {
     "artefacts_dir": {
         "desc": "Folder for generated artefacts",
         "default": None,
     },
 }
+
+
+def vara_cfg() -> s.Configuration:
+    """Get the current vara config."""
+    return _CFG
+
+
+_BB_CFG: tp.Optional[s.Configuration] = None
+
+
+def bb_cfg() -> s.Configuration:
+    """Get the current behcnbuild config."""
+    global _BB_CFG  # pylint: disable=global-statement
+    if not _BB_CFG:
+        from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
+        _BB_CFG = BB_CFG
+    return _BB_CFG
 
 
 def get_value_or_default(
@@ -161,7 +194,7 @@ def create_missing_folders() -> None:
     """Create folders that do not exist but were set in the config."""
 
     def create_missing_folder_for_cfg(
-        cfg_varname: str, local_cfg: s.Configuration = CFG
+        cfg_varname: str, local_cfg: s.Configuration = _CFG
     ) -> None:
         """Create missing folders for a specific config path."""
 
@@ -173,32 +206,32 @@ def create_missing_folders() -> None:
 
     create_missing_folder_for_cfg("benchbuild_root")
     create_missing_folder_for_cfg("result_dir")
-    create_missing_folder_for_cfg("data_cache", CFG)
-    create_missing_folder_for_cfg("plot_dir", CFG["plots"])
-    create_missing_folder_for_cfg("table_dir", CFG["tables"])
-    create_missing_folder_for_cfg("artefacts_dir", CFG["artefacts"])
+    create_missing_folder_for_cfg("data_cache", _CFG)
+    create_missing_folder_for_cfg("plot_dir", _CFG["plots"])
+    create_missing_folder_for_cfg("table_dir", _CFG["tables"])
+    create_missing_folder_for_cfg("artefacts_dir", _CFG["artefacts"])
 
 
 def save_config() -> None:
     """Persist VaRA config to a yaml file."""
-    if CFG["config_file"].value is None:
+    if _CFG["config_file"].value is None:
         config_file = ".varats.yaml"
     else:
-        config_file = str(CFG["config_file"])
-    CFG["config_file"] = path.abspath(config_file)
-    if CFG["result_dir"].value is None:
-        CFG["result_dir"] = path.dirname(str(CFG["config_file"])) + "/results"
-    if CFG["plots"]["plot_dir"].value is None:
-        CFG["plots"]["plot_dir"] = path.dirname(
-            str(CFG["config_file"])
+        config_file = str(_CFG["config_file"])
+    _CFG["config_file"] = path.abspath(config_file)
+    if _CFG["result_dir"].value is None:
+        _CFG["result_dir"] = path.dirname(str(_CFG["config_file"])) + "/results"
+    if _CFG["plots"]["plot_dir"].value is None:
+        _CFG["plots"]["plot_dir"] = path.dirname(
+            str(_CFG["config_file"])
         ) + "/plots"
-    if CFG["tables"]["table_dir"].value is None:
-        CFG["tables"]["table_dir"] = path.dirname(
-            str(CFG["config_file"])
+    if _CFG["tables"]["table_dir"].value is None:
+        _CFG["tables"]["table_dir"] = path.dirname(
+            str(_CFG["config_file"])
         ) + "/tables"
 
     create_missing_folders()
-    CFG.store(config_file)
+    _CFG.store(config_file)
 
 
 def get_varats_base_folder() -> Path:
@@ -209,7 +242,7 @@ def get_varats_base_folder() -> Path:
     Returns:
         path to base folder
     """
-    cfg_config_file = CFG["config_file"].value
+    cfg_config_file = _CFG["config_file"].value
     if cfg_config_file is None:
         raise ValueError("No config file found.")
     return Path(cfg_config_file).parent
@@ -220,9 +253,10 @@ def generate_benchbuild_config(
 ) -> None:
     """Generate a configuration file for benchbuild."""
     from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
+    new_bb_cfg = deepcopy(BB_CFG)
 
     # Projects for VaRA
-    projects_conf = BB_CFG["plugins"]["projects"]
+    projects_conf = new_bb_cfg["plugins"]["projects"]
     # If we want later to use default BB projects
     # projects_conf.value[:] = [ x for x in projects_conf.value
     #                           if not x.endswith('gzip')]
@@ -253,7 +287,7 @@ def generate_benchbuild_config(
     projects_conf.value[:] += ['varats.projects.test_projects.taint_tests']
 
     # Experiments for VaRA
-    projects_conf = BB_CFG["plugins"]["experiments"]
+    projects_conf = new_bb_cfg["plugins"]["experiments"]
     projects_conf.value[:] = []
     projects_conf.value[:] += [
         'varats.experiments.commit_report_experiment',
@@ -265,17 +299,17 @@ def generate_benchbuild_config(
     ]
 
     # Slurm Cluster Configuration
-    BB_CFG["slurm"]["account"] = "anywhere"
-    BB_CFG["slurm"]["partition"] = "anywhere"
+    new_bb_cfg["slurm"]["account"] = "anywhere"
+    new_bb_cfg["slurm"]["partition"] = "anywhere"
 
-    BB_CFG["env"] = {
+    new_bb_cfg["env"] = {
         "PATH": [
             str(Path(str(varats_cfg["vara"]["llvm_install_dir"])) / "bin/")
         ]
     }
 
     # Add VaRA experiment config variables
-    BB_CFG["varats"] = {
+    new_bb_cfg["varats"] = {
         "outfile": {
             "default": "",
             "desc": "Path to store results of VaRA CFR analysis.",
@@ -289,7 +323,7 @@ def generate_benchbuild_config(
     }
 
     def replace_bb_cwd_path(
-        cfg_varname: str, cfg_node: s.Configuration = BB_CFG
+        cfg_varname: str, cfg_node: s.Configuration = new_bb_cfg
     ) -> None:
         cfg_node[cfg_varname] = str(varats_cfg["benchbuild_root"]) +\
             str(cfg_node[cfg_varname])[len(getcwd()):]
@@ -297,16 +331,16 @@ def generate_benchbuild_config(
     replace_bb_cwd_path("build_dir")
     replace_bb_cwd_path("tmp_dir")
     replace_bb_cwd_path("test_dir")
-    replace_bb_cwd_path("node_dir", BB_CFG["slurm"])
+    replace_bb_cwd_path("node_dir", new_bb_cfg["slurm"])
 
     # Create caching folder for .bc files
     bc_cache_path = str(varats_cfg["benchbuild_root"])
-    bc_cache_path += "/" + str(BB_CFG["varats"]["result"])
+    bc_cache_path += "/" + str(new_bb_cfg["varats"]["result"])
     if not path.isdir(bc_cache_path):
         makedirs(bc_cache_path)
 
-    BB_CFG.store(bb_config_path)
+    new_bb_cfg.store(bb_config_path)
 
 
-s.setup_config(CFG, ['.varats.yaml', '.varats.yml'], "VARATS_CONFIG_FILE")
-s.update_env(CFG)
+s.setup_config(_CFG, ['.varats.yaml', '.varats.yml'], "VARATS_CONFIG_FILE")
+s.update_env(_CFG)

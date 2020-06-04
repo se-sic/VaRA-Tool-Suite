@@ -2,7 +2,6 @@
 import typing as tp
 
 from benchbuild.project import Project
-from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc, cxx
 from benchbuild.utils.download import with_git
@@ -12,6 +11,7 @@ from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
+from varats.settings import bb_cfg
 from varats.utils.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
@@ -64,7 +64,7 @@ class Qemu(Project, CVEProviderHook):  # type: ignore
                     local["../configure"]["--disable-debug-info",
                                           "--target-list=x86_64-softmmu"]
                 )
-                run(make["-j", get_number_of_jobs(BB_CFG)])
+                run(make["-j", get_number_of_jobs(bb_cfg())])
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

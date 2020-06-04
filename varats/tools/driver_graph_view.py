@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QApplication, QMessageBox
 
 from varats import settings
 from varats.gui.main_window import MainWindow
-from varats.utils.cli_util import initialize_logger_config
+from varats.utils.cli_util import initialize_cli_tool
 from varats.vara_manager import ProcessManager
 
 
@@ -21,7 +21,7 @@ class VaRATSGui:
 
         self.app = QApplication(sys.argv)
 
-        if settings.CFG["config_file"].value is None:
+        if settings.vara_cfg()["config_file"].value is None:
             err = QMessageBox()
             err.setIcon(QMessageBox.Warning)
             err.setWindowTitle("Missing config file.")
@@ -53,7 +53,7 @@ class VaRATSGui:
 
 def main() -> None:
     """Start VaRA-TS driver and run application."""
-    initialize_logger_config()
+    initialize_cli_tool()
     driver = VaRATSGui()
     driver.main()
 

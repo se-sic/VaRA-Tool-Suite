@@ -7,10 +7,10 @@ from pathlib import Path
 
 from varats.paper.case_study import load_case_study_from_file
 from varats.paper.paper_config import get_paper_config
-from varats.settings import CFG
+from varats.settings import vara_cfg
 from varats.tables.tables import TableRegistry, build_table
 from varats.tools.commit_map import create_lazy_commit_map_loader
-from varats.utils.cli_util import initialize_logger_config
+from varats.utils.cli_util import initialize_cli_tool
 
 LOG = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ def main() -> None:
 
     `vara-table`
     """
-    initialize_logger_config()
+    initialize_cli_tool()
     parser = argparse.ArgumentParser("vara-table")
     parser.add_argument(
         "table_type",
@@ -79,7 +79,7 @@ def __table(args: tp.Dict[str, tp.Any]) -> None:
 
     # Setup default result folder
     if 'result_output' not in args:
-        args['table_dir'] = str(CFG['tables']['table_dir'])
+        args['table_dir'] = str(vara_cfg()['tables']['table_dir'])
     else:
         args['table_dir'] = args.pop('result_output')
 

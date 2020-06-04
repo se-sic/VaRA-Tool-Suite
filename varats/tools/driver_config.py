@@ -12,7 +12,7 @@ import typing as tp
 import yaml
 from benchbuild.utils.settings import ConfigDumper, Configuration
 
-from varats.settings import CFG, save_config
+from varats.settings import vara_cfg, save_config
 
 
 def main() -> None:
@@ -67,7 +67,7 @@ def main() -> None:
 
 
 def __get_config_for_path(option_path: tp.List[str]) -> Configuration:
-    config = CFG
+    config = vara_cfg()
     for opt in option_path:
         config = config[opt]
     return config
@@ -113,7 +113,7 @@ def __config_set(args: tp.Dict[str, tp.Any]) -> None:
 
 def __config_show(args: tp.Dict[str, tp.Any]) -> None:
     if not "config_options" in args or len(args["config_options"]) == 0:
-        print(__dump_config_to_string(CFG))
+        print(__dump_config_to_string(vara_cfg()))
     else:
         options = args["config_options"]
         for option in options:

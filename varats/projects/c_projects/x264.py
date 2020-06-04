@@ -2,7 +2,6 @@
 import typing as tp
 
 from benchbuild.project import Project
-from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import git, make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
@@ -11,6 +10,7 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.paper.paper_config import project_filter_generator
+from varats.settings import bb_cfg
 from varats.utils.project_util import (
     get_all_revisions_between,
     wrap_paths_to_binaries,
@@ -60,4 +60,4 @@ class X264(Project):  # type: ignore
             with local.env(CC=str(clang)):
                 conf = local["./configure"]
                 run(conf["--disable-asm"])
-            run(make["-j", get_number_of_jobs(BB_CFG)])
+            run(make["-j", get_number_of_jobs(bb_cfg())])

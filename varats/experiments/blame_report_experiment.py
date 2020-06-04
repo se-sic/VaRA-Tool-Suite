@@ -9,7 +9,6 @@ import typing as tp
 
 import benchbuild.utils.actions as actions
 from benchbuild.project import Project
-from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import mkdir, opt
 from plumbum import local
 
@@ -17,6 +16,7 @@ import varats.experiments.blame_experiment as BE
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.blame_report import BlameReport as BR
 from varats.experiments.wllvm import Extract
+from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     PEErrorHandler,
     UnlimitStackSize,
@@ -52,10 +52,9 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         if not self.obj:
             return
         project = self.obj
-
         bc_cache_folder = local.path(
             Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                cache_dir=str(BB_CFG["varats"]["result"]),
+                cache_dir=str(bb_cfg()["varats"]["result"]),
                 project_name=str(project.name)
             )
         )
@@ -64,7 +63,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         # analysis also the name and the unique id of the project of every
         # run.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(BB_CFG["varats"]["outfile"]),
+            result_dir=str(bb_cfg()["varats"]["outfile"]),
             project_dir=str(project.name)
         )
 
@@ -81,18 +80,13 @@ class BlameReportGeneration(actions.Step):  # type: ignore
 
             opt_params = [
                 "-vara-BD", "-vara-BR", "-vara-init-commits",
-                "-vara-report-outfile={res_folder}/{res_file}".format(
-                    res_folder=vara_result_folder, res_file=result_file
-                )
-            ]
-
-            opt_params.append(
+                f"-vara-report-outfile={vara_result_folder}/{result_file}",
                 bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
                     project_name=project.name,
                     binary_name=binary.name,
                     project_version=project.version
                 )
-            )
+            ]
 
             run_cmd = opt[opt_params]
 
@@ -136,7 +130,8 @@ class BlameReportExperiment(VersionExperiment):
             self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE
         )
 
-        vara_result_folder = f"{BB_CFG['varats']['outfile']}/{project.name}"
+        vara_result_folder = \
+            f"{bb_cfg()['varats']['outfile']}/{project.name}"
         error_handler = PEErrorHandler(
             vara_result_folder,
             BR.get_file_name(
