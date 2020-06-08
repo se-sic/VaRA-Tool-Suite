@@ -13,18 +13,18 @@ import typing as tp
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
-from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils import actions
 from benchbuild.utils.actions import Step
 from benchbuild.utils.cmd import cp, extract_bc, opt
 from plumbum import local
 
 from varats.experiments.wllvm import RunWLLVM
-
 # These two new config parameters are needed to include Niederhuber's prepare-
 # script and to make the folder in which the results of the analyses are
 # stored user-defined.
-BB_CFG["varats"] = {
+from varats.settings import bb_cfg
+
+bb_cfg()["varats"] = {
     "prepare": {
         "default": "",
         "desc": "Path to the prepare script of Niederhuber in VaRA"
@@ -69,7 +69,6 @@ class CommitAnnotationReport(Experiment):  # type: ignore
     def actions_for_project(self, project: Project) -> tp.List[Step]:
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
-
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
             << time.RunWithTime()
@@ -103,8 +102,8 @@ class CommitAnnotationReport(Experiment):  # type: ignore
 
             with local.cwd(project_src):
                 prepare(
-                    "-c", str(BB_CFG["env"]["path"][0]), "-t",
-                    str(BB_CFG["varats"]["prepare"].value)
+                    "-c", str(bb_cfg()["env"]["path"][0]), "-t",
+                    str(bb_cfg()["varats"]["prepare"].value)
                 )
 
         def evaluate_extraction() -> None:
@@ -114,7 +113,7 @@ class CommitAnnotationReport(Experiment):  # type: ignore
                 extract_bc(project.name)
                 cp(
                     local.path(project_src / "out" / project.name + ".bc"),
-                    local.path(str(BB_CFG["varats"]["result"].value)) /
+                    local.path(str(bb_cfg()["varats"]["result"].value)) /
                     project.name + ".bc"
                 )
 
@@ -125,13 +124,13 @@ class CommitAnnotationReport(Experiment):  # type: ignore
                 -vara-CFR: to run a commit flow report
                 -yaml-out-file=<path>: specify the path to store the results
             """
-            project_src = local.path(BB_CFG["varats"]["result"].value)
+            project_src = local.path(bb_cfg()["varats"]["result"].value)
 
             # Add to the user-defined path for saving the results of the
             # analysis also the name and the unique id of the project of every
             # run.
             outfile = "-yaml-out-file={}".format(
-                BB_CFG["varats"]["outfile"].value
+                bb_cfg()["varats"]["outfile"].value
             ) + "/" + str(project.name) + "-" + str(project.run_uuid) + ".yaml"
             run_cmd = opt["-vara-CD", "-vara-CFR", outfile,
                           project_src / project.name + ".bc"]
@@ -139,7 +138,7 @@ class CommitAnnotationReport(Experiment):  # type: ignore
 
         analysis_actions = []
         if not os.path.exists(
-            local.path(str(BB_CFG["varats"]["result"].value)) / project.name +
+            local.path(str(bb_cfg()["varats"]["result"].value)) / project.name +
             ".bc"
         ):
             analysis_actions.append(Prepare(self, evaluate_preparation))

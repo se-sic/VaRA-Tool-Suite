@@ -11,7 +11,7 @@ from varats.data.databases.blame_diff_metrics_database import (
 from varats.paper.case_study import get_unique_cs_name
 from varats.paper.paper_config import get_paper_config
 from varats.tables.table import Table, TableFormat
-from varats.tools.commit_map import create_lazy_commit_map_loader
+from varats.tools.commit_map import get_commit_map
 
 
 class DiffCorrelationOverviewTable(Table):
@@ -30,9 +30,7 @@ class DiffCorrelationOverviewTable(Table):
                     "revision", "churn_total", "diff_ci_total",
                     "ci_degree_mean", "author_mean", "avg_time_mean",
                     "ci_degree_max", "author_max", "avg_time_max", "year"
-                ],
-                create_lazy_commit_map_loader(case_study.project_name)(),
-                case_study
+                ], get_commit_map(case_study.project_name), case_study
             ) for case_study in case_studies
         ]
         for data in cs_data:

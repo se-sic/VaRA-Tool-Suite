@@ -19,7 +19,7 @@ from varats.paper.artefacts import (
     store_artefacts,
 )
 from varats.paper.paper_config import get_paper_config
-from varats.utils.cli_util import initialize_logger_config
+from varats.utils.cli_util import initialize_cli_tool
 
 LOG = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ def main() -> None:
 
     `vara-art`
     """
-    initialize_logger_config()
+    initialize_cli_tool()
     parser = argparse.ArgumentParser("vara-art")
 
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
@@ -70,7 +70,6 @@ def main() -> None:
     add_parser.add_argument(
         "artefact_type",
         help="The type of the new artefact.",
-        choices=ArtefactType,
         action=enum_action(ArtefactType)
     )
     add_parser.add_argument(

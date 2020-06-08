@@ -16,13 +16,13 @@ from os import path
 import benchbuild.utils.actions as actions
 from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
-from benchbuild.settings import CFG as BB_CFG
-from benchbuild.utils.cmd import opt, mkdir, timeout
+from benchbuild.utils.cmd import mkdir, opt, timeout
 from plumbum import local
 
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
-from varats.experiments.wllvm import RunWLLVM, Extract
+from varats.experiments.wllvm import Extract, RunWLLVM
+from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     exec_func_with_pe_error_handler,
     FunctionPEErrorWrapper,
@@ -57,13 +57,13 @@ class VaraMTFACheck(actions.Step):  # type: ignore
 
         # Set up cache directory for bitcode files
         bc_cache_dir = Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-            cache_dir=str(BB_CFG["varats"]["result"]),
+            cache_dir=str(bb_cfg()["varats"]["result"]),
             project_name=str(project.name)
         )
 
         # Define the output directory.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(BB_CFG["varats"]["outfile"]),
+            result_dir=str(bb_cfg()["varats"]["outfile"]),
             project_dir=str(project.name)
         )
         mkdir("-p", vara_result_folder)
@@ -140,7 +140,7 @@ class VaRATaintPropagation(VersionExperiment):
             project.compile,
             PEErrorHandler(
                 VaraMTFACheck.RESULT_FOLDER_TEMPLATE.format(
-                    result_dir=str(BB_CFG["varats"]["outfile"]),
+                    result_dir=str(bb_cfg()["varats"]["outfile"]),
                     project_dir=str(project.name)
                 ),
                 TPR.get_file_name(
@@ -163,7 +163,7 @@ class VaRATaintPropagation(VersionExperiment):
             all_cache_files_present &= path.exists(
                 local.path(
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                        cache_dir=str(BB_CFG["varats"]["result"]),
+                        cache_dir=str(bb_cfg()["varats"]["result"]),
                         project_name=str(project.name)
                     ) + Extract.get_bc_file_name(
                         project_name=str(project.name),

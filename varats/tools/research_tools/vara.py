@@ -6,12 +6,12 @@ import shutil
 import typing as tp
 from pathlib import Path
 
+from benchbuild.utils.cmd import ln, mkdir
 from plumbum import local
-from plumbum.cmd import ln, mkdir
 from PyQt5.QtCore import QProcess
 
 from varats.plots.plot_utils import check_required_args
-from varats.settings import CFG, save_config
+from varats.settings import save_config, vara_cfg
 from varats.tools.research_tools.research_tool import (
     CodeBase,
     ResearchTool,
@@ -111,9 +111,31 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
     def __init__(self, base_dir: Path) -> None:
         super().__init__("VaRA", [BuildType.DEV], VaRACodeBase(base_dir))
+        vara_cfg()["vara"]["llvm_source_dir"] = str(base_dir)
+        save_config()
 
-    @check_required_args(["install_prefix"])
-    def setup(self, source_folder: Path, **kwargs: tp.Any) -> None:
+    @staticmethod
+    def source_location() -> Path:
+        """Returns the source location of the research tool."""
+        return Path(vara_cfg()["vara"]["llvm_source_dir"].value)
+
+    @staticmethod
+    def has_source_location() -> bool:
+        """Checks if a source location of the research tool is configured."""
+        return vara_cfg()["vara"]["llvm_source_dir"].value is not None
+
+    @staticmethod
+    def install_location() -> Path:
+        """Returns the install location of the research tool."""
+        return Path(vara_cfg()["vara"]["llvm_install_dir"].value)
+
+    @staticmethod
+    def has_install_location() -> bool:
+        """Checks if a install location of the research tool is configured."""
+        return vara_cfg()["vara"]["llvm_install_dir"].value is not None
+
+    @check_required_args(["install_prefix", "version"])
+    def setup(self, source_folder: tp.Optional[Path], **kwargs: tp.Any) -> None:
         """
         Setup the research tool VaRA with it's code base. This method sets up
         all relevant config variables, downloads repositories via the
@@ -126,21 +148,23 @@ class VaRA(ResearchTool[VaRACodeBase]):
                       * version
                       * install_prefix
         """
-        CFG["vara"]["llvm_source_dir"] = str(source_folder)
-        CFG["vara"]["llvm_install_dir"] = str(kwargs["install_prefix"])
+        cfg = vara_cfg()
+        if source_folder:
+            cfg["vara"]["llvm_source_dir"] = str(source_folder)
+        cfg["vara"]["llvm_install_dir"] = str(kwargs["install_prefix"])
         version = kwargs.get("version")
         if version:
             version = int(tp.cast(int, version))
-            CFG["vara"]["version"] = version
+            cfg["vara"]["version"] = version
         else:
-            version = CFG["vara"]["version"].value
-
-        print(f"Setting up VaRA at {source_folder}")
+            version = cfg["vara"]["version"].value
         save_config()
 
-        use_dev_branches = CFG["vara"]["developer_version"].value
+        print(f"Setting up VaRA in {self.source_location()}")
 
-        self.code_base.clone(source_folder)
+        use_dev_branches = cfg["vara"]["developer_version"].value
+
+        self.code_base.clone(self.source_location())
         self.code_base.setup_vara_remotes()
         self.code_base.checkout_vara_version(version, use_dev_branches)
         self.code_base.setup_submodules()
@@ -151,7 +175,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         version = 100
 
         # TODO (se-passau/VaRA#640): version upgrade
-        if str(CFG["vara"]["version"]) != str(version):
+        if str(vara_cfg()["vara"]["version"]) != str(version):
             raise NotImplementedError
 
         self.code_base.pull()
@@ -199,7 +223,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
         # Set install prefix in cmake
         with local.cwd(full_path):
-            CFG["vara"]["llvm_install_dir"] = str(install_location)
+            vara_cfg()["vara"]["llvm_install_dir"] = str(install_location)
             set_vara_cmake_variables(
                 str(install_location), log_without_linesep(print)
             )

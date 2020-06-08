@@ -8,11 +8,11 @@ import benchbuild.utils.actions as actions
 from benchbuild.experiment import Experiment
 from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
-from benchbuild.settings import CFG as BB_CFG
 from plumbum import local
 
 from varats.data.report import BaseReport
-from varats.experiments.wllvm import RunWLLVM, Extract, BCFileExtensions
+from varats.experiments.wllvm import Extract, RunWLLVM
+from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     get_default_compile_error_wrapped,
     PEErrorHandler,
@@ -79,7 +79,7 @@ def generate_basic_blame_experiment_actions(
         all_files_present &= path.exists(
             local.path(
                 Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                    cache_dir=str(BB_CFG["varats"]["result"]),
+                    cache_dir=str(bb_cfg()["varats"]["result"]),
                     project_name=str(project.name)
                 ) + Extract.get_bc_file_name(
                     project_name=str(project.name),

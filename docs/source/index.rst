@@ -21,6 +21,7 @@ VaRA-TS gives convenient access to a list of different research tools, which can
    :caption: List of provided research tools:
 
    research_tool_docs/vara/vara
+   research_tool_docs/phasar/phasar
 
 
 Tool-Suite Overview
@@ -36,22 +37,8 @@ VaRA-TS Docs
 
    vara-ts/vara-buildsetup
    vara-ts/benchbuild
-
-VaRA-TS API Reference
-=====================
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-   vara-ts-api/tools/research_tools
-   vara-ts-api/experiments
-   vara-ts-api/projects
-   vara-ts-api/paper
-   vara-ts-api/tools
-   vara-ts-api/plots
-   vara-ts-api/tables
-   vara-ts-api/data
-   vara-ts-api/utils.rst
+   vara-ts/development
+   vara-ts-api/vara-ts-api-reference
 
 
 Indices and tables

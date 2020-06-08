@@ -1,5 +1,5 @@
-argparse-utils>=1.2.0,<1.3.0
-benchbuild>=4.0.1
+argparse-utils>=1.2.0
+benchbuild>=4.1.0
 jupyter>=1.0.0
 matplotlib>=3.1.2
 mock>=2.0.0

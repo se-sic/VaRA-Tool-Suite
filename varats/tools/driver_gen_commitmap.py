@@ -3,14 +3,14 @@
 import argparse
 from pathlib import Path
 
-from varats.settings import CFG
+from varats.settings import vara_cfg
 from varats.tools.commit_map import get_commit_map, store_commit_map
-from varats.utils.cli_util import initialize_logger_config
+from varats.utils.cli_util import initialize_cli_tool
 
 
 def main() -> None:
     """Create a commit map for a repository."""
-    initialize_logger_config()
+    initialize_cli_tool()
     parser = argparse.ArgumentParser("vara-gen-commitmap")
     parser.add_argument("project_name", help="Name of the project")
     parser.add_argument("--path", help="Path to git repository", default=None)
@@ -44,7 +44,7 @@ def main() -> None:
 
         output_name = "{result_folder}/{project_name}/{file_name}.cmap" \
             .format(
-            result_folder=CFG["result_dir"],
+            result_folder=vara_cfg()["result_dir"],
             project_name=default_name,
             file_name=default_name)
     else:

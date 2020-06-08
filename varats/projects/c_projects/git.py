@@ -2,16 +2,17 @@
 import typing as tp
 
 import benchbuild.project as prj
-from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
+from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 from plumbum.path.utils import delete
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
+from varats.settings import bb_cfg
 from varats.utils.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
@@ -51,7 +52,7 @@ class Git(prj.Project, CVEProviderHook):  # type: ignore
                 delete("configure", "config.status")
                 run(make["configure"])
                 run(local["./configure"])
-            run(make["-j", int(BB_CFG["jobs"])])
+            run(make["-j", get_number_of_jobs(bb_cfg())])
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
