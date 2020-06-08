@@ -143,9 +143,9 @@ class BlameReportExperiment(VersionExperiment):
                 file_ext=".txt"
             )
         )
-        bc_file_extensions = []
+
         analysis_actions = BE.generate_basic_blame_experiment_actions(
-            project, bc_file_extensions, error_handler
+            project, extraction_error_handler=error_handler
         )
 
         analysis_actions.append(UnlimitStackSize(project))

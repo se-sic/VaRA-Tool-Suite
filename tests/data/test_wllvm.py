@@ -15,6 +15,7 @@ class TestExtract(unittest.TestCase):
         cls.test_project_name = "testProject"
         cls.test_binary_name = "testBinary"
         cls.test_project_version = "testProjectVersion1"
+        cls.test_bc_file_extensions = []
 
         cls.mock_bc_file_name = f"{cls.test_project_name}" \
                                 f"-{cls.test_binary_name}-" \

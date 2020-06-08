@@ -137,8 +137,8 @@ class BlameVerifierReportExperiment(VersionExperiment):
 
     def __init__(
         self,
-        project,
-        opt_flag,
+        project: Project,
+        opt_flag: str,
         report_type: tp.Type[BaseReport],
         bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None
     ) -> None:
