@@ -3,7 +3,10 @@
 import unittest
 
 from varats.data.report import FileStatusExtension
-from varats.data.reports import blame_verifier_report as BVR
+from varats.data.reports.blame_verifier_report import (
+    BlameVerifierReportNoOpt,
+    BlameVerifierReportOpt,
+)
 
 
 class TestBlameVerifierReport(unittest.TestCase):
@@ -32,7 +35,7 @@ class TestBlameVerifierReport(unittest.TestCase):
         self.mock_file_name = f"BVR_Opt{self.mock_file_name}"
 
         # When
-        actual = BVR.BlameVerifierReportOpt.get_file_name(
+        actual = BlameVerifierReportOpt.get_file_name(
             project_name=self.test_project_name,
             binary_name=self.test_binary_name,
             project_version=self.test_project_version,
@@ -51,7 +54,7 @@ class TestBlameVerifierReport(unittest.TestCase):
         self.mock_file_name = f"BVR_NoOpt{self.mock_file_name}"
 
         # When
-        actual = BVR.BlameVerifierReportNoOpt.get_file_name(
+        actual = BlameVerifierReportNoOpt.get_file_name(
             project_name=self.test_project_name,
             binary_name=self.test_binary_name,
             project_version=self.test_project_version,
