@@ -11,7 +11,7 @@ from benchbuild.project import Project
 from plumbum import local
 
 from varats.data.report import BaseReport
-from varats.experiments.wllvm import Extract, RunWLLVM
+from varats.experiments.wllvm import Extract, RunWLLVM, BCFileExtensions
 from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     get_default_compile_error_wrapped,
