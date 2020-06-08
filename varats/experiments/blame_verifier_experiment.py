@@ -10,7 +10,6 @@ import typing as tp
 
 import benchbuild.utils.actions as actions
 from benchbuild.project import Project
-from benchbuild.settings import CFG as BB_CFG
 from benchbuild.utils.cmd import opt, mkdir, timeout
 from plumbum import local
 
@@ -24,6 +23,7 @@ from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportOpt as BVR_Opt,
 )
 from varats.experiments.wllvm import BCFileExtensions, Extract
+from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
@@ -69,7 +69,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
 
         bc_cache_folder = local.path(
             Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                cache_dir=str(BB_CFG["varats"]["result"]),
+                cache_dir=str(bb_cfg()["varats"]["result"]),
                 project_name=str(project.name)
             )
         )
@@ -78,7 +78,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
         # analysis also the name and the unique id of the project of every
         # run.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(BB_CFG["varats"]["outfile"]),
+            result_dir=str(bb_cfg()["varats"]["outfile"]),
             project_dir=str(project.name)
         )
 
