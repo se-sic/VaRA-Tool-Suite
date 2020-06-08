@@ -148,7 +148,7 @@ class BlameReportExperiment(VersionExperiment):
                 file_ext=".txt"
             )
         )
-        bc_file_extensions = tp.List[BCFileExtensions]
+        bc_file_extensions = []
         analysis_actions = BE.generate_basic_blame_experiment_actions(
             project, bc_file_extensions, error_handler
         )

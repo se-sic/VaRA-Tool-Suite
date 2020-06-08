@@ -9,6 +9,7 @@ class BlameVerifierReportNoOpt(BaseReport):
     compilation optimization."""
 
     SHORTHAND = 'BVR_NoOpt'
+    FILE_TYPE = 'txt'
 
     @staticmethod
     def get_file_name(
@@ -46,6 +47,7 @@ class BlameVerifierReportOpt(BaseReport):
     compilation optimization."""
 
     SHORTHAND = 'BVR_Opt'
+    FILE_TYPE = 'txt'
 
     @staticmethod
     def get_file_name(

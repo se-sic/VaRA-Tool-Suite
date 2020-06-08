@@ -16,6 +16,7 @@ from plumbum import local
 
 import varats.experiments.blame_experiment as BE
 from varats.data.report import FileStatusExtension as FSE
+from varats.data.report import BaseReport
 from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportNoOpt as BVR_NoOpt,
 )
@@ -41,11 +42,13 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
     def __init__(
-        self, project: Project, bc_file_extensions: tp.List[BCFileExtensions]
+        self, project: Project, bc_file_extensions: tp.List[BCFileExtensions],
+        report_type: tp.Type[BaseReport]
     ):
         super(BlameVerifierReportGeneration,
               self).__init__(obj=project, action_fn=self.analyze)
         self.bc_file_extensions = bc_file_extensions
+        self.report_type = report_type
 
     def analyze(self) -> actions.StepResult:
         """
@@ -59,7 +62,6 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
             * -vara-verify-blameMD: activate BlameMDVerifier
             * -vara-verifier-options=: chooses between multiple print options
                 * Status: prints if the module as a whole passed or failed
-            * -vara-report-outfile=<path>: specify the path to store the results
         """
         if not self.obj:
             return
@@ -82,66 +84,69 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
 
         mkdir("-p", vara_result_folder)
 
+        timeout_duration = '8h'
+
         for binary in project.binaries:
-            result_file = BVR_NoOpt.get_file_name(
+            bc_target_file = Extract.get_bc_file_name(
+                project_name=str(project.name),
+                binary_name=binary.name,
+                project_version=str(project.version),
+                bc_file_extensions=self.bc_file_extensions
+            )
+
+            # Define empty success file.
+            result_file = self.report_type.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
                 project_version=str(project.version),
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.Success
+                extension_type=FSE.Success,
+                file_ext=".txt"
             )
 
-            opt_params = [
+            # Define output file name of failed runs
+            error_file = self.report_type.get_file_name(
+                project_name=str(project.name),
+                binary_name=binary.name,
+                project_version=str(project.version),
+                project_uuid=str(project.run_uuid),
+                extension_type=FSE.Failed,
+                file_ext=".txt"
+            )
+
+            # Put together the path to the bc file and the opt command of vara
+            vara_run_cmd = opt[
                 "-vara-BD", "-vara-init-commits", "-vara-verify-blameMD",
-                "-vara-verifier-options=Status",
-                "-vara-report-outfile={res_folder}/{res_file}".format(
-                    res_folder=vara_result_folder, res_file=result_file
-                )
-            ]
-
-            opt_params.append(
-                bc_cache_folder / Extract.get_bc_file_name(
-                    project_name=project.name,
-                    binary_name=binary.name,
-                    project_version=project.version,
-                    bc_file_extensions=self.bc_file_extensions
-                )
-            )
-
-            run_cmd = opt[opt_params]
-
-            timeout_duration = '8h'
+                "-vara-verifier-options=Status", "{cache_folder}/{bc_file}".
+                format(cache_folder=bc_cache_folder, bc_file=bc_target_file),
+                "-o", "/dev/null"]
 
             exec_func_with_pe_error_handler(
-                timeout[timeout_duration, run_cmd],
+                timeout[timeout_duration,
+                        vara_run_cmd] > "{res_folder}/{res_file}".
+                format(res_folder=vara_result_folder, res_file=result_file),
                 PEErrorHandler(
-                    vara_result_folder,
-                    BVR_NoOpt.get_file_name(
-                        project_name=str(project.name),
-                        binary_name=binary.name,
-                        project_version=str(project.version),
-                        project_uuid=str(project.run_uuid),
-                        extension_type=FSE.Failed,
-                        file_ext=".txt"
-                    ), timeout_duration
+                    vara_result_folder, error_file, timeout_duration
                 )
             )
 
 
 class BlameVerifierReportExperiment(VersionExperiment):
-    """
-    BlameVerifierReportExperiment generalizes the implementation and usage over different
-    optimization levels.
-    """
+    """BlameVerifierReportExperiment generalizes the implementation and usage
+    over different optimization levels."""
 
     def __init__(
         self,
         project,
         opt_flag,
-        report_type,
-        bc_file_extensions: tp.List[BCFileExtensions] = []
+        report_type: tp.Type[BaseReport],
+        bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None
     ) -> None:
         super().__init__()
+
+        if bc_file_extensions is None:
+            bc_file_extensions = []
+
         self.projects = project
         self.__opt_flag = opt_flag
         self.__bc_file_extensions = bc_file_extensions
@@ -164,7 +169,9 @@ class BlameVerifierReportExperiment(VersionExperiment):
         )
 
         analysis_actions.append(
-            BlameVerifierReportGeneration(project, self.__bc_file_extensions)
+            BlameVerifierReportGeneration(
+                project, self.__bc_file_extensions, self.__report_type
+            )
         )
         analysis_actions.append(actions.Clean(project))
 
