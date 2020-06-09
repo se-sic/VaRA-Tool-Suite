@@ -163,7 +163,7 @@ class BlameDiffMetricsDatabase(
                     combine_max(generate_degree_tuples(diff_between_head_pred)),
                 "author_max":
                     combine_max(
-                        generate_avg_time_distribution_tuples(
+                        generate_author_degree_tuples(
                             diff_between_head_pred, project_name, 1
                         )
                     ),
