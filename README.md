@@ -4,7 +4,7 @@
 
 | branch   | status                                                                                                                                  |
 | :----    | :---:                                                                                                                                   |
-| vara     | [![Build Status](https://travis-ci.com/se-passau/VaRA-Tool-Suite.svg?branch=vara)](https://travis-ci.org/se-passau/VaRA-Tool-Suite)     |
+| vara     | [![Build Status](https://travis-ci.com/se-passau/VaRA-Tool-Suite.svg?branch=vara)](https://travis-ci.com/se-passau/VaRA-Tool-Suite)     |
 | vara-dev | [![Build Status](https://travis-ci.com/se-passau/VaRA-Tool-Suite.svg?branch=vara-dev)](https://travis-ci.com/se-passau/VaRA-Tool-Suite) |
 
 ## Using VaRA with VaRA-TS
