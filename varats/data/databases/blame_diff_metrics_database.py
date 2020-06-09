@@ -2,8 +2,10 @@
 import typing as tp
 from datetime import datetime
 from functools import reduce
+from pathlib import Path
 
 import pandas as pd
+from more_itertools import flatten
 
 from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
@@ -39,6 +41,21 @@ class BlameDiffMetricsDatabase(
     """Metrics database that contains all different blame-interaction metrics
     that are based on a diff between two `BlameReports`."""
 
+    @staticmethod
+    def _id_from_paths(paths: tp.Tuple[Path, Path]) -> str:
+        return f"{MetaReport.get_commit_hash_from_result_file(paths[0].name)}_" \
+               f"{MetaReport.get_commit_hash_from_result_file(paths[1].name)}"
+
+    @staticmethod
+    def _timestamp_from_paths(paths: tp.Tuple[Path, Path]) -> str:
+        return f"{paths[0].stat().st_mtime_ns}_{paths[1].stat().st_mtime_ns}"
+
+    @staticmethod
+    def _compare_timestamps(ts1: str, ts2: str) -> bool:
+        ts1_head, ts1_pred = ts1.split("_")
+        ts2_head, ts2_pred = ts2.split("_")
+        return int(ts1_head) > int(ts2_head) or int(ts1_pred) > int(ts2_pred)
+
     @classmethod
     def _load_dataframe(
         cls, project_name: str, commit_map: CommitMap,
@@ -52,53 +69,17 @@ class BlameDiffMetricsDatabase(
             df_layout.year = df_layout.year.astype('int64')
             return df_layout
 
-        def create_data_frame_for_report(report: BlameReport) -> pd.DataFrame:
+        def create_data_frame_for_report(
+            report_paths: tp.Tuple[Path, Path]
+        ) -> tp.Tuple[pd.DataFrame, str, str]:
             # Look-up commit and infos about the HEAD commit of the report
+            head_report = load_blame_report(report_paths[0])
+            pred_report = load_blame_report(report_paths[1])
             repo = get_local_project_git(project_name)
-            commit = repo.get(report.head_commit)
+            commit = repo.get(head_report.head_commit)
             commit_date = datetime.utcfromtimestamp(commit.commit_time)
-            commit_time_id = commit_map.short_time_id(report.head_commit)
 
-            pred_commits = [(commit_map.short_time_id(rev), rev) for rev in (
-                case_study.revisions if case_study else
-                get_processed_revisions(project_name, BlameReport)
-            ) if commit_map.short_time_id(rev) < commit_time_id]
-
-            def empty_data_frame() -> pd.DataFrame:
-                return pd.DataFrame({
-                    'revision': report.head_commit,
-                    'churn_total': 0,
-                    'diff_ci_total': 0,
-                    "ci_degree_mean": 0.0,
-                    "author_mean": 0.0,
-                    "avg_time_mean": 0.0,
-                    "ci_degree_max": 0.0,
-                    "author_max": 0.0,
-                    "avg_time_max": 0.0,
-                    'year': commit_date.year,
-                },
-                                    index=[0])
-
-            if not pred_commits:
-                return empty_data_frame()
-
-            pred_report_commit_hash = max(pred_commits, key=lambda x: x[0])[1]
-
-            def is_not_predecessor_revision(revision_file: str) -> bool:
-                return not pred_report_commit_hash.startswith(
-                    MetaReport.get_commit_hash_from_result_file(revision_file)
-                )
-
-            report_files = get_processed_revisions_files(
-                project_name, BlameReport, is_not_predecessor_revision
-            )
-
-            if not report_files:
-                return empty_data_frame()
-
-            diff_between_head_pred = BlameReportDiff(
-                report, load_blame_report(report_files[0])
-            )
+            diff_between_head_pred = BlameReportDiff(head_report, pred_report)
 
             # Calculate the total number of commit interactions between the pred
             # and base BlameReport
@@ -113,7 +94,7 @@ class BlameDiffMetricsDatabase(
             # Calculate the total churn between pred and base commit
             code_churn = calc_code_churn_range(
                 repo, ChurnConfig.create_c_style_languages_config(),
-                pred_report_commit_hash, commit
+                pred_report.head_commit, commit
             )
             total_churn = reduce(
                 lambda x, y: x + y, [
@@ -136,64 +117,132 @@ class BlameDiffMetricsDatabase(
                     return max([x for x, y in tuples])
                 return 0
 
-            return pd.DataFrame({
-                'revision':
-                    report.head_commit,
-                'churn_total':
-                    total_churn,
-                'diff_ci_total':
-                    ci_total,
-                "ci_degree_mean":
-                    weighted_avg(
-                        generate_degree_tuples(diff_between_head_pred)
-                    ),
-                "author_mean":
-                    weighted_avg(
-                        generate_author_degree_tuples(
-                            diff_between_head_pred, project_name
-                        )
-                    ),
-                "avg_time_mean":
-                    weighted_avg(
-                        generate_avg_time_distribution_tuples(
-                            diff_between_head_pred, project_name, 1
-                        )
-                    ),
-                "ci_degree_max":
-                    combine_max(generate_degree_tuples(diff_between_head_pred)),
-                "author_max":
-                    combine_max(
-                        generate_author_degree_tuples(
-                            diff_between_head_pred, project_name, 1
-                        )
-                    ),
-                "avg_time_max":
-                    combine_max(
-                        generate_max_time_distribution_tuples(
-                            diff_between_head_pred, project_name, 1
-                        )
-                    ),
-                'year':
-                    commit_date.year,
-            },
-                                index=[0])
+            return (
+                pd.DataFrame({
+                    'revision':
+                        head_report.head_commit,
+                    'churn_total':
+                        total_churn,
+                    'diff_ci_total':
+                        ci_total,
+                    "ci_degree_mean":
+                        weighted_avg(
+                            generate_degree_tuples(diff_between_head_pred)
+                        ),
+                    "author_mean":
+                        weighted_avg(
+                            generate_author_degree_tuples(
+                                diff_between_head_pred, project_name
+                            )
+                        ),
+                    "avg_time_mean":
+                        weighted_avg(
+                            generate_avg_time_distribution_tuples(
+                                diff_between_head_pred, project_name, 1
+                            )
+                        ),
+                    "ci_degree_max":
+                        combine_max(
+                            generate_degree_tuples(diff_between_head_pred)
+                        ),
+                    "author_max":
+                        combine_max(
+                            generate_author_degree_tuples(
+                                diff_between_head_pred, project_name
+                            )
+                        ),
+                    "avg_time_max":
+                        combine_max(
+                            generate_max_time_distribution_tuples(
+                                diff_between_head_pred, project_name, 1
+                            )
+                        ),
+                    'year':
+                        commit_date.year,
+                },
+                             index=[0]),
+                BlameDiffMetricsDatabase._id_from_paths(report_paths),
+                BlameDiffMetricsDatabase._timestamp_from_paths(report_paths)
+            )
 
-        report_files = get_processed_revisions_files(
-            project_name, BlameReport,
-            get_case_study_file_name_filter(case_study)
-        )
+        def get_predecessor_report_file(c_hash: str) -> tp.Optional[Path]:
+            commit_time_id = commit_map.short_time_id(c_hash)
+            pred_commits = [(short_time_id_cache[rev], rev)
+                            for rev in sampled_revs
+                            if short_time_id_cache[rev] < commit_time_id]
 
-        failed_report_files = get_failed_revisions_files(
-            project_name, BlameReport,
-            get_case_study_file_name_filter(case_study)
-        )
+            if not pred_commits:
+                return None
+
+            pred_report_commit_hash = max(pred_commits, key=lambda x: x[0])[1]
+            return report_files.get(pred_report_commit_hash[:10], None)
+
+        def get_successor_report_file(c_hash: str) -> tp.Optional[Path]:
+            commit_time_id = commit_map.short_time_id(c_hash)
+            succ_commits = [(short_time_id_cache[rev], rev)
+                            for rev in sampled_revs
+                            if short_time_id_cache[rev] > commit_time_id]
+
+            if not succ_commits:
+                return None
+
+            succ_report_commit_hash = min(succ_commits, key=lambda x: x[0])[1]
+            return report_files.get(succ_report_commit_hash[:10], None)
+
+        report_files: tp.Dict[str, Path] = {
+            MetaReport.get_commit_hash_from_result_file(report.name): report
+            for report in get_processed_revisions_files(
+                project_name,
+                BlameReport,
+                get_case_study_file_name_filter(case_study)
+                if case_study else lambda x: False,
+            )
+        }
+
+        if case_study:
+            sampled_revs = case_study.revisions
+        else:
+            sampled_revs = get_processed_revisions(project_name, BlameReport)
+        short_time_id_cache: tp.Dict[str, int] = {
+            rev: commit_map.short_time_id(rev) for rev in sampled_revs
+        }
+
+        failed_report_files: tp.Dict[str, Path] = {
+            MetaReport.get_commit_hash_from_result_file(report.name): report
+            for report in get_failed_revisions_files(
+                project_name,
+                BlameReport,
+                get_case_study_file_name_filter(case_study)
+                if case_study else lambda x: False,
+            )
+        }
+
+        report_pairs: tp.List[tp.Tuple[Path, Path]] = [
+            (report, pred)
+            for report, pred in
+            [(report_file, get_predecessor_report_file(c_hash))
+             for c_hash, report_file in report_files.items()]
+            if pred is not None
+        ]
+
+        failed_report_pairs: tp.List[tp.Tuple[Path, Path]] = [
+            (report, pred)
+            for report, pred in flatten([[(
+                report_file, get_predecessor_report_file(c_hash)
+            ), (get_successor_report_file(c_hash), report_file)]
+                                         for c_hash, report_file in
+                                         failed_report_files.items()])
+            if report is not None and pred is not None
+        ]
 
         # cls.CACHE_ID is set by superclass
         # pylint: disable=E1101
         data_frame = build_cached_report_table(
-            cls.CACHE_ID, project_name, create_dataframe_layout,
-            create_data_frame_for_report, load_blame_report, report_files,
-            failed_report_files
+            cls.CACHE_ID, project_name, report_pairs, failed_report_pairs,
+            create_dataframe_layout, create_data_frame_for_report,
+            BlameDiffMetricsDatabase._id_from_paths,
+            BlameDiffMetricsDatabase._timestamp_from_paths,
+            BlameDiffMetricsDatabase._compare_timestamps
         )
 
         return data_frame
