@@ -42,10 +42,10 @@ class DiffCorrelationOverviewTable(Table):
             "avg_time_mean"
         ]
 
-        corelations = [data[vars_1].corr(method="pearson") for data in cs_data]
+        correlations = [data[vars_1].corr(method="pearson") for data in cs_data]
 
         df = pd.concat(
-            corelations, axis=1, keys=get_unique_cs_name(case_studies)
+            correlations, axis=1, keys=get_unique_cs_name(case_studies)
         )
 
         if self.format in [
