@@ -127,9 +127,7 @@ class Phasar(ResearchTool[PhasarCodeBase]):
 
     def upgrade(self) -> None:
         """Upgrade the research tool to a newer version."""
-        raise NotImplementedError(
-            "This Feature is currently under development."
-        )
+        self.code_base.pull()
 
     def build(self, build_type: BuildType, install_location: Path) -> None:
         """
