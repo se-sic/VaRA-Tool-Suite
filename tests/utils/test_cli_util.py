@@ -25,7 +25,7 @@ class ResearchToolUtils(unittest.TestCase):
         """Checks if the source_location of a ``ResearchTool`` is set to the
         correct default."""
         tmp_path = tempfile.TemporaryDirectory()
-        with replace_config() as vara_cfg:
+        with replace_config(tmp_path=tmp_path) as vara_cfg:
             vara_cfg["config_file"] = str(tmp_path.name + "/dummy.yml")
             vara = get_research_tool("vara")
             self.assertTrue(vara.has_source_location())
