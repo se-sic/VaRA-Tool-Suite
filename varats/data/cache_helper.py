@@ -102,10 +102,10 @@ def build_cached_report_table(
     Args:
         data_id: graph cache identifier
         project_name: name of the project to work with
-        data_to_load: list of data to be loaded
-        data_to_drop: list of data to be discarded
+        data_to_load: list of data items to be loaded
+        data_to_drop: list of data items to be discarded
         create_empty_df: creates an empty layout of the dataframe
-        create_cache_entry_data: creates a dataframe from a data entry
+        create_cache_entry_data: creates a dataframe from a data item
         get_entry_id: returns a unique identifier for one data item
         get_entry_timestamp: returns a string with information that can be used
                              to determine which of two data items is newer
