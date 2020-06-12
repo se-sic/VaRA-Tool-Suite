@@ -2,10 +2,10 @@
 import typing as tp
 from datetime import datetime
 from functools import reduce
+from itertools import chain
 from pathlib import Path
 
 import pandas as pd
-from more_itertools import flatten
 
 from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
@@ -43,7 +43,8 @@ class BlameDiffMetricsDatabase(
 
     @staticmethod
     def _id_from_paths(paths: tp.Tuple[Path, Path]) -> str:
-        return f"{MetaReport.get_commit_hash_from_result_file(paths[0].name)}_" \
+        return \
+            f"{MetaReport.get_commit_hash_from_result_file(paths[0].name)}_" \
                f"{MetaReport.get_commit_hash_from_result_file(paths[1].name)}"
 
     @staticmethod
@@ -227,11 +228,11 @@ class BlameDiffMetricsDatabase(
 
         failed_report_pairs: tp.List[tp.Tuple[Path, Path]] = [
             (report, pred)
-            for report, pred in flatten([[(
+            for report, pred in chain.from_iterable([[(
                 report_file, get_predecessor_report_file(c_hash)
-            ), (get_successor_report_file(c_hash), report_file)]
-                                         for c_hash, report_file in
-                                         failed_report_files.items()])
+            ), (get_successor_report_file(c_hash),
+                report_file)] for c_hash, report_file in failed_report_files.
+                                                     items()])
             if report is not None and pred is not None
         ]
 

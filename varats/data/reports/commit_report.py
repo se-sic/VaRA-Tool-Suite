@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 import yaml
-from pygtrie import CharTrie  # type: ignore
+from pygtrie import CharTrie
 
 from varats.data.report import BaseReport, FileStatusExtension, MetaReport
 from varats.data.version_header import VersionHeader

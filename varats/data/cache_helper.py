@@ -135,6 +135,8 @@ def build_cached_report_table(
             return is_newer_timestamp(
                 get_entry_timestamp(report_file), cached_entry.iloc[0]
             )
+        # We found no existing entry, so it will never be considered for
+        # updating and does not need to be deleted.
         return False
 
     missing_entries = [
