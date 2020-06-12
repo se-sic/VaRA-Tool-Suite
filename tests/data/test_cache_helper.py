@@ -7,7 +7,7 @@ from tests.test_utils import replace_config
 from varats.data.cache_helper import build_cached_report_table
 
 
-class TestDiffCorrelationOverviewTable(unittest.TestCase):
+class TestCacheHelper(unittest.TestCase):
     """Test the cache_helper module."""
 
     TEST_DATA = {
