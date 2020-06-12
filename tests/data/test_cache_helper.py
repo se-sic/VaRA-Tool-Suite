@@ -2,7 +2,6 @@
 import unittest
 
 import pandas as pd
-import pytest
 
 from tests.test_utils import replace_config
 from varats.data.cache_helper import build_cached_report_table
