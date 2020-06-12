@@ -19,9 +19,7 @@ class TestDiffCorrelationOverviewTable(unittest.TestCase):
         "c2": ("c", 2),
     }
 
-    @pytest.mark.slow
-    @replace_config()
-    def test_build_cached_report_table(self, config):
+    def test_build_cached_report_table(self):
         """Check whether data items are correctly cached and updated/evicted."""
         data_id = "cache_test_data"
         project_name = "project"
@@ -43,36 +41,37 @@ class TestDiffCorrelationOverviewTable(unittest.TestCase):
         def is_newer_timestamp(ts1: str, ts2: str) -> bool:
             return int(ts1) > int(ts2)
 
-        # initialize cache with a,b,c
-        df = build_cached_report_table(
-            data_id, project_name, ["a", "b", "c"], [], create_empty_df,
-            create_cache_entry_data, get_entry_id, get_entry_timestamp,
-            is_newer_timestamp
-        )
+        with replace_config():
+            # initialize cache with a,b,c
+            df = build_cached_report_table(
+                data_id, project_name, ["a", "b", "c"], [], create_empty_df,
+                create_cache_entry_data, get_entry_id, get_entry_timestamp,
+                is_newer_timestamp
+            )
 
-        assert "a" in df["entry"].values
-        assert "b" in df["entry"].values
-        assert "c" in df["entry"].values
+            self.assertIn("a", df["entry"].values)
+            self.assertIn("b", df["entry"].values)
+            self.assertIn("c", df["entry"].values)
 
-        # update c -> c2 and "update" b -> b
-        df = build_cached_report_table(
-            data_id, project_name, ["b", "c2"], [], create_empty_df,
-            create_cache_entry_data, get_entry_id, get_entry_timestamp,
-            is_newer_timestamp
-        )
+            # update c -> c2 and "update" b -> b
+            df = build_cached_report_table(
+                data_id, project_name, ["b", "c2"], [], create_empty_df,
+                create_cache_entry_data, get_entry_id, get_entry_timestamp,
+                is_newer_timestamp
+            )
 
-        assert "a" in df["entry"].values
-        assert "b" in df["entry"].values
-        assert "c" not in df["entry"].values
-        assert "c2" in df["entry"].values
+            self.assertIn("a", df["entry"].values)
+            self.assertIn("b", df["entry"].values)
+            self.assertNotIn("c", df["entry"].values)
+            self.assertIn("c2", df["entry"].values)
 
-        # delete a via a2
-        df = build_cached_report_table(
-            data_id, project_name, [], ["a"], create_empty_df,
-            create_cache_entry_data, get_entry_id, get_entry_timestamp,
-            is_newer_timestamp
-        )
+            # delete a via a2
+            df = build_cached_report_table(
+                data_id, project_name, [], ["a"], create_empty_df,
+                create_cache_entry_data, get_entry_id, get_entry_timestamp,
+                is_newer_timestamp
+            )
 
-        assert "a2" not in df["entry"].values
-        assert "b" in df["entry"].values
-        assert "c2" in df["entry"].values
+            self.assertNotIn("a2", df["entry"].values)
+            self.assertIn("b", df["entry"].values)
+            self.assertIn("c2", df["entry"].values)
