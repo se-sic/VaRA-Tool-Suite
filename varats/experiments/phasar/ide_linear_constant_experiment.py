@@ -21,7 +21,7 @@ from varats.utils.experiment_util import (
 
 
 class IDELinearConstantAnalysis(actions.Step):  # type: ignore
-    """Analysis step to run phasars IDELinearConstantAnalysis on a project."""
+    """Analysis step to run phasar's IDELinearConstantAnalysis on a project."""
 
     NAME = "IDELinearConstantAnalysis"
     DESCRIPTION = "TODO"  # TODO (@pdschubert): please add
@@ -35,7 +35,7 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
         super().__init__(obj=project, action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
-        """Run phasars IDELinearConstantAnalysis analysis."""
+        """Run phasar's IDELinearConstantAnalysis analysis."""
         if not self.obj:
             return
         project = self.obj

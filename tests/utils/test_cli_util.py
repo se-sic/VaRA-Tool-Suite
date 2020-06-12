@@ -40,7 +40,7 @@ class ResearchToolUtils(unittest.TestCase):
     def test_research_tool_accessor_custom(self, _):
         """Checks if the source_location of a ``ResearchTool`` is correctly set
         if configured by the user."""
-        with replace_config() as _:
+        with replace_config():
             configured_location = Path("foo/bar/bazz")
             vara = get_research_tool("vara", configured_location)
             self.assertTrue(vara.has_source_location())
