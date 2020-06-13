@@ -24,17 +24,17 @@ class ResearchToolUtils(unittest.TestCase):
     def test_research_tool_accessor_default(self, _):
         """Checks if the source_location of a ``ResearchTool`` is set to the
         correct default."""
-        tmp_path = tempfile.TemporaryDirectory()
-        with replace_config(tmp_path=tmp_path) as vara_cfg:
-            vara_cfg["config_file"] = str(tmp_path.name + "/dummy.yml")
+        with tempfile.TemporaryDirectory() as tmp_path, replace_config(
+            tmp_path=Path(tmp_path)
+        ) as vara_cfg:
+
+            vara_cfg["config_file"] = tmp_path + "/dummy.yml"
             vara = get_research_tool("vara")
             self.assertTrue(vara.has_source_location())
             self.assertEqual(
-                vara.source_location().relative_to(Path(tmp_path.name)),
+                vara.source_location().relative_to(Path(tmp_path)),
                 Path("tools_src")
             )
-
-        tmp_path.cleanup()
 
     @mock.patch('varats.tools.research_tools.vara.save_config')
     def test_research_tool_accessor_custom(self, _):
