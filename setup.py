@@ -21,6 +21,7 @@ setup(
         "wllvm>=1.1.4",
         "argparse-utils>=1.2.0",
         "pygit2>=0.28.2",
+        "pygtrie",
         "pyzmq>=19.0.0",
         "packaging>=20.1",
         "requests>=2.23.0",
