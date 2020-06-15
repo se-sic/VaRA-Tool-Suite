@@ -5,7 +5,7 @@ from varats.data.report import BaseReport, MetaReport, FileStatusExtension
 
 class BlameVerifierReportNoOpt(BaseReport):
     """A BlameVerifierReport containing the filtered results of the chosen
-    verifier-options, e.g. the diff of VaRA-hashes and debug-hashes, without any
+    verifier-options, e.g., the diff of VaRA-hashes and debug-hashes, without any
     compilation optimization."""
 
     SHORTHAND = 'BVR_NoOpt'
@@ -43,7 +43,7 @@ class BlameVerifierReportNoOpt(BaseReport):
 
 class BlameVerifierReportOpt(BaseReport):
     """A BlameVerifierReport containing the filtered results of the chosen
-    verifier-options, e.g. the diff of VaRA-hashes and debug-hashes, with
+    verifier-options, e.g., the diff of VaRA-hashes and debug-hashes, with
     compilation optimization."""
 
     SHORTHAND = 'BVR_Opt'
