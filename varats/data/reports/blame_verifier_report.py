@@ -5,8 +5,8 @@ from varats.data.report import BaseReport, MetaReport, FileStatusExtension
 
 class BlameVerifierReportNoOpt(BaseReport):
     """A BlameVerifierReport containing the filtered results of the chosen
-    verifier-options, e.g., the diff of VaRA-hashes and debug-hashes, without any
-    compilation optimization."""
+    verifier-options, e.g., the diff of VaRA-hashes and debug-hashes, without
+    any compilation optimization."""
 
     SHORTHAND = 'BVR_NoOpt'
     FILE_TYPE = 'txt'
