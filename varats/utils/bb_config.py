@@ -64,6 +64,7 @@ def generate_benchbuild_config(
         'varats.experiments.vara.marker_tester',
         'varats.experiments.vara.vara_fc_taint_analysis',
         'varats.experiments.vara.vara_full_mtfa',
+        'varats.experiments.vara.blame_verifier_experiment',
     ]
 
     # Slurm Cluster Configuration

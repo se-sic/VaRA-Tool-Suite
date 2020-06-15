@@ -18,10 +18,10 @@ from varats.data.reports.blame_report import BlameReport as BR
 from varats.experiments.wllvm import Extract
 from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
+    exec_func_with_pe_error_handler,
+    VersionExperiment,
     PEErrorHandler,
     UnlimitStackSize,
-    VersionExperiment,
-    exec_func_with_pe_error_handler,
 )
 
 
@@ -81,7 +81,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
             opt_params = [
                 "-vara-BD", "-vara-BR", "-vara-init-commits",
                 f"-vara-report-outfile={vara_result_folder}/{result_file}",
-                bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
+                bc_cache_folder / Extract.get_bc_file_name(
                     project_name=project.name,
                     binary_name=binary.name,
                     project_version=project.version
@@ -144,8 +144,9 @@ class BlameReportExperiment(VersionExperiment):
                 file_ext=".txt"
             )
         )
+
         analysis_actions = BE.generate_basic_blame_experiment_actions(
-            project, error_handler
+            project, extraction_error_handler=error_handler
         )
 
         analysis_actions.append(UnlimitStackSize(project))

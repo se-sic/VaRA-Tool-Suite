@@ -1,5 +1,5 @@
 """
-Module to provide WLLVM support for project compilation and extracing bc files
+Module to provide WLLVM support for project compilation and extracting bc files
 from generated binaries.
 
 WLLVM is a compiler replacement/hook to compile projects with clang, producing
@@ -9,6 +9,7 @@ generated bc files with LLVM.
 """
 
 import typing as tp
+from enum import Enum
 from os import getenv
 from pathlib import Path
 
@@ -22,6 +23,12 @@ from plumbum import local
 
 from varats.settings import bb_cfg
 from varats.utils.experiment_util import FunctionPEErrorWrapper, PEErrorHandler
+
+
+class BCFileExtensions(Enum):
+    DEBUG = 'dbg'
+    NO_OPT = 'O0'
+    OPT = 'O2'
 
 
 class RunWLLVM(base.Extension):  # type: ignore
@@ -74,11 +81,37 @@ class Extract(actions.Step):  # type: ignore
     DESCRIPTION = "Extract bitcode out of the execution file."
 
     BC_CACHE_FOLDER_TEMPLATE = "{cache_dir}/{project_name}/"
-    BC_FILE_TEMPLATE = "{project_name}-{binary_name}-{project_version}.bc"
+
+    @staticmethod
+    def get_bc_file_name(
+        project_name: str,
+        binary_name: str,
+        project_version: str,
+        bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None
+    ) -> str:
+        """Parses parameter information into a filename template to name a
+        bitcode file."""
+
+        if bc_file_extensions is None:
+            bc_file_extensions = []
+
+        if bc_file_extensions:
+            experiment_bc_file_ext = '-'
+
+            ext_sep = ""
+            for ext in bc_file_extensions:
+                experiment_bc_file_ext += (ext_sep + ext.value)
+                ext_sep = '_'
+        else:
+            experiment_bc_file_ext = ''
+
+        return f"{project_name}-{binary_name}-{project_version}" \
+               f"{experiment_bc_file_ext}.bc"
 
     def __init__(
         self,
         project: Project,
+        bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
         handler: tp.Optional[PEErrorHandler] = None
     ) -> None:
         super().__init__(
@@ -86,6 +119,10 @@ class Extract(actions.Step):  # type: ignore
             action_fn=FunctionPEErrorWrapper(self.extract, handler)
             if handler else self.extract
         )
+        if bc_file_extensions is None:
+            bc_file_extensions = []
+
+        self.bc_file_extensions = bc_file_extensions
 
     def extract(self) -> actions.StepResult:
         """This step extracts the bitcode of the executable of the project into
@@ -101,10 +138,11 @@ class Extract(actions.Step):  # type: ignore
         mkdir("-p", local.path() / bc_cache_folder)
 
         for binary in project.binaries:
-            bc_cache_file = bc_cache_folder + self.BC_FILE_TEMPLATE.format(
+            bc_cache_file = bc_cache_folder + self.get_bc_file_name(
                 project_name=str(project.name),
                 binary_name=str(binary.name),
-                project_version=str(project.version)
+                project_version=str(project.version),
+                bc_file_extensions=self.bc_file_extensions
             )
 
             target_binary = Path(

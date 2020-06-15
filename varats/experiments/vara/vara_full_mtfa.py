@@ -24,10 +24,10 @@ from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.experiments.wllvm import Extract, RunWLLVM
 from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
-    FunctionPEErrorWrapper,
-    PEErrorHandler,
-    VersionExperiment,
     exec_func_with_pe_error_handler,
+    FunctionPEErrorWrapper,
+    VersionExperiment,
+    PEErrorHandler,
 )
 
 
@@ -54,6 +54,7 @@ class VaraMTFACheck(actions.Step):  # type: ignore
         if not self.obj:
             return
         project = self.obj
+
         # Set up cache directory for bitcode files
         bc_cache_dir = Extract.BC_CACHE_FOLDER_TEMPLATE.format(
             cache_dir=str(bb_cfg()["varats"]["result"]),
@@ -71,7 +72,7 @@ class VaraMTFACheck(actions.Step):  # type: ignore
 
         for binary in project.binaries:
             # Combine the input bitcode file's name
-            bc_target_file = Extract.BC_FILE_TEMPLATE.format(
+            bc_target_file = Extract.get_bc_file_name(
                 project_name=str(project.name),
                 binary_name=str(binary.name),
                 project_version=str(project.version)
@@ -124,6 +125,7 @@ class VaRATaintPropagation(VersionExperiment):
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
+
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
             << time.RunWithTime()
@@ -163,7 +165,7 @@ class VaRATaintPropagation(VersionExperiment):
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
                         cache_dir=str(bb_cfg()["varats"]["result"]),
                         project_name=str(project.name)
-                    ) + Extract.BC_FILE_TEMPLATE.format(
+                    ) + Extract.get_bc_file_name(
                         project_name=str(project.name),
                         binary_name=binary.name,
                         project_version=str(project.version)
