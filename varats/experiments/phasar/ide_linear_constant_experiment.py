@@ -5,6 +5,7 @@ from os import path
 import benchbuild.utils.actions as actions
 from benchbuild.extensions import compiler, run, time
 from benchbuild.project import Project
+from benchbuild.utils.cmd import mkdir
 from plumbum import local
 
 from varats.data.report import FileStatusExtension as FSE
@@ -54,9 +55,11 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
             project_dir=str(project.name)
         )
 
+        mkdir("-p", varats_result_folder)
+
         phasar = local["phasar-llvm"]
         for binary in project.binaries:
-            bc_file = bc_cache_folder / Extract.BC_FILE_TEMPLATE.format(
+            bc_file = bc_cache_folder / Extract.get_bc_file_name(
                 project_name=project.name,
                 binary_name=binary.name,
                 project_version=project.version
@@ -148,7 +151,7 @@ class IDELinearConstantAnalysisExperiment(VersionExperiment):
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
                         cache_dir=str(bb_cfg()["varats"]["result"]),
                         project_name=str(project.name)
-                    ) + Extract.BC_FILE_TEMPLATE.format(
+                    ) + Extract.get_bc_file_name(
                         project_name=str(project.name),
                         binary_name=binary.name,
                         project_version=str(project.version)

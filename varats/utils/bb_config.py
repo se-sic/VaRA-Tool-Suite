@@ -59,7 +59,7 @@ def generate_benchbuild_config(
     projects_conf.value[:] += [
         'varats.experiments.base.just_compile',
         'varats.experiments.vara.phasar_env_analysis',
-        'varats.experiments.vara.blame_report_experiment'
+        'varats.experiments.vara.blame_report_experiment',
         'varats.experiments.vara.commit_report_experiment',
         'varats.experiments.vara.marker_tester',
         'varats.experiments.vara.vara_fc_taint_analysis',
@@ -74,7 +74,7 @@ def generate_benchbuild_config(
 
     new_bb_cfg["env"] = {
         "PATH": [
-            str(tool_type.install_location()) for tool_type in [
+            str(tool_type.install_location() / "bin") for tool_type in [
                 get_research_tool_type(tool_name)
                 for tool_name in get_supported_research_tool_names()
             ] if tool_type.has_install_location()
