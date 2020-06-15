@@ -74,7 +74,7 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
 
         for binary in project.binaries:
             # Combine the input bitcode file's name
-            bc_target_file = Extract.BC_FILE_TEMPLATE.format(
+            bc_target_file = Extract.get_bc_file_name(
                 project_name=str(project.name),
                 binary_name=str(binary.name),
                 project_version=str(project.version)
@@ -163,7 +163,7 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
                     Extract.BC_CACHE_FOLDER_TEMPLATE.format(
                         cache_dir=str(bb_cfg()["varats"]["result"]),
                         project_name=str(project.name)
-                    ) + Extract.BC_FILE_TEMPLATE.format(
+                    ) + Extract.get_bc_file_name(
                         project_name=str(project.name),
                         binary_name=binary.name,
                         project_version=str(project.version)
