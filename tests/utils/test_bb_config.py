@@ -4,7 +4,8 @@ import tempfile
 import unittest
 from copy import deepcopy
 
-from varats.settings import generate_benchbuild_config, vara_cfg, bb_cfg
+from varats.settings import vara_cfg, bb_cfg
+from varats.utils.bb_config import generate_benchbuild_config
 
 
 class BenchBuildConfig(unittest.TestCase):

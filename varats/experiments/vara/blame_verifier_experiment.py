@@ -13,7 +13,7 @@ from benchbuild.project import Project
 from benchbuild.utils.cmd import opt, mkdir, timeout
 from plumbum import local
 
-import varats.experiments.blame_experiment as BE
+import varats.experiments.vara.blame_experiment as BE
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.report import BaseReport
 from varats.data.reports.blame_verifier_report import (
