@@ -25,7 +25,9 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
     """Analysis step to run phasar's IDELinearConstantAnalysis on a project."""
 
     NAME = "IDELinearConstantAnalysis"
-    DESCRIPTION = "TODO"  # TODO (@pdschubert): please add
+    DESCRIPTION = ("Flow- and context-sensitive analysis that tracks constant "
+                   "variables and variables that linearly depend on constant "
+                   "values through the program.")
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
