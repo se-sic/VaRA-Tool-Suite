@@ -24,7 +24,7 @@ from varats.paper.case_study import (
 from varats.paper.paper_config import get_paper_config
 from varats.settings import vara_cfg
 from varats.tools.commit_map import create_lazy_commit_map_loader
-from varats.utils.cli_util import cli_list_choice, initialize_logger_config
+from varats.utils.cli_util import cli_list_choice, initialize_cli_tool
 from varats.utils.project_util import get_local_project_git_path
 
 LOG = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ LOG = logging.getLogger(__name__)
 
 def main() -> None:
     """Allow easier management of case studies."""
-    initialize_logger_config()
+    initialize_cli_tool()
     parser = ArgumentParser("vara-cs")
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
 

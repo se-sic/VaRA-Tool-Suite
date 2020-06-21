@@ -5,7 +5,10 @@ import os
 import typing as tp
 from pathlib import Path
 
+from rich.traceback import install
+
 from varats.settings import vara_cfg
+from varats.tools.research_tools.phasar import Phasar
 from varats.tools.research_tools.research_tool import ResearchTool
 from varats.tools.research_tools.vara import VaRA
 
@@ -72,11 +75,37 @@ def cli_list_choice(
         user_choice = input(prompt)
 
 
+def initialize_cli_tool() -> None:
+    """Initializes all relevant context and tools for varats cli tools."""
+    install(width=120)
+    initialize_logger_config()
+
+
 def initialize_logger_config() -> None:
     """Initializes the logging framework with a basic config, allowing the user
     to pass the warning level via an environment variable ``LOG_LEVEL``."""
     log_level = os.environ.get('LOG_LEVEL', "WARNING").upper()
     logging.basicConfig(level=log_level)
+
+
+def get_research_tool_type(
+    name: str
+) -> tp.Union[tp.Type[VaRA], tp.Type[Phasar]]:
+    """
+    Look up the type of a research tool by name.
+
+    Args:
+        name: of the research tool
+
+    Returns: the research tool type corresponding to ``name``
+    """
+    if name in ("VaRA", "vara"):
+        return VaRA
+
+    if name == "phasar":
+        return Phasar
+
+    raise LookupError(f"Could not find research tool {name}")
 
 
 def get_research_tool(
@@ -95,15 +124,22 @@ def get_research_tool(
         the research tool with the specified ``name``,
         otherwise, raises LookupError
     """
-    if name in ("VaRA", "vara"):
-        return VaRA(
-            source_location if source_location is not None else
-            Path(vara_cfg()["vara"]["llvm_source_dir"].value)
-        )
+    rs_type = get_research_tool_type(name)
 
-    raise LookupError(f"Could not find research tool {name}")
+    if source_location:
+        src_folder = Path(source_location)
+    elif rs_type.has_source_location():
+        src_folder = rs_type.source_location()
+    else:
+        config_root_path = Path(str(vara_cfg()["config_file"])).parent
+        src_folder = config_root_path / "tools_src/"
+
+    if not src_folder.exists():
+        src_folder.mkdir(parents=True)
+
+    return rs_type(src_folder)
 
 
 def get_supported_research_tool_names() -> tp.List[str]:
     """Returns a list of all supported research tools."""
-    return ["VaRA", "vara"]
+    return ["phasar", "vara"]

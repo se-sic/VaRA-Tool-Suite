@@ -10,7 +10,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 
 from varats.gui.buildsetup_window import BuildSetup
-from varats.settings import get_value_or_default, save_config, vara_cfg
+from varats.settings import save_config
 from varats.tools.research_tools.research_tool import (
     ResearchTool,
     SpecificCodeBase,
@@ -18,7 +18,7 @@ from varats.tools.research_tools.research_tool import (
 from varats.utils.cli_util import (
     get_research_tool,
     get_supported_research_tool_names,
-    initialize_logger_config,
+    initialize_cli_tool,
 )
 from varats.vara_manager import BuildType
 
@@ -104,7 +104,7 @@ def parse_string_to_build_type(build_type: str) -> BuildType:
 
 def main() -> None:
     """Build VaRA on cli."""
-    initialize_logger_config()
+    initialize_cli_tool()
     parser = argparse.ArgumentParser("vara-buildsetup")
 
     parser.add_argument(
@@ -175,9 +175,7 @@ def main() -> None:
         save_config()
         return
 
-    tool = get_research_tool(
-        args.researchtool, __get_source_location(args.sourcelocation)
-    )
+    tool = get_research_tool(args.researchtool, args.sourcelocation)
 
     if args.init:
         __build_setup_init(
@@ -198,43 +196,30 @@ def __build_setup_init(
     tool: ResearchTool[SpecificCodeBase], raw_source_location: tp.Optional[str],
     raw_install_prefix: tp.Optional[str], version: tp.Optional[int]
 ) -> None:
+    if raw_source_location:
+        source_location: tp.Optional[Path] = Path(raw_source_location)
+    else:
+        source_location = None
+
+    if source_location and not source_location.exists():
+        source_location.mkdir(parents=True)
 
     tool.setup(
-        __get_source_location(raw_source_location),
+        source_location,
         install_prefix=__get_install_prefix(tool, raw_install_prefix),
         version=version
     )
 
 
-def __get_source_location(raw_source_location: tp.Optional[str]) -> Path:
-    if raw_source_location is None:
-        src_folder = Path(
-            get_value_or_default(
-                vara_cfg()["vara"], "llvm_source_dir",
-                str(os.getcwd()) + "/tools_src/"
-            )
-        )
-    else:
-        src_folder = Path(raw_source_location)
-
-    if not src_folder.exists():
-        src_folder.mkdir(parents=True)
-
-    return src_folder
-
-
 def __get_install_prefix(
     tool: ResearchTool[SpecificCodeBase], raw_install_prefix: tp.Optional[str]
 ) -> Path:
-    if raw_install_prefix is None:
-        install_prefix = Path(
-            get_value_or_default(
-                vara_cfg()["vara"], "llvm_install_dir",
-                str(os.getcwd()) + f"/tools/{tool.name}/"
-            )
-        )
-    else:
+    if raw_install_prefix:
         install_prefix = Path(raw_install_prefix)
+    elif tool.has_install_location():
+        install_prefix = tool.install_location()
+    else:
+        install_prefix = Path(str(os.getcwd()) + f"/tools/{tool.name}/")
 
     if not install_prefix.exists():
         install_prefix.mkdir(parents=True)

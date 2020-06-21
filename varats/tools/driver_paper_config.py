@@ -19,7 +19,7 @@ from varats.settings import (
     save_config,
     vara_cfg,
 )
-from varats.utils.cli_util import cli_list_choice, initialize_logger_config
+from varats.utils.cli_util import cli_list_choice, initialize_cli_tool
 
 LOG = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ def main() -> None:
 
     `vara-pc`
     """
-    initialize_logger_config()
+    initialize_cli_tool()
     parser = argparse.ArgumentParser("vara-pc")
 
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")

@@ -6,12 +6,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from varats.data.report import BaseReport, MetaReport
 from varats.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
 
-CACHE_REVISION_COL = 'cache_revision'
+CACHE_ID_COL = 'cache_revision'
 CACHE_TIMESTAMP_COL = 'cache_timestamp'
 
 
@@ -73,28 +72,29 @@ def cache_dataframe(
     dataframe.to_csv(str(file_path), compression='infer')
 
 
+InDataType = tp.TypeVar("InDataType")
+
+
 def __create_cache_entry(
-    create_df_from_report: tp.Callable[[tp.Any], pd.DataFrame],
-    create_report: tp.Callable[[Path], BaseReport], file_path: Path
+    create_df_from_report: tp.Callable[[InDataType], tp.Tuple[pd.DataFrame, str,
+                                                              str]],
+    data: InDataType
 ) -> pd.DataFrame:
-    try:
-        new_df = create_df_from_report(create_report(file_path))
-        new_df[CACHE_REVISION_COL] = \
-            MetaReport.get_commit_hash_from_result_file(file_path.name)
-        new_df[CACHE_TIMESTAMP_COL] = file_path.stat().st_mtime_ns
-        return new_df
-    except KeyError:
-        LOG.error(f"KeyError: {file_path}")
-    except StopIteration:
-        LOG.error(f"YAML file was incomplete: {file_path}")
+    new_df, entry_id, entry_timestamp = create_df_from_report(data)
+    new_df[CACHE_ID_COL] = entry_id
+    new_df[CACHE_TIMESTAMP_COL] = entry_timestamp
+    return new_df
 
 
 def build_cached_report_table(
-    data_id: str, project_name: str, create_empty_df: tp.Callable[[],
-                                                                  pd.DataFrame],
-    create_df_from_report: tp.Callable[[tp.Any], pd.DataFrame],
-    create_report: tp.Callable[[Path], BaseReport], report_files: tp.List[Path],
-    failed_report_files: tp.List[Path]
+    data_id: str, project_name: str, data_to_load: tp.List[InDataType],
+    data_to_drop: tp.List[InDataType],
+    create_empty_df: tp.Callable[[], pd.DataFrame],
+    create_cache_entry_data: tp.Callable[[InDataType], tp.Tuple[pd.DataFrame,
+                                                                str, str]],
+    get_entry_id: tp.Callable[[InDataType], str],
+    get_entry_timestamp: tp.Callable[[InDataType], str],
+    is_newer_timestamp: tp.Callable[[str, str], bool]
 ) -> pd.DataFrame:
     """
     Build up an automatically cache dataframe.
@@ -102,91 +102,84 @@ def build_cached_report_table(
     Args:
         data_id: graph cache identifier
         project_name: name of the project to work with
+        data_to_load: list of data items to be loaded
+        data_to_drop: list of data items to be discarded
         create_empty_df: creates an empty layout of the dataframe
-        create_df_from_report: creates a dataframe from a report
-        create_report: callback to load a report
-        report_files: list of files to be loaded
-        failed_report_files: list of files to be discarded
+        create_cache_entry_data: creates a dataframe from a data item
+        get_entry_id: returns a unique identifier for one data item
+        get_entry_timestamp: returns a string with information that can be used
+                             to determine which of two data items is newer
+        is_newer_timestamp: checks whether one data item is newer than another
+                            based on their timestamps
     """
 
     # mypy needs this
     optional_cached_df = load_cached_df_or_none(data_id, project_name)
     if optional_cached_df is None:
         cached_df = create_empty_df()
-        cached_df[CACHE_REVISION_COL] = ""
-        cached_df[CACHE_TIMESTAMP_COL] = 0
+        cached_df[CACHE_ID_COL] = ""
+        cached_df[CACHE_TIMESTAMP_COL] = ""
     else:
         cached_df = optional_cached_df
 
-    def is_missing_file(report_file: Path) -> bool:
-        commit_hash = MetaReport.get_commit_hash_from_result_file(
-            report_file.name
-        )
+    def is_missing_file(report_file: InDataType) -> bool:
         return not tp.cast(
-            bool, (commit_hash == cached_df[CACHE_REVISION_COL]).any()
+            bool, (cached_df[CACHE_ID_COL] == get_entry_id(report_file)).any()
         )
 
-    def is_newer_file(report_file: Path) -> bool:
-        commit_hash = MetaReport.get_commit_hash_from_result_file(
-            report_file.name
-        )
-        return tp.cast(
-            bool, (
-                report_file.stat().st_mtime_ns >
-                cached_df[cached_df[CACHE_REVISION_COL] == commit_hash
-                         ][CACHE_TIMESTAMP_COL]
-            ).any()
-        )
+    def is_newer_file(report_file: InDataType) -> bool:
+        cached_entry = cached_df[cached_df[CACHE_ID_COL] ==
+                                 get_entry_id(report_file)][CACHE_TIMESTAMP_COL]
 
-    missing_report_files = [
-        report_file for report_file in report_files
-        if is_missing_file(report_file)
+        if len(cached_entry) > 0:
+            return is_newer_timestamp(
+                get_entry_timestamp(report_file), cached_entry.iloc[0]
+            )
+        # We found no existing entry, so it will never be considered for
+        # updating and does not need to be deleted.
+        return False
+
+    missing_entries = [
+        entry for entry in data_to_load if is_missing_file(entry)
     ]
 
-    updated_report_files = [
-        report_file for report_file in report_files
-        if is_newer_file(report_file)
-    ]
+    updated_entries = [entry for entry in data_to_load if is_newer_file(entry)]
 
-    failed_revisions = [
-        MetaReport.get_commit_hash_from_result_file(failed_file.name)
-        for failed_file in failed_report_files
-        if is_newer_file(failed_file)
+    failed_entries = [
+        get_entry_id(entry) for entry in data_to_drop if is_newer_file(entry)
     ]
 
     new_data_frames = []
-    for num, file_path in enumerate(missing_report_files):
+    for num, data_entry in enumerate(missing_entries):
         LOG.info(
-            f"Loading missing file ({(num + 1)}/"
-            f"{len(missing_report_files)}): {file_path}"
+            f"Creating missing entry ({(num + 1)}/"
+            f"{len(missing_entries)}): {data_entry}"
         )
         new_data_frames.append(
-            __create_cache_entry(
-                create_df_from_report, create_report, file_path
-            )
+            __create_cache_entry(create_cache_entry_data, data_entry)
         )
 
     new_df = pd.concat([cached_df] + new_data_frames,
                        ignore_index=True,
                        sort=False)
 
-    new_df.set_index(CACHE_REVISION_COL, inplace=True)
-    for num, file_path in enumerate(updated_report_files):
+    new_df.set_index(CACHE_ID_COL, inplace=True)
+    for num, data_entry in enumerate(updated_entries):
         LOG.info(
-            f"Updating outdated file "
-            f"({(num + 1)}/{len(updated_report_files)}): {file_path}"
+            f"Updating outdated entry "
+            f"({(num + 1)}/{len(updated_entries)}): {data_entry}"
         )
         updated_entry = __create_cache_entry(
-            create_df_from_report, create_report, file_path
+            create_cache_entry_data, data_entry
         )
-        updated_entry.set_index(CACHE_REVISION_COL)
+        updated_entry.set_index(CACHE_ID_COL, inplace=True)
         new_df.update(updated_entry)
     new_df.reset_index(inplace=True)
 
-    if len(failed_revisions) > 0:
-        LOG.info(f"Dropping {len(failed_revisions)} newly failing file(s)")
+    if len(failed_entries) > 0:
+        LOG.info(f"Dropping {len(failed_entries)} entries")
         new_df.drop(
-            new_df[new_df[CACHE_REVISION_COL].isin(failed_revisions)].index,
+            new_df[new_df[CACHE_ID_COL].isin(failed_entries)].index,
             inplace=True
         )
 
@@ -194,5 +187,5 @@ def build_cached_report_table(
 
     return new_df.loc[:, [
         col for col in new_df.columns
-        if col not in [CACHE_REVISION_COL, CACHE_TIMESTAMP_COL]
+        if col not in [CACHE_ID_COL, CACHE_TIMESTAMP_COL]
     ]]

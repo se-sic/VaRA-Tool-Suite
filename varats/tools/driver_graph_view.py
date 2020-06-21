@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QApplication, QMessageBox
 
 from varats import settings
 from varats.gui.main_window import MainWindow
-from varats.utils.cli_util import initialize_logger_config
+from varats.utils.cli_util import initialize_cli_tool
 from varats.vara_manager import ProcessManager
 
 
@@ -53,7 +53,7 @@ class VaRATSGui:
 
 def main() -> None:
     """Start VaRA-TS driver and run application."""
-    initialize_logger_config()
+    initialize_cli_tool()
     driver = VaRATSGui()
     driver.main()
 

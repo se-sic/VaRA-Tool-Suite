@@ -209,6 +209,9 @@ def get_processed_revisions_files(
         result_file_type: the type of the result file
         file_name_filter: optional filter to exclude certain files; returns
                           true if the file_name should not be checked
+        only_newest: whether to include all result files, or only the newest;
+                     if ``False``, result files for the same revision are sorted
+                     descending by the file's mtime
 
     Returns:
         a list of file paths to correctly processed revision files
@@ -222,7 +225,8 @@ def get_processed_revisions_files(
 def get_failed_revisions_files(
     project_name: str,
     result_file_type: MetaReport,
-    file_name_filter: tp.Callable[[str], bool] = lambda x: False
+    file_name_filter: tp.Callable[[str], bool] = lambda x: False,
+    only_newest: bool = True
 ) -> tp.List[Path]:
     """
     Find all file paths to failed revision files.
@@ -242,7 +246,7 @@ def get_failed_revisions_files(
     return __get_files_with_status(
         project_name, result_file_type,
         [FileStatusExtension.Failed, FileStatusExtension.CompileError],
-        file_name_filter
+        file_name_filter, only_newest
     )
 
 

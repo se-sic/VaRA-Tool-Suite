@@ -1,10 +1,12 @@
 """Module for the base BlameInteractionDatabase class."""
 import typing as tp
+from pathlib import Path
 
 import pandas as pd
 
 from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
+from varats.data.report import MetaReport
 from varats.data.reports.blame_report import (
     BlameReport,
     generate_in_head_interactions,
@@ -44,7 +46,10 @@ class BlameInteractionDatabase(
                 df_layout.HEAD_Interactions.astype('int64')
             return df_layout
 
-        def create_data_frame_for_report(report: BlameReport) -> pd.DataFrame:
+        def create_data_frame_for_report(
+            report_path: Path
+        ) -> tp.Tuple[pd.DataFrame, str, str]:
+            report = load_blame_report(report_path)
             in_head_interactions = len(generate_in_head_interactions(report))
             out_head_interactions = len(generate_out_head_interactions(report))
 
@@ -60,7 +65,9 @@ class BlameInteractionDatabase(
                 'HEAD_Interactions':
                     in_head_interactions + out_head_interactions
             },
-                                index=[0])
+                                index=[0]), report.head_commit, str(
+                                    report_path.stat().st_mtime_ns
+                                )
 
         report_files = get_processed_revisions_files(
             project_name, BlameReport,
@@ -75,9 +82,11 @@ class BlameInteractionDatabase(
         # cls.CACHE_ID is set by superclass
         # pylint: disable=E1101
         data_frame = build_cached_report_table(
-            cls.CACHE_ID, project_name, create_dataframe_layout,
-            create_data_frame_for_report, load_blame_report, report_files,
-            failed_report_files
+            cls.CACHE_ID, project_name, report_files, failed_report_files,
+            create_dataframe_layout, create_data_frame_for_report,
+            lambda path: MetaReport.get_commit_hash_from_result_file(path.name),
+            lambda path: str(path.stat().st_mtime_ns),
+            lambda a, b: int(a) > int(b)
         )
 
         return data_frame

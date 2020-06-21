@@ -6,6 +6,7 @@ from benchbuild.utils.cmd import cmake, git, make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
 from benchbuild.utils.run import run
+from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
@@ -101,13 +102,13 @@ class Gravity(Project, CVEProviderHook):  # type: ignore
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
                 cmake("-G", "Unix Makefiles", ".")
-            run(make["-j", int(bb_cfg()["jobs"])])
+            run(make["-j", get_number_of_jobs(bb_cfg())])
 
     def __compile_make(self) -> None:
         clang = cc(self)
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
-                run(make["-j", int(bb_cfg()["jobs"])])
+                run(make["-j", get_number_of_jobs(bb_cfg())])
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

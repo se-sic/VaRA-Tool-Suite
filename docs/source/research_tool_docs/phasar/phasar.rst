@@ -1,0 +1,9 @@
+******
+PhASAR
+******
+
+PhASAR is a LLVM-based Static Analysis Framework
+
+What is Phasar?
+---------------
+Phasar is a LLVM-based static analysis framework written in C++. It allows users to specify arbitrary data-flow problems which are then solved in a fully-automated manner on the specified LLVM IR target code. Computing points-to information, call-graph(s), etc. is done by the framework, thus you can focus on what matters.

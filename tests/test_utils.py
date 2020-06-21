@@ -30,7 +30,7 @@ def get_test_config(tmp_path: Path) -> benchbuild.utils.settings.Configuration:
     test_config = deepcopy(settings._CFG)  # pylint: disable=protected-access
 
     # setup test input dir
-    test_config["config_file"] = None
+    test_config["config_file"] = str(tmp_path / ".varats.yml")
     test_config["result_dir"] = str(TEST_INPUTS_DIR / "results")
     test_config["paper_config"]["folder"] = str(
         TEST_INPUTS_DIR / "paper_configs"
@@ -69,7 +69,9 @@ class _ReplaceConfig():
             else:
                 self.new_bb_config = deepcopy(self.old_bb_config)
 
-        if not tmp_path:
+        if tmp_path:
+            self.tmp_path: tp.Optional[tempfile.TemporaryDirectory] = None
+        else:
             self.tmp_path = tempfile.TemporaryDirectory()
             tmp_path = Path(self.tmp_path.name)
 
