@@ -1,6 +1,4 @@
-"""
-Annotate CVE/CWE data to a plot.
-"""
+"""Annotate Bug data to a plot."""
 import typing as tp
 
 from benchbuild.project import Project
@@ -11,10 +9,12 @@ from varats.data.provider.cve.cve_provider import CVEProvider
 from varats.tools.commit_map import create_lazy_commit_map_loader
 
 
-def draw_bugs(axis: axes.Axes,
-              project: tp.Type[Project],
-              revisions: tp.List[str],
-              extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None) -> None:
+def draw_bugs(
+    axis: axes.Axes,
+    project: tp.Type[Project],
+    revisions: tp.List[str],
+    extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None
+) -> None:
     """
     Annotates bugs for a project in an existing plot.
 
@@ -53,15 +53,19 @@ def draw_bugs(axis: axes.Axes,
         label = " ".join([f"#{bug}" for bug in bugs])
 
         transform = axis.get_xaxis_transform()
-        axis.axvline(index,
-                     label=label,
-                     linewidth=plot_cfg["linewidth"],
-                     color=plot_cfg["color"])
-        axis.text(index + 0.1,
-                  0,
-                  label,
-                  transform=transform,
-                  rotation=90,
-                  size=plot_cfg["label_size"],
-                  color=plot_cfg["color"],
-                  va=plot_cfg["vertical_alignment"])
+        axis.axvline(
+            index,
+            label=label,
+            linewidth=plot_cfg["linewidth"],
+            color=plot_cfg["color"]
+        )
+        axis.text(
+            index + 0.1,
+            0,
+            label,
+            transform=transform,
+            rotation=90,
+            size=plot_cfg["label_size"],
+            color=plot_cfg["color"],
+            va=plot_cfg["vertical_alignment"]
+        )
