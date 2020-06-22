@@ -1,7 +1,7 @@
 """
-Module for drawing commit-data metrics plots.
+Module for comparing different cluster algorithms.
 
-- scatter-plot matrix
+- cluster analysis
 """
 import abc
 import typing as tp
@@ -24,7 +24,7 @@ from varats.plots.plot import Plot
 
 def _plot_cluster_comparison(
     datasets: tp.List[tp.Tuple[np.array, str, str, tp.Dict[str, tp.Any]]]
-):
+) -> None:
     scale_factor = 1.5
     plt.figure(
         figsize=(10 * scale_factor + 1, len(datasets) * scale_factor + .5)
@@ -167,8 +167,6 @@ def _plot_cluster_comparison(
                 dataset[:, 0], dataset[:, 1], s=10, color=colors[y_pred]
             )
 
-            # plt.xlim(-2.5, 2.5)
-            # plt.ylim(-2.5, 2.5)
             plt.xticks(())
             plt.yticks(())
 
@@ -193,25 +191,19 @@ class BlameDiffCorrelationMatrix(Plot):
 
         sns.set(style="ticks", color_codes=True)
 
+        variables = [
+            "churn", "num_interactions", "num_interacting_commits",
+            "num_interacting_authors"
+        ]
         df = BlameDiffMetricsDatabase.get_data_for_project(
-            project_name, [
-                "revision", "churn_total", "diff_ci_total", "ci_degree_mean",
-                "author_mean", "avg_time_mean", "ci_degree_max", "author_max",
-                "avg_time_max", "year"
-            ], commit_map, case_study
+            project_name, ["revision", *variables], commit_map, case_study
         )
         df.set_index('revision', inplace=True)
-
-        df.drop(df[df.churn_total == 0].index, inplace=True)
-
-        vars = [
-            "churn_total", "diff_ci_total", "ci_degree_mean", "author_mean",
-            "avg_time_mean"
-        ]
+        df.drop(df[df.churn == 0].index, inplace=True)
 
         _plot_cluster_comparison([
-            (df[["churn_total", var]].to_numpy(), "churn_total", var, {})
-            for var in vars
+            (df[["churn", var]].to_numpy(), "churn", var, {})
+            for var in variables
         ])
 
     def show(self) -> None:
