@@ -363,6 +363,89 @@ class BlameReportDiff():
         return str_representation
 
 
+ElementType = tp.TypeVar('ElementType')
+
+
+def __count_elements(
+    report: tp.Union[BlameReport, BlameReportDiff],
+    get_elements_from_interaction: tp.Callable[[BlameInstInteractions],
+                                               tp.Iterable[ElementType]]
+) -> int:
+    elements: tp.Set[ElementType] = set()
+
+    for func_entry in report.function_entries:
+        for interaction in func_entry.interactions:
+            elements.update(get_elements_from_interaction(interaction))
+
+    return len(elements)
+
+
+def count_interactions(report: tp.Union[BlameReport, BlameReportDiff]) -> int:
+    """
+    Counts the number of interactions.
+
+    Args:
+        report: the blame report or diff
+
+    Returns:
+        the number of interactions in this report or diff
+    """
+    amount = 0
+
+    for func_entry in report.function_entries:
+        for interaction in func_entry.interactions:
+            amount += abs(interaction.amount)
+
+    return amount
+
+
+def count_interacting_commits(
+    report: tp.Union[BlameReport, BlameReportDiff],
+) -> int:
+    """
+    Counts the number of unique interacting commits.
+
+    Args:
+        report: the blame report or diff
+
+    Returns:
+        the number unique interacting commits in this report or diff
+    """
+    return __count_elements(
+        report, lambda interaction: interaction.interacting_commits
+    )
+
+
+def count_interacting_authors(
+    report: tp.Union[BlameReport, BlameReportDiff],
+    project_name: str,
+) -> int:
+    """
+    Counts the number of unique interacting authors.
+
+    Args:
+        report: the blame report or diff
+        project_name: name of the project the report is based on
+
+    Returns:
+        the number unique interacting authors in this report or diff
+    """
+
+    commit_lookup = create_commit_lookup_helper(project_name)
+
+    def extract_interacting_authors(
+        interaction: BlameInstInteractions
+    ) -> tp.Iterable[str]:
+        return map_commits(
+            # Issue (se-passau/VaRA#647): improve author uniquifying
+            lambda c: tp.cast(str, c.author.name),
+            interaction.interacting_commits,
+            commit_lookup
+        )
+
+    return __count_elements(report, extract_interacting_authors)
+
+
 def generate_degree_tuples(
     report: tp.Union[BlameReport, BlameReportDiff]
 ) -> tp.List[tp.Tuple[int, int]]:

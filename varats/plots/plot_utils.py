@@ -4,6 +4,8 @@ import functools
 import typing as tp
 from pathlib import Path
 
+from matplotlib.axes import Axes
+
 from varats.data.reports.commit_report import CommitMap
 
 
@@ -94,3 +96,50 @@ def find_missing_revisions(
                 new_revs.add(new_rev)
         last_row = row
     return new_revs
+
+
+def pad_axes(
+    ax: Axes,
+    pad_x: tp.Optional[float] = None,
+    pad_y: tp.Optional[float] = None
+) -> None:
+    if pad_x:
+        x_min, x_max = ax.get_xlim()
+        px = (x_max - x_min) * pad_x
+        ax.set_xlim(x_min - px, x_max + px)
+
+    if pad_y:
+        y_min, y_max = ax.get_ylim()
+        py = (y_max - y_min) * pad_y
+        ax.set_ylim(y_min - py, y_max + py)
+
+
+def align_yaxis(ax1: Axes, v1: float, ax2: Axes, v2: float) -> None:
+    """
+    Adjust ax2 ylimit so that v2 in ax2 is aligned to v1 in ax1.
+
+    See https://stackoverflow.com/a/26456731
+    """
+    _, y1 = ax1.transData.transform((0, v1))
+    _, y2 = ax2.transData.transform((0, v2))
+    adjust_yaxis(ax2, (y1 - y2) / 2, v2)
+    adjust_yaxis(ax1, (y2 - y1) / 2, v1)
+
+
+def adjust_yaxis(ax: Axes, ydif: float, v: float) -> None:
+    """
+    Shift axis ax by ydiff, maintaining point v at the same location.
+
+    See https://stackoverflow.com/a/26456731
+    """
+    inv = ax.transData.inverted()
+    _, dy = inv.transform((0, 0)) - inv.transform((0, ydif))
+    miny, maxy = ax.get_ylim()
+    miny, maxy = miny - v, maxy - v
+    if -miny > maxy or (-miny == maxy and dy > 0):
+        nminy = miny
+        nmaxy = miny * (maxy + dy) / (miny + dy)
+    else:
+        nmaxy = maxy
+        nminy = maxy * (miny + dy) / (maxy + dy)
+    ax.set_ylim(nminy + v, nmaxy + v)
