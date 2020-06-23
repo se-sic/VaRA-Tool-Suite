@@ -156,14 +156,10 @@ _CFG['artefacts'] = {
     },
 }
 
-CFG['provider'] = {
+_CFG['provider'] = {
     "github_access_token": {
         "desc": "GitHub access token",
         "default": None,
-    },
-    "data_cache": {
-        "desc": "Local data cache for provider information.",
-        "default": "data_cache"
     }
 }
 

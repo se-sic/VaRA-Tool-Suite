@@ -1,3 +1,4 @@
+"""Utility module for caching Github Objects."""
 import logging
 import typing as tp
 from pathlib import Path
@@ -6,7 +7,7 @@ from github import Github, GithubException
 from github.GithubObject import GithubObject
 from github.PaginatedList import PaginatedList
 
-from varats.settings import CFG
+from varats.settings import _CFG as CFG
 
 LOG = logging.getLogger(__name__)
 
@@ -20,13 +21,13 @@ def get_github_instance() -> Github:
 
 PyGithubObj = tp.TypeVar("PyGithubObj", bound=GithubObject)
 
+
 # TODO: extend to handle paginated lists
 def get_cached_github_object(
     cache_file_name: str, load_function: tp.Callable[[Github], PyGithubObj]
 ) -> tp.Optional[PyGithubObj]:
     github = get_github_instance()
-    cache_file = Path(str(
-        CFG["provider"]["data_cache"])) / f"pygithub_{cache_file_name}"
+    cache_file = Path(str(CFG["data_cache"])) / f"pygithub_{cache_file_name}"
 
     try:
         if cache_file.exists():

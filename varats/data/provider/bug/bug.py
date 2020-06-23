@@ -44,10 +44,12 @@ class RawBug:
         return self.__introducing_commits
 
 
-def find_all_pygit_bugs() -> tp.FrozenSet[PygitBug]:
+def find_all_pygit_bugs(project_name: str) -> tp.FrozenSet[PygitBug]:
     """
-    Create a set of all bugs.
+    Creates a set of all bugs.
 
+    :param project_name:
+        Name of the project in which to search for bugs
     :return:
         A set of PygitBug Objects.
     """
@@ -58,10 +60,12 @@ def find_all_pygit_bugs() -> tp.FrozenSet[PygitBug]:
     return frozenset(pygit_bugs)
 
 
-def find_all_raw_bugs() -> tp.FrozenSet[RawBug]:
+def find_all_raw_bugs(project_name: str) -> tp.FrozenSet[RawBug]:
     """
-    Create a set of all bugs.
+    Creates a set of all bugs.
 
+    :param project_name:
+        Name of the project in which to search for bugs
     :return:
         A set of RawBug Objects.
     """
@@ -72,10 +76,13 @@ def find_all_raw_bugs() -> tp.FrozenSet[RawBug]:
     return frozenset(hash_bugs)
 
 
-def find_pygit_bug_by_fix(fixing_commit: str) -> tp.Optional[PygitBug]:
+def find_pygit_bug_by_fix(project_name: str,
+                          fixing_commit: str) -> tp.Optional[PygitBug]:
     """
     Find the bug associated to some fixing commit, if there is any.
 
+    :param project_name:
+        Name of the project in which to search for bugs
     :param fixing_commit:
         Commit Hash of the potentially fixing commit
     :return:
@@ -87,10 +94,13 @@ def find_pygit_bug_by_fix(fixing_commit: str) -> tp.Optional[PygitBug]:
     return None
 
 
-def find_raw_bug_by_fix(fixing_commit: str) -> tp.Optional[RawBug]:
+def find_raw_bug_by_fix(project_name: str,
+                        fixing_commit: str) -> tp.Optional[RawBug]:
     """
     Find the bug associated to some fixing commit, if there is any.
 
+    :param project_name:
+        Name of the project in which to search for bugs
     :param fixing_commit:
         Commit Hash of the potentially fixing commit
     :return:
@@ -103,11 +113,13 @@ def find_raw_bug_by_fix(fixing_commit: str) -> tp.Optional[RawBug]:
 
 
 def find_pygit_bug_by_introduction(
-    introducing_commit: str
+    project_name: str, introducing_commit: str
 ) -> tp.List[PygitBug]:
     """
     Create a (potentially empty) list of bugs introduced by a certain commit.
 
+    :param project_name:
+        Name of the project in which to search for bugs
     :param introducing_commit:
         Commit Hash of the introducing commit to look for
     :return:
@@ -118,10 +130,13 @@ def find_pygit_bug_by_introduction(
     return []
 
 
-def find_raw_bug_by_introduction(introducing_commit: str) -> tp.List[RawBug]:
+def find_raw_bug_by_introduction(project_name: str,
+                                 introducing_commit: str) -> tp.List[RawBug]:
     """
     Create a (potentially empty) list of bugs introduced by a certain commit.
 
+    :param project_name:
+        Name of the project in which to search for bugs
     :param introducing_commit:
         Commit Hash of the introducing commit to look for
     :return:
