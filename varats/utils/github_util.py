@@ -1,4 +1,4 @@
-"""Utility module for caching Github Objects."""
+"""Utility module for working with the pygithub API."""
 import logging
 import typing as tp
 from pathlib import Path
