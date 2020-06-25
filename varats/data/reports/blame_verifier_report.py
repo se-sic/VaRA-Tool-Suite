@@ -1,6 +1,15 @@
 """Module for a BlameVerifierReport."""
+from enum import Enum
 
 from varats.data.report import BaseReport, MetaReport, FileStatusExtension
+
+import re
+
+
+class ResultType(Enum):
+    SUCCESSES = r"\(\d+/"
+    FAILURES = r"\(\d+/\d+\)"
+    TOTAL = r"/\d+\)"
 
 
 class BlameVerifierReportNoOpt(BaseReport):
@@ -39,6 +48,42 @@ class BlameVerifierReportNoOpt(BaseReport):
             BlameVerifierReportNoOpt.SHORTHAND, project_name, binary_name,
             project_version, project_uuid, extension_type, file_ext
         )
+
+    @staticmethod
+    def parse_verifier_results(path: str, result_type: ResultType) -> int:
+        """
+        Parses the successful, failed or total comparisons of a BlameMDVerifier
+        result file and returns them.
+
+        Args:
+            path: The path to the result file
+            result_type: The specified type, which is looked for
+            (Enum: SUCCESSFUL, FAILURES, TOTAL)
+
+        Returns:
+            Number of either successful, failed or total comparisons
+        """
+        with open(path, 'r') as file:
+            for line in file:
+                result = re.search(result_type.value, line)
+                if result:
+                    result = result.group()
+
+                    # Calc failures from parsed total comparisons and successes
+                    if result_type is ResultType.FAILURES:
+                        total = re.search(ResultType.TOTAL.value, result)
+                        total = int(re.sub("[^0-9]", "", total.group()))
+                        succs = re.search(ResultType.SUCCESSES.value, result)
+                        succs = int(re.sub("[^0-9]", "", succs.group()))
+
+                        return total - succs
+
+                    # Parse number of successes or total comparisons
+                    else:
+                        result = int(re.sub("[^0-9]", "", result))
+                        return result
+
+        return -1
 
 
 class BlameVerifierReportOpt(BaseReport):
