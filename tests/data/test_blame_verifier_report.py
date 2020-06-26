@@ -2,7 +2,6 @@
 
 import unittest
 from pathlib import Path
-from unittest import mock
 
 from varats.data.report import FileStatusExtension
 from varats.data.reports.blame_verifier_report import (

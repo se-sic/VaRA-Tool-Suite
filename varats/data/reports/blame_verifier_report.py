@@ -79,9 +79,8 @@ class BlameVerifierReportNoOpt(BaseReport):
                         return total - succs
 
                     # Parse number of successes or total comparisons
-                    else:
-                        result = int(re.sub("[^0-9]", "", result))
-                        return result
+                    result = int(re.sub("[^0-9]", "", result))
+                    return result
 
             raise RuntimeError(
                 f"The specified result type could not be found "
@@ -156,9 +155,8 @@ class BlameVerifierReportOpt(BaseReport):
                         return total - succs
 
                     # Parse number of successes or total comparisons
-                    else:
-                        result = int(re.sub("[^0-9]", "", result))
-                        return result
+                    result = int(re.sub("[^0-9]", "", result))
+                    return result
 
             raise RuntimeError(
                 f"The specified result type could not be found "
