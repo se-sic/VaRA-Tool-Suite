@@ -1,6 +1,7 @@
 """Module for a BlameVerifierReport."""
 import re
 from enum import Enum
+from pathlib import Path
 
 from varats.data.report import BaseReport, MetaReport, FileStatusExtension
 
@@ -49,10 +50,10 @@ class BlameVerifierReportNoOpt(BaseReport):
         )
 
     @staticmethod
-    def parse_verifier_results(path: str, result_type: ResultType) -> int:
+    def parse_verifier_results(path: Path, result_type: ResultType) -> int:
         """
-        Parses the successful, failed or total comparisons of a BlameMDVerifier
-        result file and returns them.
+        Parses the successful, failed or total comparisons of a
+        BlameMDVerifierNoOpt result file and returns them.
 
         Args:
             path: The path to the result file
@@ -126,10 +127,10 @@ class BlameVerifierReportOpt(BaseReport):
         )
 
     @staticmethod
-    def parse_verifier_results(path: str, result_type: ResultType) -> int:
+    def parse_verifier_results(path: Path, result_type: ResultType) -> int:
         """
-        Parses the successful, failed or total comparisons of a BlameMDVerifier
-        result file and returns them.
+        Parses the successful, failed or total comparisons of a
+        BlameMDVerifierOpt result file and returns them.
 
         Args:
             path: The path to the result file
