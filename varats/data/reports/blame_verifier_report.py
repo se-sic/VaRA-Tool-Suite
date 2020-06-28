@@ -67,20 +67,21 @@ class BlameVerifierReportNoOpt(BaseReport):
             for line in file:
                 result = re.search(result_type.value, line)
                 if result:
-                    result = result.group()
+                    result_str = result.group()
 
                     # Calc failures from parsed total comparisons and successes
                     if result_type is ResultType.FAILURES:
-                        total = re.search(ResultType.TOTAL.value, result)
-                        total = int(re.sub("[^0-9]", "", total.group()))
-                        succs = re.search(ResultType.SUCCESSES.value, result)
-                        succs = int(re.sub("[^0-9]", "", succs.group()))
+                        total = re.search(ResultType.TOTAL.value, result_str)
+                        total = re.sub("[^0-9]", "", total.group())
+                        succs = re.search(
+                            ResultType.SUCCESSES.value, result_str
+                        )
+                        succs = re.sub("[^0-9]", "", succs.group())
 
-                        return total - succs
+                        return int(total) - int(succs)
 
                     # Parse number of successes or total comparisons
-                    result = int(re.sub("[^0-9]", "", result))
-                    return result
+                    return int(re.sub("[^0-9]", "", result_str))
 
             raise RuntimeError(
                 f"The specified result type could not be found "
@@ -143,20 +144,21 @@ class BlameVerifierReportOpt(BaseReport):
             for line in file:
                 result = re.search(result_type.value, line)
                 if result:
-                    result = result.group()
+                    result_str = result.group()
 
                     # Calc failures from parsed total comparisons and successes
                     if result_type is ResultType.FAILURES:
-                        total = re.search(ResultType.TOTAL.value, result)
-                        total = int(re.sub("[^0-9]", "", total.group()))
-                        succs = re.search(ResultType.SUCCESSES.value, result)
-                        succs = int(re.sub("[^0-9]", "", succs.group()))
+                        total = re.search(ResultType.TOTAL.value, result_str)
+                        total = re.sub("[^0-9]", "", total.group())
+                        succs = re.search(
+                            ResultType.SUCCESSES.value, result_str
+                        )
+                        succs = re.sub("[^0-9]", "", succs.group())
 
-                        return total - succs
+                        return int(total) - int(succs)
 
                     # Parse number of successes or total comparisons
-                    result = int(re.sub("[^0-9]", "", result))
-                    return result
+                    return int(re.sub("[^0-9]", "", result_str))
 
             raise RuntimeError(
                 f"The specified result type could not be found "
