@@ -72,10 +72,19 @@ class BlameVerifierReportNoOpt(BaseReport):
                     # Calc failures from parsed total comparisons and successes
                     if result_type is ResultType.FAILURES:
                         total = re.search(ResultType.TOTAL.value, result_str)
-                        total_str = re.sub("[^0-9]", "", total.group())
                         succs = re.search(
                             ResultType.SUCCESSES.value, result_str
                         )
+
+                        if total or succs is None:
+                            raise RuntimeError(
+                                f"The total or successful "
+                                f"comparisons could not be "
+                                f"extracted. total: {total}; "
+                                f"succs: {succs}"
+                            )
+
+                        total_str = re.sub("[^0-9]", "", total.group())
                         succs_str = re.sub("[^0-9]", "", succs.group())
 
                         return int(total_str) - int(succs_str)
@@ -149,10 +158,19 @@ class BlameVerifierReportOpt(BaseReport):
                     # Calc failures from parsed total comparisons and successes
                     if result_type is ResultType.FAILURES:
                         total = re.search(ResultType.TOTAL.value, result_str)
-                        total_str = re.sub("[^0-9]", "", total.group())
                         succs = re.search(
                             ResultType.SUCCESSES.value, result_str
                         )
+
+                        if total or succs is None:
+                            raise RuntimeError(
+                                f"The total or successful "
+                                f"comparisons could not be "
+                                f"extracted. total: {total}; "
+                                f"succs: {succs}"
+                            )
+
+                        total_str = re.sub("[^0-9]", "", total.group())
                         succs_str = re.sub("[^0-9]", "", succs.group())
 
                         return int(total_str) - int(succs_str)
