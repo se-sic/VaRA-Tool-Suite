@@ -71,21 +71,26 @@ class BlameVerifierReportNoOpt(BaseReport):
 
                     # Calc failures from parsed total comparisons and successes
                     if result_type is ResultType.FAILURES:
-                        total = re.search(ResultType.TOTAL.value, result_str)
                         succs = re.search(
                             ResultType.SUCCESSES.value, result_str
                         )
+                        total = re.search(ResultType.TOTAL.value, result_str)
 
-                        if total or succs is None:
+                        if succs is None:
                             raise RuntimeError(
-                                f"The total or successful "
+                                f"The successful "
                                 f"comparisons could not be "
-                                f"extracted. total: {total}; "
-                                f"succs: {succs}"
+                                f"extracted. Were {succs}."
+                            )
+                        if total is None:
+                            raise RuntimeError(
+                                f"The total "
+                                f"comparisons could not be "
+                                f"extracted. Were {total}."
                             )
 
-                        total_str = re.sub("[^0-9]", "", total.group())
                         succs_str = re.sub("[^0-9]", "", succs.group())
+                        total_str = re.sub("[^0-9]", "", total.group())
 
                         return int(total_str) - int(succs_str)
 
@@ -157,21 +162,26 @@ class BlameVerifierReportOpt(BaseReport):
 
                     # Calc failures from parsed total comparisons and successes
                     if result_type is ResultType.FAILURES:
-                        total = re.search(ResultType.TOTAL.value, result_str)
                         succs = re.search(
                             ResultType.SUCCESSES.value, result_str
                         )
+                        total = re.search(ResultType.TOTAL.value, result_str)
 
-                        if total or succs is None:
+                        if succs is None:
                             raise RuntimeError(
-                                f"The total or successful "
+                                f"The successful "
                                 f"comparisons could not be "
-                                f"extracted. total: {total}; "
-                                f"succs: {succs}"
+                                f"extracted. Were {succs}."
+                            )
+                        if total is None:
+                            raise RuntimeError(
+                                f"The total "
+                                f"comparisons could not be "
+                                f"extracted. Were {total}."
                             )
 
-                        total_str = re.sub("[^0-9]", "", total.group())
                         succs_str = re.sub("[^0-9]", "", succs.group())
+                        total_str = re.sub("[^0-9]", "", total.group())
 
                         return int(total_str) - int(succs_str)
 
