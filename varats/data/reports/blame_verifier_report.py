@@ -72,13 +72,13 @@ class BlameVerifierReportNoOpt(BaseReport):
                     # Calc failures from parsed total comparisons and successes
                     if result_type is ResultType.FAILURES:
                         total = re.search(ResultType.TOTAL.value, result_str)
-                        total = re.sub("[^0-9]", "", total.group())
+                        total_str = re.sub("[^0-9]", "", total.group())
                         succs = re.search(
                             ResultType.SUCCESSES.value, result_str
                         )
-                        succs = re.sub("[^0-9]", "", succs.group())
+                        succs_str = re.sub("[^0-9]", "", succs.group())
 
-                        return int(total) - int(succs)
+                        return int(total_str) - int(succs_str)
 
                     # Parse number of successes or total comparisons
                     return int(re.sub("[^0-9]", "", result_str))
@@ -149,13 +149,13 @@ class BlameVerifierReportOpt(BaseReport):
                     # Calc failures from parsed total comparisons and successes
                     if result_type is ResultType.FAILURES:
                         total = re.search(ResultType.TOTAL.value, result_str)
-                        total = re.sub("[^0-9]", "", total.group())
+                        total_str = re.sub("[^0-9]", "", total.group())
                         succs = re.search(
                             ResultType.SUCCESSES.value, result_str
                         )
-                        succs = re.sub("[^0-9]", "", succs.group())
+                        succs_str = re.sub("[^0-9]", "", succs.group())
 
-                        return int(total) - int(succs)
+                        return int(total_str) - int(succs_str)
 
                     # Parse number of successes or total comparisons
                     return int(re.sub("[^0-9]", "", result_str))
