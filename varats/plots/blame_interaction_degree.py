@@ -65,6 +65,23 @@ class BlameDegree(Plot):
     def show(self) -> None:
         """Show the current plot."""
 
+    def _get_degree_data(self) -> pd.DataFrame:
+        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
+        case_study = self.plot_kwargs.get('plot_case_study', None)
+        project_name = self.plot_kwargs["project"]
+        interaction_plot_df = \
+            BlameInteractionDegreeDatabase.get_data_for_project(
+                project_name, [
+                    "revision", "time_id", "degree_type", "degree", "amount",
+                    "fraction"
+                ], commit_map, case_study)
+        if interaction_plot_df.empty or len(
+            np.unique(interaction_plot_df['revision'])
+        ) == 1:
+            # Need more than one data point
+            raise PlotDataEmpty
+        return interaction_plot_df
+
     def _degree_plot(
         self,
         view_mode: bool,
@@ -89,21 +106,7 @@ class BlameDegree(Plot):
         style.use(self.style)
 
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
-        case_study = self.plot_kwargs.get('plot_case_study', None)
-        project_name = self.plot_kwargs["project"]
-        interaction_plot_df = \
-            BlameInteractionDegreeDatabase.get_data_for_project(
-            project_name, [
-                "revision", "time_id", "degree_type", "degree", "amount",
-                "fraction"
-            ], commit_map, case_study)
-
-        if interaction_plot_df.empty or len(
-            np.unique(interaction_plot_df['revision'])
-        ) == 1:
-            # Plot can only be build with more than one data point
-            raise PlotDataEmpty
-
+        interaction_plot_df = self._get_degree_data()
         unique_revisions, sub_df_list = _filter_data_frame(
             degree_type, interaction_plot_df, commit_map
         )
@@ -199,21 +202,7 @@ class BlameDegree(Plot):
             changes in degree distribution
         """
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
-        case_study = self.plot_kwargs.get('plot_case_study', None)
-        project_name = self.plot_kwargs["project"]
-        interaction_plot_df = \
-            BlameInteractionDegreeDatabase.get_data_for_project(
-                project_name, [
-                    "revision", "time_id", "degree_type", "degree", "amount",
-                    "fraction"
-                ], commit_map, case_study)
-
-        if interaction_plot_df.empty or len(
-            np.unique(interaction_plot_df['revision'])
-        ) == 1:
-            # Need more than one data point
-            raise PlotDataEmpty
-
+        interaction_plot_df = self._get_degree_data()
         unique_revisions, sub_df_list = _filter_data_frame(
             degree_type, interaction_plot_df, commit_map
         )
