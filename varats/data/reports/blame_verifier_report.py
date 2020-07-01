@@ -1,5 +1,6 @@
 """Module for a BlameVerifierReport."""
 import re
+import warnings
 from enum import Enum
 from pathlib import Path
 
@@ -50,7 +51,8 @@ class BlameVerifierReportMixin(BaseReport):
 
             for line in file:
                 result = pattern.search(line)
-                if result:
+
+                if result is not None:
                     result_str = result.group()
 
                     # Calc failures from parsed total comparisons and successes
@@ -85,6 +87,15 @@ class BlameVerifierReportMixin(BaseReport):
                     # Return number of successes, total or undetermined
                     # comparisons
                     return int(re.sub("[^0-9]", "", result_str))
+
+            if result is None and result_regex is \
+                    ResultRegexForBlameVerifier.UNDETERMINED:
+                warnings.warn(
+                    f"The number of undetermined comparisons is either 0 or "
+                    f"could not be parsed from the file: {path}. Returning 0.",
+                    RuntimeWarning
+                )
+                return 0
 
             raise RuntimeError(
                 f"The specified parsing regex could not be found "
