@@ -70,7 +70,7 @@ class VaRACodeBase(CodeBase):
         ).path
         mkdir(llvm_project_dir / "build/")
         with local.cwd(llvm_project_dir / "build/"):
-            ln("-s", llvm_project_dir / "vara/utils/vara/builds/", "build_cfg")
+            ln("-s", "../vara/utils/vara/builds/", "build_cfg")
 
     def checkout_vara_version(
         self, version: int, use_dev_branches: bool
