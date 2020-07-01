@@ -49,7 +49,7 @@ def _filter_data_frame(
         interaction_plot_df.loc[interaction_plot_df.degree == x].fraction
         for x in degree_levels
     ]
-    unique_revisions = sorted(np.unique(interaction_plot_df.revision))
+    unique_revisions = interaction_plot_df.revision.unique()
 
     return unique_revisions, sub_df_list
 
@@ -64,6 +64,23 @@ class BlameDegree(Plot):
     @abc.abstractmethod
     def show(self) -> None:
         """Show the current plot."""
+
+    def _get_degree_data(self) -> pd.DataFrame:
+        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
+        case_study = self.plot_kwargs.get('plot_case_study', None)
+        project_name = self.plot_kwargs["project"]
+        interaction_plot_df = \
+            BlameInteractionDegreeDatabase.get_data_for_project(
+                project_name, [
+                    "revision", "time_id", "degree_type", "degree", "amount",
+                    "fraction"
+                ], commit_map, case_study)
+        if interaction_plot_df.empty or len(
+            np.unique(interaction_plot_df['revision'])
+        ) == 1:
+            # Need more than one data point
+            raise PlotDataEmpty
+        return interaction_plot_df
 
     def _degree_plot(
         self,
@@ -89,21 +106,7 @@ class BlameDegree(Plot):
         style.use(self.style)
 
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
-        case_study = self.plot_kwargs.get('plot_case_study', None)
-        project_name = self.plot_kwargs["project"]
-        interaction_plot_df = \
-            BlameInteractionDegreeDatabase.get_data_for_project(
-            project_name, [
-                "revision", "time_id", "degree_type", "degree", "amount",
-                "fraction"
-            ], commit_map, case_study)
-
-        if interaction_plot_df.empty or len(
-            np.unique(interaction_plot_df['revision'])
-        ) == 1:
-            # Plot can only be build with more than one data point
-            raise PlotDataEmpty
-
+        interaction_plot_df = self._get_degree_data()
         unique_revisions, sub_df_list = _filter_data_frame(
             degree_type, interaction_plot_df, commit_map
         )
@@ -182,6 +185,85 @@ class BlameDegree(Plot):
             rotation=270
         )
 
+    def _calc_missing_revisions(
+        self, degree_type: DegreeType, boundary_gradient: float
+    ) -> tp.Set[str]:
+        """
+        Select a set of revisions based on the gradients of the degree levels
+        between revisions.
+
+        Args:
+            degree_type: the degree type to consider for gradient calculation
+            boundary_gradient: the gradient threshold that needs to be exceeded
+                               to include a new revision
+
+        Returns:
+            a set of revisions sampled between revisions with unusually large
+            changes in degree distribution
+        """
+        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
+        interaction_plot_df = self._get_degree_data()
+        unique_revisions, sub_df_list = _filter_data_frame(
+            degree_type, interaction_plot_df, commit_map
+        )
+
+        def head_cm_neighbours(lhs_cm: str, rhs_cm: str) -> bool:
+            return commit_map.short_time_id(
+                lhs_cm
+            ) + 1 == commit_map.short_time_id(rhs_cm)
+
+        new_revs: tp.Set[str] = set()
+
+        # build a dataframe with revision as index and degree values as columns
+        # the cells contain the degree frequencies per revision
+        df = pd.concat([
+            series.reset_index(drop=True) for series in sub_df_list
+        ],
+                       axis=1)
+        df["revision"] = unique_revisions
+        df = df.set_index("revision")
+        df_iter = df.iterrows()
+        last_revision, last_row = next(df_iter)
+        for revision, row in df_iter:
+            # compute gradient for each degree value and see if any gradient
+            # exceeds threshold
+            gradient = abs(row - last_row)
+            if any(gradient > boundary_gradient):
+                lhs_cm = last_revision
+                rhs_cm = revision
+                if head_cm_neighbours(lhs_cm, rhs_cm):
+                    print(
+                        "Found steep gradient between neighbours " +
+                        "{lhs_cm} - {rhs_cm}: {gradient}".format(
+                            lhs_cm=lhs_cm,
+                            rhs_cm=rhs_cm,
+                            gradient=round(max(gradient), 5)
+                        )
+                    )
+                else:
+                    print(
+                        "Unusual gradient between " +
+                        "{lhs_cm} - {rhs_cm}: {gradient}".format(
+                            lhs_cm=lhs_cm,
+                            rhs_cm=rhs_cm,
+                            gradient=round(max(gradient), 5)
+                        )
+                    )
+                    new_rev_id = round((
+                        commit_map.short_time_id(lhs_cm) +
+                        commit_map.short_time_id(rhs_cm)
+                    ) / 2.0)
+                    new_rev = self.plot_kwargs['cmap'].c_hash(new_rev_id)
+                    print(
+                        "-> Adding {rev} as new revision to the sample set".
+                        format(rev=new_rev)
+                    )
+                    new_revs.add(new_rev)
+                print()
+            last_revision = revision
+            last_row = row
+        return new_revs
+
 
 class BlameInteractionDegree(BlameDegree):
     """Plotting the degree of blame interactions."""
@@ -203,7 +285,9 @@ class BlameInteractionDegree(BlameDegree):
         plt.show()
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
-        raise NotImplementedError
+        return self._calc_missing_revisions(
+            DegreeType.interaction, boundary_gradient
+        )
 
 
 class BlameAuthorDegree(BlameDegree):
@@ -226,7 +310,9 @@ class BlameAuthorDegree(BlameDegree):
         plt.show()
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
-        raise NotImplementedError
+        return self._calc_missing_revisions(
+            DegreeType.author, boundary_gradient
+        )
 
 
 class BlameMaxTimeDistribution(BlameDegree):
@@ -251,7 +337,9 @@ class BlameMaxTimeDistribution(BlameDegree):
         plt.show()
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
-        raise NotImplementedError
+        return self._calc_missing_revisions(
+            DegreeType.max_time, boundary_gradient
+        )
 
 
 class BlameAvgTimeDistribution(BlameDegree):
@@ -276,4 +364,6 @@ class BlameAvgTimeDistribution(BlameDegree):
         plt.show()
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
-        raise NotImplementedError
+        return self._calc_missing_revisions(
+            DegreeType.avg_time, boundary_gradient
+        )
