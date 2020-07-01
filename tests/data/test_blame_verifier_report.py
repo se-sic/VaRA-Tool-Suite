@@ -7,7 +7,7 @@ from varats.data.report import FileStatusExtension
 from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportNoOpt,
     BlameVerifierReportOpt,
-    ResultType,
+    ResultRegexForBlameVerifier,
 )
 
 
@@ -38,6 +38,7 @@ class TestBlameVerifierReport(unittest.TestCase):
 
         cls.mock_successes = 16082
         cls.mock_failures = 50604
+        cls.mock_undetermined = 1439
         cls.mock_total = 66686
 
     def test_get_file_name_opt(self):
@@ -77,46 +78,54 @@ class TestBlameVerifierReport(unittest.TestCase):
         # Then
         self.assertEqual(self.mock_file_name, actual)
 
-    def test_parse_verifier_results_opt(self):
-        """Test if the number of successful, failed and total comparisons of the
-        BlameMDVerifier with optimization are correctly parsed from the result
-        file."""
-        # Given
-
-        # When
-        actual_successes = BlameVerifierReportOpt.parse_verifier_results(
-            self.test_result_file_path, ResultType.SUCCESSES
-        )
-        actual_failures = BlameVerifierReportOpt.parse_verifier_results(
-            self.test_result_file_path, ResultType.FAILURES
-        )
-        actual_total = BlameVerifierReportOpt.parse_verifier_results(
-            self.test_result_file_path, ResultType.TOTAL
-        )
-
-        # Then
-        self.assertEqual(self.mock_successes, actual_successes)
-        self.assertEqual(self.mock_failures, actual_failures)
-        self.assertEqual(self.mock_total, actual_total)
-
     def test_parse_verifier_results_no_opt(self):
-        """Test if the number of successful, failed and total comparisons of the
-        BlameMDVerifier with optimization are correctly parsed from the result
-        file."""
+        """Test if the number of successful, failed, undetermined and total
+        comparisons of the BlameMDVerifier without optimization are correctly
+        parsed from the result file."""
         # Given
 
         # When
         actual_successes = BlameVerifierReportNoOpt.parse_verifier_results(
-            self.test_result_file_path, ResultType.SUCCESSES
+            self.test_result_file_path, ResultRegexForBlameVerifier.SUCCESSES
         )
         actual_failures = BlameVerifierReportNoOpt.parse_verifier_results(
-            self.test_result_file_path, ResultType.FAILURES
+            self.test_result_file_path, ResultRegexForBlameVerifier.FAILURES
+        )
+        actual_undetermined = BlameVerifierReportNoOpt.parse_verifier_results(
+            self.test_result_file_path, ResultRegexForBlameVerifier.UNDETERMINED
         )
         actual_total = BlameVerifierReportNoOpt.parse_verifier_results(
-            self.test_result_file_path, ResultType.TOTAL
+            self.test_result_file_path, ResultRegexForBlameVerifier.TOTAL
         )
 
         # Then
         self.assertEqual(self.mock_successes, actual_successes)
         self.assertEqual(self.mock_failures, actual_failures)
+        self.assertEqual(self.mock_undetermined, actual_undetermined)
+        self.assertEqual(self.mock_total, actual_total)
+
+    def test_parse_verifier_results_opt(self):
+        """Test if the number of successful, failed, undetermined and total
+        comparisons of the BlameMDVerifier with optimization are correctly
+        parsed from the result file."""
+        # Given
+
+        # When
+        actual_successes = BlameVerifierReportOpt.parse_verifier_results(
+            self.test_result_file_path, ResultRegexForBlameVerifier.SUCCESSES
+        )
+        actual_failures = BlameVerifierReportOpt.parse_verifier_results(
+            self.test_result_file_path, ResultRegexForBlameVerifier.FAILURES
+        )
+        actual_undetermined = BlameVerifierReportOpt.parse_verifier_results(
+            self.test_result_file_path, ResultRegexForBlameVerifier.UNDETERMINED
+        )
+        actual_total = BlameVerifierReportOpt.parse_verifier_results(
+            self.test_result_file_path, ResultRegexForBlameVerifier.TOTAL
+        )
+
+        # Then
+        self.assertEqual(self.mock_successes, actual_successes)
+        self.assertEqual(self.mock_failures, actual_failures)
+        self.assertEqual(self.mock_undetermined, actual_undetermined)
         self.assertEqual(self.mock_total, actual_total)
