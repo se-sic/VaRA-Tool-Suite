@@ -8,6 +8,8 @@ from varats.data.report import BaseReport, MetaReport, FileStatusExtension
 
 
 class ResultRegexForBlameVerifier(Enum):
+    """An enum containing the available parsing options for BlameMDVerifier
+    results."""
     SUCCESSES = r"\(\d+/"
     FAILURES = r"\(\d+/\d+\)"
     TOTAL = r"/\d+\)"
@@ -15,6 +17,12 @@ class ResultRegexForBlameVerifier(Enum):
 
 
 class BlameVerifierReportMixin(BaseReport):
+    """
+    Mixin class for BlameVerifierReports.
+
+    Acts as BaseReport extended with various extracted methods to avoid
+    redundancy in its BlameVerifierReport-Subclasses.
+    """
 
     SHORTHAND = 'BVR_Mixin'
 
