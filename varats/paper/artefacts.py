@@ -17,7 +17,7 @@ from pathlib import Path
 
 from varats.data.version_header import VersionHeader
 from varats.plots.plot import Plot
-from varats.plots.plots import PlotRegistry
+from varats.plots.plots import PlotRegistry, build_plot
 from varats.settings import vara_cfg
 from varats.tables.table import TableFormat, Table
 from varats.tables.tables import TableRegistry
@@ -152,10 +152,12 @@ class PlotArtefact(Artefact):
         if not self.output_path.exists():
             self.output_path.mkdir(parents=True)
 
-        # pylint: disable=not-callable
-        plot = self.plot_type_class(**self.plot_kwargs)
-        plot.style = "ggplot"
-        plot.save(self.output_path, self.file_format)
+        build_plot(
+            plot_type=self.plot_type,
+            result_output=self.output_path,
+            file_format=self.file_format,
+            **self.__plot_kwargs
+        )
 
 
 class TableArtefact(Artefact):
