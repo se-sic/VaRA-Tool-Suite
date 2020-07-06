@@ -18,10 +18,7 @@ class ResultRegexForBlameVerifier(Enum):
 
 class BlameVerifierReportMixin(BaseReport):
     """
-    Mixin class for BlameVerifierReports.
-
-    Acts as BaseReport extended with various extracted methods to avoid
-    redundancy in its BlameVerifierReport-Subclasses.
+    Mixin to that implements shared functionality between different `BlameVerifierReports` with various extracted methods to avoid redundancy in its BlameVerifierReport-Subclasses, without adapting the Report hierarchy.
     """
 
     SHORTHAND = 'BVR_Mixin'
