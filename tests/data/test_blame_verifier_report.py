@@ -7,7 +7,6 @@ from varats.data.report import FileStatusExtension
 from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportNoOpt,
     BlameVerifierReportOpt,
-    ResultRegexForBlameVerifier,
 )
 
 
