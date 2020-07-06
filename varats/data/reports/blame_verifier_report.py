@@ -1,6 +1,6 @@
 """Module for a BlameVerifierReport."""
+import logging
 import re
-import warnings
 from enum import Enum
 from pathlib import Path
 
@@ -16,24 +16,11 @@ class ResultRegexForBlameVerifier(Enum):
     UNDETERMINED = r"\d+ could not be determined"
 
 
-class BlameVerifierReportMixin(BaseReport):
+class BlameVerifierReportParserMixin:
     """Mixin that implements shared functionality between different
     `BlameVerifierReports` with various extracted methods to avoid redundancy in
     its BlameVerifierReport-Subclasses, without adapting the Report
     hierarchy."""
-
-    SHORTHAND = 'BVR_Mixin'
-
-    @staticmethod
-    def get_file_name(
-        project_name: str,
-        binary_name: str,
-        project_version: str,
-        project_uuid: str,
-        extension_type: FileStatusExtension,
-        file_ext: str = ".txt"
-    ) -> str:
-        pass
 
     @staticmethod
     def parse_verifier_results(
@@ -41,7 +28,7 @@ class BlameVerifierReportMixin(BaseReport):
     ) -> int:
         """
         Parses the number of successful, failed, undetermined or total
-        comparisons from a BlameMDVerifier result file.
+        annotations from a BlameMDVerifier result file.
 
         Args:
             path: The path to the result file
@@ -50,18 +37,18 @@ class BlameVerifierReportMixin(BaseReport):
 
         Returns:
             Number of either successful, failed, undetermined or total
-            comparisons
+            annotations
         """
         with open(path, 'r') as file:
-            pattern = re.compile(result_regex.value)
+            result_annotation_regex = re.compile(result_regex.value)
 
             for line in file:
-                result = pattern.search(line)
+                result = result_annotation_regex.search(line)
 
                 if result is not None:
                     result_str = result.group()
 
-                    # Calc failures from parsed total comparisons and successes
+                    # Calc failures from total and successful annotations
                     if result_regex is ResultRegexForBlameVerifier.FAILURES:
                         succs = re.search(
                             ResultRegexForBlameVerifier.SUCCESSES.value,
@@ -73,15 +60,15 @@ class BlameVerifierReportMixin(BaseReport):
 
                         if succs is None:
                             raise RuntimeError(
-                                f"The successful "
-                                f"comparisons could not be "
+                                f"The number of successful "
+                                f"annotations could not be "
                                 f"parsed. Were {succs}."
                             )
 
                         if total is None:
                             raise RuntimeError(
-                                f"The total "
-                                f"comparisons could not be "
+                                f"The number of total "
+                                f"annotations could not be "
                                 f"parsed. Were {total}."
                             )
 
@@ -90,16 +77,15 @@ class BlameVerifierReportMixin(BaseReport):
 
                         return int(total_str) - int(succs_str)
 
-                    # Return number of successes, total or undetermined
-                    # comparisons
+                    # Return number of successful, total or undetermined
+                    # annotations
                     return int(re.sub("[^0-9]", "", result_str))
 
             if result is None and result_regex is \
                     ResultRegexForBlameVerifier.UNDETERMINED:
-                warnings.warn(
-                    f"The number of undetermined comparisons is either 0 or "
-                    f"could not be parsed from the file: {path}. Returning 0.",
-                    RuntimeWarning
+                logging.info(
+                    f"The number of undetermined annotations is either 0 or "
+                    f"could not be parsed from the file: {path}. Returning 0."
                 )
                 return 0
 
@@ -109,7 +95,7 @@ class BlameVerifierReportMixin(BaseReport):
             )
 
 
-class BlameVerifierReportNoOpt(BlameVerifierReportMixin):
+class BlameVerifierReportNoOpt(BlameVerifierReportParserMixin, BaseReport):
     """A BlameVerifierReport containing the filtered results of the chosen
     verifier-options, e.g., the diff of VaRA-hashes and debug-hashes, without
     any compilation optimization."""
@@ -146,8 +132,29 @@ class BlameVerifierReportNoOpt(BlameVerifierReportMixin):
             project_version, project_uuid, extension_type, file_ext
         )
 
+    def get_successful_annotations(self) -> int:
+        return self.parse_verifier_results(
+            path=self.path, result_regex=ResultRegexForBlameVerifier.SUCCESSES
+        )
 
-class BlameVerifierReportOpt(BlameVerifierReportMixin):
+    def get_failed_annotations(self) -> int:
+        return self.parse_verifier_results(
+            path=self.path, result_regex=ResultRegexForBlameVerifier.FAILURES
+        )
+
+    def get_undetermined_annotations(self) -> int:
+        return self.parse_verifier_results(
+            path=self.path,
+            result_regex=ResultRegexForBlameVerifier.UNDETERMINED
+        )
+
+    def get_total_annotations(self) -> int:
+        return self.parse_verifier_results(
+            path=self.path, result_regex=ResultRegexForBlameVerifier.TOTAL
+        )
+
+
+class BlameVerifierReportOpt(BlameVerifierReportParserMixin, BaseReport):
     """A BlameVerifierReport containing the filtered results of the chosen
     verifier-options, e.g., the diff of VaRA-hashes and debug-hashes, with
     compilation optimization."""
@@ -182,4 +189,25 @@ class BlameVerifierReportOpt(BlameVerifierReportMixin):
         return MetaReport.get_file_name(
             BlameVerifierReportOpt.SHORTHAND, project_name, binary_name,
             project_version, project_uuid, extension_type, file_ext
+        )
+
+    def get_successful_annotations(self) -> int:
+        return self.parse_verifier_results(
+            path=self.path, result_regex=ResultRegexForBlameVerifier.SUCCESSES
+        )
+
+    def get_failed_annotations(self) -> int:
+        return self.parse_verifier_results(
+            path=self.path, result_regex=ResultRegexForBlameVerifier.FAILURES
+        )
+
+    def get_undetermined_annotations(self) -> int:
+        return self.parse_verifier_results(
+            path=self.path,
+            result_regex=ResultRegexForBlameVerifier.UNDETERMINED
+        )
+
+    def get_total_annotations(self) -> int:
+        return self.parse_verifier_results(
+            path=self.path, result_regex=ResultRegexForBlameVerifier.TOTAL
         )
