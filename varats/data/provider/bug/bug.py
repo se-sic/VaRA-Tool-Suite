@@ -3,6 +3,12 @@
 import typing as tp
 
 import pygit2
+from github import Github
+from github.IssueEvent import IssueEvent
+from github.PaginatedList import PaginatedList
+from github.Repository import Repository
+
+from varats.utils.github_util import get_cached_github_object
 
 
 class PygitBug:
@@ -29,7 +35,11 @@ class PygitBug:
 class RawBug:
     """Bug representation using the Commit Hashes as Strings."""
 
-    def __init__(self, fixing_commit: str, introducing_commits: tp.List[str]):
+    def __init__(
+        self,
+        fixing_commit: str,
+        introducing_commits: tp.List[str],
+    ) -> None:
         self.__fixing_commit = fixing_commit
         self.__introducing_commits = introducing_commits
 
@@ -44,6 +54,45 @@ class RawBug:
         return self.__introducing_commits
 
 
+def _get_all_issue_events(
+    project_name: str
+) -> tp.Optional[tp.List[IssueEvent]]:
+    """
+    Loads and returns all issue events from a given project.
+
+    :param project_name:
+        The name of the project to look in.
+    :return: A list of IssueEvent objects or None.
+    """
+
+    def load_issue_events(github: Github) -> PaginatedList:
+        repository: Repository = github.get_repo(project_name)
+        return repository.get_issues_events()
+
+    cache_file_name = project_name.replace("/", "_") + "_issues_events"
+
+    return get_cached_github_object(cache_file_name, load_issue_events)
+
+
+def _has_closed_a_bug(issue_event: IssueEvent) -> bool:
+    """
+    Decides for a given issue event whether it closes an issue representing a
+    bug or not.
+
+    :param issue_event:
+        the issue event to be checked
+    :return:
+        true if the issue represents a bug and the issue event closed that issue,
+        false ow.
+    """
+    if issue_event.event != "closed" or issue_event.commit_id is None:
+        return False
+    for label in issue_event.issue.labels:
+        if label.name == "bug":
+            return True
+    return False
+
+
 def find_all_pygit_bugs(project_name: str) -> tp.FrozenSet[PygitBug]:
     """
     Creates a set of all bugs.
@@ -55,7 +104,12 @@ def find_all_pygit_bugs(project_name: str) -> tp.FrozenSet[PygitBug]:
     """
     pygit_bugs: tp.Set[PygitBug] = set()
 
-    # TODO implement
+    issue_events = _get_all_issue_events(project_name)
+    if issue_events:
+        for issue_event in issue_events:
+            if _has_closed_a_bug(issue_event):
+                # TODO extract pygit2 Commit Objects from IssueEvent
+                pygit_bugs.add(PygitBug())
 
     return frozenset(pygit_bugs)
 
@@ -69,11 +123,18 @@ def find_all_raw_bugs(project_name: str) -> tp.FrozenSet[RawBug]:
     :return:
         A set of RawBug Objects.
     """
-    hash_bugs: tp.Set[RawBug] = set()
+    raw_bugs: tp.Set[RawBug] = set()
 
-    # TODO implement
+    issue_events = _get_all_issue_events(project_name)
+    if issue_events:
+        for issue_event in issue_events:
+            if _has_closed_a_bug(issue_event):
+                fixing_id: str = issue_event.commit_id
+                introducing_ids: tp.List[str] = []
 
-    return frozenset(hash_bugs)
+                # TODO find introducing commits
+                raw_bugs.add(RawBug(fixing_id, introducing_ids))
+    return frozenset(raw_bugs)
 
 
 def find_pygit_bug_by_fix(project_name: str,
