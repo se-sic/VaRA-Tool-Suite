@@ -5,6 +5,7 @@ Module for drawing commit-data metrics plots.
 """
 import abc
 import typing as tp
+from pathlib import Path
 
 import matplotlib.axes as axes
 import matplotlib.pyplot as plt
@@ -19,8 +20,10 @@ from varats.data.databases.blame_diff_metrics_database import (
     BlameDiffMetricsDatabase,
 )
 from varats.data.reports.commit_report import CommitMap
+from varats.paper.paper_config import get_loaded_paper_config
 from varats.plots.plot import Plot
 from varats.plots.plot_utils import align_yaxis, pad_axes
+from varats.tools.commit_map import get_commit_map
 
 
 def annotate_correlation(
@@ -60,7 +63,7 @@ def logit_scatterplot(
     ax = ax or plt.gca()
 
     data = pd.DataFrame({'x_values': x_values, 'y_values': y_values})
-    # dychtiomize y_values to be able to use logistic regression
+    # dychotomize y_values to be able to use logistic regression
     data['target'] = _cluster_data_by_kmeans(data['y_values'])
 
     ax2 = ax.twinx()
@@ -164,6 +167,115 @@ class BlameDiffCorrelationMatrix(Plot):
         """Show the current plot."""
         self.plot(True)
         plt.show()
+
+    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+        raise NotImplementedError
+
+
+# adapted from https://stackoverflow.com/a/55165689
+def _multivariate_grid(x, y, hue, data, scatter_alpha=.5):
+
+    def colored_scatter(x, y, c=None):
+
+        def scatter(*args, **kwargs):
+            args = (x, y)
+            if c is not None:
+                kwargs['c'] = c
+            kwargs['alpha'] = scatter_alpha
+            sns.scatterplot(*args, **kwargs)
+
+        return scatter
+
+    g = sns.JointGrid(x=x, y=y, data=data)
+    color = None
+    legends = []
+    for name, df_group in data.groupby(hue):
+        legends.append(name)
+        g.plot_joint(colored_scatter(df_group[x], df_group[y], color))
+        sns.kdeplot(df_group[x].values, ax=g.ax_marg_x, color=color)
+        sns.kdeplot(
+            df_group[y].values, ax=g.ax_marg_y, color=color, vertical=True
+        )
+    # Do also global kde:
+    sns.kdeplot(data[x].values, ax=g.ax_marg_x, color='grey')
+    sns.kdeplot(data[y].values, ax=g.ax_marg_y, color='grey', vertical=True)
+    plt.legend(legends)
+
+
+class BlameDiffDistribution(Plot):
+    """Draws a scatter-plot matrix for blame-data metrics, comparing the
+    different independent and dependent variables."""
+
+    NAME = "b_distribution_comparison"
+
+    def __init__(self, **kwargs: tp.Any):
+        super().__init__(self.NAME, **kwargs)
+
+    @abc.abstractmethod
+    def plot(self, view_mode: bool) -> None:
+        """Plot the current plot to a file."""
+        if "project" not in self.plot_kwargs:
+            case_studies = get_loaded_paper_config().get_all_case_studies()
+        else:
+            if "plot_case_study" in self.plot_kwargs:
+                case_studies = [self.plot_kwargs["plot_case_study"]]
+            else:
+                case_studies = get_loaded_paper_config().get_case_studies(
+                    self.plot_kwargs["project"]
+                )
+
+        variables = [
+            "churn", "num_interactions", "num_interacting_commits",
+            "num_interacting_authors"
+        ]
+
+        data = [(
+            case_study,
+            BlameDiffMetricsDatabase.get_data_for_project(
+                case_study.project_name, ["revision", *variables],
+                get_commit_map(case_study.project_name), case_study
+            )
+        ) for case_study in case_studies]
+        dataframes = []
+        for cs, df in data:
+            df["project"] = cs.project_name
+            dataframes.append(df)
+
+        sns.set(style="ticks", color_codes=True)
+
+        df = pd.concat(dataframes)
+        df.set_index('revision', inplace=True)
+        df.drop(df[df.churn == 0].index, inplace=True)
+
+        _multivariate_grid(
+            x='churn',
+            y='num_interactions',
+            hue='project',
+            data=df,
+        )
+
+    def show(self) -> None:
+        """Show the current plot."""
+        self.plot(True)
+        plt.show()
+
+    def save(
+        self, path: tp.Optional[Path] = None, filetype: str = 'svg'
+    ) -> None:
+        self.plot(False)
+
+        if path is None:
+            plot_dir = Path(self.plot_kwargs["plot_dir"])
+        else:
+            plot_dir = path
+        pc_name = get_loaded_paper_config().path.name
+
+        # TODO (se-passau/VaRA#545): refactor dpi into plot_config. see.
+        plt.savefig(
+            plot_dir / f"{pc_name}_{self.name}.{filetype}",
+            dpi=1200,
+            format=filetype
+        )
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError
