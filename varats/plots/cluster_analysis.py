@@ -173,9 +173,8 @@ def _plot_cluster_comparison(
             plot_num += 1
 
 
-class BlameDiffCorrelationMatrix(Plot):
-    """Draws a scatter-plot matrix for blame-data metrics, comparing the
-    differente independen and dependen variables."""
+class BlameDiffClusterAnalysis(Plot):
+    """Performs different cluster algorithms on blame-diff data."""
 
     NAME = "cluster_analysis"
 
