@@ -69,7 +69,9 @@ class _ReplaceConfig():
             else:
                 self.new_bb_config = deepcopy(self.old_bb_config)
 
-        if not tmp_path:
+        if tmp_path:
+            self.tmp_path: tp.Optional[tempfile.TemporaryDirectory] = None
+        else:
             self.tmp_path = tempfile.TemporaryDirectory()
             tmp_path = Path(self.tmp_path.name)
 

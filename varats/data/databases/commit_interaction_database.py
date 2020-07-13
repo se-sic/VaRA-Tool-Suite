@@ -1,10 +1,12 @@
 """Module for the base CommitInteractionDatabase class."""
 import typing as tp
+from pathlib import Path
 
 import pandas as pd
 
 from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
+from varats.data.report import MetaReport
 from varats.data.reports.commit_report import CommitMap, CommitReport
 from varats.data.revisions import (
     get_failed_revisions_files,
@@ -40,7 +42,10 @@ class CommitInteractionDatabase(
                                                          ].astype('int64')
             return df_layout
 
-        def create_data_frame_for_report(report: CommitReport) -> pd.DataFrame:
+        def create_data_frame_for_report(
+            report_path: Path
+        ) -> tp.Tuple[pd.DataFrame, str, str]:
+            report = load_commit_report(report_path)
             cf_head_interactions_raw = report.number_of_head_cf_interactions()
             df_head_interactions_raw = report.number_of_head_df_interactions()
 
@@ -58,7 +63,9 @@ class CommitInteractionDatabase(
                 'HEAD DF Interactions':
                     df_head_interactions_raw[0] + df_head_interactions_raw[1]
             },
-                                index=[0])
+                                index=[0]), report.head_commit, str(
+                                    report_path.stat().st_mtime_ns
+                                )
 
         report_files = get_processed_revisions_files(
             project_name, CommitReport,
@@ -73,9 +80,11 @@ class CommitInteractionDatabase(
         # cls.CACHE_ID is set by superclass
         # pylint: disable=E1101
         data_frame = build_cached_report_table(
-            cls.CACHE_ID, project_name, create_dataframe_layout,
-            create_data_frame_for_report, load_commit_report, report_files,
-            failed_report_files
+            cls.CACHE_ID, project_name, report_files, failed_report_files,
+            create_dataframe_layout, create_data_frame_for_report,
+            lambda path: MetaReport.get_commit_hash_from_result_file(path.name),
+            lambda path: str(path.stat().st_mtime_ns),
+            lambda a, b: int(a) > int(b)
         )
 
         return data_frame

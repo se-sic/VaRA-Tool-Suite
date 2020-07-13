@@ -6,8 +6,7 @@ modifiable via environment variable.
 """
 
 import typing as tp
-from copy import deepcopy
-from os import getcwd, makedirs, path
+from os import makedirs, path
 from pathlib import Path
 
 import benchbuild.utils.settings as s
@@ -246,100 +245,6 @@ def get_varats_base_folder() -> Path:
     if cfg_config_file is None:
         raise ValueError("No config file found.")
     return Path(cfg_config_file).parent
-
-
-def generate_benchbuild_config(
-    varats_cfg: s.Configuration, bb_config_path: str
-) -> None:
-    """Generate a configuration file for benchbuild."""
-    from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
-    new_bb_cfg = deepcopy(BB_CFG)
-
-    # Projects for VaRA
-    projects_conf = new_bb_cfg["plugins"]["projects"]
-    # If we want later to use default BB projects
-    # projects_conf.value[:] = [ x for x in projects_conf.value
-    #                           if not x.endswith('gzip')]
-    projects_conf.value[:] = []
-    projects_conf.value[:] += [
-        'varats.projects.c_projects.busybox',
-        'varats.projects.c_projects.coreutils',
-        'varats.projects.c_projects.curl',
-        'varats.projects.c_projects.git',
-        'varats.projects.c_projects.gravity',
-        'varats.projects.c_projects.gzip',
-        'varats.projects.c_projects.htop',
-        'varats.projects.c_projects.libvpx',
-        'varats.projects.c_projects.lrzip',
-        'varats.projects.c_projects.lz4',
-        'varats.projects.c_projects.redis',
-        'varats.projects.c_projects.openssl',
-        'varats.projects.c_projects.opus',
-        'varats.projects.c_projects.qemu',
-        'varats.projects.c_projects.tmux',
-        'varats.projects.c_projects.vim',
-        'varats.projects.c_projects.x264',
-        'varats.projects.c_projects.xz',
-    ]
-    projects_conf.value[:] += ['varats.projects.cpp_projects.doxygen']
-    projects_conf.value[:] += ['varats.projects.test_projects.basic_tests']
-    projects_conf.value[:] += ['varats.projects.test_projects.linker_check']
-    projects_conf.value[:] += ['varats.projects.test_projects.taint_tests']
-
-    # Experiments for VaRA
-    projects_conf = new_bb_cfg["plugins"]["experiments"]
-    projects_conf.value[:] = []
-    projects_conf.value[:] += [
-        'varats.experiments.commit_report_experiment',
-        'varats.experiments.marker_tester', 'varats.experiments.just_compile',
-        'varats.experiments.vara_full_mtfa',
-        'varats.experiments.vara_fc_taint_analysis',
-        'varats.experiments.phasar_env_analysis',
-        'varats.experiments.blame_report_experiment'
-    ]
-
-    # Slurm Cluster Configuration
-    new_bb_cfg["slurm"]["account"] = "anywhere"
-    new_bb_cfg["slurm"]["partition"] = "anywhere"
-
-    new_bb_cfg["env"] = {
-        "PATH": [
-            str(Path(str(varats_cfg["vara"]["llvm_install_dir"])) / "bin/")
-        ]
-    }
-
-    # Add VaRA experiment config variables
-    new_bb_cfg["varats"] = {
-        "outfile": {
-            "default": "",
-            "desc": "Path to store results of VaRA CFR analysis.",
-            "value": str(varats_cfg["result_dir"])
-        },
-        "result": {
-            "default": "",
-            "desc": "Path to store already annotated projects.",
-            "value": "BC_files"
-        }
-    }
-
-    def replace_bb_cwd_path(
-        cfg_varname: str, cfg_node: s.Configuration = new_bb_cfg
-    ) -> None:
-        cfg_node[cfg_varname] = str(varats_cfg["benchbuild_root"]) +\
-            str(cfg_node[cfg_varname])[len(getcwd()):]
-
-    replace_bb_cwd_path("build_dir")
-    replace_bb_cwd_path("tmp_dir")
-    replace_bb_cwd_path("test_dir")
-    replace_bb_cwd_path("node_dir", new_bb_cfg["slurm"])
-
-    # Create caching folder for .bc files
-    bc_cache_path = str(varats_cfg["benchbuild_root"])
-    bc_cache_path += "/" + str(new_bb_cfg["varats"]["result"])
-    if not path.isdir(bc_cache_path):
-        makedirs(bc_cache_path)
-
-    new_bb_cfg.store(bb_config_path)
 
 
 s.setup_config(_CFG, ['.varats.yaml', '.varats.yml'], "VARATS_CONFIG_FILE")
