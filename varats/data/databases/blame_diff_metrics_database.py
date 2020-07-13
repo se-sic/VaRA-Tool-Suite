@@ -91,16 +91,6 @@ class BlameDiffMetricsDatabase(
 
             diff_between_head_pred = BlameReportDiff(head_report, pred_report)
 
-            # Calculate the total number of commit interactions between the pred
-            # and base BlameReport
-            ci_total_inters = [
-                # we use abs here because we want to capute the total change
-                abs(interaction.amount)
-                for func_entry in diff_between_head_pred.function_entries
-                for interaction in func_entry.interactions
-            ]
-            ci_total = reduce(lambda x, y: x + y, ci_total_inters, 0)
-
             # Calculate the total churn between pred and base commit
             code_churn = calc_code_churn_range(
                 repo, ChurnConfig.create_c_style_languages_config(),
