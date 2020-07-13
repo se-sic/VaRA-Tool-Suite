@@ -21,7 +21,7 @@ from varats.utils.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     PEErrorHandler,
-    UnlimitStackSize,
+    wrap_unlimit_stack_size,
 )
 
 
@@ -80,6 +80,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
 
             opt_params = [
                 "-vara-BD", "-vara-BR", "-vara-init-commits",
+                "-vara-use-phasar",
                 f"-vara-report-outfile={vara_result_folder}/{result_file}",
                 bc_cache_folder / Extract.get_bc_file_name(
                     project_name=project.name,
@@ -89,6 +90,8 @@ class BlameReportGeneration(actions.Step):  # type: ignore
             ]
 
             run_cmd = opt[opt_params]
+
+            run_cmd = wrap_unlimit_stack_size(run_cmd)
 
             timeout_duration = '8h'
             from benchbuild.utils.cmd import timeout
@@ -149,7 +152,6 @@ class BlameReportExperiment(VersionExperiment):
             project, extraction_error_handler=error_handler
         )
 
-        analysis_actions.append(UnlimitStackSize(project))
         analysis_actions.append(BlameReportGeneration(project))
         analysis_actions.append(actions.Clean(project))
 
