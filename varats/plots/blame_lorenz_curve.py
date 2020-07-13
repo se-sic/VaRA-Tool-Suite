@@ -45,7 +45,7 @@ def draw_interaction_lorenz_curve(
             "At least one of the in/out interaction needs to be selected"
         )
 
-    data.sort_values(by=[data_selector, 'revision'], inplace=True)
+    data.sort_values(by=[data_selector, 'time_id'], inplace=True)
     lor = lorenz_curve(data[data_selector])
     axis.plot(
         data['revision'], lor, color='#cc0099', linewidth=plot_cfg['linewidth']
