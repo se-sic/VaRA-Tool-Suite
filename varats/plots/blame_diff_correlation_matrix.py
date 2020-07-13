@@ -110,7 +110,7 @@ def _cluster_data_by_kmeans(data: pd.Series) -> np.array:
     return cluster.labels_
 
 
-def hist(
+def _hist(
     x_values: tp.List[int],
     ax: axes.SubplotBase = None,
     **kwargs: tp.Any
@@ -159,7 +159,7 @@ class BlameDiffCorrelationMatrix(Plot):
 
         grid = sns.PairGrid(df, vars=variables)
 
-        grid.map_diag(hist)
+        grid.map_diag(_hist)
         grid.map_offdiag(logit_scatterplot)
         grid.map_offdiag(annotate_correlation)
 
@@ -173,12 +173,12 @@ class BlameDiffCorrelationMatrix(Plot):
 
 
 # adapted from https://stackoverflow.com/a/55165689
-def _multivariate_grid(x, y, hue, data, scatter_alpha=.5):
+def _multivariate_grid(x_col, y_col, hue, data, scatter_alpha=.5):
 
-    def colored_scatter(x, y, c=None):
+    def colored_scatter(x_data, y_data, c=None):
 
         def scatter(*args, **kwargs):
-            args = (x, y)
+            args = (x_data, y_data)
             if c is not None:
                 kwargs['c'] = c
             kwargs['alpha'] = scatter_alpha
@@ -186,19 +186,26 @@ def _multivariate_grid(x, y, hue, data, scatter_alpha=.5):
 
         return scatter
 
-    g = sns.JointGrid(x=x, y=y, data=data)
+    grid = sns.JointGrid(x=x_col, y=y_col, data=data)
     color = None
     legends = []
     for name, df_group in data.groupby(hue):
         legends.append(name)
-        g.plot_joint(colored_scatter(df_group[x], df_group[y], color))
-        sns.kdeplot(df_group[x].values, ax=g.ax_marg_x, color=color)
+        grid.plot_joint(
+            colored_scatter(df_group[x_col], df_group[y_col], color)
+        )
+        sns.kdeplot(df_group[x_col].values, ax=grid.ax_marg_x, color=color)
         sns.kdeplot(
-            df_group[y].values, ax=g.ax_marg_y, color=color, vertical=True
+            df_group[y_col].values,
+            ax=grid.ax_marg_y,
+            color=color,
+            vertical=True
         )
     # Do also global kde:
-    sns.kdeplot(data[x].values, ax=g.ax_marg_x, color='grey')
-    sns.kdeplot(data[y].values, ax=g.ax_marg_y, color='grey', vertical=True)
+    sns.kdeplot(data[x_col].values, ax=grid.ax_marg_x, color='grey')
+    sns.kdeplot(
+        data[y_col].values, ax=grid.ax_marg_y, color='grey', vertical=True
+    )
     plt.legend(legends)
 
 
@@ -237,8 +244,8 @@ class BlameDiffDistribution(Plot):
             )
         ) for case_study in case_studies]
         dataframes = []
-        for cs, df in data:
-            df["project"] = cs.project_name
+        for case_study, df in data:
+            df["project"] = case_study.project_name
             dataframes.append(df)
 
         sns.set(style="ticks", color_codes=True)
@@ -248,8 +255,8 @@ class BlameDiffDistribution(Plot):
         df.drop(df[df.churn == 0].index, inplace=True)
 
         _multivariate_grid(
-            x='churn',
-            y='num_interactions',
+            x_col='churn',
+            y_col='num_interactions',
             hue='project',
             data=df,
         )

@@ -103,43 +103,44 @@ def pad_axes(
     pad_x: tp.Optional[float] = None,
     pad_y: tp.Optional[float] = None
 ) -> None:
+    """Add some padding to the axis limits."""
     if pad_x:
         x_min, x_max = ax.get_xlim()
-        px = (x_max - x_min) * pad_x
-        ax.set_xlim(x_min - px, x_max + px)
+        padding_x = (x_max - x_min) * pad_x
+        ax.set_xlim(x_min - padding_x, x_max + padding_x)
 
     if pad_y:
         y_min, y_max = ax.get_ylim()
-        py = (y_max - y_min) * pad_y
-        ax.set_ylim(y_min - py, y_max + py)
+        padding_y = (y_max - y_min) * pad_y
+        ax.set_ylim(y_min - padding_y, y_max + padding_y)
 
 
-def align_yaxis(ax1: Axes, v1: float, ax2: Axes, v2: float) -> None:
+def align_yaxis(ax1: Axes, value1: float, ax2: Axes, value2: float) -> None:
     """
-    Adjust ax2 ylimit so that v2 in ax2 is aligned to v1 in ax1.
+    Adjust ax2 ylimit so that value2 in ax2 is aligned to value1 in ax1.
 
     See https://stackoverflow.com/a/26456731
     """
-    _, y1 = ax1.transData.transform((0, v1))
-    _, y2 = ax2.transData.transform((0, v2))
-    adjust_yaxis(ax2, (y1 - y2) / 2, v2)
-    adjust_yaxis(ax1, (y2 - y1) / 2, v1)
+    _, y_ax1 = ax1.transData.transform((0, value1))
+    _, y_ax2 = ax2.transData.transform((0, value2))
+    adjust_yaxis(ax2, (y_ax1 - y_ax2) / 2, value2)
+    adjust_yaxis(ax1, (y_ax2 - y_ax1) / 2, value1)
 
 
-def adjust_yaxis(ax: Axes, ydif: float, v: float) -> None:
+def adjust_yaxis(ax: Axes, ydif: float, value: float) -> None:
     """
-    Shift axis ax by ydiff, maintaining point v at the same location.
+    Shift axis ax by ydiff, maintaining point value at the same location.
 
     See https://stackoverflow.com/a/26456731
     """
     inv = ax.transData.inverted()
-    _, dy = inv.transform((0, 0)) - inv.transform((0, ydif))
+    _, delta_y = inv.transform((0, 0)) - inv.transform((0, ydif))
     miny, maxy = ax.get_ylim()
-    miny, maxy = miny - v, maxy - v
-    if -miny > maxy or (-miny == maxy and dy > 0):
+    miny, maxy = miny - value, maxy - value
+    if -miny > maxy or (-miny == maxy and delta_y > 0):
         nminy = miny
-        nmaxy = miny * (maxy + dy) / (miny + dy)
+        nmaxy = miny * (maxy + delta_y) / (miny + delta_y)
     else:
         nmaxy = maxy
-        nminy = maxy * (miny + dy) / (maxy + dy)
-    ax.set_ylim(nminy + v, nmaxy + v)
+        nminy = maxy * (miny + delta_y) / (maxy + delta_y)
+    ax.set_ylim(nminy + value, nmaxy + value)

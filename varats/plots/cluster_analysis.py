@@ -22,6 +22,48 @@ from varats.data.reports.commit_report import CommitMap
 from varats.plots.plot import Plot
 
 
+def create_cluster_objects(bandwidth, connectivity, params):
+    mean_shift = cluster.MeanShift(bandwidth=bandwidth, bin_seeding=True)
+    two_means = cluster.MiniBatchKMeans(n_clusters=params['n_clusters'])
+    ward = cluster.AgglomerativeClustering(
+        n_clusters=params['n_clusters'],
+        linkage='ward',
+        connectivity=connectivity
+    )
+    spectral = cluster.SpectralClustering(
+        n_clusters=params['n_clusters'],
+        eigen_solver='arpack',
+        affinity="nearest_neighbors"
+    )
+    dbscan = cluster.DBSCAN(eps=params['eps'])
+    optics = cluster.OPTICS(
+        min_samples=params['min_samples'],
+        xi=params['xi'],
+        min_cluster_size=params['min_cluster_size']
+    )
+    affinity_propagation = cluster.AffinityPropagation(
+        damping=params['damping'], preference=params['preference']
+    )
+    average_linkage = cluster.AgglomerativeClustering(
+        linkage="average",
+        affinity="cityblock",
+        n_clusters=params['n_clusters'],
+        connectivity=connectivity
+    )
+    birch = cluster.Birch(n_clusters=params['n_clusters'])
+    gmm = mixture.GaussianMixture(
+        n_components=params['n_clusters'], covariance_type='full'
+    )
+    clustering_algorithms = (('MiniBatchKMeans', two_means),
+                             ('AffinityPropagation',
+                              affinity_propagation), ('MeanShift', mean_shift),
+                             ('SpectralClustering', spectral), ('Ward', ward),
+                             ('AgglomerativeClustering', average_linkage),
+                             ('DBSCAN', dbscan), ('OPTICS', optics),
+                             ('Birch', birch), ('GaussianMixture', gmm))
+    return clustering_algorithms
+
+
 def _plot_cluster_comparison(
     datasets: tp.List[tp.Tuple[np.array, str, str, tp.Dict[str, tp.Any]]]
 ) -> None:
@@ -75,49 +117,10 @@ def _plot_cluster_comparison(
         # make connectivity symmetric
         connectivity = 0.5 * (connectivity + connectivity.T)
 
-        # ============
         # Create cluster objects
-        # ============
-        ms = cluster.MeanShift(bandwidth=bandwidth, bin_seeding=True)
-        two_means = cluster.MiniBatchKMeans(n_clusters=params['n_clusters'])
-        ward = cluster.AgglomerativeClustering(
-            n_clusters=params['n_clusters'],
-            linkage='ward',
-            connectivity=connectivity
+        clustering_algorithms = create_cluster_objects(
+            bandwidth, connectivity, params
         )
-        spectral = cluster.SpectralClustering(
-            n_clusters=params['n_clusters'],
-            eigen_solver='arpack',
-            affinity="nearest_neighbors"
-        )
-        dbscan = cluster.DBSCAN(eps=params['eps'])
-        optics = cluster.OPTICS(
-            min_samples=params['min_samples'],
-            xi=params['xi'],
-            min_cluster_size=params['min_cluster_size']
-        )
-        affinity_propagation = cluster.AffinityPropagation(
-            damping=params['damping'], preference=params['preference']
-        )
-        average_linkage = cluster.AgglomerativeClustering(
-            linkage="average",
-            affinity="cityblock",
-            n_clusters=params['n_clusters'],
-            connectivity=connectivity
-        )
-        birch = cluster.Birch(n_clusters=params['n_clusters'])
-        gmm = mixture.GaussianMixture(
-            n_components=params['n_clusters'], covariance_type='full'
-        )
-
-        clustering_algorithms = (('MiniBatchKMeans', two_means),
-                                 ('AffinityPropagation',
-                                  affinity_propagation), ('MeanShift', ms),
-                                 ('SpectralClustering',
-                                  spectral), ('Ward', ward),
-                                 ('AgglomerativeClustering', average_linkage),
-                                 ('DBSCAN', dbscan), ('OPTICS', optics),
-                                 ('Birch', birch), ('GaussianMixture', gmm))
 
         for i_algorithm, (name, algorithm) in enumerate(clustering_algorithms):
             # catch warnings related to kneighbors_graph
