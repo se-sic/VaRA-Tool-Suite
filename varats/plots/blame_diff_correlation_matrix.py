@@ -175,12 +175,12 @@ class BlameDiffCorrelationMatrix(Plot):
 # adapted from https://stackoverflow.com/a/55165689
 def _multivariate_grid(x_col, y_col, hue, data, scatter_alpha=.5):
 
-    def colored_scatter(x_data, y_data, c=None):
+    def colored_scatter(x_data, y_data, color=None):
 
         def scatter(*args, **kwargs):
             args = (x_data, y_data)
-            if c is not None:
-                kwargs['c'] = c
+            if color is not None:
+                kwargs['c'] = color
             kwargs['alpha'] = scatter_alpha
             sns.scatterplot(*args, **kwargs)
 

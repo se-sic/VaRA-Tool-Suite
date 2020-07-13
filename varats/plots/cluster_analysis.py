@@ -22,7 +22,7 @@ from varats.data.reports.commit_report import CommitMap
 from varats.plots.plot import Plot
 
 
-def create_cluster_objects(bandwidth, connectivity, params):
+def _create_cluster_objects(bandwidth, connectivity, params):
     mean_shift = cluster.MeanShift(bandwidth=bandwidth, bin_seeding=True)
     two_means = cluster.MiniBatchKMeans(n_clusters=params['n_clusters'])
     ward = cluster.AgglomerativeClustering(
@@ -118,7 +118,7 @@ def _plot_cluster_comparison(
         connectivity = 0.5 * (connectivity + connectivity.T)
 
         # Create cluster objects
-        clustering_algorithms = create_cluster_objects(
+        clustering_algorithms = _create_cluster_objects(
             bandwidth, connectivity, params
         )
 
