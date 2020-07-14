@@ -138,9 +138,7 @@ def get_default_compile_error_wrapped(
     )
 
 
-def wrap_unlimit_stack_size(
-    cmd: tp.Callable[..., tp.Any]
-) -> tp.Callable[..., tp.Any]:
+def wrap_unlimit_stack_size(cmd: tp.Callable[..., tp.Any]) -> tp.Any:
     """
     Wraps a command with prlimit to be executed with max stack size, i.e.,
     setting the soft limit to the hard limit.
@@ -150,7 +148,8 @@ def wrap_unlimit_stack_size(
 
     Returns: wrapped command
     """
-    return prlimit["--stack=17179869184:", cmd]
+    max_stacksize_16gb = 17179869184
+    return prlimit[f"--stack=:{max_stacksize_16gb}", cmd]
 
 
 class VersionExperiment(Experiment):  # type: ignore
