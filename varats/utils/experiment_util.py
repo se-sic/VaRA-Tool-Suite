@@ -149,7 +149,7 @@ def wrap_unlimit_stack_size(cmd: tp.Callable[..., tp.Any]) -> tp.Any:
     Returns: wrapped command
     """
     max_stacksize_16gb = 17179869184
-    return prlimit[f"--stack=:{max_stacksize_16gb}", cmd]
+    return prlimit[f"--stack={max_stacksize_16gb}:", cmd]
 
 
 class VersionExperiment(Experiment):  # type: ignore
