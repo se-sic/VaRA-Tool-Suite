@@ -6,6 +6,8 @@ from pathlib import Path
 
 from varats.data.report import BaseReport, MetaReport, FileStatusExtension
 
+LOG = logging.getLogger(__name__)
+
 
 class ResultRegexForBlameVerifier(Enum):
     """An enum containing the available parsing options for BlameMDVerifier
@@ -23,18 +25,18 @@ class BlameVerifierReportParserMixin:
 
     def __init__(self, path: Path):
         self.__path = path
-        self.__num_successes = None
-        self.__num_failures = None
-        self.__num_total = None
-        self.__num_undetermined = None
+        self.__num_successes = -1
+        self.__num_failures = -1
+        self.__num_total = -1
+        self.__num_undetermined = -1
 
     def parse_verifier_results(self) -> None:
         """Parses the number of successful, failed, undetermined and total
         annotations from a BlameMDVerifier result file once and saves the
         results in member variables."""
         with open(self.__path, 'r') as file:
-            first_result_found = False
             first_result = ResultRegexForBlameVerifier.SUCCESSES.value
+            first_result_found = False
 
             for line in file:
 
@@ -66,22 +68,23 @@ class BlameVerifierReportParserMixin:
                         )
                         self.__num_undetermined = int(undetermined_str)
 
-        if self.__num_successes is None:
+        if self.__num_successes is -1:
             raise RuntimeError(
                 f"The number of successful annotations could not be parsed "
                 f"from file: {self.__path}."
             )
 
-        if self.__num_total is None:
+        if self.__num_total is -1:
             raise RuntimeError(
                 f"The number of total annotations could not be parsed from "
                 f"file: {self.__path}."
             )
 
-        if self.__num_undetermined is None:
-            logging.info(
+        if self.__num_undetermined is -1:
+            LOG.info(
                 f"The number of undetermined annotations is either 0 or "
-                f"could not be parsed from the file: {self.__path}. Returning 0."
+                f"could not be parsed from the file: {self.__path}. "
+                f"Returning 0."
             )
             self.__num_undetermined = 0
 
