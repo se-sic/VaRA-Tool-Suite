@@ -1,11 +1,8 @@
 """Project file for redis."""
 import typing as tp
 
-from benchbuild.project import Project
+import benchbuild as bb
 from benchbuild.utils.cmd import make
-from benchbuild.utils.compiler import cc
-from benchbuild.utils.download import with_git
-from benchbuild.utils.run import run
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -18,13 +15,7 @@ from varats.utils.project_util import (
 )
 
 
-@with_git(
-    "https://github.com/antirez/redis.git",
-    refspec="HEAD",
-    shallow_clone=False,
-    version_filter=project_filter_generator("redis")
-)
-class Redis(Project, CVEProviderHook):  # type: ignore
+class Redis(bb.Project, CVEProviderHook):  # type: ignore
     """
     Redis is an in-memory database that persists on disk.
 
@@ -34,9 +25,17 @@ class Redis(Project, CVEProviderHook):  # type: ignore
     NAME = 'redis'
     GROUP = 'c_projects'
     DOMAIN = 'database'
-    VERSION = 'HEAD'
 
-    SRC_FILE = NAME + "-{0}".format(VERSION)
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/antirez/redis.git",
+            local="redis",
+            refspec="HEAD",
+            limit=None,
+            shallow=False,
+            # version_filter=project_filter_generator("redis")
+        )
+    ]
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
@@ -45,16 +44,16 @@ class Redis(Project, CVEProviderHook):  # type: ignore
             ('redis_server', 'src/redis-server')
         ])
 
-    def run_tests(self, runner: run) -> None:
+    def run_tests(self) -> None:
         pass
 
     def compile(self) -> None:
-        self.download()
+        redis_source = bb.path(self.source_of(self.primary_source))
 
-        clang = cc(self)
-        with local.cwd(self.SRC_FILE):
+        clang = bb.compiler.cc(self)
+        with local.cwd(redis_source):
             with local.env(CC=str(clang)):
-                run(make["-j", get_number_of_jobs(bb_cfg())])
+                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
