@@ -8,7 +8,7 @@ BlameReport.
 import typing as tp
 
 import benchbuild.utils.actions as actions
-from benchbuild.project import Project
+from benchbuild import Project
 from benchbuild.utils.cmd import mkdir, opt
 from plumbum import local
 
@@ -73,7 +73,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
             result_file = BR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=str(project.version),
+                project_version=project.version_of(project.primary_source),
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success
             )
@@ -84,7 +84,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                 bc_cache_folder / Extract.get_bc_file_name(
                     project_name=project.name,
                     binary_name=binary.name,
-                    project_version=project.version
+                    project_version=project.version_of(project.primary_source)
                 )
             ]
 
@@ -100,7 +100,9 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                     BR.get_file_name(
                         project_name=str(project.name),
                         binary_name=binary.name,
-                        project_version=str(project.version),
+                        project_version=project.version_of(
+                            project.primary_source
+                        ),
                         project_uuid=str(project.run_uuid),
                         extension_type=FSE.Failed,
                         file_ext=".txt"
@@ -138,7 +140,7 @@ class BlameReportExperiment(VersionExperiment):
             BR.get_file_name(
                 project_name=str(project.name),
                 binary_name="all",
-                project_version=str(project.version),
+                project_version=project.version_of(project.primary_source),
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.CompileError,
                 file_ext=".txt"

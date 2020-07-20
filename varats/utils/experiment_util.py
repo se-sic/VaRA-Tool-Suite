@@ -128,7 +128,7 @@ def get_default_compile_error_wrapped(
             report_type.get_file_name(
                 project_name=str(project.name),
                 binary_name="all",
-                project_version=str(project.version),
+                project_version=project.version_of(project.primary_source),
                 project_uuid=str(project.run_uuid),
                 extension_type=FileStatusExtension.CompileError,
                 file_ext=".txt"

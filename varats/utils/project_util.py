@@ -1,54 +1,44 @@
 """Utility module for BenchBuild project handling."""
 import abc
-import tempfile
 import typing as tp
 from enum import IntFlag
 from pathlib import Path
 
+import benchbuild as bb
 import pygit2
-from benchbuild.project import ProjectRegistry, Project
+from benchbuild.source.base import target_prefix
 from benchbuild.utils.cmd import git
-from benchbuild.utils.download import Git
 from plumbum import local
 
-from varats.settings import vara_cfg, bb_cfg
 
-
-def get_project_cls_by_name(project_name: str) -> tp.Type[Project]:
+def get_project_cls_by_name(project_name: str) -> tp.Type[bb.Project]:
     """Look up a BenchBuild project by it's name."""
-    for proj in ProjectRegistry.projects:
+    for proj in bb.project.ProjectRegistry.projects:
         if proj.endswith('gentoo') or proj.endswith("benchbuild"):
             # currently we only support vara provided projects
             continue
 
         if proj.startswith(project_name):
-            project: tp.Type[Project] = ProjectRegistry.projects[proj]
+            project: tp.Type[bb.Project
+                            ] = bb.project.ProjectRegistry.projects[proj]
             return project
 
     raise LookupError
 
 
+def get_primary_project_source(project_name: str) -> bb.source.BaseSource:
+    project_cls = get_project_cls_by_name(project_name)
+    return bb.source.primary(*project_cls.SOURCE)
+
+
 def get_local_project_git_path(project_name: str) -> Path:
     """Get the path to the local download location of git repository for a given
     benchbuild project."""
-    project_git_path = Path(str(vara_cfg()['benchbuild_root'])
-                           ) / str(bb_cfg()["tmp_dir"])
-    project_git_path /= project_name if project_name.endswith(
-        "-HEAD"
-    ) else project_name + "-HEAD"
+    primary_source = get_primary_project_source(project_name)
+    if hasattr(primary_source, "fetch"):
+        primary_source.fetch()
 
-    if not project_git_path.exists():
-        project_cls = get_project_cls_by_name(project_name)
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with local.cwd(tmpdir):
-                Git(
-                    project_cls.repository,
-                    project_cls.SRC_FILE,
-                    shallow_clone=False
-                )
-
-    return project_git_path
+    return Path(target_prefix()) / primary_source.local
 
 
 def get_local_project_git(project_name: str) -> pygit2.Repository:

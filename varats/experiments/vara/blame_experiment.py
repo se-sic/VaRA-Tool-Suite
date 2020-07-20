@@ -5,9 +5,8 @@ import typing as tp
 from os import path
 
 import benchbuild.utils.actions as actions
-from benchbuild.experiment import Experiment
+from benchbuild import Experiment, Project
 from benchbuild.extensions import compiler, run, time
-from benchbuild.project import Project
 from plumbum import local
 
 from varats.data.report import BaseReport
@@ -84,7 +83,7 @@ def generate_basic_blame_experiment_actions(
                 ) + Extract.get_bc_file_name(
                     project_name=str(project.name),
                     binary_name=binary.name,
-                    project_version=str(project.version),
+                    project_version=project.version_of(project.primary_source),
                     bc_file_extensions=bc_file_extensions
                 )
             )
