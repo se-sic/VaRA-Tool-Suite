@@ -38,7 +38,7 @@ def get_local_project_git_path(project_name: str) -> Path:
     if hasattr(primary_source, "fetch"):
         primary_source.fetch()
 
-    return Path(target_prefix()) / primary_source.local
+    return Path(target_prefix() + "/" + primary_source.local)
 
 
 def get_local_project_git(project_name: str) -> pygit2.Repository:
