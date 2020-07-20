@@ -10,10 +10,11 @@ class PygitBug:
 
     def __init__(
         self, fixing_commit: pygit2.Commit,
-        introducing_commits: tp.List[pygit2.Commit]
+        introducing_commits: tp.List[pygit2.Commit], issue_id: int
     ) -> None:
         self.__fixing_commit = fixing_commit
         self.__introducing_commits = introducing_commits
+        self.__issue_id = issue_id
 
     @property
     def fixing_commit(self) -> pygit2.Commit:
@@ -25,13 +26,22 @@ class PygitBug:
         """Commits introducing the bug as List of pygit2 Commits."""
         return self.__introducing_commits
 
+    @property
+    def issue_id(self) -> int:
+        """ID of the issue associated with the bug."""
+        return self.__issue_id
+
 
 class RawBug:
     """Bug representation using the Commit Hashes as Strings."""
 
-    def __init__(self, fixing_commit: str, introducing_commits: tp.List[str]):
+    def __init__(
+        self, fixing_commit: str, introducing_commits: tp.List[str],
+        issue_id: int
+    ) -> None:
         self.__fixing_commit = fixing_commit
         self.__introducing_commits = introducing_commits
+        self.__issue_id = issue_id
 
     @property
     def fixing_commit(self) -> str:
@@ -42,6 +52,11 @@ class RawBug:
     def introducing_commits(self) -> tp.List[str]:
         """Hashes of the commits introducing the bug as List of strings."""
         return self.__introducing_commits
+
+    @property
+    def issue_id(self) -> int:
+        """ID of the issue associated with the bug."""
+        return self.__issue_id
 
 
 def find_all_pygit_bugs(project_name: str) -> tp.FrozenSet[PygitBug]:
