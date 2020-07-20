@@ -1,13 +1,14 @@
 """Small helper classes for testing."""
 
-from benchbuild.project import Project
+from benchbuild import Project, source
 
 
 class EmptyProject(Project):
     NAME = "test_empty"
+
     DOMAIN = "debug"
     GROUP = "debug"
-    SRC_FILE = "none"
+    SOURCE = [source.nosource()]
 
     def build(self):
         pass
@@ -19,4 +20,7 @@ class EmptyProject(Project):
         pass
 
     def compile(self):
+        pass
+
+    def run_tests(self) -> None:
         pass
