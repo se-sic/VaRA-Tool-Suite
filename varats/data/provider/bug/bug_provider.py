@@ -2,17 +2,11 @@
 import logging
 import re
 import typing as tp
-from collections import defaultdict
 
 from benchbuild.project import Project
-from github import Github
-from github.IssueEvent import IssueEvent
-from github.PaginatedList import PaginatedList
-from github.Repository import Repository
 
-import varats.data.provider.bug.bug as bug  # import PygitBug, RawBug, find_all_pygit_bugs, find_all_raw_bugs, find_pygit_bug_by_fix, find_raw_bug_by_fix, find_pygit_bug_by_introduction, find_raw_bug_by_introduction
+import varats.data.provider.bug.bug as bug
 from varats.data.provider.provider import Provider
-from varats.utils.github_util import get_cached_github_object
 
 LOG = logging.getLogger(__name__)
 
@@ -146,40 +140,26 @@ class BugDefaultProvider(BugProvider):
         # pylint: disable=E1003
         super(BugProvider, self).__init__(project)
 
-    def get_resolved_bugs(self) -> tp.Dict[str, tp.Set[str]]:
-        return {}
+    def find_all_pygit_bugs(self) -> tp.FrozenSet[bug.PygitBug]:
+        return frozenset(set())
 
+    def find_all_raw_bugs(self) -> tp.FrozenSet[bug.RawBug]:
+        return frozenset(set())
 
-#TODO: Replace by bug.py methods
-def get_github_bugs(full_repo_name: str) -> tp.Dict[str, tp.Set[str]]:
-    """
-    Retrieves bugs from github by searching issues that were closed by some
-    commit.
+    def find_pygit_bug_by_fix(self,
+                              fixing_commit: str) -> tp.Optional[bug.PygitBug]:
+        return None
 
-    Args:
-        full_repo_name: the name of the github repo to search
+    def find_raw_bug_by_fix(self,
+                            fixing_commit: str) -> tp.Optional[bug.RawBug]:
+        return None
 
-    Return:
-        a map commits -> set of closed issues
-    """
-    resolved_bugs: tp.Dict[str, tp.Set[str]] = defaultdict(set)
+    def find_pygit_bug_by_introduction(
+        self, introducing_commit: str
+    ) -> tp.List[bug.PygitBug]:
+        return []
 
-    def load_issue_events(github: Github) -> PaginatedList:
-        repository: Repository = github.get_repo(full_repo_name)
-        return repository.get_issues_events()
-
-    cache_file_name = full_repo_name.replace("/", "_") + "_issues_events"
-    issue_events: tp.Optional[
-        tp.List[IssueEvent]
-    ] = get_cached_github_object(cache_file_name, load_issue_events)
-    if issue_events:
-        for issue_event in issue_events:
-            if (
-                issue_event.event == "closed" and
-                issue_event.commit_id is not None
-            ):
-                resolved_bugs[issue_event.commit_id].add(
-                    issue_event.issue.number
-                )
-        return resolved_bugs
-    return {}
+    def find_raw_bug_by_introduction(
+        self, introducing_commit: str
+    ) -> tp.List[bug.RawBug]:
+        return []

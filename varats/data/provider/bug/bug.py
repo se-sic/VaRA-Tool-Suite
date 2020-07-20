@@ -9,6 +9,10 @@ from github.PaginatedList import PaginatedList
 from github.Repository import Repository
 
 from varats.utils.github_util import get_cached_github_object
+from varats.utils.project_util import (
+    get_local_project_git_path,
+    get_local_project_git,
+)
 
 
 class PygitBug:
@@ -16,10 +20,11 @@ class PygitBug:
 
     def __init__(
         self, fixing_commit: pygit2.Commit,
-        introducing_commits: tp.List[pygit2.Commit]
+        introducing_commits: tp.List[pygit2.Commit], issue_id: int
     ) -> None:
         self.__fixing_commit = fixing_commit
         self.__introducing_commits = introducing_commits
+        self.__issue_id = issue_id
 
     @property
     def fixing_commit(self) -> pygit2.Commit:
@@ -31,17 +36,22 @@ class PygitBug:
         """Commits introducing the bug as List of pygit2 Commits."""
         return self.__introducing_commits
 
+    @property
+    def issue_id(self) -> int:
+        """ID of the issue associated with the bug."""
+        return self.__issue_id
+
 
 class RawBug:
     """Bug representation using the Commit Hashes as Strings."""
 
     def __init__(
-        self,
-        fixing_commit: str,
-        introducing_commits: tp.List[str],
+        self, fixing_commit: str, introducing_commits: tp.List[str],
+        issue_id: int
     ) -> None:
         self.__fixing_commit = fixing_commit
         self.__introducing_commits = introducing_commits
+        self.__issue_id = issue_id
 
     @property
     def fixing_commit(self) -> str:
@@ -52,6 +62,11 @@ class RawBug:
     def introducing_commits(self) -> tp.List[str]:
         """Hashes of the commits introducing the bug as List of strings."""
         return self.__introducing_commits
+
+    @property
+    def issue_id(self) -> int:
+        """ID of the issue associated with the bug."""
+        return self.__issue_id
 
 
 def _get_all_issue_events(
@@ -69,7 +84,8 @@ def _get_all_issue_events(
         repository: Repository = github.get_repo(project_name)
         return repository.get_issues_events()
 
-    cache_file_name = project_name.replace("/", "_") + "_issues_events"
+    repo_path = get_local_project_git_path(project_name)
+    cache_file_name = repo_path.name.replace("/", "_") + "_issues_events"
 
     return get_cached_github_object(cache_file_name, load_issue_events)
 
@@ -133,7 +149,11 @@ def find_all_raw_bugs(project_name: str) -> tp.FrozenSet[RawBug]:
                 introducing_ids: tp.List[str] = []
 
                 # TODO find introducing commits
-                raw_bugs.add(RawBug(fixing_id, introducing_ids))
+                raw_bugs.add(
+                    RawBug(
+                        fixing_id, introducing_ids, issue_event.issue.number
+                    )
+                )
     return frozenset(raw_bugs)
 
 
