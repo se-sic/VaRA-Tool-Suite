@@ -143,5 +143,26 @@ class BugDefaultProvider(BugProvider):
         # pylint: disable=E1003
         super(BugProvider, self).__init__(project)
 
-    def get_resolved_bugs(self) -> tp.Dict[str, tp.Set[str]]:
-        return {}
+    def find_all_pygit_bugs(self) -> tp.FrozenSet[bug.PygitBug]:
+        return frozenset(set())
+
+    def find_all_raw_bugs(self) -> tp.FrozenSet[bug.RawBug]:
+        return frozenset(set())
+
+    def find_pygit_bug_by_fix(self,
+                              fixing_commit: str) -> tp.Optional[bug.PygitBug]:
+        return None
+
+    def find_raw_bug_by_fix(self,
+                            fixing_commit: str) -> tp.Optional[bug.RawBug]:
+        return None
+
+    def find_pygit_bug_by_introduction(
+        self, introducing_commit: str
+    ) -> tp.List[bug.PygitBug]:
+        return []
+
+    def find_raw_bug_by_introduction(
+        self, introducing_commit: str
+    ) -> tp.List[bug.RawBug]:
+        return []
