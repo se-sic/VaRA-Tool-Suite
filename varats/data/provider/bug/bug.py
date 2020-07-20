@@ -125,7 +125,21 @@ def find_all_pygit_bugs(project_name: str) -> tp.FrozenSet[PygitBug]:
         for issue_event in issue_events:
             if _has_closed_a_bug(issue_event):
                 # TODO extract pygit2 Commit Objects from IssueEvent
-                pygit_bugs.add(PygitBug())
+                pygit_repo = get_local_project_git(project_name)
+
+                fixing_id: str = issue_event.commit_id
+                fixing_commit: pygit2.Commit = pygit_repo.revparse_single(
+                    fixing_id
+                )
+
+                introducing_commits: tp.List[pygit2.Commit] = []
+
+                pygit_bugs.add(
+                    PygitBug(
+                        fixing_commit, introducing_commits,
+                        issue_event.issue.number
+                    )
+                )
 
     return frozenset(pygit_bugs)
 
