@@ -122,7 +122,7 @@ class BlameDegree(Plot):
         fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
         fig.suptitle(
             str(plot_cfg['fig_title']) +
-            ' - Project {}'.format(self.plot_kwargs["project"]),
+            f' - Project {self.plot_kwargs["project"]}',
             fontsize=8
         )
 

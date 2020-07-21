@@ -167,10 +167,11 @@ class BlameDiffCorrelationMatrix(Plot):
         grid.map_offdiag(logit_scatterplot)
         grid.map_offdiag(annotate_correlation)
 
-    def show(self) -> None:
-        """Show the current plot."""
-        self.plot(True)
-        plt.show()
+        plt.subplots_adjust(top=0.9)
+        grid.fig.suptitle(
+            str("Correlation Matrix") +
+            f' - Project {self.plot_kwargs["project"]}'
+        )
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError
