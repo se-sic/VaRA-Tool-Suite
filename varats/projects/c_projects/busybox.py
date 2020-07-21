@@ -47,7 +47,7 @@ class Busybox(bb.Project, CVEProviderHook):  # type: ignore
         clang = bb.compiler.cc(self)
         with local.cwd(busybox_source):
             with local.env(CC=str(clang)):
-                bb.watch(make["defconfig"])()
+                bb.watch(make)("defconfig")
                 bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
