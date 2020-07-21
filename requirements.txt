@@ -17,6 +17,7 @@ PyYAML>=3.12
 pyzmq>=19.0.0
 requests>=2.23.0
 requests_cache>=0.5.2
+scikit-learn~=0.23.1
 seaborn>=0.8.0
 tabulate>=0.8.6
 wllvm>=1.1.4

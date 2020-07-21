@@ -273,10 +273,6 @@ class PaperConfigOverviewPlot(Plot):
         style.use(self.style)
         _plot_overview_graph(_gen_overview_plot(**self.plot_kwargs))
 
-    def show(self) -> None:
-        self.plot(True)
-        plt.show()
-
     def save(
         self, path: tp.Optional[Path] = None, filetype: str = 'svg'
     ) -> None:
@@ -291,6 +287,7 @@ class PaperConfigOverviewPlot(Plot):
         plt.savefig(
             plot_dir / f"{self.name}.{filetype}", dpi=1200, format=filetype
         )
+        plt.close()
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         revisions = _gen_overview_plot_for_project(**self.plot_kwargs)

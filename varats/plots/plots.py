@@ -119,10 +119,12 @@ def build_plot(**args: tp.Any) -> None:
         args['view'] = False
     if 'sep_stages' not in args:
         args['sep_stages'] = False
+    if 'paper_config' not in args:
+        args['paper_config'] = False
 
     LOG.info(f"Writing plots to: {args['plot_dir']}")
 
-    if 'paper_config' in args:
+    if args['paper_config']:
         paper_config = get_paper_config()
         for case_study in paper_config.get_all_case_studies():
             project_name = case_study.project_name

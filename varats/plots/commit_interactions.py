@@ -13,7 +13,7 @@ from varats.data.databases.commit_interaction_database import (
     CommitInteractionDatabase,
 )
 from varats.paper.case_study import CaseStudy, CSStage
-from varats.plots.plot import Plot
+from varats.plots.plot import Plot, PlotDataEmpty
 from varats.plots.plot_utils import check_required_args
 
 
@@ -50,6 +50,9 @@ def _plot_interaction_graph(
 
     if stages is None:
         stages = []
+
+    if data_frame.empty:
+        raise PlotDataEmpty
 
     data_frame.sort_values(by=['time_id'], inplace=True)
 
@@ -209,10 +212,6 @@ class InteractionPlot(Plot):
             cs_filter(interaction_plot_df),
             case_study.stages if case_study is not None else None, view_mode
         )
-
-    def show(self) -> None:
-        self.plot(True)
-        plt.show()
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         data_frame = _gen_interaction_graph(**self.plot_kwargs)
