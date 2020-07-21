@@ -22,7 +22,10 @@ from varats.data.reports.commit_report import CommitMap
 from varats.plots.plot import Plot, PlotDataEmpty
 
 
-def _create_cluster_objects(bandwidth, connectivity, params):
+def _create_cluster_objects(
+    bandwidth: float, connectivity: tp.Any, params: tp.Dict[str, tp.Union[float,
+                                                                          int]]
+) -> tp.List[tp.Tuple[str, tp.Any]]:
     mean_shift = cluster.MeanShift(bandwidth=bandwidth, bin_seeding=True)
     two_means = cluster.MiniBatchKMeans(n_clusters=params['n_clusters'])
     ward = cluster.AgglomerativeClustering(
@@ -54,13 +57,13 @@ def _create_cluster_objects(bandwidth, connectivity, params):
     gmm = mixture.GaussianMixture(
         n_components=params['n_clusters'], covariance_type='full'
     )
-    clustering_algorithms = (('MiniBatchKMeans', two_means),
-                             ('AffinityPropagation',
-                              affinity_propagation), ('MeanShift', mean_shift),
+    clustering_algorithms = [('MiniBatchKMeans', two_means),
+                             ('AffinityPropagation', affinity_propagation),
+                             ('MeanShift', mean_shift),
                              ('SpectralClustering', spectral), ('Ward', ward),
                              ('AgglomerativeClustering', average_linkage),
                              ('DBSCAN', dbscan), ('OPTICS', optics),
-                             ('Birch', birch), ('GaussianMixture', gmm))
+                             ('Birch', birch), ('GaussianMixture', gmm)]
     return clustering_algorithms
 
 

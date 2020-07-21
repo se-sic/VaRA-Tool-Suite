@@ -178,11 +178,21 @@ class BlameDiffCorrelationMatrix(Plot):
 
 
 # adapted from https://stackoverflow.com/a/55165689
-def _multivariate_grid(x_col, y_col, hue, data, scatter_alpha=.5):
+def _multivariate_grid(
+    x_col: str,
+    y_col: str,
+    hue: str,
+    data: pd.DataFrame,
+    scatter_alpha: float = .5
+) -> None:
 
-    def colored_scatter(x_data, y_data, color=None):
+    def colored_scatter(
+        x_data: pd.Series,
+        y_data: pd.Series,
+        color: tp.Optional[str] = None
+    ) -> tp.Callable[[tp.Any, tp.Any], None]:
 
-        def scatter(*args, **kwargs):
+        def scatter(*args: tp.Any, **kwargs: tp.Any) -> None:
             args = (x_data, y_data)
             if color is not None:
                 kwargs['c'] = color
