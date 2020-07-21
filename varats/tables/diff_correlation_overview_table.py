@@ -24,25 +24,23 @@ class DiffCorrelationOverviewTable(Table):
     def tabulate(self) -> str:
         case_studies = get_paper_config().get_all_case_studies()
 
+        variables = [
+            "churn", "num_interactions", "num_interacting_commits",
+            "num_interacting_authors"
+        ]
         cs_data = [
             BlameDiffMetricsDatabase.get_data_for_project(
-                case_study.project_name, [
-                    "revision", "churn_total", "diff_ci_total",
-                    "ci_degree_mean", "author_mean", "avg_time_mean",
-                    "ci_degree_max", "author_max", "avg_time_max", "year"
-                ], get_commit_map(case_study.project_name), case_study
+                case_study.project_name, ["revision", *variables],
+                get_commit_map(case_study.project_name), case_study
             ) for case_study in case_studies
         ]
         for data in cs_data:
             data.set_index('revision', inplace=True)
-            data.drop(data[data.churn_total == 0].index, inplace=True)
+            data.drop(data[data['churn'] == 0].index, inplace=True)
 
-        vars_1 = [
-            "churn_total", "diff_ci_total", "ci_degree_mean", "author_mean",
-            "avg_time_mean"
+        correlations = [
+            data[variables].corr(method="pearson") for data in cs_data
         ]
-
-        correlations = [data[vars_1].corr(method="pearson") for data in cs_data]
 
         df = pd.concat(
             correlations, axis=1, keys=get_unique_cs_name(case_studies)
