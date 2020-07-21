@@ -61,10 +61,6 @@ class BlameDegree(Plot):
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
 
-    @abc.abstractmethod
-    def show(self) -> None:
-        """Show the current plot."""
-
     def _get_degree_data(self) -> pd.DataFrame:
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
         case_study = self.plot_kwargs.get('plot_case_study', None)
@@ -280,10 +276,6 @@ class BlameInteractionDegree(BlameDegree):
         }
         self._degree_plot(view_mode, DegreeType.interaction, extra_plot_cfg)
 
-    def show(self) -> None:
-        self.plot(True)
-        plt.show()
-
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
             DegreeType.interaction, boundary_gradient
@@ -304,10 +296,6 @@ class BlameAuthorDegree(BlameDegree):
             'fig_title': 'Author blame interactions'
         }
         self._degree_plot(view_mode, DegreeType.author, extra_plot_cfg)
-
-    def show(self) -> None:
-        self.plot(True)
-        plt.show()
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
@@ -332,10 +320,6 @@ class BlameMaxTimeDistribution(BlameDegree):
         }
         self._degree_plot(view_mode, DegreeType.max_time, extra_plot_cfg)
 
-    def show(self) -> None:
-        self.plot(True)
-        plt.show()
-
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
             DegreeType.max_time, boundary_gradient
@@ -358,10 +342,6 @@ class BlameAvgTimeDistribution(BlameDegree):
             'edgecolor': None,
         }
         self._degree_plot(view_mode, DegreeType.avg_time, extra_plot_cfg)
-
-    def show(self) -> None:
-        self.plot(True)
-        plt.show()
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(

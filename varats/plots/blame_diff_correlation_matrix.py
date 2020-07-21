@@ -21,7 +21,7 @@ from varats.data.databases.blame_diff_metrics_database import (
 )
 from varats.data.reports.commit_report import CommitMap
 from varats.paper.paper_config import get_loaded_paper_config
-from varats.plots.plot import Plot
+from varats.plots.plot import Plot, PlotDataEmpty
 from varats.plots.plot_utils import align_yaxis, pad_axes
 from varats.tools.commit_map import get_commit_map
 
@@ -152,10 +152,14 @@ class BlameDiffCorrelationMatrix(Plot):
         ]
 
         df = BlameDiffMetricsDatabase.get_data_for_project(
-            project_name, ["revision", *variables], commit_map, case_study
+            project_name, ["revision", "time_id", *variables], commit_map,
+            case_study
         )
         df.set_index('revision', inplace=True)
         df.drop(df[df.churn == 0].index, inplace=True)
+        if df.empty:
+            raise PlotDataEmpty
+        df.sort_values(by=['time_id'], inplace=True)
 
         grid = sns.PairGrid(df, vars=variables)
 
@@ -261,11 +265,6 @@ class BlameDiffDistribution(Plot):
             data=df,
         )
 
-    def show(self) -> None:
-        """Show the current plot."""
-        self.plot(True)
-        plt.show()
-
     def save(
         self, path: tp.Optional[Path] = None, filetype: str = 'svg'
     ) -> None:
@@ -283,6 +282,7 @@ class BlameDiffDistribution(Plot):
             dpi=1200,
             format=filetype
         )
+        plt.close()
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError

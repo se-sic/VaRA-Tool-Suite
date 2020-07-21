@@ -14,7 +14,7 @@ from varats.data.databases.blame_interaction_database import (
 from varats.data.metrics import gini_coefficient, lorenz_curve
 from varats.data.reports.commit_report import CommitMap
 from varats.paper.case_study import CaseStudy
-from varats.plots.plot import Plot
+from varats.plots.plot import Plot, PlotDataEmpty
 from varats.plots.repository_churn import (
     build_repo_churn_table,
     draw_code_churn,
@@ -170,6 +170,8 @@ class BlameLorenzCurve(Plot):
             ], commit_map, case_study
         )
         data = filter_non_code_changes(data, project_name)
+        if data.empty:
+            raise PlotDataEmpty
 
         # Draw left side of the plot
         draw_interaction_lorenz_curve(main_axis, data, True, False, plot_cfg)
@@ -195,10 +197,6 @@ class BlameLorenzCurve(Plot):
             x_label.set_fontsize(plot_cfg['xtick_size'])
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
-
-    def show(self) -> None:
-        self.plot(True)
-        plt.show()
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError
@@ -350,6 +348,17 @@ class BlameGiniOverTime(Plot):
         commit_map = self.plot_kwargs['get_cmap']()
         project_name = self.plot_kwargs['project']
 
+        data = BlameInteractionDatabase.get_data_for_project(
+            project_name, [
+                "revision", "time_id", "IN_HEAD_Interactions",
+                "OUT_HEAD_Interactions", "HEAD_Interactions"
+            ], commit_map, case_study
+        )
+        data = filter_non_code_changes(data, project_name)
+        if data.empty:
+            raise PlotDataEmpty
+        data.sort_values(by=['time_id'], inplace=True)
+
         fig = plt.figure()
         fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
         grid_spec = fig.add_gridspec(3, 1)
@@ -359,15 +368,6 @@ class BlameGiniOverTime(Plot):
         main_axis.get_xaxis().set_visible(False)
 
         churn_axis = fig.add_subplot(grid_spec[2, :], sharex=main_axis)
-
-        data = BlameInteractionDatabase.get_data_for_project(
-            project_name, [
-                "revision", "time_id", "IN_HEAD_Interactions",
-                "OUT_HEAD_Interactions", "HEAD_Interactions"
-            ], commit_map, case_study
-        )
-        data = filter_non_code_changes(data, project_name)
-        data.sort_values(by=['time_id'], inplace=True)
 
         draw_gini_blame_over_time(main_axis, data, True, True, plot_cfg)
         draw_gini_blame_over_time(main_axis, data, True, False, plot_cfg)
@@ -395,10 +395,6 @@ class BlameGiniOverTime(Plot):
             x_label.set_fontsize(plot_cfg['xtick_size'])
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
-
-    def show(self) -> None:
-        self.plot(True)
-        plt.show()
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError

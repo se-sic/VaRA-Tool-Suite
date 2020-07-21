@@ -19,7 +19,7 @@ from varats.data.databases.blame_diff_metrics_database import (
     BlameDiffMetricsDatabase,
 )
 from varats.data.reports.commit_report import CommitMap
-from varats.plots.plot import Plot
+from varats.plots.plot import Plot, PlotDataEmpty
 
 
 def _create_cluster_objects(bandwidth, connectivity, params):
@@ -202,16 +202,13 @@ class BlameDiffClusterAnalysis(Plot):
         )
         df.set_index('revision', inplace=True)
         df.drop(df[df.churn == 0].index, inplace=True)
+        if df.empty:
+            raise PlotDataEmpty
 
         _plot_cluster_comparison([
             (df[["churn", var]].to_numpy(), "churn", var, {})
             for var in variables
         ])
-
-    def show(self) -> None:
-        """Show the current plot."""
-        self.plot(True)
-        plt.show()
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError
