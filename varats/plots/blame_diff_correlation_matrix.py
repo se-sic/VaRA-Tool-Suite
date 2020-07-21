@@ -191,7 +191,9 @@ def _multivariate_grid(x_col, y_col, hue, data, scatter_alpha=.5):
 
         return scatter
 
-    grid = sns.JointGrid(x=x_col, y=y_col, data=data)
+    grid = sns.JointGrid(
+        x=x_col, y=y_col, data=data, xlim=(-0.05, 1.05), ylim=(-0.05, 1.05)
+    )
     color = None
     legends = []
     for name, df_group in data.groupby(hue):
@@ -212,6 +214,9 @@ def _multivariate_grid(x_col, y_col, hue, data, scatter_alpha=.5):
         data[y_col].values, ax=grid.ax_marg_y, color='grey', vertical=True
     )
     plt.legend(legends)
+
+    plt.subplots_adjust(top=0.9)
+    grid.fig.suptitle(f"{x_col} vs. {y_col}")
 
 
 class BlameDiffDistribution(Plot):
@@ -236,20 +241,26 @@ class BlameDiffDistribution(Plot):
                     self.plot_kwargs["project"]
                 )
 
-        variables = [
-            "churn", "num_interactions", "num_interacting_commits",
-            "num_interacting_authors"
-        ]
+        var_x = self.plot_kwargs["var_x"]
+        var_y = self.plot_kwargs["var_y"]
 
         data = [(
             case_study,
             BlameDiffMetricsDatabase.get_data_for_project(
-                case_study.project_name, ["revision", *variables],
+                case_study.project_name, ["revision", var_x, var_y],
                 get_commit_map(case_study.project_name), case_study
             )
         ) for case_study in case_studies]
+
+        def normalize(values: pd.Series) -> pd.Series:
+            max_value = values.max()
+            min_value = values.min()
+            return (values - min_value) / (max_value - min_value)
+
         dataframes = []
         for case_study, df in data:
+            df[var_x] = normalize(df[var_x])
+            df[var_y] = normalize(df[var_y])
             df["project"] = case_study.project_name
             dataframes.append(df)
 
@@ -260,8 +271,8 @@ class BlameDiffDistribution(Plot):
         df.drop(df[df.churn == 0].index, inplace=True)
 
         _multivariate_grid(
-            x_col='churn',
-            y_col='num_interactions',
+            x_col=var_x,
+            y_col=var_y,
             hue='project',
             data=df,
         )
@@ -279,7 +290,8 @@ class BlameDiffDistribution(Plot):
 
         # TODO (se-passau/VaRA#545): refactor dpi into plot_config. see.
         plt.savefig(
-            plot_dir / f"{pc_name}_{self.name}.{filetype}",
+            plot_dir / f"{pc_name}_{self.name}_{self.plot_kwargs['var_x']}_vs_"
+            f"{self.plot_kwargs['var_y']}.{filetype}",
             dpi=1200,
             format=filetype
         )
