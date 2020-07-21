@@ -179,7 +179,7 @@ def _plot_cluster_comparison(
 class BlameDiffClusterAnalysis(Plot):
     """Performs different cluster algorithms on blame-diff data."""
 
-    NAME = "cluster_analysis"
+    NAME = "b_cluster_analysis"
 
     def __init__(self, **kwargs: tp.Any):
         super().__init__(self.NAME, **kwargs)
