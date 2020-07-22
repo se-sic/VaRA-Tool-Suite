@@ -115,6 +115,13 @@ class BlameVerifierReportNoOpt(BlameVerifierReportParserMixin, BaseReport):
         super().__init__(path=path)
         self.parse_verifier_results()
 
+    @property
+    def head_commit(self) -> str:
+        """The current HEAD commit under which this CommitReport was created."""
+        return BlameVerifierReportNoOpt.get_commit_hash_from_result_file(
+            Path(self.path).name
+        )
+
     @staticmethod
     def get_file_name(
         project_name: str,
@@ -156,6 +163,13 @@ class BlameVerifierReportOpt(BlameVerifierReportParserMixin, BaseReport):
     def __init__(self, path: Path):
         super().__init__(path=path)
         self.parse_verifier_results()
+
+    @property
+    def head_commit(self) -> str:
+        """The current HEAD commit under which this CommitReport was created."""
+        return BlameVerifierReportOpt.get_commit_hash_from_result_file(
+            Path(self.path).name
+        )
 
     @staticmethod
     def get_file_name(

@@ -43,23 +43,23 @@ def load_commit_map(file_path: str) -> CommitMap:
         return CommitMap(c_map_file.readlines())
 
 
-def load_blame_verifier_report_no_opt(file_path: str) -> \
+def load_blame_verifier_report_no_opt(file_path: Path) -> \
         BlameVerifierReportNoOpt:
     """
     Load a BlameVerifierReportNoOpt from a file.
 
     Attributes:
-        file_path (str): Full path to the file
+        file_path (Path): Full path to the file
     """
     return VDM.load_data_class_sync(file_path, BlameVerifierReportNoOpt)
 
 
-def load_blame_verifier_report_opt(file_path: str) -> \
+def load_blame_verifier_report_opt(file_path: Path) -> \
         BlameVerifierReportOpt:
     """
     Load a BlameVerifierReportOpt from a file.
 
     Attributes:
-        file_path (str): Full path to the file
+        file_path (Path): Full path to the file
     """
     return VDM.load_data_class_sync(file_path, BlameVerifierReportOpt)
