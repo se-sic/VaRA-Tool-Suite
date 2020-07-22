@@ -5,6 +5,10 @@ from pathlib import Path
 
 from varats.data.data_manager import VDM
 from varats.data.reports.blame_report import BlameReport
+from varats.data.reports.blame_verifier_report import (
+    BlameVerifierReportOpt,
+    BlameVerifierReportNoOpt,
+)
 from varats.data.reports.commit_report import CommitMap, CommitReport
 
 
@@ -37,3 +41,25 @@ def load_commit_map(file_path: str) -> CommitMap:
     """
     with open(file_path, "r") as c_map_file:
         return CommitMap(c_map_file.readlines())
+
+
+def load_blame_verifier_report_no_opt(file_path: str) -> \
+        BlameVerifierReportNoOpt:
+    """
+    Load a BlameVerifierReportNoOpt from a file.
+
+    Attributes:
+        file_path (str): Full path to the file
+    """
+    return VDM.load_data_class_sync(file_path, BlameVerifierReportNoOpt)
+
+
+def load_blame_verifier_report_opt(file_path: str) -> \
+        BlameVerifierReportOpt:
+    """
+    Load a BlameVerifierReportOpt from a file.
+
+    Attributes:
+        file_path (str): Full path to the file
+    """
+    return VDM.load_data_class_sync(file_path, BlameVerifierReportOpt)
