@@ -29,24 +29,31 @@ def generate_benchbuild_config(
     #                           if not x.endswith('gzip')]
     projects_conf.value[:] = []
     projects_conf.value[:] += [
+        'varats.projects.c_projects.bison',
+        'varats.projects.c_projects.bitlbee',
         'varats.projects.c_projects.busybox',
         'varats.projects.c_projects.coreutils',
         'varats.projects.c_projects.curl',
+        'varats.projects.c_projects.gawk',
         'varats.projects.c_projects.git',
         'varats.projects.c_projects.gravity',
         'varats.projects.c_projects.gzip',
         'varats.projects.c_projects.htop',
+        'varats.projects.c_projects.irssi',
+        'varats.projects.c_projects.libpng',
+        'varats.projects.c_projects.libssh',
         'varats.projects.c_projects.libvpx',
         'varats.projects.c_projects.lrzip',
         'varats.projects.c_projects.lz4',
-        'varats.projects.c_projects.redis',
         'varats.projects.c_projects.openssl',
         'varats.projects.c_projects.opus',
         'varats.projects.c_projects.qemu',
+        'varats.projects.c_projects.redis',
         'varats.projects.c_projects.tmux',
         'varats.projects.c_projects.vim',
         'varats.projects.c_projects.x264',
         'varats.projects.c_projects.xz',
+        'varats.projects.c_projects.openvpn',
     ]
     projects_conf.value[:] += ['varats.projects.cpp_projects.doxygen']
     projects_conf.value[:] += ['varats.projects.test_projects.basic_tests']
