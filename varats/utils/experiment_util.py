@@ -8,6 +8,7 @@ import typing as tp
 from abc import abstractmethod
 from pathlib import Path
 
+import benchbuild.source as source
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
 from benchbuild.utils.actions import Step, StepResult
@@ -156,6 +157,9 @@ class UnlimitStackSize(Step):  # type: ignore
         resource.setrlimit(resource.RLIMIT_STACK, (16777216, 16777216))
 
 
+T = tp.TypeVar('T')
+
+
 class VersionExperiment(Experiment):  # type: ignore
     """Base class for experiments that want to analyze different project
     revisions."""
@@ -165,7 +169,7 @@ class VersionExperiment(Experiment):  # type: ignore
         """Get the actions a project wants to run."""
 
     @staticmethod
-    def _sample_num_versions(versions: tp.List[str]) -> tp.List[str]:
+    def _sample_num_versions(versions: tp.List[T]) -> tp.List[T]:
         if vara_cfg()["experiment"]["sample_limit"].value is None:
             return versions
 
@@ -178,11 +182,8 @@ class VersionExperiment(Experiment):  # type: ignore
         ]
         return versions
 
-    def sample(
-        self,
-        prj_cls: tp.Type[Project],
-        versions: tp.Optional[tp.List[str]] = None
-    ) -> tp.Generator[str, None, None]:
+    def sample(self,
+               prj_cls: tp.Type[Project]) -> tp.List[source.VariantContext]:
         """
         Adapt version sampling process if needed, otherwise fallback to default
         implementation.
@@ -194,11 +195,10 @@ class VersionExperiment(Experiment):  # type: ignore
         Returns:
             generator that outputs a sequence of sampled versions
         """
-        if versions is None:
-            versions = []
+        variants = list(source.product(*prj_cls.SOURCE))
 
         if bool(vara_cfg()["experiment"]["random_order"]):
-            random.shuffle(versions)
+            random.shuffle(variants)
 
         fs_blacklist = vara_cfg()["experiment"]["file_status_blacklist"].value
         fs_whitelist = vara_cfg()["experiment"]["file_status_whitelist"].value
@@ -220,23 +220,23 @@ class VersionExperiment(Experiment):  # type: ignore
                     "Experiment sub class does not implement REPORT_TYPE."
                 )
 
-            for revision, file_status in get_tagged_revisions(
-                prj_cls, getattr(self, 'REPORT_TYPE')
-            ):
-                if file_status not in fs_good and revision in versions:
-                    versions.remove(revision)
+            bad_revisions = [
+                revision for revision, file_status in
+                get_tagged_revisions(prj_cls, getattr(self, 'REPORT_TYPE'))
+                if file_status not in fs_good
+            ]
 
-            if not versions:
-                print("Could not find any unprocessed versions.")
-                return
+            variants = list(
+                filter(lambda var: str(var[0]) not in bad_revisions, variants)
+            )
 
-            head, *tail = self._sample_num_versions(versions)
-            yield head
-            if bool(bb_cfg()["versions"]["full"]):
-                for version in tail:
-                    yield version
-        else:
-            versions = self._sample_num_versions(versions)
+        if not variants:
+            print("Could not find any unprocessed variants.")
+            return []
 
-            for val in Experiment.sample(self, prj_cls, versions):
-                yield val
+        variants = self._sample_num_versions(variants)
+
+        if bool(bb_cfg()["versions"]["full"]):
+            return [source.context(*var) for var in variants]
+
+        return [source.context(*variants[0])]
