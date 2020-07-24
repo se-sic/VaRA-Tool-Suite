@@ -33,7 +33,7 @@ class Curl(bb.Project, CVEProviderHook):  # type: ignore
             refspec="HEAD",
             limit=None,
             shallow=False,
-            # version_filter=project_filter_generator("curl")
+            version_filter=project_filter_generator("curl")
         )
     ]
 

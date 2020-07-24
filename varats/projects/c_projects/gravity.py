@@ -64,7 +64,7 @@ class Gravity(bb.Project, CVEProviderHook):  # type: ignore
             refspec="HEAD",
             limit=None,
             shallow=False,
-            # version_filter=project_filter_generator("gravity")
+            version_filter=project_filter_generator("gravity")
         )
         # )
     ]

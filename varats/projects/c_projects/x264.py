@@ -30,7 +30,7 @@ class X264(bb.Project):  # type: ignore
             refspec="HEAD",
             limit=None,
             shallow=False,
-            # version_filter=project_filter_generator("x264")
+            version_filter=project_filter_generator("x264")
         )
     ]
 

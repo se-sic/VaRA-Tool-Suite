@@ -29,7 +29,7 @@ class Glibc(bb.Project, CVEProviderHook):  # type: ignore
             refspec="HEAD",
             limit=None,
             shallow=False,
-            # version_filter=project_filter_generator("glibc")
+            version_filter=project_filter_generator("glibc")
         )
     ]
 

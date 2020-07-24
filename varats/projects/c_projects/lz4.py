@@ -33,7 +33,7 @@ class Lz4(bb.Project, CVEProviderHook):  # type: ignore
             refspec="HEAD",
             limit=None,
             shallow=False,
-            # version_filter=project_filter_generator("lz4")
+            version_filter=project_filter_generator("lz4")
         )
     ]
 
