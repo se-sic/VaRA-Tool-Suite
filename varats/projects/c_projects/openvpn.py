@@ -34,7 +34,7 @@ class OpenVPN(bb.Project, CVEProviderHook):  # type: ignore
             refspec="HEAD",
             limit=None,
             shallow=False,
-            # version_filter=project_filter_generator("openvpn")
+            version_filter=project_filter_generator("openvpn")
         )
     ]
 
