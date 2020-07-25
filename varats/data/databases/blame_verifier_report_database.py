@@ -1,4 +1,4 @@
-"""Module for the base BlameInteractionDegreeDatabase class."""
+"""Module for the BlameVerifierReportDatabase class."""
 import typing as tp
 from pathlib import Path
 
@@ -26,7 +26,7 @@ from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
 
 class BlameVerifierReportDatabase(
     EvaluationDatabase,
-    columns=["opt_level", "total", "successes", "failures", "undetermined"],
+    columns=["total", "successes", "failures", "undetermined"],
     cache_id="blame_verifier_report_data"
 ):
     """Provides access to blame verifier report data."""
@@ -66,6 +66,7 @@ class BlameVerifierReportDatabase(
 
             return pd.DataFrame({
                 'revision': report.head_commit,
+                'opt_level': self.__opt_level.value,
                 'total': number_of_total_annotations,
                 'successful': number_of_successful_annotations,
                 'failed': number_of_failed_annotations,
@@ -101,13 +102,24 @@ class BlameVerifierReportDatabase(
         return data_frame
 
 
-class BlameVerifierReportDatabaseOpt(BlameVerifierReportDatabase):
+class BlameVerifierReportDatabaseOpt(
+    BlameVerifierReportDatabase,
+    columns=["total", "successes", "failures", "undetermined"],
+    cache_id="blame_verifier_report_data"
+):
 
     def __init__(self):
         super().__init__(opt_level=BCFileExtensions.OPT)
 
 
-class BlameVerifierReportDatabaseNoOpt(BlameVerifierReportDatabase):
+class BlameVerifierReportDatabaseNoOpt(
+    BlameVerifierReportDatabase,
+    columns=["total", "successes", "failures", "undetermined"],
+    cache_id="blame_verifier_report_data"
+):
 
     def __init__(self):
         super().__init__(opt_level=BCFileExtensions.NO_OPT)
+
+
+adsf = BlameVerifierReportDatabaseNoOpt().get_data_for_project()
