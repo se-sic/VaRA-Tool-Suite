@@ -120,6 +120,3 @@ class BlameVerifierReportDatabaseNoOpt(
 
     def __init__(self):
         super().__init__(opt_level=BCFileExtensions.NO_OPT)
-
-
-adsf = BlameVerifierReportDatabaseNoOpt().get_data_for_project()
