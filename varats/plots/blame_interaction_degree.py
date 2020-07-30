@@ -14,6 +14,7 @@ from varats.data.databases.blame_interaction_degree_database import (
     DegreeType,
 )
 from varats.data.reports.commit_report import CommitMap
+from varats.plots.bug_annotation import draw_bugs
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.plot import Plot, PlotDataEmpty
 from varats.plots.repository_churn import draw_code_churn
@@ -158,12 +159,16 @@ class BlameDegree(Plot):
 
         # annotate CVEs
         with_cve = self.plot_kwargs.get("with_cve", False)
-        if with_cve:
+        with_bugs = self.plot_kwargs.get("with_bugs", False)
+        if with_cve or with_bugs:
             if "project" not in self.plot_kwargs:
-                LOG.error("with_cve is true but no project is given.")
+                LOG.error("Need a project to annotate bug or CVE data.")
             else:
                 project = get_project_cls_by_name(self.plot_kwargs["project"])
-                draw_cves(main_axis, project, unique_revisions, plot_cfg)
+                if with_cve:
+                    draw_cves(main_axis, project, unique_revisions, plot_cfg)
+                if with_bugs:
+                    draw_bugs(main_axis, project, unique_revisions, plot_cfg)
 
         # draw churn subplot
         if with_churn:
