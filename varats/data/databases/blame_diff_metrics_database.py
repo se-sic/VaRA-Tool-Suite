@@ -17,6 +17,9 @@ from varats.data.reports.blame_report import (
     generate_author_degree_tuples,
     generate_avg_time_distribution_tuples,
     generate_max_time_distribution_tuples,
+    count_interactions,
+    count_interacting_commits,
+    count_interacting_authors,
 )
 from varats.data.reports.commit_report import CommitMap
 from varats.data.revisions import (
@@ -34,7 +37,8 @@ class BlameDiffMetricsDatabase(
     EvaluationDatabase,
     cache_id="blame_diff_metrics_data",
     columns=[
-        "churn_total", "diff_ci_total", "ci_degree_mean", "author_mean",
+        "churn", "num_interactions", "num_interacting_commits",
+        "num_interacting_authors", "ci_degree_mean", "author_mean",
         "avg_time_mean", "ci_degree_max", "author_max", "avg_time_max", "year"
     ]
 ):
@@ -65,8 +69,13 @@ class BlameDiffMetricsDatabase(
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
-            df_layout.churn_total = df_layout.churn_total.astype('int64')
-            df_layout.diff_ci_total = df_layout.diff_ci_total.astype('int64')
+            df_layout.churn = df_layout.churn.astype('int64')
+            df_layout.num_interactions = \
+                df_layout.num_interactions.astype('int64')
+            df_layout.num_interacting_commits = \
+                df_layout.num_interacting_commits.astype('int64')
+            df_layout.num_interacting_authors = \
+                df_layout.num_interacting_authors.astype('int64')
             df_layout.year = df_layout.year.astype('int64')
             return df_layout
 
@@ -81,16 +90,6 @@ class BlameDiffMetricsDatabase(
             commit_date = datetime.utcfromtimestamp(commit.commit_time)
 
             diff_between_head_pred = BlameReportDiff(head_report, pred_report)
-
-            # Calculate the total number of commit interactions between the pred
-            # and base BlameReport
-            ci_total_inters = [
-                # we use abs here because we want to capute the total change
-                abs(interaction.amount)
-                for func_entry in diff_between_head_pred.function_entries
-                for interaction in func_entry.interactions
-            ]
-            ci_total = reduce(lambda x, y: x + y, ci_total_inters, 0)
 
             # Calculate the total churn between pred and base commit
             code_churn = calc_code_churn_range(
@@ -122,10 +121,16 @@ class BlameDiffMetricsDatabase(
                 pd.DataFrame({
                     'revision':
                         head_report.head_commit,
-                    'churn_total':
+                    'churn':
                         total_churn,
-                    'diff_ci_total':
-                        ci_total,
+                    'num_interactions':
+                        count_interactions(diff_between_head_pred),
+                    'num_interacting_commits':
+                        count_interacting_commits(diff_between_head_pred),
+                    'num_interacting_authors':
+                        count_interacting_authors(
+                            diff_between_head_pred, project_name
+                        ),
                     "ci_degree_mean":
                         weighted_avg(
                             generate_degree_tuples(diff_between_head_pred)

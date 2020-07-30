@@ -145,9 +145,5 @@ class RepoChurnPlot(Plot):
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
-    def show(self) -> None:
-        self.plot(True)
-        plt.show()
-
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError

@@ -150,9 +150,5 @@ class PaperConfigOverviewPlot(Plot):
 
         axis.set_axis_off()
 
-    def show(self) -> None:
-        self.plot(True)
-        plt.show()
-
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError

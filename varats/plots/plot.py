@@ -1,12 +1,15 @@
 """Base plot module."""
 
 import abc
+import logging
 import typing as tp
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 
 from varats.plots.plots import PlotRegistry
+
+LOG = logging.getLogger(__name__)
 
 
 class PlotDataEmpty(Exception):
@@ -72,9 +75,15 @@ class Plot(metaclass=PlotRegistry):
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
 
-    @abc.abstractmethod
     def show(self) -> None:
         """Show the current plot."""
+        try:
+            self.plot(True)
+        except PlotDataEmpty:
+            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            return
+        plt.show()
+        plt.close()
 
     def save(
         self, path: tp.Optional[Path] = None, filetype: str = 'svg'
@@ -86,7 +95,11 @@ class Plot(metaclass=PlotRegistry):
             path: The path where the file is stored (excluding the file name).
             filetype: The file type of the plot.
         """
-        self.plot(False)
+        try:
+            self.plot(False)
+        except PlotDataEmpty:
+            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            return
 
         if path is None:
             plot_dir = Path(self.plot_kwargs["plot_dir"])
@@ -106,6 +119,7 @@ class Plot(metaclass=PlotRegistry):
             bbox_inches="tight",
             format=filetype
         )
+        plt.close()
 
     @abc.abstractmethod
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
