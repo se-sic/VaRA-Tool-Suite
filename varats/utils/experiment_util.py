@@ -11,6 +11,7 @@ from pathlib import Path
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
 from benchbuild.utils.actions import Step, StepResult
+from benchbuild.utils.cmd import prlimit
 from plumbum.commands import ProcessExecutionError
 
 from varats.data.report import BaseReport, FileStatusExtension
@@ -137,23 +138,18 @@ def get_default_compile_error_wrapped(
     )
 
 
-class UnlimitStackSize(Step):  # type: ignore
+def wrap_unlimit_stack_size(cmd: tp.Callable[..., tp.Any]) -> tp.Any:
     """
-    Set higher user limits on stack size for RAM intense experiments.
+    Wraps a command with prlimit to be executed with max stack size, i.e.,
+    setting the soft limit to the hard limit.
 
-    Basically the same as calling the shell built-in ulimit.
+    Args:
+        cmd: command that should be executed with max stack size
+
+    Returns: wrapped command
     """
-
-    NAME = "Unlimit stack size"
-    DESCRIPTION = "Sets new resource limits."
-
-    def __init__(self, project: Project):
-        super(UnlimitStackSize,
-              self).__init__(obj=project, action_fn=self.__call__)
-
-    def __call__(self) -> StepResult:
-        """Same as 'ulimit -s 16777216' in a shell."""
-        resource.setrlimit(resource.RLIMIT_STACK, (16777216, 16777216))
+    max_stacksize_16gb = 17179869184
+    return prlimit[f"--stack={max_stacksize_16gb}:", cmd]
 
 
 class VersionExperiment(Experiment):  # type: ignore

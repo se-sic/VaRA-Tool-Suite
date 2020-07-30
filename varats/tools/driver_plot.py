@@ -5,12 +5,7 @@ import logging
 import typing as tp
 from pathlib import Path
 
-from varats.paper.case_study import load_case_study_from_file
-from varats.paper.paper_config import get_paper_config
-from varats.plots.plot import PlotDataEmpty
 from varats.plots.plots import PlotRegistry, build_plot
-from varats.settings import vara_cfg
-from varats.tools.commit_map import create_lazy_commit_map_loader
 from varats.utils.cli_util import initialize_cli_tool
 
 LOG = logging.getLogger(__name__)
@@ -87,47 +82,7 @@ def __plot(args: tp.Dict[str, tp.Any]) -> None:
     else:
         extra_args = {}
 
-    # Setup default result folder
-    if 'result_output' not in args:
-        args['plot_dir'] = str(vara_cfg()['plots']['plot_dir'])
-    else:
-        args['plot_dir'] = args['result_output']
-        del args['result_output']  # clear parameter
-
-    if not Path(args['plot_dir']).exists():
-        LOG.error(f"Could not find output dir {args['plot_dir']}")
-        return
-
-    LOG.info(f"Writing plots to: {args['plot_dir']}")
-
-    if args['paper_config']:
-        paper_config = get_paper_config()
-        for case_study in paper_config.get_all_case_studies():
-            project_name = case_study.project_name
-            args['project'] = project_name
-            args['get_cmap'] = create_lazy_commit_map_loader(
-                project_name, args.get('cmap', None)
-            )
-            args['plot_case_study'] = case_study
-            try:
-                build_plot(**args, **extra_args)
-            except PlotDataEmpty:
-                LOG.error(
-                    f"Could not build plot for {project_name}: "
-                    f"There was no data."
-                )
-    else:
-        if 'project' in args:
-            args['get_cmap'] = create_lazy_commit_map_loader(
-                args['project'], args.get('cmap', None)
-            )
-        if 'cs_path' in args:
-            case_study_path = Path(args['cs_path'])
-            args['plot_case_study'] = load_case_study_from_file(case_study_path)
-        else:
-            args['plot_case_study'] = None
-
-        build_plot(**args, **extra_args)
+    build_plot(**args, **extra_args)
 
 
 if __name__ == '__main__':
