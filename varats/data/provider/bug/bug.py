@@ -63,9 +63,9 @@ def find_all_pygit_bugs(project_name: str) -> tp.FrozenSet[PygitBug]:
     """
     Creates a set of all bugs.
 
-    :param project_name:
-        Name of the project in which to search for bugs
-    :return:
+    Args:
+        project_name: Name of the project in which to search for bugs
+    Returns:
         A set of PygitBug Objects.
     """
     pygit_bugs: tp.Set[PygitBug] = set()
@@ -79,9 +79,9 @@ def find_all_raw_bugs(project_name: str) -> tp.FrozenSet[RawBug]:
     """
     Creates a set of all bugs.
 
-    :param project_name:
-        Name of the project in which to search for bugs
-    :return:
+    Args:
+        project_name: Name of the project in which to search for bugs
+    Returns:
         A set of RawBug Objects.
     """
     hash_bugs: tp.Set[RawBug] = set()
@@ -92,71 +92,68 @@ def find_all_raw_bugs(project_name: str) -> tp.FrozenSet[RawBug]:
 
 
 def find_pygit_bug_by_fix(project_name: str,
-                          fixing_commit: str) -> tp.Optional[PygitBug]:
+                          fixing_commit: str) -> tp.FrozenSet[PygitBug]:
     """
     Find the bug associated to some fixing commit, if there is any.
 
-    :param project_name:
-        Name of the project in which to search for bugs
-    :param fixing_commit:
-        Commit Hash of the potentially fixing commit
-    :return:
+    Args:
+        project_name: Name of the project in which to search for bugs
+        fixing_commit: Commit Hash of the potentially fixing commit
+    Returns:
         A PygitBug Object, if there is such a bug
         None, if there is no such bug
     """
     # TODO implement
 
-    return None
+    return frozenset(set())
 
 
 def find_raw_bug_by_fix(project_name: str,
-                        fixing_commit: str) -> tp.Optional[RawBug]:
+                        fixing_commit: str) -> tp.FrozenSet[RawBug]:
     """
     Find the bug associated to some fixing commit, if there is any.
 
-    :param project_name:
-        Name of the project in which to search for bugs
-    :param fixing_commit:
-        Commit Hash of the potentially fixing commit
-    :return:
+    Args:
+        project_name: Name of the project in which to search for bugs
+        fixing_commit: Commit Hash of the potentially fixing commit
+    Returns:
         A RawBug Object, if there is such a bug
         None, if there is no such bug
     """
     # TODO implement
 
-    return None
+    return frozenset(set())
 
 
 def find_pygit_bug_by_introduction(
     project_name: str, introducing_commit: str
-) -> tp.List[PygitBug]:
+) -> tp.FrozenSet[PygitBug]:
     """
     Create a (potentially empty) list of bugs introduced by a certain commit.
 
-    :param project_name:
-        Name of the project in which to search for bugs
-    :param introducing_commit:
-        Commit Hash of the introducing commit to look for
-    :return:
+    Args:
+        project_name: Name of the project in which to search for bugs
+        introducing_commit: Commit Hash of the introducing commit to look for
+    Returns:
         A list of PygitBug Objects
     """
     # TODO implement
 
-    return []
+    return frozenset(set())
 
 
-def find_raw_bug_by_introduction(project_name: str,
-                                 introducing_commit: str) -> tp.List[RawBug]:
+def find_raw_bug_by_introduction(
+    project_name: str, introducing_commit: str
+) -> tp.FrozenSet[RawBug]:
     """
     Create a (potentially empty) list of bugs introduced by a certain commit.
 
-    :param project_name:
-        Name of the project in which to search for bugs
-    :param introducing_commit:
-        Commit Hash of the introducing commit to look for
-    :return:
+    Args:
+        project_name: Name of the project in which to search for bugs
+        introducing_commit: Commit Hash of the introducing commit to look for
+    Returns:
         A list of RawBug Objects
     """
     # TODO implement
 
-    return []
+    return frozenset(set())
