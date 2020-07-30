@@ -66,7 +66,7 @@ def find_all_pygit_bugs(project_name: str) -> tp.FrozenSet[PygitBug]:
     Args:
         project_name: Name of the project in which to search for bugs
     Returns:
-        A set of PygitBug Objects.
+        A set of PygitBugs.
     """
     pygit_bugs: tp.Set[PygitBug] = set()
 
@@ -82,7 +82,7 @@ def find_all_raw_bugs(project_name: str) -> tp.FrozenSet[RawBug]:
     Args:
         project_name: Name of the project in which to search for bugs
     Returns:
-        A set of RawBug Objects.
+        A set of RawBugs.
     """
     hash_bugs: tp.Set[RawBug] = set()
 
@@ -100,12 +100,11 @@ def find_pygit_bug_by_fix(project_name: str,
         project_name: Name of the project in which to search for bugs
         fixing_commit: Commit Hash of the potentially fixing commit
     Returns:
-        A PygitBug Object, if there is such a bug
-        None, if there is no such bug
+        A set of PygitBugs fixed by fixing_commit
     """
     # TODO implement
 
-    return frozenset(set())
+    return frozenset()
 
 
 def find_raw_bug_by_fix(project_name: str,
@@ -117,12 +116,11 @@ def find_raw_bug_by_fix(project_name: str,
         project_name: Name of the project in which to search for bugs
         fixing_commit: Commit Hash of the potentially fixing commit
     Returns:
-        A RawBug Object, if there is such a bug
-        None, if there is no such bug
+        A set of RawBugs fixed by fixing_commit
     """
     # TODO implement
 
-    return frozenset(set())
+    return frozenset()
 
 
 def find_pygit_bug_by_introduction(
@@ -135,11 +133,11 @@ def find_pygit_bug_by_introduction(
         project_name: Name of the project in which to search for bugs
         introducing_commit: Commit Hash of the introducing commit to look for
     Returns:
-        A list of PygitBug Objects
+        A set of PygitBugs introduced by introducing_commit
     """
     # TODO implement
 
-    return frozenset(set())
+    return frozenset()
 
 
 def find_raw_bug_by_introduction(
@@ -152,8 +150,8 @@ def find_raw_bug_by_introduction(
         project_name: Name of the project in which to search for bugs
         introducing_commit: Commit Hash of the introducing commit to look for
     Returns:
-        A list of RawBug Objects
+        A set of RawBugs introduced by introducing_commit
     """
     # TODO implement
 
-    return frozenset(set())
+    return frozenset()
