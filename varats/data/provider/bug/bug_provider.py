@@ -4,6 +4,8 @@ import re
 import typing as tp
 
 from benchbuild.project import Project
+from github import Github
+from github.Repository import Repository
 
 import varats.data.provider.bug.bug as bug
 from varats.data.provider.provider import Provider
@@ -41,8 +43,8 @@ class BugProvider(Provider):
         """
         Creates a set for all bugs of the provider's project.
 
-        :return:
-            A set of PygitBug Objects.
+        Returns:
+            A set of PygitBugs.
         """
         if self.__github_project_name:
             return bug.find_all_pygit_bugs(self.__github_project_name)
@@ -52,84 +54,86 @@ class BugProvider(Provider):
         """
         Creates a set for all bugs of the provider's project.
 
-        :return:
-            A set of RawBug Objects.
+        Returns:
+            A set of RawBugs.
         """
         if self.__github_project_name:
             return bug.find_all_raw_bugs(self.__github_project_name)
         return frozenset()
 
     def find_pygit_bug_by_fix(self,
-                              fixing_commit: str) -> tp.Optional[bug.PygitBug]:
+                              fixing_commit: str) -> tp.FrozenSet[bug.PygitBug]:
         """
         Find the bug associated to some fixing commit in the provider's project,
         if there is any.
 
-        :param fixing_commit:
-            Commit Hash of the potentially fixing commit
-        :return:
-            A PygitBug Object, if there is such a bug
-            None, if there is no such bug
+        Args:
+            fixing_commit: Commit Hash of the potentially fixing commit
+
+        Returns:
+            A set of PygitBugs fixed by fixing_commit
         """
         if self.__github_project_name:
             return bug.find_pygit_bug_by_fix(
                 self.__github_project_name, fixing_commit
             )
-        return None
+        return frozenset()
 
     def find_raw_bug_by_fix(self,
-                            fixing_commit: str) -> tp.Optional[bug.RawBug]:
+                            fixing_commit: str) -> tp.FrozenSet[bug.RawBug]:
         """
         Find the bug associated to some fixing commit in the provider's project,
         if there is any.
 
-        :param fixing_commit:
-            Commit Hash of the potentially fixing commit
-        :return:
-            A RawBug Object, if there is such a bug
-            None, if there is no such bug
+        Args:
+            fixing_commit: Commit Hash of the potentially fixing commit
+
+        Returns:
+            A set of RawBugs fixed by fixing_commit
         """
         if self.__github_project_name:
             return bug.find_raw_bug_by_fix(
                 self.__github_project_name, fixing_commit
             )
-        return None
+        return frozenset()
 
     def find_pygit_bug_by_introduction(
         self, introducing_commit: str
-    ) -> tp.List[bug.PygitBug]:
+    ) -> tp.FrozenSet[bug.PygitBug]:
         """
         Create a (potentially empty) list of bugs introduced by a certain commit
         to the provider's project.
 
-        :param introducing_commit:
-            Commit Hash of the introducing commit to look for
-        :return:
-            A list of PygitBug Objects
+        Args:
+            introducing_commit: Commit Hash of the introducing commit to look for
+
+        Returns:
+            A set of PygitBugs introduced by introducing_commit
         """
         if self.__github_project_name:
             return bug.find_pygit_bug_by_introduction(
                 self.__github_project_name, introducing_commit
             )
-        return []
+        return frozenset()
 
     def find_raw_bug_by_introduction(
         self, introducing_commit: str
-    ) -> tp.List[bug.RawBug]:
+    ) -> tp.FrozenSet[bug.RawBug]:
         """
         Create a (potentially empty) list of bugs introduced by a certain
         commit.
 
-        :param introducing_commit:
-            Commit Hash of the introducing commit to look for
-        :return:
-            A list of RawBug Objects
+        Args:
+            introducing_commit: Commit Hash of the introducing commit to look for
+
+        Returns:
+            A set of RawBugs introduced by introducing_commit
         """
         if self.__github_project_name:
             return bug.find_raw_bug_by_introduction(
                 self.__github_project_name, introducing_commit
             )
-        return []
+        return frozenset()
 
 
 class BugDefaultProvider(BugProvider):
@@ -141,25 +145,25 @@ class BugDefaultProvider(BugProvider):
         super(BugProvider, self).__init__(project)
 
     def find_all_pygit_bugs(self) -> tp.FrozenSet[bug.PygitBug]:
-        return frozenset(set())
+        return frozenset()
 
     def find_all_raw_bugs(self) -> tp.FrozenSet[bug.RawBug]:
-        return frozenset(set())
+        return frozenset()
 
     def find_pygit_bug_by_fix(self,
-                              fixing_commit: str) -> tp.Optional[bug.PygitBug]:
-        return None
+                              fixing_commit: str) -> tp.FrozenSet[bug.PygitBug]:
+        return frozenset()
 
     def find_raw_bug_by_fix(self,
-                            fixing_commit: str) -> tp.Optional[bug.RawBug]:
-        return None
+                            fixing_commit: str) -> tp.FrozenSet[bug.RawBug]:
+        return frozenset()
 
     def find_pygit_bug_by_introduction(
         self, introducing_commit: str
-    ) -> tp.List[bug.PygitBug]:
-        return []
+    ) -> tp.FrozenSet[bug.PygitBug]:
+        return frozenset()
 
     def find_raw_bug_by_introduction(
         self, introducing_commit: str
-    ) -> tp.List[bug.RawBug]:
-        return []
+    ) -> tp.FrozenSet[bug.RawBug]:
+        return frozenset()
