@@ -117,7 +117,8 @@ class BlameVerifierReportNoOpt(BlameVerifierReportParserMixin, BaseReport):
 
     @property
     def head_commit(self) -> str:
-        """The current HEAD commit under which this CommitReport was created."""
+        """The current HEAD commit under which this BlameVerifierReportNoOpt was
+        created."""
         return BlameVerifierReportNoOpt.get_commit_hash_from_result_file(
             Path(self.path).name
         )
@@ -166,7 +167,8 @@ class BlameVerifierReportOpt(BlameVerifierReportParserMixin, BaseReport):
 
     @property
     def head_commit(self) -> str:
-        """The current HEAD commit under which this CommitReport was created."""
+        """The current HEAD commit under which this BlameVerifierReportOpt was
+        created."""
         return BlameVerifierReportOpt.get_commit_hash_from_result_file(
             Path(self.path).name
         )
