@@ -46,6 +46,7 @@ def generate_benchbuild_config(
         'varats.projects.c_projects.lrzip',
         'varats.projects.c_projects.lz4',
         'varats.projects.c_projects.openssl',
+        'varats.projects.c_projects.openvpn',
         'varats.projects.c_projects.opus',
         'varats.projects.c_projects.qemu',
         'varats.projects.c_projects.redis',
@@ -53,7 +54,7 @@ def generate_benchbuild_config(
         'varats.projects.c_projects.vim',
         'varats.projects.c_projects.x264',
         'varats.projects.c_projects.xz',
-        'varats.projects.c_projects.openvpn',
+        'varats.projects.cpp_projects.mongodb',
     ]
     projects_conf.value[:] += ['varats.projects.cpp_projects.doxygen']
     projects_conf.value[:] += ['varats.projects.test_projects.basic_tests']
