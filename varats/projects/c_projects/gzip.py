@@ -30,23 +30,23 @@ class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
     DOMAIN = 'compression'
 
     SOURCE = [
-        # block_revisions([
-        #     # TODO (se-passau/VaRA#537): glibc < 2.28
-        #     # see e.g. https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=915151
-        #     RevisionRange(
-        #         "6ef28aeb035af20818578b1a1bc537f797c27029",
-        #         "203e40cc4558a80998d05eb74b373a51e796ca8b", "Needs glibc < 2.28"
-        #     )
-        # ])(
-        bb.source.Git(
-            remote="https://git.savannah.gnu.org/git/gzip.git",
-            local="gzip",
-            refspec="HEAD",
-            limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("gzip")
+        block_revisions([
+            # TODO (se-passau/VaRA#537): glibc < 2.28
+            # see e.g. https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=915151
+            RevisionRange(
+                "6ef28aeb035af20818578b1a1bc537f797c27029",
+                "203e40cc4558a80998d05eb74b373a51e796ca8b", "Needs glibc < 2.28"
+            )
+        ])(
+            bb.source.Git(
+                remote="https://git.savannah.gnu.org/git/gzip.git",
+                local="gzip",
+                refspec="HEAD",
+                limit=None,
+                shallow=False,
+                version_filter=project_filter_generator("gzip")
+            )
         )
-        # )
     ]
 
     @property
