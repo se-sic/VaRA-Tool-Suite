@@ -117,7 +117,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
             # Put together the path to the bc file and the opt command of vara
             vara_run_cmd = opt[
                 "-vara-BD", "-vara-init-commits", "-vara-verify-blameMD",
-                "-vara-verifier-options=Status", "{cache_folder}/{bc_file}".
+                "-vara-verifier-options=All", "{cache_folder}/{bc_file}".
                 format(cache_folder=bc_cache_folder, bc_file=bc_target_file),
                 "-o", "/dev/null"]
 

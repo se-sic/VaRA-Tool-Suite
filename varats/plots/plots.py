@@ -3,8 +3,11 @@ import logging
 import re
 import sys
 import typing as tp
+from pathlib import Path
 
 from varats.plots.plot_utils import check_required_args
+from varats.settings import vara_cfg
+from varats.tools.commit_map import create_lazy_commit_map_loader
 
 if tp.TYPE_CHECKING:
     import varats.plots.plot  # pylint: disable=W0611
@@ -70,8 +73,8 @@ class PlotRegistry(type):
         return plot_cls
 
 
-@check_required_args(['plot_type', 'view', 'sep_stages'])
-def build_plot(**kwargs: tp.Any) -> None:
+@check_required_args(['plot_type', 'file_type', 'view', 'sep_stages'])
+def render_plot(**kwargs: tp.Any) -> None:
     """Build the specified graph."""
     plot_type = PlotRegistry.get_class_for_plot_type(kwargs['plot_type'])
 
@@ -87,4 +90,59 @@ def build_plot(**kwargs: tp.Any) -> None:
     if kwargs["view"]:
         plot.show()
     else:
-        plot.save(filetype='png')
+        plot.save(filetype=kwargs['file_type'])
+
+
+def build_plot(**args: tp.Any) -> None:
+    """
+    Build the specified plot.
+
+    First, compute missing arguments that are needed by most plots.
+    """
+    from varats.paper.case_study import load_case_study_from_file
+    from varats.paper.paper_config import get_paper_config
+
+    # Setup default result folder
+    if 'result_output' not in args:
+        args['plot_dir'] = str(vara_cfg()['plots']['plot_dir'])
+    else:
+        args['plot_dir'] = args['result_output']
+        del args['result_output']  # clear parameter
+
+    if not Path(args['plot_dir']).exists():
+        LOG.error(f"Could not find output dir {args['plot_dir']}")
+        return
+
+    if 'file_type' not in args:
+        args['file_type'] = 'png'
+    if 'view' not in args:
+        args['view'] = False
+    if 'sep_stages' not in args:
+        args['sep_stages'] = False
+    if 'paper_config' not in args:
+        args['paper_config'] = False
+
+    LOG.info(f"Writing plots to: {args['plot_dir']}")
+
+    if args['paper_config']:
+        paper_config = get_paper_config()
+        for case_study in paper_config.get_all_case_studies():
+            project_name = case_study.project_name
+            args['project'] = project_name
+            args['get_cmap'] = create_lazy_commit_map_loader(
+                project_name, args.get('cmap', None)
+            )
+            args['plot_case_study'] = case_study
+            render_plot(**args)
+    else:
+        if 'project' in args:
+            args['get_cmap'] = create_lazy_commit_map_loader(
+                args['project'], args.get('cmap', None)
+            )
+        if 'cs_path' in args:
+            case_study_path = Path(args['cs_path'])
+            args['plot_case_study'] = load_case_study_from_file(case_study_path)
+        else:
+            args['plot_case_study'] = None
+
+        render_plot(**args)

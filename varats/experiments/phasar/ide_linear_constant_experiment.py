@@ -14,8 +14,8 @@ from varats.experiments.wllvm import Extract, RunWLLVM
 from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     PEErrorHandler,
-    UnlimitStackSize,
     VersionExperiment,
+    wrap_unlimit_stack_size,
     get_default_compile_error_wrapped,
     exec_func_with_pe_error_handler,
 )
@@ -81,6 +81,8 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
             run_cmd = (
                 phasar[phasar_params] > f'{varats_result_folder}/{result_file}'
             )
+
+            run_cmd = wrap_unlimit_stack_size(run_cmd)
 
             exec_func_with_pe_error_handler(
                 run_cmd,
@@ -169,7 +171,6 @@ class IDELinearConstantAnalysisExperiment(VersionExperiment):
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(Extract(project, handler=error_handler))
 
-        analysis_actions.append(UnlimitStackSize(project))
         analysis_actions.append(IDELinearConstantAnalysis(project))
         analysis_actions.append(actions.Clean(project))
 

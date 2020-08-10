@@ -156,6 +156,13 @@ _CFG['artefacts'] = {
     },
 }
 
+_CFG['provider'] = {
+    "github_access_token": {
+        "desc": "GitHub access token",
+        "default": None,
+    }
+}
+
 
 def vara_cfg() -> s.Configuration:
     """Get the current vara config."""

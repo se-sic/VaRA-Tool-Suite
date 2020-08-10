@@ -14,6 +14,7 @@ from varats.data.databases.blame_interaction_degree_database import (
     DegreeType,
 )
 from varats.data.reports.commit_report import CommitMap
+from varats.plots.bug_annotation import draw_bugs
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.plot import Plot, PlotDataEmpty
 from varats.plots.repository_churn import draw_code_churn
@@ -60,10 +61,6 @@ class BlameDegree(Plot):
     @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
-
-    @abc.abstractmethod
-    def show(self) -> None:
-        """Show the current plot."""
 
     def _get_degree_data(self) -> pd.DataFrame:
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
@@ -126,7 +123,7 @@ class BlameDegree(Plot):
         fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
         fig.suptitle(
             str(plot_cfg['fig_title']) +
-            ' - Project {}'.format(self.plot_kwargs["project"]),
+            f' - Project {self.plot_kwargs["project"]}',
             fontsize=8
         )
 
@@ -162,12 +159,16 @@ class BlameDegree(Plot):
 
         # annotate CVEs
         with_cve = self.plot_kwargs.get("with_cve", False)
-        if with_cve:
+        with_bugs = self.plot_kwargs.get("with_bugs", False)
+        if with_cve or with_bugs:
             if "project" not in self.plot_kwargs:
-                LOG.error("with_cve is true but no project is given.")
+                LOG.error("Need a project to annotate bug or CVE data.")
             else:
                 project = get_project_cls_by_name(self.plot_kwargs["project"])
-                draw_cves(main_axis, project, unique_revisions, plot_cfg)
+                if with_cve:
+                    draw_cves(main_axis, project, unique_revisions, plot_cfg)
+                if with_bugs:
+                    draw_bugs(main_axis, project, unique_revisions, plot_cfg)
 
         # draw churn subplot
         if with_churn:
@@ -280,10 +281,6 @@ class BlameInteractionDegree(BlameDegree):
         }
         self._degree_plot(view_mode, DegreeType.interaction, extra_plot_cfg)
 
-    def show(self) -> None:
-        self.plot(True)
-        plt.show()
-
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
             DegreeType.interaction, boundary_gradient
@@ -304,10 +301,6 @@ class BlameAuthorDegree(BlameDegree):
             'fig_title': 'Author blame interactions'
         }
         self._degree_plot(view_mode, DegreeType.author, extra_plot_cfg)
-
-    def show(self) -> None:
-        self.plot(True)
-        plt.show()
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
@@ -332,10 +325,6 @@ class BlameMaxTimeDistribution(BlameDegree):
         }
         self._degree_plot(view_mode, DegreeType.max_time, extra_plot_cfg)
 
-    def show(self) -> None:
-        self.plot(True)
-        plt.show()
-
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
             DegreeType.max_time, boundary_gradient
@@ -358,10 +347,6 @@ class BlameAvgTimeDistribution(BlameDegree):
             'edgecolor': None,
         }
         self._degree_plot(view_mode, DegreeType.avg_time, extra_plot_cfg)
-
-    def show(self) -> None:
-        self.plot(True)
-        plt.show()
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(

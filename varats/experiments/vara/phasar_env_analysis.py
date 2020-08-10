@@ -24,7 +24,7 @@ from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     FunctionPEErrorWrapper,
     PEErrorHandler,
-    UnlimitStackSize,
+    wrap_unlimit_stack_size,
     exec_func_with_pe_error_handler,
 )
 
@@ -106,6 +106,8 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
                 "{res_folder}/{res_file}".
                 format(res_folder=result_folder, res_file=result_file)]
 
+            phasar_run_cmd = wrap_unlimit_stack_size(phasar_run_cmd)
+
             # Run the phasar command with custom error handler and timeout
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration, phasar_run_cmd],
@@ -176,7 +178,6 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
                 analysis_actions.append(Extract(project))
                 break
 
-        analysis_actions.append(UnlimitStackSize(project))
         analysis_actions.append(PhasarEnvIFDS(project))
         analysis_actions.append(actions.Clean(project))
 
