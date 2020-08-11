@@ -41,7 +41,7 @@ class Vim(bb.Project):  # type: ignore
         pass
 
     def compile(self) -> None:
-        vim_source = bb.path(self.source_of(self.primary_source))
+        vim_source = bb.path(self.source_of_primary)
 
         clang = bb.compiler.cc(self)
         with local.cwd(vim_source):

@@ -48,7 +48,7 @@ class Redis(bb.Project, CVEProviderHook):  # type: ignore
         pass
 
     def compile(self) -> None:
-        redis_source = bb.path(self.source_of(self.primary_source))
+        redis_source = bb.path(self.source_of_primary)
 
         clang = bb.compiler.cc(self)
         with local.cwd(redis_source):

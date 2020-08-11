@@ -76,14 +76,14 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
             bc_target_file = Extract.get_bc_file_name(
                 project_name=str(project.name),
                 binary_name=str(binary.name),
-                project_version=project.version_of(project.primary_source)
+                project_version=project.version_of_primary
             )
 
             # Define result file.
             result_file = ENVR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=project.version_of(project.primary_source),
+                project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success
             )
@@ -92,7 +92,7 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
             error_file = ENVR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=project.version_of(project.primary_source),
+                project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Failed,
                 file_ext=".txt"
@@ -147,7 +147,7 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
                 ENVR.get_file_name(
                     project_name=str(project.name),
                     binary_name="all",
-                    project_version=project.version_of(project.primary_source),
+                    project_version=project.version_of_primary,
                     project_uuid=str(project.run_uuid),
                     extension_type=FSE.CompileError
                 )
@@ -167,8 +167,7 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
                     ) + Extract.get_bc_file_name(
                         project_name=str(project.name),
                         binary_name=binary.name,
-                        project_version=project.
-                        version_of(project.primary_source)
+                        project_version=project.version_of_primary
                     )
                 )
             )

@@ -32,7 +32,7 @@ class BasicTests(bb.Project):  # type: ignore
         pass
 
     def compile(self) -> None:
-        source = bb.path(self.source_of(self.primary_source))
+        source = bb.path(self.source_of_primary)
 
         clang = bb.compiler.cxx(self)
         with local.cwd(source + "/basic-tests"):

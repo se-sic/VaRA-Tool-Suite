@@ -58,7 +58,7 @@ class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
         pass
 
     def compile(self) -> None:
-        gzip_version_source = bb.path(self.source_of(self.primary_source))
+        gzip_version_source = bb.path(self.source_of_primary)
 
         self.cflags += [
             "-Wno-error=string-plus-int", "-Wno-error=shift-negative-value",

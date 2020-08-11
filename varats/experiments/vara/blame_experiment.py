@@ -83,7 +83,7 @@ def generate_basic_blame_experiment_actions(
                 ) + Extract.get_bc_file_name(
                     project_name=str(project.name),
                     binary_name=binary.name,
-                    project_version=project.version_of(project.primary_source),
+                    project_version=project.version_of_primary,
                     bc_file_extensions=bc_file_extensions
                 )
             )

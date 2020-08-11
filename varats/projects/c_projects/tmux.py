@@ -42,7 +42,7 @@ class Tmux(bb.Project, CVEProviderHook):  # type: ignore
         pass
 
     def compile(self) -> None:
-        tmux_source = bb.path(self.source_of(self.primary_source))
+        tmux_source = bb.path(self.source_of_primary)
 
         clang = bb.compiler.cc(self)
         with local.cwd(tmux_source):

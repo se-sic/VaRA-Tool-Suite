@@ -141,13 +141,10 @@ class Extract(actions.Step):  # type: ignore
             bc_cache_file = bc_cache_folder + self.get_bc_file_name(
                 project_name=str(project.name),
                 binary_name=str(binary.name),
-                project_version=project.version_of(project.primary_source),
+                project_version=project.version_of_primary,
                 bc_file_extensions=self.bc_file_extensions
             )
 
-            target_binary = Path(
-                project.source_of(project.primary_source)
-            ) / binary.path
-
+            target_binary = Path(project.source_of_primary) / binary.path
             extract_bc(target_binary)
             cp(str(target_binary) + ".bc", local.path() / bc_cache_file)

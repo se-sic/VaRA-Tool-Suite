@@ -98,7 +98,7 @@ class CRAnalysis(actions.Step):  # type: ignore
             result_file = CR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=project.version_of(project.primary_source),
+                project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success
             )
@@ -121,7 +121,7 @@ class CRAnalysis(actions.Step):  # type: ignore
                 bc_cache_folder / Extract.get_bc_file_name(
                     project_name=project.name,
                     binary_name=binary.name,
-                    project_version=project.version_of(project.primary_source)
+                    project_version=project.version_of_primary
                 )
             )
 
@@ -137,9 +137,7 @@ class CRAnalysis(actions.Step):  # type: ignore
                     CR.get_file_name(
                         project_name=str(project.name),
                         binary_name=binary.name,
-                        project_version=project.version_of(
-                            project.primary_source
-                        ),
+                        project_version=project.version_of_primary,
                         project_uuid=str(project.run_uuid),
                         extension_type=FSE.Failed,
                         file_ext=".txt"
@@ -190,8 +188,7 @@ class CommitReportExperiment(VersionExperiment):
                     ) + Extract.get_bc_file_name(
                         project_name=str(project.name),
                         binary_name=binary.name,
-                        project_version=project.
-                        version_of(project.primary_source)
+                        project_version=project.version_of_primary
                     )
                 )
             )

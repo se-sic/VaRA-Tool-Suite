@@ -51,7 +51,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
             result_file = EmptyReport.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=project.version_of(project.primary_source),
+                project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success
             )
@@ -67,9 +67,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
                     EmptyReport.get_file_name(
                         project_name=str(project.name),
                         binary_name="all",
-                        project_version=project.version_of(
-                            project.primary_source
-                        ),
+                        project_version=project.version_of_primary,
                         project_uuid=str(project.run_uuid),
                         extension_type=FSE.Failed
                     )

@@ -42,7 +42,7 @@ class Libvpx(bb.Project, CVEProviderHook):  # type: ignore
         pass
 
     def compile(self) -> None:
-        libvpx_source = bb.path(self.source_of(self.primary_source))
+        libvpx_source = bb.path(self.source_of_primary)
 
         self.cflags += ["-fPIC"]
 

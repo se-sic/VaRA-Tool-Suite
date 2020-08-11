@@ -46,7 +46,7 @@ class Curl(bb.Project, CVEProviderHook):  # type: ignore
         pass
 
     def compile(self) -> None:
-        curl_source = bb.path(self.source_of(self.primary_source))
+        curl_source = bb.path(self.source_of_primary)
 
         clang = bb.compiler.cc(self)
         with local.cwd(curl_source):

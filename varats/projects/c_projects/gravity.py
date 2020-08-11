@@ -80,7 +80,7 @@ class Gravity(bb.Project, CVEProviderHook):  # type: ignore
     def compile(self) -> None:
 
         gravity_git_path = get_local_project_git_path(self.NAME)
-        gravity_version = self.version_of(self.primary_source)
+        gravity_version = self.version_of_primary
 
         # commit 46133fb47d6da1f0dec27ae23db1d633bc72e9e3 introduced
         # cmake as build system
@@ -95,7 +95,7 @@ class Gravity(bb.Project, CVEProviderHook):  # type: ignore
             self.__compile_make()
 
     def __compile_cmake(self) -> None:
-        gravity_version_source = bb.path(self.source_of(self.primary_source))
+        gravity_version_source = bb.path(self.source_of_primary)
         clang = bb.compiler.cc(self)
         with local.cwd(gravity_version_source):
             with local.env(CC=str(clang)):
@@ -103,7 +103,7 @@ class Gravity(bb.Project, CVEProviderHook):  # type: ignore
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def __compile_make(self) -> None:
-        gravity_version_source = bb.path(self.source_of(self.primary_source))
+        gravity_version_source = bb.path(self.source_of_primary)
         clang = bb.compiler.cc(self)
         with local.cwd(gravity_version_source):
             with local.env(CC=str(clang)):
