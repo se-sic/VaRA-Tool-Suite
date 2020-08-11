@@ -25,6 +25,7 @@ class MockExperiment(EU.VersionExperiment):
 
 
 class TestProject(Project):
+    """Test project for version sampling tests."""
     NAME = "test_empty"
 
     DOMAIN = "debug"

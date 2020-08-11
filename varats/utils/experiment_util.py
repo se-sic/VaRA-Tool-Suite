@@ -153,7 +153,7 @@ def wrap_unlimit_stack_size(cmd: tp.Callable[..., tp.Any]) -> tp.Any:
     return prlimit[f"--stack={max_stacksize_16gb}:", cmd]
 
 
-T = tp.TypeVar('T')
+VersionType = tp.TypeVar('VersionType')
 
 
 class VersionExperiment(Experiment):  # type: ignore
@@ -165,7 +165,9 @@ class VersionExperiment(Experiment):  # type: ignore
         """Get the actions a project wants to run."""
 
     @staticmethod
-    def _sample_num_versions(versions: tp.List[T]) -> tp.List[T]:
+    def _sample_num_versions(
+        versions: tp.List[VersionType]
+    ) -> tp.List[VersionType]:
         if vara_cfg()["experiment"]["sample_limit"].value is None:
             return versions
 

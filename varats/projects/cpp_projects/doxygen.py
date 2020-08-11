@@ -3,11 +3,7 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.utils.cmd import cmake, cp, make
-from benchbuild.utils.revision_ranges import (
-    block_revisions,
-    GoodBadSubgraph,
-    RevisionRange,
-)
+from benchbuild.utils.revision_ranges import block_revisions, GoodBadSubgraph
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 from plumbum.path.utils import delete
