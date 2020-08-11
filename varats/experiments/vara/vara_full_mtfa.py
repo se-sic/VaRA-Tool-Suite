@@ -14,8 +14,8 @@ import typing as tp
 from os import path
 
 import benchbuild.utils.actions as actions
+from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
-from benchbuild.project import Project
 from benchbuild.utils.cmd import mkdir, opt, timeout
 from plumbum import local
 
@@ -75,14 +75,14 @@ class VaraMTFACheck(actions.Step):  # type: ignore
             bc_target_file = Extract.get_bc_file_name(
                 project_name=str(project.name),
                 binary_name=str(binary.name),
-                project_version=str(project.version)
+                project_version=project.version_of_primary
             )
 
             # Define empty success file.
             result_file = TPR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=str(project.version),
+                project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success,
                 file_ext=".ll"
@@ -92,7 +92,7 @@ class VaraMTFACheck(actions.Step):  # type: ignore
             error_file = TPR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=str(project.version),
+                project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Failed,
                 file_ext=TPR.FILE_TYPE
@@ -146,7 +146,7 @@ class VaRATaintPropagation(VersionExperiment):
                 TPR.get_file_name(
                     project_name=str(project.name),
                     binary_name="all",
-                    project_version=str(project.version),
+                    project_version=project.version_of_primary,
                     project_uuid=str(project.run_uuid),
                     extension_type=FSE.CompileError
                 )
@@ -168,7 +168,7 @@ class VaRATaintPropagation(VersionExperiment):
                     ) + Extract.get_bc_file_name(
                         project_name=str(project.name),
                         binary_name=binary.name,
-                        project_version=str(project.version)
+                        project_version=project.version_of_primary
                     )
                 )
             )

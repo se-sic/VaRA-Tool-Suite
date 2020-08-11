@@ -8,6 +8,7 @@ import typing as tp
 from abc import abstractmethod
 from pathlib import Path
 
+import benchbuild.source as source
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
 from benchbuild.utils.actions import Step, StepResult
@@ -129,7 +130,7 @@ def get_default_compile_error_wrapped(
             report_type.get_file_name(
                 project_name=str(project.name),
                 binary_name="all",
-                project_version=str(project.version),
+                project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FileStatusExtension.CompileError,
                 file_ext=".txt"
@@ -152,6 +153,9 @@ def wrap_unlimit_stack_size(cmd: tp.Callable[..., tp.Any]) -> tp.Any:
     return prlimit[f"--stack={max_stacksize_16gb}:", cmd]
 
 
+VersionType = tp.TypeVar('VersionType')
+
+
 class VersionExperiment(Experiment):  # type: ignore
     """Base class for experiments that want to analyze different project
     revisions."""
@@ -161,7 +165,9 @@ class VersionExperiment(Experiment):  # type: ignore
         """Get the actions a project wants to run."""
 
     @staticmethod
-    def _sample_num_versions(versions: tp.List[str]) -> tp.List[str]:
+    def _sample_num_versions(
+        versions: tp.List[VersionType]
+    ) -> tp.List[VersionType]:
         if vara_cfg()["experiment"]["sample_limit"].value is None:
             return versions
 
@@ -174,27 +180,22 @@ class VersionExperiment(Experiment):  # type: ignore
         ]
         return versions
 
-    def sample(
-        self,
-        prj_cls: tp.Type[Project],
-        versions: tp.Optional[tp.List[str]] = None
-    ) -> tp.Generator[str, None, None]:
+    def sample(self,
+               prj_cls: tp.Type[Project]) -> tp.List[source.VariantContext]:
         """
         Adapt version sampling process if needed, otherwise fallback to default
         implementation.
 
         Args:
             prj_cls: project class
-            versions: full list of versions to sample from
 
         Returns:
-            generator that outputs a sequence of sampled versions
+            list of sampled versions
         """
-        if versions is None:
-            versions = []
+        variants = list(source.product(*prj_cls.SOURCE))
 
         if bool(vara_cfg()["experiment"]["random_order"]):
-            random.shuffle(versions)
+            random.shuffle(variants)
 
         fs_blacklist = vara_cfg()["experiment"]["file_status_blacklist"].value
         fs_whitelist = vara_cfg()["experiment"]["file_status_whitelist"].value
@@ -216,23 +217,23 @@ class VersionExperiment(Experiment):  # type: ignore
                     "Experiment sub class does not implement REPORT_TYPE."
                 )
 
-            for revision, file_status in get_tagged_revisions(
-                prj_cls, getattr(self, 'REPORT_TYPE')
-            ):
-                if file_status not in fs_good and revision in versions:
-                    versions.remove(revision)
+            bad_revisions = [
+                revision for revision, file_status in
+                get_tagged_revisions(prj_cls, getattr(self, 'REPORT_TYPE'))
+                if file_status not in fs_good
+            ]
 
-            if not versions:
-                print("Could not find any unprocessed versions.")
-                return
+            variants = list(
+                filter(lambda var: str(var[0]) not in bad_revisions, variants)
+            )
 
-            head, *tail = self._sample_num_versions(versions)
-            yield head
-            if bool(bb_cfg()["versions"]["full"]):
-                for version in tail:
-                    yield version
-        else:
-            versions = self._sample_num_versions(versions)
+        if not variants:
+            print("Could not find any unprocessed variants.")
+            return []
 
-            for val in Experiment.sample(self, prj_cls, versions):
-                yield val
+        variants = self._sample_num_versions(variants)
+
+        if bool(bb_cfg()["versions"]["full"]):
+            return [source.context(*var) for var in variants]
+
+        return [source.context(*variants[0])]

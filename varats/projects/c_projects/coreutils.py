@@ -2,11 +2,8 @@
 import typing as tp
 from pathlib import Path
 
-import benchbuild.project as prj
+import benchbuild as bb
 from benchbuild.utils.cmd import git, make
-from benchbuild.utils.compiler import cc
-from benchbuild.utils.download import with_git
-from benchbuild.utils.run import run
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -19,21 +16,23 @@ from varats.utils.project_util import (
 )
 
 
-@with_git(
-    "https://github.com/coreutils/coreutils.git",
-    refspec="HEAD",
-    shallow_clone=False,
-    version_filter=project_filter_generator("coreutils")
-)
-class Coreutils(prj.Project, CVEProviderHook):  # type: ignore
+class Coreutils(bb.Project, CVEProviderHook):  # type: ignore
     """GNU coretuils / UNIX command-line tools (fetched by Git)"""
 
     NAME = 'coreutils'
     GROUP = 'c_projects'
     DOMAIN = 'utils'
-    VERSION = 'HEAD'
 
-    SRC_FILE = NAME + "-{0}".format(VERSION)
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/coreutils/coreutils.git",
+            local="coreutils",
+            refspec="HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("coreutils")
+        )
+    ]
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
@@ -154,21 +153,22 @@ class Coreutils(prj.Project, CVEProviderHook):  # type: ignore
             'src/dirname',
         ])
 
-    def run_tests(self, runner: run) -> None:
-        with local.cwd(self.SRC_FILE):
-            run(make["-j", get_number_of_jobs(bb_cfg()), "check"])
+    def run_tests(self) -> None:
+        coreutils_source = bb.path(self.source_of_primary)
+        with local.cwd(coreutils_source):
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()), "check")
 
     def compile(self) -> None:
-        self.download()
-        compiler = cc(self)
-        with local.cwd(self.SRC_FILE):
+        coreutils_source = bb.path(self.source_of_primary)
+        compiler = bb.compiler.cc(self)
+        with local.cwd(coreutils_source):
             git("submodule", "init")
             git("submodule", "update")
             with local.env(CC=str(compiler)):
-                run(local["./bootstrap"])
-                run(local["./configure"]["--disable-gcc-warnings"])
+                bb.watch(local["./bootstrap"])()
+                bb.watch(local["./configure"])("--disable-gcc-warnings")
 
-            run(make["-j", get_number_of_jobs(bb_cfg())])
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
             for binary in self.binaries:
                 if not Path("{binary}".format(binary=binary)).exists():
                     print("Could not find {binary}")
