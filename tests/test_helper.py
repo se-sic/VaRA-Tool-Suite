@@ -1,26 +1,22 @@
 """Small helper classes for testing."""
 
-from benchbuild import Project, source
+import typing as tp
+
+import attr
+import plumbum as pb
+from benchbuild.source import Variant, BaseSource
 
 
-class EmptyProject(Project):
-    NAME = "test_empty"
+@attr.s
+class TestSource(BaseSource):
+    test_versions: tp.List[str] = attr.ib()
 
-    DOMAIN = "debug"
-    GROUP = "debug"
-    SOURCE = [source.nosource()]
+    @property
+    def default(self) -> Variant:
+        return Variant(owner=self, version=self.test_versions[0])
 
-    def build(self):
-        pass
+    def version(self, target_dir: str, version: str) -> pb.LocalPath:
+        return pb.local.path('.') / f'varats-test-{version}'
 
-    def configure(self):
-        pass
-
-    def download(self, version=None):
-        pass
-
-    def compile(self):
-        pass
-
-    def run_tests(self) -> None:
-        pass
+    def versions(self) -> tp.Iterable[Variant]:
+        return [Variant(self, v) for v in self.test_versions]

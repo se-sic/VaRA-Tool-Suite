@@ -186,10 +186,9 @@ class VersionExperiment(Experiment):  # type: ignore
 
         Args:
             prj_cls: project class
-            versions: full list of versions to sample from
 
         Returns:
-            generator that outputs a sequence of sampled versions
+            list of sampled versions
         """
         variants = list(source.product(*prj_cls.SOURCE))
 
