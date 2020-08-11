@@ -94,7 +94,7 @@ This can be done with benchbuild's ``block_revisions`` source declaration decora
 This decorator allows you to block single revisions or larger ranges of
 revisions.
 
-To block revisions, just add the ``block_revisions` decorator around a git source declaration::
+To block revisions, just add the ``block_revisions`` decorator around a git source declaration::
 
     from benchbuild.utils.revision_ranges import (
         block_revisions,
