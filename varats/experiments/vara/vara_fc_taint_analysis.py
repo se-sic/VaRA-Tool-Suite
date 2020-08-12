@@ -11,7 +11,7 @@ import typing as tp
 from typing import List
 
 import benchbuild.utils.actions as actions
-from benchbuild.project import Project
+from benchbuild import Project
 from benchbuild.utils.cmd import FileCheck, echo, rm
 from plumbum import ProcessExecutionError
 
@@ -71,7 +71,7 @@ class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
             old_result_file = TPR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=str(project.version),
+                project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success,
                 file_ext=".ll"
@@ -81,7 +81,7 @@ class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
             error_file = "vara-" + TPR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=str(project.version),
+                project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Failed,
                 file_ext=TPR.FILE_TYPE
@@ -96,7 +96,7 @@ class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
             result_file = "vara-" + TPR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=str(project.version),
+                project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success
             )

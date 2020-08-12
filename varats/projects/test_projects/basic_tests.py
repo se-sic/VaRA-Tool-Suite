@@ -1,15 +1,9 @@
 """Small test project to run basic vara tests."""
-import benchbuild.project as prj
-from benchbuild.utils.compiler import cxx
-from benchbuild.utils.download import with_git
-from benchbuild.utils.run import run
+import benchbuild as bb
 from plumbum import local
 
 
-@with_git(
-    "https://github.com/se-passau/vara-perf-tests.git", limit=1, refspec="HEAD"
-)
-class BasicTests(prj.Project):  # type: ignore
+class BasicTests(bb.Project):  # type: ignore
     """
     Basic tests:
 
@@ -20,20 +14,27 @@ class BasicTests(prj.Project):  # type: ignore
     DOMAIN = 'testing'
     GROUP = 'test_projects'
 
-    SRC_FILE = "vara-perf-tests"
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-passau/vara-perf-tests.git",
+            local="basic-tests",
+            limit=1,
+            refspec="HEAD"
+        )
+    ]
 
     test_files = [
         "if.cpp", "loop.cpp", "switch.cpp", "exitOutsideRegion.cpp",
         "overlappingRegions.cpp", "returnInRegion.cpp"
     ]
 
-    def run_tests(self, runner: run) -> None:
+    def run_tests(self) -> None:
         pass
 
     def compile(self) -> None:
-        self.download()
+        source = bb.path(self.source_of_primary)
 
-        clang = cxx(self)
-        with local.cwd(self.SRC_FILE + "/basic-tests"):
+        clang = bb.compiler.cxx(self)
+        with local.cwd(source + "/basic-tests"):
             for test_file in self.test_files:
-                run(clang[test_file, "-o", test_file.replace('.cpp', '')])
+                bb.watch(clang)(test_file, "-o", test_file.replace('.cpp', ''))

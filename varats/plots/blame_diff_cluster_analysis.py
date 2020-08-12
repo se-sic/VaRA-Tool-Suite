@@ -118,7 +118,7 @@ def _plot_cluster_comparison(
             dataset2, n_neighbors=params['n_neighbors'], include_self=False
         )
         # make connectivity symmetric
-        connectivity = 0.5 * (connectivity + connectivity.T)
+        connectivity = 0.5 * (connectivity + connectivity.VersionType)
 
         # Create cluster objects
         clustering_algorithms = _create_cluster_objects(

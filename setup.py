@@ -16,7 +16,7 @@ setup(
         "seaborn>=0.8.0",
         "matplotlib>=3.1.2",
         "pandas>=0.22.0",
-        "benchbuild>=4.1.0,<5.0.0",
+        "benchbuild>=5.2",
         "plumbum>=1.6.6",
         "wllvm>=1.1.4",
         "argparse-utils>=1.2.0",

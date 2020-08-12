@@ -12,9 +12,8 @@ import typing as tp
 from os import path
 
 import benchbuild.utils.actions as actions
-from benchbuild.experiment import Experiment
+from benchbuild import Experiment, Project
 from benchbuild.extensions import compiler, run, time
-from benchbuild.project import Project
 from benchbuild.utils.cmd import mkdir, phasar, timeout
 from plumbum import local
 
@@ -77,14 +76,14 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
             bc_target_file = Extract.get_bc_file_name(
                 project_name=str(project.name),
                 binary_name=str(binary.name),
-                project_version=str(project.version)
+                project_version=project.version_of_primary
             )
 
             # Define result file.
             result_file = ENVR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=str(project.version),
+                project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success
             )
@@ -93,7 +92,7 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
             error_file = ENVR.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=str(project.version),
+                project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Failed,
                 file_ext=".txt"
@@ -148,7 +147,7 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
                 ENVR.get_file_name(
                     project_name=str(project.name),
                     binary_name="all",
-                    project_version=str(project.version),
+                    project_version=project.version_of_primary,
                     project_uuid=str(project.run_uuid),
                     extension_type=FSE.CompileError
                 )
@@ -168,7 +167,7 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
                     ) + Extract.get_bc_file_name(
                         project_name=str(project.name),
                         binary_name=binary.name,
-                        project_version=str(project.version)
+                        project_version=project.version_of_primary
                     )
                 )
             )

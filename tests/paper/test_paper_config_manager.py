@@ -7,6 +7,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import mock
+from benchbuild.source import nosource
 from test_case_study import YAML_CASE_STUDY
 
 import varats.paper.paper_config_manager as PCM
@@ -34,7 +35,7 @@ class TestPaperConfigManager(unittest.TestCase):
         )
         self.addCleanup(gzip_patcher.stop)
         self.mock_gzip = gzip_patcher.start()
-        self.mock_gzip.is_blocked_revision = lambda x: (False, "")
+        self.mock_gzip.SOURCE = [nosource()]
 
         project_util_patcher = mock.patch(
             'varats.paper.case_study.get_project_cls_by_name'
@@ -53,7 +54,7 @@ class TestPaperConfigManager(unittest.TestCase):
             return False, ""
 
         # block a revision
-        self.mock_gzip.is_blocked_revision = is_blocked_revision
+        self.mock_gzip.SOURCE[0].is_blocked_revision = is_blocked_revision
         # Revision not in set
         mock_get_tagged_revisions.return_value = [
             ('42b25e7f15', FileStatusExtension.Success)
