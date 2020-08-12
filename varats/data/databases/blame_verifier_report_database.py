@@ -36,9 +36,6 @@ class BlameVerifierReportDatabase(
         case_study: tp.Optional[CaseStudy], **kwargs: tp.Dict[str, tp.Any]
     ) -> pd.DataFrame:
 
-        # Decide in nested methods what the loaded report type is
-        bvr_type = MetaReport
-
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
             df_layout.opt_level = df_layout.opt_level.astype('int64')
@@ -51,19 +48,18 @@ class BlameVerifierReportDatabase(
         def create_data_frame_for_report(
             report_path: Path
         ) -> tp.Tuple[pd.DataFrame, str, str]:
-            nonlocal bvr_type
 
             report_opt = load_blame_verifier_report_opt(report_path)
             report_no_opt = load_blame_verifier_report_no_opt(report_path)
 
             if report_opt is not None:
                 report = report_opt
-                bvr_type = BlameVerifierReportOpt
                 opt_level = 2
+
             elif report_no_opt is not None:
                 report = report_no_opt
-                bvr_type = BlameVerifierReportNoOpt
                 opt_level = 0
+
             else:
                 raise RuntimeWarning("loaded unknown report type")
 
@@ -86,13 +82,30 @@ class BlameVerifierReportDatabase(
                                     report_path.stat().st_mtime_ns
                                 )
 
-        report_files = get_processed_revisions_files(
-            project_name, bvr_type, get_case_study_file_name_filter(case_study)
+        report_files_opt = get_processed_revisions_files(
+            project_name, BlameVerifierReportOpt,
+            get_case_study_file_name_filter(case_study)
         )
 
-        failed_report_files = get_failed_revisions_files(
-            project_name, bvr_type, get_case_study_file_name_filter(case_study)
+        report_files_no_opt = get_processed_revisions_files(
+            project_name, BlameVerifierReportOpt,
+            get_case_study_file_name_filter(case_study)
         )
+
+        report_files = report_files_opt + report_files_no_opt
+
+        failed_report_files_opt = get_failed_revisions_files(
+            project_name, BlameVerifierReportOpt,
+            get_case_study_file_name_filter(case_study)
+        )
+
+        failed_report_files_no_opt = get_failed_revisions_files(
+            project_name, BlameVerifierReportNoOpt,
+            get_case_study_file_name_filter(case_study)
+        )
+
+        failed_report_files = \
+            failed_report_files_opt + failed_report_files_no_opt
 
         # cls.CACHE_ID is set by superclass
         # pylint: disable=E1101
