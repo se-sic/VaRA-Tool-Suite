@@ -361,6 +361,8 @@ def block_revisions(blocks: tp.List[AbstractRevisionBlocker]) -> tp.Any:
 
 
 class VaraTestRepoSource(Git):
+    """A project source for repositories stored in the vara-test-repos
+    repository."""
 
     __vara_test_repos_git = Git(
         remote="https://github.com/se-passau/vara-test-repos",
@@ -370,6 +372,14 @@ class VaraTestRepoSource(Git):
     )
 
     def fetch(self) -> pb.LocalPath:
+        """
+        Overrides ``Git``s fetch to
+          1. fetch the vara-test-repos repo
+          2. extract the specified repo from the vara-test-repos repo
+
+        Returns:
+            the path where the inner repo is extracted to
+        """
         vara_test_repos_path = self.__vara_test_repos_git.fetch()
 
         # .gitted repo lies at vara_test_repos_path / self.remote

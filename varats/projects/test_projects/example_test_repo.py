@@ -38,6 +38,7 @@ class ExampleTestRepo(bb.Project):  # type: ignore
         pass
 
     def compile(self) -> None:
+        """Compile the example project."""
         source = bb.path(self.source_of_primary)
 
         clang = bb.compiler.cc(self)
