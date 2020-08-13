@@ -360,7 +360,8 @@ def block_revisions(blocks: tp.List[AbstractRevisionBlocker]) -> tp.Any:
     return revision_blocker_decorator
 
 
-class VaraTestRepoSource(Git):
+# ignore type as we do not have appropriate type information from benchbuild
+class VaraTestRepoSource(Git):  # type: ignore
     """A project source for repositories stored in the vara-test-repos
     repository."""
 
