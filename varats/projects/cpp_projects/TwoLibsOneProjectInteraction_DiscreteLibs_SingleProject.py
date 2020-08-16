@@ -73,3 +73,7 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(Project):
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
                 run(make["-j", get_number_of_jobs(bb_cfg())])
+
+    @classmethod
+    def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
+        return [("", "")]  # TODO: naming
