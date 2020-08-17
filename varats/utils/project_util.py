@@ -390,6 +390,7 @@ class VaraTestRepoSource(Git):  # type: ignore
 
         mkdir("-p", tgt_path)
         cp("-r", src_path + "/.", tgt_path)
+
         with local.cwd(tgt_path):
             find(
                 ".", "-depth", "-name", ".gitted", "-execdir", "mv", "-i", "{}",

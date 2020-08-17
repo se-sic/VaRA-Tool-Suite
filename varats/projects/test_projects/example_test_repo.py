@@ -41,6 +41,6 @@ class ExampleTestRepo(bb.Project):  # type: ignore
         """Compile the example project."""
         source = bb.path(self.source_of_primary)
 
-        clang = bb.compiler.cc(self)
+        c_compiler = bb.compiler.cc(self)
         with local.cwd(source):
-            bb.watch(clang)("main.c", "-o", "main")
+            bb.watch(c_compiler)("main.c", "-o", "main")
