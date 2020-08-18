@@ -4,6 +4,7 @@ Generate plots to visualize code churn of a software repository.
 For code churn, we only consider changes in source files.
 """
 import typing as tp
+from itertools import islice
 
 import matplotlib.axes as axes
 import matplotlib.pyplot as plt
@@ -13,7 +14,11 @@ import pandas as pd
 from varats.data.reports.commit_report import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plots.plot import Plot
-from varats.utils.git_util import ChurnConfig, calc_repo_code_churn
+from varats.utils.git_util import (
+    ChurnConfig,
+    calc_repo_code_churn,
+    calc_code_churn,
+)
 from varats.utils.project_util import get_local_project_git
 
 
@@ -61,6 +66,62 @@ def build_repo_churn_table(
     return pd.concat([create_dataframe_layout(), churn_data])
 
 
+def build_revisions_churn_table(
+    project_name: str, commit_map: CommitMap, revisions: tp.List[str]
+) -> pd.DataFrame:
+    """
+    Build a pandas data frame that contains all churn related data for the given
+    list of revisions.
+
+    The churn is calculated as the diff between two successive revisions in
+    the ``revisions`` list.
+
+    Table layout:
+            "revision", "time_id", "insertions", "deletions", "changed_files"
+
+    Args:
+        project_name: name of the project
+        commit_map: CommitMap for the given project(by project_name)
+        revisions: list of revisions used to calculate the churn data
+
+    Returns:
+        a data frame containing the churn data
+    """
+
+    def create_dataframe_layout() -> pd.DataFrame:
+        df_layout = pd.DataFrame(
+            columns=[
+                "revision", "time_id", "insertions", "deletions",
+                "changed_files"
+            ]
+        )
+        df_layout.time_id = df_layout.time_id.astype('int32')
+        df_layout.insertions = df_layout.insertions.astype('int64')
+        df_layout.deletions = df_layout.deletions.astype('int64')
+        df_layout.changed_files = df_layout.changed_files.astype('int64')
+        return df_layout
+
+    repo = get_local_project_git(project_name)
+
+    revision_pairs = zip(*(islice(revisions, i, None) for i in range(2)))
+    code_churn = [(0, 0, 0)]
+    code_churn.extend([
+        calc_code_churn(
+            repo, repo.get(a), repo.get(b),
+            ChurnConfig.create_c_style_languages_config()
+        ) for a, b in revision_pairs
+    ])
+    churn_data = pd.DataFrame({
+        "revision": revisions,
+        "time_id": [commit_map.short_time_id(x) for x in revisions],
+        "insertions": [x[1] for x in code_churn],
+        "deletions": [x[2] for x in code_churn],
+        "changed_files": [x[0] for x in code_churn]
+    })
+
+    return pd.concat([create_dataframe_layout(), churn_data])
+
+
 CODE_CHURN_INSERTION_LIMIT = 1500
 CODE_CHURN_DELETION_LIMIT = 1500
 
@@ -103,6 +164,49 @@ def draw_code_churn(
     clipped_deletions = [
         -x if x < CODE_CHURN_DELETION_LIMIT else -1.3 *
         CODE_CHURN_DELETION_LIMIT for x in code_churn.deletions
+    ]
+
+    axis.set_ylim(-CODE_CHURN_DELETION_LIMIT, CODE_CHURN_INSERTION_LIMIT)
+    axis.fill_between(revisions, clipped_insertions, 0, facecolor='green')
+    axis.fill_between(
+        revisions,
+        # we need a - here to visualize deletions as negative additions
+        clipped_deletions,
+        0,
+        facecolor='red'
+    )
+
+
+def draw_code_churn_for_revisions(
+    axis: axes.Axes, project_name: str, commit_map: CommitMap,
+    revisions: tp.List[str]
+) -> None:
+    """
+    Draws a churn plot onto an axis, showing insertions with green and deletions
+    with red.
+
+    The churn is calculated as the diff between two successive revisions in
+    the ``revisions`` list.
+
+    Args:
+        axis: axis to plot on
+        project_name: name of the project to plot churn for
+        commit_map: CommitMap for the given project(by project_name)
+        revisions: list of revisions used to calculate the churn data
+    """
+    churn_data = build_revisions_churn_table(
+        project_name, commit_map, revisions
+    )
+    revisions = churn_data.time_id.astype(str) + '-' + churn_data.revision.map(
+        lambda x: x[:10]
+    )
+    clipped_insertions = [
+        x if x < CODE_CHURN_INSERTION_LIMIT else 1.3 *
+        CODE_CHURN_INSERTION_LIMIT for x in churn_data.insertions
+    ]
+    clipped_deletions = [
+        -x if x < CODE_CHURN_DELETION_LIMIT else -1.3 *
+        CODE_CHURN_DELETION_LIMIT for x in churn_data.deletions
     ]
 
     axis.set_ylim(-CODE_CHURN_DELETION_LIMIT, CODE_CHURN_INSERTION_LIMIT)
