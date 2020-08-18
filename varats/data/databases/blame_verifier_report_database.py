@@ -50,7 +50,7 @@ class BlameVerifierReportDatabase(
             report_path: Path
         ) -> tp.Tuple[pd.DataFrame, str, str]:
 
-            report_file_name_pattern = re.compile(r"[^\/]+$")
+            report_file_name_pattern = re.compile(r"[^/]+$")
             report_file_name_match = re.search(
                 report_file_name_pattern, str(report_path)
             )
