@@ -17,15 +17,14 @@ from varats.utils.project_util import (
 
 class Bitlbee(bb.Project, CVEProviderHook):  # type: ignore
     """
-    Bitlbee is a modular chat client that is most commonly known for its text
-    mode user interface.
+    BitlBee brings IM (instant messaging) to IRC clients.
 
     (fetched by Git)
     """
 
     NAME = 'bitlbee'
     GROUP = 'c_projects'
-    DOMAIN = 'chat client'
+    DOMAIN = 'chat'
 
     SOURCE = [
         bb.source.Git(

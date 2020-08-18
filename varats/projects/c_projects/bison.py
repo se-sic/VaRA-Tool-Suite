@@ -16,8 +16,7 @@ from varats.utils.project_util import (
 
 class Bison(bb.Project):  # type: ignore
     """
-    Bison is a modular chat client that is most commonly known for its text mode
-    user interface.
+    GNU Bison parser generator.
 
     (fetched by Git)
     """

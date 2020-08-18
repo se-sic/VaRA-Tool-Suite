@@ -25,7 +25,7 @@ class Irssi(bb.Project, CVEProviderHook):  # type: ignore
 
     NAME = 'irssi'
     GROUP = 'c_projects'
-    DOMAIN = 'chat client'
+    DOMAIN = 'chat'
 
     SOURCE = [
         bb.source.Git(
