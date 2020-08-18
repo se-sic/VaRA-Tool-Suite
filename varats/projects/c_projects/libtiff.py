@@ -16,7 +16,8 @@ from varats.utils.project_util import (
 
 
 class Libtiff(bb.Project, CVEProviderHook):  # type: ignore
-    """Programming language Libtiff."""
+    """Libtiff is a library for reading and writing Tagged Image File Format
+    files."""
 
     NAME = 'libtiff'
     GROUP = 'c_projects'

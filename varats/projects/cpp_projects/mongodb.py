@@ -16,7 +16,12 @@ from varats.utils.project_util import (
 
 
 class MongoDB(bb.Project, CVEProviderHook):  # type: ignore
-    """Programming language MongoDB."""
+    """
+    MongoDB is a cross-platform document-oriented database program.
+
+    Classified as a NoSQL database program, MongoDB uses JSON-like documents
+    with optional schemas.
+    """
 
     NAME = 'mongodb'
     GROUP = 'cpp_projects'

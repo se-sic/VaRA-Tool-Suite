@@ -16,7 +16,7 @@ from varats.utils.project_util import (
 
 
 class Libxml2(bb.Project, CVEProviderHook):  # type: ignore
-    """Programming language Libxml2."""
+    """libxml2 is a software library for parsing XML documents."""
 
     NAME = 'libxml2'
     GROUP = 'c_projects'

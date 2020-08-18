@@ -17,8 +17,10 @@ from varats.utils.project_util import (
 
 class OpenVPN(bb.Project, CVEProviderHook):  # type: ignore
     """
-    OpenVPN is a modular chat client that is most commonly known for its text
-    mode user interface.
+    OpenVPN is open-source commercial software that implements virtual private
+    network techniques to create secure point-to-point or site-to-site
+    connections in routed or bridged configurations and remote access
+    facilities.
 
     (fetched by Git)
     """

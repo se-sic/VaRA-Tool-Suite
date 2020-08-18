@@ -16,7 +16,8 @@ from varats.utils.project_util import (
 
 
 class Poppler(bb.Project, CVEProviderHook):  # type: ignore
-    """Programming language Poppler."""
+    """Poppler is a free software utility library for rendering Portable
+    Document Format documents."""
 
     NAME = 'poppler'
     GROUP = 'cpp_projects'
