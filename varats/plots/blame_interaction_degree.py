@@ -17,7 +17,7 @@ from varats.data.reports.commit_report import CommitMap
 from varats.plots.bug_annotation import draw_bugs
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.plot import Plot, PlotDataEmpty
-from varats.plots.repository_churn import draw_code_churn, draw_code_churn2
+from varats.plots.repository_churn import draw_code_churn_for_revisions
 from varats.utils.project_util import get_project_cls_by_name
 
 LOG = logging.getLogger(__name__)
@@ -172,7 +172,7 @@ class BlameDegree(Plot):
 
         # draw churn subplot
         if with_churn:
-            draw_code_churn2(
+            draw_code_churn_for_revisions(
                 churn_axis, self.plot_kwargs['project'],
                 self.plot_kwargs['get_cmap'](), unique_revisions
             )
