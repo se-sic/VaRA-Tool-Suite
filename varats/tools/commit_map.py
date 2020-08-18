@@ -16,7 +16,7 @@ def generate_commit_map(
     """
     Generate a commit map for a repository including the commits.
 
-    ]start..end]
+    Range of commits that get included in the map: `]start..end]`
     """
     search_range = ""
     if start is not None:
@@ -62,7 +62,19 @@ def get_commit_map(
     end: str = "HEAD",
     start: tp.Optional[str] = None
 ) -> CommitMap:
-    """Get a commit map for a project."""
+    """
+    Get a commit map for a project.
+
+    Range of commits that get included in the map: `]start..end]`
+
+    Args:
+        project_name: name of the project
+        cmap_path: path to a existing commit map file
+        end: last commit that should be included in the map
+        start: commit before the first commit that should be included in the map
+
+    Returns: a bidirectional commit map from commits to time IDs
+    """
     if cmap_path is None:
         project_git_path = get_local_project_git_path(project_name)
 
@@ -77,7 +89,19 @@ def create_lazy_commit_map_loader(
     end: str = "HEAD",
     start: tp.Optional[str] = None
 ) -> tp.Callable[[], CommitMap]:
-    """Create a generator function that lazy loads a CommitMap."""
+    """
+    Create a generator function that lazy loads a CommitMap.
+
+    Range of commits that get included in the map: `]start..end]`
+
+    Args:
+        project_name: name of the project
+        cmap_path: path to a existing commit map file
+        end: last commit that should be included in the map
+        start: commit before the first commit that should be included in the map
+
+    Returns: a callable that creates a commit map on demand when called
+    """
     lazy_cached_cmap = None
 
     def get_cmap_lazy() -> CommitMap:
