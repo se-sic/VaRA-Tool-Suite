@@ -157,7 +157,7 @@ class BlameDiffCorrelationMatrix(Plot):
         )
         df.set_index('revision', inplace=True)
         df.drop(df[df.churn == 0].index, inplace=True)
-        if df.empty:
+        if df.empty or len(df.index) < 2:
             raise PlotDataEmpty
         df.sort_values(by=['time_id'], inplace=True)
 
