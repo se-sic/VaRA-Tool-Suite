@@ -48,6 +48,7 @@ class MongoDB(bb.Project, CVEProviderHook):  # type: ignore
         pass
 
     def compile(self) -> None:
+        """Compile the project."""
         mongodb_version_source = bb.path(self.source_of(self.primary_source))
 
         c_compiler = bb.compiler.cc(self)

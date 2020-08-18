@@ -42,6 +42,7 @@ class Libxml2(bb.Project, CVEProviderHook):  # type: ignore
         pass
 
     def compile(self) -> None:
+        """Compile the project."""
         libxml2_version_source = bb.path(self.source_of(self.primary_source))
 
         c_compiler = bb.compiler.cc(self)

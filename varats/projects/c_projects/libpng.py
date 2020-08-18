@@ -46,6 +46,7 @@ class Libpng(bb.Project, CVEProviderHook):  # type: ignore
         pass
 
     def compile(self) -> None:
+        """Compile the project."""
         libpng_source = bb.path(self.source_of(self.primary_source))
 
         compiler = bb.compiler.cc(self)
