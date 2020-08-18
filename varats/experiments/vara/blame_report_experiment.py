@@ -10,6 +10,7 @@ import typing as tp
 import benchbuild.utils.actions as actions
 from benchbuild import Project
 from benchbuild.utils.cmd import mkdir, opt
+from benchbuild.utils.requirements import Requirement, SlurmMem
 from plumbum import local
 
 import varats.experiments.vara.blame_experiment as BE
@@ -119,6 +120,7 @@ class BlameReportExperiment(VersionExperiment):
     NAME = "GenerateBlameReport"
 
     REPORT_TYPE = BR
+    REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """
