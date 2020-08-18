@@ -88,7 +88,7 @@ class BlameVerifierReportDatabase(
         )
 
         report_files_no_opt = get_processed_revisions_files(
-            project_name, BlameVerifierReportOpt,
+            project_name, BlameVerifierReportNoOpt,
             get_case_study_file_name_filter(case_study)
         )
 
