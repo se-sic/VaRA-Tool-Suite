@@ -24,6 +24,7 @@ class BlameVerifierReportParserMixin:
     hierarchy."""
 
     def __init__(self, path: Path):
+        super().__init__(path=path)
         self.__path = path
         self.__num_successes = -1
         self.__num_failures = -1
