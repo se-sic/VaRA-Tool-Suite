@@ -58,4 +58,4 @@ class Libssh(bb.Project, CVEProviderHook):  # type: ignore
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
-        return [("Libssh", "Libssh")]  # TODO:
+        return [("Libssh", "Libssh")]
