@@ -5,9 +5,11 @@ from enum import IntFlag
 from pathlib import Path
 
 import benchbuild as bb
+import plumbum as pb
 import pygit2
+from benchbuild.source import Git
 from benchbuild.source.base import target_prefix
-from benchbuild.utils.cmd import git
+from benchbuild.utils.cmd import cp, find, git, mkdir
 from plumbum import local
 
 
@@ -356,3 +358,55 @@ def block_revisions(blocks: tp.List[AbstractRevisionBlocker]) -> tp.Any:
         return cls
 
     return revision_blocker_decorator
+
+
+# ignore type as we do not have appropriate type information from benchbuild
+class VaraTestRepoSource(Git):  # type: ignore
+    """A project source for repositories stored in the vara-test-repos
+    repository."""
+
+    __vara_test_repos_git = Git(
+        remote="https://github.com/se-passau/vara-test-repos",
+        local="vara_test_repos",
+        refspec="HEAD",
+        limit=1
+    )
+
+    def fetch(self) -> pb.LocalPath:
+        """
+        Overrides ``Git``s fetch to
+          1. fetch the vara-test-repos repo
+          2. extract the specified repo from the vara-test-repos repo
+
+        Returns:
+            the path where the inner repo is extracted to
+        """
+        vara_test_repos_path = self.__vara_test_repos_git.fetch()
+
+        # .gitted repo lies at vara_test_repos_path / self.remote
+        # check out as self.local
+        src_path = vara_test_repos_path / self.remote
+        tgt_path = local.path(target_prefix()) / self.local
+
+        mkdir("-p", tgt_path)
+        cp("-r", src_path + "/.", tgt_path)
+
+        with local.cwd(tgt_path):
+            find(
+                ".", "-depth", "-name", ".gitted", "-execdir", "mv", "-i", "{}",
+                ".git", ";"
+            )
+            find(
+                ".", "-name", "gitmodules", "-execdir", "mv", "-i", "{}",
+                ".gitmodules", ";"
+            )
+            find(
+                ".", "-name", "gitattributes", "-execdir", "mv", "-i", "{}",
+                ".gitattributes", ";"
+            )
+            find(
+                ".", "-name", "gitignore", "-execdir", "mv", "-i", "{}",
+                ".gitignore", ";"
+            )
+
+        return tgt_path

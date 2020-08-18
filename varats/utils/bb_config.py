@@ -114,7 +114,7 @@ def generate_benchbuild_config(
 
     replace_bb_cwd_path("build_dir")
     replace_bb_cwd_path("tmp_dir")
-    replace_bb_cwd_path("test_dir")
+    # replace_bb_cwd_path("test_dir")
     replace_bb_cwd_path("node_dir", new_bb_cfg["slurm"])
 
     # Create caching folder for .bc files
