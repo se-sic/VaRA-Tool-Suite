@@ -1,4 +1,5 @@
 """Module for the BlameVerifierReportDatabase class."""
+import re
 import typing as tp
 from pathlib import Path
 
@@ -49,19 +50,32 @@ class BlameVerifierReportDatabase(
             report_path: Path
         ) -> tp.Tuple[pd.DataFrame, str, str]:
 
-            report_opt = load_blame_verifier_report_opt(report_path)
-            report_no_opt = load_blame_verifier_report_no_opt(report_path)
+            report_file_name_pattern = re.compile(r"[^\/]+$")
+            report_file_name_match = re.search(
+                report_file_name_pattern, str(report_path)
+            )
 
-            if report_opt is not None:
+            if report_file_name_match:
+                report_file_name = report_file_name_match.group()
+            else:
+                raise RuntimeWarning(
+                    "report file name could not be read from report path"
+                )
+
+            if BlameVerifierReportOpt.is_correct_report_type(report_file_name):
+                report_opt = load_blame_verifier_report_opt(report_path)
                 report = report_opt
                 opt_level = 2
 
-            elif report_no_opt is not None:
+            elif BlameVerifierReportNoOpt.is_correct_report_type(
+                report_file_name
+            ):
+                report_no_opt = load_blame_verifier_report_no_opt(report_path)
                 report = report_no_opt
                 opt_level = 0
 
             else:
-                raise RuntimeWarning("loaded unknown report type")
+                raise RuntimeWarning("unknown report type")
 
             number_of_total_annotations = report.get_total_annotations()
             number_of_successful_annotations = \
