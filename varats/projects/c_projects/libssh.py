@@ -60,6 +60,20 @@ class Libssh(bb.Project, CVEProviderHook):  # type: ignore
 
     def compile(self) -> None:
         """Compile the project."""
+        libssh_git_path = get_local_project_git_path(self.NAME)
+        libssh_version = self.version_of_primary
+
+        with local.cwd(libssh_git_path):
+            cmake_revisions = get_all_revisions_between(
+                "0151b6e17041c56813c882a3de6330c82acc8d93", "master"
+            )
+
+        if libssh_version in cmake_revisions:
+            self.__compile_cmake()
+        else:
+            self.__compile_make()
+
+    def __compile_cmake(self) -> None:
         libssh_source = bb.path(self.source_of(self.primary_source))
 
         compiler = bb.compiler.cc(self)
@@ -68,6 +82,16 @@ class Libssh(bb.Project, CVEProviderHook):  # type: ignore
             with local.env(CC=str(compiler)):
                 bb.watch(cmake)("-G", "Unix Makefiles", "..")
 
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+    def __compile_make(self) -> None:
+        libssh_source = bb.path(self.source_of(self.primary_source))
+
+        compiler = bb.compiler.cc(self)
+        with local.cwd(libssh_source):
+            with local.env(CC=str(compiler)):
+                configure = bb.watch(local["./configure"])
+                configure()
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
