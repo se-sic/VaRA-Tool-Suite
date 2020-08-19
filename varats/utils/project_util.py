@@ -142,10 +142,13 @@ def wrap_paths_to_binaries(
     >>> wrap_paths_to_binaries(["src/foo"])
     [(foo: src/foo)]
 
+    >>> wrap_paths_to_binaries(["src/foo.so"])
+    [(foo: src/foo.so)]
+
     >>> wrap_paths_to_binaries(["src/foo", "src/bar"])
     [(foo: src/foo), (bar: src/bar)]
     """
-    return wrap_paths_to_binaries_with_name([(Path(x).name, x) for x in binaries
+    return wrap_paths_to_binaries_with_name([(Path(x).stem, x) for x in binaries
                                             ])
 
 
