@@ -63,7 +63,7 @@ class Libssh(bb.Project, CVEProviderHook):  # type: ignore
         libssh_source = bb.path(self.source_of(self.primary_source))
 
         compiler = bb.compiler.cc(self)
-        mkdir(libssh_source / "build")
+        mkdir("-p", libssh_source / "build")
         with local.cwd(libssh_source / "build"):
             with local.env(CC=str(compiler)):
                 bb.watch(cmake)("-G", "Unix Makefiles", "..")
