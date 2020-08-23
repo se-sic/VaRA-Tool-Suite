@@ -262,9 +262,32 @@ def find_pygit_bug_by_introduction(
     Returns:
         A set of PygitBugs introduced by introducing_commit
     """
-    # TODO implement
+    resulting_pygit_bugs: tp.Set[PygitBug] = set()
 
-    return frozenset()
+    issue_events = _get_all_issue_events(project_name)
+    if issue_events:
+        for issue_event in issue_events:
+            if _has_closed_a_bug(issue_event):
+                pygit_repo = get_local_project_git(project_name)
+
+                fixing_id = issue_event.commit_id
+                fixing_pycommit = pygit_repo.revparse_single(fixing_id)
+
+                # TODO: find introducing commits
+                introducing_pycommits: tp.List[pygit2.Commit] = []
+
+                for introducing_pycommit in introducing_pycommits:
+                    if introducing_pycommit.hex is introducing_commit:
+                        resulting_pygit_bugs.add(
+                            PygitBug(
+                                fixing_pycommit, introducing_pycommits,
+                                issue_event.issue.number
+                            )
+                        )
+                        break
+                        # search can be terminated here, found wanted ID
+
+    return frozenset(resulting_pygit_bugs)
 
 
 def find_raw_bug_by_introduction(
@@ -280,6 +303,25 @@ def find_raw_bug_by_introduction(
     Returns:
         A set of RawBugs introduced by introducing_commit
     """
-    # TODO implement
+    resulting_raw_bugs: tp.Set[RawBug] = set()
 
-    return frozenset()
+    issue_events = _get_all_issue_events(project_name)
+    if issue_events:
+        for issue_event in issue_events:
+            if _has_closed_a_bug(issue_event):
+                fixing_id = issue_event.commit_id
+
+                # TODO find introducing commits
+                introducing_ids: tp.List[str] = []
+                for introducing_id in introducing_ids:
+                    if introducing_id is introducing_commit:
+                        resulting_raw_bugs.add(
+                            RawBug(
+                                fixing_id, introducing_ids,
+                                issue_event.issue.number
+                            )
+                        )
+                        break
+                        # search can be terminated here, found wanted ID
+
+    return frozenset(resulting_raw_bugs)
