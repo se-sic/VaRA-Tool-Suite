@@ -187,6 +187,11 @@ GIT_LOG_MATCHER = re.compile(
     r"(, (?P<insertions>\d*) insertions?\(\+\))?" +
     r"(, (?P<deletions>\d*) deletions?\(-\))?"
 )
+GIT_DIFF_MATCHER = re.compile(
+    r"( (?P<files>\d*) files? changed)?" +
+    r"(, (?P<insertions>\d*) insertions?\(\+\))?" +
+    r"(, (?P<deletions>\d*) deletions?\(-\))?"
+)
 
 
 def __calc_code_churn_range_impl(
@@ -310,6 +315,58 @@ def calc_commit_code_churn(
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
     return calc_code_churn_range(repo, churn_config, commit,
                                  commit)[str(commit.id)]
+
+
+def calc_code_churn(
+    repo: pygit2.Repository,
+    commit_a: pygit2.Commit,
+    commit_b: pygit2.Commit,
+    churn_config: tp.Optional[ChurnConfig] = None
+) -> tp.Tuple[int, int, int]:
+    """
+    Calculates churn between two commits.
+
+    Args:
+        repo: git repository
+        commit_a: base commit for diff calculation
+        commit_b: target commit for diff calculation
+        churn_config: churn config to customize churn generation
+
+    Returns:
+        dict of churn triples, where the commit hash points to
+        (files changed, insertions, deletions)
+    """
+    churn_config = ChurnConfig.init_as_default_if_none(churn_config)
+    with local.cwd(repo.path):
+        diff_base_params = [
+            "diff", "--shortstat", "-l0",
+            str(commit_a.id),
+            str(commit_b.id)
+        ]
+
+        if not churn_config.include_everything:
+            diff_base_params.append("--")
+            # builds a regrex to select files that git includes into churn calc
+            diff_base_params.append(
+                ":*.[" + churn_config.get_extensions_repr('|') + "]"
+            )
+
+        stdout = git(diff_base_params)
+        # initialize with 0 as otherwise commits without changes would be
+        # missing from the churn data
+        match = GIT_DIFF_MATCHER.match(stdout)
+        if match:
+            files_changed_m = match.group('files')
+            files_changed = int(
+                files_changed_m
+            ) if files_changed_m is not None else 0
+            insertions_m = match.group('insertions')
+            insertions = int(insertions_m) if insertions_m is not None else 0
+            deletions_m = match.group('deletions')
+            deletions = int(deletions_m) if deletions_m is not None else 0
+            return files_changed, insertions, deletions
+
+    return 0, 0, 0
 
 
 def calc_repo_code_churn(
