@@ -1,6 +1,7 @@
 """Project file for TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject."""
 import typing as tp
 
+import benchbuild as bb
 from benchbuild.project import Project
 from benchbuild.utils.cmd import cmake, git, make
 from benchbuild.utils.compiler import cc
@@ -18,14 +19,6 @@ from varats.utils.project_util import (
 )
 
 
-@with_git(
-    "https://github.com/se-passau/vara-test-repos",
-    refspec="HEAD",
-    shallow_clone=False,
-    version_filter=project_filter_generator(
-        "TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject"
-    )
-)
 class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(Project):
     """Class to analyse interactions between two discrete libraries and one
     project."""
@@ -36,6 +29,19 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(Project):
     VERSION = 'HEAD'
 
     SRC_FILE = NAME + "-{0}".format(VERSION)
+
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-passau/vara-test-repos",
+            local="TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject",
+            refspec="HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator(
+                "TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject"
+            )
+        )
+    ]
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
@@ -73,7 +79,3 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(Project):
         with local.cwd(self.SRC_FILE):
             with local.env(CC=str(clang)):
                 run(make["-j", get_number_of_jobs(bb_cfg())])
-
-    @classmethod
-    def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
-        return [("", "")]  # TODO: naming
