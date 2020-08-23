@@ -41,9 +41,10 @@ class BlameVerifierReportPlot(Plot):
         commit_map: CommitMap = self.plot_kwargs["get_cmap"]()
         project_name = self.plot_kwargs['project']
         verifier_plot_df = BlameVerifierReportDatabase.get_data_for_project(
-            project_name,
-            ["opt_level", "total", "successes", "failures", "undetermined"],
-            commit_map
+            project_name, [
+                "revision", "time_id", "opt_level", "total", "successful",
+                "failed", "undetermined"
+            ], commit_map
         )
         return verifier_plot_df
 
@@ -70,11 +71,11 @@ class BlameVerifierReportPlot(Plot):
         style.use(self.style)
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
         verifier_plot_df = self._get_verifier_data()
-        """
+
         unique_revisions, sub_df_list = _filter_data_frame(
             opt_level, verifier_plot_df, commit_map
         )
-        """
+
         fig = plt.figure()
         main_axis = fig.add_subplot(111)
 

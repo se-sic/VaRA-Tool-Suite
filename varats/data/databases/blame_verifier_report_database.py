@@ -26,7 +26,7 @@ from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
 
 class BlameVerifierReportDatabase(
     EvaluationDatabase,
-    columns=["opt_level", "total", "successes", "failures", "undetermined"],
+    columns=["opt_level", "total", "successful", "failed", "undetermined"],
     cache_id="blame_verifier_report_data"
 ):
     """Provides access to blame verifier report data."""
@@ -41,8 +41,8 @@ class BlameVerifierReportDatabase(
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
             df_layout.opt_level = df_layout.opt_level.astype('int64')
             df_layout.total = df_layout.total.astype('int64')
-            df_layout.successes = df_layout.successes.astype('int64')
-            df_layout.failures = df_layout.failures.astype('int64')
+            df_layout.successful = df_layout.successful.astype('int64')
+            df_layout.failed = df_layout.failed.astype('int64')
             df_layout.undetermined = df_layout.undetermined.astype('int64')
             return df_layout
 
@@ -86,6 +86,7 @@ class BlameVerifierReportDatabase(
 
             return pd.DataFrame({
                 'revision': report.head_commit,
+                'time_id': [commit_map.short_time_id(report.head_commit)],
                 'opt_level': opt_level,
                 'total': number_of_total_annotations,
                 'successful': number_of_successful_annotations,
