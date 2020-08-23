@@ -10,7 +10,7 @@ import benchbuild.utils.settings as s
 from benchbuild.project import Project
 
 import varats.utils.experiment_util as EU
-from tests.test_helper import EmptyProject
+from tests.test_helper import TestSource
 from tests.test_utils import get_test_config, replace_config, get_bb_test_config
 from varats.data.report import FileStatusExtension
 from varats.data.reports.commit_report import CommitReport as CR
@@ -22,6 +22,36 @@ class MockExperiment(EU.VersionExperiment):
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         return []
+
+
+class TestProject(Project):
+    """Test project for version sampling tests."""
+    NAME = "test_empty"
+
+    DOMAIN = "debug"
+    GROUP = "debug"
+    SOURCE = [
+        TestSource(
+            test_versions=['rev1', 'rev2', 'rev3', 'rev4', 'rev5'],
+            local="test_source",
+            remote="test_remote"
+        )
+    ]
+
+    def build(self):
+        pass
+
+    def configure(self):
+        pass
+
+    def download(self, version=None):
+        pass
+
+    def compile(self):
+        pass
+
+    def run_tests(self) -> None:
+        pass
 
 
 class TestVersionExperiment(unittest.TestCase):
@@ -94,11 +124,9 @@ class TestVersionExperiment(unittest.TestCase):
     def test_without_versions(self):
         """Test if we get the correct revision if no VaRA modifications are
         enabled."""
-        prj = EmptyProject(self.vers_expr)
-        sample_gen = self.vers_expr.sample(prj, self.rev_list)
-        self.assertEqual(next(sample_gen), "rev1")
-        with self.assertRaises(StopIteration):
-            next(sample_gen)
+        sample_gen = self.vers_expr.sample(TestProject)
+        self.assertEqual(sample_gen[0]["test_source"].version, "rev1")
+        self.assertEqual(len(sample_gen), 1)
 
     @mock.patch('varats.utils.experiment_util.get_tagged_revisions')
     def test_only_whitelisting_one(self, mock_get_tagged_revisions):
@@ -113,12 +141,10 @@ class TestVersionExperiment(unittest.TestCase):
 
             config["experiment"]["file_status_whitelist"] = ['success']
 
-            prj = EmptyProject(self.vers_expr)
-            sample_gen = self.vers_expr.sample(prj, self.rev_list)
+            sample_gen = self.vers_expr.sample(TestProject)
 
-            self.assertEqual(next(sample_gen), "rev1")
-            with self.assertRaises(StopIteration):
-                next(sample_gen)
+            self.assertEqual(sample_gen[0]["test_source"].version, "rev1")
+            self.assertEqual(len(sample_gen), 1)
             mock_get_tagged_revisions.assert_called()
 
     @mock.patch('varats.utils.experiment_util.get_tagged_revisions')
@@ -136,14 +162,12 @@ class TestVersionExperiment(unittest.TestCase):
                 'success', 'Failed', 'Missing'
             ]
 
-            prj = EmptyProject(self.vers_expr)
-            sample_gen = self.vers_expr.sample(prj, self.rev_list)
+            sample_gen = self.vers_expr.sample(TestProject)
 
-            self.assertEqual(next(sample_gen), "rev1")
-            self.assertEqual(next(sample_gen), "rev4")
-            self.assertEqual(next(sample_gen), "rev5")
-            with self.assertRaises(StopIteration):
-                next(sample_gen)
+            self.assertEqual(sample_gen[0]["test_source"].version, "rev1")
+            self.assertEqual(sample_gen[1]["test_source"].version, "rev4")
+            self.assertEqual(sample_gen[2]["test_source"].version, "rev5")
+            self.assertEqual(len(sample_gen), 3)
             mock_get_tagged_revisions.assert_called()
 
     @mock.patch('varats.utils.experiment_util.get_tagged_revisions')
@@ -159,15 +183,13 @@ class TestVersionExperiment(unittest.TestCase):
 
             config["experiment"]["file_status_blacklist"] = ['success']
 
-            prj = EmptyProject(self.vers_expr)
-            sample_gen = self.vers_expr.sample(prj, self.rev_list)
+            sample_gen = self.vers_expr.sample(TestProject)
 
-            self.assertEqual(next(sample_gen), "rev2")
-            self.assertEqual(next(sample_gen), "rev3")
-            self.assertEqual(next(sample_gen), "rev4")
-            self.assertEqual(next(sample_gen), "rev5")
-            with self.assertRaises(StopIteration):
-                next(sample_gen)
+            self.assertEqual(sample_gen[0]["test_source"].version, "rev2")
+            self.assertEqual(sample_gen[1]["test_source"].version, "rev3")
+            self.assertEqual(sample_gen[2]["test_source"].version, "rev4")
+            self.assertEqual(sample_gen[3]["test_source"].version, "rev5")
+            self.assertEqual(len(sample_gen), 4)
             mock_get_tagged_revisions.assert_called()
 
     @mock.patch('varats.utils.experiment_util.get_tagged_revisions')
@@ -185,13 +207,11 @@ class TestVersionExperiment(unittest.TestCase):
                 'success', 'Failed', 'Blocked'
             ]
 
-            prj = EmptyProject(self.vers_expr)
-            sample_gen = self.vers_expr.sample(prj, self.rev_list)
+            sample_gen = self.vers_expr.sample(TestProject)
 
-            self.assertEqual(next(sample_gen), "rev3")
-            self.assertEqual(next(sample_gen), "rev5")
-            with self.assertRaises(StopIteration):
-                next(sample_gen)
+            self.assertEqual(sample_gen[0]["test_source"].version, "rev3")
+            self.assertEqual(sample_gen[1]["test_source"].version, "rev5")
+            self.assertEqual(len(sample_gen), 2)
             mock_get_tagged_revisions.assert_called()
 
     @mock.patch('varats.utils.experiment_util.get_tagged_revisions')
@@ -208,10 +228,8 @@ class TestVersionExperiment(unittest.TestCase):
             config["experiment"]["file_status_blacklist"] = ['Failed']
             config["experiment"]["file_status_whitelist"] = ['Failed']
 
-            prj = EmptyProject(self.vers_expr)
-            sample_gen = self.vers_expr.sample(prj, self.rev_list)
+            sample_gen = self.vers_expr.sample(TestProject)
 
-            self.assertEqual(next(sample_gen), "rev4")
-            with self.assertRaises(StopIteration):
-                next(sample_gen)
+            self.assertEqual(sample_gen[0]["test_source"].version, "rev4")
+            self.assertEqual(len(sample_gen), 1)
             mock_get_tagged_revisions.assert_called()

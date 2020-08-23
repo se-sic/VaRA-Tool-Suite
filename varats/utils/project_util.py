@@ -1,54 +1,46 @@
 """Utility module for BenchBuild project handling."""
 import abc
-import tempfile
 import typing as tp
 from enum import IntFlag
 from pathlib import Path
 
+import benchbuild as bb
+import plumbum as pb
 import pygit2
-from benchbuild.project import ProjectRegistry, Project
-from benchbuild.utils.cmd import git
-from benchbuild.utils.download import Git
+from benchbuild.source import Git
+from benchbuild.source.base import target_prefix
+from benchbuild.utils.cmd import cp, find, git, mkdir
 from plumbum import local
 
-from varats.settings import vara_cfg, bb_cfg
 
-
-def get_project_cls_by_name(project_name: str) -> tp.Type[Project]:
+def get_project_cls_by_name(project_name: str) -> tp.Type[bb.Project]:
     """Look up a BenchBuild project by it's name."""
-    for proj in ProjectRegistry.projects:
+    for proj in bb.project.ProjectRegistry.projects:
         if proj.endswith('gentoo') or proj.endswith("benchbuild"):
             # currently we only support vara provided projects
             continue
 
         if proj.startswith(project_name):
-            project: tp.Type[Project] = ProjectRegistry.projects[proj]
+            project: tp.Type[bb.Project
+                            ] = bb.project.ProjectRegistry.projects[proj]
             return project
 
     raise LookupError
 
 
+def get_primary_project_source(project_name: str) -> bb.source.BaseSource:
+    project_cls = get_project_cls_by_name(project_name)
+    return bb.source.primary(*project_cls.SOURCE)
+
+
 def get_local_project_git_path(project_name: str) -> Path:
     """Get the path to the local download location of git repository for a given
     benchbuild project."""
-    project_git_path = Path(str(vara_cfg()['benchbuild_root'])
-                           ) / str(bb_cfg()["tmp_dir"])
-    project_git_path /= project_name if project_name.endswith(
-        "-HEAD"
-    ) else project_name + "-HEAD"
+    primary_source = get_primary_project_source(project_name)
+    if hasattr(primary_source, "fetch"):
+        primary_source.fetch()
 
-    if not project_git_path.exists():
-        project_cls = get_project_cls_by_name(project_name)
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with local.cwd(tmpdir):
-                Git(
-                    project_cls.repository,
-                    project_cls.SRC_FILE,
-                    shallow_clone=False
-                )
-
-    return project_git_path
+    return Path(target_prefix() + "/" + primary_source.local)
 
 
 def get_local_project_git(project_name: str) -> pygit2.Repository:
@@ -150,10 +142,13 @@ def wrap_paths_to_binaries(
     >>> wrap_paths_to_binaries(["src/foo"])
     [(foo: src/foo)]
 
+    >>> wrap_paths_to_binaries(["src/foo.so"])
+    [(foo: src/foo.so)]
+
     >>> wrap_paths_to_binaries(["src/foo", "src/bar"])
     [(foo: src/foo), (bar: src/bar)]
     """
-    return wrap_paths_to_binaries_with_name([(Path(x).name, x) for x in binaries
+    return wrap_paths_to_binaries_with_name([(Path(x).stem, x) for x in binaries
                                             ])
 
 
@@ -366,3 +361,55 @@ def block_revisions(blocks: tp.List[AbstractRevisionBlocker]) -> tp.Any:
         return cls
 
     return revision_blocker_decorator
+
+
+# ignore type as we do not have appropriate type information from benchbuild
+class VaraTestRepoSource(Git):  # type: ignore
+    """A project source for repositories stored in the vara-test-repos
+    repository."""
+
+    __vara_test_repos_git = Git(
+        remote="https://github.com/se-passau/vara-test-repos",
+        local="vara_test_repos",
+        refspec="HEAD",
+        limit=1
+    )
+
+    def fetch(self) -> pb.LocalPath:
+        """
+        Overrides ``Git``s fetch to
+          1. fetch the vara-test-repos repo
+          2. extract the specified repo from the vara-test-repos repo
+
+        Returns:
+            the path where the inner repo is extracted to
+        """
+        vara_test_repos_path = self.__vara_test_repos_git.fetch()
+
+        # .gitted repo lies at vara_test_repos_path / self.remote
+        # check out as self.local
+        src_path = vara_test_repos_path / self.remote
+        tgt_path = local.path(target_prefix()) / self.local
+
+        mkdir("-p", tgt_path)
+        cp("-r", src_path + "/.", tgt_path)
+
+        with local.cwd(tgt_path):
+            find(
+                ".", "-depth", "-name", ".gitted", "-execdir", "mv", "-i", "{}",
+                ".git", ";"
+            )
+            find(
+                ".", "-name", "gitmodules", "-execdir", "mv", "-i", "{}",
+                ".gitmodules", ";"
+            )
+            find(
+                ".", "-name", "gitattributes", "-execdir", "mv", "-i", "{}",
+                ".gitattributes", ";"
+            )
+            find(
+                ".", "-name", "gitignore", "-execdir", "mv", "-i", "{}",
+                ".gitignore", ";"
+            )
+
+        return tgt_path

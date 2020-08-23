@@ -3,8 +3,8 @@
 import typing as tp
 
 import benchbuild.utils.actions as actions
+from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
-from benchbuild.project import Project
 from benchbuild.utils.cmd import mkdir, touch
 
 from varats.data.report import FileStatusExtension as FSE
@@ -51,7 +51,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
             result_file = EmptyReport.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=str(project.version),
+                project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success
             )
@@ -67,7 +67,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
                     EmptyReport.get_file_name(
                         project_name=str(project.name),
                         binary_name="all",
-                        project_version=str(project.version),
+                        project_version=project.version_of_primary,
                         project_uuid=str(project.run_uuid),
                         extension_type=FSE.Failed
                     )

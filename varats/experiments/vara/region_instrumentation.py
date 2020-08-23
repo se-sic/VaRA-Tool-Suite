@@ -1,9 +1,8 @@
 """Experiment that adds tracing markers for highlight regions."""
 import typing as tp
 
-from benchbuild.experiment import Experiment
+from benchbuild import Experiment, Project
 from benchbuild.extensions import compiler, run, time
-from benchbuild.project import Project
 from benchbuild.utils.actions import Step
 
 from varats.experiments.wllvm import RunWLLVM
