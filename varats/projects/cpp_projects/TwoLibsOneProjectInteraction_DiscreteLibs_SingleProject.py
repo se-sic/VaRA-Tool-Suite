@@ -17,6 +17,7 @@ from varats.utils.project_util import (
 
 
 class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(bb.Project):
+    # type: ignore
     """Class to analyse interactions between two discrete libraries and one
     project."""
 
