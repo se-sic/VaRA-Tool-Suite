@@ -90,7 +90,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
             bc_target_file = Extract.get_bc_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=str(project.version),
+                project_version=project.version_of_primary,
                 bc_file_extensions=self.bc_file_extensions
             )
 
@@ -98,7 +98,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
             result_file = self.report_type.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=str(project.version),
+                project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success,
                 file_ext=".txt"
@@ -108,7 +108,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
             error_file = self.report_type.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=str(project.version),
+                project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Failed,
                 file_ext=".txt"

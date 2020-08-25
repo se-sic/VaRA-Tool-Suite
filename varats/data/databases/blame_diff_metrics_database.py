@@ -1,7 +1,6 @@
 """Module for diff based commit-data metrics."""
 import typing as tp
 from datetime import datetime
-from functools import reduce
 from itertools import chain
 from pathlib import Path
 
@@ -29,7 +28,7 @@ from varats.data.revisions import (
 )
 from varats.jupyterhelper.file import load_blame_report
 from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
-from varats.utils.git_util import calc_code_churn_range, ChurnConfig
+from varats.utils.git_util import ChurnConfig, calc_code_churn
 from varats.utils.project_util import get_local_project_git
 
 
@@ -92,16 +91,11 @@ class BlameDiffMetricsDatabase(
             diff_between_head_pred = BlameReportDiff(head_report, pred_report)
 
             # Calculate the total churn between pred and base commit
-            code_churn = calc_code_churn_range(
-                repo, ChurnConfig.create_c_style_languages_config(),
-                pred_report.head_commit, commit
+            code_churn = calc_code_churn(
+                repo, repo.get(pred_report.head_commit), commit,
+                ChurnConfig.create_c_style_languages_config()
             )
-            total_churn = reduce(
-                lambda x, y: x + y, [
-                    churn_rev[1] + churn_rev[2]
-                    for churn_rev in code_churn.values()
-                ]
-            )
+            total_churn = code_churn[1] + code_churn[2]
 
             def weighted_avg(tuples: tp.List[tp.Tuple[int, int]]) -> float:
                 total_sum = 0
