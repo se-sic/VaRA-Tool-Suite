@@ -73,7 +73,7 @@ def _get_all_issue_events(
     project_name: str
 ) -> tp.Optional[tp.List[IssueEvent]]:
     """
-    Loads and returns all issue events from a given project.
+    Loads and returns all issue events for a given project.
 
     Args:
         project_name: The name of the project to look in.
@@ -94,7 +94,7 @@ def _get_all_issue_events(
 
 def _has_closed_a_bug(issue_event: IssueEvent) -> bool:
     """
-    Decides for a given issue event whether it closes an issue representing a
+    Determines for a given issue event whether it closes an issue representing a
     bug or not.
 
     Args:
