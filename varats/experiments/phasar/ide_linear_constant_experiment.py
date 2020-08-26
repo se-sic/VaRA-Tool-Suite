@@ -78,11 +78,10 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
             )
 
             phasar_params = ["-m", bc_file, "-C", "CHA", "-D", "ide-lca"]
-            run_cmd = (
-                phasar[phasar_params] > f'{varats_result_folder}/{result_file}'
-            )
 
-            run_cmd = wrap_unlimit_stack_size(run_cmd)
+            run_cmd = wrap_unlimit_stack_size(phasar[phasar_params])
+
+            run_cmd = (run_cmd > f'{varats_result_folder}/{result_file}')
 
             exec_func_with_pe_error_handler(
                 run_cmd,
