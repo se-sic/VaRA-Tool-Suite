@@ -1,12 +1,10 @@
-from setuptools import find_packages, setup
+from setuptools import find_namespace_packages, setup
 
 setup(
-    name='VaRA-Tool-Suite',
+    name='varats',
     version="10.0.0",
-    url='https://github.com/se-passau/VaRA-Tool-Suite',
-    packages=find_packages(
-        exclude=["extern", "benchbuild", "icons", "results", "uicomponents"]
-    ),
+    url='https://github.com/se-passau/vara-tool-suite',
+    packages=find_namespace_packages(include=['varats.*']),
     setup_requires=["pytest-runner"],
     tests_require=["pytest", "pytest-cov"],
     install_requires=[
@@ -31,6 +29,7 @@ setup(
         "tabulate>=0.8.6",
         "rich>=1.3.1",
         "statsmodels~=0.11.1",
+        "varats-core>=10.0.0",
     ],
     author="Florian Sattler",
     author_email="sattlerf@cs.uni-saarland.de",
