@@ -7,9 +7,9 @@ from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QKeySequence, QTextCursor
 from PyQt5.QtWidgets import QShortcut, QWidget
 
-from varats import vara_manager
 from varats.gui.views.ui_BuildMenu import Ui_BuildSetup
 from varats.settings import get_value_or_default, save_config, vara_cfg
+from varats.tools.research_tools import vara_manager
 from varats.utils.exceptions import ProcessTerminatedError
 
 

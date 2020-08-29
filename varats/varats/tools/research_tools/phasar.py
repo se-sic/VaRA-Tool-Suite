@@ -15,14 +15,14 @@ from varats.tools.research_tools.research_tool import (
     ResearchTool,
     SubProject,
 )
-from varats.utils.exceptions import ProcessTerminatedError
-from varats.utils.logger_util import log_without_linesep
-from varats.vara_manager import (
+from varats.tools.research_tools.vara_manager import (
     BuildType,
     ProcessManager,
     run_process_with_output,
     set_cmake_var,
 )
+from varats.utils.exceptions import ProcessTerminatedError
+from varats.utils.logger_util import log_without_linesep
 
 
 class PhasarCodeBase(CodeBase):

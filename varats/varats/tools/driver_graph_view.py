@@ -6,8 +6,8 @@ from PyQt5.QtWidgets import QApplication, QMessageBox
 
 from varats import settings
 from varats.gui.main_window import MainWindow
+from varats.tools.research_tools.vara_manager import ProcessManager
 from varats.utils.cli_util import initialize_cli_tool
-from varats.vara_manager import ProcessManager
 
 
 class VaRATSGui:
