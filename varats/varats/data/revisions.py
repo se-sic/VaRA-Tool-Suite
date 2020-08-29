@@ -15,7 +15,10 @@ from benchbuild.project import Project
 
 from varats.data.report import FileStatusExtension, MetaReport
 from varats.settings import vara_cfg
-from varats.utils.project_util import get_project_cls_by_name
+from varats.utils.project_util import (
+    get_project_cls_by_name,
+    get_primary_project_source,
+)
 
 
 def is_revision_blocked(revision: str, project_cls: tp.Type[Project]) -> bool:
@@ -29,8 +32,9 @@ def is_revision_blocked(revision: str, project_cls: tp.Type[Project]) -> bool:
     Returns:
         filtered revision list
     """
-    if hasattr(project_cls, "is_blocked_revision"):
-        return tp.cast(bool, project_cls.is_blocked_revision(revision)[0])
+    source = get_primary_project_source(project_cls.NAME)
+    if hasattr(source, "is_blocked_revision"):
+        return tp.cast(bool, source.is_blocked_revision(revision)[0])
     return False
 
 

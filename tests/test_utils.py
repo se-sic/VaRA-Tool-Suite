@@ -8,6 +8,8 @@ from functools import wraps
 from pathlib import Path
 
 import benchbuild.utils.settings
+import plumbum as pb
+from benchbuild.source import Git, base
 
 import varats.settings as settings
 
@@ -165,3 +167,16 @@ def replace_config(
     """
 
     return _ReplaceConfig(replace_bb_config, tmp_path, vara_config, bb_config)
+
+
+class DummyGit(Git):
+    """A dummy git source that does nothing."""
+
+    def fetch(self) -> pb.LocalPath:
+        return pb.LocalPath("/dev/null")
+
+    def version(self, target_dir: str, version: str = 'HEAD') -> pb.LocalPath:
+        return pb.LocalPath("/dev/null")
+
+    def versions(self) -> tp.List[base.Variant]:
+        return []
