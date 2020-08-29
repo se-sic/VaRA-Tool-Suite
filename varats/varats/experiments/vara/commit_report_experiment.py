@@ -18,13 +18,13 @@ from plumbum import local
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.experiments.wllvm import Extract, RunWLLVM
-from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     PEErrorHandler,
     VersionExperiment,
     exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
 )
+from varats.utils.settings import bb_cfg
 
 
 class CRAnalysis(actions.Step):  # type: ignore

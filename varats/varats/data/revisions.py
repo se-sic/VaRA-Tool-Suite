@@ -14,11 +14,11 @@ from pathlib import Path
 from benchbuild.project import Project
 
 from varats.data.report import FileStatusExtension, MetaReport
-from varats.settings import vara_cfg
 from varats.utils.project_util import (
     get_project_cls_by_name,
     get_primary_project_source,
 )
+from varats.utils.settings import vara_cfg
 
 
 def is_revision_blocked(revision: str, project_cls: tp.Type[Project]) -> bool:

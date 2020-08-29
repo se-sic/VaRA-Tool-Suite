@@ -13,13 +13,13 @@ from varats.paper.paper_config import (
     get_loaded_paper_config,
     is_paper_config_loaded,
 )
-from varats.settings import (
+from varats.utils.cli_util import cli_list_choice, initialize_cli_tool
+from varats.utils.settings import (
     get_value_or_default,
     get_varats_base_folder,
     save_config,
     vara_cfg,
 )
-from varats.utils.cli_util import cli_list_choice, initialize_cli_tool
 
 LOG = logging.getLogger(__name__)
 

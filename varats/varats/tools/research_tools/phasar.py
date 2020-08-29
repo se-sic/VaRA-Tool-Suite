@@ -9,7 +9,6 @@ from plumbum import local
 from PyQt5.QtCore import QProcess
 
 from varats.plots.plot_utils import check_required_args
-from varats.settings import save_config, vara_cfg
 from varats.tools.research_tools.research_tool import (
     CodeBase,
     ResearchTool,
@@ -23,6 +22,7 @@ from varats.tools.research_tools.vara_manager import (
 )
 from varats.utils.exceptions import ProcessTerminatedError
 from varats.utils.logger_util import log_without_linesep
+from varats.utils.settings import save_config, vara_cfg
 
 
 class PhasarCodeBase(CodeBase):

@@ -6,8 +6,8 @@ import re
 import typing as tp
 from collections import defaultdict
 
-from varats.settings import vara_cfg
 from varats.tools.research_tools.research_tool import CodeBase, SubProject
+from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
 

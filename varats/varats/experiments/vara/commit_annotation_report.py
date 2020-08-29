@@ -22,7 +22,7 @@ from varats.experiments.wllvm import RunWLLVM
 # These two new config parameters are needed to include Niederhuber's prepare-
 # script and to make the folder in which the results of the analyses are
 # stored user-defined.
-from varats.settings import bb_cfg
+from varats.utils.settings import bb_cfg
 
 bb_cfg()["varats"] = {
     "prepare": {

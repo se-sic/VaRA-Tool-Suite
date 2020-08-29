@@ -10,7 +10,6 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 
 from varats.gui.buildsetup_window import BuildSetup
-from varats.settings import save_config
 from varats.tools.research_tools.research_tool import (
     ResearchTool,
     SpecificCodeBase,
@@ -21,6 +20,7 @@ from varats.utils.cli_util import (
     get_supported_research_tool_names,
     initialize_cli_tool,
 )
+from varats.utils.settings import save_config
 
 
 class VaRATSSetup:

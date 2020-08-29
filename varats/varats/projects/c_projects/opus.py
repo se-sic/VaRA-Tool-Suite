@@ -7,11 +7,11 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.paper.paper_config import project_filter_generator
-from varats.settings import bb_cfg
 from varats.utils.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
 )
+from varats.utils.settings import bb_cfg
 
 
 class Opus(bb.Project):  # type: ignore

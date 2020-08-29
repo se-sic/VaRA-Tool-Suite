@@ -21,8 +21,8 @@ from benchbuild.utils.compiler import cc
 from benchbuild.utils.path import list_to_path, path_to_list
 from plumbum import local
 
-from varats.settings import bb_cfg
 from varats.utils.experiment_util import FunctionPEErrorWrapper, PEErrorHandler
+from varats.utils.settings import bb_cfg
 
 
 class BCFileExtensions(Enum):

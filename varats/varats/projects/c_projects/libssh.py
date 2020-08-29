@@ -8,13 +8,13 @@ from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
-from varats.settings import bb_cfg
 from varats.utils.project_util import (
     ProjectBinaryWrapper,
     get_all_revisions_between,
     wrap_paths_to_binaries,
     get_local_project_git_path,
 )
+from varats.utils.settings import bb_cfg
 
 
 class Libssh(bb.Project, CVEProviderHook):  # type: ignore

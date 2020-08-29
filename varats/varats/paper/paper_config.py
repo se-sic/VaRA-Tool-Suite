@@ -22,7 +22,7 @@ from varats.paper.case_study import (
     load_case_study_from_file,
     store_case_study,
 )
-from varats.settings import vara_cfg
+from varats.utils.settings import vara_cfg
 
 
 class PaperConfig():

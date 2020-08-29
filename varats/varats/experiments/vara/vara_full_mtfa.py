@@ -22,13 +22,13 @@ from plumbum import local
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.experiments.wllvm import Extract, RunWLLVM
-from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     exec_func_with_pe_error_handler,
     FunctionPEErrorWrapper,
     VersionExperiment,
     PEErrorHandler,
 )
+from varats.utils.settings import bb_cfg
 
 
 class VaraMTFACheck(actions.Step):  # type: ignore

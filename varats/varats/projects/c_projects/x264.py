@@ -7,13 +7,13 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.paper.paper_config import project_filter_generator
-from varats.settings import bb_cfg
 from varats.utils.project_util import (
     get_all_revisions_between,
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     get_local_project_git_path,
 )
+from varats.utils.settings import bb_cfg
 
 
 class X264(bb.Project):  # type: ignore

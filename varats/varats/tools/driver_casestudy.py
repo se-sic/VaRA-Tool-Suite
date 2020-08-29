@@ -22,10 +22,10 @@ from varats.paper.case_study import (
     store_case_study,
 )
 from varats.paper.paper_config import get_paper_config
-from varats.settings import vara_cfg
 from varats.tools.commit_map import create_lazy_commit_map_loader
 from varats.utils.cli_util import cli_list_choice, initialize_cli_tool
 from varats.utils.project_util import get_local_project_git_path
+from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
 

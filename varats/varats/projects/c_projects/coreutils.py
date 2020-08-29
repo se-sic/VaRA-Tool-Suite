@@ -9,11 +9,11 @@ from plumbum import local
 
 from varats.data.provider.cve.cve_provider import CVEProviderHook
 from varats.paper.paper_config import project_filter_generator
-from varats.settings import bb_cfg
 from varats.utils.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
 )
+from varats.utils.settings import bb_cfg
 
 
 class Coreutils(bb.Project, CVEProviderHook):  # type: ignore

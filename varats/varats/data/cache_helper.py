@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from varats.settings import vara_cfg
+from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
 

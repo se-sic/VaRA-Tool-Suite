@@ -18,9 +18,9 @@ from pathlib import Path
 from varats.data.version_header import VersionHeader
 from varats.plots.plot import Plot
 from varats.plots.plots import PlotRegistry, build_plot
-from varats.settings import vara_cfg
 from varats.tables.table import TableFormat, Table
 from varats.tables.tables import TableRegistry
+from varats.utils.settings import vara_cfg
 from varats.utils.yaml_util import load_yaml, store_as_yaml
 
 LOG = logging.getLogger(__name__)

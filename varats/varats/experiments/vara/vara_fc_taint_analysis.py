@@ -18,11 +18,11 @@ from plumbum import ProcessExecutionError
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.experiments.vara.vara_full_mtfa import VaRATaintPropagation
-from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     PEErrorHandler,
     exec_func_with_pe_error_handler,
 )
+from varats.utils.settings import bb_cfg
 
 
 class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore

@@ -17,8 +17,8 @@ from varats.paper.case_study import (
     CaseStudy,
     get_newest_result_files_for_case_study,
 )
-from varats.settings import vara_cfg
 from varats.tools.commit_map import create_lazy_commit_map_loader
+from varats.utils.settings import vara_cfg
 
 
 def show_status_of_case_studies(

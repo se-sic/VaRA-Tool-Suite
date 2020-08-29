@@ -11,7 +11,7 @@ import benchbuild.utils.settings
 import plumbum as pb
 from benchbuild.source import Git, base
 
-import varats.settings as settings
+import varats.utils.settings as settings
 
 TEST_INPUTS_DIR = Path(os.path.dirname(__file__)) / 'TEST_INPUTS'
 

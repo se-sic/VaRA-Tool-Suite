@@ -12,7 +12,7 @@ import typing as tp
 import yaml
 from benchbuild.utils.settings import ConfigDumper, Configuration
 
-from varats.settings import vara_cfg, save_config
+from varats.utils.settings import vara_cfg, save_config
 
 
 def main() -> None:

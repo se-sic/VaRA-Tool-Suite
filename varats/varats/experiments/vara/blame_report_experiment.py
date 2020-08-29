@@ -17,13 +17,13 @@ import varats.experiments.vara.blame_experiment as BE
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.blame_report import BlameReport as BR
 from varats.experiments.wllvm import Extract
-from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     PEErrorHandler,
     wrap_unlimit_stack_size,
 )
+from varats.utils.settings import bb_cfg
 
 
 class BlameReportGeneration(actions.Step):  # type: ignore

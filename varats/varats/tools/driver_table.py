@@ -7,10 +7,10 @@ from pathlib import Path
 
 from varats.paper.case_study import load_case_study_from_file
 from varats.paper.paper_config import get_paper_config
-from varats.settings import vara_cfg
 from varats.tables.tables import TableRegistry, build_table
 from varats.tools.commit_map import create_lazy_commit_map_loader
 from varats.utils.cli_util import initialize_cli_tool
+from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
 

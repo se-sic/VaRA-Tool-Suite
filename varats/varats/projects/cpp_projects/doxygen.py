@@ -9,11 +9,11 @@ from plumbum import local
 from plumbum.path.utils import delete
 
 from varats.paper.paper_config import project_filter_generator
-from varats.settings import bb_cfg
 from varats.utils.project_util import (
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
 )
+from varats.utils.settings import bb_cfg
 
 
 class Doxygen(bb.Project):  # type: ignore

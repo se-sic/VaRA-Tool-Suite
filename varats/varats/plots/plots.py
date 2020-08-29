@@ -6,8 +6,8 @@ import typing as tp
 from pathlib import Path
 
 from varats.plots.plot_utils import check_required_args
-from varats.settings import vara_cfg
 from varats.tools.commit_map import create_lazy_commit_map_loader
+from varats.utils.settings import vara_cfg
 
 if tp.TYPE_CHECKING:
     import varats.plots.plot  # pylint: disable=W0611

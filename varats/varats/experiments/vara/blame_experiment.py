@@ -11,11 +11,11 @@ from plumbum import local
 
 from varats.data.report import BaseReport
 from varats.experiments.wllvm import Extract, RunWLLVM, BCFileExtensions
-from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     get_default_compile_error_wrapped,
     PEErrorHandler,
 )
+from varats.utils.settings import bb_cfg
 
 
 def setup_basic_blame_experiment(

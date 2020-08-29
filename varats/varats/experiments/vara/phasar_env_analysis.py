@@ -20,13 +20,13 @@ from plumbum import local
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.env_trace_report import EnvTraceReport as ENVR
 from varats.experiments.wllvm import Extract, RunWLLVM
-from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     FunctionPEErrorWrapper,
     PEErrorHandler,
     wrap_unlimit_stack_size,
     exec_func_with_pe_error_handler,
 )
+from varats.utils.settings import bb_cfg
 
 
 class PhasarEnvIFDS(actions.Step):  # type: ignore

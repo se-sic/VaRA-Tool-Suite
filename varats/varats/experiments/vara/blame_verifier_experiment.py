@@ -23,12 +23,12 @@ from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportOpt as BVR_Opt,
 )
 from varats.experiments.wllvm import BCFileExtensions, Extract
-from varats.settings import bb_cfg
 from varats.utils.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     PEErrorHandler,
 )
+from varats.utils.settings import bb_cfg
 
 
 class BlameVerifierReportGeneration(actions.Step):  # type: ignore
