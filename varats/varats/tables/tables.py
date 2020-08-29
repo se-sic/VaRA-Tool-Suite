@@ -13,6 +13,7 @@ class TableRegistry(type):
     TO_SNAKE_CASE_PATTERN = re.compile(r'(?<!^)(?=[A-Z])')
 
     tables: tp.Dict[str, tp.Type[tp.Any]] = {}
+    tables_discovered = False
 
     def __init__(
         cls, name: str, bases: tp.Tuple[tp.Any], attrs: tp.Dict[tp.Any, tp.Any]
@@ -25,6 +26,14 @@ class TableRegistry(type):
         TableRegistry.tables[key] = cls
 
     @staticmethod
+    def __ensure_tables_are_loaded() -> None:
+        """Ensures that all table files are loaded into the registry."""
+        if not TableRegistry.tables_discovered:
+            from . import discover  # pylint: disable=C0415
+            discover()
+            TableRegistry.tables_discovered = True
+
+    @staticmethod
     def get_table_types_help_string() -> str:
         """
         Generates help string for visualizing all available tables.
@@ -32,6 +41,7 @@ class TableRegistry(type):
         Returns:
             a help string that contains all available table names.
         """
+        TableRegistry.__ensure_tables_are_loaded()
         return "The following tables are available:\n  " + "\n  ".join([
             key for key in TableRegistry.tables if key != "table"
         ])
@@ -47,6 +57,8 @@ class TableRegistry(type):
         Returns:
             the class implementing the table
         """
+        TableRegistry.__ensure_tables_are_loaded()
+
         from varats.tables.table import Table
         if table not in TableRegistry.tables:
             sys.exit(
