@@ -3,7 +3,7 @@
 import argparse
 import typing as tp
 
-from varats import development as dev
+from varats.tools.research_tools import development as dev
 from varats.tools.research_tools.research_tool import SubProject
 from varats.utils.cli_util import (
     get_research_tool,
