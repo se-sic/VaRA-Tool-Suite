@@ -11,7 +11,6 @@ from pathlib import Path
 import numpy as np
 import pygit2
 from benchbuild import Project
-from benchbuild.source import primary
 from scipy.stats import halfnorm
 
 from varats.data.provider.release.release_provider import (
@@ -536,7 +535,6 @@ class CaseStudy():
             a list of (revision, status) tuples
         """
         project_cls = get_project_cls_by_name(self.project_name)
-        source = primary(*project_cls.SOURCE)
         tagged_revisions = get_tagged_revisions(
             project_cls, result_file_type, tag_blocked
         )
@@ -554,9 +552,9 @@ class CaseStudy():
                         found = True
                         break
                 if not found:
-                    if tag_blocked and hasattr(
-                        source, "is_blocked_revision"
-                    ) and source.is_blocked_revision(short_rev)[0]:
+                    if tag_blocked and is_revision_blocked(
+                        short_rev, project_cls
+                    ):
                         filtered_revisions.append(
                             (short_rev, FileStatusExtension.Blocked)
                         )
