@@ -2,7 +2,7 @@ from setuptools import find_namespace_packages, setup
 
 setup(
     name='varats',
-    version="10.0.0",
+    version="9.0.2",
     url='https://github.com/se-passau/vara-tool-suite',
     packages=find_namespace_packages(include=['varats.*']),
     setup_requires=["pytest-runner"],
@@ -29,7 +29,7 @@ setup(
         "tabulate>=0.8.6",
         "rich>=1.3.1",
         "statsmodels~=0.11.1",
-        "varats-core>=10.0.0",
+        "varats-core>=9.0.0",
     ],
     author="Florian Sattler",
     author_email="sattlerf@cs.uni-saarland.de",
