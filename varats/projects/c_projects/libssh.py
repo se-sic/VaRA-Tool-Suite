@@ -65,7 +65,9 @@ class Libssh(bb.Project, CVEProviderHook):  # type: ignore
 
         with local.cwd(libssh_git_path):
             cmake_revisions = get_all_revisions_between(
-                "0151b6e17041c56813c882a3de6330c82acc8d93", "master"
+                "0151b6e17041c56813c882a3de6330c82acc8d93",
+                "master",
+                short=True
             )
 
         if libssh_version in cmake_revisions:
