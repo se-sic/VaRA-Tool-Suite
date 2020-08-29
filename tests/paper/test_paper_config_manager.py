@@ -8,10 +8,12 @@ from tempfile import NamedTemporaryFile
 
 import mock
 from benchbuild.source import nosource
+from benchbuild.utils.revision_ranges import block_revisions, SingleRevision
 from test_case_study import YAML_CASE_STUDY
 
 import varats.paper.paper_config_manager as PCM
 from tests.paper.test_case_study import mocked_create_lazy_commit_map_loader
+from tests.test_utils import DummyGit
 from varats.data.report import FileStatusExtension
 from varats.data.reports.commit_report import CommitReport
 from varats.paper.case_study import load_case_study_from_file
@@ -20,6 +22,8 @@ from varats.projects.c_projects.gzip import Gzip
 
 class TestPaperConfigManager(unittest.TestCase):
     """Test basic PaperConfigManager functionality."""
+
+    DUMMY_GIT = DummyGit(remote="/dev/null", local="/dev/null")
 
     @classmethod
     def setUpClass(cls):
@@ -35,26 +39,33 @@ class TestPaperConfigManager(unittest.TestCase):
         )
         self.addCleanup(gzip_patcher.stop)
         self.mock_gzip = gzip_patcher.start()
+        self.mock_gzip.NAME = 'gzip'
         self.mock_gzip.SOURCE = [nosource()]
 
         project_util_patcher = mock.patch(
             'varats.paper.case_study.get_project_cls_by_name'
         )
         self.addCleanup(project_util_patcher.stop)
-        self.mock_get_project = project_util_patcher.start()
-        self.mock_get_project.return_value = self.mock_gzip
+        project_util_patcher.start().return_value = self.mock_gzip
+
+        # allows to add blocked revisions
+        project_source_patcher = mock.patch(
+            'varats.data.revisions.get_primary_project_source'
+        )
+        self.addCleanup(project_source_patcher.stop)
+        self.project_source_mock = project_source_patcher.start()
+        self.project_source_mock.return_value = self.DUMMY_GIT
 
     @mock.patch('varats.paper.case_study.get_tagged_revisions')
     def test_short_status(self, mock_get_tagged_revisions):
         """Check if the case study can show a short status."""
 
-        def is_blocked_revision(rev: str):
-            if rev == "7620b81735":
-                return True, ""
-            return False, ""
-
         # block a revision
-        self.mock_gzip.SOURCE[0].is_blocked_revision = is_blocked_revision
+        mocked_gzip_source = block_revisions([SingleRevision("7620b81735")])(
+            DummyGit(remote="/dev/null", local="/dev/null")
+        )
+        self.project_source_mock.return_value = mocked_gzip_source
+
         # Revision not in set
         mock_get_tagged_revisions.return_value = [
             ('42b25e7f15', FileStatusExtension.Success)

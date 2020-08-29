@@ -30,10 +30,7 @@ from varats.data.revisions import (
 from varats.data.version_header import VersionHeader
 from varats.plots.plot_utils import check_required_args
 from varats.plots.plots import PlotRegistry
-from varats.utils.project_util import (
-    get_project_cls_by_name,
-    get_primary_project_source,
-)
+from varats.utils.project_util import get_project_cls_by_name
 from varats.utils.yaml_util import load_yaml, store_as_yaml
 
 
@@ -538,7 +535,6 @@ class CaseStudy():
             a list of (revision, status) tuples
         """
         project_cls = get_project_cls_by_name(self.project_name)
-        source = get_primary_project_source(project_cls.NAME)
         tagged_revisions = get_tagged_revisions(
             project_cls, result_file_type, tag_blocked
         )
@@ -556,9 +552,9 @@ class CaseStudy():
                         found = True
                         break
                 if not found:
-                    if tag_blocked and hasattr(
-                        source, "is_blocked_revision"
-                    ) and source.is_blocked_revision(short_rev)[0]:
+                    if tag_blocked and is_revision_blocked(
+                        short_rev, project_cls
+                    ):
                         filtered_revisions.append(
                             (short_rev, FileStatusExtension.Blocked)
                         )
