@@ -2,7 +2,7 @@ from setuptools import find_namespace_packages, setup
 
 setup(
     name='varats',
-    use_scm_version=True,
+    use_scm_version={'root': '..'},
     url='https://github.com/se-passau/vara-tool-suite',
     packages=find_namespace_packages(include=['varats.*']),
     setup_requires=["pytest-runner", "setuptools_scm"],
