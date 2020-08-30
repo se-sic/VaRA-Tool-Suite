@@ -33,8 +33,8 @@ script:
   - ./run_extra_tests.sh
   - coverage combine -a
   - coverage report
-  - mypy --strict varats/varats
-  - mypy --strict varats-core/varats
+  - mypy --strict -p varats/varats
+  - mypy --strict -p varats-core/varats
 
 after_success:
   - codecov
