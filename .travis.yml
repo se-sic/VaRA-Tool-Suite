@@ -17,7 +17,8 @@ env:
   - BB_TMP_DIR=$TRAVIS_BUILD_DIR/benchbuild/tmp
 
 install:
-  - pip install .
+  - pip install ./varats-core
+  - pip install ./varats
   - pip install -r requirements.txt
   - pip install codecov
   - pip install pytest-cov
