@@ -38,6 +38,7 @@ Install to python user-directory (easier)
 The simplest way to install VaRA-TS is by using pip.
 
 .. code-block:: console
+
     pip3 install varats
 
 To install VaRA-TS from the repository into the user directory use the
