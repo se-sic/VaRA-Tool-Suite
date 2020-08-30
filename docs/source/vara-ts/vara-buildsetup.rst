@@ -35,13 +35,20 @@ First you will need to clone the VaRA Tool Suite repository.
 Install to python user-directory (easier)
 *****************************************
 
-To install VaRA-TS into the user directory use the following command.
-The same command can be used to update an existing installation (if necessary).
+The simplest way to install VaRA-TS is by using pip.
+
+.. code-block:: console
+    pip3 install varats
+
+To install VaRA-TS from the repository into the user directory use the
+following command.  The same command can be used to update an existing
+installation (if necessary).
 
 .. code-block:: console
 
     # cd to VaRA-TS directory
-    python3 -m pip install --user --upgrade -e .
+    python3 -m pip install --user --upgrade -e ./varats-core
+    python3 -m pip install --user --upgrade -e ./varats
 
     # developers also need to execute the next command
     # (if you want to contribute to VaRA/VaRA-TS):
@@ -61,7 +68,8 @@ Install to python virtualenv (advanced)
     source /path/to/virtualenv/bin/activate
 
     # cd to VaRA-TS directory
-    python3 -m pip install --upgrade -e .
+    python3 -m pip install --user --upgrade -e ./varats-core
+    python3 -m pip install --user --upgrade -e ./varats
 
     # developers also need to execute the next command
     # (if you want to contribute to VaRA/VaRA-TS):
