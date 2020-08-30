@@ -17,7 +17,7 @@ def get_project_cls_by_name(project_name: str) -> tp.Type[bb.Project]:
     """Look up a BenchBuild project by it's name."""
     global PROJECTS_DISCOVERED  # pylint: disable=global-statement
     if not PROJECTS_DISCOVERED:
-        from ..projects import discover  # pylint: disable=C0415
+        from varats.projects import discover  # pylint: disable=C0415
         discover()
         PROJECTS_DISCOVERED = True
 

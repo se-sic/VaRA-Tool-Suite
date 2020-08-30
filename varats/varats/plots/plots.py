@@ -37,7 +37,7 @@ class PlotRegistry(type):
     def __ensure_plots_are_loaded() -> None:
         """Ensures that all plot files are loaded into the registry."""
         if not PlotRegistry.plots_discovered:
-            from . import discover  # pylint: disable=C0415
+            from varats.plots import discover  # pylint: disable=C0415
             discover()
             PlotRegistry.plots_discovered = True
 
@@ -61,10 +61,6 @@ class PlotRegistry(type):
         """
         Get the class for plot from the plot registry.
 
-        Test:
-        >>> PlotRegistry.get_class_for_plot_type('paper_config_overview_plot')
-        <class 'varats.plots.paper_config_overview.PaperConfigOverviewPlot'>
-
         Args:
             plot_type: The name of the plot.
 
@@ -74,7 +70,7 @@ class PlotRegistry(type):
 
         from varats.plots.plot import Plot
         if plot_type not in PlotRegistry.plots:
-            sys.exit(
+            raise LookupError(
                 f"Unknown plot '{plot_type}'.\n" +
                 PlotRegistry.get_plot_types_help_string()
             )
