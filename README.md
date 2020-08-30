@@ -29,7 +29,7 @@ sudo apt install python3-venv # If you want to install VaRA-TS in a python virtu
 ### Installation from PyPI
 
 ```bash
-pip3 install TODO-PACKAGE-NAME
+pip3 install varats
 ```
 
 ### Installation from source
