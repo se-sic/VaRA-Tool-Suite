@@ -1,8 +1,5 @@
 from setuptools import find_namespace_packages, setup
 
-with open('../README.md') as f:
-    long_description = f.read()
-
 setup(
     name='varats',
     use_scm_version={
@@ -41,7 +38,6 @@ setup(
     author="Florian Sattler",
     author_email="sattlerf@cs.uni-saarland.de",
     license="BSD 2-Clause",
-    long_description=long_description,
     entry_points={
         "gui_scripts": [
             'vara-graphview = varats.tools.driver_graph_view:main',
