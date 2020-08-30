@@ -5,7 +5,7 @@ setup(
     use_scm_version=True,
     url='https://github.com/se-passau/vara-tool-suite',
     packages=find_namespace_packages(include=['varats.*']),
-    setup_requires=["pytest-runner"],
+    setup_requires=["pytest-runner", "setuptools_scm"],
     tests_require=["pytest", "pytest-cov"],
     install_requires=[
         "PyQt5>=5.10.0,<5.14.0",
