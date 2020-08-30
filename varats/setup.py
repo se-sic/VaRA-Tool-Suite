@@ -42,7 +42,7 @@ setup(
     author_email="sattlerf@cs.uni-saarland.de",
     license="BSD 2-Clause",
     long_description=long_description,
-    long_description_content_type='text/markdown',
+    long_description_content_type="text/markdown",
     entry_points={
         "gui_scripts": [
             'vara-graphview = varats.tools.driver_graph_view:main',
