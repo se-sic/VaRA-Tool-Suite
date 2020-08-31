@@ -1,6 +1,10 @@
+import os
+
 from setuptools import find_namespace_packages, setup
 
-with open('../README.md') as f:
+base_dir = os.path.dirname(__file__)
+
+with open(base_dir + '/README.md') as f:
     long_description = f.read()
 
 setup(
