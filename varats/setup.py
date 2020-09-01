@@ -17,6 +17,7 @@ setup(
     },
     url='https://github.com/se-passau/vara-tool-suite',
     packages=find_namespace_packages(include=['varats.*']),
+    namespace_packages=["varats"],
     setup_requires=["pytest-runner", "setuptools_scm"],
     tests_require=["pytest", "pytest-cov"],
     install_requires=[
