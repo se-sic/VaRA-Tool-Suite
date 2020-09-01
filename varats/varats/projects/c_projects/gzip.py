@@ -58,6 +58,7 @@ class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
         pass
 
     def compile(self) -> None:
+        """Compile the project."""
         gzip_version_source = bb.path(self.source_of_primary)
 
         self.cflags += [

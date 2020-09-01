@@ -19,7 +19,7 @@ class CRBarView(QWidget, Ui_Form):
     """Bar view for commit reports."""
 
     def __init__(self):
-        super(CRBarView, self).__init__()
+        super().__init__()
 
         self.commit_reports = []
         self.commit_report_merged_meta = CommitReportMeta()

@@ -85,7 +85,7 @@ class FileLoader(QRunnable):
         self, func: tp.Callable[[Path, tp.Type[LoadableType]], LoadableType],
         file_path: Path, class_type: tp.Type[LoadableType]
     ) -> None:
-        super(FileLoader, self).__init__()
+        super().__init__()
         self.func = func
         self.file_path = file_path
         self.class_type = class_type

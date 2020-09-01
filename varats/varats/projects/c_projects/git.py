@@ -43,6 +43,7 @@ class Git(bb.Project, CVEProviderHook):  # type: ignore
         pass
 
     def compile(self) -> None:
+        """Compile the project."""
         git_source = bb.path(self.source_of_primary)
 
         clang = bb.compiler.cc(self)

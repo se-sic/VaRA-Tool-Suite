@@ -184,6 +184,7 @@ class InteractionPlot(Plot):
         return True
 
     def plot(self, view_mode: bool) -> None:
+        """Plots the current plot."""
         style.use(self.style)
 
         def cs_filter(data_frame: pd.DataFrame) -> pd.DataFrame:

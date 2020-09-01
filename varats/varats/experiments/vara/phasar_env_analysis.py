@@ -40,7 +40,7 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
     def __init__(self, project: Project):
-        super(PhasarEnvIFDS, self).__init__(obj=project, action_fn=self.analyze)
+        super().__init__(obj=project, action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
         """

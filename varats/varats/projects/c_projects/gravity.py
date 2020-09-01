@@ -2,7 +2,7 @@
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.utils.cmd import cmake, git, make
+from benchbuild.utils.cmd import cmake, make
 from benchbuild.utils.revision_ranges import (
     block_revisions,
     GoodBadSubgraph,
@@ -78,7 +78,7 @@ class Gravity(bb.Project, CVEProviderHook):  # type: ignore
         pass
 
     def compile(self) -> None:
-
+        """Compile the project."""
         gravity_git_path = get_local_project_git_path(self.NAME)
         gravity_version = self.version_of_primary
 

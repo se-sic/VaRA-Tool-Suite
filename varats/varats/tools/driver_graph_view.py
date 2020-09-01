@@ -1,3 +1,4 @@
+"""Driver module for `vara-graphview`."""
 import sys
 import typing as tp
 

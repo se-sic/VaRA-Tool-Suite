@@ -88,6 +88,12 @@ class PrintMarkerInstTest(Experiment):  # type: ignore
     NAME = "PrintMarkerInstTest"
 
     def actions_for_project(self, project: Project) -> tp.List[Step]:
+        """
+        Defines the actions, which should be run on a project.
+
+        Args:
+            project: the project we run our `Experiment` on
+        """
         project.compiler_extension = compiler.RunCompiler(
             project, self
         ) << TraceBinaryCreator(project, self, "Print")
@@ -107,6 +113,12 @@ class PapiMarkerInstTest(Experiment):  # type: ignore
     NAME = "PapiMarkerInstTest"
 
     def actions_for_project(self, project: Project) -> tp.List[Step]:
+        """
+        Defines the actions, which should be run on a project.
+
+        Args:
+            project: the project we run our `Experiment` on
+        """
         project.compiler_extension = compiler.RunCompiler(
             project, self
         ) << TraceBinaryCreator(
@@ -131,6 +143,12 @@ class CheckMarkerInstTest(Experiment):  # type: ignore
     NAME = "CheckMarkerInstTest"
 
     def actions_for_project(self, project: Project) -> tp.List[Step]:
+        """
+        Defines the actions, which should be run on a project.
+
+        Args:
+            project: the project we run our `Experiment` on
+        """
         project.compiler_extension = compiler.RunCompiler(
             project, self
         ) << TraceBinaryCreator(project, self, "Check")

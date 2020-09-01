@@ -1,3 +1,4 @@
+"""Setup config for the varats-core namespace package."""
 from setuptools import find_namespace_packages, setup
 
 setup(

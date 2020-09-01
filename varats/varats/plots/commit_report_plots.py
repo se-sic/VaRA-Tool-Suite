@@ -22,7 +22,7 @@ class CRBarPlotWidget(QWidget):
     """Bar plotting widget for CommitReports."""
 
     def __init__(self, parent: QWidget) -> None:
-        super(CRBarPlotWidget, self).__init__(parent)
+        super().__init__(parent)
 
         self.cf_plot = True
 

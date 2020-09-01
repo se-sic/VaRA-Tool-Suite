@@ -2,7 +2,6 @@
 
 import os
 import random
-import resource
 import traceback
 import typing as tp
 from abc import abstractmethod
@@ -11,7 +10,7 @@ from pathlib import Path
 import benchbuild.source as source
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
-from benchbuild.utils.actions import Step, StepResult
+from benchbuild.utils.actions import Step
 from benchbuild.utils.cmd import prlimit
 from plumbum.commands import ProcessExecutionError
 

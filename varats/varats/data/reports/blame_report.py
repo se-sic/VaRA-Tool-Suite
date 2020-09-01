@@ -185,7 +185,7 @@ class BlameReport(BaseReport):
     FILE_TYPE = "yaml"
 
     def __init__(self, path: Path) -> None:
-        super(BlameReport, self).__init__(path)
+        super().__init__(path)
         self.__path = path
         with open(path, 'r') as stream:
             documents = yaml.load_all(stream, Loader=yaml.CLoader)

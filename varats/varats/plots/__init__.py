@@ -10,7 +10,7 @@ import varats.plots.plot
 def discover() -> None:
     """Auto import all plots."""
     __all__ = []
-    for loader, module_name, _ in pkgutil.walk_packages(
+    for _, module_name, _ in pkgutil.walk_packages(
         __path__,  # type: ignore
         prefix="varats.plots."
     ):

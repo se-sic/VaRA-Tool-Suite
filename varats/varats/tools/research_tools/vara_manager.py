@@ -834,7 +834,7 @@ class GitStateChecker(QRunnable):
     def __init__(
         self, state_signal: GitStateSignals, path_to_llvm: Path
     ) -> None:
-        super(GitStateChecker, self).__init__()
+        super().__init__()
         self.path_to_llvm = path_to_llvm
         self.signals = state_signal
 
@@ -854,7 +854,7 @@ class PullWorker(QRunnable):
     """QtWorker to update repositories."""
 
     def __init__(self, llvm_folder: Path) -> None:
-        super(PullWorker, self).__init__()
+        super().__init__()
         self.llvm_folder = llvm_folder
         self.check_state = CheckStateSignal()
 
