@@ -38,8 +38,7 @@ class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
     EXPECTED_FC_FILE = "{binary_name}.txt"
 
     def __init__(self, project: Project):
-        super(ParseAndValidateVaRAOutput,
-              self).__init__(obj=project, action_fn=self.filecheck)
+        super().__init__(obj=project, action_fn=self.filecheck)
 
     def filecheck(self) -> actions.StepResult:
         """

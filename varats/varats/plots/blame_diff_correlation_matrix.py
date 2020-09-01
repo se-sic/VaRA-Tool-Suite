@@ -30,7 +30,7 @@ def annotate_correlation(
     x_values: tp.List[int],
     y_values: tp.List[int],
     ax: axes.SubplotBase = None,
-    **kwargs: tp.Any
+    **kwargs: tp.Any  # pylint: disable=unused-argument
 ) -> None:
     """Plot the correlation coefficient in the top right hand corner of a
     plot."""
@@ -290,6 +290,13 @@ class BlameDiffDistribution(Plot):
     def save(
         self, path: tp.Optional[Path] = None, filetype: str = 'svg'
     ) -> None:
+        """
+        Save the current plot to a file.
+
+        Args:
+            path: The path where the file is stored (excluding the file name).
+            filetype: The file type of the plot.
+        """
         self.plot(False)
 
         if path is None:

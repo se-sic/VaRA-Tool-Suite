@@ -9,6 +9,6 @@ class ExampleView(QWidget, Ui_example_view):
     """Example data representation."""
 
     def __init__(self):
-        super(ExampleView, self).__init__()
+        super().__init__()
 
         self.setupUi(self)

@@ -143,7 +143,7 @@ class CommitReport(BaseReport):
     FILE_TYPE = "yaml"
 
     def __init__(self, path: Path) -> None:
-        super(CommitReport, self).__init__(path)
+        super().__init__(path)
         with open(path, "r") as stream:
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
             version_header = VersionHeader(next(documents))

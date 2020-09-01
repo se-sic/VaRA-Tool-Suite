@@ -38,8 +38,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         self,
         project: Project,
     ):
-        super(BlameReportGeneration,
-              self).__init__(obj=project, action_fn=self.analyze)
+        super().__init__(obj=project, action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
         """

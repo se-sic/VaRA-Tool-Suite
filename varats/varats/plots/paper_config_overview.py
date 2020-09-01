@@ -276,6 +276,13 @@ class PaperConfigOverviewPlot(Plot):
     def save(
         self, path: tp.Optional[Path] = None, filetype: str = 'svg'
     ) -> None:
+        """
+        Save the current plot to a file.
+
+        Args:
+            path: The path where the file is stored (excluding the file name).
+            filetype: The file type of the plot.
+        """
         self.plot(False)
 
         if path is None:

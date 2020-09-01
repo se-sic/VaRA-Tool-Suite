@@ -74,6 +74,7 @@ class Xz(bb.Project, CVEProviderHook):  # type: ignore
         pass
 
     def compile(self) -> None:
+        """Compile the project."""
         xz_git_path = get_local_project_git_path(self.NAME)
         xz_version_source = bb.path(self.source_of_primary)
         xz_version = self.version_of_primary

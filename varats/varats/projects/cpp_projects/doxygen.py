@@ -53,6 +53,7 @@ class Doxygen(bb.Project):  # type: ignore
         pass
 
     def compile(self) -> None:
+        """Compile the project."""
         doxygen_source = bb.path(self.source_of_primary)
 
         clangxx = bb.compiler.cxx(self)

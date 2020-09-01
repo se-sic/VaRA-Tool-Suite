@@ -4,7 +4,7 @@ import sys
 import typing as tp
 
 if tp.TYPE_CHECKING:
-    import varats.tables.table as table
+    import varats.tables.table as table  # pylint: disable=unused-import
 
 
 class TableRegistry(type):

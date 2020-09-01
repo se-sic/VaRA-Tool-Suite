@@ -1,7 +1,6 @@
 """General plots module."""
 import logging
 import re
-import sys
 import typing as tp
 from pathlib import Path
 
@@ -107,8 +106,10 @@ def build_plot(**args: tp.Any) -> None:
 
     First, compute missing arguments that are needed by most plots.
     """
+    # pylint: disable=C0415
     from varats.paper.case_study import load_case_study_from_file
     from varats.paper.paper_config import get_paper_config
+    # pylint: enable=C0415
 
     # Setup default result folder
     if 'result_output' not in args:

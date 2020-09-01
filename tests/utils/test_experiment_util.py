@@ -17,6 +17,9 @@ from varats.data.reports.commit_report import CommitReport as CR
 
 
 class MockExperiment(EU.VersionExperiment):
+    """Small MockExperiment to be used as a replacement for actual
+    experiments."""
+
     NAME = "CommitReportExperiment"
     REPORT_TYPE = CR
 

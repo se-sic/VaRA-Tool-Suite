@@ -42,6 +42,7 @@ class Busybox(bb.Project, CVEProviderHook):  # type: ignore
         pass
 
     def compile(self) -> None:
+        """Compile the project."""
         busybox_source = bb.path(self.source_of_primary)
 
         clang = bb.compiler.cc(self)

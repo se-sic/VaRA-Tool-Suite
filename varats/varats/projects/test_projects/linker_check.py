@@ -25,6 +25,7 @@ class LinkerCheck(Project):  # type: ignore
         pass
 
     def compile(self) -> None:
+        """Compile the project."""
         ldd_check = ldd(which('clang++').strip())
         opt_check = ldd(which('opt').strip())
 
