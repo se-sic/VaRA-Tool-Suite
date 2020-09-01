@@ -9,6 +9,8 @@ from varats.tables.tables import TableRegistry
 
 
 class TableFormat(Enum):
+    """List of supported TableFormats."""
+
     plain = "plain"
     simple = "simple"
     github = "github"

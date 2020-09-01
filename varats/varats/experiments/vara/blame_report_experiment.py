@@ -94,7 +94,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
             run_cmd = wrap_unlimit_stack_size(run_cmd)
 
             timeout_duration = '24h'
-            from benchbuild.utils.cmd import timeout
+            from benchbuild.utils.cmd import timeout  # pylint: disable=C0415
 
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration, run_cmd],

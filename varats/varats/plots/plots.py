@@ -67,7 +67,7 @@ class PlotRegistry(type):
         """
         PlotRegistry.__ensure_plots_are_loaded()
 
-        from varats.plots.plot import Plot
+        from varats.plots.plot import Plot  # pylint: disable=W0611
         if plot_type not in PlotRegistry.plots:
             raise LookupError(
                 f"Unknown plot '{plot_type}'.\n" +
@@ -133,6 +133,8 @@ def build_plot(**args: tp.Any) -> None:
 
     LOG.info(f"Writing plots to: {args['plot_dir']}")
 
+    args['plot_case_study'] = None
+
     if args['paper_config']:
         paper_config = get_paper_config()
         for case_study in paper_config.get_all_case_studies():
@@ -151,7 +153,5 @@ def build_plot(**args: tp.Any) -> None:
         if 'cs_path' in args:
             case_study_path = Path(args['cs_path'])
             args['plot_case_study'] = load_case_study_from_file(case_study_path)
-        else:
-            args['plot_case_study'] = None
 
         render_plot(**args)

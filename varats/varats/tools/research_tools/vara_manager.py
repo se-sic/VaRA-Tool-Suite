@@ -868,6 +868,9 @@ class PullWorker(QRunnable):
 
 
 class ProcessManager():
+    """Manager of a pool of background processes that are designed to handle
+    different tasks in parallel."""
+
     __instance: tp.Optional['ProcessManager'] = None
 
     @staticmethod
@@ -935,6 +938,7 @@ class ProcessManager():
 
     @staticmethod
     def shutdown() -> None:
+        """Shuts down the `ProcessManager` and terminates all processes."""
         # pylint: disable=protected-access
         inst = ProcessManager.get_instance()
         with inst.__mutex:
@@ -994,7 +998,7 @@ class ProcessManager():
 
 
 class VaRAStateManager():
-    """"""
+    """Manages the current installation of VaRA."""
 
     def __init__(self, llvm_folder: Path) -> None:
         if not llvm_folder.exists():
