@@ -2,7 +2,7 @@
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.utils.cmd import git, make
+from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 

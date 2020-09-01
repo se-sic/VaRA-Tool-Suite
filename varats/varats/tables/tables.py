@@ -47,7 +47,7 @@ class TableRegistry(type):
         ])
 
     @staticmethod
-    def get_class_for_table_type(table: str) -> tp.Type['table.Table']:
+    def get_class_for_table_type(table_param: str) -> tp.Type['table.Table']:
         """
         Get the class for ``table`` from the table registry.
 
@@ -59,14 +59,14 @@ class TableRegistry(type):
         """
         TableRegistry.__ensure_tables_are_loaded()
 
-        from varats.tables.table import Table
-        if table not in TableRegistry.tables:
+        from varats.tables.table import Table  # pylint: disable=C0415
+        if table_param not in TableRegistry.tables:
             sys.exit(
-                f"Unknown table '{table}'.\n" +
+                f"Unknown table '{table_param}'.\n" +
                 TableRegistry.get_table_types_help_string()
             )
 
-        table_cls = TableRegistry.tables[table]
+        table_cls = TableRegistry.tables[table_param]
         if not issubclass(table_cls, Table):
             raise AssertionError()
         return table_cls
@@ -75,11 +75,11 @@ class TableRegistry(type):
 def build_table(**kwargs: tp.Any) -> None:
     """Build the specified table."""
     table_type = TableRegistry.get_class_for_table_type(kwargs['table_type'])
-    table = table_type(**kwargs)
+    new_table_obj = table_type(**kwargs)
 
     if kwargs["view"]:
-        from varats.tables.table import TableFormat
-        table.format = TableFormat.fancy_grid
-        print(table.tabulate())
+        from varats.tables.table import TableFormat  # pylint: disable=C0415
+        new_table_obj.format = TableFormat.fancy_grid
+        print(new_table_obj.tabulate())
     else:
-        table.save()
+        new_table_obj.save()

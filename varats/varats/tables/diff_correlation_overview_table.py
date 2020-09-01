@@ -15,6 +15,7 @@ from varats.tools.commit_map import get_commit_map
 
 
 class DiffCorrelationOverviewTable(Table):
+    """Visualizes the correlations between different `BlameReport` metrics."""
 
     NAME = "b_diff_correlation_overview"
 

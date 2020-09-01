@@ -30,7 +30,8 @@ def annotate_correlation(
     x_values: tp.List[int],
     y_values: tp.List[int],
     ax: axes.SubplotBase = None,
-    **kwargs: tp.Any  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    **kwargs: tp.Any
 ) -> None:
     """Plot the correlation coefficient in the top right hand corner of a
     plot."""
@@ -56,6 +57,7 @@ def logit_scatterplot(
     x_values: tp.List[int],
     y_values: tp.List[int],
     ax: axes.SubplotBase = None,
+    # pylint: disable=unused-argument
     **kwargs: tp.Any
 ) -> None:
     """Plot a scatterplot with clusters as hue and plot a logit that estimates
@@ -113,6 +115,7 @@ def _cluster_data_by_kmeans(data: pd.Series) -> np.array:
 def _hist(
     x_values: tp.List[int],
     ax: axes.SubplotBase = None,
+    # pylint: disable=unused-argument
     **kwargs: tp.Any
 ) -> None:
     ax = ax or plt.gca()
