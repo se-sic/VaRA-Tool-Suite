@@ -30,7 +30,7 @@ template for your own project::
     from plumbum import local
 
     from varats.paper.paper_config import project_filter_generator
-    from varats.settings import bb_cfg
+    from varats.utils.settings import bb_cfg
     from varats.utils.project_util import (
         ProjectBinaryWrapper,
         wrap_paths_to_binaries,

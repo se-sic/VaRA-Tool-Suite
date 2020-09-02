@@ -24,5 +24,7 @@ python:
   version: 3.7
   install:
     - method: pip
-      path: .
+      path: ./varats-core
+    - method: pip
+      path: ./varats
     - requirements: docs/requirements.txt
