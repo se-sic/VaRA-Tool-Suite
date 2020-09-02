@@ -3,6 +3,9 @@
 import unittest
 import unittest.mock as mock
 
+from benchbuild.utils.revision_ranges import block_revisions, SingleRevision
+
+from tests.test_utils import DummyGit
 from varats.data.revisions import filter_blocked_revisions
 from varats.projects.c_projects.glibc import Glibc
 from varats.projects.c_projects.gravity import Gravity
@@ -12,19 +15,18 @@ class TestFilterBlockedRevisions(unittest.TestCase):
     """Test if the revision filter function correctly filters revision lists."""
 
     def setUp(self) -> None:
-        gravity_patcher = mock.patch(
-            'varats.projects.c_projects.gravity.Gravity', spec=Gravity
-        )
-        self.addCleanup(gravity_patcher.stop)
-        self.mock_gravity = gravity_patcher.start()
         self.blocked_revision = ['e207f0cc87', '109a1e6233']
-        self.mock_gravity.is_blocked_revision = lambda x: (
-            x in self.blocked_revision, ""
+        mocked_gravity_source = block_revisions([
+            SingleRevision(rev) for rev in self.blocked_revision
+        ])(DummyGit(remote="/dev/null", local="/dev/null"))
+        project_source_patcher = mock.patch(
+            'varats.data.revisions.get_primary_project_source'
         )
+        self.addCleanup(project_source_patcher.stop)
+        project_source_patcher.start().return_value = mocked_gravity_source
 
     def test_filter_empty_list(self):
-        self.assertListEqual([], filter_blocked_revisions([],
-                                                          self.mock_gravity))
+        self.assertListEqual([], filter_blocked_revisions([], Gravity))
 
     def test_filter_list_without_blocked(self):
         """Checks if we do not filter unblocked revisions."""
@@ -33,7 +35,7 @@ class TestFilterBlockedRevisions(unittest.TestCase):
         ]
 
         filtered_revisions = filter_blocked_revisions(
-            unblocked_revisions, self.mock_gravity
+            unblocked_revisions, Gravity
         )
 
         self.assertLessEqual(unblocked_revisions, filtered_revisions)
@@ -46,7 +48,7 @@ class TestFilterBlockedRevisions(unittest.TestCase):
         blocked_revision = ['e207f0cc87', '109a1e6233']
 
         filtered_revisions = filter_blocked_revisions(
-            unblocked_revisions + blocked_revision, self.mock_gravity
+            unblocked_revisions + blocked_revision, Gravity
         )
 
         self.assertLessEqual(unblocked_revisions, filtered_revisions)

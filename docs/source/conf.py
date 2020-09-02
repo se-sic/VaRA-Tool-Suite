@@ -23,7 +23,7 @@ import benchbuild.utils
 from pkg_resources import DistributionNotFound, get_distribution
 
 try:
-    __version__ = get_distribution("VaRA-Tool-Suite").version
+    __version__ = get_distribution("varats").version
 except DistributionNotFound:
     pass
 
