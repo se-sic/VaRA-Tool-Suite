@@ -1,6 +1,7 @@
 """Module for the BlameVerifierReportDatabase class."""
 import re
 import typing as tp
+from enum import Enum
 from pathlib import Path
 
 import pandas as pd
@@ -22,6 +23,11 @@ from varats.jupyterhelper.file import (
     load_blame_verifier_report_opt,
 )
 from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
+
+
+class OptLevel(Enum):
+    NO_OPT = 0
+    OPT = 2
 
 
 class BlameVerifierReportDatabase(
@@ -65,14 +71,14 @@ class BlameVerifierReportDatabase(
             if BlameVerifierReportOpt.is_correct_report_type(report_file_name):
                 report_opt = load_blame_verifier_report_opt(report_path)
                 report = report_opt
-                opt_level = 2
+                opt_level = OptLevel.OPT.value
 
             elif BlameVerifierReportNoOpt.is_correct_report_type(
                 report_file_name
             ):
                 report_no_opt = load_blame_verifier_report_no_opt(report_path)
                 report = report_no_opt
-                opt_level = 0
+                opt_level = OptLevel.NO_OPT.value
 
             else:
                 raise RuntimeWarning("unknown report type")
@@ -93,7 +99,7 @@ class BlameVerifierReportDatabase(
                 'failed': number_of_failed_annotations,
                 'undetermined': number_of_undetermined_annotations
             },
-                                index=[0]), report.head_commit, str(
+                                index=range(0, 1500)), report.head_commit, str(
                                     report_path.stat().st_mtime_ns
                                 )
 

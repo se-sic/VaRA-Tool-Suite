@@ -5,15 +5,16 @@ import typing as tp
 
 import matplotlib.pyplot as plt
 import matplotlib.style as style
+import matplotlib.ticker as mtick
 import numpy as np
 import pandas as pd
 from matplotlib import cm
 
 from varats.data.databases.blame_verifier_report_database import (
     BlameVerifierReportDatabase,
+    OptLevel,
 )
 from varats.data.reports.commit_report import CommitMap
-from varats.experiments.wllvm import BCFileExtensions
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.plot import Plot, PlotDataEmpty
 from varats.plots.plot_utils import check_required_args
@@ -24,10 +25,36 @@ LOG = logging.getLogger(__name__)
 
 
 def _filter_data_frame(
-    opt_level: BCFileExtensions, verifier_plot_df: pd.DataFrame,
-    commit_map: CommitMap
+    opt_level: OptLevel, verifier_plot_df: pd.DataFrame, commit_map: CommitMap
 ) -> tp.Tuple[tp.List[str], tp.List[pd.Series]]:
-    pass
+    """Reduce data frame to rows that match the optimization level."""
+
+    verifier_plot_df = verifier_plot_df.loc[verifier_plot_df['opt_level'] ==
+                                            opt_level.value]
+
+    total_levels = sorted(np.unique(verifier_plot_df.total))
+    verifier_plot_df = verifier_plot_df.set_index(['revision'])
+    verifier_plot_df = verifier_plot_df.reindex(
+        pd.MultiIndex.from_product(
+            verifier_plot_df.index.names, names=verifier_plot_df.index.names
+        ),
+        fill_value=0
+    ).reset_index()
+
+    # fix missing time_ids introduced by the product index
+    verifier_plot_df['time_id'] = verifier_plot_df['revision'].apply(
+        commit_map.short_time_id
+    )
+    verifier_plot_df.sort_values(by=['time_id'], inplace=True)
+
+    sub_df_list = [
+        verifier_plot_df.loc[verifier_plot_df.total == x].successful
+        for x in total_levels
+    ]
+
+    unique_revisions = verifier_plot_df.revision.unique()
+
+    return unique_revisions, sub_df_list
 
 
 class BlameVerifierReportPlot(Plot):
@@ -39,19 +66,27 @@ class BlameVerifierReportPlot(Plot):
 
     def _get_verifier_data(self) -> pd.DataFrame:
         commit_map: CommitMap = self.plot_kwargs["get_cmap"]()
+        case_study = self.plot_kwargs.get('plot_case_study', None)
         project_name = self.plot_kwargs['project']
         verifier_plot_df = BlameVerifierReportDatabase.get_data_for_project(
             project_name, [
                 "revision", "time_id", "opt_level", "total", "successful",
                 "failed", "undetermined"
-            ], commit_map
+            ], commit_map, case_study
         )
+
+        if verifier_plot_df.empty or len(
+            np.unique(verifier_plot_df['revision'])
+        ) == 1:
+            # Need more than one data point
+            raise PlotDataEmpty
+
         return verifier_plot_df
 
     def _verifier_plot(
         self,
         view_mode: bool,
-        opt_level: BCFileExtensions,
+        opt_level: OptLevel,
         extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
     ) -> None:
         plot_cfg = {
@@ -77,13 +112,39 @@ class BlameVerifierReportPlot(Plot):
         )
 
         fig = plt.figure()
-        main_axis = fig.add_subplot(111)
+        # grid_spec = fig.add_gridspec(3, 1)
+
+        main_axis = fig.subplots()
+        main_axis.get_xaxis().set_visible(False)
+        # churn_axis = fig.add_subplot(grid_spec[2, :], sharex=main_axis)
+        # x_axis = churn_axis
 
         fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
         fig.suptitle(
             str(plot_cfg['fig_title']) +
             f' - Project {self.plot_kwargs["project"]}',
             fontsize=8
+        )
+
+        revisions = verifier_plot_df['revision']
+        values = verifier_plot_df['successful']
+
+        # main_axis.yaxis.set_major_formatter(mtick.PercentFormatter(
+        #    verifier_plot_df['total'][0]))
+
+        main_axis.stackplot(
+            unique_revisions,
+            sub_df_list,
+            edgecolor=plot_cfg['edgecolor'],
+            colors=reversed(
+                plot_cfg['color_map'](np.linspace(0, 1, len(sub_df_list)))
+            ),
+            # TODO (se-passau/VaRA#545): remove cast with plot config rework
+            labels=map(
+                tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
+                sorted(np.unique(verifier_plot_df['total']))
+            ),
+            linewidth=plot_cfg['linewidth']
         )
 
         legend = main_axis.legend(
@@ -94,8 +155,13 @@ class BlameVerifierReportPlot(Plot):
                 'family': 'monospace'
             }
         )
+        plt.setp(
+            legend.get_title(),
+            fontsize=plot_cfg['legend_size'],
+            family='monospace'
+        )
         legend.set_visible(plot_cfg['legend_visible'])
-
+        """
         # annotate CVEs
         with_cve = self.plot_kwargs.get("with_cve", False)
         if with_cve:
@@ -104,16 +170,14 @@ class BlameVerifierReportPlot(Plot):
             else:
                 project = get_project_cls_by_name(self.plot_kwargs["project"])
                 draw_cves(main_axis, project, unique_revisions, plot_cfg)
-        """
-        t = np.arange(0.0, 2.0, 0.01)
-        s1 = np.sin(2 * np.pi * t)
-        s2 = np.sin(4 * np.pi * t)
 
-        plt.figure(1)
-        plt.subplot(211)
-        plt.plot(t, s1)
-        plt.subplot(212)
-        plt.plot(t, 2 * s1)
+        plt.setp(x_axis.get_yticklabels(), fontsize=8, fontfamily='monospace')
+        plt.setp(
+            x_axis.get_xticklabels(),
+            fontsize=plot_cfg['xtick_size'],
+            fontfamily='monospace',
+            rotation=270
+        )
         """
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
@@ -121,22 +185,38 @@ class BlameVerifierReportPlot(Plot):
 
 
 class BlameVerifierReportNoOptPlot(BlameVerifierReportPlot):
-
     NAME = 'b_verifier_report_no_opt_plot'
 
     def __init__(self, **kwargs: tp.Any) -> None:
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        self._verifier_plot(view_mode=True, opt_level=BCFileExtensions.NO_OPT)
+        extra_plot_cfg = {
+            'legend_visible': True,
+            'fig_title': 'Annotated project revisions without optimization',
+            'edgecolor': None,
+        }
+        self._verifier_plot(
+            view_mode=True,
+            opt_level=OptLevel.NO_OPT,
+            extra_plot_cfg=extra_plot_cfg
+        )
 
 
 class BlameVerifierReportOptPlot(BlameVerifierReportPlot):
-
     NAME = 'b_verifier_report_opt_plot'
 
     def __init__(self, **kwargs: tp.Any) -> None:
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        self._verifier_plot(view_mode=True, opt_level=BCFileExtensions.OPT)
+        extra_plot_cfg = {
+            'legend_visible': True,
+            'fig_title': 'Annotated project revisions with optimization',
+            'edgecolor': None,
+        }
+        self._verifier_plot(
+            view_mode=True,
+            opt_level=OptLevel.OPT,
+            extra_plot_cfg=extra_plot_cfg
+        )
