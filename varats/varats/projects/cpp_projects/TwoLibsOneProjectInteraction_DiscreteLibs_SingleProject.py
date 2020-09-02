@@ -1,4 +1,4 @@
-"""Project file for TwoLibsOneProjectInteractionDiscreteLibsSingleProject."""
+"""Project file for TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject."""
 import typing as tp
 
 import benchbuild as bb
@@ -16,7 +16,7 @@ from varats.utils.project_util import (
 from varats.utils.settings import bb_cfg
 
 
-class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
+class TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject(
     bb.Project
 ):  # type: ignore
     """Class to analyse interactions between two discrete libraries and one

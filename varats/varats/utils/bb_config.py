@@ -62,8 +62,7 @@ def generate_benchbuild_config(
     projects_conf.value[:] += ['varats.projects.cpp_projects.doxygen']
     projects_conf.value[:] += [
         'varats.projects.cpp_projects'
-        '.TwoLibsOneProjectInteraction'
-        '_DiscreteLibs_SingleProject'
+        '.TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject'
     ]
     projects_conf.value[:] += ['varats.projects.test_projects.basic_tests']
     projects_conf.value[:] += ['varats.projects.test_projects.linker_check']
