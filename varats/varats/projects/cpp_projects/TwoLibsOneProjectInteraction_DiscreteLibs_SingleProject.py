@@ -24,7 +24,7 @@ class TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject(
 
     NAME = 'TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject'
     GROUP = 'cpp_projects'
-    DOMAIN = 'analysis'
+    DOMAIN = 'library-testproject'
 
     SOURCE = [
         bb.source.Git(
@@ -50,7 +50,7 @@ class TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject(
     def compile(self) -> None:
         """Contains instructions on how to build the project."""
 
-        git_path = get_local_project_git_path(self.NAME)
+        library_source_folder = get_local_project_git_path(self.NAME)
         version = self.version_of_primary
 
         # cmake as build system
@@ -65,7 +65,7 @@ class TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject(
             self.__compile_make()
 
     def __compile_cmake(self) -> None:
-        version_source = bb.path(self.source_of_primary)
+        version_source = local.path(self.source_of_primary)
         clang = bb.compiler.cc(self)
         with local.cwd(version_source):
             with local.env(CC=str(clang)):
@@ -73,7 +73,7 @@ class TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject(
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def __compile_make(self) -> None:
-        version_source = bb.path(self.source_of_primary)
+        version_source = local.path(self.source_of_primary)
         clang = bb.compiler.cc(self)
         with local.cwd(version_source):
             with local.env(CC=str(clang)):
