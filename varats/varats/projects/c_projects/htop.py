@@ -43,11 +43,11 @@ class Htop(bb.Project, CVEProviderHook):  # type: ignore
 
     def compile(self) -> None:
         """Compile the project."""
-        htop_source = bb.path(self.source_of_primary)
+        htop_source = local.path(self.source_of_primary)
 
         clang = bb.compiler.cc(self)
-        with bb.cwd(htop_source):
-            with bb.env(CC=str(clang)):
+        with local.cwd(htop_source):
+            with local.env(CC=str(clang)):
                 bb.watch(local["./autogen.sh"])()
                 bb.watch(local["./configure"])()
 

@@ -46,7 +46,7 @@ class Bison(bb.Project):  # type: ignore
 
     def compile(self) -> None:
         """Compile the project."""
-        bison_source = bb.path(self.source_of(self.primary_source))
+        bison_source = local.path(self.source_of(self.primary_source))
 
         c_compiler = bb.compiler.cc(self)
         cxx_compiler = bb.compiler.cxx(self)

@@ -48,7 +48,7 @@ class Irssi(bb.Project, CVEProviderHook):  # type: ignore
 
     def compile(self) -> None:
         """Compile the project."""
-        irssi_source = bb.path(self.source_of(self.primary_source))
+        irssi_source = local.path(self.source_of(self.primary_source))
 
         compiler = bb.compiler.cc(self)
         with local.cwd(irssi_source):

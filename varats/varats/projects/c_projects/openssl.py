@@ -43,7 +43,7 @@ class OpenSSL(bb.Project, CVEProviderHook):  # type: ignore
 
     def compile(self) -> None:
         """Compile the project."""
-        openssl_source = bb.path(self.source_of_primary)
+        openssl_source = local.path(self.source_of_primary)
 
         compiler = bb.compiler.cc(self)
         with local.cwd(openssl_source):

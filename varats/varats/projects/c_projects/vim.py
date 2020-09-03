@@ -42,7 +42,7 @@ class Vim(bb.Project):  # type: ignore
 
     def compile(self) -> None:
         """Compile the project."""
-        vim_source = bb.path(self.source_of_primary)
+        vim_source = local.path(self.source_of_primary)
 
         clang = bb.compiler.cc(self)
         with local.cwd(vim_source):

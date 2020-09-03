@@ -39,7 +39,7 @@ class ExampleTestRepo(bb.Project):  # type: ignore
 
     def compile(self) -> None:
         """Compile the example project."""
-        source = bb.path(self.source_of_primary)
+        source = local.path(self.source_of_primary)
 
         c_compiler = bb.compiler.cc(self)
         with local.cwd(source):
