@@ -69,8 +69,8 @@ Install to python virtualenv (advanced)
     source /path/to/virtualenv/bin/activate
 
     # cd to VaRA-TS directory
-    python3 -m pip install --user --upgrade -e ./varats-core
-    python3 -m pip install --user --upgrade -e ./varats
+    python3 -m pip install --upgrade -e ./varats-core
+    python3 -m pip install --upgrade -e ./varats
 
     # developers also need to execute the next command
     # (if you want to contribute to VaRA/VaRA-TS):
