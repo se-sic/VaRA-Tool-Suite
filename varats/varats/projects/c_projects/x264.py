@@ -45,7 +45,7 @@ class X264(bb.Project):  # type: ignore
     def compile(self) -> None:
         """Compile the project."""
         x264_git_path = get_local_project_git_path(self.NAME)
-        x264_version_source = bb.path(self.source_of_primary)
+        x264_version_source = local.path(self.source_of_primary)
         x264_version = self.version_of_primary
 
         with local.cwd(x264_git_path):

@@ -43,7 +43,7 @@ class Lrzip(bb.Project, CVEProviderHook):  # type: ignore
 
     def compile(self) -> None:
         """Compile the project."""
-        lrzip_source = bb.path(self.source_of_primary)
+        lrzip_source = local.path(self.source_of_primary)
 
         self.cflags += ["-fPIC"]
 

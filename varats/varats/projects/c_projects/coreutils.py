@@ -154,12 +154,12 @@ class Coreutils(bb.Project, CVEProviderHook):  # type: ignore
         ])
 
     def run_tests(self) -> None:
-        coreutils_source = bb.path(self.source_of_primary)
+        coreutils_source = local.path(self.source_of_primary)
         with local.cwd(coreutils_source):
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()), "check")
 
     def compile(self) -> None:
-        coreutils_source = bb.path(self.source_of_primary)
+        coreutils_source = local.path(self.source_of_primary)
         compiler = bb.compiler.cc(self)
         with local.cwd(coreutils_source):
             git("submodule", "init")

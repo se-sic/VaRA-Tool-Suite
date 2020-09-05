@@ -49,7 +49,7 @@ class Qemu(bb.Project, CVEProviderHook):  # type: ignore
 
     def compile(self) -> None:
         """Compile the project."""
-        qemu_source = bb.path(self.source_of_primary)
+        qemu_source = local.path(self.source_of_primary)
 
         self.cflags += ['-Wno-tautological-type-limit-compare']
 

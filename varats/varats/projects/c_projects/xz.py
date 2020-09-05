@@ -76,13 +76,13 @@ class Xz(bb.Project, CVEProviderHook):  # type: ignore
     def compile(self) -> None:
         """Compile the project."""
         xz_git_path = get_local_project_git_path(self.NAME)
-        xz_version_source = bb.path(self.source_of_primary)
+        xz_version_source = local.path(self.source_of_primary)
         xz_version = self.version_of_primary
 
         # dynamic linking is off by default until
         # commit f9907503f882a745dce9d84c2968f6c175ba966a
         # (fda4724 is its parent)
-        with bb.cwd(xz_git_path):
+        with local.cwd(xz_git_path):
             revisions_wo_dynamic_linking = get_all_revisions_between(
                 "5d018dc03549c1ee4958364712fb0c94e1bf2741",
                 "fda4724d8114fccfa31c1839c15479f350c2fb4c",
@@ -92,8 +92,8 @@ class Xz(bb.Project, CVEProviderHook):  # type: ignore
         self.cflags += ["-fPIC"]
 
         clang = bb.compiler.cc(self)
-        with bb.cwd(xz_version_source):
-            with bb.env(CC=str(clang)):
+        with local.cwd(xz_version_source):
+            with local.env(CC=str(clang)):
                 bb.watch(autoreconf)("--install")
                 configure = bb.watch(local["./configure"])
 

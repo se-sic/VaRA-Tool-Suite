@@ -95,7 +95,7 @@ class Gravity(bb.Project, CVEProviderHook):  # type: ignore
             self.__compile_make()
 
     def __compile_cmake(self) -> None:
-        gravity_version_source = bb.path(self.source_of_primary)
+        gravity_version_source = local.path(self.source_of_primary)
         clang = bb.compiler.cc(self)
         with local.cwd(gravity_version_source):
             with local.env(CC=str(clang)):
@@ -103,7 +103,7 @@ class Gravity(bb.Project, CVEProviderHook):  # type: ignore
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def __compile_make(self) -> None:
-        gravity_version_source = bb.path(self.source_of_primary)
+        gravity_version_source = local.path(self.source_of_primary)
         clang = bb.compiler.cc(self)
         with local.cwd(gravity_version_source):
             with local.env(CC=str(clang)):

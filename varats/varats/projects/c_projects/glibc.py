@@ -43,7 +43,7 @@ class Glibc(bb.Project, CVEProviderHook):  # type: ignore
 
     def compile(self) -> None:
         """Compile the project."""
-        glibc_source = bb.path(self.source_of_primary)
+        glibc_source = local.path(self.source_of_primary)
 
         clang = bb.compiler.cc(self)
         build_dir = glibc_source / "build"

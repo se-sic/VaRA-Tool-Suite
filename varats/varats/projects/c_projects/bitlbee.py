@@ -47,7 +47,7 @@ class Bitlbee(bb.Project, CVEProviderHook):  # type: ignore
 
     def compile(self) -> None:
         """Compile the project."""
-        bitlbee_source = bb.path(self.source_of(self.primary_source))
+        bitlbee_source = local.path(self.source_of(self.primary_source))
 
         compiler = bb.compiler.cc(self)
         with local.cwd(bitlbee_source):
