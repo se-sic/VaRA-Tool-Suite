@@ -3,9 +3,8 @@ entry/exits."""
 
 import typing as tp
 
-from benchbuild.experiment import Experiment
+from benchbuild import Experiment, Project
 from benchbuild.extensions import base, compiler
-from benchbuild.project import Project
 from benchbuild.utils import run
 from benchbuild.utils.actions import Step
 from benchbuild.utils.settings import Configuration

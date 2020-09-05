@@ -1,10 +1,7 @@
 """Compile a collection of representing examples for the taint analysis."""
 import typing as tp
 
-import benchbuild.project as prj
-from benchbuild.utils.compiler import cxx
-from benchbuild.utils.download import with_git
-from benchbuild.utils.run import run
+import benchbuild as bb
 from plumbum import local
 
 from varats.utils.project_util import (
@@ -13,12 +10,7 @@ from varats.utils.project_util import (
 )
 
 
-@with_git(
-    "https://github.com/se-passau/vara-perf-tests.git",
-    limit=1,
-    refspec="origin/f-taintTests"
-)
-class TaintTests(prj.Project):  # type: ignore
+class TaintTests(bb.Project):  # type: ignore
     """
     Taint tests:
 
@@ -28,9 +20,15 @@ class TaintTests(prj.Project):  # type: ignore
     NAME = 'taint-tests'
     GROUP = 'test_projects'
     DOMAIN = 'testing'
-    VERSION = 'HEAD'
 
-    SRC_FILE = "vara-perf-tests"
+    SOURCE = [
+        bb.source.Git(
+            remote="https://github.com/se-passau/vara-perf-tests.git",
+            local="taint-tests",
+            limit=1,
+            refspec="origin/f-taintTests"
+        )
+    ]
 
     CPP_FILES = [
         "arrayTaintPropagation.cpp", "byValueArgPassing.cpp",
@@ -50,17 +48,16 @@ class TaintTests(prj.Project):  # type: ignore
             file_name.replace('.cpp', '') for file_name in self.CPP_FILES
         ])
 
-    def run_tests(self, runner: run) -> None:
+    def run_tests(self) -> None:
         pass
 
     def compile(self) -> None:
-        self.download()
+        source = bb.path(self.source_of_primary)
 
-        clang = cxx(self)
-        with local.cwd(self.SRC_FILE):
+        clang = bb.compiler.cxx(self)
+        with local.cwd(source):
             for file in self.CPP_FILES:
-                run(
-                    clang["{name}/{file}".format(name=self.NAME, file=file),
-                          "-o",
-                          file.replace('.cpp', '')]
+                bb.watch(clang)(
+                    "{name}/{file}".format(name=self.NAME, file=file), "-o",
+                    file.replace('.cpp', '')
                 )
