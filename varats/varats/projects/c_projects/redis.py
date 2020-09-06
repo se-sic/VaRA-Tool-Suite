@@ -52,10 +52,11 @@ class Redis(bb.Project, CVEProviderHook):  # type: ignore
         """Compile the project."""
         redis_source = local.path(self.source_of_primary)
 
-        clang = bb.compiler.cc(self)
+        clang = bb.compiler.cc(self)  # type: ignore
         with local.cwd(redis_source):
             with local.env(CC=str(clang)):
-                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+                bb.watch(make  # type: ignore
+                        )("-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

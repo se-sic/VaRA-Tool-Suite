@@ -167,8 +167,8 @@ class Coreutils(bb.Project, CVEProviderHook):  # type: ignore
             git("submodule", "update")
             with local.env(CC=str(compiler)):
                 bb.watch(local["./bootstrap"])()  # type: ignore
-                bb.watch(local["./configure"]
-                        )("--disable-gcc-warnings")  # type: ignore
+                bb.watch(local["./configure"]  # type: ignore
+                        )("--disable-gcc-warnings")
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))  # type: ignore
             for binary in self.binaries:

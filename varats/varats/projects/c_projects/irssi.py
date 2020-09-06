@@ -53,13 +53,13 @@ class Irssi(bb.Project, CVEProviderHook):  # type: ignore
         """Compile the project."""
         irssi_source = local.path(self.source_of(self.primary_source))
 
-        compiler = bb.compiler.cc(self)
+        compiler = bb.compiler.cc(self)  # type: ignore
         with local.cwd(irssi_source):
             with local.env(CC=str(compiler)):
-                bb.watch(local["./autogen.sh"])()
-                bb.watch(local["./configure"])()
+                bb.watch(local["./autogen.sh"])()  # type: ignore
+                bb.watch(local["./configure"])()  # type: ignore
 
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))  # type: ignore
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

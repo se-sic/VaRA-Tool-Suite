@@ -42,6 +42,6 @@ class ExampleTestRepo(bb.Project):  # type: ignore
         """Compile the example project."""
         source = local.path(self.source_of_primary)
 
-        c_compiler = bb.compiler.cc(self)
+        c_compiler = bb.compiler.cc(self)  # type: ignore
         with local.cwd(source):
-            bb.watch(c_compiler)("main.c", "-o", "main")
+            bb.watch(c_compiler)("main.c", "-o", "main")  # type: ignore

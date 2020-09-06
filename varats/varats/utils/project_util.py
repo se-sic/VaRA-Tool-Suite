@@ -14,7 +14,9 @@ from plumbum import local
 PROJECTS_DISCOVERED = False
 
 
-def get_project_cls_by_name(project_name: str) -> tp.Type[bb.Project]:
+def get_project_cls_by_name(
+    project_name: str
+) -> tp.Type[bb.Project]:  # type: ignore
     """Look up a BenchBuild project by it's name."""
     global PROJECTS_DISCOVERED  # pylint: disable=global-statement
     if not PROJECTS_DISCOVERED:
@@ -28,7 +30,7 @@ def get_project_cls_by_name(project_name: str) -> tp.Type[bb.Project]:
             continue
 
         if proj.startswith(project_name):
-            project: tp.Type[bb.Project
+            project: tp.Type[bb.Project  # type: ignore
                             ] = bb.project.ProjectRegistry.projects[proj]
             return project
 

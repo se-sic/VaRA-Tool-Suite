@@ -13,7 +13,10 @@ class RegionAnalyser(Experiment):  # type: ignore
 
     NAME = "RegionAnalyser"
 
-    def actions_for_project(self, project: Project) -> tp.List[Step]:
+    def actions_for_project(
+        self,
+        project: Project  # type: ignore
+    ) -> tp.List[Step]:
         """
         Defines the actions, which should be run on a project.
 
