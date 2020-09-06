@@ -4,8 +4,6 @@ import re
 import typing as tp
 
 from benchbuild.project import Project
-from github import Github
-from github.Repository import Repository
 
 import varats.data.provider.bug.bug as bug
 from varats.data.provider.provider import Provider
