@@ -49,7 +49,7 @@ class Poppler(bb.Project, CVEProviderHook):  # type: ignore
         poppler_version_source = local.path(self.source_of(self.primary_source))
 
         c_compiler = bb.compiler.cc(self)  # type: ignore
-        cxx_compiler = bb.compiler.cxx(self)
+        cxx_compiler = bb.compiler.cxx(self)  # type: ignore
         with local.cwd(poppler_version_source):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
                 bb.watch(cmake)("-G", "Unix Makefiles", ".")  # type: ignore

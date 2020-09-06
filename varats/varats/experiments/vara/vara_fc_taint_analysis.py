@@ -11,7 +11,7 @@ import typing as tp
 from typing import List
 
 import benchbuild.utils.actions as actions
-from benchbuild import Project
+from benchbuild import Project  # type: ignore
 from benchbuild.utils.cmd import FileCheck, echo, rm
 from plumbum import ProcessExecutionError
 

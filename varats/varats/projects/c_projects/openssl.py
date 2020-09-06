@@ -47,11 +47,11 @@ class OpenSSL(bb.Project, CVEProviderHook):  # type: ignore
         """Compile the project."""
         openssl_source = local.path(self.source_of_primary)
 
-        compiler = bb.compiler.cc(self)
+        compiler = bb.compiler.cc(self)  # type: ignore
         with local.cwd(openssl_source):
             with local.env(CC=str(compiler)):
-                bb.watch(local['./config'])()
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+                bb.watch(local['./config'])()  # type: ignore
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))  # type: ignore
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

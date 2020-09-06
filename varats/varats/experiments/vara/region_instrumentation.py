@@ -1,7 +1,7 @@
 """Experiment that adds tracing markers for highlight regions."""
 import typing as tp
 
-from benchbuild import Experiment, Project
+from benchbuild import Experiment, Project  # type: ignore
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.actions import Step
 
@@ -13,10 +13,7 @@ class RegionAnalyser(Experiment):  # type: ignore
 
     NAME = "RegionAnalyser"
 
-    def actions_for_project(
-        self,
-        project: Project  # type: ignore
-    ) -> tp.List[Step]:
+    def actions_for_project(self, project: Project) -> tp.List[Step]:
         """
         Defines the actions, which should be run on a project.
 

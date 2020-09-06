@@ -8,7 +8,7 @@ BlameReport.
 import typing as tp
 
 import benchbuild.utils.actions as actions
-from benchbuild import Project
+from benchbuild import Project  # type: ignore
 from benchbuild.utils.cmd import mkdir, opt
 from benchbuild.utils.requirements import Requirement, SlurmMem
 from plumbum import local
