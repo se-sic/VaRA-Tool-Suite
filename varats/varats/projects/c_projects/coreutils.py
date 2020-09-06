@@ -161,15 +161,16 @@ class Coreutils(bb.Project, CVEProviderHook):  # type: ignore
 
     def compile(self) -> None:
         coreutils_source = local.path(self.source_of_primary)
-        compiler = bb.compiler.cc(self)
+        compiler = bb.compiler.cc(self)  # type: ignore
         with local.cwd(coreutils_source):
             git("submodule", "init")
             git("submodule", "update")
             with local.env(CC=str(compiler)):
-                bb.watch(local["./bootstrap"])()
-                bb.watch(local["./configure"])("--disable-gcc-warnings")
+                bb.watch(local["./bootstrap"])()  # type: ignore
+                bb.watch(local["./configure"]
+                        )("--disable-gcc-warnings")  # type: ignore
 
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))  # type: ignore
             for binary in self.binaries:
                 if not Path("{binary}".format(binary=binary)).exists():
                     print("Could not find {binary}")
