@@ -23,7 +23,8 @@ install:
   - pip install codecov
   - pip install pytest-cov
   - pip install coverage
-  - pip install -I mypy==0.770
+  # Currently, mypy-0.782 miss detects type errors, this bug is fixed upstream
+  - python3 -m pip install -U git+git://github.com/python/mypy.git
 
 script:
   - pre-commit run --from-ref origin/vara-dev --to-ref HEAD
