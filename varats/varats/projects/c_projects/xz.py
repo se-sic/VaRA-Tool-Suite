@@ -18,6 +18,7 @@ from varats.utils.project_util import (
     get_all_revisions_between,
     wrap_paths_to_binaries,
     get_local_project_git_path,
+    BinaryType,
 )
 from varats.utils.settings import bb_cfg
 
@@ -66,9 +67,13 @@ class Xz(bb.Project, CVEProviderHook):  # type: ignore
                 short=True
             )
             if xz_version in old_xz_location:
-                return wrap_paths_to_binaries(['src/xz/xz'])
+                return wrap_paths_to_binaries([
+                    ('src/xz/xz', BinaryType.executable)
+                ])
 
-            return wrap_paths_to_binaries(['src/xz/.libs/xz'])
+            return wrap_paths_to_binaries([
+                ('src/xz/.libs/xz', BinaryType.executable)
+            ])
 
     def run_tests(self) -> None:
         pass

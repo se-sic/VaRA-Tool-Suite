@@ -9,6 +9,7 @@ from varats.utils.project_util import (
     VaraTestRepoSource,
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
+    BinaryType,
 )
 
 
@@ -32,7 +33,7 @@ class ExampleTestRepo(bb.Project):  # type: ignore
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
-        return wrap_paths_to_binaries(["main"])
+        return wrap_paths_to_binaries([("main", BinaryType.executable)])
 
     def run_tests(self) -> None:
         pass

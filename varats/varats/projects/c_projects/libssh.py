@@ -13,6 +13,7 @@ from varats.utils.project_util import (
     get_all_revisions_between,
     wrap_paths_to_binaries,
     get_local_project_git_path,
+    BinaryType,
 )
 from varats.utils.settings import bb_cfg
 
@@ -51,9 +52,13 @@ class Libssh(bb.Project, CVEProviderHook):  # type: ignore
                 short=True
             )
             if libssh_version in versions_with_src_library_folder:
-                return wrap_paths_to_binaries(['build/src/libssh.so'])
+                return wrap_paths_to_binaries([
+                    ('build/src/libssh.so', BinaryType.shared_library)
+                ])
 
-            return wrap_paths_to_binaries(['build/lib/libssh.so'])
+            return wrap_paths_to_binaries([
+                ('build/lib/libssh.so', BinaryType.shared_library)
+            ])
 
     def run_tests(self) -> None:
         pass
