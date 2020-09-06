@@ -38,6 +38,6 @@ class BasicTests(bb.Project):  # type: ignore
         clang = bb.compiler.cxx(self)  # type: ignore
         with local.cwd(source + "/basic-tests"):
             for test_file in self.test_files:
-                bb.watch(clang)(
+                bb.watch(clang)(  # type: ignore
                     test_file, "-o", test_file.replace('.cpp', '')
-                )  # type: ignore
+                )
