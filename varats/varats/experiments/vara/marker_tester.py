@@ -3,7 +3,7 @@ entry/exits."""
 
 import typing as tp
 
-from benchbuild import Experiment, Project
+from benchbuild import Experiment, Project  # type: ignore
 from benchbuild.extensions import base, compiler
 from benchbuild.utils import run
 from benchbuild.utils.actions import Step

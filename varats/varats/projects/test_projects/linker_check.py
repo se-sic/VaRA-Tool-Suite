@@ -1,7 +1,7 @@
 """Small test project to run test compiler functionality."""
 import typing as tp
 
-from benchbuild import Project
+from benchbuild import Project  # type: ignore
 from benchbuild.utils.cmd import ldd, which
 
 from varats.utils.project_util import ProjectBinaryWrapper
