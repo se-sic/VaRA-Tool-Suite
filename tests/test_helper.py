@@ -8,7 +8,7 @@ from benchbuild.source import Variant, BaseSource
 
 
 @attr.s
-class TestSource(BaseSource):
+class BBTestSource(BaseSource):
     """Source test fixture class."""
 
     test_versions: tp.List[str] = attr.ib()
