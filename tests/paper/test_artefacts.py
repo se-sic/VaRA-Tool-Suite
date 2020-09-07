@@ -9,7 +9,7 @@ from varats.paper.artefacts import (
     load_artefacts_from_file,
 )
 from varats.plots.paper_config_overview import PaperConfigOverviewPlot
-from varats.settings import vara_cfg
+from varats.utils.settings import vara_cfg
 
 YAML_ARTEFACTS = """DocType: Artefacts
 Version: 1

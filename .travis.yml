@@ -17,12 +17,14 @@ env:
   - BB_TMP_DIR=$TRAVIS_BUILD_DIR/benchbuild/tmp
 
 install:
-  - pip install .
+  - pip install ./varats-core
+  - pip install ./varats
   - pip install -r requirements.txt
   - pip install codecov
   - pip install pytest-cov
   - pip install coverage
-  - pip install -I mypy==0.770
+  # Currently, mypy-0.782 miss detects type errors, this bug is fixed upstream
+  - python3 -m pip install -U git+git://github.com/python/mypy.git
 
 script:
   - pre-commit run --from-ref origin/vara-dev --to-ref HEAD
@@ -32,7 +34,15 @@ script:
   - ./run_extra_tests.sh
   - coverage combine -a
   - coverage report
-  - mypy --strict varats
+  ######
+  # Uninstalling `rich` is a hack to make the code base checkable with mypy.
+  # mypy get's confused when discovering rich and by that does no longer any
+  # type checking.
+  ######
+  - pip uninstall -y rich
+  ######
+  - mypy --strict -p varats
+  - mypy --strict -p varats-core
 
 after_success:
   - codecov

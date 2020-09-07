@@ -3,7 +3,7 @@ include = */varats/*
 
 [paths]
 source =
-  varats/
+  varats/varats/
   */site-packages/varats/
 
 [report]
