@@ -10,7 +10,7 @@ import benchbuild.utils.settings as s
 from benchbuild.project import Project
 
 import varats.utils.experiment_util as EU
-from tests.test_helper import TestSource
+from tests.test_helper import BBTestSource
 from tests.test_utils import get_test_config, replace_config, get_bb_test_config
 from varats.data.report import FileStatusExtension
 from varats.data.reports.commit_report import CommitReport as CR
@@ -27,14 +27,14 @@ class MockExperiment(EU.VersionExperiment):
         return []
 
 
-class TestProject(Project):
+class BBTestProject(Project):
     """Test project for version sampling tests."""
     NAME = "test_empty"
 
     DOMAIN = "debug"
     GROUP = "debug"
     SOURCE = [
-        TestSource(
+        BBTestSource(
             test_versions=['rev1', 'rev2', 'rev3', 'rev4', 'rev5'],
             local="test_source",
             remote="test_remote"
@@ -127,7 +127,7 @@ class TestVersionExperiment(unittest.TestCase):
     def test_without_versions(self):
         """Test if we get the correct revision if no VaRA modifications are
         enabled."""
-        sample_gen = self.vers_expr.sample(TestProject)
+        sample_gen = self.vers_expr.sample(BBTestProject)
         self.assertEqual(sample_gen[0]["test_source"].version, "rev1")
         self.assertEqual(len(sample_gen), 1)
 
@@ -144,7 +144,7 @@ class TestVersionExperiment(unittest.TestCase):
 
             config["experiment"]["file_status_whitelist"] = ['success']
 
-            sample_gen = self.vers_expr.sample(TestProject)
+            sample_gen = self.vers_expr.sample(BBTestProject)
 
             self.assertEqual(sample_gen[0]["test_source"].version, "rev1")
             self.assertEqual(len(sample_gen), 1)
@@ -165,7 +165,7 @@ class TestVersionExperiment(unittest.TestCase):
                 'success', 'Failed', 'Missing'
             ]
 
-            sample_gen = self.vers_expr.sample(TestProject)
+            sample_gen = self.vers_expr.sample(BBTestProject)
 
             self.assertEqual(sample_gen[0]["test_source"].version, "rev1")
             self.assertEqual(sample_gen[1]["test_source"].version, "rev4")
@@ -186,7 +186,7 @@ class TestVersionExperiment(unittest.TestCase):
 
             config["experiment"]["file_status_blacklist"] = ['success']
 
-            sample_gen = self.vers_expr.sample(TestProject)
+            sample_gen = self.vers_expr.sample(BBTestProject)
 
             self.assertEqual(sample_gen[0]["test_source"].version, "rev2")
             self.assertEqual(sample_gen[1]["test_source"].version, "rev3")
@@ -210,7 +210,7 @@ class TestVersionExperiment(unittest.TestCase):
                 'success', 'Failed', 'Blocked'
             ]
 
-            sample_gen = self.vers_expr.sample(TestProject)
+            sample_gen = self.vers_expr.sample(BBTestProject)
 
             self.assertEqual(sample_gen[0]["test_source"].version, "rev3")
             self.assertEqual(sample_gen[1]["test_source"].version, "rev5")
@@ -231,7 +231,7 @@ class TestVersionExperiment(unittest.TestCase):
             config["experiment"]["file_status_blacklist"] = ['Failed']
             config["experiment"]["file_status_whitelist"] = ['Failed']
 
-            sample_gen = self.vers_expr.sample(TestProject)
+            sample_gen = self.vers_expr.sample(BBTestProject)
 
             self.assertEqual(sample_gen[0]["test_source"].version, "rev4")
             self.assertEqual(len(sample_gen), 1)

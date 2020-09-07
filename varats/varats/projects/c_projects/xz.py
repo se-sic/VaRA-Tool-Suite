@@ -18,6 +18,7 @@ from varats.utils.project_util import (
     get_all_revisions_between,
     wrap_paths_to_binaries,
     get_local_project_git_path,
+    BinaryType,
 )
 from varats.utils.settings import bb_cfg
 
@@ -66,9 +67,13 @@ class Xz(bb.Project, CVEProviderHook):  # type: ignore
                 short=True
             )
             if xz_version in old_xz_location:
-                return wrap_paths_to_binaries(['src/xz/xz'])
+                return wrap_paths_to_binaries([
+                    ('src/xz/xz', BinaryType.executable)
+                ])
 
-            return wrap_paths_to_binaries(['src/xz/.libs/xz'])
+            return wrap_paths_to_binaries([
+                ('src/xz/.libs/xz', BinaryType.executable)
+            ])
 
     def run_tests(self) -> None:
         pass
@@ -76,13 +81,13 @@ class Xz(bb.Project, CVEProviderHook):  # type: ignore
     def compile(self) -> None:
         """Compile the project."""
         xz_git_path = get_local_project_git_path(self.NAME)
-        xz_version_source = bb.path(self.source_of_primary)
+        xz_version_source = local.path(self.source_of_primary)
         xz_version = self.version_of_primary
 
         # dynamic linking is off by default until
         # commit f9907503f882a745dce9d84c2968f6c175ba966a
         # (fda4724 is its parent)
-        with bb.cwd(xz_git_path):
+        with local.cwd(xz_git_path):
             revisions_wo_dynamic_linking = get_all_revisions_between(
                 "5d018dc03549c1ee4958364712fb0c94e1bf2741",
                 "fda4724d8114fccfa31c1839c15479f350c2fb4c",
@@ -91,18 +96,18 @@ class Xz(bb.Project, CVEProviderHook):  # type: ignore
 
         self.cflags += ["-fPIC"]
 
-        clang = bb.compiler.cc(self)
-        with bb.cwd(xz_version_source):
-            with bb.env(CC=str(clang)):
-                bb.watch(autoreconf)("--install")
-                configure = bb.watch(local["./configure"])
+        clang = bb.compiler.cc(self)  # type: ignore
+        with local.cwd(xz_version_source):
+            with local.env(CC=str(clang)):
+                bb.watch(autoreconf)("--install")  # type: ignore
+                configure = bb.watch(local["./configure"])  # type: ignore
 
                 if xz_version in revisions_wo_dynamic_linking:
                     configure("--enable-dynamic=yes")
                 else:
                     configure()
 
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))  # type: ignore
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

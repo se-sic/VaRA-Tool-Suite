@@ -33,9 +33,11 @@ class BasicTests(bb.Project):  # type: ignore
 
     def compile(self) -> None:
         """Compile the project."""
-        source = bb.path(self.source_of_primary)
+        source = local.path(self.source_of_primary)
 
-        clang = bb.compiler.cxx(self)
+        clang = bb.compiler.cxx(self)  # type: ignore
         with local.cwd(source + "/basic-tests"):
             for test_file in self.test_files:
-                bb.watch(clang)(test_file, "-o", test_file.replace('.cpp', ''))
+                bb.watch(clang)(  # type: ignore
+                    test_file, "-o", test_file.replace('.cpp', '')
+                )

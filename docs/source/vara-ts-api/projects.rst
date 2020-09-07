@@ -66,7 +66,7 @@ template for your own project::
         def compile(self) -> None:
             """ Contains instructions on how to build the project. """
 
-            gravity_version_source = bb.path(self.source_of(self.primary_source))
+            gravity_version_source = local.path(self.source_of(self.primary_source))
             clang = bb.compiler.cc(self)
             with local.cwd(gravity_version_source):
                 with local.env(CC=str(clang)):
