@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 import pygit2
-from benchbuild import Project
+from benchbuild import Project  # type: ignore
 from scipy.stats import halfnorm
 
 from varats.data.provider.release.release_provider import (

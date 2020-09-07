@@ -1,7 +1,7 @@
 """Experiment that adds tracing markers for highlight regions."""
 import typing as tp
 
-from benchbuild import Experiment, Project
+from benchbuild import Experiment, Project  # type: ignore
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.actions import Step
 

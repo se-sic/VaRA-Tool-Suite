@@ -1,5 +1,6 @@
 """Utility module for BenchBuild project handling."""
 import typing as tp
+from enum import Enum
 from pathlib import Path
 
 import benchbuild as bb
@@ -13,7 +14,9 @@ from plumbum import local
 PROJECTS_DISCOVERED = False
 
 
-def get_project_cls_by_name(project_name: str) -> tp.Type[bb.Project]:
+def get_project_cls_by_name(
+    project_name: str
+) -> tp.Type[bb.Project]:  # type: ignore
     """Look up a BenchBuild project by it's name."""
     global PROJECTS_DISCOVERED  # pylint: disable=global-statement
     if not PROJECTS_DISCOVERED:
@@ -27,7 +30,7 @@ def get_project_cls_by_name(project_name: str) -> tp.Type[bb.Project]:
             continue
 
         if proj.startswith(project_name):
-            project: tp.Type[bb.Project
+            project: tp.Type[bb.Project  # type: ignore
                             ] = bb.project.ProjectRegistry.projects[proj]
             return project
 
@@ -96,17 +99,32 @@ def get_all_revisions_between(c_start: str,
     return list(map(lambda rev: rev[:10], result)) if short else result
 
 
+class BinaryType(Enum):
+    """Enum for different binary types."""
+
+    executable = 1
+    shared_library = 2
+    static_library = 3
+
+    def __str__(self) -> str:
+        return str(self.name)
+
+
 class ProjectBinaryWrapper():
     """
     Wraps project binaries which get generated during compilation.
 
-    >>> ProjectBinaryWrapper("binary_name", "path/to/binary")
-    (binary_name: path/to/binary)
+    >>> ProjectBinaryWrapper("binary_name", "path/to/binary", \
+                             BinaryType.executable)
+    (binary_name: path/to/binary | executable)
     """
 
-    def __init__(self, binary_name: str, path_to_binary: Path) -> None:
+    def __init__(
+        self, binary_name: str, path_to_binary: Path, binary_type: BinaryType
+    ) -> None:
         self.__binary_name = binary_name
         self.__binary_path = path_to_binary
+        self.__type = binary_type
 
     @property
     def name(self) -> str:
@@ -116,46 +134,55 @@ class ProjectBinaryWrapper():
     def path(self) -> Path:
         return self.__binary_path
 
+    @property
+    def type(self) -> BinaryType:
+        return self.__type
+
     def __str__(self) -> str:
-        return f"{self.name}: {self.path}"
+        return f"{self.name}: {self.path} | {str(self.type)}"
 
     def __repr__(self) -> str:
         return f"({str(self)})"
 
 
 def wrap_paths_to_binaries_with_name(
-    binaries: tp.List[tp.Tuple[str, str]]
+    binaries: tp.List[tp.Tuple[str, str, BinaryType]]
 ) -> tp.List[ProjectBinaryWrapper]:
     """
     Generates a wrapper for project binaries.
 
-    >>> wrap_paths_to_binaries_with_name([("fooer", "src/foo")])
-    [(fooer: src/foo)]
+    >>> wrap_paths_to_binaries_with_name([("fooer", "src/foo", \
+                                           BinaryType.executable)])
+    [(fooer: src/foo | executable)]
 
-    >>> wrap_paths_to_binaries_with_name([("fooer", "src/foo"), \
-                                          ("barer", "src/bar")])
-    [(fooer: src/foo), (barer: src/bar)]
+    >>> wrap_paths_to_binaries_with_name([("fooer", "src/foo", \
+                                           BinaryType.executable), \
+                                          ("barer", "src/bar", \
+                                           BinaryType.shared_library)])
+    [(fooer: src/foo | executable), (barer: src/bar | shared_library)]
     """
-    return [ProjectBinaryWrapper(x[0], Path(x[1])) for x in binaries]
+    return [ProjectBinaryWrapper(x[0], Path(x[1]), x[2]) for x in binaries]
 
 
 def wrap_paths_to_binaries(
-    binaries: tp.List[str]
+    binaries: tp.List[tp.Tuple[str, BinaryType]]
 ) -> tp.List[ProjectBinaryWrapper]:
     """
     Generates a wrapper for project binaries.
 
-    >>> wrap_paths_to_binaries(["src/foo"])
-    [(foo: src/foo)]
+    >>> wrap_paths_to_binaries([("src/foo", BinaryType.executable)])
+    [(foo: src/foo | executable)]
 
-    >>> wrap_paths_to_binaries(["src/foo.so"])
-    [(foo: src/foo.so)]
+    >>> wrap_paths_to_binaries([("src/foo.so", BinaryType.shared_library)])
+    [(foo: src/foo.so | shared_library)]
 
-    >>> wrap_paths_to_binaries(["src/foo", "src/bar"])
-    [(foo: src/foo), (bar: src/bar)]
+    >>> wrap_paths_to_binaries([("src/foo", BinaryType.static_library), \
+                                ("src/bar",BinaryType.executable)])
+    [(foo: src/foo | static_library), (bar: src/bar | executable)]
     """
-    return wrap_paths_to_binaries_with_name([(Path(x).stem, x) for x in binaries
-                                            ])
+    return wrap_paths_to_binaries_with_name([
+        (Path(x[0]).stem, x[0], x[1]) for x in binaries
+    ])
 
 
 # ignore type as we do not have appropriate type information from benchbuild
