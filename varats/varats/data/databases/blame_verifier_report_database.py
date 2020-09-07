@@ -99,7 +99,7 @@ class BlameVerifierReportDatabase(
                 'failed': number_of_failed_annotations,
                 'undetermined': number_of_undetermined_annotations
             },
-                                index=range(0, 1500)), report.head_commit, str(
+                                index=[0]), report.head_commit, str(
                                     report_path.stat().st_mtime_ns
                                 )
 
