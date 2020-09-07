@@ -43,7 +43,7 @@ class Opus(bb.Project):  # type: ignore
 
     def compile(self) -> None:
         """Compile the project."""
-        opus_source = bb.path(self.source_of_primary)
+        opus_source = local.path(self.source_of_primary)
 
         self.cflags += ["-fPIC"]
 

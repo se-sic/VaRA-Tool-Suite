@@ -76,7 +76,7 @@ class Libssh(bb.Project, CVEProviderHook):  # type: ignore
             self.__compile_make()
 
     def __compile_cmake(self) -> None:
-        libssh_source = bb.path(self.source_of(self.primary_source))
+        libssh_source = local.path(self.source_of(self.primary_source))
 
         compiler = bb.compiler.cc(self)
         mkdir("-p", libssh_source / "build")
@@ -87,7 +87,7 @@ class Libssh(bb.Project, CVEProviderHook):  # type: ignore
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     def __compile_make(self) -> None:
-        libssh_source = bb.path(self.source_of(self.primary_source))
+        libssh_source = local.path(self.source_of(self.primary_source))
 
         compiler = bb.compiler.cc(self)
         with local.cwd(libssh_source):

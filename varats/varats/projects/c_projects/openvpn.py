@@ -50,7 +50,7 @@ class OpenVPN(bb.Project, CVEProviderHook):  # type: ignore
 
     def compile(self) -> None:
         """Compile the project."""
-        openvpn_source = bb.path(self.source_of(self.primary_source))
+        openvpn_source = local.path(self.source_of(self.primary_source))
 
         compiler = bb.compiler.cc(self)
         with local.cwd(openvpn_source):

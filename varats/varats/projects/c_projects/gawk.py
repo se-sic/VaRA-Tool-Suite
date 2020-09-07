@@ -46,7 +46,7 @@ class Gawk(bb.Project):  # type: ignore
 
     def compile(self) -> None:
         """Compile the project."""
-        gawk_source = bb.path(self.source_of(self.primary_source))
+        gawk_source = local.path(self.source_of(self.primary_source))
 
         compiler = bb.compiler.cc(self)
         with local.cwd(gawk_source):
