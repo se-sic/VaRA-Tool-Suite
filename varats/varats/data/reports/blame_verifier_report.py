@@ -23,9 +23,9 @@ class BlameVerifierReportParserMixin:
     its BlameVerifierReport-Subclasses, without adapting the Report
     hierarchy."""
 
-    def __init__(self, path: Path):
-        super().__init__(path=path)
-        self.__path = path
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.__path = kwargs['path']
         self.__num_successes = -1
         self.__num_failures = -1
         self.__num_total = -1
@@ -112,8 +112,9 @@ class BlameVerifierReportNoOpt(BlameVerifierReportParserMixin, BaseReport):
     SHORTHAND = 'BVRNoOpt'
     FILE_TYPE = 'txt'
 
-    def __init__(self, path: Path):
-        super().__init__(path=path)
+    def __init__(self, path: Path, **kwargs):
+        kwargs['path'] = path
+        super().__init__(**kwargs)
         self.parse_verifier_results()
 
     @property
@@ -162,8 +163,9 @@ class BlameVerifierReportOpt(BlameVerifierReportParserMixin, BaseReport):
     SHORTHAND = 'BVROpt'
     FILE_TYPE = 'txt'
 
-    def __init__(self, path: Path):
-        super().__init__(path=path)
+    def __init__(self, path: Path, **kwargs):
+        kwargs['path'] = path
+        super().__init__(**kwargs)
         self.parse_verifier_results()
 
     @property
