@@ -236,13 +236,11 @@ def get_BC_cache_actions(
     """
 
     if not project_bc_files_in_cache(project, bc_file_extensions):
-        print("--------------------> Actions needed")
         return bc_action_creator(
             project, bc_file_extensions if bc_file_extensions else [],
             extraction_error_handler
         )
 
-    print("--------------------> No actions")
     return []
 
 
