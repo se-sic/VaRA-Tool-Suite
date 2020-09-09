@@ -23,8 +23,8 @@ from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
 from varats.experiments.wllvm import (
     RunWLLVM,
-    get_cached_BC_file_path,
-    get_BC_cache_actions,
+    get_cached_bc_file_path,
+    get_bc_cache_actions,
 )
 from varats.utils.experiment_util import (
     exec_func_with_pe_error_handler,
@@ -71,7 +71,7 @@ class VaraMTFACheck(actions.Step):  # type: ignore
 
         for binary in project.binaries:
             # Combine the input bitcode file's name
-            bc_target_file = get_cached_BC_file_path(project, binary)
+            bc_target_file = get_cached_bc_file_path(project, binary)
 
             # Define empty success file.
             result_file = TPR.get_file_name(
@@ -152,7 +152,7 @@ class VaRATaintPropagation(VersionExperiment):
 
         analysis_actions = []
 
-        analysis_actions += get_BC_cache_actions(
+        analysis_actions += get_bc_cache_actions(
             project, extraction_error_handler=error_handler
         )
 

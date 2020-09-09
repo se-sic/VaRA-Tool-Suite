@@ -12,8 +12,8 @@ from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.empty_report import EmptyReport
 from varats.experiments.wllvm import (
     RunWLLVM,
-    get_cached_BC_file_path,
-    get_BC_cache_actions,
+    get_cached_bc_file_path,
+    get_bc_cache_actions,
 )
 from varats.utils.experiment_util import (
     PEErrorHandler,
@@ -61,7 +61,7 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
 
         phasar = local["phasar-llvm"]
         for binary in project.binaries:
-            bc_file = get_cached_BC_file_path(project, binary)
+            bc_file = get_cached_bc_file_path(project, binary)
 
             result_file = EmptyReport.get_file_name(
                 project_name=str(project.name),
@@ -142,7 +142,7 @@ class IDELinearConstantAnalysisExperiment(VersionExperiment):
 
         analysis_actions = []
 
-        analysis_actions += get_BC_cache_actions(
+        analysis_actions += get_bc_cache_actions(
             project, extraction_error_handler=error_handler
         )
 

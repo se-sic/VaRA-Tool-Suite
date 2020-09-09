@@ -22,12 +22,7 @@ from varats.data.reports.blame_verifier_report import (
 from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportOpt as BVR_Opt,
 )
-from varats.experiments.wllvm import (
-    BCFileExtensions,
-    RunWLLVM,
-    get_cached_BC_file_path,
-    get_BC_cache_actions,
-)
+from varats.experiments.wllvm import BCFileExtensions, get_cached_bc_file_path
 from varats.utils.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
@@ -84,7 +79,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
         timeout_duration = '8h'
 
         for binary in project.binaries:
-            bc_target_file = get_cached_BC_file_path(project, binary)
+            bc_target_file = get_cached_bc_file_path(project, binary)
 
             # Define empty success file.
             result_file = self.report_type.get_file_name(

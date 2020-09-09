@@ -19,8 +19,8 @@ from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.experiments.wllvm import (
     RunWLLVM,
-    get_cached_BC_file_path,
-    get_BC_cache_actions,
+    get_cached_bc_file_path,
+    get_bc_cache_actions,
 )
 from varats.utils.experiment_util import (
     PEErrorHandler,
@@ -115,7 +115,7 @@ class CRAnalysis(actions.Step):  # type: ignore
                     )
                 )
 
-            opt_params.append(str(get_cached_BC_file_path(project, binary)))
+            opt_params.append(str(get_cached_bc_file_path(project, binary)))
 
             run_cmd = opt[opt_params]
 
@@ -184,7 +184,7 @@ class CommitReportExperiment(VersionExperiment):
 
         analysis_actions = []
 
-        analysis_actions += get_BC_cache_actions(
+        analysis_actions += get_bc_cache_actions(
             project, extraction_error_handler=error_handler
         )
 

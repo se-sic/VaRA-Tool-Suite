@@ -11,10 +11,9 @@ from plumbum import local
 
 from varats.data.report import BaseReport
 from varats.experiments.wllvm import (
-    Extract,
     RunWLLVM,
     BCFileExtensions,
-    get_BC_cache_actions,
+    get_bc_cache_actions,
 )
 from varats.utils.experiment_util import (
     get_default_compile_error_wrapped,
@@ -71,6 +70,6 @@ def generate_basic_blame_experiment_actions(
         extraction_error_handler: handler to manage errors during the
                                   extraction process
     """
-    return get_BC_cache_actions(
+    return get_bc_cache_actions(
         project, bc_file_extensions, extraction_error_handler
     )

@@ -213,7 +213,7 @@ def _create_default_bc_file_creation_actions(
     return analysis_actions
 
 
-def get_BC_cache_actions(
+def get_bc_cache_actions(
     project: Project,
     bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
     extraction_error_handler: tp.Optional[PEErrorHandler] = None,
@@ -244,7 +244,7 @@ def get_BC_cache_actions(
     return []
 
 
-def get_cached_BC_file_path(
+def get_cached_bc_file_path(
     project: Project, binary: ProjectBinaryWrapper
 ) -> Path:
     """

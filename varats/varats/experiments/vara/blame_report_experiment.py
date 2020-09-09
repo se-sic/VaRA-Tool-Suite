@@ -16,7 +16,7 @@ from plumbum import local
 import varats.experiments.vara.blame_experiment as BE
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.blame_report import BlameReport as BR
-from varats.experiments.wllvm import get_cached_BC_file_path
+from varats.experiments.wllvm import get_cached_bc_file_path
 from varats.utils.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
@@ -76,7 +76,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                 "-vara-BD", "-vara-BR", "-vara-init-commits",
                 "-vara-use-phasar",
                 f"-vara-report-outfile={vara_result_folder}/{result_file}",
-                get_cached_BC_file_path(project, binary)
+                get_cached_bc_file_path(project, binary)
             ]
 
             run_cmd = opt[opt_params]
