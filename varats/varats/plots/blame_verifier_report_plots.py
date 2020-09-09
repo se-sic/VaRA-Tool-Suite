@@ -73,6 +73,14 @@ class BlameVerifierReportPlot(Plot):
         # Filter results for current optimization level
         verifier_plot_df = verifier_plot_df.loc[verifier_plot_df['opt_level'] ==
                                                 opt_level.value]
+
+        # Raise exception if no data points were found after opt level filtering
+        if verifier_plot_df.empty or len(
+            np.unique(verifier_plot_df['revision'])
+        ) == 1:
+            # Need more than one data point
+            raise PlotDataEmpty
+
         verifier_plot_df.sort_values(by=['time_id'], inplace=True)
 
         revisions = verifier_plot_df['revision']

@@ -90,18 +90,22 @@ class BlameVerifierReportDatabase(
             number_of_undetermined_annotations \
                 = report.get_undetermined_annotations()
 
-            return pd.DataFrame({
-                'revision': report.head_commit,
-                'time_id': [commit_map.short_time_id(report.head_commit)],
-                'opt_level': opt_level,
-                'total': number_of_total_annotations,
-                'successful': number_of_successful_annotations,
-                'failed': number_of_failed_annotations,
-                'undetermined': number_of_undetermined_annotations
-            },
-                                index=[0]), report.head_commit, str(
-                                    report_path.stat().st_mtime_ns
-                                )
+            return pd.DataFrame(
+                {
+                    'revision': report.head_commit,
+                    'time_id': [commit_map.short_time_id(report.head_commit)],
+                    'opt_level': opt_level,
+                    'total': number_of_total_annotations,
+                    'successful': number_of_successful_annotations,
+                    'failed': number_of_failed_annotations,
+                    'undetermined': number_of_undetermined_annotations
+                },
+                index=[0]
+                # Add prefix of report name to head_commit to differentiate
+                # between reports with and without optimization
+            ), report.head_commit + report_path.name.split("-", 1)[0], str(
+                report_path.stat().st_mtime_ns
+            )
 
         report_files_opt = get_processed_revisions_files(
             project_name, BlameVerifierReportOpt,
@@ -133,7 +137,8 @@ class BlameVerifierReportDatabase(
         data_frame = build_cached_report_table(
             cls.CACHE_ID, project_name, report_files, failed_report_files,
             create_dataframe_layout, create_data_frame_for_report,
-            lambda path: MetaReport.get_commit_hash_from_result_file(path.name),
+            lambda path: MetaReport.get_commit_hash_from_result_file(path.name)
+            + path.name.split("-", 1)[0],
             lambda path: str(path.stat().st_mtime_ns),
             lambda a, b: int(a) > int(b)
         )
