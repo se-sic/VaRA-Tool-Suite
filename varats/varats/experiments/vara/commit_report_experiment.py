@@ -6,14 +6,12 @@ aware region analyzer (VaRA). For annotation we use the git-blame data of git.
 """
 
 import typing as tp
-from os import path
 from pathlib import Path
 
 import benchbuild.utils.actions as actions
 from benchbuild import Project  # type: ignore
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.cmd import mkdir, opt
-from plumbum import local
 
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.commit_report import CommitReport as CR
@@ -27,6 +25,7 @@ from varats.utils.experiment_util import (
     VersionExperiment,
     exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
+    create_default_compiler_error_handler,
 )
 from varats.utils.settings import bb_cfg
 
@@ -167,25 +166,13 @@ class CommitReportExperiment(VersionExperiment):
         # annotation.
         project.cflags = ["-fvara-GB"]
 
-        varats_result_folder = \
-            f"{bb_cfg()['varats']['outfile']}/{project.name}"
-
-        error_handler = PEErrorHandler(
-            varats_result_folder,
-            self.REPORT_TYPE.get_file_name(
-                project_name=str(project.name),
-                binary_name="all",
-                project_version=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.CompileError,
-                file_ext=".txt"
-            )
-        )
-
         analysis_actions = []
 
         analysis_actions += get_bc_cache_actions(
-            project, extraction_error_handler=error_handler
+            project,
+            extraction_error_handler=create_default_compiler_error_handler(
+                project, self.REPORT_TYPE
+            )
         )
 
         analysis_actions.append(CRAnalysis(project))
