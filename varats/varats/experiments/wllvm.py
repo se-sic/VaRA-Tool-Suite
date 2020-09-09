@@ -275,4 +275,4 @@ def get_cached_BC_file_path(
             "No corresponding BC file found in cache. Project was probably not"
             " compiled with the correct compile/extract action."
         )
-    return bc_file_path
+    return Path(bc_file_path)
