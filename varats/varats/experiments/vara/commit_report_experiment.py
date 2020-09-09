@@ -17,7 +17,11 @@ from plumbum import local
 
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.commit_report import CommitReport as CR
-from varats.experiments.wllvm import Extract, RunWLLVM
+from varats.experiments.wllvm import (
+    RunWLLVM,
+    get_cached_BC_file_path,
+    get_BC_cache_actions,
+)
 from varats.utils.experiment_util import (
     PEErrorHandler,
     VersionExperiment,
@@ -57,6 +61,7 @@ class CRAnalysis(actions.Step):  # type: ignore
         if not self.obj:
             return
         project = self.obj
+
         if self.__interaction_filter_experiment_name is None:
             interaction_filter_file = Path(
                 self.INTERACTION_FILTER_TEMPLATE.format(
@@ -76,13 +81,6 @@ class CRAnalysis(actions.Step):  # type: ignore
                     "Could not load interaction filter file \"" +
                     str(interaction_filter_file) + "\""
                 )
-
-        bc_cache_folder = local.path(
-            Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                cache_dir=str(bb_cfg()["varats"]["result"]),
-                project_name=str(project.name)
-            )
-        )
 
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
@@ -117,13 +115,7 @@ class CRAnalysis(actions.Step):  # type: ignore
                     )
                 )
 
-            opt_params.append(
-                bc_cache_folder / Extract.get_bc_file_name(
-                    project_name=project.name,
-                    binary_name=binary.name,
-                    project_version=project.version_of_primary
-                )
-            )
+            opt_params.append(str(get_cached_BC_file_path(project, binary)))
 
             run_cmd = opt[opt_params]
 
@@ -175,27 +167,26 @@ class CommitReportExperiment(VersionExperiment):
         # annotation.
         project.cflags = ["-fvara-GB"]
 
+        varats_result_folder = \
+            f"{bb_cfg()['varats']['outfile']}/{project.name}"
+
+        error_handler = PEErrorHandler(
+            varats_result_folder,
+            self.REPORT_TYPE.get_file_name(
+                project_name=str(project.name),
+                binary_name="all",
+                project_version=project.version_of_primary,
+                project_uuid=str(project.run_uuid),
+                extension_type=FSE.CompileError,
+                file_ext=".txt"
+            )
+        )
+
         analysis_actions = []
 
-        # Check if all binaries have corresponding BC files
-        all_files_present = True
-        for binary in project.binaries:
-            all_files_present &= path.exists(
-                local.path(
-                    Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                        cache_dir=str(bb_cfg()["varats"]["result"]),
-                        project_name=str(project.name)
-                    ) + Extract.get_bc_file_name(
-                        project_name=str(project.name),
-                        binary_name=binary.name,
-                        project_version=project.version_of_primary
-                    )
-                )
-            )
-
-        if not all_files_present:
-            analysis_actions.append(actions.Compile(project))
-            analysis_actions.append(Extract(project))
+        analysis_actions += get_BC_cache_actions(
+            project, extraction_error_handler=error_handler
+        )
 
         analysis_actions.append(CRAnalysis(project))
         analysis_actions.append(actions.Clean(project))
