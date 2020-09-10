@@ -1,6 +1,7 @@
 """Module for a BlameVerifierReport."""
 import logging
 import re
+import typing as tp
 from enum import Enum
 from pathlib import Path
 
@@ -23,7 +24,7 @@ class BlameVerifierReportParserMixin:
     its BlameVerifierReport-Subclasses, without adapting the Report
     hierarchy."""
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: tp.Any) -> None:
         super().__init__(**kwargs)
         self.__path = kwargs['path']
         self.__num_successes = -1
@@ -112,7 +113,7 @@ class BlameVerifierReportNoOpt(BlameVerifierReportParserMixin, BaseReport):
     SHORTHAND = 'BVRNoOpt'
     FILE_TYPE = 'txt'
 
-    def __init__(self, path: Path, **kwargs) -> None:
+    def __init__(self, path: Path, **kwargs: tp.Any) -> None:
         kwargs['path'] = path
         super().__init__(**kwargs)
         self.parse_verifier_results()
@@ -163,7 +164,7 @@ class BlameVerifierReportOpt(BlameVerifierReportParserMixin, BaseReport):
     SHORTHAND = 'BVROpt'
     FILE_TYPE = 'txt'
 
-    def __init__(self, path: Path, **kwargs) -> None:
+    def __init__(self, path: Path, **kwargs: tp.Any) -> None:
         kwargs['path'] = path
         super().__init__(**kwargs)
         self.parse_verifier_results()
