@@ -6,23 +6,26 @@ aware region analyzer (VaRA). For annotation we use the git-blame data of git.
 """
 
 import typing as tp
-from os import path
 from pathlib import Path
 
 import benchbuild.utils.actions as actions
 from benchbuild import Project  # type: ignore
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.cmd import mkdir, opt
-from plumbum import local
 
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.commit_report import CommitReport as CR
-from varats.experiments.wllvm import Extract, RunWLLVM
+from varats.experiments.wllvm import (
+    RunWLLVM,
+    get_cached_bc_file_path,
+    get_bc_cache_actions,
+)
 from varats.utils.experiment_util import (
     PEErrorHandler,
     VersionExperiment,
     exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
+    create_default_compiler_error_handler,
 )
 from varats.utils.settings import bb_cfg
 
@@ -57,6 +60,7 @@ class CRAnalysis(actions.Step):  # type: ignore
         if not self.obj:
             return
         project = self.obj
+
         if self.__interaction_filter_experiment_name is None:
             interaction_filter_file = Path(
                 self.INTERACTION_FILTER_TEMPLATE.format(
@@ -76,13 +80,6 @@ class CRAnalysis(actions.Step):  # type: ignore
                     "Could not load interaction filter file \"" +
                     str(interaction_filter_file) + "\""
                 )
-
-        bc_cache_folder = local.path(
-            Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                cache_dir=str(bb_cfg()["varats"]["result"]),
-                project_name=str(project.name)
-            )
-        )
 
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
@@ -117,13 +114,7 @@ class CRAnalysis(actions.Step):  # type: ignore
                     )
                 )
 
-            opt_params.append(
-                bc_cache_folder / Extract.get_bc_file_name(
-                    project_name=project.name,
-                    binary_name=binary.name,
-                    project_version=project.version_of_primary
-                )
-            )
+            opt_params.append(str(get_cached_bc_file_path(project, binary)))
 
             run_cmd = opt[opt_params]
 
@@ -177,25 +168,12 @@ class CommitReportExperiment(VersionExperiment):
 
         analysis_actions = []
 
-        # Check if all binaries have corresponding BC files
-        all_files_present = True
-        for binary in project.binaries:
-            all_files_present &= path.exists(
-                local.path(
-                    Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                        cache_dir=str(bb_cfg()["varats"]["result"]),
-                        project_name=str(project.name)
-                    ) + Extract.get_bc_file_name(
-                        project_name=str(project.name),
-                        binary_name=binary.name,
-                        project_version=project.version_of_primary
-                    )
-                )
+        analysis_actions += get_bc_cache_actions(
+            project,
+            extraction_error_handler=create_default_compiler_error_handler(
+                project, self.REPORT_TYPE
             )
-
-        if not all_files_present:
-            analysis_actions.append(actions.Compile(project))
-            analysis_actions.append(Extract(project))
+        )
 
         analysis_actions.append(CRAnalysis(project))
         analysis_actions.append(actions.Clean(project))

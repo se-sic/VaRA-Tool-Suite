@@ -16,12 +16,13 @@ from plumbum import local
 import varats.experiments.vara.blame_experiment as BE
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.blame_report import BlameReport as BR
-from varats.experiments.wllvm import Extract
+from varats.experiments.wllvm import get_cached_bc_file_path
 from varats.utils.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     PEErrorHandler,
     wrap_unlimit_stack_size,
+    create_default_compiler_error_handler,
 )
 from varats.utils.settings import bb_cfg
 
@@ -52,12 +53,6 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         if not self.obj:
             return
         project = self.obj
-        bc_cache_folder = local.path(
-            Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                cache_dir=str(bb_cfg()["varats"]["result"]),
-                project_name=str(project.name)
-            )
-        )
 
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
@@ -82,11 +77,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                 "-vara-BD", "-vara-BR", "-vara-init-commits",
                 "-vara-use-phasar",
                 f"-vara-report-outfile={vara_result_folder}/{result_file}",
-                bc_cache_folder / Extract.get_bc_file_name(
-                    project_name=project.name,
-                    binary_name=binary.name,
-                    project_version=project.version_of_primary
-                )
+                get_cached_bc_file_path(project, binary)
             ]
 
             run_cmd = opt[opt_params]
@@ -134,23 +125,11 @@ class BlameReportExperiment(VersionExperiment):
             self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE
         )
 
-        vara_result_folder = \
-            f"{bb_cfg()['varats']['outfile']}/{project.name}"
-
-        error_handler = PEErrorHandler(
-            vara_result_folder,
-            BR.get_file_name(
-                project_name=str(project.name),
-                binary_name="all",
-                project_version=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.CompileError,
-                file_ext=".txt"
-            )
-        )
-
         analysis_actions = BE.generate_basic_blame_experiment_actions(
-            project, extraction_error_handler=error_handler
+            project,
+            extraction_error_handler=create_default_compiler_error_handler(
+                project, self.REPORT_TYPE
+            )
         )
 
         analysis_actions.append(BlameReportGeneration(project))
