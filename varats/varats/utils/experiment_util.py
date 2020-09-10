@@ -140,12 +140,66 @@ def create_default_compiler_error_handler(
     binary: tp.Optional[ProjectBinaryWrapper] = None
 ) -> PEErrorHandler:
     """
-    Create a default PEErrorHandler based on the `project`, `report_type`.
+    Create a default PEErrorHandler for compile errors, based on the `project`,
+    `report_type`.
 
     Args:
         project: currently under analysis
         report_type: that should be generated
         output_folder: where the errors will be placed
+        binary: if only a specific binary is handled
+
+    Retruns: a initialized PEErrorHandler
+    """
+    return create_default_error_handler(
+        project, report_type, FileStatusExtension.CompileError, output_folder,
+        binary
+    )
+
+
+def create_default_analysis_failure_handler(
+    project: Project,
+    report_type: tp.Type[BaseReport],
+    output_folder: tp.Optional[Path] = None,
+    binary: tp.Optional[ProjectBinaryWrapper] = None,
+    timeout_duration: tp.Optional[str] = None,
+) -> PEErrorHandler:
+    """
+    Create a default PEErrorHandler for analysis failures, based on the
+    `project`, `report_type`.
+
+    Args:
+        project: currently under analysis
+        report_type: that should be generated
+        output_folder: where the errors will be placed
+        binary: if only a specific binary is handled
+        timeout_duration: set timeout
+
+    Retruns: a initialized PEErrorHandler
+    """
+    return create_default_error_handler(
+        project, report_type, FileStatusExtension.Failed, output_folder, binary,
+        timeout_duration
+    )
+
+
+def create_default_error_handler(
+    project: Project,
+    report_type: tp.Type[BaseReport],
+    error_type: FileStatusExtension,
+    output_folder: tp.Optional[Path] = None,
+    binary: tp.Optional[ProjectBinaryWrapper] = None,
+    timeout_duration: tp.Optional[str] = None,
+) -> PEErrorHandler:
+    """
+    Create a default PEErrorHandler based on the `project`, `report_type`.
+
+    Args:
+        project: currently under analysis
+        report_type: that should be generated
+        error_type: a FSE describing the problem type
+        output_folder: where the errors will be placed
+        timeout_duration: set timeout
         binary: if only a specific binary is handled
 
     Retruns: a initialized PEErrorHandler
@@ -161,9 +215,10 @@ def create_default_compiler_error_handler(
             binary_name=binary.name if binary else "all",
             project_version=project.version_of_primary,
             project_uuid=str(project.run_uuid),
-            extension_type=FileStatusExtension.CompileError,
+            extension_type=error_type,
             file_ext=".txt"
-        )
+        ),
+        timeout_duration=timeout_duration
     )
 
 
