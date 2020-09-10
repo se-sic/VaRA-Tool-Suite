@@ -68,6 +68,8 @@ class BlameVerifierReportDatabase(
                     "report file name could not be read from report path"
                 )
 
+            report: tp.Union[BlameVerifierReportOpt, BlameVerifierReportNoOpt]
+
             if BlameVerifierReportOpt.is_correct_report_type(report_file_name):
                 report_opt = load_blame_verifier_report_opt(report_path)
                 report = report_opt
