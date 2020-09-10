@@ -9,13 +9,11 @@ valid json result and which ones failed.
 """
 
 import typing as tp
-from os import path
 
 import benchbuild.utils.actions as actions
 from benchbuild import Experiment, Project  # type: ignore
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.cmd import mkdir, phasar, timeout
-from plumbum import local
 
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.env_trace_report import EnvTraceReport as ENVR
@@ -25,11 +23,11 @@ from varats.experiments.wllvm import (
     get_bc_cache_actions,
 )
 from varats.utils.experiment_util import (
-    FunctionPEErrorWrapper,
     PEErrorHandler,
     wrap_unlimit_stack_size,
     exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
+    create_default_compiler_error_handler,
 )
 from varats.utils.settings import bb_cfg
 
@@ -135,25 +133,13 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
             project, self.REPORT_TYPE, PhasarEnvIFDS.RESULT_FOLDER_TEMPLATE
         )
 
-        varats_result_folder = \
-            f"{bb_cfg()['varats']['outfile']}/{project.name}"
-
-        error_handler = PEErrorHandler(
-            varats_result_folder,
-            self.REPORT_TYPE.get_file_name(
-                project_name=str(project.name),
-                binary_name="all",
-                project_version=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.CompileError,
-                file_ext=".txt"
-            )
-        )
-
         analysis_actions = []
 
         analysis_actions += get_bc_cache_actions(
-            project, extraction_error_handler=error_handler
+            project,
+            extraction_error_handler=create_default_compiler_error_handler(
+                project, self.REPORT_TYPE
+            )
         )
 
         analysis_actions.append(PhasarEnvIFDS(project))

@@ -22,6 +22,7 @@ from varats.utils.experiment_util import (
     VersionExperiment,
     PEErrorHandler,
     wrap_unlimit_stack_size,
+    create_default_compiler_error_handler,
 )
 from varats.utils.settings import bb_cfg
 
@@ -124,23 +125,11 @@ class BlameReportExperiment(VersionExperiment):
             self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE
         )
 
-        vara_result_folder = \
-            f"{bb_cfg()['varats']['outfile']}/{project.name}"
-
-        error_handler = PEErrorHandler(
-            vara_result_folder,
-            BR.get_file_name(
-                project_name=str(project.name),
-                binary_name="all",
-                project_version=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.CompileError,
-                file_ext=".txt"
-            )
-        )
-
         analysis_actions = BE.generate_basic_blame_experiment_actions(
-            project, extraction_error_handler=error_handler
+            project,
+            extraction_error_handler=create_default_compiler_error_handler(
+                project, self.REPORT_TYPE
+            )
         )
 
         analysis_actions.append(BlameReportGeneration(project))
