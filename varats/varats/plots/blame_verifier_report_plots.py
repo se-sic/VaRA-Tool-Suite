@@ -133,6 +133,8 @@ class BlameVerifierReportPlot(Plot):
 
 
 class BlameVerifierReportNoOptPlot(BlameVerifierReportPlot):
+    """Plotting the successful and failed annotations of reports without
+    optimization."""
     NAME = 'b_verifier_report_no_opt_plot'
 
     def __init__(self, **kwargs: tp.Any) -> None:
@@ -152,6 +154,8 @@ class BlameVerifierReportNoOptPlot(BlameVerifierReportPlot):
 
 
 class BlameVerifierReportOptPlot(BlameVerifierReportPlot):
+    """Plotting the successful and failed annotations of reports with
+    optimization."""
     NAME = 'b_verifier_report_opt_plot'
 
     def __init__(self, **kwargs: tp.Any) -> None:

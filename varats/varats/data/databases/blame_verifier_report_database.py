@@ -40,7 +40,7 @@ class BlameVerifierReportDatabase(
     @classmethod
     def _load_dataframe(
         cls, project_name: str, commit_map: CommitMap,
-        case_study: tp.Optional[CaseStudy], **kwargs: tp.Dict[str, tp.Any]
+        case_study: tp.Optional[CaseStudy], **kwargs: tp.Any
     ) -> pd.DataFrame:
 
         def create_dataframe_layout() -> pd.DataFrame:
