@@ -10,7 +10,11 @@ from benchbuild.extensions import compiler, run, time
 from plumbum import local
 
 from varats.data.report import BaseReport
-from varats.experiments.wllvm import Extract, RunWLLVM, BCFileExtensions
+from varats.experiments.wllvm import (
+    RunWLLVM,
+    BCFileExtensions,
+    get_bc_cache_actions,
+)
 from varats.utils.experiment_util import (
     get_default_compile_error_wrapped,
     PEErrorHandler,
@@ -66,35 +70,6 @@ def generate_basic_blame_experiment_actions(
         extraction_error_handler: handler to manage errors during the
                                   extraction process
     """
-    analysis_actions = []
-
-    if bc_file_extensions is None:
-        bc_file_extensions = []
-
-    # Check if all binaries have corresponding BC files
-    all_files_present = True
-
-    for binary in project.binaries:
-        all_files_present &= path.exists(
-            local.path(
-                Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                    cache_dir=str(bb_cfg()["varats"]["result"]),
-                    project_name=str(project.name)
-                ) + Extract.get_bc_file_name(
-                    project_name=str(project.name),
-                    binary_name=binary.name,
-                    project_version=project.version_of_primary,
-                    bc_file_extensions=bc_file_extensions
-                )
-            )
-        )
-
-    if not all_files_present:
-        analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(
-            Extract(
-                project, bc_file_extensions, handler=extraction_error_handler
-            )
-        )
-
-    return analysis_actions
+    return get_bc_cache_actions(
+        project, bc_file_extensions, extraction_error_handler
+    )
