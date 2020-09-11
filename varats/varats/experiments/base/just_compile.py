@@ -1,6 +1,7 @@
 """Implements an empty experiment that just compiles the project."""
 
 import typing as tp
+from pathlib import Path
 
 import benchbuild.utils.actions as actions
 from benchbuild import Project  # type: ignore
@@ -11,10 +12,10 @@ from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.empty_report import EmptyReport
 from varats.experiments.wllvm import RunWLLVM
 from varats.utils.experiment_util import (
-    PEErrorHandler,
     VersionExperiment,
     exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
+    create_default_analysis_failure_handler,
 )
 from varats.utils.settings import bb_cfg
 
@@ -62,15 +63,8 @@ class EmptyAnalysis(actions.Step):  # type: ignore
 
             exec_func_with_pe_error_handler(
                 run_cmd,
-                PEErrorHandler(
-                    vara_result_folder,
-                    EmptyReport.get_file_name(
-                        project_name=str(project.name),
-                        binary_name="all",
-                        project_version=project.version_of_primary,
-                        project_uuid=str(project.run_uuid),
-                        extension_type=FSE.Failed
-                    )
+                create_default_analysis_failure_handler(
+                    project, EmptyReport, Path(vara_result_folder)
                 )
             )
 
