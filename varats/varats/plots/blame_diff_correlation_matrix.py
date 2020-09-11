@@ -97,7 +97,7 @@ def _cluster_data_by_quantile(data: pd.Series, quantile: float) -> np.array:
     def to_quantile_index(value: int) -> int:
         return 0 if value <= quantile_border else 1
 
-    return np.array([to_quantile_index(x) for x in data])
+    return np.array([to_quantile_index(i) for i, _ in enumerate(data)])
 
 
 def _cluster_data_by_kmeans(data: pd.Series) -> np.array:
