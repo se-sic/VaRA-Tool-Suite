@@ -85,7 +85,14 @@ def logit_scatterplot(
         line_kws={'alpha': 0.25}
     )
     # scatterplot with the two clusters as hue
-    sns.scatterplot(x='x_values', y='y_values', hue='target', data=data, ax=ax)
+    sns.scatterplot(
+        x='x_values',
+        y='y_values',
+        # https://github.com/mwaskom/seaborn/issues/2194
+        hue=data['target'].tolist(),
+        data=data,
+        ax=ax
+    )
     pad_axes(ax, 0.01, 0.01)
     pad_axes(ax2, 0.01, 0.01)
     align_yaxis(ax, 0, ax2, 0)
