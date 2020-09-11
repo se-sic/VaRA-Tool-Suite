@@ -6,12 +6,12 @@ BlameReport.
 """
 
 import typing as tp
+from pathlib import Path
 
 import benchbuild.utils.actions as actions
 from benchbuild import Project  # type: ignore
 from benchbuild.utils.cmd import mkdir, opt
 from benchbuild.utils.requirements import Requirement, SlurmMem
-from plumbum import local
 
 import varats.experiments.vara.blame_experiment as BE
 from varats.data.report import FileStatusExtension as FSE
@@ -20,9 +20,9 @@ from varats.experiments.wllvm import get_cached_bc_file_path, BCFileExtensions
 from varats.utils.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
-    PEErrorHandler,
     wrap_unlimit_stack_size,
     create_default_compiler_error_handler,
+    create_default_analysis_failure_handler,
 )
 from varats.utils.settings import bb_cfg
 
@@ -91,16 +91,11 @@ class BlameReportGeneration(actions.Step):  # type: ignore
 
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration, run_cmd],
-                PEErrorHandler(
-                    vara_result_folder,
-                    BR.get_file_name(
-                        project_name=str(project.name),
-                        binary_name=binary.name,
-                        project_version=project.version_of_primary,
-                        project_uuid=str(project.run_uuid),
-                        extension_type=FSE.Failed,
-                        file_ext=".txt"
-                    ), timeout_duration
+                create_default_analysis_failure_handler(
+                    project,
+                    BR,
+                    Path(vara_result_folder),
+                    timeout_duration=timeout_duration
                 )
             )
 
