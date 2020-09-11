@@ -147,7 +147,7 @@ def log_interesting_revisions(
     y_var: str,
     data: pd.DataFrame,
     threshold: float = 0.75,
-    limit=10
+    limit: int = 10
 ) -> None:
     """
     Log revisions with large discrepancy between two variables.
