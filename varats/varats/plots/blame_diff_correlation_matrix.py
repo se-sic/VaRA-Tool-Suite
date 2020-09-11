@@ -4,6 +4,7 @@ Module for drawing commit-data metrics plots.
 - scatter-plot matrix
 """
 import abc
+import logging
 import typing as tp
 from pathlib import Path
 
@@ -24,6 +25,8 @@ from varats.paper.paper_config import get_loaded_paper_config
 from varats.plots.plot import Plot, PlotDataEmpty
 from varats.plots.plot_utils import align_yaxis, pad_axes
 from varats.tools.commit_map import get_commit_map
+
+LOG = logging.getLogger(__name__)
 
 
 def annotate_correlation(
@@ -139,6 +142,43 @@ def _hist(
     align_yaxis(ax, 0, ax2, 0)
 
 
+def log_interesting_revisions(
+    x_var: str,
+    y_var: str,
+    data: pd.DataFrame,
+    threshold: float = 0.75,
+    limit=10
+) -> None:
+    """
+    Log revisions with large discrepancy between two variables.
+
+    Args:
+        x_var: name of the x variable
+        y_var: name of the y variable
+        data:  the data
+        threshold: revisions with ``y/x > threshold`` will be logged
+        limit: maximum number of interesting revisions to log
+    """
+    x_col = data[x_var]
+    y_col = data[y_var]
+    fractions = y_col / x_col
+    max_fraction = fractions.loc[fractions != np.inf].max()
+    fractions.replace(np.inf, max_fraction, inplace=True)
+    fractions.replace(np.nan, 0, inplace=True)
+
+    data['fraction'] = fractions
+    data = data.sort_values(by=['fraction', x_var, y_var], ascending=False)
+
+    fraction_threshold = (fractions.max() - fractions.min()) * threshold
+    interesting_cases = data[data['fraction'] > fraction_threshold]
+    LOG.info(
+        f"Found {len(interesting_cases)} interesting revisions "
+        f"({x_var}, {y_var})"
+    )
+    for rev, item in list(interesting_cases.iterrows())[:limit]:
+        LOG.info(f"  {rev} ({x_var}={item[x_var]}, {y_var}={item[y_var]})")
+
+
 class BlameDiffCorrelationMatrix(Plot):
     """Draws a scatter-plot matrix for blame-data metrics, comparing the
     different independent and dependent variables."""
@@ -171,6 +211,11 @@ class BlameDiffCorrelationMatrix(Plot):
         if df.empty or len(df.index) < 2:
             raise PlotDataEmpty
         df.sort_values(by=['time_id'], inplace=True)
+
+        for x_var in variables:
+            for y_var in variables:
+                if x_var != y_var:
+                    log_interesting_revisions(x_var, y_var, df.copy())
 
         grid = sns.PairGrid(df, vars=variables)
 
