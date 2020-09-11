@@ -65,6 +65,7 @@ def logit_scatterplot(
     ax = ax or plt.gca()
 
     data = pd.DataFrame({'x_values': x_values, 'y_values': y_values})
+    data.sort_values(by='y_values', inplace=True)
     # dychotomize y_values to be able to use logistic regression
     data['target'] = _cluster_data_by_kmeans(data['y_values'])
 
