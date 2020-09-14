@@ -212,10 +212,11 @@ class BlameDiffCorrelationMatrix(Plot):
             raise PlotDataEmpty
         df.sort_values(by=['time_id'], inplace=True)
 
-        for x_var in variables:
-            for y_var in variables:
-                if x_var != y_var:
-                    log_interesting_revisions(x_var, y_var, df.copy())
+        if LOG.getLogger().isEnabledFor(LOG.INFO):
+            for x_var in variables:
+                for y_var in variables:
+                    if x_var != y_var:
+                        log_interesting_revisions(x_var, y_var, df.copy())
 
         grid = sns.PairGrid(df, vars=variables)
 
