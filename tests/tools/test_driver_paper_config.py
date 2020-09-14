@@ -1,10 +1,9 @@
 """Test paper config tool."""
 import tempfile
 import unittest
+import unittest.mock as mock
 from io import StringIO
 from pathlib import Path
-
-import mock
 
 from tests.test_utils import replace_config
 from varats.paper import paper_config
