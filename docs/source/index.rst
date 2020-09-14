@@ -35,6 +35,7 @@ VaRA-TS Docs
    :maxdepth: 1
    :caption: Contents:
 
+   vara-ts/pipeline-overview
    vara-ts/vara-buildsetup
    vara-ts/benchbuild
    vara-ts/development
