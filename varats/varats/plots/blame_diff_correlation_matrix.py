@@ -212,7 +212,7 @@ class BlameDiffCorrelationMatrix(Plot):
             raise PlotDataEmpty
         df.sort_values(by=['time_id'], inplace=True)
 
-        if LOG.getLogger().isEnabledFor(LOG.INFO):
+        if LOG.isEnabledFor(logging.INFO):
             for x_var in variables:
                 for y_var in variables:
                     if x_var != y_var:
