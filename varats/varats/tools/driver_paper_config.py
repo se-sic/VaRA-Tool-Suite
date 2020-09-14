@@ -9,12 +9,9 @@ import logging
 import typing as tp
 from pathlib import Path
 
-from varats.paper.paper_config import (
-    get_loaded_paper_config,
-    is_paper_config_loaded,
-    get_paper_config,
-)
+from varats.paper.paper_config import get_paper_config
 from varats.utils.cli_util import cli_list_choice, initialize_cli_tool
+from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.settings import (
     get_value_or_default,
     get_varats_base_folder,
@@ -161,7 +158,7 @@ def _pc_set(args: tp.Dict[str, tp.Any]) -> None:
         current_config = None
         try:
             current_config = get_paper_config().path.name
-        except RuntimeError:
+        except ConfigurationLookupError:
             # No paper config specified in the varats config file
             pass
 
@@ -215,7 +212,7 @@ def _pc_list(args: tp.Dict[str, tp.Any]) -> None:
     current_config = None
     try:
         current_config = get_paper_config().path.name
-    except RuntimeError:
+    except ConfigurationLookupError:
         # No paper config specified in the varats config file
         pass
 

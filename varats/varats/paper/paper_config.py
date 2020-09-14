@@ -22,6 +22,7 @@ from varats.paper.case_study import (
     load_case_study_from_file,
     store_case_study,
 )
+from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.settings import vara_cfg
 
 
@@ -241,7 +242,7 @@ def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
         if vara_cfg()["paper_config"]["folder"].value is None or \
                 vara_cfg()["paper_config"][
                     "current_config"].value is None:
-            raise RuntimeError(
+            raise ConfigurationLookupError(
                 "No paper config was set in VaRA config file {}".format(
                     vara_cfg()['config_file']
                 )
