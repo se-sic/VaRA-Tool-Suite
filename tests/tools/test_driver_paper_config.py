@@ -7,6 +7,7 @@ from pathlib import Path
 import mock
 
 from tests.test_utils import replace_config
+from varats.paper import paper_config
 from varats.tools.driver_paper_config import _pc_list, _pc_set
 
 
@@ -41,6 +42,7 @@ class TestDriverPaperConfig(unittest.TestCase):
         mock_paper_config.return_value.path = Path("foo")
         with replace_config() as config:
             config["paper_config"]["current_config"] = "foo"
+            paper_config._G_PAPER_CONFIG = paper_config.PaperConfig(Path("foo"))
             _pc_list({})
             output = stdout.getvalue()
             self.assertEqual(
@@ -54,6 +56,7 @@ class TestDriverPaperConfig(unittest.TestCase):
         side_effect=_create_paper_config_mock
     )
     @mock.patch('varats.tools.driver_paper_config._get_paper_configs')
+    # pylint: ignore=unused-argument
     def test_vara_pc_select(
         self, mock_get_paper_configs, mock_paper_config, stdout, stdin
     ):
@@ -70,6 +73,9 @@ class TestDriverPaperConfig(unittest.TestCase):
             with replace_config(tmp_path=tmppath) as config:
                 config["paper_config"]["folder"] = str(pc_path)
                 config["paper_config"]["current_config"] = "foo"
+                paper_config._G_PAPER_CONFIG = paper_config.PaperConfig(
+                    Path("foo")
+                )
                 _pc_set({})
                 output = stdout.getvalue()
                 self.assertEqual(output, "0. foo *\n1. bar\n2. baz\n")

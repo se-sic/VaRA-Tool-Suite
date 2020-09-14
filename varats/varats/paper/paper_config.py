@@ -171,7 +171,7 @@ class PaperConfig():
         return string
 
 
-__G_PAPER_CONFIG: tp.Optional[PaperConfig] = None
+_G_PAPER_CONFIG: tp.Optional[PaperConfig] = None
 
 
 def project_filter_generator(project_name: str) -> tp.Callable[[str], bool]:
@@ -210,9 +210,9 @@ def get_loaded_paper_config() -> PaperConfig:
     Returns:
         currently active paper config
     """
-    if __G_PAPER_CONFIG is None:
+    if _G_PAPER_CONFIG is None:
         raise Exception('Paper config was not loaded')
-    return __G_PAPER_CONFIG
+    return _G_PAPER_CONFIG
 
 
 def is_paper_config_loaded() -> bool:
@@ -222,7 +222,7 @@ def is_paper_config_loaded() -> bool:
     Returns:
         ``True``, if a paper config has been loaded
     """
-    return __G_PAPER_CONFIG is not None
+    return _G_PAPER_CONFIG is not None
 
 
 def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
@@ -251,8 +251,8 @@ def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
             str(vara_cfg()["paper_config"]["current_config"])
         )
 
-    global __G_PAPER_CONFIG  # pylint: disable=global-statement
-    __G_PAPER_CONFIG = PaperConfig(config_path)
+    global _G_PAPER_CONFIG  # pylint: disable=global-statement
+    _G_PAPER_CONFIG = PaperConfig(config_path)
 
 
 def get_paper_config() -> PaperConfig:
@@ -263,6 +263,6 @@ def get_paper_config() -> PaperConfig:
     Returns:
         currently active paper config
     """
-    if __G_PAPER_CONFIG is None:
+    if _G_PAPER_CONFIG is None:
         load_paper_config()
     return get_loaded_paper_config()
