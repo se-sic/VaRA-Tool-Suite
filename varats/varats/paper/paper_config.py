@@ -167,7 +167,7 @@ class PaperConfig():
         string = "Loaded case studies:\n"
         for case_study_list in self.__case_studies.values():
             for case_study in case_study_list:
-                string += case_study.project_name
+                string += f"  {case_study.project_name}\n"
         return string
 
 
@@ -241,7 +241,7 @@ def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
         if vara_cfg()["paper_config"]["folder"].value is None or \
                 vara_cfg()["paper_config"][
                     "current_config"].value is None:
-            raise Exception(
+            raise RuntimeError(
                 "No paper config was set in VaRA config file {}".format(
                     vara_cfg()['config_file']
                 )
@@ -257,7 +257,7 @@ def load_paper_config(config_path: tp.Optional[Path] = None) -> None:
 
 def get_paper_config() -> PaperConfig:
     """
-    Returns the current paper config and loads one if there is currenlty no
+    Returns the current paper config and loads one if there is currently no
     active paper config.
 
     Returns:
