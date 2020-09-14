@@ -1,7 +1,6 @@
 """Test example file that can be used as orientation."""
 import unittest
-
-import mock
+import unittest.mock as mock
 
 
 class ExampleTestCase(unittest.TestCase):
