@@ -9,11 +9,9 @@ import logging
 import typing as tp
 from pathlib import Path
 
-from varats.paper.paper_config import (
-    get_loaded_paper_config,
-    is_paper_config_loaded,
-)
+from varats.paper.paper_config import get_paper_config
 from varats.utils.cli_util import cli_list_choice, initialize_cli_tool
+from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.settings import (
     get_value_or_default,
     get_varats_base_folder,
@@ -84,21 +82,21 @@ def main() -> None:
         save_config()
 
     if args['subcommand'] == 'create':
-        __pc_create(args)
+        _pc_create(args)
     elif args['subcommand'] == 'select':
-        __pc_set(args)
+        _pc_set(args)
     elif args['subcommand'] == 'list':
-        __pc_list(args)
+        _pc_list(args)
 
 
-def __get_paper_configs(pc_folder_path: Path) -> tp.List[str]:
+def _get_paper_configs(pc_folder_path: Path) -> tp.List[str]:
     paper_configs: tp.List[str] = []
     for folder in pc_folder_path.iterdir():
         paper_configs.append(folder.name)
     return paper_configs
 
 
-def __pc_create(args: tp.Dict[str, tp.Any]) -> None:
+def _pc_create(args: tp.Dict[str, tp.Any]) -> None:
     pc_path = Path(args['paper_config'])
     if not pc_path.is_absolute():
         current_folder = vara_cfg()["paper_config"]["folder"].value
@@ -129,7 +127,7 @@ def __pc_create(args: tp.Dict[str, tp.Any]) -> None:
     save_config()
 
 
-def __pc_set(args: tp.Dict[str, tp.Any]) -> None:
+def _pc_set(args: tp.Dict[str, tp.Any]) -> None:
     if 'paper_config' in args:
         pc_path = Path(args['paper_config'])
     else:
@@ -146,7 +144,7 @@ def __pc_set(args: tp.Dict[str, tp.Any]) -> None:
             )
             return
 
-        paper_configs = __get_paper_configs(pc_folder_path)
+        paper_configs = _get_paper_configs(pc_folder_path)
         if not paper_configs:
             LOG.error(f"Could not find paper configs in: {pc_folder_path}")
             return
@@ -157,13 +155,14 @@ def __pc_set(args: tp.Dict[str, tp.Any]) -> None:
             nonlocal raw_pc_path
             raw_pc_path = choice
 
+        current_config = None
         try:
-            if is_paper_config_loaded():
-                current_config: tp.Optional[str] = get_loaded_paper_config(
-                ).path.name
-            else:
-                current_config = None
+            current_config = get_paper_config().path.name
+        except ConfigurationLookupError:
+            # No paper config specified in the varats config file
+            pass
 
+        try:
             cli_list_choice(
                 "Choose a number to select a paper config", paper_configs,
                 lambda x: f"{x} *"
@@ -196,7 +195,7 @@ def __pc_set(args: tp.Dict[str, tp.Any]) -> None:
     save_config()
 
 
-def __pc_list(args: tp.Dict[str, tp.Any]) -> None:
+def _pc_list(args: tp.Dict[str, tp.Any]) -> None:
     if "paper_config_path" in args:
         pc_folder_path = Path(args['paper_config_path'])
     else:
@@ -210,12 +209,14 @@ def __pc_list(args: tp.Dict[str, tp.Any]) -> None:
         return
 
     print("Found the following paper_configs:")
-    if is_paper_config_loaded():
-        current_config: tp.Optional[str] = get_loaded_paper_config().path.name
-    else:
-        current_config = None
+    current_config = None
+    try:
+        current_config = get_paper_config().path.name
+    except ConfigurationLookupError:
+        # No paper config specified in the varats config file
+        pass
 
-    for paper_config in __get_paper_configs(pc_folder_path):
+    for paper_config in _get_paper_configs(pc_folder_path):
         if current_config and paper_config == current_config:
             print(f"{paper_config} *")
         else:
