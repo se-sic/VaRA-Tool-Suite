@@ -2,11 +2,11 @@
 
 import typing as tp
 import unittest
+import unittest.mock as mock
 from collections import defaultdict
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-import mock
 from benchbuild.source import nosource
 from benchbuild.utils.revision_ranges import block_revisions, SingleRevision
 from test_case_study import YAML_CASE_STUDY

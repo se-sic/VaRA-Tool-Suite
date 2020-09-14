@@ -2,9 +2,8 @@
 
 import tempfile
 import unittest
+import unittest.mock as mock
 from pathlib import Path
-
-import mock
 
 from tests.test_utils import replace_config
 from varats.tools.research_tools.phasar import Phasar
