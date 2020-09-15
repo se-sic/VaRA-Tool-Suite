@@ -29,14 +29,36 @@ class TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject(
     SOURCE = [
         VaraTestRepoSource(
             remote="LibraryAnalysisRepos"
-            "/TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject",
-            local="TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject",
+            "/TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject"
+            "/Elementalist",
+            local="TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject"
+            "/Elementalist",
             refspec="HEAD",
             limit=None,
             shallow=False,
-            version_filter=project_filter_generator(
-                "TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject"
-            )
+            version_filter=project_filter_generator("Elementalist")
+        ),
+        VaraTestRepoSource(
+            remote="LibraryAnalysisRepos"
+            "/TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject"
+            "/fire_lib",
+            local=
+            "TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject/fire_lib",
+            refspec="HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("fire_lib")
+        ),
+        VaraTestRepoSource(
+            remote="LibraryAnalysisRepos"
+            "/TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject"
+            "/water_lib",
+            local=
+            "TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject/water_lib",
+            refspec="HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("water_lib")
         )
     ]
 
