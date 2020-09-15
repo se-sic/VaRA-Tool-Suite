@@ -368,9 +368,7 @@ def extend_with_extra_revs(
         if any(map(rev_item[0].startswith, extra_revs))
     ]
 
-    case_study.include_revisions(
-        new_rev_items, merge_stage, True, ExtenderStrategy.simple_add
-    )
+    case_study.include_revisions(new_rev_items, merge_stage, True)
 
 
 @check_required_args([
@@ -452,9 +450,7 @@ def extend_with_revs_per_year(
         else:
             stage_index = kwargs['merge_stage']
 
-        case_study.include_revisions(
-            new_rev_items, stage_index, True, ExtenderStrategy.per_year_add
-        )
+        case_study.include_revisions(new_rev_items, stage_index, True)
         new_rev_items.clear()
 
 
@@ -490,7 +486,6 @@ def extend_with_distrib_sampling(
     case_study.include_revisions(
         sample_n(distribution_function, kwargs['num_rev'], revision_list),
         kwargs['merge_stage'],
-        extender_strategy=ExtenderStrategy.distrib_add,
         sampling_method=kwargs['distribution']
     )
 
@@ -562,11 +557,9 @@ def extend_with_smooth_revs(
     }
     if new_revisions:
         print("Found new revisions: ", new_revisions)
-        case_study.include_revisions(
-            [(rev, cmap.time_id(rev)) for rev in new_revisions],
-            kwargs['merge_stage'],
-            extender_strategy=ExtenderStrategy.smooth_plot
-        )
+        case_study.include_revisions([
+            (rev, cmap.time_id(rev)) for rev in new_revisions
+        ], kwargs['merge_stage'])
     else:
         print(
             "No new revisions found that where not already "
@@ -602,5 +595,4 @@ def extend_with_release_revs(
         (rev, cmap.time_id(rev)) for rev in release_revisions
     ],
                                  kwargs['merge_stage'],
-                                 extender_strategy=ExtenderStrategy.release_add,
                                  release_type=kwargs['release_type'])

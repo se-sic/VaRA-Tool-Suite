@@ -41,5 +41,5 @@ class SamplingMethod(Enum):
         raise Exception('Unsupported SamplingMethod')
 
     @abc.abstractproperty
-    def name(self):
+    def get_name(self) -> str:  # TODO: rename to name after enum removal
         """Name of the sampling method."""

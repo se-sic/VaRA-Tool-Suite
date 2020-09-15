@@ -16,6 +16,7 @@ import varats.paper_mgmt.paper_config as PC
 from varats.data.databases.file_status_database import FileStatusDatabase
 from varats.data.reports.commit_report import CommitMap
 from varats.data.reports.empty_report import EmptyReport
+from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plots.plot import Plot
 from varats.plots.plot_utils import check_required_args, find_missing_revisions
 from varats.report.report import FileStatusExtension, MetaReport
@@ -63,7 +64,9 @@ def _load_projects_ordered_by_year(
         current_config.get_all_case_studies(),
         key=lambda cs: (cs.project_name, cs.version)
     ):
-        processed_revisions = case_study.get_revisions_status(result_file_type)
+        processed_revisions = get_revisions_status_for_case_study(
+            case_study, result_file_type
+        )
 
         repo = get_local_project_git(case_study.project_name)
         revisions: tp.Dict[int, tp.List[tp.Tuple[

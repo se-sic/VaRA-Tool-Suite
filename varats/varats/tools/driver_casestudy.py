@@ -10,15 +10,13 @@ from pathlib import Path
 from argparse_utils import enum_action
 from plumbum import FG, colors, local
 
+from varats.base.sampling_method import SamplingMethod
 #from varats.data.discover_reports import foo
 from varats.data.discover_reports import initialize_reports
-from varats.paper.case_study import (
-    SamplingMethod,
-    load_case_study_from_file,
-    store_case_study,
-)
+from varats.paper.case_study import load_case_study_from_file, store_case_study
 from varats.paper_mgmt import paper_config_manager as PCM
 from varats.paper_mgmt.case_study import (
+    get_revisions_status_for_case_study,
     ExtenderStrategy,
     extend_case_study,
     generate_case_study,
@@ -394,8 +392,8 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
         # Compute available commit hashes
         for case_study in paper_config.get_case_studies(project_name):
             available_commit_hashes.extend(
-                case_study.get_revisions_status(
-                    result_file_type, tag_blocked=False
+                get_revisions_status_for_case_study(
+                    case_study, result_file_type, tag_blocked=False
                 )
             )
 

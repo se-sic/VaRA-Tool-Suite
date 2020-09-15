@@ -7,6 +7,7 @@ from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.data.reports.commit_report import CommitMap
 from varats.data.reports.empty_report import EmptyReport
 from varats.paper.case_study import CaseStudy
+from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.report.report import FileStatusExtension, MetaReport
 
 
@@ -48,8 +49,8 @@ class FileStatusDatabase(
         data_frames = []
 
         if case_study:
-            processed_revisions = case_study.get_revisions_status(
-                result_file_type, tag_blocked=tag_blocked
+            processed_revisions = get_revisions_status_for_case_study(
+                case_study, result_file_type, tag_blocked=tag_blocked
             )
             for rev, stat in processed_revisions:
                 data_frames.append(create_data_frame_for_revision(rev, stat))
