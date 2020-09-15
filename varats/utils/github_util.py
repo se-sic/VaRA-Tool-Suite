@@ -31,7 +31,7 @@ def get_cached_github_object(
     a Github instance for given project and passes it to given function.
 
     Args:
-        cache_file_name: Name of the github project to extract the data from.
+        cache_file_name: Path to the cache file for the project to extract the data from.
         load_function: Function taking a Github object as argument and returning a PygithubObj.
 
     Returns:
