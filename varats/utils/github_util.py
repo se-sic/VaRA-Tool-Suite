@@ -28,7 +28,8 @@ def get_cached_github_object(
 ) -> tp.Optional[PyGithubObj, tp.List[PyGithubObj]]:
     """
     Wrapper function for accessing specified data from a github project. Creates
-    a Github instance for given project and passes it to given function.
+    a Github instance and passes it to given function, potentially loading the
+    corresponding cashed file if it exists.
 
     Args:
         cache_file_name: Path to the cache file for the project to extract the data from.
