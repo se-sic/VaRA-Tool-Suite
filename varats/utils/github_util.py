@@ -35,7 +35,7 @@ def get_cached_github_object(
 
         obj_to_cache = load_function(github)
         if isinstance(obj_to_cache, PaginatedList):
-            obj_to_cache = [item for item in obj_to_cache]
+            obj_to_cache = list(obj_to_cache)
         github.dump(obj_to_cache, cache_file, protocol=4)
         return obj_to_cache
     except GithubException as e:
