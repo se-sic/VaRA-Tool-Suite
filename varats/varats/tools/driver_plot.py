@@ -6,7 +6,7 @@ import typing as tp
 from pathlib import Path
 
 from varats.plots.plots import PlotRegistry, build_plot
-from varats.utils.cli_util import initialize_cli_tool
+from varats.utilss.cli_util import initialize_cli_tool
 
 LOG = logging.getLogger(__name__)
 

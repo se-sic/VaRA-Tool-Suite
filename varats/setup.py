@@ -42,7 +42,7 @@ setup(
         "tabulate>=0.8.6",
         "rich>=1.3.1",
         "statsmodels~=0.11.1",
-        "varats-core>=10.0.0",
+        "varats-core>=10.0.2",
     ],
     author="Florian Sattler",
     author_email="sattlerf@cs.uni-saarland.de",

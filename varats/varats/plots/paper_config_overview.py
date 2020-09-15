@@ -12,14 +12,14 @@ import pandas as pd
 import seaborn as sb
 from matplotlib.patches import Patch
 
-import varats.paper.paper_config as PC
+import varats.paper_mgmt.paper_config as PC
 from varats.data.databases.file_status_database import FileStatusDatabase
-from varats.data.report import FileStatusExtension, MetaReport
 from varats.data.reports.commit_report import CommitMap
 from varats.data.reports.empty_report import EmptyReport
 from varats.plots.plot import Plot
 from varats.plots.plot_utils import check_required_args, find_missing_revisions
-from varats.utils.project_util import get_local_project_git
+from varats.report.report import FileStatusExtension, MetaReport
+from varats.utilss.project_util import get_local_project_git
 
 # colors taken from seaborn's default palette
 SUCCESS_COLOR = np.asarray(

@@ -4,10 +4,10 @@ import typing as tp
 import pandas as pd
 
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
-from varats.data.report import FileStatusExtension, MetaReport
 from varats.data.reports.commit_report import CommitMap
 from varats.data.reports.empty_report import EmptyReport
 from varats.paper.case_study import CaseStudy
+from varats.report.report import FileStatusExtension, MetaReport
 
 
 class FileStatusDatabase(

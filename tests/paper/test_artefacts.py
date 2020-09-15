@@ -3,13 +3,13 @@ import unittest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from varats.paper.artefacts import (
+from varats.paper_mgmt.artefacts import (
     ArtefactType,
     PlotArtefact,
     load_artefacts_from_file,
 )
 from varats.plots.paper_config_overview import PaperConfigOverviewPlot
-from varats.utils.settings import vara_cfg
+from varats.utilss.settings import vara_cfg
 
 YAML_ARTEFACTS = """DocType: Artefacts
 Version: 1

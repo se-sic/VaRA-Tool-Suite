@@ -36,7 +36,7 @@ from packaging.version import LegacyVersion, Version
 from packaging.version import parse as parse_version
 from plumbum import local
 
-from varats.data.provider.cve.cve import (
+from varats.provider.cve.cve import (
     CVE,
     CWE,
     find_all_cve,

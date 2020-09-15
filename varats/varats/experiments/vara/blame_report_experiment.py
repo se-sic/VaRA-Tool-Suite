@@ -14,17 +14,17 @@ from benchbuild.utils.cmd import mkdir, opt
 from benchbuild.utils.requirements import Requirement, SlurmMem
 
 import varats.experiments.vara.blame_experiment as BE
-from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.blame_report import BlameReport as BR
 from varats.experiments.wllvm import get_cached_bc_file_path, BCFileExtensions
-from varats.utils.experiment_util import (
+from varats.report.report import FileStatusExtension as FSE
+from varats.utilss.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     wrap_unlimit_stack_size,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
 )
-from varats.utils.settings import bb_cfg
+from varats.utilss.settings import bb_cfg
 
 
 class BlameReportGeneration(actions.Step):  # type: ignore

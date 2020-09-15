@@ -12,14 +12,14 @@ import typing as tp
 import yaml
 from argparse_utils import enum_action
 
-from varats.paper.artefacts import (
+from varats.paper_mgmt.artefacts import (
     Artefact,
     ArtefactType,
     create_artefact,
     store_artefacts,
 )
-from varats.paper.paper_config import get_paper_config
-from varats.utils.cli_util import initialize_cli_tool
+from varats.paper_mgmt.paper_config import get_paper_config
+from varats.utilss.cli_util import initialize_cli_tool
 
 LOG = logging.getLogger(__name__)
 

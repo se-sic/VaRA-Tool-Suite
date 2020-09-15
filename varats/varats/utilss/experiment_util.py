@@ -14,10 +14,10 @@ from benchbuild.utils.actions import Step
 from benchbuild.utils.cmd import prlimit
 from plumbum.commands import ProcessExecutionError
 
-from varats.data.report import BaseReport, FileStatusExtension
 from varats.data.revisions import get_tagged_revisions
-from varats.utils.project_util import ProjectBinaryWrapper
-from varats.utils.settings import vara_cfg, bb_cfg
+from varats.report.report import BaseReport, FileStatusExtension
+from varats.utilss.project_util import ProjectBinaryWrapper
+from varats.utilss.settings import vara_cfg, bb_cfg
 
 
 class PEErrorHandler():

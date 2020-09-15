@@ -8,8 +8,8 @@ from benchbuild.project import Project
 from github import Github
 from github.Repository import Repository
 
-import varats.data.provider.bug.bug as bug
-from varats.data.provider.provider import Provider
+import varats.provider.bug.bug as bug
+from varats.provider.provider import Provider
 
 LOG = logging.getLogger(__name__)
 

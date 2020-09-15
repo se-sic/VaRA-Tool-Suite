@@ -8,19 +8,19 @@ from benchbuild.utils.revision_ranges import block_revisions, RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.data.provider.cve.cve_provider import CVEProviderHook
-from varats.data.provider.release.release_provider import (
+from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.provider.cve.cve_provider import CVEProviderHook
+from varats.provider.release.release_provider import (
     ReleaseProviderHook,
     ReleaseType,
 )
-from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import (
+from varats.utilss.project_util import (
     get_tagged_commits,
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     BinaryType,
 )
-from varats.utils.settings import bb_cfg
+from varats.utilss.settings import bb_cfg
 
 
 class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore

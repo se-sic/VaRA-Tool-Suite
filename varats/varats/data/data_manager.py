@@ -16,7 +16,7 @@ from threading import Lock
 
 from PyQt5.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal, pyqtSlot
 
-from varats.data.report import BaseReport
+from varats.report.report import BaseReport
 
 LoadableType = tp.TypeVar('LoadableType', bound=BaseReport)
 

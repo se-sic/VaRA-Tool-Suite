@@ -15,6 +15,12 @@ setup(
     tests_require=["pytest", "pytest-cov"],
     install_requires=[
         "benchbuild>=5.2",
+        "plumbum>=1.6.6",
+        "PyGithub>=1.47",
+        "tabulate>=0.8.6",
+        "requests>=2.23.0",
+        "packaging>=20.1",
+        "requests_cache>=0.5.2",
     ],
     author="Florian Sattler",
     author_email="sattlerf@cs.uni-saarland.de",

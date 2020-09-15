@@ -21,7 +21,7 @@ from varats.data.databases.blame_diff_metrics_database import (
     BlameDiffMetricsDatabase,
 )
 from varats.data.reports.commit_report import CommitMap
-from varats.paper.paper_config import get_loaded_paper_config
+from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plots.plot import Plot, PlotDataEmpty
 from varats.plots.plot_utils import align_yaxis, pad_axes
 from varats.tools.commit_map import get_commit_map

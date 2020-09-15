@@ -10,28 +10,33 @@ from pathlib import Path
 from argparse_utils import enum_action
 from plumbum import FG, colors, local
 
-from varats.data.provider.release.release_provider import ReleaseType
-from varats.data.report import FileStatusExtension, MetaReport
-from varats.paper import paper_config_manager as PCM
+#from varats.data.discover_reports import foo
+from varats.data.discover_reports import initialize_reports
 from varats.paper.case_study import (
-    ExtenderStrategy,
     SamplingMethod,
-    extend_case_study,
-    generate_case_study,
     load_case_study_from_file,
     store_case_study,
 )
-from varats.paper.paper_config import get_paper_config
+from varats.paper_mgmt import paper_config_manager as PCM
+from varats.paper_mgmt.case_study import (
+    ExtenderStrategy,
+    extend_case_study,
+    generate_case_study,
+)
+from varats.paper_mgmt.paper_config import get_paper_config
+from varats.provider.release.release_provider import ReleaseType
+from varats.report.report import FileStatusExtension, MetaReport
 from varats.tools.commit_map import create_lazy_commit_map_loader
-from varats.utils.cli_util import cli_list_choice, initialize_cli_tool
-from varats.utils.project_util import get_local_project_git_path
-from varats.utils.settings import vara_cfg
+from varats.utilss.cli_util import cli_list_choice, initialize_cli_tool
+from varats.utilss.project_util import get_local_project_git_path
+from varats.utilss.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
 
 
 def main() -> None:
     """Allow easier management of case studies."""
+    initialize_reports()
     initialize_cli_tool()
     parser = ArgumentParser("vara-cs")
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")

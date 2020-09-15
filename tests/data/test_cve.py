@@ -6,7 +6,7 @@ from datetime import datetime
 
 import requests_cache
 
-from varats.data.provider.cve.cve import (
+from varats.provider.cve.cve import (
     CVE,
     CWE,
     find_all_cve,
