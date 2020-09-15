@@ -25,7 +25,7 @@ PyGithubObj = tp.TypeVar("PyGithubObj", bound=GithubObject)
 # TODO: extend to handle paginated lists
 def get_cached_github_object(
     cache_file_name: str, load_function: tp.Callable[[Github], PyGithubObj]
-) -> tp.Optional[PyGithubObj, tp.List[PyGithubObj]]:
+) -> tp.Optional[tp.Union[PyGithubObj, tp.List[PyGithubObj]]]:
     """
     Wrapper function for accessing specified data from a github project. Creates
     a Github instance and passes it to given function, potentially loading the
