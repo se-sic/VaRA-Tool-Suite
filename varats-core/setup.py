@@ -6,7 +6,7 @@ setup(
     use_scm_version={
         'root': '..',
         "relative_to": __file__,
-        "fallback_version": '10.0.0'
+        "fallback_version": '10.0.3'
     },
     url='https://github.com/se-passau/vara-tool-suite',
     packages=find_namespace_packages(include=['varats.*']),
