@@ -21,11 +21,11 @@ from varats.experiments.wllvm import (
     get_bc_cache_actions,
 )
 from varats.utils.experiment_util import (
-    PEErrorHandler,
     VersionExperiment,
     exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
     create_default_compiler_error_handler,
+    create_default_analysis_failure_handler,
 )
 from varats.utils.settings import bb_cfg
 
@@ -123,16 +123,11 @@ class CRAnalysis(actions.Step):  # type: ignore
 
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration, run_cmd],
-                PEErrorHandler(
-                    vara_result_folder,
-                    CR.get_file_name(
-                        project_name=str(project.name),
-                        binary_name=binary.name,
-                        project_version=project.version_of_primary,
-                        project_uuid=str(project.run_uuid),
-                        extension_type=FSE.Failed,
-                        file_ext=".txt"
-                    ), timeout_duration
+                create_default_analysis_failure_handler(
+                    project,
+                    CR,
+                    Path(vara_result_folder),
+                    timeout_duration=timeout_duration
                 )
             )
 

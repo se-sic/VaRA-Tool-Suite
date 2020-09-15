@@ -6,23 +6,23 @@ BlameReport.
 """
 
 import typing as tp
+from pathlib import Path
 
 import benchbuild.utils.actions as actions
 from benchbuild import Project  # type: ignore
 from benchbuild.utils.cmd import mkdir, opt
 from benchbuild.utils.requirements import Requirement, SlurmMem
-from plumbum import local
 
 import varats.experiments.vara.blame_experiment as BE
 from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.blame_report import BlameReport as BR
-from varats.experiments.wllvm import get_cached_bc_file_path
+from varats.experiments.wllvm import get_cached_bc_file_path, BCFileExtensions
 from varats.utils.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
-    PEErrorHandler,
     wrap_unlimit_stack_size,
     create_default_compiler_error_handler,
+    create_default_analysis_failure_handler,
 )
 from varats.utils.settings import bb_cfg
 
@@ -77,7 +77,9 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                 "-vara-BD", "-vara-BR", "-vara-init-commits",
                 "-vara-use-phasar",
                 f"-vara-report-outfile={vara_result_folder}/{result_file}",
-                get_cached_bc_file_path(project, binary)
+                get_cached_bc_file_path(
+                    project, binary, [BCFileExtensions.NO_OPT]
+                )
             ]
 
             run_cmd = opt[opt_params]
@@ -89,16 +91,11 @@ class BlameReportGeneration(actions.Step):  # type: ignore
 
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration, run_cmd],
-                PEErrorHandler(
-                    vara_result_folder,
-                    BR.get_file_name(
-                        project_name=str(project.name),
-                        binary_name=binary.name,
-                        project_version=project.version_of_primary,
-                        project_uuid=str(project.run_uuid),
-                        extension_type=FSE.Failed,
-                        file_ext=".txt"
-                    ), timeout_duration
+                create_default_analysis_failure_handler(
+                    project,
+                    BR,
+                    Path(vara_result_folder),
+                    timeout_duration=timeout_duration
                 )
             )
 
@@ -125,8 +122,16 @@ class BlameReportExperiment(VersionExperiment):
             self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE
         )
 
+        # Try, to build the project without optimizations to get more precise
+        # blame annotations. Note: this does not guarantee that a project is
+        # build without optimizations because the used build tool/script can
+        # still add optimizations flags after the experiment specified cflags.
+        project.cflags += ["-O0"]
+        bc_file_extensions = [BCFileExtensions.NO_OPT]
+
         analysis_actions = BE.generate_basic_blame_experiment_actions(
             project,
+            bc_file_extensions,
             extraction_error_handler=create_default_compiler_error_handler(
                 project, self.REPORT_TYPE
             )

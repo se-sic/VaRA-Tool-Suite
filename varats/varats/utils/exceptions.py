@@ -4,3 +4,7 @@
 
 class ProcessTerminatedError(Exception):
     """Raised if a process was terminated."""
+
+
+class ConfigurationLookupError(Exception):
+    """Raised if a paper config could not be found."""

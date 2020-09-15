@@ -245,7 +245,9 @@ def get_bc_cache_actions(
 
 
 def get_cached_bc_file_path(
-    project: Project, binary: ProjectBinaryWrapper
+    project: Project,
+    binary: ProjectBinaryWrapper,
+    required_bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
 ) -> Path:
     """
     Look up the path to a BC file from the BC cache.
@@ -253,6 +255,7 @@ def get_cached_bc_file_path(
     Args:
         project: the project
         binary: which corresponds to the BC file
+        required_bc_file_extensions: list of required file extensions
 
     Returns: path to the cached BC file
     """
@@ -266,7 +269,8 @@ def get_cached_bc_file_path(
     bc_file_path = bc_cache_folder / Extract.get_bc_file_name(
         project_name=project.name,
         binary_name=binary.name,
-        project_version=project.version_of_primary
+        project_version=project.version_of_primary,
+        bc_file_extensions=required_bc_file_extensions
     )
     if not bc_file_path.exists():
         raise LookupError(

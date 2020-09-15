@@ -115,6 +115,8 @@ class BlameDiffMetricsDatabase(
                 pd.DataFrame({
                     'revision':
                         head_report.head_commit,
+                    'time_id':
+                        commit_map.short_time_id(head_report.head_commit),
                     'churn':
                         total_churn,
                     'num_interactions':
