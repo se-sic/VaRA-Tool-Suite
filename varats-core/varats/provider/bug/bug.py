@@ -8,11 +8,11 @@ from github.IssueEvent import IssueEvent
 from github.PaginatedList import PaginatedList
 from github.Repository import Repository
 
-from varats.utils.github_util import get_cached_github_object
-from varats.utils.project_util import (
+from varats.project.project_util import (
     get_local_project_git_path,
     get_local_project_git,
 )
+from varats.utils.github_util import get_cached_github_object
 
 
 class PygitBug:
