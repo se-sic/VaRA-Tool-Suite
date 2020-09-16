@@ -2,14 +2,13 @@
 
 import tempfile
 import unittest
+import unittest.mock as mock
 from pathlib import Path
-
-import mock
 
 from tests.test_utils import replace_config
 from varats.tools.research_tools.phasar import Phasar
 from varats.tools.research_tools.vara import VaRA
-from varats.utils.cli_util import get_research_tool_type, get_research_tool
+from varats.utilss.cli_util import get_research_tool_type, get_research_tool
 
 
 class ResearchToolUtils(unittest.TestCase):

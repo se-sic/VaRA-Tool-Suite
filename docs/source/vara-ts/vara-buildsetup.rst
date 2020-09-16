@@ -10,14 +10,20 @@ Installation
 Install dependencies
 ********************
 
-To use the VaRA Tool Suite, make sure you have the necessary packages installed.
-For ubuntu, you can use the following command to install them (your system has to
-have at least `python3.6`):
+To use the VaRA Tool Suite, your system has to have at least `python3.6`. Make sure you have the necessary packages installed.
+
+For ubuntu:
 
 .. code-block:: console
 
     sudo apt install python3-dev python3-tk python3-psutil psutils ninja-build python3-pip autoconf cmake ruby curl time libyaml-dev
     sudo apt install python3-venv # If you want to install VaRA-TS in a python virtualenv
+
+For arch:
+
+.. code-block:: console
+
+    sudo pacman -Syu --needed python tk python-psutil psutils ninja python-pip python-statsmodels autoconf cmake ruby curl time libyaml python-coverage
 
 Get the source
 **************
@@ -35,13 +41,21 @@ First you will need to clone the VaRA Tool Suite repository.
 Install to python user-directory (easier)
 *****************************************
 
-To install VaRA-TS into the user directory use the following command.
-The same command can be used to update an existing installation (if necessary).
+The simplest way to install VaRA-TS is by using pip.
+
+.. code-block:: console
+
+    pip3 install varats
+
+To install VaRA-TS from the repository into the user directory use the
+following command.  The same command can be used to update an existing
+installation (if necessary).
 
 .. code-block:: console
 
     # cd to VaRA-TS directory
-    python3 -m pip install --user --upgrade -e .
+    python3 -m pip install --user --upgrade -e ./varats-core
+    python3 -m pip install --user --upgrade -e ./varats
 
     # developers also need to execute the next command
     # (if you want to contribute to VaRA/VaRA-TS):
@@ -61,7 +75,8 @@ Install to python virtualenv (advanced)
     source /path/to/virtualenv/bin/activate
 
     # cd to VaRA-TS directory
-    python3 -m pip install --upgrade -e .
+    python3 -m pip install --upgrade -e ./varats-core
+    python3 -m pip install --upgrade -e ./varats
 
     # developers also need to execute the next command
     # (if you want to contribute to VaRA/VaRA-TS):

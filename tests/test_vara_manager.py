@@ -3,7 +3,7 @@ repositories needed to build VaRA."""
 import unittest
 from pathlib import Path
 
-from varats.vara_manager import (
+from varats.tools.research_tools.vara_manager import (
     LLVMProjects,
     VaRAExtraProjectsIter,
     VaRAProjectsIter,

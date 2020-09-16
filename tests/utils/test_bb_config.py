@@ -3,9 +3,10 @@ import os
 import tempfile
 import unittest
 from copy import deepcopy
+from pathlib import Path
 
-from varats.settings import vara_cfg, bb_cfg
-from varats.utils.bb_config import generate_benchbuild_config
+from varats.utils.settings import vara_cfg, bb_cfg
+from varats.utilss.bb_config import generate_benchbuild_config
 
 
 class BenchBuildConfig(unittest.TestCase):
@@ -31,7 +32,7 @@ class BenchBuildConfig(unittest.TestCase):
         if exclude_list is None:
             exclude_list = []
 
-        for plugin_file in os.listdir(folder):
+        for plugin_file in os.listdir(Path("varats") / folder):
             if plugin_file in exclude_list:
                 continue
 

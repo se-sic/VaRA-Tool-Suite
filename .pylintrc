@@ -260,7 +260,8 @@ good-names=i,
            Run,
            _,
            df,
-           id
+           id,
+           pc
 
 # Include a hint for the correct naming format with invalid-name.
 include-naming-hint=no
