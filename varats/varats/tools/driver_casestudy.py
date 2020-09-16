@@ -12,6 +12,7 @@ from plumbum import FG, colors, local
 
 from varats.base.sampling_method import SamplingMethod
 from varats.data.discover_reports import initialize_reports
+from varats.mapping.commit_map import create_lazy_commit_map_loader
 from varats.paper.case_study import load_case_study_from_file, store_case_study
 from varats.paper_mgmt import paper_config_manager as PCM
 from varats.paper_mgmt.case_study import (
@@ -25,7 +26,6 @@ from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, MetaReport
-from varats.tools.commit_map import create_lazy_commit_map_loader
 from varats.utils.cli_util import cli_list_choice, initialize_cli_tool
 from varats.utils.settings import vara_cfg
 

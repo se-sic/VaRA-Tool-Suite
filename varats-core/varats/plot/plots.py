@@ -4,8 +4,8 @@ import re
 import typing as tp
 from pathlib import Path
 
+from varats.mapping.commit_map import create_lazy_commit_map_loader
 from varats.plot.plot_utils import check_required_args
-from varats.tools.commit_map import create_lazy_commit_map_loader
 from varats.utils.settings import vara_cfg
 
 if tp.TYPE_CHECKING:

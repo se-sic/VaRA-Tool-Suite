@@ -14,7 +14,6 @@ from benchbuild import Project  # type: ignore
 from scipy.stats import halfnorm
 
 from varats.base.sampling_method import SamplingMethod
-from varats.data.reports.commit_report import CommitMap
 from varats.data.revisions import (
     get_failed_revisions,
     get_processed_revisions,
@@ -23,6 +22,7 @@ from varats.data.revisions import (
     filter_blocked_revisions,
     is_revision_blocked,
 )
+from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CSStage, CaseStudy
 from varats.plot.plot_utils import check_required_args
 from varats.plot.plots import PlotRegistry

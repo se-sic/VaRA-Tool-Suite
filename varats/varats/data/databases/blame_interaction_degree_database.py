@@ -15,12 +15,12 @@ from varats.data.reports.blame_report import (
     generate_degree_tuples,
     generate_max_time_distribution_tuples,
 )
-from varats.data.reports.commit_report import CommitMap
 from varats.data.revisions import (
     get_failed_revisions_files,
     get_processed_revisions_files,
 )
 from varats.jupyterhelper.file import load_blame_report
+from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.report.report import MetaReport
