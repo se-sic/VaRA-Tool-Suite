@@ -19,8 +19,8 @@ from varats.tools.tool_util import (
     get_research_tool,
     get_supported_research_tool_names,
 )
+from varats.utils.cli_util import initialize_cli_tool
 from varats.utils.settings import save_config
-from varats.utilss.cli_util import initialize_cli_tool
 
 
 class VaRATSSetup:

@@ -11,7 +11,7 @@ For example, how a specific project is compiled is the responsibilitty of the pr
 Designing a new ``Experiment`` is also quite simple.
 
 * First, create a new python module in the ``experiments`` directory and add an experiment class which inherits from ``benchbuild.experiment.Experiment``.
-  If VaRA-TS should provide automatic support for analyzing different versions, i.e., different revisions of a git based project, use :class:`~varats.utilss.experiment_util.VersionExperiment` as base class.
+  If VaRA-TS should provide automatic support for analyzing different versions, i.e., different revisions of a git based project, use :class:`~varats.experiment.experiment_util.VersionExperiment` as base class.
 * Second, define two static variables for your experiment: ``NAME`` and ``REPORT_TYPE``
 * Next, override the ``actions_for_project`` method.
   This method should assign run-time/compile-time extensions and specify the list of actions that should be performed.
@@ -51,7 +51,7 @@ WLLVM module
 Experiment utilities module
 ...........................
 
-.. automodule:: varats.utilss.experiment_util
+.. automodule:: varats.experiment.experiment_util
     :noindex:
     :members:
     :undoc-members:
