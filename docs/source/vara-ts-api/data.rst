@@ -111,7 +111,7 @@ Data providers
 Providers are a means to supply additional data for a :ref:`project<Projects>`.
 For example, the :ref:`CVE provider` allows access to all CVEs that are related to a project.
 
-You can implement your own provider by creating a subclass of :class:`~varats.provider.provider.Provider` in its own subdirectory of ``data/provider``.
+You can implement your own provider by creating a subclass of :class:`~varats.provider.provider.Provider` in its own subdirectory of ``provider`` in varats-core.
 There is no restriction on the format in which data has to be provided.
 The ``Provider`` abstract class only requires you to specify how to create an instance of your provider for a specific project, as well as a fallback implementation (that most likely returns no data).
 If your provider needs some project-specific implementation, create a class with the name ``<your_provider_class>Hook`` and make the projects inherit from it, similar to the :class:`~varats.provider.cve.cve_provider.CVEProviderHook`.

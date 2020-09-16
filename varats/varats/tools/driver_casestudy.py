@@ -11,7 +11,6 @@ from argparse_utils import enum_action
 from plumbum import FG, colors, local
 
 from varats.base.sampling_method import SamplingMethod
-#from varats.data.discover_reports import foo
 from varats.data.discover_reports import initialize_reports
 from varats.paper.case_study import load_case_study_from_file, store_case_study
 from varats.paper_mgmt import paper_config_manager as PCM
