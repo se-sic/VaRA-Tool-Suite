@@ -13,7 +13,7 @@ import pandas as pd
 
 #import varats.data.discover_reports
 #from varats.data.discover_reports import foo
-from varats.data.reports.commit_report import CommitMap
+from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.project.project_util import get_local_project_git

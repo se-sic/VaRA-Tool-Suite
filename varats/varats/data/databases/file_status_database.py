@@ -4,8 +4,8 @@ import typing as tp
 import pandas as pd
 
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
-from varats.data.reports.commit_report import CommitMap
 from varats.data.reports.empty_report import EmptyReport
+from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.report.report import FileStatusExtension, MetaReport
