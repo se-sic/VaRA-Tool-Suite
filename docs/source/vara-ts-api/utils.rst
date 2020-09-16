@@ -10,6 +10,7 @@ Utilities overview
 * :ref:`Module: project_util`
 * :ref:`Module: filesystem_util`
 * :ref:`Module: logger_util`
+* :ref:`Module: tool_util`
 
 Module: cli_util
 ................
@@ -106,3 +107,13 @@ Module: logger_util
     :members:
     :undoc-members:
     :show-inheritance:
+
+Module: tool_util
+.......................
+
+.. automodule:: varats.tools.tool_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+-----

@@ -9,7 +9,7 @@ from os import getcwd, makedirs, path
 
 import benchbuild.utils.settings as s
 
-from varats.utilss.cli_util import (
+from varats.tools.tool_util import (
     get_supported_research_tool_names,
     get_research_tool_type,
 )
