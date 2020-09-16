@@ -8,7 +8,7 @@ from pathlib import Path
 from tests.test_utils import replace_config
 from varats.tools.research_tools.phasar import Phasar
 from varats.tools.research_tools.vara import VaRA
-from varats.utilss.cli_util import get_research_tool_type, get_research_tool
+from varats.tools.tool_util import get_research_tool_type, get_research_tool
 
 
 class ResearchToolUtils(unittest.TestCase):

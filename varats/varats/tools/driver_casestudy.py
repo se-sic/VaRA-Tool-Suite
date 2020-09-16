@@ -25,8 +25,8 @@ from varats.project.project_util import get_local_project_git_path
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, MetaReport
 from varats.tools.commit_map import create_lazy_commit_map_loader
+from varats.utils.cli_util import cli_list_choice, initialize_cli_tool
 from varats.utils.settings import vara_cfg
-from varats.utilss.cli_util import cli_list_choice, initialize_cli_tool
 
 LOG = logging.getLogger(__name__)
 

@@ -22,8 +22,8 @@ from varats.paper_mgmt.artefacts import (
     load_artefacts_from_file,
     store_artefacts,
 )
+from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.settings import vara_cfg
-from varats.utilss.exceptions import ConfigurationLookupError
 
 
 class PaperConfig():

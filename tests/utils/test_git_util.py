@@ -1,7 +1,7 @@
 """Test VaRA git utilities."""
 import unittest
 
-from varats.utilss.git_util import ChurnConfig
+from varats.utils.git_util import ChurnConfig
 
 
 class TestChurnConfig(unittest.TestCase):

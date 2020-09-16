@@ -30,7 +30,7 @@ from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.project.project_util import get_local_project_git
 from varats.report.report import MetaReport
-from varats.utilss.git_util import ChurnConfig, calc_code_churn
+from varats.utils.git_util import ChurnConfig, calc_code_churn
 
 
 class BlameDiffMetricsDatabase(

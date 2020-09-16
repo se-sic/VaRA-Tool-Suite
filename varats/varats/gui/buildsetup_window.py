@@ -9,8 +9,8 @@ from PyQt5.QtWidgets import QShortcut, QWidget
 
 from varats.gui.views.ui_BuildMenu import Ui_BuildSetup
 from varats.tools.research_tools import vara_manager
+from varats.utils.exceptions import ProcessTerminatedError
 from varats.utils.settings import get_value_or_default, save_config, vara_cfg
-from varats.utilss.exceptions import ProcessTerminatedError
 
 
 class WorkerSignals(QObject):

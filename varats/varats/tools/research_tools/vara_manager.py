@@ -27,8 +27,8 @@ from PyQt5.QtCore import (
     pyqtSlot,
 )
 
+from varats.utils.exceptions import ProcessTerminatedError
 from varats.utils.settings import vara_cfg, save_config
-from varats.utilss.exceptions import ProcessTerminatedError
 
 LOG = logging.getLogger(__name__)
 

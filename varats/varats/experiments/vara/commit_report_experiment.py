@@ -14,6 +14,13 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.cmd import mkdir, opt
 
 from varats.data.reports.commit_report import CommitReport as CR
+from varats.experiment.experiment_util import (
+    VersionExperiment,
+    exec_func_with_pe_error_handler,
+    get_default_compile_error_wrapped,
+    create_default_compiler_error_handler,
+    create_default_analysis_failure_handler,
+)
 from varats.experiments.wllvm import (
     RunWLLVM,
     get_cached_bc_file_path,
@@ -21,13 +28,6 @@ from varats.experiments.wllvm import (
 )
 from varats.report.report import FileStatusExtension as FSE
 from varats.utils.settings import bb_cfg
-from varats.utilss.experiment_util import (
-    VersionExperiment,
-    exec_func_with_pe_error_handler,
-    get_default_compile_error_wrapped,
-    create_default_compiler_error_handler,
-    create_default_analysis_failure_handler,
-)
 
 
 class CRAnalysis(actions.Step):  # type: ignore
