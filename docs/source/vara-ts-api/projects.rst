@@ -29,9 +29,9 @@ template for your own project::
     from benchbuild.utils.settings import get_number_of_jobs
     from plumbum import local
 
-    from varats.paper.paper_config import project_filter_generator
-    from varats.utils.settings import bb_cfg
-    from varats.utils.project_util import (
+    from varats.paper_mgmt.paper_config import project_filter_generator
+    from varats.utilss.settings import bb_cfg
+    from varats.utilss.project_util import (
         ProjectBinaryWrapper,
         wrap_paths_to_binaries,
     )

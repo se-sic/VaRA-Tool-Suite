@@ -6,15 +6,15 @@ from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import (
+from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.utilss.project_util import (
     get_all_revisions_between,
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     get_local_project_git_path,
     BinaryType,
 )
-from varats.utils.settings import bb_cfg
+from varats.utilss.settings import bb_cfg
 
 
 class X264(bb.Project):  # type: ignore

@@ -14,9 +14,10 @@ from benchbuild.utils.actions import Step
 from benchbuild.utils.cmd import prlimit
 from plumbum.commands import ProcessExecutionError
 
-from varats.data.report import BaseReport, FileStatusExtension
 from varats.data.revisions import get_tagged_revisions
-from varats.utils.settings import vara_cfg, bb_cfg
+from varats.report.report import BaseReport, FileStatusExtension
+from varats.utilss.project_util import ProjectBinaryWrapper
+from varats.utilss.settings import vara_cfg, bb_cfg
 
 
 class PEErrorHandler():
@@ -119,22 +120,105 @@ def get_default_compile_error_wrapped(
         project compilation function, wrapped with automatic error handling
     """
     result_dir = str(bb_cfg()["varats"]["outfile"])
-    result_folder = result_folder_template.format(
-        result_dir=result_dir, project_dir=str(project.name)
+    result_folder = Path(
+        result_folder_template.format(
+            result_dir=result_dir, project_dir=str(project.name)
+        )
     )
     return FunctionPEErrorWrapper(
         project.compile,
-        PEErrorHandler(
-            result_folder,
-            report_type.get_file_name(
-                project_name=str(project.name),
-                binary_name="all",
-                project_version=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FileStatusExtension.CompileError,
-                file_ext=".txt"
-            )
+        create_default_compiler_error_handler(
+            project, report_type, result_folder
         )
+    )
+
+
+def create_default_compiler_error_handler(
+    project: Project,
+    report_type: tp.Type[BaseReport],
+    output_folder: tp.Optional[Path] = None,
+    binary: tp.Optional[ProjectBinaryWrapper] = None
+) -> PEErrorHandler:
+    """
+    Create a default PEErrorHandler for compile errors, based on the `project`,
+    `report_type`.
+
+    Args:
+        project: currently under analysis
+        report_type: that should be generated
+        output_folder: where the errors will be placed
+        binary: if only a specific binary is handled
+
+    Retruns: a initialized PEErrorHandler
+    """
+    return create_default_error_handler(
+        project, report_type, FileStatusExtension.CompileError, output_folder,
+        binary
+    )
+
+
+def create_default_analysis_failure_handler(
+    project: Project,
+    report_type: tp.Type[BaseReport],
+    output_folder: tp.Optional[Path] = None,
+    binary: tp.Optional[ProjectBinaryWrapper] = None,
+    timeout_duration: tp.Optional[str] = None,
+) -> PEErrorHandler:
+    """
+    Create a default PEErrorHandler for analysis failures, based on the
+    `project`, `report_type`.
+
+    Args:
+        project: currently under analysis
+        report_type: that should be generated
+        output_folder: where the errors will be placed
+        binary: if only a specific binary is handled
+        timeout_duration: set timeout
+
+    Retruns: a initialized PEErrorHandler
+    """
+    return create_default_error_handler(
+        project, report_type, FileStatusExtension.Failed, output_folder, binary,
+        timeout_duration
+    )
+
+
+def create_default_error_handler(
+    project: Project,
+    report_type: tp.Type[BaseReport],
+    error_type: FileStatusExtension,
+    output_folder: tp.Optional[Path] = None,
+    binary: tp.Optional[ProjectBinaryWrapper] = None,
+    timeout_duration: tp.Optional[str] = None,
+) -> PEErrorHandler:
+    """
+    Create a default PEErrorHandler based on the `project`, `report_type`.
+
+    Args:
+        project: currently under analysis
+        report_type: that should be generated
+        error_type: a FSE describing the problem type
+        output_folder: where the errors will be placed
+        timeout_duration: set timeout
+        binary: if only a specific binary is handled
+
+    Retruns: a initialized PEErrorHandler
+    """
+    error_output_folder = output_folder if output_folder else Path(
+        f"{bb_cfg()['varats']['outfile']}/{project.name}"
+    )
+
+    return PEErrorHandler(
+        str(error_output_folder),
+        report_type.get_file_name(
+            project_name=str(project.name),
+            binary_name=binary.name if binary else "all",
+            project_version=project.version_of_primary,
+            project_uuid=str(project.run_uuid),
+            extension_type=error_type,
+            file_ext=".txt"
+        ),
+        timeout_duration=timeout_duration
     )
 
 

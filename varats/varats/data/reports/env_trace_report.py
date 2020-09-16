@@ -1,6 +1,6 @@
 """Report that simply takes the output of an phasar analysis."""
 
-from varats.data.report import BaseReport, FileStatusExtension, MetaReport
+from varats.report.report import BaseReport, FileStatusExtension, MetaReport
 
 
 class EnvTraceReport(BaseReport):

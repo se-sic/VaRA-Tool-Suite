@@ -67,7 +67,7 @@ from copy import deepcopy
 import yaml
 from PyQt5.QtCore import QDateTime, Qt
 
-from varats.data.version_header import VersionHeader
+from varats.base.version_header import VersionHeader
 
 
 class SecretYamlObject(yaml.YAMLObject):

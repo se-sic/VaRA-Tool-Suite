@@ -8,13 +8,13 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 from plumbum.path.utils import delete
 
-from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import (
+from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.utilss.project_util import (
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
     BinaryType,
 )
-from varats.utils.settings import bb_cfg
+from varats.utilss.settings import bb_cfg
 
 
 class Doxygen(bb.Project):  # type: ignore

@@ -23,8 +23,8 @@ from varats.tools.research_tools.vara_manager import (
     show_status,
     update_all_submodules,
 )
-from varats.utils.filesystem_util import FolderAlreadyPresentError
-from varats.utils.logger_util import log_without_linesep
+from varats.utilss.filesystem_util import FolderAlreadyPresentError
+from varats.utilss.logger_util import log_without_linesep
 
 
 class SubProject():

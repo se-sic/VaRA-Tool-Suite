@@ -10,15 +10,16 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 from plumbum import colors
 
-import varats.paper.paper_config as PC
-from varats.data.report import FileStatusExtension, MetaReport
+import varats.paper_mgmt.paper_config as PC
 from varats.data.revisions import get_all_revisions_files
-from varats.paper.case_study import (
-    CaseStudy,
+from varats.paper.case_study import CaseStudy
+from varats.paper_mgmt.case_study import (
+    get_revisions_status_for_case_study,
     get_newest_result_files_for_case_study,
 )
+from varats.report.report import FileStatusExtension, MetaReport
 from varats.tools.commit_map import create_lazy_commit_map_loader
-from varats.utils.settings import vara_cfg
+from varats.utilss.settings import vara_cfg
 
 
 def show_status_of_case_studies(
@@ -248,7 +249,9 @@ def get_short_status(
 
     status_occurrences: tp.DefaultDict[FileStatusExtension,
                                        tp.Set[str]] = defaultdict(set)
-    for tagged_rev in case_study.get_revisions_status(result_file_type):
+    for tagged_rev in get_revisions_status_for_case_study(
+        case_study, result_file_type
+    ):
         status_occurrences[tagged_rev[1]].add(tagged_rev[0])
 
     if total_status_occurrences is not None:
@@ -305,8 +308,8 @@ def get_status(
             if stage_name:
                 status += " ({})".format(stage_name)
             status += "\n"
-            tagged_revs = case_study.get_revisions_status(
-                result_file_type, stage_num
+            tagged_revs = get_revisions_status_for_case_study(
+                case_study, result_file_type, stage_num
             )
             if sort:
                 tagged_revs = sorted(tagged_revs, key=rev_time, reverse=True)
@@ -317,7 +320,11 @@ def get_status(
                 )
     else:
         tagged_revs = list(
-            dict.fromkeys(case_study.get_revisions_status(result_file_type))
+            dict.fromkeys(
+                get_revisions_status_for_case_study(
+                    case_study, result_file_type
+                )
+            )
         )
         if sort:
             tagged_revs = sorted(tagged_revs, key=rev_time, reverse=True)

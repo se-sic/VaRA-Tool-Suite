@@ -14,21 +14,21 @@ from benchbuild.utils.cmd import opt, mkdir, timeout
 from plumbum import local
 
 import varats.experiments.vara.blame_experiment as BE
-from varats.data.report import FileStatusExtension as FSE
-from varats.data.report import BaseReport
 from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportNoOpt as BVR_NoOpt,
 )
 from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportOpt as BVR_Opt,
 )
-from varats.experiments.wllvm import BCFileExtensions, Extract
-from varats.utils.experiment_util import (
+from varats.experiments.wllvm import BCFileExtensions, get_cached_bc_file_path
+from varats.report.report import FileStatusExtension as FSE
+from varats.report.report import BaseReport
+from varats.utilss.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     PEErrorHandler,
 )
-from varats.utils.settings import bb_cfg
+from varats.utilss.settings import bb_cfg
 
 
 class BlameVerifierReportGeneration(actions.Step):  # type: ignore
@@ -66,13 +66,6 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
             return
         project = self.obj
 
-        bc_cache_folder = local.path(
-            Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                cache_dir=str(bb_cfg()["varats"]["result"]),
-                project_name=str(project.name)
-            )
-        )
-
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
@@ -86,12 +79,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
         timeout_duration = '8h'
 
         for binary in project.binaries:
-            bc_target_file = Extract.get_bc_file_name(
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_version=project.version_of_primary,
-                bc_file_extensions=self.bc_file_extensions
-            )
+            bc_target_file = get_cached_bc_file_path(project, binary)
 
             # Define empty success file.
             result_file = self.report_type.get_file_name(
@@ -114,11 +102,10 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
             )
 
             # Put together the path to the bc file and the opt command of vara
-            vara_run_cmd = opt[
-                "-vara-BD", "-vara-init-commits", "-vara-verify-blameMD",
-                "-vara-verifier-options=All", "{cache_folder}/{bc_file}".
-                format(cache_folder=bc_cache_folder, bc_file=bc_target_file),
-                "-o", "/dev/null"]
+            vara_run_cmd = opt["-vara-BD", "-vara-init-commits",
+                               "-vara-verify-blameMD",
+                               "-vara-verifier-options=All",
+                               str(bc_target_file), "-o", "/dev/null"]
 
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration,

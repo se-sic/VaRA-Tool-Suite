@@ -8,7 +8,6 @@ import pandas as pd
 
 from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
-from varats.data.report import MetaReport
 from varats.data.reports.blame_report import (
     BlameReport,
     BlameReportDiff,
@@ -27,9 +26,11 @@ from varats.data.revisions import (
     get_processed_revisions,
 )
 from varats.jupyterhelper.file import load_blame_report
-from varats.paper.case_study import CaseStudy, get_case_study_file_name_filter
-from varats.utils.git_util import ChurnConfig, calc_code_churn
-from varats.utils.project_util import get_local_project_git
+from varats.paper.case_study import CaseStudy
+from varats.paper_mgmt.case_study import get_case_study_file_name_filter
+from varats.report.report import MetaReport
+from varats.utilss.git_util import ChurnConfig, calc_code_churn
+from varats.utilss.project_util import get_local_project_git
 
 
 class BlameDiffMetricsDatabase(
@@ -115,6 +116,8 @@ class BlameDiffMetricsDatabase(
                 pd.DataFrame({
                     'revision':
                         head_report.head_commit,
+                    'time_id':
+                        commit_map.short_time_id(head_report.head_commit),
                     'churn':
                         total_churn,
                     'num_interactions':

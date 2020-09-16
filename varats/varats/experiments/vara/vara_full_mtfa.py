@@ -11,24 +11,27 @@ executed binary.
 """
 
 import typing as tp
-from os import path
 
 import benchbuild.utils.actions as actions
 from benchbuild import Project  # type: ignore
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.cmd import mkdir, opt, timeout
-from plumbum import local
 
-from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
-from varats.experiments.wllvm import Extract, RunWLLVM
-from varats.utils.experiment_util import (
+from varats.experiments.wllvm import (
+    RunWLLVM,
+    get_cached_bc_file_path,
+    get_bc_cache_actions,
+)
+from varats.report.report import FileStatusExtension as FSE
+from varats.utilss.experiment_util import (
     exec_func_with_pe_error_handler,
-    FunctionPEErrorWrapper,
     VersionExperiment,
     PEErrorHandler,
+    get_default_compile_error_wrapped,
+    create_default_compiler_error_handler,
 )
-from varats.utils.settings import bb_cfg
+from varats.utilss.settings import bb_cfg
 
 
 class VaraMTFACheck(actions.Step):  # type: ignore
@@ -55,12 +58,6 @@ class VaraMTFACheck(actions.Step):  # type: ignore
             return
         project = self.obj
 
-        # Set up cache directory for bitcode files
-        bc_cache_dir = Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-            cache_dir=str(bb_cfg()["varats"]["result"]),
-            project_name=str(project.name)
-        )
-
         # Define the output directory.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
             result_dir=str(bb_cfg()["varats"]["outfile"]),
@@ -72,11 +69,7 @@ class VaraMTFACheck(actions.Step):  # type: ignore
 
         for binary in project.binaries:
             # Combine the input bitcode file's name
-            bc_target_file = Extract.get_bc_file_name(
-                project_name=str(project.name),
-                binary_name=str(binary.name),
-                project_version=project.version_of_primary
-            )
+            bc_target_file = get_cached_bc_file_path(project, binary)
 
             # Define empty success file.
             result_file = TPR.get_file_name(
@@ -99,10 +92,8 @@ class VaraMTFACheck(actions.Step):  # type: ignore
             )
 
             # Put together the path to the bc file and the opt command of vara
-            vara_run_cmd = opt[
-                "-vara-CD", "-print-Full-MTFA", "{cache_folder}/{bc_file}".
-                format(cache_folder=bc_cache_dir, bc_file=bc_target_file), "-o",
-                "/dev/null"]
+            vara_run_cmd = opt["-vara-CD", "-print-Full-MTFA",
+                               str(bc_target_file), "-o", "/dev/null"]
 
             # Run the MTFA command with custom error handler and timeout
             exec_func_with_pe_error_handler(
@@ -136,47 +127,20 @@ class VaRATaintPropagation(VersionExperiment):
             << run.WithTimeout()
 
         # Add own error handler to compile step.
-        project.compile = FunctionPEErrorWrapper(
-            project.compile,
-            PEErrorHandler(
-                VaraMTFACheck.RESULT_FOLDER_TEMPLATE.format(
-                    result_dir=str(bb_cfg()["varats"]["outfile"]),
-                    project_dir=str(project.name)
-                ),
-                TPR.get_file_name(
-                    project_name=str(project.name),
-                    binary_name="all",
-                    project_version=project.version_of_primary,
-                    project_uuid=str(project.run_uuid),
-                    extension_type=FSE.CompileError
-                )
-            )
+        project.compile = get_default_compile_error_wrapped(
+            project, self.REPORT_TYPE, VaraMTFACheck.RESULT_FOLDER_TEMPLATE
         )
 
         project.cflags = ["-fvara-handleRM=Commit"]
 
         analysis_actions = []
 
-        # Not run all steps if cached results exist.
-        all_cache_files_present = True
-        for binary in project.binaries:
-            all_cache_files_present &= path.exists(
-                local.path(
-                    Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                        cache_dir=str(bb_cfg()["varats"]["result"]),
-                        project_name=str(project.name)
-                    ) + Extract.get_bc_file_name(
-                        project_name=str(project.name),
-                        binary_name=binary.name,
-                        project_version=project.version_of_primary
-                    )
-                )
+        analysis_actions += get_bc_cache_actions(
+            project,
+            extraction_error_handler=create_default_compiler_error_handler(
+                project, self.REPORT_TYPE
             )
-
-            if not all_cache_files_present:
-                analysis_actions.append(actions.Compile(project))
-                analysis_actions.append(Extract(project))
-                break
+        )
 
         analysis_actions.append(VaraMTFACheck(project))
         analysis_actions.append(actions.Clean(project))

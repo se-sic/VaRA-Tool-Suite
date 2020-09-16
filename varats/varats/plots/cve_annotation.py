@@ -4,7 +4,7 @@ import typing as tp
 from benchbuild.project import Project
 from matplotlib import axes
 
-from varats.data.provider.cve.cve_provider import CVEProvider
+from varats.provider.cve.cve_provider import CVEProvider
 from varats.tools.commit_map import create_lazy_commit_map_loader
 
 

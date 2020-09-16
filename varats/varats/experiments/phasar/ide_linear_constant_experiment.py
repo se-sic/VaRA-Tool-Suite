@@ -1,6 +1,6 @@
 """Module for phasar LinearConstantAnalysis analyses."""
 import typing as tp
-from os import path
+from pathlib import Path
 
 import benchbuild.utils.actions as actions
 from benchbuild import Project  # type: ignore
@@ -8,17 +8,22 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.cmd import mkdir
 from plumbum import local
 
-from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.empty_report import EmptyReport
-from varats.experiments.wllvm import Extract, RunWLLVM
-from varats.utils.experiment_util import (
-    PEErrorHandler,
+from varats.experiments.wllvm import (
+    RunWLLVM,
+    get_cached_bc_file_path,
+    get_bc_cache_actions,
+)
+from varats.report.report import FileStatusExtension as FSE
+from varats.utilss.experiment_util import (
     VersionExperiment,
     wrap_unlimit_stack_size,
     get_default_compile_error_wrapped,
     exec_func_with_pe_error_handler,
+    create_default_compiler_error_handler,
+    create_default_analysis_failure_handler,
 )
-from varats.utils.settings import bb_cfg
+from varats.utilss.settings import bb_cfg
 
 
 class IDELinearConstantAnalysis(actions.Step):  # type: ignore
@@ -45,12 +50,6 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
             return
         project = self.obj
 
-        bc_cache_folder = local.path(
-            Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                cache_dir=str(bb_cfg()["varats"]["result"]),
-                project_name=str(project.name)
-            )
-        )
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
@@ -63,11 +62,7 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
 
         phasar = local["phasar-llvm"]
         for binary in project.binaries:
-            bc_file = bc_cache_folder / Extract.get_bc_file_name(
-                project_name=project.name,
-                binary_name=binary.name,
-                project_version=project.version_of_primary
-            )
+            bc_file = get_cached_bc_file_path(project, binary)
 
             result_file = EmptyReport.get_file_name(
                 project_name=str(project.name),
@@ -85,16 +80,8 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
 
             exec_func_with_pe_error_handler(
                 run_cmd,
-                PEErrorHandler(
-                    varats_result_folder,
-                    EmptyReport.get_file_name(
-                        project_name=str(project.name),
-                        binary_name=binary.name,
-                        project_version=project.version_of_primary,
-                        project_uuid=str(project.run_uuid),
-                        extension_type=FSE.Failed,
-                        file_ext=".txt"
-                    )
+                create_default_analysis_failure_handler(
+                    project, EmptyReport, Path(varats_result_folder)
                 )
             )
 
@@ -131,41 +118,14 @@ class IDELinearConstantAnalysisExperiment(VersionExperiment):
             IDELinearConstantAnalysis.RESULT_FOLDER_TEMPLATE
         )
 
-        varats_result_folder = \
-            f"{bb_cfg()['varats']['outfile']}/{project.name}"
-
-        error_handler = PEErrorHandler(
-            varats_result_folder,
-            EmptyReport.get_file_name(
-                project_name=str(project.name),
-                binary_name="all",
-                project_version=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.CompileError,
-                file_ext=".txt"
-            )
-        )
-
         analysis_actions = []
 
-        # Check if all binaries have corresponding BC files
-        all_files_present = True
-        for binary in project.binaries:
-            all_files_present &= path.exists(
-                local.path(
-                    Extract.BC_CACHE_FOLDER_TEMPLATE.format(
-                        cache_dir=str(bb_cfg()["varats"]["result"]),
-                        project_name=str(project.name)
-                    ) + Extract.get_bc_file_name(
-                        project_name=str(project.name),
-                        binary_name=binary.name,
-                        project_version=project.version_of_primary
-                    )
-                )
+        analysis_actions += get_bc_cache_actions(
+            project,
+            extraction_error_handler=create_default_compiler_error_handler(
+                project, self.REPORT_TYPE
             )
-        if not all_files_present:
-            analysis_actions.append(actions.Compile(project))
-            analysis_actions.append(Extract(project, handler=error_handler))
+        )
 
         analysis_actions.append(IDELinearConstantAnalysis(project))
         analysis_actions.append(actions.Clean(project))

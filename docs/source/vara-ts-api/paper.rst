@@ -114,7 +114,7 @@ Paper and case study modules
 Module: paper_config
 ....................
 
-.. automodule:: varats.paper.paper_config
+.. automodule:: varats.paper_mgmt.paper_config
     :members:
     :undoc-members:
     :show-inheritance:
@@ -134,7 +134,7 @@ Module: case_study
 Module: artefacts
 ..................
 
-.. automodule:: varats.paper.artefacts
+.. automodule:: varats.paper_mgmt.artefacts
     :members:
     :undoc-members:
     :show-inheritance:
@@ -144,7 +144,7 @@ Module: artefacts
 Module: paper_config_manager
 ............................
 
-.. automodule:: varats.paper.paper_config_manager
+.. automodule:: varats.paper_mgmt.paper_config_manager
     :members:
     :undoc-members:
     :show-inheritance:

@@ -5,8 +5,8 @@ import typing as tp
 
 from benchbuild.project import Project
 
-import varats.data.provider.bug.bug as bug
-from varats.data.provider.provider import Provider
+import varats.provider.bug.bug as bug
+from varats.provider.provider import Provider
 
 LOG = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@ import unittest.mock as mock
 
 import yaml
 
-import varats.data.version_header as vh
+import varats.base.version_header as vh
 
 
 class TestVersionHeader(unittest.TestCase):

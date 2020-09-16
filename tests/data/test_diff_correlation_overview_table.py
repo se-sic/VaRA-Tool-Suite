@@ -4,7 +4,7 @@ import unittest
 import pytest
 
 from tests.test_utils import replace_config, TEST_INPUTS_DIR
-from varats.paper.paper_config import load_paper_config
+from varats.paper_mgmt.paper_config import load_paper_config
 from varats.tables import diff_correlation_overview_table
 
 

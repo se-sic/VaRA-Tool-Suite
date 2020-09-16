@@ -4,6 +4,7 @@ Module for drawing commit-data metrics plots.
 - scatter-plot matrix
 """
 import abc
+import logging
 import typing as tp
 from pathlib import Path
 
@@ -20,10 +21,12 @@ from varats.data.databases.blame_diff_metrics_database import (
     BlameDiffMetricsDatabase,
 )
 from varats.data.reports.commit_report import CommitMap
-from varats.paper.paper_config import get_loaded_paper_config
+from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plots.plot import Plot, PlotDataEmpty
 from varats.plots.plot_utils import align_yaxis, pad_axes
 from varats.tools.commit_map import get_commit_map
+
+LOG = logging.getLogger(__name__)
 
 
 def annotate_correlation(
@@ -65,6 +68,7 @@ def logit_scatterplot(
     ax = ax or plt.gca()
 
     data = pd.DataFrame({'x_values': x_values, 'y_values': y_values})
+    data.sort_values(by='y_values', inplace=True)
     # dychotomize y_values to be able to use logistic regression
     data['target'] = _cluster_data_by_kmeans(data['y_values'])
 
@@ -84,7 +88,14 @@ def logit_scatterplot(
         line_kws={'alpha': 0.25}
     )
     # scatterplot with the two clusters as hue
-    sns.scatterplot(x='x_values', y='y_values', hue='target', data=data, ax=ax)
+    sns.scatterplot(
+        x='x_values',
+        y='y_values',
+        # https://github.com/mwaskom/seaborn/issues/2194
+        hue=data['target'].tolist(),
+        data=data,
+        ax=ax
+    )
     pad_axes(ax, 0.01, 0.01)
     pad_axes(ax2, 0.01, 0.01)
     align_yaxis(ax, 0, ax2, 0)
@@ -97,7 +108,7 @@ def _cluster_data_by_quantile(data: pd.Series, quantile: float) -> np.array:
     def to_quantile_index(value: int) -> int:
         return 0 if value <= quantile_border else 1
 
-    return np.array([to_quantile_index(x) for x in data])
+    return np.array([to_quantile_index(i) for i, _ in enumerate(data)])
 
 
 def _cluster_data_by_kmeans(data: pd.Series) -> np.array:
@@ -129,6 +140,43 @@ def _hist(
     pad_axes(ax, pad_y=0.01)
     pad_axes(ax2, pad_y=0.01)
     align_yaxis(ax, 0, ax2, 0)
+
+
+def log_interesting_revisions(
+    x_var: str,
+    y_var: str,
+    data: pd.DataFrame,
+    threshold: float = 0.75,
+    limit: int = 10
+) -> None:
+    """
+    Log revisions with large discrepancy between two variables.
+
+    Args:
+        x_var: name of the x variable
+        y_var: name of the y variable
+        data:  the data
+        threshold: revisions with ``y/x > threshold`` will be logged
+        limit: maximum number of interesting revisions to log
+    """
+    x_col = data[x_var]
+    y_col = data[y_var]
+    fractions = y_col / x_col
+    max_fraction = fractions.loc[fractions != np.inf].max()
+    fractions.replace(np.inf, max_fraction, inplace=True)
+    fractions.replace(np.nan, 0, inplace=True)
+
+    data['fraction'] = fractions
+    data = data.sort_values(by=['fraction', x_var, y_var], ascending=False)
+
+    fraction_threshold = (fractions.max() - fractions.min()) * threshold
+    interesting_cases = data[data['fraction'] > fraction_threshold]
+    LOG.info(
+        f"Found {len(interesting_cases)} interesting revisions "
+        f"({x_var}, {y_var})"
+    )
+    for rev, item in list(interesting_cases.iterrows())[:limit]:
+        LOG.info(f"  {rev} ({x_var}={item[x_var]}, {y_var}={item[y_var]})")
 
 
 class BlameDiffCorrelationMatrix(Plot):
@@ -163,6 +211,12 @@ class BlameDiffCorrelationMatrix(Plot):
         if df.empty or len(df.index) < 2:
             raise PlotDataEmpty
         df.sort_values(by=['time_id'], inplace=True)
+
+        if LOG.isEnabledFor(logging.INFO):
+            for x_var in variables:
+                for y_var in variables:
+                    if x_var != y_var:
+                        log_interesting_revisions(x_var, y_var, df.copy())
 
         grid = sns.PairGrid(df, vars=variables)
 

@@ -20,9 +20,9 @@ from varats.tools.research_tools.vara_manager import (
     run_process_with_output,
     set_cmake_var,
 )
-from varats.utils.exceptions import ProcessTerminatedError
-from varats.utils.logger_util import log_without_linesep
-from varats.utils.settings import save_config, vara_cfg
+from varats.utilss.exceptions import ProcessTerminatedError
+from varats.utilss.logger_util import log_without_linesep
+from varats.utilss.settings import save_config, vara_cfg
 
 
 class PhasarCodeBase(CodeBase):
