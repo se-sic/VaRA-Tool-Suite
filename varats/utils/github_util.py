@@ -25,7 +25,19 @@ PyGithubObj = tp.TypeVar("PyGithubObj", bound=GithubObject)
 # TODO: extend to handle paginated lists
 def get_cached_github_object(
     cache_file_name: str, load_function: tp.Callable[[Github], PyGithubObj]
-) -> tp.Optional[PyGithubObj]:
+) -> tp.Optional[tp.Union[PyGithubObj, tp.List[PyGithubObj]]]:
+    """
+    Wrapper function for accessing specified data from a github project. Creates
+    a Github instance and passes it to given function, potentially loading the
+    corresponding cashed file if it exists.
+
+    Args:
+        cache_file_name: Path to the cache file for the project to extract the data from.
+        load_function: Function taking a Github object as argument and returning a PygithubObj.
+
+    Returns:
+         The output specified by load_function or None in case of a GithubException occurring.
+    """
     github = get_github_instance()
     cache_file = Path(str(CFG["data_cache"])) / f"pygithub_{cache_file_name}"
 
@@ -35,9 +47,9 @@ def get_cached_github_object(
 
         obj_to_cache = load_function(github)
         if isinstance(obj_to_cache, PaginatedList):
-            obj_to_cache = [item for item in obj_to_cache]
+            obj_to_cache = list(obj_to_cache)
         github.dump(obj_to_cache, cache_file, protocol=4)
         return obj_to_cache
-    except GithubException as e:
-        LOG.error(e)
+    except GithubException as exception:
+        LOG.error("Failed to load Github Object from Cache", exception)
     return None
