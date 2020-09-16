@@ -1,6 +1,7 @@
 """Project file for n2n."""
 import typing as tp
 
+import benchbuild as bb
 from benchbuild.project import Project
 from benchbuild.utils.cmd import make, git
 from benchbuild.utils.compiler import cc
@@ -18,11 +19,6 @@ from varats.utils.project_util import (
 )
 
 
-@with_git(
-    "https://github.com/ntop/n2n.git",
-    refspec="HEAD",
-    version_filter=project_filter_generator("n2n")
-)
 class N2n(Project, CVEProviderHook):  # type: ignore
     """Peer-to-peer VPN (fetched by Git)"""
 
@@ -31,7 +27,12 @@ class N2n(Project, CVEProviderHook):  # type: ignore
     DOMAIN = 'VPN'
     VERSION = 'HEAD'
 
-    SRC_FILE = NAME + "-{0}".format(VERSION)
+    #SRC_FILE = NAME + "-{0}".format(VERSION)
+    SOURCE = bb.source.Git(
+        "https://github.com/ntop/n2n.git",
+        refspec="HEAD",
+        version_filter=project_filter_generator("n2n")
+    )
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
@@ -42,14 +43,19 @@ class N2n(Project, CVEProviderHook):  # type: ignore
         pass
 
     def compile(self) -> None:
-        self.download()
-
-        clang = cc(self)
-        with local.cwd(self.SRC_FILE):
-            run(git["checkout", "2.8-stable"])
-            run(local["./autogen.sh"])
-            run(local["./configure"])
-            run(make["-j", get_number_of_jobs(bb_cfg())])
+        # self.download()
+        n2n_path = local.path(self.source_of(self.primary_source))
+        clang = bb.compiler.cc(self)
+        with local.cwd(n2n_path):
+            with local.env(CC=str(clang)):
+                #run(git["checkout", "2.8-stable"])
+                bb.watch(git)("checkout", "2.8-stable")
+                # run(local["./autogen.sh"])
+                bb.watch(local["./autogen.sh"])()
+                # run(local["./configure"])
+                bb.watch(local["./configure"])()
+                #run(make["-j", get_number_of_jobs(bb_cfg())])
+                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

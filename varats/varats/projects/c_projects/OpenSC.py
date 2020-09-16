@@ -1,6 +1,7 @@
 """Project file for OpenSC."""
 import typing as tp
 
+import benchbuild as bb
 from benchbuild.project import Project
 from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc
@@ -18,11 +19,6 @@ from varats.utils.project_util import (
 )
 
 
-@with_git(
-    "https://github.com/OpenSC/OpenSC.git",
-    refspec="HEAD",
-    version_filter=project_filter_generator("OpenSC")
-)
 class OpenSC(Project, CVEProviderHook):  # type: ignore
     """Open source smart card tools and middleware (fetched by Git)"""
 
@@ -31,7 +27,12 @@ class OpenSC(Project, CVEProviderHook):  # type: ignore
     DOMAIN = 'security'
     VERSION = 'HEAD'
 
-    SRC_FILE = NAME + "-{0}".format(VERSION)
+    #SRC_FILE = NAME + "-{0}".format(VERSION)
+    SOURCE = bb.source.Git(
+        "https://github.com/OpenSC/OpenSC.git",
+        refspec="HEAD",
+        version_filter=project_filter_generator("OpenSC")
+    )
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
@@ -42,15 +43,20 @@ class OpenSC(Project, CVEProviderHook):  # type: ignore
         pass
 
     def compile(self) -> None:
-        self.download()
+        # self.download()
+        path = local.path(self.source_of(self.primary_source))
         # TODO: install dependencies:
         # sudo apt-get install pcscd libccid libpcsclite-dev libssl-dev libreadline-dev autoconf automake build-essential docbook-xsl xsltproc libtool pkg-config
         # sudo apt-get install zlib1g-dev
-        clang = cc(self)
-        with local.cwd(self.SRC_FILE):
-            run(local["./bootstrap"])
-            run(local["./configure"])
-            run(make["-j", get_number_of_jobs(bb_cfg())])
+        clang = bb.compiler.cc(self)
+        with local.cwd(path):
+            with local.env(CC=str(clang)):
+                # run(local["./bootstrap"])
+                bb.watch(local["./bootstrap"])()
+                # run(local["./configure"])
+                bb.watch(local["./configure"])()
+                #run(make["-j", get_number_of_jobs(bb_cfg())])
+                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

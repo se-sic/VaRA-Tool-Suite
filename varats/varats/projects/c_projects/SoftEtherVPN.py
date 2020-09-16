@@ -1,6 +1,6 @@
 """Project file for SoftEtherVPN."""
 import typing as tp
-
+import benchbuild as bb
 from benchbuild.project import Project
 from benchbuild.utils.cmd import make, source, git
 from benchbuild.utils.compiler import cc
@@ -18,12 +18,6 @@ from varats.utils.project_util import (
 )
 
 
-@with_git(
-    "https://github.com/SoftEtherVPN/SoftEtherVPN_Stable.git",
-    refspec="HEAD",
-    shallow_clone=False,
-    version_filter=project_filter_generator("SoftEtherVPN")
-)
 class SoftEtherVPN(Project, CVEProviderHook):  # type: ignore
     """Cross-platform multi-protocol VPN software (fetched by Git)"""
 
@@ -32,7 +26,13 @@ class SoftEtherVPN(Project, CVEProviderHook):  # type: ignore
     DOMAIN = 'VPN'
     VERSION = 'HEAD'
 
-    SRC_FILE = NAME + "-{0}".format(VERSION)
+    #SRC_FILE = NAME + "-{0}".format(VERSION)
+    SOURCE = bb.source.Git(
+        "https://github.com/SoftEtherVPN/SoftEtherVPN_Stable.git",
+        refspec="HEAD",
+        shallow_clone=False,
+        version_filter=project_filter_generator("SoftEtherVPN")
+    )
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
@@ -43,15 +43,21 @@ class SoftEtherVPN(Project, CVEProviderHook):  # type: ignore
         pass
 
     def compile(self) -> None:
-        self.download()
+        # self.download()
+        path = local.path(self.source_of(self.primary_source))
         # TODO: install dependencies:
         # sudo apt -y install cmake gcc g++ libncurses5-dev libreadline-dev libssl-dev make zlib1g-dev
-        clang = cc(self)
-        with local.cwd(self.SRC_FILE):
-            run(git["submodule", "init"])
-            run(git["submodule", "update"])
-            run(local["./configure"])
-            run(make["-C", "tmp", "-j", get_number_of_jobs(bb_cfg())])
+        clang = bb.compiler.cc(self)
+        with local.cwd(path):
+            with local.env(CC=str(clang)):
+                #run(git["submodule", "init"])
+                bb.watch(git)("submodule", "init")
+                #run(git["submodule", "update"])
+                bb.watch(git)("submodule", "update")
+                # run(local["./configure"])
+                bb.watch(local["./configure"])()
+                #run(make["-C", "tmp", "-j", get_number_of_jobs(bb_cfg())])
+                bb.watch(make)("-C", "tmp", "-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

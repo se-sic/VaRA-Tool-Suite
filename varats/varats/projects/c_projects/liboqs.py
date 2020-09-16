@@ -1,6 +1,7 @@
-"""Project file for openvpn."""
+"""Project file for liboqs."""
 import typing as tp
 
+import benchbuild as bb
 from benchbuild.project import Project
 from benchbuild.utils.cmd import ninja, cmake, git
 from benchbuild.utils.compiler import cc
@@ -18,12 +19,6 @@ from varats.utils.project_util import (
 )
 
 
-@with_git(
-    "https://github.com/open-quantum-safe/liboqs.git",
-    refspec="HEAD",
-    version_filter=project_filter_generator("liboqs"),
-    shallow_clone=False
-)
 class Liboqs(Project, CVEProviderHook):  # type: ignore
     """C library for quantum-safe cryptography (fetched by Git)"""
 
@@ -32,7 +27,13 @@ class Liboqs(Project, CVEProviderHook):  # type: ignore
     DOMAIN = 'security'
     VERSION = 'HEAD'
 
-    SRC_FILE = NAME + "-{0}".format(VERSION)
+    #SRC_FILE = NAME + "-{0}".format(VERSION)
+    SOURCE = bb.source.Git(
+        "https://github.com/open-quantum-safe/liboqs.git",
+        refspec="HEAD",
+        version_filter=project_filter_generator("liboqs"),
+        shallow_clone=False
+    )
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
@@ -43,15 +44,19 @@ class Liboqs(Project, CVEProviderHook):  # type: ignore
         pass
 
     def compile(self) -> None:
-        self.download()
+        # self.download()
 
-        clang = cc(self)
-        build_folder = local.path(self.SRC_FILE + "/" + "build")
+        path = local.path(self.source_of(self.primary_source))
+
+        clang = bb.compiler.cc(self)
+        build_folder = local.path(path + "/" + "build")
         build_folder.mkdir()
         with local.cwd(build_folder):
             with local.env(CC=str(clang)):
-                run(cmake["-G", "Ninja", ".."])
-            run(ninja)
+                #run(cmake["-G", "Ninja", ".."])
+                bb.watch(cmake)("-G", "Ninja", "..")
+            # run(ninja)
+            bb.watch(ninja)()
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

@@ -1,6 +1,7 @@
 """Project file for s2n."""
 import typing as tp
 
+import benchbuild as bb
 from benchbuild.project import Project
 from benchbuild.utils.cmd import make, source
 from benchbuild.utils.compiler import cc
@@ -18,11 +19,6 @@ from varats.utils.project_util import (
 )
 
 
-@with_git(
-    "https://github.com/awslabs/s2n.git",
-    refspec="HEAD",
-    version_filter=project_filter_generator("s2n")
-)
 class S2n(Project, CVEProviderHook):  # type: ignore
     """An implementation of the TLS/SSL protocols (fetched by Git)"""
 
@@ -31,7 +27,12 @@ class S2n(Project, CVEProviderHook):  # type: ignore
     DOMAIN = 'security'
     VERSION = 'HEAD'
 
-    SRC_FILE = NAME + "-{0}".format(VERSION)
+    #SRC_FILE = NAME + "-{0}".format(VERSION)
+    SOURCE = bb.source.Git(
+        "https://github.com/awslabs/s2n.git",
+        refspec="HEAD",
+        version_filter=project_filter_generator("s2n")
+    )
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
@@ -42,15 +43,20 @@ class S2n(Project, CVEProviderHook):  # type: ignore
         pass
 
     def compile(self) -> None:
-        self.download()
+        # self.download()
+        path = local.path(self.source_of(self.primary_source))
 
         clang = cc(self)
-        with local.cwd(self.SRC_FILE):
+        with local.cwd(path):
             # TODO: find installed OpenSSL version and store in env variable S2N_LIBCRYPTO
             with local.env(BUILD_S2N=True, LATEST_CLANG=True, S2N_LIBCRYPTO="openssl-1.1.1"):
-                run(source["codebuild/bin/s2n_setup_env.sh"])
-                run(local["codebuild/bin/s2n_install_test_dependencies.sh"])
-                run(local["codebuild/bin/s2n_codebuild.sh"])
+                # run(source["codebuild/bin/s2n_setup_env.sh"])
+                bb.watch(source)("codebuild/bin/s2n_setup_env.sh")
+                # run(local["codebuild/bin/s2n_install_test_dependencies.sh"])
+                bb.watch(
+                    local["codebuild/bin/s2n_install_test_dependencies.sh"])()
+                # run(local["codebuild/bin/s2n_codebuild.sh"])
+                bb.watch(local["codebuild/bin/s2n_codebuild.sh"])()
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
