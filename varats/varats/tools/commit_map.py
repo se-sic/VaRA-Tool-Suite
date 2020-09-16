@@ -7,7 +7,7 @@ from benchbuild.utils.cmd import git, mkdir
 from plumbum import local
 
 from varats.data.reports.commit_report import CommitMap
-from varats.utilss.project_util import get_local_project_git_path
+from varats.project.project_util import get_local_project_git_path
 
 
 def generate_commit_map(

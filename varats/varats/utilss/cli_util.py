@@ -10,7 +10,7 @@ from rich.traceback import install
 from varats.tools.research_tools.phasar import Phasar
 from varats.tools.research_tools.research_tool import ResearchTool
 from varats.tools.research_tools.vara import VaRA
-from varats.utilss.settings import vara_cfg
+from varats.utils.settings import vara_cfg
 
 
 def cli_yn_choice(question: str, default: str = 'y') -> bool:

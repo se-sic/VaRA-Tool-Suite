@@ -11,13 +11,13 @@ from benchbuild.utils.cmd import mkdir, touch
 from varats.data.reports.empty_report import EmptyReport
 from varats.experiments.wllvm import RunWLLVM
 from varats.report.report import FileStatusExtension as FSE
+from varats.utils.settings import bb_cfg
 from varats.utilss.experiment_util import (
     VersionExperiment,
     exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
     create_default_analysis_failure_handler,
 )
-from varats.utilss.settings import bb_cfg
 
 
 # Please take care when changing this file, see docs experiments/just_compile

@@ -20,7 +20,7 @@ from packaging.version import LegacyVersion, Version
 from packaging.version import parse as version_parse
 from tabulate import tabulate
 
-from varats.utilss.settings import vara_cfg
+from varats.utils.settings import vara_cfg
 
 
 class CVE:
