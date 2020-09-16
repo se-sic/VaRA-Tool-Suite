@@ -24,8 +24,8 @@ from varats.data.revisions import (
     is_revision_blocked,
 )
 from varats.paper.case_study import CSStage, CaseStudy
-from varats.plots.plot_utils import check_required_args
-from varats.plots.plots import PlotRegistry
+from varats.plot.plot_utils import check_required_args
+from varats.plot.plots import PlotRegistry
 from varats.project.project_util import get_project_cls_by_name
 from varats.provider.release.release_provider import (
     ReleaseProvider,

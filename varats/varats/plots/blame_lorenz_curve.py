@@ -14,7 +14,7 @@ from varats.data.databases.blame_interaction_database import (
 from varats.data.metrics import gini_coefficient, lorenz_curve
 from varats.data.reports.commit_report import CommitMap
 from varats.paper.case_study import CaseStudy
-from varats.plots.plot import Plot, PlotDataEmpty
+from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plots.repository_churn import (
     build_repo_churn_table,
     draw_code_churn,

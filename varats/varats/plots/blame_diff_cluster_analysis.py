@@ -19,7 +19,7 @@ from varats.data.databases.blame_diff_metrics_database import (
     BlameDiffMetricsDatabase,
 )
 from varats.data.reports.commit_report import CommitMap
-from varats.plots.plot import Plot, PlotDataEmpty
+from varats.plot.plot import Plot, PlotDataEmpty
 
 
 def _create_cluster_objects(
