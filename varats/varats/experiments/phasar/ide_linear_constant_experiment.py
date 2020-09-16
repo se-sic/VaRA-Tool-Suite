@@ -15,6 +15,7 @@ from varats.experiments.wllvm import (
     get_bc_cache_actions,
 )
 from varats.report.report import FileStatusExtension as FSE
+from varats.utils.settings import bb_cfg
 from varats.utilss.experiment_util import (
     VersionExperiment,
     wrap_unlimit_stack_size,
@@ -23,7 +24,6 @@ from varats.utilss.experiment_util import (
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
 )
-from varats.utilss.settings import bb_cfg
 
 
 class IDELinearConstantAnalysis(actions.Step):  # type: ignore

@@ -17,6 +17,7 @@ import varats.experiments.vara.blame_experiment as BE
 from varats.data.reports.blame_report import BlameReport as BR
 from varats.experiments.wllvm import get_cached_bc_file_path, BCFileExtensions
 from varats.report.report import FileStatusExtension as FSE
+from varats.utils.settings import bb_cfg
 from varats.utilss.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
@@ -24,7 +25,6 @@ from varats.utilss.experiment_util import (
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
 )
-from varats.utilss.settings import bb_cfg
 
 
 class BlameReportGeneration(actions.Step):  # type: ignore

@@ -19,8 +19,8 @@ from varats.data.reports.empty_report import EmptyReport
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plots.plot import Plot
 from varats.plots.plot_utils import check_required_args, find_missing_revisions
+from varats.project.project_util import get_local_project_git
 from varats.report.report import FileStatusExtension, MetaReport
-from varats.utilss.project_util import get_local_project_git
 
 # colors taken from seaborn's default palette
 SUCCESS_COLOR = np.asarray(

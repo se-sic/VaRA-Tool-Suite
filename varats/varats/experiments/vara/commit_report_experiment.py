@@ -20,6 +20,7 @@ from varats.experiments.wllvm import (
     get_bc_cache_actions,
 )
 from varats.report.report import FileStatusExtension as FSE
+from varats.utils.settings import bb_cfg
 from varats.utilss.experiment_util import (
     VersionExperiment,
     exec_func_with_pe_error_handler,
@@ -27,7 +28,6 @@ from varats.utilss.experiment_util import (
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
 )
-from varats.utilss.settings import bb_cfg
 
 
 class CRAnalysis(actions.Step):  # type: ignore

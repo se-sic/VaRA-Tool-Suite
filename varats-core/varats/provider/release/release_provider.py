@@ -6,8 +6,8 @@ from benchbuild.project import Project
 from packaging.version import Version
 from packaging.version import parse as parse_version
 
+from varats.project.project_util import get_tagged_commits
 from varats.provider.provider import Provider
-from varats.utilss.project_util import get_tagged_commits
 
 
 class ReleaseType(Enum):

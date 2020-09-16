@@ -5,9 +5,9 @@ import logging
 import os
 import sys
 
+from varats.utils.settings import save_config, vara_cfg
 from varats.utilss.bb_config import generate_benchbuild_config
 from varats.utilss.cli_util import cli_yn_choice
-from varats.utilss.settings import save_config, vara_cfg
 
 LOG = logging.getLogger(__name__)
 

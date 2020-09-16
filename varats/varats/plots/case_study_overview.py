@@ -13,8 +13,8 @@ from varats.data.reports.empty_report import EmptyReport
 from varats.paper.case_study import CaseStudy
 from varats.plots.plot import Plot
 from varats.plots.plot_utils import check_required_args
+from varats.project.project_util import get_project_cls_by_name
 from varats.report.report import FileStatusExtension, MetaReport
-from varats.utilss.project_util import get_project_cls_by_name
 
 SUCCESS_COLOR = (0.5568627450980392, 0.7294117647058823, 0.25882352941176473)
 BLOCKED_COLOR = (0.20392156862745098, 0.5411764705882353, 0.7411764705882353)

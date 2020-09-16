@@ -24,6 +24,7 @@ from varats.experiments.wllvm import (
     get_bc_cache_actions,
 )
 from varats.report.report import FileStatusExtension as FSE
+from varats.utils.settings import bb_cfg
 from varats.utilss.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
@@ -31,7 +32,6 @@ from varats.utilss.experiment_util import (
     get_default_compile_error_wrapped,
     create_default_compiler_error_handler,
 )
-from varats.utilss.settings import bb_cfg
 
 
 class VaraMTFACheck(actions.Step):  # type: ignore

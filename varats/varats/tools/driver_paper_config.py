@@ -10,14 +10,14 @@ import typing as tp
 from pathlib import Path
 
 from varats.paper_mgmt.paper_config import get_paper_config
-from varats.utilss.cli_util import cli_list_choice, initialize_cli_tool
-from varats.utilss.exceptions import ConfigurationLookupError
-from varats.utilss.settings import (
+from varats.utils.settings import (
     get_value_or_default,
     get_varats_base_folder,
     save_config,
     vara_cfg,
 )
+from varats.utilss.cli_util import cli_list_choice, initialize_cli_tool
+from varats.utilss.exceptions import ConfigurationLookupError
 
 LOG = logging.getLogger(__name__)
 

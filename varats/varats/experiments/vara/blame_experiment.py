@@ -15,11 +15,11 @@ from varats.experiments.wllvm import (
     get_bc_cache_actions,
 )
 from varats.report.report import BaseReport
+from varats.utils.settings import bb_cfg
 from varats.utilss.experiment_util import (
     get_default_compile_error_wrapped,
     PEErrorHandler,
 )
-from varats.utilss.settings import bb_cfg
 
 
 def setup_basic_blame_experiment(

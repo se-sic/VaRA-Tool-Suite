@@ -19,7 +19,7 @@ from varats.paper_mgmt.case_study import (
 )
 from varats.report.report import FileStatusExtension, MetaReport
 from varats.tools.commit_map import create_lazy_commit_map_loader
-from varats.utilss.settings import vara_cfg
+from varats.utils.settings import vara_cfg
 
 
 def show_status_of_case_studies(
