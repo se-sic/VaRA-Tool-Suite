@@ -14,9 +14,9 @@ from benchbuild.utils.actions import Step
 from benchbuild.utils.cmd import prlimit
 from plumbum.commands import ProcessExecutionError
 
-from varats.data.revisions import get_tagged_revisions
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.report.report import BaseReport, FileStatusExtension
+from varats.revision.revisions import get_tagged_revisions
 from varats.utils.settings import vara_cfg, bb_cfg
 
 

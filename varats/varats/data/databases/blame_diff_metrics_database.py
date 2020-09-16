@@ -19,17 +19,17 @@ from varats.data.reports.blame_report import (
     count_interacting_commits,
     count_interacting_authors,
 )
-from varats.data.revisions import (
-    get_processed_revisions_files,
-    get_failed_revisions_files,
-    get_processed_revisions,
-)
 from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.project.project_util import get_local_project_git
 from varats.report.report import MetaReport
+from varats.revision.revisions import (
+    get_processed_revisions_files,
+    get_failed_revisions_files,
+    get_processed_revisions,
+)
 from varats.utils.git_util import ChurnConfig, calc_code_churn
 
 
