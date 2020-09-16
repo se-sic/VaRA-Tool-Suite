@@ -50,7 +50,7 @@ class TestPaperConfigManager(unittest.TestCase):
 
         # allows to add blocked revisions
         project_source_patcher = mock.patch(
-            'varats.data.revisions.get_primary_project_source'
+            'varats.revision.revisions.get_primary_project_source'
         )
         self.addCleanup(project_source_patcher.stop)
         self.project_source_mock = project_source_patcher.start()

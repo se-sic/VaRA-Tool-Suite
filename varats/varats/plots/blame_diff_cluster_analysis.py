@@ -18,8 +18,8 @@ from sklearn.preprocessing import StandardScaler
 from varats.data.databases.blame_diff_metrics_database import (
     BlameDiffMetricsDatabase,
 )
-from varats.data.reports.commit_report import CommitMap
-from varats.plots.plot import Plot, PlotDataEmpty
+from varats.mapping.commit_map import CommitMap
+from varats.plot.plot import Plot, PlotDataEmpty
 
 
 def _create_cluster_objects(

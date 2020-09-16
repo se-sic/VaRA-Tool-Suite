@@ -18,7 +18,7 @@ from benchbuild.utils.actions import Step
 from benchbuild.utils.cmd import cp, extract_bc, opt
 from plumbum import local
 
-from varats.experiments.wllvm import RunWLLVM
+from varats.experiment.wllvm import RunWLLVM
 # These two new config parameters are needed to include Niederhuber's prepare-
 # script and to make the folder in which the results of the analyses are
 # stored user-defined.

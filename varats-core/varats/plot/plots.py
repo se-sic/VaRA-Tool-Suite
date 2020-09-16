@@ -4,12 +4,12 @@ import re
 import typing as tp
 from pathlib import Path
 
-from varats.plots.plot_utils import check_required_args
-from varats.tools.commit_map import create_lazy_commit_map_loader
+from varats.mapping.commit_map import create_lazy_commit_map_loader
+from varats.plot.plot_utils import check_required_args
 from varats.utils.settings import vara_cfg
 
 if tp.TYPE_CHECKING:
-    import varats.plots.plot  # pylint: disable=W0611
+    import varats.plot.plot  # pylint: disable=W0611
 
 LOG = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class PlotRegistry(type):
     @staticmethod
     def get_class_for_plot_type(
         plot_type: str
-    ) -> tp.Type['varats.plots.plot.Plot']:
+    ) -> tp.Type['varats.plot.plot.Plot']:
         """
         Get the class for plot from the plot registry.
 
@@ -67,7 +67,7 @@ class PlotRegistry(type):
         """
         PlotRegistry.__ensure_plots_are_loaded()
 
-        from varats.plots.plot import Plot  # pylint: disable=W0611
+        from varats.plot.plot import Plot  # pylint: disable=W0611
         if plot_type not in PlotRegistry.plots:
             raise LookupError(
                 f"Unknown plot '{plot_type}'.\n" +

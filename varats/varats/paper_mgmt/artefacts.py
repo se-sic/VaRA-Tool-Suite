@@ -16,8 +16,8 @@ from enum import Enum
 from pathlib import Path
 
 from varats.base.version_header import VersionHeader
-from varats.plots.plot import Plot
-from varats.plots.plots import PlotRegistry, build_plot
+from varats.plot.plot import Plot
+from varats.plot.plots import PlotRegistry, build_plot
 from varats.tables.table import TableFormat, Table
 from varats.tables.tables import TableRegistry
 from varats.utils.settings import vara_cfg
@@ -96,14 +96,14 @@ class Artefact(ABC):
 
 class PlotArtefact(Artefact):
     """
-    An artefact defining a :class:`plot<varats.plots.plot.Plot>`.
+    An artefact defining a :class:`plot<varats.plot.plot.Plot>`.
 
     Args:
         name: The name of this artefact.
         output_path: the path where the plot this artefact produces will be
                      stored
         plot_type: the
-                    :attr:`type of plot<varats.plots.plots.PlotRegistry.plots>`
+                    :attr:`type of plot<varats.plot.plots.PlotRegistry.plots>`
                     that will be generated
         file_format: the file format of the generated plot
         kwargs: additional arguments that will be passed to the plot class
@@ -121,7 +121,7 @@ class PlotArtefact(Artefact):
 
     @property
     def plot_type(self) -> str:
-        """The :attr:`type of plot<varats.plots.plots.PlotRegistry.plots>` that
+        """The :attr:`type of plot<varats.plot.plots.PlotRegistry.plots>` that
         will be generated."""
         return self.__plot_type
 
@@ -189,7 +189,7 @@ class TableArtefact(Artefact):
 
     @property
     def table_type(self) -> str:
-        """The :attr:`type of plot<varats.plots.plots.PlotRegistry.plots>` that
+        """The :attr:`type of plot<varats.plot.plots.PlotRegistry.plots>` that
         will be generated."""
         return self.__table_type
 

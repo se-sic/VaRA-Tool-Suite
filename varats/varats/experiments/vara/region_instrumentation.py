@@ -5,7 +5,7 @@ from benchbuild import Experiment, Project  # type: ignore
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.actions import Step
 
-from varats.experiments.wllvm import RunWLLVM
+from varats.experiment.wllvm import RunWLLVM
 
 
 class RegionAnalyser(Experiment):  # type: ignore

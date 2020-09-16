@@ -28,6 +28,7 @@ class ResearchToolUtils(unittest.TestCase):
         ) as vara_cfg:
 
             vara_cfg["config_file"] = tmp_path + "/dummy.yml"
+            vara_cfg["vara"]["llvm_source_dir"] = tmp_path + "/tools_src"
             vara = get_research_tool("vara")
             self.assertTrue(vara.has_source_location())
             self.assertEqual(

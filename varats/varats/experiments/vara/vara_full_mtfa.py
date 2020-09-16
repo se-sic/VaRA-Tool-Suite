@@ -25,7 +25,7 @@ from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     create_default_compiler_error_handler,
 )
-from varats.experiments.wllvm import (
+from varats.experiment.wllvm import (
     RunWLLVM,
     get_cached_bc_file_path,
     get_bc_cache_actions,

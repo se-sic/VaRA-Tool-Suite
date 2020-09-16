@@ -5,7 +5,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import varats.paper.case_study as CS
-from varats.data.reports.commit_report import CommitMap
+from varats.mapping.commit_map import CommitMap
 from varats.paper_mgmt.case_study import sample_n
 
 YAML_CASE_STUDY = """---

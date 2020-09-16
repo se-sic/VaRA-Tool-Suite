@@ -14,8 +14,17 @@ from benchbuild import Project  # type: ignore
 from scipy.stats import halfnorm
 
 from varats.base.sampling_method import SamplingMethod
-from varats.data.reports.commit_report import CommitMap
-from varats.data.revisions import (
+from varats.mapping.commit_map import CommitMap
+from varats.paper.case_study import CSStage, CaseStudy
+from varats.plot.plot_utils import check_required_args
+from varats.plot.plots import PlotRegistry
+from varats.project.project_util import get_project_cls_by_name
+from varats.provider.release.release_provider import (
+    ReleaseProvider,
+    ReleaseType,
+)
+from varats.report.report import FileStatusExtension, MetaReport
+from varats.revision.revisions import (
     get_failed_revisions,
     get_processed_revisions,
     get_tagged_revision,
@@ -23,15 +32,6 @@ from varats.data.revisions import (
     filter_blocked_revisions,
     is_revision_blocked,
 )
-from varats.paper.case_study import CSStage, CaseStudy
-from varats.plots.plot_utils import check_required_args
-from varats.plots.plots import PlotRegistry
-from varats.project.project_util import get_project_cls_by_name
-from varats.provider.release.release_provider import (
-    ReleaseProvider,
-    ReleaseType,
-)
-from varats.report.report import FileStatusExtension, MetaReport
 from varats.utils.yaml_util import load_yaml, store_as_yaml
 
 
