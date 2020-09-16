@@ -22,7 +22,7 @@ from varats.experiment.experiment_util import (
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
 )
-from varats.experiments.wllvm import get_cached_bc_file_path, BCFileExtensions
+from varats.experiment.wllvm import get_cached_bc_file_path, BCFileExtensions
 from varats.report.report import FileStatusExtension as FSE
 from varats.utils.settings import bb_cfg
 
