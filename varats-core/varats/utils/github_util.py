@@ -203,7 +203,8 @@ def get_cached_github_object(
 
 
 def get_cached_github_object_list(
-    cached_object_key: str, load_function: tp.Callable[[Github], PaginatedList]
+    cached_object_key: str,
+    load_function: 'tp.Callable[[Github], PaginatedList[PyGithubObj]]'
 ) -> tp.List[PyGithubObj]:
     """
     Transparently caches a PaginatedList of GithubObjs loaded by the given
