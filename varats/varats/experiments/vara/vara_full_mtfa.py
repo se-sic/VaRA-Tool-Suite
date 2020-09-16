@@ -18,6 +18,13 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.cmd import mkdir, opt, timeout
 
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
+from varats.experiment.experiment_util import (
+    exec_func_with_pe_error_handler,
+    VersionExperiment,
+    PEErrorHandler,
+    get_default_compile_error_wrapped,
+    create_default_compiler_error_handler,
+)
 from varats.experiments.wllvm import (
     RunWLLVM,
     get_cached_bc_file_path,
@@ -25,13 +32,6 @@ from varats.experiments.wllvm import (
 )
 from varats.report.report import FileStatusExtension as FSE
 from varats.utils.settings import bb_cfg
-from varats.utilss.experiment_util import (
-    exec_func_with_pe_error_handler,
-    VersionExperiment,
-    PEErrorHandler,
-    get_default_compile_error_wrapped,
-    create_default_compiler_error_handler,
-)
 
 
 class VaraMTFACheck(actions.Step):  # type: ignore

@@ -19,7 +19,7 @@ from varats.paper_mgmt.artefacts import (
     store_artefacts,
 )
 from varats.paper_mgmt.paper_config import get_paper_config
-from varats.utilss.cli_util import initialize_cli_tool
+from varats.utils.cli_util import initialize_cli_tool
 
 LOG = logging.getLogger(__name__)
 

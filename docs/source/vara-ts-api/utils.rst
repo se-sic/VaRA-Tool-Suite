@@ -10,11 +10,12 @@ Utilities overview
 * :ref:`Module: project_util`
 * :ref:`Module: filesystem_util`
 * :ref:`Module: logger_util`
+* :ref:`Module: tool_util`
 
 Module: cli_util
 ................
 
-.. automodule:: varats.utilss.cli_util
+.. automodule:: varats.utils.cli_util
     :members:
     :undoc-members:
     :show-inheritance:
@@ -24,7 +25,7 @@ Module: cli_util
 Module: exceptions
 ..................
 
-.. automodule:: varats.utilss.exceptions
+.. automodule:: varats.utils.exceptions
     :members:
     :undoc-members:
     :show-inheritance:
@@ -34,7 +35,7 @@ Module: exceptions
 Module: git_util
 ................
 
-.. automodule:: varats.utilss.git_util
+.. automodule:: varats.utils.git_util
     :members:
     :undoc-members:
     :show-inheritance:
@@ -44,7 +45,7 @@ Module: git_util
 Module: experiment_util
 .......................
 
-.. automodule:: varats.utilss.experiment_util
+.. automodule:: varats.experiment.experiment_util
     :members:
     :undoc-members:
     :show-inheritance:
@@ -64,7 +65,7 @@ Module: project_util
 Module: filesystem_util
 .......................
 
-.. automodule:: varats.utilss.filesystem_util
+.. automodule:: varats.utils.filesystem_util
     :members:
     :undoc-members:
     :show-inheritance:
@@ -102,7 +103,17 @@ For logging categories, we follow the default python logging `HOWTO <https://doc
 Module: logger_util
 .......................
 
-.. automodule:: varats.utilss.logger_util
+.. automodule:: varats.utils.logger_util
     :members:
     :undoc-members:
     :show-inheritance:
+
+Module: tool_util
+.......................
+
+.. automodule:: varats.tools.tool_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+-----
