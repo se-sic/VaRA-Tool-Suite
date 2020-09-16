@@ -12,7 +12,7 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
 )
-from varats.utilss.settings import bb_cfg
+from varats.utils.settings import bb_cfg
 
 
 class Vim(bb.Project):  # type: ignore

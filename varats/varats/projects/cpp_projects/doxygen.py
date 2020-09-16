@@ -14,7 +14,7 @@ from varats.project.project_util import (
     wrap_paths_to_binaries,
     BinaryType,
 )
-from varats.utilss.settings import bb_cfg
+from varats.utils.settings import bb_cfg
 
 
 class Doxygen(bb.Project):  # type: ignore

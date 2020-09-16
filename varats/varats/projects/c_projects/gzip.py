@@ -20,7 +20,7 @@ from varats.provider.release.release_provider import (
     ReleaseProviderHook,
     ReleaseType,
 )
-from varats.utilss.settings import bb_cfg
+from varats.utils.settings import bb_cfg
 
 
 class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore

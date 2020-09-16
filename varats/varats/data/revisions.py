@@ -18,7 +18,7 @@ from varats.project.project_util import (
     get_primary_project_source,
 )
 from varats.report.report import FileStatusExtension, MetaReport
-from varats.utilss.settings import vara_cfg
+from varats.utils.settings import vara_cfg
 
 
 def is_revision_blocked(revision: str, project_cls: tp.Type[Project]) -> bool:

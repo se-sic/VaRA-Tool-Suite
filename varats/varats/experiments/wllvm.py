@@ -22,8 +22,8 @@ from benchbuild.utils.path import list_to_path, path_to_list
 from plumbum import local
 
 from varats.project.project_util import ProjectBinaryWrapper
+from varats.utils.settings import bb_cfg
 from varats.utilss.experiment_util import FunctionPEErrorWrapper, PEErrorHandler
-from varats.utilss.settings import bb_cfg
 
 
 class BCFileExtensions(Enum):

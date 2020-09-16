@@ -14,7 +14,7 @@ from varats.project.project_util import (
     get_local_project_git_path,
     BinaryType,
 )
-from varats.utilss.settings import bb_cfg
+from varats.utils.settings import bb_cfg
 
 
 class X264(bb.Project):  # type: ignore

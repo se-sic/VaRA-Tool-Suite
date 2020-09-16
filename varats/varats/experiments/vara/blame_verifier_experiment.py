@@ -23,12 +23,12 @@ from varats.data.reports.blame_verifier_report import (
 from varats.experiments.wllvm import BCFileExtensions, get_cached_bc_file_path
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import BaseReport
+from varats.utils.settings import bb_cfg
 from varats.utilss.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     PEErrorHandler,
 )
-from varats.utilss.settings import bb_cfg
 
 
 class BlameVerifierReportGeneration(actions.Step):  # type: ignore
