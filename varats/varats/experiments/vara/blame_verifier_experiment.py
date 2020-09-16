@@ -25,7 +25,7 @@ from varats.experiment.experiment_util import (
     VersionExperiment,
     PEErrorHandler,
 )
-from varats.experiments.wllvm import BCFileExtensions, get_cached_bc_file_path
+from varats.experiment.wllvm import BCFileExtensions, get_cached_bc_file_path
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import BaseReport
 from varats.utils.settings import bb_cfg

@@ -41,7 +41,7 @@ Experiment utilities
 WLLVM module
 ............
 
-.. automodule:: varats.experiments.wllvm
+.. automodule:: varats.experiment.wllvm
     :members:
     :undoc-members:
     :show-inheritance:

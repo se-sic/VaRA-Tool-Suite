@@ -13,7 +13,7 @@ from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,
     PEErrorHandler,
 )
-from varats.experiments.wllvm import (
+from varats.experiment.wllvm import (
     RunWLLVM,
     BCFileExtensions,
     get_bc_cache_actions,
