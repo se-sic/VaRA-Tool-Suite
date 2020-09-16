@@ -6,7 +6,8 @@ import typing as tp
 from pathlib import Path
 
 from varats.data.discover_reports import initialize_reports
-from varats.plots.plots import PlotRegistry, build_plot
+from varats.plot.plots import PlotRegistry, build_plot
+from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
 from varats.utils.cli_util import initialize_cli_tool
 
@@ -22,6 +23,7 @@ def main() -> None:
     initialize_cli_tool()
     initialize_projects()
     initialize_reports()
+    initialize_plots()
     parser = argparse.ArgumentParser("vara-plot")
     parser.add_argument(
         "plot_type",

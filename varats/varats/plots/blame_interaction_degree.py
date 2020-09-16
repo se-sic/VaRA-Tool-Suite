@@ -14,9 +14,9 @@ from varats.data.databases.blame_interaction_degree_database import (
     DegreeType,
 )
 from varats.data.reports.commit_report import CommitMap
+from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plots.bug_annotation import draw_bugs
 from varats.plots.cve_annotation import draw_cves
-from varats.plots.plot import Plot, PlotDataEmpty
 from varats.plots.repository_churn import draw_code_churn_for_revisions
 from varats.project.project_util import get_project_cls_by_name
 

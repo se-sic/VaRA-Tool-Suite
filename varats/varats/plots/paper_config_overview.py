@@ -17,8 +17,8 @@ from varats.data.databases.file_status_database import FileStatusDatabase
 from varats.data.reports.commit_report import CommitMap
 from varats.data.reports.empty_report import EmptyReport
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
-from varats.plots.plot import Plot
-from varats.plots.plot_utils import check_required_args, find_missing_revisions
+from varats.plot.plot import Plot
+from varats.plot.plot_utils import check_required_args, find_missing_revisions
 from varats.project.project_util import get_local_project_git
 from varats.report.report import FileStatusExtension, MetaReport
 
