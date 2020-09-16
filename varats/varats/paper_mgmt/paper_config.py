@@ -11,19 +11,19 @@ new experiment to compare the results.
 import typing as tp
 from pathlib import Path
 
-from varats.paper.artefacts import (
-    Artefact,
-    Artefacts,
-    load_artefacts_from_file,
-    store_artefacts,
-)
 from varats.paper.case_study import (
     CaseStudy,
     load_case_study_from_file,
     store_case_study,
 )
-from varats.utils.exceptions import ConfigurationLookupError
-from varats.utils.settings import vara_cfg
+from varats.paper_mgmt.artefacts import (
+    Artefact,
+    Artefacts,
+    load_artefacts_from_file,
+    store_artefacts,
+)
+from varats.utilss.exceptions import ConfigurationLookupError
+from varats.utilss.settings import vara_cfg
 
 
 class PaperConfig():

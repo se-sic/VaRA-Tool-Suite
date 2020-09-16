@@ -11,15 +11,17 @@ import matplotlib.pyplot as plt
 import matplotlib.style as style
 import pandas as pd
 
+#import varats.data.discover_reports
+#from varats.data.discover_reports import foo
 from varats.data.reports.commit_report import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plots.plot import Plot
-from varats.utils.git_util import (
+from varats.utilss.git_util import (
     ChurnConfig,
     calc_repo_code_churn,
     calc_code_churn,
 )
-from varats.utils.project_util import get_local_project_git
+from varats.utilss.project_util import get_local_project_git
 
 
 def build_repo_churn_table(

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from varats.plots.plot_utils import check_required_args
 from varats.tools.commit_map import create_lazy_commit_map_loader
-from varats.utils.settings import vara_cfg
+from varats.utilss.settings import vara_cfg
 
 if tp.TYPE_CHECKING:
     import varats.plots.plot  # pylint: disable=W0611
@@ -108,7 +108,7 @@ def build_plot(**args: tp.Any) -> None:
     """
     # pylint: disable=C0415
     from varats.paper.case_study import load_case_study_from_file
-    from varats.paper.paper_config import get_paper_config
+    from varats.paper_mgmt.paper_config import get_paper_config
     # pylint: enable=C0415
 
     # Setup default result folder

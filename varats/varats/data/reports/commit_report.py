@@ -8,8 +8,8 @@ import pandas as pd
 import yaml
 from pygtrie import CharTrie
 
-from varats.data.report import BaseReport, FileStatusExtension, MetaReport
-from varats.data.version_header import VersionHeader
+from varats.base.version_header import VersionHeader
+from varats.report.report import BaseReport, FileStatusExtension, MetaReport
 
 LOG = logging.getLogger(__name__)
 

@@ -19,8 +19,8 @@ from varats.plots.repository_churn import (
     build_repo_churn_table,
     draw_code_churn,
 )
-from varats.utils.git_util import ChurnConfig, calc_repo_code_churn
-from varats.utils.project_util import get_local_project_git
+from varats.utilss.git_util import ChurnConfig, calc_repo_code_churn
+from varats.utilss.project_util import get_local_project_git
 
 
 def draw_interaction_lorenz_curve(

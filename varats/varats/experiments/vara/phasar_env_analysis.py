@@ -15,21 +15,21 @@ from benchbuild import Experiment, Project  # type: ignore
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.cmd import mkdir, phasar, timeout
 
-from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.env_trace_report import EnvTraceReport as ENVR
 from varats.experiments.wllvm import (
     RunWLLVM,
     get_cached_bc_file_path,
     get_bc_cache_actions,
 )
-from varats.utils.experiment_util import (
+from varats.report.report import FileStatusExtension as FSE
+from varats.utilss.experiment_util import (
     PEErrorHandler,
     wrap_unlimit_stack_size,
     exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
     create_default_compiler_error_handler,
 )
-from varats.utils.settings import bb_cfg
+from varats.utilss.settings import bb_cfg
 
 
 class PhasarEnvIFDS(actions.Step):  # type: ignore

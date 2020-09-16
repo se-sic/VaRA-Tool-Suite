@@ -1,7 +1,7 @@
 """
 This module allows to attach :class:`artefact definitions<Artefact>` to a.
 
-:class:`paper config<varats.paper.paper_config>`. This way, the artefacts, like
+:class:`paper config<varats.paper_mgmt.paper_config>`. This way, the artefacts, like
 :class:`plots<PlotArtefact>` or result tables, can be generated from result
 files automatically.
 
@@ -15,13 +15,13 @@ from abc import ABC
 from enum import Enum
 from pathlib import Path
 
-from varats.data.version_header import VersionHeader
+from varats.base.version_header import VersionHeader
 from varats.plots.plot import Plot
 from varats.plots.plots import PlotRegistry, build_plot
 from varats.tables.table import TableFormat, Table
 from varats.tables.tables import TableRegistry
-from varats.utils.settings import vara_cfg
 from varats.utils.yaml_util import load_yaml, store_as_yaml
+from varats.utilss.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
 

@@ -8,14 +8,14 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.cmd import mkdir
 from plumbum import local
 
-from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.empty_report import EmptyReport
 from varats.experiments.wllvm import (
     RunWLLVM,
     get_cached_bc_file_path,
     get_bc_cache_actions,
 )
-from varats.utils.experiment_util import (
+from varats.report.report import FileStatusExtension as FSE
+from varats.utilss.experiment_util import (
     VersionExperiment,
     wrap_unlimit_stack_size,
     get_default_compile_error_wrapped,
@@ -23,7 +23,7 @@ from varats.utils.experiment_util import (
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
 )
-from varats.utils.settings import bb_cfg
+from varats.utilss.settings import bb_cfg
 
 
 class IDELinearConstantAnalysis(actions.Step):  # type: ignore

@@ -6,7 +6,7 @@ from io import StringIO
 from pathlib import Path
 
 from tests.test_utils import replace_config
-from varats.paper import paper_config
+from varats.paper_mgmt import paper_config
 from varats.tools.driver_paper_config import _pc_list, _pc_set
 
 
@@ -30,7 +30,7 @@ class TestDriverPaperConfig(unittest.TestCase):
     """Tests for the driver_paper_config module."""
 
     @mock.patch('sys.stdout', new_callable=StringIO)
-    @mock.patch('varats.paper.paper_config.PaperConfig')
+    @mock.patch('varats.paper_mgmt.paper_config.PaperConfig')
     @mock.patch('varats.tools.driver_paper_config._get_paper_configs')
     def test_vara_pc_list(
         self, mock_get_paper_configs, mock_paper_config, stdout
@@ -52,7 +52,7 @@ class TestDriverPaperConfig(unittest.TestCase):
     @mock.patch('builtins.input')
     @mock.patch('sys.stdout', new_callable=StringIO)
     @mock.patch(
-        'varats.paper.paper_config.PaperConfig',
+        'varats.paper_mgmt.paper_config.PaperConfig',
         side_effect=_create_paper_config_mock
     )
     @mock.patch('varats.tools.driver_paper_config._get_paper_configs')

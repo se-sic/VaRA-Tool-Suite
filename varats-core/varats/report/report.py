@@ -10,8 +10,6 @@ from pathlib import Path
 from plumbum import colors
 from plumbum.colorlib.styles import Color
 
-from varats.data import reports as __REPORTS__
-
 
 class FileStatusExtension(Enum):
     """
@@ -534,7 +532,3 @@ class BaseReport(metaclass=MetaReport):
     def path(self) -> Path:
         """Path to the report file."""
         return self.__path
-
-
-# Discover and initialize all Reports
-__REPORTS__.discover()
