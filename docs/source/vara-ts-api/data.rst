@@ -38,7 +38,7 @@ Report module
 Handling utilities for generated report files
 .............................................
 
-.. automodule:: varats.data.revisions
+.. automodule:: varats.revision.revisions
     :members:
     :undoc-members:
     :show-inheritance:
