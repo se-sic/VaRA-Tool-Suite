@@ -16,7 +16,7 @@ Designing a new ``Experiment`` is also quite simple.
 * Next, override the ``actions_for_project`` method.
   This method should assign run-time/compile-time extensions and specify the list of actions that should be performed.
   Each action the experiment does is called a ``Step`` and will be executed by BenchBuild in order.
-* Last, add your experiment for testing to the BenchBuild config file `vara-root/benchbuild/.benchbuild.yml` under plugins/experiments/value. After testing, integrate them into the tool suite by adding it to the experiment list in ``varats.utils.settings.generate_benchbuild_config``, so it will be automatically added to the BenchBuild config in the future.
+* Last, add your experiment for testing to the BenchBuild config file `vara-root/benchbuild/.benchbuild.yml` under plugins/experiments/value. After testing, integrate them into the tool suite by adding it to the experiment list in ``varats.tools.bb_config.generate_benchbuild_config``, so it will be automatically added to the BenchBuild config in the future.
 
 .. note::
   For more information about ``Experiment``'s consider reading the BenchBuild `docs <https://pprof-study.readthedocs.io/en/master/>`_.

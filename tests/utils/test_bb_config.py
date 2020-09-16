@@ -5,8 +5,8 @@ import unittest
 from copy import deepcopy
 from pathlib import Path
 
+from varats.tools.bb_config import generate_benchbuild_config
 from varats.utils.settings import vara_cfg, bb_cfg
-from varats.utilss.bb_config import generate_benchbuild_config
 
 
 class BenchBuildConfig(unittest.TestCase):
