@@ -8,7 +8,7 @@ import pygit2
 from benchbuild.utils.cmd import git
 from plumbum import local
 
-from varats.utilss.project_util import get_local_project_git
+from varats.project.project_util import get_local_project_git
 
 
 class ChurnConfig():

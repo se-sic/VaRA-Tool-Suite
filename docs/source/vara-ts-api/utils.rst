@@ -54,7 +54,7 @@ Module: experiment_util
 Module: project_util
 ....................
 
-.. automodule:: varats.utilss.project_util
+.. automodule:: varats.project.project_util
     :members:
     :undoc-members:
     :show-inheritance:

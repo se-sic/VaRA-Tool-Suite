@@ -26,13 +26,13 @@ from varats.data.revisions import (
 from varats.paper.case_study import CSStage, CaseStudy
 from varats.plots.plot_utils import check_required_args
 from varats.plots.plots import PlotRegistry
+from varats.project.project_util import get_project_cls_by_name
 from varats.provider.release.release_provider import (
     ReleaseProvider,
     ReleaseType,
 )
 from varats.report.report import FileStatusExtension, MetaReport
 from varats.utils.yaml_util import load_yaml, store_as_yaml
-from varats.utilss.project_util import get_project_cls_by_name
 
 
 class ExtenderStrategy(Enum):

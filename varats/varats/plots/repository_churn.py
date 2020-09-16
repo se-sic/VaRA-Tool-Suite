@@ -16,12 +16,12 @@ import pandas as pd
 from varats.data.reports.commit_report import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plots.plot import Plot
+from varats.project.project_util import get_local_project_git
 from varats.utilss.git_util import (
     ChurnConfig,
     calc_repo_code_churn,
     calc_code_churn,
 )
-from varats.utilss.project_util import get_local_project_git
 
 
 def build_repo_churn_table(

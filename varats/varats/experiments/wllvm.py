@@ -21,8 +21,8 @@ from benchbuild.utils.compiler import cc
 from benchbuild.utils.path import list_to_path, path_to_list
 from plumbum import local
 
+from varats.project.project_util import ProjectBinaryWrapper
 from varats.utilss.experiment_util import FunctionPEErrorWrapper, PEErrorHandler
-from varats.utilss.project_util import ProjectBinaryWrapper
 from varats.utilss.settings import bb_cfg
 
 

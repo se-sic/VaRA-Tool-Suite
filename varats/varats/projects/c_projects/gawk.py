@@ -7,7 +7,7 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.paper_mgmt.paper_config import project_filter_generator
-from varats.utilss.project_util import (
+from varats.project.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     BinaryType,

@@ -4,7 +4,7 @@ import typing as tp
 from benchbuild import Project  # type: ignore
 from benchbuild.utils.cmd import ldd, which
 
-from varats.utilss.project_util import ProjectBinaryWrapper
+from varats.project.project_util import ProjectBinaryWrapper
 
 
 class LinkerCheck(Project):  # type: ignore
