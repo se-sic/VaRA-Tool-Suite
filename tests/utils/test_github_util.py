@@ -31,7 +31,7 @@ def create_dummy_github_object() -> GithubObject:
     return DummyGithubObject(None, {}, None, True)
 
 
-class MockPaginatedList(PaginatedListBase):
+class DummyPaginatedList(PaginatedListBase):
     """Dummy PaginatedList class."""
 
     def __init__(self, items: tp.List[GithubObject]) -> None:
@@ -78,7 +78,7 @@ class TestGithubObjectCache(unittest.TestCase):
         demo_python_list = [
             demo_github_object1, demo_github_object2, demo_github_object3
         ]
-        demo_paginated_list = MockPaginatedList(demo_python_list)
+        demo_paginated_list = DummyPaginatedList(demo_python_list)
 
         # pylint: disable=unused-argument
         def load_github_list(github: Github) -> PaginatedList:
