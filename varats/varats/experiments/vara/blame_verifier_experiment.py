@@ -14,20 +14,20 @@ from benchbuild.utils.cmd import opt, mkdir, timeout
 from plumbum import local
 
 import varats.experiments.vara.blame_experiment as BE
-from varats.data.report import FileStatusExtension as FSE
-from varats.data.report import BaseReport
 from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportNoOpt as BVR_NoOpt,
 )
 from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportOpt as BVR_Opt,
 )
-from varats.experiments.wllvm import BCFileExtensions, get_cached_bc_file_path
-from varats.utils.experiment_util import (
+from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     PEErrorHandler,
 )
+from varats.experiment.wllvm import BCFileExtensions, get_cached_bc_file_path
+from varats.report.report import FileStatusExtension as FSE
+from varats.report.report import BaseReport
 from varats.utils.settings import bb_cfg
 
 

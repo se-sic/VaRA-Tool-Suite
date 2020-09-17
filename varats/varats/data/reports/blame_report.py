@@ -10,8 +10,8 @@ import numpy as np
 import pygit2
 import yaml
 
-from varats.data.report import BaseReport, FileStatusExtension, MetaReport
-from varats.data.version_header import VersionHeader
+from varats.base.version_header import VersionHeader
+from varats.report.report import BaseReport, FileStatusExtension, MetaReport
 from varats.utils.git_util import create_commit_lookup_helper, map_commits
 
 

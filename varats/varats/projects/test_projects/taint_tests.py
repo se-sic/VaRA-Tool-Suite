@@ -4,7 +4,7 @@ import typing as tp
 import benchbuild as bb
 from plumbum import local
 
-from varats.utils.project_util import (
+from varats.project.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     BinaryType,

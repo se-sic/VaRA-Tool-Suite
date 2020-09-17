@@ -5,7 +5,7 @@ import typing as tp
 from enum import Enum
 from pathlib import Path
 
-from varats.data.report import BaseReport, MetaReport, FileStatusExtension
+from varats.report.report import BaseReport, MetaReport, FileStatusExtension
 
 LOG = logging.getLogger(__name__)
 

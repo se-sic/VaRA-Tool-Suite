@@ -13,9 +13,9 @@ You can plot your data either by directly using the :ref:`vara-plot` tool, or if
 How to add a new plot in VaRA-TS
 --------------------------------
 
-You can create a new plot by creating a subclass of :class:`~varats.plots.plot.Plot`.
+You can create a new plot by creating a subclass of :class:`~varats.plot.plot.Plot`.
 The plot will then be available under the name you declare in the class-level field ``NAME``.
-Each plot class must override the abstract function :func:`~varats.plots.plot.Plot.plot()` that is responsible for generating the plot, as well as the abstract function :func:`~varats.plots.plot.Plot.show()` that is called when the plot sould only displayed, but not saved.
+Each plot class must override the abstract function :func:`~varats.plot.plot.Plot.plot()` that is responsible for generating the plot, as well as the abstract function :func:`~varats.plot.plot.Plot.show()` that is called when the plot sould only displayed, but not saved.
 The latter usually consists of a call `self.plot()`, followed by a call to `pyplot.show()`.
 
 The data for plots should be retrieved using our :ref:`data storage abstraction<Data management>`.
@@ -26,7 +26,7 @@ Plot helper modules
 Module: plot
 ............
 
-.. automodule:: varats.plots.plot
+.. automodule:: varats.plot.plot
     :members:
     :undoc-members:
     :show-inheritance:
@@ -36,7 +36,7 @@ Module: plot
 Module: plot_utils
 ..................
 
-.. automodule:: varats.plots.plot_utils
+.. automodule:: varats.plot.plot_utils
     :members:
     :undoc-members:
     :show-inheritance:
@@ -46,7 +46,7 @@ Module: plot_utils
 Module: plots
 .............
 
-.. automodule:: varats.plots.plots
+.. automodule:: varats.plot.plots
     :members:
     :undoc-members:
     :show-inheritance:

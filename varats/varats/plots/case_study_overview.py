@@ -8,13 +8,13 @@ import matplotlib.pyplot as plt
 import matplotlib.style as style
 
 from varats.data.databases.file_status_database import FileStatusDatabase
-from varats.data.report import FileStatusExtension, MetaReport
-from varats.data.reports.commit_report import CommitMap
 from varats.data.reports.empty_report import EmptyReport
+from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
-from varats.plots.plot import Plot
-from varats.plots.plot_utils import check_required_args
-from varats.utils.project_util import get_project_cls_by_name
+from varats.plot.plot import Plot
+from varats.plot.plot_utils import check_required_args
+from varats.project.project_util import get_project_cls_by_name
+from varats.report.report import FileStatusExtension, MetaReport
 
 SUCCESS_COLOR = (0.5568627450980392, 0.7294117647058823, 0.25882352941176473)
 BLOCKED_COLOR = (0.20392156862745098, 0.5411764705882353, 0.7411764705882353)

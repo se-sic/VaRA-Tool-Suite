@@ -15,11 +15,11 @@ from varats.tools.research_tools.research_tool import (
     SpecificCodeBase,
 )
 from varats.tools.research_tools.vara_manager import BuildType
-from varats.utils.cli_util import (
+from varats.tools.tool_util import (
     get_research_tool,
     get_supported_research_tool_names,
-    initialize_cli_tool,
 )
+from varats.utils.cli_util import initialize_cli_tool
 from varats.utils.settings import save_config
 
 

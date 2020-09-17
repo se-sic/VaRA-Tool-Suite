@@ -2,7 +2,7 @@
 
 import argparse
 
-import varats.data.provider.cve.cve_provider as sec
+import varats.provider.cve.cve_provider as sec
 
 
 def main() -> None:

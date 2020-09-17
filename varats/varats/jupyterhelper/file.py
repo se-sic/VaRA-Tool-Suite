@@ -9,7 +9,8 @@ from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportOpt,
     BlameVerifierReportNoOpt,
 )
-from varats.data.reports.commit_report import CommitMap, CommitReport
+from varats.data.reports.commit_report import CommitReport
+from varats.mapping.commit_map import CommitMap
 
 
 def load_commit_report(file_path: Path) -> CommitReport:

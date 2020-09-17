@@ -6,13 +6,13 @@ from benchbuild.utils.cmd import python3
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.data.provider.cve.cve_provider import CVEProviderHook
-from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import (
+from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.project.project_util import (
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
     BinaryType,
 )
+from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
 

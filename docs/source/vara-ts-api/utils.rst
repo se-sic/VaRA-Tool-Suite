@@ -10,6 +10,7 @@ Utilities overview
 * :ref:`Module: project_util`
 * :ref:`Module: filesystem_util`
 * :ref:`Module: logger_util`
+* :ref:`Module: tool_util`
 
 Module: cli_util
 ................
@@ -44,7 +45,7 @@ Module: git_util
 Module: experiment_util
 .......................
 
-.. automodule:: varats.utils.experiment_util
+.. automodule:: varats.experiment.experiment_util
     :members:
     :undoc-members:
     :show-inheritance:
@@ -54,7 +55,7 @@ Module: experiment_util
 Module: project_util
 ....................
 
-.. automodule:: varats.utils.project_util
+.. automodule:: varats.project.project_util
     :members:
     :undoc-members:
     :show-inheritance:
@@ -106,3 +107,13 @@ Module: logger_util
     :members:
     :undoc-members:
     :show-inheritance:
+
+Module: tool_util
+.......................
+
+.. automodule:: varats.tools.tool_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+-----

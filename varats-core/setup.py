@@ -6,7 +6,7 @@ setup(
     use_scm_version={
         'root': '..',
         "relative_to": __file__,
-        "fallback_version": '10.0.0'
+        "fallback_version": '10.0.3'
     },
     url='https://github.com/se-passau/vara-tool-suite',
     packages=find_namespace_packages(include=['varats.*']),
@@ -15,6 +15,13 @@ setup(
     tests_require=["pytest", "pytest-cov"],
     install_requires=[
         "benchbuild>=5.2",
+        "plumbum>=1.6.6",
+        "PyGithub>=1.47",
+        "tabulate>=0.8.6",
+        "requests>=2.23.0",
+        "packaging>=20.1",
+        "requests_cache>=0.5.2",
+        "pygit2>=0.28.2",
     ],
     author="Florian Sattler",
     author_email="sattlerf@cs.uni-saarland.de",
