@@ -5,7 +5,7 @@ import typing as tp
 import pandas as pd
 
 from varats.data.cache_helper import get_data_file_path
-from varats.data.reports.commit_report import CommitMap
+from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 
 AvailableColumns = tp.TypeVar("AvailableColumns")

@@ -17,20 +17,20 @@ from benchbuild import Project  # type: ignore
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.cmd import mkdir, opt, timeout
 
-from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
-from varats.experiments.wllvm import (
-    RunWLLVM,
-    get_cached_bc_file_path,
-    get_bc_cache_actions,
-)
-from varats.utils.experiment_util import (
+from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     PEErrorHandler,
     get_default_compile_error_wrapped,
     create_default_compiler_error_handler,
 )
+from varats.experiment.wllvm import (
+    RunWLLVM,
+    get_cached_bc_file_path,
+    get_bc_cache_actions,
+)
+from varats.report.report import FileStatusExtension as FSE
 from varats.utils.settings import bb_cfg
 
 

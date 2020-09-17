@@ -2,7 +2,7 @@
 
 import unittest
 
-from varats.experiments.wllvm import Extract, BCFileExtensions
+from varats.experiment.wllvm import Extract, BCFileExtensions
 
 
 class TestExtract(unittest.TestCase):

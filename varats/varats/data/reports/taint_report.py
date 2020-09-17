@@ -1,6 +1,6 @@
 """Module for all reports generated for taint flow analyses."."""
 
-from varats.data.report import BaseReport, FileStatusExtension, MetaReport
+from varats.report.report import BaseReport, FileStatusExtension, MetaReport
 
 
 class TaintPropagationReport(BaseReport):

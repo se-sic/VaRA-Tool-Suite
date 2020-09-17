@@ -13,8 +13,8 @@ from varats.data.databases.commit_interaction_database import (
     CommitInteractionDatabase,
 )
 from varats.paper.case_study import CaseStudy, CSStage
-from varats.plots.plot import Plot, PlotDataEmpty
-from varats.plots.plot_utils import check_required_args
+from varats.plot.plot import Plot, PlotDataEmpty
+from varats.plot.plot_utils import check_required_args
 
 
 @check_required_args(["project", "get_cmap"])

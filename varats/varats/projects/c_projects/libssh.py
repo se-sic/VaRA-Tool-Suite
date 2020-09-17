@@ -6,15 +6,15 @@ from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.data.provider.cve.cve_provider import CVEProviderHook
-from varats.paper.paper_config import project_filter_generator
-from varats.utils.project_util import (
+from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.project.project_util import (
     ProjectBinaryWrapper,
     get_all_revisions_between,
     wrap_paths_to_binaries,
     get_local_project_git_path,
     BinaryType,
 )
+from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
 

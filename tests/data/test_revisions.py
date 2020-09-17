@@ -6,9 +6,9 @@ import unittest.mock as mock
 from benchbuild.utils.revision_ranges import block_revisions, SingleRevision
 
 from tests.test_utils import DummyGit
-from varats.data.revisions import filter_blocked_revisions
 from varats.projects.c_projects.glibc import Glibc
 from varats.projects.c_projects.gravity import Gravity
+from varats.revision.revisions import filter_blocked_revisions
 
 
 class TestFilterBlockedRevisions(unittest.TestCase):
@@ -20,7 +20,7 @@ class TestFilterBlockedRevisions(unittest.TestCase):
             SingleRevision(rev) for rev in self.blocked_revision
         ])(DummyGit(remote="/dev/null", local="/dev/null"))
         project_source_patcher = mock.patch(
-            'varats.data.revisions.get_primary_project_source'
+            'varats.revision.revisions.get_primary_project_source'
         )
         self.addCleanup(project_source_patcher.stop)
         project_source_patcher.start().return_value = mocked_gravity_source

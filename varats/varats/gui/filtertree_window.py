@@ -13,13 +13,13 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from varats.base.version_header import VersionHeader
 from varats.data.filtertree_data import (
     AndOperator,
     SourceOperator,
     TargetOperator,
     UnaryInteractionFilter,
 )
-from varats.data.version_header import VersionHeader
 from varats.gui import icons_rc  # noqa # pylint: disable=unused-import
 from varats.gui.filtertree_model import FilterTreeModel
 from varats.gui.views.ui_AuthorDateDeltaMaxFilter import (

@@ -9,7 +9,7 @@ import logging
 import typing as tp
 from pathlib import Path
 
-from varats.paper.paper_config import get_paper_config
+from varats.paper_mgmt.paper_config import get_paper_config
 from varats.utils.cli_util import cli_list_choice, initialize_cli_tool
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.settings import (

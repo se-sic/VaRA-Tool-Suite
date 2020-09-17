@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from varats.paper.artefacts import (
+from varats.paper_mgmt.artefacts import (
     ArtefactType,
     PlotArtefact,
     load_artefacts_from_file,

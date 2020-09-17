@@ -10,21 +10,23 @@ from pathlib import Path
 from argparse_utils import enum_action
 from plumbum import FG, colors, local
 
-from varats.data.provider.release.release_provider import ReleaseType
-from varats.data.report import FileStatusExtension, MetaReport
-from varats.paper import paper_config_manager as PCM
-from varats.paper.case_study import (
+from varats.base.sampling_method import SamplingMethod
+from varats.data.discover_reports import initialize_reports
+from varats.mapping.commit_map import create_lazy_commit_map_loader
+from varats.paper.case_study import load_case_study_from_file, store_case_study
+from varats.paper_mgmt import paper_config_manager as PCM
+from varats.paper_mgmt.case_study import (
+    get_revisions_status_for_case_study,
     ExtenderStrategy,
-    SamplingMethod,
     extend_case_study,
     generate_case_study,
-    load_case_study_from_file,
-    store_case_study,
 )
-from varats.paper.paper_config import get_paper_config
-from varats.tools.commit_map import create_lazy_commit_map_loader
+from varats.paper_mgmt.paper_config import get_paper_config
+from varats.project.project_util import get_local_project_git_path
+from varats.projects.discover_projects import initialize_projects
+from varats.provider.release.release_provider import ReleaseType
+from varats.report.report import FileStatusExtension, MetaReport
 from varats.utils.cli_util import cli_list_choice, initialize_cli_tool
-from varats.utils.project_util import get_local_project_git_path
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
@@ -33,6 +35,8 @@ LOG = logging.getLogger(__name__)
 def main() -> None:
     """Allow easier management of case studies."""
     initialize_cli_tool()
+    initialize_projects()
+    initialize_reports()
     parser = ArgumentParser("vara-cs")
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
 
@@ -389,8 +393,8 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
         # Compute available commit hashes
         for case_study in paper_config.get_case_studies(project_name):
             available_commit_hashes.extend(
-                case_study.get_revisions_status(
-                    result_file_type, tag_blocked=False
+                get_revisions_status_for_case_study(
+                    case_study, result_file_type, tag_blocked=False
                 )
             )
 

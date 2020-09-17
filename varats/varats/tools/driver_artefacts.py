@@ -12,13 +12,14 @@ import typing as tp
 import yaml
 from argparse_utils import enum_action
 
-from varats.paper.artefacts import (
+from varats.paper_mgmt.artefacts import (
     Artefact,
     ArtefactType,
     create_artefact,
     store_artefacts,
 )
-from varats.paper.paper_config import get_paper_config
+from varats.paper_mgmt.paper_config import get_paper_config
+from varats.projects.discover_projects import initialize_projects
 from varats.utils.cli_util import initialize_cli_tool
 
 LOG = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ def main() -> None:
     `vara-art`
     """
     initialize_cli_tool()
+    initialize_projects()
     parser = argparse.ArgumentParser("vara-art")
 
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")

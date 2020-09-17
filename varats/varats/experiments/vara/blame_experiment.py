@@ -9,16 +9,16 @@ from benchbuild import Experiment, Project  # type: ignore
 from benchbuild.extensions import compiler, run, time
 from plumbum import local
 
-from varats.data.report import BaseReport
-from varats.experiments.wllvm import (
+from varats.experiment.experiment_util import (
+    get_default_compile_error_wrapped,
+    PEErrorHandler,
+)
+from varats.experiment.wllvm import (
     RunWLLVM,
     BCFileExtensions,
     get_bc_cache_actions,
 )
-from varats.utils.experiment_util import (
-    get_default_compile_error_wrapped,
-    PEErrorHandler,
-)
+from varats.report.report import BaseReport
 from varats.utils.settings import bb_cfg
 
 

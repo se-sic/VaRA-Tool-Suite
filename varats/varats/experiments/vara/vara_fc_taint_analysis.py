@@ -15,13 +15,13 @@ from benchbuild import Project  # type: ignore
 from benchbuild.utils.cmd import FileCheck, echo, rm
 from plumbum import ProcessExecutionError
 
-from varats.data.report import FileStatusExtension as FSE
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
-from varats.experiments.vara.vara_full_mtfa import VaRATaintPropagation
-from varats.utils.experiment_util import (
+from varats.experiment.experiment_util import (
     PEErrorHandler,
     exec_func_with_pe_error_handler,
 )
+from varats.experiments.vara.vara_full_mtfa import VaRATaintPropagation
+from varats.report.report import FileStatusExtension as FSE
 from varats.utils.settings import bb_cfg
 
 
