@@ -1,7 +1,7 @@
 """Test plot registry."""
 import unittest
 
-from varats.plots.plots import PlotRegistry
+from varats.plot.plots import PlotRegistry
 
 
 class TestPlotRegistry(unittest.TestCase):

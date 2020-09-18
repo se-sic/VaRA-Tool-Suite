@@ -3,9 +3,9 @@
 import argparse
 from pathlib import Path
 
-from varats.tools.commit_map import get_commit_map, store_commit_map
+from varats.mapping.commit_map import get_commit_map, store_commit_map
+from varats.utils.cli_util import initialize_cli_tool
 from varats.utils.settings import vara_cfg
-from varats.utilss.cli_util import initialize_cli_tool
 
 
 def main() -> None:

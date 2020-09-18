@@ -1,13 +1,95 @@
 """Commit map module."""
 
+import logging
 import typing as tp
+from collections.abc import ItemsView
 from pathlib import Path
 
 from benchbuild.utils.cmd import git, mkdir
 from plumbum import local
+from pygtrie import CharTrie
 
-from varats.data.reports.commit_report import CommitMap
 from varats.project.project_util import get_local_project_git_path
+
+LOG = logging.getLogger(__name__)
+
+
+class CommitMap():
+    """Provides a mapping from commit hash to additional information."""
+
+    def __init__(self, stream: tp.Iterable[str]) -> None:
+        self.__hash_to_id: CharTrie = CharTrie()
+        for line in stream:
+            slices = line.strip().split(', ')
+            self.__hash_to_id[slices[1]] = int(slices[0])
+
+    def time_id(self, c_hash: str) -> int:
+        """
+        Convert a commit hash to a time id that allows a total order on the
+        commits, based on the c_map, e.g., created from the analyzed git
+        history.
+
+        Args:
+            c_hash: commit hash
+
+        Returns:
+            unique time-ordered id
+        """
+        return tp.cast(int, self.__hash_to_id[c_hash])
+
+    def short_time_id(self, c_hash: str) -> int:
+        """
+        Convert a short commit hash to a time id that allows a total order on
+        the commits, based on the c_map, e.g., created from the analyzed git
+        history.
+
+        The first time id is returend where the hash belonging to it starts
+        with the short hash.
+
+        Args:
+            c_hash: commit hash
+
+        Returns:
+            unique time-ordered id
+        """
+        subtrie = self.__hash_to_id.items(prefix=c_hash)
+        if subtrie:
+            if len(subtrie) > 1:
+                LOG.warning(f"Short commit hash is ambiguous: {c_hash}.")
+            return tp.cast(int, subtrie[0][1])
+        raise KeyError
+
+    def c_hash(self, time_id: int) -> str:
+        """
+        Get the hash belonging to the time id.
+
+        Args:
+            time_id: unique time-ordered id
+
+        Returns:
+            commit hash
+        """
+        for c_hash, t_id in self.__hash_to_id.items():
+            if t_id == time_id:
+                return tp.cast(str, c_hash)
+        raise KeyError
+
+    def mapping_items(self) -> tp.ItemsView[str, int]:
+        """Get an iterator over the mapping items."""
+        return ItemsView(self.__hash_to_id)
+
+    def write_to_file(self, target_file: tp.TextIO) -> None:
+        """
+        Write commit map to a file.
+
+        Args:
+            target_file: needs to be a writable stream, i.e., support .write()
+        """
+        for item in self.__hash_to_id.items():
+            target_file.write("{}, {}\n".format(item[1], item[0]))
+
+    def __str__(self) -> str:
+        return str(self.__hash_to_id)
 
 
 def generate_commit_map(

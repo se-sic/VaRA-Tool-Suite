@@ -10,7 +10,7 @@ from benchbuild.utils.cmd import ln, mkdir
 from plumbum import local
 from PyQt5.QtCore import QProcess
 
-from varats.plots.plot_utils import check_required_args
+from varats.plot.plot_utils import check_required_args
 from varats.tools.research_tools.research_tool import (
     CodeBase,
     ResearchTool,
@@ -22,9 +22,9 @@ from varats.tools.research_tools.vara_manager import (
     run_process_with_output,
     set_vara_cmake_variables,
 )
+from varats.utils.exceptions import ProcessTerminatedError
+from varats.utils.logger_util import log_without_linesep
 from varats.utils.settings import save_config, vara_cfg
-from varats.utilss.exceptions import ProcessTerminatedError
-from varats.utilss.logger_util import log_without_linesep
 
 LOG = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@ import importlib
 import pkgutil
 
 # avoid a potential cyclic import problem
-import varats.plots.plot
+import varats.plot.plot
 
 
 def discover() -> None:

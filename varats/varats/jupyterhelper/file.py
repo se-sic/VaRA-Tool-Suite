@@ -5,7 +5,8 @@ from pathlib import Path
 
 from varats.data.data_manager import VDM
 from varats.data.reports.blame_report import BlameReport
-from varats.data.reports.commit_report import CommitMap, CommitReport
+from varats.data.reports.commit_report import CommitReport
+from varats.mapping.commit_map import CommitMap
 
 
 def load_commit_report(file_path: Path) -> CommitReport:
