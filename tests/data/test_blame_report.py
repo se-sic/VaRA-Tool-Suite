@@ -129,6 +129,7 @@ result-map:
         interacting-hashes:
           - a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9
           - e8999a84efbd9c3e739bff7af39500d14e61bfbc-gzip
+          - ff999a84efbd9c3e739bff7af39500d14e61bfbc-repo-with-dashes
         amount:          5
   _Z7doStuffii:
     demangled-name:  'doStuff(int, int)'
@@ -351,6 +352,19 @@ class TestBlameReportWithRepoData(unittest.TestCase):
         self.assertEqual(
             interaction.interacting_commits[1].repository_name, "gzip"
         )
+        
+    def test_reponame_parsing_with_extra_dashes(self):
+￼        """Checks if hashes without repo data get parsed correctly."""
+￼        entry = self.report.get_blame_result_function_entry("bool_exec")
+￼        interaction = entry.interactions[0]
+￼
+￼        self.assertEqual(
+￼            interaction.interacting_commits[2].commit_hash,
+￼            "ff999a84efbd9c3e739bff7af39500d14e61bfbc"
+￼        )
+￼        self.assertEqual(
+￼            interaction.interacting_commits[2].repository_name, "repo-with-dashes"
+￼        )
 
     def test_correct_repo_base_hash(self):
         """Checks if hashes without repo data get parsed correctly."""
