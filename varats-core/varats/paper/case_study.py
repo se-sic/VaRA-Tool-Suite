@@ -33,7 +33,7 @@ class HashIDTuple():
         """Get a dict representation of this commit and id."""
         return dict(commit_hash=self.commit_hash, commit_id=self.commit_id)
 
-    def __str(self) -> str:
+    def __str__(self) -> str:
         return "({commit_id}: #{commit_hash})"\
             .format(commit_hash=self.commit_hash,
                     commit_id=self.commit_id)
