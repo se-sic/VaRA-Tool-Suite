@@ -12,7 +12,11 @@ import yaml
 
 from varats.base.version_header import VersionHeader
 from varats.report.report import BaseReport, FileStatusExtension, MetaReport
-from varats.utils.git_util import create_commit_lookup_helper, map_commits
+from varats.utils.git_util import (
+    create_commit_lookup_helper,
+    map_commits,
+    CommitRepoPair,
+)
 
 
 class BlameInstInteractions():
@@ -25,7 +29,8 @@ class BlameInstInteractions():
     """
 
     def __init__(
-        self, base_hash: str, interacting_hashes: tp.List[str], amount: int
+        self, base_hash: CommitRepoPair,
+        interacting_hashes: tp.List[CommitRepoPair], amount: int
     ) -> None:
         self.__base_hash = base_hash
         self.__interacting_hashes = interacting_hashes
@@ -37,20 +42,30 @@ class BlameInstInteractions():
     ) -> 'BlameInstInteractions':
         """Creates a `BlameInstInteractions` entry from the corresponding yaml
         document section."""
-        base_hash = str(raw_inst_entry['base-hash'])
-        interacting_hashes: tp.List[str] = []
+        base_commit, *base_repo = str(raw_inst_entry['base-hash']
+                                     ).split('-', maxsplit=1)
+        base_hash = CommitRepoPair(
+            base_commit, base_repo[0] if base_repo else "Unknown"
+        )
+        interacting_hashes: tp.List[CommitRepoPair] = []
         for raw_inst_hash in raw_inst_entry['interacting-hashes']:
-            interacting_hashes.append(str(raw_inst_hash))
+            inter_commit, *inter_repo = str(raw_inst_hash
+                                           ).split('-', maxsplit=1)
+            interacting_hashes.append(
+                CommitRepoPair(
+                    inter_commit, inter_repo[0] if inter_repo else "Unknown"
+                )
+            )
         amount = int(raw_inst_entry['amount'])
         return BlameInstInteractions(base_hash, interacting_hashes, amount)
 
     @property
-    def base_commit(self) -> str:
+    def base_commit(self) -> CommitRepoPair:
         """Base hash of the analyzed instruction."""
         return self.__base_hash
 
     @property
-    def interacting_commits(self) -> tp.List[str]:
+    def interacting_commits(self) -> tp.List[CommitRepoPair]:
         """List of hashes that interact with the base."""
         return self.__interacting_hashes
 
@@ -65,7 +80,7 @@ class BlameInstInteractions():
         )
         sep = ""
         for interacting_commit in self.interacting_commits:
-            str_representation += sep + interacting_commit
+            str_representation += sep + str(interacting_commit)
             sep = ", "
         str_representation += "]\n"
         return str_representation
@@ -536,12 +551,14 @@ def generate_time_delta_distribution_tuples(
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
             if (
-                interaction.base_commit ==
+                interaction.base_commit.commit_hash ==
                 "0000000000000000000000000000000000000000"
             ):
                 continue
 
-            base_commit = commit_lookup(interaction.base_commit)
+            base_commit = commit_lookup(
+                interaction.base_commit.commit_hash
+            )  # TODO: extend look up with repo name
             base_c_time = datetime.utcfromtimestamp(base_commit.commit_time)
 
             def translate_to_time_deltas2(
@@ -623,7 +640,9 @@ def generate_in_head_interactions(
     head_interactions = []
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            if interaction.base_commit.startswith(report.head_commit):
+            if interaction.base_commit.commit_hash.startswith(
+                report.head_commit
+            ):
                 head_interactions.append(interaction)
                 continue
 
@@ -644,7 +663,9 @@ def generate_out_head_interactions(
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
             for interacting_commit in interaction.interacting_commits:
-                if interacting_commit.startswith(report.head_commit):
+                if interacting_commit.commit_hash.startswith(
+                    report.head_commit
+                ):
                     head_interactions.append(interaction)
                     break
     return head_interactions

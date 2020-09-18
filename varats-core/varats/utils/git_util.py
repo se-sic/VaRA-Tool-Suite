@@ -167,20 +167,58 @@ def create_commit_lookup_helper(
     return get_commit
 
 
+class CommitRepoPair():
+    """Pair of a commit hash and the name of the repository it is based in."""
+
+    def __init__(self, commit_hash: str, repo_name: str) -> None:
+        self.__commit_hash = commit_hash
+        self.__repo_name = repo_name
+
+    @property
+    def commit_hash(self) -> str:
+        return self.__commit_hash
+
+    @property
+    def repository_name(self) -> str:
+        return self.__repo_name
+
+    def __lt__(self, other: tp.Any) -> bool:
+        if isinstance(other, CommitRepoPair):
+            if self.commit_hash == other.commit_hash:
+                return self.repository_name < other.repository_name
+            return self.commit_hash < other.commit_hash
+        return False
+
+    def __eq__(self, other: tp.Any) -> bool:
+        if isinstance(other, CommitRepoPair):
+            return (
+                self.commit_hash == other.commit_hash and
+                self.repository_name == other.repository_name
+            )
+        return False
+
+    def __hash__(self) -> int:
+        return hash((self.commit_hash, self.repository_name))
+
+    def __str__(self) -> str:
+        return f"{self.repository_name}[{self.commit_hash}]"
+
+
 MappedCommitResultType = tp.TypeVar("MappedCommitResultType")
 
 
 def map_commits(
     func: tp.Callable[[pygit2.Commit], MappedCommitResultType],
-    c_hash_list: tp.Iterable[str], commit_lookup: tp.Callable[[str],
-                                                              pygit2.Commit]
+    cr_pair_list: tp.Iterable[CommitRepoPair],
+    commit_lookup: tp.Callable[[str], pygit2.Commit]
 ) -> tp.Sequence[MappedCommitResultType]:
-    """Maps a functions over a range of commits."""
+    """Maps a function over a range of commits."""
     # Skip 0000 hashes that we added to mark uncommitted files
     return [
-        func(commit_lookup(c_hash))
-        for c_hash in c_hash_list
-        if c_hash != "0000000000000000000000000000000000000000"
+        func(commit_lookup(cr_pair.commit_hash)
+            )  # TODO: extend look up with repo name
+        for cr_pair in cr_pair_list
+        if cr_pair.commit_hash != "0000000000000000000000000000000000000000"
     ]
 
 
