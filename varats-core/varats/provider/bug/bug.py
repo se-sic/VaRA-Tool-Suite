@@ -78,7 +78,7 @@ def _has_closed_a_bug(issue_event: IssueEvent) -> bool:
         issue_event: the issue event to be checked
 
     Returns:
-        true if the issue represents a bug and the issue event closed that issue,
+        true if the issue represents a bug and the issue event closed that issue
         false ow.
     """
     if issue_event.event != "closed" or issue_event.commit_id is None:
@@ -186,7 +186,8 @@ def _filter_pygit_bugs_for_all_issue_events(
 
     Args:
         project_name: Name of the project to draw the issue events out of.
-        issue_filter_function: Function that determines for an issue event whether it produces an acceptable PygitBug or not.
+        issue_filter_function: Function that determines for an issue event whether it produces
+            an acceptable PygitBug or not.
 
     Returns:
         The set of PygitBugs accepted by the filtering method.
@@ -211,7 +212,8 @@ def _filter_raw_bugs_for_all_issue_events(
 
     Args:
         project_name: Name of the project to draw the issue events out of.
-        issue_filter_function: Function that determines for an issue event whether it produces an acceptable RawBug or not.
+        issue_filter_function: Function that determines for an issue event whether it produces
+            an acceptable RawBug or not.
 
     Returns:
         The set of RawBugs accepted by the filtering method.
