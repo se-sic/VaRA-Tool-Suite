@@ -15,7 +15,7 @@ from varats.data.databases.blame_verifier_report_database import (
     OptLevel,
 )
 from varats.data.reports.commit_report import CommitMap
-from varats.plots.plot import Plot, PlotDataEmpty
+from varats.plot.plot import Plot, PlotDataEmpty
 from varats.varats.plots.case_study_overview import SUCCESS_COLOR, FAILED_COLOR
 
 LOG = logging.getLogger(__name__)
