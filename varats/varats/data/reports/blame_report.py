@@ -42,13 +42,15 @@ class BlameInstInteractions():
     ) -> 'BlameInstInteractions':
         """Creates a `BlameInstInteractions` entry from the corresponding yaml
         document section."""
-        base_commit, *base_repo = str(raw_inst_entry['base-hash']).split('-', maxsplit=1)
+        base_commit, *base_repo = str(raw_inst_entry['base-hash']
+                                     ).split('-', maxsplit=1)
         base_hash = CommitRepoPair(
             base_commit, base_repo[0] if base_repo else "Unknown"
         )
         interacting_hashes: tp.List[CommitRepoPair] = []
         for raw_inst_hash in raw_inst_entry['interacting-hashes']:
-            inter_commit, *inter_repo = str(raw_inst_hash).split('-', maxsplit=1)
+            inter_commit, *inter_repo = str(raw_inst_hash
+                                           ).split('-', maxsplit=1)
             interacting_hashes.append(
                 CommitRepoPair(
                     inter_commit, inter_repo[0] if inter_repo else "Unknown"
