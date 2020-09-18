@@ -135,8 +135,10 @@ def _search_corresponding_pygit_bug(
         if fixing_id is None:
             return None
         # unwrap option type
-        fixing_id: str = fixing_id
-        fixing_pycommit: pygit2.Commit = project_repo.revparse_single(fixing_id)
+        fixing_id_string: str = fixing_id
+        fixing_pycommit: pygit2.Commit = project_repo.revparse_single(
+            fixing_id_string
+        )
 
         introducing_pycommits: tp.List[pygit2.Commit] = []
         # TODO find introducing commits
@@ -166,13 +168,15 @@ def _search_corresponding_raw_bug(
         if fixing_id is None:
             return None
         # unwrap option type
-        fixing_id: str = fixing_id
+        fixing_id_string: str = fixing_id
 
         introducing_ids: tp.List[str] = []
 
         # TODO find introducing commits
 
-        return RawBug(fixing_id, introducing_ids, issue_event.issue.number)
+        return RawBug(
+            fixing_id_string, introducing_ids, issue_event.issue.number
+        )
     return None
 
 
