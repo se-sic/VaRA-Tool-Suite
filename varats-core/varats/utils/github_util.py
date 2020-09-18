@@ -8,9 +8,12 @@ from pathlib import Path
 import pandas as pd
 from github import Github
 from github.GithubObject import GithubObject
-from github.PaginatedList import PaginatedList
 
 from varats.utils.settings import vara_cfg
+
+if tp.TYPE_CHECKING:
+    # pylint: disable=unused-import
+    from github.PaginatedList import PaginatedList
 
 LOG = logging.getLogger(__name__)
 
