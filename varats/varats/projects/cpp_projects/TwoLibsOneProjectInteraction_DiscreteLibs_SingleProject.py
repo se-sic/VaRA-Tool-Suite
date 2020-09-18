@@ -39,26 +39,6 @@ class TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject(
             version_filter=project_filter_generator(
                 "TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject"
             )
-        ),
-        VaraTestRepoSource(
-            remote="LibraryAnalysisRepos"
-            "/TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject"
-            "/fire_lib",
-            local=
-            "TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject/fire_lib",
-            refspec="HEAD",
-            limit=None,
-            shallow=False
-        ),
-        VaraTestRepoSource(
-            remote="LibraryAnalysisRepos"
-            "/TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject"
-            "/water_lib",
-            local=
-            "TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject/water_lib",
-            refspec="HEAD",
-            limit=None,
-            shallow=False
         )
     ]
 
