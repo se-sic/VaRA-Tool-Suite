@@ -212,7 +212,7 @@ def map_commits(
     cr_pair_list: tp.Iterable[CommitRepoPair],
     commit_lookup: tp.Callable[[str], pygit2.Commit]
 ) -> tp.Sequence[MappedCommitResultType]:
-    """Maps a functions over a range of commits."""
+    """Maps a function over a range of commits."""
     # Skip 0000 hashes that we added to mark uncommitted files
     return [
         func(commit_lookup(cr_pair.commit_hash)

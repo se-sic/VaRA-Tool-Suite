@@ -67,7 +67,7 @@ class TestCommitRepoPair(unittest.TestCase):
         self.assertEqual(self.cr_pair.repository_name, "foo_repo")
 
     def test_less_equal(self):
-        """Tests that to equal pairs are not less."""
+        """Tests that two equal pairs are not less."""
         cr_pair_1 = CommitRepoPair("42", "foo_repo")
         cr_pair_2 = CommitRepoPair("42", "foo_repo")
 
@@ -91,21 +91,21 @@ class TestCommitRepoPair(unittest.TestCase):
         self.assertFalse(self.cr_pair < 42)
 
     def test_equal_equal(self):
-        """Tests that to equal pairs are equal."""
+        """Tests that two equal pairs are equal."""
         cr_pair_1 = CommitRepoPair("42", "foo_repo")
         cr_pair_2 = CommitRepoPair("42", "foo_repo")
 
         self.assertTrue(cr_pair_1 == cr_pair_2)
 
     def test_equal_commit(self):
-        """Tests that a different commits are not equal."""
+        """Tests that two different commits are not equal."""
         cr_pair_1 = CommitRepoPair("aar", "foo_repo")
         cr_pair_2 = CommitRepoPair("bar", "foo_repo")
 
         self.assertFalse(cr_pair_1 == cr_pair_2)
 
     def test_equal_repo(self):
-        """Tests that a different commits are not equal."""
+        """Tests that two different commits are not equal."""
         cr_pair_1 = CommitRepoPair("bar", "bar_repo")
         cr_pair_2 = CommitRepoPair("bar", "foo_repo")
 
