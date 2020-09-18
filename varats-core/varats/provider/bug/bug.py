@@ -190,8 +190,8 @@ def _filter_pygit_bugs_for_all_issue_events(
 
     Args:
         project_name: Name of the project to draw the issue events out of.
-        issue_filter_function: Function that determines for an issue event whether it produces
-            an acceptable PygitBug or not.
+        issue_filter_function: Function that determines for an issue event
+            whether it produces an acceptable PygitBug or not.
 
     Returns:
         The set of PygitBugs accepted by the filtering method.
