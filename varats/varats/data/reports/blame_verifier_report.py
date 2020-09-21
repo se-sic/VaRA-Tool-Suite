@@ -25,7 +25,7 @@ class BlameVerifierReportParserMixin:
     hierarchy."""
 
     def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(**kwargs)
+        super().__init__(**kwargs)  # type: ignore
         self.__path = kwargs['path']
         self.__num_successes = -1
         self.__num_failures = -1
