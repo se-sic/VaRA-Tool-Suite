@@ -1,7 +1,7 @@
 """Utility module for working with the pygithub API."""
 import codecs
 import logging
-import pickle
+import pickle  # nosec
 import typing as tp
 from pathlib import Path
 
@@ -67,7 +67,7 @@ def _load_pygithub_object(obj: str) -> GithubObject:
     return tp.cast(
         GithubObject,
         get_github_instance().create_from_raw_data(
-            *pickle.loads(codecs.decode(obj.encode(), "base64"))
+            *pickle.loads(codecs.decode(obj.encode(), "base64"))  # nosec
         )
     )
 
