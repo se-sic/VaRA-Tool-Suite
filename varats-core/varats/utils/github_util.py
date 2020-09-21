@@ -12,7 +12,7 @@ from github.GithubObject import GithubObject
 from varats.utils.settings import vara_cfg
 
 if tp.TYPE_CHECKING:
-    # pylint: disable=unused-import
+    # pylint: disable=unused-import,ungrouped-imports
     from github.PaginatedList import PaginatedList
 
 LOG = logging.getLogger(__name__)
