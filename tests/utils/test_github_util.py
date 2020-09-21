@@ -59,7 +59,6 @@ class TestGithubObjectCache(unittest.TestCase):
         def load_github_object(github: Github):
             return demo_github_object
 
-        # with tempfile.TemporaryDirectory() as tmpdir:
         with replace_config():
             github_object = get_cached_github_object(
                 "demo_github_object", load_github_object
@@ -84,7 +83,6 @@ class TestGithubObjectCache(unittest.TestCase):
         def load_github_list(github: Github) -> PaginatedList:
             return demo_paginated_list
 
-        # with tempfile.TemporaryDirectory() as tmpdir:
         with replace_config():
             github_object_list = get_cached_github_object_list(
                 "demo_github_list", load_github_list

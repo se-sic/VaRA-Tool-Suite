@@ -1,7 +1,7 @@
 """Test VaRA git utilities."""
 import unittest
 
-from varats.utils.git_util import ChurnConfig
+from varats.utils.git_util import ChurnConfig, CommitRepoPair
 
 
 class TestChurnConfig(unittest.TestCase):
@@ -51,3 +51,68 @@ class TestChurnConfig(unittest.TestCase):
         self.assertEqual(
             c_style_config.get_extensions_repr("|"), "c|cpp|cxx|h|hpp|hxx"
         )
+
+
+class TestCommitRepoPair(unittest.TestCase):
+    """Test driver for the CommitRepoPair class."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.cr_pair = CommitRepoPair("42", "foo_repo")
+
+    def test_commit_hash(self):
+        self.assertEqual(self.cr_pair.commit_hash, "42")
+
+    def test_repo_name(self):
+        self.assertEqual(self.cr_pair.repository_name, "foo_repo")
+
+    def test_less_equal(self):
+        """Tests that two equal pairs are not less."""
+        cr_pair_1 = CommitRepoPair("42", "foo_repo")
+        cr_pair_2 = CommitRepoPair("42", "foo_repo")
+
+        self.assertFalse(cr_pair_1 < cr_pair_2)
+
+    def test_less_commit(self):
+        """Tests that a smaller commit is less."""
+        cr_pair_1 = CommitRepoPair("aar", "foo_repo")
+        cr_pair_2 = CommitRepoPair("bar", "foo_repo")
+
+        self.assertTrue(cr_pair_1 < cr_pair_2)
+
+    def test_less_repo(self):
+        """Tests that a smaller repo is less, if the commits are equal."""
+        cr_pair_1 = CommitRepoPair("bar", "foo_repo")
+        cr_pair_2 = CommitRepoPair("bar", "boo_repo")
+
+        self.assertFalse(cr_pair_1 < cr_pair_2)
+
+    def tests_less_something_other(self):
+        self.assertFalse(self.cr_pair < 42)
+
+    def test_equal_equal(self):
+        """Tests that two equal pairs are equal."""
+        cr_pair_1 = CommitRepoPair("42", "foo_repo")
+        cr_pair_2 = CommitRepoPair("42", "foo_repo")
+
+        self.assertTrue(cr_pair_1 == cr_pair_2)
+
+    def test_equal_commit(self):
+        """Tests that two different commits are not equal."""
+        cr_pair_1 = CommitRepoPair("aar", "foo_repo")
+        cr_pair_2 = CommitRepoPair("bar", "foo_repo")
+
+        self.assertFalse(cr_pair_1 == cr_pair_2)
+
+    def test_equal_repo(self):
+        """Tests that two different commits are not equal."""
+        cr_pair_1 = CommitRepoPair("bar", "bar_repo")
+        cr_pair_2 = CommitRepoPair("bar", "foo_repo")
+
+        self.assertFalse(cr_pair_1 == cr_pair_2)
+
+    def tests_equal_something_other(self):
+        self.assertFalse(self.cr_pair == 42)
+
+    def test_to_string(self):
+        self.assertEqual(str(self.cr_pair), "foo_repo[42]")

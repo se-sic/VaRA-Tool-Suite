@@ -163,6 +163,10 @@ _CFG['provider'] = {
     }
 }
 
+_CFG['sampling'] = {}
+
+_CFG['ml'] = {}
+
 
 def vara_cfg() -> s.Configuration:
     """Get the current vara config."""
