@@ -4,6 +4,7 @@ import re
 import typing as tp
 
 from benchbuild.project import Project
+from benchbuild.source import primary
 
 import varats.provider.bug.bug as bug
 from varats.provider.provider import Provider
@@ -26,7 +27,7 @@ class BugProvider(Provider):
     def create_provider_for_project(
         cls, project: tp.Type[Project]
     ) -> tp.Optional['BugProvider']:
-        match = GITHUB_URL_PATTERN.match(project.repository)
+        match = GITHUB_URL_PATTERN.match(primary(project.SOURCE).remote)
         if match:
             return BugProvider(project, f"{match.group(1)}/{match.group(2)}")
         return None
