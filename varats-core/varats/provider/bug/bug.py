@@ -289,12 +289,12 @@ def find_pygit_bug_by_fix(project_name: str,
         issue_event: IssueEvent
     ) -> tp.Optional[PygitBug]:
         pygit_repo: pygit2.Repository = get_local_project_git(project_name)
-        pybug: PygitBug = _search_corresponding_pygit_bug(
+        pybug: tp.Optional[PygitBug] = _search_corresponding_pygit_bug(
             issue_event, pygit_repo
         )
 
         if pybug:
-            if pybug.fixing_commit.hex is fixing_commit:
+            if pybug.fixing_commit.sha is fixing_commit:
                 return pybug
         return None
 
@@ -320,7 +320,9 @@ def find_raw_bug_by_fix(project_name: str,
         issue_event: IssueEvent
     ) -> tp.Optional[RawBug]:
         pygit_repo: pygit2.Repository = get_local_project_git(project_name)
-        rawbug: RawBug = _search_corresponding_raw_bug(issue_event, pygit_repo)
+        rawbug: tp.Optional[RawBug] = _search_corresponding_raw_bug(
+            issue_event, pygit_repo
+        )
 
         if rawbug:
             if rawbug.fixing_commit is fixing_commit:
@@ -350,13 +352,13 @@ def find_pygit_bug_by_introduction(
         issue_event: IssueEvent
     ) -> tp.Optional[PygitBug]:
         pygit_repo = get_local_project_git(project_name)
-        pybug: PygitBug = _search_corresponding_pygit_bug(
+        pybug: tp.Optional[PygitBug] = _search_corresponding_pygit_bug(
             issue_event, pygit_repo
         )
 
         if pybug:
             for introducing_pycommit in pybug.introducing_commits:
-                if introducing_pycommit.hex is introducing_commit:
+                if introducing_pycommit.sha is introducing_commit:
                     return pybug
                     # found wanted ID
         return None
@@ -384,7 +386,9 @@ def find_raw_bug_by_introduction(
         issue_event: IssueEvent
     ) -> tp.Optional[RawBug]:
         pygit_repo: pygit2.Repository = get_local_project_git(project_name)
-        rawbug: RawBug = _search_corresponding_raw_bug(issue_event, pygit_repo)
+        rawbug: tp.Optional[RawBug] = _search_corresponding_raw_bug(
+            issue_event, pygit_repo
+        )
 
         if rawbug:
             for introducing_id in rawbug.introducing_commits:
