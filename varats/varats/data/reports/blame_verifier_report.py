@@ -110,7 +110,7 @@ class BlameVerifierReportNoOpt(BlameVerifierReportParserMixin, BaseReport):
     verifier-options, e.g., the diff of VaRA-hashes and debug-hashes, without
     any compilation optimization."""
 
-    SHORTHAND = 'BVRNoOpt'
+    SHORTHAND = 'BVR_NoOpt'
     FILE_TYPE = 'txt'
 
     def __init__(self, path: Path, **kwargs: tp.Any) -> None:
@@ -161,7 +161,7 @@ class BlameVerifierReportOpt(BlameVerifierReportParserMixin, BaseReport):
     verifier-options, e.g., the diff of VaRA-hashes and debug-hashes, with
     compilation optimization."""
 
-    SHORTHAND = 'BVROpt'
+    SHORTHAND = 'BVR_Opt'
     FILE_TYPE = 'txt'
 
     def __init__(self, path: Path, **kwargs: tp.Any) -> None:
