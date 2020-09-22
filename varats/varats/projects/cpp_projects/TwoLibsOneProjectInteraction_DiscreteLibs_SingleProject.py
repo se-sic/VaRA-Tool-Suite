@@ -17,8 +17,8 @@ from varats.utils.settings import bb_cfg
 
 
 class TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject(
-    bb.Project
-):  # type: ignore
+    bb.Project  # type: ignore
+):
     """Class to analyse interactions between two discrete libraries and one
     project."""
 
@@ -59,7 +59,7 @@ class TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject(
         """Contains instructions on how to build the project."""
 
         version_source = local.path(self.source_of_primary)
-        clang = bb.compiler.cc(self)
+        clang = bb.compiler.cc(self)  # type: ignore
         mkdir(version_source / "build")
 
         # As long as multiple VaraTestRepoSources are not working, one has to
@@ -78,5 +78,5 @@ class TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject(
 
         with local.cwd(version_source / "build"):
             with local.env(CC=str(clang)):
-                bb.watch(cmake)("-G", "Unix Makefiles", "..")
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+                bb.watch(cmake)("-G", "Unix Makefiles", "..")  # type: ignore
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))  # type: ignore
