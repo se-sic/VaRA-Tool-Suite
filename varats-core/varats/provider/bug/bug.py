@@ -216,8 +216,8 @@ def _filter_raw_bugs_for_all_issue_events(
 
     Args:
         project_name: Name of the project to draw the issue events out of.
-        issue_filter_function: Function that determines for an issue event whether it produces
-            an acceptable RawBug or not.
+        issue_filter_function: Function that determines for an issue event whether
+            it produces an acceptable RawBug or not.
 
     Returns:
         The set of RawBugs accepted by the filtering method.
