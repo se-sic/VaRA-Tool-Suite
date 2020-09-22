@@ -10,6 +10,9 @@ class TestBugDetectionStrategies(unittest.TestCase):
     BugProvider."""
 
     def test_issue_events_closing_bug(self):
+        """Test identifying issue events that close a bug related issue, with
+        and without associated commit id."""
+
         # mock issue with correct labels
         bug_label = Mock(**{'name.return_value': "bug"})
         irrelevant_label = Mock(**{'name.return_value': "good first issue"})
@@ -43,6 +46,8 @@ class TestBugDetectionStrategies(unittest.TestCase):
         self.assertFalse(_has_closed_a_bug(issue_event_no_commit))
 
     def test_issue_events_closing_no_bug(self):
+        """Test identifying issue events closing an issue that is not a bug."""
+
         # mock issue without labels
         issue = Mock(**{'labels.return_value': [], 'id.return_value': 2})
 
@@ -57,6 +62,8 @@ class TestBugDetectionStrategies(unittest.TestCase):
         self.assertFalse(_has_closed_a_bug(issue_event))
 
     def test_issue_events_not_closing(self):
+        """Test identifying issue events not closing their issue."""
+
         # issue representing bug
         bug_label = Mock(**{'name.return_value': "bug"})
         issue = Mock(
