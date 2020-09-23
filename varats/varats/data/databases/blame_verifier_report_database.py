@@ -38,6 +38,8 @@ class BlameVerifierReportDatabase(
 ):
     """Provides access to blame verifier report data."""
 
+    report_file_name_pattern = re.compile(r"[^/]+$")
+
     @classmethod
     def _load_dataframe(
         cls, project_name: str, commit_map: CommitMap,
@@ -58,9 +60,9 @@ class BlameVerifierReportDatabase(
             report_path: Path
         ) -> tp.Tuple[pd.DataFrame, str, str]:
 
-            report_file_name_pattern = re.compile(r"[^/]+$")
             report_file_name_match = re.search(
-                report_file_name_pattern, str(report_path)
+                BlameVerifierReportDatabase.report_file_name_pattern,
+                str(report_path)
             )
 
             if report_file_name_match:
@@ -97,7 +99,7 @@ class BlameVerifierReportDatabase(
             return pd.DataFrame(
                 {
                     'revision': report.head_commit,
-                    'time_id': [commit_map.short_time_id(report.head_commit)],
+                    'time_id': commit_map.short_time_id(report.head_commit),
                     'opt_level': opt_level,
                     'total': number_of_total_annotations,
                     'successful': number_of_successful_annotations,
