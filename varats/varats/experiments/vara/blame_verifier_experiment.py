@@ -79,7 +79,9 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
         timeout_duration = '8h'
 
         for binary in project.binaries:
-            bc_target_file = get_cached_bc_file_path(project, binary)
+            bc_target_file = get_cached_bc_file_path(
+                project, binary, self.bc_file_extensions
+            )
 
             # Define empty success file.
             result_file = self.report_type.get_file_name(
