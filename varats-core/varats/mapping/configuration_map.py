@@ -19,7 +19,43 @@ class ConfigurationMap():
     def __init__(self) -> None:
         self.__confgurations: tp.Dict[int, Configuration] = dict()
 
-    # TODO: impl class
+    def add_configuration(self, config: Configuration) -> int:
+        """
+        Add a new configuration to the map.
+
+        Args:
+            config: the configuration to add
+
+        Returns: unique ID for the added configuration
+        """
+        next_id = self.__get_next_id()
+        self.__confgurations[next_id] = config
+        return next_id
+
+    def get_configuration(self, config_id: int) -> tp.Optional[Configuration]:
+        """
+        Look up the `Configuration` with the corresponding config_id.
+
+        Args:
+            config_id: unique identifier for the Configuration
+
+        Returns: the configuration if found, otherwise, None
+        """
+        if config_id in self.__confgurations.keys():
+            return self.__confgurations[config_id]
+
+        return None
+
+    def configurations(self) -> tp.ValuesView[Configuration]:
+        """All configurations stored in the config map."""
+        return self.__confgurations.values()
+
+    def id_config_tuples(self) -> tp.ItemsView[int, Configuration]:
+        """All id configuration pairs stored in the config map."""
+        return self.__confgurations.items()
+
+    def __get_next_id(self) -> int:
+        return len(self.__confgurations.keys())
 
 
 def load_configuration_map(file_path: Path) -> ConfigurationMap:
@@ -61,7 +97,10 @@ def store_configuration_map(
             "ConfigurationMap", 1
         )
         yaml.dump(version_header.get_dict(), stream)
-        yaml.dump(get_configuration_map_as_yaml_doc(configuration_map), stream)
+        yaml.dump({
+            id_config_pair[0]: id_config_pair[1]
+            for id_config_pair in configuration_map.id_config_tuples()
+        }, stream)
 
 
 def create_configuration_map_from_yaml_doc(
@@ -74,21 +113,6 @@ def create_configuration_map_from_yaml_doc(
         yaml_doc: containing the configuration map
 
     Returns: a new `ConfigurationMap` based on the parsed doc
-    """
-
-    # TODO impl
-
-
-def get_configuration_map_as_yaml_doc(
-    configuration_map: ConfigurationMap
-) -> tp.Dict[str, tp.Any]:
-    """
-    Dumps the `ConfigurationMap` as a yaml document.
-
-    Args:
-        configuration_map: to dump
-
-    Returns: yaml representation of the configuration map
     """
 
     # TODO impl
