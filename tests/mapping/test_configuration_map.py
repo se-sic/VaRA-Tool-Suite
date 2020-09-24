@@ -2,9 +2,32 @@
 
 import typing as tp
 import unittest
+import unittest.mock as mock
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 
-from tests.test_helper_config import TestConfigurationImpl
-from varats.mapping.configuration_map import ConfigurationMap
+from tests.test_helper_config import (
+    TestConfigurationImpl,
+    TestConfigurationOptionImpl,
+)
+from varats.mapping.configuration_map import (
+    ConfigurationMap,
+    store_configuration_map,
+    load_configuration_map,
+    create_configuration_map_from_yaml_doc,
+)
+
+YAML_DOC_CONFIG_HEADER = """---
+DocType: ConfigurationMap
+Version: 1
+...
+"""
+YAML_DOC_CONFIG_MAP = """---
+0: '{''foo'': ''foo: True'', ''bar'': ''bar: False'', ''bazz'': ''bazz: bazz-value''}'
+1: '{}'
+2: '{}'
+...
+"""
 
 
 class TestConfigurationMap(unittest.TestCase):
@@ -75,3 +98,68 @@ class TestConfigurationMap(unittest.TestCase):
         self.assertSetEqual({(0, test_config_1), (1, test_config_2),
                              (2, test_config_3)},
                             set(config_map.id_config_tuples()))
+
+
+class TestConfigurationMapStoreAndLoad(unittest.TestCase):
+    """Test if ConfigurationMap can be stored and loaded."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Setup test ConfigurationMap."""
+        cls.config_map = ConfigurationMap()
+        cls.test_config_1 = TestConfigurationImpl.create_test_config()
+        cls.test_config_2 = TestConfigurationImpl()
+        cls.test_config_3 = TestConfigurationImpl()
+
+        cls.config_id_1 = cls.config_map.add_configuration(cls.test_config_1)
+        cls.config_id_2 = cls.config_map.add_configuration(cls.test_config_2)
+        cls.config_id_3 = cls.config_map.add_configuration(cls.test_config_3)
+
+    def test_store_configuration_map(self) -> None:
+        """Tests if we can store a configuration map correctly into a file."""
+        with NamedTemporaryFile('r') as yaml_output_file:
+            store_configuration_map(
+                self.config_map, Path(yaml_output_file.name)
+            )
+
+            self.assertEqual(
+                YAML_DOC_CONFIG_HEADER + YAML_DOC_CONFIG_MAP,
+                "".join(yaml_output_file.readlines())
+            )
+
+    @mock.patch("builtins.open", create=True)
+    def test_load_configuration_map(self, mock_open) -> None:
+        """Tests if we can load a stored configuration map correctly from a
+        file."""
+        mock_open.side_effect = [
+            mock.mock_open(
+                read_data=YAML_DOC_CONFIG_HEADER + YAML_DOC_CONFIG_MAP
+            ).return_value
+        ]
+
+        config_map = load_configuration_map(
+            Path("fake_file_path"), TestConfigurationImpl
+        )
+
+        self.assertSetEqual({0, 1, 2}, set(config_map.ids()))
+        self.assertTrue(config_map.get_configuration(0) is not None)
+
+    def test_create_configuration_map_from_dict(self) -> None:
+        """Tests if we can create a `ConfigurationMap` from a dict, similar to a
+        yaml doc."""
+        config_map = create_configuration_map_from_yaml_doc({
+            '0':
+                "{'foo': 'foo: True', 'bar': 'bar: False', 'bazz': 'bazz: bazz-value'}",
+            '1':
+                "{}"
+        }, TestConfigurationImpl)
+
+        self.assertSetEqual({0, 1}, set(config_map.ids()))
+        config = config_map.get_configuration(0)
+        self.assertTrue(config is not None)
+        if config:
+            self.assertEqual(
+                TestConfigurationOptionImpl("foo", True),
+                config.get_config_value("foo")
+            )
+        self.assertTrue(config_map.get_configuration(1) is not None)

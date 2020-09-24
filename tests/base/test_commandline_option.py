@@ -2,7 +2,7 @@
 
 import unittest
 
-import varats.base.configuration_option as CO
+import varats.base.commandline_option as CO
 from tests.test_helper_config import TestConfigurationImpl
 from varats.base.configuration import Configuration
 

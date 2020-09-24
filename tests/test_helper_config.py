@@ -1,4 +1,5 @@
 """Test helper module for Configuration classes."""
+import json
 import typing as tp
 
 from varats.base.configuration import Configuration, ConfigurationOption
@@ -33,6 +34,42 @@ class TestConfigurationImpl(Configuration):
             TestConfigurationOptionImpl("bazz", "bazz-value")
         )
         return test_config
+
+    @staticmethod
+    def create_configuration_from_str(config_str: str) -> 'Configuration':
+        """
+        Creates a `Configuration` from it's string representation.
+
+        This function is the inverse to `dump_to_string` to reparse a
+        configuration dumpred previously.
+
+        Returns: new Configuration
+        """
+        loaded_dict = json.loads(config_str.replace('\'', "\""))
+        config = TestConfigurationImpl()
+        for _, option in loaded_dict.items():
+            option_name, option_value = option.split(":", maxsplit=1)
+
+            def make_possible_type_conversion(option_value: str) -> tp.Any:
+                """Converts string to correct type for special cases like bool
+                or None."""
+                if option_value.lower() == "true":
+                    return True
+                if option_value.lower() == "false":
+                    return False
+                if option_value.lower() == "none":
+                    return None
+
+                return option_value
+
+            config.add_config_option(
+                TestConfigurationOptionImpl(
+                    option_name.strip(),
+                    make_possible_type_conversion(option_value.strip())
+                )
+            )
+
+        return config
 
     def __init__(self) -> None:
         self.__config_values: tp.Dict[str, ConfigurationOption] = dict()
@@ -75,7 +112,9 @@ class TestConfigurationImpl(Configuration):
         return list(self.__config_values.values())
 
     def dump_to_string(self):
-        raise NotImplementedError
+        return str({
+            str(idx[0]): str(idx[1]) for idx in self.__config_values.items()
+        })
 
     def set_config_option(self, option_name: str, value: tp.Any) -> None:
         raise NotImplementedError
