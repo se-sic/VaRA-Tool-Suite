@@ -8,7 +8,6 @@ import matplotlib.style as style
 import matplotlib.ticker as mtick
 import numpy as np
 import pandas as pd
-from matplotlib import cm
 
 from varats.data.databases.blame_verifier_report_database import (
     BlameVerifierReportDatabase,
@@ -49,20 +48,14 @@ class BlameVerifierReportPlot(Plot):
 
     def _verifier_plot(
         self,
-        view_mode: bool,
         opt_level: OptLevel,
         extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
     ) -> None:
         plot_cfg = {
-            'linewidth': 1 if view_mode else 0.25,
-            'legend_size': 8 if view_mode else 2,
-            'xtick_size': 10 if view_mode else 2,
-            'lable_modif': lambda x: x,
-            'legend_title': 'MISSING legend_title',
+            'legend_size': 8,
             'legend_visible': True,
+            'legend_title': 'MISSING legend_title',
             'fig_title': 'MISSING figure title',
-            'edgecolor': 'black',
-            'color_map': cm.get_cmap('gist_stern'),
         }
         if extra_plot_cfg is not None:
             plot_cfg.update(extra_plot_cfg)
@@ -112,6 +105,12 @@ class BlameVerifierReportPlot(Plot):
             alpha=0.5
         )
 
+        plt.setp(
+            main_axis.get_xticklabels(),
+            rotation=30,
+            horizontalalignment='right'
+        )
+
         legend = main_axis.legend(
             title=plot_cfg['legend_title'],
             loc='upper left',
@@ -142,14 +141,11 @@ class BlameVerifierReportNoOptPlot(BlameVerifierReportPlot):
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
-            'legend_visible': True,
             'fig_title': 'Annotated project revisions without optimization',
             'legend_title': 'Annotation types'
         }
         self._verifier_plot(
-            view_mode=True,
-            opt_level=OptLevel.NO_OPT,
-            extra_plot_cfg=extra_plot_cfg
+            opt_level=OptLevel.NO_OPT, extra_plot_cfg=extra_plot_cfg
         )
 
 
@@ -163,12 +159,9 @@ class BlameVerifierReportOptPlot(BlameVerifierReportPlot):
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
-            'legend_visible': True,
             'fig_title': 'Annotated project revisions with optimization',
             'legend_title': 'Annotation types'
         }
         self._verifier_plot(
-            view_mode=True,
-            opt_level=OptLevel.OPT,
-            extra_plot_cfg=extra_plot_cfg
+            opt_level=OptLevel.OPT, extra_plot_cfg=extra_plot_cfg
         )
