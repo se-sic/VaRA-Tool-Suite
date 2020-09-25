@@ -5,7 +5,7 @@ import typing as tp
 from varats.base.configuration import Configuration
 
 
-class CommandlineOption():
+class CommandlineOption(abc.ABC):
     """Abstract class representing different kinds of command-line options,
     passed to tools like ls, e.g., `ls -l -a`."""
 

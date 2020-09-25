@@ -84,7 +84,7 @@ class TestConfigurationImpl(Configuration):
         """
         self.__config_values[option.name] = option
 
-    def set_config_value(self, option_name, value) -> None:
+    def set_config_option(self, option_name: str, value: tp.Any) -> None:
         """
         Sets the value of a `ConfigurationOption` with the corresponding key.
 
@@ -111,10 +111,7 @@ class TestConfigurationImpl(Configuration):
     def options(self) -> tp.List[ConfigurationOption]:
         return list(self.__config_values.values())
 
-    def dump_to_string(self):
+    def dump_to_string(self) -> str:
         return str({
             str(idx[0]): str(idx[1]) for idx in self.__config_values.items()
         })
-
-    def set_config_option(self, option_name: str, value: tp.Any) -> None:
-        raise NotImplementedError
