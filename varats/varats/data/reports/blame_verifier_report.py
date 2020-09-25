@@ -1,6 +1,7 @@
 """Module for a BlameVerifierReport."""
 import logging
 import re
+import typing as tp
 from enum import Enum
 from pathlib import Path
 
@@ -23,8 +24,9 @@ class BlameVerifierReportParserMixin:
     its BlameVerifierReport-Subclasses, without adapting the Report
     hierarchy."""
 
-    def __init__(self, path: Path):
-        self.__path = path
+    def __init__(self, **kwargs: tp.Any) -> None:
+        super().__init__(**kwargs)  # type: ignore
+        self.__path = kwargs['path']
         self.__num_successes = -1
         self.__num_failures = -1
         self.__num_total = -1
@@ -111,9 +113,18 @@ class BlameVerifierReportNoOpt(BlameVerifierReportParserMixin, BaseReport):
     SHORTHAND = 'BVR_NoOpt'
     FILE_TYPE = 'txt'
 
-    def __init__(self, path: Path):
-        super().__init__(path=path)
+    def __init__(self, path: Path, **kwargs: tp.Any) -> None:
+        kwargs['path'] = path
+        super().__init__(**kwargs)
         self.parse_verifier_results()
+
+    @property
+    def head_commit(self) -> str:
+        """The current HEAD commit under which this BlameVerifierReportNoOpt was
+        created."""
+        return BlameVerifierReportNoOpt.get_commit_hash_from_result_file(
+            Path(self.path).name
+        )
 
     @staticmethod
     def get_file_name(
@@ -153,9 +164,18 @@ class BlameVerifierReportOpt(BlameVerifierReportParserMixin, BaseReport):
     SHORTHAND = 'BVR_Opt'
     FILE_TYPE = 'txt'
 
-    def __init__(self, path: Path):
-        super().__init__(path=path)
+    def __init__(self, path: Path, **kwargs: tp.Any) -> None:
+        kwargs['path'] = path
+        super().__init__(**kwargs)
         self.parse_verifier_results()
+
+    @property
+    def head_commit(self) -> str:
+        """The current HEAD commit under which this BlameVerifierReportOpt was
+        created."""
+        return BlameVerifierReportOpt.get_commit_hash_from_result_file(
+            Path(self.path).name
+        )
 
     @staticmethod
     def get_file_name(
