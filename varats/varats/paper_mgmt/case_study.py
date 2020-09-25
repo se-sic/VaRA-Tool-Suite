@@ -13,7 +13,7 @@ import pygit2
 from benchbuild import Project  # type: ignore
 from scipy.stats import halfnorm
 
-from varats.base.sampling_method import SamplingMethod
+from varats.base.sampling_method import NormalSamplingMethod
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CSStage, CaseStudy
 from varats.plot.plot_utils import check_required_args
@@ -280,8 +280,8 @@ def get_unique_cs_name(case_studies: tp.List[CaseStudy]) -> tp.List[str]:
 
 @check_required_args(['extra_revs', 'git_path'])
 def generate_case_study(
-    sampling_method: SamplingMethod, cmap: CommitMap, case_study_version: int,
-    project_name: str, **kwargs: tp.Any
+    sampling_method: NormalSamplingMethod, cmap: CommitMap,
+    case_study_version: int, project_name: str, **kwargs: tp.Any
 ) -> CaseStudy:
     """
     Generate a case study for a given project.
@@ -306,8 +306,8 @@ def generate_case_study(
         extend_with_revs_per_year(case_study, cmap, **kwargs)
 
     if (
-        sampling_method is SamplingMethod.half_norm or
-        sampling_method is SamplingMethod.uniform
+        sampling_method is NormalSamplingMethod.half_norm or
+        sampling_method is NormalSamplingMethod.uniform
     ):
         extend_with_distrib_sampling(case_study, cmap, **kwargs)
 

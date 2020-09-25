@@ -38,7 +38,7 @@ class Configuration():
     static and run-time options on how the project should be build."""
 
     @staticmethod
-    @abc.abstractstaticmethod
+    @abc.abstractmethod
     def create_configuration_from_str(config_str: str) -> 'Configuration':
         """
         Creates a `Configuration` from it's string representation.

@@ -98,7 +98,7 @@ class CommandlineSpecification(CommandlineOptionGroup):
     """
 
     def __init__(self, cli_options: tp.List[CommandlineOption]) -> None:
-        super().__init__(cli_options)
+        pass
 
 
 # Adds small class aliases to the module

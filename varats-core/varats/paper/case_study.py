@@ -4,7 +4,7 @@ analysed for a project."""
 import typing as tp
 from pathlib import Path
 
-from varats.base.sampling_method import SamplingMethod
+from varats.base.sampling_method import NormalSamplingMethod
 from varats.base.version_header import VersionHeader
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, MetaReport
@@ -54,12 +54,13 @@ class CSStage():
     def __init__(
         self,
         name: tp.Optional[str] = None,
-        sampling_method: tp.Optional[SamplingMethod] = None,
+        sampling_method: tp.Optional[NormalSamplingMethod] = None,
         release_type: tp.Optional[ReleaseType] = None,
         revisions: tp.Optional[tp.List[HashIDTuple]] = None
     ) -> None:
         self.__name: tp.Optional[str] = name
-        self.__sampling_method: tp.Optional[SamplingMethod] = sampling_method
+        self.__sampling_method: tp.Optional[NormalSamplingMethod
+                                           ] = sampling_method
         self.__release_type: tp.Optional[ReleaseType] = release_type
         self.__revisions: tp.List[HashIDTuple
                                  ] = revisions if revisions is not None else []
@@ -80,12 +81,12 @@ class CSStage():
         self.__name = name
 
     @property
-    def sampling_method(self) -> tp.Optional[SamplingMethod]:
+    def sampling_method(self) -> tp.Optional[NormalSamplingMethod]:
         """The sampling method used for this stage."""
         return self.__sampling_method
 
     @sampling_method.setter
-    def sampling_method(self, sampling_method: SamplingMethod) -> None:
+    def sampling_method(self, sampling_method: NormalSamplingMethod) -> None:
         """Setter for the sampling method of the stage."""
         self.__sampling_method = sampling_method
 
@@ -337,7 +338,7 @@ class CaseStudy():
         revisions: tp.List[tp.Tuple[str, int]],
         stage_num: int = 0,
         sort_revs: bool = True,
-        sampling_method: tp.Optional[SamplingMethod] = None,
+        sampling_method: tp.Optional[NormalSamplingMethod] = None,
         release_type: tp.Optional[ReleaseType] = None
     ) -> None:
         """
@@ -425,7 +426,8 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
         release_type = raw_stage.get('release_type') or None
         stages.append(
             CSStage(
-                raw_stage.get('name') or None, SamplingMethod[sampling_method]
+                raw_stage.get('name') or None,
+                NormalSamplingMethod[sampling_method]
                 if sampling_method is not None else None,
                 ReleaseType[release_type] if release_type is not None else None,
                 hash_id_tuples

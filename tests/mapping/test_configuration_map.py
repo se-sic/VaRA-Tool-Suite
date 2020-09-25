@@ -1,6 +1,5 @@
 """Test module for ConfigurationMap tests."""
 
-import typing as tp
 import unittest
 import unittest.mock as mock
 from pathlib import Path
@@ -149,9 +148,9 @@ class TestConfigurationMapStoreAndLoad(unittest.TestCase):
         yaml doc."""
         config_map = create_configuration_map_from_yaml_doc({
             '0':
-                "{'foo': 'foo: True', 'bar': 'bar: False', 'bazz': 'bazz: bazz-value'}",
-            '1':
-                "{}"
+                "{'foo': 'foo: True', 'bar': 'bar: False', "
+                "'bazz': 'bazz: bazz-value'}",
+            '1': "{}"
         }, TestConfigurationImpl)
 
         self.assertSetEqual({0, 1}, set(config_map.ids()))

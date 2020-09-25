@@ -1,5 +1,4 @@
 """Configuration map module."""
-import abc
 import logging
 import typing as tp
 from pathlib import Path
