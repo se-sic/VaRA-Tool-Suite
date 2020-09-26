@@ -1,12 +1,16 @@
 """Test bug_provider and bug modules."""
 import unittest
-from unittest.mock import Mock, create_autospec
+from unittest.mock import create_autospec
 
+import pygit2
 from github.Issue import Issue
 from github.IssueEvent import IssueEvent
 from github.Label import Label
 
-from varats.provider.bug.bug import _has_closed_a_bug
+from varats.provider.bug.bug import (
+    _has_closed_a_bug,
+    _search_corresponding_pygit_bug,
+)
 
 
 class TestBugDetectionStrategies(unittest.TestCase):
@@ -24,7 +28,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
         irrelevant_label.name = "good first issue"
 
         issue = create_autospec(Issue)
-        issue.id = 1
+        issue.number = 1
         issue.labels = [irrelevant_label, bug_label]
 
         # sane mock issue event
@@ -48,7 +52,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
 
         # mock issue without labels
         issue = create_autospec(Issue)
-        issue.id = 2
+        issue.number = 2
         issue.labels = []
 
         issue_event = create_autospec(IssueEvent)
@@ -66,7 +70,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
         bug_label.name = "bug"
 
         issue = create_autospec(Issue)
-        issue.id = 3
+        issue.number = 3
         issue.labels = [bug_label]
 
         issue_event_pinned = create_autospec(IssueEvent)
@@ -81,3 +85,34 @@ class TestBugDetectionStrategies(unittest.TestCase):
 
         self.assertFalse(_has_closed_a_bug(issue_event_pinned))
         self.assertFalse(_has_closed_a_bug(issue_event_assigned))
+
+    def test_pygit_bug_creation(self):
+        """Test whether created pygit bug objects fit their corresponding
+        issue."""
+
+        # issue representing a bug
+        bug_label = create_autospec(Label)
+        bug_label.name = "bug"
+
+        issue = create_autospec(Issue)
+        issue.number = 4
+        issue.labels = [bug_label]
+
+        issue_event = create_autospec(IssueEvent)
+        issue_event.event = "closed"
+        issue_event.commit_id = "1237"
+        issue_event.issue = issue
+
+        # associated commit mock
+        issue_commit = create_autospec(pygit2.Commit)
+        issue_commit.hex = "1237"
+
+        mock_repo = create_autospec(pygit2.Repository)
+        mock_repo.revparse_single = create_autospec(
+            pygit2.Repository.revparse_single, return_value=issue_commit
+        )
+
+        pybug = _search_corresponding_pygit_bug(issue_event, mock_repo)
+
+        self.assertEqual(pybug.fixing_commit.hex, issue_event.commit_id)
+        self.assertEqual(pybug.issue_id, issue_event.issue.number)

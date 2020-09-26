@@ -294,7 +294,7 @@ def find_pygit_bug_by_fix(project_name: str,
         )
 
         if pybug:
-            if pybug.fixing_commit.sha is fixing_commit:
+            if pybug.fixing_commit.hex is fixing_commit:
                 return pybug
         return None
 
@@ -358,7 +358,7 @@ def find_pygit_bug_by_introduction(
 
         if pybug:
             for introducing_pycommit in pybug.introducing_commits:
-                if introducing_pycommit.sha is introducing_commit:
+                if introducing_pycommit.hex is introducing_commit:
                     return pybug
                     # found wanted ID
         return None
