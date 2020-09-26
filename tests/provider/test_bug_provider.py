@@ -14,32 +14,26 @@ class TestBugDetectionStrategies(unittest.TestCase):
         and without associated commit id."""
 
         # mock issue with correct labels
-        bug_label = Mock(**{'name.return_value': "bug"})
-        irrelevant_label = Mock(**{'name.return_value': "good first issue"})
-        issue = Mock(
-            **{
-                'labels.return_value': [irrelevant_label, bug_label],
-                'id.return_value': 1
-            }
-        )
+        bug_label = create_autospec(Label)
+        bug_label.name = "bug"
+        irrelevant_label = create_autospec(Label)
+        irrelevant_label.name = "good first issue"
+
+        issue = create_autospec(Issue)
+        issue.labels = [irrelevant_label, bug_label]
+        issue.id = 1
 
         # sane mock issue event
-        issue_event_bug = Mock(
-            **{
-                'event.return_value': "closed",
-                'commit_id.return_value': "1234",
-                'issue.return_value': issue
-            }
-        )
+        issue_event_bug = create_autospec(IssueEvent)
+        issue_event_bug.event = "closed"
+        issue_event_bug.commit_id = "1234"
+        issue_event_bug.issue = issue
 
         # mock issue event without corresponding commit
-        issue_event_no_commit = Mock(
-            **{
-                'event.return_value': "closed",
-                'commit_id.return_value': None,
-                'issue.return_value': issue
-            }
-        )
+        issue_event_no_commit = create_autospec(IssueEvent)
+        issue_event_no_commit.event = "closed"
+        issue_event_no_commit.commit_id = None
+        issue_event_no_commit.issue = issue
 
         # check if Issues get identified correctly
         self.assertTrue(_has_closed_a_bug(issue_event_bug))
