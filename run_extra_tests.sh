@@ -37,7 +37,7 @@ check_err
 $COVERAGE $(which vara-pc) list
 check_err
 
-$COVERAGE $(which vara-cs) gen paper_configs/test_extra/ -p gravity half_norm # benchbuild/tmp/gzip-HEAD #gzip/
+$COVERAGE $(which vara-cs) gen paper_configs/test_extra/ -p gravity HalfNormalSamplingMethod # benchbuild/tmp/gzip-HEAD #gzip/
 check_err
 
 $COVERAGE $(which vara-cs) ext paper_configs/test_extra/gravity_0.case_study -p gravity simple_add  --extra-revs 0dd8313ea7bce --merge-stage 3 #gravity/
