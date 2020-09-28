@@ -1,4 +1,4 @@
-"""Project file for TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject."""
+"""Project file for TwoLibsOneProjectInteractionDiscreteLibsSingleProject."""
 import typing as tp
 from pathlib import Path
 
@@ -17,28 +17,27 @@ from varats.project.project_util import (
 from varats.utils.settings import bb_cfg
 
 
-class TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject(
+class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
     bb.Project  # type: ignore
 ):
     """Class to analyse interactions between two discrete libraries and one
     project."""
 
-    NAME = 'TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject'
+    NAME = 'TwoLibsOneProjectInteractionDiscreteLibsSingleProject'
     GROUP = 'cpp_projects'
     DOMAIN = 'library-testproject'
-
     SOURCE = [
         VaraTestRepoSource(
             remote="LibraryAnalysisRepos"
-            "/TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject"
+            "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/Elementalist",
-            local="TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject"
+            local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/Elementalist",
             refspec="HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator(
-                "TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject"
+                "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             )
         )
     ]
