@@ -1,5 +1,6 @@
 """Project file for TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject."""
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.utils.cmd import cmake, cp, git, make, mkdir
@@ -67,7 +68,7 @@ class TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject(
         # ensure that the necessary libs are located as git repositories in the
         # benchbuild/tmp dir
 
-        path_to_libs_in_tmp = version_source / "../../../../../tmp"
+        path_to_libs_in_tmp = Path(bb_cfg()["tmp_dir"].value)
         path_to_root_dir = version_source / "../"
 
         cp("-r", path_to_libs_in_tmp / "fire_lib", path_to_root_dir)
