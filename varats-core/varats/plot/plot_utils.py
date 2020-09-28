@@ -6,7 +6,7 @@ from pathlib import Path
 
 from matplotlib.axes import Axes
 
-from varats.data.reports.commit_report import CommitMap
+from varats.mapping.commit_map import CommitMap
 
 
 def __check_required_args_impl(

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-from varats.plots.plots import PlotRegistry
+from varats.plot.plots import PlotRegistry
 
 LOG = logging.getLogger(__name__)
 

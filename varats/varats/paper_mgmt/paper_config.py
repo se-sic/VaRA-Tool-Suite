@@ -22,8 +22,9 @@ from varats.paper_mgmt.artefacts import (
     load_artefacts_from_file,
     store_artefacts,
 )
+from varats.projects.discover_projects import initialize_projects
+from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.settings import vara_cfg
-from varats.utilss.exceptions import ConfigurationLookupError
 
 
 class PaperConfig():
@@ -200,6 +201,7 @@ def project_filter_generator(project_name: str) -> tp.Callable[[str], bool]:
             )
         )
 
+    initialize_projects()
     return get_paper_config().get_filter_for_case_study(project_name)
 
 

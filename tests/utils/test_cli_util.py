@@ -8,7 +8,7 @@ from pathlib import Path
 from tests.test_utils import replace_config
 from varats.tools.research_tools.phasar import Phasar
 from varats.tools.research_tools.vara import VaRA
-from varats.utilss.cli_util import get_research_tool_type, get_research_tool
+from varats.tools.tool_util import get_research_tool_type, get_research_tool
 
 
 class ResearchToolUtils(unittest.TestCase):
@@ -28,6 +28,7 @@ class ResearchToolUtils(unittest.TestCase):
         ) as vara_cfg:
 
             vara_cfg["config_file"] = tmp_path + "/dummy.yml"
+            vara_cfg["vara"]["llvm_source_dir"] = tmp_path + "/tools_src"
             vara = get_research_tool("vara")
             self.assertTrue(vara.has_source_location())
             self.assertEqual(

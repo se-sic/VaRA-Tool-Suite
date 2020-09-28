@@ -20,15 +20,15 @@ from varats.data.reports.blame_verifier_report import (
 from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportOpt as BVR_Opt,
 )
-from varats.experiments.wllvm import BCFileExtensions, get_cached_bc_file_path
-from varats.report.report import FileStatusExtension as FSE
-from varats.report.report import BaseReport
-from varats.utils.settings import bb_cfg
-from varats.utilss.experiment_util import (
+from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     PEErrorHandler,
 )
+from varats.experiment.wllvm import BCFileExtensions, get_cached_bc_file_path
+from varats.report.report import FileStatusExtension as FSE
+from varats.report.report import BaseReport
+from varats.utils.settings import bb_cfg
 
 
 class BlameVerifierReportGeneration(actions.Step):  # type: ignore
@@ -79,7 +79,9 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
         timeout_duration = '8h'
 
         for binary in project.binaries:
-            bc_target_file = get_cached_bc_file_path(project, binary)
+            bc_target_file = get_cached_bc_file_path(
+                project, binary, self.bc_file_extensions
+            )
 
             # Define empty success file.
             result_file = self.report_type.get_file_name(
