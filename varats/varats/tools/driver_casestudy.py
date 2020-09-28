@@ -10,7 +10,7 @@ from pathlib import Path
 from argparse_utils import enum_action
 from plumbum import FG, colors, local
 
-from varats.base.sampling_method import NormalSamplingMethod, SamplingMethodBase
+from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.discover_reports import initialize_reports
 from varats.mapping.commit_map import create_lazy_commit_map_loader
 from varats.paper.case_study import load_case_study_from_file, store_case_study

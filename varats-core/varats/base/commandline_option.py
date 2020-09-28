@@ -97,9 +97,6 @@ class CommandlineSpecification(CommandlineOptionGroup):
     adding '-l' or '-h' to the command line of 'ls' when executed.
     """
 
-    def __init__(self, cli_options: tp.List[CommandlineOption]) -> None:
-        pass
-
 
 # Adds small class aliases to the module
 CLOSwitch = CommandlineOptionSwitch

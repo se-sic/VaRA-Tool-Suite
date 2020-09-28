@@ -8,7 +8,6 @@ from enum import Enum
 from itertools import groupby
 from pathlib import Path
 
-import numpy as np
 import pygit2
 from benchbuild import Project  # type: ignore
 from scipy.stats import halfnorm
@@ -310,8 +309,8 @@ def generate_case_study(
         extend_with_revs_per_year(case_study, cmap, **kwargs)
 
     if (
-        type(sampling_method) is HalfNormalSamplingMethod or
-        type(sampling_method) is UniformSamplingMethod
+        isinstance(sampling_method, HalfNormalSamplingMethod) or
+        isinstance(sampling_method, UniformSamplingMethod)
     ):
         extend_with_distrib_sampling(case_study, cmap, **kwargs)
 
