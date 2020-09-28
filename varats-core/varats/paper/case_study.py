@@ -4,7 +4,13 @@ analysed for a project."""
 import typing as tp
 from pathlib import Path
 
-from varats.base.sampling_method import NormalSamplingMethod
+from varats.base.sampling_method import (
+    NormalSamplingMethod,
+    UniformSamplingMethod,
+    HalfNormalSamplingMethod,
+    SamplingMethodBase,
+    SamplingMethod,
+)
 from varats.base.version_header import VersionHeader
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, MetaReport
@@ -54,13 +60,12 @@ class CSStage():
     def __init__(
         self,
         name: tp.Optional[str] = None,
-        sampling_method: tp.Optional[NormalSamplingMethod] = None,
+        sampling_method: tp.Optional[SamplingMethod] = None,
         release_type: tp.Optional[ReleaseType] = None,
         revisions: tp.Optional[tp.List[HashIDTuple]] = None
     ) -> None:
         self.__name: tp.Optional[str] = name
-        self.__sampling_method: tp.Optional[NormalSamplingMethod
-                                           ] = sampling_method
+        self.__sampling_method: tp.Optional[SamplingMethod] = sampling_method
         self.__release_type: tp.Optional[ReleaseType] = release_type
         self.__revisions: tp.List[HashIDTuple
                                  ] = revisions if revisions is not None else []
@@ -81,7 +86,7 @@ class CSStage():
         self.__name = name
 
     @property
-    def sampling_method(self) -> tp.Optional[NormalSamplingMethod]:
+    def sampling_method(self) -> tp.Optional[SamplingMethod]:
         """The sampling method used for this stage."""
         return self.__sampling_method
 
@@ -144,7 +149,7 @@ class CSStage():
         if self.name is not None:
             stage_dict['name'] = self.name
         if self.sampling_method is not None:
-            stage_dict['sampling_method'] = self.sampling_method.name
+            stage_dict['sampling_method'] = self.sampling_method.name()
         if self.release_type is not None:
             stage_dict['release_type'] = self.release_type.name
         revision_list = [revision.get_dict() for revision in self.__revisions]
@@ -422,13 +427,35 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
                     raw_hash_id_tuple['commit_id']
                 )
             )
-        sampling_method = raw_stage.get('sampling_method') or None
+
+        sampling_method_name = raw_stage.get('sampling_method') or None
+
+        def create_correct_sampling_method(
+            sampling_method_name: str
+        ) -> SamplingMethod:
+            # TODO (sattlerf): remove old sampling look-up code after everyone
+            # migrated to the new case study style.
+            if sampling_method_name == 'uniform':
+                return UniformSamplingMethod()
+            if sampling_method_name == 'half_norm':
+                return HalfNormalSamplingMethod()
+
+            return SamplingMethodBase[SamplingMethod].get_sampling_method_type(
+                sampling_method_name
+            )()
+
+        if sampling_method_name:
+            sampling_method: tp.Optional[SamplingMethod
+                                        ] = create_correct_sampling_method(
+                                            sampling_method_name
+                                        )
+        else:
+            sampling_method = None
+
         release_type = raw_stage.get('release_type') or None
         stages.append(
             CSStage(
-                raw_stage.get('name') or None,
-                NormalSamplingMethod[sampling_method]
-                if sampling_method is not None else None,
+                raw_stage.get('name') or None, sampling_method,
                 ReleaseType[release_type] if release_type is not None else None,
                 hash_id_tuples
             )

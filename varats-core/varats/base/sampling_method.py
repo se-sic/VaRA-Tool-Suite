@@ -8,7 +8,7 @@ from scipy.stats import halfnorm
 
 from varats.base.configuration import Configuration
 
-T = tp.TypeVar('T', bound='SamplingMethodBase')
+T = tp.TypeVar('T')
 
 
 class SamplingMethodBase(tp.Generic[T], abc.ABC):
@@ -32,7 +32,7 @@ class SamplingMethodBase(tp.Generic[T], abc.ABC):
         cls.methods[cls.name()] = cls
 
     @classmethod
-    def _get_sampling_method_type(cls, sampling_method_name: str) -> tp.Type[T]:
+    def get_sampling_method_type(cls, sampling_method_name: str) -> tp.Type[T]:
         """Maps the name of a `SamplingMethod` to the concret type."""
         return cls.methods[sampling_method_name]
 
@@ -47,14 +47,20 @@ class SamplingMethodBase(tp.Generic[T], abc.ABC):
         Returns: reinitialized `SamplingMethod`
         """
         loaded_dict = json.loads(config_str.replace('\'', "\""))
-        # TODO: maybe check the type parsed
 
-        sm_type: tp.Type[T] = SamplingMethodBase[T]._get_sampling_method_type(
+        sm_type: tp.Type[T] = SamplingMethodBase[T].get_sampling_method_type(
             loaded_dict[SamplingMethodBase.CONFIG_TYPE_NAME]
         )
 
         sm_obj: T = sm_type()
-        sm_obj._configure_sampling_method(loaded_dict)
+        if not issubclass(type(sm_obj), SamplingMethodBase):
+            raise AssertionError(
+                "Sampling methods can only be created for classes which "
+                "implement the SamplingMethodBase interface."
+            )
+        # sm_obj is always a subtype of SamplingMethodBase
+        tp.cast('SamplingMethodBase[T]',
+                sm_obj)._configure_sampling_method(loaded_dict)
         return sm_obj
 
     @classmethod
@@ -94,6 +100,8 @@ class SamplingMethodBase(tp.Generic[T], abc.ABC):
         pass
 
 
+SamplingMethod = SamplingMethodBase[tp.Any]
+
 SampleType = tp.TypeVar('SampleType')
 
 
@@ -119,6 +127,22 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
         """
         raise NotImplementedError
 
+    @classmethod
+    def normal_sampling_method_types(
+        cls
+    ) -> tp.List[tp.Type['NormalSamplingMethod']]:
+        """
+        Returns a list of all registered normal sampling method types.
+
+        Returns: list of `NormalSamplingMethod`s
+        """
+        return list(
+            filter(
+                lambda ty: issubclass(ty, NormalSamplingMethod) and ty is
+                not NormalSamplingMethod, cls.methods.values()
+            )
+        )
+
     @abc.abstractmethod
     def gen_distribution_function(self) -> tp.Callable[[int], np.ndarray]:
         """
@@ -129,21 +153,32 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
             according to the selected distribution
         """
 
-    @abc.abstractmethod
     def sample_n(self, data: tp.List[SampleType],
-                 n: int) -> tp.List[SampleType]:
+                 num_samples: int) -> tp.List[SampleType]:
         """
-        Draw `n` samples from the data.
+        Return a list of n unique samples. If the list to sample is smaller than
+        the number of samples the full list is returned.
 
         Args:
-            data: to sample from
-            n: amount of samples to draw
+            data: list to sample from
+            num_samples: number of samples to choose
 
         Returns: list of sampled items
         """
+        if num_samples >= len(data):
+            return data
+
+        probabilities = self.gen_distribution_function()(len(data))
+        probabilities /= probabilities.sum()
+
+        sampled_idxs = np.random.choice(
+            len(data), num_samples, replace=False, p=probabilities
+        )
+
+        return [data[idx] for idx in sampled_idxs]
 
 
-class UniformSamplingethod(NormalSamplingMethod):
+class UniformSamplingMethod(NormalSamplingMethod):
 
     def gen_distribution_function(self) -> tp.Callable[[int], np.ndarray]:
         """
@@ -160,19 +195,6 @@ class UniformSamplingethod(NormalSamplingMethod):
             )
 
         return uniform
-
-    def sample_n(self, data: tp.List[SampleType],
-                 n: int) -> tp.List[SampleType]:
-        """
-        Draw `n` samples from the data.
-
-        Args:
-            data: to sample from
-            n: amount of samples to draw
-
-        Returns: list of sampled items
-        """
-        raise NotADirectoryError
 
 
 class HalfNormalSamplingMethod(NormalSamplingMethod):
@@ -192,19 +214,6 @@ class HalfNormalSamplingMethod(NormalSamplingMethod):
             )
 
         return halfnormal
-
-    def sample_n(self, data: tp.List[SampleType],
-                 n: int) -> tp.List[SampleType]:
-        """
-        Draw `n` samples from the data.
-
-        Args:
-            data: to sample from
-            n: amount of samples to draw
-
-        Returns: list of sampled items
-        """
-        raise NotADirectoryError
 
 
 class SamplingStrategy(abc.ABC):  # @Kalti: better name? Sampling heuristic?
