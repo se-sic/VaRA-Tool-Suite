@@ -34,7 +34,7 @@ script:
   # - coverage combine -a
   - ls -lisa
   # - coverage report
-  - pytest -p pytest_cov --cov=varats-core --cov=varats --cov=tests
+  - pytest -p pytest_cov --cov varats-core --cov varats --cov tests
   - rm -rf benchbuild
   - ./run_extra_tests.sh
   - coverage combine -a
