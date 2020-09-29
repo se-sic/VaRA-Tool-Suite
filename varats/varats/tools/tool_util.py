@@ -46,6 +46,7 @@ def get_research_tool(
         otherwise, raises LookupError
     """
     rs_type = get_research_tool_type(name)
+    raise AssertionError
 
     if source_location:
         src_folder = Path(source_location)
