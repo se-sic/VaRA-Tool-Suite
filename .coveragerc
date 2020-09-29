@@ -1,12 +1,9 @@
 [run]
-include =
-  */varats/*
-  */varats-core/*
+include = */varats/*
 
 [paths]
 source =
   varats/varats/
-  varats-core/varats/
   */site-packages/varats/
   */site-packages/varats-core/
 

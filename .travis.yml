@@ -30,7 +30,7 @@ script:
   - pre-commit run --from-ref origin/vara-dev --to-ref HEAD
   - mkdir -p benchbuild
   # - coverage run -p -m pytest varats varats-core tests
-  - pytest --cov=./ varats varats-core tests
+  - pytest --cov=varats-core --cov=varats --cov=tests
   - rm -rf benchbuild
   - ./run_extra_tests.sh
   - coverage combine -a
