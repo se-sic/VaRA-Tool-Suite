@@ -1,3 +1,6 @@
+[run]
+include = */varats*/*
+
 [paths]
 source =
   varats/varats/
