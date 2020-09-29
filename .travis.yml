@@ -29,7 +29,7 @@ install:
 script:
   - pre-commit run --from-ref origin/vara-dev --to-ref HEAD
   - mkdir -p benchbuild
-  - coverage run -m pytest varats varats-core tests
+  - coverage run -p -m pytest varats varats-core tests
   - rm -rf benchbuild
   - ./run_extra_tests.sh
   - coverage combine -a
