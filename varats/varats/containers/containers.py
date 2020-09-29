@@ -1,8 +1,13 @@
+import logging
 import typing as tp
 from enum import Enum
 
 from benchbuild.environments.domain import declarative, commands
 from benchbuild.environments.service_layer import messagebus, unit_of_work
+
+from varats.utils.settings import bb_cfg
+
+LOG = logging.getLogger(__name__)
 
 
 class ImageBase(Enum):
@@ -29,37 +34,43 @@ __BASE_IMAGES: tp.Dict[ImageBase, declarative.ContainerImage] = {
 def add_varats_layers(
     layers: declarative.ContainerImage
 ) -> declarative.ContainerImage:
-    # crun = str(CFG['container']['runtime'])
-    # src_dir = str(CFG['container']['source'])
-    # tgt_dir = '/benchbuild'
+    crun = str(bb_cfg()['container']['runtime'])
+    src_dir = '/local/storage/boehmseb/vara/VaRA-Tool-Suite'
+    tgt_dir = '/varats'
 
-    # def from_source(image: ContainerImage) -> None:
-    #     LOG.debug('installing benchbuild from source.')
-    #     LOG.debug('src_dir: %s tgt_dir: %s', src_dir, tgt_dir)
-    #
-    #     # The image requires git, pip and a working python3.7 or better.
-    #     image.run('mkdir', f'{tgt_dir}', runtime=crun)
-    #     image.run('pip3', 'install', 'setuptools', runtime=crun)
-    #     image.run(
-    #         'pip3',
-    #         'install',
-    #         '--ignore-installed',
-    #         tgt_dir,
-    #         mount=f'type=bind,src={src_dir},target={tgt_dir}',
-    #         runtime=crun
-    #     )
+    def from_source(
+        image: declarative.ContainerImage
+    ) -> declarative.ContainerImage:
+        LOG.debug('installing benchbuild from source.')
+        LOG.debug('src_dir: %s tgt_dir: %s', src_dir, tgt_dir)
+
+        # The image requires git, pip and a working python3.7 or better.
+        image.run('mkdir', f'{tgt_dir}', runtime=crun)
+        image.run('pip3', 'install', '--upgrade', 'pip')
+        image.run('pip3', 'install', 'setuptools', runtime=crun)
+        return image.run(
+            'pip3',
+            'install',
+            '--ignore-installed',
+            tgt_dir + '/varats-core',
+            tgt_dir + '/varats',
+            mount=f'type=bind,src={src_dir},target={tgt_dir}',
+            runtime=crun
+        )
 
     def from_pip(
         image: declarative.ContainerImage
     ) -> declarative.ContainerImage:
         # LOG.debug('installing benchbuild from pip release.')
-        return image.run('pip3', 'install', 'varats-core', 'varats')
+        return image.run('pip3', 'install', '--upgrade',
+                         'pip').run('pip3', 'install', 'varats-core', 'varats')
 
     # if bool(CFG['container']['from_source']):
     #     from_source(layers)
     # else:
     #     from_pip(layers)
-    return from_pip(layers).run('vara-gen-bb-config')
+    # return from_pip(layers).run('vara-gen-bbconfig')
+    return from_source(layers).run('vara-gen-bbconfig')
 
 
 # TODO: create tool that builds all base images
