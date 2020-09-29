@@ -82,7 +82,7 @@ class SamplingMethodBase(tp.Generic[SamplingMethodSubType], abc.ABC):
                 "implement the SamplingMethodBase interface."
             )
         # sm_obj is always a subtype of SamplingMethodBase
-        tp.cast(
+        tp.cast(# pylint: disable=W0212
             'SamplingMethodBase[SamplingMethodSubType]', sm_obj
         )._configure_sampling_method(  # pylint: disable=W0212
             loaded_dict
@@ -154,7 +154,6 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
         """
         # We don't extend the config with own options, therefore, we don't have
         # to configure anything here.
-        pass
 
     @classmethod
     def normal_sampling_method_types(

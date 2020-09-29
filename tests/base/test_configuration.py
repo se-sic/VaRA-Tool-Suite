@@ -6,7 +6,6 @@ from tests.test_helper_config import (
     ConfigurationOptionTestImpl,
     ConfigurationTestImpl,
 )
-from varats.base.configuration import Configuration
 
 
 class TestConfigurationOption(unittest.TestCase):
