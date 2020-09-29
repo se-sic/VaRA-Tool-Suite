@@ -21,7 +21,7 @@ class TestSamplingMethodBase(unittest.TestCase):
                 tp.Any].sampling_method_names()
         )
 
-        class NewTestSamplingMethod(SamplingMethodBase):
+        class NewTestSamplingMethod(SamplingMethodBase):  # pylint: disable=W0612
             pass
 
         self.assertTrue(

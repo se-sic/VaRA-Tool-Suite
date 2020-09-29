@@ -2,7 +2,6 @@
 
 import unittest
 
-import varats.base.commandline_option as CO
 from tests.test_helper_config import (
     ConfigurationOptionTestImpl,
     ConfigurationTestImpl,

@@ -309,8 +309,9 @@ def generate_case_study(
         extend_with_revs_per_year(case_study, cmap, **kwargs)
 
     if (
-        isinstance(sampling_method, HalfNormalSamplingMethod) or
-        isinstance(sampling_method, UniformSamplingMethod)
+        isinstance(
+            sampling_method, (HalfNormalSamplingMethod, UniformSamplingMethod)
+        )
     ):
         extend_with_distrib_sampling(case_study, cmap, **kwargs)
 

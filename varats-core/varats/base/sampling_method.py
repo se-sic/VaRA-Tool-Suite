@@ -82,10 +82,11 @@ class SamplingMethodBase(tp.Generic[SamplingMethodSubType], abc.ABC):
                 "implement the SamplingMethodBase interface."
             )
         # sm_obj is always a subtype of SamplingMethodBase
-        tp.cast('SamplingMethodBase[SamplingMethodSubType]',
-                sm_obj)._configure_sampling_method(
-                    loaded_dict
-                )  # pylint: disable=W0212
+        tp.cast(
+            'SamplingMethodBase[SamplingMethodSubType]', sm_obj
+        )._configure_sampling_method(  # pylint: disable=W0212
+            loaded_dict
+        )
         return sm_obj
 
     @classmethod
