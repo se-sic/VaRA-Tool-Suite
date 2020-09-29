@@ -6,8 +6,8 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 from tests.test_helper_config import (
-    TestConfigurationImpl,
-    TestConfigurationOptionImpl,
+    ConfigurationTestImpl,
+    ConfigurationOptionTestImpl,
 )
 from varats.mapping.configuration_map import (
     ConfigurationMap,
@@ -35,7 +35,7 @@ class TestConfigurationMap(unittest.TestCase):
     def test_add_get_config(self) -> None:
         """Tests if we can add and retrieve a config from the map."""
         config_map = ConfigurationMap()
-        test_config = TestConfigurationImpl()
+        test_config = ConfigurationTestImpl()
 
         config_id = config_map.add_configuration(test_config)
 
@@ -45,9 +45,9 @@ class TestConfigurationMap(unittest.TestCase):
     def test_add_get_multiple_configs(self) -> None:
         """Tests if we can add and retrieve multiple configs from the map."""
         config_map = ConfigurationMap()
-        test_config_1 = TestConfigurationImpl()
-        test_config_2 = TestConfigurationImpl()
-        test_config_3 = TestConfigurationImpl()
+        test_config_1 = ConfigurationTestImpl()
+        test_config_2 = ConfigurationTestImpl()
+        test_config_3 = ConfigurationTestImpl()
 
         config_id_1 = config_map.add_configuration(test_config_1)
         config_id_2 = config_map.add_configuration(test_config_2)
@@ -70,9 +70,9 @@ class TestConfigurationMap(unittest.TestCase):
     def test_inter_configs(self) -> None:
         """Test if we can iterate over all configurations."""
         config_map = ConfigurationMap()
-        test_config_1 = TestConfigurationImpl()
-        test_config_2 = TestConfigurationImpl()
-        test_config_3 = TestConfigurationImpl()
+        test_config_1 = ConfigurationTestImpl()
+        test_config_2 = ConfigurationTestImpl()
+        test_config_3 = ConfigurationTestImpl()
 
         config_map.add_configuration(test_config_1)
         config_map.add_configuration(test_config_2)
@@ -85,9 +85,9 @@ class TestConfigurationMap(unittest.TestCase):
     def test_inter_id_config_tuples(self) -> None:
         """Test if we can iterate over all id configuration pairs."""
         config_map = ConfigurationMap()
-        test_config_1 = TestConfigurationImpl()
-        test_config_2 = TestConfigurationImpl()
-        test_config_3 = TestConfigurationImpl()
+        test_config_1 = ConfigurationTestImpl()
+        test_config_2 = ConfigurationTestImpl()
+        test_config_3 = ConfigurationTestImpl()
 
         config_map.add_configuration(test_config_1)
         config_map.add_configuration(test_config_2)
@@ -106,9 +106,9 @@ class TestConfigurationMapStoreAndLoad(unittest.TestCase):
     def setUpClass(cls):
         """Setup test ConfigurationMap."""
         cls.config_map = ConfigurationMap()
-        cls.test_config_1 = TestConfigurationImpl.create_test_config()
-        cls.test_config_2 = TestConfigurationImpl()
-        cls.test_config_3 = TestConfigurationImpl()
+        cls.test_config_1 = ConfigurationTestImpl.create_test_config()
+        cls.test_config_2 = ConfigurationTestImpl()
+        cls.test_config_3 = ConfigurationTestImpl()
 
         cls.config_id_1 = cls.config_map.add_configuration(cls.test_config_1)
         cls.config_id_2 = cls.config_map.add_configuration(cls.test_config_2)
@@ -137,7 +137,7 @@ class TestConfigurationMapStoreAndLoad(unittest.TestCase):
         ]
 
         config_map = load_configuration_map(
-            Path("fake_file_path"), TestConfigurationImpl
+            Path("fake_file_path"), ConfigurationTestImpl
         )
 
         self.assertSetEqual({0, 1, 2}, set(config_map.ids()))
@@ -151,14 +151,14 @@ class TestConfigurationMapStoreAndLoad(unittest.TestCase):
                 "{'foo': 'foo: True', 'bar': 'bar: False', "
                 "'bazz': 'bazz: bazz-value'}",
             '1': "{}"
-        }, TestConfigurationImpl)
+        }, ConfigurationTestImpl)
 
         self.assertSetEqual({0, 1}, set(config_map.ids()))
         config = config_map.get_configuration(0)
         self.assertTrue(config is not None)
         if config:
             self.assertEqual(
-                TestConfigurationOptionImpl("foo", True),
+                ConfigurationOptionTestImpl("foo", True),
                 config.get_config_value("foo")
             )
         self.assertTrue(config_map.get_configuration(1) is not None)

@@ -5,7 +5,7 @@ import typing as tp
 from varats.base.configuration import Configuration, ConfigurationOption
 
 
-class TestConfigurationOptionImpl(ConfigurationOption):
+class ConfigurationOptionTestImpl(ConfigurationOption):
     """Small `ConfigurationOption` implementation for testing."""
 
     def __init__(self, name: str, value: tp.Any) -> None:
@@ -21,17 +21,17 @@ class TestConfigurationOptionImpl(ConfigurationOption):
         return self.__value
 
 
-class TestConfigurationImpl(Configuration):
+class ConfigurationTestImpl(Configuration):
     """Small `Configuration` implementation for testing."""
 
     @staticmethod
-    def create_test_config() -> 'TestConfigurationImpl':
+    def create_test_config() -> 'ConfigurationTestImpl':
         """Create a small test Configuration."""
-        test_config = TestConfigurationImpl()
-        test_config.add_config_option(TestConfigurationOptionImpl("foo", True))
-        test_config.add_config_option(TestConfigurationOptionImpl("bar", False))
+        test_config = ConfigurationTestImpl()
+        test_config.add_config_option(ConfigurationOptionTestImpl("foo", True))
+        test_config.add_config_option(ConfigurationOptionTestImpl("bar", False))
         test_config.add_config_option(
-            TestConfigurationOptionImpl("bazz", "bazz-value")
+            ConfigurationOptionTestImpl("bazz", "bazz-value")
         )
         return test_config
 
@@ -46,7 +46,7 @@ class TestConfigurationImpl(Configuration):
         Returns: new Configuration
         """
         loaded_dict = json.loads(config_str.replace('\'', "\""))
-        config = TestConfigurationImpl()
+        config = ConfigurationTestImpl()
         for _, option in loaded_dict.items():
             option_name, option_value = option.split(":", maxsplit=1)
 
@@ -63,7 +63,7 @@ class TestConfigurationImpl(Configuration):
                 return option_value
 
             config.add_config_option(
-                TestConfigurationOptionImpl(
+                ConfigurationOptionTestImpl(
                     option_name.strip(),
                     make_possible_type_conversion(option_value.strip())
                 )
@@ -92,7 +92,7 @@ class TestConfigurationImpl(Configuration):
             option_name: config key, i.e., option/feature name
             value: of the specified feature
         """
-        self.add_config_option(TestConfigurationOptionImpl(option_name, value))
+        self.add_config_option(ConfigurationOptionTestImpl(option_name, value))
 
     def get_config_value(self, option_name) -> tp.Optional[tp.Any]:
         """
