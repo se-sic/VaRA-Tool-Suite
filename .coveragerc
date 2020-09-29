@@ -1,5 +1,6 @@
 [run]
 include = */varats/*
+include = */varats-core/*
 
 [paths]
 source =
