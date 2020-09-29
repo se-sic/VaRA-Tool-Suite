@@ -3,21 +3,19 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.project import Project
-from benchbuild.utils.cmd import make
+from benchbuild.utils.cmd import make, source
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
-from benchbuild.utils.run import run
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.data.provider.cve.cve_provider import CVEProviderHook
-from varats.paper.paper_config import project_filter_generator
-from varats.settings import bb_cfg
-from varats.utils.project_util import (
+from varats.provider.cve.cve_provider import CVEProviderHook
+from varats.paper_mgmt.paper_config import project_filter_generator
+
+from varats.project.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
 )
-
 
 class NMap(Project, CVEProviderHook):  # type: ignore
     """Nmap - the Network Mapper (fetched by Git)"""
@@ -29,9 +27,10 @@ class NMap(Project, CVEProviderHook):  # type: ignore
 
     #SRC_FILE = NAME + "-{0}".format(VERSION)
     SOURCE = bb.source.Git(
-        "https://github.com/nmap/nmap.git",
+        remote= "https://github.com/nmap/nmap.git",
         refspec="HEAD",
-        version_filter=project_filter_generator("nmap")
+        version_filter=project_filter_generator("nmap"),
+        local="nmap"
     )
 
     @property
@@ -40,7 +39,7 @@ class NMap(Project, CVEProviderHook):  # type: ignore
         # TODO
         return wrap_paths_to_binaries(["nmap"])
 
-    def run_tests(self, runner: run) -> None:
+    def run_tests(self) -> None:
         pass
 
     def compile(self) -> None:

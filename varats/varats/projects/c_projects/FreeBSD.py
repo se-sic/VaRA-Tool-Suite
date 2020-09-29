@@ -5,14 +5,13 @@ from benchbuild.project import Project
 from benchbuild.utils.cmd import make
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.download import with_git
-from benchbuild.utils.run import run
+#from benchbuild.utils.run import run
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.data.provider.cve.cve_provider import CVEProviderHook
-from varats.paper.paper_config import project_filter_generator
-from varats.settings import bb_cfg
-from varats.utils.project_util import (
+from varats.provider.cve.cve_provider import CVEProviderHook
+from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.project.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
 )
@@ -28,9 +27,10 @@ class FreeBSD(Project, CVEProviderHook):  # type: ignore
 
     # SRC_FILE = NAME + "-{0}".format(VERSION)
     SOURCE = bb.source.Git(
-        "https://github.com/freebsd/freebsd.git",
+        remote="https://github.com/freebsd/freebsd.git",
         refspec="HEAD",
-        version_filter=project_filter_generator("FreeBSD")
+        version_filter=project_filter_generator("FreeBSD"),
+        local="FreeBSD"
     )
 
     @property
@@ -39,7 +39,7 @@ class FreeBSD(Project, CVEProviderHook):  # type: ignore
         # TODO: What to input here? (it is an operating system)
         return wrap_paths_to_binaries(["FreeBSD"])
 
-    def run_tests(self, runner: run) -> None:
+    def run_tests(self) -> None:
         pass
 
     def compile(self) -> None:
@@ -52,7 +52,7 @@ class FreeBSD(Project, CVEProviderHook):  # type: ignore
             with local.env(CC=str(clang)):
                 # Hope, the kernel is enough to show OpenSSL behaviour; 'make universe' takes 167 GiB space...
                 # run(make["buildkernel", "-j", get_number_of_jobs(bb_cfg())])
-                bb.watch(make)("buildkernel", "-j", get_number_of_jobs(bb_cfg())])
+                bb.watch(make)("buildkernel", "-j", get_number_of_jobs(bb_cfg()))
 
     @ classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
