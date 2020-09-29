@@ -22,21 +22,39 @@ class SamplingMethodBase(tp.Generic[SamplingMethodSubType], abc.ABC):
 
     CONFIG_TYPE_NAME = 'sampling_method'
 
-    methods: tp.Dict[str, tp.Type[SamplingMethodSubType]] = dict()
+    _methods: tp.Dict[str, tp.Type[SamplingMethodSubType]] = dict()
 
     @classmethod
     def __init_subclass__(cls, *args: tp.Any, **kwargs: tp.Any) -> None:
         # mypy does not yet fully understand __init_subclass__()
         # https://github.com/python/mypy/issues/4660
         super().__init_subclass__(*args, **kwargs)  # type: ignore
-        cls.methods[cls.name()] = cls
+        cls._methods[cls.name()] = cls
+
+    @classmethod
+    def sampling_method_names(cls) -> tp.List[str]:
+        """
+        Returns a list of all registered sampling method names.
+
+        Returns: list of sampling method names
+        """
+        return list(cls._methods.keys())
 
     @classmethod
     def get_sampling_method_type(
         cls, sampling_method_name: str
     ) -> tp.Type[SamplingMethodSubType]:
         """Maps the name of a `SamplingMethod` to the concret type."""
-        return cls.methods[sampling_method_name]
+        return cls._methods[sampling_method_name]
+
+    @classmethod
+    def sampling_method_types(cls) -> tp.List[tp.Type[SamplingMethodSubType]]:
+        """
+        Returns a list of all registered sampling method types.
+
+        Returns: list of sampling method types
+        """
+        return list(cls._methods.values())
 
     @staticmethod
     def create_sampling_method_from_config_str(
@@ -133,7 +151,9 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
 
         Returns: configured `SamplingMethod`
         """
-        raise NotImplementedError
+        # We don't extend the config with own options, therefore, we don't have
+        # to configure anything here.
+        pass
 
     @classmethod
     def normal_sampling_method_types(
@@ -147,7 +167,7 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
         return list(
             filter(
                 lambda ty: issubclass(ty, NormalSamplingMethod) and ty is
-                not NormalSamplingMethod, cls.methods.values()
+                not NormalSamplingMethod, cls._methods.values()
             )
         )
 
@@ -237,8 +257,14 @@ class SampleN(SamplingStrategy):
     def __init__(self, amount: int = 1) -> None:
         self.__amount = amount
 
+    @property
     def amount(self) -> int:
-        """Amount of options that should be sampled."""
+        """
+        Amount of options that should be sampled.
+
+        >>> SampleN(42).amount
+        42
+        """
         return self.__amount
 
 

@@ -11,12 +11,12 @@ class ConfigurationOption():
     def name(self) -> str:
         """The option name, refering to the feature from which this options
         stems."""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @abc.abstractproperty
     def value(self) -> tp.Any:
         """Current set value of the option."""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def __str__(self) -> str:
         return f"{self.name}: {str(self.value)}"
@@ -58,7 +58,7 @@ class Configuration():
             option_name: config key, i.e., feature name
             value: of the specified feature
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @abc.abstractmethod
     def set_config_option(self, option_name: str, value: tp.Any) -> None:
@@ -69,7 +69,7 @@ class Configuration():
             option_name: config key, i.e., feature name
             value: of the specified feature
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @abc.abstractmethod
     def get_config_value(self, option_name: str) -> tp.Optional[tp.Any]:
@@ -81,7 +81,7 @@ class Configuration():
 
         Returns: the currently set value for the feature
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @abc.abstractmethod
     def options(self) -> tp.List[ConfigurationOption]:
@@ -90,7 +90,7 @@ class Configuration():
 
         Returns: a list of all configuration options
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @abc.abstractmethod
     def dump_to_string(self) -> str:
@@ -102,7 +102,7 @@ class Configuration():
 
         Returns: Configuration as a string
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def __str__(self) -> str:
         return self.dump_to_string()
