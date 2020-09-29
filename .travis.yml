@@ -17,12 +17,12 @@ env:
   - BB_TMP_DIR=$TRAVIS_BUILD_DIR/benchbuild/tmp
 
 install:
-  - pip install ./varats-core
-  - pip install ./varats
-  - pip install -r requirements.txt
-  - pip install codecov
-  - pip install pytest-cov
-  - pip install coverage
+  - pip install --user ./varats-core
+  - pip install --user ./varats
+  - pip install --user -r requirements.txt
+  - pip install --user codecov
+  - pip install --user pytest-cov
+  - pip install --user coverage
   # Currently, mypy-0.782 miss detects type errors, this bug is fixed upstream
   - python3 -m pip install -U git+git://github.com/python/mypy.git
 
