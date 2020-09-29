@@ -329,6 +329,13 @@ def __casestudy_create_or_extend(
     )
     cmap = args['get_cmap']()
 
+    # Rewrite requested distribution with initialized object
+    if 'distribution' in args:
+        sampling_method = NormalSamplingMethod.get_sampling_method_type(
+            args['distribution']
+        )()
+        args['distribution'] = sampling_method
+
     if args['subcommand'] == 'ext':
         case_study = load_case_study_from_file(Path(args['case_study_path']))
 
@@ -357,10 +364,6 @@ def __casestudy_create_or_extend(
 
         # Specify merge_stage as 0 for creating new case studies
         args['merge_stage'] = 0
-
-        sampling_method = NormalSamplingMethod.get_sampling_method_type(
-            args['distribution']
-        )()
 
         case_study = generate_case_study(
             sampling_method, cmap, args['version'], args['project'], **args
