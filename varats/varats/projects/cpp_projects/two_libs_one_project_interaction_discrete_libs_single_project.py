@@ -1,4 +1,5 @@
-"""Project file for TwoLibsOneProjectInteractionDiscreteLibsSingleProject."""
+"""Project file for
+two_libs_one_project_interaction_discrete_libs_single_project."""
 import typing as tp
 from pathlib import Path
 
