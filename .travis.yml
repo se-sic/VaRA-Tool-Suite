@@ -38,6 +38,7 @@ script:
   - ./run_extra_tests.sh
   - coverage combine -a
   - coverage report
+  - ls -lisa
   ######
   # Uninstalling `rich` is a hack to make the code base checkable with mypy.
   # mypy get's confused when discovering rich and by that does no longer any
