@@ -59,7 +59,10 @@ def generate_benchbuild_config(
         'varats.projects.cpp_projects.mongodb',
         'varats.projects.cpp_projects.poppler',
     ]
-    projects_conf.value[:] += ['varats.projects.cpp_projects.doxygen']
+    projects_conf.value[:] += [
+        'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'
+        '.TwoLibsOneProjectInteraction_DiscreteLibs_SingleProject'
+    ]
     projects_conf.value[:] += ['varats.projects.test_projects.basic_tests']
     projects_conf.value[:] += ['varats.projects.test_projects.linker_check']
     projects_conf.value[:] += ['varats.projects.test_projects.taint_tests']
