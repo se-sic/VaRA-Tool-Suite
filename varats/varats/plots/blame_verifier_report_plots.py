@@ -15,27 +15,18 @@ from varats.data.databases.blame_verifier_report_database import (
     BlameVerifierReportDatabase,
     OptLevel,
 )
-from varats.data.databases.file_status_database import FileStatusDatabase
-from varats.data.reports.empty_report import EmptyReport
-from varats.mapping.commit_map import CommitMap
+from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
-from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plot_utils import check_required_args, find_missing_revisions
 from varats.plots.case_study_overview import SUCCESS_COLOR, FAILED_COLOR
-from varats.project.project_util import get_local_project_git
-from varats.report.report import FileStatusExtension, MetaReport
 
 LOG = logging.getLogger(__name__)
 
 
-@check_required_args(["get_cmap", "project"])
-def _get_df_for_case_study(
-    case_study: CaseStudy, **kwargs: tp.Any
-) -> pd.DataFrame:
-    commit_map: CommitMap = kwargs["get_cmap"]
+def _get_df_for_case_study(case_study: CaseStudy) -> pd.DataFrame:
+    project_name = case_study.project_name
+    commit_map = get_commit_map(project_name)
 
-    project_name = kwargs["project"]
     verifier_plot_df = BlameVerifierReportDatabase.get_data_for_project(
         project_name, [
             "revision", "time_id", "opt_level", "total", "successful", "failed",
@@ -52,20 +43,7 @@ def _get_df_for_case_study(
     return verifier_plot_df
 
 
-def _load_dataframes_of_projects(
-    current_config: PC.PaperConfig, **kwargs: tp.Any
-) -> tp.List[pd.DataFrame]:
-    all_dataframes: tp.List[pd.DataFrame] = []
-    all_case_studies = current_config.get_all_case_studies()
-
-    for case_study in all_case_studies:
-        current_df = _get_df_for_case_study(case_study, **kwargs)
-        all_dataframes.append(current_df)
-
-    return all_dataframes
-
-
-def _extract_data_from_dataframes(
+def _extract_data_from_dataframe(
     verifier_plot_df: pd.DataFrame, opt_level: OptLevel
 ) -> tp.Dict[str, tp.Any]:
 
@@ -99,6 +77,16 @@ def _extract_data_from_dataframes(
     return result_data
 
 
+def _load_all_dataframes(current_config: PC.PaperConfig):
+    all_case_studies = current_config.get_all_case_studies()
+    all_dataframes: tp.List[pd.DataFrame] = []
+
+    for case_study in sorted(all_case_studies, key=lambda cs: cs.project_name):
+        all_dataframes.append(_get_df_for_case_study(case_study))
+
+    return all_dataframes
+
+
 def _verifier_plot(
     opt_level: OptLevel,
     extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
@@ -116,15 +104,13 @@ def _verifier_plot(
     if extra_plot_cfg is not None:
         plot_cfg.update(extra_plot_cfg)
 
-    verifier_plot_df_list = _load_dataframes_of_projects(
-        current_config, **kwargs
-    )
+    verifier_plot_df_list = _load_all_dataframes(current_config)
 
     final_plot_data: tp.List[tp.Dict[str, tp.Any]] = []
 
     for dataframe in verifier_plot_df_list:
         final_plot_data.append(
-            _extract_data_from_dataframes(dataframe, opt_level)
+            _extract_data_from_dataframe(dataframe, opt_level)
         )
 
     grid = gs.GridSpec(len(final_plot_data), 1)
