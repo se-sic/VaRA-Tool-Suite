@@ -43,7 +43,7 @@ check_err
 $COVERAGE $(which vara-cs) ext paper_configs/test_extra/gravity_0.case_study -p gravity simple_add  --extra-revs 0dd8313ea7bce --merge-stage 3 #gravity/
 check_err
 
-$COVERAGE $(which vara-cs) ext paper_configs/test_extra/gravity_0.case_study -p gravity distrib_add --distribution uniform --num-rev 5 #gravity/
+$COVERAGE $(which vara-cs) ext paper_configs/test_extra/gravity_0.case_study -p gravity distrib_add --distribution UniformSamplingMethod --num-rev 5 #gravity/
 check_err
 
 $COVERAGE $(which vara-cs) ext paper_configs/test_extra/gravity_0.case_study -p gravity release_add --release-type major --merge-stage 4 #gravity/
