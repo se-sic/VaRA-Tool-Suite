@@ -4,6 +4,8 @@ include =
   */varats-core/*
   */tests/*
 
+find_namespace_packages = True
+
 [paths]
 source =
   varats/varats/
