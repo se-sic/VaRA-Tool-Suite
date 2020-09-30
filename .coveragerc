@@ -7,7 +7,7 @@ source =
 source_pkgs = varats
 
 parallel = True
-relative_files = True
+timid = True
 
 [paths]
 source =
