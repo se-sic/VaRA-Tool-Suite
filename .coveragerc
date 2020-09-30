@@ -4,7 +4,12 @@ include =
   */varats-core/*
   */tests/*
 
-find_namespace_packages = True
+source =
+  varats/varats/
+  varats-core/varats/
+
+source_pkgs =
+  varats
 
 [paths]
 source =
