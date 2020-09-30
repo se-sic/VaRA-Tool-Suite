@@ -7,7 +7,6 @@ source =
 source_pkgs = varats
 
 parallel = True
-timid = True
 
 [paths]
 source =
