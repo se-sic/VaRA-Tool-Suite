@@ -315,7 +315,6 @@ def __casestudy_create_or_extend(
 ) -> None:
     if "project" not in args and "git_path" not in args:
         parser.error("need --project or --git-path")
-        return
 
     if "project" in args and "git_path" not in args:
         args['git_path'] = str(get_local_project_git_path(args['project']))
