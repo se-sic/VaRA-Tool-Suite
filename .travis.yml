@@ -31,14 +31,10 @@ script:
   - pre-commit run --from-ref origin/vara-dev --to-ref HEAD
   - mkdir -p benchbuild
   - coverage run -p -m pytest varats varats-core tests
-  # - coverage combine -a
-  # - coverage report
-  #- pytest -p pytest_cov --cov varats-core --cov varats --cov tests
   - rm -rf benchbuild
   - ./run_extra_tests.sh
   - coverage combine -a --rcfile=.coveragerc
   - coverage report
-  - ls -lisa
   ######
   # Uninstalling `rich` is a hack to make the code base checkable with mypy.
   # mypy get's confused when discovering rich and by that does no longer any
