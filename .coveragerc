@@ -1,10 +1,6 @@
 [run]
-include =
-  */varats/*
-  */varats-core/*
-  */tests/*
-
 source =
+  tests/
   varats/varats/
   varats-core/varats/
 
@@ -14,6 +10,7 @@ source_pkgs =
 [paths]
 source =
   varats/varats/
+  varats-core/varats/
   */site-packages/varats/
   */site-packages/varats-core/
 
