@@ -16,7 +16,7 @@ function check_err {
   fi
 }
 
-COVERAGE='coverage run -p'
+COVERAGE='coverage run -p --rcfile=.coveragerc'
 
 # Smoke tests
 $COVERAGE $(which vara-buildsetup) vara -c
