@@ -1,6 +1,7 @@
 [run]
 include =
   */varats/*
+  */varats-core/*
   */tests/*
 
 [paths]
