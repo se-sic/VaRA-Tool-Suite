@@ -13,7 +13,7 @@ LOG = logging.getLogger(__name__)
 
 
 class ConfigurationMap():
-    """A configuration map builds a relation between an unique ID and the
+    """A configuration map builds a relation between a unique ID and the
     corresponding project configuration."""
 
     def __init__(self) -> None:

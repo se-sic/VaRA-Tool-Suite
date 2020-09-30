@@ -15,7 +15,7 @@ class ConfigurationOption():
 
     @abc.abstractproperty
     def value(self) -> tp.Any:
-        """Current set value of the option."""
+        """Currently set value of the option."""
         raise NotImplementedError  # pragma: no cover
 
     def __str__(self) -> str:

@@ -16,7 +16,7 @@ class SamplingMethodBase(tp.Generic[SamplingMethodSubType], abc.ABC):
     Represents the sampling configuration added as a base class to all sampling
     methods.
 
-    This class is designed make the configuration of a sampling method
+    This class is designed to make the configuration of a sampling method
     persitable.
     """
 
@@ -110,8 +110,13 @@ class SamplingMethodBase(tp.Generic[SamplingMethodSubType], abc.ABC):
         return str(partial_config)
 
     def _extend_config(self) -> tp.Dict[str, tp.Any]:  # pylint: disable=R0201
-        """Returns a configuration dict with config values from the sub class
-        that should be persisted."""
+        """
+        Returns a configuration dict with config values from the sub class
+        that should be persisted.
+        
+        Implementations in subclasses should always call 
+        `super()._extend_config()` first.
+        """
         return dict()
 
     def _configure_sampling_method(self, config: tp.Dict[str, str]) -> None:
@@ -138,8 +143,13 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
         pass
 
     def _extend_config(self) -> tp.Dict[str, tp.Any]:
-        """Returns a configuration dict with config values from the sub class
-        that should be persisted."""
+        """
+        Returns a configuration dict with config values from the sub class
+        that should be persisted.
+        
+        Implementations in subclasses should always call 
+        `super()._extend_config()` first.
+        """
         partial_config = super()._extend_config()
         return partial_config
 
@@ -302,8 +312,13 @@ class FeatureSamplingMethod(SamplingMethodBase['FeatureSamplingMethod']):
         self.__solver = solver
 
     def _extend_config(self) -> tp.Dict[str, tp.Any]:
-        """Returns a configuration dict with config values from the sub class
-        that should be persisted."""
+        """
+        Returns a configuration dict with config values from the sub class
+        that should be persisted.
+        
+        Implementations in subclasses should always call 
+        `super()._extend_config()` first.
+        """
         partial_config = super()._extend_config()
         partial_config["solver"] = self.__solver
         return partial_config
