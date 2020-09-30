@@ -111,10 +111,10 @@ class SamplingMethodBase(tp.Generic[SamplingMethodSubType], abc.ABC):
 
     def _extend_config(self) -> tp.Dict[str, tp.Any]:  # pylint: disable=R0201
         """
-        Returns a configuration dict with config values from the sub class
-        that should be persisted.
-        
-        Implementations in subclasses should always call 
+        Returns a configuration dict with config values from the sub class that
+        should be persisted.
+
+        Implementations in subclasses should always call
         `super()._extend_config()` first.
         """
         return dict()
@@ -144,10 +144,10 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
 
     def _extend_config(self) -> tp.Dict[str, tp.Any]:
         """
-        Returns a configuration dict with config values from the sub class
-        that should be persisted.
-        
-        Implementations in subclasses should always call 
+        Returns a configuration dict with config values from the sub class that
+        should be persisted.
+
+        Implementations in subclasses should always call
         `super()._extend_config()` first.
         """
         partial_config = super()._extend_config()
@@ -313,10 +313,10 @@ class FeatureSamplingMethod(SamplingMethodBase['FeatureSamplingMethod']):
 
     def _extend_config(self) -> tp.Dict[str, tp.Any]:
         """
-        Returns a configuration dict with config values from the sub class
-        that should be persisted.
-        
-        Implementations in subclasses should always call 
+        Returns a configuration dict with config values from the sub class that
+        should be persisted.
+
+        Implementations in subclasses should always call
         `super()._extend_config()` first.
         """
         partial_config = super()._extend_config()
