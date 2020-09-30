@@ -23,7 +23,9 @@ from varats.plots.case_study_overview import SUCCESS_COLOR, FAILED_COLOR
 LOG = logging.getLogger(__name__)
 
 
-def _get_df_for_case_study(case_study: CaseStudy) -> pd.DataFrame:
+def _get_named_df_for_case_study(
+    case_study: CaseStudy
+) -> tp.Dict[str, tp.Union[str, pd.DataFrame]]:
     project_name = case_study.project_name
     commit_map = get_commit_map(project_name)
 
@@ -40,35 +42,43 @@ def _get_df_for_case_study(case_study: CaseStudy) -> pd.DataFrame:
         # Need more than one data point
         raise PlotDataEmpty
 
-    return verifier_plot_df
+    named_verifier_df = {
+        "project_name": project_name,
+        "dataframe": verifier_plot_df
+    }
+
+    return named_verifier_df
 
 
-def _extract_data_from_dataframe(
-    verifier_plot_df: pd.DataFrame, opt_level: OptLevel
-) -> tp.Dict[str, tp.Any]:
+def _extract_data_from_named_dataframe(
+    named_verifier_plot_df: tp.Dict[str, tp.Union[str, pd.DataFrame]],
+    opt_level: OptLevel
+) -> tp.Tuple[str, tp.Dict[str, tp.Any]]:
+    current_project_name = str(named_verifier_plot_df["project_name"])
+    current_verifier_plot_df = pd.DataFrame(named_verifier_plot_df["dataframe"])
 
     # Filter results for current optimization level
-    verifier_plot_df = verifier_plot_df.loc[verifier_plot_df['opt_level'] ==
-                                            opt_level.value]
+    current_verifier_plot_df = current_verifier_plot_df.loc[
+        current_verifier_plot_df['opt_level'] == opt_level.value]
 
     # Raise exception if no data points were found after opt level filtering
-    if verifier_plot_df.empty or len(
-        np.unique(verifier_plot_df['revision'])
+    if current_verifier_plot_df.empty or len(
+        np.unique(current_verifier_plot_df['revision'])
     ) == 1:
         # Need more than one data point
         raise PlotDataEmpty
 
-    verifier_plot_df.sort_values(by=['time_id'], inplace=True)
+    current_verifier_plot_df.sort_values(by=['time_id'], inplace=True)
 
-    revisions = verifier_plot_df['revision']
-    successes = verifier_plot_df['successful'].to_numpy()
-    failures = verifier_plot_df['failed'].to_numpy()
-    total = verifier_plot_df['total'].to_numpy()
+    revisions = current_verifier_plot_df['revision']
+    successes = current_verifier_plot_df['successful'].to_numpy()
+    failures = current_verifier_plot_df['failed'].to_numpy()
+    total = current_verifier_plot_df['total'].to_numpy()
 
     successes_in_percent = successes / total
     failures_in_percent = failures / total
 
-    result_data: tp.Dict[str, tp.Any] = {
+    result_data = current_project_name, {
         "revisions": revisions,
         "successes_in_percent": successes_in_percent,
         "failures_in_percent": failures_in_percent
@@ -77,22 +87,23 @@ def _extract_data_from_dataframe(
     return result_data
 
 
-def _load_all_dataframes(current_config: PC.PaperConfig):
+def _load_all_named_dataframes(
+    current_config: PC.PaperConfig
+) -> tp.List[tp.Dict[str, tp.Union[str, pd.DataFrame]]]:
     all_case_studies = current_config.get_all_case_studies()
-    all_dataframes: tp.List[pd.DataFrame] = []
+    all_named_dataframes: tp.List[tp.Dict[str, tp.Union[str,
+                                                        pd.DataFrame]]] = []
 
     for case_study in sorted(all_case_studies, key=lambda cs: cs.project_name):
-        all_dataframes.append(_get_df_for_case_study(case_study))
+        all_named_dataframes.append(_get_named_df_for_case_study(case_study))
 
-    return all_dataframes
+    return all_named_dataframes
 
 
 def _verifier_plot(
     opt_level: OptLevel,
-    extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
-    **kwargs
+    extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None
 ) -> None:
-
     current_config = PC.get_paper_config()
 
     plot_cfg = {
@@ -104,13 +115,15 @@ def _verifier_plot(
     if extra_plot_cfg is not None:
         plot_cfg.update(extra_plot_cfg)
 
-    verifier_plot_df_list = _load_all_dataframes(current_config)
+    # The project name of the dataframes is stored to remember the
+    # correct title of the subplots
+    named_verifier_plot_df_list = _load_all_named_dataframes(current_config)
 
-    final_plot_data: tp.List[tp.Dict[str, tp.Any]] = []
+    final_plot_data: tp.List[tp.Tuple[str, tp.Dict[str, tp.Any]]] = []
 
-    for dataframe in verifier_plot_df_list:
+    for named_dataframe in named_verifier_plot_df_list:
         final_plot_data.append(
-            _extract_data_from_dataframe(dataframe, opt_level)
+            _extract_data_from_named_dataframe(named_dataframe, opt_level)
         )
 
     grid = gs.GridSpec(len(final_plot_data), 1)
@@ -120,19 +133,18 @@ def _verifier_plot(
     for i, plot_data in enumerate(final_plot_data):
         main_axis = fig.add_subplot(grid[i])
 
-        fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
-        fig.suptitle(
-            str(plot_cfg['fig_title']) + f' - Project {kwargs["project"]}',
-            fontsize=8
+        fig.subplots_adjust(top=0.95, hspace=1.1, right=0.95, left=0.07)
+        main_axis.title.set_text(
+            str(plot_cfg['fig_title']) + f' - Project {plot_data[0]}'
         )
         main_axis.set_xlabel('Revisions')
         main_axis.set_ylabel('Success/Failure rate in %')
         main_axis.yaxis.set_major_formatter(mtick.PercentFormatter(1.0))
 
         main_axis.stackplot(
-            plot_data["revisions"],
-            plot_data["successes_in_percent"],
-            plot_data["failures_in_percent"],
+            plot_data[1]["revisions"],
+            plot_data[1]["successes_in_percent"],
+            plot_data[1]["failures_in_percent"],
             labels=['successes', 'failures'],
             colors=[SUCCESS_COLOR, FAILED_COLOR],
             alpha=0.5
@@ -189,7 +201,6 @@ class BlameVerifierReportNoOptPlot(BlameVerifierReportPlot):
         _verifier_plot(
             opt_level=OptLevel.NO_OPT,
             extra_plot_cfg=extra_plot_cfg,
-            **self.plot_kwargs
         )
 
 
@@ -209,5 +220,4 @@ class BlameVerifierReportOptPlot(BlameVerifierReportPlot):
         _verifier_plot(
             opt_level=OptLevel.OPT,
             extra_plot_cfg=extra_plot_cfg,
-            **self.plot_kwargs
         )
