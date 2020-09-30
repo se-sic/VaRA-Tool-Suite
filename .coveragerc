@@ -4,8 +4,10 @@ source =
   varats/varats/
   varats-core/varats/
 
-source_pkgs =
-  varats
+source_pkgs = varats
+
+parallel = True
+relative_files = True
 
 [paths]
 source =
