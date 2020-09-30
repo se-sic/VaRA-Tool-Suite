@@ -2,6 +2,7 @@
 import abc
 import logging
 import typing as tp
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import matplotlib.style as style
@@ -126,14 +127,13 @@ def _verifier_plot(
             _extract_data_from_named_dataframe(named_dataframe, opt_level)
         )
 
-    grid = gs.GridSpec(len(final_plot_data), 1)
-
     fig = plt.figure()
+    grid = gs.GridSpec(len(final_plot_data), 1)
 
     for i, plot_data in enumerate(final_plot_data):
         main_axis = fig.add_subplot(grid[i])
+        main_axis.grid(linestyle='--')
 
-        fig.subplots_adjust(top=0.95, hspace=1.1, right=0.95, left=0.07)
         main_axis.title.set_text(
             str(plot_cfg['fig_title']) + f' - Project {plot_data[0]}'
         )
@@ -171,6 +171,7 @@ def _verifier_plot(
             fontsize=plot_cfg['legend_size'],
             family='monospace'
         )
+        plt.tight_layout()
 
 
 class BlameVerifierReportPlot(Plot):
@@ -221,3 +222,29 @@ class BlameVerifierReportOptPlot(BlameVerifierReportPlot):
             opt_level=OptLevel.OPT,
             extra_plot_cfg=extra_plot_cfg,
         )
+
+    def save(
+        self, path: tp.Optional[Path] = None, filetype: str = 'svg'
+    ) -> None:
+        """
+        Save the current plot to a file.
+
+        Args:
+            path: The path where the file is stored (excluding the file name).
+            filetype: The file type of the plot.
+        """
+        self.plot(False)
+
+        if path is None:
+            plot_dir = Path(self.plot_kwargs["plot_dir"])
+        else:
+            plot_dir = path
+
+        # TODO (se-passau/VaRA#545): refactor dpi into plot_config. see.
+        plt.savefig(
+            plot_dir / f"{self.name}.{filetype}",
+            dpi=1200,
+            format=filetype,
+            bbox_inches='tight'
+        )
+        plt.close()
