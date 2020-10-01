@@ -42,7 +42,7 @@ class BCFileExtensions(Enum):
     OPT = 'O2'
     TBAA = "TBAA"
 
-    def __lt__(self, other) -> bool:
+    def __lt__(self, other: tp.Any) -> bool:
         if isinstance(other, BCFileExtensions):
             return self.value < other.value
 
