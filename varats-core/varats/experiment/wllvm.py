@@ -37,6 +37,8 @@ class BCFileExtensions(Enum):
     requirements, e.g., was compiled with debug metadata or compiled with
     optimizations.
     """
+    value: str
+
     DEBUG = 'dbg'
     NO_OPT = 'O0'
     OPT = 'O2'
