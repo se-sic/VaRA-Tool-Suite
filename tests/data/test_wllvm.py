@@ -5,6 +5,24 @@ import unittest
 from varats.experiment.wllvm import Extract, BCFileExtensions
 
 
+class TestBCFileExtensions(unittest.TestCase):
+    """Test if the Extension enum is correctly setup."""
+
+    def test_ordering(self):
+        """Checks if the extension are ordered/sorted correclty."""
+        exts = [
+            BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
+            BCFileExtensions.DEBUG
+        ]
+
+        self.assertEqual(
+            sorted(exts), [
+                BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
+                BCFileExtensions.DEBUG
+            ]
+        )
+
+
 class TestExtract(unittest.TestCase):
     """Test if the extraction of a llvm bitcode file from the project is
     correct."""
@@ -28,7 +46,7 @@ class TestExtract(unittest.TestCase):
         self.test_bc_file_extensions = [
             BCFileExtensions.DEBUG, BCFileExtensions.OPT
         ]
-        self.mock_bc_file_name = f"{self.mock_bc_file_name}dbg_O2.bc"
+        self.mock_bc_file_name = f"{self.mock_bc_file_name}O2_dbg.bc"
 
         # When
         actual = Extract.get_bc_file_name(
@@ -46,7 +64,7 @@ class TestExtract(unittest.TestCase):
         self.test_bc_file_extensions = [
             BCFileExtensions.DEBUG, BCFileExtensions.NO_OPT
         ]
-        self.mock_bc_file_name = f"{self.mock_bc_file_name}dbg_O0.bc"
+        self.mock_bc_file_name = f"{self.mock_bc_file_name}O0_dbg.bc"
 
         # When
         actual = Extract.get_bc_file_name(
