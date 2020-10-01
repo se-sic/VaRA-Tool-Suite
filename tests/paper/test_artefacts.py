@@ -61,7 +61,7 @@ class TestArtefacts(unittest.TestCase):
         """Check if artefact is serialized correctly."""
         artefact_dict = self.artefact.get_dict()
         self.assertEqual(artefact_dict['artefact_type'], 'plot')
-        self.assertEqual(artefact_dict['artefact_type_version'], 1)
+        self.assertEqual(artefact_dict['artefact_type_version'], '1')
         self.assertEqual(artefact_dict['file_format'], 'png')
         self.assertEqual(artefact_dict['name'], 'overview')
         self.assertEqual(artefact_dict['output_path'], 'some/path')
