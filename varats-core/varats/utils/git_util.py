@@ -294,9 +294,15 @@ def __calc_code_churn_range_impl(
             churn_values[rev] = (0, 0, 0)
         for match in GIT_LOG_MATCHER.finditer(stdout):
             commit_hash = match.group('hash')
-            files_changed = int(match.group('files'))
-            insertions = int(match.group('insertions'))
-            deletions = int(match.group('deletions'))
+
+            def value_or_zero(match_result: tp.Any) -> int:
+                if match_result is not None:
+                    return int(match_result)
+                return 0
+
+            files_changed = value_or_zero(match.group('files'))
+            insertions = value_or_zero(match.group('insertions'))
+            deletions = value_or_zero(match.group('deletions'))
             churn_values[commit_hash] = (files_changed, insertions, deletions)
 
     return churn_values
@@ -391,9 +397,15 @@ def calc_code_churn(
         # missing from the churn data
         match = GIT_DIFF_MATCHER.match(stdout)
         if match:
-            files_changed = int(match.group('files'))
-            insertions = int(match.group('insertions'))
-            deletions = int(match.group('deletions'))
+
+            def value_or_zero(match_result: tp.Any) -> int:
+                if match_result is not None:
+                    return int(match_result)
+                return 0
+
+            files_changed = value_or_zero(match.group('files'))
+            insertions = value_or_zero(match.group('insertions'))
+            deletions = value_or_zero(match.group('deletions'))
             return files_changed, insertions, deletions
 
     return 0, 0, 0
