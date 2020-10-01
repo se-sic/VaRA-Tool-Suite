@@ -72,7 +72,7 @@ class Artefact(ABC):
             str(vara_cfg()['paper_config']['current_config'])
         ) / self.__output_path
 
-    def get_dict(self) -> tp.Dict[str, str]:
+    def get_dict(self) -> tp.Dict[str, tp.Union[str, int]]:
         """
         Construct a dict from this artefact for easy export to yaml.
 
@@ -84,7 +84,7 @@ class Artefact(ABC):
         """
         return {
             'artefact_type': self.__artefact_type.name,
-            'artefact_type_version': str(self.__artefact_type.value[1]),
+            'artefact_type_version': self.__artefact_type.value[1],
             'name': self.__name,
             'output_path': str(self.__output_path)
         }
