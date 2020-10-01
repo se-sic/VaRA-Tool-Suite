@@ -5,7 +5,10 @@ import logging
 import os
 import sys
 
-from varats.tools.bb_config import generate_benchbuild_config
+from varats.tools.bb_config import (
+    generate_benchbuild_config,
+    get_bb_config_file_path,
+)
 from varats.utils.cli_util import cli_yn_choice
 from varats.utils.settings import save_config, vara_cfg
 
@@ -48,10 +51,7 @@ def main() -> None:
         LOG.info(f"Setting BB path to: {vara_cfg()['benchbuild_root']}")
         save_config()
 
-    generate_benchbuild_config(
-        vara_cfg(),
-        str(vara_cfg()["benchbuild_root"]) + "/.benchbuild.yml"
-    )
+    generate_benchbuild_config(vara_cfg(), get_bb_config_file_path())
 
 
 if __name__ == '__main__':

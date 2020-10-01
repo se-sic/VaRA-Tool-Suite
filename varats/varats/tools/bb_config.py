@@ -8,11 +8,13 @@ from copy import deepcopy
 from os import getcwd, makedirs, path
 
 import benchbuild.utils.settings as s
+from plumbum import local, LocalPath
 
 from varats.tools.tool_util import (
     get_supported_research_tool_names,
     get_research_tool_type,
 )
+from varats.utils.settings import vara_cfg
 
 
 def generate_benchbuild_config(
@@ -124,3 +126,24 @@ def generate_benchbuild_config(
         makedirs(bc_cache_path)
 
     new_bb_cfg.store(bb_config_path)
+
+
+def get_bb_config_file_path() -> LocalPath:
+    """
+    Get the path to the benchbuild config file.
+
+    Returns:
+        the path to the benchbuild config file
+    """
+    return local.path(str(vara_cfg()["benchbuild_root"])) / ".benchbuild.yml"
+
+
+def load_bb_config() -> None:
+    """
+    Manually load the benchbuild config.
+
+    This is useful for tools that use benchbuild and need benchbuild to use our
+    config instead of the default config.
+    """
+    from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
+    BB_CFG.load(get_bb_config_file_path())

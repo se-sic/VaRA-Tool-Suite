@@ -5,6 +5,8 @@ import abc
 import typing as tp
 from pathlib import Path
 
+from benchbuild.environments.domain.declarative import ContainerImage
+
 from varats.tools.research_tools.vara_manager import (
     BuildType,
     add_remote,
@@ -352,4 +354,16 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
 
         Returns:
             True, if the tool was correctly installed
+        """
+
+    @abc.abstractmethod
+    def add_container_layers(self, layers: ContainerImage) -> ContainerImage:
+        """
+        Add the layers required for this research tool to the given container.
+
+        Args:
+            layers: the container to add the layers to
+
+        Returns:
+            the container with the added layers
         """

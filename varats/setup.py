@@ -57,6 +57,7 @@ setup(
             'vara-art = varats.tools.driver_artefacts:main',
             'vara-buildsetup = varats.tools.driver_build_setup:main',
             'vara-config = varats.tools.driver_config:main',
+            'vara-container = varats.tools.driver_container:main',
             'vara-cs = varats.tools.driver_casestudy:main',
             'vara-develop = varats.tools.driver_develop:main',
             'vd = varats.tools.driver_develop:main',

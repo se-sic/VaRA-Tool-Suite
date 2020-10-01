@@ -33,6 +33,25 @@ _CFG = s.Configuration(
     }
 )
 
+_CFG["container"] = {
+    "research_tool": {
+        "desc":
+            "The currently active research tool."
+            "Base containers come with this tool preinstalled.",
+        "default": None
+    },
+    "from_source": {
+        "desc":
+            "Whether to install varats in the container from a local "
+            "checkout or pip.",
+        "default": False
+    },
+    "varats_source": {
+        "desc": "The local checkout of varats to use for the source install.",
+        "default": None
+    }
+}
+
 _CFG["vara"] = {
     "version": {
         "desc": "VaRA version.",
