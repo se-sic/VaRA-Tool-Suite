@@ -234,6 +234,8 @@ class ArtefactType(Enum):
     of the class responsible for that kind of artefact and a version number to
     allow evolution of artefacts.
     """
+    value: tp.Tuple[Artefact, int]
+
     plot = (PlotArtefact, 1)
     table = (TableArtefact, 1)
 
