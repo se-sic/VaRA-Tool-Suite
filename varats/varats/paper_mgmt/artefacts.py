@@ -84,7 +84,7 @@ class Artefact(ABC):
         """
         return {
             'artefact_type': self.__artefact_type.name,
-            'artefact_type_version': self.__artefact_type.value[1],
+            'artefact_type_version': str(self.__artefact_type.value[1]),
             'name': self.__name,
             'output_path': str(self.__output_path)
         }
