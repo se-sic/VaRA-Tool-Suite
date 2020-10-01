@@ -3,12 +3,36 @@
 import re
 import typing as tp
 from enum import Enum
+from pathlib import Path
 
 import pygit2
 from benchbuild.utils.cmd import git
 from plumbum import local
 
 from varats.project.project_util import get_local_project_git
+
+################################################################################
+# Git interaction helpers
+
+
+def get_current_branch(repo_folder: tp.Optional[Path] = None) -> str:
+    """
+    Get the current branch of a repository, e.g., HEAD.
+
+    Args:
+        repo_folder: where the git repository is located
+
+    Returns: branch name
+    """
+    if repo_folder is None or repo_folder == Path(''):
+        return tp.cast(str, git("rev-parse", "--abbrev-ref", "HEAD").strip())
+
+    with local.cwd(repo_folder):
+        return tp.cast(str, git("rev-parse", "--abbrev-ref", "HEAD").strip())
+
+
+################################################################################
+# Git interaction classes
 
 
 class ChurnConfig():
