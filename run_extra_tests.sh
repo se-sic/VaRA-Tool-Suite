@@ -64,10 +64,10 @@ check_err
 $COVERAGE $(which vara-art) show overview
 check_err
 
+# Tests that we can add extra refs from other branches if a refspec is specified
 $COVERAGE $(which vara-pc) create test_extra_refs
 check_err
 
-# Tests that we can add extra refs from other branches if a refspec is specified
 $COVERAGE $(which vara-cs) gen paper_configs/test_extra_refs/ -p test-taint-tests UniformSamplingMethod --num-rev 0 --extra-revs f3729ae7f861dab7975f5c
 check_err
 
