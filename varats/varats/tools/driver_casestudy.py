@@ -10,7 +10,7 @@ from pathlib import Path
 from argparse_utils import enum_action
 from plumbum import FG, colors, local
 
-from varats.base.sampling_method import SamplingMethod
+from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.discover_reports import initialize_reports
 from varats.mapping.commit_map import create_lazy_commit_map_loader
 from varats.paper.case_study import load_case_study_from_file, store_case_study
@@ -180,7 +180,13 @@ def __create_gen_parser(sub_parsers: _SubParsersAction) -> None:
         "paper_config_path",
         help="Path to paper_config folder (e.g., paper_configs/ase-17)"
     )
-    gen_parser.add_argument("distribution", action=enum_action(SamplingMethod))
+    gen_parser.add_argument(
+        "distribution",
+        choices=[
+            x.name()
+            for x in NormalSamplingMethod.normal_sampling_method_types()
+        ]
+    )
     gen_parser.add_argument(
         "-v", "--version", type=int, default=0, help="Case study version."
     )
@@ -198,7 +204,11 @@ def __create_ext_parser(sub_parsers: _SubParsersAction) -> None:
         help="Extender strategy"
     )
     ext_parser.add_argument(
-        "--distribution", action=enum_action(SamplingMethod)
+        "--distribution",
+        choices=[
+            x.name()
+            for x in NormalSamplingMethod.normal_sampling_method_types()
+        ]
     )
     ext_parser.add_argument("--release-type", action=enum_action(ReleaseType))
     ext_parser.add_argument(
@@ -305,7 +315,6 @@ def __casestudy_create_or_extend(
 ) -> None:
     if "project" not in args and "git_path" not in args:
         parser.error("need --project or --git-path")
-        return
 
     if "project" in args and "git_path" not in args:
         args['git_path'] = str(get_local_project_git_path(args['project']))
@@ -318,6 +327,13 @@ def __casestudy_create_or_extend(
         args['start'] if 'start' in args else None
     )
     cmap = args['get_cmap']()
+
+    # Rewrite requested distribution with initialized object
+    if 'distribution' in args:
+        sampling_method = NormalSamplingMethod.get_sampling_method_type(
+            args['distribution']
+        )()
+        args['distribution'] = sampling_method
 
     if args['subcommand'] == 'ext':
         case_study = load_case_study_from_file(Path(args['case_study_path']))
@@ -349,7 +365,7 @@ def __casestudy_create_or_extend(
         args['merge_stage'] = 0
 
         case_study = generate_case_study(
-            args['distribution'], cmap, args['version'], args['project'], **args
+            sampling_method, cmap, args['version'], args['project'], **args
         )
 
         store_case_study(case_study, args['paper_config_path'])
