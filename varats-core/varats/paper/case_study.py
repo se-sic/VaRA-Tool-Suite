@@ -4,7 +4,13 @@ analysed for a project."""
 import typing as tp
 from pathlib import Path
 
-from varats.base.sampling_method import SamplingMethod
+from varats.base.sampling_method import (
+    NormalSamplingMethod,
+    UniformSamplingMethod,
+    HalfNormalSamplingMethod,
+    SamplingMethodBase,
+    SamplingMethod,
+)
 from varats.base.version_header import VersionHeader
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, MetaReport
@@ -33,7 +39,7 @@ class HashIDTuple():
         """Get a dict representation of this commit and id."""
         return dict(commit_hash=self.commit_hash, commit_id=self.commit_id)
 
-    def __str(self) -> str:
+    def __str__(self) -> str:
         return "({commit_id}: #{commit_hash})"\
             .format(commit_hash=self.commit_hash,
                     commit_id=self.commit_id)
@@ -85,7 +91,7 @@ class CSStage():
         return self.__sampling_method
 
     @sampling_method.setter
-    def sampling_method(self, sampling_method: SamplingMethod) -> None:
+    def sampling_method(self, sampling_method: NormalSamplingMethod) -> None:
         """Setter for the sampling method of the stage."""
         self.__sampling_method = sampling_method
 
@@ -143,7 +149,7 @@ class CSStage():
         if self.name is not None:
             stage_dict['name'] = self.name
         if self.sampling_method is not None:
-            stage_dict['sampling_method'] = self.sampling_method.name
+            stage_dict['sampling_method'] = self.sampling_method.name()
         if self.release_type is not None:
             stage_dict['release_type'] = self.release_type.name
         revision_list = [revision.get_dict() for revision in self.__revisions]
@@ -337,7 +343,7 @@ class CaseStudy():
         revisions: tp.List[tp.Tuple[str, int]],
         stage_num: int = 0,
         sort_revs: bool = True,
-        sampling_method: tp.Optional[SamplingMethod] = None,
+        sampling_method: tp.Optional[NormalSamplingMethod] = None,
         release_type: tp.Optional[ReleaseType] = None
     ) -> None:
         """
@@ -421,12 +427,35 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
                     raw_hash_id_tuple['commit_id']
                 )
             )
-        sampling_method = raw_stage.get('sampling_method') or None
+
+        sampling_method_name = raw_stage.get('sampling_method') or None
+
+        def create_correct_sampling_method(
+            sampling_method_name: str
+        ) -> SamplingMethod:
+            # TODO (sattlerf): remove old sampling look-up code after everyone
+            # migrated to the new case study style.
+            if sampling_method_name == 'uniform':
+                return UniformSamplingMethod()
+            if sampling_method_name == 'half_norm':
+                return HalfNormalSamplingMethod()
+
+            return SamplingMethodBase[SamplingMethod].get_sampling_method_type(
+                sampling_method_name
+            )()
+
+        if sampling_method_name:
+            sampling_method: tp.Optional[SamplingMethod
+                                        ] = create_correct_sampling_method(
+                                            sampling_method_name
+                                        )
+        else:
+            sampling_method = None
+
         release_type = raw_stage.get('release_type') or None
         stages.append(
             CSStage(
-                raw_stage.get('name') or None, SamplingMethod[sampling_method]
-                if sampling_method is not None else None,
+                raw_stage.get('name') or None, sampling_method,
                 ReleaseType[release_type] if release_type is not None else None,
                 hash_id_tuples
             )
