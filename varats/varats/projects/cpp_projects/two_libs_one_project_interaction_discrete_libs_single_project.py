@@ -1,5 +1,6 @@
-"""Project file for
-two_libs_one_project_interaction_discrete_libs_single_project."""
+"""Project implementation for the
+TwoLibsOneProjectInteractionDiscreteLibsSingleProject library analysis
+repository."""
 import typing as tp
 from pathlib import Path
 
