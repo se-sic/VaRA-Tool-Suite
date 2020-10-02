@@ -8,11 +8,14 @@ from enum import Enum
 from itertools import groupby
 from pathlib import Path
 
-import numpy as np
 import pygit2
 from benchbuild import Project  # type: ignore
 
-from varats.base.sampling_method import SamplingMethod
+from varats.base.sampling_method import (
+    NormalSamplingMethod,
+    UniformSamplingMethod,
+    HalfNormalSamplingMethod,
+)
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot_utils import check_required_args
@@ -276,8 +279,8 @@ def get_unique_cs_name(case_studies: tp.List[CaseStudy]) -> tp.List[str]:
 
 @check_required_args(['extra_revs', 'git_path'])
 def generate_case_study(
-    sampling_method: SamplingMethod, cmap: CommitMap, case_study_version: int,
-    project_name: str, **kwargs: tp.Any
+    sampling_method: NormalSamplingMethod, cmap: CommitMap,
+    case_study_version: int, project_name: str, **kwargs: tp.Any
 ) -> CaseStudy:
     """
     Generate a case study for a given project.
@@ -302,8 +305,9 @@ def generate_case_study(
         extend_with_revs_per_year(case_study, cmap, **kwargs)
 
     if (
-        sampling_method is SamplingMethod.half_norm or
-        sampling_method is SamplingMethod.uniform
+        isinstance(
+            sampling_method, (HalfNormalSamplingMethod, UniformSamplingMethod)
+        )
     ):
         extend_with_distrib_sampling(case_study, cmap, **kwargs)
 
@@ -477,43 +481,13 @@ def extend_with_distrib_sampling(
         not is_blocked(rev_item[0], project_cls)
     ]
 
-    distribution_function = kwargs['distribution'].gen_distribution_function()
+    sampling_method = kwargs['distribution']
 
     case_study.include_revisions(
-        sample_n(distribution_function, kwargs['num_rev'], revision_list),
+        sampling_method.sample_n(revision_list, kwargs['num_rev']),
         kwargs['merge_stage'],
         sampling_method=kwargs['distribution']
     )
-
-
-def sample_n(
-    distrib_func: tp.Callable[[int], np.ndarray], num_samples: int,
-    list_to_sample: tp.List[tp.Tuple[str, int]]
-) -> tp.List[tp.Tuple[str, int]]:
-    """
-    Return a list of n unique samples. If the list to sample is smaller than the
-    number of samples the full list is returned.
-
-    Args:
-        distrib_func: Distribution function with
-                        f(n) -> [] where len([]) == n probabilities
-        num_samples: number of samples to choose
-        list_to_sample: list to sample from
-
-    Returns:
-        list[] of sampled items
-    """
-    if num_samples >= len(list_to_sample):
-        return list_to_sample
-
-    probabilities = distrib_func(len(list_to_sample))
-    probabilities /= probabilities.sum()
-
-    sampled_idxs = np.random.choice(
-        len(list_to_sample), num_samples, replace=False, p=probabilities
-    )
-
-    return [list_to_sample[idx] for idx in sampled_idxs]
 
 
 @check_required_args(['plot_type', 'boundary_gradient'])

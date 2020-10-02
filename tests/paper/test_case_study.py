@@ -5,8 +5,8 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import varats.paper.case_study as CS
+from varats.base.sampling_method import UniformSamplingMethod
 from varats.mapping.commit_map import CommitMap
-from varats.paper_mgmt.case_study import sample_n
 
 YAML_CASE_STUDY = """---
 DocType: CaseStudy
@@ -154,28 +154,13 @@ class TestSampling(unittest.TestCase):
     def test_sample_amount(self):
         """Check if sampling function produces the correct amount of sample."""
         self.assertEqual(
-            len(
-                sample_n(
-                    CS.SamplingMethod.uniform.gen_distribution_function(), 5,
-                    self.base_list
-                )
-            ), 5
+            len(UniformSamplingMethod().sample_n(self.base_list, 5)), 5
         )
         self.assertEqual(
-            len(
-                sample_n(
-                    CS.SamplingMethod.uniform.gen_distribution_function(), 1,
-                    self.base_list
-                )
-            ), 1
+            len(UniformSamplingMethod().sample_n(self.base_list, 1)), 1
         )
         self.assertEqual(
-            len(
-                sample_n(
-                    CS.SamplingMethod.uniform.gen_distribution_function(), 7,
-                    self.base_list
-                )
-            ), 7
+            len(UniformSamplingMethod().sample_n(self.base_list, 7)), 7
         )
 
     def test_sample_more_than_max_amount(self):
@@ -183,18 +168,18 @@ class TestSampling(unittest.TestCase):
         we sample more than in the initial list."""
         self.assertEqual(
             len(
-                sample_n(
-                    CS.SamplingMethod.uniform.gen_distribution_function(),
-                    len(self.base_list) + 1, self.base_list
+                UniformSamplingMethod().sample_n(
+                    self.base_list,
+                    len(self.base_list) + 1
                 )
             ), len(self.base_list)
         )
 
         self.assertEqual(
             len(
-                sample_n(
-                    CS.SamplingMethod.uniform.gen_distribution_function(),
-                    len(self.base_list) + 666, self.base_list
+                UniformSamplingMethod().sample_n(
+                    self.base_list,
+                    len(self.base_list) + 666
                 )
             ), len(self.base_list)
         )
@@ -203,10 +188,5 @@ class TestSampling(unittest.TestCase):
         """Check if sampling function produces the correct amount of sample if
         we want nothing."""
         self.assertEqual(
-            len(
-                sample_n(
-                    CS.SamplingMethod.uniform.gen_distribution_function(), 0,
-                    self.base_list
-                )
-            ), 0
+            len(UniformSamplingMethod().sample_n(self.base_list, 0)), 0
         )

@@ -15,7 +15,7 @@ In order to ease the creation of case studies the tool suite offers different sa
 
 For example, we can generate a new case study for the project ``gzip``, drawing 10 revision from the projects history based on a half-normal distribution, with::
 
-    vara-cs gen PATH_TO_PAPER_CONF_DIR/ half_norm PATH_TO_REPO/ --num-rev 10
+    vara-cs gen PATH_TO_PAPER_CONF_DIR/ HalfNormalSamplingMethod PATH_TO_REPO/ --num-rev 10
 
 To easy handling of multiple projects, created case studies should be grouped into folders, e.g., a set of case studies used for a paper, called paper config.
 For more information see :ref:`How to use paper configs`.
@@ -27,7 +27,7 @@ To simplify that, our tool suite provides :ref:`vara-cs ext`, a tool for extendi
 
 For example::
 
-    vara-cs ext paper_configs/ase-17/gzip_0.case_study distrib_add gzip/ --distribution uniform --num-rev 5
+    vara-cs ext paper_configs/ase-17/gzip_0.case_study distrib_add gzip/ --distribution UniformSamplingMethod --num-rev 5
 
 will add 5 new revision, sampled uniformly from all revisions, to the case study.
 
