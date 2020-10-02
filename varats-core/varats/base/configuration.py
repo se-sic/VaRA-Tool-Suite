@@ -41,7 +41,7 @@ class Configuration():
     @abc.abstractmethod
     def create_configuration_from_str(config_str: str) -> 'Configuration':
         """
-        Creates a `Configuration` from it's string representation.
+        Creates a `Configuration` from its string representation.
 
         This function is the inverse to `dump_to_string` to reparse a
         configuration dumpred previously.

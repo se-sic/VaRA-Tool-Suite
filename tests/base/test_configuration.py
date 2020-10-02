@@ -49,7 +49,7 @@ class TestConfigurationOption(unittest.TestCase):
         self.assertTrue(config_option_int != config_option_bool)
 
     def test_equality_othertypes(self) -> None:
-        """Test to compare config option to to each other."""
+        """Test to compare config option to each other."""
         config_option_int = ConfigurationOptionTestImpl("foo", 42)
         other_object = 42
 
