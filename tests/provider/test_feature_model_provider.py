@@ -1,6 +1,5 @@
 """Tests for feature_model_provider."""
 import unittest
-from unittest.mock import create_autospec
 
 from tests.utils.test_experiment_util import BBTestProject
 from varats.projects.c_projects.x264 import X264

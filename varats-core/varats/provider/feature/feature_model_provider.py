@@ -10,25 +10,43 @@ from varats.provider.provider import Provider
 
 
 class FeatureModelProvider(Provider):
+    """Provider for accessing project related FeatureModels."""
 
     def __init__(self, project: tp.Type[Project]) -> None:
-        super().__init__(project)
+        pass
 
     @classmethod
     def create_provider_for_project(
         cls, project: tp.Type[Project]
     ) -> tp.Optional['FeatureModelProvider']:
+        """
+        Creates a provider instance for the given project if possible.
+
+        Returns:
+            a provider instance for the given project if possible,
+            otherwise, ``None``
+        """
         return FeatureModelProvider(project)
 
     @classmethod
     def create_default_provider(
         cls, project: tp.Type[Project]
     ) -> 'FeatureModelProvider':
+        """
+        Creates a default provider instance that can be used with any project.
+
+        Returns:
+            a default provider instance
+        """
         raise AssertionError(
             "All usages should be covered by the project specific provider."
         )
 
-    def get_feature_model_path(self, revision: str) -> tp.Optional[Path]:
+    def get_feature_model_path(
+        self,
+        # Currently, unused until pascals impl is ready
+        revision: str  # pylint: disable=W0613
+    ) -> tp.Optional[Path]:
         """
         Get the path to a feature model for a specific `revision` that describes
         the features of a project and their relationships. In case that no
