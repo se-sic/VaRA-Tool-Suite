@@ -9,7 +9,11 @@ from benchbuild.utils.cmd import git, mkdir
 from plumbum import local
 from pygtrie import CharTrie
 
-from varats.project.project_util import get_local_project_git_path
+from varats.project.project_util import (
+    get_local_project_git_path,
+    get_primary_project_source,
+)
+from varats.utils.git_util import get_current_branch
 
 LOG = logging.getLogger(__name__)
 
@@ -93,12 +97,23 @@ class CommitMap():
 
 
 def generate_commit_map(
-    path: Path, end: str = "HEAD", start: tp.Optional[str] = None
+    path: Path,
+    end: str = "HEAD",
+    start: tp.Optional[str] = None,
+    refspec: str = "HEAD"
 ) -> CommitMap:
     """
     Generate a commit map for a repository including the commits.
 
     Range of commits that get included in the map: `]start..end]`
+
+    Args:
+        path: to the repository
+        end: last commit that should be included
+        start: parent of the first commit that should be included
+        refspec: that should be checked out
+
+    Returns: initalized ``CommitMap``
     """
     search_range = ""
     if start is not None:
@@ -106,6 +121,8 @@ def generate_commit_map(
     search_range += end
 
     with local.cwd(path):
+        old_head = get_current_branch()
+        git("checkout", refspec)
         full_out = git("--no-pager", "log", "--pretty=format:'%H'")
         wanted_out = git(
             "--no-pager", "log", "--pretty=format:'%H'", search_range
@@ -121,6 +138,7 @@ def generate_commit_map(
                 if line in wanted_cm:
                     yield "{}, {}\n".format(number, line)
 
+        git("checkout", old_head)
         return CommitMap(format_stream())
 
 
@@ -159,8 +177,12 @@ def get_commit_map(
     """
     if cmap_path is None:
         project_git_path = get_local_project_git_path(project_name)
+        primary_source = get_primary_project_source(project_name)
+        refspec = "HEAD"
+        if hasattr(primary_source, "refspec"):
+            refspec = primary_source.refspec
 
-        return generate_commit_map(project_git_path, end, start)
+        return generate_commit_map(project_git_path, end, start, refspec)
 
     return load_commit_map_from_path(cmap_path)
 
