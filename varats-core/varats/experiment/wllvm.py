@@ -33,7 +33,7 @@ class BCFileExtensions(Enum):
     """
     List of possible extensions that specify the way a BC file was created.
 
-    An extension should be requested when a BC file needs to fullfill certain
+    An extension should be requested when a BC file needs to fulfill certain
     requirements, e.g., was compiled with debug metadata or compiled with
     optimizations.
     """

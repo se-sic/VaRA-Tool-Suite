@@ -9,7 +9,7 @@ class TestBCFileExtensions(unittest.TestCase):
     """Test if the Extension enum is correctly setup."""
 
     def test_ordering(self):
-        """Checks if the extension are ordered/sorted correclty."""
+        """Checks if the extension are ordered/sorted correctly."""
         exts = [
             BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
             BCFileExtensions.DEBUG
