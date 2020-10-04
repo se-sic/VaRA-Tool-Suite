@@ -12,9 +12,6 @@ from varats.provider.provider import Provider
 class FeatureModelProvider(Provider):
     """Provider for accessing project related FeatureModels."""
 
-    def __init__(self, project: tp.Type[Project]) -> None:
-        pass
-
     @classmethod
     def create_provider_for_project(
         cls, project: tp.Type[Project]
