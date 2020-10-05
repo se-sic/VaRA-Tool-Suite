@@ -78,7 +78,8 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                 "-vara-use-phasar",
                 f"-vara-report-outfile={vara_result_folder}/{result_file}",
                 get_cached_bc_file_path(
-                    project, binary, [BCFileExtensions.NO_OPT]
+                    project, binary,
+                    [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
                 )
             ]
 
