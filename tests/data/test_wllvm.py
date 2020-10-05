@@ -6,10 +6,10 @@ from varats.experiment.wllvm import Extract, BCFileExtensions
 
 
 class TestBCFileExtensions(unittest.TestCase):
-    """Test if the Extension enum is correctly setup."""
+    """Test if the Extension enum is correctly set up."""
 
     def test_ordering(self):
-        """Checks if the extension are ordered/sorted correctly."""
+        """Checks if the extensions are ordered/sorted correctly."""
         exts = [
             BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
             BCFileExtensions.DEBUG
