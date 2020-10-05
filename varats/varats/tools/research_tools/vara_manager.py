@@ -733,6 +733,8 @@ def set_vara_cmake_variables(
 
 class GitState(Enum):
     """Represent the direct state of a branch."""
+    value: int
+
     OK = 1
     BEHIND = 2
     ERROR = 3

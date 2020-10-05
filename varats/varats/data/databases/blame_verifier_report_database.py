@@ -27,6 +27,8 @@ from varats.revision.revisions import (
 
 
 class OptLevel(Enum):
+    value: int
+
     NO_OPT = 0
     OPT = 2
 

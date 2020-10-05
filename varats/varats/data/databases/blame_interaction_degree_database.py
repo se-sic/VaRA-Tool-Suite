@@ -31,6 +31,8 @@ AVG_TIME_BUCKET_SIZE = 1
 
 class DegreeType(Enum):
     """Degree types of blame interaction data."""
+    value: str
+
     interaction = "interaction"
     author = "author"
     max_time = "max_time"

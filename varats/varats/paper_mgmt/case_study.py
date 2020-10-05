@@ -10,7 +10,6 @@ from pathlib import Path
 
 import pygit2
 from benchbuild import Project  # type: ignore
-from scipy.stats import halfnorm
 
 from varats.base.sampling_method import (
     NormalSamplingMethod,
@@ -18,14 +17,11 @@ from varats.base.sampling_method import (
     HalfNormalSamplingMethod,
 )
 from varats.mapping.commit_map import CommitMap
-from varats.paper.case_study import CSStage, CaseStudy
+from varats.paper.case_study import CaseStudy
 from varats.plot.plot_utils import check_required_args
 from varats.plot.plots import PlotRegistry
 from varats.project.project_util import get_project_cls_by_name
-from varats.provider.release.release_provider import (
-    ReleaseProvider,
-    ReleaseType,
-)
+from varats.provider.release.release_provider import ReleaseProvider
 from varats.report.report import FileStatusExtension, MetaReport
 from varats.revision.revisions import (
     get_failed_revisions,
@@ -35,11 +31,11 @@ from varats.revision.revisions import (
     filter_blocked_revisions,
     is_revision_blocked,
 )
-from varats.utils.yaml_util import load_yaml, store_as_yaml
 
 
 class ExtenderStrategy(Enum):
     """Enum for all currently supported extender strategies."""
+    value: int
 
     mixed = -1
     simple_add = 1
