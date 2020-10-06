@@ -9,7 +9,7 @@ import matplotlib.style as style
 import matplotlib.ticker as mtick
 import numpy as np
 import pandas as pd
-from matplotlib import gridspec as gs
+from sklearn import preprocessing
 
 import varats.paper_mgmt.paper_config as PC
 from varats.data.databases.blame_verifier_report_database import (
@@ -71,7 +71,7 @@ def _extract_data_from_named_dataframe(
 
     current_verifier_plot_df.sort_values(by=['time_id'], inplace=True)
 
-    revisions = current_verifier_plot_df['revision']
+    revisions = current_verifier_plot_df['revision'].to_numpy()
     successes = current_verifier_plot_df['successful'].to_numpy()
     failures = current_verifier_plot_df['failed'].to_numpy()
     total = current_verifier_plot_df['total'].to_numpy()
@@ -127,51 +127,115 @@ def _verifier_plot(
             _extract_data_from_named_dataframe(named_dataframe, opt_level)
         )
 
+    if _is_multi_cs_plot():
+        _verifier_plot_multiple(plot_cfg, final_plot_data)
+    else:
+        # Pass the only list item of the plot data
+        _verifier_plot_single(plot_cfg, final_plot_data[0])
+
+
+def _is_multi_cs_plot() -> bool:
+    if len(PC.get_paper_config().get_all_case_studies()) > 1:
+        return True
+
+    return False
+
+
+def _verifier_plot_single(
+    plot_cfg: tp.Dict[str, tp.Any], plot_data: tp.Tuple[str, tp.Dict[str,
+                                                                     tp.Any]]
+):
+    fig, main_axis = plt.subplots()
+
+    fig.suptitle(
+        str(plot_cfg['fig_title']) + f' - Project {plot_data[0]}', fontsize=8
+    )
+    main_axis.grid(linestyle='--')
+    main_axis.set_xlabel('Revisions')
+    main_axis.set_ylabel('Success/Failure rate in %')
+    main_axis.yaxis.set_major_formatter(mtick.PercentFormatter(1.0))
+    fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
+
+    main_axis.stackplot(
+        plot_data[1]["revisions"],
+        plot_data[1]["successes_in_percent"],
+        plot_data[1]["failures_in_percent"],
+        labels=['successes', 'failures'],
+        colors=[SUCCESS_COLOR, FAILED_COLOR],
+        alpha=0.5
+    )
+
+    plt.setp(
+        main_axis.get_xticklabels(), rotation=30, horizontalalignment='right'
+    )
+
+    legend = main_axis.legend(
+        title=plot_cfg['legend_title'],
+        loc='upper left',
+        prop={
+            'size': plot_cfg['legend_size'],
+            'family': 'monospace'
+        }
+    )
+    legend.set_visible(plot_cfg['legend_visible'])
+
+    plt.setp(
+        legend.get_title(),
+        fontsize=plot_cfg['legend_size'],
+        family='monospace'
+    )
+
+
+def _verifier_plot_multiple(
+    plot_cfg: tp.Dict[str, tp.Any],
+    final_plot_data: tp.List[tp.Tuple[str, tp.Dict[str, tp.Any]]]
+):
     fig = plt.figure()
-    grid = gs.GridSpec(len(final_plot_data), 1)
+    main_axis = fig.subplots()
+    project_names: str = "| "
+    main_axis.grid(linestyle='--')
+    main_axis.set_xlabel('Revisions')
+    main_axis.set_ylabel('Success rate in %')
+    main_axis.yaxis.set_major_formatter(mtick.PercentFormatter(1.0))
+    fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
 
-    for i, plot_data in enumerate(final_plot_data):
-        main_axis = fig.add_subplot(grid[i])
-        main_axis.grid(linestyle='--')
+    for plot_data in final_plot_data:
+        project_names += plot_data[0] + " | "
+        revisions_as_number = np.array([
+            x + 1 for x, y in enumerate(plot_data[1]["revisions"])
+        ]).reshape(-1, 1)
 
-        main_axis.title.set_text(
-            str(plot_cfg['fig_title']) + f' - Project {plot_data[0]}'
+        normalized_revisions = preprocessing.normalize(
+            revisions_as_number, axis=0
         )
-        main_axis.set_xlabel('Revisions')
-        main_axis.set_ylabel('Success/Failure rate in %')
-        main_axis.yaxis.set_major_formatter(mtick.PercentFormatter(1.0))
 
-        main_axis.stackplot(
-            plot_data[1]["revisions"],
+        main_axis.plot(
+            normalized_revisions,
             plot_data[1]["successes_in_percent"],
-            plot_data[1]["failures_in_percent"],
-            labels=['successes', 'failures'],
-            colors=[SUCCESS_COLOR, FAILED_COLOR],
-            alpha=0.5
+            label=plot_data[0]
         )
+    main_axis.title.set_text(
+        str(plot_cfg['fig_title']) + f' - Project(s) {project_names}'
+    )
 
-        plt.setp(
-            main_axis.get_xticklabels(),
-            rotation=30,
-            horizontalalignment='right'
-        )
+    plt.setp(
+        main_axis.get_xticklabels(), rotation=30, horizontalalignment='right'
+    )
+    legend = main_axis.legend(
+        title=plot_cfg['legend_title'],
+        loc='upper left',
+        prop={
+            'size': plot_cfg['legend_size'],
+            'family': 'monospace'
+        }
+    )
+    legend.set_visible(plot_cfg['legend_visible'])
 
-        legend = main_axis.legend(
-            title=plot_cfg['legend_title'],
-            loc='upper left',
-            prop={
-                'size': plot_cfg['legend_size'],
-                'family': 'monospace'
-            }
-        )
-        legend.set_visible(plot_cfg['legend_visible'])
-
-        plt.setp(
-            legend.get_title(),
-            fontsize=plot_cfg['legend_size'],
-            family='monospace'
-        )
-        plt.tight_layout()
+    plt.setp(
+        legend.get_title(),
+        fontsize=plot_cfg['legend_size'],
+        family='monospace'
+    )
 
 
 class BlameVerifierReportPlot(Plot):
@@ -195,9 +259,16 @@ class BlameVerifierReportNoOptPlot(BlameVerifierReportPlot):
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
+        legend_title: str
+
+        if _is_multi_cs_plot():
+            legend_title = "Success rate of projects:"
+        else:
+            legend_title = "Annotation types:"
+
         extra_plot_cfg = {
-            'fig_title': 'Annotated project revisions without optimization',
-            'legend_title': 'Annotation types'
+            'fig_title': 'Annotated project revisions with optimization',
+            'legend_title': legend_title
         }
         _verifier_plot(
             opt_level=OptLevel.NO_OPT,
@@ -214,9 +285,16 @@ class BlameVerifierReportOptPlot(BlameVerifierReportPlot):
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
+        legend_title: str
+
+        if _is_multi_cs_plot():
+            legend_title = "Success rate of projects:"
+        else:
+            legend_title = "Annotation types:"
+
         extra_plot_cfg = {
             'fig_title': 'Annotated project revisions with optimization',
-            'legend_title': 'Annotation types'
+            'legend_title': legend_title
         }
         _verifier_plot(
             opt_level=OptLevel.OPT,
