@@ -18,6 +18,7 @@ class ReleaseType(Enum):
     It is assumed that a major release is also a minor release and that a minor
     release is also a patch release.
     """
+    value: int
 
     major = 1
     minor = 2

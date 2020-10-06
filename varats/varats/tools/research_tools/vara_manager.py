@@ -28,6 +28,7 @@ from PyQt5.QtCore import (
 )
 
 from varats.utils.exceptions import ProcessTerminatedError
+from varats.utils.git_util import get_current_branch
 from varats.utils.settings import vara_cfg, save_config
 
 LOG = logging.getLogger(__name__)
@@ -492,15 +493,6 @@ def checkout_new_branch(
         pass
 
 
-def get_current_branch(repo_folder: tp.Optional[Path]) -> str:
-    """Get the current branch of a repository, e.g., HEAD."""
-    if repo_folder is None or repo_folder == Path(''):
-        return tp.cast(str, git("rev-parse", "--abbrev-ref", "HEAD").strip())
-
-    with local.cwd(repo_folder):
-        return tp.cast(str, git("rev-parse", "--abbrev-ref", "HEAD").strip())
-
-
 def has_branch(repo_folder: Path, branch_name: str) -> bool:
     """Checks if a branch exists in the local repository."""
     with local.cwd(repo_folder):
@@ -741,6 +733,8 @@ def set_vara_cmake_variables(
 
 class GitState(Enum):
     """Represent the direct state of a branch."""
+    value: int
+
     OK = 1
     BEHIND = 2
     ERROR = 3

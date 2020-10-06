@@ -30,9 +30,25 @@ from varats.utils.settings import bb_cfg
 
 
 class BCFileExtensions(Enum):
+    """
+    List of possible extensions that specify the way a BC file was created.
+
+    An extension should be requested when a BC file needs to fulfill certain
+    requirements, e.g., was compiled with debug metadata or compiled with
+    optimizations.
+    """
+    value: str
+
     DEBUG = 'dbg'
     NO_OPT = 'O0'
     OPT = 'O2'
+    TBAA = "TBAA"
+
+    def __lt__(self, other: tp.Any) -> bool:
+        if isinstance(other, BCFileExtensions):
+            return self.value < other.value
+
+        return False
 
 
 class RunWLLVM(base.Extension):  # type: ignore
@@ -103,7 +119,7 @@ class Extract(actions.Step):  # type: ignore
             experiment_bc_file_ext = '-'
 
             ext_sep = ""
-            for ext in bc_file_extensions:
+            for ext in sorted(bc_file_extensions):
                 experiment_bc_file_ext += (ext_sep + ext.value)
                 ext_sep = '_'
         else:

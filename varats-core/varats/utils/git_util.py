@@ -3,12 +3,36 @@
 import re
 import typing as tp
 from enum import Enum
+from pathlib import Path
 
 import pygit2
 from benchbuild.utils.cmd import git
 from plumbum import local
 
 from varats.project.project_util import get_local_project_git
+
+################################################################################
+# Git interaction helpers
+
+
+def get_current_branch(repo_folder: tp.Optional[Path] = None) -> str:
+    """
+    Get the current branch of a repository, e.g., HEAD.
+
+    Args:
+        repo_folder: where the git repository is located
+
+    Returns: branch name
+    """
+    if repo_folder is None or repo_folder == Path(''):
+        return tp.cast(str, git("rev-parse", "--abbrev-ref", "HEAD").strip())
+
+    with local.cwd(repo_folder):
+        return tp.cast(str, git("rev-parse", "--abbrev-ref", "HEAD").strip())
+
+
+################################################################################
+# Git interaction classes
 
 
 class ChurnConfig():
@@ -22,6 +46,9 @@ class ChurnConfig():
     """
 
     class Language(Enum):
+        """Enum for different languages that can be used to filter code
+        churn."""
+        value: tp.Set[str]
 
         C = {"h", "c"}
         CPP = {"h", "hxx", "hpp", "cxx", "cpp"}
@@ -294,9 +321,15 @@ def __calc_code_churn_range_impl(
             churn_values[rev] = (0, 0, 0)
         for match in GIT_LOG_MATCHER.finditer(stdout):
             commit_hash = match.group('hash')
-            files_changed = int(match.group('files'))
-            insertions = int(match.group('insertions'))
-            deletions = int(match.group('deletions'))
+
+            def value_or_zero(match_result: tp.Any) -> int:
+                if match_result is not None:
+                    return int(match_result)
+                return 0
+
+            files_changed = value_or_zero(match.group('files'))
+            insertions = value_or_zero(match.group('insertions'))
+            deletions = value_or_zero(match.group('deletions'))
             churn_values[commit_hash] = (files_changed, insertions, deletions)
 
     return churn_values
@@ -391,9 +424,15 @@ def calc_code_churn(
         # missing from the churn data
         match = GIT_DIFF_MATCHER.match(stdout)
         if match:
-            files_changed = int(match.group('files'))
-            insertions = int(match.group('insertions'))
-            deletions = int(match.group('deletions'))
+
+            def value_or_zero(match_result: tp.Any) -> int:
+                if match_result is not None:
+                    return int(match_result)
+                return 0
+
+            files_changed = value_or_zero(match.group('files'))
+            insertions = value_or_zero(match.group('insertions'))
+            deletions = value_or_zero(match.group('deletions'))
             return files_changed, insertions, deletions
 
     return 0, 0, 0
