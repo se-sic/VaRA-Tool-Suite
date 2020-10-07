@@ -20,8 +20,10 @@ stages:
   revisions:
   - commit_hash: b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a
     commit_id: 41
+    config_ids: [0, 1]
   - commit_hash: 7620b817357d6f14356afd004ace2da426cf8c36
     commit_id: 494
+    config_ids: [2]
   - commit_hash: 622e9b1d024da1343b83fc47fb1891e1d245add3
     commit_id: 431
   - commit_hash: 8798d5c4fd520dcf91f36ebfa60bc5f3dca550d9
@@ -42,7 +44,12 @@ stages:
   revisions:
   - commit_hash: 7620b817357d6f14356afd004ace2da426cf8c36
     commit_id: 494
+...
 ---
+0: '{''foo'': ''foo: True'', ''bar'': ''bar: False'', ''bazz'': ''bazz: bazz-value''}'
+1: '{}'
+2: '{}'
+...
 """
 
 GIT_LOG_OUT = """7620b817357d6f14356afd004ace2da426cf8c36
@@ -141,6 +148,43 @@ class TestCaseStudy(unittest.TestCase):
             revision_filter("42b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
         )
         self.assertFalse(revision_filter("42"))
+
+    def test_get_config_ids_for_rev(self):
+        """Checks if the correct config IDs are fetched for the different
+        revisions."""
+        self.assertEqual(
+            self.case_study.get_config_ids_for_revision(
+                'b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a'
+            ), [0, 1]
+        )
+        self.assertEqual(
+            self.case_study.get_config_ids_for_revision(
+                '8798d5c4fd520dcf91f36ebfa60bc5f3dca550d9'
+            ), [-1]
+        )
+
+    def test_get_config_ids_for_multiple_revs(self):
+        """Checks if the correct config IDs are fetched for the different
+        revisions if a revisions is part of more than one stage."""
+        self.assertEqual(
+            self.case_study.get_config_ids_for_revision(
+                '7620b817357d6f14356afd004ace2da426cf8c36'
+            ), [2]
+        )
+
+    def test_get_config_ids_for_rev_in_stage(self):
+        """Checks if the correct config IDs are fetched for the different
+        revisions."""
+        self.assertEqual(
+            self.case_study.get_config_ids_for_revision_in_stage(
+                '7620b817357d6f14356afd004ace2da426cf8c36', 0
+            ), [2]
+        )
+        self.assertEqual(
+            self.case_study.get_config_ids_for_revision_in_stage(
+                '7620b817357d6f14356afd004ace2da426cf8c36', 1
+            ), [-1]
+        )
 
 
 class TestSampling(unittest.TestCase):

@@ -12,6 +12,7 @@ from varats.base.sampling_method import (
     SamplingMethod,
 )
 from varats.base.version_header import VersionHeader
+from varats.mapping.configuration_map import ConfigurationMap
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, MetaReport
 from varats.utils.yaml_util import load_yaml, store_as_yaml
@@ -21,9 +22,21 @@ class HashIDTuple():
     """Combining a commit hash with a unique and ordered id, starting with 0 for
     the first commit in the repository."""
 
-    def __init__(self, commit_hash: str, commit_id: int) -> None:
+    def __init__(
+        self,
+        commit_hash: str,
+        commit_id: int,
+        config_ids: tp.Optional[tp.List[int]] = None
+    ) -> None:
         self.__commit_hash = commit_hash
         self.__commit_id = commit_id
+
+        if config_ids:
+            self.__config_ids: tp.List[int] = config_ids
+        else:
+            # By default we add a list with the DummyConfig ID if no
+            # configurations where provided.
+            self.__config_ids = [ConfigurationMap.DUMMY_CONFIG_ID]
 
     @property
     def commit_hash(self) -> str:
@@ -35,9 +48,18 @@ class HashIDTuple():
         """The order ID of the commit hash."""
         return self.__commit_id
 
-    def get_dict(self) -> tp.Dict[str, tp.Union[str, int]]:
+    @property
+    def config_ids(self) -> tp.List[int]:
+        """The order ID of the configuration."""
+        return self.__config_ids
+
+    def get_dict(self) -> tp.Dict[str, tp.Union[str, int, tp.List[int]]]:
         """Get a dict representation of this commit and id."""
-        return dict(commit_hash=self.commit_hash, commit_id=self.commit_id)
+        return dict(
+            commit_hash=self.commit_hash,
+            commit_id=self.commit_id,
+            config_ids=self.config_ids
+        )
 
     def __str__(self) -> str:
         return "({commit_id}: #{commit_hash})"\
@@ -132,6 +154,21 @@ class CSStage():
         """
         if not self.has_revision(revision):
             self.__revisions.append(HashIDTuple(revision, commit_id))
+
+    def get_config_ids_for_revision(self, revision: str) -> tp.List[int]:
+        """
+        Returns a list of all configuration IDs specified for this revision.
+
+        Args:
+            revision: i.e., a commit hash registed in this ``CSStage``
+
+        Returns: list of config IDs
+        """
+        return list({
+            config_id for entry in self.__revisions
+            if entry.commit_hash.startswith(revision)
+            for config_id in entry.config_ids
+        })
 
     def sort(self, reverse: bool = True) -> None:
         """Sort the revisions of the case study by commit ID inplace."""
@@ -274,6 +311,43 @@ class CaseStudy():
         if self.num_stages <= num_stage:
             return False
         return self.__stages[num_stage].has_revision(revision)
+
+    def get_config_ids_for_revision(self, revision: str) -> tp.List[int]:
+        """
+        Returns a list of all configuration IDs specified for this revision.
+
+        Args:
+            revision: i.e., a commit hash registed in this case study
+
+        Returns: list of config IDs
+        """
+        config_ids: tp.List[int] = []
+        for stage in self.__stages:
+            config_ids += stage.get_config_ids_for_revision(revision)
+
+        if ConfigurationMap.DUMMY_CONFIG_ID in config_ids and len(
+            config_ids
+        ) > 1:
+            config_ids.remove(ConfigurationMap.DUMMY_CONFIG_ID)
+
+        return config_ids
+
+    def get_config_ids_for_revision_in_stage(
+        self, revision: str, num_stage: int
+    ) -> tp.List[int]:
+        """
+        Returns a list of all configuration IDs specified for this revision.
+
+        Args:
+            revision: i.e., a commit hash registed in this case study
+            num_stage: number of the stage to search in
+
+        Returns: list of config IDs
+        """
+        if self.num_stages <= num_stage:
+            return []
+
+        return self.__stages[num_stage].get_config_ids_for_revision(revision)
 
     def shift_stage(self, from_index: int, offset: int) -> None:
         """
@@ -421,10 +495,15 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
     for raw_stage in raw_case_study['stages']:
         hash_id_tuples: tp.List[HashIDTuple] = []
         for raw_hash_id_tuple in raw_stage['revisions']:
+            if 'config_ids' in raw_hash_id_tuple:
+                config_ids = [int(x) for x in raw_hash_id_tuple['config_ids']]
+            else:
+                config_ids = []
+
             hash_id_tuples.append(
                 HashIDTuple(
                     raw_hash_id_tuple['commit_hash'],
-                    raw_hash_id_tuple['commit_id']
+                    raw_hash_id_tuple['commit_id'], config_ids
                 )
             )
 
