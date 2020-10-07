@@ -76,13 +76,13 @@ def _extract_data_from_named_dataframe(
     failures = current_verifier_plot_df['failed'].to_numpy()
     total = current_verifier_plot_df['total'].to_numpy()
 
-    successes_in_percent = successes / total
-    failures_in_percent = failures / total
+    success_ratio = successes / total
+    failure_ratio = failures / total
 
     result_data = current_project_name, {
         "revisions": revisions,
-        "successes_in_percent": successes_in_percent,
-        "failures_in_percent": failures_in_percent
+        "success_ratio": success_ratio,
+        "failure_ratio": failure_ratio
     }
 
     return result_data
@@ -144,7 +144,7 @@ def _is_multi_cs_plot() -> bool:
 def _verifier_plot_single(
     plot_cfg: tp.Dict[str, tp.Any], plot_data: tp.Tuple[str, tp.Dict[str,
                                                                      tp.Any]]
-):
+) -> None:
     fig, main_axis = plt.subplots()
 
     fig.suptitle(
@@ -158,8 +158,8 @@ def _verifier_plot_single(
 
     main_axis.stackplot(
         plot_data[1]["revisions"],
-        plot_data[1]["successes_in_percent"],
-        plot_data[1]["failures_in_percent"],
+        plot_data[1]["success_ratio"],
+        plot_data[1]["failure_ratio"],
         labels=['successes', 'failures'],
         colors=[SUCCESS_COLOR, FAILED_COLOR],
         alpha=0.5
@@ -189,12 +189,12 @@ def _verifier_plot_single(
 def _verifier_plot_multiple(
     plot_cfg: tp.Dict[str, tp.Any],
     final_plot_data: tp.List[tp.Tuple[str, tp.Dict[str, tp.Any]]]
-):
+) -> None:
     fig = plt.figure()
     main_axis = fig.subplots()
     project_names: str = "| "
     main_axis.grid(linestyle='--')
-    main_axis.set_xlabel('Revisions')
+    main_axis.set_xlabel('Revisions normalized')
     main_axis.set_ylabel('Success rate in %')
     main_axis.yaxis.set_major_formatter(mtick.PercentFormatter(1.0))
     fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
@@ -208,10 +208,9 @@ def _verifier_plot_multiple(
         normalized_revisions = preprocessing.normalize(
             revisions_as_number, axis=0
         )
-
         main_axis.plot(
             normalized_revisions,
-            plot_data[1]["successes_in_percent"],
+            plot_data[1]["success_ratio"],
             label=plot_data[0]
         )
     main_axis.title.set_text(
