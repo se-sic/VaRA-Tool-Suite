@@ -29,7 +29,10 @@ To execute BenchBuild from another directory the ``VARA_ROOT`` environment varia
 
 .. code-block:: bash
 
+  # temporary:
   export VARA_ROOT=/path/to/your/vara/root/directory
+  # permanent: 
+  echo 'export VARA_ROOT=/path/to/your/vara/root/directory' >> ~/.$(basename $0)rc 
 
 How-to configure BenchBuild yourself
 ------------------------------------
