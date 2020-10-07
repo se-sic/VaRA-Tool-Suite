@@ -192,7 +192,7 @@ class VaraTestRepoSource(Git):  # type: ignore
 
     def fetch(self) -> pb.LocalPath:
         """
-        Overrides ``Git``s fetch to
+        Overrides ``Git`` s fetch to
           1. fetch the vara-test-repos repo
           2. extract the specified repo from the vara-test-repos repo
 
