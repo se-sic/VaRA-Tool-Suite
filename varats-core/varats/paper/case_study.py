@@ -4,6 +4,7 @@ analysed for a project."""
 import typing as tp
 from pathlib import Path
 
+from varats.base.configuration import Configuration
 from varats.base.sampling_method import (
     NormalSamplingMethod,
     UniformSamplingMethod,
@@ -12,7 +13,10 @@ from varats.base.sampling_method import (
     SamplingMethod,
 )
 from varats.base.version_header import VersionHeader
-from varats.mapping.configuration_map import ConfigurationMap
+from varats.mapping.configuration_map import (
+    ConfigurationMap,
+    create_configuration_map_from_yaml_doc,
+)
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, MetaReport
 from varats.utils.yaml_util import load_yaml, store_as_yaml
@@ -547,6 +551,31 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
 
     return CaseStudy(
         raw_case_study['project_name'], raw_case_study['version'], stages
+    )
+
+
+def load_configuration_map_from_case_study_file(
+    file_path: Path, concrete_config_type: tp.Type[Configuration]
+) -> ConfigurationMap:
+    """
+    Load a configuration map from a case-study file.
+
+    Args:
+        file_path: to the configuration map file
+        concrete_config_type: type of the configuration objects that should be
+                              created
+
+    Returns: a new `ConfigurationMap` based on the parsed file
+    """
+    documents = load_yaml(file_path)
+    version_header = VersionHeader(next(documents))
+    version_header.raise_if_not_type("CaseStudy")
+    version_header.raise_if_version_is_less_than(1)
+
+    next(documents)  # Skip case study yaml-doc
+
+    return create_configuration_map_from_yaml_doc(
+        next(documents), concrete_config_type
     )
 
 

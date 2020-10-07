@@ -1,10 +1,12 @@
 """Test case study."""
 import typing as tp
 import unittest
+import unittest.mock as mock
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import varats.paper.case_study as CS
+from tests.test_helper_config import ConfigurationTestImpl
 from varats.base.sampling_method import UniformSamplingMethod
 from varats.mapping.commit_map import CommitMap
 
@@ -185,6 +187,26 @@ class TestCaseStudy(unittest.TestCase):
                 '7620b817357d6f14356afd004ace2da426cf8c36', 1
             ), [-1]
         )
+
+
+class TestCaseStudyConfigurationMap(unittest.TestCase):
+    """Test ConfigurationMap/CaseStudy storage functionality."""
+
+    @mock.patch("pathlib.Path.exists", return_value=True)
+    @mock.patch("builtins.open", create=True)
+    def test_load_configuration_map(self, mock_open, _) -> None:
+        """Tests if we can load a stored configuration map correctly from a
+        file."""
+        mock_open.side_effect = [
+            mock.mock_open(read_data=YAML_CASE_STUDY).return_value
+        ]
+
+        config_map = CS.load_configuration_map_from_case_study_file(
+            Path("fake_file_path"), ConfigurationTestImpl
+        )
+
+        self.assertSetEqual({0, 1, 2}, set(config_map.ids()))
+        self.assertTrue(config_map.get_configuration(0) is not None)
 
 
 class TestSampling(unittest.TestCase):
