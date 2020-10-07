@@ -25,14 +25,14 @@ The generated result files are place in the ``vara/results/$PROJECT_NAME`` folde
 
 Running BenchBuild outside the ``$VARA_ROOT/benchbuild`` directory
 ------------------------------------
-To execute BenchBuild from another directory the ``VARA_ROOT`` environment variable must be set, so varats and benchbuild can locate the varats configuration file. 
+To execute BenchBuild from another directory the ``VARA_ROOT`` environment variable must be set, so varats and benchbuild can locate the varats configuration file.
 
 .. code-block:: bash
 
   # temporary:
   export VARA_ROOT=/path/to/your/vara/root/directory
-  # permanent: 
-  echo 'export VARA_ROOT=/path/to/your/vara/root/directory' >> ~/.$(basename $0)rc 
+  # permanent:
+  echo 'export VARA_ROOT=/path/to/your/vara/root/directory' >> ~/.$(basename $0)rc
 
 How-to configure BenchBuild yourself
 ------------------------------------
