@@ -18,7 +18,7 @@ from varats.report.report import FileStatusExtension, MetaReport
 from varats.utils.yaml_util import load_yaml, store_as_yaml
 
 
-class HashIDTuple():
+class CSEntry():
     """Combining a commit hash with a unique and ordered id, starting with 0 for
     the first commit in the repository."""
 
@@ -84,12 +84,12 @@ class CSStage():
         name: tp.Optional[str] = None,
         sampling_method: tp.Optional[SamplingMethod] = None,
         release_type: tp.Optional[ReleaseType] = None,
-        revisions: tp.Optional[tp.List[HashIDTuple]] = None
+        revisions: tp.Optional[tp.List[CSEntry]] = None
     ) -> None:
         self.__name: tp.Optional[str] = name
         self.__sampling_method: tp.Optional[SamplingMethod] = sampling_method
         self.__release_type: tp.Optional[ReleaseType] = release_type
-        self.__revisions: tp.List[HashIDTuple
+        self.__revisions: tp.List[CSEntry
                                  ] = revisions if revisions is not None else []
 
     @property
@@ -144,16 +144,22 @@ class CSStage():
 
         return False
 
-    def add_revision(self, revision: str, commit_id: int) -> None:
+    def add_revision(
+        self,
+        revision: str,
+        commit_id: int,
+        config_ids: tp.Optional[tp.List[int]] = None
+    ) -> None:
         """
         Add a new revision to this stage.
 
         Args:
             revision: to add
             commit_id: unique ID for ordering of commits
+            config_ids: list of configuration IDs
         """
         if not self.has_revision(revision):
-            self.__revisions.append(HashIDTuple(revision, commit_id))
+            self.__revisions.append(CSEntry(revision, commit_id, config_ids))
 
     def get_config_ids_for_revision(self, revision: str) -> tp.List[int]:
         """
@@ -493,7 +499,7 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
     raw_case_study = next(documents)
     stages: tp.List[CSStage] = []
     for raw_stage in raw_case_study['stages']:
-        hash_id_tuples: tp.List[HashIDTuple] = []
+        hash_id_tuples: tp.List[CSEntry] = []
         for raw_hash_id_tuple in raw_stage['revisions']:
             if 'config_ids' in raw_hash_id_tuple:
                 config_ids = [int(x) for x in raw_hash_id_tuple['config_ids']]
@@ -501,7 +507,7 @@ def load_case_study_from_file(file_path: Path) -> CaseStudy:
                 config_ids = []
 
             hash_id_tuples.append(
-                HashIDTuple(
+                CSEntry(
                     raw_hash_id_tuple['commit_hash'],
                     raw_hash_id_tuple['commit_id'], config_ids
                 )
