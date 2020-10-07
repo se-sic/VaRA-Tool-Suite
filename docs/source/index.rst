@@ -28,6 +28,9 @@ Tool-Suite Overview
 ===================
 .. image:: VaRA-overview-white.svg
 
+.. note::
+   As the frist starting point, take a look at the :ref:`Tool-Suite Pipeline Overview`. The overview briefly introduces and descibes all different components and how they interact with each other.
+
 VaRA-TS Docs
 ============
 
