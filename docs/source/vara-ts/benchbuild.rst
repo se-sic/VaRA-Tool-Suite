@@ -23,6 +23,17 @@ Second, we change into the benchbuild folder and run an experiment that generate
 
 The generated result files are place in the ``vara/results/$PROJECT_NAME`` folder and can be further visualized with VaRA-TS graph generators.
 
+Running BenchBuild outside the ``$VARA_ROOT/benchbuild`` directory
+------------------------------------
+To execute BenchBuild from another directory the ``VARA_ROOT`` environment variable must be set, so varats and benchbuild can locate the varats configuration file.
+
+.. code-block:: bash
+
+  # temporary:
+  export VARA_ROOT=/path/to/your/vara/root/directory
+  # permanent:
+  echo 'export VARA_ROOT=/path/to/your/vara/root/directory' >> ~/.$(basename $0)rc
+
 How-to configure BenchBuild yourself
 ------------------------------------
 BenchBuild's configuration file ``.benchbuild.yml`` normally is placed inside the ``benchbuild`` folder, which is located in the vara root folder.
