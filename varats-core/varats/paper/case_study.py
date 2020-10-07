@@ -17,6 +17,8 @@ from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, MetaReport
 from varats.utils.yaml_util import load_yaml, store_as_yaml
 
+CSEntryMapTypes = tp.Union[str, int, tp.List[int]]
+
 
 class CSEntry():
     """Combining a commit hash with a unique and ordered id, starting with 0 for
@@ -53,7 +55,7 @@ class CSEntry():
         """The order ID of the configuration."""
         return self.__config_ids
 
-    def get_dict(self) -> tp.Dict[str, tp.Union[str, int, tp.List[int]]]:
+    def get_dict(self) -> tp.Dict[str, CSEntryMapTypes]:
         """Get a dict representation of this commit and id."""
         return dict(
             commit_hash=self.commit_hash,
@@ -182,13 +184,10 @@ class CSStage():
 
     def get_dict(
         self
-    ) -> tp.Dict[str, tp.Union[str, tp.List[tp.Dict[str, tp.Union[str, int]]]]]:
+    ) -> tp.Dict[str, tp.Union[str, tp.List[tp.Dict[str, CSEntryMapTypes]]]]:
         """Get a dict representation of this stage."""
-        stage_dict: tp.Dict[str,
-                            tp.Union[str,
-                                     tp.List[tp.Dict[str,
-                                                     tp.Union[str,
-                                                              int]]]]] = dict()
+        stage_dict: tp.Dict[str, tp.Union[str, tp.List[tp.Dict[
+            str, CSEntryMapTypes]]]] = dict()
         if self.name is not None:
             stage_dict['name'] = self.name
         if self.sampling_method is not None:
@@ -475,7 +474,7 @@ class CaseStudy():
     def get_dict(
         self
     ) -> tp.Dict[str, tp.Union[str, int, tp.List[tp.Dict[str, tp.Union[
-        str, tp.List[tp.Dict[str, tp.Union[str, int]]]]]]]]:
+        str, tp.List[tp.Dict[str, CSEntryMapTypes]]]]]]]:
         """Get a dict representation of this case study."""
         return dict(
             project_name=self.project_name,
