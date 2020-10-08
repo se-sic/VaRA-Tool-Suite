@@ -41,7 +41,7 @@ class CSEntry():
             self.__config_ids: tp.List[int] = config_ids
         else:
             # By default we add a list with the DummyConfig ID if no
-            # configurations where provided.
+            # configurations were provided.
             self.__config_ids = [ConfigurationMap.DUMMY_CONFIG_ID]
 
     @property
