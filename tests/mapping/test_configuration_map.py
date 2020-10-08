@@ -9,6 +9,7 @@ from tests.test_helper_config import (
     ConfigurationTestImpl,
     ConfigurationOptionTestImpl,
 )
+from varats.base.configuration import DummyConfiguration
 from varats.mapping.configuration_map import (
     ConfigurationMap,
     store_configuration_map,
@@ -41,6 +42,17 @@ class TestConfigurationMap(unittest.TestCase):
 
         self.assertEqual(0, config_id)
         self.assertEqual(test_config, config_map.get_configuration(config_id))
+
+    def test_get_dummy_config(self) -> None:
+        """Tests if we can retrieve the special ``DummyConfiguration`` from the
+        map."""
+        config_map = ConfigurationMap()
+
+        self.assertEqual(
+            type(
+                config_map.get_configuration(ConfigurationMap.DUMMY_CONFIG_ID)
+            ), DummyConfiguration
+        )
 
     def test_add_get_multiple_configs(self) -> None:
         """Tests if we can add and retrieve multiple configs from the map."""

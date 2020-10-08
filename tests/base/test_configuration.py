@@ -6,6 +6,7 @@ from tests.test_helper_config import (
     ConfigurationOptionTestImpl,
     ConfigurationTestImpl,
 )
+from varats.base.configuration import DummyConfiguration
 
 
 class TestConfigurationOption(unittest.TestCase):
@@ -65,3 +66,36 @@ class TestConfiguration(unittest.TestCase):
         config = ConfigurationTestImpl.create_test_config()
 
         self.assertEqual(str(config), config.dump_to_string())
+
+
+class TestDummyConfiguration(unittest.TestCase):
+    """Test if the Dummy Configuration does not allow any interface usage."""
+
+    def test_crash_create_config_from_str(self) -> None:
+        with self.assertRaises(AssertionError):
+            DummyConfiguration.create_configuration_from_str("")
+
+    def test_crash_add_config_option(self) -> None:
+        with self.assertRaises(AssertionError):
+            d_config = DummyConfiguration()
+            d_config.add_config_option(ConfigurationOptionTestImpl("foo", 42))
+
+    def test_crash_set_config_option(self) -> None:
+        with self.assertRaises(AssertionError):
+            d_config = DummyConfiguration()
+            d_config.set_config_option("foo", 42)
+
+    def test_crash_get_config_value(self) -> None:
+        with self.assertRaises(AssertionError):
+            d_config = DummyConfiguration()
+            d_config.get_config_value("foo")
+
+    def test_crash_options(self) -> None:
+        with self.assertRaises(AssertionError):
+            d_config = DummyConfiguration()
+            d_config.options()
+
+    def test_crash_dump_to_string(self) -> None:
+        with self.assertRaises(AssertionError):
+            d_config = DummyConfiguration()
+            d_config.dump_to_string()

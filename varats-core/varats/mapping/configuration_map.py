@@ -5,7 +5,7 @@ from pathlib import Path
 
 import yaml
 
-from varats.base.configuration import Configuration
+from varats.base.configuration import Configuration, DummyConfiguration
 from varats.base.version_header import VersionHeader
 from varats.utils.exceptions import ConfigurationMapConfigIDMissmatch
 
@@ -15,6 +15,8 @@ LOG = logging.getLogger(__name__)
 class ConfigurationMap():
     """A configuration map builds a relation between a unique ID and the
     corresponding project configuration."""
+
+    DUMMY_CONFIG_ID = -1
 
     def __init__(self) -> None:
         self.__configurations: tp.Dict[int, Configuration] = dict()
@@ -41,6 +43,9 @@ class ConfigurationMap():
 
         Returns: the configuration if found, otherwise, None
         """
+        if config_id == self.DUMMY_CONFIG_ID:
+            return DummyConfiguration()
+
         if config_id in self.__configurations.keys():
             return self.__configurations[config_id]
 
