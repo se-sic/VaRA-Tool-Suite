@@ -10,6 +10,7 @@ from varats.tables.tables import TableRegistry
 
 class TableFormat(Enum):
     """List of supported TableFormats."""
+    value: str
 
     plain = "plain"
     simple = "simple"

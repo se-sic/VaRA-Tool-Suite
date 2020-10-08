@@ -1,10 +1,12 @@
 """Test case study."""
 import typing as tp
 import unittest
+import unittest.mock as mock
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import varats.paper.case_study as CS
+from tests.test_helper_config import ConfigurationTestImpl
 from varats.base.sampling_method import UniformSamplingMethod
 from varats.mapping.commit_map import CommitMap
 
@@ -20,8 +22,10 @@ stages:
   revisions:
   - commit_hash: b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a
     commit_id: 41
+    config_ids: [0, 1]
   - commit_hash: 7620b817357d6f14356afd004ace2da426cf8c36
     commit_id: 494
+    config_ids: [2]
   - commit_hash: 622e9b1d024da1343b83fc47fb1891e1d245add3
     commit_id: 431
   - commit_hash: 8798d5c4fd520dcf91f36ebfa60bc5f3dca550d9
@@ -42,7 +46,12 @@ stages:
   revisions:
   - commit_hash: 7620b817357d6f14356afd004ace2da426cf8c36
     commit_id: 494
+...
 ---
+0: '{''foo'': ''foo: True'', ''bar'': ''bar: False'', ''bazz'': ''bazz: bazz-value''}'
+1: '{}'
+2: '{}'
+...
 """
 
 GIT_LOG_OUT = """7620b817357d6f14356afd004ace2da426cf8c36
@@ -141,6 +150,63 @@ class TestCaseStudy(unittest.TestCase):
             revision_filter("42b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
         )
         self.assertFalse(revision_filter("42"))
+
+    def test_get_config_ids_for_rev(self):
+        """Checks if the correct config IDs are fetched for the different
+        revisions."""
+        self.assertEqual(
+            self.case_study.get_config_ids_for_revision(
+                'b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a'
+            ), [0, 1]
+        )
+        self.assertEqual(
+            self.case_study.get_config_ids_for_revision(
+                '8798d5c4fd520dcf91f36ebfa60bc5f3dca550d9'
+            ), [-1]
+        )
+
+    def test_get_config_ids_for_multiple_revs(self):
+        """Checks if the correct config IDs are fetched for the different
+        revisions if a revisions is part of more than one stage."""
+        self.assertEqual(
+            self.case_study.get_config_ids_for_revision(
+                '7620b817357d6f14356afd004ace2da426cf8c36'
+            ), [2]
+        )
+
+    def test_get_config_ids_for_rev_in_stage(self):
+        """Checks if the correct config IDs are fetched for the different
+        revisions."""
+        self.assertEqual(
+            self.case_study.get_config_ids_for_revision_in_stage(
+                '7620b817357d6f14356afd004ace2da426cf8c36', 0
+            ), [2]
+        )
+        self.assertEqual(
+            self.case_study.get_config_ids_for_revision_in_stage(
+                '7620b817357d6f14356afd004ace2da426cf8c36', 1
+            ), [-1]
+        )
+
+
+class TestCaseStudyConfigurationMap(unittest.TestCase):
+    """Test ConfigurationMap/CaseStudy storage functionality."""
+
+    @mock.patch("pathlib.Path.exists", return_value=True)
+    @mock.patch("builtins.open", create=True)
+    def test_load_configuration_map(self, mock_open, _) -> None:
+        """Tests if we can load a stored configuration map correctly from a
+        file."""
+        mock_open.side_effect = [
+            mock.mock_open(read_data=YAML_CASE_STUDY).return_value
+        ]
+
+        config_map = CS.load_configuration_map_from_case_study_file(
+            Path("fake_file_path"), ConfigurationTestImpl
+        )
+
+        self.assertSetEqual({0, 1, 2}, set(config_map.ids()))
+        self.assertTrue(config_map.get_configuration(0) is not None)
 
 
 class TestSampling(unittest.TestCase):

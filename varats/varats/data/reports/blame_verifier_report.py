@@ -13,6 +13,8 @@ LOG = logging.getLogger(__name__)
 class ResultRegexForBlameVerifier(Enum):
     """An enum containing the available parsing options for BlameMDVerifier
     results."""
+    value: str
+
     SUCCESSES = r"\(\d+/"
     TOTAL = r"/\d+\)"
     UNDETERMINED = r"\d+ could not be determined"
