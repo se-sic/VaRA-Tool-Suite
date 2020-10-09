@@ -54,6 +54,8 @@ def get_local_project_git_path(
 def get_extended_commit_lookup_source(
     project_name: str, git_name: str
 ) -> bb.source.BaseSource:
+    """Get the RepoSource specified by the git_name or raise an error if no
+    match was found."""
     project_cls = get_project_cls_by_name(project_name)
 
     # The primary source should always be first in the source list
