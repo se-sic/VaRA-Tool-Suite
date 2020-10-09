@@ -34,14 +34,41 @@ def get_primary_project_source(project_name: str) -> bb.source.BaseSource:
     return bb.source.primary(*project_cls.SOURCE)
 
 
-def get_local_project_git_path(project_name: str) -> Path:
+def get_local_project_git_path(
+    project_name: str, git_name: tp.Optional[str] = None
+) -> Path:
     """Get the path to the local download location of git repository for a given
     benchbuild project."""
-    primary_source = get_primary_project_source(project_name)
-    if hasattr(primary_source, "fetch"):
-        primary_source.fetch()
 
-    return Path(target_prefix() + "/" + primary_source.local)
+    if git_name is not None:
+        source = get_extended_commit_lookup_source(project_name, git_name)
+    else:
+        source = get_primary_project_source(project_name)
+
+    if hasattr(source, "fetch"):
+        source.fetch()
+
+    return Path(target_prefix() + "/" + source.local)
+
+
+def get_extended_commit_lookup_source(
+    project_name: str, git_name: str
+) -> bb.source.BaseSource:
+    project_cls = get_project_cls_by_name(project_name)
+
+    # The primary source should always be first in the source list
+    primary_source_name = project_cls.SOURCE[0].local
+
+    if git_name == primary_source_name:
+        return get_primary_project_source(project_name)
+
+    for source in project_cls.SOURCE:
+        if git_name == source.local:
+            return source
+
+    raise LookupError(
+        "The specified git_name could not be found in the sources"
+    )
 
 
 def get_local_project_git(project_name: str) -> pygit2.Repository:
