@@ -34,72 +34,14 @@ def get_primary_project_source(project_name: str) -> bb.source.BaseSource:
     return bb.source.primary(*project_cls.SOURCE)
 
 
-def get_secondary_project_sources(
-    project_name: str, git_names: tp.List[str]
-) -> tp.List[bb.source.BaseSource]:
+def get_local_project_git_path(project_name: str) -> Path:
+    """Get the path to the local download location of git repository for a given
+    benchbuild project."""
     primary_source = get_primary_project_source(project_name)
-    project_cls = get_project_cls_by_name(project_name)
-    secondary_project_sources: tp.List[bb.source.BaseSource] = []
-    secondary_project_sources_names: tp.List[str] = []
-    iter_sources = iter(project_cls.SOURCE)
-
-    if primary_source.local in git_names:
-        git_names.remove(primary_source.local)
-
-    # Skip primary source
-    next(iter_sources)
-
-    for source in iter_sources:
-        secondary_project_sources.append(source)
-        secondary_project_sources_names.append(source.local)
-
-    if not secondary_project_sources:
-        raise LookupError("There are no secondary sources")
-
-    if not all(item in git_names for item in secondary_project_sources_names):
-        raise LookupError(
-            "The specified git_names were not found in the "
-            "secondary sources"
-        )
-
-    return secondary_project_sources
-
-
-def get_local_project_git_path(
-    project_name: str,
-    git_names: tp.Optional[tp.List[str]] = None
-) -> tp.List[Path]:
-    """Get the paths to the local download location of git repositories for a
-    given benchbuild project."""
-    primary_source = get_primary_project_source(project_name)
-
     if hasattr(primary_source, "fetch"):
         primary_source.fetch()
 
-    # The path to the primary source is always the first list item. If no
-    # secondary sources are available it is also the only one.
-    local_project_git_paths: tp.List[Path] = [
-        Path(target_prefix() + "/" + primary_source.local)
-    ]
-
-    if git_names is not None:
-        secondary_sources = get_secondary_project_sources(
-            project_name, git_names
-        )
-
-        for source in secondary_sources:
-            if hasattr(source, "fetch"):
-                source.fetch()
-
-            local_project_git_paths.append(
-                Path(target_prefix() + "/" + source.local)
-            )
-
-    return local_project_git_paths
-
-
-def commit_lookup():
-    pass
+    return Path(target_prefix() + "/" + primary_source.local)
 
 
 def get_local_project_git(project_name: str) -> pygit2.Repository:
