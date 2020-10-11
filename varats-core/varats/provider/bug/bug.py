@@ -1,5 +1,6 @@
 """Bug Classes used by bug_provider."""
 
+import re
 import typing as tp
 
 import pygit2
@@ -41,6 +42,20 @@ class PygitBug:
         """ID of the issue associated with the bug, if there is one."""
         return self.__issue_id
 
+    def __eq__(self, other):
+        if type(self) is type(other):
+            return (
+                self.fixing_commit == other.fixing_commit and
+                self.introducing_commits == other.introducing_commits and
+                self.issue_id == other.issue_id
+            )
+        return False
+
+    def __hash__(self):
+        return hash(
+            (self.fixing_commit, self.introducing_commits, self.issue_id)
+        )
+
 
 class RawBug:
     """Bug representation using the Commit Hashes as Strings."""
@@ -67,6 +82,20 @@ class RawBug:
     def issue_id(self) -> tp.Optional[int]:
         """ID of the issue associated with the bug, if there is one."""
         return self.__issue_id
+
+    def __eq__(self, other):
+        if type(self) is type(other):
+            return (
+                self.fixing_commit == other.fixing_commit and
+                self.introducing_commits == other.introducing_commits and
+                self.issue_id == other.issue_id
+            )
+        return False
+
+    def __hash__(self):
+        return hash(
+            (self.fixing_commit, self.introducing_commits, self.issue_id)
+        )
 
 
 def _has_closed_a_bug(issue_event: IssueEvent) -> bool:
@@ -101,6 +130,12 @@ def _is_closing_message(commit_message: str) -> bool:
         true if the commit message contains key words that indicate the closing of
         a bug, false ow.
     """
+    # only look for keyword in first line of commit message
+    first_line = commit_message[0:commit_message.index('\n')]
+
+    match = re.search(r'fix|fixed|fixes', first_line, re.IGNORECASE)
+    if match:  # None if re.search did not find a match
+        return True
     return False
 
 
