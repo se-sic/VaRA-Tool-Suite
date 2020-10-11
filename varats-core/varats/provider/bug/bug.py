@@ -42,7 +42,7 @@ class PygitBug:
         """ID of the issue associated with the bug, if there is one."""
         return self.__issue_id
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if type(self) is type(other):
             return (
                 self.fixing_commit == other.fixing_commit and
@@ -51,7 +51,7 @@ class PygitBug:
             )
         return False
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(
             (self.fixing_commit, self.introducing_commits, self.issue_id)
         )
@@ -83,7 +83,7 @@ class RawBug:
         """ID of the issue associated with the bug, if there is one."""
         return self.__issue_id
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if type(self) is type(other):
             return (
                 self.fixing_commit == other.fixing_commit and
@@ -92,7 +92,7 @@ class RawBug:
             )
         return False
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(
             (self.fixing_commit, self.introducing_commits, self.issue_id)
         )
@@ -387,7 +387,7 @@ def find_pygit_bug_by_fix(project_name: str,
     ) -> tp.Optional[PygitBug]:
         if _has_closed_a_bug(issue_event) and issue_event.commit_id:
             pygit_repo: pygit2.Repository = get_local_project_git(project_name)
-            pybug: tp.Optional[PygitBug] = _search_corresponding_pygit_bug(
+            pybug = _search_corresponding_pygit_bug(
                 issue_event.commit_id, pygit_repo, issue_event.issue.number
             )
             if pybug.fixing_commit.hex is fixing_commit:
@@ -428,7 +428,7 @@ def find_raw_bug_by_fix(project_name: str,
     ) -> tp.Optional[RawBug]:
         if _has_closed_a_bug(issue_event) and issue_event.commit_id:
             pygit_repo: pygit2.Repository = get_local_project_git(project_name)
-            rawbug: tp.Optional[RawBug] = _search_corresponding_raw_bug(
+            rawbug = _search_corresponding_raw_bug(
                 issue_event.commit_id, pygit_repo, issue_event.issue.number
             )
             if rawbug.fixing_commit is fixing_commit:
@@ -470,7 +470,7 @@ def find_pygit_bug_by_introduction(
     ) -> tp.Optional[PygitBug]:
         if _has_closed_a_bug(issue_event) and issue_event.commit_id:
             pygit_repo = get_local_project_git(project_name)
-            pybug: tp.Optional[PygitBug] = _search_corresponding_pygit_bug(
+            pybug = _search_corresponding_pygit_bug(
                 issue_event.commit_id, pygit_repo, issue_event.issue.number
             )
 
@@ -517,7 +517,7 @@ def find_raw_bug_by_introduction(
     ) -> tp.Optional[RawBug]:
         if _has_closed_a_bug(issue_event) and issue_event.commit_id:
             pygit_repo: pygit2.Repository = get_local_project_git(project_name)
-            rawbug: tp.Optional[RawBug] = _search_corresponding_raw_bug(
+            rawbug = _search_corresponding_raw_bug(
                 issue_event.commit_id, pygit_repo, issue_event.issue.number
             )
 
