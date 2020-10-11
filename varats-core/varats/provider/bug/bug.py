@@ -127,8 +127,8 @@ def _is_closing_message(commit_message: str) -> bool:
         commit_message: the commit message to be checked
 
     Returns:
-        true if the commit message contains key words that indicate the closing of
-        a bug, false ow.
+        true if the commit message contains key words that indicate the
+        closing of a bug, false ow.
     """
     # only look for keyword in first line of commit message
     first_line = commit_message[0:commit_message.index('\n')]
