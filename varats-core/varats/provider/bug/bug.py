@@ -390,7 +390,7 @@ def find_pygit_bug_by_fix(project_name: str,
             pybug = _search_corresponding_pygit_bug(
                 issue_event.commit_id, pygit_repo, issue_event.issue.number
             )
-            if pybug.fixing_commit.hex is fixing_commit:
+            if pybug.fixing_commit.hex == fixing_commit:
                 return pybug
         return None
 
@@ -400,7 +400,7 @@ def find_pygit_bug_by_fix(project_name: str,
         if _is_closing_message(commit.message):
             pygit_repo: pygit2.Repository = get_local_project_git(project_name)
             pybug = _search_corresponding_pygit_bug(commit.hex, pygit_repo)
-            if pybug.fixing_commit.hex is fixing_commit:
+            if pybug.fixing_commit.hex == fixing_commit:
                 return pybug
         return None
 
@@ -431,7 +431,7 @@ def find_raw_bug_by_fix(project_name: str,
             rawbug = _search_corresponding_raw_bug(
                 issue_event.commit_id, pygit_repo, issue_event.issue.number
             )
-            if rawbug.fixing_commit is fixing_commit:
+            if rawbug.fixing_commit == fixing_commit:
                 return rawbug
         return None
 
@@ -441,7 +441,7 @@ def find_raw_bug_by_fix(project_name: str,
         if _is_closing_message(commit.message):
             pygit_repo: pygit2.Repository = get_local_project_git(project_name)
             rawbug = _search_corresponding_raw_bug(commit.hex, pygit_repo)
-            if rawbug.fixing_commit is fixing_commit:
+            if rawbug.fixing_commit == fixing_commit:
                 return rawbug
         return None
 
@@ -475,7 +475,7 @@ def find_pygit_bug_by_introduction(
             )
 
             for introducing_pycommit in pybug.introducing_commits:
-                if introducing_pycommit.hex is introducing_commit:
+                if introducing_pycommit.hex == introducing_commit:
                     return pybug
                     # found wanted ID
         return None
@@ -488,7 +488,7 @@ def find_pygit_bug_by_introduction(
             pybug = _search_corresponding_pygit_bug(commit.hex, pygit_repo)
 
             for introducing_pycommit in pybug.introducing_commits:
-                if introducing_pycommit is introducing_commit:
+                if introducing_pycommit == introducing_commit:
                     return pybug
         return None
 
@@ -522,7 +522,7 @@ def find_raw_bug_by_introduction(
             )
 
             for introducing_id in rawbug.introducing_commits:
-                if introducing_id is introducing_commit:
+                if introducing_id == introducing_commit:
                     return rawbug
                     # found wanted ID
         return None
@@ -535,7 +535,7 @@ def find_raw_bug_by_introduction(
             rawbug = _search_corresponding_raw_bug(commit.hex, pygit_repo)
 
             for introducing_pycommit in rawbug.introducing_commits:
-                if introducing_pycommit is introducing_commit:
+                if introducing_pycommit == introducing_commit:
                     return rawbug
         return None
 
