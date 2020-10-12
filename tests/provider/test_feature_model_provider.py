@@ -21,7 +21,7 @@ class TestFeatureModelProvider(unittest.TestCase):
             )
 
     def test_false_feature_model_path_access(self):
-        """Checks look-up for none existens FeatureModels."""
+        """Checks look-up for non-existent FeatureModels."""
         provider = FeatureModelProvider.create_provider_for_project(
             BBTestProject
         )
