@@ -40,7 +40,7 @@ def get_local_project_git_path(
     """Get the path to the local download location of git repository for a given
     benchbuild project."""
 
-    if git_name is not None:
+    if git_name:
         source = get_extended_commit_lookup_source(project_name, git_name)
     else:
         source = get_primary_project_source(project_name)
@@ -61,11 +61,11 @@ def get_extended_commit_lookup_source(
     # The primary source should always be first in the source list
     primary_source_name = project_cls.SOURCE[0].local
 
-    if git_name == primary_source_name:
+    if git_name.startswith(primary_source_name):
         return get_primary_project_source(project_name)
 
     for source in project_cls.SOURCE:
-        if git_name == source.local:
+        if git_name.startswith(source.local):
             return source
 
     raise LookupError(
