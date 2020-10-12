@@ -1,6 +1,5 @@
 """Bug Classes used by bug_provider."""
 
-import re
 import typing as tp
 
 import pygit2
@@ -21,7 +20,7 @@ class PygitBug:
 
     def __init__(
         self, fixing_commit: pygit2.Commit,
-        introducing_commits: tp.List[pygit2.Commit], issue_id: tp.Optional[int]
+        introducing_commits: tp.Set[pygit2.Commit], issue_id: tp.Optional[int]
     ) -> None:
         self.__fixing_commit = fixing_commit
         self.__introducing_commits = introducing_commits
@@ -33,7 +32,7 @@ class PygitBug:
         return self.__fixing_commit
 
     @property
-    def introducing_commits(self) -> tp.List[pygit2.Commit]:
+    def introducing_commits(self) -> tp.Set[pygit2.Commit]:
         """Commits introducing the bug as List of pygit2 Commits."""
         return self.__introducing_commits
 
@@ -61,7 +60,7 @@ class RawBug:
     """Bug representation using the Commit Hashes as Strings."""
 
     def __init__(
-        self, fixing_commit: str, introducing_commits: tp.List[str],
+        self, fixing_commit: str, introducing_commits: tp.Set[str],
         issue_id: tp.Optional[int]
     ) -> None:
         self.__fixing_commit = fixing_commit
@@ -74,7 +73,7 @@ class RawBug:
         return self.__fixing_commit
 
     @property
-    def introducing_commits(self) -> tp.List[str]:
+    def introducing_commits(self) -> tp.Set[str]:
         """Hashes of the commits introducing the bug as List of strings."""
         return self.__introducing_commits
 
@@ -133,10 +132,9 @@ def _is_closing_message(commit_message: str) -> bool:
     # only look for keyword in first line of commit message
     first_line = commit_message[0:commit_message.index('\n')]
 
-    match = re.search(r'fix|fixed|fixes', first_line, re.IGNORECASE)
-    if match:  # None if re.search did not find a match
-        return True
-    return False
+    return any([
+        keyword in first_line.split() for keyword in ['fix', 'fixed', 'fixes']
+    ])
 
 
 def _get_all_issue_events(project_name: str) -> tp.List[IssueEvent]:
