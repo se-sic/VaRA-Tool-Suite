@@ -246,7 +246,7 @@ def get_bc_cache_actions(
 
     Args:
         project: the project to compile
-        required_bc_file_extensions: list of required file extensions
+        bc_file_extensions: list of bc file extensions
         extraction_error_handler: error handler to report errors during
                                   the extraction step
         bc_action_creator: alternative BC cache actions creation callback
