@@ -40,6 +40,11 @@ def _get_named_df_for_case_study(
     if verifier_plot_df.empty or len(
         np.unique(verifier_plot_df['revision'])
     ) == 1:
+        if _is_multi_cs_plot():
+            raise RuntimeWarning(
+                f"Project {project_name} did not provide any plot data"
+            )
+
         # Need more than one data point
         raise PlotDataEmpty
 
@@ -96,7 +101,12 @@ def _load_all_named_dataframes(
                                                         pd.DataFrame]]] = []
 
     for case_study in sorted(all_case_studies, key=lambda cs: cs.project_name):
-        all_named_dataframes.append(_get_named_df_for_case_study(case_study))
+        try:
+            all_named_dataframes.append(
+                _get_named_df_for_case_study(case_study)
+            )
+        except RuntimeWarning:
+            continue
 
     return all_named_dataframes
 
@@ -214,7 +224,7 @@ def _verifier_plot_multiple(
             label=plot_data[0]
         )
     main_axis.title.set_text(
-        str(plot_cfg['fig_title']) + f' - Project(s) {project_names}'
+        str(plot_cfg['fig_title']) + f' - Project(s): \n{project_names}'
     )
 
     plt.setp(
