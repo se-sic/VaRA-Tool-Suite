@@ -274,6 +274,32 @@ class BlameVerifierReportNoOptPlot(BlameVerifierReportPlot):
             extra_plot_cfg=extra_plot_cfg,
         )
 
+    def save(
+        self, path: tp.Optional[Path] = None, filetype: str = 'svg'
+    ) -> None:
+        """
+        Save the current plot to a file.
+
+        Args:
+            path: The path where the file is stored (excluding the file name).
+            filetype: The file type of the plot.
+        """
+        self.plot(False)
+
+        if path is None:
+            plot_dir = Path(self.plot_kwargs["plot_dir"])
+        else:
+            plot_dir = path
+
+        # TODO (se-passau/VaRA#545): refactor dpi into plot_config. see.
+        plt.savefig(
+            plot_dir / f"{self.name}.{filetype}",
+            dpi=1200,
+            format=filetype,
+            bbox_inches='tight'
+        )
+        plt.close()
+
 
 class BlameVerifierReportOptPlot(BlameVerifierReportPlot):
     """Plotting the successful and failed annotations of reports with
