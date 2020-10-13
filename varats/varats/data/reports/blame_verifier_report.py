@@ -207,3 +207,55 @@ class BlameVerifierReportOpt(BlameVerifierReportParserMixin, BaseReport):
             BlameVerifierReportOpt.SHORTHAND, project_name, binary_name,
             project_version, project_uuid, extension_type, file_ext
         )
+
+
+class BlameVerifierReportNoOptTBAA(BlameVerifierReportParserMixin, BaseReport):
+    """A BlameVerifierReport containing the filtered results of the chosen
+    verifier-options, e.g., the diff of VaRA-hashes and debug-hashes, without
+    any compilation optimization and TBAA (type based alias analysis)
+    metadata."""
+
+    SHORTHAND = 'BVR_NoOpt_TBAA'
+    FILE_TYPE = 'txt'
+
+    def __init__(self, path: Path, **kwargs: tp.Any) -> None:
+        kwargs['path'] = path
+        super().__init__(**kwargs)
+        self.parse_verifier_results()
+
+    @property
+    def head_commit(self) -> str:
+        """The current HEAD commit under which this BlameVerifierReportNoOpt was
+        created."""
+        return BlameVerifierReportNoOptTBAA.get_commit_hash_from_result_file(
+            Path(self.path).name
+        )
+
+    @staticmethod
+    def get_file_name(
+        project_name: str,
+        binary_name: str,
+        project_version: str,
+        project_uuid: str,
+        extension_type: FileStatusExtension,
+        file_ext: str = ".txt"
+    ) -> str:
+        """
+        Generates a filename for a blame verifier report with no optimization
+        and '.txt' as file extension.
+
+        Args:
+            project_name: name of the project for which the report was generated
+            binary_name: name of the binary for which the report was generated
+            project_version: version of the analyzed project, i.e., commit hash
+            project_uuid: benchbuild uuid for the experiment run
+            extension_type: to specify the status of the generated report
+            file_ext: file extension of the report file
+
+        Returns:
+            name for the report file that can later be uniquely identified
+        """
+        return MetaReport.get_file_name(
+            BlameVerifierReportNoOptTBAA.SHORTHAND, project_name, binary_name,
+            project_version, project_uuid, extension_type, file_ext
+        )

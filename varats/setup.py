@@ -36,7 +36,7 @@ setup(
         "pyzmq>=19.0.0",
         "PyGithub>=1.47",
         "packaging>=20.1",
-        "requests>=2.23.0",
+        "requests>=2.24.0",
         "requests_cache>=0.5.2",
         "scikit-learn~=0.23.1",
         "tabulate>=0.8.6",
