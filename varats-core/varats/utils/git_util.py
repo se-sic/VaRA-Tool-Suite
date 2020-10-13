@@ -173,22 +173,28 @@ def create_commit_lookup_helper(
 ) -> tp.Callable[[str], pygit2.Commit]:
     """Creates a commit lookup function for a specific repository."""
 
-    cache_dict: tp.Dict[str, pygit2.Commit] = {}
-    repo = get_local_project_git(project_name)
+    repos: tp.Dict[str, tp.Any[pygit2.Repository]] = {
+        'project_name': pygit2.Repository
+    }
+    cache_dict: tp.Dict[pygit2.Repository, tp.Dict[str, pygit2.Commit]] = {}
 
     def get_commit(c_hash: str) -> pygit2.Commit:
-        if c_hash in cache_dict:
-            return cache_dict[c_hash]
+        if c_hash in cache_dict[repos[project_name]]:
+            return cache_dict[repos[project_name]][c_hash]
 
-        commit = repo.get(c_hash)
+        repos[project_name] = get_local_project_git(project_name)
+        commit = None
+        for repo in repos.values():
+            if repo.get(c_hash):
+                commit = repo.get(c_hash)
+                cache_dict[repo][c_hash] = commit
+
         if commit is None:
             raise LookupError(
-                "Could not find commit {commit} in {project}".format(
-                    commit=c_hash, project=project_name
-                )
+                f"Could not find commit {commit} in current or prior used "
+                "projects."
             )
 
-        cache_dict[c_hash] = commit
         return commit
 
     return get_commit
