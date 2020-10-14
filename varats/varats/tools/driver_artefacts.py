@@ -250,6 +250,13 @@ __IMAGE_TEMPLATE = """            <img src="{}" />"""
 def generate_html_plot_overview(
     artefacts: tp.List[PlotArtefact], outfile: Path
 ) -> None:
+    """
+    Generates a html overview for the given artefacts.
+
+    Args:
+        artefacts: the artefacts to include in the overview
+        outfile: the path to store the overview in
+    """
     projects: tp.List[str] = [
         case_study.project_name
         for case_study in get_paper_config().get_all_case_studies()
