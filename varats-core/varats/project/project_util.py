@@ -69,7 +69,7 @@ def get_extended_commit_lookup_source(
             return source
 
     raise LookupError(
-        "The specified git_name could not be found in the sources"
+        f"The specified git_name {git_name} could not be found in the sources"
     )
 
 
