@@ -170,32 +170,42 @@ class ChurnConfig():
 
 def create_commit_lookup_helper(
     project_name: str
-) -> tp.Callable[[str], pygit2.Commit]:
+) -> tp.Callable[[str, str], pygit2.Commit]:
     """Creates a commit lookup function for a specific repository."""
 
-    repos: tp.Dict[str, tp.Any[pygit2.Repository]] = {
-        'project_name': pygit2.Repository
-    }
-    cache_dict: tp.Dict[pygit2.Repository, tp.Dict[str, pygit2.Commit]] = {}
+    repos: tp.Dict[str, tp.Any[pygit2.Repository]] = {}
+    commit_hash_cache_dict: tp.Dict[str, pygit2.Commit] = {}
 
-    def get_commit(c_hash: str) -> pygit2.Commit:
-        if c_hash in cache_dict[repos[project_name]]:
-            return cache_dict[repos[project_name]][c_hash]
+    def get_commit(
+        c_hash: str, git_name: tp.Optional[str] = None
+    ) -> pygit2.Commit:
+        if not git_name:
+            repos[project_name] = get_local_project_git(project_name)
+            if c_hash in commit_hash_cache_dict:
+                return commit_hash_cache_dict[c_hash]
 
-        repos[project_name] = get_local_project_git(project_name)
-        commit = None
-        for repo in repos.values():
-            if repo.get(c_hash):
-                commit = repo.get(c_hash)
-                cache_dict[repo][c_hash] = commit
+            commit = repos[project_name].get(c_hash)
+            if commit is None:
+                raise LookupError(
+                    f"Could not find commit {c_hash} in {project_name}"
+                )
+            commit_hash_cache_dict[c_hash] = commit
+            return commit
 
-        if commit is None:
-            raise LookupError(
-                f"Could not find commit {commit} in current or prior used "
-                "projects."
-            )
+        if git_name not in repos:
+            repos[git_name] = get_local_project_git(project_name, git_name)
 
-        return commit
+        if c_hash not in commit_hash_cache_dict:
+            if repos[git_name].get(c_hash):
+                commit = repos[git_name].get(c_hash)
+                commit_hash_cache_dict[c_hash] = commit
+            else:
+                raise LookupError(
+                    f"Could not find commit {c_hash} in "
+                    f"project {project_name} within git repository {git_name}"
+                )
+
+        return commit_hash_cache_dict[c_hash]
 
     return get_commit
 
@@ -243,12 +253,12 @@ MappedCommitResultType = tp.TypeVar("MappedCommitResultType")
 def map_commits(
     func: tp.Callable[[pygit2.Commit], MappedCommitResultType],
     cr_pair_list: tp.Iterable[CommitRepoPair],
-    commit_lookup: tp.Callable[[str], pygit2.Commit]
+    commit_lookup: tp.Callable[[str, str], pygit2.Commit],
 ) -> tp.Sequence[MappedCommitResultType]:
     """Maps a function over a range of commits."""
     # Skip 0000 hashes that we added to mark uncommitted files
     return [
-        func(commit_lookup(cr_pair.commit_hash)
+        func(commit_lookup(cr_pair.commit_hash, cr_pair.repository_name)
             )  # TODO: extend look up with repo name
         for cr_pair in cr_pair_list
         if cr_pair.commit_hash != "0000000000000000000000000000000000000000"
