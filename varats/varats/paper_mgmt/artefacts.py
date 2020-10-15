@@ -381,3 +381,41 @@ def __store_artefacts_to_file(artefacts: Artefacts, file_path: Path) -> None:
         file_path,
         [VersionHeader.from_version_number('Artefacts', 1), artefacts]
     )
+
+
+def filter_plot_artefacts(
+    artefacts: tp.Iterable[Artefact]
+) -> tp.Iterable[PlotArtefact]:
+    """
+    Filter all plot artefacts from a list of artefacts.
+    
+    Args:
+        artefacts: the artefacts to filter
+
+    Returns:
+        all plot artefacts
+    """
+    return [
+        tp.cast(PlotArtefact, artefact)
+        for artefact in artefacts
+        if artefact.artefact_type == ArtefactType.plot
+    ]
+
+
+def filter_table_artefacts(
+    artefacts: tp.Iterable[Artefact]
+) -> tp.Iterable[TableArtefact]:
+    """
+    Filter all table artefacts from a list of artefacts.
+
+    Args:
+        artefacts: the artefacts to filter
+
+    Returns:
+        all table artefacts
+    """
+    return [
+        tp.cast(TableArtefact, artefact)
+        for artefact in artefacts
+        if artefact.artefact_type == ArtefactType.table
+    ]

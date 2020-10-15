@@ -18,7 +18,7 @@ from varats.paper_mgmt.artefacts import (
     ArtefactType,
     create_artefact,
     store_artefacts,
-    PlotArtefact,
+    PlotArtefact, filter_plot_artefacts,
 )
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
@@ -163,11 +163,9 @@ def __artefact_generate(args: tp.Dict[str, tp.Any]) -> None:
         artefact.generate_artefact()
 
     if 'html_overview' in args.keys():
-        plot_artefacts: tp.List[PlotArtefact] = [
-            tp.cast(PlotArtefact, artefact)
-            for artefact in get_paper_config().get_all_artefacts()
-            if artefact.artefact_type == ArtefactType.plot
-        ]
+        plot_artefacts: tp.Iterable[PlotArtefact] = filter_plot_artefacts(
+            get_paper_config().get_all_artefacts()
+        )
         plot_artefacts = [
             artefact for artefact in plot_artefacts
             if artefact.plot_kwargs.get('paper_config', False)
@@ -248,7 +246,7 @@ __IMAGE_TEMPLATE = """            <img src="{}" />"""
 
 
 def generate_html_plot_overview(
-    artefacts: tp.List[PlotArtefact], outfile: Path
+    artefacts: tp.Iterable[PlotArtefact], outfile: Path
 ) -> None:
     """
     Generates a html overview for the given artefacts.
