@@ -546,8 +546,8 @@ def generate_time_delta_distribution_tuples(
         list of (degree, amount) tuples
     """
     degree_dict: tp.DefaultDict[int, int] = defaultdict(int)
-    commit_lookup: tp.Callable[[str, str], pygit2.Commit]
-    commit_lookup = create_commit_lookup_helper(project_name)
+    commit_lookup: tp.Callable[
+        [str, str], pygit2.Commit] = create_commit_lookup_helper(project_name)
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
