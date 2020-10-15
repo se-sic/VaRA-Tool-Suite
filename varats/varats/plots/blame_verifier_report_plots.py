@@ -2,7 +2,6 @@
 import abc
 import logging
 import typing as tp
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import matplotlib.style as style

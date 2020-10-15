@@ -6,7 +6,6 @@ Module for drawing commit-data metrics plots.
 import abc
 import logging
 import typing as tp
-from pathlib import Path
 
 import matplotlib.axes as axes
 import matplotlib.pyplot as plt
@@ -344,6 +343,15 @@ class BlameDiffDistribution(Plot):
         )
 
     def plot_file_name(self, filetype: str) -> str:
+        """
+        Get the file name this plot will be stored to when calling save.
+
+        Args:
+            filetype: the file type for the plot
+
+        Returns:
+            the file name the plot will be stored to
+        """
         pc_name = get_loaded_paper_config().path.name
         var_x = self.plot_kwargs['var_x']
         var_y = self.plot_kwargs['var_y']
