@@ -95,6 +95,14 @@ class Plot(metaclass=PlotRegistry):
 
         Returns:
             the file name the plot will be stored to
+
+        Test:
+        >>> p = Plot('test', project='bar')
+        >>> p.plot_file_name('svg')
+        'bar_test.svg'
+        >>> p = Plot('foo', project='bar', plot_case_study=CaseStudy('baz', 42))
+        >>> p.plot_file_name('png')
+        'baz_42_foo.png'
         """
         plot_ident = ''
         if 'plot_case_study' in self.plot_kwargs:
