@@ -255,10 +255,10 @@ def generate_html_plot_overview(
         artefacts: the artefacts to include in the overview
         outfile: the path to store the overview in
     """
-    projects: tp.List[str] = [
+    projects: tp.Set[str] = {
         case_study.project_name
         for case_study in get_paper_config().get_all_case_studies()
-    ]
+    }
 
     columns: tp.List[str] = []
     for project in projects:
