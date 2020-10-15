@@ -388,7 +388,7 @@ def filter_plot_artefacts(
 ) -> tp.Iterable[PlotArtefact]:
     """
     Filter all plot artefacts from a list of artefacts.
-    
+
     Args:
         artefacts: the artefacts to filter
 
