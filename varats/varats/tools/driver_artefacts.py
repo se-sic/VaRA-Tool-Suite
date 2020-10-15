@@ -18,7 +18,8 @@ from varats.paper_mgmt.artefacts import (
     ArtefactType,
     create_artefact,
     store_artefacts,
-    PlotArtefact, filter_plot_artefacts,
+    PlotArtefact,
+    filter_plot_artefacts,
 )
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
