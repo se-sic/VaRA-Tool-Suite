@@ -179,6 +179,9 @@ def create_commit_lookup_helper(
     def get_commit(
         c_hash: str, git_name: tp.Optional[str] = None
     ) -> pygit2.Commit:
+        if git_name == "Unknown":
+            git_name = None
+
         if not git_name:
             repos[project_name] = get_local_project_git(project_name)
             if c_hash in commit_hash_cache_dict:
