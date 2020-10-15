@@ -343,32 +343,11 @@ class BlameDiffDistribution(Plot):
             data=df,
         )
 
-    def save(
-        self, path: tp.Optional[Path] = None, filetype: str = 'svg'
-    ) -> None:
-        """
-        Save the current plot to a file.
-
-        Args:
-            path: The path where the file is stored (excluding the file name).
-            filetype: The file type of the plot.
-        """
-        self.plot(False)
-
-        if path is None:
-            plot_dir = Path(self.plot_kwargs["plot_dir"])
-        else:
-            plot_dir = path
+    def plot_file_name(self, filetype: str) -> str:
         pc_name = get_loaded_paper_config().path.name
-
-        # TODO (se-passau/VaRA#545): refactor dpi into plot_config. see.
-        plt.savefig(
-            plot_dir / f"{pc_name}_{self.name}_{self.plot_kwargs['var_x']}_vs_"
-            f"{self.plot_kwargs['var_y']}.{filetype}",
-            dpi=1200,
-            format=filetype
-        )
-        plt.close()
+        var_x = self.plot_kwargs['var_x']
+        var_y = self.plot_kwargs['var_y']
+        return f"{pc_name}_{self.name}_{var_x}_vs_{var_y}.{filetype}"
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError

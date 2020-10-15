@@ -7,6 +7,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
+from varats.paper.case_study import CaseStudy
 from varats.plot.plots import PlotRegistry
 
 LOG = logging.getLogger(__name__)
@@ -85,6 +86,29 @@ class Plot(metaclass=PlotRegistry):
         plt.show()
         plt.close()
 
+    def plot_file_name(self, filetype: str) -> str:
+        """
+        Get the file name this plot will be stored to when calling save.
+
+        Args:
+            filetype: the file type for the plot
+
+        Returns:
+            the file name the plot will be stored to
+        """
+        plot_ident = ''
+        if 'plot_case_study' in self.plot_kwargs:
+            case_study: CaseStudy = self.plot_kwargs['plot_case_study']
+            plot_ident = f"{case_study.project_name}_{case_study.version}_"
+        elif 'project' in self.plot_kwargs:
+            plot_ident = f"{self.plot_kwargs['project']}_"
+
+        sep_stages = ''
+        if self.supports_stage_separation() and self.plot_kwargs['sep_stages']:
+            sep_stages = 'S'
+
+        return f"{plot_ident}{self.name}{sep_stages}.{filetype}"
+
     def save(
         self, path: tp.Optional[Path] = None, filetype: str = 'svg'
     ) -> None:
@@ -105,16 +129,10 @@ class Plot(metaclass=PlotRegistry):
             plot_dir = Path(self.plot_kwargs["plot_dir"])
         else:
             plot_dir = path
-        project_name = self.plot_kwargs["project"]
 
+        # TODO (se-passau/VaRA#545): refactor dpi into plot_config.
         plt.savefig(
-            plot_dir / (
-                project_name + "_{graph_name}{stages}.{filetype}".format(
-                    graph_name=self.name,
-                    stages='S' if self.plot_kwargs['sep_stages'] else '',
-                    filetype=filetype
-                )
-            ),
+            plot_dir / self.plot_file_name(filetype),
             dpi=1200,
             bbox_inches="tight",
             format=filetype
