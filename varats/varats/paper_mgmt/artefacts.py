@@ -255,6 +255,28 @@ class Artefacts:
         """
         return self.__artefacts.values()
 
+    @property
+    def plot_artefacts(self) -> tp.Iterable[PlotArtefact]:
+        r"""
+        An iterator of the :class:`PlotArtefact`\ s in this collection.
+        """
+        return [
+            tp.cast(PlotArtefact, artefact)
+            for artefact in self.artefacts
+            if artefact.artefact_type == ArtefactType.plot
+        ]
+
+    @property
+    def table_artefacts(self) -> tp.Iterable[TableArtefact]:
+        r"""
+        An iterator of the :class:`TableArtefact`\ s in this collection.
+        """
+        return [
+            tp.cast(TableArtefact, artefact)
+            for artefact in self.artefacts
+            if artefact.artefact_type == ArtefactType.table
+        ]
+
     def get_artefact(self, name: str) -> tp.Optional[Artefact]:
         """
         Lookup an artefact by its name.

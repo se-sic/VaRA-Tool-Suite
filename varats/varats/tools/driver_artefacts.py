@@ -163,13 +163,8 @@ def __artefact_generate(args: tp.Dict[str, tp.Any]) -> None:
         artefact.generate_artefact()
 
     if 'html_overview' in args.keys():
-        plot_artefacts: tp.List[PlotArtefact] = [
-            tp.cast(PlotArtefact, artefact)
-            for artefact in get_paper_config().get_all_artefacts()
-            if artefact.artefact_type == ArtefactType.plot
-        ]
         plot_artefacts = [
-            artefact for artefact in plot_artefacts
+            artefact for artefact in get_paper_config().artefacts.plot_artefacts
             if artefact.plot_kwargs.get('paper_config', False)
         ]
         generate_html_plot_overview(
