@@ -264,9 +264,9 @@ def generate_html_plot_overview(
             kwargs = dict(artefact.plot_kwargs)
             kwargs['project'] = case_study.project_name
             kwargs['plot_case_study'] = case_study
-            plot_name = artefact.plot_type_class(
-                artefact.plot_kwargs
-            ).plot_file_name(artefact.file_format)
+            plot_name = artefact.plot_type_class(**kwargs).plot_file_name(
+                artefact.file_format
+            )
             if not (artefact.output_path / plot_name).exists():
                 LOG.info(f"Could not find image {plot_name}")
                 continue
