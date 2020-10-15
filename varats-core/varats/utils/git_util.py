@@ -173,6 +173,8 @@ def create_commit_lookup_helper(
 ) -> tp.Callable[[str, str], pygit2.Commit]:
     """Creates a commit lookup function for a specific repository."""
 
+    # Only used when no git_name is provided
+    primary_project_repo = get_local_project_git(project_name)
     repos: tp.Dict[str, tp.Any[pygit2.Repository]] = {}
     commit_hash_cache_dict: tp.Dict[str, pygit2.Commit] = {}
 
@@ -183,11 +185,10 @@ def create_commit_lookup_helper(
             git_name = None
 
         if not git_name:
-            repos[project_name] = get_local_project_git(project_name)
             if c_hash in commit_hash_cache_dict:
                 return commit_hash_cache_dict[c_hash]
 
-            commit = repos[project_name].get(c_hash)
+            commit = primary_project_repo.get(c_hash)
             if commit is None:
                 raise LookupError(
                     f"Could not find commit {c_hash} in {project_name}"
