@@ -33,7 +33,7 @@ class BlameInstInteractions():
         interacting_hashes: tp.List[CommitRepoPair], amount: int
     ) -> None:
         self.__base_hash = base_hash
-        self.__interacting_hashes = interacting_hashes
+        self.__interacting_hashes = sorted(interacting_hashes)
         self.__amount = amount
 
     @staticmethod
@@ -88,8 +88,7 @@ class BlameInstInteractions():
     def __eq__(self, other: tp.Any) -> bool:
         if isinstance(other, BlameInstInteractions):
             if self.base_commit == other.base_commit:
-                return sorted(self.interacting_commits
-                             ) == sorted(other.interacting_commits)
+                return self.interacting_commits == other.interacting_commits
 
         return False
 
@@ -97,8 +96,7 @@ class BlameInstInteractions():
         if isinstance(other, BlameInstInteractions):
             if self.base_commit < other.base_commit:
                 return True
-            return sorted(self.interacting_commits
-                         ) < sorted(other.interacting_commits)
+            return self.interacting_commits < other.interacting_commits
 
         return False
 
@@ -164,14 +162,15 @@ def _calc_diff_between_func_entries(
 ) -> BlameResultFunctionEntry:
     diff_interactions: tp.List[BlameInstInteractions] = []
 
-    base_interactions = sorted(base_func_entry.interactions)
-    prev_interactions = sorted(prev_func_entry.interactions)
+    # copy lists to avoid side effects
+    base_interactions = list(base_func_entry.interactions)
+    prev_interactions = list(prev_func_entry.interactions)
 
     for base_inter in base_interactions:
         if base_inter in prev_interactions:
             prev_inter_idx = prev_interactions.index(base_inter)
             prev_inter = prev_interactions.pop(prev_inter_idx)
-            # create new blame inst interaction with the absolute differente
+            # create new blame inst interaction with the absolute difference
             # between base and prev
             difference = base_inter.amount - prev_inter.amount
             if difference != 0:
