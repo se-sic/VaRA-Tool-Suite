@@ -30,7 +30,8 @@ from varats.revision.revisions import (
     get_failed_revisions_files,
     get_processed_revisions,
 )
-from varats.utils.git_util import ChurnConfig, calc_code_churn
+from varats.utils.git_util import ChurnConfig, calc_code_churn, \
+    create_commit_lookup_helper
 
 
 class BlameDiffMetricsDatabase(
@@ -66,6 +67,8 @@ class BlameDiffMetricsDatabase(
         cls, project_name: str, commit_map: CommitMap,
         case_study: tp.Optional[CaseStudy], **kwargs: tp.Any
     ) -> pd.DataFrame:
+        repo = get_local_project_git(project_name)
+        commit_lookup = create_commit_lookup_helper(project_name)
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
@@ -85,7 +88,6 @@ class BlameDiffMetricsDatabase(
             # Look-up commit and infos about the HEAD commit of the report
             head_report = load_blame_report(report_paths[0])
             pred_report = load_blame_report(report_paths[1])
-            repo = get_local_project_git(project_name)
             commit = repo.get(head_report.head_commit)
             commit_date = datetime.utcfromtimestamp(commit.commit_time)
 
@@ -126,7 +128,7 @@ class BlameDiffMetricsDatabase(
                         count_interacting_commits(diff_between_head_pred),
                     'num_interacting_authors':
                         count_interacting_authors(
-                            diff_between_head_pred, project_name
+                            diff_between_head_pred, commit_lookup
                         ),
                     "ci_degree_mean":
                         weighted_avg(
@@ -135,13 +137,13 @@ class BlameDiffMetricsDatabase(
                     "author_mean":
                         weighted_avg(
                             generate_author_degree_tuples(
-                                diff_between_head_pred, project_name
+                                diff_between_head_pred, commit_lookup
                             )
                         ),
                     "avg_time_mean":
                         weighted_avg(
                             generate_avg_time_distribution_tuples(
-                                diff_between_head_pred, project_name, 1
+                                diff_between_head_pred, commit_lookup, 1
                             )
                         ),
                     "ci_degree_max":
@@ -151,13 +153,13 @@ class BlameDiffMetricsDatabase(
                     "author_max":
                         combine_max(
                             generate_author_degree_tuples(
-                                diff_between_head_pred, project_name
+                                diff_between_head_pred, commit_lookup
                             )
                         ),
                     "avg_time_max":
                         combine_max(
                             generate_max_time_distribution_tuples(
-                                diff_between_head_pred, project_name, 1
+                                diff_between_head_pred, commit_lookup, 1
                             )
                         ),
                     'year':
