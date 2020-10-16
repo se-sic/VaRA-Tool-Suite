@@ -25,8 +25,8 @@ LOG = logging.getLogger(__name__)
 
 
 def _get_named_df_for_case_study(
-    case_study: CaseStudy
-) -> tp.Dict[str, tp.Union[str, pd.DataFrame]]:
+    case_study: CaseStudy, opt_level: OptLevel
+) -> tp.Optional[tp.Dict[str, tp.Union[str, pd.DataFrame]]]:
     project_name = case_study.project_name
     commit_map = get_commit_map(project_name)
 
@@ -37,16 +37,20 @@ def _get_named_df_for_case_study(
         ], commit_map, case_study
     )
 
+    # Filter results for current optimization level
+    verifier_plot_df = verifier_plot_df.loc[verifier_plot_df['opt_level'] ==
+                                            opt_level.value]
     if verifier_plot_df.empty or len(
         np.unique(verifier_plot_df['revision'])
     ) == 1:
         if _is_multi_cs_plot():
-            raise RuntimeWarning(
-                f"Project {project_name} did not provide any plot data"
-            )
+            return None
 
         # Need more than one data point
-        raise PlotDataEmpty
+        raise PlotDataEmpty(
+            f"No data found for project {project_name} with optimization level "
+            f"{opt_level.value}"
+        )
 
     named_verifier_df = {
         "project_name": project_name,
@@ -57,23 +61,12 @@ def _get_named_df_for_case_study(
 
 
 def _extract_data_from_named_dataframe(
-    named_verifier_plot_df: tp.Dict[str, tp.Union[str, pd.DataFrame]],
-    opt_level: OptLevel
+    named_verifier_plot_df: tp.Dict[str, tp.Union[str, pd.DataFrame]]
 ) -> tp.Tuple[str, tp.Dict[str, tp.Any]]:
-    current_project_name = str(named_verifier_plot_df["project_name"])
-    current_verifier_plot_df = pd.DataFrame(named_verifier_plot_df["dataframe"])
 
-    # Filter results for current optimization level
-    current_verifier_plot_df = current_verifier_plot_df.loc[
-        current_verifier_plot_df['opt_level'] == opt_level.value]
-
-    # Raise exception if no data points were found after opt level filtering
-    if current_verifier_plot_df.empty or len(
-        np.unique(current_verifier_plot_df['revision'])
-    ) == 1:
-        # Need more than one data point
-        raise PlotDataEmpty
-
+    current_verifier_plot_df = tp.cast(
+        pd.DataFrame, named_verifier_plot_df['dataframe']
+    )
     current_verifier_plot_df.sort_values(by=['time_id'], inplace=True)
 
     revisions = current_verifier_plot_df['revision'].to_numpy()
@@ -84,7 +77,7 @@ def _extract_data_from_named_dataframe(
     success_ratio = successes / total
     failure_ratio = failures / total
 
-    result_data = current_project_name, {
+    result_data = named_verifier_plot_df['project_name'], {
         "revisions": revisions,
         "success_ratio": success_ratio,
         "failure_ratio": failure_ratio
@@ -94,19 +87,17 @@ def _extract_data_from_named_dataframe(
 
 
 def _load_all_named_dataframes(
-    current_config: PC.PaperConfig
+    current_config: PC.PaperConfig, opt_level: OptLevel
 ) -> tp.List[tp.Dict[str, tp.Union[str, pd.DataFrame]]]:
     all_case_studies = current_config.get_all_case_studies()
     all_named_dataframes: tp.List[tp.Dict[str, tp.Union[str,
                                                         pd.DataFrame]]] = []
 
     for case_study in sorted(all_case_studies, key=lambda cs: cs.project_name):
-        try:
-            all_named_dataframes.append(
-                _get_named_df_for_case_study(case_study)
-            )
-        except RuntimeWarning:
-            continue
+        named_df = _get_named_df_for_case_study(case_study, opt_level)
+
+        if named_df:
+            all_named_dataframes.append(named_df)
 
     return all_named_dataframes
 
@@ -128,14 +119,19 @@ def _verifier_plot(
 
     # The project name of the dataframes is stored to remember the
     # correct title of the subplots
-    named_verifier_plot_df_list = _load_all_named_dataframes(current_config)
+    named_verifier_plot_df_list = _load_all_named_dataframes(
+        current_config, opt_level
+    )
 
     final_plot_data: tp.List[tp.Tuple[str, tp.Dict[str, tp.Any]]] = []
 
     for named_dataframe in named_verifier_plot_df_list:
         final_plot_data.append(
-            _extract_data_from_named_dataframe(named_dataframe, opt_level)
+            _extract_data_from_named_dataframe(named_dataframe)
         )
+
+    if not final_plot_data:
+        raise PlotDataEmpty("No plot data was provided")
 
     if _is_multi_cs_plot():
         _verifier_plot_multiple(plot_cfg, final_plot_data)
