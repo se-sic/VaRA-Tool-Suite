@@ -42,8 +42,8 @@ class PygitBug:
         """ID of the issue associated with the bug, if there is one."""
         return self.__issue_id
 
-    def __eq__(self, other) -> bool:
-        if type(self) is type(other):
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, PygitBug):
             return (
                 self.fixing_commit == other.fixing_commit and
                 self.introducing_commits == other.introducing_commits and
@@ -83,8 +83,8 @@ class RawBug:
         """ID of the issue associated with the bug, if there is one."""
         return self.__issue_id
 
-    def __eq__(self, other) -> bool:
-        if type(self) is type(other):
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, RawBug):
             return (
                 self.fixing_commit == other.fixing_commit and
                 self.introducing_commits == other.introducing_commits and

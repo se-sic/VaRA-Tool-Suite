@@ -45,7 +45,7 @@ class BugProvider(Provider):
         Returns:
             A set of PygitBugs.
         """
-        resulting_bugs = set()
+        resulting_bugs: tp.Set[bug.PygitBug] = set()
         if self.__github_project_name:
             resulting_bugs.union(
                 bug.find_all_issue_pygit_bugs(self.__github_project_name)
@@ -62,7 +62,7 @@ class BugProvider(Provider):
         Returns:
             A set of RawBugs.
         """
-        resulting_bugs = set()
+        resulting_bugs: tp.Set[bug.RawBug] = set()
         if self.__github_project_name:
             resulting_bugs.union(
                 bug.find_all_issue_raw_bugs(self.__github_project_name)
@@ -84,7 +84,7 @@ class BugProvider(Provider):
         Returns:
             A set of PygitBugs fixed by fixing_commit
         """
-        resulting_bugs = set()
+        resulting_bugs: tp.Set[bug.PygitBug] = set()
         if self.__github_project_name:
             resulting_bugs.union(
                 bug.find_issue_pygit_bugs_by_fix(
@@ -111,7 +111,7 @@ class BugProvider(Provider):
         Returns:
             A set of RawBugs fixed by fixing_commit
         """
-        resulting_bugs = set()
+        resulting_bugs: tp.Set[bug.RawBug] = set()
         if self.__github_project_name:
             resulting_bugs.union(
                 bug.find_issue_raw_bugs_by_fix(
@@ -139,7 +139,7 @@ class BugProvider(Provider):
         Returns:
             A set of PygitBugs introduced by introducing_commit
         """
-        resulting_bugs = set()
+        resulting_bugs: tp.Set[bug.PygitBug] = set()
         if self.__github_project_name:
             resulting_bugs.union(
                 bug.find_issue_pygit_bugs_by_introduction(
@@ -167,7 +167,7 @@ class BugProvider(Provider):
         Returns:
             A set of RawBugs introduced by introducing_commit
         """
-        resulting_bugs = set()
+        resulting_bugs: tp.Set[bug.RawBug] = set()
         if self.__github_project_name:
             resulting_bugs.union(
                 bug.find_issue_raw_bugs_by_introduction(
