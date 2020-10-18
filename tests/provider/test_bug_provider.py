@@ -9,7 +9,7 @@ from github.Label import Label
 
 from varats.provider.bug.bug import (
     _has_closed_a_bug,
-    _search_corresponding_pygit_bug,
+    _create_corresponding_pygit_bug,
 )
 
 
@@ -112,7 +112,9 @@ class TestBugDetectionStrategies(unittest.TestCase):
             pygit2.Repository.revparse_single, return_value=issue_commit
         )
 
-        pybug = _search_corresponding_pygit_bug(issue_event, mock_repo)
+        pybug = _create_corresponding_pygit_bug(
+            issue_event.commit_id, mock_repo, issue_event.issue.number
+        )
 
         self.assertEqual(pybug.fixing_commit.hex, issue_event.commit_id)
         self.assertEqual(pybug.issue_id, issue_event.issue.number)

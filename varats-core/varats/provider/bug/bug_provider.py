@@ -45,9 +45,15 @@ class BugProvider(Provider):
         Returns:
             A set of PygitBugs.
         """
+        resulting_bugs = set()
         if self.__github_project_name:
-            return bug.find_all_pygit_bugs(self.__github_project_name)
-        return frozenset()
+            resulting_bugs.union(
+                bug.find_all_issue_pygit_bugs(self.__github_project_name)
+            )
+        resulting_bugs.union(
+            bug.find_all_commit_message_pygit_bugs(self.project.SOURCE)
+        )
+        return frozenset(resulting_bugs)
 
     def find_all_raw_bugs(self) -> tp.FrozenSet[bug.RawBug]:
         """
@@ -56,9 +62,15 @@ class BugProvider(Provider):
         Returns:
             A set of RawBugs.
         """
+        resulting_bugs = set()
         if self.__github_project_name:
-            return bug.find_all_raw_bugs(self.__github_project_name)
-        return frozenset()
+            resulting_bugs.union(
+                bug.find_all_issue_raw_bugs(self.__github_project_name)
+            )
+        resulting_bugs.union(
+            bug.find_all_commit_message_raw_bugs(self.project.SOURCE)
+        )
+        return frozenset(resulting_bugs)
 
     def find_pygit_bug_by_fix(self,
                               fixing_commit: str) -> tp.FrozenSet[bug.PygitBug]:
@@ -72,11 +84,20 @@ class BugProvider(Provider):
         Returns:
             A set of PygitBugs fixed by fixing_commit
         """
+        resulting_bugs = set()
         if self.__github_project_name:
-            return bug.find_pygit_bug_by_fix(
-                self.__github_project_name, fixing_commit
+            resulting_bugs.union(
+                bug.find_issue_pygit_bugs_by_fix(
+                    self.__github_project_name, fixing_commit
+                )
             )
-        return frozenset()
+
+        resulting_bugs.union(
+            bug.find_commit_message_pygit_bugs_by_fix(
+                self.project.SOURCE, fixing_commit
+            )
+        )
+        return frozenset(resulting_bugs)
 
     def find_raw_bug_by_fix(self,
                             fixing_commit: str) -> tp.FrozenSet[bug.RawBug]:
@@ -90,11 +111,20 @@ class BugProvider(Provider):
         Returns:
             A set of RawBugs fixed by fixing_commit
         """
+        resulting_bugs = set()
         if self.__github_project_name:
-            return bug.find_raw_bug_by_fix(
-                self.__github_project_name, fixing_commit
+            resulting_bugs.union(
+                bug.find_issue_raw_bugs_by_fix(
+                    self.__github_project_name, fixing_commit
+                )
             )
-        return frozenset()
+
+        resulting_bugs.union(
+            bug.find_commit_message_raw_bugs_by_fix(
+                self.project.SOURCE, fixing_commit
+            )
+        )
+        return frozenset(resulting_bugs)
 
     def find_pygit_bug_by_introduction(
         self, introducing_commit: str
@@ -109,11 +139,20 @@ class BugProvider(Provider):
         Returns:
             A set of PygitBugs introduced by introducing_commit
         """
+        resulting_bugs = set()
         if self.__github_project_name:
-            return bug.find_pygit_bug_by_introduction(
-                self.__github_project_name, introducing_commit
+            resulting_bugs.union(
+                bug.find_issue_pygit_bugs_by_introduction(
+                    self.__github_project_name, introducing_commit
+                )
             )
-        return frozenset()
+
+        resulting_bugs.union(
+            bug.find_commit_message_pygit_bugs_by_introduction(
+                self.project.SOURCE, introducing_commit
+            )
+        )
+        return frozenset(resulting_bugs)
 
     def find_raw_bug_by_introduction(
         self, introducing_commit: str
@@ -128,11 +167,20 @@ class BugProvider(Provider):
         Returns:
             A set of RawBugs introduced by introducing_commit
         """
+        resulting_bugs = set()
         if self.__github_project_name:
-            return bug.find_raw_bug_by_introduction(
-                self.__github_project_name, introducing_commit
+            resulting_bugs.union(
+                bug.find_issue_raw_bugs_by_introduction(
+                    self.__github_project_name, introducing_commit
+                )
             )
-        return frozenset()
+
+        resulting_bugs.union(
+            bug.find_commit_message_raw_bugs_by_introduction(
+                self.project.SOURCE, introducing_commit
+            )
+        )
+        return frozenset(resulting_bugs)
 
 
 class BugDefaultProvider(BugProvider):
