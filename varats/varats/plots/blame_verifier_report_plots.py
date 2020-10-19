@@ -132,7 +132,7 @@ def _verifier_plot(
     if not final_plot_data:
         raise PlotDataEmpty("No plot data was provided")
 
-    if _is_multi_cs_plot():
+    if _is_multi_cs_plot() and len(final_plot_data) > 1:
         _verifier_plot_multiple(plot_cfg, final_plot_data)
     else:
         # Pass the only list item of the plot data
