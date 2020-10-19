@@ -175,7 +175,7 @@ def create_commit_lookup_helper(
 
     # Only used when no git_name is provided
     primary_project_repo = get_local_project_git(project_name)
-    repos: tp.Dict[str, tp.Any[pygit2.Repository]] = {}
+    repos: tp.Dict[str, pygit2.Repository] = {}
     commit_hash_cache_dict: tp.Dict[str, pygit2.Commit] = {}
 
     def get_commit(
