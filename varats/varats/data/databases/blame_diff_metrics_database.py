@@ -30,8 +30,11 @@ from varats.revision.revisions import (
     get_failed_revisions_files,
     get_processed_revisions,
 )
-from varats.utils.git_util import ChurnConfig, calc_code_churn, \
-    create_commit_lookup_helper
+from varats.utils.git_util import (
+    ChurnConfig,
+    calc_code_churn,
+    create_commit_lookup_helper,
+)
 
 
 class BlameDiffMetricsDatabase(

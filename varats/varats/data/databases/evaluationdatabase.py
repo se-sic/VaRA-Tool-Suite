@@ -90,9 +90,8 @@ class EvaluationDatabase(abc.ABC):
             revisions = CharTrie()
             for revision in case_study.revisions:
                 revisions[revision] = True
-            return data_frame[data_frame["revision"].apply(
-                lambda x: revisions.has_node(x) != 0
-            )]
+            return data_frame[data_frame["revision"].
+                              apply(lambda x: revisions.has_node(x) != 0)]
 
         data = cs_filter(data)
         return data[columns]
