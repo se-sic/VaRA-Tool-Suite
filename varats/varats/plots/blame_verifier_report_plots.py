@@ -199,6 +199,7 @@ def _verifier_plot_multiple(
 ) -> None:
     fig = plt.figure()
     main_axis = fig.subplots()
+    main_axis.set_xlim(0, 1)
     project_names: str = "| "
     main_axis.grid(linestyle='--')
     main_axis.set_xlabel('Revisions normalized')
@@ -208,12 +209,15 @@ def _verifier_plot_multiple(
 
     for plot_data in final_plot_data:
         project_names += plot_data[0] + " | "
-        revisions_as_number = np.array([
+
+        # Save an unique int for each varying revision to prepare the data
+        # for the normalization on the x-axis
+        revisions_as_numbers = np.array([
             x + 1 for x, y in enumerate(plot_data[1]["revisions"])
         ]).reshape(-1, 1)
 
-        normalized_revisions = preprocessing.normalize(
-            revisions_as_number, axis=0
+        normalized_revisions = preprocessing.minmax_scale(
+            revisions_as_numbers, (0, 1), axis=0, copy=False
         )
         main_axis.plot(
             normalized_revisions,
