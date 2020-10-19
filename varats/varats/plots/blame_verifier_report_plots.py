@@ -46,10 +46,11 @@ def _get_named_df_for_case_study(
             return None
 
         # Need more than one data point
-        raise PlotDataEmpty(
+        LOG.warning(
             f"No data found for project {project_name} with optimization level "
             f"{opt_level.value}"
         )
+        raise PlotDataEmpty
 
     named_verifier_df = {
         "project_name": project_name,
@@ -130,7 +131,8 @@ def _verifier_plot(
         )
 
     if not final_plot_data:
-        raise PlotDataEmpty("No plot data was provided")
+        LOG.warning("No plot data was provided")
+        raise PlotDataEmpty
 
     if _is_multi_cs_plot() and len(final_plot_data) > 1:
         _verifier_plot_multiple(plot_cfg, final_plot_data)
