@@ -3,6 +3,7 @@ import abc
 import typing as tp
 
 import pandas as pd
+from pygtrie import CharTrie
 
 from varats.data.cache_helper import get_data_file_path
 from varats.mapping.commit_map import CommitMap
@@ -85,8 +86,12 @@ class EvaluationDatabase(abc.ABC):
             selected."""
             if case_study is None or data_frame.empty:
                 return data_frame
-            return data_frame[data_frame.apply(
-                lambda x: case_study.has_revision(x["revision"]), axis=1
+            # use a trie for fast prefix lookup
+            revisions = CharTrie()
+            for revision in case_study.revisions:
+                revisions[revision] = True
+            return data_frame[data_frame["revision"].apply(
+                lambda x: revisions.has_node(x) != 0
             )]
 
         data = cs_filter(data)
