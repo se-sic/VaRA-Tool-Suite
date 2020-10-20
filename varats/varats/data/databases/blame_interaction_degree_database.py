@@ -24,6 +24,7 @@ from varats.revision.revisions import (
     get_failed_revisions_files,
     get_processed_revisions_files,
 )
+from varats.utils.git_util import create_commit_lookup_helper
 
 MAX_TIME_BUCKET_SIZE = 1
 AVG_TIME_BUCKET_SIZE = 1
@@ -51,6 +52,7 @@ class BlameInteractionDegreeDatabase(
         cls, project_name: str, commit_map: CommitMap,
         case_study: tp.Optional[CaseStudy], **kwargs: tp.Any
     ) -> pd.DataFrame:
+        commit_lookup = create_commit_lookup_helper(project_name)
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
@@ -68,7 +70,7 @@ class BlameInteractionDegreeDatabase(
             total = sum(amounts)
 
             list_of_author_degree_occurrences = generate_author_degree_tuples(
-                report, project_name
+                report, commit_lookup
             )
             author_degrees, author_amounts = map(
                 list, zip(*list_of_author_degree_occurrences)
@@ -76,7 +78,7 @@ class BlameInteractionDegreeDatabase(
             author_total = sum(author_amounts)
 
             list_of_max_time_deltas = generate_max_time_distribution_tuples(
-                report, project_name, MAX_TIME_BUCKET_SIZE
+                report, commit_lookup, MAX_TIME_BUCKET_SIZE
             )
             max_time_buckets, max_time_amounts = map(
                 list, zip(*list_of_max_time_deltas)
@@ -84,7 +86,7 @@ class BlameInteractionDegreeDatabase(
             total_max_time_amounts = sum(max_time_amounts)
 
             list_of_avg_time_deltas = generate_avg_time_distribution_tuples(
-                report, project_name, AVG_TIME_BUCKET_SIZE
+                report, commit_lookup, AVG_TIME_BUCKET_SIZE
             )
             avg_time_buckets, avg_time_amounts = map(
                 list, zip(*list_of_avg_time_deltas)
