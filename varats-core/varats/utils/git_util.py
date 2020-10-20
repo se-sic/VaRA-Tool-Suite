@@ -168,10 +168,10 @@ class ChurnConfig():
         return concat_str
 
 
-CommitLookupHelper = tp.Callable[[str], pygit2.Commit]
+CommitLookupTy = tp.Callable[[str], pygit2.Commit]
 
 
-def create_commit_lookup_helper(project_name: str) -> CommitLookupHelper:
+def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
     """Creates a commit lookup function for a specific repository."""
 
     cache_dict: tp.Dict[str, pygit2.Commit] = {}

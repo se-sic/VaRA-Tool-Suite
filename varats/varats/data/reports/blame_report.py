@@ -16,7 +16,7 @@ from varats.utils.git_util import (
     create_commit_lookup_helper,
     map_commits,
     CommitRepoPair,
-    CommitLookupHelper,
+    CommitLookupTy,
 )
 
 
@@ -433,7 +433,7 @@ def count_interacting_commits(
 
 def count_interacting_authors(
     report: tp.Union[BlameReport, BlameReportDiff],
-    commit_lookup: CommitLookupHelper
+    commit_lookup: CommitLookupTy
 ) -> int:
     """
     Counts the number of unique interacting authors.
@@ -486,7 +486,7 @@ def generate_degree_tuples(
 
 def generate_author_degree_tuples(
     report: tp.Union[BlameReport, BlameReportDiff],
-    commit_lookup: CommitLookupHelper
+    commit_lookup: CommitLookupTy
 ) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples (author_degree, amount) where author_degree is
@@ -521,7 +521,7 @@ def generate_author_degree_tuples(
 
 def generate_time_delta_distribution_tuples(
     report: tp.Union[BlameReport, BlameReportDiff],
-    commit_lookup: CommitLookupHelper, bucket_size: int,
+    commit_lookup: CommitLookupTy, bucket_size: int,
     aggregate_function: tp.Callable[[tp.Sequence[tp.Union[int, float]]],
                                     tp.Union[int, float]]
 ) -> tp.List[tp.Tuple[int, int]]:
@@ -578,7 +578,7 @@ def generate_time_delta_distribution_tuples(
 
 def generate_avg_time_distribution_tuples(
     report: tp.Union[BlameReport, BlameReportDiff],
-    commit_lookup: CommitLookupHelper, bucket_size: int
+    commit_lookup: CommitLookupTy, bucket_size: int
 ) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples that represent the distribution of average time
@@ -601,7 +601,7 @@ def generate_avg_time_distribution_tuples(
 
 def generate_max_time_distribution_tuples(
     report: tp.Union[BlameReport, BlameReportDiff],
-    commit_lookup: CommitLookupHelper, bucket_size: int
+    commit_lookup: CommitLookupTy, bucket_size: int
 ) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples that represent the distribution of maximal time
