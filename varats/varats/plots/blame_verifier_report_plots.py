@@ -76,11 +76,17 @@ def _extract_data_from_named_dataframe(
 
     success_ratio = successes / total
     failure_ratio = failures / total
+    average_success_ratio = round((success_ratio.sum() / success_ratio.size) *
+                                  100, 2)
+    average_failure_ratio = round((failure_ratio.sum() / failure_ratio.size) *
+                                  100, 2)
 
     result_data = named_verifier_plot_df['project_name'], {
         "revisions": revisions,
         "success_ratio": success_ratio,
-        "failure_ratio": failure_ratio
+        "failure_ratio": failure_ratio,
+        "average_success_ratio": average_success_ratio,
+        "average_failure_ratio": average_failure_ratio
     }
 
     return result_data
@@ -166,7 +172,10 @@ def _verifier_plot_single(
         plot_data[1]["revisions"],
         plot_data[1]["success_ratio"],
         plot_data[1]["failure_ratio"],
-        labels=['successes', 'failures'],
+        labels=[
+            f"successes(\u2205{plot_data[1]['average_success_ratio']}%)",
+            f"failures(\u2205{plot_data[1]['average_failure_ratio']}%)"
+        ],
         colors=[SUCCESS_COLOR, FAILED_COLOR],
         alpha=0.5
     )
@@ -205,9 +214,12 @@ def _verifier_plot_multiple(
     main_axis.set_ylabel('Success rate in %')
     main_axis.yaxis.set_major_formatter(mtick.PercentFormatter(1.0))
     fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
+    mean_over_all_project_successes = 0
 
     for plot_data in final_plot_data:
         project_names += plot_data[0] + " | "
+        mean_over_all_project_successes += plot_data[1]["average_success_ratio"
+                                                       ] / len(final_plot_data)
 
         # Save an unique int for each varying revision to prepare the data
         # for the normalization on the x-axis
@@ -221,8 +233,10 @@ def _verifier_plot_multiple(
         main_axis.plot(
             normalized_revisions,
             plot_data[1]["success_ratio"],
-            label=plot_data[0]
+            label=
+            f"{plot_data[0]}(\u2205{plot_data[1]['average_success_ratio']}%)"
         )
+
     main_axis.title.set_text(
         str(plot_cfg['fig_title']) + f' - Project(s): \n{project_names}'
     )
@@ -230,8 +244,10 @@ def _verifier_plot_multiple(
     plt.setp(
         main_axis.get_xticklabels(), rotation=30, horizontalalignment='right'
     )
+
     legend = main_axis.legend(
-        title=plot_cfg['legend_title'],
+        title=
+        f"{plot_cfg['legend_title']}(\u2205{round(mean_over_all_project_successes, 2)}%):",
         loc='upper left',
         prop={
             'size': plot_cfg['legend_size'],
@@ -274,7 +290,7 @@ class BlameVerifierReportNoOptPlot(BlameVerifierReportPlot):
         legend_title: str
 
         if _is_multi_cs_plot():
-            legend_title = "Success rate of projects:"
+            legend_title = "Success rate of projects"
         else:
             legend_title = "Annotation types:"
 
@@ -300,7 +316,7 @@ class BlameVerifierReportOptPlot(BlameVerifierReportPlot):
         legend_title: str
 
         if _is_multi_cs_plot():
-            legend_title = "Success rate of projects:"
+            legend_title = "Success rate of projects"
         else:
             legend_title = "Annotation types:"
 
