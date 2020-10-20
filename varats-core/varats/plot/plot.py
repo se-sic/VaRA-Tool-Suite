@@ -105,7 +105,7 @@ class Plot(metaclass=PlotRegistry):
         'baz_42_foo.png'
         """
         plot_ident = ''
-        if 'plot_case_study' in self.plot_kwargs:
+        if self.plot_kwargs.get('plot_case_study', None):
             case_study: CaseStudy = self.plot_kwargs['plot_case_study']
             plot_ident = f"{case_study.project_name}_{case_study.version}_"
         elif 'project' in self.plot_kwargs:

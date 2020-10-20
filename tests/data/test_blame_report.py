@@ -20,7 +20,13 @@ FAKE_REPORT_PATH = (
 
 YAML_DOC_HEADER = """---
 DocType:         BlameReport
-Version:         1
+Version:         3
+...
+"""
+
+YAML_DOC_BR_METADATA = """---
+funcs-in-module: 3
+insts-in-module: 21
 ...
 """
 
@@ -113,7 +119,7 @@ result-map:
 
 YAML_DOC_HEADER_2 = """---
 DocType:         BlameReport
-Version:         2
+Version:         3
 ...
 """
 
@@ -268,15 +274,48 @@ class TestResultFunctionEntry(unittest.TestCase):
         self.assertEqual(cxx_interaction_list, [])
 
 
-class TestBlameReport(unittest.TestCase):
-    """Test if a blame report is correctly reconstructed from yaml."""
+class TestBlameReportMetaData(unittest.TestCase):
+    """Test if meta data from a blame report is correctly reconstructed from
+    yaml."""
+
+    report: BlameReport
 
     @classmethod
     def setUpClass(cls):
         """Load and parse function infos from yaml file."""
         with mock.patch(
             "builtins.open",
-            new=mock.mock_open(read_data=YAML_DOC_HEADER + YAML_DOC_BR_1)
+            new=mock.mock_open(
+                read_data=YAML_DOC_HEADER + YAML_DOC_BR_METADATA + YAML_DOC_BR_1
+            )
+        ):
+            loaded_report = BlameReport(Path('fake_file_path'))
+            cls.report = loaded_report
+
+    def test_num_functions_are_parsed_correctly(self):
+        """Tests if the number of functions is correctly parsed from the
+        file."""
+        self.assertEqual(self.report.meta_data.num_functions, 3)
+
+    def test_num_instructions_are_parsed_correctly(self):
+        """Tests if the number of instructions is correctly parsed from the
+        file."""
+        self.assertEqual(self.report.meta_data.num_instructions, 21)
+
+
+class TestBlameReport(unittest.TestCase):
+    """Test if a blame report is correctly reconstructed from yaml."""
+
+    report: BlameReport
+
+    @classmethod
+    def setUpClass(cls):
+        """Load and parse function infos from yaml file."""
+        with mock.patch(
+            "builtins.open",
+            new=mock.mock_open(
+                read_data=YAML_DOC_HEADER + YAML_DOC_BR_METADATA + YAML_DOC_BR_1
+            )
         ):
             loaded_report = BlameReport(Path('fake_file_path'))
             cls.report = loaded_report
@@ -322,7 +361,10 @@ class TestBlameReportWithRepoData(unittest.TestCase):
         """Load and parse function infos from yaml file."""
         with mock.patch(
             "builtins.open",
-            new=mock.mock_open(read_data=YAML_DOC_HEADER_2 + YAML_DOC_BR_5)
+            new=mock.mock_open(
+                read_data=YAML_DOC_HEADER_2 + YAML_DOC_BR_METADATA +
+                YAML_DOC_BR_5
+            )
         ):
             loaded_report = BlameReport(Path('fake_file_path'))
             cls.report = loaded_report
@@ -391,7 +433,10 @@ class TestBlameReportDiff(unittest.TestCase):
         ]:
             with mock.patch(
                 "builtins.open",
-                new=mock.mock_open(read_data=YAML_DOC_HEADER + report_yaml)
+                new=mock.mock_open(
+                    read_data=YAML_DOC_HEADER + YAML_DOC_BR_METADATA +
+                    report_yaml
+                )
             ):
                 cls.reports.append(BlameReport(Path(FAKE_REPORT_PATH)))
 
@@ -584,7 +629,9 @@ class TestBlameReportHelperFunctions(unittest.TestCase):
         """Load and parse function infos from yaml file."""
         with mock.patch(
             "builtins.open",
-            new=mock.mock_open(read_data=YAML_DOC_HEADER + YAML_DOC_BR_1)
+            new=mock.mock_open(
+                read_data=YAML_DOC_HEADER + YAML_DOC_BR_METADATA + YAML_DOC_BR_1
+            )
         ):
             loaded_report = BlameReport(Path('fake_file_path'))
             cls.report = loaded_report
