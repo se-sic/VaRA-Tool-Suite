@@ -246,8 +246,8 @@ def _verifier_plot_multiple(
     )
 
     legend = main_axis.legend(
-        title=
-        f"{plot_cfg['legend_title']}(\u2205{round(mean_over_all_project_successes, 2)}%):",
+        title=f"{plot_cfg['legend_title']}"
+        f"(\u2205{round(mean_over_all_project_successes, 2)}%):",
         loc='upper left',
         prop={
             'size': plot_cfg['legend_size'],
