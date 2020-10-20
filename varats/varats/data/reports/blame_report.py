@@ -193,6 +193,35 @@ def _calc_diff_between_func_entries(
     )
 
 
+class BlameReportMetaData():
+    """Provides extra meta data about llvm::Module, which was analyzed to
+    generate this ``BlameReport``."""
+
+    def __init__(self, num_functions: int, num_instructions: int) -> None:
+        self.__number_of_functions_in_module = num_functions
+        self.__number_of_instructions_in_module = num_instructions
+
+    @property
+    def num_functions(self) -> int:
+        """Number of functions in the analyzed llvm::Module."""
+        return self.__number_of_functions_in_module
+
+    @property
+    def num_instructions(self) -> int:
+        """Number of instructions processed in the analyzed llvm::Module."""
+        return self.__number_of_instructions_in_module
+
+    @staticmethod
+    def create_blame_report_meta_data(
+        raw_document: tp.Dict[str, tp.Any]
+    ) -> 'BlameReportMetaData':
+        """Creates `BlameReportMetaData` from the corresponding yaml
+        document."""
+        num_functions = int(raw_document['funcs-in-module'])
+        num_instructions = int(raw_document['insts-in-module'])
+        return BlameReportMetaData(num_functions, num_instructions)
+
+
 class BlameReport(BaseReport):
     """Full blame report containing all blame interactions."""
 
@@ -206,7 +235,10 @@ class BlameReport(BaseReport):
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
             version_header = VersionHeader(next(documents))
             version_header.raise_if_not_type("BlameReport")
-            version_header.raise_if_version_is_less_than(1)
+            version_header.raise_if_version_is_less_than(3)
+
+            self.__meta_data = BlameReportMetaData \
+                .create_blame_report_meta_data(next(documents))
 
             self.__function_entries: tp.Dict[str,
                                              BlameResultFunctionEntry] = dict()
@@ -241,6 +273,11 @@ class BlameReport(BaseReport):
     def head_commit(self) -> str:
         """The current HEAD commit under which this CommitReport was created."""
         return BlameReport.get_commit_hash_from_result_file(self.path.name)
+
+    @property
+    def meta_data(self) -> BlameReportMetaData:
+        """Access the meta data that was gathered with the ``BlameReport``."""
+        return self.__meta_data
 
     @staticmethod
     def get_file_name(
