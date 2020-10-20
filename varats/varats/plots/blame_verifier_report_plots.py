@@ -24,8 +24,8 @@ LOG = logging.getLogger(__name__)
 
 
 def _get_named_df_for_case_study(
-    case_study: CaseStudy
-) -> tp.Dict[str, tp.Union[str, pd.DataFrame]]:
+    case_study: CaseStudy, opt_level: OptLevel
+) -> tp.Optional[tp.Dict[str, tp.Union[str, pd.DataFrame]]]:
     project_name = case_study.project_name
     commit_map = get_commit_map(project_name)
 
@@ -36,10 +36,20 @@ def _get_named_df_for_case_study(
         ], commit_map, case_study
     )
 
+    # Filter results for current optimization level
+    verifier_plot_df = verifier_plot_df.loc[verifier_plot_df['opt_level'] ==
+                                            opt_level.value]
     if verifier_plot_df.empty or len(
         np.unique(verifier_plot_df['revision'])
     ) == 1:
+        if _is_multi_cs_plot():
+            return None
+
         # Need more than one data point
+        LOG.warning(
+            f"No data found for project {project_name} with optimization level "
+            f"{opt_level.value}"
+        )
         raise PlotDataEmpty
 
     named_verifier_df = {
@@ -51,23 +61,12 @@ def _get_named_df_for_case_study(
 
 
 def _extract_data_from_named_dataframe(
-    named_verifier_plot_df: tp.Dict[str, tp.Union[str, pd.DataFrame]],
-    opt_level: OptLevel
+    named_verifier_plot_df: tp.Dict[str, tp.Union[str, pd.DataFrame]]
 ) -> tp.Tuple[str, tp.Dict[str, tp.Any]]:
-    current_project_name = str(named_verifier_plot_df["project_name"])
-    current_verifier_plot_df = pd.DataFrame(named_verifier_plot_df["dataframe"])
 
-    # Filter results for current optimization level
-    current_verifier_plot_df = current_verifier_plot_df.loc[
-        current_verifier_plot_df['opt_level'] == opt_level.value]
-
-    # Raise exception if no data points were found after opt level filtering
-    if current_verifier_plot_df.empty or len(
-        np.unique(current_verifier_plot_df['revision'])
-    ) == 1:
-        # Need more than one data point
-        raise PlotDataEmpty
-
+    current_verifier_plot_df = tp.cast(
+        pd.DataFrame, named_verifier_plot_df['dataframe']
+    )
     current_verifier_plot_df.sort_values(by=['time_id'], inplace=True)
 
     revisions = current_verifier_plot_df['revision'].to_numpy()
@@ -78,7 +77,7 @@ def _extract_data_from_named_dataframe(
     success_ratio = successes / total
     failure_ratio = failures / total
 
-    result_data = current_project_name, {
+    result_data = named_verifier_plot_df['project_name'], {
         "revisions": revisions,
         "success_ratio": success_ratio,
         "failure_ratio": failure_ratio
@@ -88,14 +87,17 @@ def _extract_data_from_named_dataframe(
 
 
 def _load_all_named_dataframes(
-    current_config: PC.PaperConfig
+    current_config: PC.PaperConfig, opt_level: OptLevel
 ) -> tp.List[tp.Dict[str, tp.Union[str, pd.DataFrame]]]:
     all_case_studies = current_config.get_all_case_studies()
     all_named_dataframes: tp.List[tp.Dict[str, tp.Union[str,
                                                         pd.DataFrame]]] = []
 
     for case_study in sorted(all_case_studies, key=lambda cs: cs.project_name):
-        all_named_dataframes.append(_get_named_df_for_case_study(case_study))
+        named_df = _get_named_df_for_case_study(case_study, opt_level)
+
+        if named_df:
+            all_named_dataframes.append(named_df)
 
     return all_named_dataframes
 
@@ -117,16 +119,21 @@ def _verifier_plot(
 
     # The project name of the dataframes is stored to remember the
     # correct title of the subplots
-    named_verifier_plot_df_list = _load_all_named_dataframes(current_config)
+    named_verifier_plot_df_list = _load_all_named_dataframes(
+        current_config, opt_level
+    )
 
     final_plot_data: tp.List[tp.Tuple[str, tp.Dict[str, tp.Any]]] = []
 
     for named_dataframe in named_verifier_plot_df_list:
         final_plot_data.append(
-            _extract_data_from_named_dataframe(named_dataframe, opt_level)
+            _extract_data_from_named_dataframe(named_dataframe)
         )
 
-    if _is_multi_cs_plot():
+    if not final_plot_data:
+        raise PlotDataEmpty
+
+    if _is_multi_cs_plot() and len(final_plot_data) > 1:
         _verifier_plot_multiple(plot_cfg, final_plot_data)
     else:
         # Pass the only list item of the plot data
@@ -191,6 +198,7 @@ def _verifier_plot_multiple(
 ) -> None:
     fig = plt.figure()
     main_axis = fig.subplots()
+    main_axis.set_xlim(0, 1)
     project_names: str = "| "
     main_axis.grid(linestyle='--')
     main_axis.set_xlabel('Revisions normalized')
@@ -200,12 +208,15 @@ def _verifier_plot_multiple(
 
     for plot_data in final_plot_data:
         project_names += plot_data[0] + " | "
-        revisions_as_number = np.array([
+
+        # Save an unique int for each varying revision to prepare the data
+        # for the normalization on the x-axis
+        revisions_as_numbers = np.array([
             x + 1 for x, y in enumerate(plot_data[1]["revisions"])
         ]).reshape(-1, 1)
 
-        normalized_revisions = preprocessing.normalize(
-            revisions_as_number, axis=0
+        normalized_revisions = preprocessing.minmax_scale(
+            revisions_as_numbers, (0, 1), axis=0, copy=False
         )
         main_axis.plot(
             normalized_revisions,
@@ -213,7 +224,7 @@ def _verifier_plot_multiple(
             label=plot_data[0]
         )
     main_axis.title.set_text(
-        str(plot_cfg['fig_title']) + f' - Project(s) {project_names}'
+        str(plot_cfg['fig_title']) + f' - Project(s): \n{project_names}'
     )
 
     plt.setp(
