@@ -173,8 +173,8 @@ def _verifier_plot_single(
         plot_data[1]["success_ratio"],
         plot_data[1]["failure_ratio"],
         labels=[
-            f"successes(\u2205{plot_data[1]['average_success_ratio']}%)",
-            f"failures(\u2205{plot_data[1]['average_failure_ratio']}%)"
+            f"successes(\u2205 {plot_data[1]['average_success_ratio']}%)",
+            f"failures(\u2205 {plot_data[1]['average_failure_ratio']}%)"
         ],
         colors=[SUCCESS_COLOR, FAILED_COLOR],
         alpha=0.5
@@ -234,7 +234,7 @@ def _verifier_plot_multiple(
             normalized_revisions,
             plot_data[1]["success_ratio"],
             label=
-            f"{plot_data[0]}(\u2205{plot_data[1]['average_success_ratio']}%)"
+            f"{plot_data[0]}(\u2205 {plot_data[1]['average_success_ratio']}%)"
         )
 
     main_axis.title.set_text(
@@ -247,7 +247,7 @@ def _verifier_plot_multiple(
 
     legend = main_axis.legend(
         title=f"{plot_cfg['legend_title']}"
-        f"(\u2205{round(mean_over_all_project_successes, 2)}%):",
+        f"(\u2205 {round(mean_over_all_project_successes, 2)}%):",
         loc='upper left',
         prop={
             'size': plot_cfg['legend_size'],
