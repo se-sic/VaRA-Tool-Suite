@@ -256,22 +256,22 @@ def generate_html_plot_overview(
         artefacts: the artefacts to include in the overview
         outfile: the path to store the overview in
     """
-    projects: tp.Set[str] = {
-        case_study.project_name
-        for case_study in get_paper_config().get_all_case_studies()
-    }
 
     columns: tp.List[str] = []
-    for project in projects:
+    for case_study in get_paper_config().get_all_case_studies():
         images: tp.List[str] = []
         for artefact in artefacts:
-            plot_name = artefact.plot_type_class(artefact.plot_kwargs).name
-            image_name = f"{project}_{plot_name}.{artefact.file_format}"
-            if not (artefact.output_path / image_name).exists():
-                LOG.info(f"Could not find image {image_name}")
+            kwargs = dict(artefact.plot_kwargs)
+            kwargs['project'] = case_study.project_name
+            kwargs['plot_case_study'] = case_study
+            plot_name = artefact.plot_type_class(**kwargs).plot_file_name(
+                artefact.file_format
+            )
+            if not (artefact.output_path / plot_name).exists():
+                LOG.info(f"Could not find image {plot_name}")
                 continue
             image_path = (artefact.output_path /
-                          image_name).relative_to(outfile.parent)
+                          plot_name).relative_to(outfile.parent)
             images.append(__IMAGE_TEMPLATE.format(str(image_path)))
         if images:
             columns.append(__COLUMN_TEMPLATE.format("\n".join(images)))
