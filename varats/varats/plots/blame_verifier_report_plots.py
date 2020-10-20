@@ -131,7 +131,6 @@ def _verifier_plot(
         )
 
     if not final_plot_data:
-        LOG.warning("No plot data was provided")
         raise PlotDataEmpty
 
     if _is_multi_cs_plot() and len(final_plot_data) > 1:
