@@ -3,7 +3,6 @@
 import typing as tp
 
 import pygit2
-from benchbuild.project import Project
 from github import Github
 from github.IssueEvent import IssueEvent
 from github.PaginatedList import PaginatedList
@@ -277,7 +276,7 @@ def _filter_all_issue_raw_bugs(
 
 
 def _filter_all_commit_message_pygit_bugs(
-    project: tp.Type[Project],
+    project_name: str,
     commit_filter_function: tp.Callable[[pygit2.Commit], tp.Optional[PygitBug]]
 ) -> tp.FrozenSet[PygitBug]:
     """
@@ -285,7 +284,7 @@ def _filter_all_commit_message_pygit_bugs(
     PygitBugs using the commit history.
 
     Args:
-        project: The project to draw the commit history from.
+        project_name: Name of the project to draw the commit history from.
         commit_filter_function: Function that determines for a commit
             whether it produces an acceptable PygitBug or not.
 
@@ -293,7 +292,7 @@ def _filter_all_commit_message_pygit_bugs(
         The set of PygitBugs considered acceptable by the filtering method.
     """
     resulting_pygit_bugs = set()
-    project_repo = get_local_project_git(project.name)
+    project_repo = get_local_project_git(project_name)
 
     # traverse commit history
     most_recent_commit = project_repo[project_repo.head.target]
@@ -308,15 +307,15 @@ def _filter_all_commit_message_pygit_bugs(
 
 
 def _filter_all_commit_message_raw_bugs(
-    project: tp.Type[Project],
-    commit_filter_function: tp.Callable[[pygit2.Commit], tp.Optional[RawBug]]
+    project_name: str, commit_filter_function: tp.Callable[[pygit2.Commit],
+                                                           tp.Optional[RawBug]]
 ) -> tp.FrozenSet[RawBug]:
     """
     Wrapper function that uses given function to filter out a certain type of
     PygitBugs using the commit history.
 
     Args:
-        project: The project to draw the commit history from.
+        project_name: Name of the project to draw the commit history from.
         commit_filter_function: Function that determines for a commit
             whether it produces an acceptable RawBug or not.
 
@@ -324,7 +323,7 @@ def _filter_all_commit_message_raw_bugs(
         The set of RawBugs considered acceptable by the filtering method.
     """
     resulting_raw_bugs = set()
-    project_repo = get_local_project_git(project.name)
+    project_repo = get_local_project_git(project_name)
 
     # traverse commit history
     most_recent_commit = project_repo[project_repo.head.target]
@@ -519,13 +518,13 @@ def find_issue_raw_bugs_by_introduction(
 
 
 def find_all_commit_message_pygit_bugs(
-    project: tp.Type[Project]
+    project_name: str
 ) -> tp.FrozenSet[PygitBug]:
     """
     Creates a set of all bugs found in the commit history of a project.
 
     Args:
-        project: The project in which to search for bugs
+        project_name: Name of the project in which to search for bugs
 
     Returns:
         A set of PygitBugs
@@ -535,23 +534,21 @@ def find_all_commit_message_pygit_bugs(
         commit: pygit2.Commit
     ) -> tp.Optional[PygitBug]:
         if _is_closing_message(commit.message):
-            pygit_repo: pygit2.Repository = get_local_project_git(project.name)
+            pygit_repo: pygit2.Repository = get_local_project_git(project_name)
             return _create_corresponding_pygit_bug(commit.hex, pygit_repo)
         return None
 
     return _filter_all_commit_message_pygit_bugs(
-        project, accept_all_commit_message_pybugs
+        project_name, accept_all_commit_message_pybugs
     )
 
 
-def find_all_commit_message_raw_bugs(
-    project: tp.Type[Project]
-) -> tp.FrozenSet[RawBug]:
+def find_all_commit_message_raw_bugs(project_name: str) -> tp.FrozenSet[RawBug]:
     """
     Creates a set of all bugs found in the commit history of a project.
 
     Args:
-        project: The project in which to search for bugs
+        project_name: Name of the project in which to search for bugs
 
     Returns:
         A set of PygitBugs
@@ -561,24 +558,24 @@ def find_all_commit_message_raw_bugs(
         commit: pygit2.Commit
     ) -> tp.Optional[RawBug]:
         if _is_closing_message(commit.message):
-            pygit_repo: pygit2.Repository = get_local_project_git(project.name)
+            pygit_repo: pygit2.Repository = get_local_project_git(project_name)
             return _create_corresponding_raw_bug(commit.hex, pygit_repo)
         return None
 
     return _filter_all_commit_message_raw_bugs(
-        project, accept_all_commit_message_rawbugs
+        project_name, accept_all_commit_message_rawbugs
     )
 
 
 def find_commit_message_pygit_bugs_by_fix(
-    project: tp.Type[Project], fixing_commit: str
+    project_name: str, fixing_commit: str
 ) -> tp.FrozenSet[PygitBug]:
     """
     Traverses the commit history of given project to find the bug associated to
     some fixing commit, if there is any.
 
     Args:
-        project: The project in which to search for bugs
+        project_name: Name of the project in which to search for bugs
         fixing_commit: Commit Hash of the potentially fixing commit
 
     Returns:
@@ -589,26 +586,26 @@ def find_commit_message_pygit_bugs_by_fix(
         commit: pygit2.Commit
     ) -> tp.Optional[PygitBug]:
         if _is_closing_message(commit.message):
-            pygit_repo: pygit2.Repository = get_local_project_git(project.name)
+            pygit_repo: pygit2.Repository = get_local_project_git(project_name)
             pybug = _create_corresponding_pygit_bug(commit.hex, pygit_repo)
             if pybug.fixing_commit.hex == fixing_commit:
                 return pybug
         return None
 
     return _filter_all_commit_message_pygit_bugs(
-        project, accept_commit_message_pybug_with_certain_fix
+        project_name, accept_commit_message_pybug_with_certain_fix
     )
 
 
 def find_commit_message_raw_bugs_by_fix(
-    project: tp.Type[Project], fixing_commit: str
+    project_name: str, fixing_commit: str
 ) -> tp.FrozenSet[RawBug]:
     """
     Traverses the commit history of given project to find the bug associated to
     some fixing commit, if there is any.
 
     Args:
-        project: The project in which to search for bugs
+        project_name: Name of the project in which to search for bugs
         fixing_commit: Commit Hash of the potentially fixing commit
 
     Returns:
@@ -619,26 +616,26 @@ def find_commit_message_raw_bugs_by_fix(
         commit: pygit2.Commit
     ) -> tp.Optional[RawBug]:
         if _is_closing_message(commit.message):
-            pygit_repo: pygit2.Repository = get_local_project_git(project.name)
+            pygit_repo: pygit2.Repository = get_local_project_git(project_name)
             rawbug = _create_corresponding_raw_bug(commit.hex, pygit_repo)
             if rawbug.fixing_commit == fixing_commit:
                 return rawbug
         return None
 
     return _filter_all_commit_message_raw_bugs(
-        project, accept_commit_message_rawbug_with_certain_fix
+        project_name, accept_commit_message_rawbug_with_certain_fix
     )
 
 
 def find_commit_message_pygit_bugs_by_introduction(
-    project: tp.Type[Project], introducing_commit: str
+    project_name: str, introducing_commit: str
 ) -> tp.FrozenSet[PygitBug]:
     """
     Create a (potentially empty) list of bugs introduced by a certain commit by
     traversing the commit history of given project.
 
     Args:
-        project: The project in which to search for bugs
+        project_name: Name of the project in which to search for bugs
         introducing_commit: Commit Hash of the introducing commit to look for
 
     Returns:
@@ -649,7 +646,7 @@ def find_commit_message_pygit_bugs_by_introduction(
         commit: pygit2.Commit
     ) -> tp.Optional[PygitBug]:
         if _is_closing_message(commit.message):
-            pygit_repo: pygit2.Repository = get_local_project_git(project.name)
+            pygit_repo: pygit2.Repository = get_local_project_git(project_name)
             pybug = _create_corresponding_pygit_bug(commit.hex, pygit_repo)
 
             for introducing_pycommit in pybug.introducing_commits:
@@ -658,19 +655,19 @@ def find_commit_message_pygit_bugs_by_introduction(
         return None
 
     return _filter_all_commit_message_pygit_bugs(
-        project, accept_commit_message_pybug_with_certain_introduction
+        project_name, accept_commit_message_pybug_with_certain_introduction
     )
 
 
 def find_commit_message_raw_bugs_by_introduction(
-    project: tp.Type[Project], introducing_commit: str
+    project_name: str, introducing_commit: str
 ) -> tp.FrozenSet[RawBug]:
     """
     Create a (potentially empty) list of bugs introduced by a certain commit by
     traversing the commit history of given project.
 
     Args:
-        project: The project in which to search for bugs
+        project_name: Name of the project in which to search for bugs
         introducing_commit: Commit Hash of the introducing commit to look for
 
     Returns:
@@ -681,7 +678,7 @@ def find_commit_message_raw_bugs_by_introduction(
         commit: pygit2.Commit
     ) -> tp.Optional[RawBug]:
         if _is_closing_message(commit.message):
-            pygit_repo: pygit2.Repository = get_local_project_git(project.name)
+            pygit_repo: pygit2.Repository = get_local_project_git(project_name)
             rawbug = _create_corresponding_raw_bug(commit.hex, pygit_repo)
 
             for introducing_id in rawbug.introducing_commits:
@@ -690,5 +687,5 @@ def find_commit_message_raw_bugs_by_introduction(
         return None
 
     return _filter_all_commit_message_raw_bugs(
-        project, accept_commit_message_rawbug_with_certain_introduction
+        project_name, accept_commit_message_rawbug_with_certain_introduction
     )
