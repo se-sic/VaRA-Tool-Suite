@@ -51,7 +51,7 @@ class BugProvider(Provider):
                 bug.find_all_issue_pygit_bugs(self.__github_project_name)
             )
         resulting_bugs.union(
-            bug.find_all_commit_message_pygit_bugs(self.project.SOURCE)
+            bug.find_all_commit_message_pygit_bugs(self.project)
         )
         return frozenset(resulting_bugs)
 
@@ -67,9 +67,7 @@ class BugProvider(Provider):
             resulting_bugs.union(
                 bug.find_all_issue_raw_bugs(self.__github_project_name)
             )
-        resulting_bugs.union(
-            bug.find_all_commit_message_raw_bugs(self.project.SOURCE)
-        )
+        resulting_bugs.union(bug.find_all_commit_message_raw_bugs(self.project))
         return frozenset(resulting_bugs)
 
     def find_pygit_bug_by_fix(self,
@@ -94,7 +92,7 @@ class BugProvider(Provider):
 
         resulting_bugs.union(
             bug.find_commit_message_pygit_bugs_by_fix(
-                self.project.SOURCE, fixing_commit
+                self.project, fixing_commit
             )
         )
         return frozenset(resulting_bugs)
@@ -121,7 +119,7 @@ class BugProvider(Provider):
 
         resulting_bugs.union(
             bug.find_commit_message_raw_bugs_by_fix(
-                self.project.SOURCE, fixing_commit
+                self.project, fixing_commit
             )
         )
         return frozenset(resulting_bugs)
@@ -149,7 +147,7 @@ class BugProvider(Provider):
 
         resulting_bugs.union(
             bug.find_commit_message_pygit_bugs_by_introduction(
-                self.project.SOURCE, introducing_commit
+                self.project, introducing_commit
             )
         )
         return frozenset(resulting_bugs)
@@ -177,7 +175,7 @@ class BugProvider(Provider):
 
         resulting_bugs.union(
             bug.find_commit_message_raw_bugs_by_introduction(
-                self.project.SOURCE, introducing_commit
+                self.project, introducing_commit
             )
         )
         return frozenset(resulting_bugs)

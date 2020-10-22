@@ -277,8 +277,8 @@ def _filter_all_issue_raw_bugs(
 
 
 def _filter_all_commit_message_pygit_bugs(
-    project: Project, commit_filter_function: tp.Callable[[pygit2.Commit],
-                                                          tp.Optional[PygitBug]]
+    project: tp.Type[Project],
+    commit_filter_function: tp.Callable[[pygit2.Commit], tp.Optional[PygitBug]]
 ) -> tp.FrozenSet[PygitBug]:
     """
     Wrapper function that uses given function to filter out a certain type of
@@ -308,8 +308,8 @@ def _filter_all_commit_message_pygit_bugs(
 
 
 def _filter_all_commit_message_raw_bugs(
-    project: Project, commit_filter_function: tp.Callable[[pygit2.Commit],
-                                                          tp.Optional[RawBug]]
+    project: tp.Type[Project],
+    commit_filter_function: tp.Callable[[pygit2.Commit], tp.Optional[RawBug]]
 ) -> tp.FrozenSet[RawBug]:
     """
     Wrapper function that uses given function to filter out a certain type of
@@ -519,7 +519,7 @@ def find_issue_raw_bugs_by_introduction(
 
 
 def find_all_commit_message_pygit_bugs(
-    project: Project
+    project: tp.Type[Project]
 ) -> tp.FrozenSet[PygitBug]:
     """
     Creates a set of all bugs found in the commit history of a project.
@@ -544,7 +544,9 @@ def find_all_commit_message_pygit_bugs(
     )
 
 
-def find_all_commit_message_raw_bugs(project: Project) -> tp.FrozenSet[RawBug]:
+def find_all_commit_message_raw_bugs(
+    project: tp.Type[Project]
+) -> tp.FrozenSet[RawBug]:
     """
     Creates a set of all bugs found in the commit history of a project.
 
@@ -569,7 +571,7 @@ def find_all_commit_message_raw_bugs(project: Project) -> tp.FrozenSet[RawBug]:
 
 
 def find_commit_message_pygit_bugs_by_fix(
-    project: Project, fixing_commit: str
+    project: tp.Type[Project], fixing_commit: str
 ) -> tp.FrozenSet[PygitBug]:
     """
     Traverses the commit history of given project to find the bug associated to
@@ -599,7 +601,7 @@ def find_commit_message_pygit_bugs_by_fix(
 
 
 def find_commit_message_raw_bugs_by_fix(
-    project: Project, fixing_commit: str
+    project: tp.Type[Project], fixing_commit: str
 ) -> tp.FrozenSet[RawBug]:
     """
     Traverses the commit history of given project to find the bug associated to
@@ -629,7 +631,7 @@ def find_commit_message_raw_bugs_by_fix(
 
 
 def find_commit_message_pygit_bugs_by_introduction(
-    project: Project, introducing_commit: str
+    project: tp.Type[Project], introducing_commit: str
 ) -> tp.FrozenSet[PygitBug]:
     """
     Create a (potentially empty) list of bugs introduced by a certain commit by
@@ -661,7 +663,7 @@ def find_commit_message_pygit_bugs_by_introduction(
 
 
 def find_commit_message_raw_bugs_by_introduction(
-    project: Project, introducing_commit: str
+    project: tp.Type[Project], introducing_commit: str
 ) -> tp.FrozenSet[RawBug]:
     """
     Create a (potentially empty) list of bugs introduced by a certain commit by
