@@ -312,7 +312,7 @@ def _filter_all_commit_message_raw_bugs(
 ) -> tp.FrozenSet[RawBug]:
     """
     Wrapper function that uses given function to filter out a certain type of
-    PygitBugs using the commit history.
+    RawBugs using the commit history.
 
     Args:
         project_name: Name of the project to draw the commit history from.
