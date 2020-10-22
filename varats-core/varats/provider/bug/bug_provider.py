@@ -51,7 +51,7 @@ class BugProvider(Provider):
                 bug.find_all_issue_pygit_bugs(self.__github_project_name)
             )
         resulting_bugs.union(
-            bug.find_all_commit_message_pygit_bugs(self.project.name)
+            bug.find_all_commit_message_pygit_bugs(self.project.NAME)
         )
         return frozenset(resulting_bugs)
 
@@ -68,7 +68,7 @@ class BugProvider(Provider):
                 bug.find_all_issue_raw_bugs(self.__github_project_name)
             )
         resulting_bugs.union(
-            bug.find_all_commit_message_raw_bugs(self.project.name)
+            bug.find_all_commit_message_raw_bugs(self.project.NAME)
         )
         return frozenset(resulting_bugs)
 
@@ -94,7 +94,7 @@ class BugProvider(Provider):
 
         resulting_bugs.union(
             bug.find_commit_message_pygit_bugs_by_fix(
-                self.project.name, fixing_commit
+                self.project.NAME, fixing_commit
             )
         )
         return frozenset(resulting_bugs)
@@ -121,7 +121,7 @@ class BugProvider(Provider):
 
         resulting_bugs.union(
             bug.find_commit_message_raw_bugs_by_fix(
-                self.project.name, fixing_commit
+                self.project.NAME, fixing_commit
             )
         )
         return frozenset(resulting_bugs)
@@ -149,7 +149,7 @@ class BugProvider(Provider):
 
         resulting_bugs.union(
             bug.find_commit_message_pygit_bugs_by_introduction(
-                self.project.name, introducing_commit
+                self.project.NAME, introducing_commit
             )
         )
         return frozenset(resulting_bugs)
@@ -177,7 +177,7 @@ class BugProvider(Provider):
 
         resulting_bugs.union(
             bug.find_commit_message_raw_bugs_by_introduction(
-                self.project.name, introducing_commit
+                self.project.NAME, introducing_commit
             )
         )
         return frozenset(resulting_bugs)
