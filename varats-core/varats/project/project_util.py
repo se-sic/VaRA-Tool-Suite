@@ -62,11 +62,11 @@ def get_extended_commit_lookup_source(
     # The primary source should always be first in the source list
     primary_source_name = os.path.basename(project_cls.SOURCE[0].local)
 
-    if git_name.startswith(primary_source_name):
+    if git_name == primary_source_name:
         return get_primary_project_source(project_name)
 
     for source in project_cls.SOURCE:
-        if git_name.startswith(os.path.basename(source.local)):
+        if git_name == os.path.basename(source.local):
             return source
 
     raise LookupError(
