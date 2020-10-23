@@ -267,8 +267,7 @@ def map_commits(
     """Maps a function over a range of commits."""
     # Skip 0000 hashes that we added to mark uncommitted files
     return [
-        func(commit_lookup(cr_pair.commit_hash, cr_pair.repository_name)
-            )  # TODO: extend look up with repo name
+        func(commit_lookup(cr_pair.commit_hash, cr_pair.repository_name))
         for cr_pair in cr_pair_list
         if cr_pair.commit_hash != "0000000000000000000000000000000000000000"
     ]

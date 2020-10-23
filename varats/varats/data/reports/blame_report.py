@@ -592,7 +592,7 @@ def generate_time_delta_distribution_tuples(
             base_commit = commit_lookup(
                 interaction.base_commit.commit_hash,
                 interaction.base_commit.repository_name
-            )  # TODO: extend look up with repo name
+            )
             base_c_time = datetime.utcfromtimestamp(base_commit.commit_time)
 
             def translate_to_time_deltas2(
