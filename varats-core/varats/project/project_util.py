@@ -49,7 +49,7 @@ def get_local_project_git_path(
     if hasattr(source, "fetch"):
         source.fetch()
 
-    return Path(target_prefix()) / source.local
+    return tp.cast(Path, Path(target_prefix()) / source.local)
 
 
 def get_extended_commit_lookup_source(
@@ -59,8 +59,7 @@ def get_extended_commit_lookup_source(
     match was found."""
     project_cls = get_project_cls_by_name(project_name)
 
-    # The primary source should always be first in the source list
-    primary_source_name = os.path.basename(project_cls.SOURCE[0].local)
+    primary_source_name = get_primary_project_source(project_name).local
 
     if git_name == primary_source_name:
         return get_primary_project_source(project_name)
