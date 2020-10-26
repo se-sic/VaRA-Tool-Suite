@@ -7,6 +7,7 @@ from benchbuild.project import Project
 from benchbuild.source import primary
 
 import varats.provider.bug.bug as bug
+from varats.project.project_util import get_primary_project_source
 from varats.provider.provider import Provider
 
 LOG = logging.getLogger(__name__)
@@ -27,9 +28,18 @@ class BugProvider(Provider):
     def create_provider_for_project(
         cls, project: tp.Type[Project]
     ) -> tp.Optional['BugProvider']:
-        match = GITHUB_URL_PATTERN.match(primary(*project.SOURCE).remote)
-        if match:
-            return BugProvider(project, f"{match.group(1)}/{match.group(2)}")
+        primary_source = get_primary_project_source(project.NAME)
+
+        # test if project has a GIT repository
+        if hasattr(primary_source, "fetch"):
+            match = GITHUB_URL_PATTERN.match(primary(*project.SOURCE).remote)
+            if match:
+                return BugProvider(
+                    project, f"{match.group(1)}/{match.group(2)}"
+                )
+
+            # project is no github project
+            return BugProvider(project, None)
         return None
 
     @classmethod
