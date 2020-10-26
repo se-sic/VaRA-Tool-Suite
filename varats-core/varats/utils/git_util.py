@@ -176,9 +176,13 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
 
     # Only used when no git_name is provided
     primary_project_repo = get_local_project_git(project_name)
-    repos: tp.Dict[str, pygit2.Repository] = {}
-    commit_hash_cache_dict: tp.Dict[str, pygit2.Commit] = {}
-    git_name_to_commit_hash_dict: tp.Dict[str, str] = {}
+    repos: tp.Dict[tp.Optional[str], pygit2.Repository] = {}
+
+    # Maps the git_name to its corresponding git repository with an inner
+    # hash-commit mapping
+    cache_dict: tp.Dict[tp.Optional[str], tp.Dict[pygit2.Repository,
+                                                  tp.Dict[str,
+                                                          pygit2.Commit]]] = {}
 
     def get_commit(
         c_hash: str, git_name: tp.Optional[str] = None
@@ -187,34 +191,38 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
             git_name = None
 
         if not git_name:
-            if c_hash in commit_hash_cache_dict:
-                return commit_hash_cache_dict[c_hash]
+            if git_name not in cache_dict:
+                repos[git_name] = primary_project_repo
+                cache_dict[git_name] = {}
+                cache_dict[git_name][primary_project_repo] = {}
+
+            if c_hash in cache_dict[git_name][repos[git_name]]:
+                return cache_dict[git_name][repos[git_name]][c_hash]
 
             commit = primary_project_repo.get(c_hash)
             if commit is None:
                 raise LookupError(
                     f"Could not find commit {c_hash} in {project_name}"
                 )
-            commit_hash_cache_dict[c_hash] = commit
+            cache_dict[git_name][repos[git_name]][c_hash] = commit
             return commit
 
-        if git_name not in repos:
-            repos[git_name] = get_local_project_git(project_name, git_name)
+        if git_name not in cache_dict:
+            current_repo = get_local_project_git(project_name, git_name)
+            repos[git_name] = current_repo
+            cache_dict[git_name] = {}
+            cache_dict[git_name][current_repo] = {}
 
-        if c_hash not in commit_hash_cache_dict and repos[git_name].get(c_hash):
-            git_name_to_commit_hash_dict[git_name] = c_hash
-            commit = repos[git_name].get(c_hash)
-            commit_hash_cache_dict[c_hash] = commit
+        if c_hash in cache_dict[git_name][repos[git_name]]:
+            return cache_dict[git_name][repos[git_name]][c_hash]
 
-        # Ensure that the scope of a c_hash lies in its corresponding git_name
-        if git_name not in git_name_to_commit_hash_dict \
-                or c_hash not in git_name_to_commit_hash_dict[git_name]:
+        commit = repos[git_name].get(c_hash)
+        if commit is None:
             raise LookupError(
                 f"Could not find commit {c_hash} in "
                 f"project {project_name} within git repository {git_name}"
             )
-
-        return commit_hash_cache_dict[c_hash]
+        cache_dict[git_name][repos[git_name]][c_hash] = commit
 
     return get_commit
 
