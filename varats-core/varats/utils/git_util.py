@@ -223,6 +223,7 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
                 f"project {project_name} within git repository {git_name}"
             )
         cache_dict[git_name][repos[git_name]][c_hash] = commit
+        return commit
 
     return get_commit
 
