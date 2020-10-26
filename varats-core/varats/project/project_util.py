@@ -49,7 +49,7 @@ def get_local_project_git_path(
     if hasattr(source, "fetch"):
         source.fetch()
 
-    return Path(target_prefix() + "/" + source.local)
+    return Path(target_prefix()) / source.local
 
 
 def get_extended_commit_lookup_source(
