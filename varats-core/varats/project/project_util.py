@@ -59,7 +59,9 @@ def get_extended_commit_lookup_source(
     match was found."""
     project_cls = get_project_cls_by_name(project_name)
 
-    primary_source_name = get_primary_project_source(project_name).local
+    primary_source_name = os.path.basename(
+        get_primary_project_source(project_name).local
+    )
 
     if git_name == primary_source_name:
         return get_primary_project_source(project_name)
