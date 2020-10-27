@@ -169,17 +169,17 @@ class TestBugDetectionStrategies(unittest.TestCase):
         mock_repo = create_autospec(pygit2.Repository)
         mock_repo.revparse_single = MagicMock(side_effect=mock_revparse)
 
-        def mock_get_all_issue_events():
+        def mock_get_all_issue_events(project_name: str):
             return [
                 event_close_first_nocommit, event_close_no_bug,
                 event_reopen_first, event_close_second, event_close_first
             ]
 
-        def mock_get_repo():
+        def mock_get_repo(project_name: str):
             return mock_repo
 
-        with patch(bug._get_all_issue_events, mock_get_all_issue_events), \
-        patch(bug.get_local_project_git, mock_get_repo):
+        with patch('varats.provider.bug.bug._get_all_issue_events', mock_get_all_issue_events), \
+        patch('varats.provider.bug.bug.get_local_project_git', mock_get_repo):
 
             # issue filter method for pygit bugs
             def accept_pybugs(event: IssueEvent):

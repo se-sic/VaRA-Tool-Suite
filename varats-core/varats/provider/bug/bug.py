@@ -23,7 +23,7 @@ class PygitBug:
         introducing_commits: tp.Set[pygit2.Commit], issue_id: tp.Optional[int]
     ) -> None:
         self.__fixing_commit = fixing_commit
-        self.__introducing_commits = introducing_commits
+        self.__introducing_commits = frozenset(introducing_commits)
         self.__issue_id = issue_id
 
     @property
@@ -32,7 +32,7 @@ class PygitBug:
         return self.__fixing_commit
 
     @property
-    def introducing_commits(self) -> tp.Set[pygit2.Commit]:
+    def introducing_commits(self) -> tp.FrozenSet[pygit2.Commit]:
         """Commits introducing the bug as List of pygit2 Commits."""
         return self.__introducing_commits
 
@@ -64,7 +64,7 @@ class RawBug:
         issue_id: tp.Optional[int]
     ) -> None:
         self.__fixing_commit = fixing_commit
-        self.__introducing_commits = introducing_commits
+        self.__introducing_commits = frozenset(introducing_commits)
         self.__issue_id = issue_id
 
     @property
@@ -73,7 +73,7 @@ class RawBug:
         return self.__fixing_commit
 
     @property
-    def introducing_commits(self) -> tp.Set[str]:
+    def introducing_commits(self) -> tp.FrozenSet[str]:
         """Hashes of the commits introducing the bug as List of strings."""
         return self.__introducing_commits
 
