@@ -200,4 +200,10 @@ class TestBugDetectionStrategies(unittest.TestCase):
             pybugs = bug._filter_all_issue_pygit_bugs("", accept_pybugs)
             rawbugs = bug._filter_all_issue_raw_bugs("", accept_rawbugs)
 
-            # TODO test if pybugs and rawbugs contain bugs with correct IDs
+            # create set of fixing IDs of found bugs
+            pybugs_ids = set(pybug.fixing_commit.hex for pybug in pybugs)
+            rawbug_ids = set(rawbug.fixing_commit for rawbug in rawbugs)
+            expected_ids = {"1239", "1240"}
+
+            self.assertEqual(pybugs_ids, expected_ids)
+            self.assertEqual(rawbug_ids, expected_ids)
