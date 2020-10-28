@@ -184,8 +184,12 @@ class TestBugDetectionStrategies(unittest.TestCase):
         def mock_get_repo(project_name: str):
             return mock_repo
 
-        with patch('varats.provider.bug.bug._get_all_issue_events', mock_get_all_issue_events), \
-        patch('varats.provider.bug.bug.get_local_project_git', mock_get_repo):
+        with patch(
+                'varats.provider.bug.bug._get_all_issue_events',
+                mock_get_all_issue_events),\
+            patch(
+                'varats.provider.bug.bug.get_local_project_git',
+                mock_get_repo):
 
             # issue filter method for pygit bugs
             def accept_pybugs(event: IssueEvent):
