@@ -7,7 +7,13 @@ from github.Issue import Issue
 from github.IssueEvent import IssueEvent
 from github.Label import Label
 
-import varats.provider.bug.bug as bug
+from varats.provider.bug.bug import (
+    _has_closed_a_bug,
+    _create_corresponding_pygit_bug,
+    _create_corresponding_raw_bug,
+    _filter_all_issue_raw_bugs,
+    _filter_all_issue_pygit_bugs,
+)
 
 
 class TestBugDetectionStrategies(unittest.TestCase):
@@ -41,8 +47,8 @@ class TestBugDetectionStrategies(unittest.TestCase):
         issue_event_no_commit.issue = issue
 
         # check if Issues get identified correctly
-        self.assertTrue(bug._has_closed_a_bug(issue_event_bug))
-        self.assertFalse(bug._has_closed_a_bug(issue_event_no_commit))
+        self.assertTrue(_has_closed_a_bug(issue_event_bug))
+        self.assertFalse(_has_closed_a_bug(issue_event_no_commit))
 
     def test_issue_events_closing_no_bug(self):
         """Test identifying issue events closing an issue that is not a bug."""
@@ -57,7 +63,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
         issue_event.commit_id = "1235"
         issue_event.issue = issue
 
-        self.assertFalse(bug._has_closed_a_bug(issue_event))
+        self.assertFalse(_has_closed_a_bug(issue_event))
 
     def test_issue_events_not_closing(self):
         """Test identifying issue events not closing their issue."""
@@ -80,8 +86,8 @@ class TestBugDetectionStrategies(unittest.TestCase):
         issue_event_assigned.commit_id = "1236"
         issue_event_assigned.issue = issue
 
-        self.assertFalse(bug._has_closed_a_bug(issue_event_pinned))
-        self.assertFalse(bug._has_closed_a_bug(issue_event_assigned))
+        self.assertFalse(_has_closed_a_bug(issue_event_pinned))
+        self.assertFalse(_has_closed_a_bug(issue_event_assigned))
 
     def test_pygit_bug_creation(self):
         """Test whether created pygit bug objects fit their corresponding
@@ -109,7 +115,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
             pygit2.Repository.revparse_single, return_value=issue_commit
         )
 
-        pybug = bug._create_corresponding_pygit_bug(
+        pybug = _create_corresponding_pygit_bug(
             issue_event.commit_id, mock_repo, issue_event.issue.number
         )
 
@@ -183,22 +189,22 @@ class TestBugDetectionStrategies(unittest.TestCase):
 
             # issue filter method for pygit bugs
             def accept_pybugs(event: IssueEvent):
-                if bug._has_closed_a_bug(event) and event.commit_id:
-                    return bug._create_corresponding_pygit_bug(
+                if _has_closed_a_bug(event) and event.commit_id:
+                    return _create_corresponding_pygit_bug(
                         event.commit_id, mock_repo, event.issue.number
                     )
                 return None
 
             # issue filter method for raw bugs
             def accept_rawbugs(event: IssueEvent):
-                if bug._has_closed_a_bug(event) and event.commit_id:
-                    return bug._create_corresponding_raw_bug(
+                if _has_closed_a_bug(event) and event.commit_id:
+                    return _create_corresponding_raw_bug(
                         event.commit_id, mock_repo, event.issue.number
                     )
                 return None
 
-            pybugs = bug._filter_all_issue_pygit_bugs("", accept_pybugs)
-            rawbugs = bug._filter_all_issue_raw_bugs("", accept_rawbugs)
+            pybugs = _filter_all_issue_pygit_bugs("", accept_pybugs)
+            rawbugs = _filter_all_issue_raw_bugs("", accept_rawbugs)
 
             # create set of fixing IDs of found bugs
             pybugs_ids = set(pybug.fixing_commit.hex for pybug in pybugs)
