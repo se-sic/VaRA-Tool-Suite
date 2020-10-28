@@ -180,13 +180,13 @@ class TestBugDetectionStrategies(unittest.TestCase):
             pygit2.Repository.revparse_single, side_effect=mock_revparse
         )
 
-        def mock_get_all_issue_events(project_name: str):
+        def mock_get_all_issue_events(_project_name: str):
             return iter([
                 event_close_first_nocommit, event_close_no_bug,
                 event_reopen_first, event_close_second, event_close_first
             ])
 
-        def mock_get_repo(project_name: str):
+        def mock_get_repo(_project_name: str):
             return mock_repo
 
         with patch(
@@ -236,7 +236,8 @@ class TestBugDetectionStrategies(unittest.TestCase):
 
         first_non_fixing_commit = create_autospec(pygit2.Commit)
         first_non_fixing_commit.hex = "1242"
-        first_non_fixing_commit.message = "Added documentation\nGrammar Errors need to be fixed"
+        first_non_fixing_commit.message = "Added documentation\n" + \
+                                          "Grammar Errors need to be fixed"
 
         second_non_fixing_commit = create_autospec(pygit2.Commit)
         second_non_fixing_commit.hex = "1243"
@@ -252,7 +253,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
             mock_commit.hex = commit_id
             return mock_commit
 
-        def mock_walk(start_id: str, sort_mode: int):
+        def mock_walk(_start_id: str, _sort_mode: int):
             return iter([
                 first_fixing_commit, first_non_fixing_commit,
                 second_non_fixing_commit, second_fixing_commit
@@ -266,7 +267,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
             pygit2.Repository.walk, side_effect=mock_walk
         )
 
-        def mock_get_repo(project_name: str):
+        def mock_get_repo(_project_name: str):
             return mock_repo
 
         with patch(
