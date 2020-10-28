@@ -1,6 +1,6 @@
 """Test bug_provider and bug modules."""
 import unittest
-from unittest.mock import create_autospec, patch, MagicMock
+from unittest.mock import create_autospec, patch
 
 import pygit2
 from github.Issue import Issue
