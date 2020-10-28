@@ -130,10 +130,11 @@ def _is_closing_message(commit_message: str) -> bool:
         closing of a bug, false ow.
     """
     # only look for keyword in first line of commit message
-    first_line = commit_message[0:commit_message.index('\n')]
+    first_line = commit_message.partition('\n')[0]
 
     return any([
-        keyword in first_line.split() for keyword in ['fix', 'fixed', 'fixes']
+        keyword in first_line.split()
+        for keyword in ['fix', 'Fix', 'fixed', 'Fixed', 'fixes', 'Fixes']
     ])
 
 
@@ -295,9 +296,8 @@ def _filter_all_commit_message_pygit_bugs(
     project_repo = get_local_project_git(project_name)
 
     # traverse commit history
-    most_recent_commit = project_repo[project_repo.head.target]
     for commit in project_repo.walk(
-        most_recent_commit.id, pygit2.GIT_SORT_TIME
+        project_repo.head.target.hex, pygit2.GIT_SORT_TIME
     ):
         pybug = commit_filter_function(commit)
         if pybug:

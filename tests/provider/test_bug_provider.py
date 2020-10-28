@@ -9,10 +9,13 @@ from github.Label import Label
 
 from varats.provider.bug.bug import (
     _has_closed_a_bug,
+    _is_closing_message,
     _create_corresponding_pygit_bug,
     _create_corresponding_raw_bug,
     _filter_all_issue_raw_bugs,
     _filter_all_issue_pygit_bugs,
+    _filter_all_commit_message_raw_bugs,
+    _filter_all_commit_message_pygit_bugs,
 )
 
 
@@ -173,13 +176,15 @@ class TestBugDetectionStrategies(unittest.TestCase):
             return mock_commit
 
         mock_repo = create_autospec(pygit2.Repository)
-        mock_repo.revparse_single = MagicMock(side_effect=mock_revparse)
+        mock_repo.revparse_single = create_autospec(
+            pygit2.Repository.revparse_single, side_effect=mock_revparse
+        )
 
         def mock_get_all_issue_events(project_name: str):
-            return [
+            return iter([
                 event_close_first_nocommit, event_close_no_bug,
                 event_reopen_first, event_close_second, event_close_first
-            ]
+            ])
 
         def mock_get_repo(project_name: str):
             return mock_repo
@@ -207,13 +212,90 @@ class TestBugDetectionStrategies(unittest.TestCase):
                     )
                 return None
 
-            pybugs = _filter_all_issue_pygit_bugs("", accept_pybugs)
-            rawbugs = _filter_all_issue_raw_bugs("", accept_rawbugs)
-
             # create set of fixing IDs of found bugs
-            pybugs_ids = set(pybug.fixing_commit.hex for pybug in pybugs)
-            rawbug_ids = set(rawbug.fixing_commit for rawbug in rawbugs)
+            pybug_ids = set(
+                pybug.fixing_commit.hex
+                for pybug in _filter_all_issue_pygit_bugs("", accept_pybugs)
+            )
+            rawbug_ids = set(
+                rawbug.fixing_commit
+                for rawbug in _filter_all_issue_raw_bugs("", accept_rawbugs)
+            )
             expected_ids = {"1239", "1240"}
 
-            self.assertEqual(pybugs_ids, expected_ids)
+            self.assertEqual(pybug_ids, expected_ids)
+            self.assertEqual(rawbug_ids, expected_ids)
+
+    def test_filter_commit_message_bugs(self):
+        """Test on the commit history of a project whether the corresponding set
+        of bugs is created correctly."""
+
+        first_fixing_commit = create_autospec(pygit2.Commit)
+        first_fixing_commit.hex = "1241"
+        first_fixing_commit.message = "Fixed first issue"
+
+        first_non_fixing_commit = create_autospec(pygit2.Commit)
+        first_non_fixing_commit.hex = "1242"
+        first_non_fixing_commit.message = "Added documentation\nGrammar Errors need to be fixed"
+
+        second_non_fixing_commit = create_autospec(pygit2.Commit)
+        second_non_fixing_commit.hex = "1243"
+        second_non_fixing_commit.message = "Added feature X"
+
+        second_fixing_commit = create_autospec(pygit2.Commit)
+        second_fixing_commit.hex = "1244"
+        second_fixing_commit.message = "fixes second problem"
+
+        # Method that creates simple pygit2 Commit mocks for given ID
+        def mock_revparse(commit_id: str):
+            mock_commit = create_autospec(pygit2.Commit)
+            mock_commit.hex = commit_id
+            return mock_commit
+
+        def mock_walk(start_id: str, sort_mode: int):
+            return iter([
+                first_fixing_commit, first_non_fixing_commit,
+                second_non_fixing_commit, second_fixing_commit
+            ])
+
+        mock_repo = create_autospec(pygit2.Repository)
+        mock_repo.revparse_single = create_autospec(
+            pygit2.Repository.revparse_single, side_effect=mock_revparse
+        )
+        mock_repo.walk = create_autospec(
+            pygit2.Repository.walk, side_effect=mock_walk
+        )
+
+        def mock_get_repo(project_name: str):
+            return mock_repo
+
+        with patch(
+            'varats.provider.bug.bug.get_local_project_git', mock_get_repo
+        ):
+
+            # commit filter method for pygit bugs
+            def accept_pybugs(commit: pygit2.Commit):
+                if _is_closing_message(commit.message):
+                    return _create_corresponding_pygit_bug(
+                        commit.hex, mock_repo
+                    )
+                return None
+
+            # commit filter method for raw bugs
+            def accept_rawbugs(commit: pygit2.Commit):
+                if _is_closing_message(commit.message):
+                    return _create_corresponding_raw_bug(commit.hex, mock_repo)
+                return None
+
+            pybug_ids = set(
+                pybug.fixing_commit.hex for pybug in
+                _filter_all_commit_message_pygit_bugs("", accept_pybugs)
+            )
+            rawbug_ids = set(
+                rawbug.fixing_commit for rawbug in
+                _filter_all_commit_message_raw_bugs("", accept_rawbugs)
+            )
+            expected_ids = {"1241", "1244"}
+
+            self.assertEqual(pybug_ids, expected_ids)
             self.assertEqual(rawbug_ids, expected_ids)
