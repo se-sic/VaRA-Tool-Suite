@@ -270,7 +270,7 @@ class TestResultFunctionEntry(unittest.TestCase):
             self.func_entry_cxx.demangled_name, 'doStuff(int, int)'
         )
 
-    def test_demangled_name(self):
+    def test_instructions_name(self):
         """Test if num instructions is saved correctly."""
         self.assertEqual(self.func_entry_c.num_instructions, 42)
         self.assertEqual(self.func_entry_cxx.num_instructions, 2)
