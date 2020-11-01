@@ -1,5 +1,6 @@
 """Utility module for handling git repos."""
 
+import os
 import re
 import typing as tp
 from enum import Enum
@@ -9,7 +10,10 @@ import pygit2
 from benchbuild.utils.cmd import git
 from plumbum import local
 
-from varats.project.project_util import get_local_project_git
+from varats.project.project_util import (
+    get_local_project_git,
+    get_primary_project_source,
+)
 
 ################################################################################
 # Git interaction helpers
@@ -176,13 +180,13 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
 
     # Only used when no git_name is provided
     primary_project_repo = get_local_project_git(project_name)
-    repos: tp.Dict[tp.Optional[str], pygit2.Repository] = {}
+    primary_source_name = os.path.basename(
+        get_primary_project_source(project_name).local
+    )
+    repos: tp.Dict[str, pygit2.Repository] = {}
 
-    # Maps the git_name to its corresponding git repository with an inner
-    # hash-commit mapping
-    cache_dict: tp.Dict[tp.Optional[str], tp.Dict[pygit2.Repository,
-                                                  tp.Dict[str,
-                                                          pygit2.Commit]]] = {}
+    # Maps hash to commit within corresponding git_name
+    cache_dict: tp.Dict[str, tp.Dict[str, pygit2.Commit]] = {}
 
     def get_commit(
         c_hash: str, git_name: tp.Optional[str] = None
@@ -191,30 +195,28 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
             git_name = None
 
         if not git_name:
-            if git_name not in cache_dict:
-                repos[git_name] = primary_project_repo
-                cache_dict[git_name] = {}
-                cache_dict[git_name][primary_project_repo] = {}
+            if primary_source_name not in cache_dict:
+                repos[primary_source_name] = primary_project_repo
+                cache_dict[primary_source_name] = {}
 
-            if c_hash in cache_dict[git_name][repos[git_name]]:
-                return cache_dict[git_name][repos[git_name]][c_hash]
+            if c_hash in cache_dict[primary_source_name]:
+                return cache_dict[primary_source_name][c_hash]
 
             commit = primary_project_repo.get(c_hash)
             if commit is None:
                 raise LookupError(
                     f"Could not find commit {c_hash} in {project_name}"
                 )
-            cache_dict[git_name][repos[git_name]][c_hash] = commit
+            cache_dict[primary_source_name][c_hash] = commit
             return commit
 
         if git_name not in cache_dict:
             current_repo = get_local_project_git(project_name, git_name)
             repos[git_name] = current_repo
             cache_dict[git_name] = {}
-            cache_dict[git_name][current_repo] = {}
 
-        if c_hash in cache_dict[git_name][repos[git_name]]:
-            return cache_dict[git_name][repos[git_name]][c_hash]
+        if c_hash in cache_dict[git_name]:
+            return cache_dict[git_name][c_hash]
 
         commit = repos[git_name].get(c_hash)
         if commit is None:
@@ -222,7 +224,7 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
                 f"Could not find commit {c_hash} in "
                 f"project {project_name} within git repository {git_name}"
             )
-        cache_dict[git_name][repos[git_name]][c_hash] = commit
+        cache_dict[git_name][c_hash] = commit
         return commit
 
     return get_commit
