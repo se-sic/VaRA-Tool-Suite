@@ -176,7 +176,16 @@ CommitLookupTy = tp.Callable[[str, str], pygit2.Commit]
 
 
 def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
-    """Creates a commit lookup function for a specific repository."""
+    """
+    Creates a commit lookup function for project repositories.
+
+    Args:
+        project_name: the name of the given benchbuild project
+
+    Returns:
+        a Callable that takes the commit hash and repository name to get the
+        corresponding commit.
+    """
 
     # Only used when no git_name is provided
     primary_project_repo = get_local_project_git(project_name)
@@ -191,6 +200,22 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
     def get_commit(
         c_hash: str, git_name: tp.Optional[str] = None
     ) -> pygit2.Commit:
+        """
+        Gets the commit from a given commit hash within its corresponding
+        repository name.
+
+        Args:
+            c_hash: the commit hash of the searched commit
+            git_name: the name of the repository, wherein the commit is being
+                      searched. If no git_name is provided, the name of the
+                      primary source is used.
+
+
+        Returns:
+            the commit, which matches the given commit hash within the given
+            repository name.
+        """
+
         if git_name == "Unknown":
             git_name = None
 

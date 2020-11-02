@@ -38,8 +38,18 @@ def get_primary_project_source(project_name: str) -> bb.source.BaseSource:
 def get_local_project_git_path(
     project_name: str, git_name: tp.Optional[str] = None
 ) -> Path:
-    """Get the path to the local download location of git repository for a given
-    benchbuild project."""
+    """
+    Get the path to the local download location of a git repository for a given
+    benchbuild project.
+
+    Args:
+        project_name: the name of the given benchbuild project
+        git_name: the name of the git repository. If no git_name is provided,
+                  the name of the primary source is used
+
+    Returns:
+        the path to the local download location of the git repository.
+    """
 
     if git_name:
         source = get_extended_commit_lookup_source(project_name, git_name)
@@ -55,8 +65,18 @@ def get_local_project_git_path(
 def get_extended_commit_lookup_source(
     project_name: str, git_name: str
 ) -> bb.source.BaseSource:
-    """Get the RepoSource specified by the git_name or raise an error if no
-    match was found."""
+    """
+    Get the benchbuild BaseSource specified by the git_name or raise a
+    LookupError if no match was found within the given benchbuild project.
+
+    Args:
+        project_name: the name of the given benchbuild project
+        git_name: the name of the git repository
+
+    Returns:
+        the benchbuild BaseSource of the searched git repository
+    """
+
     project_cls = get_project_cls_by_name(project_name)
 
     primary_source_name = os.path.basename(
