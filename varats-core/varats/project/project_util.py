@@ -98,7 +98,16 @@ def get_extended_commit_lookup_source(
 def get_local_project_git(
     project_name: str, git_name: tp.Optional[str] = None
 ) -> pygit2.Repository:
-    """Get the git repository for a given benchbuild project."""
+    """
+    Get the git repository for a given benchbuild project.
+
+    Args:
+        project_name: the name of the given benchbuild project
+        git_name: the name of the git repository
+
+    Returns:
+        the git repository that matches the given git_name.
+    """
     git_path = get_local_project_git_path(project_name, git_name)
     repo_path = pygit2.discover_repository(str(git_path))
     return pygit2.Repository(repo_path)
