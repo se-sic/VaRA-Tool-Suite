@@ -1,18 +1,15 @@
 """Module for the :class:`BugProvider`."""
 import logging
-import re
 import typing as tp
 
 from benchbuild.project import Project
-from benchbuild.source import primary
 
 import varats.provider.bug.bug as bug
 from varats.project.project_util import get_primary_project_source
 from varats.provider.provider import Provider
+from varats.utils.github_util import get_github_repo_name_for_project
 
 LOG = logging.getLogger(__name__)
-
-GITHUB_URL_PATTERN = re.compile(r"https://github\.com/(.*)/(.*)\.git")
 
 
 class BugProvider(Provider):
@@ -32,14 +29,10 @@ class BugProvider(Provider):
 
         # test if project has a GIT repository
         if hasattr(primary_source, "fetch"):
-            match = GITHUB_URL_PATTERN.match(primary(*project.SOURCE).remote)
-            if match:
-                return BugProvider(
-                    project, f"{match.group(1)}/{match.group(2)}"
-                )
-
-            # project is no github project
-            return BugProvider(project, None)
+            # If project has Github repo, pass name as second arg, None ow.
+            return BugProvider(
+                project, get_github_repo_name_for_project(project)
+            )
         return None
 
     @classmethod
@@ -58,7 +51,7 @@ class BugProvider(Provider):
         resulting_bugs: tp.Set[bug.PygitBug] = set()
         if self.__github_project_name:
             resulting_bugs.union(
-                bug.find_all_issue_pygit_bugs(self.__github_project_name)
+                bug.find_all_issue_pygit_bugs(self.project.NAME)
             )
         resulting_bugs.union(
             bug.find_all_commit_message_pygit_bugs(self.project.NAME)
@@ -74,9 +67,7 @@ class BugProvider(Provider):
         """
         resulting_bugs: tp.Set[bug.RawBug] = set()
         if self.__github_project_name:
-            resulting_bugs.union(
-                bug.find_all_issue_raw_bugs(self.__github_project_name)
-            )
+            resulting_bugs.union(bug.find_all_issue_raw_bugs(self.project.NAME))
         resulting_bugs.union(
             bug.find_all_commit_message_raw_bugs(self.project.NAME)
         )
@@ -98,7 +89,7 @@ class BugProvider(Provider):
         if self.__github_project_name:
             resulting_bugs.union(
                 bug.find_issue_pygit_bugs_by_fix(
-                    self.__github_project_name, fixing_commit
+                    self.project.NAME, fixing_commit
                 )
             )
 
@@ -125,7 +116,7 @@ class BugProvider(Provider):
         if self.__github_project_name:
             resulting_bugs.union(
                 bug.find_issue_raw_bugs_by_fix(
-                    self.__github_project_name, fixing_commit
+                    self.project.NAME, fixing_commit
                 )
             )
 
@@ -153,7 +144,7 @@ class BugProvider(Provider):
         if self.__github_project_name:
             resulting_bugs.union(
                 bug.find_issue_pygit_bugs_by_introduction(
-                    self.__github_project_name, introducing_commit
+                    self.project.NAME, introducing_commit
                 )
             )
 
@@ -181,7 +172,7 @@ class BugProvider(Provider):
         if self.__github_project_name:
             resulting_bugs.union(
                 bug.find_issue_raw_bugs_by_introduction(
-                    self.__github_project_name, introducing_commit
+                    self.project.NAME, introducing_commit
                 )
             )
 

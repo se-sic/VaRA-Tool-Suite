@@ -2,10 +2,13 @@
 import codecs
 import logging
 import pickle  # nosec
+import re
 import typing as tp
 from pathlib import Path
 
 import pandas as pd
+from benchbuild.project import Project
+from benchbuild.source import primary
 from github import Github
 from github.GithubObject import GithubObject
 
@@ -16,6 +19,8 @@ if tp.TYPE_CHECKING:
     from github.PaginatedList import PaginatedList
 
 LOG = logging.getLogger(__name__)
+
+GITHUB_URL_PATTERN = re.compile(r"https://github\.com/(.*)/(.*)\.git")
 
 
 def get_github_instance() -> Github:
@@ -227,3 +232,13 @@ def get_cached_github_object_list(
     obj_list_to_cache = list(load_function(get_github_instance()))
     _cache_pygithub_object_list(cached_object_key, obj_list_to_cache)
     return obj_list_to_cache
+
+
+def get_github_repo_name_for_project(
+    project: tp.Type[Project]
+) -> tp.Optional[str]:
+    match = GITHUB_URL_PATTERN.match(primary(*project.SOURCE).remote)
+    if match:
+        return f"{match.group(1)}/{match.group(2)}"
+    # project is no github project
+    return None

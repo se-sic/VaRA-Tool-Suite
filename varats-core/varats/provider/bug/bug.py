@@ -11,8 +11,12 @@ from github.Repository import Repository
 from varats.project.project_util import (
     get_local_project_git_path,
     get_local_project_git,
+    get_project_cls_by_name,
 )
-from varats.utils.github_util import get_cached_github_object_list
+from varats.utils.github_util import (
+    get_cached_github_object_list,
+    get_github_repo_name_for_project,
+)
 
 
 class PygitBug:
@@ -149,20 +153,27 @@ def _get_all_issue_events(project_name: str) -> tp.List[IssueEvent]:
         A list of IssueEvent objects or None.
     """
 
-    def load_issue_events(github: Github) -> PaginatedList[IssueEvent]:
-        repository: Repository = github.get_repo(project_name)
-        return repository.get_issues_events()
-
-    repo_path = get_local_project_git_path(project_name)
-    cache_file_name = repo_path.name.replace("/", "_") + "_issues_events"
-
-    issue_events = get_cached_github_object_list(
-        cache_file_name, load_issue_events
+    github_repo_name = get_github_repo_name_for_project(
+        get_project_cls_by_name(project_name)
     )
 
-    if issue_events:
-        return issue_events
-    return []
+    if github_repo_name:
+
+        def load_issue_events(github: Github) -> 'PaginatedList[IssueEvent]':
+            repository: Repository = github.get_repo(github_repo_name)
+            return repository.get_issues_events()
+
+        cache_file_name = github_repo_name.replace("/", "_") + "_issues_events"
+
+        issue_events = get_cached_github_object_list(
+            cache_file_name, load_issue_events
+        )
+
+        if issue_events:
+            return issue_events
+        return []
+    # No github repo; Should not occur at this point
+    raise AssertionError
 
 
 def _create_corresponding_pygit_bug(
