@@ -78,7 +78,8 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                 "-vara-use-phasar",
                 f"-vara-report-outfile={vara_result_folder}/{result_file}",
                 get_cached_bc_file_path(
-                    project, binary, [BCFileExtensions.NO_OPT]
+                    project, binary,
+                    [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
                 )
             ]
 
@@ -117,17 +118,16 @@ class BlameReportExperiment(VersionExperiment):
         Args:
             project: to analyze
         """
-
-        BE.setup_basic_blame_experiment(
-            self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE
-        )
-
         # Try, to build the project without optimizations to get more precise
         # blame annotations. Note: this does not guarantee that a project is
         # build without optimizations because the used build tool/script can
         # still add optimizations flags after the experiment specified cflags.
-        project.cflags += ["-O0"]
-        bc_file_extensions = [BCFileExtensions.NO_OPT]
+        project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g0"]
+        bc_file_extensions = [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+
+        BE.setup_basic_blame_experiment(
+            self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE
+        )
 
         analysis_actions = BE.generate_basic_blame_experiment_actions(
             project,

@@ -16,7 +16,6 @@ from varats.tools.research_tools.vara_manager import (
     download_repo,
     fetch_remote,
     get_branches,
-    get_current_branch,
     has_branch,
     has_remote_branch,
     init_all_submodules,
@@ -26,6 +25,7 @@ from varats.tools.research_tools.vara_manager import (
     update_all_submodules,
 )
 from varats.utils.filesystem_util import FolderAlreadyPresentError
+from varats.utils.git_util import get_current_branch
 from varats.utils.logger_util import log_without_linesep
 
 

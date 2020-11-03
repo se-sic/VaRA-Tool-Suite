@@ -18,6 +18,7 @@ class ReleaseType(Enum):
     It is assumed that a major release is also a minor release and that a minor
     release is also a patch release.
     """
+    value: int
 
     major = 1
     minor = 2
@@ -128,16 +129,24 @@ class ReleaseDefaultProvider(ReleaseProvider):
     def get_release_revisions(
         self, release_type: ReleaseType
     ) -> tp.List[tp.Tuple[str, str]]:
-        if release_type is ReleaseType.patch:
+
+        def get_patch_releases() -> tp.List[tp.Tuple[str, str]]:
             return [(commit, tag)
                     for commit, tag, version in self.releases
                     if not version.is_prerelease]
-        if release_type is ReleaseType.minor:
+
+        def get_minor_releases() -> tp.List[tp.Tuple[str, str]]:
             return [(commit, tag)
                     for commit, tag, version in self.releases
                     if version.micro == 0]
-        if release_type is ReleaseType.major:
+
+        def get_major_releases() -> tp.List[tp.Tuple[str, str]]:
             return [(commit, tag)
                     for commit, tag, version in self.releases
                     if version.minor == 0]
-        return []
+
+        return {
+            ReleaseType.patch: get_patch_releases,
+            ReleaseType.minor: get_minor_releases,
+            ReleaseType.major: get_major_releases
+        }[release_type]()

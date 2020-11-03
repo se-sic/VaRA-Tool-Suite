@@ -1,6 +1,10 @@
 ---
 DocType:         BlameReport
-Version:         1
+Version:         3
+...
+---
+funcs-in-module: 42
+insts-in-module: 1337
 ...
 ---
 result-map:

@@ -1,6 +1,7 @@
 """Module for a BlameVerifierReport."""
 import logging
 import re
+import typing as tp
 from enum import Enum
 from pathlib import Path
 
@@ -12,6 +13,8 @@ LOG = logging.getLogger(__name__)
 class ResultRegexForBlameVerifier(Enum):
     """An enum containing the available parsing options for BlameMDVerifier
     results."""
+    value: str
+
     SUCCESSES = r"\(\d+/"
     TOTAL = r"/\d+\)"
     UNDETERMINED = r"\d+ could not be determined"
@@ -23,8 +26,9 @@ class BlameVerifierReportParserMixin:
     its BlameVerifierReport-Subclasses, without adapting the Report
     hierarchy."""
 
-    def __init__(self, path: Path):
-        self.__path = path
+    def __init__(self, **kwargs: tp.Any) -> None:
+        super().__init__(**kwargs)  # type: ignore
+        self.__path = kwargs['path']
         self.__num_successes = -1
         self.__num_failures = -1
         self.__num_total = -1
@@ -111,9 +115,18 @@ class BlameVerifierReportNoOpt(BlameVerifierReportParserMixin, BaseReport):
     SHORTHAND = 'BVR_NoOpt'
     FILE_TYPE = 'txt'
 
-    def __init__(self, path: Path):
-        super().__init__(path=path)
+    def __init__(self, path: Path, **kwargs: tp.Any) -> None:
+        kwargs['path'] = path
+        super().__init__(**kwargs)
         self.parse_verifier_results()
+
+    @property
+    def head_commit(self) -> str:
+        """The current HEAD commit under which this BlameVerifierReportNoOpt was
+        created."""
+        return BlameVerifierReportNoOpt.get_commit_hash_from_result_file(
+            Path(self.path).name
+        )
 
     @staticmethod
     def get_file_name(
@@ -153,9 +166,18 @@ class BlameVerifierReportOpt(BlameVerifierReportParserMixin, BaseReport):
     SHORTHAND = 'BVR_Opt'
     FILE_TYPE = 'txt'
 
-    def __init__(self, path: Path):
-        super().__init__(path=path)
+    def __init__(self, path: Path, **kwargs: tp.Any) -> None:
+        kwargs['path'] = path
+        super().__init__(**kwargs)
         self.parse_verifier_results()
+
+    @property
+    def head_commit(self) -> str:
+        """The current HEAD commit under which this BlameVerifierReportOpt was
+        created."""
+        return BlameVerifierReportOpt.get_commit_hash_from_result_file(
+            Path(self.path).name
+        )
 
     @staticmethod
     def get_file_name(
@@ -183,5 +205,57 @@ class BlameVerifierReportOpt(BlameVerifierReportParserMixin, BaseReport):
         """
         return MetaReport.get_file_name(
             BlameVerifierReportOpt.SHORTHAND, project_name, binary_name,
+            project_version, project_uuid, extension_type, file_ext
+        )
+
+
+class BlameVerifierReportNoOptTBAA(BlameVerifierReportParserMixin, BaseReport):
+    """A BlameVerifierReport containing the filtered results of the chosen
+    verifier-options, e.g., the diff of VaRA-hashes and debug-hashes, without
+    any compilation optimization and TBAA (type based alias analysis)
+    metadata."""
+
+    SHORTHAND = 'BVR_NoOpt_TBAA'
+    FILE_TYPE = 'txt'
+
+    def __init__(self, path: Path, **kwargs: tp.Any) -> None:
+        kwargs['path'] = path
+        super().__init__(**kwargs)
+        self.parse_verifier_results()
+
+    @property
+    def head_commit(self) -> str:
+        """The current HEAD commit under which this BlameVerifierReportNoOpt was
+        created."""
+        return BlameVerifierReportNoOptTBAA.get_commit_hash_from_result_file(
+            Path(self.path).name
+        )
+
+    @staticmethod
+    def get_file_name(
+        project_name: str,
+        binary_name: str,
+        project_version: str,
+        project_uuid: str,
+        extension_type: FileStatusExtension,
+        file_ext: str = ".txt"
+    ) -> str:
+        """
+        Generates a filename for a blame verifier report with no optimization
+        and '.txt' as file extension.
+
+        Args:
+            project_name: name of the project for which the report was generated
+            binary_name: name of the binary for which the report was generated
+            project_version: version of the analyzed project, i.e., commit hash
+            project_uuid: benchbuild uuid for the experiment run
+            extension_type: to specify the status of the generated report
+            file_ext: file extension of the report file
+
+        Returns:
+            name for the report file that can later be uniquely identified
+        """
+        return MetaReport.get_file_name(
+            BlameVerifierReportNoOptTBAA.SHORTHAND, project_name, binary_name,
             project_version, project_uuid, extension_type, file_ext
         )

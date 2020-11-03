@@ -93,6 +93,7 @@ def get_all_revisions_between(c_start: str,
 
 class BinaryType(Enum):
     """Enum for different binary types."""
+    value: int
 
     executable = 1
     shared_library = 2
@@ -191,7 +192,7 @@ class VaraTestRepoSource(Git):  # type: ignore
 
     def fetch(self) -> pb.LocalPath:
         """
-        Overrides ``Git``s fetch to
+        Overrides ``Git`` s fetch to
           1. fetch the vara-test-repos repo
           2. extract the specified repo from the vara-test-repos repo
 

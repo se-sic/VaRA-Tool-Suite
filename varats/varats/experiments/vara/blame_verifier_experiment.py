@@ -11,14 +11,16 @@ import typing as tp
 import benchbuild.utils.actions as actions
 from benchbuild.project import Project
 from benchbuild.utils.cmd import opt, mkdir, timeout
-from plumbum import local
 
 import varats.experiments.vara.blame_experiment as BE
+from varats.data.reports.blame_verifier_report import (
+    BlameVerifierReportOpt as BVR_Opt,
+)
 from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportNoOpt as BVR_NoOpt,
 )
 from varats.data.reports.blame_verifier_report import (
-    BlameVerifierReportOpt as BVR_Opt,
+    BlameVerifierReportNoOptTBAA as BVR_NoOptTBAA,
 )
 from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
@@ -79,7 +81,9 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
         timeout_duration = '8h'
 
         for binary in project.binaries:
-            bc_target_file = get_cached_bc_file_path(project, binary)
+            bc_target_file = get_cached_bc_file_path(
+                project, binary, self.bc_file_extensions
+            )
 
             # Define empty success file.
             result_file = self.report_type.get_file_name(
@@ -124,7 +128,7 @@ class BlameVerifierReportExperiment(VersionExperiment):
     def __init__(
         self,
         project: Project,
-        opt_flag: str,
+        opt_flags: tp.Union[str, tp.List[str]],
         report_type: tp.Type[BaseReport],
         bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None
     ) -> None:
@@ -134,7 +138,7 @@ class BlameVerifierReportExperiment(VersionExperiment):
             bc_file_extensions = []
 
         self.projects = project
-        self.__opt_flag = opt_flag
+        self.__opt_flag = opt_flags
         self.__bc_file_extensions = bc_file_extensions
         self.__report_type = report_type
 
@@ -191,4 +195,22 @@ class BlameVerifierReportExperimentOpt(BlameVerifierReportExperiment):
         super().__init__(
             projects, '-O2', BVR_Opt,
             [BCFileExtensions.DEBUG, BCFileExtensions.OPT]
+        )
+
+
+class BlameVerifierReportExperimentNoOptTBAA(BlameVerifierReportExperiment):
+    """Generates a Blame Verifier Report of the project(s) specified in the call
+    without any optimization and TBAA metadata (BVR_NoOptTBAA)."""
+
+    NAME = "GenerateBlameVerifierReportNoOptTBAA"
+
+    REPORT_TYPE = BVR_NoOptTBAA
+
+    def __init__(self, projects: Project) -> None:
+        super().__init__(
+            projects, ["-O1", "-Xclang", "-disable-llvm-optzns"], BVR_NoOptTBAA,
+            [
+                BCFileExtensions.DEBUG, BCFileExtensions.NO_OPT,
+                BCFileExtensions.TBAA
+            ]
         )
