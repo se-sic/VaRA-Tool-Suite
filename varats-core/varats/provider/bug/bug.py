@@ -159,8 +159,10 @@ def _get_all_issue_events(project_name: str) -> tp.List[IssueEvent]:
     if github_repo_name:
 
         def load_issue_events(github: Github) -> 'PaginatedList[IssueEvent]':
-            repository: Repository = github.get_repo(github_repo_name)
-            return repository.get_issues_events()
+            if github_repo_name:
+                repository: Repository = github.get_repo(github_repo_name)
+                return repository.get_issues_events()
+            raise AssertionError
 
         cache_file_name = github_repo_name.replace("/", "_") + "_issues_events"
 
