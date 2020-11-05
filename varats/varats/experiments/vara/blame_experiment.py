@@ -19,7 +19,6 @@ from varats.experiment.wllvm import (
     get_bc_cache_actions,
 )
 from varats.report.report import BaseReport
-from varats.utils.settings import bb_cfg
 
 
 def setup_basic_blame_experiment(
@@ -50,7 +49,7 @@ def setup_basic_blame_experiment(
 
     # This c-flag is provided by VaRA and it suggests to use the git-blame
     # annotation.
-    project.cflags = ["-fvara-GB"]
+    project.cflags += ["-fvara-GB"]
 
 
 def generate_basic_blame_experiment_actions(

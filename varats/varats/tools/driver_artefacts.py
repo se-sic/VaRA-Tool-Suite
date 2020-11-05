@@ -8,6 +8,7 @@ import argparse
 import logging
 import textwrap
 import typing as tp
+from pathlib import Path
 
 import yaml
 from argparse_utils import enum_action
@@ -17,10 +18,13 @@ from varats.paper_mgmt.artefacts import (
     ArtefactType,
     create_artefact,
     store_artefacts,
+    PlotArtefact,
+    filter_plot_artefacts,
 )
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
 from varats.utils.cli_util import initialize_cli_tool
+from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
 
@@ -59,6 +63,13 @@ def main() -> None:
         "--only",
         nargs='+',
         help="Only generate artefacts with the given names."
+    )
+
+    generate_parser.add_argument(
+        "--html-overview",
+        action="store_true",
+        default=False,
+        help="Generate a HTML overview for plots that have paper_config=true."
     )
 
     # vara-art add
@@ -152,6 +163,21 @@ def __artefact_generate(args: tp.Dict[str, tp.Any]) -> None:
         )
         artefact.generate_artefact()
 
+    if 'html_overview' in args.keys():
+        plot_artefacts: tp.Iterable[PlotArtefact] = filter_plot_artefacts(
+            get_paper_config().get_all_artefacts()
+        )
+        plot_artefacts = [
+            artefact for artefact in plot_artefacts
+            if artefact.plot_kwargs.get('paper_config', False)
+        ]
+        generate_html_plot_overview(
+            plot_artefacts,
+            Path(str(vara_cfg()['artefacts']['artefacts_dir'])) /
+            Path(str(vara_cfg()['paper_config']['current_config'])) /
+            "index.html"
+        )
+
 
 def __artefact_add(args: tp.Dict[str, tp.Any]) -> None:
     paper_config = get_paper_config()
@@ -174,6 +200,85 @@ def __artefact_add(args: tp.Dict[str, tp.Any]) -> None:
     )
     paper_config.add_artefact(artefact)
     store_artefacts(paper_config.artefacts, paper_config.path)
+
+
+__HTML_TEMPLATE = """<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Results</title>
+    <style type="text/css" media="screen">
+        .box {{
+            display: flex;
+            padding: 0 4px;
+        }}
+
+        .column {{
+            flex: 18%;
+            max-width: 18%;
+            min-width: 18%;
+            padding: 0 4px;
+        }}
+
+        .column img {{
+            margin-top: 8px;
+            vertical-align: middle;
+            width: 100%;
+        }}
+    </style>
+</head>
+
+<body>
+    <div class="box">
+{}
+    </div>
+</body>
+
+</html>
+"""
+
+__COLUMN_TEMPLATE = """        <div class="column">
+{}
+        </div>"""
+
+__IMAGE_TEMPLATE = """            <img src="{}" />"""
+
+
+def generate_html_plot_overview(
+    artefacts: tp.Iterable[PlotArtefact], outfile: Path
+) -> None:
+    """
+    Generates a html overview for the given artefacts.
+
+    Args:
+        artefacts: the artefacts to include in the overview
+        outfile: the path to store the overview in
+    """
+
+    columns: tp.List[str] = []
+    for case_study in get_paper_config().get_all_case_studies():
+        images: tp.List[str] = []
+        for artefact in artefacts:
+            kwargs = dict(artefact.plot_kwargs)
+            kwargs['project'] = case_study.project_name
+            kwargs['plot_case_study'] = case_study
+            plot_name = artefact.plot_type_class(**kwargs).plot_file_name(
+                artefact.file_format
+            )
+            if not (artefact.output_path / plot_name).exists():
+                LOG.info(f"Could not find image {plot_name}")
+                continue
+            image_path = (artefact.output_path /
+                          plot_name).relative_to(outfile.parent)
+            images.append(__IMAGE_TEMPLATE.format(str(image_path)))
+        if images:
+            columns.append(__COLUMN_TEMPLATE.format("\n".join(images)))
+    html = __HTML_TEMPLATE.format("\n".join(columns))
+
+    with open(outfile, "w") as file:
+        file.write(html)
 
 
 if __name__ == '__main__':

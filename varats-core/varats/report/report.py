@@ -17,6 +17,7 @@ class FileStatusExtension(Enum):
 
     Specific report files can map these to their own specific representation.
     """
+    value: tp.Tuple[str, Color]
 
     Success = ("success", colors.green)
     Failed = ("failed", colors.lightred)

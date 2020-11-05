@@ -16,6 +16,7 @@ from varats.utils.git_util import (
     create_commit_lookup_helper,
     map_commits,
     CommitRepoPair,
+    CommitLookupTy,
 )
 
 
@@ -33,7 +34,7 @@ class BlameInstInteractions():
         interacting_hashes: tp.List[CommitRepoPair], amount: int
     ) -> None:
         self.__base_hash = base_hash
-        self.__interacting_hashes = interacting_hashes
+        self.__interacting_hashes = sorted(interacting_hashes)
         self.__amount = amount
 
     @staticmethod
@@ -88,8 +89,7 @@ class BlameInstInteractions():
     def __eq__(self, other: tp.Any) -> bool:
         if isinstance(other, BlameInstInteractions):
             if self.base_commit == other.base_commit:
-                return sorted(self.interacting_commits
-                             ) == sorted(other.interacting_commits)
+                return self.interacting_commits == other.interacting_commits
 
         return False
 
@@ -97,8 +97,7 @@ class BlameInstInteractions():
         if isinstance(other, BlameInstInteractions):
             if self.base_commit < other.base_commit:
                 return True
-            return sorted(self.interacting_commits
-                         ) < sorted(other.interacting_commits)
+            return self.interacting_commits < other.interacting_commits
 
         return False
 
@@ -164,14 +163,15 @@ def _calc_diff_between_func_entries(
 ) -> BlameResultFunctionEntry:
     diff_interactions: tp.List[BlameInstInteractions] = []
 
-    base_interactions = sorted(base_func_entry.interactions)
-    prev_interactions = sorted(prev_func_entry.interactions)
+    # copy lists to avoid side effects
+    base_interactions = list(base_func_entry.interactions)
+    prev_interactions = list(prev_func_entry.interactions)
 
     for base_inter in base_interactions:
         if base_inter in prev_interactions:
             prev_inter_idx = prev_interactions.index(base_inter)
             prev_inter = prev_interactions.pop(prev_inter_idx)
-            # create new blame inst interaction with the absolute differente
+            # create new blame inst interaction with the absolute difference
             # between base and prev
             difference = base_inter.amount - prev_inter.amount
             if difference != 0:
@@ -193,6 +193,35 @@ def _calc_diff_between_func_entries(
     )
 
 
+class BlameReportMetaData():
+    """Provides extra meta data about llvm::Module, which was analyzed to
+    generate this ``BlameReport``."""
+
+    def __init__(self, num_functions: int, num_instructions: int) -> None:
+        self.__number_of_functions_in_module = num_functions
+        self.__number_of_instructions_in_module = num_instructions
+
+    @property
+    def num_functions(self) -> int:
+        """Number of functions in the analyzed llvm::Module."""
+        return self.__number_of_functions_in_module
+
+    @property
+    def num_instructions(self) -> int:
+        """Number of instructions processed in the analyzed llvm::Module."""
+        return self.__number_of_instructions_in_module
+
+    @staticmethod
+    def create_blame_report_meta_data(
+        raw_document: tp.Dict[str, tp.Any]
+    ) -> 'BlameReportMetaData':
+        """Creates `BlameReportMetaData` from the corresponding yaml
+        document."""
+        num_functions = int(raw_document['funcs-in-module'])
+        num_instructions = int(raw_document['insts-in-module'])
+        return BlameReportMetaData(num_functions, num_instructions)
+
+
 class BlameReport(BaseReport):
     """Full blame report containing all blame interactions."""
 
@@ -206,7 +235,10 @@ class BlameReport(BaseReport):
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
             version_header = VersionHeader(next(documents))
             version_header.raise_if_not_type("BlameReport")
-            version_header.raise_if_version_is_less_than(1)
+            version_header.raise_if_version_is_less_than(3)
+
+            self.__meta_data = BlameReportMetaData \
+                .create_blame_report_meta_data(next(documents))
 
             self.__function_entries: tp.Dict[str,
                                              BlameResultFunctionEntry] = dict()
@@ -241,6 +273,11 @@ class BlameReport(BaseReport):
     def head_commit(self) -> str:
         """The current HEAD commit under which this CommitReport was created."""
         return BlameReport.get_commit_hash_from_result_file(self.path.name)
+
+    @property
+    def meta_data(self) -> BlameReportMetaData:
+        """Access the meta data that was gathered with the ``BlameReport``."""
+        return self.__meta_data
 
     @staticmethod
     def get_file_name(
@@ -433,20 +470,18 @@ def count_interacting_commits(
 
 def count_interacting_authors(
     report: tp.Union[BlameReport, BlameReportDiff],
-    project_name: str,
+    commit_lookup: CommitLookupTy
 ) -> int:
     """
     Counts the number of unique interacting authors.
 
     Args:
         report: the blame report or diff
-        project_name: name of the project the report is based on
+        commit_lookup: function to look up commits
 
     Returns:
         the number unique interacting authors in this report or diff
     """
-
-    commit_lookup = create_commit_lookup_helper(project_name)
 
     def extract_interacting_authors(
         interaction: BlameInstInteractions
@@ -488,7 +523,7 @@ def generate_degree_tuples(
 
 def generate_author_degree_tuples(
     report: tp.Union[BlameReport, BlameReportDiff],
-    project_name: str,
+    commit_lookup: CommitLookupTy
 ) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples (author_degree, amount) where author_degree is
@@ -498,14 +533,13 @@ def generate_author_degree_tuples(
 
     Args:
         report: the blame report
-        project_name: name of the project the report is based on
+        commit_lookup: function to look up commits
 
     Returns:
         list of tuples (author_degree, amount)
     """
 
     degree_dict: tp.DefaultDict[int, int] = defaultdict(int)
-    commit_lookup = create_commit_lookup_helper(project_name)
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
@@ -523,8 +557,8 @@ def generate_author_degree_tuples(
 
 
 def generate_time_delta_distribution_tuples(
-    report: tp.Union[BlameReport,
-                     BlameReportDiff], project_name: str, bucket_size: int,
+    report: tp.Union[BlameReport, BlameReportDiff],
+    commit_lookup: CommitLookupTy, bucket_size: int,
     aggregate_function: tp.Callable[[tp.Sequence[tp.Union[int, float]]],
                                     tp.Union[int, float]]
 ) -> tp.List[tp.Tuple[int, int]]:
@@ -537,7 +571,7 @@ def generate_time_delta_distribution_tuples(
 
     Args:
         report: to analyze
-        project_name: name of the project
+        commit_lookup: function to look up commits
         bucket_size: size of a time bucket in days
         aggregate_function: to aggregate the delta values of all
                             interacting commits
@@ -546,7 +580,6 @@ def generate_time_delta_distribution_tuples(
         list of (degree, amount) tuples
     """
     degree_dict: tp.DefaultDict[int, int] = defaultdict(int)
-    commit_lookup = create_commit_lookup_helper(project_name)
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
@@ -581,8 +614,8 @@ def generate_time_delta_distribution_tuples(
 
 
 def generate_avg_time_distribution_tuples(
-    report: tp.Union[BlameReport, BlameReportDiff], project_name: str,
-    bucket_size: int
+    report: tp.Union[BlameReport, BlameReportDiff],
+    commit_lookup: CommitLookupTy, bucket_size: int
 ) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples that represent the distribution of average time
@@ -592,20 +625,20 @@ def generate_avg_time_distribution_tuples(
 
     Args:
         report: to analyze
-        project_name: name of the project
+        commit_lookup: function to look up commits
         bucket_size: size of a time bucket in days
 
     Returns:
         list of (degree, avg_time) tuples
     """
     return generate_time_delta_distribution_tuples(
-        report, project_name, bucket_size, np.average
+        report, commit_lookup, bucket_size, np.average
     )
 
 
 def generate_max_time_distribution_tuples(
-    report: tp.Union[BlameReport, BlameReportDiff], project_name: str,
-    bucket_size: int
+    report: tp.Union[BlameReport, BlameReportDiff],
+    commit_lookup: CommitLookupTy, bucket_size: int
 ) -> tp.List[tp.Tuple[int, int]]:
     """
     Generates a list of tuples that represent the distribution of maximal time
@@ -616,14 +649,14 @@ def generate_max_time_distribution_tuples(
 
     Args:
         report: to analyze
-        project_name: name of the project
+        commit_lookup: function to look up commits
         bucket_size: size of a time bucket in days
 
     Returns:
         list of (degree, max_time) tuples
     """
     return generate_time_delta_distribution_tuples(
-        report, project_name, bucket_size, max
+        report, commit_lookup, bucket_size, max
     )
 
 

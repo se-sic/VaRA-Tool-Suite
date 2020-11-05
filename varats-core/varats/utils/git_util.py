@@ -46,6 +46,9 @@ class ChurnConfig():
     """
 
     class Language(Enum):
+        """Enum for different languages that can be used to filter code
+        churn."""
+        value: tp.Set[str]
 
         C = {"h", "c"}
         CPP = {"h", "hxx", "hpp", "cxx", "cpp"}
@@ -165,9 +168,10 @@ class ChurnConfig():
         return concat_str
 
 
-def create_commit_lookup_helper(
-    project_name: str
-) -> tp.Callable[[str], pygit2.Commit]:
+CommitLookupTy = tp.Callable[[str], pygit2.Commit]
+
+
+def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
     """Creates a commit lookup function for a specific repository."""
 
     cache_dict: tp.Dict[str, pygit2.Commit] = {}
@@ -290,44 +294,44 @@ def __calc_code_churn_range_impl(
     else:
         revision_range = "{}~..{}".format(start_range, end_range)
 
-    with local.cwd(repo_path):
-        log_base_params = ["log", "--pretty=%H"]
-        diff_base_params = [
-            "log", "--pretty=format:'%H'", "--date=short", "--shortstat", "-l0"
-        ]
-        if revision_range:
-            log_base_params.append(revision_range)
-            diff_base_params.append(revision_range)
+    repo_git = git["-C", repo_path]
+    log_base_params = ["log", "--pretty=%H"]
+    diff_base_params = [
+        "log", "--pretty=format:'%H'", "--date=short", "--shortstat", "-l0"
+    ]
+    if revision_range:
+        log_base_params.append(revision_range)
+        diff_base_params.append(revision_range)
 
-        if not churn_config.include_everything:
-            diff_base_params.append("--")
-            # builds a regrex to select files that git includes into churn calc
-            diff_base_params.append(
-                ":*.[" + churn_config.get_extensions_repr('|') + "]"
-            )
+    if not churn_config.include_everything:
+        diff_base_params.append("--")
+        # builds a regrex to select files that git includes into churn calc
+        diff_base_params.append(
+            ":*.[" + churn_config.get_extensions_repr('|') + "]"
+        )
 
-        if revision_range:
-            stdout = git(diff_base_params)
-            revs = git(log_base_params).strip().split()
-        else:
-            stdout = git(diff_base_params)
-            revs = git(log_base_params).strip().split()
-        # initialize with 0 as otherwise commits without changes would be
-        # missing from the churn data
-        for rev in revs:
-            churn_values[rev] = (0, 0, 0)
-        for match in GIT_LOG_MATCHER.finditer(stdout):
-            commit_hash = match.group('hash')
+    if revision_range:
+        stdout = repo_git(diff_base_params)
+        revs = repo_git(log_base_params).strip().split()
+    else:
+        stdout = repo_git(diff_base_params)
+        revs = repo_git(log_base_params).strip().split()
+    # initialize with 0 as otherwise commits without changes would be
+    # missing from the churn data
+    for rev in revs:
+        churn_values[rev] = (0, 0, 0)
+    for match in GIT_LOG_MATCHER.finditer(stdout):
+        commit_hash = match.group('hash')
 
-            def value_or_zero(match_result: tp.Any) -> int:
-                if match_result is not None:
-                    return int(match_result)
-                return 0
+        def value_or_zero(match_result: tp.Any) -> int:
+            if match_result is not None:
+                return int(match_result)
+            return 0
 
-            files_changed = value_or_zero(match.group('files'))
-            insertions = value_or_zero(match.group('insertions'))
-            deletions = value_or_zero(match.group('deletions'))
-            churn_values[commit_hash] = (files_changed, insertions, deletions)
+        files_changed = value_or_zero(match.group('files'))
+        insertions = value_or_zero(match.group('insertions'))
+        deletions = value_or_zero(match.group('deletions'))
+        churn_values[commit_hash] = (files_changed, insertions, deletions)
 
     return churn_values
 
@@ -402,35 +406,35 @@ def calc_code_churn(
         (files changed, insertions, deletions)
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
-    with local.cwd(repo.path):
-        diff_base_params = [
-            "diff", "--shortstat", "-l0",
-            str(commit_a.id),
-            str(commit_b.id)
-        ]
+    repo_git = git["-C", repo.path]
+    diff_base_params = [
+        "diff", "--shortstat", "-l0",
+        str(commit_a.id),
+        str(commit_b.id)
+    ]
 
-        if not churn_config.include_everything:
-            diff_base_params.append("--")
-            # builds a regrex to select files that git includes into churn calc
-            diff_base_params.append(
-                ":*.[" + churn_config.get_extensions_repr('|') + "]"
-            )
+    if not churn_config.include_everything:
+        diff_base_params.append("--")
+        # builds a regrex to select files that git includes into churn calc
+        diff_base_params.append(
+            ":*.[" + churn_config.get_extensions_repr('|') + "]"
+        )
 
-        stdout = git(diff_base_params)
-        # initialize with 0 as otherwise commits without changes would be
-        # missing from the churn data
-        match = GIT_DIFF_MATCHER.match(stdout)
-        if match:
+    stdout = repo_git(diff_base_params)
+    # initialize with 0 as otherwise commits without changes would be
+    # missing from the churn data
+    match = GIT_DIFF_MATCHER.match(stdout)
+    if match:
 
-            def value_or_zero(match_result: tp.Any) -> int:
-                if match_result is not None:
-                    return int(match_result)
-                return 0
+        def value_or_zero(match_result: tp.Any) -> int:
+            if match_result is not None:
+                return int(match_result)
+            return 0
 
-            files_changed = value_or_zero(match.group('files'))
-            insertions = value_or_zero(match.group('insertions'))
-            deletions = value_or_zero(match.group('deletions'))
-            return files_changed, insertions, deletions
+        files_changed = value_or_zero(match.group('files'))
+        insertions = value_or_zero(match.group('insertions'))
+        deletions = value_or_zero(match.group('deletions'))
+        return files_changed, insertions, deletions
 
     return 0, 0, 0
 

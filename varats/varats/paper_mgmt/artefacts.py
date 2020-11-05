@@ -72,7 +72,7 @@ class Artefact(ABC):
             str(vara_cfg()['paper_config']['current_config'])
         ) / self.__output_path
 
-    def get_dict(self) -> tp.Dict[str, str]:
+    def get_dict(self) -> tp.Dict[str, tp.Union[str, int]]:
         """
         Construct a dict from this artefact for easy export to yaml.
 
@@ -140,7 +140,7 @@ class PlotArtefact(Artefact):
         """Additional arguments that will be passed to the plot_type_class."""
         return self.__plot_kwargs
 
-    def get_dict(self) -> tp.Dict[str, str]:
+    def get_dict(self) -> tp.Dict[str, tp.Union[str, int]]:
         artefact_dict = super().get_dict()
         artefact_dict['plot_type'] = self.__plot_type
         artefact_dict['file_format'] = self.__file_format
@@ -208,7 +208,7 @@ class TableArtefact(Artefact):
         """Additional arguments that will be passed to the plot_type_class."""
         return self.__table_kwargs
 
-    def get_dict(self) -> tp.Dict[str, str]:
+    def get_dict(self) -> tp.Dict[str, tp.Union[str, int]]:
         artefact_dict = super().get_dict()
         artefact_dict['table_type'] = self.__table_type
         artefact_dict['table_format'] = self.__table_format.name
@@ -234,6 +234,8 @@ class ArtefactType(Enum):
     of the class responsible for that kind of artefact and a version number to
     allow evolution of artefacts.
     """
+    value: tp.Tuple[Artefact, int]
+
     plot = (PlotArtefact, 1)
     table = (TableArtefact, 1)
 
@@ -279,7 +281,9 @@ class Artefacts:
     def __iter__(self) -> tp.Iterator[Artefact]:
         return self.__artefacts.values().__iter__()
 
-    def get_dict(self) -> tp.Dict[str, tp.List[tp.Dict[str, str]]]:
+    def get_dict(
+        self
+    ) -> tp.Dict[str, tp.List[tp.Dict[str, tp.Union[str, int]]]]:
         """Construct a dict from these artefacts for easy export to yaml."""
         return dict(
             artefacts=[artefact.get_dict() for artefact in self.artefacts]
@@ -377,3 +381,41 @@ def __store_artefacts_to_file(artefacts: Artefacts, file_path: Path) -> None:
         file_path,
         [VersionHeader.from_version_number('Artefacts', 1), artefacts]
     )
+
+
+def filter_plot_artefacts(
+    artefacts: tp.Iterable[Artefact]
+) -> tp.Iterable[PlotArtefact]:
+    """
+    Filter all plot artefacts from a list of artefacts.
+
+    Args:
+        artefacts: the artefacts to filter
+
+    Returns:
+        all plot artefacts
+    """
+    return [
+        tp.cast(PlotArtefact, artefact)
+        for artefact in artefacts
+        if artefact.artefact_type == ArtefactType.plot
+    ]
+
+
+def filter_table_artefacts(
+    artefacts: tp.Iterable[Artefact]
+) -> tp.Iterable[TableArtefact]:
+    """
+    Filter all table artefacts from a list of artefacts.
+
+    Args:
+        artefacts: the artefacts to filter
+
+    Returns:
+        all table artefacts
+    """
+    return [
+        tp.cast(TableArtefact, artefact)
+        for artefact in artefacts
+        if artefact.artefact_type == ArtefactType.table
+    ]
