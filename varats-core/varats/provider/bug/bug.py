@@ -9,7 +9,6 @@ from github.PaginatedList import PaginatedList
 from github.Repository import Repository
 
 from varats.project.project_util import (
-    get_local_project_git_path,
     get_local_project_git,
     get_project_cls_by_name,
 )
