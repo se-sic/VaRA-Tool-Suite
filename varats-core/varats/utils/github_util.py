@@ -230,7 +230,8 @@ def get_cached_github_object_list(
         return [tp.cast(PyGithubObj, obj) for obj in cached_list]
 
     obj_list_to_cache = list(load_function(get_github_instance()))
-    _cache_pygithub_object_list(cached_object_key, obj_list_to_cache)
+    # if list shall be cached manually:
+    # _cache_pygithub_object_list(cached_object_key, obj_list_to_cache)
     return obj_list_to_cache
 
 

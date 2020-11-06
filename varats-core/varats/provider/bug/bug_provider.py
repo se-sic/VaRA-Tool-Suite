@@ -50,10 +50,10 @@ class BugProvider(Provider):
         """
         resulting_bugs: tp.Set[bug.PygitBug] = set()
         if self.__github_project_name:
-            resulting_bugs.union(
+            resulting_bugs = resulting_bugs.union(
                 bug.find_all_issue_pygit_bugs(self.project.NAME)
             )
-        resulting_bugs.union(
+        resulting_bugs = resulting_bugs.union(
             bug.find_all_commit_message_pygit_bugs(self.project.NAME)
         )
         return frozenset(resulting_bugs)
@@ -67,8 +67,10 @@ class BugProvider(Provider):
         """
         resulting_bugs: tp.Set[bug.RawBug] = set()
         if self.__github_project_name:
-            resulting_bugs.union(bug.find_all_issue_raw_bugs(self.project.NAME))
-        resulting_bugs.union(
+            resulting_bugs = resulting_bugs.union(
+                bug.find_all_issue_raw_bugs(self.project.NAME)
+            )
+        resulting_bugs = resulting_bugs.union(
             bug.find_all_commit_message_raw_bugs(self.project.NAME)
         )
         return frozenset(resulting_bugs)
@@ -87,13 +89,13 @@ class BugProvider(Provider):
         """
         resulting_bugs: tp.Set[bug.PygitBug] = set()
         if self.__github_project_name:
-            resulting_bugs.union(
+            resulting_bugs = resulting_bugs.union(
                 bug.find_issue_pygit_bugs_by_fix(
                     self.project.NAME, fixing_commit
                 )
             )
 
-        resulting_bugs.union(
+        resulting_bugs = resulting_bugs.union(
             bug.find_commit_message_pygit_bugs_by_fix(
                 self.project.NAME, fixing_commit
             )
@@ -114,13 +116,13 @@ class BugProvider(Provider):
         """
         resulting_bugs: tp.Set[bug.RawBug] = set()
         if self.__github_project_name:
-            resulting_bugs.union(
+            resulting_bugs = resulting_bugs.union(
                 bug.find_issue_raw_bugs_by_fix(
                     self.project.NAME, fixing_commit
                 )
             )
 
-        resulting_bugs.union(
+        resulting_bugs = resulting_bugs.union(
             bug.find_commit_message_raw_bugs_by_fix(
                 self.project.NAME, fixing_commit
             )
@@ -142,13 +144,13 @@ class BugProvider(Provider):
         """
         resulting_bugs: tp.Set[bug.PygitBug] = set()
         if self.__github_project_name:
-            resulting_bugs.union(
+            resulting_bugs = resulting_bugs.union(
                 bug.find_issue_pygit_bugs_by_introduction(
                     self.project.NAME, introducing_commit
                 )
             )
 
-        resulting_bugs.union(
+        resulting_bugs = resulting_bugs.union(
             bug.find_commit_message_pygit_bugs_by_introduction(
                 self.project.NAME, introducing_commit
             )
@@ -170,13 +172,13 @@ class BugProvider(Provider):
         """
         resulting_bugs: tp.Set[bug.RawBug] = set()
         if self.__github_project_name:
-            resulting_bugs.union(
+            resulting_bugs = resulting_bugs.union(
                 bug.find_issue_raw_bugs_by_introduction(
                     self.project.NAME, introducing_commit
                 )
             )
 
-        resulting_bugs.union(
+        resulting_bugs = resulting_bugs.union(
             bug.find_commit_message_raw_bugs_by_introduction(
                 self.project.NAME, introducing_commit
             )
