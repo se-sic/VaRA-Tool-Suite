@@ -183,7 +183,8 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
         project_name: name of the given benchbuild project
 
     Returns:
-        a Callable that maps a commit hash and repository name to the corresponding commit.
+        a Callable that maps a commit hash and repository name to the
+        corresponding commit.
     """
 
     # Only used when no git_name is provided
