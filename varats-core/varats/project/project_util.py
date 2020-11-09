@@ -92,7 +92,15 @@ def get_all_revisions_between(c_start: str,
 
 
 def is_git_source(source: bb.source.BaseSource) -> bool:
-    """Tests if given base source is a git source."""
+    """
+    Checks if given base source is a git source.
+
+    Args:
+        source: base source to check
+
+    Returns:
+        true if the base source is a git source, false ow.
+    """
     return hasattr(source, "fetch")
 
 

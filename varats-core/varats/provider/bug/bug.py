@@ -5,7 +5,6 @@ import typing as tp
 import pygit2
 from github import Github
 from github.IssueEvent import IssueEvent
-from github.PaginatedList import PaginatedList
 from github.Repository import Repository
 
 from varats.project.project_util import (
@@ -16,6 +15,9 @@ from varats.utils.github_util import (
     get_cached_github_object_list,
     get_github_repo_name_for_project,
 )
+
+if tp.TYPE_CHECKING:
+    from github.PaginatedList import PaginatedList  # pylint: disable=W0611
 
 
 class PygitBug:
