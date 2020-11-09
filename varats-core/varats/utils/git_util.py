@@ -1,5 +1,6 @@
 """Utility module for handling git repos."""
 
+import os
 import re
 import typing as tp
 from enum import Enum
@@ -9,7 +10,10 @@ import pygit2
 from benchbuild.utils.cmd import git
 from plumbum import local
 
-from varats.project.project_util import get_local_project_git
+from varats.project.project_util import (
+    get_local_project_git,
+    get_primary_project_source,
+)
 
 ################################################################################
 # Git interaction helpers
@@ -168,28 +172,84 @@ class ChurnConfig():
         return concat_str
 
 
-CommitLookupTy = tp.Callable[[str], pygit2.Commit]
+CommitLookupTy = tp.Callable[[str, str], pygit2.Commit]
 
 
 def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
-    """Creates a commit lookup function for a specific repository."""
+    """
+    Creates a commit lookup function for project repositories.
 
-    cache_dict: tp.Dict[str, pygit2.Commit] = {}
-    repo = get_local_project_git(project_name)
+    Args:
+        project_name: name of the given benchbuild project
 
-    def get_commit(c_hash: str) -> pygit2.Commit:
-        if c_hash in cache_dict:
-            return cache_dict[c_hash]
+    Returns:
+        a Callable that maps a commit hash and repository name to the
+        corresponding commit.
+    """
 
-        commit = repo.get(c_hash)
+    # Only used when no git_name is provided
+    primary_project_repo = get_local_project_git(project_name)
+    primary_source_name = os.path.basename(
+        get_primary_project_source(project_name).local
+    )
+    repos: tp.Dict[str, pygit2.Repository] = {}
+
+    # Maps hash to commit within corresponding git_name
+    cache_dict: tp.Dict[str, tp.Dict[str, pygit2.Commit]] = {}
+
+    def get_commit(
+        c_hash: str, git_name: tp.Optional[str] = None
+    ) -> pygit2.Commit:
+        """
+        Gets the commit from a given commit hash within its corresponding
+        repository name.
+
+        Args:
+            c_hash: commit hash of the searched commit
+            git_name: name of the repository, wherein the commit is being
+                      searched. If no git_name is provided, the name of the
+                      primary source is used.
+
+
+        Returns:
+            commit, which corresponds to the given commit hash within the given
+            repository.
+        """
+
+        if git_name == "Unknown":
+            git_name = None
+
+        if not git_name:
+            if primary_source_name not in cache_dict:
+                repos[primary_source_name] = primary_project_repo
+                cache_dict[primary_source_name] = {}
+
+            if c_hash in cache_dict[primary_source_name]:
+                return cache_dict[primary_source_name][c_hash]
+
+            commit = primary_project_repo.get(c_hash)
+            if commit is None:
+                raise LookupError(
+                    f"Could not find commit {c_hash} in {project_name}"
+                )
+            cache_dict[primary_source_name][c_hash] = commit
+            return commit
+
+        if git_name not in cache_dict:
+            current_repo = get_local_project_git(project_name, git_name)
+            repos[git_name] = current_repo
+            cache_dict[git_name] = {}
+
+        if c_hash in cache_dict[git_name]:
+            return cache_dict[git_name][c_hash]
+
+        commit = repos[git_name].get(c_hash)
         if commit is None:
             raise LookupError(
-                "Could not find commit {commit} in {project}".format(
-                    commit=c_hash, project=project_name
-                )
+                f"Could not find commit {c_hash} in "
+                f"project {project_name} within git repository {git_name}"
             )
-
-        cache_dict[c_hash] = commit
+        cache_dict[git_name][c_hash] = commit
         return commit
 
     return get_commit
@@ -238,13 +298,12 @@ MappedCommitResultType = tp.TypeVar("MappedCommitResultType")
 def map_commits(
     func: tp.Callable[[pygit2.Commit], MappedCommitResultType],
     cr_pair_list: tp.Iterable[CommitRepoPair],
-    commit_lookup: tp.Callable[[str], pygit2.Commit]
+    commit_lookup: tp.Callable[[str, str], pygit2.Commit],
 ) -> tp.Sequence[MappedCommitResultType]:
     """Maps a function over a range of commits."""
     # Skip 0000 hashes that we added to mark uncommitted files
     return [
-        func(commit_lookup(cr_pair.commit_hash)
-            )  # TODO: extend look up with repo name
+        func(commit_lookup(cr_pair.commit_hash, cr_pair.repository_name))
         for cr_pair in cr_pair_list
         if cr_pair.commit_hash != "0000000000000000000000000000000000000000"
     ]
