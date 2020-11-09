@@ -238,6 +238,11 @@ def get_cached_github_object_list(
 def get_github_repo_name_for_project(
     project: tp.Type[Project]
 ) -> tp.Optional[str]:
+    """
+    Finds the github repo name corresponding to a given github project.
+
+    Returns None if the given project is not a github project.
+    """
     match = GITHUB_URL_PATTERN.match(primary(*project.SOURCE).remote)
     if match:
         return f"{match.group(1)}/{match.group(2)}"

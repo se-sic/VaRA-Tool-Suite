@@ -5,7 +5,10 @@ import typing as tp
 from benchbuild.project import Project
 
 import varats.provider.bug.bug as bug
-from varats.project.project_util import get_primary_project_source
+from varats.project.project_util import (
+    get_primary_project_source,
+    is_git_source,
+)
 from varats.provider.provider import Provider
 from varats.utils.github_util import get_github_repo_name_for_project
 
@@ -27,8 +30,7 @@ class BugProvider(Provider):
     ) -> tp.Optional['BugProvider']:
         primary_source = get_primary_project_source(project.NAME)
 
-        # test if project has a GIT repository
-        if hasattr(primary_source, "fetch"):
+        if is_git_source(primary_source):
             # If project has Github repo, pass name as second arg, None ow.
             return BugProvider(
                 project, get_github_repo_name_for_project(project)
