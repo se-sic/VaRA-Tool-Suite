@@ -180,10 +180,10 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
     Creates a commit lookup function for project repositories.
 
     Args:
-        project_name: the name of the given benchbuild project
+        project_name: name of the given benchbuild project
 
     Returns:
-        a Callable that takes the commit hash and repository name to get the
+        a Callable that maps a commit hash and repository name to the
         corresponding commit.
     """
 
@@ -205,15 +205,15 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
         repository name.
 
         Args:
-            c_hash: the commit hash of the searched commit
-            git_name: the name of the repository, wherein the commit is being
+            c_hash: commit hash of the searched commit
+            git_name: name of the repository, wherein the commit is being
                       searched. If no git_name is provided, the name of the
                       primary source is used.
 
 
         Returns:
-            the commit, which matches the given commit hash within the given
-            repository name.
+            commit, which corresponds to the given commit hash within the given
+            repository.
         """
 
         if git_name == "Unknown":
