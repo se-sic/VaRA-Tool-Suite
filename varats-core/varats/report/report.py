@@ -39,6 +39,10 @@ class FileStatusExtension(Enum):
         color."""
         return tp.cast(str, self.status_color[self.name])
 
+    def num_color_characters(self) -> int:
+        """Returns the number of non printable color characters."""
+        return len(re.sub(self.name, '', self.get_colored_status()))
+
     @staticmethod
     def get_physical_file_statuses() -> tp.Set['FileStatusExtension']:
         """Returns the set of file status extensions that are associated with

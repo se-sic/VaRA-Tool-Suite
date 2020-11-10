@@ -436,16 +436,9 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
         def result_file_to_list_entry(
             commit_status_pair: tp.Tuple[str, FileStatusExtension]
         ) -> str:
-
-            status_name_length = len(commit_status_pair[1].name)
-            status_color_length = len(
-                commit_status_pair[1].get_colored_status()
-            )
-            status_length = status_color_length + \
-                            longest_file_status_extension - status_name_length
-
             status = commit_status_pair[1].get_colored_status().rjust(
-                status_length, " "
+                longest_file_status_extension +
+                commit_status_pair[1].num_color_characters(), " "
             )
 
             return f"[{status}] {commit_status_pair[0][:10]}"
@@ -506,14 +499,12 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
         file_status = result_file_type.get_status_from_result_file(
             result_file.name
         )
-        status_name_length = len(file_status.name)
-
-        status_color_length = len(file_status.get_colored_status())
-
-        status_length = status_color_length + longest_file_status_extension - \
-                        status_name_length
-
-        status = (file_status.get_colored_status().rjust(status_length, " "))
+        status = (
+            file_status.get_colored_status().rjust(
+                longest_file_status_extension +
+                file_status.num_color_characters(), " "
+            )
+        )
         return f"[{status}] {result_file.name}"
 
     def open_in_editor(result_file: Path) -> None:
