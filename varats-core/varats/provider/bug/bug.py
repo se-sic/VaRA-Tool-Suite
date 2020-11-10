@@ -164,7 +164,10 @@ def _get_all_issue_events(project_name: str) -> tp.List[IssueEvent]:
             if github_repo_name:
                 repository: Repository = github.get_repo(github_repo_name)
                 return repository.get_issues_events()
-            raise AssertionError
+            # Call should only happen when loading issue events for a github repo
+            raise AssertionError(
+                f"No github repo found for project {project_name}"
+            )
 
         cache_file_name = github_repo_name.replace("/", "_") + "_issues_events"
 
@@ -176,7 +179,7 @@ def _get_all_issue_events(project_name: str) -> tp.List[IssueEvent]:
             return issue_events
         return []
     # No github repo; Should not occur at this point
-    raise AssertionError
+    raise AssertionError(f"No github repo found for project {project_name}")
 
 
 def _create_corresponding_pygit_bug(
