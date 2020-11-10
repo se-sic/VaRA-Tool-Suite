@@ -69,6 +69,7 @@ class TestGithubObjectCache(unittest.TestCase):
                 _get_cached_pygithub_object("demo_github_object")
             )
 
+    @unittest.skip("Manual caching is currently disabled.")
     def test_cache_paginated_list(self):
         """Test caching a PaginatedList of GithubObjects."""
         demo_github_object1: GithubObject = create_dummy_github_object()

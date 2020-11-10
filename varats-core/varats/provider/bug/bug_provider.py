@@ -1,17 +1,18 @@
 """Module for the :class:`BugProvider`."""
 import logging
-import re
 import typing as tp
 
 from benchbuild.project import Project
-from benchbuild.source import primary
 
 import varats.provider.bug.bug as bug
+from varats.project.project_util import (
+    get_primary_project_source,
+    is_git_source,
+)
 from varats.provider.provider import Provider
+from varats.utils.github_util import get_github_repo_name_for_project
 
 LOG = logging.getLogger(__name__)
-
-GITHUB_URL_PATTERN = re.compile(r"https://github\.com/(.*)/(.*)\.git")
 
 
 class BugProvider(Provider):
@@ -27,9 +28,13 @@ class BugProvider(Provider):
     def create_provider_for_project(
         cls, project: tp.Type[Project]
     ) -> tp.Optional['BugProvider']:
-        match = GITHUB_URL_PATTERN.match(primary(*project.SOURCE).remote)
-        if match:
-            return BugProvider(project, f"{match.group(1)}/{match.group(2)}")
+        primary_source = get_primary_project_source(project.NAME)
+
+        if is_git_source(primary_source):
+            # If project has Github repo, pass name as second arg, None ow.
+            return BugProvider(
+                project, get_github_repo_name_for_project(project)
+            )
         return None
 
     @classmethod
@@ -45,9 +50,15 @@ class BugProvider(Provider):
         Returns:
             A set of PygitBugs.
         """
+        resulting_bugs: tp.Set[bug.PygitBug] = set()
         if self.__github_project_name:
-            return bug.find_all_pygit_bugs(self.__github_project_name)
-        return frozenset()
+            resulting_bugs = resulting_bugs.union(
+                bug.find_all_issue_pygit_bugs(self.project.NAME)
+            )
+        resulting_bugs = resulting_bugs.union(
+            bug.find_all_commit_message_pygit_bugs(self.project.NAME)
+        )
+        return frozenset(resulting_bugs)
 
     def find_all_raw_bugs(self) -> tp.FrozenSet[bug.RawBug]:
         """
@@ -56,9 +67,15 @@ class BugProvider(Provider):
         Returns:
             A set of RawBugs.
         """
+        resulting_bugs: tp.Set[bug.RawBug] = set()
         if self.__github_project_name:
-            return bug.find_all_raw_bugs(self.__github_project_name)
-        return frozenset()
+            resulting_bugs = resulting_bugs.union(
+                bug.find_all_issue_raw_bugs(self.project.NAME)
+            )
+        resulting_bugs = resulting_bugs.union(
+            bug.find_all_commit_message_raw_bugs(self.project.NAME)
+        )
+        return frozenset(resulting_bugs)
 
     def find_pygit_bug_by_fix(self,
                               fixing_commit: str) -> tp.FrozenSet[bug.PygitBug]:
@@ -72,11 +89,20 @@ class BugProvider(Provider):
         Returns:
             A set of PygitBugs fixed by fixing_commit
         """
+        resulting_bugs: tp.Set[bug.PygitBug] = set()
         if self.__github_project_name:
-            return bug.find_pygit_bug_by_fix(
-                self.__github_project_name, fixing_commit
+            resulting_bugs = resulting_bugs.union(
+                bug.find_issue_pygit_bugs_by_fix(
+                    self.project.NAME, fixing_commit
+                )
             )
-        return frozenset()
+
+        resulting_bugs = resulting_bugs.union(
+            bug.find_commit_message_pygit_bugs_by_fix(
+                self.project.NAME, fixing_commit
+            )
+        )
+        return frozenset(resulting_bugs)
 
     def find_raw_bug_by_fix(self,
                             fixing_commit: str) -> tp.FrozenSet[bug.RawBug]:
@@ -90,11 +116,20 @@ class BugProvider(Provider):
         Returns:
             A set of RawBugs fixed by fixing_commit
         """
+        resulting_bugs: tp.Set[bug.RawBug] = set()
         if self.__github_project_name:
-            return bug.find_raw_bug_by_fix(
-                self.__github_project_name, fixing_commit
+            resulting_bugs = resulting_bugs.union(
+                bug.find_issue_raw_bugs_by_fix(
+                    self.project.NAME, fixing_commit
+                )
             )
-        return frozenset()
+
+        resulting_bugs = resulting_bugs.union(
+            bug.find_commit_message_raw_bugs_by_fix(
+                self.project.NAME, fixing_commit
+            )
+        )
+        return frozenset(resulting_bugs)
 
     def find_pygit_bug_by_introduction(
         self, introducing_commit: str
@@ -109,11 +144,20 @@ class BugProvider(Provider):
         Returns:
             A set of PygitBugs introduced by introducing_commit
         """
+        resulting_bugs: tp.Set[bug.PygitBug] = set()
         if self.__github_project_name:
-            return bug.find_pygit_bug_by_introduction(
-                self.__github_project_name, introducing_commit
+            resulting_bugs = resulting_bugs.union(
+                bug.find_issue_pygit_bugs_by_introduction(
+                    self.project.NAME, introducing_commit
+                )
             )
-        return frozenset()
+
+        resulting_bugs = resulting_bugs.union(
+            bug.find_commit_message_pygit_bugs_by_introduction(
+                self.project.NAME, introducing_commit
+            )
+        )
+        return frozenset(resulting_bugs)
 
     def find_raw_bug_by_introduction(
         self, introducing_commit: str
@@ -128,11 +172,20 @@ class BugProvider(Provider):
         Returns:
             A set of RawBugs introduced by introducing_commit
         """
+        resulting_bugs: tp.Set[bug.RawBug] = set()
         if self.__github_project_name:
-            return bug.find_raw_bug_by_introduction(
-                self.__github_project_name, introducing_commit
+            resulting_bugs = resulting_bugs.union(
+                bug.find_issue_raw_bugs_by_introduction(
+                    self.project.NAME, introducing_commit
+                )
             )
-        return frozenset()
+
+        resulting_bugs = resulting_bugs.union(
+            bug.find_commit_message_raw_bugs_by_introduction(
+                self.project.NAME, introducing_commit
+            )
+        )
+        return frozenset(resulting_bugs)
 
 
 class BugDefaultProvider(BugProvider):
