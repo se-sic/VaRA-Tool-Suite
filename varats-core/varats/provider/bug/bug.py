@@ -164,7 +164,8 @@ def _get_all_issue_events(project_name: str) -> tp.List[IssueEvent]:
             if github_repo_name:
                 repository: Repository = github.get_repo(github_repo_name)
                 return repository.get_issues_events()
-            # Call should only happen when loading issue events for a github repo
+            # Method should only be called when loading issue
+            # events for a github repo
             raise AssertionError(
                 f"No github repo found for project {project_name}"
             )
