@@ -12,12 +12,7 @@ import yaml
 
 from varats.base.version_header import VersionHeader
 from varats.report.report import BaseReport, FileStatusExtension, MetaReport
-from varats.utils.git_util import (
-    create_commit_lookup_helper,
-    map_commits,
-    CommitRepoPair,
-    CommitLookupTy,
-)
+from varats.utils.git_util import map_commits, CommitRepoPair, CommitLookupTy
 
 
 class BlameInstInteractions():
@@ -519,6 +514,31 @@ def generate_degree_tuples(
             degree_dict[degree] += interaction.amount
 
     return list(degree_dict.items())
+
+
+def is_multi_repository_report(report: BlameReport) -> bool:
+    """
+    Searches for different repository names in the report to determine if the
+    the report depends on more than one git repository.
+
+    Args:
+        report: BlameReport that is being searched through
+
+    Returns:
+        True if more than one repository names were found.
+    """
+    base_repository_name: str = ""
+
+    for func_entry in report.function_entries:
+        for interaction in func_entry.interactions:
+            if not base_repository_name:
+                base_repository_name = interaction.base_commit.repository_name
+
+            for interacting_commit in interaction.interacting_commits:
+                if base_repository_name != interacting_commit.repository_name:
+                    return True
+
+    return False
 
 
 def generate_author_degree_tuples(
