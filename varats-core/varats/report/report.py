@@ -41,7 +41,7 @@ class FileStatusExtension(Enum):
 
     def num_color_characters(self) -> int:
         """Returns the number of non printable color characters."""
-        return len(re.sub(self.name, '', self.get_colored_status()))
+        return len(self.status_color[''])
 
     @staticmethod
     def get_physical_file_statuses() -> tp.Set['FileStatusExtension']:
