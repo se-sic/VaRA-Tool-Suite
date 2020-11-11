@@ -45,6 +45,7 @@ def main() -> None:
     __create_ext_parser(sub_parsers)  # vara-cs ext
     __create_package_parser(sub_parsers)  # vara-cs package
     __create_view_parser(sub_parsers)  # vara-cs view
+    __create_cleanup_parser(sub_parsers)  # vara-cs cleanup
 
     args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
 
@@ -60,6 +61,8 @@ def main() -> None:
         __casestudy_package(args, parser)
     elif args['subcommand'] == 'view':
         __casestudy_view(args)
+    elif args['subcommand'] == 'cleanup':
+        __casestudy_cleanup(args)
 
 
 def __create_status_parser(sub_parsers: _SubParsersAction) -> None:
@@ -291,6 +294,18 @@ def __create_view_parser(sub_parsers: _SubParsersAction) -> None:
     )
 
 
+def __create_cleanup_parser(sub_parsers: _SubParsersAction) -> None:
+    cleanup_parser = sub_parsers.add_parser(
+        'cleanup', help="Cleanup report files."
+    )
+    cleanup_parser.add_argument(
+        "cleanup_type",
+        help="The cleanup type that gets removed.",
+        choices=["old", "error", "custom"],
+        type=str
+    )
+
+
 def __casestudy_status(
     args: tp.Dict[str, tp.Any], parser: ArgumentParser
 ) -> None:
@@ -512,6 +527,46 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
         )
     except EOFError:
         return
+
+
+def __casestudy_cleanup(args: tp.Dict[str, tp.Any]) -> None:
+    cleanup_type = args['cleanup_type']
+    project_names = [
+        cs.project_name for cs in get_paper_config().get_all_case_studies()
+    ]
+
+    def find_result_dir_paths_of_projects() -> tp.List[Path]:
+        result_dir_path = Path(vara_cfg()["result_dir"].value)
+        existing_paper_config_result_dir_paths = []
+
+        for project_name in project_names:
+            path = Path(result_dir_path / project_name)
+            if os.path.exists(path):
+                existing_paper_config_result_dir_paths.append(path)
+
+        return existing_paper_config_result_dir_paths
+
+    def find_old_result_files(
+        paths_to_result_dirs: tp.List[Path]
+    ) -> tp.List[Path]:
+        pass
+        # TODO: impl
+
+    def remove_error_result_files() -> None:
+        result_dir_paths = find_result_dir_paths_of_projects()
+
+        for result_dir_path in result_dir_paths:
+            result_file_names = os.listdir(result_dir_path)
+
+            for result_file_name in result_file_names:
+                if result_file_name.__contains__(
+                    "_cerror."
+                ) and MetaReport.is_result_file(result_file_name):
+                    #os.remove(result_dir_path / result_file_name)
+                    print(f"Deleted: {result_dir_path}/{result_file_name}")
+
+    if cleanup_type == "error":
+        remove_error_result_files()
 
 
 if __name__ == '__main__':
