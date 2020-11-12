@@ -14,6 +14,8 @@ from varats.data.reports.blame_report import (
     generate_avg_time_distribution_tuples,
     generate_degree_tuples,
     generate_max_time_distribution_tuples,
+    is_multi_repository_report,
+    generate_lib_dependent_degrees,
 )
 from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
@@ -65,8 +67,21 @@ class BlameInteractionDegreeDatabase(
             report_path: Path
         ) -> tp.Tuple[pd.DataFrame, str, str]:
             report = load_blame_report(report_path)
-            list_of_degree_occurrences = generate_degree_tuples(report)
-            degrees, amounts = map(list, zip(*list_of_degree_occurrences))
+            multi_repo_report: bool = is_multi_repository_report(report)
+
+            if multi_repo_report:
+                categorised_list_of_degree_occurences = \
+                    generate_lib_dependent_degrees(report)
+
+                # The first key is always the base commit repo name
+                base_repo_name = next(
+                    iter(categorised_list_of_degree_occurences)
+                )
+                # TODO: Use categorised degrees and amounts in dataframe
+            else:
+                list_of_degree_occurrences = generate_degree_tuples(report)
+                degrees, amounts = map(list, zip(*list_of_degree_occurrences))
+
             total = sum(amounts)
 
             list_of_author_degree_occurrences = generate_author_degree_tuples(

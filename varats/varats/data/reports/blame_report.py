@@ -516,16 +516,65 @@ def generate_degree_tuples(
     return list(degree_dict.items())
 
 
-def is_multi_repository_report(report: BlameReport) -> bool:
+def generate_lib_dependent_degrees(
+    report: tp.Union[BlameReport, BlameReportDiff]
+) -> tp.Dict[str, tp.List[tp.Tuple[int, int]]]:
     """
-    Searches for different repository names in the report to determine if the
-    the report depends on more than one git repository.
-
     Args:
-        report: BlameReport that is being searched through
+        report: The blame report
 
     Returns:
-        True if more than one repository names were found.
+        Lists of tuples (degree, amount) categorised by their corresponding
+        library name.
+    """
+    categorised_degree_dict: tp.Dict[str, tp.Dict[int, int]] = {}
+
+    for func_entry in report.function_entries:
+        for interaction in func_entry.interactions:
+            tmp_degree_of_libs: tp.Dict[str, int] = {}
+
+            # Add base repo name as first key
+            if not categorised_degree_dict:
+                categorised_degree_dict[interaction.base_commit.repository_name
+                                       ] = {}
+
+            for inter_hash in interaction.interacting_commits:
+                inter_hash_repo_name = inter_hash.repository_name
+
+                if inter_hash_repo_name not in categorised_degree_dict:
+                    categorised_degree_dict[inter_hash_repo_name] = {}
+
+                if inter_hash_repo_name \
+                        not in tmp_degree_of_libs:
+                    tmp_degree_of_libs[inter_hash_repo_name] = 1
+                else:
+                    tmp_degree_of_libs[inter_hash_repo_name] += 1
+
+            for repo_name, degree in tmp_degree_of_libs.items():
+                if degree not in categorised_degree_dict[repo_name]:
+                    categorised_degree_dict[repo_name][degree] = 0
+
+                categorised_degree_dict[repo_name][degree] += interaction.amount
+
+    # Transform to tuples (degree, amount)
+    result_dict: tp.Dict[str, tp.List[tp.Tuple[int, int]]] = {}
+    for repo_name, degree_amount_dict in categorised_degree_dict.items():
+        result_dict[repo_name] = tp.cast(
+            tp.List[tp.Tuple[int, int]], list(degree_amount_dict.items())
+        )
+
+    return result_dict
+
+
+def is_multi_repository_report(report: BlameReport) -> bool:
+    """
+    Determines if the report depends on more than one git repository.
+
+    Args:
+        report: The blame report
+
+    Returns:
+        True if more than one unique repository name was found.
     """
     base_repository_name: str = ""
 
