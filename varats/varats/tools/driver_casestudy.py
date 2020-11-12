@@ -425,17 +425,22 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
             nonlocal commit_hash
             commit_hash = choice_pair[0][:10]
 
+        statuses = FileStatusExtension.get_physical_file_statuses().union(
+            FileStatusExtension.get_virtual_file_statuses()
+        )
+
         longest_file_status_extension = max([
-            len(status.get_colored_status())
-            for status in FileStatusExtension.get_physical_file_statuses()
+            len(status.name) for status in statuses
         ])
 
         def result_file_to_list_entry(
             commit_status_pair: tp.Tuple[str, FileStatusExtension]
         ) -> str:
             status = commit_status_pair[1].get_colored_status().rjust(
-                longest_file_status_extension, " "
+                longest_file_status_extension +
+                commit_status_pair[1].num_color_characters(), " "
             )
+
             return f"[{status}] {commit_status_pair[0][:10]}"
 
         # Ask user which commit we should use
@@ -482,15 +487,24 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
         f"Found {len(result_files)} matching result files (newest to oldest):"
     )
 
+    statuses = FileStatusExtension.get_physical_file_statuses().union(
+        FileStatusExtension.get_virtual_file_statuses()
+    )
+
     longest_file_status_extension = max([
-        len(status.get_colored_status())
-        for status in FileStatusExtension.get_physical_file_statuses()
+        len(status.name) for status in statuses
     ])
 
     def result_file_to_list_entry(result_file: Path) -> str:
+        file_status = result_file_type.get_status_from_result_file(
+            result_file.name
+        )
         status = (
-            result_file_type.get_status_from_result_file(result_file.name)
-        ).get_colored_status().rjust(longest_file_status_extension, " ")
+            file_status.get_colored_status().rjust(
+                longest_file_status_extension +
+                file_status.num_color_characters(), " "
+            )
+        )
         return f"[{status}] {result_file.name}"
 
     def open_in_editor(result_file: Path) -> None:
