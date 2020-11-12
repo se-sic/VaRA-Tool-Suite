@@ -154,6 +154,19 @@ def get_all_revisions_between(c_start: str,
     return list(map(lambda rev: rev[:10], result)) if short else result
 
 
+def is_git_source(source: bb.source.BaseSource) -> bool:
+    """
+    Checks if given base source is a git source.
+
+    Args:
+        source: base source to check
+
+    Returns:
+        true if the base source is a git source, false ow.
+    """
+    return hasattr(source, "fetch")
+
+
 class BinaryType(Enum):
     """Enum for different binary types."""
     value: int
