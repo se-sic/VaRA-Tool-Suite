@@ -110,8 +110,10 @@ def create_base_image(base: ImageBase) -> None:
         # we need an up-to-date pip version to get the prebuilt pygit2 package
         # with an up-to-date libgit2
         image.run('pip3', 'install', '--upgrade', 'pip')
-        add_benchbuild_layers(image)
         _add_varats_layers(image)
+        # override bb with custom version if bb install from source is active
+        if bb_cfg()['container']['from_source']:
+            add_benchbuild_layers(image)
 
         # add research tool if configured
         configured_research_tool = vara_cfg()["container"]["research_tool"]
