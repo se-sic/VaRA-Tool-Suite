@@ -22,22 +22,18 @@ class BugOverviewTable(Table):
     def tabulate(self) -> str:
         project_name = self.table_kwargs["project"]
 
-        with BugProvider.create_provider_for_project(
+        bug_provider = BugProvider.get_provider_for_project(
             get_project_cls_by_name(project_name)
-        ) as provider:
-            if provider:
-                bug_provider = provider
-            else:
-                bug_provider = BugProvider.create_default_provider(
-                    get_project_cls_by_name(project_name)
-                )
+        )
 
-        variables = ["fixing hash", "fixing message", "fixing author"]
+        variables = [
+            "fixing hash", "fixing message", "fixing author", "issue_number"
+        ]
         pybugs = bug_provider.find_all_pygit_bugs()
 
         data_rows = [[
             pybug.fixing_commit.hex, pybug.fixing_commit.message,
-            pybug.fixing_commit.author
+            pybug.fixing_commit.author, pybug.issue_id
         ] for pybug in pybugs]
 
         bug_df = pd.DataFrame(columns=variables, data=np.array(data_rows))
@@ -48,20 +44,3 @@ class BugOverviewTable(Table):
             tex_code = bug_df.to_latex(bold_rows=True, multicolumn_format="c")
             return str(tex_code) if tex_code else ""
         return tabulate(bug_df, bug_df.columns, self.format.value)
-
-    def save(
-        self,
-        path: tp.Optional[Path] = None,
-    ) -> None:
-        filetype = self.format_filetypes.get(self.format, "txt")
-
-        if path is None:
-            table_dir = self.table_kwargs("table_dir")
-        else:
-            table_dir = path
-
-        filename = f"{self.NAME}_{self.table_kwargs('project')}"
-        content = self.tabulate()
-
-        with open(table_dir / f"{filename}.{filetype}", "w") as output_file:
-            output_file.write(content)
