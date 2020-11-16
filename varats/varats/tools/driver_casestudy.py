@@ -300,8 +300,8 @@ def __create_cleanup_parser(sub_parsers: _SubParsersAction) -> None:
     )
     cleanup_parser.add_argument(
         "cleanup_type",
-        help="The cleanup type that gets removed.",
-        choices=["old", "error", "custom"],
+        help="The type of the performed cleanup action.",
+        choices=["old", "error", "regex"],
         type=str
     )
 
@@ -546,11 +546,9 @@ def __casestudy_cleanup(args: tp.Dict[str, tp.Any]) -> None:
 
         return existing_paper_config_result_dir_paths
 
-    def find_old_result_files(
-        paths_to_result_dirs: tp.List[Path]
-    ) -> tp.List[Path]:
+    def remove_old_result_files() -> None:
         pass
-        # TODO: impl
+        # TODO: Implement the removal of old result files.
 
     def remove_error_result_files() -> None:
         result_dir_paths = find_result_dir_paths_of_projects()
@@ -562,9 +560,16 @@ def __casestudy_cleanup(args: tp.Dict[str, tp.Any]) -> None:
                 if result_file_name.__contains__(
                     "_cerror."
                 ) and MetaReport.is_result_file(result_file_name):
-                    #os.remove(result_dir_path / result_file_name)
-                    print(f"Deleted: {result_dir_path}/{result_file_name}")
+                    os.remove(result_dir_path / result_file_name)
+                    # TODO: Maybe implement listing of to be deleted or
+                    #  deleted files.
 
+    def remove_result_files_by_regex() -> None:
+        pass
+        # TODO: Implement the removal of files specified by the user
+        #  https://github.com/se-passau/VaRA/issues/488
+
+    # TODO: Implement case distinction for cleanup types
     if cleanup_type == "error":
         remove_error_result_files()
 
