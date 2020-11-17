@@ -13,6 +13,7 @@ from pathlib import Path
 import yaml
 from argparse_utils import enum_action
 
+from varats.data.discover_reports import initialize_reports
 from varats.paper_mgmt.artefacts import (
     Artefact,
     ArtefactType,
@@ -22,7 +23,9 @@ from varats.paper_mgmt.artefacts import (
     filter_plot_artefacts,
 )
 from varats.paper_mgmt.paper_config import get_paper_config
+from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
+from varats.tables.discover_tables import initialize_tables
 from varats.utils.cli_util import initialize_cli_tool
 from varats.utils.settings import vara_cfg
 
@@ -37,6 +40,9 @@ def main() -> None:
     """
     initialize_cli_tool()
     initialize_projects()
+    initialize_reports()
+    initialize_tables()
+    initialize_plots()
     parser = argparse.ArgumentParser("vara-art")
 
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
