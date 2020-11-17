@@ -518,31 +518,32 @@ def generate_degree_tuples(
 
 def generate_lib_dependent_degrees(
     report: tp.Union[BlameReport, BlameReportDiff]
-) -> tp.Dict[str, tp.List[tp.Tuple[int, int]]]:
+) -> tp.Dict[str, tp.Dict[str, tp.List[tp.Tuple[int, int]]]]:
     """
     Args:
         report: The blame report
 
     Returns:
-        Lists of tuples (degree, amount) categorised by their corresponding
-        library name.
+        Map of tuples (degree, amount) categorised by their corresponding
+        library name to their corresponding base library name.
     """
-    categorised_degree_dict: tp.Dict[str, tp.Dict[int, int]] = {}
+    categorised_degree_dict: tp.Dict[str, tp.Dict[str, tp.Dict[int, int]]] = {}
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
+            base_repo_name = interaction.base_commit.repository_name
             tmp_degree_of_libs: tp.Dict[str, int] = {}
 
-            # Add base repo name as first key
             if not categorised_degree_dict:
-                categorised_degree_dict[interaction.base_commit.repository_name
-                                       ] = {}
+                categorised_degree_dict[base_repo_name] = {}
 
             for inter_hash in interaction.interacting_commits:
                 inter_hash_repo_name = inter_hash.repository_name
 
-                if inter_hash_repo_name not in categorised_degree_dict:
-                    categorised_degree_dict[inter_hash_repo_name] = {}
+                if inter_hash_repo_name \
+                        not in categorised_degree_dict[base_repo_name]:
+                    categorised_degree_dict[base_repo_name][inter_hash_repo_name
+                                                           ] = {}
 
                 if inter_hash_repo_name \
                         not in tmp_degree_of_libs:
@@ -551,17 +552,22 @@ def generate_lib_dependent_degrees(
                     tmp_degree_of_libs[inter_hash_repo_name] += 1
 
             for repo_name, degree in tmp_degree_of_libs.items():
-                if degree not in categorised_degree_dict[repo_name]:
-                    categorised_degree_dict[repo_name][degree] = 0
+                if degree not in categorised_degree_dict[base_repo_name][
+                    repo_name]:
+                    categorised_degree_dict[base_repo_name][repo_name][degree
+                                                                      ] = 0
 
-                categorised_degree_dict[repo_name][degree] += interaction.amount
+                categorised_degree_dict[base_repo_name][repo_name][
+                    degree] += interaction.amount
 
     # Transform to tuples (degree, amount)
-    result_dict: tp.Dict[str, tp.List[tp.Tuple[int, int]]] = {}
-    for repo_name, degree_amount_dict in categorised_degree_dict.items():
-        result_dict[repo_name] = tp.cast(
-            tp.List[tp.Tuple[int, int]], list(degree_amount_dict.items())
-        )
+    result_dict: tp.Dict[str, tp.Dict[str, tp.List[tp.Tuple[int, int]]]] = {}
+    for base_repo_name, inter_lib_dict in categorised_degree_dict.items():
+        result_dict[base_repo_name] = {}
+        for inter_lib_name, degree_amount_dict in inter_lib_dict.items():
+            result_dict[base_repo_name][inter_lib_name] = tp.cast(
+                tp.List[tp.Tuple[int, int]], list(degree_amount_dict.items())
+            )
 
     return result_dict
 
