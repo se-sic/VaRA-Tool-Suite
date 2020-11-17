@@ -3,9 +3,6 @@
 import importlib
 import pkgutil
 
-# avoid a potential cyclic import problem
-import varats.plot.plot
-
 
 def discover() -> None:
     """Auto import all plots."""
