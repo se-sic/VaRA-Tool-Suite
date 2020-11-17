@@ -33,14 +33,6 @@ class PlotRegistry(type):
         PlotRegistry.plots[key] = cls
 
     @staticmethod
-    def __ensure_plots_are_loaded() -> None:
-        """Ensures that all plot files are loaded into the registry."""
-        if not PlotRegistry.plots_discovered:
-            from varats.plots import discover  # pylint: disable=C0415
-            discover()
-            PlotRegistry.plots_discovered = True
-
-    @staticmethod
     def get_plot_types_help_string() -> str:
         """
         Generates help string for visualizing all available plots.
@@ -48,7 +40,6 @@ class PlotRegistry(type):
         Returns:
             a help string that contains all available plot names.
         """
-        PlotRegistry.__ensure_plots_are_loaded()
         return "The following plots are available:\n  " + "\n  ".join([
             key for key in PlotRegistry.plots if key != "plot"
         ])
@@ -65,8 +56,6 @@ class PlotRegistry(type):
 
         Returns: The class implementing the plot.
         """
-        PlotRegistry.__ensure_plots_are_loaded()
-
         from varats.plot.plot import Plot  # pylint: disable=W0611
         if plot_type not in PlotRegistry.plots:
             raise LookupError(

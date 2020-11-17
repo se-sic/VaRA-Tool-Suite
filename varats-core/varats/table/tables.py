@@ -26,14 +26,6 @@ class TableRegistry(type):
         TableRegistry.tables[key] = cls
 
     @staticmethod
-    def __ensure_tables_are_loaded() -> None:
-        """Ensures that all table files are loaded into the registry."""
-        if not TableRegistry.tables_discovered:
-            from varats.tables import discover  # pylint: disable=C0415
-            discover()
-            TableRegistry.tables_discovered = True
-
-    @staticmethod
     def get_table_types_help_string() -> str:
         """
         Generates help string for visualizing all available tables.
@@ -41,7 +33,6 @@ class TableRegistry(type):
         Returns:
             a help string that contains all available table names.
         """
-        TableRegistry.__ensure_tables_are_loaded()
         return "The following tables are available:\n  " + "\n  ".join([
             key for key in TableRegistry.tables if key != "table"
         ])
@@ -57,8 +48,6 @@ class TableRegistry(type):
         Returns:
             the class implementing the table
         """
-        TableRegistry.__ensure_tables_are_loaded()
-
         from varats.table.table import Table  # pylint: disable=C0415
         if table_param not in TableRegistry.tables:
             sys.exit(
