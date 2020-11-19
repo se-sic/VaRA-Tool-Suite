@@ -81,6 +81,7 @@ class BlameInteractionDegreeDatabase(
             #  multiple libs
             # TODO: Find better way to make multi_repo_report check
             multi_repo_report: bool = is_multi_repository_report(report)
+
             categorised_list_of_degree_occurrences = \
                 generate_lib_dependent_degrees(report)
 
@@ -121,59 +122,34 @@ class BlameInteractionDegreeDatabase(
             )
             total_avg_time_amounts = sum(avg_time_amounts)
 
-            amount_of_entries = len(
-                degrees + author_degrees + max_time_buckets + avg_time_buckets
-            )
+            # TODO: calculate amount_of_entries
+            amount_of_entries = 5  # Additional entries
 
-            def build_data_frame(
+            # TODO: Add degree_type etc. to dataframe rows
+            def build_dataframe_row(
                 base_library: str, inter_library: str,
                 lib_degree: tp.List[tp.Any], lib_amount: tp.List[tp.Any]
-            ) -> pd.DataFrame:
-                return pd.DataFrame(
-                    [{
-                        'revision': [report.head_commit] * amount_of_entries,
-                        'time_id':
-                            [commit_map.short_time_id(report.head_commit)] *
-                            amount_of_entries,
-                        'degree_type':
-                            [DegreeType.interaction.value] * len(degrees) +
-                            [DegreeType.author.value] * len(author_degrees) +
-                            [DegreeType.max_time.value] * len(max_time_buckets)
-                            +
-                            [DegreeType.avg_time.value] * len(avg_time_buckets),
-                        'degree':
-                            degrees + author_degrees + max_time_buckets +
-                            avg_time_buckets,
-                        'amount':
-                            amounts + author_amounts + max_time_amounts +
-                            avg_time_amounts,
-                        'fraction':
-                            np.concatenate([
-                                np.divide(amounts, total),
-                                np.divide(author_amounts, author_total),
-                                np.divide(
-                                    max_time_amounts, total_max_time_amounts
-                                ),
-                                np.divide(
-                                    avg_time_amounts, total_avg_time_amounts
-                                ),
-                            ]),
-                        'base_lib':
-                            base_library,
-                        'inter_lib':
-                            inter_library,
-                        'lib_degree':
-                            lib_degree,
-                        'lib_amount':
-                            lib_amount,
-                        'lib_fraction':
-                            np.divide(lib_amount, total_amounts_of_all_libs)
-                    }],
-                    # TODO: change range from len(0, amount_of_entries)
-                    index=[0]
-                )
+            ) -> tp.Dict:
 
-            pd_dataframe: pd.DataFrame = create_dataframe_layout()
+                data_dict: tp.Dict[str, tp.Any] = {
+                    'revision':
+                        report.head_commit,
+                    'time_id':
+                        commit_map.short_time_id(report.head_commit),
+                    'base_lib':
+                        base_library,
+                    'inter_lib':
+                        inter_library,
+                    'lib_degree':
+                        lib_degree,
+                    'lib_amount':
+                        lib_amount,
+                    'lib_fraction':
+                        np.divide(lib_amount, total_amounts_of_all_libs)
+                }
+                return data_dict
+
+            result_data_dicts: tp.List[tp.Dict] = []
 
             for base_lib_name, inter_lib_dict \
                     in categorised_list_of_degree_occurrences.items():
@@ -184,26 +160,17 @@ class BlameInteractionDegreeDatabase(
                     inter_degrees, inter_amounts = map(
                         list, zip(*degree_amount_tuples)
                     )
-
-                    if pd_dataframe.empty:
-                        pd_dataframe = build_data_frame(
-                            base_lib_name, inter_lib_name, inter_degrees,
-                            inter_amounts
+                    for x in range(0, len(inter_degrees)):
+                        current_data_dict = build_dataframe_row(
+                            base_lib_name,
+                            inter_lib_name,
+                            tp.cast(tp.List, inter_degrees)[x],
+                            tp.cast(tp.List, inter_amounts)[x],
                         )
-                    else:
-                        # TODO: Replace this inefficient piece with sth. more
-                        #  graceful
-                        pd_dataframe = pd.concat([
-                            pd_dataframe,
-                            build_data_frame(
-                                base_lib_name, inter_lib_name, inter_degrees,
-                                inter_amounts
-                            )
-                        ])
-            return (
-                pd_dataframe, report.head_commit,
-                str(report_path.stat().st_mtime_ns)
-            )
+                        result_data_dicts.append(current_data_dict)
+
+            df = pd.DataFrame(result_data_dicts)
+            return df, report.head_commit, str(report_path.stat().st_mtime_ns)
 
         report_files = get_processed_revisions_files(
             project_name, BlameReport,
@@ -224,5 +191,4 @@ class BlameInteractionDegreeDatabase(
             lambda path: str(path.stat().st_mtime_ns),
             lambda a, b: int(a) > int(b)
         )
-        # TODO: Investigate weird fraction rates after 5th entry in cache dict
         return data_frame
