@@ -47,7 +47,7 @@ class BlameInteractionDegreeDatabase(
     cache_id="blame_interaction_degree_data",
     columns=[
         "degree_type", "degree", "amount", "fraction", "base_lib", "inter_lib",
-        "lib_degree", "lib_amount"
+        "lib_degree", "lib_amount", "lib_fraction"
     ]
 ):
     """Provides access to blame interaction degree data."""
@@ -68,6 +68,8 @@ class BlameInteractionDegreeDatabase(
             df_layout.inter_lib = df_layout.inter_lib.astype('str')
             df_layout.lib_degree = df_layout.lib_degree.astype('int64')
             df_layout.lib_amount = df_layout.lib_amount.astype('int64')
+            df_layout.lib_fraction = df_layout.lib_fraction.astype('int64')
+
             return df_layout
 
         def create_data_frame_for_report(
@@ -79,12 +81,20 @@ class BlameInteractionDegreeDatabase(
             #  multiple libs
             # TODO: Find better way to make multi_repo_report check
             multi_repo_report: bool = is_multi_repository_report(report)
-            pd.set_option("display.max_rows", None, "display.max_columns", None)
             categorised_list_of_degree_occurrences = \
                 generate_lib_dependent_degrees(report)
 
+            total_amounts_of_all_libs = 0
+
+            for base_name, lib_dict \
+                    in categorised_list_of_degree_occurrences.items():
+                for lib_name, tuple_list in lib_dict.items():
+                    for degree_amount_tuple in tuple_list:
+                        total_amounts_of_all_libs += degree_amount_tuple[1]
+
             list_of_degree_occurrences = generate_degree_tuples(report)
             degrees, amounts = map(list, zip(*list_of_degree_occurrences))
+
             total = sum(amounts)
 
             list_of_author_degree_occurrences = generate_author_degree_tuples(
@@ -116,10 +126,8 @@ class BlameInteractionDegreeDatabase(
             )
 
             def build_data_frame(
-                base_lib_name: tp.Optional[str] = None,
-                inter_lib_name: tp.Optional[str] = None,
-                lib_degree: tp.Optional[tp.List[tp.Any]] = None,
-                lib_amount: tp.Optional[tp.List[tp.Any]] = None
+                base_library: str, inter_library: str,
+                lib_degree: tp.List[tp.Any], lib_amount: tp.List[tp.Any]
             ) -> pd.DataFrame:
                 return pd.DataFrame(
                     [{
@@ -148,16 +156,18 @@ class BlameInteractionDegreeDatabase(
                                 ),
                                 np.divide(
                                     avg_time_amounts, total_avg_time_amounts
-                                )
+                                ),
                             ]),
                         'base_lib':
-                            base_lib_name,
+                            base_library,
                         'inter_lib':
-                            inter_lib_name,
+                            inter_library,
                         'lib_degree':
                             lib_degree,
                         'lib_amount':
                             lib_amount,
+                        'lib_fraction':
+                            np.divide(lib_amount, total_amounts_of_all_libs)
                     }],
                     # TODO: change range from len(0, amount_of_entries)
                     index=[0]
