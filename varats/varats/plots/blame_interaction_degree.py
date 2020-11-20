@@ -2,6 +2,7 @@
 import abc
 import logging
 import typing as tp
+from itertools import product, groupby
 
 import matplotlib.pyplot as plt
 import matplotlib.style as style
@@ -55,6 +56,90 @@ def _filter_data_frame(
     return unique_revisions, sub_df_list
 
 
+def _filter_multi_lib_data_frame_tuple(
+    df_tuple: tp.Tuple[pd.DataFrame, pd.DataFrame], commit_map: CommitMap
+) -> tp.Tuple[tp.Tuple[tp.List[str], tp.List[pd.Series], tp.Optional[tp.Tuple[
+    tp.List[str], tp.List[pd.Series]]]]]:
+    print(df_tuple)
+
+    def filter_data_frame(
+        df: pd.DataFrame
+    ) -> tp.Tuple[tp.List[str], tp.List[pd.Series]]:
+        degree_levels = sorted(np.unique(df.lib_degree))
+        df = df.set_index(['revision', 'lib_degree', 'base_lib', 'inter_lib'])
+        df = df.reindex(
+            pd.MultiIndex.from_product(df.index.levels, names=df.index.names),
+            fill_value=0
+        ).reset_index()
+        # fix missing time_ids introduced by the product index
+        df['time_id'] = df['revision'].apply(commit_map.short_time_id)
+        df.sort_values(by=['time_id'], inplace=True)
+
+        sub_df_list = [
+            df.loc[df.lib_degree == x].lib_fraction for x in degree_levels
+        ]
+        unique_revisions = df.revision.unique()
+
+        return unique_revisions, sub_df_list
+
+    result = []
+
+    if isinstance(df_tuple, pd.DataFrame):
+        return filter_data_frame(df_tuple)
+    else:
+        return tuple(filter_data_frame(df) for df in df_tuple)
+
+
+def get_list_of_grouped_dataframes(
+    interaction_plot_df: pd.DataFrame
+) -> tp.List[tp.Tuple[pd.DataFrame, pd.DataFrame]]:
+    interaction_plot_df = interaction_plot_df[[
+        'revision', 'time_id', 'base_lib', 'inter_lib', 'lib_degree',
+        'lib_amount', 'lib_fraction'
+    ]]
+    all_base_lib_names = sorted(np.unique(interaction_plot_df.base_lib))
+    all_inter_lib_names = sorted(np.unique(interaction_plot_df.inter_lib))
+
+    def build_dataframe_tuples(
+    ) -> tp.List[tp.Tuple[pd.DataFrame, tp.Optional[pd.DataFrame]]]:
+        df_tuple_list: tp.List[tp.Tuple[pd.DataFrame, pd.DataFrame]] = []
+        df_pair_list: tp.Tuple[pd.DataFrame, pd.DataFrame]
+        """Builds a list of dataframe tuples when possible. When the base and
+        interacting library are also existent in their interchanged state,
+        the corresponding dataframe tuple gets added to the list. If the
+        libraries do not exist in their interchanged state, only the
+        dataframe is added."""
+
+        # TODO: Find more efficient way to remove tuples with same values
+        name_combination_list = set(
+            tuple(sorted(list(tup)))
+            for tup in product(all_base_lib_names, all_inter_lib_names)
+        )
+
+        for name_tuple in name_combination_list:
+
+            df_first = interaction_plot_df[(
+                interaction_plot_df[['base_lib',
+                                     'inter_lib']] == list(name_tuple)
+            ).all(1)]
+
+            df_second = interaction_plot_df[(
+                interaction_plot_df[['inter_lib',
+                                     'base_lib']] == list(name_tuple)
+            ).all(1)]
+
+            if not df_first.empty or not df_second.empty:
+                if df_first.equals(df_second) or df_second.empty:
+                    df_pair = df_first
+                else:
+                    df_pair = (df_first, df_second)
+                df_tuple_list.append(df_pair)
+
+        return df_tuple_list
+
+    return build_dataframe_tuples()
+
+
 class BlameDegree(Plot):
     """Base plot for blame degree plots."""
 
@@ -70,11 +155,14 @@ class BlameDegree(Plot):
             BlameInteractionDegreeDatabase.get_data_for_project(
                 project_name, [
                     "revision", "time_id", "degree_type", "degree", "amount",
-                    "fraction"
+                    "fraction", "base_lib", "inter_lib", "lib_degree",
+                    "lib_amount", "lib_fraction"
                 ], commit_map, case_study)
-        if interaction_plot_df.empty or len(
-            np.unique(interaction_plot_df['revision'])
-        ) == 1:
+
+        length = len(np.unique(interaction_plot_df['revision']))
+        is_empty = interaction_plot_df.empty
+
+        if is_empty or length == 1:
             # Need more than one data point
             raise PlotDataEmpty
         return interaction_plot_df
@@ -104,9 +192,23 @@ class BlameDegree(Plot):
 
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
         interaction_plot_df = self._get_degree_data()
-        unique_revisions, sub_df_list = _filter_data_frame(
-            degree_type, interaction_plot_df, commit_map
-        )
+        print(interaction_plot_df)
+
+        # TODO: differentiate plot types
+        is_multi_lib_plot = True
+        if is_multi_lib_plot:
+            grouped_df_list = get_list_of_grouped_dataframes(
+                interaction_plot_df
+            )
+            filtered_groups = []
+            for item in grouped_df_list:
+                filtered_groups.append(
+                    _filter_multi_lib_data_frame_tuple(item, commit_map)
+                )
+        else:
+            unique_revisions, sub_df_list = _filter_data_frame(
+                degree_type, interaction_plot_df, commit_map
+            )
 
         fig = plt.figure()
         grid_spec = fig.add_gridspec(3, 1)

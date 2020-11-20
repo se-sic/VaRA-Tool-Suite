@@ -127,8 +127,8 @@ class BlameInteractionDegreeDatabase(
 
             # TODO: Add degree_type etc. to dataframe rows
             def build_dataframe_row(
-                base_library: str, inter_library: str,
-                lib_degree: tp.List[tp.Any], lib_amount: tp.List[tp.Any]
+                base_library: str, inter_library: str, lib_degree: int,
+                lib_amount: int
             ) -> tp.Dict:
 
                 data_dict: tp.Dict[str, tp.Any] = {
@@ -160,7 +160,8 @@ class BlameInteractionDegreeDatabase(
                     inter_degrees, inter_amounts = map(
                         list, zip(*degree_amount_tuples)
                     )
-                    for x in range(0, len(inter_degrees)):
+                    # TODO: simplify with zip()
+                    for x in range(len(inter_degrees)):
                         current_data_dict = build_dataframe_row(
                             base_lib_name,
                             inter_lib_name,
@@ -168,6 +169,10 @@ class BlameInteractionDegreeDatabase(
                             tp.cast(tp.List, inter_amounts)[x],
                         )
                         result_data_dicts.append(current_data_dict)
+
+            # TODO: remove testing row
+            test_row = build_dataframe_row("fire_lib", "Elementalist", 42, 24)
+            result_data_dicts.append(test_row)
 
             df = pd.DataFrame(result_data_dicts)
             return df, report.head_commit, str(report_path.stat().st_mtime_ns)
