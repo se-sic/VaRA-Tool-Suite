@@ -7,6 +7,7 @@ from github.Issue import Issue
 from github.IssueEvent import IssueEvent
 from github.Label import Label
 
+from varats.projects.test_projects.bug_provider_test_repos import BasicTestRepo
 from varats.provider.bug.bug import (
     _has_closed_a_bug,
     _is_closing_message,
@@ -17,6 +18,7 @@ from varats.provider.bug.bug import (
     _filter_all_commit_message_raw_bugs,
     _filter_all_commit_message_pygit_bugs,
 )
+from varats.provider.bug.bug_provider import BugProvider
 
 
 class TestBugDetectionStrategies(unittest.TestCase):
@@ -300,3 +302,37 @@ class TestBugDetectionStrategies(unittest.TestCase):
 
             self.assertEqual(pybug_ids, expected_ids)
             self.assertEqual(rawbug_ids, expected_ids)
+
+
+class TestBugProvider(unittest.TestCase):
+    """Test the bug provider on test projects from vara-test-repos."""
+
+    def test_basic_repo(self):
+        """Test provider on BugDetectionRepos/BasicTestRepo."""
+        provider = BugProvider.create_provider_for_project(BasicTestRepo)
+
+        rawbugs = provider.find_all_raw_bugs()
+        pybugs = provider.find_all_pygit_bugs()
+
+        rawbug_fix_ids = set(rawbug.fixing_commit for rawbug in rawbugs)
+        pybug_fix_ids = set(pybug.fixing_commit.hex for pybug in pybugs)
+        pybug_fix_msgs = set(pybug.fixing_commit.message for pybug in pybugs)
+        expected_ids = {
+            "195aef18c07b25b2f70d779e5ff23676f5894374",
+            "b21e9a7c62dbd433377a603df1341b4c8523983a",
+            "696b26c5abbbfc4a47c7b53f3486009c6e5db656",
+            "082804d9f46d69a70617209603d9b7f628ea2489"
+        }
+        expected_msgs = {
+            "Fixed function arguments", "Fixes answer to everything",
+            "Fixes return type of multiply", "Multiplication result fix"
+        }
+
+        self.assertEqual(rawbug_fix_ids, expected_ids)
+        self.assertEqual(pybug_fix_ids, expected_ids)
+        self.assertEqual(pybug_fix_msgs, expected_msgs)
+
+        pybugs_last_fixed = provider.find_pygit_bug_by_fix(
+            "082804d9f46d69a70617209603d9b7f628ea2489"
+        )
+        self.assertTrue(len(pybugs_last_fixed) == 1)
