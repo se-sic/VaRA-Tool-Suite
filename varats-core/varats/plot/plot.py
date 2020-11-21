@@ -69,7 +69,7 @@ class Plot(metaclass=PlotRegistry):
     @staticmethod
     def supports_stage_separation() -> bool:
         """True, if the plot supports stage separation, i.e., the plot can be
-        draw separating the different stages in a case study."""
+        drawn separating the different stages in a case study."""
         return False
 
     @abc.abstractmethod
@@ -88,7 +88,7 @@ class Plot(metaclass=PlotRegistry):
 
     def plot_file_name(self, filetype: str) -> str:
         """
-        Get the file name this plot will be stored to when calling save.
+        Get the file name this plot; will be stored to when calling save.
 
         Args:
             filetype: the file type for the plot
@@ -112,7 +112,8 @@ class Plot(metaclass=PlotRegistry):
             plot_ident = f"{self.plot_kwargs['project']}_"
 
         sep_stages = ''
-        if self.supports_stage_separation() and self.plot_kwargs['sep_stages']:
+        if self.supports_stage_separation(
+        ) and self.plot_kwargs.get('sep_stages', None):
             sep_stages = 'S'
 
         return f"{plot_ident}{self.name}{sep_stages}.{filetype}"

@@ -18,8 +18,8 @@ from pathlib import Path
 from varats.base.version_header import VersionHeader
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotRegistry, build_plot
-from varats.tables.table import TableFormat, Table
-from varats.tables.tables import TableRegistry
+from varats.table.table import TableFormat, Table
+from varats.table.tables import TableRegistry
 from varats.utils.settings import vara_cfg
 from varats.utils.yaml_util import load_yaml, store_as_yaml
 

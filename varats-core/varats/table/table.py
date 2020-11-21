@@ -5,7 +5,8 @@ import typing as tp
 from enum import Enum
 from pathlib import Path
 
-from varats.tables.tables import TableRegistry
+from varats.paper.case_study import CaseStudy
+from varats.table.tables import TableRegistry
 
 
 class TableFormat(Enum):
@@ -99,9 +100,46 @@ class Table(metaclass=TableRegistry):
         """
         return self.__saved_extra_args
 
+    @staticmethod
+    def supports_stage_separation() -> bool:
+        """True, if the table supports stage separation, i.e., the table can be
+        drawn separating the different stages in a case study."""
+        return False
+
     @abc.abstractmethod
     def tabulate(self) -> str:
         """Build the table using tabulate."""
+
+    def table_file_name(self) -> str:
+        """
+        Get the file name this table; will be stored to when calling save.
+
+        Returns:
+            the file name the table will be stored to
+
+        Test:
+        >>> p = Table('test', project='bar')
+        >>> p.table_file_name()
+        'bar_test.tex'
+        >>> p = Table('foo', project='bar', table_case_study=CaseStudy('baz', 42))
+        >>> p.format = TableFormat.fancy_grid
+        >>> p.table_file_name()
+        'baz_42_foo.txt'
+        """
+        filetype = self.format_filetypes.get(self.__format, "txt")
+        table_ident = ''
+        if self.table_kwargs.get('table_case_study', None):
+            case_study: CaseStudy = self.table_kwargs['table_case_study']
+            table_ident = f"{case_study.project_name}_{case_study.version}_"
+        elif 'project' in self.table_kwargs:
+            table_ident = f"{self.table_kwargs['project']}_"
+
+        sep_stages = ''
+        if self.supports_stage_separation(
+        ) and self.table_kwargs.get('sep_stages', None):
+            sep_stages = 'S'
+
+        return f"{table_ident}{self.name}{sep_stages}.{filetype}"
 
     def save(
         self,
@@ -115,17 +153,12 @@ class Table(metaclass=TableRegistry):
             file_name: the file name of the table; this overrides automatic
                        file name construction.
         """
-        filetype = self.format_filetypes.get(self.__format, "txt")
+        table = self.tabulate()
 
         if path is None:
             table_dir = Path(self.table_kwargs["table_dir"])
         else:
             table_dir = path
 
-        project_name = self.table_kwargs["project"]
-        stages = 'S' if self.table_kwargs['sep_stages'] else ''
-        file_name = f"{project_name}_{self.name}{stages}"
-
-        table = self.tabulate()
-        with open(table_dir / f"{file_name}.{filetype}", "w") as outfile:
+        with open(table_dir / self.table_file_name(), "w") as outfile:
             outfile.write(table)
