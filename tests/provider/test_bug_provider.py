@@ -319,14 +319,14 @@ class TestBugProvider(unittest.TestCase):
         pybug_fix_ids = set(pybug.fixing_commit.hex for pybug in pybugs)
         pybug_fix_msgs = set(pybug.fixing_commit.message for pybug in pybugs)
         expected_ids = {
-            "195aef18c07b25b2f70d779e5ff23676f5894374",
-            "b21e9a7c62dbd433377a603df1341b4c8523983a",
-            "696b26c5abbbfc4a47c7b53f3486009c6e5db656",
-            "082804d9f46d69a70617209603d9b7f628ea2489"
+            "ddf0ba95408dc5508504c84e6616c49128410389",
+            "d846bdbe45e4d64a34115f5285079e1b5f84007f",
+            "2da78b2820370f6759e9086fad74155d6655e93b",
+            "3b76c8d295385358375fefdb0cf045d97ad2d193"
         }
         expected_msgs = {
-            "Fixed function arguments", "Fixes answer to everything",
-            "Fixes return type of multiply", "Multiplication result fix"
+            "Fixed function arguments\n", "Fixes answer to everything\n",
+            "Fixes return type of multiply\n", "Multiplication result fix\n"
         }
 
         self.assertEqual(rawbug_fix_ids, expected_ids)
@@ -334,6 +334,6 @@ class TestBugProvider(unittest.TestCase):
         self.assertEqual(pybug_fix_msgs, expected_msgs)
 
         pybugs_last_fixed = provider.find_pygit_bug_by_fix(
-            "082804d9f46d69a70617209603d9b7f628ea2489"
+            "3b76c8d295385358375fefdb0cf045d97ad2d193"
         )
         self.assertTrue(len(pybugs_last_fixed) == 1)
