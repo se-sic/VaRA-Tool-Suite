@@ -13,11 +13,11 @@ from varats.project.project_util import (
 )
 
 
-class BasicTestRepo(bb.Project):  # type: ignore
+class BasicBugDetectionTestRepo(bb.Project):  # type: ignore
     """Example project demonstrating how to use a repo from the vara-test-
     repos."""
 
-    NAME = 'basic_test_repo'
+    NAME = 'basic_bug_detection_test_repo'
     DOMAIN = 'testing'
     GROUP = 'test_projects'
 

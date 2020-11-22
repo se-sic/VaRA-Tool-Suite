@@ -2,7 +2,9 @@
 import re
 import unittest
 
-from varats.projects.test_projects.bug_provider_test_repos import BasicTestRepo
+from varats.projects.test_projects.bug_provider_test_repos import (
+    BasicBugDetectionTestRepo,
+)
 from varats.tables.bug_overview_table import BugOverviewTable
 
 
@@ -11,10 +13,10 @@ class TestBugOverviewTable(unittest.TestCase):
     formats of the table."""
 
     def test_basic_repo_latex_booktabs(self):
-        """"Tests the latex booktabs format of the basic test repo."""
+        """"Tests the latex booktabs format of the basic bug test repo."""
 
         # latex booktabs is default format
-        table = BugOverviewTable(project=BasicTestRepo.NAME)
+        table = BugOverviewTable(project=BasicBugDetectionTestRepo.NAME)
 
         # each bug must be matched separately since order is unclear
         result_bug_regex =\
