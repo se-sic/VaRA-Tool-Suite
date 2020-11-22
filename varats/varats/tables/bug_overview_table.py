@@ -1,6 +1,5 @@
 """Module for writing bug-data metrics tables."""
 import typing as tp
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -8,7 +7,7 @@ from tabulate import tabulate
 
 from varats.project.project_util import get_project_cls_by_name
 from varats.provider.bug.bug_provider import BugProvider
-from varats.tables.table import Table, TableFormat
+from varats.table.table import Table, TableFormat
 
 
 class BugOverviewTable(Table):
@@ -33,7 +32,7 @@ class BugOverviewTable(Table):
 
         data_rows = [[
             pybug.fixing_commit.hex, pybug.fixing_commit.message,
-            pybug.fixing_commit.author, pybug.issue_id
+            pybug.fixing_commit.author.name, pybug.issue_id
         ] for pybug in pybugs]
 
         bug_df = pd.DataFrame(columns=variables, data=np.array(data_rows))

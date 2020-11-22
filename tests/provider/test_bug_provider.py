@@ -7,7 +7,6 @@ from github.Issue import Issue
 from github.IssueEvent import IssueEvent
 from github.Label import Label
 
-from varats.project.project_util import get_local_project_git
 from varats.projects.test_projects.bug_provider_test_repos import BasicTestRepo
 from varats.provider.bug.bug import (
     _has_closed_a_bug,
