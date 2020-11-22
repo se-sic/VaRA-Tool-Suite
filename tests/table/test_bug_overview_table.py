@@ -13,7 +13,8 @@ class TestBugOverviewTable(unittest.TestCase):
     formats of the table."""
 
     def test_basic_repo_latex_booktabs(self):
-        """"Tests the latex booktabs format of the basic bug test repo."""
+        """"Tests the latex booktabs format of the basic bug detection test
+        repo."""
 
         # latex booktabs is default format
         table = BugOverviewTable(project=BasicBugDetectionTestRepo.NAME)

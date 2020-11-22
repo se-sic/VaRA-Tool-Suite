@@ -310,7 +310,7 @@ class TestBugProvider(unittest.TestCase):
     """Test the bug provider on test projects from vara-test-repos."""
 
     def test_basic_repo(self):
-        """Test provider on basic_bug_test_repo."""
+        """Test provider on basic_bug_detection_test_repo."""
         provider = BugProvider.get_provider_for_project(
             BasicBugDetectionTestRepo
         )
