@@ -95,7 +95,6 @@ class BlameInteractionDegreeDatabase(
 
             list_of_degree_occurrences = generate_degree_tuples(report)
             degrees, amounts = map(list, zip(*list_of_degree_occurrences))
-
             total = sum(amounts)
 
             list_of_author_degree_occurrences = generate_author_degree_tuples(
@@ -123,7 +122,9 @@ class BlameInteractionDegreeDatabase(
             total_avg_time_amounts = sum(avg_time_amounts)
 
             # TODO: calculate amount_of_entries
-            amount_of_entries = 5  # Additional entries
+            amount_of_entries = len(
+                degrees + author_degrees + max_time_buckets + avg_time_buckets
+            )
 
             # TODO: Add degree_type etc. to dataframe rows
             def build_dataframe_row(
@@ -170,9 +171,15 @@ class BlameInteractionDegreeDatabase(
                         )
                         result_data_dicts.append(current_data_dict)
 
-            # TODO: remove testing row
-            test_row = build_dataframe_row("fire_lib", "Elementalist", 42, 24)
-            result_data_dicts.append(test_row)
+            # TODO: remove testing rows
+            fire_lib_test_one = build_dataframe_row(
+                "fire_lib", "Elementalist", 5, 24
+            )
+            fire_lib_test_two = build_dataframe_row(
+                "fire_lib", "Elementalist", 6, 42
+            )
+            result_data_dicts.append(fire_lib_test_one)
+            result_data_dicts.append(fire_lib_test_two)
 
             df = pd.DataFrame(result_data_dicts)
             return df, report.head_commit, str(report_path.stat().st_mtime_ns)
