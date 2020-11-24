@@ -373,12 +373,15 @@ class BlameDegree(Plot):
                 fontsize=8
             )
 
+            # TODO: Choose colormaps that have exlusive colors compared to
+            #  each other
+            # TODO: Find way to add markers like lines to area of stackplot
             first_plot, = main_axis.stackplot(
                 unique_revisions_one,
                 fraction_series_one,
                 edgecolor=plot_cfg['edgecolor'],
-                colors=plot_cfg['color_map'](
-                    np.linspace(0, 1, len(fraction_series_one))
+                colors=cm.get_cmap('inferno')(
+                    np.linspace(0, 1, len(fraction_series_two))
                 ),
                 # TODO (se-passau/VaRA#545): remove cast with plot config rework
                 labels=map(
@@ -388,17 +391,14 @@ class BlameDegree(Plot):
                 linewidth=plot_cfg['linewidth']
             )
 
-            second_plot, = main_axis.stackplot(
+            second_plot, _, = main_axis.stackplot(
                 unique_revisions_two,
                 fraction_series_two,
                 edgecolor=plot_cfg['edgecolor'],
-                colors=cm.get_cmap('rainbow')(
-                    np.linspace(0, 1, len(fraction_series_one))
-                ),
-                # TODO (se-passau/VaRA#545): remove cast with plot config rework
-                labels=map(
-                    tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
-                    degrees_two
+                colors=reversed(
+                    cm.get_cmap('ocean')(
+                        np.linspace(0, 1, len(fraction_series_two))
+                    )
                 ),
                 linewidth=plot_cfg['linewidth'],
                 alpha=0.3
@@ -428,7 +428,12 @@ class BlameDegree(Plot):
                     'size': plot_cfg['legend_size'],
                     'family': 'monospace'
                 },
-                handles=[second_plot]
+                # TODO (se-passau/VaRA#545): remove cast with plot config rework
+                labels=map(
+                    tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
+                    degrees_two
+                ),
+                handles=[second_plot],
             )
             plt.setp(
                 legend_two.get_title(),
@@ -440,6 +445,8 @@ class BlameDegree(Plot):
             legend_two.set_visible(plot_cfg['legend_visible'])
 
             main_axis.add_artist(legend_one)
+
+            # TODO: Fix disappearing labels in legends
             """
             # annotate CVEs
             with_cve = self.plot_kwargs.get("with_cve", False)
@@ -479,11 +486,11 @@ class BlameDegree(Plot):
         """
 
         # TODO: Generate one plot for each plot date
-        for idx, data in enumerate(mono_plot_data):
-            generate_mono_lib_plot(data, degrees=mono_plot_degrees[idx])
+        #for idx, data in enumerate(mono_plot_data):
+        generate_mono_lib_plot(mono_plot_data[1], degrees=mono_plot_degrees[1])
 
-        for idx, data in enumerate(multi_plot_data):
-            generate_multi_lib_plot(data, degrees=multi_plot_degree_tuples[idx])
+        #for idx, data in enumerate(multi_plot_data):
+        #    generate_multi_lib_plot(data, degrees=multi_plot_degree_tuples[idx])
 
     def _calc_missing_revisions(
         self, degree_type: DegreeType, boundary_gradient: float
