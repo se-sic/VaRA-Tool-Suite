@@ -40,6 +40,8 @@ class BugOverviewTable(Table):
         if self.format in [
             TableFormat.latex, TableFormat.latex_raw, TableFormat.latex_booktabs
         ]:
-            tex_code = bug_df.to_latex(bold_rows=True, multicolumn_format="c")
+            tex_code = bug_df.to_latex(
+                bold_rows=True, multicolumn_format="c", longtable=True
+            )
             return str(tex_code) if tex_code else ""
         return tabulate(bug_df, bug_df.columns, self.format.value)
