@@ -52,6 +52,12 @@ def main() -> None:
         default=False
     )
     parser.add_argument(
+        "--wrap-document",
+        help="Wrap the table in a full compilable document (for latex tables)",
+        action='store_true',
+        default=False
+    )
+    parser.add_argument(
         "--report-type",
         help="The report type to generate the table for."
         "Tables may ignore this option.",

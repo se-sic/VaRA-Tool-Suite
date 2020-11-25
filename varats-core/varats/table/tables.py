@@ -71,4 +71,4 @@ def build_table(**kwargs: tp.Any) -> None:
         new_table_obj.format = TableFormat.fancy_grid
         print(new_table_obj.tabulate())
     else:
-        new_table_obj.save()
+        new_table_obj.save(kwargs.get("wrap_document", False))
