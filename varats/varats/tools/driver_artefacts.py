@@ -357,6 +357,9 @@ def _get_artefact_files_info(artefact: Artefact) -> tp.List[tp.Dict[str, str]]:
             "file_name": table.table_file_name(),
             "project": table.table_kwargs.get("project", "[UNKNOWN]")
         } for table in tables]
+    raise AssertionError(
+        f"Missing implementation for artefact type {artefact.artefact_type}"
+    )
 
 
 def _locate_artefact_file(artefact_file: Path, output_path: Path,
