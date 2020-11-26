@@ -75,10 +75,10 @@ def build_tables(**args: tp.Any) -> None:
     Args:
         **args: the arguments for the table(s)
     """
-    map(build_table, prepare_tables(**args))
+    for table in prepare_tables(**args):
+        build_table(table)
 
 
-@check_required_args(['view'])
 def build_table(table: 'table.Table') -> None:
     """
     Builds the given table.
@@ -132,11 +132,16 @@ def prepare_tables(**args: tp.Any) -> tp.Iterable['table.Table']:
     else:
         args['table_dir'] = args.pop('result_output')
 
-    if not args["view"]:
-        if not Path(args['table_dir']).exists():
-            LOG.error(f"Could not find output dir {args['table_dir']}")
-            return []
-        LOG.info(f"Writing tables to: {args['table_dir']}")
+    if not Path(args['table_dir']).exists():
+        LOG.error(f"Could not find output dir {args['table_dir']}")
+        return []
+
+    if 'view' not in args:
+        args['view'] = False
+    if 'paper_config' not in args:
+        args['paper_config'] = False
+
+    LOG.info(f"Writing tables to: {args['table_dir']}")
 
     if args['paper_config']:
         tables: tp.List['table.Table'] = []

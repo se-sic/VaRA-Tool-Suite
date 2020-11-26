@@ -76,10 +76,10 @@ def build_plots(**args: tp.Any) -> None:
     Args:
         **args: the arguments for the plot(s)
     """
-    map(build_plot, prepare_plots(**args))
+    for plot in prepare_plots(**args):
+        build_plot(plot)
 
 
-@check_required_args(['file_type', 'view'])
 def build_plot(plot: 'varats.plot.plot.Plot') -> None:
     """
     Builds the given plot.
