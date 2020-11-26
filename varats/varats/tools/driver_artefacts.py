@@ -80,13 +80,6 @@ def main() -> None:
         help="Only generate artefacts with the given names."
     )
 
-    generate_parser.add_argument(
-        "--html-overview",
-        action="store_true",
-        default=False,
-        help="Generate a HTML overview for plots that have paper_config=true."
-    )
-
     # vara-art add
     add_parser = sub_parsers.add_parser(
         'add',
@@ -178,24 +171,23 @@ def __artefact_generate(args: tp.Dict[str, tp.Any]) -> None:
             f"{artefact.output_path}"
         )
         artefact.generate_artefact()
+
+    # generate index.html
     _generate_index_html(
         artefacts,
         Path(str(vara_cfg()['artefacts']['artefacts_dir'])) /
         Path(str(get_paper_config().path.name)) / "index.html"
     )
-
-    if 'html_overview' in args.keys():
-        plot_artefacts = filter_plot_artefacts(artefacts)
-        plot_artefacts = [
-            artefact for artefact in plot_artefacts
-            if artefact.plot_kwargs.get('paper_config', False)
-        ]
-        _generate_html_plot_overview(
-            plot_artefacts,
-            Path(str(vara_cfg()['artefacts']['artefacts_dir'])) /
-            Path(str(vara_cfg()['paper_config']['current_config'])) /
-            "plot_matrix.html"
-        )
+    # generate plot_matrix.html
+    plot_artefacts = [
+        artefact for artefact in (filter_plot_artefacts(artefacts))
+        if artefact.plot_kwargs.get('paper_config', False)
+    ]
+    _generate_html_plot_matrix(
+        plot_artefacts,
+        Path(str(vara_cfg()['artefacts']['artefacts_dir'])) /
+        Path(str(get_paper_config().path.name)) / "plot_matrix.html"
+    )
 
 
 def __artefact_add(args: tp.Dict[str, tp.Any]) -> None:
@@ -252,7 +244,7 @@ __INDEX_LINKS = """  <ul>
   </ul>"""
 
 
-def _generate_html_plot_overview(
+def _generate_html_plot_matrix(
     artefacts: tp.Iterable[PlotArtefact], outfile: Path
 ) -> None:
     """
