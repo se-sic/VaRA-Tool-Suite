@@ -208,35 +208,131 @@ class BlameDegree(Plot):
 
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
         interaction_plot_df = self._get_degree_data()
+        unique_revisions, sub_df_list = _filter_data_frame(
+            degree_type, interaction_plot_df, commit_map
+        )
 
-        # TODO: differentiate plot types
-        is_multi_lib_plot = True
-        if is_multi_lib_plot:
-            grouped_dataframes = get_grouped_dataframes(interaction_plot_df)
-            filtered_dataframes = _filter_grouped_dataframes(
-                grouped_dataframes, commit_map
-            )
-            mono_plot_degrees = []
-            for dataframe in grouped_dataframes[0]:
-                mono_plot_degrees.append(
-                    sorted(np.unique(dataframe['lib_degree']))
-                )
+        fig = plt.figure()
+        grid_spec = fig.add_gridspec(3, 1)
 
-            multi_plot_degree_tuples: tp.List[tp.Tuple[tp.List[int],
-                                                       tp.List[int]]] = []
-            for dataframe_tuple in grouped_dataframes[1]:
-                multi_plot_degree_tuples.append((
-                    sorted(np.unique(dataframe_tuple[0]['lib_degree'])),
-                    sorted(np.unique(dataframe_tuple[1]['lib_degree']))
-                ))
-
-            mono_plot_data = filtered_dataframes[0]
-            multi_plot_data = filtered_dataframes[1]
+        if with_churn:
+            main_axis = fig.add_subplot(grid_spec[:-1, :])
+            main_axis.get_xaxis().set_visible(False)
+            churn_axis = fig.add_subplot(grid_spec[2, :], sharex=main_axis)
+            x_axis = churn_axis
         else:
-            # TODO: differentiate btw. single degree plot and multi lib degree
-            unique_revisions, sub_df_list = _filter_data_frame(
-                degree_type, interaction_plot_df, commit_map
+            main_axis = fig.add_subplot(grid_spec[:, :])
+            x_axis = main_axis
+
+        fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
+        fig.suptitle(
+            str(plot_cfg['fig_title']) +
+            f' - Project {self.plot_kwargs["project"]}',
+            fontsize=8
+        )
+
+        main_axis.stackplot(
+            unique_revisions,
+            sub_df_list,
+            edgecolor=plot_cfg['edgecolor'],
+            colors=reversed(
+                plot_cfg['color_map'](np.linspace(0, 1, len(sub_df_list)))
+            ),
+            # TODO (se-passau/VaRA#545): remove cast with plot config rework
+            labels=map(
+                tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
+                sorted(np.unique(interaction_plot_df['degree']))
+            ),
+            linewidth=plot_cfg['linewidth']
+        )
+
+        legend = main_axis.legend(
+            title=plot_cfg['legend_title'],
+            loc='upper left',
+            prop={
+                'size': plot_cfg['legend_size'],
+                'family': 'monospace'
+            }
+        )
+        plt.setp(
+            legend.get_title(),
+            fontsize=plot_cfg['legend_size'],
+            family='monospace'
+        )
+        legend.set_visible(plot_cfg['legend_visible'])
+
+        # annotate CVEs
+        with_cve = self.plot_kwargs.get("with_cve", False)
+        with_bugs = self.plot_kwargs.get("with_bugs", False)
+        if with_cve or with_bugs:
+            if "project" not in self.plot_kwargs:
+                LOG.error("Need a project to annotate bug or CVE data.")
+            else:
+                project = get_project_cls_by_name(self.plot_kwargs["project"])
+                if with_cve:
+                    draw_cves(main_axis, project, unique_revisions, plot_cfg)
+                if with_bugs:
+                    draw_bugs(main_axis, project, unique_revisions, plot_cfg)
+
+        # draw churn subplot
+        if with_churn:
+            draw_code_churn_for_revisions(
+                churn_axis, self.plot_kwargs['project'],
+                self.plot_kwargs['get_cmap'](), unique_revisions
             )
+
+        plt.setp(x_axis.get_yticklabels(), fontsize=8, fontfamily='monospace')
+        plt.setp(
+            x_axis.get_xticklabels(),
+            fontsize=plot_cfg['xtick_size'],
+            fontfamily='monospace',
+            rotation=270
+        )
+
+    def _multi_lib_degree_plot(
+        self,
+        view_mode: bool,
+        extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        with_churn: bool = True
+    ) -> None:
+        plot_cfg = {
+            'linewidth': 2 if view_mode else 1,
+            'legend_size': 5 if view_mode else 2,
+            'xtick_size': 10 if view_mode else 2,
+            'lable_modif': lambda x: x,
+            'legend_title': 'MISSING legend_title',
+            'legend_visible': True,
+            'fig_title': 'MISSING figure title',
+            'edgecolor': 'black',
+            'colormap_first': cm.get_cmap('autumn_r'),
+            'colormap_second': cm.get_cmap('bwr_r')
+        }
+        if extra_plot_cfg is not None:
+            plot_cfg.update(extra_plot_cfg)
+
+        style.use(self.style)
+
+        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
+        interaction_plot_df = self._get_degree_data()
+
+        grouped_dataframes = get_grouped_dataframes(interaction_plot_df)
+        filtered_dataframes = _filter_grouped_dataframes(
+            grouped_dataframes, commit_map
+        )
+        mono_plot_degrees = []
+        for dataframe in grouped_dataframes[0]:
+            mono_plot_degrees.append(sorted(np.unique(dataframe['lib_degree'])))
+
+        multi_plot_degree_tuples: tp.List[tp.Tuple[tp.List[int],
+                                                   tp.List[int]]] = []
+        for dataframe_tuple in grouped_dataframes[1]:
+            multi_plot_degree_tuples.append((
+                sorted(np.unique(dataframe_tuple[0]['lib_degree'])),
+                sorted(np.unique(dataframe_tuple[1]['lib_degree']))
+            ))
+
+        mono_plot_data = filtered_dataframes[0]
+        multi_plot_data = filtered_dataframes[1]
 
         def generate_mono_lib_plot(
             data: tp.Tuple[str, str, tp.List[str], tp.List[pd.Series]],
@@ -268,28 +364,33 @@ class BlameDegree(Plot):
                 fontsize=8
             )
 
-            main_axis.stackplot(
-                unique_revisions,
-                fraction_series,
-                edgecolor=plot_cfg['edgecolor'],
-                colors=reversed(
-                    plot_cfg['color_map'](
-                        np.linspace(0, 1, len(fraction_series))
-                    )
-                ),
-                labels=map(
-                    tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
-                    degrees
-                )
+            lines = []
+            colormap = plot_cfg['colormap_first'](
+                np.linspace(0, 1, len(fraction_series))
             )
 
+            for idx, line in enumerate(fraction_series):
+                lines += main_axis.plot(
+                    unique_revisions,
+                    line,
+                    linewidth=plot_cfg['linewidth'],
+                    color=colormap[idx]
+                )
+
             legend = main_axis.legend(
-                title=plot_cfg['legend_title'],
+                handles=lines,
+                title=plot_cfg['legend_title'] +
+                f" | {base_lib_name} --> {inter_lib_name}",
+                # TODO (se-passau/VaRA#545): remove cast with plot config rework
+                labels=map(
+                    tp.cast(tp.Callable[[int], str], plot_cfg['lable_modif']),
+                    degrees
+                ),
                 loc='upper left',
                 prop={
                     'size': plot_cfg['legend_size'],
                     'family': 'monospace'
-                },
+                }
             )
             plt.setp(
                 legend.get_title(),
@@ -341,15 +442,13 @@ class BlameDegree(Plot):
             degrees: tp.Tuple[tp.List[int], tp.List[int]]
         ) -> None:
 
-            # TODO: differentiate btw. mono plot and multi plot
-            base_lib_name = data[0][0]
-            inter_lib_name = data[0][1]
+            unique_revisions = data[0][2]
 
-            unique_revisions_one = data[0][2]
+            lib_name_first = data[0][0]
+            lib_name_second = data[0][1]
             fraction_series_one = data[0][3]
             degrees_one = degrees[0]
 
-            unique_revisions_two = data[1][2]
             fraction_series_two = data[1][3]
             degrees_two = degrees[1]
 
@@ -368,86 +467,83 @@ class BlameDegree(Plot):
             fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
             fig.suptitle(
                 str(plot_cfg['fig_title']) +
-                f' - Project {self.plot_kwargs["project"]} | {base_lib_name} '
-                f'<--> {inter_lib_name}',
+                f' - Project {self.plot_kwargs["project"]} | {lib_name_first} '
+                f'<--> {lib_name_second}',
                 fontsize=8
             )
 
-            # TODO: Choose colormaps that have exlusive colors compared to
-            #  each other
-            # TODO: Find way to add markers like lines to area of stackplot
-            first_plot, = main_axis.stackplot(
-                unique_revisions_one,
-                fraction_series_one,
-                edgecolor=plot_cfg['edgecolor'],
-                colors=cm.get_cmap('inferno')(
-                    np.linspace(0, 1, len(fraction_series_two))
-                ),
+            lines_first = []
+            colormap_first = plot_cfg['colormap_first'](
+                np.linspace(0, 1, len(fraction_series_one))
+            )
+            lines_second = []
+            colormap_second = plot_cfg['colormap_second'](
+                np.linspace(0.6, 1, len(fraction_series_two))
+            )
+
+            for idx, line in enumerate(fraction_series_one):
+                lines_first += main_axis.plot(
+                    unique_revisions,
+                    line,
+                    linewidth=plot_cfg['linewidth'],
+                    color=colormap_first[idx]
+                )
+
+            for idx, line in enumerate(fraction_series_two):
+                lines_second += main_axis.plot(
+                    unique_revisions,
+                    line,
+                    linewidth=plot_cfg['linewidth'],
+                    color=colormap_second[idx],
+                    linestyle="dashdot"
+                )
+
+            legend_first = main_axis.legend(
+                handles=lines_first,
+                title=plot_cfg['legend_title'] +
+                f" | {lib_name_first} --> {lib_name_second}",
                 # TODO (se-passau/VaRA#545): remove cast with plot config rework
                 labels=map(
-                    tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
+                    tp.cast(tp.Callable[[int], str], plot_cfg['lable_modif']),
                     degrees_one
                 ),
-                linewidth=plot_cfg['linewidth']
-            )
-
-            second_plot, _, = main_axis.stackplot(
-                unique_revisions_two,
-                fraction_series_two,
-                edgecolor=plot_cfg['edgecolor'],
-                colors=reversed(
-                    cm.get_cmap('ocean')(
-                        np.linspace(0, 1, len(fraction_series_two))
-                    )
-                ),
-                linewidth=plot_cfg['linewidth'],
-                alpha=0.3
-            )
-
-            legend_one = main_axis.legend(
-                title=plot_cfg['legend_title'] +
-                f" | {base_lib_name} --> {inter_lib_name}",
                 loc='upper left',
                 prop={
                     'size': plot_cfg['legend_size'],
                     'family': 'monospace'
-                },
-                handles=[first_plot]
+                }
             )
             plt.setp(
-                legend_one.get_title(),
+                legend_first.get_title(),
                 fontsize=plot_cfg['legend_size'],
-                family='monospace'
+                family='monospace',
             )
+            main_axis.add_artist(legend_first)
+            legend_first.set_visible(plot_cfg['legend_visible'])
 
-            legend_two = main_axis.legend(
+            legend_second = main_axis.legend(
+                handles=lines_second,
                 title=plot_cfg['legend_title'] +
-                f" | {inter_lib_name} --> {base_lib_name}",
+                f" | {lib_name_second} --> {lib_name_first}",
+                # TODO (se-passau/VaRA#545): remove cast with plot config rework
+                labels=map(
+                    tp.cast(tp.Callable[[int], str], plot_cfg['lable_modif']),
+                    degrees_two
+                ),
                 loc='upper right',
                 prop={
                     'size': plot_cfg['legend_size'],
                     'family': 'monospace'
-                },
-                # TODO (se-passau/VaRA#545): remove cast with plot config rework
-                labels=map(
-                    tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
-                    degrees_two
-                ),
-                handles=[second_plot],
+                }
             )
             plt.setp(
-                legend_two.get_title(),
+                legend_second.get_title(),
                 fontsize=plot_cfg['legend_size'],
                 family='monospace'
             )
+            main_axis.add_artist(legend_second)
+            legend_second.set_visible(plot_cfg['legend_visible'])
 
-            legend_one.set_visible(plot_cfg['legend_visible'])
-            legend_two.set_visible(plot_cfg['legend_visible'])
-
-            main_axis.add_artist(legend_one)
-
-            # TODO: Fix disappearing labels in legends
-            """
             # annotate CVEs
             with_cve = self.plot_kwargs.get("with_cve", False)
             with_bugs = self.plot_kwargs.get("with_bugs", False)
@@ -483,14 +579,15 @@ class BlameDegree(Plot):
                 fontfamily='monospace',
                 rotation=270
             )
-        """
 
-        # TODO: Generate one plot for each plot date
-        #for idx, data in enumerate(mono_plot_data):
-        generate_mono_lib_plot(mono_plot_data[1], degrees=mono_plot_degrees[1])
+        # TODO: Save one plot for each plot date
+        for idx, mono_data in enumerate(mono_plot_data):
+            generate_mono_lib_plot(mono_data, degrees=mono_plot_degrees[idx])
 
-        #for idx, data in enumerate(multi_plot_data):
-        #    generate_multi_lib_plot(data, degrees=multi_plot_degree_tuples[idx])
+        for idx, multi_data in enumerate(multi_plot_data):
+            generate_multi_lib_plot(
+                multi_data, degrees=multi_plot_degree_tuples[idx]
+            )
 
     def _calc_missing_revisions(
         self, degree_type: DegreeType, boundary_gradient: float
@@ -586,6 +683,27 @@ class BlameInteractionDegree(BlameDegree):
             'fig_title': 'Blame interactions'
         }
         self._degree_plot(view_mode, DegreeType.interaction, extra_plot_cfg)
+
+    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+        return self._calc_missing_revisions(
+            DegreeType.interaction, boundary_gradient
+        )
+
+
+class BlameInteractionDegreeMultiLib(BlameDegree):
+    """Plotting the degree of blame interactions with multiple libraries."""
+
+    NAME = 'b_interaction_degree_multi_lib'
+
+    def __init__(self, **kwargs: tp.Any):
+        super().__init__(self.NAME, **kwargs)
+
+    def plot(self, view_mode: bool) -> None:
+        extra_plot_cfg = {
+            'legend_title': 'Interaction degrees',
+            'fig_title': 'Blame interactions'
+        }
+        self._multi_lib_degree_plot(view_mode, extra_plot_cfg)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
