@@ -143,6 +143,11 @@ def main() -> None:
         help="Build type to use for the tool build configuration."
     )
     parser.add_argument(
+        "-r",
+        "--release",
+        help="Checks if a new major release is available.",
+    )
+    parser.add_argument(
         "researchtool",
         help="The research tool one wants to setup",
         choices=get_supported_research_tool_names()
@@ -181,6 +186,8 @@ def main() -> None:
         __build_setup_init(
             tool, args.sourcelocation, args.installprefix, args.version
         )
+    if args.release:
+        tool.is_up_to_date()
     if args.update:
         tool.upgrade()
     if args.build:

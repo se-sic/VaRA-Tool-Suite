@@ -330,6 +330,10 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """
 
     @abc.abstractmethod
+    def is_up_to_date(self) -> bool:
+        """Returns true if a newer major release is available."""
+
+    @abc.abstractmethod
     def upgrade(self) -> None:
         """Upgrade the research tool to a newer version."""
 
