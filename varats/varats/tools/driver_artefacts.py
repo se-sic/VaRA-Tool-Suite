@@ -127,23 +127,23 @@ def main() -> None:
         return
 
     if args['subcommand'] == 'list':
-        __artefact_list()
+        _artefact_list()
     elif args['subcommand'] == 'show':
-        __artefact_show(args)
+        _artefact_show(args)
     elif args['subcommand'] == 'generate':
-        __artefact_generate(args)
+        _artefact_generate(args)
     elif args['subcommand'] == 'add':
-        __artefact_add(args)
+        _artefact_add(args)
 
 
-def __artefact_list() -> None:
+def _artefact_list() -> None:
     paper_config = get_paper_config()
 
     for artefact in paper_config.artefacts:
         print(f"{artefact.name} [{artefact.artefact_type.name}]")
 
 
-def __artefact_show(args: tp.Dict[str, tp.Any]) -> None:
+def _artefact_show(args: tp.Dict[str, tp.Any]) -> None:
     paper_config = get_paper_config()
     for name in args['names']:
         artefact = paper_config.artefacts.get_artefact(name)
@@ -154,7 +154,7 @@ def __artefact_show(args: tp.Dict[str, tp.Any]) -> None:
             print(f"There is no artefact with the name {name}.")
 
 
-def __artefact_generate(args: tp.Dict[str, tp.Any]) -> None:
+def _artefact_generate(args: tp.Dict[str, tp.Any]) -> None:
     artefacts: tp.Iterable[Artefact]
 
     if 'only' in args.keys():
@@ -175,8 +175,8 @@ def __artefact_generate(args: tp.Dict[str, tp.Any]) -> None:
     # generate index.html
     _generate_index_html(
         artefacts,
-        Path(str(vara_cfg()['artefacts']['artefacts_dir'])) /
-        Path(str(get_paper_config().path.name)) / "index.html"
+        Path(vara_cfg()['artefacts']['artefacts_dir'].value) /
+        vara_cfg()['paper_config']['current_config'].value / "index.html"
     )
     # generate plot_matrix.html
     plot_artefacts = [
@@ -185,12 +185,12 @@ def __artefact_generate(args: tp.Dict[str, tp.Any]) -> None:
     ]
     _generate_html_plot_matrix(
         plot_artefacts,
-        Path(str(vara_cfg()['artefacts']['artefacts_dir'])) /
-        Path(str(get_paper_config().path.name)) / "plot_matrix.html"
+        Path(vara_cfg()['artefacts']['artefacts_dir'].value) /
+        vara_cfg()['paper_config']['current_config'].value / "plot_matrix.html"
     )
 
 
-def __artefact_add(args: tp.Dict[str, tp.Any]) -> None:
+def _artefact_add(args: tp.Dict[str, tp.Any]) -> None:
     paper_config = get_paper_config()
 
     if 'extra_args' in args.keys():
