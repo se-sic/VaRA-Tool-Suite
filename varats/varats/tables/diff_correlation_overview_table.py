@@ -55,6 +55,9 @@ class DiffCorrelationOverviewTable(Table):
             return str(table) if table else ""
         return tabulate(df, df.columns, self.format.value)
 
+    def wrap_table(self) -> str:
+        return wrap_table_in_document(table=self.tabulate())
+
     def save(
         self,
         path: tp.Optional[Path] = None,
@@ -67,19 +70,10 @@ class DiffCorrelationOverviewTable(Table):
         else:
             table_dir = path
 
-        table = self.tabulate()
-
-        if wrap_document and self.format in [
-            TableFormat.latex_raw, TableFormat.latex_booktabs, TableFormat.latex
-        ]:
-            doc = Document(
-                default_filepath=f"{table_dir}/{self.name}",
-                documentclass="scrbook",
-                document_options="paper=a4",
-                geometry_options={"margin": "1.5cm"}
-            )
-            wrap_table_in_document(table, doc)
-            doc.generate_tex()
+        if wrap_document:
+            table = self.wrap_table()
         else:
-            with open(table_dir / f"{self.name}.{filetype}", "w") as outfile:
-                outfile.write(table)
+            table = self.tabulate()
+
+        with open(table_dir / f"{self.name}.{filetype}", "w") as outfile:
+            outfile.write(table)
