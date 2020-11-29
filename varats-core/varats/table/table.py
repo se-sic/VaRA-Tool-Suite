@@ -222,4 +222,4 @@ def wrap_table_in_document(
     doc.append(NoEscape(table))
 
     # dump function returns string representation of document
-    return doc.dumps_content()
+    return doc.dumps()
