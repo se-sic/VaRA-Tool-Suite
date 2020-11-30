@@ -275,6 +275,8 @@ class VaraTestRepoSource(Git):  # type: ignore
         Returns:
             the path where the inner repo is extracted to
         """
+        self.__vara_test_repos_git.shallow = self.shallow
+        self.__vara_test_repos_git.clone = self.clone
         vara_test_repos_path = self.__vara_test_repos_git.fetch()
 
         # .gitted repo lies at vara_test_repos_path / self.remote
