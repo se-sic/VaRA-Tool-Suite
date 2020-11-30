@@ -1,0 +1,9 @@
+DocType: CaseStudy
+Version: 1
+---
+project_name: gravity
+stages:
+- revisions:
+  - commit_hash: 2c71dec8ad65ba36e505a97478e4f5a464fffea6
+    commit_id: 663
+version: 0
