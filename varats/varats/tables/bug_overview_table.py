@@ -46,5 +46,5 @@ class BugOverviewTable(Table):
             return str(tex_code) if tex_code else ""
         return tabulate(bug_df, bug_df.columns, self.format.value)
 
-    def wrap_table(self) -> str:
-        return wrap_table_in_document(table=self.tabulate(), landscape=True)
+    def wrap_table(self, table: str) -> str:
+        return wrap_table_in_document(table=table, landscape=True)

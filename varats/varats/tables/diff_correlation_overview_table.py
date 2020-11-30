@@ -55,8 +55,8 @@ class DiffCorrelationOverviewTable(Table):
             return str(table) if table else ""
         return tabulate(df, df.columns, self.format.value)
 
-    def wrap_table(self) -> str:
-        return wrap_table_in_document(table=self.tabulate())
+    def wrap_table(self, table: str) -> str:
+        return wrap_table_in_document(table=table)
 
     def save(
         self,
@@ -70,10 +70,9 @@ class DiffCorrelationOverviewTable(Table):
         else:
             table_dir = path
 
+        table = self.tabulate()
         if wrap_document:
-            table = self.wrap_table()
-        else:
-            table = self.tabulate()
+            table = self.wrap_table(table)
 
         with open(table_dir / f"{self.name}.{filetype}", "w") as outfile:
             outfile.write(table)

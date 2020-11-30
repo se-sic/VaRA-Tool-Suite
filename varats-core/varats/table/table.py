@@ -151,7 +151,7 @@ class Table(metaclass=TableRegistry):
         return table_file_name
 
     @abc.abstractmethod
-    def wrap_table(self) -> str:
+    def wrap_table(self, table: str) -> str:
         """
         Used to wrap tables inside a complete latex document by passing desired
         parameters to wrap_table_in_document.
@@ -173,10 +173,9 @@ class Table(metaclass=TableRegistry):
             wrap_document: flags whether to wrap the (latex) table code into a
                            complete document.
         """
+        table = self.tabulate()
         if wrap_document:
-            table = self.wrap_table()
-        else:
-            table = self.tabulate()
+            table = self.wrap_table(table)
 
         if path is None:
             table_dir = Path(self.table_kwargs["table_dir"])
