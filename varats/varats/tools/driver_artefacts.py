@@ -29,13 +29,13 @@ from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
 from varats.table.tables import prepare_tables
 from varats.tables.discover_tables import initialize_tables
-from varats.utils.cli_util import initialize_cli_tool
-from varats.utils.html_utils import (
+from varats.ts_utils.html_utils import (
     CSS_IMAGE_MATRIX,
     CSS_COMMON,
     html_page,
     CSS_TABLE,
 )
+from varats.utils.cli_util import initialize_cli_tool
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
