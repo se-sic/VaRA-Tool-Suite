@@ -2,7 +2,6 @@
 TwoLibsOneProjectInteractionDiscreteLibsSingleProject library analysis
 repository."""
 import typing as tp
-from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.utils.cmd import cmake, cp, git, make, mkdir
@@ -12,6 +11,7 @@ from plumbum import local
 from varats.paper_mgmt.paper_config import project_filter_generator
 from varats.project.project_util import (
     VaraTestRepoSource,
+    VaraTestSubmoduleSource,
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
     BinaryType,
@@ -36,7 +36,30 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
             local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/Elementalist",
             refspec="HEAD",
-            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator(
+                "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            )
+        ),
+        VaraTestSubmoduleSource(
+            remote="LibraryAnalysisRepos"
+            "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            "/fire_lib",
+            local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            "/Elementalist/external/fire_lib",
+            refspec="HEAD",
+            shallow=False,
+            version_filter=project_filter_generator(
+                "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            )
+        ),
+        VaraTestSubmoduleSource(
+            remote="LibraryAnalysisRepos"
+            "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            "/water_lib",
+            local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            "/Elementalist/external/water_lib",
+            refspec="HEAD",
             shallow=False,
             version_filter=project_filter_generator(
                 "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
@@ -64,20 +87,6 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
         c_compiler = bb.compiler.cc(self)  # type: ignore
         cxx_compiler = bb.compiler.cxx(self)  # type: ignore
         mkdir(version_source / "build")
-
-        # As long as multiple VaraTestRepoSources are not working, one has to
-        # ensure that the necessary libs are located as git repositories in the
-        # benchbuild/tmp dir
-
-        path_to_libs_in_tmp = Path(bb_cfg()["tmp_dir"].value)
-        path_to_root_dir = version_source / "../"
-
-        cp("-r", path_to_libs_in_tmp / "fire_lib", path_to_root_dir)
-        cp("-r", path_to_libs_in_tmp / "water_lib", path_to_root_dir)
-
-        with local.cwd(version_source):
-            git("submodule", "sync")
-            git("submodule", "update")
 
         with local.cwd(version_source / "build"):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):

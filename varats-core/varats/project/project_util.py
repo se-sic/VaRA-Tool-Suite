@@ -7,7 +7,7 @@ from pathlib import Path
 import benchbuild as bb
 import plumbum as pb
 import pygit2
-from benchbuild.source import Git
+from benchbuild.source import Git, GitSubmodule
 from benchbuild.source.base import target_prefix
 from benchbuild.utils.cmd import cp, find, git, mkdir
 from plumbum import local
@@ -302,5 +302,22 @@ class VaraTestRepoSource(Git):  # type: ignore
                 ".", "-name", "gitignore", "-execdir", "mv", "-i", "{}",
                 ".gitignore", ";"
             )
+
+        return tgt_path
+
+
+class VaraTestSubmoduleSource(GitSubmodule):
+    """A GitSubmodule wrapper for accessing repositories stored in the vara-
+    test-repos repository."""
+
+    def fetch(self) -> pb.LocalPath:
+        """
+        Overrides ``GitSubmodules`` s fetch.
+
+        Returns:
+            the path where the inner repo is extracted to
+        """
+
+        tgt_path = local.path(target_prefix()) / self.local
 
         return tgt_path
