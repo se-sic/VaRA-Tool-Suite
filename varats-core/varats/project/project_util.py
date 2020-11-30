@@ -30,7 +30,7 @@ def get_project_cls_by_name(
     raise LookupError
 
 
-def get_primary_project_source(project_name: str) -> bb.source.BaseSource:
+def get_primary_project_source(project_name: str) -> bb.source.FetchableSource:
     project_cls = get_project_cls_by_name(project_name)
     return bb.source.primary(*project_cls.SOURCE)
 
@@ -65,17 +65,17 @@ def get_local_project_git_path(
 
 def get_extended_commit_lookup_source(
     project_name: str, git_name: str
-) -> bb.source.BaseSource:
+) -> bb.source.FetchableSource:
     """
-    Get benchbuild BaseSource specified by the git_name or raise a LookupError
-    if no match was found within the given benchbuild project.
+    Get benchbuild FetchableSource specified by the git_name or raise a
+    LookupError if no match was found within the given benchbuild project.
 
     Args:
         project_name: name of the given benchbuild project
         git_name: name of the git repository
 
     Returns:
-        benchbuild BaseSource of the searched git repository
+        benchbuild FetchableSource of the searched git repository
     """
 
     project_cls = get_project_cls_by_name(project_name)
@@ -154,7 +154,7 @@ def get_all_revisions_between(c_start: str,
     return list(map(lambda rev: rev[:10], result)) if short else result
 
 
-def is_git_source(source: bb.source.BaseSource) -> bool:
+def is_git_source(source: bb.source.FetchableSource) -> bool:
     """
     Checks if given base source is a git source.
 

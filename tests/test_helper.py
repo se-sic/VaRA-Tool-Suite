@@ -4,11 +4,11 @@ import typing as tp
 
 import attr
 import plumbum as pb
-from benchbuild.source import Variant, BaseSource
+from benchbuild.source import Variant, FetchableSource
 
 
 @attr.s
-class BBTestSource(BaseSource):
+class BBTestSource(FetchableSource):
     """Source test fixture class."""
 
     test_versions: tp.List[str] = attr.ib()

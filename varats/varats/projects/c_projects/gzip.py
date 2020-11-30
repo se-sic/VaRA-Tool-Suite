@@ -3,6 +3,7 @@ import re
 import typing as tp
 
 import benchbuild as bb
+from benchbuild.environments.domain.declarative import ContainerImage
 from benchbuild.utils.cmd import make
 from benchbuild.utils.revision_ranges import block_revisions, RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
@@ -29,6 +30,7 @@ class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
     NAME = 'gzip'
     GROUP = 'c_projects'
     DOMAIN = 'compression'
+    CONTAINER = ContainerImage()
 
     SOURCE = [
         block_revisions([
@@ -43,7 +45,6 @@ class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
                 remote="https://git.savannah.gnu.org/git/gzip.git",
                 local="gzip",
                 refspec="HEAD",
-                limit=None,
                 shallow=False,
                 version_filter=project_filter_generator("gzip")
             )
