@@ -283,7 +283,6 @@ class VaraTestRepoSource(Git):  # type: ignore
         # check out as self.local
         src_path = vara_test_repos_path / self.remote
         tgt_path = local.path(target_prefix()) / self.local
-
         mkdir("-p", tgt_path)
         cp("-r", src_path + "/.", tgt_path)
 
@@ -307,10 +306,21 @@ class VaraTestRepoSource(Git):  # type: ignore
 
         return tgt_path
 
+    def version(self, target_dir: str, version: str = 'HEAD') -> pb.LocalPath:
+        self.__vara_test_repos_git.shallow = self.shallow
+        self.__vara_test_repos_git.clone = self.clone
+        src_loc = self.fetch()
+        tgt_loc = pb.local.path(target_dir) / self.local
+
+        mkdir('-p', tgt_loc)
+        cp("-r", src_loc + "/.", tgt_loc)
+
+        return tgt_loc
+
 
 class VaraTestSubmoduleSource(GitSubmodule):
-    """A GitSubmodule wrapper for accessing repositories stored in the vara-
-    test-repos repository."""
+    """A GitSubmodule wrapper for accessing repositories stored in the main
+    repository."""
 
     def fetch(self) -> pb.LocalPath:
         """
