@@ -41,32 +41,34 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
             shallow=False,
             version_filter=project_filter_generator(
                 "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-            )
+            ),
+            submodules=[
+                VaraTestSubmoduleSource(
+                    remote="LibraryAnalysisRepos"
+                    "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+                    "/fire_lib",
+                    local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+                    "/fire_lib",
+                    refspec="HEAD",
+                    shallow=False,
+                    version_filter=project_filter_generator(
+                        "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+                    )
+                ),
+                VaraTestSubmoduleSource(
+                    remote="LibraryAnalysisRepos"
+                    "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+                    "/water_lib",
+                    local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+                    "/water_lib",
+                    refspec="HEAD",
+                    shallow=False,
+                    version_filter=project_filter_generator(
+                        "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+                    )
+                )
+            ]
         ),
-        VaraTestSubmoduleSource(
-            remote="LibraryAnalysisRepos"
-            "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-            "/fire_lib",
-            local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-            "/Elementalist/external/fire_lib",
-            refspec="HEAD",
-            shallow=False,
-            version_filter=project_filter_generator(
-                "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-            )
-        ),
-        VaraTestSubmoduleSource(
-            remote="LibraryAnalysisRepos"
-            "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-            "/water_lib",
-            local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-            "/Elementalist/external/water_lib",
-            refspec="HEAD",
-            shallow=False,
-            version_filter=project_filter_generator(
-                "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-            )
-        )
     ]
 
     @property

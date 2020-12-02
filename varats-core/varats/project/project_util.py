@@ -12,6 +12,8 @@ from benchbuild.source.base import target_prefix
 from benchbuild.utils.cmd import cp, find, git, mkdir
 from plumbum import local
 
+from varats.utils.settings import bb_cfg
+
 
 def get_project_cls_by_name(
     project_name: str
@@ -254,10 +256,45 @@ def wrap_paths_to_binaries(
     ])
 
 
+class VaraTestSubmoduleSource(GitSubmodule):
+    """A GitSubmodule wrapper for accessing repositories stored in the main
+    repository."""
+
+    def __init__(
+        self,
+        remote: str,
+        local: str,
+        clone: bool = True,
+        limit: int = 10,
+        refspec: str = 'HEAD',
+        shallow: bool = True,
+        version_filter: tp.Callable[[str], bool] = lambda version: True
+    ):
+        super().__init__(
+            remote, local, clone, limit, refspec, shallow, version_filter
+        )
+
+
 # ignore type as we do not have appropriate type information from benchbuild
 class VaraTestRepoSource(Git):  # type: ignore
     """A project source for repositories stored in the vara-test-repos
     repository."""
+
+    def __init__(
+        self,
+        remote: str,
+        local: str,
+        clone: bool = True,
+        limit: int = 10,
+        refspec: str = 'HEAD',
+        shallow: bool = True,
+        version_filter: tp.Callable[[str], bool] = lambda version: True,
+        submodules: tp.Optional[tp.List[VaraTestSubmoduleSource]] = None
+    ):
+        super().__init__(
+            remote, local, clone, limit, refspec, shallow, version_filter
+        )
+        self.submodules = submodules
 
     __vara_test_repos_git = Git(
         remote="https://github.com/se-passau/vara-test-repos",
@@ -265,6 +302,24 @@ class VaraTestRepoSource(Git):  # type: ignore
         refspec="HEAD",
         limit=1
     )
+
+    def rename_to_git(self):
+        find(
+            ".", "-depth", "-name", ".gitted", "-execdir", "mv", "-i", "{}",
+            ".git", ";"
+        )
+        find(
+            ".", "-name", "gitmodules", "-execdir", "mv", "-i", "{}",
+            ".gitmodules", ";"
+        )
+        find(
+            ".", "-name", "gitattributes", "-execdir", "mv", "-i", "{}",
+            ".gitattributes", ";"
+        )
+        find(
+            ".", "-name", "gitignore", "-execdir", "mv", "-i", "{}",
+            ".gitignore", ";"
+        )
 
     def fetch(self) -> pb.LocalPath:
         """
@@ -278,58 +333,30 @@ class VaraTestRepoSource(Git):  # type: ignore
         self.__vara_test_repos_git.shallow = self.shallow
         self.__vara_test_repos_git.clone = self.clone
         vara_test_repos_path = self.__vara_test_repos_git.fetch()
+        main_src_path = vara_test_repos_path / self.remote
+        main_tgt_path = local.path(target_prefix()) / self.local
 
-        # .gitted repo lies at vara_test_repos_path / self.remote
-        # check out as self.local
-        src_path = vara_test_repos_path / self.remote
-        tgt_path = local.path(target_prefix()) / self.local
-        mkdir("-p", tgt_path)
-        cp("-r", src_path + "/.", tgt_path)
+        def prepare_main_repo():
+            mkdir("-p", main_tgt_path)
+            cp("-r", main_src_path + "/.", main_tgt_path)
 
-        with local.cwd(tgt_path):
-            find(
-                ".", "-depth", "-name", ".gitted", "-execdir", "mv", "-i", "{}",
-                ".git", ";"
-            )
-            find(
-                ".", "-name", "gitmodules", "-execdir", "mv", "-i", "{}",
-                ".gitmodules", ";"
-            )
-            find(
-                ".", "-name", "gitattributes", "-execdir", "mv", "-i", "{}",
-                ".gitattributes", ";"
-            )
-            find(
-                ".", "-name", "gitignore", "-execdir", "mv", "-i", "{}",
-                ".gitignore", ";"
-            )
+            with local.cwd(main_tgt_path):
+                self.rename_to_git()
 
-        return tgt_path
+        def prepare_submodules():
+            for submodule in tp.cast(
+                tp.List[VaraTestSubmoduleSource], self.submodules
+            ):
+                submodule_path = vara_test_repos_path + "/" + submodule.remote
+                submodule_target = local.path(target_prefix()) / submodule.local
+                print(f"submodule path: {submodule_path}")
+                mkdir("-p", submodule_target)
+                cp("-r", submodule_path + "/.", submodule_target)
 
-    def version(self, target_dir: str, version: str = 'HEAD') -> pb.LocalPath:
-        self.__vara_test_repos_git.shallow = self.shallow
-        self.__vara_test_repos_git.clone = self.clone
-        src_loc = self.fetch()
-        tgt_loc = pb.local.path(target_dir) / self.local
+                with local.cwd(submodule_target):
+                    self.rename_to_git()
 
-        mkdir('-p', tgt_loc)
-        cp("-r", src_loc + "/.", tgt_loc)
+        prepare_main_repo()
+        prepare_submodules()
 
-        return tgt_loc
-
-
-class VaraTestSubmoduleSource(GitSubmodule):
-    """A GitSubmodule wrapper for accessing repositories stored in the main
-    repository."""
-
-    def fetch(self) -> pb.LocalPath:
-        """
-        Overrides ``GitSubmodules`` s fetch.
-
-        Returns:
-            the path where the inner repo is extracted to
-        """
-
-        tgt_path = local.path(target_prefix()) / self.local
-
-        return tgt_path
+        return main_tgt_path
