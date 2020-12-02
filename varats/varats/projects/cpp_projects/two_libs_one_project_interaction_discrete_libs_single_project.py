@@ -1,18 +1,19 @@
 """Project implementation for the
 TwoLibsOneProjectInteractionDiscreteLibsSingleProject library analysis
 repository."""
+import itertools as it
 import typing as tp
 
 import benchbuild as bb
 from benchbuild.environments.domain.declarative import ContainerImage
-from benchbuild.utils.cmd import cmake, cp, git, make, mkdir
+from benchbuild.source import GitSubmodule
+from benchbuild.utils.cmd import cmake, make, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.paper_mgmt.paper_config import project_filter_generator
 from varats.project.project_util import (
     VaraTestRepoSource,
-    VaraTestSubmoduleSource,
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
     BinaryType,
@@ -30,10 +31,9 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
     GROUP = 'cpp_projects'
     DOMAIN = 'library-testproject'
     CONTAINER = ContainerImage()
-    SOURCE = []
 
     submodules = [
-        VaraTestSubmoduleSource(
+        GitSubmodule(
             remote="LibraryAnalysisRepos"
             "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/fire_lib",
@@ -45,7 +45,7 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
                 "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             )
         ),
-        VaraTestSubmoduleSource(
+        GitSubmodule(
             remote="LibraryAnalysisRepos"
             "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/water_lib",
@@ -59,23 +59,23 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
         )
     ]
 
-    main_repo = VaraTestRepoSource(
-        remote="LibraryAnalysisRepos"
-        "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-        "/Elementalist",
-        local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-        "/Elementalist",
-        refspec="HEAD",
-        shallow=False,
-        version_filter=project_filter_generator(
-            "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-        ),
-        submodules=submodules
-    )
+    repos = [
+        VaraTestRepoSource(
+            remote="LibraryAnalysisRepos"
+            "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            "/Elementalist",
+            local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            "/Elementalist",
+            refspec="HEAD",
+            shallow=False,
+            version_filter=project_filter_generator(
+                "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            ),
+            submodules=submodules
+        )
+    ]
 
-    SOURCE.append(main_repo)
-    for submodule in submodules:
-        SOURCE.append(submodule)
+    SOURCE = list(it.chain(repos, submodules))
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:

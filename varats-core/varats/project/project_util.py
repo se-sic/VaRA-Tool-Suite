@@ -57,8 +57,7 @@ def get_local_project_git_path(
     else:
         source = get_primary_project_source(project_name)
 
-    if not isinstance(source,
-                      VaraTestSubmoduleSource) and hasattr(source, "fetch"):
+    if not isinstance(source, GitSubmodule) and hasattr(source, "fetch"):
         source.fetch()
 
     return tp.cast(Path, Path(target_prefix()) / source.local)
@@ -274,25 +273,6 @@ def rename_to_git():
     )
 
 
-class VaraTestSubmoduleSource(GitSubmodule):
-    """A GitSubmodule wrapper for accessing repositories stored in the main
-    repository."""
-
-    def __init__(
-        self,
-        remote: str,
-        local: str,
-        clone: bool = True,
-        limit: int = 10,
-        refspec: str = 'HEAD',
-        shallow: bool = True,
-        version_filter: tp.Callable[[str], bool] = lambda version: True
-    ):
-        super().__init__(
-            remote, local, clone, limit, refspec, shallow, version_filter
-        )
-
-
 class VaraTestRepoSource(Git):  # type: ignore
     """A project source for repositories stored in the vara-test-repos
     repository."""
@@ -306,7 +286,7 @@ class VaraTestRepoSource(Git):  # type: ignore
         refspec: str = 'HEAD',
         shallow: bool = True,
         version_filter: tp.Callable[[str], bool] = lambda version: True,
-        submodules: tp.Optional[tp.List[VaraTestSubmoduleSource]] = None
+        submodules: tp.Optional[tp.List[GitSubmodule]] = None
     ):
         super().__init__(
             remote, local, clone, limit, refspec, shallow, version_filter
@@ -316,8 +296,6 @@ class VaraTestRepoSource(Git):  # type: ignore
     __vara_test_repos_git = Git(
         remote="https://github.com/se-passau/vara-test-repos",
         local="vara_test_repos",
-        refspec="HEAD",
-        limit=1
     )
 
     def fetch(self) -> pb.LocalPath:
@@ -331,22 +309,21 @@ class VaraTestRepoSource(Git):  # type: ignore
         """
         self.__vara_test_repos_git.shallow = self.shallow
         self.__vara_test_repos_git.clone = self.clone
+
         vara_test_repos_path = self.__vara_test_repos_git.fetch()
         main_src_path = vara_test_repos_path / self.remote
         main_tgt_path = local.path(target_prefix()) / self.local
 
-        def prepare_main_repo():
+        def extract_main_repo():
             mkdir("-p", main_tgt_path)
             cp("-r", main_src_path + "/.", main_tgt_path)
 
             with local.cwd(main_tgt_path):
                 rename_to_git()
 
-        def prepare_submodules():
-            for submodule in tp.cast(
-                tp.List[VaraTestSubmoduleSource], self.submodules
-            ):
-                submodule_path = vara_test_repos_path + "/" + submodule.remote
+        def extract_libraries():
+            for submodule in tp.cast(tp.List[GitSubmodule], self.submodules):
+                submodule_path = vara_test_repos_path / Path(submodule.remote)
                 submodule_target = local.path(target_prefix()) / submodule.local
                 mkdir("-p", submodule_target)
                 cp("-r", submodule_path + "/.", submodule_target)
@@ -354,13 +331,14 @@ class VaraTestRepoSource(Git):  # type: ignore
                 with local.cwd(submodule_target):
                     rename_to_git()
 
-        prepare_main_repo()
-        prepare_submodules()
+        extract_main_repo()
+        extract_libraries()
 
         return main_tgt_path
 
     def version(self, target_dir: str, version: str = 'HEAD') -> pb.LocalPath:
-
+        """Overrides ``Git`` s version to create a new git worktree pointing to
+        the requested version."""
         src_loc = self.fetch()
         tgt_loc = pb.local.path(target_dir) / self.local
         clone = git['clone']
@@ -368,10 +346,7 @@ class VaraTestRepoSource(Git):  # type: ignore
 
         mkdir('-p', tgt_loc)
         with pb.local.cwd(tgt_loc):
-            clone(
-                '--dissociate', '--recurse-submodules', '--reference', src_loc,
-                src_loc, '.'
-            )
+            clone('--recurse-submodules', src_loc, '.')
             checkout('--detach', version)
 
         return tgt_loc
