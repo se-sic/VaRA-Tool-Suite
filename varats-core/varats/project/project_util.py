@@ -29,7 +29,7 @@ def get_project_cls_by_name(
     raise LookupError
 
 
-def get_primary_project_source(project_name: str) -> bb.source.BaseSource:
+def get_primary_project_source(project_name: str) -> bb.source.FetchableSource:
     project_cls = get_project_cls_by_name(project_name)
     return bb.source.primary(*project_cls.SOURCE)
 
@@ -38,9 +38,14 @@ def get_local_project_git_path(project_name: str) -> Path:
     """Get the path to the local download location of git repository for a given
     benchbuild project."""
     primary_source = get_primary_project_source(project_name)
-    if hasattr(primary_source, "fetch"):
-        primary_source.fetch()
 
+    if not isinstance(primary_source, Git):
+        raise AssertionError(
+            f"Primary source of project {project_name} is not a git."
+        )
+
+    primary_source = tp.cast(Git, primary_source)
+    primary_source.fetch()
     return Path(target_prefix() + "/" + primary_source.local)
 
 
