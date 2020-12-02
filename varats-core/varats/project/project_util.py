@@ -1,4 +1,5 @@
 """Utility module for BenchBuild project handling."""
+import os
 import typing as tp
 from enum import Enum
 from pathlib import Path
@@ -34,24 +35,73 @@ def get_primary_project_source(project_name: str) -> bb.source.FetchableSource:
     return bb.source.primary(*project_cls.SOURCE)
 
 
-def get_local_project_git_path(project_name: str) -> Path:
-    """Get the path to the local download location of git repository for a given
-    benchbuild project."""
-    primary_source = get_primary_project_source(project_name)
+def get_local_project_git_path(
+    project_name: str, git_name: tp.Optional[str] = None
+) -> Path:
+    """
+    Get the path to the local download location of a git repository for a given
+    benchbuild project.
 
-    if not isinstance(primary_source, Git):
-        raise AssertionError(
-            f"Primary source of project {project_name} is not a git."
-        )
+    Args:
+        project_name: name of the given benchbuild project
+        git_name: name of the git repository, i.e., the name of the repository
+                  folder. If no git_name is provided, the name of the primary
+                  source is used.
 
-    primary_source = tp.cast(Git, primary_source)
-    primary_source.fetch()
-    return Path(target_prefix() + "/" + primary_source.local)
+    Returns:
+        Path to the local download location of the git repository.
+    """
+
+    if git_name:
+        source = get_extended_commit_lookup_source(project_name, git_name)
+    else:
+        source = get_primary_project_source(project_name)
+
+    if is_git_source(source):
+        tp.cast(Git, source).fetch()
+
+    return Path(target_prefix()) / Path(source.local)
 
 
-def get_local_project_git(project_name: str) -> pygit2.Repository:
-    """Get the git repository for a given benchbuild project."""
-    git_path = get_local_project_git_path(project_name)
+def get_extended_commit_lookup_source(
+    project_name: str, git_name: str
+) -> bb.source.FetchableSource:
+    """
+    Get benchbuild FetchableSource specified by the git_name or raise a
+    LookupError if no match was found within the given benchbuild project.
+
+    Args:
+        project_name: name of the given benchbuild project
+        git_name: name of the git repository
+
+    Returns:
+        benchbuild BaseSource of the searched git repository
+    """
+
+    project_cls = get_project_cls_by_name(project_name)
+    for source in project_cls.SOURCE:
+        if git_name == os.path.basename(source.local):
+            return source
+
+    raise LookupError(
+        f"The specified git_name {git_name} could not be found in the sources"
+    )
+
+
+def get_local_project_git(
+    project_name: str, git_name: tp.Optional[str] = None
+) -> pygit2.Repository:
+    """
+    Get the git repository for a given benchbuild project.
+
+    Args:
+        project_name: name of the given benchbuild project
+        git_name: name of the git repository
+
+    Returns:
+        git repository that matches the given git_name.
+    """
+    git_path = get_local_project_git_path(project_name, git_name)
     repo_path = pygit2.discover_repository(str(git_path))
     return pygit2.Repository(repo_path)
 
@@ -94,6 +144,19 @@ def get_all_revisions_between(c_start: str,
         ).strip().split()
     )
     return list(map(lambda rev: rev[:10], result)) if short else result
+
+
+def is_git_source(source: bb.source.FetchableSource) -> bool:
+    """
+    Checks if given base source is a git source.
+
+    Args:
+        source: base source to check
+
+    Returns:
+        true if the base source is a git source, false ow.
+    """
+    return hasattr(source, "fetch")
 
 
 class BinaryType(Enum):
