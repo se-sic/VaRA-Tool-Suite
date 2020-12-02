@@ -12,8 +12,6 @@ from benchbuild.source.base import target_prefix
 from benchbuild.utils.cmd import cp, find, git, mkdir
 from plumbum import local
 
-from varats.utils.settings import bb_cfg
-
 
 def get_project_cls_by_name(
     project_name: str
@@ -59,7 +57,8 @@ def get_local_project_git_path(
     else:
         source = get_primary_project_source(project_name)
 
-    if hasattr(source, "fetch"):
+    if not isinstance(source,
+                      VaraTestSubmoduleSource) and hasattr(source, "fetch"):
         source.fetch()
 
     return tp.cast(Path, Path(target_prefix()) / source.local)
@@ -256,6 +255,25 @@ def wrap_paths_to_binaries(
     ])
 
 
+def rename_to_git():
+    find(
+        ".", "-depth", "-name", ".gitted", "-execdir", "mv", "-i", "{}", ".git",
+        ";"
+    )
+    find(
+        ".", "-name", "gitmodules", "-execdir", "mv", "-i", "{}", ".gitmodules",
+        ";"
+    )
+    find(
+        ".", "-name", "gitattributes", "-execdir", "mv", "-i", "{}",
+        ".gitattributes", ";"
+    )
+    find(
+        ".", "-name", "gitignore", "-execdir", "mv", "-i", "{}", ".gitignore",
+        ";"
+    )
+
+
 class VaraTestSubmoduleSource(GitSubmodule):
     """A GitSubmodule wrapper for accessing repositories stored in the main
     repository."""
@@ -275,7 +293,6 @@ class VaraTestSubmoduleSource(GitSubmodule):
         )
 
 
-# ignore type as we do not have appropriate type information from benchbuild
 class VaraTestRepoSource(Git):  # type: ignore
     """A project source for repositories stored in the vara-test-repos
     repository."""
@@ -303,24 +320,6 @@ class VaraTestRepoSource(Git):  # type: ignore
         limit=1
     )
 
-    def rename_to_git(self):
-        find(
-            ".", "-depth", "-name", ".gitted", "-execdir", "mv", "-i", "{}",
-            ".git", ";"
-        )
-        find(
-            ".", "-name", "gitmodules", "-execdir", "mv", "-i", "{}",
-            ".gitmodules", ";"
-        )
-        find(
-            ".", "-name", "gitattributes", "-execdir", "mv", "-i", "{}",
-            ".gitattributes", ";"
-        )
-        find(
-            ".", "-name", "gitignore", "-execdir", "mv", "-i", "{}",
-            ".gitignore", ";"
-        )
-
     def fetch(self) -> pb.LocalPath:
         """
         Overrides ``Git`` s fetch to
@@ -341,7 +340,7 @@ class VaraTestRepoSource(Git):  # type: ignore
             cp("-r", main_src_path + "/.", main_tgt_path)
 
             with local.cwd(main_tgt_path):
-                self.rename_to_git()
+                rename_to_git()
 
         def prepare_submodules():
             for submodule in tp.cast(
@@ -349,14 +348,30 @@ class VaraTestRepoSource(Git):  # type: ignore
             ):
                 submodule_path = vara_test_repos_path + "/" + submodule.remote
                 submodule_target = local.path(target_prefix()) / submodule.local
-                print(f"submodule path: {submodule_path}")
                 mkdir("-p", submodule_target)
                 cp("-r", submodule_path + "/.", submodule_target)
 
                 with local.cwd(submodule_target):
-                    self.rename_to_git()
+                    rename_to_git()
 
         prepare_main_repo()
         prepare_submodules()
 
         return main_tgt_path
+
+    def version(self, target_dir: str, version: str = 'HEAD') -> pb.LocalPath:
+
+        src_loc = self.fetch()
+        tgt_loc = pb.local.path(target_dir) / self.local
+        clone = git['clone']
+        checkout = git['checkout']
+
+        mkdir('-p', tgt_loc)
+        with pb.local.cwd(tgt_loc):
+            clone(
+                '--dissociate', '--recurse-submodules', '--reference', src_loc,
+                src_loc, '.'
+            )
+            checkout('--detach', version)
+
+        return tgt_loc

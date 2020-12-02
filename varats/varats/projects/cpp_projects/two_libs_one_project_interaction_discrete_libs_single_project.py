@@ -30,46 +30,52 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
     GROUP = 'cpp_projects'
     DOMAIN = 'library-testproject'
     CONTAINER = ContainerImage()
-    SOURCE = [
-        VaraTestRepoSource(
+    SOURCE = []
+
+    submodules = [
+        VaraTestSubmoduleSource(
             remote="LibraryAnalysisRepos"
             "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-            "/Elementalist",
+            "/fire_lib",
             local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-            "/Elementalist",
+            "/fire_lib",
             refspec="HEAD",
             shallow=False,
             version_filter=project_filter_generator(
                 "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-            ),
-            submodules=[
-                VaraTestSubmoduleSource(
-                    remote="LibraryAnalysisRepos"
-                    "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-                    "/fire_lib",
-                    local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-                    "/fire_lib",
-                    refspec="HEAD",
-                    shallow=False,
-                    version_filter=project_filter_generator(
-                        "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-                    )
-                ),
-                VaraTestSubmoduleSource(
-                    remote="LibraryAnalysisRepos"
-                    "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-                    "/water_lib",
-                    local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-                    "/water_lib",
-                    refspec="HEAD",
-                    shallow=False,
-                    version_filter=project_filter_generator(
-                        "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-                    )
-                )
-            ]
+            )
         ),
+        VaraTestSubmoduleSource(
+            remote="LibraryAnalysisRepos"
+            "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            "/water_lib",
+            local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            "/water_lib",
+            refspec="HEAD",
+            shallow=False,
+            version_filter=project_filter_generator(
+                "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            )
+        )
     ]
+
+    main_repo = VaraTestRepoSource(
+        remote="LibraryAnalysisRepos"
+        "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+        "/Elementalist",
+        local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+        "/Elementalist",
+        refspec="HEAD",
+        shallow=False,
+        version_filter=project_filter_generator(
+            "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+        ),
+        submodules=submodules
+    )
+
+    SOURCE.append(main_repo)
+    for submodule in submodules:
+        SOURCE.append(submodule)
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
