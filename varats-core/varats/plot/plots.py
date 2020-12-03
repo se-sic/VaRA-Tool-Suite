@@ -69,9 +69,41 @@ class PlotRegistry(type):
         return plot_cls
 
 
-@check_required_args(['plot_type', 'file_type', 'view', 'sep_stages'])
-def render_plot(**kwargs: tp.Any) -> None:
-    """Build the specified graph."""
+def build_plots(**args: tp.Any) -> None:
+    """
+    Build the specfied plot(s).
+
+    Args:
+        **args: the arguments for the plot(s)
+    """
+    for plot in prepare_plots(**args):
+        build_plot(plot)
+
+
+def build_plot(plot: 'varats.plot.plot.Plot') -> None:
+    """
+    Builds the given plot.
+
+    Args:
+        plot: the plot to build
+    """
+    if plot.plot_kwargs["view"]:
+        plot.show()
+    else:
+        plot.save(filetype=plot.plot_kwargs['file_type'])
+
+
+@check_required_args(['plot_type', 'sep_stages'])
+def prepare_plot(**kwargs: tp.Any) -> 'varats.plot.plot.Plot':
+    """
+    Instantiate a plot with the given args.
+
+    Args:
+        **kwargs: the arguments for the plot
+
+    Returns:
+        the instantiated plot
+    """
     plot_type = PlotRegistry.get_class_for_plot_type(kwargs['plot_type'])
 
     if kwargs['sep_stages'] and not plot_type.supports_stage_separation():
@@ -82,18 +114,20 @@ def render_plot(**kwargs: tp.Any) -> None:
 
     plot = plot_type(**kwargs)
     plot.style = "ggplot"
-
-    if kwargs["view"]:
-        plot.show()
-    else:
-        plot.save(filetype=kwargs['file_type'])
+    return plot
 
 
-def build_plot(**args: tp.Any) -> None:
+def prepare_plots(**args: tp.Any) -> tp.Iterable['varats.plot.plot.Plot']:
     """
-    Build the specified plot.
+    Instantiate the specified plot(s).
 
     First, compute missing arguments that are needed by most plots.
+
+    Args:
+        **args: the arguments for the plot(s)
+
+    Returns:
+        an iterable of instantiated plots
     """
     # pylint: disable=C0415
     from varats.paper.case_study import load_case_study_from_file
@@ -109,7 +143,7 @@ def build_plot(**args: tp.Any) -> None:
 
     if not Path(args['plot_dir']).exists():
         LOG.error(f"Could not find output dir {args['plot_dir']}")
-        return
+        return []
 
     if 'file_type' not in args:
         args['file_type'] = 'png'
@@ -125,6 +159,7 @@ def build_plot(**args: tp.Any) -> None:
     args['plot_case_study'] = None
 
     if args['paper_config']:
+        plots: tp.List['varats.plot.plot.Plot'] = []
         paper_config = get_paper_config()
         for case_study in paper_config.get_all_case_studies():
             project_name = case_study.project_name
@@ -133,7 +168,8 @@ def build_plot(**args: tp.Any) -> None:
                 project_name, args.get('cmap', None)
             )
             args['plot_case_study'] = case_study
-            render_plot(**args)
+            plots.append(prepare_plot(**args))
+        return plots
     else:
         if 'project' in args:
             args['get_cmap'] = create_lazy_commit_map_loader(
@@ -143,4 +179,4 @@ def build_plot(**args: tp.Any) -> None:
             case_study_path = Path(args['cs_path'])
             args['plot_case_study'] = load_case_study_from_file(case_study_path)
 
-        render_plot(**args)
+        return [prepare_plot(**args)]

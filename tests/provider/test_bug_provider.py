@@ -7,6 +7,9 @@ from github.Issue import Issue
 from github.IssueEvent import IssueEvent
 from github.Label import Label
 
+from varats.projects.test_projects.bug_provider_test_repos import (
+    BasicBugDetectionTestRepo,
+)
 from varats.provider.bug.bug import (
     _has_closed_a_bug,
     _is_closing_message,
@@ -17,6 +20,7 @@ from varats.provider.bug.bug import (
     _filter_all_commit_message_raw_bugs,
     _filter_all_commit_message_pygit_bugs,
 )
+from varats.provider.bug.bug_provider import BugProvider
 
 
 class TestBugDetectionStrategies(unittest.TestCase):
@@ -300,3 +304,39 @@ class TestBugDetectionStrategies(unittest.TestCase):
 
             self.assertEqual(pybug_ids, expected_ids)
             self.assertEqual(rawbug_ids, expected_ids)
+
+
+class TestBugProvider(unittest.TestCase):
+    """Test the bug provider on test projects from vara-test-repos."""
+
+    def test_basic_repo(self):
+        """Test provider on basic_bug_detection_test_repo."""
+        provider = BugProvider.get_provider_for_project(
+            BasicBugDetectionTestRepo
+        )
+
+        rawbugs = provider.find_all_raw_bugs()
+        pybugs = provider.find_all_pygit_bugs()
+
+        rawbug_fix_ids = set(rawbug.fixing_commit for rawbug in rawbugs)
+        pybug_fix_ids = set(pybug.fixing_commit.hex for pybug in pybugs)
+        pybug_fix_msgs = set(pybug.fixing_commit.message for pybug in pybugs)
+        expected_ids = {
+            "ddf0ba95408dc5508504c84e6616c49128410389",
+            "d846bdbe45e4d64a34115f5285079e1b5f84007f",
+            "2da78b2820370f6759e9086fad74155d6655e93b",
+            "3b76c8d295385358375fefdb0cf045d97ad2d193"
+        }
+        expected_msgs = {
+            "Fixed function arguments\n", "Fixes answer to everything\n",
+            "Fixes return type of multiply\n", "Multiplication result fix\n"
+        }
+
+        self.assertEqual(rawbug_fix_ids, expected_ids)
+        self.assertEqual(pybug_fix_ids, expected_ids)
+        self.assertEqual(pybug_fix_msgs, expected_msgs)
+
+        pybugs_last_fixed = provider.find_pygit_bug_by_fix(
+            "3b76c8d295385358375fefdb0cf045d97ad2d193"
+        )
+        self.assertTrue(len(pybugs_last_fixed) == 1)
