@@ -573,9 +573,28 @@ def __casestudy_cleanup(args: tp.Dict[str, tp.Any],parser: ArgumentParser) -> No
         paper_config = get_paper_config()
         result_dir = Path(str(vara_cfg()['result_dir']))
         for case_study in paper_config.get_all_case_studies():
-            for file in get_newest_result_files_for_case_study(case_study, result_dir, EmptyReport, True):
+            old_files = []
+            newer_files: tp.Dict[str, Path] = dict()
+            result_dir_cs = result_dir/case_study.project_name
+            if not result_dir_cs.exists():
+                continue
+            for opt_res_file in result_dir_cs.iterdir():
+                commit_hash = MetaReport.get_commit_hash_from_result_file(opt_res_file.name)
+                if case_study.has_revision(commit_hash):
+                    current_file = newer_files.get(commit_hash)
+                    if current_file is None:
+                        newer_files.__setitem__(commit_hash,opt_res_file)
+                    else:
+                        if (
+                                current_file.stat().st_mtime <
+                                opt_res_file.stat().st_mtime
+                        ):
+                            nnewer_files.__setitem__(commit_hash,opt_res_file)
+                            old_files.append(current_file)
+                        else:
+                            old_files.append(opt_res_file)
+            for file in old_files:
                 if os.path.exists(file):
-                    LOG.info("clearing file: " + file)
                     os.remove(file)
 
     def remove_error_result_files() -> None:
