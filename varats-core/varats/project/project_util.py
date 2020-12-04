@@ -314,14 +314,17 @@ class VaraTestRepoSource(Git):  # type: ignore
         main_src_path = vara_test_repos_path / self.remote
         main_tgt_path = local.path(target_prefix()) / self.local
 
-        def extract_main_repo():
+        def extract_main_repo() -> None:
             mkdir("-p", main_tgt_path)
             cp("-r", main_src_path + "/.", main_tgt_path)
 
             with local.cwd(main_tgt_path):
                 rename_to_git()
 
-        def extract_libraries():
+        def extract_libraries() -> None:
+            if not self.submodules:
+                return
+
             for submodule in tp.cast(tp.List[GitSubmodule], self.submodules):
                 submodule_path = vara_test_repos_path / Path(submodule.remote)
                 submodule_target = local.path(target_prefix()) / submodule.local
