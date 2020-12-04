@@ -491,6 +491,31 @@ def count_interacting_authors(
     return __count_elements(report, extract_interacting_authors)
 
 
+def generate_degree_amount_dict(
+    report: tp.Union[BlameReport, BlameReportDiff]
+) -> tp.Dict[int, int]:
+    """
+    Generates a dict of degrees as keys and corresponding amounts as values
+    where degree is the interaction degree of a blame interaction, e.g., the
+    number of incoming interactions, and amount is the number of times an
+    interaction with this degree was found in the report.
+
+    Args:
+        report: the blame report
+
+    Returns:
+        dict of degrees as keys and corresponding amounts as values
+    """
+    degree_amount_dict: tp.DefaultDict[int, int] = defaultdict(int)
+
+    for func_entry in report.function_entries:
+        for interaction in func_entry.interactions:
+            degree = len(interaction.interacting_commits)
+            degree_amount_dict[degree] += interaction.amount
+
+    return degree_amount_dict
+
+
 def generate_degree_tuples(
     report: tp.Union[BlameReport, BlameReportDiff]
 ) -> tp.List[tp.Tuple[int, int]]:
@@ -506,14 +531,8 @@ def generate_degree_tuples(
     Returns:
         list of tuples (degree, amount)
     """
-    degree_dict: tp.DefaultDict[int, int] = defaultdict(int)
 
-    for func_entry in report.function_entries:
-        for interaction in func_entry.interactions:
-            degree = len(interaction.interacting_commits)
-            degree_dict[degree] += interaction.amount
-
-    return list(degree_dict.items())
+    return list(generate_degree_amount_dict(report).items())
 
 
 def generate_lib_dependent_degrees(
@@ -570,30 +589,6 @@ def generate_lib_dependent_degrees(
             )
 
     return result_dict
-
-
-def is_multi_repository_report(report: BlameReport) -> bool:
-    """
-    Determines if the report depends on more than one git repository.
-
-    Args:
-        report: The blame report
-
-    Returns:
-        True if more than one unique repository name was found.
-    """
-    base_repository_name: str = ""
-
-    for func_entry in report.function_entries:
-        for interaction in func_entry.interactions:
-            if not base_repository_name:
-                base_repository_name = interaction.base_commit.repository_name
-
-            for interacting_commit in interaction.interacting_commits:
-                if base_repository_name != interacting_commit.repository_name:
-                    return True
-
-    return False
 
 
 def generate_author_degree_tuples(

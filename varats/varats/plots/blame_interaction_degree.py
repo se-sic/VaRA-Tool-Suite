@@ -170,9 +170,8 @@ class BlameDegree(Plot):
         interaction_plot_df = \
             BlameInteractionDegreeDatabase.get_data_for_project(
                 project_name, [
-                    "revision", "time_id", "degree_type", "degree", "amount",
-                    "fraction", "base_lib", "inter_lib", "lib_degree",
-                    "lib_amount", "lib_fraction"
+                    "revision", "time_id", "degree_type", "base_lib",
+                    "inter_lib", "degree", "amount", "lib_amount", "fraction"
                 ], commit_map, case_study)
 
         length = len(np.unique(interaction_plot_df['revision']))

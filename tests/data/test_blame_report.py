@@ -12,6 +12,7 @@ from varats.data.reports.blame_report import (
     BlameResultFunctionEntry,
     BlameInstInteractions,
     generate_degree_tuples,
+    generate_degree_amount_dict,
 )
 
 FAKE_REPORT_PATH = (
@@ -630,7 +631,7 @@ class TestBlameReportHelperFunctions(unittest.TestCase):
         with mock.patch(
             "builtins.open",
             new=mock.mock_open(
-                read_data=YAML_DOC_HEADER + YAML_DOC_BR_METADATA + YAML_DOC_BR_1
+                read_data=YAML_DOC_HEADER + YAML_DOC_BR_METADATA + YAML_DOC_BR_2
             )
         ):
             loaded_report = BlameReport(Path('fake_file_path'))
@@ -639,5 +640,11 @@ class TestBlameReportHelperFunctions(unittest.TestCase):
     def test_generate_degree_tuple(self):
         """Test if degree tuple generation works."""
         degree_tuples = generate_degree_tuples(self.report)
-        self.assertEqual(degree_tuples[0], (1, 22))
-        self.assertEqual(degree_tuples[1], (2, 5))
+        self.assertEqual(degree_tuples[0], (1, 24))
+        self.assertEqual(degree_tuples[1], (2, 7))
+
+    def test_generate_degree_amount_dict(self):
+        """Test if degree amount dict generation works."""
+        degree_amount_dict = generate_degree_amount_dict(self.report)
+        self.assertEqual(degree_amount_dict[1], 24)
+        self.assertEqual(degree_amount_dict[2], 7)
