@@ -12,10 +12,12 @@ from plumbum import FG, colors, local
 
 from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.discover_reports import initialize_reports
+from varats.data.reports.empty_report import EmptyReport
 from varats.mapping.commit_map import create_lazy_commit_map_loader
 from varats.paper.case_study import load_case_study_from_file, store_case_study
 from varats.paper_mgmt import paper_config_manager as PCM
 from varats.paper_mgmt.case_study import (
+    get_newest_result_files_for_case_study,
     get_revisions_status_for_case_study,
     ExtenderStrategy,
     extend_case_study,
@@ -26,7 +28,7 @@ from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, MetaReport
-from varats.utils.cli_util import cli_list_choice, initialize_cli_tool
+from varats.utils.cli_util import cli_list_choice, initialize_cli_tool, cli_yn_choice
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
@@ -62,7 +64,7 @@ def main() -> None:
     elif args['subcommand'] == 'view':
         __casestudy_view(args)
     elif args['subcommand'] == 'cleanup':
-        __casestudy_cleanup(args)
+        __casestudy_cleanup(args,parser)
 
 
 def __create_status_parser(sub_parsers: _SubParsersAction) -> None:
@@ -304,6 +306,13 @@ def __create_cleanup_parser(sub_parsers: _SubParsersAction) -> None:
         choices=["old", "error", "regex"],
         type=str
     )
+    cleanup_parser.add_argument(
+        "--filter",
+        help="Filter when unsing regex",
+        default="",
+        type=str
+    )
+
 
 
 def __casestudy_status(
@@ -543,7 +552,7 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
         return
 
 
-def __casestudy_cleanup(args: tp.Dict[str, tp.Any]) -> None:
+def __casestudy_cleanup(args: tp.Dict[str, tp.Any],parser: ArgumentParser) -> None:
     cleanup_type = args['cleanup_type']
     project_names = [
         cs.project_name for cs in get_paper_config().get_all_case_studies()
@@ -561,8 +570,13 @@ def __casestudy_cleanup(args: tp.Dict[str, tp.Any]) -> None:
         return existing_paper_config_result_dir_paths
 
     def remove_old_result_files() -> None:
-        pass
-        # TODO: Implement the removal of old result files.
+        paper_config = get_paper_config()
+        result_dir = Path(str(vara_cfg()['result_dir']))
+        for case_study in paper_config.get_all_case_studies():
+            for file in get_newest_result_files_for_case_study(case_study, result_dir, EmptyReport, True):
+                if os.path.exists(file):
+                    LOG.info("clearing file: " + file)
+                    os.remove(file)
 
     def remove_error_result_files() -> None:
         result_dir_paths = find_result_dir_paths_of_projects()
@@ -579,13 +593,42 @@ def __casestudy_cleanup(args: tp.Dict[str, tp.Any]) -> None:
                     #  deleted files.
 
     def remove_result_files_by_regex() -> None:
-        pass
-        # TODO: Implement the removal of files specified by the user
-        #  https://github.com/se-passau/VaRA/issues/488
+        filter = args["filter"]
+        if filter == "":
+            parser.error("Specify a regex filter with --filter or -f")
+        result_dir_paths = find_result_dir_paths_of_projects()
+
+        for result_dir_path in result_dir_paths:
+            result_file_names = os.listdir(result_dir_path)
+            todelete = []
+            for result_file_name in result_file_names:
+               match =  re.match(filter,result_file_name)
+               if match is not None:
+                   todelete.append(result_file_name);
+            if not todelete:
+                print(f"No matching result files in {result_dir_path} found.")
+                continue
+
+            for file_name in todelete:
+                print(f"{file_name}")
+            print(f"Found {len(todelete)} matching result files in {result_dir_path}:")
+            try:
+                if cli_yn_choice("Do you whant to delte these files","n"):
+                    for file_name in todelete:
+                        if os.path.exists(result_dir_path / file_name):
+                            os.remove(result_dir_path/file_name)
+            except:
+                EOFError
+                continue
+
 
     # TODO: Implement case distinction for cleanup types
     if cleanup_type == "error":
         remove_error_result_files()
+    if cleanup_type == "old":
+        remove_old_result_files()
+    if cleanup_type == "regex":
+        remove_result_files_by_regex()
 
 
 if __name__ == '__main__':

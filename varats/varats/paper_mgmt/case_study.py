@@ -172,17 +172,17 @@ def get_revision_status_for_case_study(
 
 
 def get_newest_result_files_for_case_study(
-    case_study: CaseStudy, result_dir: Path, report_type: MetaReport
+        case_study: CaseStudy, result_dir: Path, report_type: MetaReport, old: bool = False
 ) -> tp.List[Path]:
     """
     Return all result files of a specific type that belong to a given case
     study. For revision with multiple files, the newest file will be selected.
-
+    If old is true all result files with a newer version available are returned.
     Returns:
         list of result file paths
     """
     files_to_store: tp.Dict[str, Path] = dict()
-
+    newer_files: tp.Dict[str, Path] = dict()
     result_dir /= case_study.project_name
     if not result_dir.exists():
         return []
@@ -193,17 +193,21 @@ def get_newest_result_files_for_case_study(
                 opt_res_file.name
             )
             if case_study.has_revision(commit_hash):
-                current_file = files_to_store.get(commit_hash, None)
+                current_file = newer_files.get(commit_hash, None)
                 if current_file is None:
-                    files_to_store[commit_hash] = opt_res_file
+                    newer_files[commit_hash] = opt_res_file
                 else:
                     if (
-                        current_file.stat().st_mtime <
-                        opt_res_file.stat().st_mtime
+                            current_file.stat().st_mtime <
+                            opt_res_file.stat().st_mtime
                     ):
-                        files_to_store[commit_hash] = opt_res_file
+                        newer_files[commit_hash] = opt_res_file
+                        files_to_store[commit_hash] = current_file
+    if old:
+        return list(files_to_store.values())
+    else:
+        return list(newer_files.values())
 
-    return list(files_to_store.values())
 
 
 def get_case_study_file_name_filter(
