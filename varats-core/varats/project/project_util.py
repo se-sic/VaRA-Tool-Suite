@@ -57,7 +57,7 @@ def get_local_project_git_path(
     else:
         source = get_primary_project_source(project_name)
 
-    if not isinstance(source, GitSubmodule) and hasattr(source, "fetch"):
+    if not isinstance(source, GitSubmodule) and is_git_source(source):
         source.fetch()
 
     return tp.cast(Path, Path(target_prefix()) / source.local)
