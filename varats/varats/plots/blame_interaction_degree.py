@@ -71,8 +71,9 @@ def _filter_grouped_dataframes(
     def filter_data_frame(
         df: pd.DataFrame
     ) -> tp.Tuple[str, str, tp.List[str], tp.List[pd.Series]]:
-        degree_levels = sorted(np.unique(df.lib_degree))
-        df = df.set_index(['revision', 'lib_degree', 'base_lib', 'inter_lib'])
+
+        degree_levels = sorted(np.unique(df.degree))
+        df = df.set_index(['revision', 'degree', 'base_lib', 'inter_lib'])
         df = df.reindex(
             pd.MultiIndex.from_product(df.index.levels, names=df.index.names),
             fill_value=0
@@ -81,9 +82,7 @@ def _filter_grouped_dataframes(
         df['time_id'] = df['revision'].apply(commit_map.short_time_id)
         df.sort_values(by=['time_id'], inplace=True)
 
-        sub_df_list = [
-            df.loc[df.lib_degree == x].lib_fraction for x in degree_levels
-        ]
+        sub_df_list = [df.loc[df.degree == x].fraction for x in degree_levels]
 
         base_library_name = df['base_lib'][0]
         inter_library_name = df['inter_lib'][0]
@@ -114,12 +113,18 @@ def get_grouped_dataframes(
     interaction_plot_df: pd.DataFrame
 ) -> tp.Tuple[tp.List[pd.DataFrame], tp.List[tp.Tuple[pd.DataFrame,
                                                       pd.DataFrame]]]:
-    interaction_plot_df = interaction_plot_df[[
-        'revision', 'time_id', 'base_lib', 'inter_lib', 'lib_degree',
-        'lib_amount', 'lib_fraction'
-    ]]
-    all_base_lib_names = sorted(np.unique(interaction_plot_df.base_lib))
-    all_inter_lib_names = sorted(np.unique(interaction_plot_df.inter_lib))
+
+    interaction_plot_df = interaction_plot_df[interaction_plot_df.degree_type ==
+                                              DegreeType.interaction.value]
+
+    all_base_lib_names: tp.List[str] = sorted(
+        np.unique([str(base_lib) for base_lib in interaction_plot_df.base_lib])
+    )
+    all_inter_lib_names: tp.List[str] = sorted(
+        np.unique([
+            str(inter_lib) for inter_lib in interaction_plot_df.inter_lib
+        ])
+    )
 
     def build_dataframe_tuples() -> tp.Tuple[
         tp.List[pd.DataFrame], tp.List[tp.Tuple[pd.DataFrame, pd.DataFrame]]]:
@@ -145,7 +150,7 @@ def get_grouped_dataframes(
             ).all(1)]
 
             if not df_first.empty or not df_second.empty:
-                if df_first.equals(df_second) or df_second.empty:
+                if df_second.empty:
                     df_list.append(df_first)
                 else:
                     df_pair = (df_first, df_second)
@@ -320,14 +325,14 @@ class BlameDegree(Plot):
         )
         mono_plot_degrees = []
         for dataframe in grouped_dataframes[0]:
-            mono_plot_degrees.append(sorted(np.unique(dataframe['lib_degree'])))
+            mono_plot_degrees.append(sorted(np.unique(dataframe['degree'])))
 
         multi_plot_degree_tuples: tp.List[tp.Tuple[tp.List[int],
                                                    tp.List[int]]] = []
         for dataframe_tuple in grouped_dataframes[1]:
             multi_plot_degree_tuples.append((
-                sorted(np.unique(dataframe_tuple[0]['lib_degree'])),
-                sorted(np.unique(dataframe_tuple[1]['lib_degree']))
+                sorted(np.unique(dataframe_tuple[0]['degree'])),
+                sorted(np.unique(dataframe_tuple[1]['degree']))
             ))
 
         mono_plot_data = filtered_dataframes[0]
