@@ -331,9 +331,14 @@ class VaraTestRepoSource(Git):  # type: ignore
         local="vara_test_repos",
     )
 
-    def __init__(self, submodules: tp.List[VaraTestRepoSubmodule], **kwargs):
+    def __init__(
+        self,
+        submodules: tp.Optional[tp.List[VaraTestRepoSubmodule]] = None,
+        **kwargs
+    ):
         super().__init__(**kwargs)
-        self.submodules: tp.List[VaraTestRepoSubmodule] = submodules
+        self.submodules: tp.Optional[tp.List[VaraTestRepoSubmodule]
+                                    ] = submodules
 
     def fetch(self) -> pb.LocalPath:
         """
@@ -355,8 +360,9 @@ class VaraTestRepoSource(Git):  # type: ignore
         rename_to_git(main_src_path, main_tgt_path)
 
         # Extract submodules
-        for submodule in self.submodules:
-            submodule.fetch()
+        if self.submodules:
+            for submodule in self.submodules:
+                submodule.fetch()
 
         return main_tgt_path
 
