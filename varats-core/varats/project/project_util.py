@@ -1,6 +1,7 @@
 """Utility module for BenchBuild project handling."""
 import os
 import typing as tp
+from distutils.dir_util import copy_tree
 from enum import Enum
 from pathlib import Path
 
@@ -9,7 +10,7 @@ import plumbum as pb
 import pygit2
 from benchbuild.source import Git, GitSubmodule
 from benchbuild.source.base import target_prefix
-from benchbuild.utils.cmd import cp, find, git, mkdir
+from benchbuild.utils.cmd import git, mkdir
 from plumbum import local
 
 
@@ -254,26 +255,45 @@ def wrap_paths_to_binaries(
     ])
 
 
-def rename_to_git():
-    find(
-        ".", "-depth", "-name", ".gitted", "-execdir", "mv", "-i", "{}", ".git",
-        ";"
-    )
-    find(
-        ".", "-name", "gitmodules", "-execdir", "mv", "-i", "{}", ".gitmodules",
-        ";"
-    )
-    find(
-        ".", "-name", "gitattributes", "-execdir", "mv", "-i", "{}",
-        ".gitattributes", ";"
-    )
-    find(
-        ".", "-name", "gitignore", "-execdir", "mv", "-i", "{}", ".gitignore",
-        ";"
-    )
+def rename_to_git(src_dir: Path, dest_dir: Path) -> None:
+    """
+    Renames git files that were made git_storable (e.g., .gitted) back to their
+    original git name and moves them to the destination path.
+
+    Args:
+        src_dir: path to the source directory
+        dest_dir: path to the destination directory
+    """
+    if os.path.isdir(dest_dir):
+        return
+    copy_tree(str(src_dir), str(dest_dir))
+
+    for root, dirs, files in os.walk(dest_dir, topdown=False):
+        for name in files:
+            if name == "gitmodules":
+                os.rename(
+                    os.path.join(root, name), os.path.join(root, ".gitmodules")
+                )
+            elif name == "gitattributes":
+                os.rename(
+                    os.path.join(root, name),
+                    os.path.join(root, ".gitattributes")
+                )
+            elif name == "gitignore":
+                os.rename(
+                    os.path.join(root, name), os.path.join(root, ".gitignore")
+                )
+            elif name == ".gitted":
+                os.rename(os.path.join(root, name), os.path.join(root, ".git"))
+
+        for name in dirs:
+            if name == ".gitted":
+                os.rename(os.path.join(root, name), os.path.join(root, ".git"))
 
 
 class VaraTestRepoSubmodule(GitSubmodule):
+    """A project source for submodule repositories stored in the vara-test-repos
+    repository."""
 
     __vara_test_repos_git = Git(
         remote="https://github.com/se-passau/vara-test-repos",
@@ -296,11 +316,8 @@ class VaraTestRepoSubmodule(GitSubmodule):
         submodule_path = vara_test_repos_path / Path(self.remote)
         submodule_target = local.path(target_prefix()) / Path(self.local)
 
-        mkdir("-p", submodule_target)
-        cp("-r", submodule_path + "/.", submodule_target)
-
-        with local.cwd(submodule_target):
-            rename_to_git()
+        # Extract submodule
+        rename_to_git(submodule_path, submodule_target)
 
         return submodule_target
 
@@ -335,19 +352,11 @@ class VaraTestRepoSource(Git):  # type: ignore
         main_tgt_path = local.path(target_prefix()) / self.local
 
         # Extract main repo
-        mkdir("-p", main_tgt_path)
-        cp("-r", main_src_path + "/.", main_tgt_path)
-        with local.cwd(main_tgt_path):
-            rename_to_git()
+        rename_to_git(main_src_path, main_tgt_path)
 
         # Extract submodules
-        for submodule in tp.cast(
-            tp.List[VaraTestRepoSubmodule], self.submodules
-        ):
-            submodule_path = submodule.fetch()
-
-            with local.cwd(submodule_path):
-                rename_to_git()
+        for submodule in self.submodules:
+            submodule.fetch()
 
         return main_tgt_path
 
