@@ -17,6 +17,7 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
     BinaryType,
+    VaraTestRepoSubmodule,
 )
 from varats.utils.settings import bb_cfg
 
@@ -33,7 +34,7 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
     CONTAINER = ContainerImage()
 
     submodules = [
-        GitSubmodule(
+        VaraTestRepoSubmodule(
             remote="LibraryAnalysisRepos"
             "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/fire_lib",
@@ -45,7 +46,7 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
                 "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             )
         ),
-        GitSubmodule(
+        VaraTestRepoSubmodule(
             remote="LibraryAnalysisRepos"
             "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/water_lib",
