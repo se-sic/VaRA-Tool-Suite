@@ -79,6 +79,9 @@ class BlameInteractionDegreeDatabase(
 
             degree_amount_dict = generate_degree_amount_dict(report)
 
+            # TODO: Write test to check if fraction within one revision adds
+            #  up to 1
+
             # TODO: Find more efficient way to calculate the sum of new amounts
             def calc_total_amounts() -> int:
                 total = 0

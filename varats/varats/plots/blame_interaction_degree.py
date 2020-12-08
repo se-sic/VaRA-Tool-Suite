@@ -109,6 +109,14 @@ def _filter_grouped_dataframes(
     return filtered_dataframe_list, filtered_dataframe_tuple_list
 
 
+def get_distinct_base_lib_names(df: pd.DataFrame) -> tp.List[str]:
+    return sorted(np.unique([str(base_lib) for base_lib in df.base_lib]))
+
+
+def get_distinct_inter_lib_names(df: pd.DataFrame) -> tp.List[str]:
+    return sorted(np.unique([str(inter_lib) for inter_lib in df.inter_lib]))
+
+
 def get_grouped_dataframes(
     interaction_plot_df: pd.DataFrame
 ) -> tp.Tuple[tp.List[pd.DataFrame], tp.List[tp.Tuple[pd.DataFrame,
@@ -186,6 +194,219 @@ class BlameDegree(Plot):
             # Need more than one data point
             raise PlotDataEmpty
         return interaction_plot_df
+
+    def _fraction_overview_plot(
+        self,
+        view_mode: bool,
+        degree_type: DegreeType,
+        extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        with_churn: bool = True
+    ) -> None:
+        plot_cfg = {
+            'linewidth': 1 if view_mode else 0.25,
+            'legend_size': 8 if view_mode else 2,
+            'xtick_size': 10 if view_mode else 2,
+            'lable_modif': lambda x: x,
+            'legend_title': 'MISSING legend_title',
+            'legend_visible': True,
+            'fig_title': 'MISSING figure title',
+            'edgecolor': 'black',
+            'color_map': cm.get_cmap('tab10')
+        }
+        if extra_plot_cfg is not None:
+            plot_cfg.update(extra_plot_cfg)
+
+        style.use(self.style)
+
+        df = self._get_degree_data()
+        df = df[df.degree_type == degree_type.value]
+        df.sort_values(by=['time_id'], inplace=True)
+        unique_revisions = np.unique(list(df.revision))
+        grouped_df: pd.DataFrame = df.groupby(['revision'])
+
+        dataframes_per_revision: tp.Dict[str, pd.DataFrame] = {}
+        total_lib_amount_per_revision: tp.Dict[str, int] = {}
+
+        for revision in unique_revisions:
+            dataframes_per_revision[revision] = grouped_df.get_group(revision)
+
+        base_lib_names_per_revision: tp.Dict[str, tp.List[str]] = {}
+        inter_lib_names_per_revision: tp.Dict[str, tp.List[str]] = {}
+
+        for revision in unique_revisions:
+            total_lib_amount_per_revision[revision] = dataframes_per_revision[
+                revision].sum().lib_amount
+            base_lib_names_per_revision[revision] = get_distinct_base_lib_names(
+                dataframes_per_revision[revision]
+            )
+            inter_lib_names_per_revision[revision
+                                        ] = get_distinct_inter_lib_names(
+                                            dataframes_per_revision[revision]
+                                        )
+
+        base_lib_fractions: tp.Dict[str, tp.List[float]] = {}
+        inter_lib_fractions: tp.Dict[str, tp.List[float]] = {}
+        base_plot_data: tp.List[tp.List] = []
+        inter_plot_data: tp.List[tp.List] = []
+
+        for revision in unique_revisions:
+            for base_name in base_lib_names_per_revision[revision]:
+                if base_name not in base_lib_fractions:
+                    base_lib_fractions[base_name] = []
+
+                current_fraction = np.divide(
+                    dataframes_per_revision[revision].loc[
+                        dataframes_per_revision[revision].base_lib == base_name
+                    ].lib_amount.sum(), total_lib_amount_per_revision[revision]
+                )
+                base_lib_fractions[base_name].append(current_fraction)
+
+            for inter_name in inter_lib_names_per_revision[revision]:
+                if inter_name not in inter_lib_fractions:
+                    inter_lib_fractions[inter_name] = []
+
+                current_fraction = np.divide(
+                    dataframes_per_revision[revision].loc[
+                        dataframes_per_revision[revision].inter_lib ==
+                        inter_name].lib_amount.sum(),
+                    total_lib_amount_per_revision[revision]
+                )
+                inter_lib_fractions[inter_name].append(current_fraction)
+
+        base_plot_data = [
+            base_fraction for base_fraction in base_lib_fractions.values()
+        ]
+
+        inter_plot_data = [
+            inter_fraction for inter_fraction in inter_lib_fractions.values()
+        ]
+
+        def generate_fraction_overview_plot() -> None:
+            fig = plt.figure()
+            grid_spec = fig.add_gridspec(3, 1)
+
+            if with_churn:
+                out_axis = fig.add_subplot(grid_spec[0, :])
+                out_axis.get_xaxis().set_visible(False)
+                in_axis = fig.add_subplot(grid_spec[1, :])
+                in_axis.get_xaxis().set_visible(False)
+                churn_axis = fig.add_subplot(grid_spec[-1, :], sharex=out_axis)
+                x_axis = churn_axis
+            else:
+                out_axis = fig.add_subplot(grid_spec[0, :])
+                in_axis = fig.add_subplot(grid_spec[1, :])
+                x_axis = in_axis
+
+            fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
+            fig.suptitle(
+                str(plot_cfg['fig_title']) +
+                f' - Project {self.plot_kwargs["project"]} | TODO: All '
+                f'library names',
+                fontsize=8
+            )
+            cm_length = max(len(base_lib_fractions), len(inter_lib_fractions))
+            colormap = plot_cfg['color_map'](np.linspace(0, 1, cm_length))
+
+            outgoing_plot_lines = []
+            ingoing_plot_lines = []
+
+            outgoing_plot_lines += out_axis.stackplot(
+                unique_revisions,
+                base_plot_data,
+                linewidth=plot_cfg['linewidth'],
+                colors=colormap,
+                edgecolor=plot_cfg['edgecolor']
+            )
+
+            legend_out = out_axis.legend(
+                handles=outgoing_plot_lines,
+                title=plot_cfg['legend_title'] + f" | Outgoing",
+                # TODO (se-passau/VaRA#545): remove cast with plot config rework
+                labels=map(
+                    tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
+                    base_lib_fractions
+                ),
+                loc='upper left',
+                prop={
+                    'size': plot_cfg['legend_size'],
+                    'family': 'monospace'
+                }
+            )
+            plt.setp(
+                legend_out.get_title(),
+                fontsize=plot_cfg['legend_size'],
+                family='monospace',
+            )
+            out_axis.add_artist(legend_out)
+            legend_out.set_visible(plot_cfg['legend_visible'])
+
+            ingoing_plot_lines += in_axis.stackplot(
+                unique_revisions,
+                inter_plot_data,
+                linewidth=plot_cfg['linewidth'],
+                colors=colormap,
+                edgecolor=plot_cfg['edgecolor']
+            )
+            legend_in = in_axis.legend(
+                handles=ingoing_plot_lines,
+                title=plot_cfg['legend_title'] + f" | Ingoing",
+                # TODO (se-passau/VaRA#545): remove cast with plot config rework
+                labels=map(
+                    tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
+                    inter_lib_fractions
+                ),
+                loc='upper left',
+                prop={
+                    'size': plot_cfg['legend_size'],
+                    'family': 'monospace'
+                }
+            )
+            plt.setp(
+                legend_in.get_title(),
+                fontsize=plot_cfg['legend_size'],
+                family='monospace',
+            )
+            in_axis.add_artist(legend_in)
+            legend_in.set_visible(plot_cfg['legend_visible'])
+            """
+            # annotate CVEs
+            with_cve = self.plot_kwargs.get("with_cve", False)
+            with_bugs = self.plot_kwargs.get("with_bugs", False)
+            if with_cve or with_bugs:
+                if "project" not in self.plot_kwargs:
+                    LOG.error("Need a project to annotate bug or CVE data.")
+                else:
+                    project = get_project_cls_by_name(
+                        self.plot_kwargs["project"]
+                    )
+                    if with_cve:
+                        draw_cves(
+                            main_axis, project, unique_revisions, plot_cfg
+                        )
+                    if with_bugs:
+                        draw_bugs(
+                            main_axis, project, unique_revisions, plot_cfg
+                        )
+
+            # draw churn subplot
+            if with_churn:
+                draw_code_churn_for_revisions(
+                    churn_axis, self.plot_kwargs['project'],
+                    self.plot_kwargs['get_cmap'](), unique_revisions
+                )
+
+            plt.setp(
+                x_axis.get_yticklabels(), fontsize=8, fontfamily='monospace'
+            )
+            plt.setp(
+                x_axis.get_xticklabels(),
+                fontsize=plot_cfg['xtick_size'],
+                fontfamily='monospace',
+                rotation=270
+            )
+            """
+
+        generate_fraction_overview_plot()
 
     def _degree_plot(
         self,
@@ -309,7 +530,7 @@ class BlameDegree(Plot):
             'fig_title': 'MISSING figure title',
             'edgecolor': 'black',
             'colormap_first': cm.get_cmap('autumn_r'),
-            'colormap_second': cm.get_cmap('bwr_r')
+            'colormap_second': cm.get_cmap('bwr_r'),
         }
         if extra_plot_cfg is not None:
             plot_cfg.update(extra_plot_cfg)
@@ -708,6 +929,29 @@ class BlameInteractionDegreeMultiLib(BlameDegree):
             'fig_title': 'Blame interactions'
         }
         self._multi_lib_degree_plot(view_mode, extra_plot_cfg)
+
+    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+        return self._calc_missing_revisions(
+            DegreeType.interaction, boundary_gradient
+        )
+
+
+class BlameInteractionFractionOverview(BlameDegree):
+    """Plotting the degree of blame interactions with multiple libraries."""
+
+    NAME = 'b_interaction_fraction_overview'
+
+    def __init__(self, **kwargs: tp.Any):
+        super().__init__(self.NAME, **kwargs)
+
+    def plot(self, view_mode: bool) -> None:
+        extra_plot_cfg = {
+            'legend_title': 'legend title',
+            'fig_title': 'fig title'
+        }
+        self._fraction_overview_plot(
+            view_mode, DegreeType.interaction, extra_plot_cfg
+        )
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
