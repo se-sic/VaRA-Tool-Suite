@@ -17,9 +17,9 @@ from pathlib import Path
 
 from varats.base.version_header import VersionHeader
 from varats.plot.plot import Plot
-from varats.plot.plots import PlotRegistry, build_plot
+from varats.plot.plots import PlotRegistry, build_plots
 from varats.table.table import TableFormat, Table
-from varats.table.tables import TableRegistry
+from varats.table.tables import TableRegistry, build_tables
 from varats.utils.settings import vara_cfg
 from varats.utils.yaml_util import load_yaml, store_as_yaml
 
@@ -152,7 +152,7 @@ class PlotArtefact(Artefact):
         if not self.output_path.exists():
             self.output_path.mkdir(parents=True)
 
-        build_plot(
+        build_plots(
             plot_type=self.plot_type,
             result_output=self.output_path,
             file_format=self.file_format,
@@ -189,23 +189,23 @@ class TableArtefact(Artefact):
 
     @property
     def table_type(self) -> str:
-        """The :attr:`type of plot<varats.plot.plots.PlotRegistry.plots>` that
-        will be generated."""
+        """The :attr:`type of table<varats.table.tables.TableRegistry.plots>`
+        that will be generated."""
         return self.__table_type
 
     @property
     def table_type_class(self) -> tp.Type[Table]:
-        """The class associated with :func:`plot_type`."""
+        """The class associated with :func:`table_type`."""
         return self.__table_type_class
 
     @property
     def file_format(self) -> TableFormat:
-        """The file format of the generated plot."""
+        """The file format of the generated table."""
         return self.__table_format
 
     @property
     def table_kwargs(self) -> tp.Any:
-        """Additional arguments that will be passed to the plot_type_class."""
+        """Additional arguments that will be passed to the table_type_class."""
         return self.__table_kwargs
 
     def get_dict(self) -> tp.Dict[str, tp.Union[str, int]]:
@@ -220,9 +220,12 @@ class TableArtefact(Artefact):
         if not self.output_path.exists():
             self.output_path.mkdir(parents=True)
 
-        # pylint: disable=not-callable
-        table = self.table_type_class(**self.table_kwargs)
-        table.save(self.output_path)
+        build_tables(
+            table_type=self.table_type,
+            result_output=self.output_path,
+            file_format=self.file_format,
+            **self.table_kwargs
+        )
 
 
 class ArtefactType(Enum):
