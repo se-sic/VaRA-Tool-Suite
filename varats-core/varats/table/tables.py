@@ -91,7 +91,7 @@ def build_table(table: 'table.Table') -> None:
         table.format = TableFormat.fancy_grid
         print(table.tabulate())
     else:
-        table.save(wrap_document=kwargs.get("wrap_document", False))
+        table.save(wrap_document=table.table_kwargs.get("wrap_document", False))
 
 
 @check_required_args(['table_type'])
