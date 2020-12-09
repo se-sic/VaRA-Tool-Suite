@@ -300,8 +300,7 @@ class BlameDegree(Plot):
             fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
             fig.suptitle(
                 str(plot_cfg['fig_title']) +
-                f' - Project {self.plot_kwargs["project"]} | TODO: All '
-                f'library names',
+                f' - Project {self.plot_kwargs["project"]}',
                 fontsize=8
             )
             cm_length = max(len(base_lib_fractions), len(inter_lib_fractions))
@@ -309,18 +308,20 @@ class BlameDegree(Plot):
 
             outgoing_plot_lines = []
             ingoing_plot_lines = []
+            alpha = 0.7
 
             outgoing_plot_lines += out_axis.stackplot(
                 unique_revisions,
                 base_plot_data,
                 linewidth=plot_cfg['linewidth'],
                 colors=colormap,
-                edgecolor=plot_cfg['edgecolor']
+                edgecolor=plot_cfg['edgecolor'],
+                alpha=alpha
             )
 
             legend_out = out_axis.legend(
                 handles=outgoing_plot_lines,
-                title=plot_cfg['legend_title'] + f" | Outgoing",
+                title=plot_cfg['legend_title'] + f" | Outgoing interactions",
                 # TODO (se-passau/VaRA#545): remove cast with plot config rework
                 labels=map(
                     tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
@@ -345,11 +346,12 @@ class BlameDegree(Plot):
                 inter_plot_data,
                 linewidth=plot_cfg['linewidth'],
                 colors=colormap,
-                edgecolor=plot_cfg['edgecolor']
+                edgecolor=plot_cfg['edgecolor'],
+                alpha=alpha
             )
             legend_in = in_axis.legend(
                 handles=ingoing_plot_lines,
-                title=plot_cfg['legend_title'] + f" | Ingoing",
+                title=plot_cfg['legend_title'] + f" | Ingoing interactions",
                 # TODO (se-passau/VaRA#545): remove cast with plot config rework
                 labels=map(
                     tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
@@ -946,8 +948,8 @@ class BlameInteractionFractionOverview(BlameDegree):
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
-            'legend_title': 'legend title',
-            'fig_title': 'fig title'
+            'legend_title': 'Fraction ratio',
+            'fig_title': 'Distribution of fractions'
         }
         self._fraction_overview_plot(
             view_mode, DegreeType.interaction, extra_plot_cfg
