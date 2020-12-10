@@ -71,7 +71,7 @@ class BlameInteractionDegreeDatabase(
         ) -> tp.Tuple[pd.DataFrame, str, str]:
             report = load_blame_report(report_path)
 
-            categorised_list_of_degree_occurrences = \
+            categorised_degree_occurrences = \
                 generate_lib_dependent_degrees(report)
 
             # TODO: Write test to check if fraction within one revision adds
@@ -82,7 +82,7 @@ class BlameInteractionDegreeDatabase(
                 total = 0
 
                 for _, lib_dict \
-                        in categorised_list_of_degree_occurrences.items():
+                        in categorised_degree_occurrences.items():
                     for _, tuple_list in lib_dict.items():
                         for degree_amount_tuple in tuple_list:
                             total += degree_amount_tuple[1]
@@ -139,7 +139,7 @@ class BlameInteractionDegreeDatabase(
 
             # Append interaction rows
             for base_lib_name, inter_lib_dict \
-                    in categorised_list_of_degree_occurrences.items():
+                    in categorised_degree_occurrences.items():
 
                 for inter_lib_name, degree_amount_tuples in \
                         inter_lib_dict.items():
