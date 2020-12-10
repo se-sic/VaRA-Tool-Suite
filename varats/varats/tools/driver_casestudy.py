@@ -26,7 +26,11 @@ from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, MetaReport
-from varats.utils.cli_util import cli_list_choice, initialize_cli_tool
+from varats.utils.cli_util import (
+    cli_list_choice,
+    initialize_cli_tool,
+    cli_yn_choice,
+)
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
@@ -62,7 +66,7 @@ def main() -> None:
     elif args['subcommand'] == 'view':
         __casestudy_view(args)
     elif args['subcommand'] == 'cleanup':
-        __casestudy_cleanup(args,parser)
+        __casestudy_cleanup(args, parser)
 
 
 def __create_status_parser(sub_parsers: _SubParsersAction) -> None:
@@ -305,12 +309,12 @@ def __create_cleanup_parser(sub_parsers: _SubParsersAction) -> None:
         type=str
     )
     cleanup_parser.add_argument(
-        "--filter",
+        "-f",
+        "--filter-regex",
         help="Filter when unsing regex",
         default="",
         type=str
     )
-
 
 
 def __casestudy_status(
@@ -550,7 +554,9 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
         return
 
 
-def __casestudy_cleanup(args: tp.Dict[str, tp.Any],parser: ArgumentParser) -> None:
+def __casestudy_cleanup(
+    args: tp.Dict[str, tp.Any], parser: ArgumentParser
+) -> None:
     cleanup_type = args['cleanup_type']
     project_names = [
         cs.project_name for cs in get_paper_config().get_all_case_studies()
@@ -571,28 +577,30 @@ def __casestudy_cleanup(args: tp.Dict[str, tp.Any],parser: ArgumentParser) -> No
         paper_config = get_paper_config()
         result_dir = Path(str(vara_cfg()['result_dir']))
         for case_study in paper_config.get_all_case_studies():
-            old_files = []
+            old_files: tp.List[Path] = []
             newer_files: tp.Dict[str, Path] = dict()
-            result_dir_cs = result_dir/case_study.project_name
+            result_dir_cs = result_dir / case_study.project_name
             if not result_dir_cs.exists():
                 continue
             for opt_res_file in result_dir_cs.iterdir():
-                commit_hash = MetaReport.get_commit_hash_from_result_file(opt_res_file.name)
+                commit_hash = MetaReport.get_commit_hash_from_result_file(
+                    opt_res_file.name
+                )
                 if case_study.has_revision(commit_hash):
                     current_file = newer_files.get(commit_hash)
                     if current_file is None:
-                        newer_files.__setitem__(commit_hash,opt_res_file)
+                        newer_files[commit_hash] = opt_res_file
                     else:
                         if (
-                                current_file.stat().st_mtime <
-                                opt_res_file.stat().st_mtime
+                            current_file.stat().st_mtime_ns <
+                            opt_res_file.stat().st_mtime_ns
                         ):
-                            nnewer_files.__setitem__(commit_hash,opt_res_file)
+                            newer_files[commit_hash] = opt_res_file
                             old_files.append(current_file)
                         else:
                             old_files.append(opt_res_file)
             for file in old_files:
-                if os.path.exists(file):
+                if file.exists():
                     os.remove(file)
 
     def remove_error_result_files() -> None:
@@ -602,42 +610,43 @@ def __casestudy_cleanup(args: tp.Dict[str, tp.Any],parser: ArgumentParser) -> No
             result_file_names = os.listdir(result_dir_path)
 
             for result_file_name in result_file_names:
-                if result_file_name.__contains__(
-                    "_cerror."
+                if MetaReport.result_file_has_status(
+                    result_file_name, FileStatusExtension.CompileError
                 ) and MetaReport.is_result_file(result_file_name):
                     os.remove(result_dir_path / result_file_name)
                     # TODO: Maybe implement listing of to be deleted or
                     #  deleted files.
 
     def remove_result_files_by_regex() -> None:
-        filter = args["filter"]
-        if filter == "":
+        filter = args["-filter-regex"]
+        if not filter:
             parser.error("Specify a regex filter with --filter or -f")
         result_dir_paths = find_result_dir_paths_of_projects()
 
         for result_dir_path in result_dir_paths:
             result_file_names = os.listdir(result_dir_path)
-            todelete = []
+            files_to_delete: tp.List[str] = []
             for result_file_name in result_file_names:
-               match =  re.match(filter,result_file_name)
-               if match is not None:
-                   todelete.append(result_file_name);
-            if not todelete:
+                match = re.match(filter, result_file_name)
+                if match is not None:
+                    files_to_delete.append(result_file_name)
+            if not files_to_delete:
                 print(f"No matching result files in {result_dir_path} found.")
                 continue
 
-            for file_name in todelete:
+            for file_name in files_to_delete:
                 print(f"{file_name}")
-            print(f"Found {len(todelete)} matching result files in {result_dir_path}:")
-            try:
-                if cli_yn_choice("Do you whant to delte these files","n"):
-                    for file_name in todelete:
-                        if os.path.exists(result_dir_path / file_name):
-                            os.remove(result_dir_path/file_name)
-            except:
-                EOFError
-                continue
+            print(
+                f"Found {len(files_to_delete)} matching result files in {result_dir_path}:"
+            )
 
+            try:
+                if cli_yn_choice("Do you whant to delete these files", "n"):
+                    for file_name in files_to_delete:
+                        if Path.exists(result_dir_path / file_name):
+                            os.remove(result_dir_path / file_name)
+            except EOFError:
+                continue
 
     # TODO: Implement case distinction for cleanup types
     if cleanup_type == "error":
