@@ -475,8 +475,9 @@ def calc_code_churn(
     if not churn_config.include_everything:
         diff_base_params.append("--")
         # builds a regrex to select files that git includes into churn calc
+        diff_base_params.append(":")
         diff_base_params.append(
-            ":*.[" + churn_config.get_extensions_repr('|') + "]"
+            "*.[" + churn_config.get_extensions_repr('|') + "]"
         )
 
     stdout = repo_git(diff_base_params)

@@ -221,7 +221,9 @@ class BlameDegree(Plot):
         df = self._get_degree_data()
         df = df[df.degree_type == degree_type.value]
         df.sort_values(by=['time_id'], inplace=True)
-        unique_revisions = np.unique(list(df.revision))
+        df.reset_index(inplace=True)
+        revision_df = pd.DataFrame(df["revision"])
+        unique_revisions = list(revision_df["revision"].unique())
         grouped_df: pd.DataFrame = df.groupby(['revision'])
 
         dataframes_per_revision: tp.Dict[str, pd.DataFrame] = {}
@@ -370,7 +372,7 @@ class BlameDegree(Plot):
             )
             in_axis.add_artist(legend_in)
             legend_in.set_visible(plot_cfg['legend_visible'])
-            """
+
             # annotate CVEs
             with_cve = self.plot_kwargs.get("with_cve", False)
             with_bugs = self.plot_kwargs.get("with_bugs", False)
@@ -382,13 +384,9 @@ class BlameDegree(Plot):
                         self.plot_kwargs["project"]
                     )
                     if with_cve:
-                        draw_cves(
-                            main_axis, project, unique_revisions, plot_cfg
-                        )
+                        draw_cves(in_axis, project, unique_revisions, plot_cfg)
                     if with_bugs:
-                        draw_bugs(
-                            main_axis, project, unique_revisions, plot_cfg
-                        )
+                        draw_bugs(in_axis, project, unique_revisions, plot_cfg)
 
             # draw churn subplot
             if with_churn:
@@ -406,7 +404,6 @@ class BlameDegree(Plot):
                 fontfamily='monospace',
                 rotation=270
             )
-            """
 
         generate_fraction_overview_plot()
 
