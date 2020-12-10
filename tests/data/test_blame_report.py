@@ -12,7 +12,6 @@ from varats.data.reports.blame_report import (
     BlameResultFunctionEntry,
     BlameInstInteractions,
     generate_degree_tuples,
-    generate_degree_amount_dict,
 )
 
 FAKE_REPORT_PATH = (
@@ -642,9 +641,3 @@ class TestBlameReportHelperFunctions(unittest.TestCase):
         degree_tuples = generate_degree_tuples(self.report)
         self.assertEqual(degree_tuples[0], (1, 24))
         self.assertEqual(degree_tuples[1], (2, 7))
-
-    def test_generate_degree_amount_dict(self):
-        """Test if degree amount dict generation works."""
-        degree_amount_dict = generate_degree_amount_dict(self.report)
-        self.assertEqual(degree_amount_dict[1], 24)
-        self.assertEqual(degree_amount_dict[2], 7)

@@ -184,7 +184,7 @@ class BlameDegree(Plot):
             BlameInteractionDegreeDatabase.get_data_for_project(
                 project_name, [
                     "revision", "time_id", "degree_type", "base_lib",
-                    "inter_lib", "degree", "amount", "lib_amount", "fraction"
+                    "inter_lib", "degree", "amount", "fraction"
                 ], commit_map, case_study)
 
         length = len(np.unique(interaction_plot_df['revision']))
@@ -227,7 +227,7 @@ class BlameDegree(Plot):
         grouped_df: pd.DataFrame = df.groupby(['revision'])
 
         dataframes_per_revision: tp.Dict[str, pd.DataFrame] = {}
-        total_lib_amount_per_revision: tp.Dict[str, int] = {}
+        total_amount_per_revision: tp.Dict[str, int] = {}
 
         for revision in unique_revisions:
             dataframes_per_revision[revision] = grouped_df.get_group(revision)
@@ -236,8 +236,8 @@ class BlameDegree(Plot):
         inter_lib_names_per_revision: tp.Dict[str, tp.List[str]] = {}
 
         for revision in unique_revisions:
-            total_lib_amount_per_revision[revision] = dataframes_per_revision[
-                revision].sum().lib_amount
+            total_amount_per_revision[revision] = dataframes_per_revision[
+                revision].sum().amount
             base_lib_names_per_revision[revision] = get_distinct_base_lib_names(
                 dataframes_per_revision[revision]
             )
@@ -259,7 +259,7 @@ class BlameDegree(Plot):
                 current_fraction = np.divide(
                     dataframes_per_revision[revision].loc[
                         dataframes_per_revision[revision].base_lib == base_name
-                    ].lib_amount.sum(), total_lib_amount_per_revision[revision]
+                    ].amount.sum(), total_amount_per_revision[revision]
                 )
                 base_lib_fractions[base_name].append(current_fraction)
 
@@ -270,8 +270,8 @@ class BlameDegree(Plot):
                 current_fraction = np.divide(
                     dataframes_per_revision[revision].loc[
                         dataframes_per_revision[revision].inter_lib ==
-                        inter_name].lib_amount.sum(),
-                    total_lib_amount_per_revision[revision]
+                        inter_name].amount.sum(),
+                    total_amount_per_revision[revision]
                 )
                 inter_lib_fractions[inter_name].append(current_fraction)
 

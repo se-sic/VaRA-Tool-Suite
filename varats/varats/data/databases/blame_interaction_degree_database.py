@@ -14,7 +14,6 @@ from varats.data.reports.blame_report import (
     generate_avg_time_distribution_tuples,
     generate_max_time_distribution_tuples,
     generate_lib_dependent_degrees,
-    generate_degree_amount_dict,
 )
 from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
@@ -45,8 +44,7 @@ class BlameInteractionDegreeDatabase(
     EvaluationDatabase,
     cache_id="blame_interaction_degree_data",
     columns=[
-        "degree_type", "base_lib", "inter_lib", "degree", "amount",
-        "lib_amount", "fraction"
+        "degree_type", "base_lib", "inter_lib", "degree", "amount", "fraction"
     ]
 ):
     """Provides access to blame interaction degree data."""
@@ -64,7 +62,6 @@ class BlameInteractionDegreeDatabase(
             df_layout.inter_lib = df_layout.inter_lib.astype('str')
             df_layout.degree = df_layout.degree.astype('int64')
             df_layout.amount = df_layout.amount.astype('int64')
-            df_layout.lib_amount = df_layout.lib_amount.astype('int64')
             df_layout.fraction = df_layout.fraction.astype('int64')
 
             return df_layout
@@ -76,8 +73,6 @@ class BlameInteractionDegreeDatabase(
 
             categorised_list_of_degree_occurrences = \
                 generate_lib_dependent_degrees(report)
-
-            degree_amount_dict = generate_degree_amount_dict(report)
 
             # TODO: Write test to check if fraction within one revision adds
             #  up to 1
@@ -124,14 +119,9 @@ class BlameInteractionDegreeDatabase(
                 degree: int,
                 amount: int,
                 total_amount: int,
-                lib_amount: tp.Optional[int] = None,
                 base_library: tp.Optional[str] = None,
                 inter_library: tp.Optional[str] = None
             ) -> tp.Dict:
-                if lib_amount:
-                    amount_for_fraction = lib_amount
-                else:
-                    amount_for_fraction = amount
 
                 data_dict: tp.Dict[str, tp.Any] = {
                     'revision': report.head_commit,
@@ -141,8 +131,7 @@ class BlameInteractionDegreeDatabase(
                     'inter_lib': inter_library,
                     'degree': degree,
                     'amount': amount,
-                    'lib_amount': lib_amount,
-                    'fraction': np.divide(amount_for_fraction, total_amount)
+                    'fraction': np.divide(amount, total_amount)
                 }
                 return data_dict
 
@@ -166,8 +155,7 @@ class BlameInteractionDegreeDatabase(
                         interaction_data_dict = build_dataframe_row(
                             degree_type=DegreeType.interaction,
                             degree=degree,
-                            amount=degree_amount_dict[degree],
-                            lib_amount=lib_amount,
+                            amount=lib_amount,
                             total_amount=total_amounts_of_all_libs,
                             base_library=base_lib_name,
                             inter_library=inter_lib_name,
@@ -178,8 +166,7 @@ class BlameInteractionDegreeDatabase(
             fire_lib_test_one = build_dataframe_row(
                 degree_type=DegreeType.interaction,
                 degree=5,
-                amount=11,
-                lib_amount=21,
+                amount=21,
                 total_amount=total_amounts_of_all_libs,
                 base_library="fire_lib",
                 inter_library="Elementalist"
@@ -188,8 +175,7 @@ class BlameInteractionDegreeDatabase(
             fire_lib_test_two = build_dataframe_row(
                 degree_type=DegreeType.interaction,
                 degree=6,
-                amount=13,
-                lib_amount=24,
+                amount=24,
                 total_amount=total_amounts_of_all_libs,
                 base_library="fire_lib",
                 inter_library="Elementalist"

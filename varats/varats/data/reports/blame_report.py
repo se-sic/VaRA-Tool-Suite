@@ -491,31 +491,6 @@ def count_interacting_authors(
     return __count_elements(report, extract_interacting_authors)
 
 
-def generate_degree_amount_dict(
-    report: tp.Union[BlameReport, BlameReportDiff]
-) -> tp.Dict[int, int]:
-    """
-    Generates a dict of degrees as keys and corresponding amounts as values
-    where degree is the interaction degree of a blame interaction, e.g., the
-    number of incoming interactions, and amount is the number of times an
-    interaction with this degree was found in the report.
-
-    Args:
-        report: the blame report
-
-    Returns:
-        dict of degrees as keys and corresponding amounts as values
-    """
-    degree_amount_dict: tp.DefaultDict[int, int] = defaultdict(int)
-
-    for func_entry in report.function_entries:
-        for interaction in func_entry.interactions:
-            degree = len(interaction.interacting_commits)
-            degree_amount_dict[degree] += interaction.amount
-
-    return degree_amount_dict
-
-
 def generate_degree_tuples(
     report: tp.Union[BlameReport, BlameReportDiff]
 ) -> tp.List[tp.Tuple[int, int]]:
@@ -527,12 +502,17 @@ def generate_degree_tuples(
 
     Args:
         report: the blame report
-
     Returns:
         list of tuples (degree, amount)
     """
+    degree_dict: tp.DefaultDict[int, int] = defaultdict(int)
 
-    return list(generate_degree_amount_dict(report).items())
+    for func_entry in report.function_entries:
+        for interaction in func_entry.interactions:
+            degree = len(interaction.interacting_commits)
+            degree_dict[degree] += interaction.amount
+
+    return list(degree_dict.items())
 
 
 def generate_lib_dependent_degrees(
