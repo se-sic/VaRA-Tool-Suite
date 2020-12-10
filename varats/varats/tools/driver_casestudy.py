@@ -558,103 +558,105 @@ def __casestudy_cleanup(
     args: tp.Dict[str, tp.Any], parser: ArgumentParser
 ) -> None:
     cleanup_type = args['cleanup_type']
+
+    if cleanup_type == "error":
+        _remove_error_result_files()
+    if cleanup_type == "old":
+        _remove_old_result_files()
+    if cleanup_type == "regex":
+        if not args['filter_regex']:
+            parser.error("Specify a regex filter with --filter-regex or -f")
+        _remove_result_files_by_regex(args['filter_regex'])
+
+
+def _remove_old_result_files() -> None:
+    paper_config = get_paper_config()
+    result_dir = Path(str(vara_cfg()['result_dir']))
+    for case_study in paper_config.get_all_case_studies():
+        old_files: tp.List[Path] = []
+        newer_files: tp.Dict[str, Path] = dict()
+        result_dir_cs = result_dir / case_study.project_name
+        if not result_dir_cs.exists():
+            continue
+        for opt_res_file in result_dir_cs.iterdir():
+            commit_hash = MetaReport.get_commit_hash_from_result_file(
+                opt_res_file.name
+            )
+            if case_study.has_revision(commit_hash):
+                current_file = newer_files.get(commit_hash)
+                if current_file is None:
+                    newer_files[commit_hash] = opt_res_file
+                else:
+                    if (
+                        current_file.stat().st_mtime_ns <
+                        opt_res_file.stat().st_mtime_ns
+                    ):
+                        newer_files[commit_hash] = opt_res_file
+                        old_files.append(current_file)
+                    else:
+                        old_files.append(opt_res_file)
+        for file in old_files:
+            if file.exists():
+                os.remove(file)
+
+
+def _find_result_dir_paths_of_projects() -> tp.List[Path]:
+    result_dir_path = Path(vara_cfg()["result_dir"].value)
+    existing_paper_config_result_dir_paths = []
     project_names = [
         cs.project_name for cs in get_paper_config().get_all_case_studies()
     ]
+    for project_name in project_names:
+        path = Path(result_dir_path / project_name)
+        if Path.exists(path):
+            existing_paper_config_result_dir_paths.append(path)
 
-    def find_result_dir_paths_of_projects() -> tp.List[Path]:
-        result_dir_path = Path(vara_cfg()["result_dir"].value)
-        existing_paper_config_result_dir_paths = []
+    return existing_paper_config_result_dir_paths
 
-        for project_name in project_names:
-            path = Path(result_dir_path / project_name)
-            if os.path.exists(path):
-                existing_paper_config_result_dir_paths.append(path)
 
-        return existing_paper_config_result_dir_paths
+def _remove_error_result_files() -> None:
+    result_dir_paths = _find_result_dir_paths_of_projects()
 
-    def remove_old_result_files() -> None:
-        paper_config = get_paper_config()
-        result_dir = Path(str(vara_cfg()['result_dir']))
-        for case_study in paper_config.get_all_case_studies():
-            old_files: tp.List[Path] = []
-            newer_files: tp.Dict[str, Path] = dict()
-            result_dir_cs = result_dir / case_study.project_name
-            if not result_dir_cs.exists():
-                continue
-            for opt_res_file in result_dir_cs.iterdir():
-                commit_hash = MetaReport.get_commit_hash_from_result_file(
-                    opt_res_file.name
-                )
-                if case_study.has_revision(commit_hash):
-                    current_file = newer_files.get(commit_hash)
-                    if current_file is None:
-                        newer_files[commit_hash] = opt_res_file
-                    else:
-                        if (
-                            current_file.stat().st_mtime_ns <
-                            opt_res_file.stat().st_mtime_ns
-                        ):
-                            newer_files[commit_hash] = opt_res_file
-                            old_files.append(current_file)
-                        else:
-                            old_files.append(opt_res_file)
-            for file in old_files:
-                if file.exists():
-                    os.remove(file)
+    for result_dir_path in result_dir_paths:
+        result_file_names = os.listdir(result_dir_path)
 
-    def remove_error_result_files() -> None:
-        result_dir_paths = find_result_dir_paths_of_projects()
+        for result_file_name in result_file_names:
+            if MetaReport.result_file_has_status(
+                result_file_name, FileStatusExtension.CompileError
+            ) and MetaReport.is_result_file(result_file_name):
+                os.remove(result_dir_path / result_file_name)
+                # TODO: Maybe implement listing of to be deleted or
+                #  deleted files.
 
-        for result_dir_path in result_dir_paths:
-            result_file_names = os.listdir(result_dir_path)
 
-            for result_file_name in result_file_names:
-                if MetaReport.result_file_has_status(
-                    result_file_name, FileStatusExtension.CompileError
-                ) and MetaReport.is_result_file(result_file_name):
-                    os.remove(result_dir_path / result_file_name)
-                    # TODO: Maybe implement listing of to be deleted or
-                    #  deleted files.
+def _remove_result_files_by_regex(regex_filter: str) -> None:
+    result_dir_paths = _find_result_dir_paths_of_projects()
 
-    def remove_result_files_by_regex() -> None:
-        filter = args["-filter-regex"]
-        if not filter:
-            parser.error("Specify a regex filter with --filter or -f")
-        result_dir_paths = find_result_dir_paths_of_projects()
+    for result_dir_path in result_dir_paths:
+        result_file_names = os.listdir(result_dir_path)
+        files_to_delete: tp.List[str] = []
+        for result_file_name in result_file_names:
+            match = re.match(regex_filter, result_file_name)
+            if match is not None:
+                files_to_delete.append(result_file_name)
+        if not files_to_delete:
+            print(f"No matching result files in {result_dir_path} found.")
+            continue
 
-        for result_dir_path in result_dir_paths:
-            result_file_names = os.listdir(result_dir_path)
-            files_to_delete: tp.List[str] = []
-            for result_file_name in result_file_names:
-                match = re.match(filter, result_file_name)
-                if match is not None:
-                    files_to_delete.append(result_file_name)
-            if not files_to_delete:
-                print(f"No matching result files in {result_dir_path} found.")
-                continue
+        for file_name in files_to_delete:
+            print(f"{file_name}")
+        print(
+            f"Found {len(files_to_delete)} matching"
+            "result files in {result_dir_path}:"
+        )
 
-            for file_name in files_to_delete:
-                print(f"{file_name}")
-            print(
-                f"Found {len(files_to_delete)} matching result files in {result_dir_path}:"
-            )
-
-            try:
-                if cli_yn_choice("Do you whant to delete these files", "n"):
-                    for file_name in files_to_delete:
-                        if Path.exists(result_dir_path / file_name):
-                            os.remove(result_dir_path / file_name)
-            except EOFError:
-                continue
-
-    # TODO: Implement case distinction for cleanup types
-    if cleanup_type == "error":
-        remove_error_result_files()
-    if cleanup_type == "old":
-        remove_old_result_files()
-    if cleanup_type == "regex":
-        remove_result_files_by_regex()
+        try:
+            if cli_yn_choice("Do you want to delete these files", "n"):
+                for file_name in files_to_delete:
+                    if Path.exists(result_dir_path / file_name):
+                        os.remove(result_dir_path / file_name)
+        except EOFError:
+            continue
 
 
 if __name__ == '__main__':
