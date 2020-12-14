@@ -7,7 +7,7 @@ from tabulate import tabulate
 
 from varats.project.project_util import get_project_cls_by_name
 from varats.provider.bug.bug_provider import BugProvider
-from varats.table.table import Table, TableFormat
+from varats.table.table import Table, TableFormat, wrap_table_in_document
 
 
 class BugOverviewTable(Table):
@@ -40,6 +40,11 @@ class BugOverviewTable(Table):
         if self.format in [
             TableFormat.latex, TableFormat.latex_raw, TableFormat.latex_booktabs
         ]:
-            tex_code = bug_df.to_latex(bold_rows=True, multicolumn_format="c")
+            tex_code = bug_df.to_latex(
+                bold_rows=True, multicolumn_format="c", longtable=True
+            )
             return str(tex_code) if tex_code else ""
         return tabulate(bug_df, bug_df.columns, self.format.value)
+
+    def wrap_table(self, table: str) -> str:
+        return wrap_table_in_document(table=table, landscape=True)
