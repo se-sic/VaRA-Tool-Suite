@@ -10,7 +10,7 @@ import plumbum as pb
 import pygit2
 from benchbuild.source import Git, GitSubmodule
 from benchbuild.source.base import target_prefix
-from benchbuild.utils.cmd import git, mkdir
+from benchbuild.utils.cmd import git, mkdir, cp
 from plumbum import local
 
 
@@ -255,10 +255,12 @@ def wrap_paths_to_binaries(
     ])
 
 
-def rename_to_git(src_dir: Path, dest_dir: Path) -> None:
+def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
     """
     Renames git files that were made git_storable (e.g., .gitted) back to their
-    original git name and moves them to the destination path.
+    original git name and stores the renamed copy at the destination path. The
+    original files stay untouched. Renaming and copying will be skipped if the
+    dest_dir already exists.
 
     Args:
         src_dir: path to the source directory
@@ -317,7 +319,7 @@ class VaraTestRepoSubmodule(GitSubmodule):
         submodule_target = local.path(target_prefix()) / Path(self.local)
 
         # Extract submodule
-        rename_to_git(submodule_path, submodule_target)
+        copy_renamed_git_to_dest(submodule_path, submodule_target)
 
         return submodule_target
 
@@ -330,15 +332,6 @@ class VaraTestRepoSource(Git):  # type: ignore
         remote="https://github.com/se-passau/vara-test-repos",
         local="vara_test_repos",
     )
-
-    def __init__(
-        self,
-        submodules: tp.Optional[tp.List[VaraTestRepoSubmodule]] = None,
-        **kwargs
-    ):
-        super().__init__(**kwargs)
-        self.submodules: tp.Optional[tp.List[VaraTestRepoSubmodule]
-                                    ] = submodules
 
     def fetch(self) -> pb.LocalPath:
         """
@@ -357,26 +350,48 @@ class VaraTestRepoSource(Git):  # type: ignore
         main_tgt_path = local.path(target_prefix()) / self.local
 
         # Extract main repo
-        rename_to_git(main_src_path, main_tgt_path)
-
-        # Extract submodules
-        if self.submodules:
-            for submodule in self.submodules:
-                submodule.fetch()
+        copy_renamed_git_to_dest(main_src_path, main_tgt_path)
 
         return main_tgt_path
 
     def version(self, target_dir: str, version: str = 'HEAD') -> pb.LocalPath:
         """Overrides ``Git`` s version to create a new git worktree pointing to
         the requested version."""
-        src_loc = self.fetch()
+
+        main_repo_src_local = self.fetch()
         tgt_loc = pb.local.path(target_dir) / self.local
-        clone = git['clone']
-        checkout = git['checkout']
+        vara_test_repos_path = self.__vara_test_repos_git.fetch()
+        main_repo_src_remote = vara_test_repos_path / self.remote
 
         mkdir('-p', tgt_loc)
+
+        # Extract main repository
+        cp("-r", main_repo_src_local + "/.", tgt_loc)
+
+        # Extract submodules
         with pb.local.cwd(tgt_loc):
-            clone('--recurse-submodules', src_loc, '.')
-            checkout('--detach', version)
+
+            # Get submodule entries
+            submodule_url_entry_list = git(
+                "config", "--file", ".gitmodules", "--name-only",
+                "--get-regexp", "url"
+            ).split('\n')
+
+            # Remove empty strings
+            submodule_url_entry_list = list(
+                filter(None, submodule_url_entry_list)
+            )
+
+            for entry in submodule_url_entry_list:
+                relative_submodule_url = Path(
+                    git("config", "--file", ".gitmodules", "--get",
+                        entry).replace('\n', '')
+                )
+                copy_renamed_git_to_dest(
+                    main_repo_src_remote / relative_submodule_url,
+                    relative_submodule_url
+                )
+            git("checkout", "--detach", version)
+            git("submodule", "update")
 
         return tgt_loc

@@ -1,12 +1,10 @@
 """Project implementation for the
 TwoLibsOneProjectInteractionDiscreteLibsSingleProject library analysis
 repository."""
-import itertools as it
 import typing as tp
 
 import benchbuild as bb
 from benchbuild.environments.domain.declarative import ContainerImage
-from benchbuild.source import GitSubmodule
 from benchbuild.utils.cmd import cmake, make, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
@@ -33,7 +31,19 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
     DOMAIN = 'library-testproject'
     CONTAINER = ContainerImage()
 
-    submodules = [
+    SOURCE = [
+        VaraTestRepoSource(
+            remote="LibraryAnalysisRepos"
+            "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            "/Elementalist",
+            local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            "/Elementalist",
+            refspec="HEAD",
+            shallow=False,
+            version_filter=project_filter_generator(
+                "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            )
+        ),
         VaraTestRepoSubmodule(
             remote="LibraryAnalysisRepos"
             "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
@@ -59,24 +69,6 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
             )
         )
     ]
-
-    repos = [
-        VaraTestRepoSource(
-            remote="LibraryAnalysisRepos"
-            "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-            "/Elementalist",
-            local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-            "/Elementalist",
-            refspec="HEAD",
-            shallow=False,
-            version_filter=project_filter_generator(
-                "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-            ),
-            submodules=submodules
-        )
-    ]
-
-    SOURCE = list(it.chain(repos, submodules))
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
