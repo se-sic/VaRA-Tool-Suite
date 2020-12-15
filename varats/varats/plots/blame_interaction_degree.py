@@ -4,7 +4,6 @@ import logging
 import typing as tp
 from itertools import product
 
-import matplotlib.colors as mpl_colors
 import matplotlib.pyplot as plt
 import matplotlib.style as style
 import numpy as np
@@ -448,7 +447,7 @@ class BlameDegree(Plot):
 
             legend_out = out_axis.legend(
                 handles=outgoing_plot_lines,
-                title=plot_cfg['legend_title'] + f" | Outgoing interactions",
+                title=plot_cfg['legend_title'] + " | Outgoing interactions",
                 # TODO (se-passau/VaRA#545): remove cast with plot config rework
                 labels=map(
                     tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
@@ -478,7 +477,7 @@ class BlameDegree(Plot):
             )
             legend_in = in_axis.legend(
                 handles=ingoing_plot_lines,
-                title=plot_cfg['legend_title'] + f" | Ingoing interactions",
+                title=plot_cfg['legend_title'] + " | Ingoing interactions",
                 # TODO (se-passau/VaRA#545): remove cast with plot config rework
                 labels=map(
                     tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
@@ -539,7 +538,6 @@ class BlameDegree(Plot):
     ) -> None:
         plot_cfg = {
             'fig_title': 'MISSING figure title',
-            'color_map': cm.get_cmap('tab10')
         }
         if extra_plot_cfg is not None:
             plot_cfg.update(extra_plot_cfg)
@@ -559,14 +557,55 @@ class BlameDegree(Plot):
 
         # Duplicated lib names are necessary to avoid cycles in the graph
         all_lib_names: tp.List[str] = base_lib_names + inter_lib_names
+        all_distinct_lib_names = list(set(all_lib_names))
         base_lib_name_index_mapping: tp.Dict[str, int] = {}
         inter_lib_name_index_mapping: tp.Dict[str, int] = {}
+        lib_name_to_color_shades_mapping: tp.Dict[str, tp.Dict[
+            int, str]] = dict((name, dict()) for name in all_distinct_lib_names)
+        lib_name_to_colormap_mapping: tp.Dict[str, tp.Any] = {}
 
         sankey_src_idx_list: tp.List[int] = []
         sankey_tgt_idx_list: tp.List[int] = []
         sankey_value_list: tp.List[float] = []
-        sankey_degree_list: tp.List[str] = []
-        sankey_color_list: tp.List[str] = []
+        sankey_degree_list: tp.List[int] = []
+        sankey_flow_color_list: tp.List[str] = []
+        sankey_node_color_list: tp.List[str] = []
+
+        # TODO: Pass colormap to plot call
+        # TODO: Prevention of having too few colormaps
+        # TODO: Prevent access on highest degree to result in out of bounds
+        # TODO: Implement export of static image with kaleido
+
+        colormaps = [
+            cm.get_cmap("Blues"),
+            cm.get_cmap("Reds"),
+            cm.get_cmap("Greens"),
+            cm.get_cmap("Greys"),
+            cm.get_cmap("Oranges")
+        ]
+
+        for lib_idx, lib_name in \
+                enumerate(lib_name_to_color_shades_mapping):
+
+            # If there are not enough colormaps provided, reuse them.
+            if not colormaps[lib_idx]:
+                lib_idx = 0
+            shades = colormaps[lib_idx](
+                np.linspace(0.25, 1, highest_degree + 1)
+            )
+            lib_name_to_colormap_mapping[lib_name] = colormaps[lib_idx]
+
+            color_dict = {}
+
+            for shade_idx, shade in enumerate(shades):
+                color_dict[shade_idx] = str(tuple(shade))
+
+            lib_name_to_color_shades_mapping[lib_name] = color_dict
+
+        for lib_name in all_lib_names:
+            sankey_node_color_list.append(
+                f"rgba{tuple(lib_name_to_colormap_mapping[lib_name](0))}"
+            )
 
         for idx, name in enumerate(base_lib_names):
             base_lib_name_index_mapping[name] = idx
@@ -581,12 +620,14 @@ class BlameDegree(Plot):
             base_lib = str(row["base_lib"])
             inter_lib = str(row["inter_lib"])
             fraction = float(row["fraction"])
-            degree = str(row["degree"])
+            degree = int(row["degree"])
+            color = f"rgba{lib_name_to_color_shades_mapping[base_lib][degree]}"
 
             sankey_src_idx_list.append(base_lib_name_index_mapping[base_lib])
             sankey_tgt_idx_list.append(inter_lib_name_index_mapping[inter_lib])
             sankey_value_list.append(fraction * 100 / len(unique_revisions))
             sankey_degree_list.append(degree)
+            sankey_flow_color_list.append(color)
 
         fig = pl.graph_objs.Figure(
             data=[
@@ -597,6 +638,7 @@ class BlameDegree(Plot):
                         thickness=20,
                         line=dict(color="black", width=0.5),
                         label=all_lib_names,
+                        color=sankey_node_color_list,
                         hovertemplate='Fraction ratio = %{'
                         'value}%<extra></extra> '
                     ),
@@ -605,6 +647,7 @@ class BlameDegree(Plot):
                         target=sankey_tgt_idx_list,
                         value=sankey_value_list,
                         customdata=sankey_degree_list,
+                        color=sankey_flow_color_list,
                         hovertemplate='Interaction has a fraction ratio of '
                         '%{value}%<br /> and a degree of %{'
                         'customdata}<extra></extra>',
