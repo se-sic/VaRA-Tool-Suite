@@ -4,10 +4,12 @@ import logging
 import typing as tp
 from itertools import product
 
+import matplotlib.colors as mpl_colors
 import matplotlib.pyplot as plt
 import matplotlib.style as style
 import numpy as np
 import pandas as pd
+import plotly as pl
 from matplotlib import cm
 
 from varats.data.databases.blame_interaction_degree_database import (
@@ -530,6 +532,90 @@ class BlameDegree(Plot):
 
         generate_fraction_overview_plot()
 
+    def _library_interactions(
+        self,
+        degree_type: DegreeType,
+        extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
+    ) -> None:
+        plot_cfg = {
+            'fig_title': 'MISSING figure title',
+            'color_map': cm.get_cmap('tab10')
+        }
+        if extra_plot_cfg is not None:
+            plot_cfg.update(extra_plot_cfg)
+
+        style.use(self.style)
+
+        df = self._get_degree_data()
+        df = df[df.degree_type == degree_type.value]
+        df.sort_values(by=['time_id'], inplace=True)
+        df.reset_index(inplace=True)
+        revision_df = pd.DataFrame(df["revision"])
+        unique_revisions = list(revision_df["revision"].unique())
+        highest_degree = df["degree"].max()
+
+        base_lib_names: tp.List[str] = get_distinct_base_lib_names(df)
+        inter_lib_names: tp.List[str] = get_distinct_inter_lib_names(df)
+
+        # Duplicated lib names are necessary to avoid cycles in the graph
+        all_lib_names: tp.List[str] = base_lib_names + inter_lib_names
+        base_lib_name_index_mapping: tp.Dict[str, int] = {}
+        inter_lib_name_index_mapping: tp.Dict[str, int] = {}
+
+        sankey_src_idx_list: tp.List[int] = []
+        sankey_tgt_idx_list: tp.List[int] = []
+        sankey_value_list: tp.List[float] = []
+        sankey_degree_list: tp.List[str] = []
+        sankey_color_list: tp.List[str] = []
+
+        for idx, name in enumerate(base_lib_names):
+            base_lib_name_index_mapping[name] = idx
+
+        # Continue the index for the interacting libraries
+        idx_offset = len(base_lib_name_index_mapping)
+
+        for idx, name in enumerate(inter_lib_names):
+            inter_lib_name_index_mapping[name] = idx + idx_offset
+
+        for _, row in df.iterrows():
+            base_lib = str(row["base_lib"])
+            inter_lib = str(row["inter_lib"])
+            fraction = float(row["fraction"])
+            degree = str(row["degree"])
+
+            sankey_src_idx_list.append(base_lib_name_index_mapping[base_lib])
+            sankey_tgt_idx_list.append(inter_lib_name_index_mapping[inter_lib])
+            sankey_value_list.append(fraction * 100 / len(unique_revisions))
+            sankey_degree_list.append(degree)
+
+        fig = pl.graph_objs.Figure(
+            data=[
+                pl.graph_objs.Sankey(
+                    arrangement="perpendicular",
+                    node=dict(
+                        pad=15,
+                        thickness=20,
+                        line=dict(color="black", width=0.5),
+                        label=all_lib_names,
+                        hovertemplate='Fraction ratio = %{'
+                        'value}%<extra></extra> '
+                    ),
+                    link=dict(
+                        source=sankey_src_idx_list,
+                        target=sankey_tgt_idx_list,
+                        value=sankey_value_list,
+                        customdata=sankey_degree_list,
+                        hovertemplate='Interaction has a fraction ratio of '
+                        '%{value}%<br /> and a degree of %{'
+                        'customdata}<extra></extra>',
+                    )
+                )
+            ]
+        )
+
+        fig.update_layout(title_text="Library interactions", font_size=20)
+        fig.show()
+
     def _multi_lib_degree_plot(
         self,
         view_mode: bool,
@@ -968,6 +1054,24 @@ class BlameInteractionFractionOverview(BlameDegree):
         self._fraction_overview_plot(
             view_mode, DegreeType.interaction, extra_plot_cfg
         )
+
+    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+        return self._calc_missing_revisions(
+            DegreeType.interaction, boundary_gradient
+        )
+
+
+class BlameInteractionLibraryRelations(BlameDegree):
+    """Plotting the degree of blame interactions with multiple libraries."""
+
+    NAME = 'b_library_interactions'
+
+    def __init__(self, **kwargs: tp.Any):
+        super().__init__(self.NAME, **kwargs)
+
+    def plot(self, view_mode: bool) -> None:
+        extra_plot_cfg = {'fig_title': 'Library interactions'}
+        self._library_interactions(DegreeType.interaction, extra_plot_cfg)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
