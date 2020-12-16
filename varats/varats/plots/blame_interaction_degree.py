@@ -8,8 +8,10 @@ import matplotlib.pyplot as plt
 import matplotlib.style as style
 import numpy as np
 import pandas as pd
-import plotly as pl
 from matplotlib import cm
+from plotly import graph_objs as go
+from plotly import io as pio
+from plumbum import Path
 
 from varats.data.databases.blame_interaction_degree_database import (
     BlameInteractionDegreeDatabase,
@@ -128,11 +130,11 @@ def _filter_grouped_dataframes(
 
 
 def get_distinct_base_lib_names(df: pd.DataFrame) -> tp.List[str]:
-    return sorted(np.unique([str(base_lib) for base_lib in df.base_lib]))
+    return list(np.unique([str(base_lib) for base_lib in df.base_lib]))
 
 
 def get_distinct_inter_lib_names(df: pd.DataFrame) -> tp.List[str]:
-    return sorted(np.unique([str(inter_lib) for inter_lib in df.inter_lib]))
+    return list(np.unique([str(inter_lib) for inter_lib in df.inter_lib]))
 
 
 def get_grouped_dataframes(
@@ -533,11 +535,21 @@ class BlameDegree(Plot):
 
     def _library_interactions(
         self,
+        view_mode: bool,
         degree_type: DegreeType,
         extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
     ) -> None:
         plot_cfg = {
             'fig_title': 'MISSING figure title',
+            'show_in_browser': view_mode,
+            'font_size': 20 if view_mode else 10,
+            'cmap_names_list': [
+                'Greens', 'Reds', 'Blues', 'Greys', 'Oranges', 'Purples',
+                'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu', 'GnBu',
+                'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn'
+            ],
+            'width': 1500,
+            'height': 1000
         }
         if extra_plot_cfg is not None:
             plot_cfg.update(extra_plot_cfg)
@@ -557,63 +569,57 @@ class BlameDegree(Plot):
 
         # Duplicated lib names are necessary to avoid cycles in the graph
         all_lib_names: tp.List[str] = base_lib_names + inter_lib_names
-        all_distinct_lib_names = list(set(all_lib_names))
+        all_distinct_lib_names = sorted(set(all_lib_names))
         base_lib_name_index_mapping: tp.Dict[str, int] = {}
         inter_lib_name_index_mapping: tp.Dict[str, int] = {}
-        lib_name_to_color_shades_mapping: tp.Dict[str, tp.Dict[
-            int, str]] = dict((name, dict()) for name in all_distinct_lib_names)
         lib_name_to_colormap_mapping: tp.Dict[str, tp.Any] = {}
+        lib_name_to_color_shades_mapping: tp.Dict[str, tp.Dict[int, str]] = \
+            dict((name, dict()) for name in all_distinct_lib_names)
 
         sankey_src_idx_list: tp.List[int] = []
         sankey_tgt_idx_list: tp.List[int] = []
-        sankey_value_list: tp.List[float] = []
         sankey_degree_list: tp.List[int] = []
+        sankey_value_list: tp.List[float] = []
         sankey_flow_color_list: tp.List[str] = []
         sankey_node_color_list: tp.List[str] = []
 
-        # TODO: Pass colormap to plot call
-        # TODO: Prevention of having too few colormaps
         # TODO: Prevent access on highest degree to result in out of bounds
         # TODO: Implement export of static image with kaleido
-
-        colormaps = [
-            cm.get_cmap("Blues"),
-            cm.get_cmap("Reds"),
-            cm.get_cmap("Greens"),
-            cm.get_cmap("Greys"),
-            cm.get_cmap("Oranges")
-        ]
+        # TODO: Add plotly and kaleido to package list
 
         for lib_idx, lib_name in \
                 enumerate(lib_name_to_color_shades_mapping):
 
             # If there are not enough colormaps provided, reuse them.
-            if not colormaps[lib_idx]:
+            if len(tp.cast(tp.List, plot_cfg['cmap_names_list'])) <= lib_idx:
                 lib_idx = 0
-            shades = colormaps[lib_idx](
-                np.linspace(0.25, 1, highest_degree + 1)
-            )
-            lib_name_to_colormap_mapping[lib_name] = colormaps[lib_idx]
 
-            color_dict = {}
+            shades = cm.get_cmap(
+                tp.cast(tp.List, plot_cfg['cmap_names_list'])[lib_idx]
+            )(np.linspace(0.25, 1, highest_degree + 1))
+
+            lib_name_to_colormap_mapping[lib_name] = cm.get_cmap(
+                tp.cast(tp.List, plot_cfg['cmap_names_list'])[lib_idx]
+            )
+            tmp_color_dict = {}
 
             for shade_idx, shade in enumerate(shades):
-                color_dict[shade_idx] = str(tuple(shade))
+                tmp_color_dict[shade_idx] = str(tuple(shade))
 
-            lib_name_to_color_shades_mapping[lib_name] = color_dict
+            lib_name_to_color_shades_mapping[lib_name] = tmp_color_dict
 
         for lib_name in all_lib_names:
             sankey_node_color_list.append(
-                f"rgba{tuple(lib_name_to_colormap_mapping[lib_name](0))}"
+                f"rgba{tuple(lib_name_to_colormap_mapping[lib_name](0.5))}"
             )
 
         for idx, name in enumerate(base_lib_names):
             base_lib_name_index_mapping[name] = idx
 
-        # Continue the index for the interacting libraries
         idx_offset = len(base_lib_name_index_mapping)
 
         for idx, name in enumerate(inter_lib_names):
+            # Continue the index for the interacting libraries
             inter_lib_name_index_mapping[name] = idx + idx_offset
 
         for _, row in df.iterrows():
@@ -629,9 +635,12 @@ class BlameDegree(Plot):
             sankey_degree_list.append(degree)
             sankey_flow_color_list.append(color)
 
-        fig = pl.graph_objs.Figure(
+        layout = go.Layout(
+            autosize=False, width=plot_cfg['width'], height=plot_cfg['height']
+        )
+        fig = go.Figure(
             data=[
-                pl.graph_objs.Sankey(
+                go.Sankey(
                     arrangement="perpendicular",
                     node=dict(
                         pad=15,
@@ -646,18 +655,30 @@ class BlameDegree(Plot):
                         source=sankey_src_idx_list,
                         target=sankey_tgt_idx_list,
                         value=sankey_value_list,
-                        customdata=sankey_degree_list,
                         color=sankey_flow_color_list,
-                        hovertemplate='Interaction has a fraction ratio of '
-                        '%{value}%<br /> and a degree of %{'
+                        customdata=sankey_degree_list,
+                        hovertemplate='Interaction has a fraction ratio of %{'
+                        'value}%<br /> and a degree of %{'
                         'customdata}<extra></extra>',
                     )
                 )
             ]
         )
 
-        fig.update_layout(title_text="Library interactions", font_size=20)
-        fig.show()
+        fig.update_layout(
+            title_text=plot_cfg['fig_title'], font_size=plot_cfg['font_size']
+        )
+
+        # TODO: Move show() and save() to class level
+        if plot_cfg['show_in_browser']:
+            fig.show()
+        else:
+            fig.layout = layout
+            pio.write_image(
+                fig,
+                self.plot_kwargs['plot_dir'] + "/" + self.plot_file_name("png"),
+                format="png"
+            )
 
     def _multi_lib_degree_plot(
         self,
@@ -1104,8 +1125,9 @@ class BlameInteractionFractionOverview(BlameDegree):
         )
 
 
-class BlameInteractionLibraryRelations(BlameDegree):
-    """Plotting the degree of blame interactions with multiple libraries."""
+class BlameLibraryInteractions(BlameDegree):
+    """Plotting the dependencies of  blame interactions with multiple
+    libraries."""
 
     NAME = 'b_library_interactions'
 
@@ -1113,8 +1135,13 @@ class BlameInteractionLibraryRelations(BlameDegree):
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        extra_plot_cfg = {'fig_title': 'Library interactions'}
-        self._library_interactions(DegreeType.interaction, extra_plot_cfg)
+        extra_plot_cfg = {
+            'fig_title': 'Library interactions',
+            'show_in_browser': view_mode
+        }
+        self._library_interactions(
+            view_mode, DegreeType.interaction, extra_plot_cfg
+        )
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
