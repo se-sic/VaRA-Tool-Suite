@@ -41,6 +41,7 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
             local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/Elementalist",
             refspec="HEAD",
+            limit=1,
             shallow=False,
             version_filter=project_filter_generator(
                 "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
@@ -53,6 +54,7 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
             local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/fire_lib",
             refspec="HEAD",
+            limit=1,
             shallow=False,
             version_filter=project_filter_generator(
                 "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
@@ -65,6 +67,7 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
             local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/water_lib",
             refspec="HEAD",
+            limit=1,
             shallow=False,
             version_filter=project_filter_generator(
                 "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"

@@ -26,7 +26,7 @@ class BasicBugDetectionTestRepo(bb.Project):  # type: ignore
             remote="BugDetectionRepos/BasicTestRepo",
             local="basic_test_repo",
             refspec="HEAD",
-            limit=None,
+            limit=1,
             version_filter=project_filter_generator("basic_test_repo")
         )
     ]
