@@ -21,6 +21,7 @@ LOG = logging.getLogger(__name__)
 
 
 class ImageBase(Enum):
+    """Container image bases that can be used by projects."""
     DEBIAN_10 = "debian:10"
 
 

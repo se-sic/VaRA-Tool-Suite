@@ -13,7 +13,7 @@ First, we need to generate a folder with a configuration file for BenchBuild in 
   vara-gen-bbconfig
 
 Running BenchBuild experiments
-----------------------------------
+------------------------------
 Second, we change into the benchbuild folder and run an experiment that generates `BlameReports` for provided projects. In this case we use `gzip`.
 
 .. code-block:: bash
@@ -24,7 +24,7 @@ Second, we change into the benchbuild folder and run an experiment that generate
 The generated result files are place in the ``vara/results/$PROJECT_NAME`` folder and can be further visualized with VaRA-TS graph generators.
 
 Running BenchBuild outside the ``$VARA_ROOT/benchbuild`` directory
-------------------------------------
+------------------------------------------------------------------
 To execute BenchBuild from another directory the ``VARA_ROOT`` environment variable must be set, so varats and benchbuild can locate the varats configuration file.
 
 .. code-block:: bash
@@ -87,3 +87,49 @@ To adapt and tune BenchBuild further, you can moify the different configuration 
   parallel_processes:
     desc: Proccesses use to work on execution plans.
     value: 4
+
+Running BenchBuild in a container
+---------------------------------
+
+BenchBuild can run its experiments inside a container.
+This allows to customize the execution environment on a per-project(-version) and per-experiment level.
+
+To use BenchBuild's container support, you first need to setup `buildah <https://github.com/containers/buildah/blob/master/install.md>`_ and `podman <https://podman.io/getting-started/installation>`_ on your system.
+
+Then, you have to set the following parameters in the :ref:`BenchBuild config <How-to configure BenchBuild yourself>`:
+
+.. code-block:: yaml
+
+  container:
+    from_source:
+      desc: Install BenchBuild from source or from pip (default)
+      value: false
+    mounts:
+        desc: List of paths that will be mounted inside the container.
+        value:
+        - [<path-to-varats-root>/results, /varats_root/results]
+        - [<path-to-varats-root>/benchbuild/BC_files, /varats_root/BC_files]
+        - [<path-to-varats-root>/vara/paper_configs, /varats_root/paper_configs]
+    root:
+        desc: Permanent storage for container images
+        value: !create-if-needed '<path-to-varats-root>/containers/lib'
+    runroot:
+        desc: Runtime storage for containers
+        value: !create-if-needed '<path-to-varats-root>/containers/run'
+    runtime:
+        desc: Default container runtime used by podman
+        value: /usr/bin/crun
+    source:
+        desc: Path to benchbuild's source directory
+        value: '</path/to/benchbuild>'
+
+The next step is to select the correct research tool for your experiment and build the base containers using the :ref:`vara-container` tool.
+
+You can now run your experiments in a container simply by replacing the `run` in your BenchBuild command with `container`, for example, like this:
+
+.. code-block:: bash
+
+  cd $VARA_ROOT/benchbuild
+  benchbuild -vv container -E GenerateBlameReport gzip
+
+Note, that the project is responsible for providing a :ref:`base container image <Using Containers>` to run in.
