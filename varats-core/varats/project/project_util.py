@@ -307,6 +307,8 @@ class VaraTestRepoSubmodule(GitSubmodule):
         Overrides ``GitSubmodule`` s fetch to
           1. fetch the vara-test-repos repo
           2. extract the specified submodule from the vara-test-repos repo
+          3. rename files that were made git_storable (e.g., .gitted) back to
+             their original name (e.g., .git)
 
         Returns:
             the path where the inner repo is extracted to
@@ -331,6 +333,8 @@ class VaraTestRepoSource(Git):  # type: ignore
     __vara_test_repos_git = Git(
         remote="https://github.com/se-passau/vara-test-repos",
         local="vara_test_repos",
+        refspec="HEAD",
+        limit=1
     )
 
     def fetch(self) -> pb.LocalPath:
@@ -338,6 +342,8 @@ class VaraTestRepoSource(Git):  # type: ignore
         Overrides ``Git`` s fetch to
           1. fetch the vara-test-repos repo
           2. extract the specified repo from the vara-test-repos repo
+          3. rename files that were made git_storable (e.g., .gitted) back to
+            their original name (e.g., .git)
 
         Returns:
             the path where the inner repo is extracted to
@@ -367,6 +373,10 @@ class VaraTestRepoSource(Git):  # type: ignore
 
         # Extract main repository
         cp("-r", main_repo_src_local + "/.", tgt_loc)
+
+        # Skip submodule extraction if none exist
+        if not Path(tgt_loc / ".gitmodules").exists():
+            return tgt_loc
 
         # Extract submodules
         with pb.local.cwd(tgt_loc):

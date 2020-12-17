@@ -30,6 +30,8 @@ class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
     NAME = 'gzip'
     GROUP = 'c_projects'
     DOMAIN = 'compression'
+
+    # TODO (PolyJIT/benchbuild#42): remove after BB provides implicit default
     CONTAINER = ContainerImage()
 
     SOURCE = [
