@@ -87,7 +87,7 @@ class PrintMarkerInstTest(Experiment):  # type: ignore
 
     NAME = "PrintMarkerInstTest"
 
-    def actions_for_project(self, project: Project) -> tp.List[Step]:
+    def actions_for_project(self, project: Project) -> tp.MutableSequence[Step]:
         """
         Defines the actions, which should be run on a project.
 
@@ -100,9 +100,8 @@ class PrintMarkerInstTest(Experiment):  # type: ignore
 
         project.cflags = ["-fvara-handleRM=High"]
 
-        project_actions: tp.List[Step] = self.default_compiletime_actions(
-            project
-        )
+        project_actions: tp.MutableSequence[
+            Step] = self.default_compiletime_actions(project)
 
         return project_actions
 
@@ -112,7 +111,7 @@ class PapiMarkerInstTest(Experiment):  # type: ignore
 
     NAME = "PapiMarkerInstTest"
 
-    def actions_for_project(self, project: Project) -> tp.List[Step]:
+    def actions_for_project(self, project: Project) -> tp.MutableSequence[Step]:
         """
         Defines the actions, which should be run on a project.
 
@@ -130,9 +129,8 @@ class PapiMarkerInstTest(Experiment):  # type: ignore
 
         project.cflags = ["-fvara-handleRM=High"]
 
-        project_actions: tp.List[Step] = self.default_compiletime_actions(
-            project
-        )
+        project_actions: tp.MutableSequence[
+            Step] = self.default_compiletime_actions(project)
 
         return project_actions
 
@@ -142,7 +140,7 @@ class CheckMarkerInstTest(Experiment):  # type: ignore
 
     NAME = "CheckMarkerInstTest"
 
-    def actions_for_project(self, project: Project) -> tp.List[Step]:
+    def actions_for_project(self, project: Project) -> tp.MutableSequence[Step]:
         """
         Defines the actions, which should be run on a project.
 
@@ -155,8 +153,7 @@ class CheckMarkerInstTest(Experiment):  # type: ignore
 
         project.cflags = ["-fvara-handleRM=High"]
 
-        project_actions: tp.List[Step] = self.default_compiletime_actions(
-            project
-        )
+        project_actions: tp.MutableSequence[
+            Step] = self.default_compiletime_actions(project)
 
         return project_actions
