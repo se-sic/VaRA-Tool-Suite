@@ -197,7 +197,7 @@ class ProjectBinaryWrapper():
 
     @property
     def name(self) -> str:
-        """Name of the Binary."""
+        """Name of the binary."""
         return self.__binary_name
 
     @property
@@ -207,7 +207,7 @@ class ProjectBinaryWrapper():
 
     @property
     def type(self) -> BinaryType:
-        """Specifies the type, e.g., executable, shared or static library, of
+        """Specifies the type, e.g., executable, shared, or static library, of
         the binary."""
         return self.__type
 

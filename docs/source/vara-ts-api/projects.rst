@@ -86,7 +86,7 @@ Specifying Project Binaries
 ...........................
 
 The :func:`~varats.project.project_util.ProjectBinaryWrapper.binaries` property
-of a ``Project`` exports a list of binaries build by the project, specifying
+of a ``Project`` exports a list of binaries built by the project, specifying
 the relative path from the project root to the created binary.  When queried by
 an analysis, a list of
 :class:`~varats.project.project_util.ProjectBinaryWrapper`\ s is returned,
@@ -97,7 +97,7 @@ Binary wrappers can be created automatically with the provided helper functions
 :class:`~varats.project.project_util.wrap_paths_to_binaries` or
 :class:`~varats.project.project_util.wrap_paths_to_binaries_with_name`.
 
-Furthermore, keep in mind that for some projects binary locations change during
+Furthermore, keep in mind that, for some projects, binary locations change during
 project life time.  To specify a specific binary locations for a range of
 project revisions use ``benchbuild.utils.revision_ranges``.
 
