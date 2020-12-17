@@ -345,7 +345,7 @@ class VaraTestRepoSource(Git):  # type: ignore
           1. fetch the vara-test-repos repo
           2. extract the specified repo from the vara-test-repos repo
           3. rename files that were made git_storable (e.g., .gitted) back to
-            their original name (e.g., .git)
+             their original name (e.g., .git)
 
         Returns:
             the path where the inner repo is extracted to
