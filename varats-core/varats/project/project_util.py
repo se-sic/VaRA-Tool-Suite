@@ -300,6 +300,8 @@ class VaraTestRepoSubmodule(GitSubmodule):
     __vara_test_repos_git = Git(
         remote="https://github.com/se-passau/vara-test-repos",
         local="vara_test_repos",
+        refspec="HEAD",
+        limit=1
     )
 
     def fetch(self) -> pb.LocalPath:
