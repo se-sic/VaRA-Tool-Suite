@@ -10,6 +10,7 @@ import pandas as pd
 from matplotlib import cm
 from plotly import graph_objs as go
 from plotly import io as pio
+from plumbum import Path
 
 from varats.data.databases.blame_interaction_degree_database import (
     BlameInteractionDegreeDatabase,
@@ -559,18 +560,21 @@ class BlameDegree(Plot):
         view_mode: bool,
         degree_type: DegreeType,
         extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
-    ) -> None:
+    ) -> go.Figure:
         plot_cfg = {
-            'fig_title': 'MISSING figure title',
-            'show_in_browser': view_mode,
-            'font_size': 20 if view_mode else 10,
-            'cmap_names_list': [
+            'fig_title':
+                'MISSING figure title',
+            'font_size':
+                20 if view_mode else 10,
+            'width':
+                1500,
+            'height':
+                1000,
+            'colormaps': [
                 'Greens', 'Reds', 'Blues', 'Greys', 'Oranges', 'Purples',
                 'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu', 'GnBu',
                 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn'
-            ],
-            'width': 1500,
-            'height': 1000
+            ]
         }
         if extra_plot_cfg is not None:
             plot_cfg.update(extra_plot_cfg)
@@ -604,23 +608,21 @@ class BlameDegree(Plot):
         sankey_flow_color_list: tp.List[str] = []
         sankey_node_color_list: tp.List[str] = []
 
-        # TODO: Prevent access on highest degree to result in out of bounds
-        # TODO: Implement export of static image with kaleido
         # TODO: Add plotly and kaleido to package list
 
         for lib_idx, lib_name in \
                 enumerate(lib_name_to_color_shades_mapping):
 
             # If there are not enough colormaps provided, reuse them.
-            if len(tp.cast(tp.List, plot_cfg['cmap_names_list'])) <= lib_idx:
+            if len(tp.cast(tp.List, plot_cfg['colormaps'])) <= lib_idx:
                 lib_idx = 0
 
             shades = cm.get_cmap(
-                tp.cast(tp.List, plot_cfg['cmap_names_list'])[lib_idx]
+                tp.cast(tp.List, plot_cfg['colormaps'])[lib_idx]
             )(np.linspace(0.25, 1, highest_degree + 1))
 
             lib_name_to_colormap_mapping[lib_name] = cm.get_cmap(
-                tp.cast(tp.List, plot_cfg['cmap_names_list'])[lib_idx]
+                tp.cast(tp.List, plot_cfg['colormaps'])[lib_idx]
             )
             tmp_color_dict = {}
 
@@ -689,17 +691,10 @@ class BlameDegree(Plot):
         fig.update_layout(
             title_text=plot_cfg['fig_title'], font_size=plot_cfg['font_size']
         )
-
-        # TODO: Move show() and save() to class level
-        if plot_cfg['show_in_browser']:
-            fig.show()
-        else:
+        if not view_mode:
             fig.layout = layout
-            pio.write_image(
-                fig,
-                self.plot_kwargs['plot_dir'] + "/" + self.plot_file_name("png"),
-                format="png"
-            )
+
+        return fig
 
     def _calc_missing_revisions(
         self, degree_type: DegreeType, boundary_gradient: float
@@ -865,14 +860,44 @@ class BlameLibraryInteractions(BlameDegree):
 
     def __init__(self, **kwargs: tp.Any):
         super().__init__(self.NAME, **kwargs)
+        self.__figure = go.Figure()
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
             'fig_title': 'Library interactions',
-            'show_in_browser': view_mode
+            'width': 1500,
+            'height': 1000
         }
-        self._library_interactions(
+        self.__figure = self._library_interactions(
             view_mode, DegreeType.interaction, extra_plot_cfg
+        )
+
+    def show(self) -> None:
+        try:
+            self.plot(True)
+        except PlotDataEmpty:
+            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            return
+        self.__figure.show()
+
+    def save(
+        self, path: tp.Optional[Path] = None, filetype: str = 'png'
+    ) -> None:
+        try:
+            self.plot(False)
+        except PlotDataEmpty:
+            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            return
+
+        if path is None:
+            plot_dir = Path(self.plot_kwargs["plot_dir"])
+        else:
+            plot_dir = path
+
+        pio.write_image(
+            self.__figure,
+            plot_dir + "/" + self.plot_file_name(filetype),
+            format=filetype
         )
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
