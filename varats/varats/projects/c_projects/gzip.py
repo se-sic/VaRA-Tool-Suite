@@ -47,6 +47,7 @@ class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
                 remote="https://git.savannah.gnu.org/git/gzip.git",
                 local="gzip",
                 refspec="HEAD",
+                limit=None,
                 shallow=False,
                 version_filter=project_filter_generator("gzip")
             )
