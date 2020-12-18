@@ -30,7 +30,7 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
     GROUP = 'cpp_projects'
     DOMAIN = 'library-testproject'
 
-    # TODO (PolyJIT/benchbuild#42): remove after BB provides implicit default
+    # TODO (PolyJIT/benchbuild#345): remove after BB provides implicit default
     CONTAINER = ContainerImage()
 
     SOURCE = [
