@@ -311,9 +311,15 @@ def __create_cleanup_parser(sub_parsers: _SubParsersAction) -> None:
     cleanup_parser.add_argument(
         "-f",
         "--filter-regex",
-        help="Filter when unsing regex",
+        help="Regex to determine which report files should be deleted.",
         default="",
         type=str
+    )
+    cleanup_parser.add_argument(
+        "--silent",
+        action="store_true",
+        default=False,
+        help="Hide the output of the matching filenames."
     )
 
 
@@ -565,7 +571,7 @@ def __casestudy_cleanup(
     if cleanup_type == CleanupType.regex:
         if not args['filter_regex']:
             parser.error("Specify a regex filter with --filter-regex or -f")
-        _remove_result_files_by_regex(args['filter_regex'])
+        _remove_result_files_by_regex(args['filter_regex'], args['silent'])
 
 
 def _remove_old_result_files() -> None:
@@ -630,7 +636,7 @@ def _remove_error_result_files() -> None:
                 os.remove(result_dir_path / result_file_name)
 
 
-def _remove_result_files_by_regex(regex_filter: str) -> None:
+def _remove_result_files_by_regex(regex_filter: str, hide: bool) -> None:
     result_dir_paths = _find_result_dir_paths_of_projects()
 
     for result_dir_path in result_dir_paths:
@@ -643,9 +649,9 @@ def _remove_result_files_by_regex(regex_filter: str) -> None:
         if not files_to_delete:
             print(f"No matching result files in {result_dir_path} found.")
             continue
-
-        for file_name in files_to_delete:
-            print(f"{file_name}")
+        if not hide:
+            for file_name in files_to_delete:
+                print(f"{file_name}")
         print(
             f"Found {len(files_to_delete)} matching"
             "result files in {result_dir_path}:"
