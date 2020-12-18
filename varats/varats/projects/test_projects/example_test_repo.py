@@ -26,7 +26,7 @@ class ExampleTestRepo(bb.Project):  # type: ignore
             remote="BasicTestRepos/ExampleRepo",
             local="example_repo",
             refspec="HEAD",
-            limit=1,
+            limit=None,
             version_filter=project_filter_generator("example_test_repo")
         )
     ]
