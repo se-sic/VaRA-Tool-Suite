@@ -5,6 +5,7 @@ import os
 import re
 import typing as tp
 from argparse import ArgumentParser, ArgumentTypeError, _SubParsersAction
+from enum import Enum
 from pathlib import Path
 
 from argparse_utils import enum_action
@@ -305,8 +306,7 @@ def __create_cleanup_parser(sub_parsers: _SubParsersAction) -> None:
     cleanup_parser.add_argument(
         "cleanup_type",
         help="The type of the performed cleanup action.",
-        choices=["old", "error", "regex"],
-        type=str
+        action=enum_action(CleanupType)
     )
     cleanup_parser.add_argument(
         "-f",
@@ -558,12 +558,11 @@ def __casestudy_cleanup(
     args: tp.Dict[str, tp.Any], parser: ArgumentParser
 ) -> None:
     cleanup_type = args['cleanup_type']
-
-    if cleanup_type == "error":
+    if cleanup_type == CleanupType.error:
         _remove_error_result_files()
-    if cleanup_type == "old":
+    if cleanup_type == CleanupType.old:
         _remove_old_result_files()
-    if cleanup_type == "regex":
+    if cleanup_type == CleanupType.regex:
         if not args['filter_regex']:
             parser.error("Specify a regex filter with --filter-regex or -f")
         _remove_result_files_by_regex(args['filter_regex'])
@@ -621,12 +620,14 @@ def _remove_error_result_files() -> None:
         result_file_names = os.listdir(result_dir_path)
 
         for result_file_name in result_file_names:
-            if MetaReport.result_file_has_status(
-                result_file_name, FileStatusExtension.CompileError
+            if (
+                MetaReport.result_file_has_status(
+                    result_file_name, FileStatusExtension.CompileError
+                ) or MetaReport.result_file_has_status(
+                    result_file_name, FileStatusExtension.Failed
+                )
             ) and MetaReport.is_result_file(result_file_name):
                 os.remove(result_dir_path / result_file_name)
-                # TODO: Maybe implement listing of to be deleted or
-                #  deleted files.
 
 
 def _remove_result_files_by_regex(regex_filter: str) -> None:
@@ -657,6 +658,12 @@ def _remove_result_files_by_regex(regex_filter: str) -> None:
                         os.remove(result_dir_path / file_name)
         except EOFError:
             continue
+
+
+class CleanupType(Enum):
+    old = 0
+    error = 1
+    regex = 2
 
 
 if __name__ == '__main__':
