@@ -608,7 +608,14 @@ class BlameDegree(Plot):
         sankey_flow_color_list: tp.List[str] = []
         sankey_node_color_list: tp.List[str] = []
 
+        if len(all_distinct_lib_names) > len(plot_cfg['colormaps']):
+            LOG.warning(
+                "Not enough colormaps for all libraries provided. "
+                "Colormaps will be reused."
+            )
+
         # TODO: Add plotly and kaleido to package list
+        # TODO: Write docs
 
         for lib_idx, lib_name in \
                 enumerate(lib_name_to_color_shades_mapping):
