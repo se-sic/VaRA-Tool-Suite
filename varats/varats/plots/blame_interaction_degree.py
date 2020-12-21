@@ -75,11 +75,11 @@ def _filter_data_frame(
     return unique_revisions, sub_df_list
 
 
-def get_distinct_base_lib_names(df: pd.DataFrame) -> tp.List[str]:
+def _get_distinct_base_lib_names(df: pd.DataFrame) -> tp.List[str]:
     return list(np.unique([str(base_lib) for base_lib in df.base_lib]))
 
 
-def get_distinct_inter_lib_names(df: pd.DataFrame) -> tp.List[str]:
+def _get_distinct_inter_lib_names(df: pd.DataFrame) -> tp.List[str]:
     return list(np.unique([str(inter_lib) for inter_lib in df.inter_lib]))
 
 
@@ -384,28 +384,30 @@ class BlameDegree(Plot):
         grouped_df: pd.DataFrame = df.groupby(['revision'])
 
         dataframes_per_revision: tp.Dict[str, pd.DataFrame] = {}
-        total_amount_per_revision: tp.Dict[str, int] = {}
 
         for revision in unique_revisions:
             dataframes_per_revision[revision] = grouped_df.get_group(revision)
 
+        total_amount_per_revision: tp.Dict[str, int] = {}
         base_lib_names_per_revision: tp.Dict[str, tp.List[str]] = {}
         inter_lib_names_per_revision: tp.Dict[str, tp.List[str]] = {}
 
         for revision in unique_revisions:
             total_amount_per_revision[revision] = dataframes_per_revision[
                 revision].sum().amount
-            base_lib_names_per_revision[revision] = get_distinct_base_lib_names(
-                dataframes_per_revision[revision]
-            )
+            base_lib_names_per_revision[revision
+                                       ] = _get_distinct_base_lib_names(
+                                           dataframes_per_revision[revision]
+                                       )
             inter_lib_names_per_revision[revision
-                                        ] = get_distinct_inter_lib_names(
+                                        ] = _get_distinct_inter_lib_names(
                                             dataframes_per_revision[revision]
                                         )
 
         base_lib_fractions: tp.Dict[str, tp.List[float]] = {}
         inter_lib_fractions: tp.Dict[str, tp.List[float]] = {}
 
+        # Calc fractions for base and interacting libraries
         for revision in unique_revisions:
             for base_name in base_lib_names_per_revision[revision]:
                 if base_name not in base_lib_fractions:
@@ -589,10 +591,10 @@ class BlameDegree(Plot):
         unique_revisions = list(revision_df["revision"].unique())
         highest_degree = df["degree"].max()
 
-        base_lib_names: tp.List[str] = get_distinct_base_lib_names(df)
-        inter_lib_names: tp.List[str] = get_distinct_inter_lib_names(df)
+        base_lib_names: tp.List[str] = _get_distinct_base_lib_names(df)
+        inter_lib_names: tp.List[str] = _get_distinct_inter_lib_names(df)
 
-        # Duplicated lib names are necessary to avoid cycles in the graph
+        # Duplicated lib names are necessary to avoid cycles in the plot
         all_lib_names: tp.List[str] = base_lib_names + inter_lib_names
         all_distinct_lib_names = sorted(set(all_lib_names))
         base_lib_name_index_mapping: tp.Dict[str, int] = {}
@@ -604,7 +606,7 @@ class BlameDegree(Plot):
         sankey_src_idx_list: tp.List[int] = []
         sankey_tgt_idx_list: tp.List[int] = []
         sankey_degree_list: tp.List[int] = []
-        sankey_value_list: tp.List[float] = []
+        sankey_fraction_list: tp.List[float] = []
         sankey_flow_color_list: tp.List[str] = []
         sankey_node_color_list: tp.List[str] = []
 
@@ -613,9 +615,6 @@ class BlameDegree(Plot):
                 "Not enough colormaps for all libraries provided. "
                 "Colormaps will be reused."
             )
-
-        # TODO: Add plotly and kaleido to package list
-        # TODO: Write docs
 
         for lib_idx, lib_name in \
                 enumerate(lib_name_to_color_shades_mapping):
@@ -661,7 +660,7 @@ class BlameDegree(Plot):
 
             sankey_src_idx_list.append(base_lib_name_index_mapping[base_lib])
             sankey_tgt_idx_list.append(inter_lib_name_index_mapping[inter_lib])
-            sankey_value_list.append(fraction * 100 / len(unique_revisions))
+            sankey_fraction_list.append(fraction * 100 / len(unique_revisions))
             sankey_degree_list.append(degree)
             sankey_flow_color_list.append(color)
 
@@ -684,7 +683,7 @@ class BlameDegree(Plot):
                     link=dict(
                         source=sankey_src_idx_list,
                         target=sankey_tgt_idx_list,
-                        value=sankey_value_list,
+                        value=sankey_fraction_list,
                         color=sankey_flow_color_list,
                         customdata=sankey_degree_list,
                         hovertemplate='Interaction has a fraction ratio of %{'
@@ -805,7 +804,13 @@ class BlameInteractionDegree(BlameDegree):
 
 
 class BlameInteractionDegreeMultiLib(BlameDegree):
-    """Plotting the degree of blame interactions with multiple libraries."""
+    """
+    Plotting the degree of blame interactions between two libraries.
+
+    Pass the selected base library (base_lib) and interacting library
+    (inter_lib) as key-value pairs after the plot name. E.g., base_lib=Foo
+    inter_lib=Bar
+    """
 
     NAME = 'b_interaction_degree_multi_lib'
 
@@ -837,7 +842,8 @@ class BlameInteractionDegreeMultiLib(BlameDegree):
 
 
 class BlameInteractionFractionOverview(BlameDegree):
-    """Plotting the degree of blame interactions with multiple libraries."""
+    """Plotting the fraction distribution of in-/outgoing blame interactions
+    from all project libraries."""
 
     NAME = 'b_interaction_fraction_overview'
 
@@ -860,8 +866,8 @@ class BlameInteractionFractionOverview(BlameDegree):
 
 
 class BlameLibraryInteractions(BlameDegree):
-    """Plotting the dependencies of  blame interactions with multiple
-    libraries."""
+    """Plotting the dependencies of blame interactions from all project
+    libraries either as interactive plot in the browser or static image."""
 
     NAME = 'b_library_interactions'
 
