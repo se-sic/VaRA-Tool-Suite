@@ -74,10 +74,6 @@ class BlameInteractionDegreeDatabase(
             categorised_degree_occurrences = \
                 generate_lib_dependent_degrees(report)
 
-            # TODO: Write test to check if fraction within one revision adds
-            #  up to 1
-
-            # TODO: Find more efficient way to calculate the sum of new amounts
             def calc_total_amounts() -> int:
                 total = 0
 
@@ -147,7 +143,7 @@ class BlameInteractionDegreeDatabase(
                     inter_degrees, inter_amounts = map(
                         list, zip(*degree_amount_tuples)
                     )
-                    # TODO: simplify with zip()
+
                     for i, _ in enumerate(inter_degrees):
                         degree = tp.cast(tp.List, inter_degrees)[i]
                         lib_amount = tp.cast(tp.List, inter_amounts)[i]
@@ -161,27 +157,6 @@ class BlameInteractionDegreeDatabase(
                             inter_library=inter_lib_name,
                         )
                         result_data_dicts.append(interaction_data_dict)
-
-            # TODO: remove test row
-            fire_lib_test_one = build_dataframe_row(
-                degree_type=DegreeType.interaction,
-                degree=5,
-                amount=21,
-                total_amount=total_amounts_of_all_libs,
-                base_library="fire_lib",
-                inter_library="Elementalist"
-            )
-            # TODO: remove test row
-            fire_lib_test_two = build_dataframe_row(
-                degree_type=DegreeType.interaction,
-                degree=6,
-                amount=24,
-                total_amount=total_amounts_of_all_libs,
-                base_library="fire_lib",
-                inter_library="Elementalist"
-            )
-            result_data_dicts.append(fire_lib_test_one)
-            result_data_dicts.append(fire_lib_test_two)
 
             def append_rows_of_degree_type(
                 degree_type: DegreeType,
