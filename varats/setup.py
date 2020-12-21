@@ -25,6 +25,8 @@ setup(
         "PyQt5-stubs>=5.10.0,<5.14.0",
         "PyYAML>=3.12",
         "seaborn>=0.8.0",
+        "kaleido>=0.1.0",
+        "plotly>=4.14.1",
         "matplotlib>=3.1.2",
         "pandas>=0.22.0",
         "benchbuild>=5.3.1",
