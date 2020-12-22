@@ -502,6 +502,7 @@ def generate_degree_tuples(
 
     Args:
         report: the blame report
+
     Returns:
         list of tuples (degree, amount)
     """

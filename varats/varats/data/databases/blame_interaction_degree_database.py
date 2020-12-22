@@ -220,4 +220,5 @@ class BlameInteractionDegreeDatabase(
             lambda path: str(path.stat().st_mtime_ns),
             lambda a, b: int(a) > int(b)
         )
+
         return data_frame

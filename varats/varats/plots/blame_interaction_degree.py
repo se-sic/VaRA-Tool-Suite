@@ -33,6 +33,7 @@ def _filter_data_frame(
     """Reduce data frame to rows that match the degree type."""
     interaction_plot_df = interaction_plot_df[interaction_plot_df.degree_type ==
                                               degree_type.value]
+
     degree_levels = sorted(np.unique(interaction_plot_df.degree))
     interaction_plot_df = interaction_plot_df.set_index(['revision', 'degree'])
 
@@ -41,24 +42,18 @@ def _filter_data_frame(
             'amount': 'sum',
             'fraction': 'sum'
         })
-        aggregated_df = aggregated_df.reindex(
-            pd.MultiIndex.from_product(
-                aggregated_df.index.levels, names=aggregated_df.index.names
-            ),
-            fill_value=0
-        ).reset_index()
         return aggregated_df
 
     if degree_type == DegreeType.interaction:
         interaction_plot_df = aggregate_data(interaction_plot_df)
-    else:
-        interaction_plot_df = interaction_plot_df.reindex(
-            pd.MultiIndex.from_product(
-                interaction_plot_df.index.levels,
-                names=interaction_plot_df.index.names
-            ),
-            fill_value=0
-        ).reset_index()
+
+    interaction_plot_df = interaction_plot_df.reindex(
+        pd.MultiIndex.from_product(
+            interaction_plot_df.index.levels,
+            names=interaction_plot_df.index.names
+        ),
+        fill_value=0
+    ).reset_index()
 
     # fix missing time_ids introduced by the product index
     interaction_plot_df['time_id'] = interaction_plot_df['revision'].apply(
