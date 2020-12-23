@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.style as style
 import numpy as np
 import pandas as pd
+from graphviz import Graph, Digraph
 from matplotlib import cm
 from plotly import graph_objs as go
 from plotly import io as pio
@@ -346,6 +347,82 @@ class BlameDegree(Plot):
             fontfamily='monospace',
             rotation=270
         )
+
+    def _graphviz_plot(
+        self,
+        view_mode: bool,
+        degree_type: DegreeType,
+        revision: str,
+        extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        with_churn: bool = True
+    ) -> None:
+        plot_cfg = {
+            'linewidth': 1 if view_mode else 0.25,
+            'legend_size': 8 if view_mode else 2,
+            'xtick_size': 10 if view_mode else 2,
+            'lable_modif': lambda x: x,
+            'legend_title': 'MISSING legend_title',
+            'legend_visible': True,
+            'fig_title': 'MISSING figure title',
+            'edgecolor': 'black',
+            'color_map': cm.get_cmap('tab10')
+        }
+        if extra_plot_cfg is not None:
+            plot_cfg.update(extra_plot_cfg)
+
+        style.use(self.style)
+
+        df = self._get_degree_data()
+        df = df[df.degree_type == degree_type.value]
+        df = df[df.revision == revision]
+        df.sort_values(by=['time_id'], inplace=True)
+
+        # ---- TODO: remove test columns ----
+        base_hash = ["a1", "a2", "a2", "a3", "a1"]
+        inter_hash = ["c1", "c2", "d3", "d1", "e3"]
+        df['base_hash'] = base_hash
+        df['inter_hash'] = inter_hash
+        # ---- TODO: remove test columns ----
+
+        df.reset_index(inplace=True)
+        base_lib_names = _get_distinct_base_lib_names(df)
+        inter_lib_names = _get_distinct_inter_lib_names(df)
+        all_distinct_lib_names = sorted(set(base_lib_names + inter_lib_names))
+
+        # TODO: Add graphviz to requirements and setup.py
+
+        g = Digraph(
+            "G",
+            filename="test.gv",
+        )
+
+        mapping: tp.Dict[str, tp.List[str]] = {
+            lib_name: [] for lib_name in all_distinct_lib_names
+        }
+        edge_tuples: tp.List[tp.Tuple[str, str]] = []
+
+        for _, row in df.iterrows():
+            base_hash = str(row['base_hash'])
+            base_lib = str(row['base_lib'])
+            inter_hash = str(row['inter_hash'])
+            inter_lib = str(row['inter_lib'])
+
+            edge_tuple = (base_hash, inter_hash)
+            edge_tuples.append(edge_tuple)
+
+            mapping[base_lib].append(base_hash)
+            mapping[inter_lib].append(inter_hash)
+
+        for key, value in mapping.items():
+            with g.subgraph(name="cluster_" + key) as sg:
+                sg.attr(label=key)
+                for node in value:
+                    sg.node(node)
+
+        for edge in edge_tuples:
+            g.edge(edge[0], edge[1])
+
+        g.view()
 
     def _fraction_overview_plot(
         self,
@@ -906,6 +983,26 @@ class BlameLibraryInteractions(BlameDegree):
             self.__figure,
             plot_dir + "/" + self.plot_file_name(filetype),
             format=filetype
+        )
+
+    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+        return self._calc_missing_revisions(
+            DegreeType.interaction, boundary_gradient
+        )
+
+
+class BlameInteractionGraphviz(BlameDegree):
+
+    NAME = 'b_interaction_graphviz'
+
+    def __init__(self, **kwargs: tp.Any):
+        super().__init__(self.NAME, **kwargs)
+
+    def plot(self, view_mode: bool) -> None:
+        extra_plot_cfg = {'legend_title': 'foo', 'fig_title': 'bar'}
+        revision = self.plot_kwargs['revision']
+        self._graphviz_plot(
+            view_mode, DegreeType.interaction, revision, extra_plot_cfg
         )
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
