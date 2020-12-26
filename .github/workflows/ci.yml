@@ -7,7 +7,7 @@ on:
     branches: [ vara, vara-dev ]
 
 env:
-  - BB_TMP_DIR=$(pwd)/benchbuild/tmp
+  BB_TMP_DIR: $(pwd)/benchbuild/tmp
 
 jobs:
   build:
