@@ -1,5 +1,6 @@
 runner:
   mypy:
+    name: reviewdog/mypy
     cmd: mypy --strict --show-column-numbers -p varats
     errorformat:
       - "%f:%l:%c: %m"
