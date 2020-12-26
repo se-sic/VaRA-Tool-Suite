@@ -24,7 +24,7 @@ jobs:
         # mypy.  mypy get's confused when discovering rich and by that does no
         # longer any type checking.
         ########################################################################
-        pip uninstall rich
+        pip uninstall -y rich
         ########################################################################
     - name: Setup reviewdog
       run: |
