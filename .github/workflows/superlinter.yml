@@ -33,4 +33,5 @@ jobs:
           VALIDATE_PYTHON_BLACK: false
           VALIDATE_BASH: false
           VALIDATE_ALL_CODEBASE: true # TODO: change later
+          PYTHON_PYLINT_CONFIG_FILE: .pylintrc
           ACTIONS_RUNNER_DEBUG: true
