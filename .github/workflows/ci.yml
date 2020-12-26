@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6]
+        python-version: [3.6, 3.7, 3.8]
 
     steps:
     - uses: actions/checkout@v2
@@ -34,17 +34,12 @@ jobs:
         pip install ./varats-core
         pip install ./varats
         pip install -r requirements.txt
-        #pip install -r test-requirements.txt
         pip install codecov
         pip install pytest-cov
         pip install coverage
         pip install mypy
-        #- name: Test bootstrapping
-        #  run: |
-        #    coverage run -p `which benchbuild` bootstrap -s
     - name: Run unittests
       run: |
-        #pytest --cov-config=./.coveragerc --cov=./ benchbuild tests
         echo $BB_TMP_DIR
         mkdir -p benchbuild
         coverage run -p -m pytest varats varats-core tests
@@ -53,16 +48,9 @@ jobs:
     - name: Run integration tests
       run: |
         ./run_extra_tests.sh
-        #coverage run -p `which benchbuild` config view
-        #coverage run -p `which benchbuild` project view
-        #coverage run -p `which benchbuild` experiment view
-        #coverage run -p `which benchbuild` -vvvvv run --full test
-        #coverage run -p `which benchbuild` -vvvvv slurm -E empty test
-        #coverage combine -a
         coverage combine -a --rcfile=.coveragerc
         coverage xml
     - name: Upload coverage report
       uses: codecov/codecov-action@v1
       with:
-        #token: ${{ secrets.CODECOV_TOKEN }}
         file: ./coverage.xml
