@@ -21,8 +21,6 @@ jobs:
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
    - name: Install system dependencies for CI
      run: |
         sudo apt-get install time git libgit2-dev ninja-build
