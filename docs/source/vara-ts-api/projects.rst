@@ -82,6 +82,25 @@ template for your own project::
     :class:`Gravity<varats.projects.c_projects.gravity.Gravity>` project.
 
 
+Specifying Project Binaries
+...........................
+
+The :func:`~varats.project.project_util.ProjectBinaryWrapper.binaries` property
+of a ``Project`` exports a list of binaries built by the project, specifying
+the relative path from the project root to the created binary.  When queried by
+an analysis, a list of
+:class:`~varats.project.project_util.ProjectBinaryWrapper`\ s is returned,
+where every wrapper specifies the name, location of the binary, and the
+:class:`~varats.project.project_util.BinaryType`.
+
+Binary wrappers can be created automatically with the provided helper functions
+:class:`~varats.project.project_util.wrap_paths_to_binaries` or
+:class:`~varats.project.project_util.wrap_paths_to_binaries_with_name`.
+
+Furthermore, keep in mind that, for some projects, binary locations change during
+project life time.  To specify a specific binary locations for a range of
+project revisions use ``benchbuild.utils.revision_ranges``.
+
 Blocking revisions
 ..................
 

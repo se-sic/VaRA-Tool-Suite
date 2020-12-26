@@ -22,7 +22,6 @@ from varats.paper_mgmt.artefacts import (
     load_artefacts_from_file,
     store_artefacts,
 )
-from varats.projects.discover_projects import initialize_projects
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.settings import vara_cfg
 
@@ -48,12 +47,7 @@ class PaperConfig():
                 self.__case_studies[case_study.project_name].append(case_study)
             else:
                 self.__case_studies[case_study.project_name] = [case_study]
-        if (self.__path / 'artefacts.yaml').exists():
-            self.__artefacts = load_artefacts_from_file(
-                self.__path / 'artefacts.yaml'
-            )
-        else:
-            self.__artefacts = Artefacts([])
+        self.__artefacts: tp.Optional[Artefacts] = None
 
     @property
     def path(self) -> Path:
@@ -63,6 +57,14 @@ class PaperConfig():
     @property
     def artefacts(self) -> Artefacts:
         """The artefacts of this paper config."""
+        if not self.__artefacts:
+            if (self.__path / 'artefacts.yaml').exists():
+                self.__artefacts = load_artefacts_from_file(
+                    self.__path / 'artefacts.yaml'
+                )
+            else:
+                self.__artefacts = Artefacts([])
+
         return self.__artefacts
 
     def get_case_studies(self, cs_name: str) -> tp.List[CaseStudy]:
@@ -91,9 +93,7 @@ class PaperConfig():
 
     def get_all_artefacts(self) -> tp.Iterable[Artefact]:
         """Returns an iterable of the artefacts of this paper config."""
-        if self.__artefacts:
-            return self.__artefacts
-        return []
+        return self.artefacts
 
     def has_case_study(self, cs_name: str) -> bool:
         """
@@ -154,7 +154,7 @@ class PaperConfig():
         Args:
             artefact: the artefact to add
         """
-        self.__artefacts.add_artefact(artefact)
+        self.artefacts.add_artefact(artefact)
 
     def store(self) -> None:
         """Persist the current state of the paper config saving all case studies
@@ -162,8 +162,8 @@ class PaperConfig():
         for case_study_list in self.__case_studies.values():
             for case_study in case_study_list:
                 store_case_study(case_study, self.__path)
-        if self.__artefacts:
-            store_artefacts(self.__artefacts, self.__path)
+        if self.artefacts:
+            store_artefacts(self.artefacts, self.__path)
 
     def __str__(self) -> str:
         string = "Loaded case studies:\n"
@@ -201,7 +201,6 @@ def project_filter_generator(project_name: str) -> tp.Callable[[str], bool]:
             )
         )
 
-    initialize_projects()
     return get_paper_config().get_filter_for_case_study(project_name)
 
 

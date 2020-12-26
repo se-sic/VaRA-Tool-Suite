@@ -1,4 +1,5 @@
 """Utility module for BenchBuild project handling."""
+import os
 import typing as tp
 from enum import Enum
 from pathlib import Path
@@ -34,19 +35,81 @@ def get_primary_project_source(project_name: str) -> bb.source.BaseSource:
     return bb.source.primary(*project_cls.SOURCE)
 
 
-def get_local_project_git_path(project_name: str) -> Path:
-    """Get the path to the local download location of git repository for a given
-    benchbuild project."""
-    primary_source = get_primary_project_source(project_name)
-    if hasattr(primary_source, "fetch"):
-        primary_source.fetch()
+def get_local_project_git_path(
+    project_name: str, git_name: tp.Optional[str] = None
+) -> Path:
+    """
+    Get the path to the local download location of a git repository for a given
+    benchbuild project.
 
-    return Path(target_prefix() + "/" + primary_source.local)
+    Args:
+        project_name: name of the given benchbuild project
+        git_name: name of the git repository, i.e., the name of the repository
+                  folder. If no git_name is provided, the name of the primary
+                  source is used.
+
+    Returns:
+        Path to the local download location of the git repository.
+    """
+
+    if git_name:
+        source = get_extended_commit_lookup_source(project_name, git_name)
+    else:
+        source = get_primary_project_source(project_name)
+
+    if hasattr(source, "fetch"):
+        source.fetch()
+
+    return tp.cast(Path, Path(target_prefix()) / source.local)
 
 
-def get_local_project_git(project_name: str) -> pygit2.Repository:
-    """Get the git repository for a given benchbuild project."""
-    git_path = get_local_project_git_path(project_name)
+def get_extended_commit_lookup_source(
+    project_name: str, git_name: str
+) -> bb.source.BaseSource:
+    """
+    Get benchbuild BaseSource specified by the git_name or raise a LookupError
+    if no match was found within the given benchbuild project.
+
+    Args:
+        project_name: name of the given benchbuild project
+        git_name: name of the git repository
+
+    Returns:
+        benchbuild BaseSource of the searched git repository
+    """
+
+    project_cls = get_project_cls_by_name(project_name)
+
+    primary_source_name = os.path.basename(
+        get_primary_project_source(project_name).local
+    )
+
+    if git_name == primary_source_name:
+        return get_primary_project_source(project_name)
+
+    for source in project_cls.SOURCE:
+        if git_name == os.path.basename(source.local):
+            return source
+
+    raise LookupError(
+        f"The specified git_name {git_name} could not be found in the sources"
+    )
+
+
+def get_local_project_git(
+    project_name: str, git_name: tp.Optional[str] = None
+) -> pygit2.Repository:
+    """
+    Get the git repository for a given benchbuild project.
+
+    Args:
+        project_name: name of the given benchbuild project
+        git_name: name of the git repository
+
+    Returns:
+        git repository that matches the given git_name.
+    """
+    git_path = get_local_project_git_path(project_name, git_name)
     repo_path = pygit2.discover_repository(str(git_path))
     return pygit2.Repository(repo_path)
 
@@ -91,6 +154,19 @@ def get_all_revisions_between(c_start: str,
     return list(map(lambda rev: rev[:10], result)) if short else result
 
 
+def is_git_source(source: bb.source.BaseSource) -> bool:
+    """
+    Checks if given base source is a git source.
+
+    Args:
+        source: base source to check
+
+    Returns:
+        true if the base source is a git source, false ow.
+    """
+    return hasattr(source, "fetch")
+
+
 class BinaryType(Enum):
     """Enum for different binary types."""
     value: int
@@ -121,14 +197,18 @@ class ProjectBinaryWrapper():
 
     @property
     def name(self) -> str:
+        """Name of the binary."""
         return self.__binary_name
 
     @property
     def path(self) -> Path:
+        """Path to the binary location."""
         return self.__binary_path
 
     @property
     def type(self) -> BinaryType:
+        """Specifies the type, e.g., executable, shared, or static library, of
+        the binary."""
         return self.__type
 
     def __str__(self) -> str:
@@ -161,7 +241,8 @@ def wrap_paths_to_binaries(
     binaries: tp.List[tp.Tuple[str, BinaryType]]
 ) -> tp.List[ProjectBinaryWrapper]:
     """
-    Generates a wrapper for project binaries.
+    Generates a wrapper for project binaries, automatically infering the binary
+    name.
 
     >>> wrap_paths_to_binaries([("src/foo", BinaryType.executable)])
     [(foo: src/foo | executable)]
