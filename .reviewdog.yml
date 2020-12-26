@@ -1,12 +1,13 @@
 runner:
   mypy:
-    name: reviewdog/mypy
+    name: mypy
     cmd: mypy --strict --show-column-numbers -p varats
     errorformat:
       - "%f:%l:%c: %m"
     level: error
 
   pylint:
+    name: pylint
     cmd: pylint varats*
     errorformat:
       - "%f:%l:%c: %t%n: %m"
