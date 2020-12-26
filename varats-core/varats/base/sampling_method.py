@@ -176,8 +176,7 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
         """
         return list(
             filter(
-                lambda ty: issubclass(ty, NormalSamplingMethod) and ty is
-                not NormalSamplingMethod, cls._methods.values()
+                lambda ty: ty is not NormalSamplingMethod, cls._methods.values()
             )
         )
 
