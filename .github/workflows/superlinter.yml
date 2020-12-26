@@ -36,3 +36,4 @@ jobs:
           PYTHON_PYLINT_CONFIG_FILE: .pylintrc
           LINTER_RULES_PATH: .
           ACTIONS_RUNNER_DEBUG: true
+          FILTER_REGEX_EXCLUDE: tests/.*
