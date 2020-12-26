@@ -127,7 +127,8 @@ class Table(metaclass=TableRegistry):
         >>> p = Table('test', project='bar')
         >>> p.table_file_name()
         'bar_test.tex'
-        >>> p = Table('foo', project='bar', table_case_study=CaseStudy('baz', 42))
+        >>> p = Table('foo', project='bar', table_case_study=CaseStudy('baz',
+                                                                       42))
         >>> p.format = TableFormat.fancy_grid
         >>> p.table_file_name()
         'baz_42_foo.txt'

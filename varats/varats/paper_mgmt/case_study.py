@@ -485,8 +485,7 @@ def extend_with_distrib_sampling(
 
     case_study.include_revisions(
         sampling_method.sample_n(revision_list, kwargs['num_rev']),
-        kwargs['merge_stage'],
-        sampling_method=kwargs['distribution']
+        kwargs['merge_stage']
     )
 
 

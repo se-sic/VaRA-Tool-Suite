@@ -424,9 +424,7 @@ class CaseStudy():
         self,
         revisions: tp.List[tp.Tuple[str, int]],
         stage_num: int = 0,
-        sort_revs: bool = True,
-        sampling_method: tp.Optional[NormalSamplingMethod] = None,
-        release_type: tp.Optional[ReleaseType] = None
+        sort_revs: bool = True
     ) -> None:
         """
         Add multiple revisions to this case study.
@@ -435,7 +433,6 @@ class CaseStudy():
             revisions: List of tuples with (commit_hash, id) to be inserted
             stage_num: The stage to insert the revisions
             sort_revs: True if the stage should be kept sorted
-            sampling_method: The sampling method used to acquire the revisions
         """
         for revision in revisions:
             self.include_revision(revision[0], revision[1], stage_num, False)
@@ -443,8 +440,6 @@ class CaseStudy():
         if len(self.__stages) <= stage_num:
             for idx in range(len(self.__stages), stage_num + 1):
                 self.insert_empty_stage(idx)
-
-        stage = self.__stages[stage_num]
 
         if sort_revs and self.num_stages > 0:
             self.__stages[stage_num].sort()
