@@ -3,7 +3,6 @@ import typing as tp
 from pathlib import Path
 
 import pandas as pd
-from pylatex import Document
 from tabulate import tabulate
 
 from varats.data.databases.blame_diff_metrics_database import (

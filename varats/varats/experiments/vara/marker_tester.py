@@ -32,7 +32,7 @@ class TraceBinaryCreator(base.Extension):  # type: ignore
         else:
             self.extra_ldflags = extra_ldflags
 
-        super(TraceBinaryCreator, self).__init__(*extensions, config=config)
+        super().__init__(*extensions, config=config)
 
     def __call__(
         self,
