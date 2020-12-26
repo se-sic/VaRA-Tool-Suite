@@ -1,43 +1,43 @@
-name: Super-Linter
-
-# Run this workflow every time a new commit pushed to your repository
-on:
-  push:
-    branches: [ vara, vara-dev ]
-  pull_request:
-    branches: [ vara, vara-dev ]
-
-jobs:
-  # Set the job key. The key is displayed as the job name
-  # when a job name is not provided
-  super-lint:
-    # Name the Job
-    name: Lint code base
-    # Set the type of machine to run on
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        python-version: [ 3.6 ]
-
-    steps:
-      # Checks out a copy of your repository on the ubuntu-latest machine
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      # Runs the Super-Linter action
-      - name: Run Super-Linter
-        uses: github/super-linter@v3
-        env:
-          DEFAULT_BRANCH: vara-dev
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VALIDATE_PYTHON_FLAKE8: false
-          VALIDATE_PYTHON_BLACK: false
-          VALIDATE_BASH: false
-          VALIDATE_ALL_CODEBASE: true # TODO: change later
-          PYTHON_PYLINT_CONFIG_FILE: .pylintrc
-          LINTER_RULES_PATH: .
-          ACTIONS_RUNNER_DEBUG: true
-          FILTER_REGEX_EXCLUDE: tests/.*
+#name: Super-Linter
+#
+## Run this workflow every time a new commit pushed to your repository
+#on:
+#  push:
+#    branches: [ vara, vara-dev ]
+#  pull_request:
+#    branches: [ vara, vara-dev ]
+#
+#jobs:
+#  # Set the job key. The key is displayed as the job name
+#  # when a job name is not provided
+#  super-lint:
+#    # Name the Job
+#    name: Lint code base
+#    # Set the type of machine to run on
+#    runs-on: ubuntu-latest
+#
+#    strategy:
+#      matrix:
+#        python-version: [ 3.6 ]
+#
+#    steps:
+#      # Checks out a copy of your repository on the ubuntu-latest machine
+#      - name: Checkout code
+#        uses: actions/checkout@v2
+#        with:
+#          fetch-depth: 0
+#
+#      # Runs the Super-Linter action
+#      - name: Run Super-Linter
+#        uses: github/super-linter@v3
+#        env:
+#          DEFAULT_BRANCH: vara-dev
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#          VALIDATE_PYTHON_FLAKE8: false
+#          VALIDATE_PYTHON_BLACK: false
+#          VALIDATE_BASH: false
+#          VALIDATE_ALL_CODEBASE: true # TODO: change later
+#          PYTHON_PYLINT_CONFIG_FILE: .pylintrc
+#          LINTER_RULES_PATH: .
+#          ACTIONS_RUNNER_DEBUG: true
+#          FILTER_REGEX_EXCLUDE: tests/.*

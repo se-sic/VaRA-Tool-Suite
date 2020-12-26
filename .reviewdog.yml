@@ -1,0 +1,11 @@
+runner:
+  mypy:
+    cmd: mypy --strict --show-column-numbers -p varats
+    errorformat:
+      - "%f:%l:%c: %m"
+    level: error
+
+  pylint:
+    cmd: pylint varats*
+    errorformat:
+      - "%f:%l:%c: %t%n: %m"
