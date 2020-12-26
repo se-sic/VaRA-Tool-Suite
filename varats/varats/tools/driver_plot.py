@@ -79,7 +79,7 @@ def main() -> None:
     __plot(args)
 
 
-def __plot(args: tp.Dict[str, tp.Any]):
+def __plot(args: tp.Dict[str, tp.Any]) -> None:
     if 'extra_args' in args.keys():
         extra_args = {
             e[0].replace('-', '_'): e[1]
