@@ -18,7 +18,6 @@ from varats.mapping.configuration_map import (
     create_configuration_map_from_yaml_doc,
 )
 from varats.provider.release.release_provider import ReleaseType
-from varats.report.report import FileStatusExtension, MetaReport
 from varats.utils.yaml_util import load_yaml, store_as_yaml
 
 CSEntryMapTypes = tp.Union[str, int, tp.List[int]]

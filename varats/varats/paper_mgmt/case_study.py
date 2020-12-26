@@ -9,7 +9,7 @@ from itertools import groupby
 from pathlib import Path
 
 import pygit2
-from benchbuild import Project  # type: ignore
+from benchbuild import Project
 
 from varats.base.sampling_method import (
     NormalSamplingMethod,
