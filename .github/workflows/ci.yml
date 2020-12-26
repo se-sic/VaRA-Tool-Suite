@@ -26,7 +26,7 @@ jobs:
 
     - name: Install system dependencies for CI
       run: |
-         sudo apt-get install time git libgit2-dev ninja-build
+         sudo apt-get install time git libgit2-dev ninja-build libyaml-dev
 
     - name: Install dependencies
       run: |
