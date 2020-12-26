@@ -429,7 +429,6 @@ def extend_with_revs_per_year(
         commits[commit_date.year].append(str(commit.id))
 
     new_rev_items = []  # new revisions that get added to to case_study
-    project_cls = get_project_cls_by_name(case_study.project_name)
     for year, commits_in_year in commits.items():
         samples = min(len(commits_in_year), kwargs['revs_per_year'])
         sample_commit_indices = sorted(
@@ -439,7 +438,7 @@ def extend_with_revs_per_year(
         for commit_index in sample_commit_indices:
             commit_hash = commits_in_year[commit_index]
             if kwargs["ignore_blocked"] and is_revision_blocked(
-                commit_hash, project_cls
+                commit_hash, get_project_cls_by_name(case_study.project_name)
             ):
                 continue
             time_id = cmap.time_id(commit_hash)
