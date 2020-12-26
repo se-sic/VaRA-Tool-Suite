@@ -33,3 +33,4 @@ jobs:
           VALIDATE_PYTHON_BLACK: false
           VALIDATE_BASH: false
           VALIDATE_ALL_CODEBASE: true # TODO: change later
+          ACTIONS_RUNNER_DEBUG: true
