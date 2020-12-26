@@ -12,11 +12,7 @@ import yaml
 
 from varats.base.version_header import VersionHeader
 from varats.report.report import BaseReport, FileStatusExtension, MetaReport
-from varats.utils.git_util import (
-    map_commits,
-    CommitRepoPair,
-    CommitLookupTy,
-)
+from varats.utils.git_util import map_commits, CommitRepoPair, CommitLookupTy
 
 
 class BlameInstInteractions():
