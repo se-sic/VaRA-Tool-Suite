@@ -561,6 +561,4 @@ def extend_with_release_revs(
 
     case_study.include_revisions([
         (rev, cmap.time_id(rev)) for rev in release_revisions
-    ],
-                                 kwargs['merge_stage'],
-                                 release_type=kwargs['release_type'])
+    ], kwargs['merge_stage'])
