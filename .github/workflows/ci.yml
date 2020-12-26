@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: [ vara, vara-dev ]
 
-env:
-  - BB_TMP_DIR=$(pwd)/benchbuild/tmp
-
 jobs:
   build:
     runs-on: ubuntu-latest
