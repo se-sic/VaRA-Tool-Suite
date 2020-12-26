@@ -347,7 +347,7 @@ ignored-classes=optparse.Values,thread._local,_thread._local
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis). It
 # supports qualified module names, as well as Unix pattern matching.
-ignored-modules=benchbuild,matplotlib,seaborn,plumbum,yaml,PyQt5,pandas,numpy,pygit2,scipy,sklearn,argparse_utils,mock,requests_cache,tabulate,requests,packaging,pytest,rich,pygtrie
+ignored-modules=benchbuild,matplotlib,seaborn,plumbum,yaml,PyQt5,PyQt5.QtCore,pandas,numpy,pygit2,scipy,sklearn,argparse_utils,mock,requests_cache,tabulate,requests,packaging,pytest,rich,pygtrie
 
 # Show a hint with possible names when a member name was not found. The aspect
 # of finding the hint is based on edit distance.
