@@ -5,7 +5,6 @@ import logging
 import typing as tp
 from pathlib import Path
 
-from varats.base.commandline_option import CLOSpec
 from varats.data.discover_reports import initialize_reports
 from varats.plot.plots import PlotRegistry, build_plots
 from varats.plots.discover_plots import initialize_plots
