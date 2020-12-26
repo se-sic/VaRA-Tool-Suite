@@ -41,21 +41,5 @@ jobs:
       env:
         REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        reviewdog -runners=mypy -reporter=github-pr-check -conf=.reviewdog.yml
+        reviewdog -runners=mypy -tee -reporter=github-pr-check -conf=.reviewdog.yml
         reviewdog -runners=pylint -reporter=github-pr-check -conf=.reviewdog.yml
-
-  mypy:
-    name: runner / mypy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - uses: tsuyoshicho/action-mypy@v1
-        with:
-          github_token: ${{ secrets.github_token }}
-          # Change reviewdog reporter if you need [github-pr-check,github-check,github-pr-review].
-          reporter: github-pr-check
-          # Change reporter level if you need.
-          # GitHub Status Check won't become failure with warning.
-          #level: warning
