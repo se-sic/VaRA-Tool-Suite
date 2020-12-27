@@ -127,7 +127,8 @@ class Table(metaclass=TableRegistry):
         >>> p = Table('test', project='bar')
         >>> p.table_file_name()
         'bar_test.tex'
-        >>> p = Table('foo', project='bar', table_case_study=CaseStudy('baz', 42))
+        >>> p = Table('foo', project='bar', table_case_study=CaseStudy('baz',\
+                                                                       42))
         >>> p.format = TableFormat.fancy_grid
         >>> p.table_file_name()
         'baz_42_foo.txt'
@@ -210,7 +211,7 @@ def wrap_table_in_document(
             "landscape": "true" if landscape else "false"
         }
     )
-    #set monospace font
+    # set monospace font
     monospace_comm = UnsafeCommand(
         'renewcommand', r'\familydefault', extra_arguments=r'\ttdefault'
     )
@@ -227,4 +228,4 @@ def wrap_table_in_document(
     doc.append(NoEscape(table))
 
     # dump function returns string representation of document
-    return doc.dumps()
+    return tp.cast(str, doc.dumps())

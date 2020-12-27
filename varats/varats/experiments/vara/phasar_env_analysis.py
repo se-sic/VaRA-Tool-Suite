@@ -11,7 +11,7 @@ valid json result and which ones failed.
 import typing as tp
 
 import benchbuild.utils.actions as actions
-from benchbuild import Experiment, Project  # type: ignore
+from benchbuild import Experiment, Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.cmd import mkdir, phasar, timeout
 

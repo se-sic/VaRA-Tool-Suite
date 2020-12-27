@@ -9,7 +9,7 @@ import typing as tp
 from pathlib import Path
 
 import benchbuild.utils.actions as actions
-from benchbuild import Project  # type: ignore
+from benchbuild import Project
 from benchbuild.utils.cmd import mkdir, opt
 from benchbuild.utils.requirements import Requirement, SlurmMem
 

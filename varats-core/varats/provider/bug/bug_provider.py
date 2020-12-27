@@ -139,7 +139,8 @@ class BugProvider(Provider):
         to the provider's project.
 
         Args:
-            introducing_commit: Commit Hash of the introducing commit to look for
+            introducing_commit: commit hash of the introducing commit to look
+                                for
 
         Returns:
             A set of PygitBugs introduced by introducing_commit
@@ -167,7 +168,8 @@ class BugProvider(Provider):
         commit.
 
         Args:
-            introducing_commit: Commit Hash of the introducing commit to look for
+            introducing_commit: commit hash of the introducing commit to look
+            for
 
         Returns:
             A set of RawBugs introduced by introducing_commit
