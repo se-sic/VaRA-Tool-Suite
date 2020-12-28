@@ -1,3 +1,4 @@
+"""This module provides different sampling-method interface classes."""
 import abc
 import json
 import typing as tp
@@ -176,8 +177,8 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
         """
         return list(
             filter(
-                lambda ty: issubclass(ty, NormalSamplingMethod) and ty is
-                not NormalSamplingMethod, cls._methods.values()
+                lambda ty: ty is not NormalSamplingMethod and
+                issubclass(ty, NormalSamplingMethod), cls._methods.values()
             )
         )
 
@@ -343,7 +344,7 @@ class FeatureSamplingMethod(SamplingMethodBase['FeatureSamplingMethod']):
 
     @abc.abstractmethod
     def sample(
-        feature_model, partial_config: tp.Optional[Configuration],
+        self, feature_model, partial_config: tp.Optional[Configuration],
         strategy: tp.Optional[SamplingStrategy]
     ) -> tp.List[Configuration]:
         """

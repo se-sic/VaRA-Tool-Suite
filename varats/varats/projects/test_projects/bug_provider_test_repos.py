@@ -42,6 +42,6 @@ class BasicBugDetectionTestRepo(bb.Project):  # type: ignore
         """Compile the example project."""
         source = local.path(self.source_of_primary)
 
-        c_compiler = bb.compiler.cc(self)  # type: ignore
+        c_compiler = bb.compiler.cc(self)
         with local.cwd(source):
-            bb.watch(c_compiler)("main.c", "-o", "main")  # type: ignore
+            bb.watch(c_compiler)("main.c", "-o", "main")

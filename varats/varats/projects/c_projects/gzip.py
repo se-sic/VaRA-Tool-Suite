@@ -71,12 +71,12 @@ class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
             "-Wno-string-plus-int", "-Wno-shift-negative-value"
         ]
 
-        clang = bb.compiler.cc(self)  # type: ignore
+        clang = bb.compiler.cc(self)
         with local.cwd(gzip_version_source):
             with local.env(CC=str(clang)):
-                bb.watch(local["./bootstrap"])()  # type: ignore
-                bb.watch(local["./configure"])()  # type: ignore
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))  # type: ignore
+                bb.watch(local["./bootstrap"])()
+                bb.watch(local["./configure"])()
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
     def get_release_revisions(
