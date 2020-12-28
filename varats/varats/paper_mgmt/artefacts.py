@@ -1,9 +1,9 @@
 """
 This module allows to attach :class:`artefact definitions<Artefact>` to a.
 
-:class:`paper config<varats.paper_mgmt.paper_config>`. This way, the artefacts, like
-:class:`plots<PlotArtefact>` or result tables, can be generated from result
-files automatically.
+:class:`paper config<varats.paper_mgmt.paper_config>`. This way, the artefacts,
+like :class:`plots<PlotArtefact>` or result tables, can be generated from
+result files automatically.
 
 Typically, a paper config has a file ``artefacts.yaml`` that manages artefact
 definitions.

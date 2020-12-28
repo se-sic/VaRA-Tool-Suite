@@ -9,7 +9,7 @@ from itertools import groupby
 from pathlib import Path
 
 import pygit2
-from benchbuild import Project  # type: ignore
+from benchbuild import Project
 
 from varats.base.sampling_method import (
     NormalSamplingMethod,
@@ -429,7 +429,6 @@ def extend_with_revs_per_year(
         commits[commit_date.year].append(str(commit.id))
 
     new_rev_items = []  # new revisions that get added to to case_study
-    project_cls = get_project_cls_by_name(case_study.project_name)
     for year, commits_in_year in commits.items():
         samples = min(len(commits_in_year), kwargs['revs_per_year'])
         sample_commit_indices = sorted(
@@ -439,7 +438,7 @@ def extend_with_revs_per_year(
         for commit_index in sample_commit_indices:
             commit_hash = commits_in_year[commit_index]
             if kwargs["ignore_blocked"] and is_revision_blocked(
-                commit_hash, project_cls
+                commit_hash, get_project_cls_by_name(case_study.project_name)
             ):
                 continue
             time_id = cmap.time_id(commit_hash)
@@ -485,8 +484,7 @@ def extend_with_distrib_sampling(
 
     case_study.include_revisions(
         sampling_method.sample_n(revision_list, kwargs['num_rev']),
-        kwargs['merge_stage'],
-        sampling_method=kwargs['distribution']
+        kwargs['merge_stage']
     )
 
 
@@ -563,6 +561,4 @@ def extend_with_release_revs(
 
     case_study.include_revisions([
         (rev, cmap.time_id(rev)) for rev in release_revisions
-    ],
-                                 kwargs['merge_stage'],
-                                 release_type=kwargs['release_type'])
+    ], kwargs['merge_stage'])

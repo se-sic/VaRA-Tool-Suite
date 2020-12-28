@@ -3,7 +3,7 @@ import typing as tp
 from pathlib import Path
 
 import benchbuild.utils.actions as actions
-from benchbuild import Project  # type: ignore
+from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils.cmd import mkdir
 from plumbum import local

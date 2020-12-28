@@ -54,19 +54,18 @@ class Qemu(bb.Project, CVEProviderHook):  # type: ignore
 
         self.cflags += ['-Wno-tautological-type-limit-compare']
 
-        c_compiler = bb.compiler.cc(self)  # type: ignore
-        cxx_compiler = bb.compiler.cxx(self)  # type: ignore
+        c_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
         build_folder = qemu_source / "build"
         build_folder.mkdir()
 
         with local.cwd(build_folder):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-                configure = bb.watch(local["../configure"])  # type: ignore
+                configure = bb.watch(local["../configure"])
                 configure(
                     "--disable-debug-info", "--target-list=x86_64-softmmu"
                 )
-                bb.watch(make  # type: ignore
-                        )("-j", get_number_of_jobs(bb_cfg()))
+                bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

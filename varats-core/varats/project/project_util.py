@@ -13,9 +13,7 @@ from benchbuild.utils.cmd import cp, find, git, mkdir
 from plumbum import local
 
 
-def get_project_cls_by_name(
-    project_name: str
-) -> tp.Type[bb.Project]:  # type: ignore
+def get_project_cls_by_name(project_name: str) -> tp.Type[bb.Project]:
     """Look up a BenchBuild project by it's name."""
     for proj in bb.project.ProjectRegistry.projects:
         if proj.endswith('gentoo') or proj.endswith("benchbuild"):
@@ -23,7 +21,7 @@ def get_project_cls_by_name(
             continue
 
         if proj.startswith(project_name):
-            project: tp.Type[bb.Project  # type: ignore
+            project: tp.Type[bb.Project
                             ] = bb.project.ProjectRegistry.projects[proj]
             return project
 

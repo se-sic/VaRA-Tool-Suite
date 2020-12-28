@@ -2,12 +2,10 @@
 blame experiments that have a similar experiment setup."""
 
 import typing as tp
-from os import path
 
 import benchbuild.utils.actions as actions
-from benchbuild import Experiment, Project  # type: ignore
+from benchbuild import Experiment, Project
 from benchbuild.extensions import compiler, run, time
-from plumbum import local
 
 from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,

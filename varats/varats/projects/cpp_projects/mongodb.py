@@ -52,11 +52,11 @@ class MongoDB(bb.Project, CVEProviderHook):  # type: ignore
         """Compile the project."""
         mongodb_version_source = local.path(self.source_of(self.primary_source))
 
-        c_compiler = bb.compiler.cc(self)  # type: ignore
-        cxx_compiler = bb.compiler.cxx(self)  # type: ignore
+        c_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
         with local.cwd(mongodb_version_source):
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
-                bb.watch(python3)(  # type: ignore
+                bb.watch(python3)(
                     "buildscripts/scons.py",
                     f"-j {get_number_of_jobs(bb_cfg())}", "-d",
                     "--disable-warnings-as-errors"
