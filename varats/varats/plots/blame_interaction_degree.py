@@ -1,13 +1,14 @@
 """Generate plots for the degree of blame interactions."""
 import abc
 import logging
+import tempfile
 import typing as tp
 
 import matplotlib.pyplot as plt
 import matplotlib.style as style
 import numpy as np
 import pandas as pd
-from graphviz import Graph, Digraph
+from graphviz import Digraph
 from matplotlib import cm
 from plotly import graph_objs as go
 from plotly import io as pio
@@ -1007,7 +1008,7 @@ class BlameInteractionGraphviz(BlameDegree):
         except PlotDataEmpty:
             LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
             return
-        self.__graph.view()
+        self.__graph.view(tempfile.mktemp())
 
     def save(
         self, path: tp.Optional[Path] = None, filetype: str = 'png'
