@@ -17,7 +17,8 @@ from varats.utils.github_util import (
 )
 
 if tp.TYPE_CHECKING:
-    from github.PaginatedList import PaginatedList  # pylint: disable=W0611
+    # pylint: disable=ungrouped-imports,unused-import
+    from github.PaginatedList import PaginatedList
 
 
 class PygitBug:

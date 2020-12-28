@@ -170,13 +170,13 @@ def prepare_plots(**args: tp.Any) -> tp.Iterable['varats.plot.plot.Plot']:
             args['plot_case_study'] = case_study
             plots.append(prepare_plot(**args))
         return plots
-    else:
-        if 'project' in args:
-            args['get_cmap'] = create_lazy_commit_map_loader(
-                args['project'], args.get('cmap', None)
-            )
-        if 'cs_path' in args:
-            case_study_path = Path(args['cs_path'])
-            args['plot_case_study'] = load_case_study_from_file(case_study_path)
 
-        return [prepare_plot(**args)]
+    if 'project' in args:
+        args['get_cmap'] = create_lazy_commit_map_loader(
+            args['project'], args.get('cmap', None)
+        )
+    if 'cs_path' in args:
+        case_study_path = Path(args['cs_path'])
+        args['plot_case_study'] = load_case_study_from_file(case_study_path)
+
+    return [prepare_plot(**args)]

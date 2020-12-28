@@ -345,7 +345,8 @@ def _get_artefact_files_info(artefact: Artefact) -> tp.List[tp.Dict[str, str]]:
             "file_name": plot.plot_file_name(artefact.file_format),
             "project": plot.plot_kwargs.get("project", "[UNKNOWN]")
         } for plot in plots]
-    elif artefact.artefact_type == ArtefactType.table:
+
+    if artefact.artefact_type == ArtefactType.table:
         artefact = tp.cast(TableArtefact, artefact)
         tables = prepare_tables(
             table_type=artefact.table_type,
@@ -357,6 +358,7 @@ def _get_artefact_files_info(artefact: Artefact) -> tp.List[tp.Dict[str, str]]:
             "file_name": table.table_file_name(),
             "project": table.table_kwargs.get("project", "[UNKNOWN]")
         } for table in tables]
+
     raise AssertionError(
         f"Missing implementation for artefact type {artefact.artefact_type}"
     )

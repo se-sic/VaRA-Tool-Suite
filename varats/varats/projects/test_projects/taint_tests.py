@@ -57,10 +57,10 @@ class TaintTests(bb.Project):  # type: ignore
         """Compile the project."""
         source = local.path(self.source_of_primary)
 
-        clang = bb.compiler.cxx(self)  # type: ignore
+        clang = bb.compiler.cxx(self)
         with local.cwd(source):
             for file in self.CPP_FILES:
-                bb.watch(clang)(  # type: ignore
+                bb.watch(clang)(
                     "{name}/{file}".format(name=self.NAME, file=file), "-o",
                     file.replace('.cpp', '')
                 )
