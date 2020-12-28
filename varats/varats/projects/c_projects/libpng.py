@@ -52,13 +52,13 @@ class Libpng(bb.Project, CVEProviderHook):  # type: ignore
         """Compile the project."""
         libpng_source = local.path(self.source_of(self.primary_source))
 
-        compiler = bb.compiler.cc(self)  # type: ignore
+        compiler = bb.compiler.cc(self)
         mkdir(libpng_source / "build")
         with local.cwd(libpng_source / "build"):
             with local.env(CC=str(compiler)):
-                bb.watch(cmake)("-G", "Unix Makefiles", "..")  # type: ignore
+                bb.watch(cmake)("-G", "Unix Makefiles", "..")
 
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))  # type: ignore
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

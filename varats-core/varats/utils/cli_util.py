@@ -3,11 +3,8 @@
 import logging
 import os
 import typing as tp
-from pathlib import Path
 
 from rich.traceback import install
-
-from varats.utils.settings import vara_cfg
 
 
 def cli_yn_choice(question: str, default: str = 'y') -> bool:

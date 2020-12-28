@@ -96,18 +96,18 @@ class Xz(bb.Project, CVEProviderHook):  # type: ignore
 
         self.cflags += ["-fPIC"]
 
-        clang = bb.compiler.cc(self)  # type: ignore
+        clang = bb.compiler.cc(self)
         with local.cwd(xz_version_source):
             with local.env(CC=str(clang)):
-                bb.watch(autoreconf)("--install")  # type: ignore
-                configure = bb.watch(local["./configure"])  # type: ignore
+                bb.watch(autoreconf)("--install")
+                configure = bb.watch(local["./configure"])
 
                 if xz_version in revisions_wo_dynamic_linking:
                     configure("--enable-dynamic=yes")
                 else:
                     configure()
 
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))  # type: ignore
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

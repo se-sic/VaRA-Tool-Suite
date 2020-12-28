@@ -1,0 +1,45 @@
+name: reviewdog
+
+on:
+  pull_request:
+    branches: [ vara, vara-dev ]
+
+jobs:
+  reviewdog:
+    name: reviewdog
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install ./varats-core
+        pip install ./varats
+        pip install mypy
+        pip install pylint
+        ########################################################################
+        # Uninstalling `rich` is a hack to make the code base checkable with
+        # mypy.  mypy get's confused when discovering rich and by that does no
+        # longer any type checking.
+        ########################################################################
+        pip uninstall -y rich
+        ########################################################################
+    - name: Setup reviewdog
+      run: |
+        mkdir -p $HOME/bin && curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh| sh -s -- -b $HOME/bin
+        echo "$HOME/bin" >> $GITHUB_PATH
+        echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+    - name: Run reviewdog
+      env:
+        REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        reviewdog -runners=mypy -tee -reporter=github-pr-check -conf=.reviewdog.yml
+        reviewdog -runners=pylint -reporter=github-pr-check -conf=.reviewdog.yml
