@@ -145,8 +145,8 @@ class BlameInteractionDegreeDatabase(
                     )
 
                     for i, _ in enumerate(inter_degrees):
-                        degree = tp.cast(tp.List, inter_degrees)[i]
-                        lib_amount = tp.cast(tp.List, inter_amounts)[i]
+                        degree = tp.cast(tp.List[int], inter_degrees)[i]
+                        lib_amount = tp.cast(tp.List[int], inter_amounts)[i]
 
                         interaction_data_dict = build_dataframe_row(
                             degree_type=DegreeType.interaction,
@@ -163,7 +163,7 @@ class BlameInteractionDegreeDatabase(
                 degrees: tp.List[int],
                 amounts: tp.List[int],
                 sum_amounts: int,
-            ):
+            ) -> None:
                 for k, _ in enumerate(degrees):
                     data_dict = build_dataframe_row(
                         degree_type=degree_type,
@@ -176,24 +176,24 @@ class BlameInteractionDegreeDatabase(
             # Append author rows
             append_rows_of_degree_type(
                 degree_type=DegreeType.author,
-                degrees=tp.cast(tp.List, author_degrees),
-                amounts=tp.cast(tp.List, author_amounts),
+                degrees=tp.cast(tp.List[int], author_degrees),
+                amounts=tp.cast(tp.List[int], author_amounts),
                 sum_amounts=tp.cast(int, author_total)
             )
 
             # Append max_time rows
             append_rows_of_degree_type(
                 degree_type=DegreeType.max_time,
-                degrees=tp.cast(tp.List, max_time_buckets),
-                amounts=tp.cast(tp.List, max_time_amounts),
+                degrees=tp.cast(tp.List[int], max_time_buckets),
+                amounts=tp.cast(tp.List[int], max_time_amounts),
                 sum_amounts=tp.cast(int, total_max_time_amounts)
             )
 
             # Append avg_time rows
             append_rows_of_degree_type(
                 degree_type=DegreeType.avg_time,
-                degrees=tp.cast(tp.List, avg_time_buckets),
-                amounts=tp.cast(tp.List, avg_time_amounts),
+                degrees=tp.cast(tp.List[int], avg_time_buckets),
+                amounts=tp.cast(tp.List[int], avg_time_amounts),
                 sum_amounts=tp.cast(int, total_avg_time_amounts)
             )
 

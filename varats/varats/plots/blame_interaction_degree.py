@@ -8,7 +8,7 @@ import matplotlib.style as style
 import numpy as np
 import pandas as pd
 from matplotlib import cm
-from plotly import graph_objs as go
+from plotly import graph_objs as go  # type: ignore
 from plotly import io as pio
 from plumbum import Path
 
@@ -605,7 +605,9 @@ class BlameDegree(Plot):
         sankey_flow_color_list: tp.List[str] = []
         sankey_node_color_list: tp.List[str] = []
 
-        if len(all_distinct_lib_names) > len(plot_cfg['colormaps']):
+        num_colormaps: int = len(tp.cast(tp.List[str], plot_cfg['colormaps']))
+
+        if len(all_distinct_lib_names) > num_colormaps:
             LOG.warning(
                 "Not enough colormaps for all libraries provided. "
                 "Colormaps will be reused."
@@ -615,15 +617,15 @@ class BlameDegree(Plot):
                 enumerate(lib_name_to_color_shades_mapping):
 
             # If there are not enough colormaps provided, reuse them.
-            if len(tp.cast(tp.List, plot_cfg['colormaps'])) <= lib_idx:
+            if num_colormaps <= lib_idx:
                 lib_idx = 0
 
             shades = cm.get_cmap(
-                tp.cast(tp.List, plot_cfg['colormaps'])[lib_idx]
+                tp.cast(tp.List[str], plot_cfg['colormaps'])[lib_idx]
             )(np.linspace(0.25, 1, highest_degree + 1))
 
             lib_name_to_colormap_mapping[lib_name] = cm.get_cmap(
-                tp.cast(tp.List, plot_cfg['colormaps'])[lib_idx]
+                tp.cast(tp.List[str], plot_cfg['colormaps'])[lib_idx]
             )
             tmp_color_dict = {}
 
