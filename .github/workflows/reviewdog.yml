@@ -34,7 +34,7 @@ jobs:
         ########################################################################
     - name: Setup reviewdog
       run: |
-        mkdir -p $HOME/bin && curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh| sh -s -- -b $HOME/bin
+        mkdir -p $HOME/bin && curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/release-v0.10/install.sh| sh -s -- -b $HOME/bin
         echo "$HOME/bin" >> $GITHUB_PATH
         echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
     - name: Run reviewdog
@@ -42,4 +42,4 @@ jobs:
         REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         reviewdog -runners=mypy -tee -reporter=github-pr-check -conf=.reviewdog.yml
-        reviewdog -runners=pylint -reporter=github-pr-check -conf=.reviewdog.yml
+        reviewdog -runners=pylint -tee -reporter=github-pr-check -conf=.reviewdog.yml
