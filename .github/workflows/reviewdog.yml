@@ -32,6 +32,7 @@ jobs:
         ########################################################################
         pip uninstall -y rich
         ########################################################################
+        pylint --version
     - name: Setup reviewdog
       run: |
         mkdir -p $HOME/bin && curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/release-v0.10/install.sh| sh -s -- -b $HOME/bin
