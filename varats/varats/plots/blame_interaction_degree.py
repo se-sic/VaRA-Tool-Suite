@@ -350,25 +350,9 @@ class BlameDegree(Plot):
 
     def _graphviz_plot(
         self,
-        view_mode: bool,
         degree_type: DegreeType,
         revision: str,
-        extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
-        with_churn: bool = True
-    ) -> None:
-        plot_cfg = {
-            'linewidth': 1 if view_mode else 0.25,
-            'legend_size': 8 if view_mode else 2,
-            'xtick_size': 10 if view_mode else 2,
-            'lable_modif': lambda x: x,
-            'legend_title': 'MISSING legend_title',
-            'legend_visible': True,
-            'fig_title': 'MISSING figure title',
-            'edgecolor': 'black',
-            'color_map': cm.get_cmap('tab10')
-        }
-        if extra_plot_cfg is not None:
-            plot_cfg.update(extra_plot_cfg)
+    ) -> Digraph:
 
         style.use(self.style)
 
@@ -376,6 +360,8 @@ class BlameDegree(Plot):
         df = df[df.degree_type == degree_type.value]
         df = df[df.revision == revision]
         df.sort_values(by=['time_id'], inplace=True)
+
+        # TODO: Add base_hash and inter_hash columns to db
 
         # ---- TODO: remove test columns ----
         base_hash = ["a1", "a2", "a2", "a3", "a1"]
@@ -391,38 +377,37 @@ class BlameDegree(Plot):
 
         # TODO: Add graphviz to requirements and setup.py
 
-        g = Digraph(
-            "G",
-            filename="test.gv",
-        )
+        g = Digraph("Digraph")
 
-        mapping: tp.Dict[str, tp.List[str]] = {
+        lib_to_hashes_mapping: tp.Dict[str, tp.List[str]] = {
             lib_name: [] for lib_name in all_distinct_lib_names
         }
-        edge_tuples: tp.List[tp.Tuple[str, str]] = []
+        edge_tuple_list: tp.List[tp.Tuple[str, str]] = []
 
         for _, row in df.iterrows():
-            base_hash = str(row['base_hash'])
-            base_lib = str(row['base_lib'])
-            inter_hash = str(row['inter_hash'])
-            inter_lib = str(row['inter_lib'])
+            base_hash = row['base_hash']
+            base_lib = row['base_lib']
+            inter_hash = row['inter_hash']
+            inter_lib = row['inter_lib']
 
             edge_tuple = (base_hash, inter_hash)
-            edge_tuples.append(edge_tuple)
+            edge_tuple_list.append(edge_tuple)
 
-            mapping[base_lib].append(base_hash)
-            mapping[inter_lib].append(inter_hash)
+            lib_to_hashes_mapping[base_lib].append(base_hash)
+            lib_to_hashes_mapping[inter_lib].append(inter_hash)
 
-        for key, value in mapping.items():
+        for key, value in lib_to_hashes_mapping.items():
+
+            # 'cluster_' prefix is necessary for grouping commits to libraries
             with g.subgraph(name="cluster_" + key) as sg:
                 sg.attr(label=key)
                 for node in value:
                     sg.node(node)
 
-        for edge in edge_tuples:
+        for edge in edge_tuple_list:
             g.edge(edge[0], edge[1])
 
-        g.view()
+        return g
 
     def _fraction_overview_plot(
         self,
@@ -890,12 +875,12 @@ class BlameInteractionDegreeMultiLib(BlameDegree):
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        if 'base_lib' and 'inter_lib' in self.plot_kwargs:
-            base_lib = self.plot_kwargs['base_lib']
-            inter_lib = self.plot_kwargs['inter_lib']
-        else:
+        if 'base_lib' and 'inter_lib' not in self.plot_kwargs:
             LOG.warning("No library names were provided.")
             raise PlotDataEmpty
+
+        base_lib = self.plot_kwargs['base_lib']
+        inter_lib = self.plot_kwargs['inter_lib']
 
         extra_plot_cfg = {
             'legend_title': 'Interaction degrees',
@@ -992,17 +977,59 @@ class BlameLibraryInteractions(BlameDegree):
 
 
 class BlameInteractionGraphviz(BlameDegree):
+    """
+    Plotting the interactions between all commits of multiple libraries of a
+    chosen revision.
+
+    Pass the selected revision as key-value pair after the plot name. E.g.,
+    revision=Foo
+    """
 
     NAME = 'b_interaction_graphviz'
 
     def __init__(self, **kwargs: tp.Any):
         super().__init__(self.NAME, **kwargs)
+        self.__graph = Digraph()
 
     def plot(self, view_mode: bool) -> None:
-        extra_plot_cfg = {'legend_title': 'foo', 'fig_title': 'bar'}
+
+        if 'revision' not in self.plot_kwargs:
+            LOG.warning("No revision for plotting was chosen.")
+            raise PlotDataEmpty
+
         revision = self.plot_kwargs['revision']
-        self._graphviz_plot(
-            view_mode, DegreeType.interaction, revision, extra_plot_cfg
+
+        self.__graph = self._graphviz_plot(DegreeType.interaction, revision)
+
+    def show(self) -> None:
+        try:
+            self.plot(True)
+        except PlotDataEmpty:
+            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            return
+        self.__graph.view()
+
+    def save(
+        self, path: tp.Optional[Path] = None, filetype: str = 'png'
+    ) -> None:
+        try:
+            self.plot(False)
+        except PlotDataEmpty:
+            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            return
+
+        if path is None:
+            plot_dir = Path(self.plot_kwargs["plot_dir"])
+        else:
+            plot_dir = path
+
+        # TODO: Fix double filetypes in name (e.g., foo.png.png)
+
+        self.__graph.render(
+            filename=self.plot_file_name(filetype),
+            directory=plot_dir,
+            format=filetype,
+            cleanup=True
         )
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
