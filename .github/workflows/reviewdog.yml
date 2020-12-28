@@ -32,6 +32,7 @@ jobs:
         ########################################################################
         pip uninstall -y rich
         ########################################################################
+        pylint --version
     - name: Setup reviewdog
       run: |
         mkdir -p $HOME/bin && curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh| sh -s -- -b $HOME/bin
@@ -41,5 +42,5 @@ jobs:
       env:
         REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        reviewdog -runners=mypy -tee -reporter=github-pr-check -conf=.reviewdog.yml
+        reviewdog -runners=mypy -reporter=github-pr-check -conf=.reviewdog.yml
         reviewdog -runners=pylint -reporter=github-pr-check -conf=.reviewdog.yml
