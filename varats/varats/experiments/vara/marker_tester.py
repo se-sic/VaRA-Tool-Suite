@@ -3,7 +3,7 @@ entry/exits."""
 
 import typing as tp
 
-from benchbuild import Experiment, Project  # type: ignore
+from benchbuild import Experiment, Project
 from benchbuild.extensions import base, compiler
 from benchbuild.utils import run
 from benchbuild.utils.actions import Step
@@ -32,7 +32,7 @@ class TraceBinaryCreator(base.Extension):  # type: ignore
         else:
             self.extra_ldflags = extra_ldflags
 
-        super(TraceBinaryCreator, self).__init__(*extensions, config=config)
+        super().__init__(*extensions, config=config)
 
     def __call__(
         self,

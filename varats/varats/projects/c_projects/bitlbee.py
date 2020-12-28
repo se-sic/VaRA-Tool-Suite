@@ -50,12 +50,12 @@ class Bitlbee(bb.Project, CVEProviderHook):  # type: ignore
         """Compile the project."""
         bitlbee_source = local.path(self.source_of(self.primary_source))
 
-        compiler = bb.compiler.cc(self)  # type: ignore
+        compiler = bb.compiler.cc(self)
         with local.cwd(bitlbee_source):
             with local.env(CC=str(compiler)):
-                bb.watch(local["./configure"])()  # type: ignore
+                bb.watch(local["./configure"])()
 
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))  # type: ignore
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
