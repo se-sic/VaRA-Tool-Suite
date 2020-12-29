@@ -265,7 +265,7 @@ class BlameDegree(Plot):
             degree_type, interaction_plot_df, commit_map
         )
 
-        def _gen_multi_lib_degree_plot():
+        def _gen_multi_lib_degree_plot() -> None:
             fig = plt.figure()
             grid_spec = fig.add_gridspec(3, 1)
 
@@ -442,7 +442,7 @@ class BlameDegree(Plot):
         for inter_fraction in inter_lib_fractions.values():
             inter_plot_data.append(inter_fraction)
 
-        def _gen_fraction_overview_plot():
+        def _gen_fraction_overview_plot() -> None:
             fig = plt.figure()
             grid_spec = fig.add_gridspec(3, 1)
 
@@ -596,7 +596,7 @@ class BlameDegree(Plot):
         interaction_plot_df.sort_values(by=['time_id'], inplace=True)
         interaction_plot_df.reset_index(inplace=True)
 
-        def _gen_lib_name_dict(df: pd.DataFrame):
+        def _gen_lib_name_dict(df: pd.DataFrame) -> tp.Dict[str, tp.List[str]]:
             name_dict: tp.Dict[str, tp.List[str]] = {
                 "base_lib_names": _get_distinct_base_lib_names(df),
                 "inter_lib_names": _get_distinct_inter_lib_names(df)
