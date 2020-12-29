@@ -4,8 +4,8 @@
 
 | branch   | status                                                                                                                                  |
 | :----    | :---:                                                                                                                                   |
-| vara     | [![Build Status](https://travis-ci.com/se-passau/VaRA-Tool-Suite.svg?branch=vara)](https://travis-ci.com/se-passau/VaRA-Tool-Suite)     |
-| vara-dev | [![Build Status](https://travis-ci.com/se-passau/VaRA-Tool-Suite.svg?branch=vara-dev)](https://travis-ci.com/se-passau/VaRA-Tool-Suite) |
+| vara     | ![Python CI](https://github.com/se-sic/VaRA-Tool-Suite/workflows/Python%20CI/badge.svg?branch=vara)                                     |
+| vara-dev | ![Python CI](https://github.com/se-sic/VaRA-Tool-Suite/workflows/Python%20CI/badge.svg?branch=vara-dev)                                 |
 
 ## Using VaRA with VaRA-TS
 VaRA is a variability-aware framework to analyze interactions between code regions that convey a semantic meaning for the researcher, e.g., `CommitRegions` represent blocks of code that belongs to the same commit.
