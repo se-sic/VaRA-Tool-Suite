@@ -166,7 +166,6 @@ class BlameDegree(Plot):
             ),
             linewidth=plot_cfg['linewidth']
         )
-
         legend = main_axis.legend(
             title=plot_cfg['legend_title'],
             loc='upper left',
@@ -181,7 +180,6 @@ class BlameDegree(Plot):
             family='monospace'
         )
         legend.set_visible(plot_cfg['legend_visible'])
-
         # annotate CVEs
         with_cve = self.plot_kwargs.get("with_cve", False)
         with_bugs = self.plot_kwargs.get("with_bugs", False)
@@ -194,14 +192,12 @@ class BlameDegree(Plot):
                     draw_cves(main_axis, project, unique_revisions, plot_cfg)
                 if with_bugs:
                     draw_bugs(main_axis, project, unique_revisions, plot_cfg)
-
         # draw churn subplot
         if with_churn:
             draw_code_churn_for_revisions(
                 churn_axis, self.plot_kwargs['project'],
                 self.plot_kwargs['get_cmap'](), unique_revisions
             )
-
         plt.setp(x_axis.get_yticklabels(), fontsize=8, fontfamily='monospace')
         plt.setp(
             x_axis.get_xticklabels(),
@@ -303,7 +299,6 @@ class BlameDegree(Plot):
             ),
             linewidth=plot_cfg['linewidth']
         )
-
         legend = main_axis.legend(
             title=plot_cfg['legend_title'],
             loc='upper left',
@@ -318,7 +313,6 @@ class BlameDegree(Plot):
             family='monospace'
         )
         legend.set_visible(plot_cfg['legend_visible'])
-
         # annotate CVEs
         with_cve = self.plot_kwargs.get("with_cve", False)
         with_bugs = self.plot_kwargs.get("with_bugs", False)
@@ -331,14 +325,12 @@ class BlameDegree(Plot):
                     draw_cves(main_axis, project, unique_revisions, plot_cfg)
                 if with_bugs:
                     draw_bugs(main_axis, project, unique_revisions, plot_cfg)
-
         # draw churn subplot
         if with_churn:
             draw_code_churn_for_revisions(
                 churn_axis, self.plot_kwargs['project'],
                 self.plot_kwargs['get_cmap'](), unique_revisions
             )
-
         plt.setp(x_axis.get_yticklabels(), fontsize=8, fontfamily='monospace')
         plt.setp(
             x_axis.get_xticklabels(),
@@ -427,13 +419,13 @@ class BlameDegree(Plot):
                 )
                 inter_lib_fractions[inter_name].append(current_fraction)
 
-        base_plot_data: tp.List[tp.List] = [
-            base_fraction for base_fraction in base_lib_fractions.values()
-        ]
+        base_plot_data = []
+        for base_fraction in base_lib_fractions.values():
+            base_plot_data.append(base_fraction)
 
-        inter_plot_data: tp.List[tp.List] = [
-            inter_fraction for inter_fraction in inter_lib_fractions.values()
-        ]
+        inter_plot_data = []
+        for inter_fraction in inter_lib_fractions.values():
+            inter_plot_data.append(inter_fraction)
 
         fig = plt.figure()
         grid_spec = fig.add_gridspec(3, 1)
@@ -577,127 +569,174 @@ class BlameDegree(Plot):
             plot_cfg.update(extra_plot_cfg)
 
         style.use(self.style)
+        interaction_plot_df = self._get_degree_data()
+        interaction_plot_df = interaction_plot_df[
+            interaction_plot_df.degree_type == degree_type.value]
+        interaction_plot_df.sort_values(by=['time_id'], inplace=True)
+        interaction_plot_df.reset_index(inplace=True)
 
-        df = self._get_degree_data()
-        df = df[df.degree_type == degree_type.value]
-        df.sort_values(by=['time_id'], inplace=True)
-        df.reset_index(inplace=True)
-        revision_df = pd.DataFrame(df["revision"])
-        unique_revisions = list(revision_df["revision"].unique())
-        highest_degree = df["degree"].max()
+        def _gen_lib_name_dict(df: pd.DataFrame):
+            name_dict: tp.Dict[str, tp.List[str]] = {
+                "base_lib_names": _get_distinct_base_lib_names(df),
+                "inter_lib_names": _get_distinct_inter_lib_names(df)
+            }
 
-        base_lib_names: tp.List[str] = _get_distinct_base_lib_names(df)
-        inter_lib_names: tp.List[str] = _get_distinct_inter_lib_names(df)
+            # Duplicated lib names are necessary to avoid cycles in the plot
+            name_dict["all_lib_names"] = name_dict[
+                "base_lib_names"] + name_dict["inter_lib_names"]
 
-        # Duplicated lib names are necessary to avoid cycles in the plot
-        all_lib_names: tp.List[str] = base_lib_names + inter_lib_names
-        all_distinct_lib_names = sorted(set(all_lib_names))
-        base_lib_name_index_mapping: tp.Dict[str, int] = {}
-        inter_lib_name_index_mapping: tp.Dict[str, int] = {}
-        lib_name_to_colormap_mapping: tp.Dict[str, tp.Any] = {}
-        lib_name_to_color_shades_mapping: tp.Dict[str, tp.Dict[int, str]] = \
-            dict((name, dict()) for name in all_distinct_lib_names)
-
-        sankey_src_idx_list: tp.List[int] = []
-        sankey_tgt_idx_list: tp.List[int] = []
-        sankey_degree_list: tp.List[int] = []
-        sankey_fraction_list: tp.List[float] = []
-        sankey_flow_color_list: tp.List[str] = []
-        sankey_node_color_list: tp.List[str] = []
-
-        num_colormaps: int = len(tp.cast(tp.List[str], plot_cfg['colormaps']))
-
-        if len(all_distinct_lib_names) > num_colormaps:
-            LOG.warning(
-                "Not enough colormaps for all libraries provided. "
-                "Colormaps will be reused."
+            name_dict["all_distinct_lib_names"] = sorted(
+                set(name_dict["all_lib_names"])
             )
+            return name_dict
 
-        for lib_idx, lib_name in \
-                enumerate(lib_name_to_color_shades_mapping):
+        lib_name_dict = _gen_lib_name_dict(interaction_plot_df)
 
-            # If there are not enough colormaps provided, reuse them.
-            if num_colormaps <= lib_idx:
-                lib_idx = 0
-
-            shades = cm.get_cmap(
-                tp.cast(tp.List[str], plot_cfg['colormaps'])[lib_idx]
-            )(np.linspace(0.25, 1, highest_degree + 1))
-
-            lib_name_to_colormap_mapping[lib_name] = cm.get_cmap(
-                tp.cast(tp.List[str], plot_cfg['colormaps'])[lib_idx]
+        def _build_color_mappings(
+        ) -> tp.Tuple[tp.Dict[str, tp.Any], tp.Dict[str, tp.Dict[int, str]]]:
+            libs_to_colormaps: tp.Dict[str, tp.Any] = {}
+            libs_to_shades: tp.Dict[str, tp.Dict[int, str]] = dict(
+                (name, dict())
+                for name in lib_name_dict["all_distinct_lib_names"]
             )
-            tmp_color_dict = {}
-
-            for shade_idx, shade in enumerate(shades):
-                tmp_color_dict[shade_idx] = str(tuple(shade))
-
-            lib_name_to_color_shades_mapping[lib_name] = tmp_color_dict
-
-        for lib_name in all_lib_names:
-            sankey_node_color_list.append(
-                f"rgba{tuple(lib_name_to_colormap_mapping[lib_name](0.5))}"
+            num_colormaps: int = len(
+                tp.cast(tp.List[str], plot_cfg['colormaps'])
             )
+            highest_degree = interaction_plot_df["degree"].max()
 
-        for idx, name in enumerate(base_lib_names):
-            base_lib_name_index_mapping[name] = idx
-
-        idx_offset = len(base_lib_name_index_mapping)
-
-        for idx, name in enumerate(inter_lib_names):
-            # Continue the index for the interacting libraries
-            inter_lib_name_index_mapping[name] = idx + idx_offset
-
-        for _, row in df.iterrows():
-            base_lib = str(row["base_lib"])
-            inter_lib = str(row["inter_lib"])
-            fraction = float(row["fraction"])
-            degree = int(row["degree"])
-            color = f"rgba{lib_name_to_color_shades_mapping[base_lib][degree]}"
-
-            sankey_src_idx_list.append(base_lib_name_index_mapping[base_lib])
-            sankey_tgt_idx_list.append(inter_lib_name_index_mapping[inter_lib])
-            sankey_fraction_list.append(fraction * 100 / len(unique_revisions))
-            sankey_degree_list.append(degree)
-            sankey_flow_color_list.append(color)
-
-        layout = go.Layout(
-            autosize=False, width=plot_cfg['width'], height=plot_cfg['height']
-        )
-        fig = go.Figure(
-            data=[
-                go.Sankey(
-                    arrangement="perpendicular",
-                    node=dict(
-                        pad=15,
-                        thickness=20,
-                        line=dict(color="black", width=0.5),
-                        label=all_lib_names,
-                        color=sankey_node_color_list,
-                        hovertemplate='Fraction ratio = %{'
-                        'value}%<extra></extra> '
-                    ),
-                    link=dict(
-                        source=sankey_src_idx_list,
-                        target=sankey_tgt_idx_list,
-                        value=sankey_fraction_list,
-                        color=sankey_flow_color_list,
-                        customdata=sankey_degree_list,
-                        hovertemplate='Interaction has a fraction ratio of %{'
-                        'value}%<br /> and a degree of %{'
-                        'customdata}<extra></extra>',
-                    )
+            if len(lib_name_dict["all_distinct_lib_names"]) > num_colormaps:
+                LOG.warning(
+                    "Not enough colormaps for all libraries provided. "
+                    "Colormaps will be reused."
                 )
-            ]
-        )
 
-        fig.update_layout(
-            title_text=plot_cfg['fig_title'], font_size=plot_cfg['font_size']
-        )
-        if not view_mode:
-            fig.layout = layout
+            for lib_idx, lib_name in enumerate(libs_to_shades):
 
-        return fig
+                # If there are not enough colormaps provided, reuse them.
+                if num_colormaps <= lib_idx:
+                    lib_idx = 0
+
+                shade_lists = cm.get_cmap(
+                    tp.cast(tp.List[str], plot_cfg['colormaps'])[lib_idx]
+                )(np.linspace(0.25, 1, highest_degree + 1))
+
+                libs_to_colormaps[lib_name] = cm.get_cmap(
+                    tp.cast(tp.List[str], plot_cfg['colormaps'])[lib_idx]
+                )
+                tmp_idx_to_shades_mapping: tp.Dict[int, str] = {}
+
+                for shade_idx, shades in enumerate(shade_lists):
+                    tmp_idx_to_shades_mapping[shade_idx] = str(tuple(shades))
+
+                libs_to_shades[lib_name] = tmp_idx_to_shades_mapping
+
+            return libs_to_colormaps, libs_to_shades
+
+        lib_name_to_colormap_mapping, lib_name_to_color_shades_mapping = \
+            _build_color_mappings()
+
+        def _create_lib_name_to_idx_mapping(
+        ) -> tp.Tuple[tp.Dict[str, int], tp.Dict[str, int]]:
+            base_lib_mapping: tp.Dict[str, int] = {}
+            inter_lib_mapping: tp.Dict[str, int] = {}
+
+            for idx, name in enumerate(lib_name_dict["base_lib_names"]):
+                base_lib_mapping[name] = idx
+
+            idx_offset = len(base_lib_mapping)
+
+            for idx, name in enumerate(lib_name_dict["inter_lib_names"]):
+                # Continue the index for the interacting libraries
+                inter_lib_mapping[name] = idx + idx_offset
+
+            return base_lib_mapping, inter_lib_mapping
+
+        def collect_plotting_data(
+            dataframe: pd.DataFrame
+        ) -> tp.Dict[str, tp.List[tp.Any]]:
+            sankey_data_dict: tp.Dict[str, tp.List[tp.Any]] = {
+                "sources": [],
+                "targets": [],
+                "fractions": [],
+                "node_colors": [],
+                "edge_colors": [],
+                "degrees": [],
+            }
+
+            revision_df = pd.DataFrame(interaction_plot_df["revision"])
+            unique_revisions = list(revision_df["revision"].unique())
+
+            base_lib_name_index_mapping, inter_lib_name_index_mapping = \
+                _create_lib_name_to_idx_mapping()
+
+            for name in lib_name_dict["all_lib_names"]:
+                sankey_data_dict["node_colors"].append(
+                    f"rgba{tuple(lib_name_to_colormap_mapping[name](0.5))}"
+                )
+
+            for _, row in dataframe.iterrows():
+                color = "rgba" + lib_name_to_color_shades_mapping[
+                    row["base_lib"]][row["degree"]]
+
+                sankey_data_dict["sources"].append(
+                    base_lib_name_index_mapping[row["base_lib"]]
+                )
+                sankey_data_dict["targets"].append(
+                    inter_lib_name_index_mapping[row["inter_lib"]]
+                )
+                sankey_data_dict["fractions"].append(
+                    row["fraction"] * 100 / len(unique_revisions)
+                )
+                sankey_data_dict["degrees"].append(row["degree"])
+                sankey_data_dict["edge_colors"].append(color)
+
+            return sankey_data_dict
+
+        data_dict = collect_plotting_data(interaction_plot_df)
+
+        def _build_sankey_figure() -> go.Figure:
+            layout = go.Layout(
+                autosize=False,
+                width=plot_cfg['width'],
+                height=plot_cfg['height']
+            )
+            fig = go.Figure(
+                data=[
+                    go.Sankey(
+                        arrangement="perpendicular",
+                        node=dict(
+                            pad=15,
+                            thickness=20,
+                            line=dict(color="black", width=0.5),
+                            label=lib_name_dict["all_lib_names"],
+                            color=data_dict["node_colors"],
+                            hovertemplate='Fraction ratio = %{'
+                            'value}%<extra></extra> '
+                        ),
+                        link=dict(
+                            source=data_dict["sources"],
+                            target=data_dict["targets"],
+                            value=data_dict["fractions"],
+                            color=data_dict["edge_colors"],
+                            customdata=data_dict["degrees"],
+                            hovertemplate='Interaction has a fraction ratio '
+                            'of %{value}%<br /> and a degree of '
+                            '%{customdata}<extra></extra>',
+                        )
+                    )
+                ]
+            )
+
+            fig.update_layout(
+                title_text=plot_cfg['fig_title'],
+                font_size=plot_cfg['font_size']
+            )
+            if not view_mode:
+                fig.layout = layout
+
+            return fig
+
+        return _build_sankey_figure()
 
     def _calc_missing_revisions(
         self, degree_type: DegreeType, boundary_gradient: float
