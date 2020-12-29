@@ -402,33 +402,37 @@ class BlameDegree(Plot):
                                             dataframes_per_revision[revision]
                                         )
 
-        base_lib_fractions: tp.Dict[str, tp.List[float]] = {}
-        inter_lib_fractions: tp.Dict[str, tp.List[float]] = {}
+        def _calc_fractions() -> tp.Tuple[tp.Dict[str, tp.List[float]], tp.Dict[
+            str, tp.List[float]]]:
+            base_fractions: tp.Dict[str, tp.List[float]] = {}
+            inter_fractions: tp.Dict[str, tp.List[float]] = {}
 
-        # Calc fractions for base and interacting libraries
-        for revision in unique_revisions:
-            for base_name in base_lib_names_per_revision[revision]:
-                if base_name not in base_lib_fractions:
-                    base_lib_fractions[base_name] = []
+            for rev in unique_revisions:
+                for base_name in base_lib_names_per_revision[rev]:
+                    if base_name not in base_fractions:
+                        base_fractions[base_name] = []
 
-                current_fraction = np.divide(
-                    dataframes_per_revision[revision].loc[
-                        dataframes_per_revision[revision].base_lib == base_name
-                    ].amount.sum(), total_amount_per_revision[revision]
-                )
-                base_lib_fractions[base_name].append(current_fraction)
+                    current_fraction = np.divide(
+                        dataframes_per_revision[rev].loc[
+                            dataframes_per_revision[rev].base_lib == base_name
+                        ].amount.sum(), total_amount_per_revision[rev]
+                    )
+                    base_fractions[base_name].append(current_fraction)
 
-            for inter_name in inter_lib_names_per_revision[revision]:
-                if inter_name not in inter_lib_fractions:
-                    inter_lib_fractions[inter_name] = []
+                for inter_name in inter_lib_names_per_revision[rev]:
+                    if inter_name not in inter_fractions:
+                        inter_fractions[inter_name] = []
 
-                current_fraction = np.divide(
-                    dataframes_per_revision[revision].loc[
-                        dataframes_per_revision[revision].inter_lib ==
-                        inter_name].amount.sum(),
-                    total_amount_per_revision[revision]
-                )
-                inter_lib_fractions[inter_name].append(current_fraction)
+                    current_fraction = np.divide(
+                        dataframes_per_revision[rev].loc[
+                            dataframes_per_revision[rev].inter_lib == inter_name
+                        ].amount.sum(), total_amount_per_revision[rev]
+                    )
+                    inter_fractions[inter_name].append(current_fraction)
+
+            return base_fractions, inter_fractions
+
+        base_lib_fractions, inter_lib_fractions = _calc_fractions()
 
         base_plot_data = []
         for base_fraction in base_lib_fractions.values():
@@ -438,122 +442,128 @@ class BlameDegree(Plot):
         for inter_fraction in inter_lib_fractions.values():
             inter_plot_data.append(inter_fraction)
 
-        fig = plt.figure()
-        grid_spec = fig.add_gridspec(3, 1)
+        def _gen_fraction_overview_plot():
+            fig = plt.figure()
+            grid_spec = fig.add_gridspec(3, 1)
 
-        if with_churn:
-            out_axis = fig.add_subplot(grid_spec[0, :])
-            out_axis.get_xaxis().set_visible(False)
-            in_axis = fig.add_subplot(grid_spec[1, :])
-            in_axis.get_xaxis().set_visible(False)
-            churn_axis = fig.add_subplot(grid_spec[-1, :], sharex=out_axis)
-            x_axis = churn_axis
-        else:
-            out_axis = fig.add_subplot(grid_spec[0, :])
-            in_axis = fig.add_subplot(grid_spec[1, :])
-            x_axis = in_axis
-
-        fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
-        fig.suptitle(
-            str(plot_cfg['fig_title']) +
-            f' - Project {self.plot_kwargs["project"]}',
-            fontsize=8
-        )
-        cm_length = max(len(base_lib_fractions), len(inter_lib_fractions))
-        colormap = plot_cfg['color_map'](np.linspace(0, 1, cm_length))
-
-        outgoing_plot_lines = []
-        ingoing_plot_lines = []
-        alpha = 0.7
-
-        outgoing_plot_lines += out_axis.stackplot(
-            unique_revisions,
-            base_plot_data,
-            linewidth=plot_cfg['linewidth'],
-            colors=colormap,
-            edgecolor=plot_cfg['edgecolor'],
-            alpha=alpha
-        )
-
-        legend_out = out_axis.legend(
-            handles=outgoing_plot_lines,
-            title=plot_cfg['legend_title'] + " | Outgoing interactions",
-            # TODO (se-passau/VaRA#545): remove cast with plot config rework
-            labels=map(
-                tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
-                base_lib_fractions
-            ),
-            loc='upper left',
-            prop={
-                'size': plot_cfg['legend_size'],
-                'family': 'monospace'
-            }
-        )
-        plt.setp(
-            legend_out.get_title(),
-            fontsize=plot_cfg['legend_size'],
-            family='monospace',
-        )
-        out_axis.add_artist(legend_out)
-        legend_out.set_visible(plot_cfg['legend_visible'])
-
-        ingoing_plot_lines += in_axis.stackplot(
-            unique_revisions,
-            inter_plot_data,
-            linewidth=plot_cfg['linewidth'],
-            colors=colormap,
-            edgecolor=plot_cfg['edgecolor'],
-            alpha=alpha
-        )
-        legend_in = in_axis.legend(
-            handles=ingoing_plot_lines,
-            title=plot_cfg['legend_title'] + " | Ingoing interactions",
-            # TODO (se-passau/VaRA#545): remove cast with plot config rework
-            labels=map(
-                tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
-                inter_lib_fractions
-            ),
-            loc='upper left',
-            prop={
-                'size': plot_cfg['legend_size'],
-                'family': 'monospace'
-            }
-        )
-        plt.setp(
-            legend_in.get_title(),
-            fontsize=plot_cfg['legend_size'],
-            family='monospace',
-        )
-        in_axis.add_artist(legend_in)
-        legend_in.set_visible(plot_cfg['legend_visible'])
-
-        # annotate CVEs
-        with_cve = self.plot_kwargs.get("with_cve", False)
-        with_bugs = self.plot_kwargs.get("with_bugs", False)
-        if with_cve or with_bugs:
-            if "project" not in self.plot_kwargs:
-                LOG.error("Need a project to annotate bug or CVE data.")
+            if with_churn:
+                out_axis = fig.add_subplot(grid_spec[0, :])
+                out_axis.get_xaxis().set_visible(False)
+                in_axis = fig.add_subplot(grid_spec[1, :])
+                in_axis.get_xaxis().set_visible(False)
+                churn_axis = fig.add_subplot(grid_spec[-1, :], sharex=out_axis)
+                x_axis = churn_axis
             else:
-                project = get_project_cls_by_name(self.plot_kwargs["project"])
-                if with_cve:
-                    draw_cves(in_axis, project, unique_revisions, plot_cfg)
-                if with_bugs:
-                    draw_bugs(in_axis, project, unique_revisions, plot_cfg)
+                out_axis = fig.add_subplot(grid_spec[0, :])
+                in_axis = fig.add_subplot(grid_spec[1, :])
+                x_axis = in_axis
 
-        # draw churn subplot
-        if with_churn:
-            draw_code_churn_for_revisions(
-                churn_axis, self.plot_kwargs['project'],
-                self.plot_kwargs['get_cmap'](), unique_revisions
+            fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
+            fig.suptitle(
+                str(plot_cfg['fig_title']) +
+                f' - Project {self.plot_kwargs["project"]}',
+                fontsize=8
+            )
+            cm_length = max(len(base_lib_fractions), len(inter_lib_fractions))
+            colormap = plot_cfg['color_map'](np.linspace(0, 1, cm_length))
+
+            outgoing_plot_lines = []
+            ingoing_plot_lines = []
+
+            outgoing_plot_lines += out_axis.stackplot(
+                unique_revisions,
+                base_plot_data,
+                linewidth=plot_cfg['linewidth'],
+                colors=colormap,
+                edgecolor=plot_cfg['edgecolor'],
+                alpha=0.7
             )
 
-        plt.setp(x_axis.get_yticklabels(), fontsize=8, fontfamily='monospace')
-        plt.setp(
-            x_axis.get_xticklabels(),
-            fontsize=plot_cfg['xtick_size'],
-            fontfamily='monospace',
-            rotation=270
-        )
+            legend_out = out_axis.legend(
+                handles=outgoing_plot_lines,
+                title=plot_cfg['legend_title'] + " | Outgoing interactions",
+                # TODO (se-passau/VaRA#545): remove cast with plot config rework
+                labels=map(
+                    tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
+                    base_lib_fractions
+                ),
+                loc='upper left',
+                prop={
+                    'size': plot_cfg['legend_size'],
+                    'family': 'monospace'
+                }
+            )
+            plt.setp(
+                legend_out.get_title(),
+                fontsize=plot_cfg['legend_size'],
+                family='monospace',
+            )
+            out_axis.add_artist(legend_out)
+            legend_out.set_visible(plot_cfg['legend_visible'])
+
+            ingoing_plot_lines += in_axis.stackplot(
+                unique_revisions,
+                inter_plot_data,
+                linewidth=plot_cfg['linewidth'],
+                colors=colormap,
+                edgecolor=plot_cfg['edgecolor'],
+                alpha=0.7
+            )
+            legend_in = in_axis.legend(
+                handles=ingoing_plot_lines,
+                title=plot_cfg['legend_title'] + " | Ingoing interactions",
+                # TODO (se-passau/VaRA#545): remove cast with plot config rework
+                labels=map(
+                    tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
+                    inter_lib_fractions
+                ),
+                loc='upper left',
+                prop={
+                    'size': plot_cfg['legend_size'],
+                    'family': 'monospace'
+                }
+            )
+            plt.setp(
+                legend_in.get_title(),
+                fontsize=plot_cfg['legend_size'],
+                family='monospace',
+            )
+            in_axis.add_artist(legend_in)
+            legend_in.set_visible(plot_cfg['legend_visible'])
+
+            # annotate CVEs
+            with_cve = self.plot_kwargs.get("with_cve", False)
+            with_bugs = self.plot_kwargs.get("with_bugs", False)
+            if with_cve or with_bugs:
+                if "project" not in self.plot_kwargs:
+                    LOG.error("Need a project to annotate bug or CVE data.")
+                else:
+                    project = get_project_cls_by_name(
+                        self.plot_kwargs["project"]
+                    )
+                    if with_cve:
+                        draw_cves(in_axis, project, unique_revisions, plot_cfg)
+                    if with_bugs:
+                        draw_bugs(in_axis, project, unique_revisions, plot_cfg)
+
+            # draw churn subplot
+            if with_churn:
+                draw_code_churn_for_revisions(
+                    churn_axis, self.plot_kwargs['project'],
+                    self.plot_kwargs['get_cmap'](), unique_revisions
+                )
+
+            plt.setp(
+                x_axis.get_yticklabels(), fontsize=8, fontfamily='monospace'
+            )
+            plt.setp(
+                x_axis.get_xticklabels(),
+                fontsize=plot_cfg['xtick_size'],
+                fontfamily='monospace',
+                rotation=270
+            )
+
+        _gen_fraction_overview_plot()
 
     def _library_interactions(
         self,
