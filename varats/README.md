@@ -2,7 +2,7 @@
 
 ## Project Status [![codecov](https://codecov.io/gh/se-sic/VaRA-Tool-Suite/branch/vara-dev/graph/badge.svg)](https://codecov.io/gh/se-sic/VaRA-Tool-Suite) [![Documentation Status](https://readthedocs.org/projects/vara/badge/?version=vara-dev)](https://vara.readthedocs.io/en/vara-dev/?badge=vara-dev)
 
-| branch   | status                                                                                                                                  |
+| branch   | build status                                                                                                                            |
 | :----    | :---:                                                                                                                                   |
 | vara     | ![Python CI](https://github.com/se-sic/VaRA-Tool-Suite/workflows/Python%20CI/badge.svg?branch=vara)                                     |
 | vara-dev | ![Python CI](https://github.com/se-sic/VaRA-Tool-Suite/workflows/Python%20CI/badge.svg?branch=vara-dev)                                 |
