@@ -265,79 +265,90 @@ class BlameDegree(Plot):
             degree_type, interaction_plot_df, commit_map
         )
 
-        fig = plt.figure()
-        grid_spec = fig.add_gridspec(3, 1)
+        def _gen_multi_lib_degree_plot():
+            fig = plt.figure()
+            grid_spec = fig.add_gridspec(3, 1)
 
-        if with_churn:
-            main_axis = fig.add_subplot(grid_spec[:-1, :])
-            main_axis.get_xaxis().set_visible(False)
-            churn_axis = fig.add_subplot(grid_spec[2, :], sharex=main_axis)
-            x_axis = churn_axis
-        else:
-            main_axis = fig.add_subplot(grid_spec[:, :])
-            x_axis = main_axis
-
-        fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
-        fig.suptitle(
-            str(plot_cfg['fig_title']) +
-            f' - Project {self.plot_kwargs["project"]} '
-            f'| {plot_cfg["base_lib"]} --> {plot_cfg["inter_lib"]}',
-            fontsize=8
-        )
-
-        main_axis.stackplot(
-            unique_revisions,
-            sub_df_list,
-            edgecolor=plot_cfg['edgecolor'],
-            colors=reversed(
-                plot_cfg['color_map'](np.linspace(0, 1, len(sub_df_list)))
-            ),
-            # TODO (se-passau/VaRA#545): remove cast with plot config rework
-            labels=map(
-                tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
-                sorted(np.unique(interaction_plot_df['degree']))
-            ),
-            linewidth=plot_cfg['linewidth']
-        )
-        legend = main_axis.legend(
-            title=plot_cfg['legend_title'],
-            loc='upper left',
-            prop={
-                'size': plot_cfg['legend_size'],
-                'family': 'monospace'
-            }
-        )
-        plt.setp(
-            legend.get_title(),
-            fontsize=plot_cfg['legend_size'],
-            family='monospace'
-        )
-        legend.set_visible(plot_cfg['legend_visible'])
-        # annotate CVEs
-        with_cve = self.plot_kwargs.get("with_cve", False)
-        with_bugs = self.plot_kwargs.get("with_bugs", False)
-        if with_cve or with_bugs:
-            if "project" not in self.plot_kwargs:
-                LOG.error("Need a project to annotate bug or CVE data.")
+            if with_churn:
+                main_axis = fig.add_subplot(grid_spec[:-1, :])
+                main_axis.get_xaxis().set_visible(False)
+                churn_axis = fig.add_subplot(grid_spec[2, :], sharex=main_axis)
+                x_axis = churn_axis
             else:
-                project = get_project_cls_by_name(self.plot_kwargs["project"])
-                if with_cve:
-                    draw_cves(main_axis, project, unique_revisions, plot_cfg)
-                if with_bugs:
-                    draw_bugs(main_axis, project, unique_revisions, plot_cfg)
-        # draw churn subplot
-        if with_churn:
-            draw_code_churn_for_revisions(
-                churn_axis, self.plot_kwargs['project'],
-                self.plot_kwargs['get_cmap'](), unique_revisions
+                main_axis = fig.add_subplot(grid_spec[:, :])
+                x_axis = main_axis
+
+            fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
+            fig.suptitle(
+                str(plot_cfg['fig_title']) +
+                f' - Project {self.plot_kwargs["project"]} '
+                f'| {plot_cfg["base_lib"]} --> {plot_cfg["inter_lib"]}',
+                fontsize=8
             )
-        plt.setp(x_axis.get_yticklabels(), fontsize=8, fontfamily='monospace')
-        plt.setp(
-            x_axis.get_xticklabels(),
-            fontsize=plot_cfg['xtick_size'],
-            fontfamily='monospace',
-            rotation=270
-        )
+
+            main_axis.stackplot(
+                unique_revisions,
+                sub_df_list,
+                edgecolor=plot_cfg['edgecolor'],
+                colors=reversed(
+                    plot_cfg['color_map'](np.linspace(0, 1, len(sub_df_list)))
+                ),
+                # TODO (se-passau/VaRA#545): remove cast with plot config rework
+                labels=map(
+                    tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
+                    sorted(np.unique(interaction_plot_df['degree']))
+                ),
+                linewidth=plot_cfg['linewidth']
+            )
+            legend = main_axis.legend(
+                title=plot_cfg['legend_title'],
+                loc='upper left',
+                prop={
+                    'size': plot_cfg['legend_size'],
+                    'family': 'monospace'
+                }
+            )
+            plt.setp(
+                legend.get_title(),
+                fontsize=plot_cfg['legend_size'],
+                family='monospace'
+            )
+            legend.set_visible(plot_cfg['legend_visible'])
+            # annotate CVEs
+            with_cve = self.plot_kwargs.get("with_cve", False)
+            with_bugs = self.plot_kwargs.get("with_bugs", False)
+            if with_cve or with_bugs:
+                if "project" not in self.plot_kwargs:
+                    LOG.error("Need a project to annotate bug or CVE data.")
+                else:
+                    project = get_project_cls_by_name(
+                        self.plot_kwargs["project"]
+                    )
+                    if with_cve:
+                        draw_cves(
+                            main_axis, project, unique_revisions, plot_cfg
+                        )
+                    if with_bugs:
+                        draw_bugs(
+                            main_axis, project, unique_revisions, plot_cfg
+                        )
+            # draw churn subplot
+            if with_churn:
+                draw_code_churn_for_revisions(
+                    churn_axis, self.plot_kwargs['project'],
+                    self.plot_kwargs['get_cmap'](), unique_revisions
+                )
+            plt.setp(
+                x_axis.get_yticklabels(), fontsize=8, fontfamily='monospace'
+            )
+            plt.setp(
+                x_axis.get_xticklabels(),
+                fontsize=plot_cfg['xtick_size'],
+                fontfamily='monospace',
+                rotation=270
+            )
+
+        _gen_multi_lib_degree_plot()
 
     def _fraction_overview_plot(
         self,
