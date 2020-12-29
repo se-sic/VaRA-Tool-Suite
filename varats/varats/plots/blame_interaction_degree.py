@@ -577,6 +577,8 @@ class BlameDegree(Plot):
         degree_type: DegreeType,
         extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
     ) -> go.Figure:
+
+        # Choose sequential colormaps for correct shading
         plot_cfg = {
             'fig_title':
                 'MISSING figure title',
