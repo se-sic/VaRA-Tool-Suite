@@ -2,6 +2,7 @@
 import abc
 import logging
 import typing as tp
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import matplotlib.style as style
@@ -10,7 +11,6 @@ import pandas as pd
 from matplotlib import cm
 from plotly import graph_objs as go  # type: ignore
 from plotly import io as pio
-from plumbum import Path
 
 from varats.data.databases.blame_interaction_degree_database import (
     BlameInteractionDegreeDatabase,
@@ -380,7 +380,6 @@ class BlameDegree(Plot):
         revision_df = pd.DataFrame(df["revision"])
         unique_revisions = list(revision_df["revision"].unique())
         grouped_df: pd.DataFrame = df.groupby(['revision'])
-
         dataframes_per_revision: tp.Dict[str, pd.DataFrame] = {}
 
         for revision in unique_revisions:
@@ -434,13 +433,20 @@ class BlameDegree(Plot):
 
         base_lib_fractions, inter_lib_fractions = _calc_fractions()
 
-        base_plot_data = []
-        for base_fraction in base_lib_fractions.values():
-            base_plot_data.append(base_fraction)
+        def _collect_plot_data(
+        ) -> tp.Tuple[tp.List[tp.List[float]], tp.List[tp.List[float]]]:
+            base_lib_fractions_list: tp.List[tp.List[float]] = []
+            inter_lib_fractions_list: tp.List[tp.List[float]] = []
 
-        inter_plot_data = []
-        for inter_fraction in inter_lib_fractions.values():
-            inter_plot_data.append(inter_fraction)
+            for base_fraction in base_lib_fractions.values():
+                base_lib_fractions_list.append(base_fraction)
+
+            for inter_fraction in inter_lib_fractions.values():
+                inter_lib_fractions_list.append(inter_fraction)
+
+            return base_lib_fractions_list, inter_lib_fractions_list
+
+        base_plot_fraction_data, inter_plot_fraction_data = _collect_plot_data()
 
         def _gen_fraction_overview_plot() -> None:
             fig = plt.figure()
@@ -472,7 +478,7 @@ class BlameDegree(Plot):
 
             outgoing_plot_lines += out_axis.stackplot(
                 unique_revisions,
-                base_plot_data,
+                base_plot_fraction_data,
                 linewidth=plot_cfg['linewidth'],
                 colors=colormap,
                 edgecolor=plot_cfg['edgecolor'],
@@ -503,7 +509,7 @@ class BlameDegree(Plot):
 
             ingoing_plot_lines += in_axis.stackplot(
                 unique_revisions,
-                inter_plot_data,
+                inter_plot_fraction_data,
                 linewidth=plot_cfg['linewidth'],
                 colors=colormap,
                 edgecolor=plot_cfg['edgecolor'],
@@ -960,13 +966,13 @@ class BlameLibraryInteractions(BlameDegree):
             return
 
         if path is None:
-            plot_dir = Path(self.plot_kwargs["plot_dir"])
+            plot_dir = self.plot_kwargs["plot_dir"]
         else:
             plot_dir = path
 
         pio.write_image(
             self.__figure,
-            plot_dir + "/" + self.plot_file_name(filetype),
+            str(plot_dir) + "/" + self.plot_file_name(filetype),
             format=filetype
         )
 
