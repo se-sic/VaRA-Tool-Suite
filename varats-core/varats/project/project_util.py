@@ -1,4 +1,5 @@
 """Utility module for BenchBuild project handling."""
+import logging
 import os
 import typing as tp
 from distutils.dir_util import copy_tree
@@ -12,6 +13,8 @@ from benchbuild.source import Git, GitSubmodule
 from benchbuild.source.base import target_prefix
 from benchbuild.utils.cmd import git, mkdir, cp
 from plumbum import local
+
+LOG = logging.getLogger(__name__)
 
 
 def get_project_cls_by_name(project_name: str) -> tp.Type[bb.Project]:
@@ -270,6 +273,10 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
         dest_dir: path to the destination directory
     """
     if os.path.isdir(dest_dir):
+        LOG.error(
+            "The passed destination directory already exists. "
+            "Copy/rename actions are skipped."
+        )
         return
     copy_tree(str(src_dir), str(dest_dir))
 
@@ -360,7 +367,7 @@ class VaraTestRepoSource(Git):  # type: ignore
         main_src_path = vara_test_repos_path / self.remote
         main_tgt_path = local.path(target_prefix()) / self.local
 
-        # Extract main repo
+        # Extract main repository
         copy_renamed_git_to_dest(main_src_path, main_tgt_path)
 
         return main_tgt_path

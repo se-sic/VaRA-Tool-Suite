@@ -30,9 +30,6 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
     GROUP = 'cpp_projects'
     DOMAIN = 'library-testproject'
 
-    # TODO (PolyJIT/benchbuild#345): remove after BB provides implicit default
-    CONTAINER = ContainerImage()
-
     SOURCE = [
         VaraTestRepoSource(
             remote="LibraryAnalysisRepos"

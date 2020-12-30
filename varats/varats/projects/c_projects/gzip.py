@@ -31,9 +31,6 @@ class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
     GROUP = 'c_projects'
     DOMAIN = 'compression'
 
-    # TODO (PolyJIT/benchbuild#345): remove after BB provides implicit default
-    CONTAINER = ContainerImage()
-
     SOURCE = [
         block_revisions([
             # TODO (se-passau/VaRA#537): glibc < 2.28
