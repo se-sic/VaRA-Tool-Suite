@@ -568,8 +568,8 @@ def generate_lib_dependent_degrees(
     for base_repo_name, inter_lib_dict in categorised_degree_dict.items():
         result_dict[base_repo_name] = {}
         for inter_lib_name, degree_amount_dict in inter_lib_dict.items():
-            result_dict[base_repo_name][inter_lib_name] = tp.cast(
-                tp.List[tp.Tuple[int, int]], list(degree_amount_dict.items())
+            result_dict[base_repo_name][inter_lib_name] = list(
+                degree_amount_dict.items()
             )
 
     return result_dict
