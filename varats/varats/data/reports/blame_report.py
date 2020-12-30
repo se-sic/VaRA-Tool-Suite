@@ -540,8 +540,10 @@ def generate_lib_dependent_degrees(
             for inter_hash in interaction.interacting_commits:
                 inter_hash_repo_name = inter_hash.repository_name
 
-                if (inter_hash_repo_name 
-                        not in categorised_degree_dict[base_repo_name]):
+                if (
+                    inter_hash_repo_name not in
+                    categorised_degree_dict[base_repo_name]
+                ):
                     categorised_degree_dict[base_repo_name][inter_hash_repo_name
                                                            ] = {}
 
@@ -551,8 +553,10 @@ def generate_lib_dependent_degrees(
                     tmp_degree_of_libs[inter_hash_repo_name] += 1
 
             for repo_name, degree in tmp_degree_of_libs.items():
-                if degree not in categorised_degree_dict[base_repo_name][
-                    repo_name]:
+                if (
+                    degree not in categorised_degree_dict[base_repo_name]
+                    [repo_name]
+                ):
                     categorised_degree_dict[base_repo_name][repo_name][degree
                                                                       ] = 0
 
