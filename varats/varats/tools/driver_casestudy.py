@@ -626,13 +626,11 @@ def _remove_error_result_files() -> None:
         result_file_names = os.listdir(result_dir_path)
 
         for result_file_name in result_file_names:
-            if (
-                MetaReport.result_file_has_status(
-                    result_file_name, FileStatusExtension.CompileError
-                ) or MetaReport.result_file_has_status(
-                    result_file_name, FileStatusExtension.Failed
-                )
-            ) and MetaReport.is_result_file(result_file_name):
+            if MetaReport.is_result_file(result_file_name) and (
+                MetaReport.
+                result_file_has_status_compileerror(result_file_name) or
+                MetaReport.result_file_has_status_failed(result_file_name)
+            ):
                 os.remove(result_dir_path / result_file_name)
 
 
