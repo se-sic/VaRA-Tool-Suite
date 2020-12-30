@@ -3,7 +3,6 @@ import re
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.environments.domain.declarative import ContainerImage
 from benchbuild.utils.cmd import make
 from benchbuild.utils.revision_ranges import block_revisions, RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs

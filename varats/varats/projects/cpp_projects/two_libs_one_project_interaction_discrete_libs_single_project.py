@@ -4,7 +4,6 @@ repository."""
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.environments.domain.declarative import ContainerImage
 from benchbuild.utils.cmd import cmake, make, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
