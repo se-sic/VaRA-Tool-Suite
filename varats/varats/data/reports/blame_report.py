@@ -521,7 +521,7 @@ def generate_lib_dependent_degrees(
 ) -> tp.Dict[str, tp.Dict[str, tp.List[tp.Tuple[int, int]]]]:
     """
     Args:
-        report: The blame report
+        report: blame report
 
     Returns:
         Map of tuples (degree, amount) categorised by their corresponding
@@ -540,13 +540,12 @@ def generate_lib_dependent_degrees(
             for inter_hash in interaction.interacting_commits:
                 inter_hash_repo_name = inter_hash.repository_name
 
-                if inter_hash_repo_name \
-                        not in categorised_degree_dict[base_repo_name]:
+                if (inter_hash_repo_name 
+                        not in categorised_degree_dict[base_repo_name]):
                     categorised_degree_dict[base_repo_name][inter_hash_repo_name
                                                            ] = {}
 
-                if inter_hash_repo_name \
-                        not in tmp_degree_of_libs:
+                if inter_hash_repo_name not in tmp_degree_of_libs:
                     tmp_degree_of_libs[inter_hash_repo_name] = 1
                 else:
                     tmp_degree_of_libs[inter_hash_repo_name] += 1

@@ -640,7 +640,6 @@ class BlameDegree(Plot):
                 )
 
             for lib_idx, lib_name in enumerate(libs_to_shades):
-
                 # If there are not enough colormaps provided, reuse them.
                 if num_colormaps <= lib_idx:
                     lib_idx = 0

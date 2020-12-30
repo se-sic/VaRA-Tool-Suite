@@ -71,14 +71,12 @@ class BlameInteractionDegreeDatabase(
         ) -> tp.Tuple[pd.DataFrame, str, str]:
             report = load_blame_report(report_path)
 
-            categorised_degree_occurrences = \
-                generate_lib_dependent_degrees(report)
+            categorised_degree_occurrences = generate_lib_dependent_degrees(report)
 
             def calc_total_amounts() -> int:
                 total = 0
 
-                for _, lib_dict \
-                        in categorised_degree_occurrences.items():
+                for _, lib_dict in categorised_degree_occurrences.items():
                     for _, tuple_list in lib_dict.items():
                         for degree_amount_tuple in tuple_list:
                             total += degree_amount_tuple[1]
@@ -86,9 +84,7 @@ class BlameInteractionDegreeDatabase(
 
             total_amounts_of_all_libs = calc_total_amounts()
 
-            list_of_author_degree_occurrences = \
-                generate_author_degree_tuples(report, commit_lookup
-                                              )
+            list_of_author_degree_occurrences = generate_author_degree_tuples(report, commit_lookup)
             author_degrees, author_amounts = map(
                 list, zip(*list_of_author_degree_occurrences)
             )
