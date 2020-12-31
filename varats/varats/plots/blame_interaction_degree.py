@@ -199,7 +199,8 @@ class BlameDegree(Plot):
         if extra_plot_cfg is not None:
             plot_cfg.update(extra_plot_cfg)
 
-        fig_suptitle = f'{str(plot_cfg["fig_title"])} - Project {self.plot_kwargs["project"]}'
+        fig_suptitle = f'{str(plot_cfg["fig_title"])} - ' \
+                       f'Project {self.plot_kwargs["project"]}'
         plot_cfg["fig_suptitle"] = fig_suptitle
 
         style.use(self.style)
@@ -236,7 +237,9 @@ class BlameDegree(Plot):
         if extra_plot_cfg is not None:
             plot_cfg.update(extra_plot_cfg)
 
-        fig_suptitle = f'{str(plot_cfg["fig_title"])} - Project {self.plot_kwargs["project"]} | {plot_cfg["base_lib"]} --> {plot_cfg["inter_lib"]} '
+        fig_suptitle = f'{str(plot_cfg["fig_title"])} - ' \
+                       f'Project {self.plot_kwargs["project"]} | ' \
+                       f'{plot_cfg["base_lib"]} --> {plot_cfg["inter_lib"]} '
         plot_cfg["fig_suptitle"] = fig_suptitle
 
         style.use(self.style)
