@@ -29,7 +29,7 @@ setup(
         "plotly>=4.14.1",
         "matplotlib>=3.1.2",
         "pandas>=0.22.0",
-        "benchbuild>=5.3.1",
+        "benchbuild>=6.0.1",
         "plumbum>=1.6.6",
         "wllvm>=1.1.4",
         "argparse-utils>=1.2.0",
