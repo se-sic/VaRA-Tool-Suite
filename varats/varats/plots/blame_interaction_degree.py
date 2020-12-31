@@ -515,7 +515,7 @@ class BlameDegree(Plot):
 
         gen_fraction_overview_plot()
 
-    LibsToColormapsAndLibsToIndexWithShadesMappingsTuple = \
+    LibsToColormapAndLibsToIndexWithShadesMappingsTuple = \
         tp.Tuple[tp.Dict[str, tp.Any], tp.Dict[str, tp.Dict[int, str]]]
 
     def _multi_lib_interaction_sankey_plot(
@@ -569,7 +569,7 @@ class BlameDegree(Plot):
         lib_name_dict = gen_lib_name_dict(interaction_plot_df)
 
         def build_color_mappings(
-        ) -> BlameDegree.LibsToColormapsAndLibsToIndexWithShadesMappingsTuple:
+        ) -> BlameDegree.LibsToColormapAndLibsToIndexWithShadesMappingsTuple:
             libs_to_colormaps: tp.Dict[str, tp.Any] = {}
             libs_to_shades: tp.Dict[str, tp.Dict[int, str]] = dict(
                 (name, dict())
@@ -701,13 +701,13 @@ class BlameDegree(Plot):
                     )
                 ]
             )
+            if not view_mode:
+                fig.layout = layout
 
             fig.update_layout(
                 title_text=plot_cfg['fig_title'],
                 font_size=plot_cfg['font_size']
             )
-            if not view_mode:
-                fig.layout = layout
 
             return fig
 
