@@ -515,7 +515,10 @@ class BlameDegree(Plot):
 
         gen_fraction_overview_plot()
 
-    def _library_interactions(
+    LibsToColormapsAndLibsToIndexWithShadesMappingsTuple = \
+        tp.Tuple[tp.Dict[str, tp.Any], tp.Dict[str, tp.Dict[int, str]]]
+
+    def _multi_lib_interaction_sankey_plot(
         self,
         view_mode: bool,
         degree_type: DegreeType,
@@ -548,7 +551,7 @@ class BlameDegree(Plot):
         interaction_plot_df.sort_values(by=['time_id'], inplace=True)
         interaction_plot_df.reset_index(inplace=True)
 
-        def _gen_lib_name_dict(df: pd.DataFrame) -> tp.Dict[str, tp.List[str]]:
+        def gen_lib_name_dict(df: pd.DataFrame) -> tp.Dict[str, tp.List[str]]:
             name_dict: tp.Dict[str, tp.List[str]] = {
                 "base_lib_names": _get_distinct_base_lib_names(df),
                 "inter_lib_names": _get_distinct_inter_lib_names(df)
@@ -563,10 +566,10 @@ class BlameDegree(Plot):
             )
             return name_dict
 
-        lib_name_dict = _gen_lib_name_dict(interaction_plot_df)
+        lib_name_dict = gen_lib_name_dict(interaction_plot_df)
 
-        def _build_color_mappings(
-        ) -> tp.Tuple[tp.Dict[str, tp.Any], tp.Dict[str, tp.Dict[int, str]]]:
+        def build_color_mappings(
+        ) -> BlameDegree.LibsToColormapsAndLibsToIndexWithShadesMappingsTuple:
             libs_to_colormaps: tp.Dict[str, tp.Any] = {}
             libs_to_shades: tp.Dict[str, tp.Dict[int, str]] = dict(
                 (name, dict())
@@ -605,9 +608,9 @@ class BlameDegree(Plot):
             return libs_to_colormaps, libs_to_shades
 
         lib_name_to_colormap_mapping, lib_name_to_color_shades_mapping = \
-            _build_color_mappings()
+            build_color_mappings()
 
-        def _create_lib_name_to_idx_mapping(
+        def create_lib_name_to_idx_mapping(
         ) -> tp.Tuple[tp.Dict[str, int], tp.Dict[str, int]]:
             base_lib_mapping: tp.Dict[str, int] = {}
             inter_lib_mapping: tp.Dict[str, int] = {}
@@ -639,7 +642,7 @@ class BlameDegree(Plot):
             unique_revisions = list(revision_df["revision"].unique())
 
             base_lib_name_index_mapping, inter_lib_name_index_mapping = \
-                _create_lib_name_to_idx_mapping()
+                create_lib_name_to_idx_mapping()
 
             for name in lib_name_dict["all_lib_names"]:
                 sankey_data_dict["node_colors"].append(
@@ -666,7 +669,7 @@ class BlameDegree(Plot):
 
         data_dict = collect_plotting_data(interaction_plot_df)
 
-        def _build_sankey_figure() -> go.Figure:
+        def build_sankey_figure() -> go.Figure:
             layout = go.Layout(
                 autosize=False,
                 width=plot_cfg['width'],
@@ -708,7 +711,7 @@ class BlameDegree(Plot):
 
             return fig
 
-        return _build_sankey_figure()
+        return build_sankey_figure()
 
     def _calc_missing_revisions(
         self, degree_type: DegreeType, boundary_gradient: float
@@ -877,7 +880,7 @@ class BlameLibraryInteractions(BlameDegree):
     """Plotting the dependencies of blame interactions from all project
     libraries either as interactive plot in the browser or static image."""
 
-    NAME = 'b_library_interactions'
+    NAME = 'b_multi_lib_interaction_sankey_plot'
 
     def __init__(self, **kwargs: tp.Any):
         super().__init__(self.NAME, **kwargs)
@@ -889,7 +892,7 @@ class BlameLibraryInteractions(BlameDegree):
             'width': 1500,
             'height': 1000
         }
-        self.__figure = self._library_interactions(
+        self.__figure = self._multi_lib_interaction_sankey_plot(
             view_mode, DegreeType.interaction, extra_plot_cfg
         )
 
