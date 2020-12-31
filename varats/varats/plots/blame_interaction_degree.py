@@ -79,7 +79,8 @@ def _get_distinct_inter_lib_names(df: pd.DataFrame) -> tp.List[str]:
 
 
 def _generate_stackplot(
-    df: pd.DataFrame, unique_revisions, sub_df_list, with_churn: bool,
+    df: pd.DataFrame, unique_revisions: tp.List[str],
+    sub_df_list: tp.List[pd.Series], with_churn: bool,
     plot_cfg: tp.Dict[str, tp.Any], plot_kwargs: tp.Any
 ) -> None:
     fig = plt.figure()
