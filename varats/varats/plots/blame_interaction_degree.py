@@ -285,6 +285,12 @@ class BlameDegree(Plot):
             plot_cfg, self.plot_kwargs
         )
 
+    BaseAndInterLibToFractionListMappingsTuple = tp.Tuple[tp.Dict[
+        str, tp.List[float]], tp.Dict[str, tp.List[float]]]
+
+    BaseAndInterLibFractionListsTuple = tp.Tuple[tp.List[tp.List[float]],
+                                                 tp.List[tp.List[float]]]
+
     def _fraction_overview_plot(
         self,
         view_mode: bool,
@@ -336,8 +342,8 @@ class BlameDegree(Plot):
                                             dataframes_per_revision[revision]
                                         )
 
-        def _calc_fractions() -> tp.Tuple[tp.Dict[str, tp.List[float]], tp.Dict[
-            str, tp.List[float]]]:
+        def calc_fractions(
+        ) -> BlameDegree.BaseAndInterLibToFractionListMappingsTuple:
             base_fractions: tp.Dict[str, tp.List[float]] = {}
             inter_fractions: tp.Dict[str, tp.List[float]] = {}
 
@@ -366,10 +372,10 @@ class BlameDegree(Plot):
 
             return base_fractions, inter_fractions
 
-        base_lib_fractions, inter_lib_fractions = _calc_fractions()
+        base_lib_fractions, inter_lib_fractions = calc_fractions()
 
-        def _collect_plot_data(
-        ) -> tp.Tuple[tp.List[tp.List[float]], tp.List[tp.List[float]]]:
+        def collect_plot_data(
+        ) -> BlameDegree.BaseAndInterLibFractionListsTuple:
             base_lib_fractions_list: tp.List[tp.List[float]] = []
             inter_lib_fractions_list: tp.List[tp.List[float]] = []
 
@@ -381,9 +387,9 @@ class BlameDegree(Plot):
 
             return base_lib_fractions_list, inter_lib_fractions_list
 
-        base_plot_fraction_data, inter_plot_fraction_data = _collect_plot_data()
+        base_plot_fraction_data, inter_plot_fraction_data = collect_plot_data()
 
-        def _gen_fraction_overview_plot() -> None:
+        def gen_fraction_overview_plot() -> None:
             fig = plt.figure()
             grid_spec = fig.add_gridspec(3, 1)
             out_axis = fig.add_subplot(grid_spec[0, :])
@@ -403,6 +409,35 @@ class BlameDegree(Plot):
                 f' - Project {self.plot_kwargs["project"]}',
                 fontsize=8
             )
+
+            def setup_legend(
+                legends_axis: tp.Any, handles: tp.Any, legend_title_suffix: str,
+                fractions: tp.Dict[str, tp.List[float]]
+            ) -> None:
+                legend = legends_axis.legend(
+                    handles=handles,
+                    title=f'{plot_cfg["legend_title"]} | {legend_title_suffix}',
+                    # TODO (se-passau/VaRA#545): remove cast with plot config
+                    #  rework
+                    labels=map(
+                        tp.cast(
+                            tp.Callable[[str], str], plot_cfg['lable_modif']
+                        ), fractions
+                    ),
+                    loc='upper left',
+                    prop={
+                        'size': plot_cfg['legend_size'],
+                        'family': 'monospace'
+                    }
+                )
+                plt.setp(
+                    legend.get_title(),
+                    fontsize=plot_cfg['legend_size'],
+                    family='monospace',
+                )
+                legends_axis.add_artist(legend)
+                legend.set_visible(plot_cfg['legend_visible'])
+
             cm_length = max(len(base_lib_fractions), len(inter_lib_fractions))
             colormap = plot_cfg['color_map'](np.linspace(0, 1, cm_length))
 
@@ -418,27 +453,11 @@ class BlameDegree(Plot):
                 alpha=0.7
             )
 
-            legend_out = out_axis.legend(
-                handles=outgoing_plot_lines,
-                title=plot_cfg['legend_title'] + " | Outgoing interactions",
-                # TODO (se-passau/VaRA#545): remove cast with plot config rework
-                labels=map(
-                    tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
-                    base_lib_fractions
-                ),
-                loc='upper left',
-                prop={
-                    'size': plot_cfg['legend_size'],
-                    'family': 'monospace'
-                }
+            # Setup outgoing interactions legend
+            setup_legend(
+                out_axis, outgoing_plot_lines, "Outgoing interactions",
+                base_lib_fractions
             )
-            plt.setp(
-                legend_out.get_title(),
-                fontsize=plot_cfg['legend_size'],
-                family='monospace',
-            )
-            out_axis.add_artist(legend_out)
-            legend_out.set_visible(plot_cfg['legend_visible'])
 
             ingoing_plot_lines += in_axis.stackplot(
                 unique_revisions,
@@ -448,27 +467,12 @@ class BlameDegree(Plot):
                 edgecolor=plot_cfg['edgecolor'],
                 alpha=0.7
             )
-            legend_in = in_axis.legend(
-                handles=ingoing_plot_lines,
-                title=plot_cfg['legend_title'] + " | Ingoing interactions",
-                # TODO (se-passau/VaRA#545): remove cast with plot config rework
-                labels=map(
-                    tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
-                    inter_lib_fractions
-                ),
-                loc='upper left',
-                prop={
-                    'size': plot_cfg['legend_size'],
-                    'family': 'monospace'
-                }
+
+            # Setup ingoing interactions legend
+            setup_legend(
+                in_axis, ingoing_plot_lines, "Ingoing interactions",
+                inter_lib_fractions
             )
-            plt.setp(
-                legend_in.get_title(),
-                fontsize=plot_cfg['legend_size'],
-                family='monospace',
-            )
-            in_axis.add_artist(legend_in)
-            legend_in.set_visible(plot_cfg['legend_visible'])
 
             # annotate CVEs
             with_cve = self.plot_kwargs.get("with_cve", False)
@@ -509,7 +513,7 @@ class BlameDegree(Plot):
                     axis.get_yticklabels(), fontsize=8, fontfamily='monospace'
                 )
 
-        _gen_fraction_overview_plot()
+        gen_fraction_overview_plot()
 
     def _library_interactions(
         self,
