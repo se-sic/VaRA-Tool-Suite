@@ -343,6 +343,8 @@ class VaraTestRepoSource(Git):  # type: ignore
     """A project source for repositories stored in the vara-test-repos
     repository."""
 
+    __repository_is_extracted = False
+
     __vara_test_repos_git = Git(
         remote="https://github.com/se-passau/vara-test-repos",
         local="vara_test_repos",
@@ -369,7 +371,9 @@ class VaraTestRepoSource(Git):  # type: ignore
         main_tgt_path = local.path(target_prefix()) / self.local
 
         # Extract main repository
-        copy_renamed_git_to_dest(main_src_path, main_tgt_path)
+        if not self.__repository_is_extracted:
+            copy_renamed_git_to_dest(main_src_path, main_tgt_path)
+            self.__repository_is_extracted = True
 
         return main_tgt_path
 
