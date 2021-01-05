@@ -304,7 +304,8 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
 
 
 # TODO (se-passau/VaRA#717): Remove pylint's disable when issue is fixed
-class VaraTestRepoSubmodule(GitSubmodule):  # type: ignore  #disable=R0901
+# pylint: disable=too-many-ancestors
+class VaraTestRepoSubmodule(GitSubmodule):  # type: ignore
     """A project source for submodule repositories stored in the vara-test-repos
     repository."""
 
