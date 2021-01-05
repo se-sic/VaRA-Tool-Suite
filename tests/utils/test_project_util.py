@@ -60,7 +60,9 @@ class TestVaraTestRepoSource(unittest.TestCase):
     @mock.patch('varats.project.project_util.target_prefix')
     def test_fetch_and_version(
         self, mock_tgt_prefix_base, mock_tgt_prefix_project_util
-    ):
+    ) -> None:
+        """Verify that calling fetch and version on the main repository results
+        in the correct directory structure and naming."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmppath = Path(tmpdir)
             with replace_config(tmp_path=tmppath):
