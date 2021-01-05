@@ -2,6 +2,7 @@
 import abc
 import logging
 import typing as tp
+from collections import defaultdict
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -153,6 +154,44 @@ def _generate_stackplot(
     )
 
 
+class FractionMap:
+    """Mapping of library names to fractions."""
+
+    def __init__(self):
+        self.__mapping: tp.DefaultDict[str, tp.List[float]] = defaultdict(list)
+
+    @property
+    def as_default_dict(self) -> tp.DefaultDict[str, tp.List[float]]:
+        return self.__mapping
+
+    def get_lib_num(self) -> int:
+        return len(self.__mapping.keys())
+
+    def get_lib_names(self) -> tp.List[str]:
+        """Returns all library names."""
+
+        lib_names: tp.List[str] = []
+        for lib_name in self.__mapping:
+            lib_names.append(lib_name)
+
+        return lib_names
+
+    def get_all_fraction_lists(self) -> tp.List[tp.List[float]]:
+        """Returns a list containing all library fraction lists."""
+
+        all_fraction_lists: tp.List[tp.List[float]] = []
+        for fraction_list in self.__mapping.values():
+            all_fraction_lists.append(fraction_list)
+
+        return all_fraction_lists
+
+    def get_fractions_from_lib(self, lib_name: str) -> tp.List[float]:
+        return self.__mapping[lib_name]
+
+    def add_fraction_to_lib(self, lib_name: str, fraction: float) -> None:
+        self.__mapping[lib_name].append(fraction)
+
+
 class BlameDegree(Plot):
     """Base plot for blame degree plots."""
 
@@ -286,9 +325,7 @@ class BlameDegree(Plot):
             plot_cfg, self.plot_kwargs
         )
 
-    BaseAndInterLibToFractionListMappingsTuple = tp.Tuple[tp.Dict[
-        str, tp.List[float]], tp.Dict[str, tp.List[float]]]
-
+    BaseInterFractionMapTuple = tp.Tuple[FractionMap, FractionMap]
     BaseAndInterLibFractionListsTuple = tp.Tuple[tp.List[tp.List[float]],
                                                  tp.List[tp.List[float]]]
 
@@ -343,52 +380,37 @@ class BlameDegree(Plot):
                                             dataframes_per_revision[revision]
                                         )
 
-        def calc_fractions(
-        ) -> BlameDegree.BaseAndInterLibToFractionListMappingsTuple:
-            base_fractions: tp.Dict[str, tp.List[float]] = {}
-            inter_fractions: tp.Dict[str, tp.List[float]] = {}
+        def calc_fractions() -> BlameDegree.BaseInterFractionMapTuple:
+            base_fraction_map = FractionMap()
+            inter_fraction_map = FractionMap()
 
             for rev in unique_revisions:
                 for base_name in base_lib_names_per_revision[rev]:
-                    if base_name not in base_fractions:
-                        base_fractions[base_name] = []
-
                     current_fraction = np.divide(
                         dataframes_per_revision[rev].loc[
                             dataframes_per_revision[rev].base_lib == base_name
                         ].amount.sum(), total_amount_per_revision[rev]
                     )
-                    base_fractions[base_name].append(current_fraction)
+                    base_fraction_map.add_fraction_to_lib(
+                        base_name, current_fraction
+                    )
 
                 for inter_name in inter_lib_names_per_revision[rev]:
-                    if inter_name not in inter_fractions:
-                        inter_fractions[inter_name] = []
-
                     current_fraction = np.divide(
                         dataframes_per_revision[rev].loc[
                             dataframes_per_revision[rev].inter_lib == inter_name
                         ].amount.sum(), total_amount_per_revision[rev]
                     )
-                    inter_fractions[inter_name].append(current_fraction)
+                    inter_fraction_map.add_fraction_to_lib(
+                        inter_name, current_fraction
+                    )
 
-            return base_fractions, inter_fractions
+            return base_fraction_map, inter_fraction_map
 
-        base_lib_fractions, inter_lib_fractions = calc_fractions()
+        base_lib_fraction_map, inter_lib_fraction_map = calc_fractions()
 
-        def collect_plot_data(
-        ) -> BlameDegree.BaseAndInterLibFractionListsTuple:
-            base_lib_fractions_list: tp.List[tp.List[float]] = []
-            inter_lib_fractions_list: tp.List[tp.List[float]] = []
-
-            for base_fraction in base_lib_fractions.values():
-                base_lib_fractions_list.append(base_fraction)
-
-            for inter_fraction in inter_lib_fractions.values():
-                inter_lib_fractions_list.append(inter_fraction)
-
-            return base_lib_fractions_list, inter_lib_fractions_list
-
-        base_plot_fraction_data, inter_plot_fraction_data = collect_plot_data()
+        base_plot_data = base_lib_fraction_map.get_all_fraction_lists()
+        inter_plot_data = inter_lib_fraction_map.get_all_fraction_lists()
 
         def gen_fraction_overview_plot() -> None:
             fig = plt.figure()
@@ -413,7 +435,7 @@ class BlameDegree(Plot):
 
             def setup_legend(
                 legends_axis: tp.Any, handles: tp.Any, legend_title_suffix: str,
-                fractions: tp.Dict[str, tp.List[float]]
+                legend_items: tp.List[str]
             ) -> None:
                 legend = legends_axis.legend(
                     handles=handles,
@@ -423,7 +445,7 @@ class BlameDegree(Plot):
                     labels=map(
                         tp.cast(
                             tp.Callable[[str], str], plot_cfg['lable_modif']
-                        ), fractions
+                        ), legend_items
                     ),
                     loc='upper left',
                     prop={
@@ -439,15 +461,18 @@ class BlameDegree(Plot):
                 legends_axis.add_artist(legend)
                 legend.set_visible(plot_cfg['legend_visible'])
 
-            cm_length = max(len(base_lib_fractions), len(inter_lib_fractions))
-            colormap = plot_cfg['color_map'](np.linspace(0, 1, cm_length))
+            colormap_length = max(
+                base_lib_fraction_map.get_lib_num(),
+                inter_lib_fraction_map.get_lib_num()
+            )
+            colormap = plot_cfg['color_map'](np.linspace(0, 1, colormap_length))
 
             outgoing_plot_lines = []
             ingoing_plot_lines = []
 
             outgoing_plot_lines += out_axis.stackplot(
                 unique_revisions,
-                base_plot_fraction_data,
+                base_plot_data,
                 linewidth=plot_cfg['linewidth'],
                 colors=colormap,
                 edgecolor=plot_cfg['edgecolor'],
@@ -457,12 +482,12 @@ class BlameDegree(Plot):
             # Setup outgoing interactions legend
             setup_legend(
                 out_axis, outgoing_plot_lines, "Outgoing interactions",
-                base_lib_fractions
+                base_lib_fraction_map.get_lib_names()
             )
 
             ingoing_plot_lines += in_axis.stackplot(
                 unique_revisions,
-                inter_plot_fraction_data,
+                inter_plot_data,
                 linewidth=plot_cfg['linewidth'],
                 colors=colormap,
                 edgecolor=plot_cfg['edgecolor'],
@@ -472,7 +497,7 @@ class BlameDegree(Plot):
             # Setup ingoing interactions legend
             setup_legend(
                 in_axis, ingoing_plot_lines, "Ingoing interactions",
-                inter_lib_fractions
+                inter_lib_fraction_map.get_lib_names()
             )
 
             # annotate CVEs
