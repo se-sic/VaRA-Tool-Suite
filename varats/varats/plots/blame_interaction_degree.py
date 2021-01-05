@@ -154,44 +154,6 @@ def _generate_stackplot(
     )
 
 
-class FractionMap:
-    """Mapping of library names to fractions."""
-
-    def __init__(self):
-        self.__mapping: tp.DefaultDict[str, tp.List[float]] = defaultdict(list)
-
-    @property
-    def as_default_dict(self) -> tp.DefaultDict[str, tp.List[float]]:
-        return self.__mapping
-
-    def get_lib_num(self) -> int:
-        return len(self.__mapping.keys())
-
-    def get_lib_names(self) -> tp.List[str]:
-        """Returns all library names."""
-
-        lib_names: tp.List[str] = []
-        for lib_name in self.__mapping:
-            lib_names.append(lib_name)
-
-        return lib_names
-
-    def get_all_fraction_lists(self) -> tp.List[tp.List[float]]:
-        """Returns a list containing all library fraction lists."""
-
-        all_fraction_lists: tp.List[tp.List[float]] = []
-        for fraction_list in self.__mapping.values():
-            all_fraction_lists.append(fraction_list)
-
-        return all_fraction_lists
-
-    def get_fractions_from_lib(self, lib_name: str) -> tp.List[float]:
-        return self.__mapping[lib_name]
-
-    def add_fraction_to_lib(self, lib_name: str, fraction: float) -> None:
-        self.__mapping[lib_name].append(fraction)
-
-
 class BlameDegree(Plot):
     """Base plot for blame degree plots."""
 
@@ -325,9 +287,45 @@ class BlameDegree(Plot):
             plot_cfg, self.plot_kwargs
         )
 
+    class FractionMap:
+        """Mapping of library names to fractions."""
+
+        def __init__(self) -> None:
+            self.__mapping: tp.DefaultDict[str,
+                                           tp.List[float]] = defaultdict(list)
+
+        @property
+        def as_default_dict(self) -> tp.DefaultDict[str, tp.List[float]]:
+            return self.__mapping
+
+        def get_lib_num(self) -> int:
+            return len(self.__mapping.keys())
+
+        def get_lib_names(self) -> tp.List[str]:
+            """Returns all library names."""
+
+            lib_names: tp.List[str] = []
+            for lib_name in self.__mapping:
+                lib_names.append(lib_name)
+
+            return lib_names
+
+        def get_all_fraction_lists(self) -> tp.List[tp.List[float]]:
+            """Returns a list containing all library fraction lists."""
+
+            all_fraction_lists: tp.List[tp.List[float]] = []
+            for fraction_list in self.__mapping.values():
+                all_fraction_lists.append(fraction_list)
+
+            return all_fraction_lists
+
+        def get_fractions_from_lib(self, lib_name: str) -> tp.List[float]:
+            return self.__mapping[lib_name]
+
+        def add_fraction_to_lib(self, lib_name: str, fraction: float) -> None:
+            self.__mapping[lib_name].append(fraction)
+
     BaseInterFractionMapTuple = tp.Tuple[FractionMap, FractionMap]
-    BaseAndInterLibFractionListsTuple = tp.Tuple[tp.List[tp.List[float]],
-                                                 tp.List[tp.List[float]]]
 
     def _fraction_overview_plot(
         self,
@@ -381,8 +379,8 @@ class BlameDegree(Plot):
                                         )
 
         def calc_fractions() -> BlameDegree.BaseInterFractionMapTuple:
-            base_fraction_map = FractionMap()
-            inter_fraction_map = FractionMap()
+            base_fraction_map = BlameDegree.FractionMap()
+            inter_fraction_map = BlameDegree.FractionMap()
 
             for rev in unique_revisions:
                 for base_name in base_lib_names_per_revision[rev]:
