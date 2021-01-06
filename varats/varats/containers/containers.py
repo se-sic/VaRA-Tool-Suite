@@ -79,7 +79,7 @@ def _add_vara_config(layers: ContainerImage, tmp_dir: str) -> ContainerImage:
     config["paper_config"]["folder"] = VARATS_ROOT + "paper_configs/"
     config["benchbuild_root"] = BB_ROOT
 
-    #TODO: hook for research tool
+    #TODO: hook for research tool (se-passau/VaRA#718)
 
     config.store(local.path(config_file))
     layers.copy_([config_file], config["config_file"].value)
