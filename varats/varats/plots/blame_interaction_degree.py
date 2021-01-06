@@ -559,8 +559,9 @@ class BlameDegree(Plot):
             unique_revisions, plot_cfg, self.plot_kwargs
         )
 
-    LibsToColormapAndLibsToIndexWithShadesMappingsTuple = \
-        tp.Tuple[tp.Dict[str, tp.Any], tp.Dict[str, tp.Dict[int, str]]]
+    IndexShadesMapping = tp.Dict[int, str]
+    LibraryColormapMapping = tp.Dict[str, tp.Any]
+    LibraryToIndexShadesMapping = tp.Dict[str, IndexShadesMapping]
 
     def _multi_lib_interaction_sankey_plot(
         self,
@@ -613,9 +614,10 @@ class BlameDegree(Plot):
         lib_name_dict = gen_lib_name_dict(interaction_plot_df)
 
         def build_color_mappings(
-        ) -> BlameDegree.LibsToColormapAndLibsToIndexWithShadesMappingsTuple:
-            libs_to_colormaps: tp.Dict[str, tp.Any] = {}
-            libs_to_shades: tp.Dict[str, tp.Dict[int, str]] = dict(
+        ) -> tp.Tuple[BlameDegree.LibraryColormapMapping,
+                      BlameDegree.LibraryToIndexShadesMapping]:
+            lib_to_colormap: BlameDegree.LibraryColormapMapping = {}
+            lib_to_idx_shades: BlameDegree.LibraryToIndexShadesMapping = dict(
                 (name, dict())
                 for name in lib_name_dict["all_distinct_lib_names"]
             )
@@ -630,7 +632,7 @@ class BlameDegree(Plot):
                     "Colormaps will be reused."
                 )
 
-            for lib_idx, lib_name in enumerate(libs_to_shades):
+            for lib_idx, lib_name in enumerate(lib_to_idx_shades):
                 # If there are not enough colormaps provided, reuse them.
                 if num_colormaps <= lib_idx:
                     lib_idx = 0
@@ -639,7 +641,7 @@ class BlameDegree(Plot):
                     tp.cast(tp.List[str], plot_cfg['colormaps'])[lib_idx]
                 )(np.linspace(0.25, 1, highest_degree + 1))
 
-                libs_to_colormaps[lib_name] = cm.get_cmap(
+                lib_to_colormap[lib_name] = cm.get_cmap(
                     tp.cast(tp.List[str], plot_cfg['colormaps'])[lib_idx]
                 )
                 tmp_idx_to_shades_mapping: tp.Dict[int, str] = {}
@@ -647,9 +649,9 @@ class BlameDegree(Plot):
                 for shade_idx, shades in enumerate(shade_lists):
                     tmp_idx_to_shades_mapping[shade_idx] = str(tuple(shades))
 
-                libs_to_shades[lib_name] = tmp_idx_to_shades_mapping
+                lib_to_idx_shades[lib_name] = tmp_idx_to_shades_mapping
 
-            return libs_to_colormaps, libs_to_shades
+            return lib_to_colormap, lib_to_idx_shades
 
         lib_name_to_colormap_mapping, lib_name_to_color_shades_mapping = \
             build_color_mappings()
