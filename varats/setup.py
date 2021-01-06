@@ -27,7 +27,7 @@ setup(
         "seaborn>=0.8.0",
         "matplotlib>=3.1.2",
         "pandas>=0.22.0",
-        "benchbuild>=5.3.1",  # TODO: upgrade BB version
+        "benchbuild>=6.0.0"
         "plumbum>=1.6.6",
         "wllvm>=1.1.4",
         "argparse-utils>=1.2.0",
