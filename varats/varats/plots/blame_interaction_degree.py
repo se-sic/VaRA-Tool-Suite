@@ -154,6 +154,212 @@ def _generate_stackplot(
     )
 
 
+class FractionMap:
+    """Mapping of library names to fractions."""
+
+    def __init__(self) -> None:
+        self.__mapping: tp.DefaultDict[str, tp.List[float]] = defaultdict(list)
+
+    @property
+    def as_default_dict(self) -> tp.DefaultDict[str, tp.List[float]]:
+        return self.__mapping
+
+    def get_lib_num(self) -> int:
+        return len(self.__mapping.keys())
+
+    def get_lib_names(self) -> tp.List[str]:
+        """Returns all library names."""
+
+        lib_names: tp.List[str] = []
+        for lib_name in self.__mapping:
+            lib_names.append(lib_name)
+
+        return lib_names
+
+    def get_all_fraction_lists(self) -> tp.List[tp.List[float]]:
+        """Returns a list containing all library fraction lists."""
+
+        all_fraction_lists: tp.List[tp.List[float]] = []
+        for fraction_list in self.__mapping.values():
+            all_fraction_lists.append(fraction_list)
+
+        return all_fraction_lists
+
+    def get_fractions_from_lib(self, lib_name: str) -> tp.List[float]:
+        return self.__mapping[lib_name]
+
+    def add_fraction_to_lib(self, lib_name: str, fraction: float) -> None:
+        self.__mapping[lib_name].append(fraction)
+
+
+BaseInterFractionMapTuple = tp.Tuple[FractionMap, FractionMap]
+
+
+def _calc_fractions(
+    unique_revisions: tp.List[str],
+    revision_to_base_names_mapping: tp.Dict[str, tp.List[str]],
+    revision_to_inter_names_mapping: tp.Dict[str, tp.List[str]],
+    revision_to_dataframes_mapping: tp.Dict[str, pd.DataFrame],
+    revision_to_total_amount_mapping: tp.Dict[str, int]
+) -> BaseInterFractionMapTuple:
+    """Calculate the fractions of the base and interacting libraries for the
+    fraction overview plot."""
+
+    base_fraction_map = FractionMap()
+    inter_fraction_map = FractionMap()
+
+    for rev in unique_revisions:
+        for base_name in revision_to_base_names_mapping[rev]:
+            current_fraction = np.divide(
+                revision_to_dataframes_mapping[rev].loc[
+                    revision_to_dataframes_mapping[rev].base_lib == base_name
+                ].amount.sum(), revision_to_total_amount_mapping[rev]
+            )
+            base_fraction_map.add_fraction_to_lib(base_name, current_fraction)
+
+        for inter_name in revision_to_inter_names_mapping[rev]:
+            current_fraction = np.divide(
+                revision_to_dataframes_mapping[rev].loc[
+                    revision_to_dataframes_mapping[rev].inter_lib == inter_name
+                ].amount.sum(), revision_to_total_amount_mapping[rev]
+            )
+            inter_fraction_map.add_fraction_to_lib(inter_name, current_fraction)
+
+    return base_fraction_map, inter_fraction_map
+
+
+def _gen_fraction_overview_legend(
+    legends_axis: tp.Any, handles: tp.Any, legend_title_suffix: str,
+    legend_items: tp.List[str], plot_cfg: tp.Dict[str, tp.Any]
+) -> None:
+    legend = legends_axis.legend(
+        handles=handles,
+        title=f'{plot_cfg["legend_title"]} | {legend_title_suffix}',
+        # TODO (se-passau/VaRA#545): remove cast with plot config
+        #  rework
+        labels=map(
+            tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
+            legend_items
+        ),
+        loc='upper left',
+        prop={
+            'size': plot_cfg['legend_size'],
+            'family': 'monospace'
+        }
+    )
+    plt.setp(
+        legend.get_title(),
+        fontsize=plot_cfg['legend_size'],
+        family='monospace',
+    )
+    legends_axis.add_artist(legend)
+    legend.set_visible(plot_cfg['legend_visible'])
+
+
+def _plot_fraction_overview(
+    base_lib_fraction_map: FractionMap, inter_lib_fraction_map: FractionMap,
+    with_churn: bool, unique_revisions: tp.List[str],
+    plot_cfg: tp.Dict[str, tp.Any], plot_kwargs: tp.Dict[str, tp.Any]
+) -> None:
+
+    fig = plt.figure()
+    grid_spec = fig.add_gridspec(3, 1)
+    out_axis = fig.add_subplot(grid_spec[0, :])
+    out_axis.get_xaxis().set_visible(False)
+    in_axis = fig.add_subplot(grid_spec[1, :])
+
+    if with_churn:
+        in_axis.get_xaxis().set_visible(False)
+        churn_axis = fig.add_subplot(grid_spec[-1, :], sharex=out_axis)
+        x_axis = churn_axis
+    else:
+        x_axis = in_axis
+
+    fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
+    fig.suptitle(
+        str(plot_cfg['fig_title']) + f' - Project {plot_kwargs["project"]}',
+        fontsize=8
+    )
+
+    colormap = plot_cfg['color_map'](
+        np.linspace(
+            0, 1,
+            max(
+                base_lib_fraction_map.get_lib_num(),
+                inter_lib_fraction_map.get_lib_num()
+            )
+        )
+    )
+
+    outgoing_plot_lines = []
+    ingoing_plot_lines = []
+
+    outgoing_plot_lines += out_axis.stackplot(
+        unique_revisions,
+        base_lib_fraction_map.get_all_fraction_lists(),
+        linewidth=plot_cfg['linewidth'],
+        colors=colormap,
+        edgecolor=plot_cfg['edgecolor'],
+        alpha=0.7
+    )
+
+    # Setup outgoing interactions legend
+    _gen_fraction_overview_legend(
+        out_axis, outgoing_plot_lines, "Outgoing interactions",
+        base_lib_fraction_map.get_lib_names(), plot_cfg
+    )
+
+    ingoing_plot_lines += in_axis.stackplot(
+        unique_revisions,
+        inter_lib_fraction_map.get_all_fraction_lists(),
+        linewidth=plot_cfg['linewidth'],
+        colors=colormap,
+        edgecolor=plot_cfg['edgecolor'],
+        alpha=0.7
+    )
+
+    # Setup ingoing interactions legend
+    _gen_fraction_overview_legend(
+        in_axis, ingoing_plot_lines, "Ingoing interactions",
+        inter_lib_fraction_map.get_lib_names(), plot_cfg
+    )
+
+    # annotate CVEs
+    with_cve = plot_kwargs.get("with_cve", False)
+    with_bugs = plot_kwargs.get("with_bugs", False)
+    if with_cve or with_bugs:
+        if "project" not in plot_kwargs:
+            LOG.error("Need a project to annotate bug or CVE data.")
+        else:
+            project = get_project_cls_by_name(plot_kwargs["project"])
+            if with_cve:
+                draw_cves(in_axis, project, unique_revisions, plot_cfg)
+            if with_bugs:
+                draw_bugs(in_axis, project, unique_revisions, plot_cfg)
+
+    # draw churn subplot
+    if with_churn:
+        draw_code_churn_for_revisions(
+            churn_axis, plot_kwargs['project'], plot_kwargs['get_cmap'](),
+            unique_revisions
+        )
+
+    # Format labels of axes
+    plt.setp(
+        x_axis.get_xticklabels(),
+        fontsize=plot_cfg['xtick_size'],
+        fontfamily='monospace',
+        rotation=270
+    )
+
+    axes = [out_axis, in_axis]
+    if with_churn:
+        axes.append(churn_axis)
+
+    for axis in axes:
+        plt.setp(axis.get_yticklabels(), fontsize=8, fontfamily='monospace')
+
+
 class BlameDegree(Plot):
     """Base plot for blame degree plots."""
 
@@ -287,46 +493,6 @@ class BlameDegree(Plot):
             plot_cfg, self.plot_kwargs
         )
 
-    class FractionMap:
-        """Mapping of library names to fractions."""
-
-        def __init__(self) -> None:
-            self.__mapping: tp.DefaultDict[str,
-                                           tp.List[float]] = defaultdict(list)
-
-        @property
-        def as_default_dict(self) -> tp.DefaultDict[str, tp.List[float]]:
-            return self.__mapping
-
-        def get_lib_num(self) -> int:
-            return len(self.__mapping.keys())
-
-        def get_lib_names(self) -> tp.List[str]:
-            """Returns all library names."""
-
-            lib_names: tp.List[str] = []
-            for lib_name in self.__mapping:
-                lib_names.append(lib_name)
-
-            return lib_names
-
-        def get_all_fraction_lists(self) -> tp.List[tp.List[float]]:
-            """Returns a list containing all library fraction lists."""
-
-            all_fraction_lists: tp.List[tp.List[float]] = []
-            for fraction_list in self.__mapping.values():
-                all_fraction_lists.append(fraction_list)
-
-            return all_fraction_lists
-
-        def get_fractions_from_lib(self, lib_name: str) -> tp.List[float]:
-            return self.__mapping[lib_name]
-
-        def add_fraction_to_lib(self, lib_name: str, fraction: float) -> None:
-            self.__mapping[lib_name].append(fraction)
-
-    BaseInterFractionMapTuple = tp.Tuple[FractionMap, FractionMap]
-
     def _fraction_overview_plot(
         self,
         view_mode: bool,
@@ -357,187 +523,41 @@ class BlameDegree(Plot):
         revision_df = pd.DataFrame(df["revision"])
         unique_revisions = list(revision_df["revision"].unique())
         grouped_df: pd.DataFrame = df.groupby(['revision'])
-        dataframes_per_revision: tp.Dict[str, pd.DataFrame] = {}
+        revision_to_dataframes_mapping: tp.Dict[str, pd.DataFrame] = {}
 
         for revision in unique_revisions:
-            dataframes_per_revision[revision] = grouped_df.get_group(revision)
+            revision_to_dataframes_mapping[revision] = grouped_df.get_group(
+                revision
+            )
 
-        total_amount_per_revision: tp.Dict[str, int] = {}
-        base_lib_names_per_revision: tp.Dict[str, tp.List[str]] = {}
-        inter_lib_names_per_revision: tp.Dict[str, tp.List[str]] = {}
+        revision_to_total_amount_mapping: tp.Dict[str, int] = {}
+        revision_to_base_names_mapping: tp.Dict[str, tp.List[str]] = {}
+        revision_to_inter_names_mapping: tp.Dict[str, tp.List[str]] = {}
 
+        # Collect mapping data
         for revision in unique_revisions:
-            total_amount_per_revision[revision] = dataframes_per_revision[
-                revision].sum().amount
-            base_lib_names_per_revision[revision
-                                       ] = _get_distinct_base_lib_names(
-                                           dataframes_per_revision[revision]
-                                       )
-            inter_lib_names_per_revision[revision
-                                        ] = _get_distinct_inter_lib_names(
-                                            dataframes_per_revision[revision]
-                                        )
-
-        def calc_fractions() -> BlameDegree.BaseInterFractionMapTuple:
-            base_fraction_map = BlameDegree.FractionMap()
-            inter_fraction_map = BlameDegree.FractionMap()
-
-            for rev in unique_revisions:
-                for base_name in base_lib_names_per_revision[rev]:
-                    current_fraction = np.divide(
-                        dataframes_per_revision[rev].loc[
-                            dataframes_per_revision[rev].base_lib == base_name
-                        ].amount.sum(), total_amount_per_revision[rev]
-                    )
-                    base_fraction_map.add_fraction_to_lib(
-                        base_name, current_fraction
-                    )
-
-                for inter_name in inter_lib_names_per_revision[rev]:
-                    current_fraction = np.divide(
-                        dataframes_per_revision[rev].loc[
-                            dataframes_per_revision[rev].inter_lib == inter_name
-                        ].amount.sum(), total_amount_per_revision[rev]
-                    )
-                    inter_fraction_map.add_fraction_to_lib(
-                        inter_name, current_fraction
-                    )
-
-            return base_fraction_map, inter_fraction_map
-
-        base_lib_fraction_map, inter_lib_fraction_map = calc_fractions()
-
-        base_plot_data = base_lib_fraction_map.get_all_fraction_lists()
-        inter_plot_data = inter_lib_fraction_map.get_all_fraction_lists()
-
-        def gen_fraction_overview_plot() -> None:
-            fig = plt.figure()
-            grid_spec = fig.add_gridspec(3, 1)
-            out_axis = fig.add_subplot(grid_spec[0, :])
-            out_axis.get_xaxis().set_visible(False)
-            in_axis = fig.add_subplot(grid_spec[1, :])
-
-            if with_churn:
-                in_axis.get_xaxis().set_visible(False)
-                churn_axis = fig.add_subplot(grid_spec[-1, :], sharex=out_axis)
-                x_axis = churn_axis
-            else:
-                x_axis = in_axis
-
-            fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
-            fig.suptitle(
-                str(plot_cfg['fig_title']) +
-                f' - Project {self.plot_kwargs["project"]}',
-                fontsize=8
-            )
-
-            def setup_legend(
-                legends_axis: tp.Any, handles: tp.Any, legend_title_suffix: str,
-                legend_items: tp.List[str]
-            ) -> None:
-                legend = legends_axis.legend(
-                    handles=handles,
-                    title=f'{plot_cfg["legend_title"]} | {legend_title_suffix}',
-                    # TODO (se-passau/VaRA#545): remove cast with plot config
-                    #  rework
-                    labels=map(
-                        tp.cast(
-                            tp.Callable[[str], str], plot_cfg['lable_modif']
-                        ), legend_items
-                    ),
-                    loc='upper left',
-                    prop={
-                        'size': plot_cfg['legend_size'],
-                        'family': 'monospace'
-                    }
+            revision_to_total_amount_mapping[
+                revision] = revision_to_dataframes_mapping[revision].sum(
+                ).amount
+            revision_to_base_names_mapping[
+                revision] = _get_distinct_base_lib_names(
+                    revision_to_dataframes_mapping[revision]
                 )
-                plt.setp(
-                    legend.get_title(),
-                    fontsize=plot_cfg['legend_size'],
-                    family='monospace',
-                )
-                legends_axis.add_artist(legend)
-                legend.set_visible(plot_cfg['legend_visible'])
-
-            colormap_length = max(
-                base_lib_fraction_map.get_lib_num(),
-                inter_lib_fraction_map.get_lib_num()
-            )
-            colormap = plot_cfg['color_map'](np.linspace(0, 1, colormap_length))
-
-            outgoing_plot_lines = []
-            ingoing_plot_lines = []
-
-            outgoing_plot_lines += out_axis.stackplot(
-                unique_revisions,
-                base_plot_data,
-                linewidth=plot_cfg['linewidth'],
-                colors=colormap,
-                edgecolor=plot_cfg['edgecolor'],
-                alpha=0.7
-            )
-
-            # Setup outgoing interactions legend
-            setup_legend(
-                out_axis, outgoing_plot_lines, "Outgoing interactions",
-                base_lib_fraction_map.get_lib_names()
-            )
-
-            ingoing_plot_lines += in_axis.stackplot(
-                unique_revisions,
-                inter_plot_data,
-                linewidth=plot_cfg['linewidth'],
-                colors=colormap,
-                edgecolor=plot_cfg['edgecolor'],
-                alpha=0.7
-            )
-
-            # Setup ingoing interactions legend
-            setup_legend(
-                in_axis, ingoing_plot_lines, "Ingoing interactions",
-                inter_lib_fraction_map.get_lib_names()
-            )
-
-            # annotate CVEs
-            with_cve = self.plot_kwargs.get("with_cve", False)
-            with_bugs = self.plot_kwargs.get("with_bugs", False)
-            if with_cve or with_bugs:
-                if "project" not in self.plot_kwargs:
-                    LOG.error("Need a project to annotate bug or CVE data.")
-                else:
-                    project = get_project_cls_by_name(
-                        self.plot_kwargs["project"]
-                    )
-                    if with_cve:
-                        draw_cves(in_axis, project, unique_revisions, plot_cfg)
-                    if with_bugs:
-                        draw_bugs(in_axis, project, unique_revisions, plot_cfg)
-
-            # draw churn subplot
-            if with_churn:
-                draw_code_churn_for_revisions(
-                    churn_axis, self.plot_kwargs['project'],
-                    self.plot_kwargs['get_cmap'](), unique_revisions
+            revision_to_inter_names_mapping[
+                revision] = _get_distinct_inter_lib_names(
+                    revision_to_dataframes_mapping[revision]
                 )
 
-            # Format labels of axes
-            plt.setp(
-                x_axis.get_xticklabels(),
-                fontsize=plot_cfg['xtick_size'],
-                fontfamily='monospace',
-                rotation=270
-            )
+        base_lib_fraction_map, inter_lib_fraction_map = _calc_fractions(
+            unique_revisions, revision_to_base_names_mapping,
+            revision_to_inter_names_mapping, revision_to_dataframes_mapping,
+            revision_to_total_amount_mapping
+        )
 
-            axes = [out_axis, in_axis]
-            if with_churn:
-                axes.append(churn_axis)
-
-            for axis in axes:
-                plt.setp(
-                    axis.get_yticklabels(), fontsize=8, fontfamily='monospace'
-                )
-
-        gen_fraction_overview_plot()
+        _plot_fraction_overview(
+            base_lib_fraction_map, inter_lib_fraction_map, with_churn,
+            unique_revisions, plot_cfg, self.plot_kwargs
+        )
 
     LibsToColormapAndLibsToIndexWithShadesMappingsTuple = \
         tp.Tuple[tp.Dict[str, tp.Any], tp.Dict[str, tp.Dict[int, str]]]
