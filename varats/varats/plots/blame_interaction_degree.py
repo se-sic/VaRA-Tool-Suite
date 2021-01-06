@@ -27,6 +27,10 @@ from varats.project.project_util import get_project_cls_by_name
 LOG = logging.getLogger(__name__)
 
 
+def _get_unique_revisions(dataframe: pd.DataFrame) -> tp.List[str]:
+    return list(dataframe.revision.unique())
+
+
 def _filter_data_frame(
     degree_type: DegreeType, interaction_plot_df: pd.DataFrame,
     commit_map: CommitMap
@@ -568,6 +572,7 @@ class BlameDegree(Plot):
         view_mode: bool,
         degree_type: DegreeType,
         extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
+        save_path: tp.Optional[Path] = None
     ) -> go.Figure:
 
         # Choose sequential colormaps for correct shading
@@ -595,8 +600,15 @@ class BlameDegree(Plot):
             interaction_plot_df.degree_type == degree_type.value]
         interaction_plot_df.sort_values(by=['time_id'], inplace=True)
         interaction_plot_df.reset_index(inplace=True)
+        unique_revisions = _get_unique_revisions(interaction_plot_df)
 
-        def gen_lib_name_dict(df: pd.DataFrame) -> tp.Dict[str, tp.List[str]]:
+        # TODO: replace unique revisions in other methods with function call
+
+        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
+
+        def get_separated_lib_names_dict(
+            df: pd.DataFrame
+        ) -> tp.Dict[str, tp.List[str]]:
             name_dict: tp.Dict[str, tp.List[str]] = {
                 "base_lib_names": _get_distinct_base_lib_names(df),
                 "inter_lib_names": _get_distinct_inter_lib_names(df)
@@ -611,9 +623,8 @@ class BlameDegree(Plot):
             )
             return name_dict
 
-        lib_name_dict = gen_lib_name_dict(interaction_plot_df)
-
         def build_color_mappings(
+            lib_name_dict: tp.Dict[str, tp.List[str]]
         ) -> tp.Tuple[BlameDegree.LibraryColormapMapping,
                       BlameDegree.LibraryToIndexShadesMapping]:
             lib_to_colormap: BlameDegree.LibraryColormapMapping = {}
@@ -653,10 +664,8 @@ class BlameDegree(Plot):
 
             return lib_to_colormap, lib_to_idx_shades
 
-        lib_name_to_colormap_mapping, lib_name_to_color_shades_mapping = \
-            build_color_mappings()
-
         def create_lib_name_to_idx_mapping(
+            lib_name_dict: tp.Dict[str, tp.List[str]]
         ) -> tp.Tuple[tp.Dict[str, int], tp.Dict[str, int]]:
             base_lib_mapping: tp.Dict[str, int] = {}
             inter_lib_mapping: tp.Dict[str, int] = {}
@@ -673,7 +682,9 @@ class BlameDegree(Plot):
             return base_lib_mapping, inter_lib_mapping
 
         def collect_plotting_data(
-            dataframe: pd.DataFrame
+            dataframe: pd.DataFrame, lib_name_dict: tp.Dict[str, tp.List[str]],
+            lib_name_to_colormap_mapping: tp.Dict[str, tp.Any],
+            lib_name_to_color_shades_mapping: tp.Dict[str, tp.Dict[int, str]]
         ) -> tp.Dict[str, tp.List[tp.Any]]:
             sankey_data_dict: tp.Dict[str, tp.List[tp.Any]] = {
                 "sources": [],
@@ -684,11 +695,8 @@ class BlameDegree(Plot):
                 "degrees": [],
             }
 
-            revision_df = pd.DataFrame(interaction_plot_df["revision"])
-            unique_revisions = list(revision_df["revision"].unique())
-
             base_lib_name_index_mapping, inter_lib_name_index_mapping = \
-                create_lib_name_to_idx_mapping()
+                create_lib_name_to_idx_mapping(lib_name_dict)
 
             for name in lib_name_dict["all_lib_names"]:
                 sankey_data_dict["node_colors"].append(
@@ -705,17 +713,15 @@ class BlameDegree(Plot):
                 sankey_data_dict["targets"].append(
                     inter_lib_name_index_mapping[row["inter_lib"]]
                 )
-                sankey_data_dict["fractions"].append(
-                    row["fraction"] * 100 / len(unique_revisions)
-                )
+                sankey_data_dict["fractions"].append(row["fraction"] * 100)
                 sankey_data_dict["degrees"].append(row["degree"])
                 sankey_data_dict["edge_colors"].append(color)
 
             return sankey_data_dict
 
-        data_dict = collect_plotting_data(interaction_plot_df)
-
-        def build_sankey_figure() -> go.Figure:
+        def build_sankey_figure(
+            data_dict: tp.Dict[str, tp.List[tp.Any]]
+        ) -> go.Figure:
             layout = go.Layout(
                 autosize=False,
                 width=plot_cfg['width'],
@@ -757,7 +763,43 @@ class BlameDegree(Plot):
 
             return fig
 
-        return build_sankey_figure()
+        def save_figure(
+            figure: tp.Any,
+            revision: str,
+            c_map: CommitMap,
+            path: tp.Optional[Path] = None,
+            filetype: str = 'png'
+        ) -> None:
+            revision_id = -1
+            for c_hash, idx in c_map.mapping_items():
+                if c_hash.startswith(revision):
+                    revision_id = idx
+                    break
+
+            if path is None:
+                plot_dir = self.plot_kwargs["plot_dir"]
+            else:
+                plot_dir = path
+
+            file_name = self.plot_file_name(filetype).rsplit('.', 1)[0]
+            file_name = f"{file_name}_{revision_id}.{filetype}"
+
+            pio.write_image(
+                figure, str(plot_dir) + "/" + file_name, format=filetype
+            )
+
+        # Generate and save all sankey plots
+        for rev in unique_revisions:
+            df = interaction_plot_df.loc[interaction_plot_df['revision'] == rev]
+
+            lib_name_dict = get_separated_lib_names_dict(df)
+            lib_to_colormap, lib_to_shades = build_color_mappings(lib_name_dict)
+
+            plotting_data_dict = collect_plotting_data(
+                df, lib_name_dict, lib_to_colormap, lib_to_shades
+            )
+            fig = build_sankey_figure(plotting_data_dict)
+            save_figure(fig, rev, commit_map, save_path, "png")
 
     def _calc_missing_revisions(
         self, degree_type: DegreeType, boundary_gradient: float
@@ -951,24 +993,13 @@ class BlameLibraryInteractions(BlameDegree):
         self.__figure.show()
 
     def save(
-        self, path: tp.Optional[Path] = None, filetype: str = 'png'
+        self, path: tp.Optional[Path] = None, filetype: str = 'svg'
     ) -> None:
         try:
             self.plot(False)
         except PlotDataEmpty:
             LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
             return
-
-        if path is None:
-            plot_dir = self.plot_kwargs["plot_dir"]
-        else:
-            plot_dir = path
-
-        pio.write_image(
-            self.__figure,
-            str(plot_dir) + "/" + self.plot_file_name(filetype),
-            format=filetype
-        )
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
