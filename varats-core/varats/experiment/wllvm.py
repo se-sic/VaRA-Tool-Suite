@@ -67,15 +67,15 @@ class RunWLLVM(base.Extension):  # type: ignore
             wllvm = local["wllvm"]
 
         env = bb_cfg()["env"].value
-        path = path_to_list(getenv("PATH", ""))
-        path.extend(env.get("PATH", []))
+        env_path_list = path_to_list(getenv("PATH", ""))
+        env_path_list.extend(env.get("PATH", []))
 
         libs_path = path_to_list(getenv("LD_LIBRARY_PATH", ""))
         libs_path.extend(env.get("LD_LIBRARY_PATH", []))
 
         wllvm = wllvm.with_env(
             LLVM_COMPILER="clang",
-            PATH=list_to_path(path),
+            PATH=list_to_path(env_path_list),
             LD_LIBRARY_PATH=list_to_path(libs_path)
         )
 

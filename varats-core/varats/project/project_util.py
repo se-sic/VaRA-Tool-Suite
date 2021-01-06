@@ -13,9 +13,7 @@ from benchbuild.utils.cmd import cp, find, git, mkdir
 from plumbum import local
 
 
-def get_project_cls_by_name(
-    project_name: str
-) -> tp.Type[bb.Project]:  # type: ignore
+def get_project_cls_by_name(project_name: str) -> tp.Type[bb.Project]:
     """Look up a BenchBuild project by it's name."""
     for proj in bb.project.ProjectRegistry.projects:
         if proj.endswith('gentoo') or proj.endswith("benchbuild"):
@@ -23,7 +21,7 @@ def get_project_cls_by_name(
             continue
 
         if proj.startswith(project_name):
-            project: tp.Type[bb.Project  # type: ignore
+            project: tp.Type[bb.Project
                             ] = bb.project.ProjectRegistry.projects[proj]
             return project
 
@@ -189,14 +187,18 @@ class ProjectBinaryWrapper():
 
     @property
     def name(self) -> str:
+        """Name of the binary."""
         return self.__binary_name
 
     @property
     def path(self) -> Path:
+        """Path to the binary location."""
         return self.__binary_path
 
     @property
     def type(self) -> BinaryType:
+        """Specifies the type, e.g., executable, shared, or static library, of
+        the binary."""
         return self.__type
 
     def __str__(self) -> str:
@@ -229,7 +231,8 @@ def wrap_paths_to_binaries(
     binaries: tp.List[tp.Tuple[str, BinaryType]]
 ) -> tp.List[ProjectBinaryWrapper]:
     """
-    Generates a wrapper for project binaries.
+    Generates a wrapper for project binaries, automatically infering the binary
+    name.
 
     >>> wrap_paths_to_binaries([("src/foo", BinaryType.executable)])
     [(foo: src/foo | executable)]

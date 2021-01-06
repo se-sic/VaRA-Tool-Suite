@@ -75,23 +75,26 @@ def build_tables(**args: tp.Any) -> None:
     Args:
         **args: the arguments for the table(s)
     """
-    for table in prepare_tables(**args):
-        build_table(table)
+    for p_table in prepare_tables(**args):
+        build_table(p_table)
 
 
-def build_table(table: 'table.Table') -> None:
+def build_table(table_to_build: 'table.Table') -> None:
     """
     Builds the given table.
 
     Args:
         table: the table to build
     """
-    if table.table_kwargs["view"]:
+    if table_to_build.table_kwargs["view"]:
         from varats.table.table import TableFormat  # pylint: disable=C0415
-        table.format = TableFormat.fancy_grid
-        print(table.tabulate())
+        table_to_build.format = TableFormat.fancy_grid
+        print(table_to_build.tabulate())
     else:
-        table.save()
+        table_to_build.save(
+            wrap_document=table_to_build.table_kwargs.
+            get("wrap_document", False)
+        )
 
 
 @check_required_args(['table_type'])
@@ -153,14 +156,12 @@ def prepare_tables(**args: tp.Any) -> tp.Iterable['table.Table']:
             args['table_case_study'] = case_study
             tables.append(prepare_table(**args))
         return tables
+
+    if 'project' in args:
+        args['get_cmap'] = create_lazy_commit_map_loader(args['project'])
+    if 'cs_path' in args:
+        case_study_path = Path(args['cs_path'])
+        args['table_case_study'] = load_case_study_from_file(case_study_path)
     else:
-        if 'project' in args:
-            args['get_cmap'] = create_lazy_commit_map_loader(args['project'])
-        if 'cs_path' in args:
-            case_study_path = Path(args['cs_path'])
-            args['table_case_study'] = load_case_study_from_file(
-                case_study_path
-            )
-        else:
-            args['table_case_study'] = None
-        return [prepare_table(**args)]
+        args['table_case_study'] = None
+    return [prepare_table(**args)]
