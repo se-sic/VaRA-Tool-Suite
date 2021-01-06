@@ -5,6 +5,7 @@ import shutil
 import typing as tp
 from pathlib import Path
 
+from benchbuild.environments.domain.declarative import ContainerImage
 from plumbum import local
 from PyQt5.QtCore import QProcess
 
@@ -194,3 +195,15 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         status_ok &= (install_location / "bin/phasar-llvm").exists()
 
         return status_ok
+
+    def add_container_layers(self, layers: ContainerImage) -> ContainerImage:
+        """
+        Add the layers required for this research tool to the given container.
+
+        Args:
+            layers: the container to add the layers to
+
+        Returns:
+            the container with the added layers
+        """
+        raise NotImplementedError("See se-passau/VaRA#718")
