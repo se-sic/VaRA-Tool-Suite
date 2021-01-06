@@ -45,7 +45,7 @@ def _add_varats_layers(layers: ContainerImage) -> ContainerImage:
 
     def from_source(image: ContainerImage) -> None:
         LOG.debug('installing benchbuild from source.')
-        LOG.debug('src_dir: %s tgt_dir: %s', src_dir, tgt_dir)
+        LOG.debug(f'src_dir: {src_dir} tgt_dir: {tgt_dir}')
 
         image.run('mkdir', f'{tgt_dir}', runtime=crun)
         image.run('pip3', 'install', 'setuptools', runtime=crun)
