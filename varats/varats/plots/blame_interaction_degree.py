@@ -27,6 +27,44 @@ from varats.project.project_util import get_project_cls_by_name
 LOG = logging.getLogger(__name__)
 
 
+class FractionMap:
+    """Mapping of library names to fractions."""
+
+    def __init__(self) -> None:
+        self.__mapping: tp.DefaultDict[str, tp.List[float]] = defaultdict(list)
+
+    @property
+    def as_default_dict(self) -> tp.DefaultDict[str, tp.List[float]]:
+        return self.__mapping
+
+    def get_lib_num(self) -> int:
+        return len(self.__mapping.keys())
+
+    def get_lib_names(self) -> tp.List[str]:
+        """Returns all library names."""
+
+        lib_names: tp.List[str] = []
+        for lib_name in self.__mapping:
+            lib_names.append(lib_name)
+
+        return lib_names
+
+    def get_all_fraction_lists(self) -> tp.List[tp.List[float]]:
+        """Returns a list containing all library fraction lists."""
+
+        all_fraction_lists: tp.List[tp.List[float]] = []
+        for fraction_list in self.__mapping.values():
+            all_fraction_lists.append(fraction_list)
+
+        return all_fraction_lists
+
+    def get_fractions_from_lib(self, lib_name: str) -> tp.List[float]:
+        return self.__mapping[lib_name]
+
+    def add_fraction_to_lib(self, lib_name: str, fraction: float) -> None:
+        self.__mapping[lib_name].append(fraction)
+
+
 def _get_unique_revisions(dataframe: pd.DataFrame) -> tp.List[str]:
     return list(dataframe.revision.unique())
 
@@ -156,44 +194,6 @@ def _generate_stackplot(
         fontfamily='monospace',
         rotation=270
     )
-
-
-class FractionMap:
-    """Mapping of library names to fractions."""
-
-    def __init__(self) -> None:
-        self.__mapping: tp.DefaultDict[str, tp.List[float]] = defaultdict(list)
-
-    @property
-    def as_default_dict(self) -> tp.DefaultDict[str, tp.List[float]]:
-        return self.__mapping
-
-    def get_lib_num(self) -> int:
-        return len(self.__mapping.keys())
-
-    def get_lib_names(self) -> tp.List[str]:
-        """Returns all library names."""
-
-        lib_names: tp.List[str] = []
-        for lib_name in self.__mapping:
-            lib_names.append(lib_name)
-
-        return lib_names
-
-    def get_all_fraction_lists(self) -> tp.List[tp.List[float]]:
-        """Returns a list containing all library fraction lists."""
-
-        all_fraction_lists: tp.List[tp.List[float]] = []
-        for fraction_list in self.__mapping.values():
-            all_fraction_lists.append(fraction_list)
-
-        return all_fraction_lists
-
-    def get_fractions_from_lib(self, lib_name: str) -> tp.List[float]:
-        return self.__mapping[lib_name]
-
-    def add_fraction_to_lib(self, lib_name: str, fraction: float) -> None:
-        self.__mapping[lib_name].append(fraction)
 
 
 BaseInterFractionMapTuple = tp.Tuple[FractionMap, FractionMap]
@@ -364,6 +364,114 @@ def _plot_fraction_overview(
         plt.setp(axis.get_yticklabels(), fontsize=8, fontfamily='monospace')
 
 
+def _get_separated_lib_names_dict(
+    dataframe: pd.DataFrame
+) -> tp.Dict[str, tp.List[str]]:
+    """Creates a dict that contains library information about distinct base and
+    interacting library names, the names of all libraries and the distinct names
+    of all libraries."""
+
+    name_dict: tp.Dict[str, tp.List[str]] = {
+        "base_lib_names": _get_distinct_base_lib_names(dataframe),
+        "inter_lib_names": _get_distinct_inter_lib_names(dataframe)
+    }
+
+    # Duplicated lib names are necessary to avoid cycles in the plot
+    name_dict["all_lib_names"
+             ] = name_dict["base_lib_names"] + name_dict["inter_lib_names"]
+
+    name_dict["all_distinct_lib_names"] = sorted(
+        set(name_dict["all_lib_names"])
+    )
+    return name_dict
+
+
+IndexShadesMapping = tp.Dict[int, str]
+LibraryColormapMapping = tp.Dict[str, tp.Any]
+LibraryToIndexShadesMapping = tp.Dict[str, IndexShadesMapping]
+
+
+def _build_sankey_color_mappings(
+    highest_degree: int, plot_cfg: tp.Dict[str, tp.Any],
+    lib_name_dict: tp.Dict[str, tp.List[str]]
+) -> tp.Tuple[LibraryColormapMapping, LibraryToIndexShadesMapping]:
+    """Returns a tuple of a LibraryColormapMapping and a
+    LibraryToIndexShadesMapping."""
+
+    lib_to_colormap: LibraryColormapMapping = {}
+    lib_to_idx_shades: LibraryToIndexShadesMapping = dict(
+        (name, dict()) for name in lib_name_dict["all_distinct_lib_names"]
+    )
+    num_colormaps: int = len(tp.cast(tp.List[str], plot_cfg['colormaps']))
+
+    if len(lib_name_dict["all_distinct_lib_names"]) > num_colormaps:
+        LOG.warning(
+            "Not enough colormaps for all libraries provided. "
+            "Colormaps will be reused."
+        )
+
+    for lib_idx, lib_name in enumerate(lib_to_idx_shades):
+        # If there are not enough colormaps provided, reuse them.
+        if num_colormaps <= lib_idx:
+            lib_idx = 0
+
+        shade_lists = cm.get_cmap(
+            tp.cast(tp.List[str], plot_cfg['colormaps'])[lib_idx]
+        )(np.linspace(0.25, 1, highest_degree + 1))
+
+        lib_to_colormap[lib_name] = cm.get_cmap(
+            tp.cast(tp.List[str], plot_cfg['colormaps'])[lib_idx]
+        )
+        tmp_idx_to_shades_mapping: tp.Dict[int, str] = {}
+
+        for shade_idx, shades in enumerate(shade_lists):
+            tmp_idx_to_shades_mapping[shade_idx] = str(tuple(shades))
+
+        lib_to_idx_shades[lib_name] = tmp_idx_to_shades_mapping
+
+    return lib_to_colormap, lib_to_idx_shades
+
+
+def _get_verified_revision(
+    revision: str, unique_revisions: tp.List[str]
+) -> str:
+    """
+    Returns the passed revision in full length after checking its validity.
+
+    If the passed revision is a unique prefix of an existing one, it will be
+    extended it to its full length.
+    """
+
+    revision = revision.strip()
+    matching_prefix_revs = []
+
+    # Autocomplete the selected revision string if it's unique in all revisions.
+    for rev in unique_revisions:
+        if rev.startswith(revision):
+            matching_prefix_revs.append(rev)
+    if not matching_prefix_revs:
+        LOG.warning(
+            "The selected revision does not exist in the "
+            "database nor is it a prefix of an existing "
+            "one."
+        )
+        raise PlotDataEmpty
+    if len(matching_prefix_revs) > 1:
+        matching_revs_as_str: str = ""
+        for prefix_rev in matching_prefix_revs:
+            matching_revs_as_str += f"{prefix_rev}\n"
+        LOG.warning(
+            f"The selected revision does not exist in the "
+            f"database. The selected revision was: {revision}. Did you "
+            f"mean any of the following revisions?"
+            f"\n{matching_revs_as_str} "
+        )
+        raise PlotDataEmpty
+
+    revision = matching_prefix_revs[0]
+    return revision
+
+
 def _save_figure(
     figure: tp.Any,
     revision: str,
@@ -402,37 +510,106 @@ def _save_figure(
     pio.write_image(figure, str(plot_dir) + "/" + file_name, format=filetype)
 
 
-def _get_completed_revision(
-    revision: str, unique_revisions: tp.List[str]
-) -> str:
-    revision = revision.strip()
-    matching_prefix_revs = []
+def _collect_sankey_plotting_data(
+    dataframe: pd.DataFrame, lib_name_dict: tp.Dict[str, tp.List[str]],
+    lib_name_to_colormap_mapping: tp.Dict[str, tp.Any],
+    lib_name_to_color_shades_mapping: tp.Dict[str, tp.Dict[int, str]]
+) -> tp.Dict[str, tp.List[tp.Any]]:
+    sankey_data_dict: tp.Dict[str, tp.List[tp.Any]] = {
+        "sources": [],
+        "targets": [],
+        "fractions": [],
+        "node_colors": [],
+        "edge_colors": [],
+        "degrees": [],
+    }
 
-    # Autocomplete selected revision string if unique in revisions.
-    for rev in unique_revisions:
-        if rev.startswith(revision):
-            matching_prefix_revs.append(rev)
-    if not matching_prefix_revs:
-        LOG.warning(
-            "The selected revision does not exist in the "
-            "database nor is it a prefix of an existing "
-            "one."
-        )
-        raise PlotDataEmpty
-    if len(matching_prefix_revs) > 1:
-        matching_revs_as_str: str = ""
-        for prefix_rev in matching_prefix_revs:
-            matching_revs_as_str += f"{prefix_rev}\n"
-        LOG.warning(
-            f"The selected revision does not exist in the "
-            f"database. The selected revision was: {revision}. Did you "
-            f"mean any of the following revisions?"
-            f"\n{matching_revs_as_str} "
-        )
-        raise PlotDataEmpty
+    base_lib_name_index_mapping, inter_lib_name_index_mapping = \
+        _gen_sankey_lib_name_to_idx_mapping(lib_name_dict)
 
-    revision = matching_prefix_revs[0]
-    return revision
+    for name in lib_name_dict["all_lib_names"]:
+        sankey_data_dict["node_colors"].append(
+            f"rgba{tuple(lib_name_to_colormap_mapping[name](0.5))}"
+        )
+
+    for _, row in dataframe.iterrows():
+        color = "rgba" + lib_name_to_color_shades_mapping[row["base_lib"]][
+            row["degree"]]
+
+        sankey_data_dict["sources"].append(
+            base_lib_name_index_mapping[row["base_lib"]]
+        )
+        sankey_data_dict["targets"].append(
+            inter_lib_name_index_mapping[row["inter_lib"]]
+        )
+        sankey_data_dict["fractions"].append(row["fraction"] * 100)
+        sankey_data_dict["degrees"].append(row["degree"])
+        sankey_data_dict["edge_colors"].append(color)
+
+    return sankey_data_dict
+
+
+def _gen_sankey_lib_name_to_idx_mapping(
+    lib_name_dict: tp.Dict[str, tp.List[str]]
+) -> tp.Tuple[tp.Dict[str, int], tp.Dict[str, int]]:
+    base_lib_mapping: tp.Dict[str, int] = {}
+    inter_lib_mapping: tp.Dict[str, int] = {}
+
+    for idx, name in enumerate(lib_name_dict["base_lib_names"]):
+        base_lib_mapping[name] = idx
+
+    idx_offset = len(base_lib_mapping)
+
+    for idx, name in enumerate(lib_name_dict["inter_lib_names"]):
+        # Continue the index for the interacting libraries
+        inter_lib_mapping[name] = idx + idx_offset
+
+    return base_lib_mapping, inter_lib_mapping
+
+
+def _build_sankey_figure(
+    revision: str, view_mode: bool, data_dict: tp.Dict[str, tp.List[tp.Any]],
+    library_names_dict: tp.Dict[str, tp.List[str]], plot_cfg: tp.Dict[str,
+                                                                      tp.Any]
+) -> go.Figure:
+    layout = go.Layout(
+        autosize=False, width=plot_cfg['width'], height=plot_cfg['height']
+    )
+    fig = go.Figure(
+        data=[
+            go.Sankey(
+                arrangement="perpendicular",
+                node=dict(
+                    pad=15,
+                    thickness=20,
+                    line=dict(color="black", width=0.5),
+                    label=library_names_dict["all_lib_names"],
+                    color=data_dict["node_colors"],
+                    hovertemplate='Fraction ratio = %{'
+                    'value}%<extra></extra> '
+                ),
+                link=dict(
+                    source=data_dict["sources"],
+                    target=data_dict["targets"],
+                    value=data_dict["fractions"],
+                    color=data_dict["edge_colors"],
+                    customdata=data_dict["degrees"],
+                    hovertemplate='Interaction has a fraction ratio '
+                    'of %{value}%<br /> and a degree of '
+                    '%{customdata}<extra></extra>',
+                )
+            )
+        ]
+    )
+    if not view_mode:
+        fig.layout = layout
+
+    fig.update_layout(
+        title_text=f"Revision: {revision}<br />{plot_cfg['fig_title']}",
+        font_size=plot_cfg['font_size']
+    )
+
+    return fig
 
 
 class BlameDegree(Plot):
@@ -634,10 +811,6 @@ class BlameDegree(Plot):
             unique_revisions, plot_cfg, self.plot_kwargs
         )
 
-    IndexShadesMapping = tp.Dict[int, str]
-    LibraryColormapMapping = tp.Dict[str, tp.Any]
-    LibraryToIndexShadesMapping = tp.Dict[str, IndexShadesMapping]
-
     def _multi_lib_interaction_sankey_plot(
         self,
         view_mode: bool,
@@ -675,192 +848,38 @@ class BlameDegree(Plot):
         unique_revisions = _get_unique_revisions(interaction_plot_df)
 
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
-
-        def get_separated_lib_names_dict(
-            dataframe: pd.DataFrame
-        ) -> tp.Dict[str, tp.List[str]]:
-            name_dict: tp.Dict[str, tp.List[str]] = {
-                "base_lib_names": _get_distinct_base_lib_names(dataframe),
-                "inter_lib_names": _get_distinct_inter_lib_names(dataframe)
-            }
-
-            # Duplicated lib names are necessary to avoid cycles in the plot
-            name_dict["all_lib_names"] = name_dict[
-                "base_lib_names"] + name_dict["inter_lib_names"]
-
-            name_dict["all_distinct_lib_names"] = sorted(
-                set(name_dict["all_lib_names"])
-            )
-            return name_dict
-
-        def build_color_mappings(
-            lib_name_dict: tp.Dict[str, tp.List[str]]
-        ) -> tp.Tuple[BlameDegree.LibraryColormapMapping,
-                      BlameDegree.LibraryToIndexShadesMapping]:
-            lib_to_colormap: BlameDegree.LibraryColormapMapping = {}
-            lib_to_idx_shades: BlameDegree.LibraryToIndexShadesMapping = dict(
-                (name, dict())
-                for name in lib_name_dict["all_distinct_lib_names"]
-            )
-            num_colormaps: int = len(
-                tp.cast(tp.List[str], plot_cfg['colormaps'])
-            )
-            highest_degree = interaction_plot_df["degree"].max()
-
-            if len(lib_name_dict["all_distinct_lib_names"]) > num_colormaps:
-                LOG.warning(
-                    "Not enough colormaps for all libraries provided. "
-                    "Colormaps will be reused."
-                )
-
-            for lib_idx, lib_name in enumerate(lib_to_idx_shades):
-                # If there are not enough colormaps provided, reuse them.
-                if num_colormaps <= lib_idx:
-                    lib_idx = 0
-
-                shade_lists = cm.get_cmap(
-                    tp.cast(tp.List[str], plot_cfg['colormaps'])[lib_idx]
-                )(np.linspace(0.25, 1, highest_degree + 1))
-
-                lib_to_colormap[lib_name] = cm.get_cmap(
-                    tp.cast(tp.List[str], plot_cfg['colormaps'])[lib_idx]
-                )
-                tmp_idx_to_shades_mapping: tp.Dict[int, str] = {}
-
-                for shade_idx, shades in enumerate(shade_lists):
-                    tmp_idx_to_shades_mapping[shade_idx] = str(tuple(shades))
-
-                lib_to_idx_shades[lib_name] = tmp_idx_to_shades_mapping
-
-            return lib_to_colormap, lib_to_idx_shades
-
-        def create_lib_name_to_idx_mapping(
-            lib_name_dict: tp.Dict[str, tp.List[str]]
-        ) -> tp.Tuple[tp.Dict[str, int], tp.Dict[str, int]]:
-            base_lib_mapping: tp.Dict[str, int] = {}
-            inter_lib_mapping: tp.Dict[str, int] = {}
-
-            for idx, name in enumerate(lib_name_dict["base_lib_names"]):
-                base_lib_mapping[name] = idx
-
-            idx_offset = len(base_lib_mapping)
-
-            for idx, name in enumerate(lib_name_dict["inter_lib_names"]):
-                # Continue the index for the interacting libraries
-                inter_lib_mapping[name] = idx + idx_offset
-
-            return base_lib_mapping, inter_lib_mapping
-
-        def collect_plotting_data(
-            dataframe: pd.DataFrame, lib_name_dict: tp.Dict[str, tp.List[str]],
-            lib_name_to_colormap_mapping: tp.Dict[str, tp.Any],
-            lib_name_to_color_shades_mapping: tp.Dict[str, tp.Dict[int, str]]
-        ) -> tp.Dict[str, tp.List[tp.Any]]:
-            sankey_data_dict: tp.Dict[str, tp.List[tp.Any]] = {
-                "sources": [],
-                "targets": [],
-                "fractions": [],
-                "node_colors": [],
-                "edge_colors": [],
-                "degrees": [],
-            }
-
-            base_lib_name_index_mapping, inter_lib_name_index_mapping = \
-                create_lib_name_to_idx_mapping(lib_name_dict)
-
-            for name in lib_name_dict["all_lib_names"]:
-                sankey_data_dict["node_colors"].append(
-                    f"rgba{tuple(lib_name_to_colormap_mapping[name](0.5))}"
-                )
-
-            for _, row in dataframe.iterrows():
-                color = "rgba" + lib_name_to_color_shades_mapping[
-                    row["base_lib"]][row["degree"]]
-
-                sankey_data_dict["sources"].append(
-                    base_lib_name_index_mapping[row["base_lib"]]
-                )
-                sankey_data_dict["targets"].append(
-                    inter_lib_name_index_mapping[row["inter_lib"]]
-                )
-                sankey_data_dict["fractions"].append(row["fraction"] * 100)
-                sankey_data_dict["degrees"].append(row["degree"])
-                sankey_data_dict["edge_colors"].append(color)
-
-            return sankey_data_dict
-
-        def build_sankey_figure(
-            data_dict: tp.Dict[str, tp.List[tp.Any]], revision: str
-        ) -> go.Figure:
-            layout = go.Layout(
-                autosize=False,
-                width=plot_cfg['width'],
-                height=plot_cfg['height']
-            )
-            fig = go.Figure(
-                data=[
-                    go.Sankey(
-                        arrangement="perpendicular",
-                        node=dict(
-                            pad=15,
-                            thickness=20,
-                            line=dict(color="black", width=0.5),
-                            label=library_names_dict["all_lib_names"],
-                            color=data_dict["node_colors"],
-                            hovertemplate='Fraction ratio = %{'
-                            'value}%<extra></extra> '
-                        ),
-                        link=dict(
-                            source=data_dict["sources"],
-                            target=data_dict["targets"],
-                            value=data_dict["fractions"],
-                            color=data_dict["edge_colors"],
-                            customdata=data_dict["degrees"],
-                            hovertemplate='Interaction has a fraction ratio '
-                            'of %{value}%<br /> and a degree of '
-                            '%{customdata}<extra></extra>',
-                        )
-                    )
-                ]
-            )
-            if not view_mode:
-                fig.layout = layout
-
-            fig.update_layout(
-                title_text=f"Revision: {revision}<br />{plot_cfg['fig_title']}",
-                font_size=plot_cfg['font_size']
-            )
-
-            return fig
+        highest_degree = interaction_plot_df["degree"].max()
 
         # Generate and save sankey plots for all revs if no revision was
         # specified. If specified, show an interactive sankey plot in the
         # browser.
         for rev in unique_revisions:
             if view_mode and 'revision' in self.plot_kwargs:
-                rev = _get_completed_revision(
+                rev = _get_verified_revision(
                     self.plot_kwargs['revision'], unique_revisions
                 )
 
             df = interaction_plot_df.loc[interaction_plot_df['revision'] == rev]
 
-            library_names_dict = get_separated_lib_names_dict(df)
-            lib_to_colormap_mapping, lib_to_shades_mapping = \
-                build_color_mappings(library_names_dict)
-
-            plotting_data_dict = collect_plotting_data(
-                df, library_names_dict, lib_to_colormap_mapping,
-                lib_to_shades_mapping
+            lib_names_dict = _get_separated_lib_names_dict(df)
+            lib_cm_mapping, lib_shades_mapping = _build_sankey_color_mappings(
+                highest_degree, plot_cfg, lib_names_dict
             )
-            sankey_figure = build_sankey_figure(plotting_data_dict, rev)
+
+            plotting_data_dict = _collect_sankey_plotting_data(
+                df, lib_names_dict, lib_cm_mapping, lib_shades_mapping
+            )
+            sankey_figure = _build_sankey_figure(
+                rev, view_mode, plotting_data_dict, lib_names_dict, plot_cfg
+            )
 
             if view_mode and 'revision' in self.plot_kwargs:
                 return sankey_figure
-
-            _save_figure(
-                sankey_figure, rev, commit_map, self.plot_kwargs,
-                self.plot_file_name(filetype), save_path, 'png'
-            )
+            else:
+                _save_figure(
+                    sankey_figure, rev, commit_map, self.plot_kwargs,
+                    self.plot_file_name(filetype), save_path, 'png'
+                )
         return None
 
     def _calc_missing_revisions(
