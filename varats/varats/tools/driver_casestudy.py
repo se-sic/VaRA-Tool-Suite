@@ -5,6 +5,7 @@ import os
 import re
 import typing as tp
 from argparse import ArgumentParser, ArgumentTypeError, _SubParsersAction
+from enum import Enum
 from pathlib import Path
 
 from argparse_utils import enum_action
@@ -26,7 +27,11 @@ from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, MetaReport
-from varats.utils.cli_util import cli_list_choice, initialize_cli_tool
+from varats.utils.cli_util import (
+    cli_list_choice,
+    initialize_cli_tool,
+    cli_yn_choice,
+)
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
@@ -62,7 +67,7 @@ def main() -> None:
     elif args['subcommand'] == 'view':
         __casestudy_view(args)
     elif args['subcommand'] == 'cleanup':
-        __casestudy_cleanup(args)
+        __casestudy_cleanup(args, parser)
 
 
 def __create_status_parser(sub_parsers: _SubParsersAction) -> None:
@@ -301,8 +306,20 @@ def __create_cleanup_parser(sub_parsers: _SubParsersAction) -> None:
     cleanup_parser.add_argument(
         "cleanup_type",
         help="The type of the performed cleanup action.",
-        choices=["old", "error", "regex"],
+        action=enum_action(CleanupType)
+    )
+    cleanup_parser.add_argument(
+        "-f",
+        "--filter-regex",
+        help="Regex to determine which report files should be deleted.",
+        default="",
         type=str
+    )
+    cleanup_parser.add_argument(
+        "--silent",
+        action="store_true",
+        default=False,
+        help="Hide the output of the matching filenames."
     )
 
 
@@ -543,49 +560,114 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
         return
 
 
-def __casestudy_cleanup(args: tp.Dict[str, tp.Any]) -> None:
+def __casestudy_cleanup(
+    args: tp.Dict[str, tp.Any], parser: ArgumentParser
+) -> None:
     cleanup_type = args['cleanup_type']
+    if cleanup_type == CleanupType.error:
+        _remove_error_result_files()
+    if cleanup_type == CleanupType.old:
+        _remove_old_result_files()
+    if cleanup_type == CleanupType.regex:
+        if not args['filter_regex']:
+            parser.error("Specify a regex filter with --filter-regex or -f")
+        _remove_result_files_by_regex(args['filter_regex'], args['silent'])
+
+
+def _remove_old_result_files() -> None:
+    paper_config = get_paper_config()
+    result_dir = Path(str(vara_cfg()['result_dir']))
+    for case_study in paper_config.get_all_case_studies():
+        old_files: tp.List[Path] = []
+        newer_files: tp.Dict[str, Path] = dict()
+        result_dir_cs = result_dir / case_study.project_name
+        if not result_dir_cs.exists():
+            continue
+        for opt_res_file in result_dir_cs.iterdir():
+            commit_hash = MetaReport.get_commit_hash_from_result_file(
+                opt_res_file.name
+            )
+            if case_study.has_revision(commit_hash):
+                current_file = newer_files.get(commit_hash)
+                if current_file is None:
+                    newer_files[commit_hash] = opt_res_file
+                else:
+                    if (
+                        current_file.stat().st_mtime_ns <
+                        opt_res_file.stat().st_mtime_ns
+                    ):
+                        newer_files[commit_hash] = opt_res_file
+                        old_files.append(current_file)
+                    else:
+                        old_files.append(opt_res_file)
+        for file in old_files:
+            if file.exists():
+                os.remove(file)
+
+
+def _find_result_dir_paths_of_projects() -> tp.List[Path]:
+    result_dir_path = Path(vara_cfg()["result_dir"].value)
+    existing_paper_config_result_dir_paths = []
     project_names = [
         cs.project_name for cs in get_paper_config().get_all_case_studies()
     ]
+    for project_name in project_names:
+        path = Path(result_dir_path / project_name)
+        if Path.exists(path):
+            existing_paper_config_result_dir_paths.append(path)
 
-    def find_result_dir_paths_of_projects() -> tp.List[Path]:
-        result_dir_path = Path(vara_cfg()["result_dir"].value)
-        existing_paper_config_result_dir_paths = []
+    return existing_paper_config_result_dir_paths
 
-        for project_name in project_names:
-            path = Path(result_dir_path / project_name)
-            if os.path.exists(path):
-                existing_paper_config_result_dir_paths.append(path)
 
-        return existing_paper_config_result_dir_paths
+def _remove_error_result_files() -> None:
+    result_dir_paths = _find_result_dir_paths_of_projects()
 
-    def remove_old_result_files() -> None:
-        pass
-        # TODO: Implement the removal of old result files.
+    for result_dir_path in result_dir_paths:
+        result_file_names = os.listdir(result_dir_path)
 
-    def remove_error_result_files() -> None:
-        result_dir_paths = find_result_dir_paths_of_projects()
+        for result_file_name in result_file_names:
+            if MetaReport.is_result_file(result_file_name) and (
+                MetaReport.
+                result_file_has_status_compileerror(result_file_name) or
+                MetaReport.result_file_has_status_failed(result_file_name)
+            ):
+                os.remove(result_dir_path / result_file_name)
 
-        for result_dir_path in result_dir_paths:
-            result_file_names = os.listdir(result_dir_path)
 
-            for result_file_name in result_file_names:
-                if result_file_name.__contains__(
-                    "_cerror."
-                ) and MetaReport.is_result_file(result_file_name):
-                    os.remove(result_dir_path / result_file_name)
-                    # TODO: Maybe implement listing of to be deleted or
-                    #  deleted files.
+def _remove_result_files_by_regex(regex_filter: str, hide: bool) -> None:
+    result_dir_paths = _find_result_dir_paths_of_projects()
 
-    def remove_result_files_by_regex() -> None:
-        pass
-        # TODO: Implement the removal of files specified by the user
-        #  https://github.com/se-passau/VaRA/issues/488
+    for result_dir_path in result_dir_paths:
+        result_file_names = os.listdir(result_dir_path)
+        files_to_delete: tp.List[str] = []
+        for result_file_name in result_file_names:
+            match = re.match(regex_filter, result_file_name)
+            if match is not None:
+                files_to_delete.append(result_file_name)
+        if not files_to_delete:
+            print(f"No matching result files in {result_dir_path} found.")
+            continue
+        if not hide:
+            for file_name in files_to_delete:
+                print(f"{file_name}")
+        print(
+            f"Found {len(files_to_delete)} matching"
+            "result files in {result_dir_path}:"
+        )
 
-    # TODO: Implement case distinction for cleanup types
-    if cleanup_type == "error":
-        remove_error_result_files()
+        try:
+            if cli_yn_choice("Do you want to delete these files", "n"):
+                for file_name in files_to_delete:
+                    if Path.exists(result_dir_path / file_name):
+                        os.remove(result_dir_path / file_name)
+        except EOFError:
+            continue
+
+
+class CleanupType(Enum):
+    old = 0
+    error = 1
+    regex = 2
 
 
 if __name__ == '__main__':
