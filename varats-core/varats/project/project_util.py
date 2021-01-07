@@ -335,7 +335,8 @@ class VaraTestRepoSubmodule(GitSubmodule):  # type: ignore
         submodule_target = local.path(target_prefix()) / Path(self.local)
 
         # Extract submodule
-        copy_renamed_git_to_dest(submodule_path, submodule_target)
+        if not os.path.isdir(submodule_target):
+            copy_renamed_git_to_dest(submodule_path, submodule_target)
 
         return submodule_target
 
