@@ -4,8 +4,11 @@ import argparse
 import logging
 import typing as tp
 
+from argparse_utils import enum_action
+
 from varats.data.discover_reports import initialize_reports
 from varats.projects.discover_projects import initialize_projects
+from varats.table.table import TableFormat
 from varats.table.tables import TableRegistry, build_tables
 from varats.tables.discover_tables import initialize_tables
 from varats.utils.cli_util import initialize_cli_tool
@@ -57,6 +60,12 @@ def main() -> None:
         help="The report type to generate the table for."
         "Tables may ignore this option.",
         default="EmptyReport"
+    )
+    parser.add_argument(
+        "--output-format",
+        help="The format the table should have",
+        action=enum_action(TableFormat),
+        default=TableFormat.fancy_grid
     )
     parser.add_argument(
         "extra_args",

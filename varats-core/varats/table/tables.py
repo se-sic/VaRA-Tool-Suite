@@ -88,7 +88,7 @@ def build_table(table_to_build: 'table.Table') -> None:
     """
     if table_to_build.table_kwargs["view"]:
         from varats.table.table import TableFormat  # pylint: disable=C0415
-        table_to_build.format = TableFormat.fancy_grid
+        table_to_build.format = table_kwargs["output-format"]
         print(table_to_build.tabulate())
     else:
         table_to_build.save(
