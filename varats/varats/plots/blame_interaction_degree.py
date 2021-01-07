@@ -70,7 +70,7 @@ def _filter_data_frame(
         interaction_plot_df.loc[interaction_plot_df.degree == x].fraction
         for x in degree_levels
     ]
-    unique_revisions = interaction_plot_df.revision.unique()
+    unique_revisions = _get_unique_revisions(interaction_plot_df)
 
     return unique_revisions, sub_df_list
 
@@ -364,6 +364,77 @@ def _plot_fraction_overview(
         plt.setp(axis.get_yticklabels(), fontsize=8, fontfamily='monospace')
 
 
+def _save_figure(
+    figure: tp.Any,
+    revision: str,
+    c_map: CommitMap,
+    plot_kwargs: tp.Dict[str, tp.Any],
+    plot_file_name: str,
+    path: tp.Optional[Path] = None,
+    filetype: str = 'png'
+) -> None:
+    revision_idx = -1
+    max_idx = -1
+    for c_hash, idx in c_map.mapping_items():
+        if idx > max_idx:
+            max_idx = idx
+        if c_hash.startswith(revision):
+            revision_idx = idx
+
+    if revision_idx == -1:
+        LOG.error(
+            f"The revision {revision} could not be found in the "
+            f"commit map."
+        )
+        raise PlotDataEmpty
+
+    max_idx_digit_num = len(str(max_idx))
+    padded_idx_str = str(revision_idx).rjust(max_idx_digit_num, str(0))
+
+    if path is None:
+        plot_dir = plot_kwargs["plot_dir"]
+    else:
+        plot_dir = path
+
+    file_name = plot_file_name.rsplit('.', 1)[0]
+    file_name = f"{file_name}_{padded_idx_str}.{filetype}"
+
+    pio.write_image(figure, str(plot_dir) + "/" + file_name, format=filetype)
+
+
+def _get_completed_revision(
+    revision: str, unique_revisions: tp.List[str]
+) -> str:
+    revision = revision.strip()
+    matching_prefix_revs = []
+
+    # Autocomplete selected revision string if unique in revisions.
+    for rev in unique_revisions:
+        if rev.startswith(revision):
+            matching_prefix_revs.append(rev)
+    if not matching_prefix_revs:
+        LOG.warning(
+            "The selected revision does not exist in the "
+            "database nor is it a prefix of an existing "
+            "one."
+        )
+        raise PlotDataEmpty
+    if len(matching_prefix_revs) > 1:
+        matching_revs_as_str: str = ""
+        for prefix_rev in matching_prefix_revs:
+            matching_revs_as_str += f"{prefix_rev}\n"
+        LOG.warning(
+            f"The selected revision does not exist in the "
+            f"database. The selected revision was: {revision}. Did you "
+            f"mean any of the following revisions?"
+            f"\n{matching_revs_as_str} "
+        )
+        raise PlotDataEmpty
+
+    revision = matching_prefix_revs[0]
+    return revision
+
+
 class BlameDegree(Plot):
     """Base plot for blame degree plots."""
 
@@ -525,7 +596,7 @@ class BlameDegree(Plot):
         df.sort_values(by=['time_id'], inplace=True)
         df.reset_index(inplace=True)
         revision_df = pd.DataFrame(df["revision"])
-        unique_revisions = list(revision_df["revision"].unique())
+        unique_revisions = _get_unique_revisions(revision_df["revision"])
         grouped_df: pd.DataFrame = df.groupby(['revision'])
         revision_to_dataframes_mapping: tp.Dict[str, pd.DataFrame] = {}
 
@@ -572,15 +643,16 @@ class BlameDegree(Plot):
         view_mode: bool,
         degree_type: DegreeType,
         extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
-        save_path: tp.Optional[Path] = None
-    ) -> go.Figure:
+        save_path: tp.Optional[Path] = None,
+        filetype: str = 'png'
+    ) -> tp.Optional[go.Figure]:
 
         # Choose sequential colormaps for correct shading
         plot_cfg = {
             'fig_title':
                 'MISSING figure title',
             'font_size':
-                20 if view_mode else 10,
+                10,
             'width':
                 1500,
             'height':
@@ -602,16 +674,14 @@ class BlameDegree(Plot):
         interaction_plot_df.reset_index(inplace=True)
         unique_revisions = _get_unique_revisions(interaction_plot_df)
 
-        # TODO: replace unique revisions in other methods with function call
-
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
 
         def get_separated_lib_names_dict(
-            df: pd.DataFrame
+            dataframe: pd.DataFrame
         ) -> tp.Dict[str, tp.List[str]]:
             name_dict: tp.Dict[str, tp.List[str]] = {
-                "base_lib_names": _get_distinct_base_lib_names(df),
-                "inter_lib_names": _get_distinct_inter_lib_names(df)
+                "base_lib_names": _get_distinct_base_lib_names(dataframe),
+                "inter_lib_names": _get_distinct_inter_lib_names(dataframe)
             }
 
             # Duplicated lib names are necessary to avoid cycles in the plot
@@ -720,7 +790,7 @@ class BlameDegree(Plot):
             return sankey_data_dict
 
         def build_sankey_figure(
-            data_dict: tp.Dict[str, tp.List[tp.Any]]
+            data_dict: tp.Dict[str, tp.List[tp.Any]], revision: str
         ) -> go.Figure:
             layout = go.Layout(
                 autosize=False,
@@ -735,7 +805,7 @@ class BlameDegree(Plot):
                             pad=15,
                             thickness=20,
                             line=dict(color="black", width=0.5),
-                            label=lib_name_dict["all_lib_names"],
+                            label=library_names_dict["all_lib_names"],
                             color=data_dict["node_colors"],
                             hovertemplate='Fraction ratio = %{'
                             'value}%<extra></extra> '
@@ -757,49 +827,41 @@ class BlameDegree(Plot):
                 fig.layout = layout
 
             fig.update_layout(
-                title_text=plot_cfg['fig_title'],
+                title_text=f"Revision: {revision}<br />{plot_cfg['fig_title']}",
                 font_size=plot_cfg['font_size']
             )
 
             return fig
 
-        def save_figure(
-            figure: tp.Any,
-            revision: str,
-            c_map: CommitMap,
-            path: tp.Optional[Path] = None,
-            filetype: str = 'png'
-        ) -> None:
-            revision_id = -1
-            for c_hash, idx in c_map.mapping_items():
-                if c_hash.startswith(revision):
-                    revision_id = idx
-                    break
-
-            if path is None:
-                plot_dir = self.plot_kwargs["plot_dir"]
-            else:
-                plot_dir = path
-
-            file_name = self.plot_file_name(filetype).rsplit('.', 1)[0]
-            file_name = f"{file_name}_{revision_id}.{filetype}"
-
-            pio.write_image(
-                figure, str(plot_dir) + "/" + file_name, format=filetype
-            )
-
-        # Generate and save all sankey plots
+        # Generate and save sankey plots for all revs if no revision was
+        # specified. If specified, show an interactive sankey plot in the
+        # browser.
         for rev in unique_revisions:
+            if view_mode and 'revision' in self.plot_kwargs:
+                rev = _get_completed_revision(
+                    self.plot_kwargs['revision'], unique_revisions
+                )
+
             df = interaction_plot_df.loc[interaction_plot_df['revision'] == rev]
 
-            lib_name_dict = get_separated_lib_names_dict(df)
-            lib_to_colormap, lib_to_shades = build_color_mappings(lib_name_dict)
+            library_names_dict = get_separated_lib_names_dict(df)
+            lib_to_colormap_mapping, lib_to_shades_mapping = \
+                build_color_mappings(library_names_dict)
 
             plotting_data_dict = collect_plotting_data(
-                df, lib_name_dict, lib_to_colormap, lib_to_shades
+                df, library_names_dict, lib_to_colormap_mapping,
+                lib_to_shades_mapping
             )
-            fig = build_sankey_figure(plotting_data_dict)
-            save_figure(fig, rev, commit_map, save_path, "png")
+            sankey_figure = build_sankey_figure(plotting_data_dict, rev)
+
+            if view_mode and 'revision' in self.plot_kwargs:
+                return sankey_figure
+
+            _save_figure(
+                sankey_figure, rev, commit_map, self.plot_kwargs,
+                self.plot_file_name(filetype), save_path, 'png'
+            )
+        return None
 
     def _calc_missing_revisions(
         self, degree_type: DegreeType, boundary_gradient: float
@@ -965,8 +1027,13 @@ class BlameInteractionFractionOverview(BlameDegree):
 
 
 class BlameLibraryInteractions(BlameDegree):
-    """Plotting the dependencies of blame interactions from all project
-    libraries either as interactive plot in the browser or static image."""
+    """
+    Plotting the dependencies of blame interactions from all project libraries
+    either as interactive plot in the browser or as static image.
+
+    To plot in interactive mode, select view_mode=True and pass the selected
+    revision as key-value pair after the plot name. E.g., revision=Foo
+    """
 
     NAME = 'b_multi_lib_interaction_sankey_plot'
 
@@ -975,13 +1042,28 @@ class BlameLibraryInteractions(BlameDegree):
         self.__figure = go.Figure()
 
     def plot(self, view_mode: bool) -> None:
+        if view_mode and 'revision' not in self.plot_kwargs:
+            LOG.warning(
+                "The interactive view mode requires a selected revision."
+            )
+            raise PlotDataEmpty
+
+        if not view_mode and 'revision' in self.plot_kwargs:
+            LOG.warning(
+                "View mode is turned off. The specified revision will be "
+                "ignored."
+            )
+
         extra_plot_cfg = {
-            'fig_title': 'Library interactions',
+            'fig_title':
+                'Library interactions from base(left) to interacting(right) '
+                'library(ies).<br />Color saturation increases with '
+                'the degree level.',
             'width': 1500,
             'height': 1000
         }
         self.__figure = self._multi_lib_interaction_sankey_plot(
-            view_mode, DegreeType.interaction, extra_plot_cfg
+            view_mode, DegreeType.interaction, extra_plot_cfg, filetype='png'
         )
 
     def show(self) -> None:
@@ -992,8 +1074,9 @@ class BlameLibraryInteractions(BlameDegree):
             return
         self.__figure.show()
 
+    # Skip save method to save one figure for each revision
     def save(
-        self, path: tp.Optional[Path] = None, filetype: str = 'svg'
+        self, path: tp.Optional[Path] = None, filetype: str = 'png'
     ) -> None:
         try:
             self.plot(False)
