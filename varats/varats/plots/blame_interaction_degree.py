@@ -875,11 +875,11 @@ class BlameDegree(Plot):
 
             if view_mode and 'revision' in self.plot_kwargs:
                 return sankey_figure
-            else:
-                _save_figure(
-                    sankey_figure, rev, commit_map, self.plot_kwargs,
-                    self.plot_file_name(filetype), save_path, 'png'
-                )
+
+            _save_figure(
+                sankey_figure, rev, commit_map, self.plot_kwargs,
+                self.plot_file_name(filetype), save_path, 'png'
+            )
         return None
 
     def _calc_missing_revisions(
