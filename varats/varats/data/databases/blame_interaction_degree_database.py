@@ -71,14 +71,14 @@ class BlameInteractionDegreeDatabase(
         ) -> tp.Tuple[pd.DataFrame, str, str]:
             report = load_blame_report(report_path)
 
-            categorised_degree_occurrences = \
-                generate_lib_dependent_degrees(report)
+            categorised_degree_occurrences = generate_lib_dependent_degrees(
+                report
+            )
 
             def calc_total_amounts() -> int:
                 total = 0
 
-                for _, lib_dict \
-                        in categorised_degree_occurrences.items():
+                for _, lib_dict in categorised_degree_occurrences.items():
                     for _, tuple_list in lib_dict.items():
                         for degree_amount_tuple in tuple_list:
                             total += degree_amount_tuple[1]
@@ -86,28 +86,40 @@ class BlameInteractionDegreeDatabase(
 
             total_amounts_of_all_libs = calc_total_amounts()
 
-            list_of_author_degree_occurrences = \
-                generate_author_degree_tuples(report, commit_lookup
-                                              )
-            author_degrees, author_amounts = map(
+            list_of_author_degree_occurrences = generate_author_degree_tuples(
+                report, commit_lookup
+            )
+
+            author_degrees_untyped, author_amounts_untyped = map(
                 list, zip(*list_of_author_degree_occurrences)
             )
+            author_degrees = tp.cast(tp.List[int], author_degrees_untyped)
+            author_amounts = tp.cast(tp.List[int], author_amounts_untyped)
+
             author_total = sum(author_amounts)
 
             list_of_max_time_deltas = generate_max_time_distribution_tuples(
                 report, commit_lookup, MAX_TIME_BUCKET_SIZE
             )
-            max_time_buckets, max_time_amounts = map(
+
+            max_time_buckets_untyped, max_time_amounts_untyped = map(
                 list, zip(*list_of_max_time_deltas)
             )
+            max_time_buckets = tp.cast(tp.List[int], max_time_buckets_untyped)
+            max_time_amounts = tp.cast(tp.List[int], max_time_amounts_untyped)
+
             total_max_time_amounts = sum(max_time_amounts)
 
             list_of_avg_time_deltas = generate_avg_time_distribution_tuples(
                 report, commit_lookup, AVG_TIME_BUCKET_SIZE
             )
-            avg_time_buckets, avg_time_amounts = map(
+
+            avg_time_buckets_untyped, avg_time_amounts_untyped = map(
                 list, zip(*list_of_avg_time_deltas)
             )
+            avg_time_buckets = tp.cast(tp.List[int], avg_time_buckets_untyped)
+            avg_time_amounts = tp.cast(tp.List[int], avg_time_amounts_untyped)
+
             total_avg_time_amounts = sum(avg_time_amounts)
 
             def build_dataframe_row(
@@ -140,13 +152,15 @@ class BlameInteractionDegreeDatabase(
                 for inter_lib_name, degree_amount_tuples in \
                         inter_lib_dict.items():
 
-                    inter_degrees, inter_amounts = map(
+                    inter_degrees_untyped, inter_amounts_untyped = map(
                         list, zip(*degree_amount_tuples)
                     )
+                    inter_degrees = tp.cast(tp.List[int], inter_degrees_untyped)
+                    inter_amounts = tp.cast(tp.List[int], inter_amounts_untyped)
 
                     for i, _ in enumerate(inter_degrees):
-                        degree = tp.cast(tp.List, inter_degrees)[i]
-                        lib_amount = tp.cast(tp.List, inter_amounts)[i]
+                        degree = inter_degrees[i]
+                        lib_amount = inter_amounts[i]
 
                         interaction_data_dict = build_dataframe_row(
                             degree_type=DegreeType.interaction,
@@ -163,7 +177,7 @@ class BlameInteractionDegreeDatabase(
                 degrees: tp.List[int],
                 amounts: tp.List[int],
                 sum_amounts: int,
-            ):
+            ) -> None:
                 for k, _ in enumerate(degrees):
                     data_dict = build_dataframe_row(
                         degree_type=degree_type,
@@ -176,25 +190,25 @@ class BlameInteractionDegreeDatabase(
             # Append author rows
             append_rows_of_degree_type(
                 degree_type=DegreeType.author,
-                degrees=tp.cast(tp.List, author_degrees),
-                amounts=tp.cast(tp.List, author_amounts),
-                sum_amounts=tp.cast(int, author_total)
+                degrees=author_degrees,
+                amounts=author_amounts,
+                sum_amounts=author_total
             )
 
             # Append max_time rows
             append_rows_of_degree_type(
                 degree_type=DegreeType.max_time,
-                degrees=tp.cast(tp.List, max_time_buckets),
-                amounts=tp.cast(tp.List, max_time_amounts),
-                sum_amounts=tp.cast(int, total_max_time_amounts)
+                degrees=max_time_buckets,
+                amounts=max_time_amounts,
+                sum_amounts=total_max_time_amounts
             )
 
             # Append avg_time rows
             append_rows_of_degree_type(
                 degree_type=DegreeType.avg_time,
-                degrees=tp.cast(tp.List, avg_time_buckets),
-                amounts=tp.cast(tp.List, avg_time_amounts),
-                sum_amounts=tp.cast(int, total_avg_time_amounts)
+                degrees=avg_time_buckets,
+                amounts=avg_time_amounts,
+                sum_amounts=total_avg_time_amounts
             )
 
             return pd.DataFrame(result_data_dicts), report.head_commit, str(

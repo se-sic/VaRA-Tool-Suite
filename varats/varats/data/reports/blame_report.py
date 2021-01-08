@@ -506,7 +506,7 @@ def generate_degree_tuples(
     Returns:
         list of tuples (degree, amount)
     """
-    degree_dict: tp.DefaultDict[int, int] = defaultdict(int)
+    degree_dict: DegreeAmountMappingTy = defaultdict(int)
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
@@ -516,57 +516,66 @@ def generate_degree_tuples(
     return list(degree_dict.items())
 
 
+DegreeAmountMappingTy = tp.Dict[int, int]
+
+
 def generate_lib_dependent_degrees(
     report: tp.Union[BlameReport, BlameReportDiff]
 ) -> tp.Dict[str, tp.Dict[str, tp.List[tp.Tuple[int, int]]]]:
     """
     Args:
-        report: The blame report
+        report: blame report
 
     Returns:
         Map of tuples (degree, amount) categorised by their corresponding
         library name to their corresponding base library name.
     """
-    categorised_degree_dict: tp.Dict[str, tp.Dict[str, tp.Dict[int, int]]] = {}
+
+    base_inter_lib_degree_amount_mapping: tp.Dict[str, tp.Dict[
+        str, DegreeAmountMappingTy]] = {}
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
             base_repo_name = interaction.base_commit.repository_name
             tmp_degree_of_libs: tp.Dict[str, int] = {}
 
-            if not categorised_degree_dict:
-                categorised_degree_dict[base_repo_name] = {}
+            if not base_inter_lib_degree_amount_mapping:
+                base_inter_lib_degree_amount_mapping[base_repo_name] = {}
 
             for inter_hash in interaction.interacting_commits:
                 inter_hash_repo_name = inter_hash.repository_name
 
-                if inter_hash_repo_name \
-                        not in categorised_degree_dict[base_repo_name]:
-                    categorised_degree_dict[base_repo_name][inter_hash_repo_name
-                                                           ] = {}
+                if (
+                    inter_hash_repo_name not in
+                    base_inter_lib_degree_amount_mapping[base_repo_name]
+                ):
+                    base_inter_lib_degree_amount_mapping[base_repo_name][
+                        inter_hash_repo_name] = {}
 
-                if inter_hash_repo_name \
-                        not in tmp_degree_of_libs:
+                if inter_hash_repo_name not in tmp_degree_of_libs:
                     tmp_degree_of_libs[inter_hash_repo_name] = 1
                 else:
                     tmp_degree_of_libs[inter_hash_repo_name] += 1
 
             for repo_name, degree in tmp_degree_of_libs.items():
-                if degree not in categorised_degree_dict[base_repo_name][
-                    repo_name]:
-                    categorised_degree_dict[base_repo_name][repo_name][degree
-                                                                      ] = 0
+                if (
+                    degree not in base_inter_lib_degree_amount_mapping[
+                        base_repo_name][repo_name]
+                ):
+                    base_inter_lib_degree_amount_mapping[base_repo_name][
+                        repo_name][degree] = 0
 
-                categorised_degree_dict[base_repo_name][repo_name][
+                base_inter_lib_degree_amount_mapping[base_repo_name][repo_name][
                     degree] += interaction.amount
 
     # Transform to tuples (degree, amount)
     result_dict: tp.Dict[str, tp.Dict[str, tp.List[tp.Tuple[int, int]]]] = {}
-    for base_repo_name, inter_lib_dict in categorised_degree_dict.items():
-        result_dict[base_repo_name] = {}
+    for base_name, inter_lib_dict in base_inter_lib_degree_amount_mapping.items(
+    ):
+        result_dict[base_name] = {}
         for inter_lib_name, degree_amount_dict in inter_lib_dict.items():
-            result_dict[base_repo_name][inter_lib_name] = tp.cast(
-                tp.List[tp.Tuple[int, int]], list(degree_amount_dict.items())
+            result_dict[base_name][inter_lib_name] = list(
+                degree_amount_dict.items()
             )
 
     return result_dict
