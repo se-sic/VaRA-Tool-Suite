@@ -513,14 +513,17 @@ def _save_figure(
         plot_dir = path
 
     file_name = plot_file_name.rsplit('.', 1)[0]
-    file_name = f"{file_name}_{padded_idx_str}.{filetype}"
 
     if plot_type == PlotTypes.SANKEY:
+        file_name = f"{file_name}_{padded_idx_str}.{filetype}"
+
         pio.write_image(
             figure, str(plot_dir) + "/" + file_name, format=filetype
         )
 
     if plot_type == PlotTypes.GRAPHVIZ:
+        file_name = f"{file_name}_{padded_idx_str}"
+
         figure.render(
             filename=str(plot_dir) + "/" + file_name,
             directory=plot_dir,
@@ -854,7 +857,6 @@ class BlameDegree(Plot):
 
         # TODO: Add graphviz to requirements and setup.py
         # TODO: add lib_name to node id
-        # TODO: remove double file extensions
 
         for rev in unique_revisions:
             if view_mode and 'revision' in self.plot_kwargs:
@@ -1302,8 +1304,6 @@ class BlameCommitInteractionsGraphviz(BlameDegree):
         except PlotDataEmpty:
             LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
             return
-
-        # TODO: Fix double filetypes in name (e.g., foo.png.png)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
