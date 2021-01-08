@@ -498,9 +498,8 @@ def calc_code_churn(
         diff_base_params.append("--")
         # builds a regex to select files that git includes into churn calc
         diff_base_params.append(":")
-        diff_base_params = diff_base_params + churn_config.get_modified_file_extensions(
-            '*.'
-        )
+        diff_base_params = diff_base_params + \
+                           churn_config.get_modified_file_extensions('*.')
 
     stdout = repo_git(diff_base_params)
     # initialize with 0 as otherwise commits without changes would be
