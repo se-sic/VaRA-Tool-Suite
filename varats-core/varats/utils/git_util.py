@@ -171,6 +171,28 @@ class ChurnConfig():
 
         return concat_str
 
+    def get_modified_file_extensions(self,
+                                     prefix: str = "",
+                                     suffix: str = "") -> tp.List[str]:
+        """
+        Args:
+            prefix: prefix adding to the strings head
+            suffix: suffix adding to the strings tail
+
+        Returns:
+            list of modified string file extensions
+        """
+
+        extensions_list: tp.List[str] = []
+
+        for ext in sorted({
+            ext for lang in self.enabled_languages for ext in lang.value
+        }):
+            ext = prefix + ext + suffix
+            extensions_list.append(ext)
+
+        return extensions_list
+
 
 CommitLookupTy = tp.Callable[[str, str], pygit2.Commit]
 
@@ -474,10 +496,10 @@ def calc_code_churn(
 
     if not churn_config.include_everything:
         diff_base_params.append("--")
-        # builds a regrex to select files that git includes into churn calc
+        # builds a regex to select files that git includes into churn calc
         diff_base_params.append(":")
-        diff_base_params.append(
-            "*.[" + churn_config.get_extensions_repr('|') + "]"
+        diff_base_params = diff_base_params + churn_config.get_modified_file_extensions(
+            '*.'
         )
 
     stdout = repo_git(diff_base_params)
