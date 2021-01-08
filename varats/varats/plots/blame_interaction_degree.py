@@ -1,9 +1,9 @@
 """Generate plots for the degree of blame interactions."""
 import abc
 import logging
-import tempfile
 import typing as tp
 from collections import defaultdict
+from enum import Enum
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -65,6 +65,11 @@ class FractionMap:
 
     def add_fraction_to_lib(self, lib_name: str, fraction: float) -> None:
         self.__mapping[lib_name].append(fraction)
+
+
+class PlotTypes(Enum):
+    GRAPHVIZ = "graphviz"
+    SANKEY = "sankey"
 
 
 def _get_unique_revisions(dataframe: pd.DataFrame) -> tp.List[str]:
@@ -480,6 +485,7 @@ def _save_figure(
     c_map: CommitMap,
     plot_kwargs: tp.Dict[str, tp.Any],
     plot_file_name: str,
+    plot_type: PlotTypes,
     path: tp.Optional[Path] = None,
     filetype: str = 'png'
 ) -> None:
@@ -509,7 +515,18 @@ def _save_figure(
     file_name = plot_file_name.rsplit('.', 1)[0]
     file_name = f"{file_name}_{padded_idx_str}.{filetype}"
 
-    pio.write_image(figure, str(plot_dir) + "/" + file_name, format=filetype)
+    if plot_type == PlotTypes.SANKEY:
+        pio.write_image(
+            figure, str(plot_dir) + "/" + file_name, format=filetype
+        )
+
+    if plot_type == PlotTypes.GRAPHVIZ:
+        figure.render(
+            filename=str(plot_dir) + "/" + file_name,
+            directory=plot_dir,
+            format=filetype,
+            cleanup=True
+        )
 
 
 def _collect_sankey_plotting_data(
@@ -549,6 +566,37 @@ def _collect_sankey_plotting_data(
         sankey_data_dict["edge_colors"].append(color)
 
     return sankey_data_dict
+
+
+LibraryToHashesMapping = tp.Dict[str, tp.List[str]]
+
+
+def _collect_graphviz_plotting_data(
+    df: pd.DataFrame
+) -> tp.Tuple[LibraryToHashesMapping, tp.List[tp.Tuple[str, str]]]:
+
+    base_lib_names = _get_distinct_base_lib_names(df)
+    inter_lib_names = _get_distinct_inter_lib_names(df)
+    all_distinct_lib_names = sorted(set(base_lib_names + inter_lib_names))
+
+    lib_to_hashes_mapping: tp.Dict[str, tp.List[str]] = {
+        lib_name: [] for lib_name in all_distinct_lib_names
+    }
+    edge_tuple_list: tp.List[tp.Tuple[str, str]] = []
+
+    for _, row in df.iterrows():
+        base_hash = row['base_hash']
+        base_lib = row['base_lib']
+        inter_hash = row['inter_hash']
+        inter_lib = row['inter_lib']
+
+        edge_tuple = (base_hash, inter_hash)
+        edge_tuple_list.append(edge_tuple)
+
+        lib_to_hashes_mapping[base_lib].append(base_hash)
+        lib_to_hashes_mapping[inter_lib].append(inter_hash)
+
+    return lib_to_hashes_mapping, edge_tuple_list
 
 
 def _gen_sankey_lib_name_to_idx_mapping(
@@ -612,6 +660,26 @@ def _build_sankey_figure(
     )
 
     return fig
+
+
+def _build_graphviz_digraph(
+    lib_to_hashes_mapping: tp.Dict[str, tp.List[str]],
+    edge_tuple_list: tp.List[tp.Tuple[str, str]]
+) -> Digraph:
+    graph = Digraph("Digraph")
+
+    for key, value in lib_to_hashes_mapping.items():
+
+        # 'cluster_' prefix is necessary for grouping commits to libraries
+        with graph.subgraph(name="cluster_" + key) as subgraph:
+            subgraph.attr(label=key)
+            for node in value:
+                subgraph.node(node)
+
+    for edge in edge_tuple_list:
+        graph.edge(edge[0], edge[1])
+
+    return graph
 
 
 class BlameDegree(Plot):
@@ -749,64 +817,73 @@ class BlameDegree(Plot):
 
     def _graphviz_plot(
         self,
+        view_mode: bool,
         degree_type: DegreeType,
-        revision: str,
-    ) -> Digraph:
+        extra_plot_cfg: tp.Dict[str, tp.Any],
+        save_path: tp.Optional[Path] = None,
+        filetype: str = 'png'
+    ) -> tp.Optional[Digraph]:
+        plot_cfg = {'fig_title': 'MISSING figure title'}
+        if extra_plot_cfg is not None:
+            plot_cfg.update(extra_plot_cfg)
 
         style.use(self.style)
 
         df = self._get_degree_data()
         df = df[df.degree_type == degree_type.value]
-        df = df[df.revision == revision]
         df.sort_values(by=['time_id'], inplace=True)
+        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
 
         # TODO: Add base_hash and inter_hash columns to db
 
         # ---- TODO: remove test columns ----
-        base_hash = ["a1", "a2", "a2", "a3", "a1"]
-        inter_hash = ["c1", "c2", "d3", "d1", "e3"]
+        base_hash = [
+            "a1", "c1", "a2", "a3", "a1", "a1", "c2", "a2", "a3", "a1", "a1",
+            "a2"
+        ]
+        inter_hash = [
+            "c1", "a1", "d3", "d1", "e3", "c1", "a2", "d3", "d1", "e3", "c1",
+            "c2"
+        ]
         df['base_hash'] = base_hash
         df['inter_hash'] = inter_hash
         # ---- TODO: remove test columns ----
 
         df.reset_index(inplace=True)
-        base_lib_names = _get_distinct_base_lib_names(df)
-        inter_lib_names = _get_distinct_inter_lib_names(df)
-        all_distinct_lib_names = sorted(set(base_lib_names + inter_lib_names))
+        unique_revisions = _get_unique_revisions(df)
 
         # TODO: Add graphviz to requirements and setup.py
+        # TODO: add lib_name to node id
+        # TODO: remove double file extensions
 
-        g = Digraph("Digraph")
+        for rev in unique_revisions:
+            if view_mode and 'revision' in self.plot_kwargs:
+                rev = _get_verified_revision(
+                    self.plot_kwargs['revision'], unique_revisions
+                )
 
-        lib_to_hashes_mapping: tp.Dict[str, tp.List[str]] = {
-            lib_name: [] for lib_name in all_distinct_lib_names
-        }
-        edge_tuple_list: tp.List[tp.Tuple[str, str]] = []
+            dataframe = df.loc[df['revision'] == rev]
+            (lib_to_hashes_mapping,
+             edge_tuple_list) = _collect_graphviz_plotting_data(dataframe)
 
-        for _, row in df.iterrows():
-            base_hash = row['base_hash']
-            base_lib = row['base_lib']
-            inter_hash = row['inter_hash']
-            inter_lib = row['inter_lib']
+            fig = _build_graphviz_digraph(
+                lib_to_hashes_mapping, edge_tuple_list
+            )
 
-            edge_tuple = (base_hash, inter_hash)
-            edge_tuple_list.append(edge_tuple)
+            if view_mode and 'revision' in self.plot_kwargs:
+                return fig
 
-            lib_to_hashes_mapping[base_lib].append(base_hash)
-            lib_to_hashes_mapping[inter_lib].append(inter_hash)
-
-        for key, value in lib_to_hashes_mapping.items():
-
-            # 'cluster_' prefix is necessary for grouping commits to libraries
-            with g.subgraph(name="cluster_" + key) as sg:
-                sg.attr(label=key)
-                for node in value:
-                    sg.node(node)
-
-        for edge in edge_tuple_list:
-            g.edge(edge[0], edge[1])
-
-        return g
+            _save_figure(
+                figure=fig,
+                revision=rev,
+                c_map=commit_map,
+                plot_kwargs=self.plot_kwargs,
+                plot_file_name=self.plot_file_name(filetype),
+                plot_type=PlotTypes.GRAPHVIZ,
+                path=save_path,
+                filetype=filetype
+            )
+        return None
 
     def _fraction_overview_plot(
         self,
@@ -940,8 +1017,14 @@ class BlameDegree(Plot):
                 return sankey_figure
 
             _save_figure(
-                sankey_figure, rev, commit_map, self.plot_kwargs,
-                self.plot_file_name(filetype), save_path, 'png'
+                figure=sankey_figure,
+                revision=rev,
+                c_map=commit_map,
+                plot_kwargs=self.plot_kwargs,
+                plot_file_name=self.plot_file_name(filetype),
+                plot_type=PlotTypes.SANKEY,
+                path=save_path,
+                filetype='png'
             )
         return None
 
@@ -1172,13 +1255,12 @@ class BlameLibraryInteractions(BlameDegree):
         )
 
 
-class BlameInteractionGraphviz(BlameDegree):
+class BlameCommitInteractionsGraphviz(BlameDegree):
     """
-    Plotting the interactions between all commits of multiple libraries of a
-    chosen revision.
+    Plotting the interactions between all commits of multiple libraries.
 
-    Pass the selected revision as key-value pair after the plot name. E.g.,
-    revision=Foo
+    To view one plot, select view_mode=True and pass the selected revision as
+    key-value pair after the plot name. E.g., revision=Foo
     """
 
     NAME = 'b_interaction_graphviz'
@@ -1188,14 +1270,21 @@ class BlameInteractionGraphviz(BlameDegree):
         self.__graph = Digraph()
 
     def plot(self, view_mode: bool) -> None:
-
-        if 'revision' not in self.plot_kwargs:
-            LOG.warning("No revision for plotting was chosen.")
+        if view_mode and 'revision' not in self.plot_kwargs:
+            LOG.warning("No revision for view mode was chosen.")
             raise PlotDataEmpty
 
-        revision = self.plot_kwargs['revision']
-
-        self.__graph = self._graphviz_plot(DegreeType.interaction, revision)
+        if not view_mode and 'revision' in self.plot_kwargs:
+            LOG.warning(
+                "View mode is turned off. The specified revision will be "
+                "ignored."
+            )
+        extra_plot_cfg: tp.Dict[str, tp.Any] = {}
+        self.__graph = self._graphviz_plot(
+            view_mode=view_mode,
+            degree_type=DegreeType.interaction,
+            extra_plot_cfg=extra_plot_cfg
+        )
 
     def show(self) -> None:
         try:
@@ -1203,7 +1292,7 @@ class BlameInteractionGraphviz(BlameDegree):
         except PlotDataEmpty:
             LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
             return
-        self.__graph.view(tempfile.mktemp())
+        self.__graph.view()
 
     def save(
         self, path: tp.Optional[Path] = None, filetype: str = 'png'
@@ -1214,19 +1303,7 @@ class BlameInteractionGraphviz(BlameDegree):
             LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
             return
 
-        if path is None:
-            plot_dir = Path(self.plot_kwargs["plot_dir"])
-        else:
-            plot_dir = path
-
         # TODO: Fix double filetypes in name (e.g., foo.png.png)
-
-        self.__graph.render(
-            filename=self.plot_file_name(filetype),
-            directory=plot_dir,
-            format=filetype,
-            cleanup=True
-        )
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
