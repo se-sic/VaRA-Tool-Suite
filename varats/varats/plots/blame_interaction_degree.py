@@ -65,6 +65,12 @@ class FractionMap:
         self.__mapping[lib_name].append(fraction)
 
 
+BaseInterFractionMapTuple = tp.Tuple[FractionMap, FractionMap]
+IndexShadesMapping = tp.Dict[int, str]
+LibraryColormapMapping = tp.Dict[str, tp.Any]
+LibraryToIndexShadesMapping = tp.Dict[str, IndexShadesMapping]
+
+
 def _get_unique_revisions(dataframe: pd.DataFrame) -> tp.List[str]:
     return list(dataframe.revision.unique())
 
@@ -194,9 +200,6 @@ def _generate_stackplot(
         fontfamily='monospace',
         rotation=270
     )
-
-
-BaseInterFractionMapTuple = tp.Tuple[FractionMap, FractionMap]
 
 
 def _calc_fractions(
@@ -384,11 +387,6 @@ def _get_separated_lib_names_dict(
         set(name_dict["all_lib_names"])
     )
     return name_dict
-
-
-IndexShadesMapping = tp.Dict[int, str]
-LibraryColormapMapping = tp.Dict[str, tp.Any]
-LibraryToIndexShadesMapping = tp.Dict[str, IndexShadesMapping]
 
 
 def _build_sankey_color_mappings(
