@@ -43,6 +43,17 @@ class DegreeType(Enum):
 def _get_tuple_of_degree_amount_lists(
     list_of_occurrences: tp.List[tp.Tuple[int, int]]
 ) -> tp.Tuple[tp.List[int], tp.List[int]]:
+    """
+    Maps the first and second value of the passed tuples to two separate lists
+    respectively and returns them as a tuple.
+
+    Args:
+        list_of_occurrences: list of tuples that are going to be separated
+
+    Returns:
+        a tuple of lists containing the first and second values of the passed
+        tuples
+    """
 
     degrees: tp.List[int] = []
     amounts: tp.List[int] = []
