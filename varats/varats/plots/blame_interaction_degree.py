@@ -875,6 +875,8 @@ class BlameDegree(Plot):
             if view_mode and 'revision' in self.plot_kwargs:
                 return fig
 
+            # TODO (se-passau/VaRA#545): move plot file saving to top level,
+            #  which currently breaks the plot abstraction.
             _save_figure(
                 figure=fig,
                 revision=rev,
