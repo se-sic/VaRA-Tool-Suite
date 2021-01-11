@@ -71,14 +71,14 @@ LibraryColormapMapping = tp.Dict[str, tp.Any]
 LibraryToIndexShadesMapping = tp.Dict[str, IndexShadesMapping]
 
 
-def _get_unique_revisions(dataframe: pd.DataFrame) -> tp.Set[str]:
-    return set(dataframe.revision)
+def _get_unique_revisions(dataframe: pd.DataFrame) -> tp.List[str]:
+    return list(dataframe.revision.unique())
 
 
 def _filter_data_frame(
     degree_type: DegreeType, interaction_plot_df: pd.DataFrame,
     commit_map: CommitMap
-) -> tp.Tuple[tp.Set[str], tp.List[pd.Series]]:
+) -> tp.Tuple[tp.List[str], tp.List[pd.Series]]:
     """Reduce data frame to rows that match the degree type."""
     interaction_plot_df = interaction_plot_df[interaction_plot_df.degree_type ==
                                               degree_type.value]
@@ -128,7 +128,7 @@ def _get_distinct_inter_lib_names(df: pd.DataFrame) -> tp.List[str]:
 
 
 def _generate_stackplot(
-    df: pd.DataFrame, unique_revisions: tp.Set[str],
+    df: pd.DataFrame, unique_revisions: tp.List[str],
     sub_df_list: tp.List[pd.Series], with_churn: bool,
     plot_cfg: tp.Dict[str, tp.Any], plot_kwargs: tp.Any
 ) -> None:
@@ -203,7 +203,7 @@ def _generate_stackplot(
 
 
 def _calc_fractions(
-    unique_revisions: tp.Set[str],
+    unique_revisions: tp.List[str],
     revision_to_base_names_mapping: tp.Dict[str, tp.List[str]],
     revision_to_inter_names_mapping: tp.Dict[str, tp.List[str]],
     revision_to_dataframes_mapping: tp.Dict[str, pd.DataFrame],
@@ -265,7 +265,7 @@ def _gen_fraction_overview_legend(
 
 def _plot_fraction_overview(
     base_lib_fraction_map: FractionMap, inter_lib_fraction_map: FractionMap,
-    with_churn: bool, unique_revisions: tp.Set[str],
+    with_churn: bool, unique_revisions: tp.List[str],
     plot_cfg: tp.Dict[str, tp.Any], plot_kwargs: tp.Dict[str, tp.Any]
 ) -> None:
 
@@ -430,7 +430,9 @@ def _build_sankey_color_mappings(
     return lib_to_colormap, lib_to_idx_shades
 
 
-def _get_verified_revision(revision: str, unique_revisions: tp.Set[str]) -> str:
+def _get_verified_revision(
+    revision: str, unique_revisions: tp.List[str]
+) -> str:
     """
     Returns the passed revision in full length after checking its validity.
 
