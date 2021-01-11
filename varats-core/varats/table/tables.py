@@ -87,7 +87,7 @@ def build_table(table_to_build: 'table.Table') -> None:
         table: the table to build
     """
     if table_to_build.table_kwargs["view"]:
-        table_to_build.format = table_kwargs["output-format"]
+        table_to_build.format = table_to_build.table_kwargs["output-format"]
         print(table_to_build.tabulate())
     else:
         table_to_build.save(
