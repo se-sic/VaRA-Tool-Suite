@@ -771,7 +771,7 @@ class BlameDegree(Plot):
         df.sort_values(by=['time_id'], inplace=True)
         df.reset_index(inplace=True)
         revision_df = pd.DataFrame(df["revision"])
-        unique_revisions = _get_unique_revisions(revision_df["revision"])
+        unique_revisions = _get_unique_revisions(revision_df)
         grouped_df: pd.DataFrame = df.groupby(['revision'])
         revision_to_dataframes_mapping: tp.Dict[str, pd.DataFrame] = {}
 
