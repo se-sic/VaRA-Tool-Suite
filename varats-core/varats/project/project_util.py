@@ -392,6 +392,8 @@ class VaraTestRepoSource(Git):  # type: ignore
 
         # Skip submodule extraction if none exist
         if not Path(tgt_loc / ".gitmodules").exists():
+            with pb.local.cwd(tgt_loc):
+                git("checkout", "--detach", version)
             return tgt_loc
 
         # Extract submodules
