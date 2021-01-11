@@ -40,6 +40,23 @@ class DegreeType(Enum):
     avg_time = "avg_time"
 
 
+def _get_tuple_of_degree_amount_lists(
+    list_of_occurrences: tp.List[tp.Tuple[int, int]]
+) -> tp.Tuple[tp.List[int], tp.List[int]]:
+
+    degrees: tp.List[int] = []
+    amounts: tp.List[int] = []
+
+    if not list_of_occurrences:
+        return degrees, amounts
+
+    degrees_untyped, amounts_untyped = map(list, zip(*list_of_occurrences))
+    degrees = tp.cast(tp.List[int], degrees_untyped)
+    amounts = tp.cast(tp.List[int], amounts_untyped)
+
+    return degrees, amounts
+
+
 class BlameInteractionDegreeDatabase(
     EvaluationDatabase,
     cache_id="blame_interaction_degree_data",
@@ -89,37 +106,23 @@ class BlameInteractionDegreeDatabase(
             list_of_author_degree_occurrences = generate_author_degree_tuples(
                 report, commit_lookup
             )
-
-            author_degrees_untyped, author_amounts_untyped = map(
-                list, zip(*list_of_author_degree_occurrences)
+            author_degrees, author_amounts = _get_tuple_of_degree_amount_lists(
+                list_of_author_degree_occurrences
             )
-            author_degrees = tp.cast(tp.List[int], author_degrees_untyped)
-            author_amounts = tp.cast(tp.List[int], author_amounts_untyped)
-
             author_total = sum(author_amounts)
 
             list_of_max_time_deltas = generate_max_time_distribution_tuples(
                 report, commit_lookup, MAX_TIME_BUCKET_SIZE
             )
-
-            max_time_buckets_untyped, max_time_amounts_untyped = map(
-                list, zip(*list_of_max_time_deltas)
-            )
-            max_time_buckets = tp.cast(tp.List[int], max_time_buckets_untyped)
-            max_time_amounts = tp.cast(tp.List[int], max_time_amounts_untyped)
-
+            (max_time_buckets, max_time_amounts
+            ) = _get_tuple_of_degree_amount_lists(list_of_max_time_deltas)
             total_max_time_amounts = sum(max_time_amounts)
 
             list_of_avg_time_deltas = generate_avg_time_distribution_tuples(
                 report, commit_lookup, AVG_TIME_BUCKET_SIZE
             )
-
-            avg_time_buckets_untyped, avg_time_amounts_untyped = map(
-                list, zip(*list_of_avg_time_deltas)
-            )
-            avg_time_buckets = tp.cast(tp.List[int], avg_time_buckets_untyped)
-            avg_time_amounts = tp.cast(tp.List[int], avg_time_amounts_untyped)
-
+            (avg_time_buckets, avg_time_amounts
+            ) = _get_tuple_of_degree_amount_lists(list_of_avg_time_deltas)
             total_avg_time_amounts = sum(avg_time_amounts)
 
             def build_dataframe_row(
@@ -149,14 +152,13 @@ class BlameInteractionDegreeDatabase(
             for base_lib_name, inter_lib_dict \
                     in categorised_degree_occurrences.items():
 
-                for inter_lib_name, degree_amount_tuples in \
+                for inter_lib_name, list_of_lib_degree_amount_tuples in \
                         inter_lib_dict.items():
 
-                    inter_degrees_untyped, inter_amounts_untyped = map(
-                        list, zip(*degree_amount_tuples)
-                    )
-                    inter_degrees = tp.cast(tp.List[int], inter_degrees_untyped)
-                    inter_amounts = tp.cast(tp.List[int], inter_amounts_untyped)
+                    (inter_degrees,
+                     inter_amounts) = _get_tuple_of_degree_amount_lists(
+                         list_of_lib_degree_amount_tuples
+                     )
 
                     for i, _ in enumerate(inter_degrees):
                         degree = inter_degrees[i]
