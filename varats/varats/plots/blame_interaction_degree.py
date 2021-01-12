@@ -603,7 +603,7 @@ def _build_sankey_figure(
         fig.layout = layout
 
     fig.update_layout(
-        title_text=f"Revision: {revision}<br />{plot_cfg['fig_title']}",
+        title_text=f"<b>Revision: {revision}</b><br />{plot_cfg['fig_title']}",
         font_size=plot_cfg['font_size']
     )
 
@@ -1076,8 +1076,7 @@ class BlameLibraryInteractions(BlameDegree):
         extra_plot_cfg = {
             'fig_title':
                 'Library interactions from base(left) to interacting(right) '
-                'library(ies).<br />Color saturation increases with '
-                'the degree level.',
+                'libraries. Color saturation increases with the degree level.',
             'width': 1500,
             'height': 1000
         }
