@@ -516,6 +516,35 @@ def generate_degree_tuples(
     return list(degree_dict.items())
 
 
+def gen_base_to_inter_commit_repo_pair_mapping(
+    report: tp.Union[BlameReport, BlameReportDiff]
+) -> tp.Dict[CommitRepoPair, tp.List[CommitRepoPair]]:
+    """
+    Args:
+        report: blame report
+
+    Returns:
+        Map of CommitRepoPairs (base pair, interacting pairs)
+        categorised by their corresponding base CommitRepoPair to their
+        corresponding list of interacting CommitRepoPairs.
+    """
+
+    base_to_inter_mapping: tp.Dict[CommitRepoPair,
+                                   tp.List[CommitRepoPair]] = defaultdict(list)
+
+    for func_entry in report.function_entries:
+        for interaction in func_entry.interactions:
+            base_commit_repo_pair = CommitRepoPair(
+                interaction.base_commit.commit_hash,
+                interaction.base_commit.repository_name
+            )
+
+            base_to_inter_mapping[base_commit_repo_pair
+                                 ] += interaction.interacting_commits
+
+    return base_to_inter_mapping
+
+
 DegreeAmountMappingTy = tp.Dict[int, int]
 
 

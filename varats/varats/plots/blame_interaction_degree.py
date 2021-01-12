@@ -19,6 +19,9 @@ from varats.data.databases.blame_interaction_degree_database import (
     BlameInteractionDegreeDatabase,
     DegreeType,
 )
+from varats.data.databases.blame_library_interactions_database import (
+    BlameLibraryInteractionsDatabase,
+)
 from varats.mapping.commit_map import CommitMap
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plots.bug_annotation import draw_bugs
@@ -669,7 +672,7 @@ def _build_graphviz_digraph(
     lib_to_hashes_mapping: tp.Dict[str, tp.List[str]],
     edge_tuple_list: tp.List[tp.Tuple[str, str]]
 ) -> Digraph:
-    graph = Digraph("Digraph")
+    graph = Digraph(name="Digraph")
 
     for key, value in lib_to_hashes_mapping.items():
 
@@ -683,6 +686,85 @@ def _build_graphviz_digraph(
         graph.edge(edge[0], edge[1])
 
     return graph
+
+
+class BlameLibraryInteraction(Plot):
+    """Base plot for blame library interaction plots."""
+
+    @abc.abstractmethod
+    def plot(self, view_mode: bool) -> None:
+        """Plot the current plot to a file."""
+
+    def _get_interaction_data(self) -> pd.DataFrame:
+        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
+        case_study = self.plot_kwargs.get('plot_case_study', None)
+        project_name = self.plot_kwargs["project"]
+        lib_interaction_df = \
+            BlameLibraryInteractionsDatabase.get_data_for_project(
+                project_name, ["revision", "time_id", "base_hash", "base_lib",
+                               "inter_hash", "inter_lib"],
+                commit_map, case_study)
+
+        length = len(np.unique(lib_interaction_df['revision']))
+        is_empty = lib_interaction_df.empty
+
+        if is_empty or length == 1:
+            # Need more than one data point
+            raise PlotDataEmpty
+        return lib_interaction_df
+
+    def _graphviz_plot(
+        self,
+        view_mode: bool,
+        extra_plot_cfg: tp.Dict[str, tp.Any],
+        save_path: tp.Optional[Path] = None,
+        filetype: str = 'png'
+    ) -> tp.Optional[Digraph]:
+        plot_cfg = {'fig_title': 'MISSING figure title'}
+        if extra_plot_cfg is not None:
+            plot_cfg.update(extra_plot_cfg)
+
+        style.use(self.style)
+
+        df = self._get_interaction_data()
+        df.sort_values(by=['time_id'], inplace=True)
+        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
+        df.reset_index(inplace=True)
+        unique_revisions = _get_unique_revisions(df)
+
+        # TODO: Add graphviz to requirements and setup.py
+        # TODO: add lib_name to node id
+
+        for rev in unique_revisions:
+            if view_mode and 'revision' in self.plot_kwargs:
+                rev = _get_verified_revision(
+                    self.plot_kwargs['revision'], unique_revisions
+                )
+
+            dataframe = df.loc[df['revision'] == rev]
+            (lib_to_hashes_mapping,
+             edge_tuple_list) = _collect_graphviz_plotting_data(dataframe)
+
+            fig = _build_graphviz_digraph(
+                lib_to_hashes_mapping, edge_tuple_list
+            )
+
+            if view_mode and 'revision' in self.plot_kwargs:
+                return fig
+
+            # TODO (se-passau/VaRA#545): move plot file saving to top level,
+            #  which currently breaks the plot abstraction.
+            _save_figure(
+                figure=fig,
+                revision=rev,
+                c_map=commit_map,
+                plot_kwargs=self.plot_kwargs,
+                plot_file_name=self.plot_file_name(filetype),
+                plot_type=PlotTypes.GRAPHVIZ,
+                path=save_path,
+                filetype=filetype
+            )
+        return None
 
 
 class BlameDegree(Plot):
@@ -817,77 +899,6 @@ class BlameDegree(Plot):
             interaction_plot_df, unique_revisions, sub_df_list, with_churn,
             plot_cfg, self.plot_kwargs
         )
-
-    def _graphviz_plot(
-        self,
-        view_mode: bool,
-        degree_type: DegreeType,
-        extra_plot_cfg: tp.Dict[str, tp.Any],
-        save_path: tp.Optional[Path] = None,
-        filetype: str = 'png'
-    ) -> tp.Optional[Digraph]:
-        plot_cfg = {'fig_title': 'MISSING figure title'}
-        if extra_plot_cfg is not None:
-            plot_cfg.update(extra_plot_cfg)
-
-        style.use(self.style)
-
-        df = self._get_degree_data()
-        df = df[df.degree_type == degree_type.value]
-        df.sort_values(by=['time_id'], inplace=True)
-        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
-
-        # TODO: Add base_hash and inter_hash columns to db
-
-        # ---- TODO: remove test columns ----
-        base_hash = [
-            "a1", "c1", "a2", "a3", "a1", "a1", "c2", "a2", "a3", "a1", "a1",
-            "a2"
-        ]
-        inter_hash = [
-            "c1", "a1", "d3", "d1", "e3", "c1", "a2", "d3", "d1", "e3", "c1",
-            "c2"
-        ]
-        df['base_hash'] = base_hash
-        df['inter_hash'] = inter_hash
-        # ---- TODO: remove test columns ----
-
-        df.reset_index(inplace=True)
-        unique_revisions = _get_unique_revisions(df)
-
-        # TODO: Add graphviz to requirements and setup.py
-        # TODO: add lib_name to node id
-
-        for rev in unique_revisions:
-            if view_mode and 'revision' in self.plot_kwargs:
-                rev = _get_verified_revision(
-                    self.plot_kwargs['revision'], unique_revisions
-                )
-
-            dataframe = df.loc[df['revision'] == rev]
-            (lib_to_hashes_mapping,
-             edge_tuple_list) = _collect_graphviz_plotting_data(dataframe)
-
-            fig = _build_graphviz_digraph(
-                lib_to_hashes_mapping, edge_tuple_list
-            )
-
-            if view_mode and 'revision' in self.plot_kwargs:
-                return fig
-
-            # TODO (se-passau/VaRA#545): move plot file saving to top level,
-            #  which currently breaks the plot abstraction.
-            _save_figure(
-                figure=fig,
-                revision=rev,
-                c_map=commit_map,
-                plot_kwargs=self.plot_kwargs,
-                plot_file_name=self.plot_file_name(filetype),
-                plot_type=PlotTypes.GRAPHVIZ,
-                path=save_path,
-                filetype=filetype
-            )
-        return None
 
     def _fraction_overview_plot(
         self,
@@ -1259,7 +1270,7 @@ class BlameLibraryInteractions(BlameDegree):
         )
 
 
-class BlameCommitInteractionsGraphviz(BlameDegree):
+class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
     """
     Plotting the interactions between all commits of multiple libraries.
 
@@ -1267,7 +1278,7 @@ class BlameCommitInteractionsGraphviz(BlameDegree):
     key-value pair after the plot name. E.g., revision=Foo
     """
 
-    NAME = 'b_interaction_graphviz'
+    NAME = 'b_lib_interaction_graphviz'
 
     def __init__(self, **kwargs: tp.Any):
         super().__init__(self.NAME, **kwargs)
@@ -1285,9 +1296,7 @@ class BlameCommitInteractionsGraphviz(BlameDegree):
             )
         extra_plot_cfg: tp.Dict[str, tp.Any] = {}
         self.__graph = self._graphviz_plot(
-            view_mode=view_mode,
-            degree_type=DegreeType.interaction,
-            extra_plot_cfg=extra_plot_cfg
+            view_mode=view_mode, extra_plot_cfg=extra_plot_cfg
         )
 
     def show(self) -> None:
@@ -1308,9 +1317,8 @@ class BlameCommitInteractionsGraphviz(BlameDegree):
             return
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
-        return self._calc_missing_revisions(
-            DegreeType.interaction, boundary_gradient
-        )
+        # TODO: impl calc_missing_revisions?
+        return set()
 
 
 class BlameAuthorDegree(BlameDegree):
