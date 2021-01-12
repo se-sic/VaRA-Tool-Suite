@@ -61,7 +61,7 @@ def _add_varats_layers(layers: ContainerImage) -> ContainerImage:
 
     def from_pip(image: ContainerImage) -> None:
         LOG.debug("installing varats from pip release.")
-        image.run('pip3', 'install', 'varats-core', 'varats')
+        image.run('pip3', 'install', 'varats-core', 'varats', runtime=crun)
 
     if bool(vara_cfg()['container']['from_source']):
         from_source(layers)
@@ -121,7 +121,8 @@ def create_base_image(base: ImageBase) -> None:
         if configured_research_tool:
             research_tool = get_research_tool(str(configured_research_tool))
             image_name += f"_{research_tool.name.lower()}"
-            research_tool.add_container_layers(image)
+            # TODO (se-passau/VaRA#718): enable when implemented
+            # research_tool.add_container_layers(image)
 
         _add_vara_config(image, tmpdir)
         _add_benchbuild_config(image)

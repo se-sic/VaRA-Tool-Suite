@@ -8,6 +8,7 @@ from benchbuild.utils.revision_ranges import block_revisions, RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
+from varats.containers.containers import get_base_image, ImageBase
 from varats.paper_mgmt.paper_config import project_filter_generator
 from varats.project.project_util import (
     get_tagged_commits,
@@ -49,6 +50,8 @@ class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
             )
         )
     ]
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10)
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:

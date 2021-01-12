@@ -91,6 +91,18 @@ def generate_benchbuild_config(
     new_bb_cfg["slurm"]["account"] = "anywhere"
     new_bb_cfg["slurm"]["partition"] = "anywhere"
 
+    # Container pre Configuration
+    container_conf = new_bb_cfg["container"]["mounts"]
+    container_conf.value[:] = []
+    container_conf.value[:] = [
+        [varats_cfg["result_dir"].value, "/varats_root/results"],
+        [f"{varats_cfg['benchbuild_root']}/BC_files", "/varats_root/BC_files"],
+        [
+            varats_cfg["paper_config"]["folder"].value,
+            "/varats_root/paper_configs"
+        ],
+    ]
+
     new_bb_cfg["env"] = {
         "PATH": [
             str(tool_type.install_location() / "bin") for tool_type in [
