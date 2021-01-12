@@ -4,12 +4,15 @@ import logging
 import typing as tp
 from collections import defaultdict
 from enum import Enum
+from os.path import isdir
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import matplotlib.style as style
 import numpy as np
 import pandas as pd
+import plumbum as pb
+from benchbuild.utils.cmd import mkdir
 from graphviz import Digraph
 from matplotlib import cm
 from plotly import graph_objs as go  # type: ignore
@@ -30,6 +33,11 @@ from varats.plots.repository_churn import draw_code_churn_for_revisions
 from varats.project.project_util import get_project_cls_by_name
 
 LOG = logging.getLogger(__name__)
+
+
+class PlotTypes(Enum):
+    GRAPHVIZ = "graphviz"
+    SANKEY = "sankey"
 
 
 class FractionMap:
@@ -70,9 +78,10 @@ class FractionMap:
         self.__mapping[lib_name].append(fraction)
 
 
-class PlotTypes(Enum):
-    GRAPHVIZ = "graphviz"
-    SANKEY = "sankey"
+BaseInterFractionMapTuple = tp.Tuple[FractionMap, FractionMap]
+IndexShadesMapping = tp.Dict[int, str]
+LibraryColormapMapping = tp.Dict[str, tp.Any]
+LibraryToIndexShadesMapping = tp.Dict[str, IndexShadesMapping]
 
 
 def _get_unique_revisions(dataframe: pd.DataFrame) -> tp.List[str]:
@@ -204,9 +213,6 @@ def _generate_stackplot(
         fontfamily='monospace',
         rotation=270
     )
-
-
-BaseInterFractionMapTuple = tp.Tuple[FractionMap, FractionMap]
 
 
 def _calc_fractions(
@@ -396,11 +402,6 @@ def _get_separated_lib_names_dict(
     return name_dict
 
 
-IndexShadesMapping = tp.Dict[int, str]
-LibraryColormapMapping = tp.Dict[str, tp.Any]
-LibraryToIndexShadesMapping = tp.Dict[str, IndexShadesMapping]
-
-
 def _build_sankey_color_mappings(
     highest_degree: int, plot_cfg: tp.Dict[str, tp.Any],
     lib_name_dict: tp.Dict[str, tp.List[str]]
@@ -516,19 +517,26 @@ def _save_figure(
         plot_dir = path
 
     file_name = plot_file_name.rsplit('.', 1)[0]
+    plot_subdir = plot_kwargs["plot_type"]
+
+    with pb.local.cwd(plot_dir):
+        if not isdir(plot_subdir):
+            mkdir(plot_subdir)
 
     if plot_type == PlotTypes.SANKEY:
         file_name = f"{file_name}_{padded_idx_str}.{filetype}"
 
         pio.write_image(
-            figure, str(plot_dir) + "/" + file_name, format=filetype
+            fig=figure,
+            file=str(plot_dir) + "/" + plot_subdir + "/" + file_name,
+            format=filetype
         )
 
     if plot_type == PlotTypes.GRAPHVIZ:
         file_name = f"{file_name}_{padded_idx_str}"
 
         figure.render(
-            filename=str(plot_dir) + "/" + file_name,
+            filename=str(plot_dir) + "/" + plot_subdir + "/" + file_name,
             directory=plot_dir,
             format=filetype,
             cleanup=True
@@ -661,7 +669,7 @@ def _build_sankey_figure(
         fig.layout = layout
 
     fig.update_layout(
-        title_text=f"Revision: {revision}<br />{plot_cfg['fig_title']}",
+        title_text=f"<b>Revision: {revision}</b><br />{plot_cfg['fig_title']}",
         font_size=plot_cfg['font_size']
     )
 
@@ -927,7 +935,7 @@ class BlameDegree(Plot):
         df.sort_values(by=['time_id'], inplace=True)
         df.reset_index(inplace=True)
         revision_df = pd.DataFrame(df["revision"])
-        unique_revisions = _get_unique_revisions(revision_df["revision"])
+        unique_revisions = _get_unique_revisions(revision_df)
         grouped_df: pd.DataFrame = df.groupby(['revision'])
         revision_to_dataframes_mapping: tp.Dict[str, pd.DataFrame] = {}
 
@@ -1030,6 +1038,8 @@ class BlameDegree(Plot):
             if view_mode and 'revision' in self.plot_kwargs:
                 return sankey_figure
 
+            # TODO (se-passau/VaRA#545): move plot file saving to top level,
+            #  which currently breaks the plot abstraction.
             _save_figure(
                 figure=sankey_figure,
                 revision=rev,
@@ -1236,8 +1246,7 @@ class BlameLibraryInteractions(BlameDegree):
         extra_plot_cfg = {
             'fig_title':
                 'Library interactions from base(left) to interacting(right) '
-                'library(ies).<br />Color saturation increases with '
-                'the degree level.',
+                'libraries. Color saturation increases with the degree level.',
             'width': 1500,
             'height': 1000
         }
