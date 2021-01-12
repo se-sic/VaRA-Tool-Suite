@@ -30,7 +30,7 @@ def main() -> None:
         help="Plot to generate." + PlotRegistry.get_plot_types_help_string()
     )
     parser.add_argument(
-        "-r", "--result-output", help="Folder with result files"
+        "-r", "--result-output", help="Set the output folder for plot files"
     )
     parser.add_argument("-p", "--project", help="Project name")
     parser.add_argument(

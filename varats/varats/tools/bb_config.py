@@ -84,6 +84,9 @@ def generate_benchbuild_config(
         'varats.experiments.phasar.ide_linear_constant_experiment',
     ]
 
+    # Enable version exploration by default
+    new_bb_cfg["versions"]["full"] = True
+
     # Slurm Cluster Configuration
     new_bb_cfg["slurm"]["account"] = "anywhere"
     new_bb_cfg["slurm"]["partition"] = "anywhere"

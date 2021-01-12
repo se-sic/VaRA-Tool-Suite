@@ -20,6 +20,14 @@ class BBTestSource(FetchableSource):
         self.test_versions = test_versions
 
     @property
+    def local(self) -> str:
+        return "test_source"
+
+    @property
+    def remote(self) -> tp.Union[str, tp.Dict[str, str]]:
+        return "test_remote"
+
+    @property
     def default(self) -> Variant:
         return Variant(owner=self, version=self.test_versions[0])
 

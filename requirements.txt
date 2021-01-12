@@ -1,5 +1,5 @@
 argparse-utils>=1.2.0
-benchbuild>=6.0.0
+benchbuild>=6.0.1
 jupyter>=1.0.0
 matplotlib>=3.1.2
 packaging>=20.1
