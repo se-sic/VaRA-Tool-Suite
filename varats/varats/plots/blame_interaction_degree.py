@@ -1,6 +1,7 @@
 """Generate plots for the degree of blame interactions."""
 import abc
 import logging
+import tempfile
 import typing as tp
 from collections import defaultdict
 from enum import Enum
@@ -582,37 +583,6 @@ def _collect_sankey_plotting_data(
     return sankey_data_dict
 
 
-LibraryToHashesMapping = tp.Dict[str, tp.List[str]]
-
-
-def _collect_graphviz_plotting_data(
-    df: pd.DataFrame
-) -> tp.Tuple[LibraryToHashesMapping, tp.List[tp.Tuple[str, str]]]:
-
-    base_lib_names = _get_distinct_base_lib_names(df)
-    inter_lib_names = _get_distinct_inter_lib_names(df)
-    all_distinct_lib_names = sorted(set(base_lib_names + inter_lib_names))
-
-    lib_to_hashes_mapping: tp.Dict[str, tp.List[str]] = {
-        lib_name: [] for lib_name in all_distinct_lib_names
-    }
-    edge_tuple_list: tp.List[tp.Tuple[str, str]] = []
-
-    for _, row in df.iterrows():
-        base_hash = row['base_hash']
-        base_lib = row['base_lib']
-        inter_hash = row['inter_hash']
-        inter_lib = row['inter_lib']
-
-        edge_tuple = (base_hash, inter_hash)
-        edge_tuple_list.append(edge_tuple)
-
-        lib_to_hashes_mapping[base_lib].append(base_hash)
-        lib_to_hashes_mapping[inter_lib].append(inter_hash)
-
-    return lib_to_hashes_mapping, edge_tuple_list
-
-
 def _gen_sankey_lib_name_to_idx_mapping(
     lib_name_dict: tp.Dict[str, tp.List[str]]
 ) -> tp.Tuple[tp.Dict[str, int], tp.Dict[str, int]]:
@@ -676,11 +646,42 @@ def _build_sankey_figure(
     return fig
 
 
+LibraryToHashesMapping = tp.Dict[str, tp.List[str]]
+
+
+def _collect_graphviz_plotting_data(
+    df: pd.DataFrame
+) -> tp.Tuple[LibraryToHashesMapping, tp.List[tp.Tuple[str, str]]]:
+
+    base_lib_names = _get_distinct_base_lib_names(df)
+    inter_lib_names = _get_distinct_inter_lib_names(df)
+    all_distinct_lib_names = sorted(set(base_lib_names + inter_lib_names))
+
+    lib_to_hashes_mapping: tp.Dict[str, tp.List[str]] = {
+        lib_name: [] for lib_name in all_distinct_lib_names
+    }
+    edge_tuple_list: tp.List[tp.Tuple[str, str]] = []
+
+    for _, row in df.iterrows():
+        base_hash = row['base_hash']
+        base_lib = row['base_lib']
+        inter_hash = row['inter_hash']
+        inter_lib = row['inter_lib']
+
+        edge_tuple = (f'{base_hash}_{base_lib}', f'{inter_hash}_{inter_lib}')
+        edge_tuple_list.append(edge_tuple)
+
+        lib_to_hashes_mapping[base_lib].append(base_hash)
+        lib_to_hashes_mapping[inter_lib].append(inter_hash)
+
+    return lib_to_hashes_mapping, edge_tuple_list
+
+
 def _build_graphviz_digraph(
     lib_to_hashes_mapping: tp.Dict[str, tp.List[str]],
     edge_tuple_list: tp.List[tp.Tuple[str, str]]
 ) -> Digraph:
-    graph = Digraph(name="Digraph")
+    graph = Digraph(name="Digraph", strict=True)
 
     for lib_name, c_hash_list in lib_to_hashes_mapping.items():
 
@@ -688,7 +689,7 @@ def _build_graphviz_digraph(
         with graph.subgraph(name="cluster_" + lib_name) as subgraph:
             subgraph.attr(label=lib_name)
             for c_hash in c_hash_list:
-                subgraph.node(c_hash)
+                subgraph.node(name=f'{c_hash}_{lib_name}', label=c_hash)
 
     graph.edges(edge_tuple_list)
 
@@ -739,9 +740,6 @@ class BlameLibraryInteraction(Plot):
         df.reset_index(inplace=True)
         unique_revisions = _get_unique_revisions(df)
 
-        # TODO: Add graphviz to requirements and setup.py
-        # TODO: add lib_name to node id
-
         for rev in unique_revisions:
             if view_mode and 'revision' in self.plot_kwargs:
                 rev = _get_verified_revision(
@@ -749,6 +747,7 @@ class BlameLibraryInteraction(Plot):
                 )
 
             dataframe = df.loc[df['revision'] == rev]
+
             (lib_to_hashes_mapping,
              edge_tuple_list) = _collect_graphviz_plotting_data(dataframe)
 
@@ -1313,7 +1312,7 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
         except PlotDataEmpty:
             LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
             return
-        self.__graph.view()
+        self.__graph.view(tempfile.mktemp())
 
     def save(
         self, path: tp.Optional[Path] = None, filetype: str = 'png'
