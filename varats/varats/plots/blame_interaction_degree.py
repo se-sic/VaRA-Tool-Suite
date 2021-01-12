@@ -674,16 +674,15 @@ def _build_graphviz_digraph(
 ) -> Digraph:
     graph = Digraph(name="Digraph")
 
-    for key, value in lib_to_hashes_mapping.items():
+    for lib_name, c_hash_list in lib_to_hashes_mapping.items():
 
         # 'cluster_' prefix is necessary for grouping commits to libraries
-        with graph.subgraph(name="cluster_" + key) as subgraph:
-            subgraph.attr(label=key)
-            for node in value:
-                subgraph.node(node)
+        with graph.subgraph(name="cluster_" + lib_name) as subgraph:
+            subgraph.attr(label=lib_name)
+            for c_hash in c_hash_list:
+                subgraph.node(c_hash)
 
-    for edge in edge_tuple_list:
-        graph.edge(edge[0], edge[1])
+    graph.edges(edge_tuple_list)
 
     return graph
 
