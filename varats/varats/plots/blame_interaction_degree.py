@@ -690,8 +690,11 @@ def _build_graphviz_edges(
     return lib_to_hashes_mapping
 
 
-def _build_graphviz_fig(df: pd.DataFrame) -> Digraph:
+def _build_graphviz_fig(df: pd.DataFrame, revision: str) -> Digraph:
     graph = Digraph(name="Digraph", strict=True)
+    graph.attr(label=f"Revision: {revision}")
+    graph.attr(labelloc="t")
+
     lib_to_hashes_mapping = _build_graphviz_edges(df, graph)
 
     for lib_name, c_hash_list in lib_to_hashes_mapping.items():
@@ -749,8 +752,6 @@ class BlameLibraryInteraction(Plot):
         df.reset_index(inplace=True)
         unique_revisions = _get_unique_revisions(df)
 
-        # TODO: Add fig title
-
         for rev in unique_revisions:
             if view_mode and 'revision' in self.plot_kwargs:
                 rev = _get_verified_revision(
@@ -758,7 +759,7 @@ class BlameLibraryInteraction(Plot):
                 )
 
             dataframe = df.loc[df['revision'] == rev]
-            fig = _build_graphviz_fig(dataframe)
+            fig = _build_graphviz_fig(dataframe, rev)
 
             if view_mode and 'revision' in self.plot_kwargs:
                 return fig
