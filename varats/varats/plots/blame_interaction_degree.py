@@ -649,9 +649,10 @@ def _build_sankey_figure(
 LibraryToHashesMapping = tp.Dict[str, tp.List[str]]
 
 
-def _collect_graphviz_plotting_data(
-    df: pd.DataFrame
-) -> tp.Tuple[LibraryToHashesMapping, tp.List[tp.Tuple[str, str]]]:
+def _build_graphviz_edges(
+    df: pd.DataFrame,
+    graph: Digraph,
+) -> LibraryToHashesMapping:
 
     base_lib_names = _get_distinct_base_lib_names(df)
     inter_lib_names = _get_distinct_inter_lib_names(df)
@@ -660,7 +661,6 @@ def _collect_graphviz_plotting_data(
     lib_to_hashes_mapping: tp.Dict[str, tp.List[str]] = {
         lib_name: [] for lib_name in all_distinct_lib_names
     }
-    edge_tuple_list: tp.List[tp.Tuple[str, str]] = []
 
     for _, row in df.iterrows():
         base_hash = row['base_hash']
@@ -668,20 +668,31 @@ def _collect_graphviz_plotting_data(
         inter_hash = row['inter_hash']
         inter_lib = row['inter_lib']
 
-        edge_tuple = (f'{base_hash}_{base_lib}', f'{inter_hash}_{inter_lib}')
-        edge_tuple_list.append(edge_tuple)
+        # Get number of equal interactions within the dataframe
+        weight = len(
+            df[(
+                df[['base_hash', 'base_lib', 'inter_hash', 'inter_lib']
+                  ] == list((base_hash, base_lib, inter_hash, inter_lib))
+            ).all(1)].index
+        )
+
+        label = None
+        if weight > 1:
+            label = str(weight)
+
+        graph.edge(
+            f'{base_hash}_{base_lib}', f'{inter_hash}_{inter_lib}', label=label
+        )
 
         lib_to_hashes_mapping[base_lib].append(base_hash)
         lib_to_hashes_mapping[inter_lib].append(inter_hash)
 
-    return lib_to_hashes_mapping, edge_tuple_list
+    return lib_to_hashes_mapping
 
 
-def _build_graphviz_digraph(
-    lib_to_hashes_mapping: tp.Dict[str, tp.List[str]],
-    edge_tuple_list: tp.List[tp.Tuple[str, str]]
-) -> Digraph:
+def _build_graphviz_fig(df: pd.DataFrame) -> Digraph:
     graph = Digraph(name="Digraph", strict=True)
+    lib_to_hashes_mapping = _build_graphviz_edges(df, graph)
 
     for lib_name, c_hash_list in lib_to_hashes_mapping.items():
 
@@ -690,8 +701,6 @@ def _build_graphviz_digraph(
             subgraph.attr(label=lib_name)
             for c_hash in c_hash_list:
                 subgraph.node(name=f'{c_hash}_{lib_name}', label=c_hash)
-
-    graph.edges(edge_tuple_list)
 
     return graph
 
@@ -740,6 +749,8 @@ class BlameLibraryInteraction(Plot):
         df.reset_index(inplace=True)
         unique_revisions = _get_unique_revisions(df)
 
+        # TODO: Add fig title
+
         for rev in unique_revisions:
             if view_mode and 'revision' in self.plot_kwargs:
                 rev = _get_verified_revision(
@@ -747,13 +758,7 @@ class BlameLibraryInteraction(Plot):
                 )
 
             dataframe = df.loc[df['revision'] == rev]
-
-            (lib_to_hashes_mapping,
-             edge_tuple_list) = _collect_graphviz_plotting_data(dataframe)
-
-            fig = _build_graphviz_digraph(
-                lib_to_hashes_mapping, edge_tuple_list
-            )
+            fig = _build_graphviz_fig(dataframe)
 
             if view_mode and 'revision' in self.plot_kwargs:
                 return fig
