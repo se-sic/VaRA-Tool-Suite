@@ -41,6 +41,12 @@ class PlotTypes(Enum):
     SANKEY = "sankey"
 
 
+class EdgeWeightThreshold(Enum):
+    LOW = 3
+    MEDIUM = 10
+    HIGH = 20
+
+
 class FractionMap:
     """Mapping of library names to fractions."""
 
@@ -652,6 +658,8 @@ LibraryToHashesMapping = tp.Dict[str, tp.List[str]]
 def _build_graphviz_edges(
     df: pd.DataFrame,
     graph: Digraph,
+    show_edge_weight: bool,
+    edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None
 ) -> LibraryToHashesMapping:
 
     base_lib_names = _get_distinct_base_lib_names(df)
@@ -668,17 +676,22 @@ def _build_graphviz_edges(
         inter_hash = row['inter_hash']
         inter_lib = row['inter_lib']
 
-        # Get number of equal interactions within the dataframe
-        weight = len(
-            df[(
-                df[['base_hash', 'base_lib', 'inter_hash', 'inter_lib']
-                  ] == list((base_hash, base_lib, inter_hash, inter_lib))
-            ).all(1)].index
-        )
-
         label = None
-        if weight > 1:
-            label = str(weight)
+
+        if show_edge_weight:
+            # Get number of equal interactions within the dataframe
+            weight = len(
+                df[(
+                    df[['base_hash', 'base_lib', 'inter_hash', 'inter_lib']
+                      ] == list((base_hash, base_lib, inter_hash, inter_lib))
+                ).all(1)].index
+            )
+            weight_string = str(weight)
+            if not edge_weight_threshold:
+                label = weight_string
+            else:
+                if weight >= edge_weight_threshold.value:
+                    label = weight_string
 
         graph.edge(
             f'{base_hash}_{base_lib}', f'{inter_hash}_{inter_lib}', label=label
@@ -690,12 +703,19 @@ def _build_graphviz_edges(
     return lib_to_hashes_mapping
 
 
-def _build_graphviz_fig(df: pd.DataFrame, revision: str) -> Digraph:
+def _build_graphviz_fig(
+    df: pd.DataFrame,
+    revision: str,
+    show_edge_weight: bool,
+    edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None
+) -> Digraph:
     graph = Digraph(name="Digraph", strict=True)
     graph.attr(label=f"Revision: {revision}")
     graph.attr(labelloc="t")
 
-    lib_to_hashes_mapping = _build_graphviz_edges(df, graph)
+    lib_to_hashes_mapping = _build_graphviz_edges(
+        df, graph, show_edge_weight, edge_weight_threshold
+    )
 
     for lib_name, c_hash_list in lib_to_hashes_mapping.items():
 
@@ -737,10 +757,14 @@ class BlameLibraryInteraction(Plot):
         self,
         view_mode: bool,
         extra_plot_cfg: tp.Dict[str, tp.Any],
+        show_edge_weight: bool = False,
+        edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
         save_path: tp.Optional[Path] = None,
         filetype: str = 'png'
     ) -> tp.Optional[Digraph]:
-        plot_cfg = {'fig_title': 'MISSING figure title'}
+        plot_cfg = {
+            'fig_title': 'MISSING figure title',
+        }
         if extra_plot_cfg is not None:
             plot_cfg.update(extra_plot_cfg)
 
@@ -759,7 +783,9 @@ class BlameLibraryInteraction(Plot):
                 )
 
             dataframe = df.loc[df['revision'] == rev]
-            fig = _build_graphviz_fig(dataframe, rev)
+            fig = _build_graphviz_fig(
+                dataframe, rev, show_edge_weight, edge_weight_threshold
+            )
 
             if view_mode and 'revision' in self.plot_kwargs:
                 return fig
@@ -1309,7 +1335,9 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
             )
         extra_plot_cfg: tp.Dict[str, tp.Any] = {}
         self.__graph = self._graphviz_plot(
-            view_mode=view_mode, extra_plot_cfg=extra_plot_cfg
+            view_mode=view_mode,
+            extra_plot_cfg=extra_plot_cfg,
+            show_edge_weight=True
         )
 
     def show(self) -> None:
