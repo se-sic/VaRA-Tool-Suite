@@ -3,12 +3,15 @@ import abc
 import logging
 import typing as tp
 from collections import defaultdict
+from os.path import isdir
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import matplotlib.style as style
 import numpy as np
 import pandas as pd
+import plumbum as pb
+from benchbuild.utils.cmd import mkdir
 from matplotlib import cm
 from plotly import graph_objs as go  # type: ignore
 from plotly import io as pio
@@ -504,8 +507,17 @@ def _save_figure(
 
     file_name = plot_file_name.rsplit('.', 1)[0]
     file_name = f"{file_name}_{padded_idx_str}.{filetype}"
+    plot_subdir = plot_kwargs["plot_type"]
 
-    pio.write_image(figure, str(plot_dir) + "/" + file_name, format=filetype)
+    with pb.local.cwd(plot_dir):
+        if not isdir(plot_subdir):
+            mkdir(plot_subdir)
+
+    pio.write_image(
+        figure,
+        str(plot_dir) + "/" + plot_subdir + "/" + file_name,
+        format=filetype
+    )
 
 
 def _collect_sankey_plotting_data(
