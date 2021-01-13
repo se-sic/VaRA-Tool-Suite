@@ -50,12 +50,12 @@ class Opus(bb.Project):  # type: ignore
 
         self.cflags += ["-fPIC"]
 
-        clang = bb.compiler.cc(self)  # type: ignore
+        clang = bb.compiler.cc(self)
         with local.cwd(opus_source):
             with local.env(CC=str(clang)):
-                bb.watch(local["./autogen.sh"])()  # type: ignore
-                bb.watch(local["./configure"])()  # type: ignore
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))  # type: ignore
+                bb.watch(local["./autogen.sh"])()
+                bb.watch(local["./configure"])()
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

@@ -21,11 +21,20 @@ from varats.paper_mgmt.artefacts import (
     store_artefacts,
     PlotArtefact,
     filter_plot_artefacts,
+    TableArtefact,
 )
 from varats.paper_mgmt.paper_config import get_paper_config
+from varats.plot.plots import prepare_plots
 from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
+from varats.table.tables import prepare_tables
 from varats.tables.discover_tables import initialize_tables
+from varats.ts_utils.html_utils import (
+    CSS_IMAGE_MATRIX,
+    CSS_COMMON,
+    html_page,
+    CSS_TABLE,
+)
 from varats.utils.cli_util import initialize_cli_tool
 from varats.utils.settings import vara_cfg
 
@@ -69,13 +78,6 @@ def main() -> None:
         "--only",
         nargs='+',
         help="Only generate artefacts with the given names."
-    )
-
-    generate_parser.add_argument(
-        "--html-overview",
-        action="store_true",
-        default=False,
-        help="Generate a HTML overview for plots that have paper_config=true."
     )
 
     # vara-art add
@@ -125,23 +127,23 @@ def main() -> None:
         return
 
     if args['subcommand'] == 'list':
-        __artefact_list()
+        _artefact_list()
     elif args['subcommand'] == 'show':
-        __artefact_show(args)
+        _artefact_show(args)
     elif args['subcommand'] == 'generate':
-        __artefact_generate(args)
+        _artefact_generate(args)
     elif args['subcommand'] == 'add':
-        __artefact_add(args)
+        _artefact_add(args)
 
 
-def __artefact_list() -> None:
+def _artefact_list() -> None:
     paper_config = get_paper_config()
 
     for artefact in paper_config.artefacts:
         print(f"{artefact.name} [{artefact.artefact_type.name}]")
 
 
-def __artefact_show(args: tp.Dict[str, tp.Any]) -> None:
+def _artefact_show(args: tp.Dict[str, tp.Any]) -> None:
     paper_config = get_paper_config()
     for name in args['names']:
         artefact = paper_config.artefacts.get_artefact(name)
@@ -152,7 +154,7 @@ def __artefact_show(args: tp.Dict[str, tp.Any]) -> None:
             print(f"There is no artefact with the name {name}.")
 
 
-def __artefact_generate(args: tp.Dict[str, tp.Any]) -> None:
+def _artefact_generate(args: tp.Dict[str, tp.Any]) -> None:
     artefacts: tp.Iterable[Artefact]
 
     if 'only' in args.keys():
@@ -162,6 +164,7 @@ def __artefact_generate(args: tp.Dict[str, tp.Any]) -> None:
         ]
     else:
         artefacts = get_paper_config().get_all_artefacts()
+
     for artefact in artefacts:
         LOG.info(
             f"Generating artefact {artefact.name} in location "
@@ -169,23 +172,25 @@ def __artefact_generate(args: tp.Dict[str, tp.Any]) -> None:
         )
         artefact.generate_artefact()
 
-    if 'html_overview' in args.keys():
-        plot_artefacts: tp.Iterable[PlotArtefact] = filter_plot_artefacts(
-            get_paper_config().get_all_artefacts()
-        )
-        plot_artefacts = [
-            artefact for artefact in plot_artefacts
-            if artefact.plot_kwargs.get('paper_config', False)
-        ]
-        generate_html_plot_overview(
-            plot_artefacts,
-            Path(str(vara_cfg()['artefacts']['artefacts_dir'])) /
-            Path(str(vara_cfg()['paper_config']['current_config'])) /
-            "index.html"
-        )
+    # generate index.html
+    _generate_index_html(
+        artefacts,
+        Path(vara_cfg()['artefacts']['artefacts_dir'].value) /
+        vara_cfg()['paper_config']['current_config'].value / "index.html"
+    )
+    # generate plot_matrix.html
+    plot_artefacts = [
+        artefact for artefact in (filter_plot_artefacts(artefacts))
+        if artefact.plot_kwargs.get('paper_config', False)
+    ]
+    _generate_html_plot_matrix(
+        plot_artefacts,
+        Path(vara_cfg()['artefacts']['artefacts_dir'].value) /
+        vara_cfg()['paper_config']['current_config'].value / "plot_matrix.html"
+    )
 
 
-def __artefact_add(args: tp.Dict[str, tp.Any]) -> None:
+def _artefact_add(args: tp.Dict[str, tp.Any]) -> None:
     paper_config = get_paper_config()
 
     if 'extra_args' in args.keys():
@@ -208,51 +213,38 @@ def __artefact_add(args: tp.Dict[str, tp.Any]) -> None:
     store_artefacts(paper_config.artefacts, paper_config.path)
 
 
-__HTML_TEMPLATE = """<!DOCTYPE html>
-<html>
+__INDEX_TABLE_TEMPLATE = """      <h2>{heading}</h2>
+      <p><table>
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th>File</th>
+          </tr>
+        </thead>
+        <tbody>
+{list}
+        </tbody>
+      </table></p>"""
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>Results</title>
-    <style type="text/css" media="screen">
-        .box {{
-            display: flex;
-            padding: 0 4px;
-        }}
+__INDEX_ENTRY_TEMPLATE = \
+    """        <tr>
+          <td>{project}</td>
+          <td><a href="{link}">{name}</a></td>
+        </tr>"""
 
-        .column {{
-            flex: 18%;
-            max-width: 18%;
-            min-width: 18%;
-            padding: 0 4px;
-        }}
-
-        .column img {{
-            margin-top: 8px;
-            vertical-align: middle;
-            width: 100%;
-        }}
-    </style>
-</head>
-
-<body>
-    <div class="box">
+__COLUMN_TEMPLATE = """    <div class="column">
 {}
-    </div>
-</body>
+    </div>"""
 
-</html>
-"""
+__IMAGE_TEMPLATE = """        <img src="{}" />"""
 
-__COLUMN_TEMPLATE = """        <div class="column">
-{}
-        </div>"""
-
-__IMAGE_TEMPLATE = """            <img src="{}" />"""
+__INDEX_LINKS = """  <ul>
+    <li><a href=".">artefacts folder</a></li>
+    <li><a href="plot_matrix.html">plot matrix</a></li>
+  </ul>"""
 
 
-def generate_html_plot_overview(
+def _generate_html_plot_matrix(
     artefacts: tp.Iterable[PlotArtefact], outfile: Path
 ) -> None:
     """
@@ -281,10 +273,103 @@ def generate_html_plot_overview(
             images.append(__IMAGE_TEMPLATE.format(str(image_path)))
         if images:
             columns.append(__COLUMN_TEMPLATE.format("\n".join(images)))
-    html = __HTML_TEMPLATE.format("\n".join(columns))
+    html = html_page(
+        "Results", "\n".join(columns), [CSS_COMMON, CSS_IMAGE_MATRIX]
+    )
 
     with open(outfile, "w") as file:
         file.write(html)
+
+
+def _generate_index_html(
+    artefacts: tp.Iterable[Artefact], outfile: Path
+) -> None:
+    """
+    Generates a html overview for the given artefacts.
+
+    Args:
+        artefacts: the artefacts to include in the overview
+        outfile: the path to store the overview in
+    """
+    columns: tp.List[str] = []
+    for artefact in artefacts:
+        artefact_info, artefact_html = _generate_artefact_html(
+            artefact, outfile.parent
+        )
+        columns.append(
+            __INDEX_TABLE_TEMPLATE.format(
+                heading=artefact_info, list=artefact_html
+            )
+        )
+
+    title = f"Artefacts for paper config \"{get_paper_config().path.name}\""
+    content = __INDEX_LINKS
+    content += __COLUMN_TEMPLATE.format("\n".join(columns))
+    html = html_page(title, content, [CSS_COMMON, CSS_TABLE])
+
+    with open(outfile, "w") as file:
+        file.write(html)
+
+
+def _generate_artefact_html(artefact: Artefact,
+                            cwd: Path) -> tp.Tuple[str, str]:
+    artefact_info = f"{artefact.name} ({artefact.artefact_type.name})"
+    list_entries: tp.List[str] = []
+    entries = _get_artefact_files_info(artefact)
+    for entry in entries:
+        artefact_file = entry["file_name"]
+        artefact_file_path = _locate_artefact_file(
+            Path(artefact_file), artefact.output_path, cwd
+        )
+        if artefact_file_path:
+            list_entries.append(
+                __INDEX_ENTRY_TEMPLATE.format(
+                    project=entry["project"],
+                    link=str(artefact_file_path),
+                    name=artefact_file
+                )
+            )
+    return artefact_info, "\n".join(list_entries)
+
+
+def _get_artefact_files_info(artefact: Artefact) -> tp.List[tp.Dict[str, str]]:
+    if artefact.artefact_type == ArtefactType.plot:
+        artefact = tp.cast(PlotArtefact, artefact)
+        plots = prepare_plots(
+            plot_type=artefact.plot_type,
+            result_output=artefact.output_path,
+            file_format=artefact.file_format,
+            **artefact.plot_kwargs
+        )
+        return [{
+            "file_name": plot.plot_file_name(artefact.file_format),
+            "project": plot.plot_kwargs.get("project", "[UNKNOWN]")
+        } for plot in plots]
+
+    if artefact.artefact_type == ArtefactType.table:
+        artefact = tp.cast(TableArtefact, artefact)
+        tables = prepare_tables(
+            table_type=artefact.table_type,
+            result_output=artefact.output_path,
+            file_format=artefact.file_format,
+            **artefact.table_kwargs
+        )
+        return [{
+            "file_name": table.table_file_name(),
+            "project": table.table_kwargs.get("project", "[UNKNOWN]")
+        } for table in tables]
+
+    raise AssertionError(
+        f"Missing implementation for artefact type {artefact.artefact_type}"
+    )
+
+
+def _locate_artefact_file(artefact_file: Path, output_path: Path,
+                          cwd: Path) -> tp.Optional[Path]:
+    if not (output_path / artefact_file).exists():
+        LOG.info(f"Could not find artefact file {artefact_file}")
+        return None
+    return (output_path / artefact_file).relative_to(cwd)
 
 
 if __name__ == '__main__':

@@ -6,7 +6,7 @@ import typing as tp
 from pathlib import Path
 
 from varats.data.discover_reports import initialize_reports
-from varats.plot.plots import PlotRegistry, build_plot
+from varats.plot.plots import PlotRegistry, build_plots
 from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
 from varats.utils.cli_util import initialize_cli_tool
@@ -30,7 +30,7 @@ def main() -> None:
         help="Plot to generate." + PlotRegistry.get_plot_types_help_string()
     )
     parser.add_argument(
-        "-r", "--result-output", help="Folder with result files"
+        "-r", "--result-output", help="Set the output folder for plot files"
     )
     parser.add_argument("-p", "--project", help="Project name")
     parser.add_argument(
@@ -88,7 +88,7 @@ def __plot(args: tp.Dict[str, tp.Any]) -> None:
     else:
         extra_args = {}
 
-    build_plot(**args, **extra_args)
+    build_plots(**args, **extra_args)
 
 
 if __name__ == '__main__':

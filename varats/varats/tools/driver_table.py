@@ -3,17 +3,12 @@
 import argparse
 import logging
 import typing as tp
-from pathlib import Path
 
 from varats.data.discover_reports import initialize_reports
-from varats.mapping.commit_map import create_lazy_commit_map_loader
-from varats.paper.case_study import load_case_study_from_file
-from varats.paper_mgmt.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
-from varats.table.tables import TableRegistry, build_table
+from varats.table.tables import TableRegistry, build_tables
 from varats.tables.discover_tables import initialize_tables
 from varats.utils.cli_util import initialize_cli_tool
-from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
 
@@ -52,6 +47,12 @@ def main() -> None:
         default=False
     )
     parser.add_argument(
+        "--wrap-document",
+        help="Wrap the table in a full compilable document (for latex tables)",
+        action='store_true',
+        default=False
+    )
+    parser.add_argument(
         "--report-type",
         help="The report type to generate the table for."
         "Tables may ignore this option.",
@@ -83,38 +84,7 @@ def __table(args: tp.Dict[str, tp.Any]) -> None:
     else:
         extra_args = {}
 
-    # Setup default result folder
-    if 'result_output' not in args:
-        args['table_dir'] = str(vara_cfg()['tables']['table_dir'])
-    else:
-        args['table_dir'] = args.pop('result_output')
-
-    if not args["view"]:
-        if not Path(args['table_dir']).exists():
-            LOG.error(f"Could not find output dir {args['table_dir']}")
-            return
-
-        LOG.info(f"Writing tables to: {args['table_dir']}")
-
-    if args['paper_config']:
-        paper_config = get_paper_config()
-        for case_study in paper_config.get_all_case_studies():
-            project_name = case_study.project_name
-            args['project'] = project_name
-            args['get_cmap'] = create_lazy_commit_map_loader(project_name)
-            args['table_case_study'] = case_study
-            build_table(**args, **extra_args)
-    else:
-        if 'project' in args:
-            args['get_cmap'] = create_lazy_commit_map_loader(args['project'])
-        if 'cs_path' in args:
-            case_study_path = Path(args['cs_path'])
-            args['table_case_study'] = load_case_study_from_file(
-                case_study_path
-            )
-        else:
-            args['table_case_study'] = None
-        build_table(**args, **extra_args)
+    build_tables(**args, **extra_args)
 
 
 if __name__ == '__main__':
