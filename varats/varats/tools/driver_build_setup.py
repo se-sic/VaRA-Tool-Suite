@@ -145,7 +145,9 @@ def main() -> None:
     parser.add_argument(
         "-r",
         "--release",
-        help="Checks if a new major release is available.",
+        action="store_true",
+        default=None,
+        help="Checks if a new major release of VaRA is available.",
     )
     parser.add_argument(
         "researchtool",
@@ -170,10 +172,12 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    if not (args.config or args.init or args.update or args.build):
+    if not (
+        args.config or args.init or args.update or args.release or args.build
+    ):
         parser.error(
-            "At least one argument of --config, --init, --update or --build " +
-            "must be given."
+            "At least one argument of --config, --init, --update, --release "
+            "or --build must be given. "
         )
 
     if args.config:

@@ -171,7 +171,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         self.code_base.setup_build_link()
 
     def is_up_to_date(self) -> bool:
-        """Returns true if a newer major release is available."""
+        """Returns true if a newer major release of VaRA is available."""
         pass
 
     def upgrade(self) -> None:
