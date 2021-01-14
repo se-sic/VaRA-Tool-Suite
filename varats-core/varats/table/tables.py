@@ -86,8 +86,8 @@ def build_table(table_to_build: 'table.Table') -> None:
     Args:
         table: the table to build
     """
+    table_to_build.format = table_to_build.table_kwargs["output-format"]
     if table_to_build.table_kwargs["view"]:
-        table_to_build.format = table_to_build.table_kwargs["output-format"]
         print(table_to_build.tabulate())
     else:
         table_to_build.save(
@@ -140,6 +140,12 @@ def prepare_tables(**args: tp.Any) -> tp.Iterable['table.Table']:
 
     if 'view' not in args:
         args['view'] = False
+    if 'output-format' not in args:
+        from varats.table.table import TableFormat  # pylint: disable=C0415
+        if args['view']:
+            args['output-format'] = TableFormat.fancy_grid
+        else:
+            args['output-format'] = TableFormat.latex_booktabs
     if 'paper_config' not in args:
         args['paper_config'] = False
 

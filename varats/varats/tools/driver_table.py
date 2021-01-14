@@ -64,8 +64,7 @@ def main() -> None:
     parser.add_argument(
         "--output-format",
         help="The format the table should have",
-        action=enum_action(TableFormat),
-        default=TableFormat.fancy_grid
+        action=enum_action(TableFormat)
     )
     parser.add_argument(
         "extra_args",
