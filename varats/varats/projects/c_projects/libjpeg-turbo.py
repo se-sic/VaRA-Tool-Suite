@@ -19,7 +19,7 @@ from varats.utils.settings import bb_cfg
 class Libxml2(bb.Project, CVEProviderHook):  # type: ignore
     """libjpeg-turbo is a JPEG image codec."""
 
-    NAME = 'libjpeg-turbo'
+    NAME = 'libjpeg_turbo'
     GROUP = 'c_projects'
     DOMAIN = 'JPEG image codec'
 
