@@ -43,11 +43,11 @@ _CFG["container"] = {
     "from_source": {
         "desc":
             "Whether to install varats in the container from a local "
-            "checkout or pip.",
+            "source checkout or pip.",
         "default": False
     },
     "varats_source": {
-        "desc": "The local checkout of varats to use for the source install.",
+        "desc": "Path to the local checkout of varats to use for the source install.",
         "default": None
     }
 }

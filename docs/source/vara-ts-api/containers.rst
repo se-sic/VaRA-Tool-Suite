@@ -5,29 +5,29 @@ BenchBuild allows you to :ref:`run experiments in a container <Running BenchBuil
 The `containers` module handles the correct creation of container images.
 Our containers are structured in layers as follows::
 
-    ┌─────────────────────────────────┐  \
-    │ Base Container (e.g. Debian 10) │   |
-    └─────────────────────────────────┘   |
-                     +                    |
-    ┌─────────────────────────────────┐   |
-    │             varats              │   |
-    └─────────────────────────────────┘   |
-                     +                     > Base Image
-    ┌─────────────────────────────────┐   |
-    │           benchbuild            │   |
-    └─────────────────────────────────┘   |
-                     +                    |
-    ┌─────────────────────────────────┐   |
-    │    Research Tool (e.g. VaRA)    │   |
-    └─────────────────────────────────┘  /
-                     +
-    ┌─────────────────────────────────┐
-    │        Project Specific         │
-    └─────────────────────────────────┘
-                     +
-    ┌─────────────────────────────────┐
-    │       Experiment Specific       │
-    └─────────────────────────────────┘
+    ┌───────────────────────────────────┐  \
+    │ Base Container (e.g., Debian 10)  │   |
+    └───────────────────────────────────┘   |
+                      +                     |
+    ┌───────────────────────────────────┐   |
+    │              varats               │   |
+    └───────────────────────────────────┘   |
+                      +                      > Base Image
+    ┌───────────────────────────────────┐   |
+    │            benchbuild             │   |
+    └───────────────────────────────────┘   |
+                      +                     |
+    ┌───────────────────────────────────┐   |
+    │    Research Tool (e.g., VaRA)     │   |
+    └───────────────────────────────────┘  /
+                      +
+    ┌───────────────────────────────────┐
+    │         Project Specific          │
+    └───────────────────────────────────┘
+                      +
+    ┌───────────────────────────────────┐
+    │        Experiment Specific        │
+    └───────────────────────────────────┘
 
 
 Base images are built once for each :class:`~varats.containers.containers.ImageBase` with the currently configured research tool using the :ref:`vara-container` tool.

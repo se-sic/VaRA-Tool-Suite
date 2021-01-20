@@ -95,6 +95,8 @@ BenchBuild can run its experiments inside a container.
 This allows to customize the execution environment on a per-project(-version) and per-experiment level.
 
 To use BenchBuild's container support, you first need to setup `buildah <https://github.com/containers/buildah/blob/master/install.md>`_ and `podman <https://podman.io/getting-started/installation>`_ on your system.
+Please follow their install instructions on how to setup both tools.
+Keep in mind that you have to set a subuid and subgid mapping on all machines that need to run containers. 
 
 Then, you have to set the following parameters in the :ref:`BenchBuild config <How-to configure BenchBuild yourself>`:
 
