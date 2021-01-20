@@ -4,6 +4,7 @@ import logging
 import typing as tp
 from copy import deepcopy
 from enum import Enum
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from benchbuild.environments.domain.commands import Command, CreateImage
@@ -44,14 +45,14 @@ __BASE_IMAGES: tp.Dict[ImageBase, ContainerImage] = {
                               )
 }
 
-VARATS_ROOT = "/varats_root/"
-BB_ROOT = "/app/"
+CONTAINER_VARATS_ROOT: Path = Path("/varats_root/")
+CONTAINER_BB_ROOT: Path = Path("/app/")
 
 
 def _add_varats_layers(layers: ContainerImage) -> ContainerImage:
-    crun = str(bb_cfg()['container']['runtime'])
-    src_dir = str(vara_cfg()['container']['varats_source'])
-    tgt_dir = '/varats'
+    crun = bb_cfg()['container']['runtime'].value
+    src_dir = Path(vara_cfg()['container']['varats_source'].value)
+    tgt_dir = Path('/varats')
 
     def from_source(image: ContainerImage) -> None:
         LOG.debug('installing benchbuild from source.')
@@ -63,8 +64,8 @@ def _add_varats_layers(layers: ContainerImage) -> ContainerImage:
             'pip3',
             'install',
             '--ignore-installed',
-            tgt_dir + '/varats-core',
-            tgt_dir + '/varats',
+            str(tgt_dir / 'varats-core'),
+            str(tgt_dir / 'varats'),
             mount=f'type=bind,src={src_dir},target={tgt_dir}',
             runtime=crun
         )
@@ -84,10 +85,12 @@ def _add_vara_config(layers: ContainerImage, tmp_dir: str) -> ContainerImage:
     config = deepcopy(vara_cfg())
     config_file = tmp_dir + "/.varats.yaml"
 
-    config["config_file"] = VARATS_ROOT + ".varats.yaml"
-    config["result_dir"] = VARATS_ROOT + "results/"
-    config["paper_config"]["folder"] = VARATS_ROOT + "paper_configs/"
-    config["benchbuild_root"] = BB_ROOT
+    config["config_file"] = str(CONTAINER_VARATS_ROOT / ".varats.yaml")
+    config["result_dir"] = str(CONTAINER_VARATS_ROOT / "results/")
+    config["paper_config"]["folder"] = str(
+        CONTAINER_VARATS_ROOT / "paper_configs/"
+    )
+    config["benchbuild_root"] = str(CONTAINER_BB_ROOT)
 
     #TODO: hook for research tool (se-passau/VaRA#718)
 
@@ -100,8 +103,8 @@ def _add_vara_config(layers: ContainerImage, tmp_dir: str) -> ContainerImage:
 
 def _add_benchbuild_config(layers: ContainerImage) -> ContainerImage:
     layers.env(
-        BB_VARATS_OUTFILE=f"{VARATS_ROOT}results/",
-        BB_VARATS_RESULT=f"{VARATS_ROOT}BC_files/"
+        BB_VARATS_OUTFILE=str(CONTAINER_VARATS_ROOT / "results"),
+        BB_VARATS_RESULT=str(CONTAINER_VARATS_ROOT / "BC_files")
     )
 
     return layers
@@ -136,9 +139,8 @@ def create_base_image(base: ImageBase) -> None:
 
         _add_vara_config(image, tmpdir)
         _add_benchbuild_config(image)
-        # image.run('')
 
-        image.workingdir(BB_ROOT)
+        image.workingdir(str(CONTAINER_BB_ROOT))
         cmd: Command = CreateImage(image_name, image)
         uow = unit_of_work.ContainerImagesUOW()
         messagebus.handle(cmd, uow)
@@ -161,7 +163,7 @@ def get_base_image(base: ImageBase) -> ContainerImage:
     Returns:
         the requested base image
     """
-    image_name = f"{base.value}_varats"
+    image_name = base.value
     configured_research_tool = vara_cfg()["container"]["research_tool"]
     if configured_research_tool:
         research_tool = get_research_tool(str(configured_research_tool))
