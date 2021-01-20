@@ -146,7 +146,7 @@ def main() -> None:
         "-r",
         "--release",
         action="store_true",
-        default=None,
+        default=False,
         help="Checks if a new major release of VaRA is available.",
     )
     parser.add_argument(

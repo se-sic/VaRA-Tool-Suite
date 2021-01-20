@@ -31,7 +31,7 @@ LOG = logging.getLogger(__name__)
 
 class VaRACodeBase(CodeBase):
     """Layout of the VaRA code base: setting up vara-llvm-project fork, VaRA,
-    and optinaly phasar for static analysis."""
+    and optionally phasar for static analysis."""
 
     def __init__(self, base_dir: Path) -> None:
         sub_projects = [
@@ -100,6 +100,18 @@ class VaRACodeBase(CodeBase):
         """Pull and update all ``SubProject`` s."""
         self.map_sub_projects(lambda prj: prj.pull())
         self.setup_submodules()
+
+    def fetch(self, sub_prj_name: str) -> None:
+        """Fetch the passed `SubProject` name."""
+        with local.cwd(self.base_dir):
+            sub_prj: tp.Optional[SubProject] = self.get_sub_project(
+                sub_prj_name
+            )
+            if not sub_prj:
+                LOG.warning("The specified SubProject name does not exist.")
+                return
+
+            sub_prj.fetch(sub_prj_name)
 
 
 class VaRA(ResearchTool[VaRACodeBase]):
