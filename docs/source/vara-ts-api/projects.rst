@@ -191,6 +191,9 @@ This can be done by assigning a container image to the `CONTAINER` class variabl
     CONTAINER = get_base_image(ImageBase.DEBIAN_10)
 
 To ensure that the container already contains everything required by BenchBuild, you should use one of our base images using the function :func:`~varats.containers.containers.get_base_image()`. You can then add additional layers to the image using BenchBuild's buildah API.
+For example, you can create a container based on our Debian 10 base image and install `wget` like this::
+
+    get_base_image(ImageBase.DEBIAN_10).run("apt", "install", "-y", "wget")
 
 For some projects, you may want to use different container images based on the project revision.
 This can be achieved by assigning `CONTAINER` a list of `(RevisionRange, ContainerImage)` tuples.
