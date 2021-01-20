@@ -2,7 +2,6 @@
 
 import typing as tp
 
-import attr
 import plumbum as pb
 from benchbuild.source import Variant, FetchableSource
 
