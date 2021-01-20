@@ -6,9 +6,17 @@ This tool is used to manage the container images used when :ref:`running benchbu
 .. program-output:: vara-container -h
     :nostderr:
 
-TODO: add section about tool selection once implemented
+This tool provides an easy way to select the research tool that is used in the base containers:
 
-With `vara-container build`, you can build all base container images:
+.. program-output:: vara-container select-tool -h
+    :nostderr:
+
+With `vara-container build`, you can build all base container images for the current research tool:
 
 .. program-output:: vara-container build -h
+    :nostderr:
+
+Existing base images can also be deleted:
+
+.. program-output:: vara-container delete -h
     :nostderr:

@@ -12,7 +12,9 @@ from benchbuild.environments.domain.declarative import (
     ContainerImage,
 )
 from benchbuild.environments.service_layer import messagebus, unit_of_work
+from benchbuild.utils.cmd import buildah as buildah
 from plumbum import local
+from plumbum.commands import ConcreteCommand
 
 from varats.tools.tool_util import get_research_tool
 from varats.utils.settings import bb_cfg, vara_cfg
@@ -20,18 +22,26 @@ from varats.utils.settings import bb_cfg, vara_cfg
 LOG = logging.getLogger(__name__)
 
 
+def prepare_buildah() -> ConcreteCommand:
+    return buildah["--root",
+                   bb_cfg()["container"]["root"].value, "--runroot",
+                   bb_cfg()["container"]["runroot"].value]
+
+
 class ImageBase(Enum):
     """Container image bases that can be used by projects."""
-    DEBIAN_10 = "debian:10"
+    DEBIAN_10 = "localhost/debian:10_varats"
 
 
 __BASE_IMAGES: tp.Dict[ImageBase, ContainerImage] = {
     ImageBase.DEBIAN_10:
-        ContainerImage().from_("debian:10").run('apt', 'update').run(
-            'apt', 'install', '-y', 'python3', 'python3-dev', 'python3-pip',
-            'musl-dev', 'git', 'gcc', 'libgit2-dev', 'libffi-dev',
-            'libyaml-dev', 'clang'
-        )
+        ContainerImage().from_("docker.io/library/debian:10"
+                              ).run('apt', 'update').run(
+                                  'apt', 'install', '-y', 'python3',
+                                  'python3-dev', 'python3-pip', 'musl-dev',
+                                  'git', 'gcc', 'libgit2-dev', 'libffi-dev',
+                                  'libyaml-dev', 'clang'
+                              )
 }
 
 VARATS_ROOT = "/varats_root/"
@@ -106,7 +116,7 @@ def create_base_image(base: ImageBase) -> None:
     """
     with TemporaryDirectory() as tmpdir:
         image = __BASE_IMAGES[base]
-        image_name = f"{base.value}_varats"
+        image_name = base.value
 
         # we need an up-to-date pip version to get the prebuilt pygit2 package
         # with an up-to-date libgit2
@@ -157,3 +167,13 @@ def get_base_image(base: ImageBase) -> ContainerImage:
         research_tool = get_research_tool(str(configured_research_tool))
         image_name += f"_{research_tool.name.lower()}"
     return ContainerImage().from_(image_name)
+
+
+def delete_base_image(base: ImageBase) -> None:
+    prepare_buildah()("rmi", "--force", base.value)
+
+
+def delete_base_images() -> None:
+    for base in ImageBase:
+        LOG.info(f"deleting base container {base.value}.")
+        delete_base_image(base)
