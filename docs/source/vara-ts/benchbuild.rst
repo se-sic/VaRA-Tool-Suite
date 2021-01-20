@@ -98,7 +98,8 @@ To use BenchBuild's container support, you first need to setup `buildah <https:/
 Please follow their install instructions on how to setup both tools.
 Keep in mind that you have to set a subuid and subgid mapping on all machines that need to run containers. 
 
-Then, you have to set the following parameters in the :ref:`BenchBuild config <How-to configure BenchBuild yourself>`:
+Then, make sure that the following parameters in the :ref:`BenchBuild config <How-to configure BenchBuild yourself>` are set.
+If you generated your configuration via :ref:`vara-gen-bbconfig`, these options were automatically set.
 
 .. code-block:: yaml
 
@@ -126,6 +127,7 @@ Then, you have to set the following parameters in the :ref:`BenchBuild config <H
         value: '</path/to/benchbuild>'
 
 The next step is to select the correct research tool for your experiment and build the base containers using the :ref:`vara-container` tool.
+Remember to first select a research tool and then build the base containers.
 
 You can now run your experiments in a container simply by replacing the `run` in your BenchBuild command with `container`, for example, like this:
 
@@ -134,4 +136,4 @@ You can now run your experiments in a container simply by replacing the `run` in
   cd $VARA_ROOT/benchbuild
   benchbuild -vv container -E GenerateBlameReport gzip
 
-Note, that the project is responsible for providing a :ref:`base container image <Using Containers>` to run in.
+Note, that each project is responsible for providing a :ref:`base container image <Using Containers>` to run in.
