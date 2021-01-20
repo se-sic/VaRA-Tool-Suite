@@ -48,9 +48,9 @@ _CFG["container"] = {
     },
     "varats_source": {
         "desc":
-            "Path to the local checkout of varats to use for the source install.",
-        "default":
-            None
+            "Path to the local checkout of varats to use for the source"
+            "install.",
+        "default": None
     }
 }
 

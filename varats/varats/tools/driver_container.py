@@ -37,8 +37,8 @@ def main() -> None:
     # vara-container build
     build_parser = sub_parsers.add_parser(
         'build',
-        help=
-        "Build base containers for the current research tool. By default builds all base containers."
+        help="Build base containers for the current research tool."
+        "By default builds all base containers."
     )
     build_parser.add_argument(
         "-i",
@@ -50,8 +50,8 @@ def main() -> None:
     # vara-container delete
     delete_parser = sub_parsers.add_parser(
         'delete',
-        help=
-        "Delete base containers for the current research tool. By default deletes all base containers."
+        help="Delete base containers for the current research tool."
+        "By default deletes all base containers."
     )
     delete_parser.add_argument(
         "-i",

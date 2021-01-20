@@ -13,7 +13,7 @@ from benchbuild.environments.domain.declarative import (
     ContainerImage,
 )
 from benchbuild.environments.service_layer import messagebus, unit_of_work
-from benchbuild.utils.cmd import buildah as buildah
+from benchbuild.utils.cmd import buildah
 from plumbum import local
 from plumbum.commands import ConcreteCommand
 
