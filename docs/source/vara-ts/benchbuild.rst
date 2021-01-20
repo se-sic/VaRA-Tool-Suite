@@ -88,15 +88,22 @@ To adapt and tune BenchBuild further, you can moify the different configuration 
     desc: Proccesses use to work on execution plans.
     value: 4
 
-Running BenchBuild in a container
+Running BenchBuild in a Container
 ---------------------------------
 
 BenchBuild can run its experiments inside a container.
 This allows to customize the execution environment on a per-project(-version) and per-experiment level.
 
+Configuring the Container Support
+.................................
+
 To use BenchBuild's container support, you first need to setup `buildah <https://github.com/containers/buildah/blob/master/install.md>`_ and `podman <https://podman.io/getting-started/installation>`_ on your system.
 Please follow their install instructions on how to setup both tools.
-Keep in mind that you have to set a subuid and subgid mapping on all machines that need to run containers. 
+Keep in mind that you have to set a subuid and subgid mapping on all machines that need to run containers.
+You also need to install `crun` on those machines.
+For debian, this can be don with the following command::
+
+    sudo apt install crun
 
 Then, make sure that the following parameters in the :ref:`BenchBuild config <How-to configure BenchBuild yourself>` are set.
 If you generated your configuration via :ref:`vara-gen-bbconfig`, these options were automatically set.
@@ -126,8 +133,14 @@ If you generated your configuration via :ref:`vara-gen-bbconfig`, these options 
         desc: Path to benchbuild's source directory
         value: '</path/to/benchbuild>'
 
-The next step is to select the correct research tool for your experiment and build the base containers using the :ref:`vara-container` tool.
-Remember to first select a research tool and then build the base containers.
+
+Executing Experiments in a Container
+....................................
+
+If your experiment makes use of a ref:`research tool`, the next step is to select the correct research tool for your experiment.
+Afterwards, you need to build the base containers.
+Both tasks can be accomplished using the :ref:`vara-container` tool.
+Remember to first select a research tool and then build the base containers afterwards.
 
 You can now run your experiments in a container simply by replacing the `run` in your BenchBuild command with `container`, for example, like this:
 
@@ -137,3 +150,13 @@ You can now run your experiments in a container simply by replacing the `run` in
   benchbuild -vv container -E GenerateBlameReport gzip
 
 Note, that each project is responsible for providing a :ref:`base container image <Using Containers>` to run in.
+
+
+Using buildah and podman on the Commandline
+...........................................
+
+For more advanced users, it might be useful to work with buildah and podman directly from the commandline, e.g., when debugging container images.
+In these situations, it can come in handy to create some shell aliases that set the correct `root` and `runroot` to for the buildah and podman commands::
+
+    alias bbuildah='buildah --root <path-to-varats-root>/containers/lib --runroot <path-to-varats-root>/containers/run'
+    alias bpodman='podman --root <path-to-varats-root>/containers/lib --runroot <path-to-varats-root>/containers/run'
