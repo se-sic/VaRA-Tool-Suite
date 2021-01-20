@@ -172,10 +172,18 @@ def get_base_image(base: ImageBase) -> ContainerImage:
 
 
 def delete_base_image(base: ImageBase) -> None:
+    """
+    Delete the base image for the given image base and the current research
+    tool.
+
+    Args:
+        base: the image base
+    """
     prepare_buildah()("rmi", "--force", base.value)
 
 
 def delete_base_images() -> None:
+    """Deletes all base images for the current research tool."""
     for base in ImageBase:
         LOG.info(f"deleting base container {base.value}.")
         delete_base_image(base)
