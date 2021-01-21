@@ -2,6 +2,7 @@
 and how to configure and setup VaRA."""
 import logging
 import os
+import re
 import shutil
 import typing as tp
 from pathlib import Path
@@ -103,15 +104,8 @@ class VaRACodeBase(CodeBase):
 
     def fetch(self, sub_prj_name: str) -> None:
         """Fetch the passed `SubProject` name."""
-        with local.cwd(self.base_dir):
-            sub_prj: tp.Optional[SubProject] = self.get_sub_project(
-                sub_prj_name
-            )
-            if not sub_prj:
-                LOG.warning("The specified SubProject name does not exist.")
-                return
-
-            sub_prj.fetch(sub_prj_name)
+        sub_prj: SubProject = self.get_sub_project(sub_prj_name)
+        sub_prj.fetch()
 
 
 class VaRA(ResearchTool[VaRACodeBase]):
@@ -182,9 +176,29 @@ class VaRA(ResearchTool[VaRACodeBase]):
         self.code_base.setup_submodules()
         self.code_base.setup_build_link()
 
-    def is_up_to_date(self) -> bool:
-        """Returns true if a newer major release of VaRA is available."""
-        pass
+    def is_up_to_date(self) -> None:
+        """Checks if there is a newer major release of VaRA available."""
+
+        self.code_base.fetch("vara-llvm-project")
+        remote_branches = self.code_base.get_sub_project("vara-llvm-project"
+                                                        ).get_branches(["-r"])
+        release_version_pattern = re.compile("-([0-9]+)-dev")
+        current_version = int(vara_cfg()["vara"]["version"])
+        highest_version = 0
+
+        for branch in remote_branches:
+            match = release_version_pattern.search(branch)
+            if match:
+                match_version = int(re.sub("\D", "", match.group()))
+                if match_version > highest_version:
+                    highest_version = match_version
+
+        if current_version == highest_version:
+            print("Your VaRA version is up to date!")
+            return
+
+        print("Your VaRA version is outdated!")
+        print(f"Newest version is: {highest_version}")
 
     def upgrade(self) -> None:
         """Upgrade the research tool to a newer version."""
