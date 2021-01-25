@@ -143,13 +143,6 @@ def main() -> None:
         help="Build type to use for the tool build configuration."
     )
     parser.add_argument(
-        "-r",
-        "--release",
-        action="store_true",
-        default=False,
-        help="Checks if a new major release of VaRA is available.",
-    )
-    parser.add_argument(
         "researchtool",
         help="The research tool one wants to setup",
         choices=get_supported_research_tool_names()
@@ -172,12 +165,10 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    if not (
-        args.config or args.init or args.update or args.release or args.build
-    ):
+    if not (args.config or args.init or args.update or args.build):
         parser.error(
-            "At least one argument of --config, --init, --update, --release "
-            "or --build must be given. "
+            "At least one argument of --config, --init, --update or --build "
+            "must be given. "
         )
 
     if args.config:
@@ -190,10 +181,9 @@ def main() -> None:
         __build_setup_init(
             tool, args.sourcelocation, args.installprefix, args.version
         )
-    if args.release:
-        tool.is_up_to_date()
     if args.update:
         tool.upgrade()
+        tool.is_up_to_date()
     if args.build:
         build_type = parse_string_to_build_type(args.buildtype)
         tool.build(build_type, __get_install_prefix(tool, args.installprefix))
@@ -201,6 +191,7 @@ def main() -> None:
             print(f"{tool.name} was correctly installed.")
         else:
             print(f"Could not install {tool.name} correctly.")
+        tool.is_up_to_date()
 
 
 def __build_setup_init(

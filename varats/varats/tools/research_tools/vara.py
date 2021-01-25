@@ -238,7 +238,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         else:
             print(
                 f"VaRA is outdated!\n"
-                f"Upgrade to version {highest_vara_llvm_version}."
+                f"Upgrade to major release version {highest_vara_llvm_version}."
             )
 
     def upgrade(self) -> None:
