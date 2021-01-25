@@ -102,10 +102,25 @@ class VaRACodeBase(CodeBase):
         self.map_sub_projects(lambda prj: prj.pull())
         self.setup_submodules()
 
-    def fetch(self, sub_prj_name: str) -> None:
-        """Fetch the passed `SubProject` name."""
+    def fetch(
+        self,
+        sub_prj_name: str,
+        remote: tp.Optional[str] = None,
+        extra_args: tp.Optional[tp.List[str]] = None
+    ) -> None:
+        """Fetch the passed `SubProject`."""
         sub_prj: SubProject = self.get_sub_project(sub_prj_name)
-        sub_prj.fetch()
+        sub_prj.fetch(remote, extra_args)
+
+    def get_tags(
+        self,
+        sub_prj_name: str,
+        extra_args: tp.Optional[tp.List[str]] = None
+    ) -> tp.List[str]:
+        """Get the list of available git tags of the `SubProject`."""
+        sub_prj: SubProject = self.get_sub_project(sub_prj_name)
+        tag_list = sub_prj.get_tags(extra_args)
+        return tag_list
 
 
 class VaRA(ResearchTool[VaRACodeBase]):
@@ -178,27 +193,53 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
     def is_up_to_date(self) -> None:
         """Checks if there is a newer major release of VaRA available."""
+        current_vara_version = int(vara_cfg()["vara"]["version"])
 
-        self.code_base.fetch("vara-llvm-project")
-        remote_branches = self.code_base.get_sub_project("vara-llvm-project"
-                                                        ).get_branches(["-r"])
-        release_version_pattern = re.compile("-([0-9]+)-dev")
-        current_version = int(vara_cfg()["vara"]["version"])
-        highest_version = 0
+        def find_highest_vara_tag_version() -> int:
+            self.code_base.fetch("VaRA")
+            vara_tags = self.code_base.get_tags("VaRA")
 
-        for branch in remote_branches:
-            match = release_version_pattern.search(branch)
-            if match:
-                match_version = int(re.sub("\D", "", match.group()))
-                if match_version > highest_version:
-                    highest_version = match_version
+            version_pattern = re.compile("vara-([0-9]+\.[0-9])")
+            highest_tag_version = 0
 
-        if current_version == highest_version:
-            print("Your VaRA version is up to date!")
-            return
+            for tag in vara_tags:
+                match = version_pattern.search(tag)
+                if match:
+                    match_version = int(re.sub("\D", "", match.group()))
+                    if match_version > highest_tag_version:
+                        highest_tag_version = match_version
 
-        print("Your VaRA version is outdated!")
-        print(f"Newest version is: {highest_version}")
+            return highest_tag_version
+
+        def find_highest_vara_llvm_version() -> int:
+            self.code_base.fetch("vara-llvm-project")
+            remote_branches = self.code_base.get_sub_project(
+                "vara-llvm-project"
+            ).get_branches(["-r"])
+
+            release_version_pattern = re.compile("-([0-9]+)-dev")
+            highest_version = 0
+
+            for branch in remote_branches:
+                match = release_version_pattern.search(branch)
+                if match:
+                    match_version = int(re.sub("\D", "", match.group()))
+                    if match_version > highest_version:
+                        highest_version = match_version
+
+            return highest_version
+
+        highest_vara_llvm_version = find_highest_vara_llvm_version()
+        highest_vara_tag_version = find_highest_vara_tag_version()
+
+        if (current_vara_version == highest_vara_llvm_version
+           ) and current_vara_version == (highest_vara_tag_version + 10):
+            print("VaRA is up to date!")
+        else:
+            print(
+                f"VaRA is outdated!\n"
+                f"Upgrade to version {highest_vara_llvm_version}."
+            )
 
     def upgrade(self) -> None:
         """Upgrade the research tool to a newer version."""
