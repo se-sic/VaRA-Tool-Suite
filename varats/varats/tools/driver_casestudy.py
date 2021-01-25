@@ -27,12 +27,12 @@ from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, MetaReport
+from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.utils.cli_util import (
     cli_list_choice,
     initialize_cli_tool,
     cli_yn_choice,
 )
-from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
@@ -58,7 +58,12 @@ def main() -> None:
     if 'subcommand' not in args:
         parser.print_help()
         return
+    configuration_lookup_error_handler(casestudy_exec_command, args, parser)
 
+
+def casestudy_exec_command(
+    args: tp.Dict[str, tp.Any], parser: ArgumentParser
+) -> None:
     if args['subcommand'] == 'status':
         __casestudy_status(args, parser)
     elif args['subcommand'] == 'gen' or args['subcommand'] == 'ext':
@@ -337,16 +342,10 @@ def __casestudy_status(
         )
     if args['short'] and args['ws']:
         parser.error("At most one argument of: --short, --ws can be used.")
-    try:
-        PCM.show_status_of_case_studies(
-            args['report_name'], args['filter_regex'], args['short'],
-            args['sorted'], args['list_revs'], args['ws'], args['legend']
-        )
-    except ConfigurationLookupError:
-        print(
-            "No paper config was set. "
-            "To create or select a paper config use vara-pc"
-        )
+    PCM.show_status_of_case_studies(
+        args['report_name'], args['filter_regex'], args['short'],
+        args['sorted'], args['list_revs'], args['ws'], args['legend']
+    )
 
 
 def __casestudy_create_or_extend(
@@ -508,12 +507,6 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
         commit_hash = __init_commit_hash(args)
     except LookupError:
         return
-    except ConfigurationLookupError:
-        print(
-            "No paper config was set. "
-            "To create or select a paper config use vara-pc"
-        )
-        return
 
     result_files = PCM.get_result_files(
         result_file_type, project_name, commit_hash,
@@ -587,14 +580,7 @@ def __casestudy_cleanup(
 
 
 def _remove_old_result_files() -> None:
-    try:
-        paper_config = get_paper_config()
-    except ConfigurationLookupError:
-        print(
-            "No paper config was set. "
-            "To create or select a paper config use vara-pc"
-        )
-        return
+    paper_config = get_paper_config()
     result_dir = Path(str(vara_cfg()['result_dir']))
     for case_study in paper_config.get_all_case_studies():
         old_files: tp.List[Path] = []
@@ -627,14 +613,7 @@ def _remove_old_result_files() -> None:
 def _find_result_dir_paths_of_projects() -> tp.List[Path]:
     result_dir_path = Path(vara_cfg()["result_dir"].value)
     existing_paper_config_result_dir_paths = []
-    try:
-        paper_config = get_paper_config()
-    except ConfigurationLookupError:
-        print(
-            "No paper config was set. "
-            "To create or select a paper config use vara-pc"
-        )
-        return existing_paper_config_result_dir_paths
+    paper_config = get_paper_config()
     project_names = [
         cs.project_name for cs in paper_config.get_all_case_studies()
     ]
