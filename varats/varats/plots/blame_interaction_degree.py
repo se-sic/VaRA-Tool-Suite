@@ -1317,7 +1317,7 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
     key-value pair after the plot name. E.g., revision=Foo
     """
 
-    NAME = 'b_lib_interaction_graphviz'
+    NAME = 'b_multi_lib_interaction_graphviz'
 
     def __init__(self, **kwargs: tp.Any):
         super().__init__(self.NAME, **kwargs)
