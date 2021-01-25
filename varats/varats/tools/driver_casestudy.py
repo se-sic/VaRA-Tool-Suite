@@ -58,10 +58,10 @@ def main() -> None:
     if 'subcommand' not in args:
         parser.print_help()
         return
-    configuration_lookup_error_handler(casestudy_exec_command, args, parser)
+    configuration_lookup_error_handler(__casestudy_exec_command, args, parser)
 
 
-def casestudy_exec_command(
+def __casestudy_exec_command(
     args: tp.Dict[str, tp.Any], parser: ArgumentParser
 ) -> None:
     if args['subcommand'] == 'status':
