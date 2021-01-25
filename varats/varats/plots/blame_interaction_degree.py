@@ -707,7 +707,8 @@ def _build_graphviz_fig(
     df: pd.DataFrame,
     revision: str,
     show_edge_weight: bool,
-    edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None
+    shown_revision_length: int,
+    edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
 ) -> Digraph:
     graph = Digraph(name="Digraph", strict=True)
     graph.attr(label=f"Revision: {revision}")
@@ -723,7 +724,21 @@ def _build_graphviz_fig(
         with graph.subgraph(name="cluster_" + lib_name) as subgraph:
             subgraph.attr(label=lib_name)
             for c_hash in c_hash_list:
-                subgraph.node(name=f'{c_hash}_{lib_name}', label=c_hash)
+
+                if shown_revision_length > len(c_hash):
+                    shown_revision_length = len(c_hash)
+
+                if shown_revision_length < 1:
+                    LOG.error(
+                        f"The passed revision length of "
+                        f"{shown_revision_length} must be at least 1."
+                    )
+                    raise PlotDataEmpty
+
+                subgraph.node(
+                    name=f'{c_hash}_{lib_name}',
+                    label=c_hash[0:shown_revision_length]
+                )
 
     return graph
 
@@ -758,6 +773,7 @@ class BlameLibraryInteraction(Plot):
         view_mode: bool,
         extra_plot_cfg: tp.Dict[str, tp.Any],
         show_edge_weight: bool = False,
+        shown_revision_length: int = 10,
         edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
         save_path: tp.Optional[Path] = None,
         filetype: str = 'png'
@@ -784,7 +800,8 @@ class BlameLibraryInteraction(Plot):
 
             dataframe = df.loc[df['revision'] == rev]
             fig = _build_graphviz_fig(
-                dataframe, rev, show_edge_weight, edge_weight_threshold
+                dataframe, rev, show_edge_weight, shown_revision_length,
+                edge_weight_threshold
             )
 
             if view_mode and 'revision' in self.plot_kwargs:
