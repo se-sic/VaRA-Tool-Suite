@@ -339,7 +339,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """
 
     @abc.abstractmethod
-    def is_up_to_date(self) -> bool:
+    def is_up_to_date(self) -> None:
         """Returns true if a newer major release of VaRA is available."""
 
     @abc.abstractmethod

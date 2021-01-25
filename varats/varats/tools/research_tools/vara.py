@@ -199,13 +199,13 @@ class VaRA(ResearchTool[VaRACodeBase]):
             self.code_base.fetch("VaRA")
             vara_tags = self.code_base.get_tags("VaRA")
 
-            version_pattern = re.compile("vara-([0-9]+\.[0-9])")
+            version_pattern = re.compile(r"vara-([0-9]+\.[0-9])")
             highest_tag_version = 0
 
             for tag in vara_tags:
                 match = version_pattern.search(tag)
                 if match:
-                    match_version = int(re.sub("\D", "", match.group()))
+                    match_version = int(re.sub(r"\D", "", match.group()))
                     if match_version > highest_tag_version:
                         highest_tag_version = match_version
 
@@ -217,13 +217,13 @@ class VaRA(ResearchTool[VaRACodeBase]):
                 "vara-llvm-project"
             ).get_branches(["-r"])
 
-            release_version_pattern = re.compile("-([0-9]+)-dev")
+            release_version_pattern = re.compile(r"-([0-9]+)-dev")
             highest_version = 0
 
             for branch in remote_branches:
                 match = release_version_pattern.search(branch)
                 if match:
-                    match_version = int(re.sub("\D", "", match.group()))
+                    match_version = int(re.sub(r"\D", "", match.group()))
                     if match_version > highest_version:
                         highest_version = match_version
 
