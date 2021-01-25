@@ -32,6 +32,7 @@ from varats.utils.cli_util import (
     initialize_cli_tool,
     cli_yn_choice,
 )
+from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
@@ -336,10 +337,15 @@ def __casestudy_status(
         )
     if args['short'] and args['ws']:
         parser.error("At most one argument of: --short, --ws can be used.")
-    PCM.show_status_of_case_studies(
-        args['report_name'], args['filter_regex'], args['short'],
-        args['sorted'], args['list_revs'], args['ws'], args['legend']
-    )
+    try:
+        PCM.show_status_of_case_studies(
+            args['report_name'], args['filter_regex'], args['short'],
+            args['sorted'], args['list_revs'], args['ws'], args['legend']
+        )
+    except ConfigurationLookupError:
+        print(
+            "No paper config was set. To create or select a paper config use vara-pc"
+        )
 
 
 def __casestudy_create_or_extend(
@@ -435,8 +441,13 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
         # Ask the user to provide a commit hash
         print("No commit hash was provided.")
         commit_hash = ""
-        paper_config = get_paper_config()
-
+        try:
+            paper_config = get_paper_config()
+        except ConfigurationLookupError:
+            print(
+                "No paper config was set. To create or select a paper config use vara-pc"
+            )
+            return
         available_commit_hashes = []
         # Compute available commit hashes
         for case_study in paper_config.get_case_studies(project_name):
@@ -575,7 +586,13 @@ def __casestudy_cleanup(
 
 
 def _remove_old_result_files() -> None:
-    paper_config = get_paper_config()
+    try:
+        paper_config = get_paper_config()
+    except ConfigurationLookupError:
+        print(
+            "No paper config was set. To create or select a paper config use vara-pc"
+        )
+        return
     result_dir = Path(str(vara_cfg()['result_dir']))
     for case_study in paper_config.get_all_case_studies():
         old_files: tp.List[Path] = []
@@ -608,8 +625,15 @@ def _remove_old_result_files() -> None:
 def _find_result_dir_paths_of_projects() -> tp.List[Path]:
     result_dir_path = Path(vara_cfg()["result_dir"].value)
     existing_paper_config_result_dir_paths = []
+    try:
+        paper_config = get_paper_config()
+    except ConfigurationLookupError:
+        print(
+            "No paper config was set. To create or select a paper config use vara-pc"
+        )
+        return existing_paper_config_result_dir_paths
     project_names = [
-        cs.project_name for cs in get_paper_config().get_all_case_studies()
+        cs.project_name for cs in paper_config.get_all_case_studies()
     ]
     for project_name in project_names:
         path = Path(result_dir_path / project_name)
