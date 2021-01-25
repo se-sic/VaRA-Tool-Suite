@@ -344,7 +344,8 @@ def __casestudy_status(
         )
     except ConfigurationLookupError:
         print(
-            "No paper config was set. To create or select a paper config use vara-pc"
+            "No paper config was set. "
+            "To create or select a paper config use vara-pc"
         )
 
 
@@ -441,13 +442,7 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
         # Ask the user to provide a commit hash
         print("No commit hash was provided.")
         commit_hash = ""
-        try:
-            paper_config = get_paper_config()
-        except ConfigurationLookupError:
-            print(
-                "No paper config was set. To create or select a paper config use vara-pc"
-            )
-            return
+        paper_config = get_paper_config()
         available_commit_hashes = []
         # Compute available commit hashes
         for case_study in paper_config.get_case_studies(project_name):
@@ -512,6 +507,12 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
     try:
         commit_hash = __init_commit_hash(args)
     except LookupError:
+        return
+    except ConfigurationLookupError:
+        print(
+            "No paper config was set. "
+            "To create or select a paper config use vara-pc"
+        )
         return
 
     result_files = PCM.get_result_files(
@@ -590,7 +591,8 @@ def _remove_old_result_files() -> None:
         paper_config = get_paper_config()
     except ConfigurationLookupError:
         print(
-            "No paper config was set. To create or select a paper config use vara-pc"
+            "No paper config was set. "
+            "To create or select a paper config use vara-pc"
         )
         return
     result_dir = Path(str(vara_cfg()['result_dir']))
@@ -629,7 +631,8 @@ def _find_result_dir_paths_of_projects() -> tp.List[Path]:
         paper_config = get_paper_config()
     except ConfigurationLookupError:
         print(
-            "No paper config was set. To create or select a paper config use vara-pc"
+            "No paper config was set. "
+            "To create or select a paper config use vara-pc"
         )
         return existing_paper_config_result_dir_paths
     project_names = [
