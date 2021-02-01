@@ -71,6 +71,7 @@ def configuration_lookup_error_handler(func) -> tp.Any:
     """Wrapper for drivers to catche internal Exceptions and provide a helpful
     message to the user."""
 
+    @wraps(func)
     def wrapper_configuration_lookup_error_handler(*args, **kwargs):
         try:
             func(*args, *kwargs)
