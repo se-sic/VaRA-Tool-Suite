@@ -1,7 +1,6 @@
 """Utilities for tool handling."""
 
 import typing as tp
-from argparse import ArgumentParser
 from pathlib import Path
 
 from varats.tools.research_tools.phasar import Phasar
