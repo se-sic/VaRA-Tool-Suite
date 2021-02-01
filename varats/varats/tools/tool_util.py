@@ -68,16 +68,17 @@ def get_supported_research_tool_names() -> tp.List[str]:
     return ["phasar", "vara"]
 
 
-def configuration_lookup_error_handler(
-    fun, args: tp.Dict[str, tp.Any], parser: ArgumentParser
-) -> None:
+def configuration_lookup_error_handler(func) -> tp.Any:
     """Wrapper for drivers to catche internal Exceptions and provide a helpful
     message to the user."""
-    try:
-        fun(args, parser)
-    except ConfigurationLookupError:
-        print(
-            "No paper config was set. "
-            "To create or select a paper config use vara-pc"
-        )
-        return
+
+    def wrapper_configuration_lookup_error_handler(*args, **kwargs):
+        try:
+            func(*args, *kwargs)
+        except ConfigurationLookupError:
+            print(
+                "No paper config was set. "
+                "To create or select a paper config use vara-pc"
+            )
+
+    return wrapper_configuration_lookup_error_handler

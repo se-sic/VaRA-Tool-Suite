@@ -54,13 +54,13 @@ def main() -> None:
     __create_cleanup_parser(sub_parsers)  # vara-cs cleanup
 
     args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
-
     if 'subcommand' not in args:
         parser.print_help()
         return
-    configuration_lookup_error_handler(__casestudy_exec_command, args, parser)
+    __casestudy_exec_command(args, parser)
 
 
+@configuration_lookup_error_handler
 def __casestudy_exec_command(
     args: tp.Dict[str, tp.Any], parser: ArgumentParser
 ) -> None:
