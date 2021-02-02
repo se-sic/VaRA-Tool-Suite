@@ -122,7 +122,8 @@ class VaRACodeBase(CodeBase):
         remote: tp.Optional[str] = None,
         extra_args: tp.Optional[tp.List[str]] = None
     ) -> None:
-        """Fetch the passed `SubProject`."""
+        """Fetch the `SubProject` corresponding to the passed subproject
+        name."""
         sub_prj: SubProject = self.get_sub_project(sub_prj_name)
         sub_prj.fetch(remote, extra_args)
 
@@ -131,7 +132,8 @@ class VaRACodeBase(CodeBase):
         sub_prj_name: str,
         extra_args: tp.Optional[tp.List[str]] = None
     ) -> tp.List[str]:
-        """Get the list of available git tags of the `SubProject`."""
+        """Get a list of available git tags of the `SubProject` corresponding to
+        the passed subproject name."""
         sub_prj: SubProject = self.get_sub_project(sub_prj_name)
         tag_list = sub_prj.get_tags(extra_args)
         return tag_list
@@ -206,7 +208,11 @@ class VaRA(ResearchTool[VaRACodeBase]):
         self.code_base.setup_build_link()
 
     def is_up_to_date(self) -> None:
-        """Checks if there is a newer major release of VaRA available."""
+        """
+        Checks if there is a newer major release of VaRA available.
+
+        Prints the result as console output.
+        """
         current_vara_version = int(vara_cfg()["vara"]["version"])
 
         def find_highest_vara_tag_version() -> int:
