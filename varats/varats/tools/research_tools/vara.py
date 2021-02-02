@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import typing as tp
+from enum import Enum
 from pathlib import Path
 
 from benchbuild.utils.cmd import ln, mkdir
@@ -28,6 +29,19 @@ from varats.utils.logger_util import log_without_linesep
 from varats.utils.settings import save_config, vara_cfg
 
 LOG = logging.getLogger(__name__)
+
+
+class UnixColors(Enum):
+    """Unix colors."""
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 
 class VaRACodeBase(CodeBase):
@@ -200,7 +214,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
             vara_tags = self.code_base.get_tags("VaRA")
 
             version_pattern = re.compile(r"vara-([0-9]+\.[0-9])")
-            highest_tag_version = 0
+            highest_tag_version = -1
 
             for tag in vara_tags:
                 match = version_pattern.search(tag)
@@ -208,6 +222,12 @@ class VaRA(ResearchTool[VaRACodeBase]):
                     match_version = int(re.sub(r"\D", "", match.group()))
                     if match_version > highest_tag_version:
                         highest_tag_version = match_version
+
+            if highest_tag_version == -1:
+                LOG.warning(
+                    "No VaRA tag matching the release pattern was "
+                    "found."
+                )
 
             return highest_tag_version
 
@@ -218,7 +238,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
             ).get_branches(["-r"])
 
             release_version_pattern = re.compile(r"-([0-9]+)-dev")
-            highest_version = 0
+            highest_version = -1
 
             for branch in remote_branches:
                 match = release_version_pattern.search(branch)
@@ -227,18 +247,29 @@ class VaRA(ResearchTool[VaRACodeBase]):
                     if match_version > highest_version:
                         highest_version = match_version
 
+            if highest_version == -1:
+                LOG.warning(
+                    "No vara-llvm-project release branch name was "
+                    "found."
+                )
+
             return highest_version
 
         highest_vara_llvm_version = find_highest_vara_llvm_version()
         highest_vara_tag_version = find_highest_vara_tag_version()
 
-        if (current_vara_version == highest_vara_llvm_version
-           ) and current_vara_version == (highest_vara_tag_version + 10):
-            print("VaRA is up to date!")
+        if (current_vara_version >= highest_vara_llvm_version
+           ) and current_vara_version >= (highest_vara_tag_version + 10):
+            print(
+                f"{UnixColors.OKGREEN.value}VaRA major release version is up "
+                f"to date!{UnixColors.ENDC.value}"
+            )
         else:
             print(
-                f"VaRA is outdated!\n"
-                f"Upgrade to major release version {highest_vara_llvm_version}."
+                f"{UnixColors.WARNING.value}VaRA is outdated!\n"
+                f"Upgrade to major release version "
+                f"{UnixColors.BOLD.value}{UnixColors.OKBLUE.value}"
+                f"{highest_vara_llvm_version}{UnixColors.ENDC.value}"
             )
 
     def upgrade(self) -> None:
