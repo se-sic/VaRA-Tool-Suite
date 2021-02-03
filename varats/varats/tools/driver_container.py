@@ -15,6 +15,8 @@ from varats.containers.containers import (
     create_base_image,
     delete_base_image,
     delete_base_images,
+    export_base_image,
+    export_base_images,
 )
 from varats.tools.bb_config import load_bb_config
 from varats.tools.tool_util import get_supported_research_tool_names
@@ -45,6 +47,12 @@ def main() -> None:
         "--image",
         help="Only build the given image",
         action=enum_action(ImageBase)
+    )
+    build_parser.add_argument(
+        "--export",
+        help="Export the built images to the filesystem.",
+        action="store_true",
+        default=False,
     )
 
     # vara-container delete
@@ -83,8 +91,12 @@ def main() -> None:
 def __container_build(args: tp.Dict[str, tp.Any]) -> None:
     if "image" in args.keys():
         create_base_image(args["image"])
+        if args.get("export", False):
+            export_base_image(args["image"])
     else:
         create_base_images()
+        if args.get("export", False):
+            export_base_images()
 
 
 def __container_delete(args: tp.Dict[str, tp.Any]) -> None:
