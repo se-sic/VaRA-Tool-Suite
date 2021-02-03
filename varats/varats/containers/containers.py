@@ -33,6 +33,15 @@ class ImageBase(Enum):
     """Container image bases that can be used by projects."""
     DEBIAN_10 = "localhost/debian:10_varats"
 
+    @property
+    def image_name(self) -> str:
+        image_name = str(self.value)
+        configured_research_tool = vara_cfg()["container"]["research_tool"]
+        if configured_research_tool:
+            research_tool = get_research_tool(str(configured_research_tool))
+            image_name += f"_{research_tool.name.lower()}"
+        return image_name
+
 
 __BASE_IMAGES: tp.Dict[ImageBase, ContainerImage] = {
     ImageBase.DEBIAN_10:
@@ -119,7 +128,6 @@ def create_base_image(base: ImageBase) -> None:
     """
     with TemporaryDirectory() as tmpdir:
         image = __BASE_IMAGES[base]
-        image_name = base.value
 
         # we need an up-to-date pip version to get the prebuilt pygit2 package
         # with an up-to-date libgit2
@@ -133,7 +141,6 @@ def create_base_image(base: ImageBase) -> None:
         configured_research_tool = vara_cfg()["container"]["research_tool"]
         if configured_research_tool:
             research_tool = get_research_tool(str(configured_research_tool))
-            image_name += f"_{research_tool.name.lower()}"
             # TODO (se-passau/VaRA#718): enable when implemented
             # research_tool.add_container_layers(image)
 
@@ -141,7 +148,7 @@ def create_base_image(base: ImageBase) -> None:
         _add_benchbuild_config(image)
 
         image.workingdir(str(CONTAINER_BB_ROOT))
-        cmd: Command = CreateImage(image_name, image)
+        cmd: Command = CreateImage(base.image_name, image)
         uow = unit_of_work.ContainerImagesUOW()
         messagebus.handle(cmd, uow)
 
@@ -149,7 +156,7 @@ def create_base_image(base: ImageBase) -> None:
 def create_base_images() -> None:
     """Builds all base images for the current research tool."""
     for base in ImageBase:
-        LOG.info(f"Building base container {base.value}.")
+        LOG.info(f"Building base container {base.image_name}.")
         create_base_image(base)
 
 
@@ -163,12 +170,7 @@ def get_base_image(base: ImageBase) -> ContainerImage:
     Returns:
         the requested base image
     """
-    image_name = base.value
-    configured_research_tool = vara_cfg()["container"]["research_tool"]
-    if configured_research_tool:
-        research_tool = get_research_tool(str(configured_research_tool))
-        image_name += f"_{research_tool.name.lower()}"
-    return ContainerImage().from_(image_name)
+    return ContainerImage().from_(base.image_name)
 
 
 def delete_base_image(base: ImageBase) -> None:
@@ -179,11 +181,11 @@ def delete_base_image(base: ImageBase) -> None:
     Args:
         base: the image base
     """
-    prepare_buildah()("rmi", "--force", base.value)
+    prepare_buildah()("rmi", "--force", base.image_name)
 
 
 def delete_base_images() -> None:
     """Deletes all base images for the current research tool."""
     for base in ImageBase:
-        LOG.info(f"deleting base container {base.value}.")
+        LOG.info(f"deleting base container {base.image_name}.")
         delete_base_image(base)
