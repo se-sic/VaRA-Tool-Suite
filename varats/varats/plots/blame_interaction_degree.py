@@ -42,9 +42,9 @@ class PlotTypes(Enum):
 
 
 class EdgeWeightThreshold(Enum):
-    LOW = 3
-    MEDIUM = 10
-    HIGH = 20
+    LOW = 30
+    MEDIUM = 100
+    HIGH = 500
 
 
 class FractionMap:
@@ -524,7 +524,6 @@ def _save_figure(
         plot_dir = path
 
     file_name = plot_file_name.rsplit('.', 1)[0]
-    file_name = f"{file_name}_{padded_idx_str}.{filetype}"
     plot_subdir = plot_kwargs["plot_type"]
 
     with pb.local.cwd(plot_dir):

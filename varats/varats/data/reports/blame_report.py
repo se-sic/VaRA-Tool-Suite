@@ -534,13 +534,16 @@ def gen_base_to_inter_commit_repo_pair_mapping(
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
+            amount = interaction.amount
             base_commit_repo_pair = CommitRepoPair(
                 interaction.base_commit.commit_hash,
                 interaction.base_commit.repository_name
             )
 
-            base_to_inter_mapping[base_commit_repo_pair
-                                 ] += interaction.interacting_commits
+            # Add each interaction `amount` times
+            for i in range(amount):
+                base_to_inter_mapping[base_commit_repo_pair
+                                     ] += interaction.interacting_commits
 
     return base_to_inter_mapping
 
