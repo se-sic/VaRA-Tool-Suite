@@ -516,34 +516,40 @@ def generate_degree_tuples(
     return list(degree_dict.items())
 
 
+InteractingCommitRepoPairToAmountMapping = tp.Dict[CommitRepoPair, int]
+
+
 def gen_base_to_inter_commit_repo_pair_mapping(
     report: tp.Union[BlameReport, BlameReportDiff]
-) -> tp.Dict[CommitRepoPair, tp.List[CommitRepoPair]]:
+) -> tp.Dict[CommitRepoPair, InteractingCommitRepoPairToAmountMapping]:
     """
     Args:
         report: blame report
 
     Returns:
-        Map of CommitRepoPairs (base pair, interacting pairs)
-        categorised by their corresponding base CommitRepoPair to their
-        corresponding list of interacting CommitRepoPairs.
+        A mapping from base CommitRepoPairs to a mapping of the corresponding
+        interacting CommitRepoPairs to their amount.
     """
 
-    base_to_inter_mapping: tp.Dict[CommitRepoPair,
-                                   tp.List[CommitRepoPair]] = defaultdict(list)
+    base_to_inter_mapping: tp.Dict[
+        CommitRepoPair,
+        InteractingCommitRepoPairToAmountMapping] = defaultdict(dict)
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
             amount = interaction.amount
-            base_commit_repo_pair = CommitRepoPair(
-                interaction.base_commit.commit_hash,
-                interaction.base_commit.repository_name
-            )
+            base_commit_repo_pair = interaction.base_commit
 
-            # Add each interaction `amount` times
-            for _ in range(amount):
-                base_to_inter_mapping[base_commit_repo_pair
-                                     ] += interaction.interacting_commits
+            for interacting_c_repo_pair in interaction.interacting_commits:
+                if (
+                    interacting_c_repo_pair not in
+                    base_to_inter_mapping[base_commit_repo_pair]
+                ):
+                    base_to_inter_mapping[base_commit_repo_pair][
+                        interacting_c_repo_pair] = 0
+
+                base_to_inter_mapping[base_commit_repo_pair][
+                    interacting_c_repo_pair] += amount
 
     return base_to_inter_mapping
 

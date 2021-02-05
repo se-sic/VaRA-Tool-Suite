@@ -13,7 +13,9 @@ from varats.data.reports.blame_report import (
     BlameInstInteractions,
     generate_degree_tuples,
     generate_lib_dependent_degrees,
+    gen_base_to_inter_commit_repo_pair_mapping,
 )
+from varats.utils.git_util import CommitRepoPair
 
 FAKE_REPORT_PATH = (
     "BR-xz-xz-fdbc0cfa71_63959faf-66d9-41e0-8dbb-abeee2c255eb_success.yaml"
@@ -699,3 +701,42 @@ class TestBlameReportHelperFunctions(unittest.TestCase):
         )
         self.assertEqual(degree_tuples["Elementalist"]["water_lib"][0], (1, 5))
         self.assertEqual(degree_tuples["Elementalist"]["fire_lib"][0], (1, 5))
+
+    def test_gen_base_to_inter_commit_repo_pair_mapping(self):
+        """Test if the mapping of base hash to interacting hashes works."""
+
+        base_inter_mapping = gen_base_to_inter_commit_repo_pair_mapping(
+            self.reports[1]
+        )
+
+        elem_e6 = CommitRepoPair(
+            "e64923e69eab82332c1bed7fe1e80e14c2c5cb7f", "Elementalist"
+        )
+        elem_5e = CommitRepoPair(
+            "5e030723d70f4894c21881e32dba4decec815c7e", "Elementalist"
+        )
+        elem_97 = CommitRepoPair(
+            "97c573ee98a1c2143b6876433697e363c9eca98b", "Elementalist"
+        )
+        elem_bd = CommitRepoPair(
+            "bd693d7bc2e4ae5be93e300506ba1efea149e5b7", "Elementalist"
+        )
+        water_58 = CommitRepoPair(
+            "58ec513bd231f384038d9612ffdfb14affa6263f", "water_lib"
+        )
+        fire_ea = CommitRepoPair(
+            "ead5e00960478e1d270aea5f373aece97b4b7e74", "fire_lib"
+        )
+
+        self.assertEqual(base_inter_mapping[elem_e6][elem_5e], 1)
+        self.assertEqual(base_inter_mapping[elem_e6][elem_97], 1)
+
+        self.assertEqual(base_inter_mapping[elem_5e][elem_97], 32)
+        self.assertEqual(base_inter_mapping[elem_5e][elem_e6], 32)
+        self.assertEqual(base_inter_mapping[elem_5e][elem_bd], 31)
+        self.assertEqual(base_inter_mapping[elem_5e][water_58], 5)
+        self.assertEqual(base_inter_mapping[elem_5e][fire_ea], 5)
+
+        self.assertEqual(base_inter_mapping[elem_bd][elem_5e], 1)
+        self.assertEqual(base_inter_mapping[elem_bd][elem_97], 1)
+        self.assertEqual(base_inter_mapping[elem_bd][elem_e6], 1)

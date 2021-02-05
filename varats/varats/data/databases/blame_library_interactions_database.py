@@ -24,7 +24,7 @@ from varats.revision.revisions import (
 class BlameLibraryInteractionsDatabase(
     EvaluationDatabase,
     cache_id="blame_library_interaction_data",
-    columns=["base_hash", "base_lib", "inter_hash", "inter_lib"]
+    columns=["base_hash", "base_lib", "inter_hash", "inter_lib", "amount"]
 ):
     """Provides access to blame library interaction data."""
 
@@ -40,6 +40,7 @@ class BlameLibraryInteractionsDatabase(
             df_layout.base_lib = df_layout.base_lib.astype('str')
             df_layout.inter_hash = df_layout.inter_hash.astype('str')
             df_layout.inter_lib = df_layout.inter_lib.astype('str')
+            df_layout.amount = df_layout.amount.astype('int')
 
             return df_layout
 
@@ -51,10 +52,8 @@ class BlameLibraryInteractionsDatabase(
                 gen_base_to_inter_commit_repo_pair_mapping(report)
 
             def build_dataframe_row(
-                base_hash: str,
-                base_library: str,
-                inter_hash: str,
-                inter_library: str,
+                base_hash: str, base_library: str, inter_hash: str,
+                inter_library: str, amount: int
             ) -> tp.Dict:
 
                 data_dict: tp.Dict[str, tp.Any] = {
@@ -63,19 +62,24 @@ class BlameLibraryInteractionsDatabase(
                     'base_hash': base_hash,
                     'base_lib': base_library,
                     'inter_hash': inter_hash,
-                    'inter_lib': inter_library
+                    'inter_lib': inter_library,
+                    'amount': amount
                 }
                 return data_dict
 
             result_data_dicts: tp.List[tp.Dict] = []
 
             for base_pair in base_inter_c_repo_pair_mapping:
-                for inter_pair in base_inter_c_repo_pair_mapping[base_pair]:
+                inter_pair_amount_dict = base_inter_c_repo_pair_mapping[
+                    base_pair]
+
+                for inter_pair in inter_pair_amount_dict:
                     current_rev_data_dict = build_dataframe_row(
                         base_hash=base_pair.commit_hash,
                         base_library=base_pair.repository_name,
                         inter_hash=inter_pair.commit_hash,
-                        inter_library=inter_pair.repository_name
+                        inter_library=inter_pair.repository_name,
+                        amount=inter_pair_amount_dict[inter_pair]
                     )
                     result_data_dicts.append(current_rev_data_dict)
 

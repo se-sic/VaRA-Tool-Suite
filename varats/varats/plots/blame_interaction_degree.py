@@ -679,13 +679,7 @@ def _build_graphviz_edges(
         label = None
 
         if show_edge_weight:
-            # Get number of equal interactions within the dataframe
-            weight = len(
-                df[(
-                    df[['base_hash', 'base_lib', 'inter_hash', 'inter_lib']
-                      ] == list((base_hash, base_lib, inter_hash, inter_lib))
-                ).all(1)].index
-            )
+            weight = row['amount']
             weight_string = str(weight)
             if not edge_weight_threshold:
                 label = weight_string
@@ -757,7 +751,7 @@ class BlameLibraryInteraction(Plot):
         lib_interaction_df = \
             BlameLibraryInteractionsDatabase.get_data_for_project(
                 project_name, ["revision", "time_id", "base_hash", "base_lib",
-                               "inter_hash", "inter_lib"],
+                               "inter_hash", "inter_lib", "amount"],
                 commit_map, case_study)
 
         length = len(np.unique(lib_interaction_df['revision']))
