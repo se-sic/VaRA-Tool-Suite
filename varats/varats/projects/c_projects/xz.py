@@ -21,6 +21,7 @@ from varats.project.project_util import (
 )
 from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
+from varats.varats.containers.containers import get_base_image, ImageBase
 
 
 class Xz(bb.Project, CVEProviderHook):  # type: ignore
@@ -54,6 +55,8 @@ class Xz(bb.Project, CVEProviderHook):  # type: ignore
             )
         )
     ]
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10)
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
