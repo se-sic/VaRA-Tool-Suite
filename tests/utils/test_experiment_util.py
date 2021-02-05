@@ -34,7 +34,7 @@ class BBTestProject(Project):
     DOMAIN = "debug"
     GROUP = "debug"
     SOURCE = [
-        BBTestSource(test_versions=['rev1', 'rev2', 'rev3', 'rev4', 'rev5'],)
+        BBTestSource(test_versions=['rev1', 'rev2', 'rev3', 'rev4', 'rev5'])
     ]
 
     def build(self):

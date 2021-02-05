@@ -12,6 +12,7 @@ from varats.data.reports.blame_report import (
     BlameResultFunctionEntry,
     BlameInstInteractions,
     generate_degree_tuples,
+    generate_lib_dependent_degrees,
 )
 
 FAKE_REPORT_PATH = (
@@ -140,6 +141,47 @@ result-map:
   _Z7doStuffii:
     demangled-name:  'doStuff(int, int)'
     insts:           []
+...
+"""
+
+YAML_DOC_BR_6 = """---
+result-map:
+  _Z25handle_elementalist_stuffv:
+    demangled-name:  'handle_elementalist_stuff()'
+    insts:
+      - base-hash:       e64923e69eab82332c1bed7fe1e80e14c2c5cb7f-Elementalist
+        interacting-hashes:
+          - 5e030723d70f4894c21881e32dba4decec815c7e-Elementalist
+          - 97c573ee98a1c2143b6876433697e363c9eca98b-Elementalist
+        amount:          1
+      - base-hash:       5e030723d70f4894c21881e32dba4decec815c7e-Elementalist
+        interacting-hashes:
+          - 97c573ee98a1c2143b6876433697e363c9eca98b-Elementalist
+          - e64923e69eab82332c1bed7fe1e80e14c2c5cb7f-Elementalist
+        amount:          1
+      - base-hash:       5e030723d70f4894c21881e32dba4decec815c7e-Elementalist
+        interacting-hashes:
+          - 97c573ee98a1c2143b6876433697e363c9eca98b-Elementalist
+          - bd693d7bc2e4ae5be93e300506ba1efea149e5b7-Elementalist
+          - e64923e69eab82332c1bed7fe1e80e14c2c5cb7f-Elementalist
+        amount:          26
+      - base-hash:       5e030723d70f4894c21881e32dba4decec815c7e-Elementalist
+        interacting-hashes:
+          - 58ec513bd231f384038d9612ffdfb14affa6263f-water_lib
+          - 97c573ee98a1c2143b6876433697e363c9eca98b-Elementalist
+          - bd693d7bc2e4ae5be93e300506ba1efea149e5b7-Elementalist
+          - e64923e69eab82332c1bed7fe1e80e14c2c5cb7f-Elementalist
+          - ead5e00960478e1d270aea5f373aece97b4b7e74-fire_lib
+        amount:          5
+  _Z9get_shoutNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE:
+    demangled-name:  'get_shout(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >)'
+    insts:
+      - base-hash:       bd693d7bc2e4ae5be93e300506ba1efea149e5b7-Elementalist
+        interacting-hashes:
+          - 5e030723d70f4894c21881e32dba4decec815c7e-Elementalist
+          - 97c573ee98a1c2143b6876433697e363c9eca98b-Elementalist
+          - e64923e69eab82332c1bed7fe1e80e14c2c5cb7f-Elementalist
+        amount:          1
 ...
 """
 
@@ -626,18 +668,34 @@ class TestBlameReportHelperFunctions(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Load and parse function infos from yaml file."""
-        with mock.patch(
-            "builtins.open",
-            new=mock.mock_open(
-                read_data=YAML_DOC_HEADER + YAML_DOC_BR_METADATA + YAML_DOC_BR_1
-            )
-        ):
-            loaded_report = BlameReport(Path('fake_file_path'))
-            cls.report = loaded_report
+        """Load different blame_reports."""
+        cls.reports = []
+        for report_yaml in [YAML_DOC_BR_2, YAML_DOC_BR_6]:
+            with mock.patch(
+                "builtins.open",
+                new=mock.mock_open(
+                    read_data=YAML_DOC_HEADER + YAML_DOC_BR_METADATA +
+                    report_yaml
+                )
+            ):
+                cls.reports.append(BlameReport(Path(FAKE_REPORT_PATH)))
 
     def test_generate_degree_tuple(self):
         """Test if degree tuple generation works."""
-        degree_tuples = generate_degree_tuples(self.report)
-        self.assertEqual(degree_tuples[0], (1, 22))
-        self.assertEqual(degree_tuples[1], (2, 5))
+        degree_tuples = generate_degree_tuples(self.reports[0])
+        self.assertEqual(degree_tuples[0], (1, 24))
+        self.assertEqual(degree_tuples[1], (2, 7))
+
+    def test_generate_lib_dependent_degrees(self):
+        """Test if degree tuples per library generation works."""
+
+        degree_tuples = generate_lib_dependent_degrees(self.reports[1])
+
+        self.assertEqual(
+            degree_tuples["Elementalist"]["Elementalist"][0], (2, 2)
+        )
+        self.assertEqual(
+            degree_tuples["Elementalist"]["Elementalist"][1], (3, 32)
+        )
+        self.assertEqual(degree_tuples["Elementalist"]["water_lib"][0], (1, 5))
+        self.assertEqual(degree_tuples["Elementalist"]["fire_lib"][0], (1, 5))
