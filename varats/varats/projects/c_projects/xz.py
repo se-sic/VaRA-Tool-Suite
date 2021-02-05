@@ -11,6 +11,7 @@ from benchbuild.utils.revision_ranges import (
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
+from varats.containers.containers import get_base_image, ImageBase
 from varats.paper_mgmt.paper_config import project_filter_generator
 from varats.project.project_util import (
     ProjectBinaryWrapper,
@@ -21,7 +22,6 @@ from varats.project.project_util import (
 )
 from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
-from varats.varats.containers.containers import get_base_image, ImageBase
 
 
 class Xz(bb.Project, CVEProviderHook):  # type: ignore
