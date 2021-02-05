@@ -118,7 +118,8 @@ def _add_vara_config(layers: ContainerImage, tmp_dir: str) -> ContainerImage:
 def _add_benchbuild_config(layers: ContainerImage) -> ContainerImage:
     layers.env(
         BB_VARATS_OUTFILE=str(CONTAINER_VARATS_ROOT / "results"),
-        BB_VARATS_RESULT=str(CONTAINER_VARATS_ROOT / "BC_files")
+        BB_VARATS_RESULT=str(CONTAINER_VARATS_ROOT / "BC_files"),
+        BB_JOBS=str(bb_cfg()["jobs"]),
     )
 
     return layers
