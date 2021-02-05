@@ -524,6 +524,7 @@ def _save_figure(
         plot_dir = path
 
     file_name = plot_file_name.rsplit('.', 1)[0]
+    file_name = f"{file_name}_{padded_idx_str}.{filetype}"
     plot_subdir = plot_kwargs["plot_type"]
 
     with pb.local.cwd(plot_dir):
@@ -1375,8 +1376,7 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
             return
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
-        # TODO: impl calc_missing_revisions?
-        return set()
+        pass
 
 
 class BlameAuthorDegree(BlameDegree):
