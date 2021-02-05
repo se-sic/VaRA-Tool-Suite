@@ -541,7 +541,7 @@ def gen_base_to_inter_commit_repo_pair_mapping(
             )
 
             # Add each interaction `amount` times
-            for i in range(amount):
+            for _ in range(amount):
                 base_to_inter_mapping[base_commit_repo_pair
                                      ] += interaction.interacting_commits
 
