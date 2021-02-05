@@ -1,6 +1,7 @@
 """Utilities for tool handling."""
 
 import typing as tp
+from functools import wraps
 from pathlib import Path
 
 from varats.tools.research_tools.phasar import Phasar
@@ -67,12 +68,14 @@ def get_supported_research_tool_names() -> tp.List[str]:
     return ["phasar", "vara"]
 
 
-def configuration_lookup_error_handler(func) -> tp.Any:
+def configuration_lookup_error_handler(func: tp.Any) -> tp.Any:
     """Wrapper for drivers to catche internal Exceptions and provide a helpful
     message to the user."""
 
     @wraps(func)
-    def wrapper_configuration_lookup_error_handler(*args, **kwargs):
+    def wrapper_configuration_lookup_error_handler(
+        *args: tp.Any, **kwargs: tp.Any
+    ):
         try:
             func(*args, *kwargs)
         except ConfigurationLookupError:
