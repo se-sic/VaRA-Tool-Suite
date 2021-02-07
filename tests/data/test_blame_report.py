@@ -21,7 +21,7 @@ FAKE_REPORT_PATH = (
 
 YAML_DOC_HEADER = """---
 DocType:         BlameReport
-Version:         3
+Version:         4
 ...
 """
 
@@ -35,9 +35,11 @@ YAML_DOC_BR_1 = """---
 result-map:
   adjust_assignment_expression:
     demangled-name:  adjust_assignment_expression
+    num-instructions:   42
     insts:           []
   bool_exec:
     demangled-name:  bool_exec
+    num-instructions:   42
     insts:
       - base-hash:       48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33
         interacting-hashes:
@@ -50,6 +52,7 @@ result-map:
         amount:          5
   _Z7doStuffii:
     demangled-name:  'doStuff(int, int)'
+    num-instructions:   2
     insts:           []
 ...
 """
@@ -58,9 +61,11 @@ YAML_DOC_BR_2 = """---
 result-map:
   adjust_assignment_expression:
     demangled-name:  adjust_assignment_expression
+    num-instructions:   42
     insts:           []
   bool_exec:
     demangled-name:  bool_exec
+    num-instructions:   42
     insts:
       - base-hash:       48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33
         interacting-hashes:
@@ -73,6 +78,7 @@ result-map:
         amount:          7
   _Z7doStuffii:
     demangled-name:  'doStuff(int, int)'
+    num-instructions:   42
     insts:
       - base-hash:       48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33
         interacting-hashes:
@@ -80,6 +86,7 @@ result-map:
         amount:          3
   _Z7doStuffdd:
     demangled-name:  'doStuff(double, double)'
+    num-instructions:   42
     insts:
       - base-hash:       48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33
         interacting-hashes:
@@ -92,9 +99,11 @@ YAML_DOC_BR_3 = """---
 result-map:
   adjust_assignment_expression:
     demangled-name:  adjust_assignment_expression
+    num-instructions:   42
     insts:           []
   _Z7doStuffii:
     demangled-name:  'doStuff(int, int)'
+    num-instructions:   2
     insts:           []
 ...
 """
@@ -103,9 +112,11 @@ YAML_DOC_BR_4 = """---
 result-map:
   adjust_assignment_expression:
     demangled-name:  adjust_assignment_expression
+    num-instructions:   42
     insts:           []
   bool_exec:
     demangled-name:  bool_exec
+    num-instructions:   42
     insts:
       - base-hash:       48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33
         interacting-hashes:
@@ -114,13 +125,14 @@ result-map:
         amount:          5
   _Z7doStuffii:
     demangled-name:  'doStuff(int, int)'
+    num-instructions:   2
     insts:           []
 ...
 """
 
 YAML_DOC_HEADER_2 = """---
 DocType:         BlameReport
-Version:         3
+Version:         4
 ...
 """
 
@@ -128,9 +140,11 @@ YAML_DOC_BR_5 = """---
 result-map:
   adjust_assignment_expression:
     demangled-name:  adjust_assignment_expression
+    num-instructions:   42
     insts:           []
   bool_exec:
     demangled-name:  bool_exec
+    num-instructions:   42
     insts:
       - base-hash:       48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33-xz
         interacting-hashes:
@@ -140,6 +154,7 @@ result-map:
         amount:          5
   _Z7doStuffii:
     demangled-name:  'doStuff(int, int)'
+    num-instructions:   2
     insts:           []
 ...
 """
@@ -296,6 +311,11 @@ class TestResultFunctionEntry(unittest.TestCase):
         self.assertEqual(
             self.func_entry_cxx.demangled_name, 'doStuff(int, int)'
         )
+
+    def test_instructions_name(self):
+        """Test if num instructions is saved correctly."""
+        self.assertEqual(self.func_entry_c.num_instructions, 42)
+        self.assertEqual(self.func_entry_cxx.num_instructions, 2)
 
     def test_found_interactions(self):
         """Test if all interactions where found."""
@@ -503,6 +523,17 @@ class TestBlameReportDiff(unittest.TestCase):
         )
         self.assertEqual(new_func.interactions[0].amount, 2)
 
+    def test_num_instructions_diff_added(self):
+        """Checks if we correctly calculate the numer of instructions in a
+        diff."""
+        diff = BlameReportDiff(self.reports[1], self.reports[0])
+
+        new_func = diff.get_blame_result_function_entry('_Z7doStuffdd')
+
+        # Check if new function is correctly added to diff
+        self.assertEqual(new_func.name, '_Z7doStuffdd')
+        self.assertEqual(new_func.num_instructions, 42)
+
     def test_remove_function_between_reports(self):
         """Checks if the diff containts functions that where removed between
         reports."""
@@ -540,6 +571,16 @@ class TestBlameReportDiff(unittest.TestCase):
             'e8999a84efbd9c3e739bff7af39500d14e61bfbc'
         )
         self.assertEqual(del_func.interactions[1].amount, 5)
+
+    def test_num_instructions_diff_removed(self):
+        """Checks if we correctly calculate the numer of instructions in a
+        diff."""
+        diff = BlameReportDiff(self.reports[2], self.reports[0])
+        del_func = diff.get_blame_result_function_entry('bool_exec')
+
+        # Check if new function is correctly added to diff
+        self.assertEqual(del_func.name, 'bool_exec')
+        self.assertEqual(del_func.num_instructions, 42)
 
     def test_add_interaction(self):
         """Checks if the diff containts interactions that where added between
