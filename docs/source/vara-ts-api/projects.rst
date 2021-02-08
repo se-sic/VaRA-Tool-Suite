@@ -95,7 +95,7 @@ an analysis, a list of
 :class:`~varats.project.project_util.ProjectBinaryWrapper`\ s is returned,
 where every wrapper specifies the name, location of the binary, and the
 :class:`~varats.project.project_util.BinaryType`.
-To guarantee that all specified binaries where produced during compilation, one
+To guarantee that all specified binaries were produced during compilation, one
 should add a :func:`~varats.project.project_util.verify_binaries` call after
 the compilation is done.
 In our example, the :func:`~varats.project.project_util.verify_binaries` call
