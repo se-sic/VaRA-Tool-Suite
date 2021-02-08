@@ -13,6 +13,7 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     get_local_project_git_path,
     BinaryType,
+    verify_binaries,
 )
 from varats.utils.settings import bb_cfg
 
@@ -63,3 +64,5 @@ class X264(bb.Project):  # type: ignore
             with local.env(CC=str(clang)):
                 bb.watch(local["./configure"])("--disable-asm")
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+            verify_binaries(self)
