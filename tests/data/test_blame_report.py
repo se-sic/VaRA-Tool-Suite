@@ -12,6 +12,7 @@ from varats.data.reports.blame_report import (
     BlameResultFunctionEntry,
     BlameInstInteractions,
     generate_degree_tuples,
+    generate_lib_dependent_degrees,
 )
 
 FAKE_REPORT_PATH = (
@@ -20,7 +21,7 @@ FAKE_REPORT_PATH = (
 
 YAML_DOC_HEADER = """---
 DocType:         BlameReport
-Version:         3
+Version:         4
 ...
 """
 
@@ -34,9 +35,11 @@ YAML_DOC_BR_1 = """---
 result-map:
   adjust_assignment_expression:
     demangled-name:  adjust_assignment_expression
+    num-instructions:   42
     insts:           []
   bool_exec:
     demangled-name:  bool_exec
+    num-instructions:   42
     insts:
       - base-hash:       48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33
         interacting-hashes:
@@ -49,6 +52,7 @@ result-map:
         amount:          5
   _Z7doStuffii:
     demangled-name:  'doStuff(int, int)'
+    num-instructions:   2
     insts:           []
 ...
 """
@@ -57,9 +61,11 @@ YAML_DOC_BR_2 = """---
 result-map:
   adjust_assignment_expression:
     demangled-name:  adjust_assignment_expression
+    num-instructions:   42
     insts:           []
   bool_exec:
     demangled-name:  bool_exec
+    num-instructions:   42
     insts:
       - base-hash:       48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33
         interacting-hashes:
@@ -72,6 +78,7 @@ result-map:
         amount:          7
   _Z7doStuffii:
     demangled-name:  'doStuff(int, int)'
+    num-instructions:   42
     insts:
       - base-hash:       48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33
         interacting-hashes:
@@ -79,6 +86,7 @@ result-map:
         amount:          3
   _Z7doStuffdd:
     demangled-name:  'doStuff(double, double)'
+    num-instructions:   42
     insts:
       - base-hash:       48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33
         interacting-hashes:
@@ -91,9 +99,11 @@ YAML_DOC_BR_3 = """---
 result-map:
   adjust_assignment_expression:
     demangled-name:  adjust_assignment_expression
+    num-instructions:   42
     insts:           []
   _Z7doStuffii:
     demangled-name:  'doStuff(int, int)'
+    num-instructions:   2
     insts:           []
 ...
 """
@@ -102,9 +112,11 @@ YAML_DOC_BR_4 = """---
 result-map:
   adjust_assignment_expression:
     demangled-name:  adjust_assignment_expression
+    num-instructions:   42
     insts:           []
   bool_exec:
     demangled-name:  bool_exec
+    num-instructions:   42
     insts:
       - base-hash:       48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33
         interacting-hashes:
@@ -113,13 +125,14 @@ result-map:
         amount:          5
   _Z7doStuffii:
     demangled-name:  'doStuff(int, int)'
+    num-instructions:   2
     insts:           []
 ...
 """
 
 YAML_DOC_HEADER_2 = """---
 DocType:         BlameReport
-Version:         3
+Version:         4
 ...
 """
 
@@ -127,9 +140,11 @@ YAML_DOC_BR_5 = """---
 result-map:
   adjust_assignment_expression:
     demangled-name:  adjust_assignment_expression
+    num-instructions:   42
     insts:           []
   bool_exec:
     demangled-name:  bool_exec
+    num-instructions:   42
     insts:
       - base-hash:       48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33-xz
         interacting-hashes:
@@ -139,7 +154,49 @@ result-map:
         amount:          5
   _Z7doStuffii:
     demangled-name:  'doStuff(int, int)'
+    num-instructions:   2
     insts:           []
+...
+"""
+
+YAML_DOC_BR_6 = """---
+result-map:
+  _Z25handle_elementalist_stuffv:
+    demangled-name:  'handle_elementalist_stuff()'
+    insts:
+      - base-hash:       e64923e69eab82332c1bed7fe1e80e14c2c5cb7f-Elementalist
+        interacting-hashes:
+          - 5e030723d70f4894c21881e32dba4decec815c7e-Elementalist
+          - 97c573ee98a1c2143b6876433697e363c9eca98b-Elementalist
+        amount:          1
+      - base-hash:       5e030723d70f4894c21881e32dba4decec815c7e-Elementalist
+        interacting-hashes:
+          - 97c573ee98a1c2143b6876433697e363c9eca98b-Elementalist
+          - e64923e69eab82332c1bed7fe1e80e14c2c5cb7f-Elementalist
+        amount:          1
+      - base-hash:       5e030723d70f4894c21881e32dba4decec815c7e-Elementalist
+        interacting-hashes:
+          - 97c573ee98a1c2143b6876433697e363c9eca98b-Elementalist
+          - bd693d7bc2e4ae5be93e300506ba1efea149e5b7-Elementalist
+          - e64923e69eab82332c1bed7fe1e80e14c2c5cb7f-Elementalist
+        amount:          26
+      - base-hash:       5e030723d70f4894c21881e32dba4decec815c7e-Elementalist
+        interacting-hashes:
+          - 58ec513bd231f384038d9612ffdfb14affa6263f-water_lib
+          - 97c573ee98a1c2143b6876433697e363c9eca98b-Elementalist
+          - bd693d7bc2e4ae5be93e300506ba1efea149e5b7-Elementalist
+          - e64923e69eab82332c1bed7fe1e80e14c2c5cb7f-Elementalist
+          - ead5e00960478e1d270aea5f373aece97b4b7e74-fire_lib
+        amount:          5
+  _Z9get_shoutNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE:
+    demangled-name:  'get_shout(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >)'
+    insts:
+      - base-hash:       bd693d7bc2e4ae5be93e300506ba1efea149e5b7-Elementalist
+        interacting-hashes:
+          - 5e030723d70f4894c21881e32dba4decec815c7e-Elementalist
+          - 97c573ee98a1c2143b6876433697e363c9eca98b-Elementalist
+          - e64923e69eab82332c1bed7fe1e80e14c2c5cb7f-Elementalist
+        amount:          1
 ...
 """
 
@@ -254,6 +311,11 @@ class TestResultFunctionEntry(unittest.TestCase):
         self.assertEqual(
             self.func_entry_cxx.demangled_name, 'doStuff(int, int)'
         )
+
+    def test_instructions_name(self):
+        """Test if num instructions is saved correctly."""
+        self.assertEqual(self.func_entry_c.num_instructions, 42)
+        self.assertEqual(self.func_entry_cxx.num_instructions, 2)
 
     def test_found_interactions(self):
         """Test if all interactions where found."""
@@ -461,6 +523,17 @@ class TestBlameReportDiff(unittest.TestCase):
         )
         self.assertEqual(new_func.interactions[0].amount, 2)
 
+    def test_num_instructions_diff_added(self):
+        """Checks if we correctly calculate the numer of instructions in a
+        diff."""
+        diff = BlameReportDiff(self.reports[1], self.reports[0])
+
+        new_func = diff.get_blame_result_function_entry('_Z7doStuffdd')
+
+        # Check if new function is correctly added to diff
+        self.assertEqual(new_func.name, '_Z7doStuffdd')
+        self.assertEqual(new_func.num_instructions, 42)
+
     def test_remove_function_between_reports(self):
         """Checks if the diff containts functions that where removed between
         reports."""
@@ -498,6 +571,16 @@ class TestBlameReportDiff(unittest.TestCase):
             'e8999a84efbd9c3e739bff7af39500d14e61bfbc'
         )
         self.assertEqual(del_func.interactions[1].amount, 5)
+
+    def test_num_instructions_diff_removed(self):
+        """Checks if we correctly calculate the numer of instructions in a
+        diff."""
+        diff = BlameReportDiff(self.reports[2], self.reports[0])
+        del_func = diff.get_blame_result_function_entry('bool_exec')
+
+        # Check if new function is correctly added to diff
+        self.assertEqual(del_func.name, 'bool_exec')
+        self.assertEqual(del_func.num_instructions, 42)
 
     def test_add_interaction(self):
         """Checks if the diff containts interactions that where added between
@@ -626,18 +709,34 @@ class TestBlameReportHelperFunctions(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Load and parse function infos from yaml file."""
-        with mock.patch(
-            "builtins.open",
-            new=mock.mock_open(
-                read_data=YAML_DOC_HEADER + YAML_DOC_BR_METADATA + YAML_DOC_BR_1
-            )
-        ):
-            loaded_report = BlameReport(Path('fake_file_path'))
-            cls.report = loaded_report
+        """Load different blame_reports."""
+        cls.reports = []
+        for report_yaml in [YAML_DOC_BR_2, YAML_DOC_BR_6]:
+            with mock.patch(
+                "builtins.open",
+                new=mock.mock_open(
+                    read_data=YAML_DOC_HEADER + YAML_DOC_BR_METADATA +
+                    report_yaml
+                )
+            ):
+                cls.reports.append(BlameReport(Path(FAKE_REPORT_PATH)))
 
     def test_generate_degree_tuple(self):
         """Test if degree tuple generation works."""
-        degree_tuples = generate_degree_tuples(self.report)
-        self.assertEqual(degree_tuples[0], (1, 22))
-        self.assertEqual(degree_tuples[1], (2, 5))
+        degree_tuples = generate_degree_tuples(self.reports[0])
+        self.assertEqual(degree_tuples[0], (1, 24))
+        self.assertEqual(degree_tuples[1], (2, 7))
+
+    def test_generate_lib_dependent_degrees(self):
+        """Test if degree tuples per library generation works."""
+
+        degree_tuples = generate_lib_dependent_degrees(self.reports[1])
+
+        self.assertEqual(
+            degree_tuples["Elementalist"]["Elementalist"][0], (2, 2)
+        )
+        self.assertEqual(
+            degree_tuples["Elementalist"]["Elementalist"][1], (3, 32)
+        )
+        self.assertEqual(degree_tuples["Elementalist"]["water_lib"][0], (1, 5))
+        self.assertEqual(degree_tuples["Elementalist"]["fire_lib"][0], (1, 5))
