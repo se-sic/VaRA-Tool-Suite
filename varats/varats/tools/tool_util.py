@@ -5,6 +5,7 @@ from pathlib import Path
 
 from varats.tools.research_tools.phasar import Phasar
 from varats.tools.research_tools.research_tool import ResearchTool
+from varats.tools.research_tools.szz_unleashed import SZZUnleashed
 from varats.tools.research_tools.vara import VaRA
 from varats.utils.settings import vara_cfg
 
@@ -25,6 +26,9 @@ def get_research_tool_type(
 
     if name == "phasar":
         return Phasar
+
+    if name == "szzunleashed":
+        return SZZUnleashed
 
     raise LookupError(f"Could not find research tool {name}")
 
@@ -63,4 +67,4 @@ def get_research_tool(
 
 def get_supported_research_tool_names() -> tp.List[str]:
     """Returns a list of all supported research tools."""
-    return ["phasar", "vara"]
+    return ["phasar", "vara", "szzunleashed"]

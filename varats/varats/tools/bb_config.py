@@ -81,6 +81,7 @@ def generate_benchbuild_config(
         'varats.experiments.vara.vara_full_mtfa',
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.phasar.ide_linear_constant_experiment',
+        'varats.experiments.szz.szz_unleashed_experiment',
     ]
 
     # Enable version exploration by default
