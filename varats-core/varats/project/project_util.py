@@ -288,7 +288,7 @@ class BinaryNotFound(CompilationError):
         return BinaryNotFound(msg)
 
 
-def verify_binaries(project: bb.Project):
+def verify_binaries(project: bb.Project) -> None:
     """Verifies that all binaries for a given project exist."""
     for binary in project.binaries:
         if not binary.path.exists():
