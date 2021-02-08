@@ -163,6 +163,7 @@ YAML_DOC_BR_6 = """---
 result-map:
   _Z25handle_elementalist_stuffv:
     demangled-name:  'handle_elementalist_stuff()'
+    num-instructions:   42
     insts:
       - base-hash:       e64923e69eab82332c1bed7fe1e80e14c2c5cb7f-Elementalist
         interacting-hashes:
@@ -190,6 +191,7 @@ result-map:
         amount:          5
   _Z9get_shoutNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE:
     demangled-name:  'get_shout(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >)'
+    num-instructions:   42
     insts:
       - base-hash:       bd693d7bc2e4ae5be93e300506ba1efea149e5b7-Elementalist
         interacting-hashes:
