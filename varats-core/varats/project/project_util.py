@@ -17,6 +17,10 @@ from plumbum import local
 LOG = logging.getLogger(__name__)
 
 
+class CompilationError(Exception):
+    """Exception raised if an error during the compilation was discovered."""
+
+
 def get_project_cls_by_name(project_name: str) -> tp.Type[bb.Project]:
     """Look up a BenchBuild project by it's name."""
     for proj in bb.project.ProjectRegistry.projects:
@@ -259,6 +263,36 @@ def wrap_paths_to_binaries(
     return wrap_paths_to_binaries_with_name([
         (Path(x[0]).stem, x[0], x[1]) for x in binaries
     ])
+
+
+class BinaryNotFound(CompilationError):
+    """Exception raised if an binary that should exist was not found."""
+
+    @staticmethod
+    def create_error_for_binary(
+        binary: ProjectBinaryWrapper
+    ) -> 'BinaryNotFound':
+        """
+        Creates a BinaryNotFound error for a specific binary.
+
+        Args:
+            binary: project binary that was not found
+
+        Returns:
+            initialzied BinaryNotFound error
+        """
+        msg = str(
+            f"Could not find specified binary {binary.name} at relative " +
+            f"project path: {str(binary.path)}"
+        )
+        return BinaryNotFound(msg)
+
+
+def verify_binaries(project: bb.Project):
+    """Verifies that all binaries for a given project exist."""
+    for binary in project.binaries:
+        if not binary.path.exists():
+            raise BinaryNotFound.create_error_for_binary(binary)
 
 
 def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
