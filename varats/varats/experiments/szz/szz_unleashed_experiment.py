@@ -128,7 +128,8 @@ class CreateSZZUnleashedReport(actions.Step):
         with open(f"{varats_result_folder}/{result_file}", "w") as yaml_file:
             yaml_file.write(
                 yaml.dump_all([
-                    VersionHeader.from_version_number("SZZReport", 1),
+                    VersionHeader.from_version_number("SZZReport",
+                                                      1).get_dict(),
                     raw_szz_report
                 ],
                               explicit_start=True,
