@@ -41,7 +41,7 @@ class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
             )
         ])(
             bb.source.Git(
-                remote="https://git.savannah.gnu.org/git/gzip.git",
+                remote="https://github.com/Distrotech/gzip.git",
                 local="gzip",
                 refspec="HEAD",
                 limit=None,
@@ -50,7 +50,7 @@ class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
             )
         ),
         bb.source.GitSubmodule(
-            remote="https://git.savannah.gnu.org/git/gnulib.git",
+            remote="https://github.com/coreutils/gnulib.git",
             local="gzip/gnulib",
             refspec="HEAD",
             limit=None,
