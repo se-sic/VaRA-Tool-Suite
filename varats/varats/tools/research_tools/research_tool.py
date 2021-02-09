@@ -339,8 +339,13 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """
 
     @abc.abstractmethod
-    def is_up_to_date(self) -> None:
-        """Returns true if a newer major release of VaRA is available."""
+    def find_highest_sub_prj_version(self, sub_prj_name: str) -> int:
+        """Returns the highest release version number for the specified
+        ``SubProject`` name."""
+
+    @abc.abstractmethod
+    def is_up_to_date(self) -> bool:
+        """Returns true if VaRA's major release version is up to date."""
 
     @abc.abstractmethod
     def upgrade(self) -> None:

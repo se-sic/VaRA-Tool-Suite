@@ -5,7 +5,6 @@ import os
 import re
 import shutil
 import typing as tp
-from enum import Enum
 from pathlib import Path
 
 from benchbuild.utils.cmd import ln, mkdir
@@ -29,19 +28,6 @@ from varats.utils.logger_util import log_without_linesep
 from varats.utils.settings import save_config, vara_cfg
 
 LOG = logging.getLogger(__name__)
-
-
-class UnixColors(Enum):
-    """Unix colors."""
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
 
 
 class VaRACodeBase(CodeBase):
@@ -207,76 +193,66 @@ class VaRA(ResearchTool[VaRACodeBase]):
         self.code_base.setup_submodules()
         self.code_base.setup_build_link()
 
-    def is_up_to_date(self) -> None:
-        """
-        Checks if there is a newer major release of VaRA available.
+    def find_highest_sub_prj_version(self, sub_prj_name: str) -> int:
+        """Returns the highest release version number for the specified
+        ``SubProject`` name."""
 
-        Prints the result as console output.
-        """
-        current_vara_version = int(vara_cfg()["vara"]["version"])
+        self.code_base.fetch(sub_prj_name)
 
-        def find_highest_vara_tag_version() -> int:
-            self.code_base.fetch("VaRA")
-            vara_tags = self.code_base.get_tags("VaRA")
+        unfiltered_version_list: tp.List[str]
+        highest_version = -1
 
+        if sub_prj_name == "VaRA":
+            unfiltered_version_list = self.code_base.get_tags("VaRA")
             version_pattern = re.compile(r"vara-([0-9]+\.[0-9])")
-            highest_tag_version = -1
 
-            for tag in vara_tags:
-                match = version_pattern.search(tag)
-                if match:
-                    match_version = int(re.sub(r"\D", "", match.group()))
-                    if match_version > highest_tag_version:
-                        highest_tag_version = match_version
-
-            if highest_tag_version == -1:
-                LOG.warning(
-                    "No VaRA tag matching the release pattern was "
-                    "found."
-                )
-
-            return highest_tag_version
-
-        def find_highest_vara_llvm_version() -> int:
-            self.code_base.fetch("vara-llvm-project")
-            remote_branches = self.code_base.get_sub_project(
+        elif sub_prj_name == "vara-llvm-project":
+            unfiltered_version_list = self.code_base.get_sub_project(
                 "vara-llvm-project"
             ).get_branches(["-r"])
+            version_pattern = re.compile(r"-([0-9]+)-dev")
+        else:
+            LOG.warning(
+                "The version retrieval of the specified subproject is not "
+                "implemented yet."
+            )
+            raise NotImplementedError
 
-            release_version_pattern = re.compile(r"-([0-9]+)-dev")
-            highest_version = -1
+        for unfiltered_version in unfiltered_version_list:
+            match = version_pattern.search(unfiltered_version)
+            if match:
+                match_version = int(re.sub(r"\D", "", match.group()))
+                if match_version > highest_version:
+                    highest_version = match_version
 
-            for branch in remote_branches:
-                match = release_version_pattern.search(branch)
-                if match:
-                    match_version = int(re.sub(r"\D", "", match.group()))
-                    if match_version > highest_version:
-                        highest_version = match_version
-
-            if highest_version == -1:
+        if highest_version == -1:
+            if sub_prj_name == "VaRA":
                 LOG.warning(
-                    "No vara-llvm-project release branch name was "
-                    "found."
+                    "No VaRA tag matching the release pattern was found."
                 )
+            if sub_prj_name == "vara-llvm-project":
+                LOG.warning(
+                    "No vara-llvm-project release branch name was found."
+                )
+            raise LookupError
 
-            return highest_version
+        return highest_version
 
-        highest_vara_llvm_version = find_highest_vara_llvm_version()
-        highest_vara_tag_version = find_highest_vara_tag_version()
+    def is_up_to_date(self) -> bool:
+        """Returns true if VaRA's major release version is up to date."""
+
+        current_vara_version = int(vara_cfg()["vara"]["version"])
+
+        highest_vara_tag_version = self.find_highest_sub_prj_version("VaRA")
+        highest_vara_llvm_version = self.find_highest_sub_prj_version(
+            "vara-llvm-project"
+        )
 
         if (current_vara_version >= highest_vara_llvm_version
            ) and current_vara_version >= (highest_vara_tag_version + 10):
-            print(
-                f"{UnixColors.OKGREEN.value}VaRA major release version is up "
-                f"to date!{UnixColors.ENDC.value}"
-            )
-        else:
-            print(
-                f"{UnixColors.WARNING.value}VaRA is outdated!\n"
-                f"Upgrade to major release version "
-                f"{UnixColors.BOLD.value}{UnixColors.OKBLUE.value}"
-                f"{highest_vara_llvm_version}{UnixColors.ENDC.value}"
-            )
+            return True
+
+        return False
 
     def upgrade(self) -> None:
         """Upgrade the research tool to a newer version."""

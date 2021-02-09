@@ -6,6 +6,7 @@ import sys
 import typing as tp
 from pathlib import Path
 
+from plumbum import colors
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 
@@ -56,6 +57,27 @@ def update_term(text: str, enable_inline: bool = False) -> None:
         print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r', flush=True)
     else:
         print(text)
+
+
+def print_up_to_date_message(research_tool: ResearchTool) -> None:
+    """
+    Checks if VaRA's major release is up to date and prints a message in the
+    terminal accordingly.
+
+    Args:
+        research_tool: The loaded research tool
+    """
+    highest_release_version = research_tool.find_highest_sub_prj_version(
+        "vara-llvm-project"
+    )
+    if research_tool.is_up_to_date():
+        print(f"{colors.green}VaRA major release version is up to date!")
+    else:
+        print(
+            f"{colors.LightYellow}VaRA is outdated!\n"
+            f"Upgrade to major release version {colors.bold}{colors.LightBlue}"
+            f"{highest_release_version}"
+        )
 
 
 def parse_string_to_build_type(build_type: str) -> BuildType:
@@ -183,7 +205,7 @@ def main() -> None:
         )
     if args.update:
         tool.upgrade()
-        tool.is_up_to_date()
+        print_up_to_date_message(tool)
     if args.build:
         build_type = parse_string_to_build_type(args.buildtype)
         tool.build(build_type, __get_install_prefix(tool, args.installprefix))
@@ -191,7 +213,7 @@ def main() -> None:
             print(f"{tool.name} was correctly installed.")
         else:
             print(f"Could not install {tool.name} correctly.")
-        tool.is_up_to_date()
+        print_up_to_date_message(tool)
 
 
 def __build_setup_init(
