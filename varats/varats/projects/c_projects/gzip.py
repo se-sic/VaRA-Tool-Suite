@@ -41,7 +41,7 @@ class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
             )
         ])(
             bb.source.Git(
-                remote="https://github.com/Distrotech/gzip.git",
+                remote="https://github.com/vulder/gzip.git",
                 local="gzip",
                 refspec="HEAD",
                 limit=None,

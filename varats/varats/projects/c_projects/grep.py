@@ -26,7 +26,7 @@ class Grep(bb.Project, CVEProviderHook):  # type: ignore
 
     SOURCE = [
         bb.source.Git(
-            remote="https://github.com/Distrotech/grep.git",
+            remote="https://github.com/vulder/grep.git",
             local="grep",
             refspec="HEAD",
             limit=None,
