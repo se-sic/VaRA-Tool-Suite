@@ -15,6 +15,7 @@ from varats.tools.research_tools.research_tool import (
     ResearchTool,
     SpecificCodeBase,
 )
+from varats.tools.research_tools.vara import VaRACodeBase
 from varats.tools.research_tools.vara_manager import BuildType
 from varats.tools.tool_util import (
     get_research_tool,
@@ -59,10 +60,10 @@ def update_term(text: str, enable_inline: bool = False) -> None:
         print(text)
 
 
-def print_up_to_date_message(research_tool: ResearchTool) -> None:
+def print_up_to_date_message(research_tool: ResearchTool[VaRACodeBase]) -> None:
     """
-    Checks if VaRA's major release is up to date and prints a message in the
-    terminal accordingly.
+    Checks if VaRA's major release version is up to date and prints a message in
+    the terminal accordingly.
 
     Args:
         research_tool: The loaded research tool
