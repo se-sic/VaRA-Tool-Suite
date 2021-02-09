@@ -39,14 +39,15 @@ class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
                 "6ef28aeb035af20818578b1a1bc537f797c27029",
                 "203e40cc4558a80998d05eb74b373a51e796ca8b", "Needs glibc < 2.28"
             )
-        ]),
-        bb.source.Git(
-            remote="https://git.savannah.gnu.org/git/gzip.git",
-            local="gzip",
-            refspec="HEAD",
-            limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("gzip")
+        ])(
+            bb.source.Git(
+                remote="https://git.savannah.gnu.org/git/gzip.git",
+                local="gzip",
+                refspec="HEAD",
+                limit=None,
+                shallow=False,
+                version_filter=project_filter_generator("gzip")
+            )
         ),
         bb.source.GitSubmodule(
             remote="https://git.savannah.gnu.org/git/gnulib.git",
