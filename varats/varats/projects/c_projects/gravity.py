@@ -19,6 +19,7 @@ from varats.project.project_util import (
     wrap_paths_to_binaries,
     get_local_project_git_path,
     BinaryType,
+    verify_binaries,
 )
 from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
@@ -103,12 +104,16 @@ class Gravity(bb.Project, CVEProviderHook):  # type: ignore
                 bb.watch(cmake)("-G", "Unix Makefiles", ".")
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
+            verify_binaries(self)
+
     def __compile_make(self) -> None:
         gravity_version_source = local.path(self.source_of_primary)
         clang = bb.compiler.cc(self)
         with local.cwd(gravity_version_source):
             with local.env(CC=str(clang)):
                 bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+            verify_binaries(self)
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

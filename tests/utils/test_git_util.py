@@ -41,15 +41,24 @@ class TestChurnConfig(unittest.TestCase):
 
     def test_extensions_repr_gen(self):
         c_config = ChurnConfig.create_c_language_config()
-        self.assertEqual(c_config.get_extensions_repr(), "c, h")
-        self.assertEqual(c_config.get_extensions_repr("|"), "c|h")
+        self.assertEqual(c_config.get_extensions_repr(), ["c", "h"])
+        self.assertEqual(
+            c_config.get_extensions_repr(prefix="*."), ["*.c", "*.h"]
+        )
+        self.assertEqual(c_config.get_extensions_repr(suffix="|"), ["c|", "h|"])
 
         c_style_config = ChurnConfig.create_c_style_languages_config()
         self.assertEqual(
-            c_style_config.get_extensions_repr(), "c, cpp, cxx, h, hpp, hxx"
+            c_style_config.get_extensions_repr(),
+            ["c", "cpp", "cxx", "h", "hpp", "hxx"]
         )
         self.assertEqual(
-            c_style_config.get_extensions_repr("|"), "c|cpp|cxx|h|hpp|hxx"
+            c_style_config.get_extensions_repr(prefix="*."),
+            ["*.c", "*.cpp", "*.cxx", "*.h", "*.hpp", "*.hxx"]
+        )
+        self.assertEqual(
+            c_style_config.get_extensions_repr(suffix="|"),
+            ["c|", "cpp|", "cxx|", "h|", "hpp|", "hxx|"]
         )
 
 

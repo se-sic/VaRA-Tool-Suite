@@ -1,6 +1,6 @@
 ---
 DocType:         BlameReport
-Version:         3
+Version:         4
 ...
 ---
 funcs-in-module: 42
@@ -10,6 +10,7 @@ insts-in-module: 1337
 result-map:
   args_parse:
     demangled-name:  args_parse
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -36,6 +37,7 @@ result-map:
         amount:          26
   coder_add_filter:
     demangled-name:  coder_add_filter
+    num-instructions:  42
     insts:
       - base-hash:       4820f10d0f173864f6a2ea7479663b509ac53358
         interacting-hashes:
@@ -54,6 +56,7 @@ result-map:
         amount:          1
   coder_init:
     demangled-name:  coder_init
+    num-instructions:  42
     insts:
       - base-hash:       fa3ab0df8ae7a8a1ad55b52266dc0fd387458671
         interacting-hashes:
@@ -123,6 +126,7 @@ result-map:
         amount:          2
   coder_run:
     demangled-name:  coder_run
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -220,6 +224,7 @@ result-map:
         amount:          12
   coder_set_check:
     demangled-name:  coder_set_check
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -228,6 +233,7 @@ result-map:
         amount:          2
   coder_set_compression_settings:
     demangled-name:  coder_set_compression_settings
+    num-instructions:  42
     insts:
       - base-hash:       4820f10d0f173864f6a2ea7479663b509ac53358
         interacting-hashes:
@@ -271,9 +277,11 @@ result-map:
         amount:          1
   coder_set_extreme:
     demangled-name:  coder_set_extreme
+    num-instructions:  42
     insts:           []
   coder_set_preset:
     demangled-name:  coder_set_preset
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -281,6 +289,7 @@ result-map:
         amount:          4
   compressed_name:
     demangled-name:  compressed_name
+    num-instructions:  42
     insts:
       - base-hash:       bd137524f2f50e30ba054f42f1f6536cd3cee920
         interacting-hashes:
@@ -316,18 +325,23 @@ result-map:
         amount:          1
   cpucores:
     demangled-name:  cpucores
+    num-instructions:  42
     insts:           []
   hardware_init:
     demangled-name:  hardware_init
+    num-instructions:  42
     insts:           []
   hardware_memlimit_decoder:
     demangled-name:  hardware_memlimit_decoder
+    num-instructions:  42
     insts:           []
   hardware_memlimit_encoder:
     demangled-name:  hardware_memlimit_encoder
+    num-instructions:  42
     insts:           []
   hardware_memlimit_init:
     demangled-name:  hardware_memlimit_init
+    num-instructions:  42
     insts:
       - base-hash:       bd7ca1dad5c146b6217799ffaa230c32d207a3e5
         interacting-hashes:
@@ -339,6 +353,7 @@ result-map:
         amount:          9
   hardware_memlimit_set:
     demangled-name:  hardware_memlimit_set
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -347,12 +362,15 @@ result-map:
         amount:          2
   hardware_threadlimit_get:
     demangled-name:  hardware_threadlimit_get
+    num-instructions:  42
     insts:           []
   hardware_threadlimit_init:
     demangled-name:  hardware_threadlimit_init
+    num-instructions:  42
     insts:           []
   hardware_threadlimit_set:
     demangled-name:  hardware_threadlimit_set
+    num-instructions:  42
     insts:
       - base-hash:       3084d662d2646ab7eb58daf0dc32cf3f9a74eec7
         interacting-hashes:
@@ -362,6 +380,7 @@ result-map:
         amount:          2
   io_close:
     demangled-name:  io_close
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -373,6 +392,7 @@ result-map:
         amount:          2
   io_close_dest:
     demangled-name:  io_close_dest
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -384,6 +404,7 @@ result-map:
         amount:          4
   io_close_src:
     demangled-name:  io_close_src
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -391,6 +412,7 @@ result-map:
         amount:          27
   io_copy_attrs:
     demangled-name:  io_copy_attrs
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -421,9 +443,11 @@ result-map:
         amount:          40
   io_init:
     demangled-name:  io_init
+    num-instructions:  42
     insts:           []
   io_open:
     demangled-name:  io_open
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -435,6 +459,7 @@ result-map:
         amount:          5
   io_open_dest:
     demangled-name:  io_open_dest
+    num-instructions:  42
     insts:
       - base-hash:       75905a9afc0ee89954ede7d08af70d1148bf0fd9
         interacting-hashes:
@@ -465,6 +490,7 @@ result-map:
         amount:          4
   io_open_src:
     demangled-name:  io_open_src
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -495,6 +521,7 @@ result-map:
         amount:          2
   io_read:
     demangled-name:  io_read
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -506,6 +533,7 @@ result-map:
         amount:          3
   io_unlink:
     demangled-name:  io_unlink
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -532,6 +560,7 @@ result-map:
         amount:          5
   io_write:
     demangled-name:  io_write
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -543,6 +572,7 @@ result-map:
         amount:          44
   is_empty_filename:
     demangled-name:  is_empty_filename
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -550,12 +580,15 @@ result-map:
         amount:          2
   is_tty_stdin:
     demangled-name:  is_tty_stdin
+    num-instructions:  42
     insts:           []
   is_tty_stdout:
     demangled-name:  is_tty_stdout
+    num-instructions:  42
     insts:           []
   main:
     demangled-name:  main
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -581,6 +614,7 @@ result-map:
         amount:          1
   memlimit_too_small:
     demangled-name:  memlimit_too_small
+    num-instructions:  42
     insts:
       - base-hash:       4820f10d0f173864f6a2ea7479663b509ac53358
         interacting-hashes:
@@ -588,6 +622,7 @@ result-map:
         amount:          5
   message:
     demangled-name:  message
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -598,9 +633,11 @@ result-map:
         amount:          16
   message_bug:
     demangled-name:  message_bug
+    num-instructions:  42
     insts:           []
   message_error:
     demangled-name:  message_error
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -608,6 +645,7 @@ result-map:
         amount:          14
   message_fatal:
     demangled-name:  message_fatal
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -617,6 +655,7 @@ result-map:
         amount:          14
   message_filters:
     demangled-name:  message_filters
+    num-instructions:  42
     insts:
       - base-hash:       4fed98417d1687f5eccccb42a133fde3ec81216a
         interacting-hashes:
@@ -628,6 +667,7 @@ result-map:
         amount:          2
   message_help:
     demangled-name:  message_help
+    num-instructions:  42
     insts:
       - base-hash:       4fed98417d1687f5eccccb42a133fde3ec81216a
         interacting-hashes:
@@ -635,6 +675,7 @@ result-map:
         amount:          3
   message_init:
     demangled-name:  message_init
+    num-instructions:  42
     insts:
       - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
         interacting-hashes:
@@ -646,9 +687,11 @@ result-map:
         amount:          2
   message_progress_end:
     demangled-name:  message_progress_end
+    num-instructions:  42
     insts:           []
   message_progress_start:
     demangled-name:  message_progress_start
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -669,6 +712,7 @@ result-map:
         amount:          2
   message_progress_update:
     demangled-name:  message_progress_update
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -680,6 +724,7 @@ result-map:
         amount:          13
   message_set_files:
     demangled-name:  message_set_files
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -687,24 +732,31 @@ result-map:
         amount:          2
   message_signal_handler:
     demangled-name:  message_signal_handler
+    num-instructions:  42
     insts:           []
   message_strm:
     demangled-name:  message_strm
+    num-instructions:  42
     insts:           []
   message_try_help:
     demangled-name:  message_try_help
+    num-instructions:  42
     insts:           []
   message_verbosity_decrease:
     demangled-name:  message_verbosity_decrease
+    num-instructions:  42
     insts:           []
   message_verbosity_increase:
     demangled-name:  message_verbosity_increase
+    num-instructions:  42
     insts:           []
   message_version:
     demangled-name:  message_version
+    num-instructions:  42
     insts:           []
   message_warning:
     demangled-name:  message_warning
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -712,12 +764,15 @@ result-map:
         amount:          14
   my_exit:
     demangled-name:  my_exit
+    num-instructions:  42
     insts:           []
   my_snprintf:
     demangled-name:  my_snprintf
+    num-instructions:  42
     insts:           []
   my_time:
     demangled-name:  my_time
+    num-instructions:  42
     insts:
       - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
         interacting-hashes:
@@ -725,9 +780,11 @@ result-map:
         amount:          7
   open_stdxxx:
     demangled-name:  open_stdxxx
+    num-instructions:  42
     insts:           []
   options_delta:
     demangled-name:  options_delta
+    num-instructions:  42
     insts:
       - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
         interacting-hashes:
@@ -749,6 +806,7 @@ result-map:
         amount:          4
   options_lzma:
     demangled-name:  options_lzma
+    num-instructions:  42
     insts:
       - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
         interacting-hashes:
@@ -799,6 +857,7 @@ result-map:
         amount:          2
   options_subblock:
     demangled-name:  options_subblock
+    num-instructions:  42
     insts:
       - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
         interacting-hashes:
@@ -807,6 +866,7 @@ result-map:
         amount:          5
   parse_environment:
     demangled-name:  parse_environment
+    num-instructions:  42
     insts:
       - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
         interacting-hashes:
@@ -828,6 +888,7 @@ result-map:
         amount:          4
   parse_options:
     demangled-name:  parse_options
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -854,6 +915,7 @@ result-map:
         amount:          1
   parse_real:
     demangled-name:  parse_real
+    num-instructions:  42
     insts:
       - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
         interacting-hashes:
@@ -982,12 +1044,15 @@ result-map:
         amount:          1
   physmem:
     demangled-name:  physmem
+    num-instructions:  42
     insts:           []
   print_filename:
     demangled-name:  print_filename
+    num-instructions:  42
     insts:           []
   process_file:
     demangled-name:  process_file
+    num-instructions:  42
     insts:
       - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
         interacting-hashes:
@@ -999,6 +1064,7 @@ result-map:
         amount:          22
   progress_elapsed:
     demangled-name:  progress_elapsed
+    num-instructions:  42
     insts:
       - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
         interacting-hashes:
@@ -1006,6 +1072,7 @@ result-map:
         amount:          3
   progress_flush:
     demangled-name:  progress_flush
+    num-instructions:  42
     insts:
       - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
         interacting-hashes:
@@ -1017,6 +1084,7 @@ result-map:
         amount:          18
   progress_percentage:
     demangled-name:  progress_percentage
+    num-instructions:  42
     insts:
       - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
         interacting-hashes:
@@ -1028,6 +1096,7 @@ result-map:
         amount:          7
   progress_pos:
     demangled-name:  progress_pos
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -1035,6 +1104,7 @@ result-map:
         amount:          1
   progress_remaining:
     demangled-name:  progress_remaining
+    num-instructions:  42
     insts:
       - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
         interacting-hashes:
@@ -1046,15 +1116,19 @@ result-map:
         amount:          1
   progress_signal_handler:
     demangled-name:  progress_signal_handler
+    num-instructions:  42
     insts:           []
   progress_sizes:
     demangled-name:  progress_sizes
+    num-instructions:  42
     insts:           []
   progress_sizes_helper:
     demangled-name:  progress_sizes_helper
+    num-instructions:  42
     insts:           []
   progress_speed:
     demangled-name:  progress_speed
+    num-instructions:  42
     insts:
       - base-hash:       68bf7ac2984d3627369a240ef0491934d53f7899
         interacting-hashes:
@@ -1066,6 +1140,7 @@ result-map:
         amount:          19
   progress_time:
     demangled-name:  progress_time
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -1077,6 +1152,7 @@ result-map:
         amount:          11
   read_name:
     demangled-name:  read_name
+    num-instructions:  42
     insts:
       - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
         interacting-hashes:
@@ -1088,6 +1164,7 @@ result-map:
         amount:          91
   set_delta:
     demangled-name:  set_delta
+    num-instructions:  42
     insts:
       - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
         interacting-hashes:
@@ -1104,9 +1181,11 @@ result-map:
         amount:          5
   set_exit_status:
     demangled-name:  set_exit_status
+    num-instructions:  42
     insts:           []
   set_lzma:
     demangled-name:  set_lzma
+    num-instructions:  42
     insts:
       - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
         interacting-hashes:
@@ -1127,6 +1206,7 @@ result-map:
         amount:          35
   set_subblock:
     demangled-name:  set_subblock
+    num-instructions:  42
     insts:
       - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
         interacting-hashes:
@@ -1139,21 +1219,27 @@ result-map:
         amount:          4
   signal_handler:
     demangled-name:  signal_handler
+    num-instructions:  42
     insts:           []
   signals_block:
     demangled-name:  signals_block
+    num-instructions:  42
     insts:           []
   signals_exit:
     demangled-name:  signals_exit
+    num-instructions:  42
     insts:           []
   signals_init:
     demangled-name:  signals_init
+    num-instructions:  42
     insts:           []
   signals_unblock:
     demangled-name:  signals_unblock
+    num-instructions:  42
     insts:           []
   str_to_uint64:
     demangled-name:  str_to_uint64
+    num-instructions:  42
     insts:
       - base-hash:       5d018dc03549c1ee4958364712fb0c94e1bf2741
         interacting-hashes:
@@ -1198,6 +1284,7 @@ result-map:
         amount:          6
   suffix_get_dest_name:
     demangled-name:  suffix_get_dest_name
+    num-instructions:  42
     insts:
       - base-hash:       bd137524f2f50e30ba054f42f1f6536cd3cee920
         interacting-hashes:
@@ -1209,6 +1296,7 @@ result-map:
         amount:          4
   suffix_set:
     demangled-name:  suffix_set
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -1217,9 +1305,11 @@ result-map:
         amount:          6
   test_suffix:
     demangled-name:  test_suffix
+    num-instructions:  42
     insts:           []
   uncompressed_name:
     demangled-name:  uncompressed_name
+    num-instructions:  42
     insts:
       - base-hash:       fcfb86c7770328cfffa2e83b176af9a1ba2d9128
         interacting-hashes:
@@ -1254,6 +1344,7 @@ result-map:
         amount:          14
   vmessage:
     demangled-name:  vmessage
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
@@ -1269,9 +1360,11 @@ result-map:
         amount:          1
   xrealloc:
     demangled-name:  xrealloc
+    num-instructions:  42
     insts:           []
   xstrdup:
     demangled-name:  xstrdup
+    num-instructions:  42
     insts:
       - base-hash:       e114502b2bc371e4a45449832cb69be036360722
         interacting-hashes:
