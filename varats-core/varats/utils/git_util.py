@@ -149,27 +149,29 @@ class ChurnConfig():
         """Disable `language` in the config."""
         self.__enabled_languages.remove(language)
 
-    def get_extensions_repr(self, sep: str = ", ") -> str:
+    def get_extensions_repr(self,
+                            prefix: str = "",
+                            suffix: str = "") -> tp.List[str]:
         """
-        Returns a string that containts all file extensions from all enabled
-        languages.
+        Returns a list that contains all file extensions from all enabled
+        languages extended with the passed pre-/suffix.
 
         Args:
-            sep: separator inserted between file extensions
+            prefix: prefix adding to the strings head
+            suffix: suffix adding to the strings tail
 
         Returns:
-            string representation of all enabled extension types
+            list of modified string file extensions
         """
-        concat_str = ""
-        tmp_sep = ""
+        extensions_list: tp.List[str] = []
+
         for ext in sorted({
             ext for lang in self.enabled_languages for ext in lang.value
         }):
-            concat_str += tmp_sep
-            tmp_sep = sep
-            concat_str += ext
+            ext = prefix + ext + suffix
+            extensions_list.append(ext)
 
-        return concat_str
+        return extensions_list
 
 
 CommitLookupTy = tp.Callable[[str, str], pygit2.Commit]
@@ -364,10 +366,9 @@ def __calc_code_churn_range_impl(
 
     if not churn_config.include_everything:
         diff_base_params.append("--")
-        # builds a regrex to select files that git includes into churn calc
-        diff_base_params.append(
-            ":*.[" + churn_config.get_extensions_repr('|') + "]"
-        )
+        # builds a regex to select files that git includes into churn calc
+        diff_base_params = diff_base_params + \
+                           churn_config.get_extensions_repr('*.')
 
     if revision_range:
         stdout = repo_git(diff_base_params)
@@ -474,10 +475,9 @@ def calc_code_churn(
 
     if not churn_config.include_everything:
         diff_base_params.append("--")
-        # builds a regrex to select files that git includes into churn calc
-        diff_base_params.append(
-            ":*.[" + churn_config.get_extensions_repr('|') + "]"
-        )
+        # builds a regex to select files that git includes into churn calc
+        diff_base_params = diff_base_params + \
+                           churn_config.get_extensions_repr('*.')
 
     stdout = repo_git(diff_base_params)
     # initialize with 0 as otherwise commits without changes would be
