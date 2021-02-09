@@ -48,6 +48,14 @@ class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
                 shallow=False,
                 version_filter=project_filter_generator("gzip")
             )
+        ),
+        bb.source.GitSubmodule(
+            remote="https://git.savannah.gnu.org/git/gnulib.git",
+            local="gzip/gnulib",
+            refspec="HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("gzip")
         )
     ]
 
