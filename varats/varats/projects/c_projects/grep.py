@@ -1,6 +1,5 @@
 """Project file for the GNU grep."""
 import typing as tp
-from pathlib import Path
 
 import benchbuild as bb
 from benchbuild.utils.cmd import make
