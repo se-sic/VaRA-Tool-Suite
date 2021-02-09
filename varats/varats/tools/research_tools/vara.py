@@ -210,7 +210,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
             unfiltered_version_list = self.code_base.get_sub_project(
                 "vara-llvm-project"
             ).get_branches(["-r"])
-            version_pattern = re.compile(r"-([0-9]+)-dev")
+            version_pattern = re.compile(r"vara-([0-9]+)-dev")
         else:
             LOG.warning(
                 "The version retrieval of the specified subproject is not "
