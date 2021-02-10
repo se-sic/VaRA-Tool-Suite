@@ -99,6 +99,7 @@ Configuring the Container Support
 
 To use BenchBuild's container support, you first need to setup `buildah <https://github.com/containers/buildah/blob/master/install.md>`_ and `podman <https://podman.io/getting-started/installation>`_ on your system.
 Please follow their install instructions on how to setup both tools.
+We highly recommend to use buildah and podman in rootless mode.
 Keep in mind that you have to set a subuid and subgid mapping on all machines that need to run containers.
 You also need to install `crun` on those machines.
 For debian, this can be don with the following command::
@@ -142,7 +143,7 @@ Afterwards, you need to build the base containers.
 Both tasks can be accomplished using the :ref:`vara-container` tool.
 Remember to first select a research tool and then build the base containers afterwards.
 
-You can now run your experiments in a container simply by replacing the `run` in your BenchBuild command with `container`, for example, like this:
+You can now run your experiments in a container simply by replacing the ``run`` in your BenchBuild command with ``container``, for example, like this:
 
 .. code-block:: bash
 
@@ -160,3 +161,51 @@ In these situations, it can come in handy to create some shell aliases that set 
 
     alias bbuildah='buildah --root <path-to-varats-root>/containers/lib --runroot <path-to-varats-root>/containers/run'
     alias bpodman='podman --root <path-to-varats-root>/containers/lib --runroot <path-to-varats-root>/containers/run'
+
+
+For debugging purposes, it can be useful to mount the file system of a container image.
+This can be done with the following steps:
+
+1. Create a buikdah unshare session with
+
+   .. code-block:: bash
+
+     buildah unshare
+
+   This creates an environment where it looks like if you were root.
+2. Create the ``bbuildah`` alias (the unshare environment does not know the alias yet, even if it was set in the shell where you executed ``buildah unshare``).
+3. Create a working container from the desired image with
+
+   .. code-block:: bash
+
+     newontainer=$(bbuildah from <image_id>)
+
+   This command will print a container id.
+4. Mount the working container (identified by the id you got from the step before) with
+
+   .. code-block:: bash
+
+     containermnt=$(bbuildah mount $newcontainer)
+
+   Container's file system is now available at ``$containermnt``.
+5. After you are done, unmount the container's file system with
+
+   .. code-block:: bash
+
+     bbuildah umount $newcontainer
+
+6. Delete the working container with
+
+   .. code-block:: bash
+
+     bbuildah rm $newcontainer
+
+7. Exit the buildah unshare session by typing ``exit``
+
+Alternatively, you can spawn a shell (e.g., bash) in the container by executing the following command after step 3:
+
+.. code-block:: bash
+
+  bbuildah run $newcontainer bash
+
+Depending on your concrete setup, it might not be necessary to do this in an buildah unshare session.
