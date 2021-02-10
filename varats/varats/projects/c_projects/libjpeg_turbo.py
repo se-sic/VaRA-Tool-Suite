@@ -11,6 +11,7 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
     BinaryType,
+    verify_binaries,
 )
 from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
@@ -53,6 +54,8 @@ class LibjpegTurbo(bb.Project, CVEProviderHook):  # type: ignore
             with local.env(CC=str(c_compiler)):
                 bb.watch(cmake)("-G", "Unix Makefiles", ".")  # type: ignore
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))  # type: ignore
+
+            verify_binaries(self)
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

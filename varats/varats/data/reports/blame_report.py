@@ -102,11 +102,12 @@ class BlameResultFunctionEntry():
 
     def __init__(
         self, name: str, demangled_name: str,
-        blame_insts: tp.List[BlameInstInteractions]
+        blame_insts: tp.List[BlameInstInteractions], num_instructions: int
     ) -> None:
         self.__name = name
         self.__demangled_name = demangled_name
         self.__inst_list = blame_insts
+        self.__num_instructions = num_instructions
 
     @staticmethod
     def create_blame_result_function_entry(
@@ -115,13 +116,16 @@ class BlameResultFunctionEntry():
         """Creates a `BlameResultFunctionEntry` from the corresponding yaml
         document section."""
         demangled_name = str(raw_function_entry['demangled-name'])
+        num_instructions = int(raw_function_entry['num-instructions'])
         inst_list: tp.List[BlameInstInteractions] = []
         for raw_inst_entry in raw_function_entry['insts']:
             inst_list.append(
                 BlameInstInteractions.
                 create_blame_inst_interactions(raw_inst_entry)
             )
-        return BlameResultFunctionEntry(name, demangled_name, inst_list)
+        return BlameResultFunctionEntry(
+            name, demangled_name, inst_list, num_instructions
+        )
 
     @property
     def name(self) -> str:
@@ -137,6 +141,11 @@ class BlameResultFunctionEntry():
     def demangled_name(self) -> str:
         """Demangled name of the function."""
         return self.__demangled_name
+
+    @property
+    def num_instructions(self) -> int:
+        """Number of instructions in this function."""
+        return self.__num_instructions
 
     @property
     def interactions(self) -> tp.List[BlameInstInteractions]:
@@ -162,6 +171,11 @@ def _calc_diff_between_func_entries(
     base_interactions = list(base_func_entry.interactions)
     prev_interactions = list(prev_func_entry.interactions)
 
+    # num instructions diff
+    diff_num_instructions = abs(
+        base_func_entry.num_instructions - prev_func_entry.num_instructions
+    )
+
     for base_inter in base_interactions:
         if base_inter in prev_interactions:
             prev_inter_idx = prev_interactions.index(base_inter)
@@ -184,7 +198,8 @@ def _calc_diff_between_func_entries(
     diff_interactions += prev_interactions
 
     return BlameResultFunctionEntry(
-        base_func_entry.name, base_func_entry.demangled_name, diff_interactions
+        base_func_entry.name, base_func_entry.demangled_name, diff_interactions,
+        diff_num_instructions
     )
 
 
@@ -230,7 +245,7 @@ class BlameReport(BaseReport):
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
             version_header = VersionHeader(next(documents))
             version_header.raise_if_not_type("BlameReport")
-            version_header.raise_if_version_is_less_than(3)
+            version_header.raise_if_version_is_less_than(4)
 
             self.__meta_data = BlameReportMetaData \
                 .create_blame_report_meta_data(next(documents))
@@ -577,7 +592,7 @@ def generate_lib_dependent_degrees(
             base_repo_name = interaction.base_commit.repository_name
             tmp_degree_of_libs: tp.Dict[str, int] = {}
 
-            if not base_inter_lib_degree_amount_mapping:
+            if base_repo_name not in base_inter_lib_degree_amount_mapping:
                 base_inter_lib_degree_amount_mapping[base_repo_name] = {}
 
             for inter_hash in interaction.interacting_commits:
