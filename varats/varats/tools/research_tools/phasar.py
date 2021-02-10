@@ -14,6 +14,7 @@ from varats.tools.research_tools.research_tool import (
     CodeBase,
     ResearchTool,
     SubProject,
+    Distro,
 )
 from varats.tools.research_tools.vara_manager import (
     BuildType,
@@ -196,12 +197,15 @@ class Phasar(ResearchTool[PhasarCodeBase]):
 
         return status_ok
 
-    def add_container_layers(self, layers: ContainerImage) -> ContainerImage:
+    def add_container_layers(
+        self, layers: ContainerImage, distro: Distro
+    ) -> ContainerImage:
         """
         Add the layers required for this research tool to the given container.
 
         Args:
             layers: the container to add the layers to
+            distro: distro used by the layers
 
         Returns:
             the container with the added layers

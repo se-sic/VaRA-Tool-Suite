@@ -11,11 +11,14 @@ from benchbuild.utils.cmd import ln, mkdir
 from plumbum import local
 from PyQt5.QtCore import QProcess
 
+from varats.containers import containers
 from varats.plot.plot_utils import check_required_args
 from varats.tools.research_tools.research_tool import (
     CodeBase,
     ResearchTool,
     SubProject,
+    Dependencies,
+    Distro,
 )
 from varats.tools.research_tools.vara_manager import (
     BuildType,
@@ -109,6 +112,11 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
     Find the main repo online on github: https://github.com/se-passau/VaRA
     """
+
+    DEPENDENCIES = Dependencies({
+        Distro.DEBIAN: ["libboost-all-dev"],
+        Distro.ARCH: ["boost"]
+    })
 
     def __init__(self, base_dir: Path) -> None:
         super().__init__("VaRA", [BuildType.DEV], VaRACodeBase(base_dir))
@@ -256,14 +264,27 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
         return status_ok
 
-    def add_container_layers(self, layers: ContainerImage) -> ContainerImage:
+    def add_container_layers(
+        self, layers: ContainerImage, distro: Distro
+    ) -> ContainerImage:
         """
         Add the layers required for this research tool to the given container.
 
         Args:
             layers: the container to add the layers to
+            distro: distro used by the layers
 
         Returns:
             the container with the added layers
         """
-        raise NotImplementedError("See se-passau/VaRA#718")
+        if not self.verify_install(self.install_location()):
+            raise AssertionError(
+                "VaRA is not correctly installed on your system."
+            )
+
+        container_vara_dir = containers.CONTAINER_VARATS_ROOT / "tools/VaRA"
+        layers.run(*(self.DEPENDENCIES.get_install_command(distro).split(" ")))
+        layers.copy_([str(self.install_location())], str(container_vara_dir))
+        layers.env(BB_ENV=f"{{PATH: [{str(container_vara_dir / 'bin')}]}}")
+
+        return layers

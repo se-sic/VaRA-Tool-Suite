@@ -3,6 +3,7 @@ developers to setup and configure their own research tool by inheriting and
 implementing the base classes ``ResearchTool`` and ``CodeBase``."""
 import abc
 import typing as tp
+from enum import Enum
 from pathlib import Path
 
 from benchbuild.environments.domain.declarative import ContainerImage
@@ -27,6 +28,38 @@ from varats.tools.research_tools.vara_manager import (
 from varats.utils.filesystem_util import FolderAlreadyPresentError
 from varats.utils.git_util import get_current_branch
 from varats.utils.logger_util import log_without_linesep
+
+
+class Distro(Enum):
+    """Linux distributions supported by the tool suite."""
+    DEBIAN = "debian",
+    ARCH = "arch"
+
+
+_install_commands = {
+    Distro.DEBIAN: "apt install -y",
+    Distro.ARCH: "pacman -S --noconfirm"
+}
+
+
+class Dependencies:
+    """Models the dependencies for a research tool."""
+
+    def __init__(self, dependencies: tp.Dict[Distro, tp.List[str]]):
+        self.__dependencies = dependencies
+
+    def get_install_command(self, distro: Distro) -> str:
+        """
+        Given a distro, return a command how the dependencies can be installed.
+        Args:
+            distro: the distro to use
+
+        Returns:
+            the command how the dependencies can be installed
+        """
+        return _install_commands[distro] + " " + " ".join(
+            self.__dependencies[distro]
+        )
 
 
 class SubProject():
@@ -357,7 +390,9 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """
 
     @abc.abstractmethod
-    def add_container_layers(self, layers: ContainerImage) -> ContainerImage:
+    def add_container_layers(
+        self, layers: ContainerImage, distro: Distro
+    ) -> ContainerImage:
         """
         Add the layers required for this research tool to the given container.
 

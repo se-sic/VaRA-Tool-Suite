@@ -22,6 +22,7 @@ from benchbuild.utils.cmd import buildah
 from plumbum import local
 from plumbum.commands import ConcreteCommand
 
+from varats.tools.research_tools.research_tool import Distro
 from varats.tools.tool_util import get_research_tool
 from varats.utils.settings import bb_cfg, vara_cfg
 
@@ -36,16 +37,24 @@ def prepare_buildah() -> ConcreteCommand:
 
 class ImageBase(Enum):
     """Container image bases that can be used by projects."""
-    DEBIAN_10 = "localhost/debian:10_varats"
+    DEBIAN_10 = ("localhost/debian:10_varats", Distro.DEBIAN)
+
+    def __init__(self, name: str, distro: Distro):
+        self.__name = name
+        self.__distro = distro
 
     @property
     def image_name(self) -> str:
-        image_name = str(self.value)
+        image_name = self.__name
         configured_research_tool = vara_cfg()["container"]["research_tool"]
         if configured_research_tool:
             research_tool = get_research_tool(str(configured_research_tool))
             image_name += f"_{research_tool.name.lower()}"
         return image_name
+
+    @property
+    def distro(self) -> Distro:
+        return self.__distro
 
 
 __BASE_IMAGES: tp.Dict[ImageBase, ContainerImage] = {
@@ -106,8 +115,6 @@ def _add_vara_config(layers: ContainerImage, tmp_dir: str) -> ContainerImage:
     )
     config["benchbuild_root"] = str(CONTAINER_BB_ROOT)
 
-    #TODO: hook for research tool (se-passau/VaRA#718)
-
     config.store(local.path(config_file))
     layers.copy_([config_file], config["config_file"].value)
     layers.env(VARATS_CONFIG_FILE=config["config_file"].value)
@@ -147,8 +154,7 @@ def create_base_image(base: ImageBase) -> None:
         configured_research_tool = vara_cfg()["container"]["research_tool"]
         if configured_research_tool:
             research_tool = get_research_tool(str(configured_research_tool))
-            # TODO (se-passau/VaRA#718): enable when implemented
-            # research_tool.add_container_layers(image)
+            research_tool.add_container_layers(image, base.distro)
 
         _add_vara_config(image, tmpdir)
         _add_benchbuild_config(image)
