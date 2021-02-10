@@ -554,7 +554,7 @@ def generate_lib_dependent_degrees(
             base_repo_name = interaction.base_commit.repository_name
             tmp_degree_of_libs: tp.Dict[str, int] = {}
 
-            if not base_inter_lib_degree_amount_mapping:
+            if base_repo_name not in base_inter_lib_degree_amount_mapping:
                 base_inter_lib_degree_amount_mapping[base_repo_name] = {}
 
             for inter_hash in interaction.interacting_commits:
