@@ -681,11 +681,10 @@ def _build_graphviz_edges(
         if show_edge_weight:
             weight = row['amount']
             weight_string = str(weight)
-            if not edge_weight_threshold:
+            if not edge_weight_threshold or (
+                weight >= edge_weight_threshold.value
+            ):
                 label = weight_string
-            else:
-                if weight >= edge_weight_threshold.value:
-                    label = weight_string
 
         graph.edge(
             f'{base_hash}_{base_lib}', f'{inter_hash}_{inter_lib}', label=label
@@ -717,6 +716,8 @@ def _build_graphviz_fig(
         # 'cluster_' prefix is necessary for grouping commits to libraries
         with graph.subgraph(name="cluster_" + lib_name) as subgraph:
             subgraph.attr(label=lib_name)
+            subgraph.attr(color="red")
+
             for c_hash in c_hash_list:
 
                 if shown_revision_length > len(c_hash):
@@ -770,7 +771,7 @@ class BlameLibraryInteraction(Plot):
         shown_revision_length: int = 10,
         edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
         save_path: tp.Optional[Path] = None,
-        filetype: str = 'png'
+        filetype: str = 'pdf'
     ) -> tp.Optional[Digraph]:
         plot_cfg = {
             'fig_title': 'MISSING figure title',
