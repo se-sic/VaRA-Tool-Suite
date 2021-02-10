@@ -152,6 +152,10 @@ You can now run your experiments in a container simply by replacing the ``run`` 
 
 Note, that each project is responsible for providing a :ref:`base container image <Using Containers>` to run in.
 
+.. warning::
+
+  BenchBuild configuration values are not automatically propagated into the container.
+  If a specific value is needed either the base image needs to provide it or the project/experiment needs to add the specific BenchBuild environment variable to its layer.
 
 Using buildah and podman on the Commandline
 ...........................................
