@@ -75,7 +75,7 @@ def configuration_lookup_error_handler(func: tp.Any) -> tp.Any:
     @wraps(func)
     def wrapper_configuration_lookup_error_handler(
         *args: tp.Any, **kwargs: tp.Any
-    ) -> tp.Any:
+    ) -> tp.Callable[..., tp.Any]:
         try:
             func(*args, *kwargs)
         except ConfigurationLookupError:
