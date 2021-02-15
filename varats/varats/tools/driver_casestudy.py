@@ -27,6 +27,7 @@ from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, MetaReport
+from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.utils.cli_util import (
     cli_list_choice,
     initialize_cli_tool,
@@ -53,11 +54,16 @@ def main() -> None:
     __create_cleanup_parser(sub_parsers)  # vara-cs cleanup
 
     args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
-
     if 'subcommand' not in args:
         parser.print_help()
         return
+    __casestudy_exec_command(args, parser)
 
+
+@configuration_lookup_error_handler
+def __casestudy_exec_command(
+    args: tp.Dict[str, tp.Any], parser: ArgumentParser
+) -> None:
     if args['subcommand'] == 'status':
         __casestudy_status(args, parser)
     elif args['subcommand'] == 'gen' or args['subcommand'] == 'ext':
@@ -436,7 +442,6 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
         print("No commit hash was provided.")
         commit_hash = ""
         paper_config = get_paper_config()
-
         available_commit_hashes = []
         # Compute available commit hashes
         for case_study in paper_config.get_case_studies(project_name):
@@ -608,8 +613,9 @@ def _remove_old_result_files() -> None:
 def _find_result_dir_paths_of_projects() -> tp.List[Path]:
     result_dir_path = Path(vara_cfg()["result_dir"].value)
     existing_paper_config_result_dir_paths = []
+    paper_config = get_paper_config()
     project_names = [
-        cs.project_name for cs in get_paper_config().get_all_case_studies()
+        cs.project_name for cs in paper_config.get_all_case_studies()
     ]
     for project_name in project_names:
         path = Path(result_dir_path / project_name)
