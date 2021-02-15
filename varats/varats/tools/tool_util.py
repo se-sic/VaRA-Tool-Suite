@@ -68,14 +68,16 @@ def get_supported_research_tool_names() -> tp.List[str]:
     return ["phasar", "vara"]
 
 
-def configuration_lookup_error_handler(func: tp.Any) -> tp.Any:
+def configuration_lookup_error_handler(
+    func: tp.Callable[..., None]
+) -> tp.Callable[..., None]:
     """Wrapper for drivers to catch internal Exceptions and provide a helpful
     message to the user."""
 
     @wraps(func)
     def wrapper_configuration_lookup_error_handler(
         *args: tp.Any, **kwargs: tp.Any
-    ) -> tp.Callable[..., tp.Any]:
+    ) -> None:
         try:
             func(*args, *kwargs)
         except ConfigurationLookupError:
