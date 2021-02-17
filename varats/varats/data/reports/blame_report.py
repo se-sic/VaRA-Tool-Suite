@@ -538,7 +538,7 @@ def gen_base_to_inter_commit_repo_pair_mapping(
     report: tp.Union[BlameReport, BlameReportDiff]
 ) -> tp.Dict[CommitRepoPair, InteractingCommitRepoPairToAmountMapping]:
     """
-    Maps the base CommitRepoPair of an blame interaction to each distinct
+    Maps the base CommitRepoPair of a blame interaction to each distinct
     interacting CommitRepoPair, which maps to the amount of the interaction.
 
     Args:

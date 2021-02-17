@@ -1,4 +1,4 @@
-"""Module for the base BlameLibraryInteractionsDatabase class."""
+"""Module for the BlameLibraryInteractionsDatabase class."""
 import typing as tp
 from pathlib import Path
 
