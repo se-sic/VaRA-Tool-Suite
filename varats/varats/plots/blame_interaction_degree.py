@@ -42,9 +42,9 @@ class PlotTypes(Enum):
 
 
 class EdgeWeightThreshold(Enum):
-    LOW = 30
-    MEDIUM = 100
-    HIGH = 500
+    LOW = 10
+    MEDIUM = 30
+    HIGH = 70
 
 
 class FractionMap:
@@ -677,18 +677,17 @@ def _build_graphviz_edges(
         inter_lib = row['inter_lib']
 
         label = None
+        weight = row['amount']
 
-        if show_edge_weight:
-            weight = row['amount']
-            weight_string = str(weight)
-            if not edge_weight_threshold or (
-                weight >= edge_weight_threshold.value
-            ):
-                label = weight_string
+        if not edge_weight_threshold or weight >= edge_weight_threshold.value:
+            if show_edge_weight:
+                label = str(weight)
 
-        graph.edge(
-            f'{base_hash}_{base_lib}', f'{inter_hash}_{inter_lib}', label=label
-        )
+            graph.edge(
+                f'{base_hash}_{base_lib}',
+                f'{inter_hash}_{inter_lib}',
+                label=label
+            )
 
         lib_to_hashes_mapping[base_lib].append(base_hash)
         lib_to_hashes_mapping[inter_lib].append(inter_hash)
@@ -766,20 +765,12 @@ class BlameLibraryInteraction(Plot):
     def _graphviz_plot(
         self,
         view_mode: bool,
-        extra_plot_cfg: tp.Dict[str, tp.Any],
         show_edge_weight: bool = False,
         shown_revision_length: int = 10,
         edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
         save_path: tp.Optional[Path] = None,
         filetype: str = 'pdf'
     ) -> tp.Optional[Digraph]:
-        plot_cfg = {
-            'fig_title': 'MISSING figure title',
-        }
-        if extra_plot_cfg is not None:
-            plot_cfg.update(extra_plot_cfg)
-
-        style.use(self.style)
 
         df = self._get_interaction_data()
         df.sort_values(by=['time_id'], inplace=True)
@@ -1345,11 +1336,8 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
                 "View mode is turned off. The specified revision will be "
                 "ignored."
             )
-        extra_plot_cfg: tp.Dict[str, tp.Any] = {}
         self.__graph = self._graphviz_plot(
-            view_mode=view_mode,
-            extra_plot_cfg=extra_plot_cfg,
-            show_edge_weight=True
+            view_mode=view_mode, show_edge_weight=True
         )
 
     def show(self) -> None:
@@ -1370,7 +1358,7 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
             return
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
-        pass
+        raise NotImplementedError
 
 
 class BlameAuthorDegree(BlameDegree):

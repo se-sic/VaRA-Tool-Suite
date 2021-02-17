@@ -74,14 +74,15 @@ class BlameLibraryInteractionsDatabase(
                     base_pair]
 
                 for inter_pair in inter_pair_amount_dict:
-                    current_rev_data_dict = build_dataframe_row(
-                        base_hash=base_pair.commit_hash,
-                        base_library=base_pair.repository_name,
-                        inter_hash=inter_pair.commit_hash,
-                        inter_library=inter_pair.repository_name,
-                        amount=inter_pair_amount_dict[inter_pair]
+                    result_data_dicts.append(
+                        build_dataframe_row(
+                            base_hash=base_pair.commit_hash,
+                            base_library=base_pair.repository_name,
+                            inter_hash=inter_pair.commit_hash,
+                            inter_library=inter_pair.repository_name,
+                            amount=inter_pair_amount_dict[inter_pair]
+                        )
                     )
-                    result_data_dicts.append(current_rev_data_dict)
 
             return pd.DataFrame(result_data_dicts), report.head_commit, str(
                 report_path.stat().st_mtime_ns
