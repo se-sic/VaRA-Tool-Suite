@@ -226,14 +226,8 @@ class VaRA(ResearchTool[VaRACodeBase]):
                     highest_version = match_version
 
         if highest_version == -1:
-            if sub_prj_name == "VaRA":
-                LOG.warning(
-                    "No VaRA tag matching the release pattern was found."
-                )
-            if sub_prj_name == "vara-llvm-project":
-                LOG.warning(
-                    "No vara-llvm-project release branch name was found."
-                )
+            warning_str = f"No version in {sub_prj_name} matched the release pattern."
+            LOG.warning(warning_str)
             raise LookupError
 
         return highest_version

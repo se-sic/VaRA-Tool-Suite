@@ -63,7 +63,7 @@ def update_term(text: str, enable_inline: bool = False) -> None:
 def print_up_to_date_message(research_tool: ResearchTool[VaRACodeBase]) -> None:
     """
     Checks if VaRA's major release version is up to date and prints a message in
-    the terminal accordingly.
+    the terminal if VaRA is outdated.
 
     Args:
         research_tool: The loaded research tool
@@ -71,14 +71,45 @@ def print_up_to_date_message(research_tool: ResearchTool[VaRACodeBase]) -> None:
     highest_release_version = research_tool.find_highest_sub_prj_version(
         "vara-llvm-project"
     )
-    if research_tool.is_up_to_date():
-        print(f"{colors.green}VaRA major release version is up to date!")
-    else:
+    if not research_tool.is_up_to_date():
         print(
-            f"{colors.LightYellow}VaRA is outdated!\n"
-            f"Upgrade to major release version {colors.bold}{colors.LightBlue}"
-            f"{highest_release_version}"
+            f"{colors.LightYellow}VaRA is outdated! Newest major release "
+            f"version is {colors.bold}{colors.LightBlue}"
+            f"{highest_release_version}{colors.bold.reset}{colors.fg.reset}\n"
         )
+
+
+def show_major_release_prompt(
+    research_tool: ResearchTool[VaRACodeBase]
+) -> None:
+    """
+    Shows a prompt if VaRA's major release version is not up to date to decide
+    if the user wants to upgrade.
+
+    Args:
+        research_tool: The loaded research tool
+    """
+
+    if not research_tool.is_up_to_date():
+        print_up_to_date_message(research_tool)
+        print(
+            "Press:\n"
+            f"  {colors.bold}1{colors.bold.reset} to upgrade and continue.\n"
+            f"  {colors.bold}2{colors.bold.reset} to continue without "
+            f"upgrading.\n "
+        )
+        user_choice = input("> ")
+
+        if user_choice == '1':
+            research_tool.upgrade()
+            return
+        elif user_choice == '2':
+            return
+
+        print(
+            f"{colors.Red}Your selection is invalid. Aborting.{colors.Red.reset}"
+        )
+        raise IOError
 
 
 def parse_string_to_build_type(build_type: str) -> BuildType:
@@ -205,16 +236,16 @@ def main() -> None:
             tool, args.sourcelocation, args.installprefix, args.version
         )
     if args.update:
-        tool.upgrade()
         print_up_to_date_message(tool)
+        tool.upgrade()
     if args.build:
+        show_major_release_prompt(tool)
         build_type = parse_string_to_build_type(args.buildtype)
         tool.build(build_type, __get_install_prefix(tool, args.installprefix))
         if tool.verify_install(__get_install_prefix(tool, args.installprefix)):
             print(f"{tool.name} was correctly installed.")
         else:
             print(f"Could not install {tool.name} correctly.")
-        print_up_to_date_message(tool)
 
 
 def __build_setup_init(
