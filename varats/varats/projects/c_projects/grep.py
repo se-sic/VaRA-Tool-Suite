@@ -26,7 +26,7 @@ class Grep(bb.Project, CVEProviderHook):  # type: ignore
 
     SOURCE = [
         bb.source.Git(
-            remote="https://git.savannah.gnu.org/git/grep.git",
+            remote="https://github.com/vulder/grep.git",
             local="grep",
             refspec="HEAD",
             limit=None,
@@ -34,7 +34,7 @@ class Grep(bb.Project, CVEProviderHook):  # type: ignore
             version_filter=project_filter_generator("grep")
         ),
         bb.source.GitSubmodule(
-            remote="https://git.savannah.gnu.org/git/gnulib.git",
+            remote="https://github.com/coreutils/gnulib.git",
             local="grep/gnulib",
             refspec="HEAD",
             limit=None,

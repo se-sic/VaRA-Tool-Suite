@@ -531,6 +531,47 @@ def generate_degree_tuples(
     return list(degree_dict.items())
 
 
+InteractingCommitRepoPairToAmountMapping = tp.Dict[CommitRepoPair, int]
+
+
+def gen_base_to_inter_commit_repo_pair_mapping(
+    report: tp.Union[BlameReport, BlameReportDiff]
+) -> tp.Dict[CommitRepoPair, InteractingCommitRepoPairToAmountMapping]:
+    """
+    Maps the base CommitRepoPair of a blame interaction to each distinct
+    interacting CommitRepoPair, which maps to the amount of the interaction.
+
+    Args:
+        report: blame report
+
+    Returns:
+        A mapping from base CommitRepoPairs to a mapping of the corresponding
+        interacting CommitRepoPairs to their amount.
+    """
+
+    base_to_inter_mapping: tp.Dict[
+        CommitRepoPair,
+        InteractingCommitRepoPairToAmountMapping] = defaultdict(dict)
+
+    for func_entry in report.function_entries:
+        for interaction in func_entry.interactions:
+            amount = interaction.amount
+            base_commit_repo_pair = interaction.base_commit
+
+            for interacting_c_repo_pair in interaction.interacting_commits:
+                if (
+                    interacting_c_repo_pair not in
+                    base_to_inter_mapping[base_commit_repo_pair]
+                ):
+                    base_to_inter_mapping[base_commit_repo_pair][
+                        interacting_c_repo_pair] = 0
+
+                base_to_inter_mapping[base_commit_repo_pair][
+                    interacting_c_repo_pair] += amount
+
+    return base_to_inter_mapping
+
+
 DegreeAmountMappingTy = tp.Dict[int, int]
 
 
@@ -554,7 +595,7 @@ def generate_lib_dependent_degrees(
             base_repo_name = interaction.base_commit.repository_name
             tmp_degree_of_libs: tp.Dict[str, int] = {}
 
-            if not base_inter_lib_degree_amount_mapping:
+            if base_repo_name not in base_inter_lib_degree_amount_mapping:
                 base_inter_lib_degree_amount_mapping[base_repo_name] = {}
 
             for inter_hash in interaction.interacting_commits:
