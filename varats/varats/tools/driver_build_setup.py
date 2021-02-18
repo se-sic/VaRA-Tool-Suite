@@ -103,11 +103,12 @@ def show_major_release_prompt(
         if user_choice == '1':
             research_tool.upgrade()
             return
-        elif user_choice == '2':
+        if user_choice == '2':
             return
 
         print(
-            f"{colors.Red}Your selection is invalid. Aborting.{colors.Red.reset}"
+            f"{colors.Red}Your selection is invalid. Aborting."
+            f"{colors.Red.reset}"
         )
         raise IOError
 

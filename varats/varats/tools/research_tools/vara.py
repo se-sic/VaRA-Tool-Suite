@@ -226,7 +226,8 @@ class VaRA(ResearchTool[VaRACodeBase]):
                     highest_version = match_version
 
         if highest_version == -1:
-            warning_str = f"No version in {sub_prj_name} matched the release pattern."
+            warning_str = f"No version in {sub_prj_name} matched the release " \
+                          f"pattern."
             LOG.warning(warning_str)
             raise LookupError
 
