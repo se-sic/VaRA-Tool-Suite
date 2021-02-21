@@ -215,10 +215,11 @@ def _create_corresponding_pygit_bug(
         pydrill_repo.get_commit(closing_commit)
     )
 
-    for _, introducing_string in blame_dict:
-        introducing_pycommits.add(
-            project_repo.revparse_single(introducing_string)
-        )
+    for _, introducing_set in blame_dict.items():
+        for introducing_id in introducing_set:
+            introducing_pycommits.add(
+                project_repo.revparse_single(introducing_id)
+            )
 
     return PygitBug(closing_pycommit, introducing_pycommits, issue_number)
 
@@ -245,10 +246,13 @@ def _create_corresponding_raw_bug(
 
     introducing_ids: tp.Set[str] = set()
 
-    blame_dict = pydrill_repo.get_commits_last_modified_lines(closing_commit)
+    blame_dict = pydrill_repo.get_commits_last_modified_lines(
+        pydrill_repo.get_commit(closing_commit)
+    )
 
-    for _, introducing_id in blame_dict:
-        introducing_ids.add(introducing_id)
+    for _, introducing_set in blame_dict.items():
+        for introducing_id in introducing_set:
+            introducing_ids.add(introducing_id)
 
     return RawBug(closing_commit, introducing_ids, issue_number)
 
