@@ -2,6 +2,7 @@
 import unittest
 from unittest.mock import create_autospec, patch
 
+import pydriller
 import pygit2
 from github.Issue import Issue
 from github.IssueEvent import IssueEvent
@@ -122,12 +123,21 @@ class TestBugDetectionStrategies(unittest.TestCase):
             pygit2.Repository.revparse_single, return_value=issue_commit
         )
 
-        pybug = _create_corresponding_pygit_bug(
-            issue_event.commit_id, mock_repo, issue_event.issue.number
+        mock_pydrill_repo = create_autospec(pydriller.GitRepository)
+        mock_pydrill_repo.get_commits_last_modified_lines = create_autospec(
+            pydriller.GitRepository.get_commits_last_modified_lines,
+            return_value={}
         )
 
-        self.assertEqual(pybug.fixing_commit.hex, issue_event.commit_id)
-        self.assertEqual(pybug.issue_id, issue_event.issue.number)
+        with patch(
+            'varats.provider.bug.bug.pydriller.GitRepository', mock_pydrill_repo
+        ):
+            pybug = _create_corresponding_pygit_bug(
+                issue_event.commit_id, mock_repo, issue_event.issue.number
+            )
+
+            self.assertEqual(pybug.fixing_commit.hex, issue_event.commit_id)
+            self.assertEqual(pybug.issue_id, issue_event.issue.number)
 
     def test_filter_issue_bugs(self):
         """Test on a set of IssueEvents whether the corresponding set of bugs is
@@ -193,12 +203,21 @@ class TestBugDetectionStrategies(unittest.TestCase):
         def mock_get_repo(_project_name: str):
             return mock_repo
 
+        mock_pydrill_repo = create_autospec(pydriller.GitRepository)
+        mock_pydrill_repo.get_commits_last_modified_lines = create_autospec(
+            pydriller.GitRepository.get_commits_last_modified_lines,
+            return_value={}
+        )
+
         with patch(
                 'varats.provider.bug.bug._get_all_issue_events',
                 mock_get_all_issue_events),\
             patch(
                 'varats.provider.bug.bug.get_local_project_git',
-                mock_get_repo):
+                mock_get_repo),\
+            patch(
+                'varats.provider.bug.bug.pydriller.GitRepository',
+                mock_pydrill_repo):
 
             # issue filter method for pygit bugs
             def accept_pybugs(event: IssueEvent):
@@ -274,9 +293,18 @@ class TestBugDetectionStrategies(unittest.TestCase):
         def mock_get_repo(_project_name: str):
             return mock_repo
 
+        mock_pydrill_repo = create_autospec(pydriller.GitRepository)
+        mock_pydrill_repo.get_commits_last_modified_lines = create_autospec(
+            pydriller.GitRepository.get_commits_last_modified_lines,
+            return_value={}
+        )
+
         with patch(
-            'varats.provider.bug.bug.get_local_project_git', mock_get_repo
-        ):
+                'varats.provider.bug.bug.get_local_project_git',
+                mock_get_repo),\
+            patch(
+                'varats.provider.bug.bug.pydriller.GitRepository',
+                mock_pydrill_repo):
 
             # commit filter method for pygit bugs
             def accept_pybugs(commit: pygit2.Commit):
