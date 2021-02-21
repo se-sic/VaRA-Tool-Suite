@@ -360,11 +360,81 @@ class TestBugProvider(unittest.TestCase):
             "Fixes return type of multiply\n", "Multiplication result fix\n"
         }
 
+        # asserting correct fixes have been found
         self.assertEqual(rawbug_fix_ids, expected_ids)
         self.assertEqual(pybug_fix_ids, expected_ids)
         self.assertEqual(pybug_fix_msgs, expected_msgs)
 
-        pybugs_last_fixed = provider.find_pygit_bug_by_fix(
+        # find certain pybugs searching them by their fixing hashes
+        pybug_first = provider.find_pygit_bug_by_fix(
+            "ddf0ba95408dc5508504c84e6616c49128410389"
+        )
+        pybug_first_intro_ids = set(
+            intro_commit.hex
+            for intro_commit in next(iter(pybug_first)).introducing_commits
+        )
+
+        pybug_second = provider.find_pygit_bug_by_fix(
+            "d846bdbe45e4d64a34115f5285079e1b5f84007f"
+        )
+        pybug_second_intro_ids = set(
+            intro_commit.hex
+            for intro_commit in next(iter(pybug_second)).introducing_commits
+        )
+
+        pybug_third = provider.find_pygit_bug_by_fix(
+            "2da78b2820370f6759e9086fad74155d6655e93b"
+        )
+        pybug_third_intro_ids = set(
+            intro_commit.hex
+            for intro_commit in next(iter(pybug_third)).introducing_commits
+        )
+
+        pybug_fourth = provider.find_pygit_bug_by_fix(
             "3b76c8d295385358375fefdb0cf045d97ad2d193"
         )
-        self.assertTrue(len(pybugs_last_fixed) == 1)
+        pybug_fourth_intro_ids = set(
+            intro_commit.hex
+            for intro_commit in next(iter(pybug_fourth)).introducing_commits
+        )
+
+        # find certain rawbugs searching them by their fixing hashes
+        rawbug_first = provider.find_raw_bug_by_fix(
+            "ddf0ba95408dc5508504c84e6616c49128410389"
+        )
+        rawbug_first_intro_ids = next(iter(rawbug_first)).introducing_commits
+
+        rawbug_second = provider.find_raw_bug_by_fix(
+            "d846bdbe45e4d64a34115f5285079e1b5f84007f"
+        )
+        rawbug_second_intro_ids = next(iter(rawbug_second)).introducing_commits
+
+        rawbug_third = provider.find_raw_bug_by_fix(
+            "2da78b2820370f6759e9086fad74155d6655e93b"
+        )
+        rawbug_third_intro_ids = next(iter(rawbug_third)).introducing_commits
+
+        rawbug_fourth = provider.find_raw_bug_by_fix(
+            "3b76c8d295385358375fefdb0cf045d97ad2d193"
+        )
+        rawbug_fourth_intro_ids = next(iter(rawbug_fourth)).introducing_commits
+
+        expected_first = {"343bea18b421cfa2eb5945b2672f62f171abcc83"}
+        expected_second = {"343bea18b421cfa2eb5945b2672f62f171abcc83"}
+        expected_third = {"8fae311154a28b7928fe667b6aad09319259b1aa"}
+        expected_fourth = {
+            "c4b7bd9a2cedf1eb67d13be3cf4e826273cfe17b",
+            "8fae311154a28b7928fe667b6aad09319259b1aa"
+        }
+
+        self.assertEqual(pybug_first_intro_ids, expected_first)
+        self.assertEqual(rawbug_first_intro_ids, expected_first)
+
+        self.assertEqual(pybug_second_intro_ids, expected_second)
+        self.assertEqual(rawbug_second_intro_ids, expected_second)
+
+        self.assertEqual(pybug_third_intro_ids, expected_third)
+        self.assertEqual(rawbug_third_intro_ids, expected_third)
+
+        self.assertEqual(pybug_fourth_intro_ids, expected_fourth)
+        self.assertEqual(rawbug_fourth_intro_ids, expected_fourth)
