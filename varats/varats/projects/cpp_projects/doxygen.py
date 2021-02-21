@@ -13,6 +13,7 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
     BinaryType,
+    verify_binaries,
 )
 from varats.utils.settings import bb_cfg
 
@@ -65,6 +66,8 @@ class Doxygen(bb.Project):  # type: ignore
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
             bb.watch(cp)("bin/doxygen", ".")
+
+            verify_binaries(self)
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

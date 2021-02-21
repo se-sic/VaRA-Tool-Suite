@@ -1,9 +1,12 @@
 argparse-utils>=1.2.0
 benchbuild>=6.0.1
+graphviz>=0.14.2
 jupyter>=1.0.0
+kaleido>=0.1.0
 matplotlib>=3.1.2
 packaging>=20.1
 pandas>=0.22.0
+plotly>=4.14.1
 plumbum>=1.6.6
 pre-commit>=2.3.0
 PyDriller>=1.15.5
