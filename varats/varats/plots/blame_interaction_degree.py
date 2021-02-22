@@ -19,6 +19,9 @@ from matplotlib import cm
 from plotly import graph_objs as go  # type: ignore
 from plotly import io as pio
 
+from varats.data.databases.blame_diff_library_interaction_database import (
+    BlameDiffLibraryInteractionDatabase,
+)
 from varats.data.databases.blame_interaction_degree_database import (
     BlameInteractionDegreeDatabase,
     DegreeType,
@@ -26,6 +29,7 @@ from varats.data.databases.blame_interaction_degree_database import (
 from varats.data.databases.blame_library_interactions_database import (
     BlameLibraryInteractionsDatabase,
 )
+from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.mapping.commit_map import CommitMap
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plots.bug_annotation import draw_bugs
@@ -288,7 +292,6 @@ def _plot_fraction_overview(
     with_churn: bool, unique_revisions: tp.List[str],
     plot_cfg: tp.Dict[str, tp.Any], plot_kwargs: tp.Dict[str, tp.Any]
 ) -> None:
-
     fig = plt.figure()
     grid_spec = fig.add_gridspec(3, 1)
     out_axis = fig.add_subplot(grid_spec[0, :])
@@ -661,7 +664,6 @@ def _build_graphviz_edges(
     show_edge_weight: bool,
     edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None
 ) -> LibraryToHashesMapping:
-
     base_lib_names = _get_distinct_base_lib_names(df)
     inter_lib_names = _get_distinct_inter_lib_names(df)
     all_distinct_lib_names = sorted(set(base_lib_names + inter_lib_names))
@@ -744,15 +746,28 @@ class BlameLibraryInteraction(Plot):
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
 
-    def _get_interaction_data(self) -> pd.DataFrame:
+    def _get_interaction_data(self, blame_diff: bool = False) -> pd.DataFrame:
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
         case_study = self.plot_kwargs.get('plot_case_study', None)
         project_name = self.plot_kwargs["project"]
-        lib_interaction_df = \
-            BlameLibraryInteractionsDatabase.get_data_for_project(
-                project_name, ["revision", "time_id", "base_hash", "base_lib",
-                               "inter_hash", "inter_lib", "amount"],
-                commit_map, case_study)
+
+        variables = [
+            "time_id", "base_hash", "base_lib", "inter_hash", "inter_lib",
+            "amount"
+        ]
+
+        if blame_diff:
+            lib_interaction_df = \
+                BlameDiffLibraryInteractionDatabase.get_data_for_project(
+                    project_name, ["revision", *variables], commit_map,
+                    case_study
+                )
+        else:
+            lib_interaction_df = \
+                BlameLibraryInteractionsDatabase.get_data_for_project(
+                    project_name, ["revision", *variables], commit_map,
+                    case_study
+                )
 
         length = len(np.unique(lib_interaction_df['revision']))
         is_empty = lib_interaction_df.empty
@@ -765,6 +780,7 @@ class BlameLibraryInteraction(Plot):
     def _graphviz_plot(
         self,
         view_mode: bool,
+        show_blame_diff: bool = False,
         show_edge_weight: bool = False,
         shown_revision_length: int = 10,
         edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
@@ -772,7 +788,7 @@ class BlameLibraryInteraction(Plot):
         filetype: str = 'pdf'
     ) -> tp.Optional[Digraph]:
 
-        df = self._get_interaction_data()
+        df = self._get_interaction_data(show_blame_diff)
         df.sort_values(by=['time_id'], inplace=True)
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
         df.reset_index(inplace=True)
@@ -1337,7 +1353,7 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
                 "ignored."
             )
         self.__graph = self._graphviz_plot(
-            view_mode=view_mode, show_edge_weight=True
+            view_mode=view_mode, show_edge_weight=True, show_blame_diff=True
         )
 
     def show(self) -> None:

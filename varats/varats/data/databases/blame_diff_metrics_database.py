@@ -37,6 +37,124 @@ from varats.utils.git_util import (
 )
 
 
+def _id_from_paths(paths: tp.Tuple[Path, Path]) -> str:
+    return \
+        f"{MetaReport.get_commit_hash_from_result_file(paths[0].name)}_" \
+        f"{MetaReport.get_commit_hash_from_result_file(paths[1].name)}"
+
+
+def _timestamp_from_paths(paths: tp.Tuple[Path, Path]) -> str:
+    return f"{paths[0].stat().st_mtime_ns}_{paths[1].stat().st_mtime_ns}"
+
+
+def _compare_timestamps(ts1: str, ts2: str) -> bool:
+    ts1_head, ts1_pred = ts1.split("_")
+    ts2_head, ts2_pred = ts2.split("_")
+    return int(ts1_head) > int(ts2_head) or int(ts1_pred) > int(ts2_pred)
+
+
+def _build_report_files_tuple(
+    project_name: str, case_study: CaseStudy
+) -> tp.Tuple[tp.Dict[str, Path], tp.Dict[str, Path]]:
+    report_files: tp.Dict[str, Path] = {
+        MetaReport.get_commit_hash_from_result_file(report.name): report
+        for report in get_processed_revisions_files(
+            project_name,
+            BlameReport,
+            get_case_study_file_name_filter(case_study)
+            if case_study else lambda x: False,
+        )
+    }
+
+    failed_report_files: tp.Dict[str, Path] = {
+        MetaReport.get_commit_hash_from_result_file(report.name): report
+        for report in get_failed_revisions_files(
+            project_name,
+            BlameReport,
+            get_case_study_file_name_filter(case_study)
+            if case_study else lambda x: False,
+        )
+    }
+    return report_files, failed_report_files
+
+
+def _build_report_pairs_tuple(
+    project_name: str, commit_map: CommitMap, case_study: CaseStudy
+):
+    report_files, failed_report_files = _build_report_files_tuple(
+        project_name, case_study
+    )
+
+    if case_study:
+        sampled_revs = case_study.revisions
+    else:
+        sampled_revs = get_processed_revisions(project_name, BlameReport)
+    short_time_id_cache: tp.Dict[str, int] = {
+        rev: commit_map.short_time_id(rev) for rev in sampled_revs
+    }
+
+    report_pairs: tp.List[tp.Tuple[Path, Path]] = [
+        (report, pred) for report, pred in [(
+            report_file,
+            _get_predecessor_report_file(
+                c_hash, commit_map, short_time_id_cache, report_files,
+                sampled_revs
+            )
+        ) for c_hash, report_file in report_files.items()] if pred is not None
+    ]
+
+    failed_report_pairs: tp.List[tp.Tuple[Path, Path]] = [
+        (report, pred) for report, pred in chain.from_iterable(
+            [[(
+                report_file,
+                _get_predecessor_report_file(
+                    c_hash, commit_map, short_time_id_cache, report_files,
+                    sampled_revs
+                )
+            ),
+              (
+                  _get_successor_report_file(
+                      c_hash, commit_map, short_time_id_cache, report_files,
+                      sampled_revs
+                  ), report_file
+              )] for c_hash, report_file in failed_report_files.items()]
+        ) if report is not None and pred is not None
+    ]
+    return report_pairs, failed_report_pairs
+
+
+def _get_predecessor_report_file(
+    c_hash: str, commit_map: CommitMap, short_time_id_cache: tp.Dict[str, int],
+    report_files: tp.Dict[str, Path], sampled_revs: tp.List[str]
+) -> tp.Optional[Path]:
+    commit_time_id = commit_map.short_time_id(c_hash)
+    pred_commits = [(short_time_id_cache[rev], rev)
+                    for rev in sampled_revs
+                    if short_time_id_cache[rev] < commit_time_id]
+
+    if not pred_commits:
+        return None
+
+    pred_report_commit_hash = max(pred_commits, key=lambda x: x[0])[1]
+    return report_files.get(pred_report_commit_hash[:10], None)
+
+
+def _get_successor_report_file(
+    c_hash: str, commit_map: CommitMap, short_time_id_cache: tp.Dict[str, int],
+    report_files: tp.Dict[str, Path], sampled_revs: tp.List[str]
+) -> tp.Optional[Path]:
+    commit_time_id = commit_map.short_time_id(c_hash)
+    succ_commits = [(short_time_id_cache[rev], rev)
+                    for rev in sampled_revs
+                    if short_time_id_cache[rev] > commit_time_id]
+
+    if not succ_commits:
+        return None
+
+    succ_report_commit_hash = min(succ_commits, key=lambda x: x[0])[1]
+    return report_files.get(succ_report_commit_hash[:10], None)
+
+
 class BlameDiffMetricsDatabase(
     EvaluationDatabase,
     cache_id="blame_diff_metrics_data",
@@ -48,22 +166,6 @@ class BlameDiffMetricsDatabase(
 ):
     """Metrics database that contains all different blame-interaction metrics
     that are based on a diff between two `BlameReports`."""
-
-    @staticmethod
-    def _id_from_paths(paths: tp.Tuple[Path, Path]) -> str:
-        return \
-            f"{MetaReport.get_commit_hash_from_result_file(paths[0].name)}_" \
-               f"{MetaReport.get_commit_hash_from_result_file(paths[1].name)}"
-
-    @staticmethod
-    def _timestamp_from_paths(paths: tp.Tuple[Path, Path]) -> str:
-        return f"{paths[0].stat().st_mtime_ns}_{paths[1].stat().st_mtime_ns}"
-
-    @staticmethod
-    def _compare_timestamps(ts1: str, ts2: str) -> bool:
-        ts1_head, ts1_pred = ts1.split("_")
-        ts2_head, ts2_pred = ts2.split("_")
-        return int(ts1_head) > int(ts2_head) or int(ts1_pred) > int(ts2_pred)
 
     @classmethod
     def _load_dataframe(
@@ -168,89 +270,20 @@ class BlameDiffMetricsDatabase(
                     'year':
                         commit_date.year,
                 },
-                             index=[0]),
-                BlameDiffMetricsDatabase._id_from_paths(report_paths),
-                BlameDiffMetricsDatabase._timestamp_from_paths(report_paths)
+                             index=[0]), _id_from_paths(report_paths),
+                _timestamp_from_paths(report_paths)
             )
 
-        def get_predecessor_report_file(c_hash: str) -> tp.Optional[Path]:
-            commit_time_id = commit_map.short_time_id(c_hash)
-            pred_commits = [(short_time_id_cache[rev], rev)
-                            for rev in sampled_revs
-                            if short_time_id_cache[rev] < commit_time_id]
-
-            if not pred_commits:
-                return None
-
-            pred_report_commit_hash = max(pred_commits, key=lambda x: x[0])[1]
-            return report_files.get(pred_report_commit_hash[:10], None)
-
-        def get_successor_report_file(c_hash: str) -> tp.Optional[Path]:
-            commit_time_id = commit_map.short_time_id(c_hash)
-            succ_commits = [(short_time_id_cache[rev], rev)
-                            for rev in sampled_revs
-                            if short_time_id_cache[rev] > commit_time_id]
-
-            if not succ_commits:
-                return None
-
-            succ_report_commit_hash = min(succ_commits, key=lambda x: x[0])[1]
-            return report_files.get(succ_report_commit_hash[:10], None)
-
-        report_files: tp.Dict[str, Path] = {
-            MetaReport.get_commit_hash_from_result_file(report.name): report
-            for report in get_processed_revisions_files(
-                project_name,
-                BlameReport,
-                get_case_study_file_name_filter(case_study)
-                if case_study else lambda x: False,
-            )
-        }
-
-        if case_study:
-            sampled_revs = case_study.revisions
-        else:
-            sampled_revs = get_processed_revisions(project_name, BlameReport)
-        short_time_id_cache: tp.Dict[str, int] = {
-            rev: commit_map.short_time_id(rev) for rev in sampled_revs
-        }
-
-        failed_report_files: tp.Dict[str, Path] = {
-            MetaReport.get_commit_hash_from_result_file(report.name): report
-            for report in get_failed_revisions_files(
-                project_name,
-                BlameReport,
-                get_case_study_file_name_filter(case_study)
-                if case_study else lambda x: False,
-            )
-        }
-
-        report_pairs: tp.List[tp.Tuple[Path, Path]] = [
-            (report, pred)
-            for report, pred in
-            [(report_file, get_predecessor_report_file(c_hash))
-             for c_hash, report_file in report_files.items()]
-            if pred is not None
-        ]
-
-        failed_report_pairs: tp.List[tp.Tuple[Path, Path]] = [
-            (report, pred)
-            for report, pred in chain.from_iterable([[(
-                report_file, get_predecessor_report_file(c_hash)
-            ), (get_successor_report_file(c_hash),
-                report_file)] for c_hash, report_file in failed_report_files.
-                                                     items()])
-            if report is not None and pred is not None
-        ]
+        report_pairs, failed_report_pairs = _build_report_pairs_tuple(
+            project_name, commit_map, case_study
+        )
 
         # cls.CACHE_ID is set by superclass
         # pylint: disable=E1101
         data_frame = build_cached_report_table(
             cls.CACHE_ID, project_name, report_pairs, failed_report_pairs,
             create_dataframe_layout, create_data_frame_for_report,
-            BlameDiffMetricsDatabase._id_from_paths,
-            BlameDiffMetricsDatabase._timestamp_from_paths,
-            BlameDiffMetricsDatabase._compare_timestamps
+            _id_from_paths, _timestamp_from_paths, _compare_timestamps
         )
 
         return data_frame
