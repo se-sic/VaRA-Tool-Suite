@@ -100,13 +100,12 @@ class Xz(bb.Project, CVEProviderHook):  # type: ignore
                 short=True
             )
 
-        self.cflags += ["-fPIC"]
+        #self.cflags += ["-fPIC"]
 
         clang = bb.compiler.cc(self)
         with local.cwd(xz_version_source):
             with local.env(CC=str(clang)):
                 bb.watch(autoreconf)("--install")
-                bb.watch(local["./autogen.sh"])
                 configure = bb.watch(local["./configure"])
 
                 if xz_version in revisions_wo_dynamic_linking:
