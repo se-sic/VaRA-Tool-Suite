@@ -546,8 +546,8 @@ def _save_figure(
         file_name = f"{file_name}_{padded_idx_str}"
 
         figure.render(
-            filename=str(plot_dir) + "/" + plot_subdir + "/" + file_name,
-            directory=plot_dir,
+            filename=file_name,
+            directory=str(plot_dir) + "/" + plot_subdir,
             format=filetype,
             cleanup=True
         )
@@ -704,7 +704,7 @@ def _build_graphviz_fig(
     shown_revision_length: int,
     edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
 ) -> Digraph:
-    graph = Digraph(name="Digraph", strict=True)
+    graph = Digraph(name="Digraph", strict=True, engine="fdp")
     graph.attr(label=f"Revision: {revision}")
     graph.attr(labelloc="t")
 
