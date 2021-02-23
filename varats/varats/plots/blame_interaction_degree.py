@@ -29,7 +29,6 @@ from varats.data.databases.blame_interaction_degree_database import (
 from varats.data.databases.blame_library_interactions_database import (
     BlameLibraryInteractionsDatabase,
 )
-from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.mapping.commit_map import CommitMap
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plots.bug_annotation import draw_bugs

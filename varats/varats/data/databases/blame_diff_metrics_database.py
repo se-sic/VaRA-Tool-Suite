@@ -54,7 +54,7 @@ def _compare_timestamps(ts1: str, ts2: str) -> bool:
 
 
 def _build_report_files_tuple(
-    project_name: str, case_study: CaseStudy
+    project_name: str, case_study: tp.Optional[CaseStudy]
 ) -> tp.Tuple[tp.Dict[str, Path], tp.Dict[str, Path]]:
     report_files: tp.Dict[str, Path] = {
         MetaReport.get_commit_hash_from_result_file(report.name): report
@@ -79,7 +79,7 @@ def _build_report_files_tuple(
 
 
 def _build_report_pairs_tuple(
-    project_name: str, commit_map: CommitMap, case_study: CaseStudy
+    project_name: str, commit_map: CommitMap, case_study: tp.Optional[CaseStudy]
 ):
     report_files, failed_report_files = _build_report_files_tuple(
         project_name, case_study

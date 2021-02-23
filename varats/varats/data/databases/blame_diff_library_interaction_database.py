@@ -61,7 +61,7 @@ class BlameDiffLibraryInteractionDatabase(
             def build_dataframe_row(
                 base_hash: str, base_library: str, inter_hash: str,
                 inter_library: str, amount: int
-            ) -> tp.Dict:
+            ) -> tp.Dict[str, tp.Any]:
 
                 data_dict: tp.Dict[str, tp.Any] = {
                     'revision':
