@@ -78,9 +78,12 @@ def _build_report_files_tuple(
     return report_files, failed_report_files
 
 
+ReportPairTupleList = tp.List[tp.Tuple[Path, Path]]
+
+
 def _build_report_pairs_tuple(
     project_name: str, commit_map: CommitMap, case_study: tp.Optional[CaseStudy]
-):
+) -> tp.Tuple[ReportPairTupleList, ReportPairTupleList]:
     report_files, failed_report_files = _build_report_files_tuple(
         project_name, case_study
     )
