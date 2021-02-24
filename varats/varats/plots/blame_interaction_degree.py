@@ -652,6 +652,24 @@ def _build_sankey_figure(
     return fig
 
 
+def _get_verified_commit_hash(
+    df: pd.DataFrame, show_interactions_of_commit: str
+) -> str:
+    unique_base_hashes = list(
+        np.unique([str(base_hash) for base_hash in df.base_hash])
+    )
+    unique_inter_hashes = list(
+        np.unique([str(inter_hash) for inter_hash in df.inter_hash])
+    )
+    all_unique_hashes = list(
+        np.unique(unique_base_hashes + unique_inter_hashes)
+    )
+
+    return _get_verified_revision(
+        show_interactions_of_commit, all_unique_hashes
+    )
+
+
 LibraryToHashesMapping = tp.Dict[str, tp.List[str]]
 
 
@@ -659,8 +677,14 @@ def _build_graphviz_edges(
     df: pd.DataFrame,
     graph: Digraph,
     show_edge_weight: bool,
-    edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None
+    edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
+    show_interactions_of_commit: tp.Optional[str] = None
 ) -> LibraryToHashesMapping:
+
+    if show_interactions_of_commit is not None:
+        show_interactions_of_commit = _get_verified_commit_hash(
+            df, show_interactions_of_commit
+        )
 
     base_lib_names = _get_distinct_base_lib_names(df)
     inter_lib_names = _get_distinct_inter_lib_names(df)
@@ -675,6 +699,15 @@ def _build_graphviz_edges(
         base_lib = row['base_lib']
         inter_hash = row['inter_hash']
         inter_lib = row['inter_lib']
+
+        base_inter_hash_tuple = (base_hash, inter_hash)
+
+        # Skip edges that do not connect with the specified
+        # ``show_interactions_of_commit`` node.
+        if show_interactions_of_commit is not None and (
+            show_interactions_of_commit not in base_inter_hash_tuple
+        ):
+            continue
 
         label = None
         weight = row['amount']
@@ -701,13 +734,15 @@ def _build_graphviz_fig(
     show_edge_weight: bool,
     shown_revision_length: int,
     edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
+    show_interactions_of_commit: tp.Optional[str] = None,
 ) -> Digraph:
     graph = Digraph(name="Digraph", strict=True)
     graph.attr(label=f"Revision: {revision}")
     graph.attr(labelloc="t")
 
     lib_to_hashes_mapping = _build_graphviz_edges(
-        df, graph, show_edge_weight, edge_weight_threshold
+        df, graph, show_edge_weight, edge_weight_threshold,
+        show_interactions_of_commit
     )
 
     for lib_name, c_hash_list in lib_to_hashes_mapping.items():
@@ -768,6 +803,7 @@ class BlameLibraryInteraction(Plot):
         show_edge_weight: bool = False,
         shown_revision_length: int = 10,
         edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
+        show_interactions_of_commit: tp.Optional[str] = None,
         save_path: tp.Optional[Path] = None,
         filetype: str = 'pdf'
     ) -> tp.Optional[Digraph]:
@@ -787,7 +823,7 @@ class BlameLibraryInteraction(Plot):
             dataframe = df.loc[df['revision'] == rev]
             fig = _build_graphviz_fig(
                 dataframe, rev, show_edge_weight, shown_revision_length,
-                edge_weight_threshold
+                edge_weight_threshold, show_interactions_of_commit
             )
 
             if view_mode and 'revision' in self.plot_kwargs:
@@ -1337,7 +1373,8 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
                 "ignored."
             )
         self.__graph = self._graphviz_plot(
-            view_mode=view_mode, show_edge_weight=True
+            view_mode=view_mode,
+            show_edge_weight=True,
         )
 
     def show(self) -> None:
