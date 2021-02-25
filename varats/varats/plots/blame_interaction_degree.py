@@ -654,6 +654,34 @@ def _build_sankey_figure(
     return fig
 
 
+def _add_diff_amount_col_to_df(
+    inter_df: pd.DataFrame, diff_df: pd.DataFrame
+) -> pd.DataFrame:
+    """Adds the ``amount`` of rows from ``diff_df`` to the same rows of
+    ``inter_df`` in a new column named ``diff_amount``."""
+
+    merged_df = pd.merge(
+        inter_df,
+        diff_df,
+        on=[
+            "revision", "time_id", "base_hash", "base_lib", "inter_hash",
+            "inter_lib"
+        ],
+        how='left',
+        indicator="diff_amount"
+    )
+
+    # Adds the amount from diff_df to rows that exist in both dataframes
+    merged_df['diff_amount'] = np.where(
+        merged_df.diff_amount == 'both', merged_df.amount_y, 0
+    )
+
+    merged_df.rename(columns={"amount_x": "amount"}, inplace=True)
+    del merged_df["amount_y"]
+
+    return merged_df
+
+
 LibraryToHashesMapping = tp.Dict[str, tp.List[str]]
 
 
@@ -678,16 +706,23 @@ def _build_graphviz_edges(
         inter_lib = row['inter_lib']
 
         label = None
+        color = "black"
         weight = row['amount']
+        diff_weight = int(row['diff_amount'])
 
         if not edge_weight_threshold or weight >= edge_weight_threshold.value:
             if show_edge_weight:
                 label = str(weight)
 
+            if diff_weight > 0:
+                color = "orange"
+                label = f"({label}/{str(diff_weight)})"
+
             graph.edge(
                 f'{base_hash}_{base_lib}',
                 f'{inter_hash}_{inter_lib}',
-                label=label
+                label=label,
+                color=color
             )
 
         lib_to_hashes_mapping[base_lib].append(base_hash)
@@ -771,7 +806,7 @@ class BlameLibraryInteraction(Plot):
         length = len(np.unique(lib_interaction_df['revision']))
         is_empty = lib_interaction_df.empty
 
-        if is_empty or length == 1:
+        if not blame_diff and (is_empty or length == 1):
             # Need more than one data point
             raise PlotDataEmpty
         return lib_interaction_df
@@ -779,6 +814,7 @@ class BlameLibraryInteraction(Plot):
     def _graphviz_plot(
         self,
         view_mode: bool,
+        show_blame_interactions: bool = True,
         show_blame_diff: bool = False,
         show_edge_weight: bool = False,
         shown_revision_length: int = 10,
@@ -787,7 +823,29 @@ class BlameLibraryInteraction(Plot):
         filetype: str = 'pdf'
     ) -> tp.Optional[Digraph]:
 
-        df = self._get_interaction_data(show_blame_diff)
+        def _get_graphviz_project_data(
+            blame_interactions: bool, blame_diff: bool
+        ) -> pd.DataFrame:
+            if not blame_interactions and not blame_diff:
+                LOG.warning(
+                    "You set neither 'show_blame_interactions', "
+                    "'show_blame_diff', or both to 'True'. Aborting."
+                )
+                raise PlotDataEmpty
+
+            if blame_interactions and blame_diff:
+                inter_df = self._get_interaction_data(False)
+                diff_df = self._get_interaction_data(True)
+                return _add_diff_amount_col_to_df(inter_df, diff_df)
+
+            if blame_interactions:
+                return self._get_interaction_data(False)
+
+            return self._get_interaction_data(True)
+
+        df = _get_graphviz_project_data(
+            show_blame_interactions, show_blame_diff
+        )
         df.sort_values(by=['time_id'], inplace=True)
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
         df.reset_index(inplace=True)
@@ -1352,7 +1410,10 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
                 "ignored."
             )
         self.__graph = self._graphviz_plot(
-            view_mode=view_mode, show_edge_weight=True, show_blame_diff=True
+            view_mode=view_mode,
+            show_edge_weight=True,
+            show_blame_interactions=True,
+            show_blame_diff=True
         )
 
     def show(self) -> None:
