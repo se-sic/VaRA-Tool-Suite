@@ -521,12 +521,12 @@ def _save_figure(
     padded_idx_str = str(revision_idx).rjust(max_idx_digit_num, str(0))
 
     if path is None:
-        plot_dir = plot_kwargs["plot_dir"]
+        plot_dir = Path(plot_kwargs["plot_dir"])
     else:
         plot_dir = path
 
     file_name = plot_file_name.rsplit('.', 1)[0]
-    plot_subdir = plot_kwargs["plot_type"]
+    plot_subdir = Path(plot_kwargs["plot_type"])
 
     with pb.local.cwd(plot_dir):
         if not isdir(plot_subdir):
@@ -537,7 +537,7 @@ def _save_figure(
 
         pio.write_image(
             fig=figure,
-            file=str(plot_dir) + "/" + plot_subdir + "/" + file_name,
+            file=str(plot_dir / plot_subdir / file_name),
             format=filetype
         )
 
@@ -546,7 +546,7 @@ def _save_figure(
 
         figure.render(
             filename=file_name,
-            directory=str(plot_dir) + "/" + plot_subdir,
+            directory=str(plot_dir / plot_subdir),
             format=filetype,
             cleanup=True
         )
@@ -1412,8 +1412,7 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
         self.__graph = self._graphviz_plot(
             view_mode=view_mode,
             show_edge_weight=True,
-            show_blame_interactions=True,
-            show_blame_diff=True
+            show_blame_interactions=True
         )
 
     def show(self) -> None:
