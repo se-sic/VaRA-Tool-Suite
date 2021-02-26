@@ -708,7 +708,11 @@ def _build_graphviz_edges(
         label = None
         color = "black"
         weight = row['amount']
-        diff_weight = int(row['diff_amount'])
+
+        if 'diff_amount' in row:
+            diff_weight = int(row['diff_amount'])
+        else:
+            diff_weight = 0
 
         if not edge_weight_threshold or weight >= edge_weight_threshold.value:
             if show_edge_weight:
@@ -737,10 +741,16 @@ def _build_graphviz_fig(
     show_edge_weight: bool,
     shown_revision_length: int,
     edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
+    layout_engine: str = 'fdp'
 ) -> Digraph:
-    graph = Digraph(name="Digraph", strict=True, engine="fdp")
+    graph = Digraph(name="Digraph", strict=True, engine=layout_engine)
     graph.attr(label=f"Revision: {revision}")
     graph.attr(labelloc="t")
+
+    if layout_engine == "fdp":
+        graph.attr(splines="True")
+        graph.attr(overlap="False")
+        graph.attr(nodesep="1")
 
     lib_to_hashes_mapping = _build_graphviz_edges(
         df, graph, show_edge_weight, edge_weight_threshold
@@ -819,6 +829,7 @@ class BlameLibraryInteraction(Plot):
         show_edge_weight: bool = False,
         shown_revision_length: int = 10,
         edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
+        layout_engine: str = 'dot',
         save_path: tp.Optional[Path] = None,
         filetype: str = 'pdf'
     ) -> tp.Optional[Digraph]:
@@ -828,7 +839,7 @@ class BlameLibraryInteraction(Plot):
         ) -> pd.DataFrame:
             if not blame_interactions and not blame_diff:
                 LOG.warning(
-                    "You set neither 'show_blame_interactions', "
+                    "You have to set either 'show_blame_interactions', "
                     "'show_blame_diff', or both to 'True'. Aborting."
                 )
                 raise PlotDataEmpty
@@ -860,7 +871,7 @@ class BlameLibraryInteraction(Plot):
             dataframe = df.loc[df['revision'] == rev]
             fig = _build_graphviz_fig(
                 dataframe, rev, show_edge_weight, shown_revision_length,
-                edge_weight_threshold
+                edge_weight_threshold, layout_engine
             )
 
             if view_mode and 'revision' in self.plot_kwargs:
@@ -1390,7 +1401,9 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
     Plotting the interactions between all commits of multiple libraries.
 
     To view one plot, select view_mode=True and pass the selected revision as
-    key-value pair after the plot name. E.g., revision=Foo
+    key-value pair after the plot name. E.g., revision=Foo. When the layout
+    engine fdp is chosen, the additional graph attributes 'splines=True',
+    'overlap=False', and 'nodesep=1' are added.
     """
 
     NAME = 'b_multi_lib_interaction_graphviz'
@@ -1410,9 +1423,7 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
                 "ignored."
             )
         self.__graph = self._graphviz_plot(
-            view_mode=view_mode,
-            show_edge_weight=True,
-            show_blame_interactions=True
+            view_mode=view_mode, show_edge_weight=True
         )
 
     def show(self) -> None:
