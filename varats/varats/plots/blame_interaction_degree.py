@@ -830,9 +830,9 @@ class BlameLibraryInteraction(Plot):
         show_edge_weight: bool = False,
         shown_revision_length: int = 10,
         edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
-        layout_engine: str = 'dot',
+        layout_engine: str = 'fdp',
         save_path: tp.Optional[Path] = None,
-        filetype: str = 'pdf'
+        filetype: str = 'png'
     ) -> tp.Optional[Digraph]:
 
         def _get_graphviz_project_data(
