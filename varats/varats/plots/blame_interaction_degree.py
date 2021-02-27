@@ -720,7 +720,8 @@ def _build_graphviz_edges(
 
             if diff_weight > 0:
                 color = "orange"
-                label = f"({label}/{str(diff_weight)})"
+                plus_minus = u'\u00b1'
+                label = f"{label} ({plus_minus}{str(diff_weight)})"
 
             graph.edge(
                 f'{base_hash}_{base_lib}',
