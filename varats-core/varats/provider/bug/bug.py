@@ -251,8 +251,7 @@ def _create_corresponding_raw_bug(
     )
 
     for _, introducing_set in blame_dict.items():
-        for introducing_id in introducing_set:
-            introducing_ids.add(introducing_id)
+        introducing_ids.update(introducing_set)
 
     return RawBug(closing_commit, introducing_ids, issue_number)
 
