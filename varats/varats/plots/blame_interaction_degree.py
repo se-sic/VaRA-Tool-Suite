@@ -223,7 +223,8 @@ def _generate_stackplot(
 
 
 def _calc_fractions(
-    unique_revisions: tp.List[str],
+    unique_revisions: tp.List[str], all_base_lib_names: tp.List[str],
+    all_inter_lib_names: tp.List[str],
     revision_to_base_names_mapping: tp.Dict[str, tp.List[str]],
     revision_to_inter_names_mapping: tp.Dict[str, tp.List[str]],
     revision_to_dataframes_mapping: tp.Dict[str, pd.DataFrame],
@@ -244,6 +245,15 @@ def _calc_fractions(
             )
             base_fraction_map.add_fraction_to_lib(base_name, current_fraction)
 
+        # Add fraction value 0 to all libraries that are not yet present in a
+        # revision
+        absent_base_lib_names = set(all_base_lib_names) - set(
+            revision_to_base_names_mapping[rev]
+        )
+
+        for base_name in absent_base_lib_names:
+            base_fraction_map.add_fraction_to_lib(base_name, 0)
+
         for inter_name in revision_to_inter_names_mapping[rev]:
             current_fraction = np.divide(
                 revision_to_dataframes_mapping[rev].loc[
@@ -251,6 +261,12 @@ def _calc_fractions(
                 ].amount.sum(), revision_to_total_amount_mapping[rev]
             )
             inter_fraction_map.add_fraction_to_lib(inter_name, current_fraction)
+
+        absent_inter_lib_names = set(all_inter_lib_names) - set(
+            revision_to_inter_names_mapping[rev]
+        )
+        for inter_name in absent_inter_lib_names:
+            inter_fraction_map.add_fraction_to_lib(inter_name, 0)
 
     return base_fraction_map, inter_fraction_map
 
@@ -968,6 +984,8 @@ class BlameDegree(Plot):
         df = df[df.degree_type == degree_type.value]
         df.sort_values(by=['time_id'], inplace=True)
         df.reset_index(inplace=True)
+        all_base_lib_names = _get_distinct_base_lib_names(df)
+        all_inter_lib_names = _get_distinct_inter_lib_names(df)
         revision_df = pd.DataFrame(df["revision"])
         unique_revisions = _get_unique_revisions(revision_df)
         grouped_df: pd.DataFrame = df.groupby(['revision'])
@@ -997,9 +1015,9 @@ class BlameDegree(Plot):
                 )
 
         base_lib_fraction_map, inter_lib_fraction_map = _calc_fractions(
-            unique_revisions, revision_to_base_names_mapping,
-            revision_to_inter_names_mapping, revision_to_dataframes_mapping,
-            revision_to_total_amount_mapping
+            unique_revisions, all_base_lib_names, all_inter_lib_names,
+            revision_to_base_names_mapping, revision_to_inter_names_mapping,
+            revision_to_dataframes_mapping, revision_to_total_amount_mapping
         )
 
         _plot_fraction_overview(
