@@ -6,12 +6,10 @@ import shutil
 import typing as tp
 from pathlib import Path
 
-from benchbuild.environments.domain.declarative import ContainerImage
 from benchbuild.utils.cmd import ln, mkdir
 from plumbum import local
 from PyQt5.QtCore import QProcess
 
-from varats.containers import containers
 from varats.plot.plot_utils import check_required_args
 from varats.tools.research_tools.research_tool import (
     CodeBase,
@@ -29,6 +27,9 @@ from varats.tools.research_tools.vara_manager import (
 from varats.utils.exceptions import ProcessTerminatedError
 from varats.utils.logger_util import log_without_linesep
 from varats.utils.settings import save_config, vara_cfg
+
+if tp.TYPE_CHECKING:
+    from varats.containers.containers import BaseImageCreationContext
 
 LOG = logging.getLogger(__name__)
 
@@ -265,26 +266,28 @@ class VaRA(ResearchTool[VaRACodeBase]):
         return status_ok
 
     def add_container_layers(
-        self, layers: ContainerImage, distro: Distro
-    ) -> ContainerImage:
+        self, image_context: 'BaseImageCreationContext'
+    ) -> None:
         """
         Add the layers required for this research tool to the given container.
 
         Args:
-            layers: the container to add the layers to
-            distro: distro used by the layers
-
-        Returns:
-            the container with the added layers
+            image_context: the base image creation context
         """
         if not self.verify_install(self.install_location()):
             raise AssertionError(
                 "VaRA is not correctly installed on your system."
             )
 
-        container_vara_dir = containers.CONTAINER_VARATS_ROOT / "tools/VaRA"
-        layers.run(*(self.DEPENDENCIES.get_install_command(distro).split(" ")))
-        layers.copy_([str(self.install_location())], str(container_vara_dir))
-        layers.env(BB_ENV=f"{{PATH: [{str(container_vara_dir / 'bin')}]}}")
-
-        return layers
+        container_vara_dir = image_context.varats_root / "tools/VaRA"
+        image_context.layers.run(
+            *(
+                self.DEPENDENCIES.get_install_command(image_context.distro
+                                                     ).split(" ")
+            )
+        )
+        image_context.layers.copy_([str(self.install_location())],
+                                   str(container_vara_dir))
+        image_context.layers.env(
+            BB_ENV=f"{{PATH: [{str(container_vara_dir / 'bin')}]}}"
+        )

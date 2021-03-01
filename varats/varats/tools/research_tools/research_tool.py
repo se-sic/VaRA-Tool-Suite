@@ -6,8 +6,6 @@ import typing as tp
 from enum import Enum
 from pathlib import Path
 
-from benchbuild.environments.domain.declarative import ContainerImage
-
 from varats.tools.research_tools.vara_manager import (
     BuildType,
     add_remote,
@@ -28,6 +26,9 @@ from varats.tools.research_tools.vara_manager import (
 from varats.utils.filesystem_util import FolderAlreadyPresentError
 from varats.utils.git_util import get_current_branch
 from varats.utils.logger_util import log_without_linesep
+
+if tp.TYPE_CHECKING:
+    from varats.containers.containers import BaseImageCreationContext
 
 
 class Distro(Enum):
@@ -391,14 +392,11 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
 
     @abc.abstractmethod
     def add_container_layers(
-        self, layers: ContainerImage, distro: Distro
-    ) -> ContainerImage:
+        self, image_context: 'BaseImageCreationContext'
+    ) -> None:
         """
         Add the layers required for this research tool to the given container.
 
         Args:
-            layers: the container to add the layers to
-
-        Returns:
-            the container with the added layers
+            image_context: the base image creation context
         """

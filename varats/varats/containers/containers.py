@@ -57,22 +57,94 @@ class ImageBase(Enum):
         return self.__distro
 
 
-__BASE_IMAGES: tp.Dict[ImageBase, ContainerImage] = {
+_BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[], ContainerImage]] = {
     ImageBase.DEBIAN_10:
-        ContainerImage().from_("docker.io/library/debian:10"
-                              ).run('apt', 'update').run(
-                                  'apt', 'install', '-y', 'python3',
-                                  'python3-dev', 'python3-pip', 'musl-dev',
-                                  'git', 'gcc', 'libgit2-dev', 'libffi-dev',
-                                  'libyaml-dev', 'clang'
-                              )
+        lambda: ContainerImage().from_("docker.io/library/debian:10").
+        run('apt', 'update').run(
+            'apt', 'install', '-y', 'python3', 'python3-dev', 'python3-pip',
+            'musl-dev', 'git', 'gcc', 'libgit2-dev', 'libffi-dev',
+            'libyaml-dev', 'clang'
+        )
 }
 
-CONTAINER_VARATS_ROOT: Path = Path("/varats_root/")
-CONTAINER_BB_ROOT: Path = Path("/app/")
+
+class BaseImageCreationContext():
+    """
+    Context for base image creation.
+
+    This class stores context information when creating a base image.
+    """
+
+    def __init__(self, base: ImageBase, tmpdir: Path):
+        self.__layers = _BASE_IMAGES[base]()
+        self.__distro = base.distro
+        self.__image_name = base.image_name
+        self.__tmpdir = tmpdir
+
+    @property
+    def layers(self) -> ContainerImage:
+        """
+        Layers of the container that is being created using this context.
+
+        Users of this context can use this object to add new layers.
+
+        Returns:
+            the container layers
+        """
+        return self.__layers
+
+    @property
+    def image_name(self) -> str:
+        """
+        Name of the image that is being created.
+
+        Returns:
+            the name of the image that is being created
+        """
+        return self.__image_name
+
+    @property
+    def distro(self) -> Distro:
+        """
+        Distro the image that is being created is based on.
+
+        Returns:
+            the distro of the image that is being created
+        """
+        return self.__distro
+
+    @property
+    def varats_root(self) -> Path:
+        """
+        VaRA-TS root inside the container.
+
+        Returns:
+            the VaRA-TS root inside the container
+        """
+        return Path("/varats_root/")
+
+    @property
+    def bb_root(self) -> Path:
+        """
+        BenchBuild root inside the container.
+
+        Returns:
+            the BenchBuild root inside the container
+        """
+        return Path("/app/")
+
+    @property
+    def tmpdir(self) -> Path:
+        """
+        Temporary directory that can be used during image creation.
+
+        Returns:
+            the path to the temporary directory
+        """
+        return self.__tmpdir
 
 
-def _add_varats_layers(layers: ContainerImage) -> ContainerImage:
+def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
     crun = bb_cfg()['container']['runtime'].value
     src_dir = Path(vara_cfg()['container']['varats_source'].value)
     tgt_dir = Path('/varats')
@@ -98,38 +170,33 @@ def _add_varats_layers(layers: ContainerImage) -> ContainerImage:
         image.run('pip3', 'install', 'varats-core', 'varats', runtime=crun)
 
     if bool(vara_cfg()['container']['from_source']):
-        from_source(layers)
+        from_source(image_context.layers)
     else:
-        from_pip(layers)
-    return layers
+        from_pip(image_context.layers)
 
 
-def _add_vara_config(layers: ContainerImage, tmp_dir: str) -> ContainerImage:
+def _add_vara_config(image_context: BaseImageCreationContext) -> None:
     config = deepcopy(vara_cfg())
-    config_file = tmp_dir + "/.varats.yaml"
+    config_file = str(image_context.tmpdir / ".varats.yaml")
 
-    config["config_file"] = str(CONTAINER_VARATS_ROOT / ".varats.yaml")
-    config["result_dir"] = str(CONTAINER_VARATS_ROOT / "results/")
+    config["config_file"] = str(image_context.varats_root / ".varats.yaml")
+    config["result_dir"] = str(image_context.varats_root / "results/")
     config["paper_config"]["folder"] = str(
-        CONTAINER_VARATS_ROOT / "paper_configs/"
+        image_context.varats_root / "paper_configs/"
     )
-    config["benchbuild_root"] = str(CONTAINER_BB_ROOT)
+    config["benchbuild_root"] = str(image_context.bb_root)
 
     config.store(local.path(config_file))
-    layers.copy_([config_file], config["config_file"].value)
-    layers.env(VARATS_CONFIG_FILE=config["config_file"].value)
-
-    return layers
+    image_context.layers.copy_([config_file], config["config_file"].value)
+    image_context.layers.env(VARATS_CONFIG_FILE=config["config_file"].value)
 
 
-def _add_benchbuild_config(layers: ContainerImage) -> ContainerImage:
-    layers.env(
-        BB_VARATS_OUTFILE=str(CONTAINER_VARATS_ROOT / "results"),
-        BB_VARATS_RESULT=str(CONTAINER_VARATS_ROOT / "BC_files"),
+def _add_benchbuild_config(image_context: BaseImageCreationContext) -> None:
+    image_context.layers.env(
+        BB_VARATS_OUTFILE=str(image_context.varats_root / "results"),
+        BB_VARATS_RESULT=str(image_context.varats_root / "BC_files"),
         BB_JOBS=str(bb_cfg()["jobs"]),
     )
-
-    return layers
 
 
 def create_base_image(base: ImageBase) -> None:
@@ -140,27 +207,27 @@ def create_base_image(base: ImageBase) -> None:
         base: the image base
     """
     with TemporaryDirectory() as tmpdir:
-        image = __BASE_IMAGES[base]
+        image_context = BaseImageCreationContext(base, Path(tmpdir))
 
         # we need an up-to-date pip version to get the prebuilt pygit2 package
         # with an up-to-date libgit2
-        image.run('pip3', 'install', '--upgrade', 'pip')
-        _add_varats_layers(image)
+        image_context.layers.run('pip3', 'install', '--upgrade', 'pip')
+        _add_varats_layers(image_context)
         # override bb with custom version if bb install from source is active
         if bb_cfg()['container']['from_source']:
-            add_benchbuild_layers(image)
+            add_benchbuild_layers(image_context.layers)
 
         # add research tool if configured
         configured_research_tool = vara_cfg()["container"]["research_tool"]
         if configured_research_tool:
             research_tool = get_research_tool(str(configured_research_tool))
-            research_tool.add_container_layers(image, base.distro)
+            research_tool.add_container_layers(image_context)
 
-        _add_vara_config(image, tmpdir)
-        _add_benchbuild_config(image)
+        _add_vara_config(image_context)
+        _add_benchbuild_config(image_context)
 
-        image.workingdir(str(CONTAINER_BB_ROOT))
-        cmd: Command = CreateImage(base.image_name, image)
+        image_context.layers.workingdir(str(image_context.bb_root))
+        cmd: Command = CreateImage(base.image_name, image_context.layers)
         uow = unit_of_work.ContainerImagesUOW()
         messagebus.handle(cmd, uow)
 
