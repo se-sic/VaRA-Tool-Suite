@@ -226,6 +226,14 @@ def _add_vara_config(image_context: BaseImageCreationContext) -> None:
 
 
 def _add_benchbuild_config(image_context: BaseImageCreationContext) -> None:
+    # copy libraries to image if LD_LIBRARY_PATH is set
+    if "LD_LIBRARY_PATH" in bb_cfg()["env"].value.keys():
+        image_context.layers.copy_([bb_cfg()["env"].value["LD_LIBRARY_PATH"]],
+                                   str(image_context.varats_root / "libs"))
+        image_context.append_to_env(
+            "LD_LIBRARY_PATH", [str(image_context.varats_root / "libs")]
+        )
+    # set BB config via env vars
     image_context.layers.env(
         BB_VARATS_OUTFILE=str(image_context.varats_root / "results"),
         BB_VARATS_RESULT=str(image_context.varats_root / "BC_files"),
