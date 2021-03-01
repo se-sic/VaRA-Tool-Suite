@@ -247,11 +247,11 @@ def _calc_fractions(
 
         # Add fraction value 0 to all libraries that are not yet present in a
         # revision
-        base_lib_names = set(all_base_lib_names) - set(
+        absent_base_lib_names = set(all_base_lib_names) - set(
             revision_to_base_names_mapping[rev]
         )
 
-        for base_name in base_lib_names:
+        for base_name in absent_base_lib_names:
             base_fraction_map.add_fraction_to_lib(base_name, 0)
 
         for inter_name in revision_to_inter_names_mapping[rev]:
@@ -262,10 +262,10 @@ def _calc_fractions(
             )
             inter_fraction_map.add_fraction_to_lib(inter_name, current_fraction)
 
-        inter_lib_names = set(all_inter_lib_names) - set(
+        absent_inter_lib_names = set(all_inter_lib_names) - set(
             revision_to_inter_names_mapping[rev]
         )
-        for inter_name in inter_lib_names:
+        for inter_name in absent_inter_lib_names:
             inter_fraction_map.add_fraction_to_lib(inter_name, 0)
 
     return base_fraction_map, inter_fraction_map
