@@ -114,10 +114,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
     Find the main repo online on github: https://github.com/se-passau/VaRA
     """
 
-    DEPENDENCIES = Dependencies({
-        Distro.DEBIAN: ["libboost-all-dev"],
-        Distro.ARCH: ["boost"]
-    })
+    DEPENDENCIES = Dependencies({})
 
     def __init__(self, base_dir: Path) -> None:
         super().__init__("VaRA", [BuildType.DEV], VaRACodeBase(base_dir))
@@ -280,12 +277,13 @@ class VaRA(ResearchTool[VaRACodeBase]):
             )
 
         container_vara_dir = image_context.varats_root / "tools/VaRA"
-        image_context.layers.run(
-            *(
-                self.DEPENDENCIES.get_install_command(image_context.distro
-                                                     ).split(" ")
+        if self.DEPENDENCIES.has_distro(image_context.distro):
+            image_context.layers.run(
+                *(
+                    self.DEPENDENCIES.get_install_command(image_context.distro
+                                                         ).split(" ")
+                )
             )
-        )
         image_context.layers.copy_([str(self.install_location())],
                                    str(container_vara_dir))
         image_context.append_to_env("PATH", [str(container_vara_dir / 'bin')])

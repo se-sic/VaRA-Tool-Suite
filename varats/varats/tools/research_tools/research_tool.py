@@ -49,6 +49,25 @@ class Dependencies:
     def __init__(self, dependencies: tp.Dict[Distro, tp.List[str]]):
         self.__dependencies = dependencies
 
+    def has_distro(self, distro: Distro) -> bool:
+        """
+        Check whether the given distro occurs in the dependencies.
+
+        Args:
+            distro: the distro to check
+
+        Returns:
+            whether the given distro occurs in the dependencies
+
+        Test:
+        >>> deps = Dependencies({Distro.DEBIAN: ["foo", "bar"]})
+        >>> deps.has_distro(Distro.DEBIAN)
+        True
+        >>> deps.has_distro(Distro.ARCH)
+        False
+        """
+        return distro in self.__dependencies.keys()
+
     def get_install_command(self, distro: Distro) -> str:
         """
         Given a distro, return a command how the dependencies can be installed.
