@@ -57,10 +57,17 @@ class Dependencies:
 
         Returns:
             the command how the dependencies can be installed
+
+        Test:
+        >>> deps = Dependencies({Distro.DEBIAN: ["foo", "bar"], \
+            Distro.ARCH: ["baz"]})
+        >>> deps.get_install_command(Distro.DEBIAN)
+        'apt install -y foo bar'
+        >>> deps.get_install_command(Distro.ARCH)
+        'pacman -S --noconfirm baz'
         """
-        return _install_commands[distro] + " " + " ".join(
-            self.__dependencies[distro]
-        )
+        return f"{_install_commands[distro]} " \
+               f"{' '.join(self.__dependencies[distro])}"
 
 
 class SubProject():
