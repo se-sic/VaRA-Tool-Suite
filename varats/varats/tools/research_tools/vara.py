@@ -288,6 +288,4 @@ class VaRA(ResearchTool[VaRACodeBase]):
         )
         image_context.layers.copy_([str(self.install_location())],
                                    str(container_vara_dir))
-        image_context.layers.env(
-            BB_ENV=f"{{PATH: [{str(container_vara_dir / 'bin')}]}}"
-        )
+        image_context.append_to_env("PATH", [str(container_vara_dir / 'bin')])

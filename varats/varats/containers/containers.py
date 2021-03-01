@@ -2,11 +2,13 @@
 
 import logging
 import typing as tp
+from collections import defaultdict
 from copy import deepcopy
 from enum import Enum
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import yaml
 from benchbuild.environments.domain.commands import (
     Command,
     CreateImage,
@@ -80,6 +82,7 @@ class BaseImageCreationContext():
         self.__distro = base.distro
         self.__image_name = base.image_name
         self.__tmpdir = tmpdir
+        self.__env: tp.Dict[str, tp.List[str]] = defaultdict(list)
 
     @property
     def layers(self) -> ContainerImage:
@@ -143,6 +146,37 @@ class BaseImageCreationContext():
         """
         return self.__tmpdir
 
+    @property
+    def env(self) -> tp.Dict[str, tp.List[str]]:
+        """
+        The current state of the environment to add to the container.
+
+        The environment variables in this dict will be applied to the
+        `BB_ENV` environment variable inside the container.
+
+        Returns:
+            the current state of the environment to add to the container
+        """
+        return dict(self.__env)
+
+    def append_to_env(self, env_var: str, values: tp.List[str]) -> None:
+        """
+        Set a environment variable inside the container.
+
+        Use this instead of calling `layers.env()` directly, except you know
+        what you are doing. Using `layers.env()` directly overrides previously
+        set environment variables in the container (very bad, e.g., for PATH).
+        Environment variables added this way will be applied to the `BB_ENV`
+        environment variable inside the container. This mechanism ensures that
+        the same environment variable can be modified from multiple locations
+        during image creation.
+
+        Args:
+            env_var: name of the env var to set
+            values: value of the env var to set
+        """
+        self.__env[env_var].extend(values)
+
 
 def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
     crun = bb_cfg()['container']['runtime'].value
@@ -196,6 +230,7 @@ def _add_benchbuild_config(image_context: BaseImageCreationContext) -> None:
         BB_VARATS_OUTFILE=str(image_context.varats_root / "results"),
         BB_VARATS_RESULT=str(image_context.varats_root / "BC_files"),
         BB_JOBS=str(bb_cfg()["jobs"]),
+        BB_ENV=yaml.dump(image_context.env)
     )
 
 
