@@ -11,37 +11,37 @@ Setup up a ``virtualenv`` with the tool suite in ``scratch/<user>``.
   cd /scratch/<user>/
   virtualenv -p /usr/bin/python3 vara-virt
 
-Furthermore, this guide assumes that your vara-root directory is ``/scratch/<user>/vara``.
+Furthermore, this guide assumes that your vara-root directory is ``/scratch/<user>/varats``.
 
 .. code-block::
 
-   cd /scratch/<user>/vara
+   cd /scratch/<user>/varats
 
 1. Clone Tool-Suite and set up VaRA
 
-   | We assume that VaRA is installed to ``/scratch/<user>/vara/VaRA``
+   We assume that VaRA is installed to ``/scratch/<user>/varats/tools/VaRA``
 
-2. Edit ``.vara.yaml`` and set options:
+2. Edit ``.varats.yaml`` and set options:
 
 .. code-block::
 
-   - result_dir: /scratch/<user>/vara/results
+   - result_dir: /scratch/<user>/varats/results
    - paper_config:
      - current_config: <your_config>
-     - folder: /scratch/<user>/vara/paper_configs
+     - folder: /scratch/<user>/varats/paper_configs
 
-3. | Create benchbuild config (``vara-gen-bbconfig``)
+3. Create benchbuild config (``vara-gen-bbconfig``)
 
-4. Edit benchbuild config (``/scratch/<user>/vara/benchbuild/.benchbuild.yml``) as needed:
+4. Edit benchbuild config (``/scratch/<user>/varats/benchbuild/.benchbuild.yml``) as needed:
 
    - set benchbuild directories to point to scratch:
 
    .. code-block::
 
       build_dir:
-         value: /scratch/<user>/vara/benchbuild/results
+         value: /scratch/<user>/varats/benchbuild/results
       tmp_dir:
-         value: /scratch/<user>/vara/benchbuild/tmp
+         value: /scratch/<user>/varats/benchbuild/tmp
 
    - set environment variables to point to scratch:
 
@@ -50,7 +50,7 @@ Furthermore, this guide assumes that your vara-root directory is ``/scratch/<use
       env:
         value:
             PATH:
-            - /scratch/<user>/vara/VaRA/bin/
+            - /scratch/<user>/varats/tools/VaRA/bin/
             HOME: /scratch/<user>/
 
    - configure slurm related parameters:
@@ -73,7 +73,7 @@ Furthermore, this guide assumes that your vara-root directory is ``/scratch/<use
    .. code-block::
 
       vara:
-          outfile: /scratch/<user>/vara/results
+          outfile: /scratch/<user>/varats/results
           result: BC_files
 
    - increase verbosity
@@ -103,7 +103,7 @@ Furthermore, this guide assumes that your vara-root directory is ``/scratch/<use
 
    .. code-block::
 
-      #SBATCH -o /scratch/<user>/vara/benchbuild/slurm-output/cs-overview/doxygen/GitBlameAnnotationReport-%A_%a.txt
+      #SBATCH -o /scratch/<user>/varats/benchbuild/slurm-output/gravity/GenerateBlameReport-%A_%a.txt
 
 7. Start a job:
 
@@ -115,9 +115,9 @@ Furthermore, this guide assumes that your vara-root directory is ``/scratch/<use
       # or
       sbatch --constraint=kine bb-configs/<report_type>-slurm-<project>.sh
 
-NOTE: If you want to run the same project again (with GitBlameAnnotationReport), you need to empty the BC_files directory, because the path to the git repository will be different. See `#494 <https://github.com/se-passau/VaRA/issues/494>`_
+NOTE: If you want to run the same project again (with GenerateBlameReport), you need to empty the BC_files directory, because the path to the git repository will be different. See `#494 <https://github.com/se-passau/VaRA/issues/494>`_
 
-To use interaction filters, I recommend storing all of them in a separate directory (e.g., benchbuild/interaction_filters) with descriptive names and symlinking them to the place where the experiment expects them.
+To use interaction filters, we recommend storing all of them in a separate directory (e.g., benchbuild/interaction_filters) with descriptive names and symlinking them to the place where the experiment expects them.
 
 TIP: In case you get strange errors or results, try to empty all temporary directories and try again, e.g.:
 
@@ -135,9 +135,9 @@ If certain libraries needed by vara or clang are missing on the slurm-nodes, you
 
    .. code-block::
 
-      mkdir /scratch/<username>/vara/libs
+      mkdir /scratch/<username>/varats/libs
 
-2. | Copy the necessary libraries from your system to the libs folder
+2. Copy the necessary libraries from your system to the libs folder
 
 3. Add the following entry to the ``env`` section of your benchbuild config:
 
@@ -146,4 +146,4 @@ If certain libraries needed by vara or clang are missing on the slurm-nodes, you
       env:
           value:
               LD_LIBRARY_PATH:
-              - /scratch/<user>/vara/libs
+              - /scratch/<user>/varats/libs
