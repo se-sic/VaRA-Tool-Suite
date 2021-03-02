@@ -69,6 +69,19 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
             version_filter=project_filter_generator(
                 "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             )
+        ),
+        VaraTestRepoSubmodule(
+            remote="LibraryAnalysisRepos"
+            "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            "/earth_lib",
+            local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            "/earth_lib",
+            refspec="HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator(
+                "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            )
         )
     ]
 
