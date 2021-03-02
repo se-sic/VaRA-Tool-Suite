@@ -148,6 +148,8 @@ If certain libraries needed by vara or clang are missing on the slurm-nodes, you
               LD_LIBRARY_PATH:
               - /scratch/<user>/varats/libs
 
+If you are using containers, ``vara-container create`` will detect if such a entry in the BenchBuild config exists, copy all files found in this path into the container, and set the ``LD_LIBRARY_PATH`` inside the container appropriately.
+
 
 Slurm and Container
 -------------------
