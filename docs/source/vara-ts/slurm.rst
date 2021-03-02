@@ -13,7 +13,7 @@ Setup up a ``virtualenv`` with the tool suite in ``scratch/<user>``.
 
 Furthermore, this guide assumes that your vara-root directory is ``/scratch/<user>/varats``.
 
-.. code-block::
+.. code-block:: bash
 
    cd /scratch/<user>/varats
 
@@ -23,7 +23,7 @@ Furthermore, this guide assumes that your vara-root directory is ``/scratch/<use
 
 2. Edit ``.varats.yaml`` and set options:
 
-.. code-block::
+.. code-block:: yaml
 
    - result_dir: /scratch/<user>/varats/results
    - paper_config:
@@ -36,7 +36,7 @@ Furthermore, this guide assumes that your vara-root directory is ``/scratch/<use
 
    - set benchbuild directories to point to scratch:
 
-   .. code-block::
+   .. code-block:: yaml
 
       build_dir:
          value: /scratch/<user>/varats/benchbuild/results
@@ -45,7 +45,7 @@ Furthermore, this guide assumes that your vara-root directory is ``/scratch/<use
 
    - set environment variables to point to scratch:
 
-   .. code-block::
+   .. code-block:: yaml
 
       env:
         value:
@@ -55,7 +55,7 @@ Furthermore, this guide assumes that your vara-root directory is ``/scratch/<use
 
    - configure slurm related parameters:
 
-   .. code-block::
+   .. code-block:: yaml
 
       jobs: '10' # TODO: find good default
       parallel_processes: '4' # TODO: find good default
@@ -70,7 +70,7 @@ Furthermore, this guide assumes that your vara-root directory is ``/scratch/<use
 
    - set vara related options:
 
-   .. code-block::
+   .. code-block:: yaml
 
       vara:
           outfile: /scratch/<user>/varats/results
@@ -78,7 +78,7 @@ Furthermore, this guide assumes that your vara-root directory is ``/scratch/<use
 
    - increase verbosity
 
-   .. code-block::
+   .. code-block:: yaml
 
       verbosity:
         value: <0-4>
@@ -89,25 +89,25 @@ Furthermore, this guide assumes that your vara-root directory is ``/scratch/<use
 
       Activate your virtualenv to use the correct benchbuild
 
-   .. code-block::
+   .. code-block:: bash
 
       benchbuild slurm -E <report_type> <project>
 
    Move resulting script to appropriate subdir, e.g.:
 
-   .. code-block::
+   .. code-block:: bash
 
       mv <report_type>-slurm.sh bb-configs/<report_type>-slurm-<project>.sh
 
 6. (Optional) Modify -o parameter of SBATCH to get output file for debugging, e.g.
 
-   .. code-block::
+   .. code-block:: bash
 
       #SBATCH -o /scratch/<user>/varats/benchbuild/slurm-output/gravity/GenerateBlameReport-%A_%a.txt
 
 7. Start a job:
 
-   .. code-block::
+   .. code-block:: bash
 
       cd benchbuild
 
@@ -133,7 +133,7 @@ If certain libraries needed by vara or clang are missing on the slurm-nodes, you
 
 1. Create a folder for the libraries on scratch
 
-   .. code-block::
+   .. code-block:: bash
 
       mkdir /scratch/<username>/varats/libs
 
@@ -141,7 +141,7 @@ If certain libraries needed by vara or clang are missing on the slurm-nodes, you
 
 3. Add the following entry to the ``env`` section of your benchbuild config:
 
-   .. code-block::
+   .. code-block:: yaml
 
       env:
           value:
