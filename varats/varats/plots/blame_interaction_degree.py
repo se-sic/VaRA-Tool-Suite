@@ -845,15 +845,16 @@ class BlameLibraryInteraction(Plot):
                 )
                 raise PlotDataEmpty
 
-            if blame_interactions and blame_diff:
+            if blame_interactions:
                 inter_df = self._get_interaction_data(False)
+            else:
+                inter_df = self._get_interaction_data(True)
+                
+            if  blame_diff:
                 diff_df = self._get_interaction_data(True)
                 return _add_diff_amount_col_to_df(inter_df, diff_df)
 
-            if blame_interactions:
-                return self._get_interaction_data(False)
-
-            return self._get_interaction_data(True)
+            return inter_df
 
         df = _get_graphviz_project_data(
             show_blame_interactions, show_blame_diff
