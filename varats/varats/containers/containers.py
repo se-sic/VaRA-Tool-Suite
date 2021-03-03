@@ -7,8 +7,8 @@ from enum import Enum
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from benchbuild.environments import bootstrap
 from benchbuild.environments.domain.commands import (
-    Command,
     CreateImage,
     fs_compliant_name,
     ExportImage,
@@ -17,7 +17,6 @@ from benchbuild.environments.domain.declarative import (
     add_benchbuild_layers,
     ContainerImage,
 )
-from benchbuild.environments.service_layer import messagebus, unit_of_work
 from benchbuild.utils.cmd import buildah
 from plumbum import local
 from plumbum.commands import ConcreteCommand
@@ -133,6 +132,7 @@ def create_base_image(base: ImageBase) -> None:
         base: the image base
     """
     with TemporaryDirectory() as tmpdir:
+        publish = bootstrap.bus()
         image = __BASE_IMAGES[base]
 
         # we need an up-to-date pip version to get the prebuilt pygit2 package
@@ -154,9 +154,7 @@ def create_base_image(base: ImageBase) -> None:
         _add_benchbuild_config(image)
 
         image.workingdir(str(CONTAINER_BB_ROOT))
-        cmd: Command = CreateImage(base.image_name, image)
-        uow = unit_of_work.ContainerImagesUOW()
-        messagebus.handle(cmd, uow)
+        publish(CreateImage(base.image_name, image))
 
 
 def create_base_images() -> None:
@@ -199,13 +197,12 @@ def delete_base_images() -> None:
 
 def export_base_image(base: ImageBase) -> None:
     """Export the base image to the filesystem."""
-    uow = unit_of_work.ContainerImagesUOW()
+    publish = bootstrap.bus()
     export_name = fs_compliant_name(base.image_name)
     export_path = local.path(
         bb_cfg()["container"]["export"].value
     ) / export_name + ".tar"
-    export_cmd = ExportImage(base.image_name, str(export_path))
-    messagebus.handle(export_cmd, uow)
+    publish(ExportImage(base.image_name, str(export_path)))
 
 
 def export_base_images() -> None:
