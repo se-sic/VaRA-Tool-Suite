@@ -95,10 +95,10 @@ EOF
 # End of cleanup cluster node
 
 # SLURM Command
-export XDG_RUNTIME_DIR='{{ prefix }}'
-export HOME='{{ prefix }}'
-export BB_CONTAINER_ROOT="!create-if-needed {{ prefix }}/containers/lib"
-export BB_CONTAINER_RUNROOT="!create-if-needed {{ prefix }}/containers/run"
+export XDG_RUNTIME_DIR=${BB_SLURM_NODE_DIR}
+export HOME=${BB_SLURM_NODE_DIR}
+export BB_CONTAINER_ROOT="${BB_SLURM_NODE_DIR}/containers/lib"
+export BB_CONTAINER_RUNROOT="${BB_SLURM_NODE_DIR}/containers/run"
 pushd '{{ prefix }}' > /dev/null
 _project=$(echo ${_project} | sed -e "s/-/\//")
 {{ node_command }}

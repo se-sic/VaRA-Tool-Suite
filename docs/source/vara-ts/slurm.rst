@@ -167,9 +167,19 @@ If you understand how BenchBuild uses containers to run experiments you can prep
 
 4. Rootless containers do not work on NFS (see `here <https://github.com/containers/podman/blob/master/rootless.md>`_), so we have to take some extra steps if we want to run containers via slurm:
 
+    - You need to set the container root and runroot paths to some location that is not on a NFS, e.g., to a directory in ``tmp``:
+
+    .. code-block:: yaml
+
+      container:
+        root:
+          value: /tmp/<username>/containers/lib
+        runroot:
+          value: /tmp/<username>/containers/run
+
     - BenchBuild allows to export and import container images.
       That means that you can build the base images once, e.g., on your local machine, and export them so that the cluster nodes do not need to rebuild them over and over again.
-      You can set the export and import paths in the BenchBuild config to point to some location both you and the slurm nodes have access:
+      You can set the export and import paths in the BenchBuild config to point to some location both you and the slurm nodes have access (this path may be on a NFS):
 
       .. code-block:: yaml
 
