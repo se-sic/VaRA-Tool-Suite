@@ -41,6 +41,10 @@ _project="${projects[$SLURM_ARRAY_TASK_ID]}"
 exec 1> {{ log }}-$_project
 exec 2>&1
 
+# parent of node dir (= BB_SLURM_NODE_DIR) is used as home
+node_dir=$(dirname {{ prefix }})
+mkdir -p $node_dir
+
 # Prepare cluster node
 exec 9> {{ lockfile }}
 flock -x 9 && {
@@ -95,10 +99,10 @@ EOF
 # End of cleanup cluster node
 
 # SLURM Command
-export XDG_RUNTIME_DIR=${BB_SLURM_NODE_DIR}
-export HOME=${BB_SLURM_NODE_DIR}
-export BB_CONTAINER_ROOT="${BB_SLURM_NODE_DIR}/containers/lib"
-export BB_CONTAINER_RUNROOT="${BB_SLURM_NODE_DIR}/containers/run"
+export XDG_RUNTIME_DIR=${node_dir}
+export HOME=${node_dir}
+export BB_CONTAINER_ROOT="${node_dir}/containers/lib"
+export BB_CONTAINER_RUNROOT="${node_dir}/containers/run"
 pushd '{{ prefix }}' > /dev/null
 _project=$(echo ${_project} | sed -e "s/-/\//")
 {{ node_command }}
