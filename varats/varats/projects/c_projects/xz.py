@@ -100,7 +100,7 @@ class Xz(bb.Project, CVEProviderHook):  # type: ignore
                 short=True
             )
 
-        #self.cflags += ["-fPIC"]
+        self.cflags += ["-fPIC"]
 
         clang = bb.compiler.cc(self)
         with local.cwd(xz_version_source):
