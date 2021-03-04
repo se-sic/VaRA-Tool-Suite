@@ -31,7 +31,7 @@ class SZZReport(BaseReport):
                 raise AssertionError(
                     "Report was not created with the correct tool."
                 )
-            self.__bugs = {}
+            self.__bugs: tp.Dict[str, RawBug] = {}
             for fix, introducers in raw_report["bugs"].items():
                 self.__bugs[fix] = RawBug(fix, set(introducers), None)
 
@@ -42,7 +42,7 @@ class SZZReport(BaseReport):
         Returns:
             A set of `RawBug` s.
         """
-        return frozenset(self.__bugs.items())
+        return frozenset(self.__bugs.values())
 
     def get_raw_bug_by_fix(self, fixing_commit: str) -> tp.Optional[RawBug]:
         """
