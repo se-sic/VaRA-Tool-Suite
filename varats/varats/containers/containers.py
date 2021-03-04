@@ -7,7 +7,12 @@ from enum import Enum
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from benchbuild.environments.domain.commands import Command, CreateImage
+from benchbuild.environments.domain.commands import (
+    Command,
+    CreateImage,
+    fs_compliant_name,
+    ExportImage,
+)
 from benchbuild.environments.domain.declarative import (
     add_benchbuild_layers,
     ContainerImage,
@@ -113,7 +118,8 @@ def _add_vara_config(layers: ContainerImage, tmp_dir: str) -> ContainerImage:
 def _add_benchbuild_config(layers: ContainerImage) -> ContainerImage:
     layers.env(
         BB_VARATS_OUTFILE=str(CONTAINER_VARATS_ROOT / "results"),
-        BB_VARATS_RESULT=str(CONTAINER_VARATS_ROOT / "BC_files")
+        BB_VARATS_RESULT=str(CONTAINER_VARATS_ROOT / "BC_files"),
+        BB_JOBS=str(bb_cfg()["jobs"]),
     )
 
     return layers
@@ -156,7 +162,7 @@ def create_base_image(base: ImageBase) -> None:
 def create_base_images() -> None:
     """Builds all base images for the current research tool."""
     for base in ImageBase:
-        LOG.info(f"Building base container {base.image_name}.")
+        LOG.info(f"Building base image {base.image_name}.")
         create_base_image(base)
 
 
@@ -187,5 +193,23 @@ def delete_base_image(base: ImageBase) -> None:
 def delete_base_images() -> None:
     """Deletes all base images for the current research tool."""
     for base in ImageBase:
-        LOG.info(f"deleting base container {base.image_name}.")
+        LOG.info(f"Deleting base image {base.image_name}.")
         delete_base_image(base)
+
+
+def export_base_image(base: ImageBase) -> None:
+    """Export the base image to the filesystem."""
+    uow = unit_of_work.ContainerImagesUOW()
+    export_name = fs_compliant_name(base.image_name)
+    export_path = local.path(
+        bb_cfg()["container"]["export"].value
+    ) / export_name + ".tar"
+    export_cmd = ExportImage(base.image_name, str(export_path))
+    messagebus.handle(export_cmd, uow)
+
+
+def export_base_images() -> None:
+    """Exports all base images for the current research tool."""
+    for base in ImageBase:
+        LOG.info(f"Exporting base image {base.image_name}.")
+        export_base_image(base)
