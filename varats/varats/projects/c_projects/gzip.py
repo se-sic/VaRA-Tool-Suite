@@ -14,6 +14,7 @@ from varats.project.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     BinaryType,
+    verify_binaries,
 )
 from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.provider.release.release_provider import (
@@ -40,13 +41,21 @@ class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
             )
         ])(
             bb.source.Git(
-                remote="https://git.savannah.gnu.org/git/gzip.git",
+                remote="https://github.com/vulder/gzip.git",
                 local="gzip",
                 refspec="HEAD",
                 limit=None,
                 shallow=False,
                 version_filter=project_filter_generator("gzip")
             )
+        ),
+        bb.source.GitSubmodule(
+            remote="https://github.com/coreutils/gnulib.git",
+            local="gzip/gnulib",
+            refspec="HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator("gzip")
         )
     ]
 
@@ -73,6 +82,8 @@ class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
                 bb.watch(local["./bootstrap"])()
                 bb.watch(local["./configure"])()
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+            verify_binaries(self)
 
     @classmethod
     def get_release_revisions(

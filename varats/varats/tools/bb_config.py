@@ -37,6 +37,7 @@ def generate_benchbuild_config(
         'varats.projects.c_projects.gawk',
         'varats.projects.c_projects.git',
         'varats.projects.c_projects.gravity',
+        'varats.projects.c_projects.grep',
         'varats.projects.c_projects.gzip',
         'varats.projects.c_projects.htop',
         'varats.projects.c_projects.irssi',
