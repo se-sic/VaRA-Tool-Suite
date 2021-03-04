@@ -20,7 +20,6 @@ class SZZReport(BaseReport):
 
     def __init__(self, path: Path, szz_tool: str):
         super().__init__(path)
-        self.__path = path
         with open(path, 'r') as stream:
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
             version_header = VersionHeader(next(documents))
