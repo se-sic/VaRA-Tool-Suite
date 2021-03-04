@@ -17,7 +17,6 @@ from varats.provider.bug.bug_provider import BugProvider
 from varats.report.report import FileStatusExtension as FSE
 from varats.tools.research_tools.szz_unleashed import SZZUnleashed
 from varats.utils.settings import bb_cfg
-from varats.utils.yaml_util import store_as_yaml
 
 
 class PrepareSZZUnleashedData(actions.Step):
@@ -54,7 +53,6 @@ class PrepareSZZUnleashedData(actions.Step):
 
         with (results_dir / "issue_list.json").open("w") as issues_file:
             json.dump(fixers_dict, issues_file, indent=2)
-        # print(json.dumps(fixers_dict, indent=2))
 
         return actions.StepResult.OK
 
