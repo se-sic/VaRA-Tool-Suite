@@ -11,10 +11,10 @@ from varats.tools.research_tools.vara import VaRA
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.settings import vara_cfg
 
+ResearchToolT = tp.Union[tp.Type[VaRA], tp.Type[Phasar], tp.Type[SZZUnleashed]]
 
-def get_research_tool_type(
-    name: str
-) -> tp.Union[tp.Type[VaRA], tp.Type[Phasar]]:
+
+def get_research_tool_type(name: str) -> ResearchToolT:
     """
     Look up the type of a research tool by name.
 

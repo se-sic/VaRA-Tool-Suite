@@ -19,7 +19,7 @@ from varats.tools.research_tools.szz_unleashed import SZZUnleashed
 from varats.utils.settings import bb_cfg
 
 
-class PrepareSZZUnleashedData(actions.Step):
+class PrepareSZZUnleashedData(actions.Step):  # type: ignore
     NAME = "PrepareSZZUnleashedData"
     DESCRIPTION = "Prepares data needed for running SZZUnleashed."
 
@@ -57,7 +57,7 @@ class PrepareSZZUnleashedData(actions.Step):
         return actions.StepResult.OK
 
 
-class RunSZZUnleashed(actions.Step):
+class RunSZZUnleashed(actions.Step):  # type: ignore
     NAME = "RunSZZUnleashed"
     DESCRIPTION = "Run SZZUnleashed on a project"
 
@@ -79,7 +79,7 @@ class RunSZZUnleashed(actions.Step):
         return actions.StepResult.OK
 
 
-class CreateSZZUnleashedReport(actions.Step):
+class CreateSZZUnleashedReport(actions.Step):  # type: ignore
     NAME = "CreateSZZUnleashedReport"
     DESCRIPTION = "Run SZZUnleashed on a project"
 
@@ -112,7 +112,7 @@ class CreateSZZUnleashedReport(actions.Step):
         for result_entry in szz_result:
             bugs.setdefault(result_entry[0], set())
             bugs[result_entry[0]].add(result_entry[1])
-        bugs = {k: list(v) for k, v in bugs.items()}
+        bugs = {k: set(v) for k, v in bugs.items()}
         raw_szz_report = {"szz_tool": "SZZUnleashed", "bugs": bugs}
 
         result_file = SZZUnleashedReport.get_file_name(
@@ -137,7 +137,7 @@ class CreateSZZUnleashedReport(actions.Step):
         return actions.StepResult.OK
 
 
-class SZZUnleashedExperiment(Experiment):
+class SZZUnleashedExperiment(Experiment):  # type: ignore
     """Generates a SZZUnleashed report."""
 
     NAME = "SZZUnleashed"
