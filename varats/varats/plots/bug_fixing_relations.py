@@ -1,8 +1,8 @@
 import typing as tp
 
+import chart_studio.grid_objs as gob
+import chart_studio.plotly as ply
 import numpy as np
-import plotly.grid_objs as gob
-import plotly.plotly as ply
 import pygit2
 
 from varats.plot.plot import Plot
@@ -14,9 +14,9 @@ from varats.provider.bug.bug import RawBug
 from varats.provider.bug.bug_provider import BugProvider
 
 
-def _create_chord_diagram_for_raw_bugs(
+def _plot_chord_diagram_for_raw_bugs(
     project_name: str, bug_set: tp.Set[RawBug]
-) -> gob.Figure:
+):
     """Creates a chord diagram representing relations between introducing/fixing
     commits for a given set of RawBugs."""
     project_repo = get_local_project_git(project_name)
@@ -43,11 +43,12 @@ def _create_chord_diagram_for_raw_bugs(
 
     #defining some constants for diagram generation
     cp_parameters = [1.2, 1.5, 1.8, 2.1]
-    distance_thresholds[
+    distance_thresholds = [
         0.0,
         get_distance([1, 0], 2 * [np.sqrt(2) / 2]),
         np.sqrt(2),
-        get_distance([1, 0], [-np.sqrt(2) / 2, np.sqrt(2) / 2]), 2.0]
+        get_distance([1, 0], [-np.sqrt(2) / 2, np.sqrt(2) / 2]), 2.0
+    ]
     edge_colors = ['#d4daff', '#84a9dd', '#5588c8', '#6d8acf']
     node_color = 'rgba(0,51,181, 0.85)'
 
@@ -77,9 +78,9 @@ def _create_chord_diagram_for_raw_bugs(
         ])
 
     lines = []
-    fixes_x = []
-    fixes_y = []
-    fixes_label = []
+    fixes_x: tp.List = []
+    fixes_y: tp.List = []
+    fixes_label: tp.List = []
     for bug in bug_set:
         bug_fix = bug.fixing_commit
         fix_ind = map_commits_to_nodes[bug_fix]
@@ -116,8 +117,8 @@ def _create_chord_diagram_for_raw_bugs(
         fixes_label.append(bug_fix)
 
     nodes = go.Scater(
-        x=fixes_x,
-        y=fixes_y,
+        x=np.array(fixes_x),
+        y=np.array(fixes_y),
         mode='markers',
         name='',
         marker=dict(
@@ -149,7 +150,8 @@ def _create_chord_diagram_for_raw_bugs(
     )
 
     data = lines + [nodes]
-    return gob.Figure(data=data, layout=layout)
+    gob.Figure(data=data, layout=layout)
+    ply.iplot(figure, filename='test')
 
 
 class BugFixingRelationPlot(Plot):
@@ -172,9 +174,7 @@ class BugFixingRelationPlot(Plot):
         )
 
         raw_bugs = bug_provider.find_all_raw_bugs()
-        figure = _create_chord_diagram_for_raw_bugs(project_name, raw_bugs)
-
-        ply.iplot(figure, filename='test')
+        _plot_chord_diagram_for_raw_bugs(project_name, raw_bugs)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return set()
