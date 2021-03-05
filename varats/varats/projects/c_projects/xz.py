@@ -113,7 +113,7 @@ class Xz(bb.Project, CVEProviderHook):  # type: ignore
                 else:
                     configure()
 
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()), "--debug=b")
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
