@@ -213,3 +213,9 @@ class TestVaraTestRepoSource(unittest.TestCase):
                             "58ec513",
                             git('rev-parse', '--short', 'HEAD').rstrip()
                         )
+
+                    with local.cwd(self.bb_result_lib_path / "earth_lib"):
+                        self.assertEqual(
+                            "1db6fbe",
+                            git('rev-parse', '--short', 'HEAD').rstrip()
+                        )
