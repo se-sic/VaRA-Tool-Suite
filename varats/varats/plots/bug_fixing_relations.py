@@ -1,8 +1,8 @@
 import typing as tp
 
-import chart_studio.grid_objs as gob
 import chart_studio.plotly as ply
 import numpy as np
+import plotly.graph_objs as gob
 import pygit2
 
 from varats.plot.plot import Plot
@@ -35,7 +35,7 @@ def _plot_chord_diagram_for_raw_bugs(
     theta_vals = np.linspace(0, 2 * np.pi, commit_count)
     commit_coordinates: tp.List = list()
     for theta in theta_vals:
-        commit_coordinates.append(np.array(np.cos(theta), np.sin(theta)))
+        commit_coordinates.append(np.array([np.cos(theta), np.sin(theta)]))
 
     def get_distance(p1, p2):
         # Returns distance between two points
@@ -116,7 +116,7 @@ def _plot_chord_diagram_for_raw_bugs(
         fixes_y.append(fix_coordinates[1])
         fixes_label.append(bug_fix)
 
-    nodes = go.Scater(
+    nodes = gob.Scatter(
         x=np.array(fixes_x),
         y=np.array(fixes_y),
         mode='markers',
@@ -150,7 +150,7 @@ def _plot_chord_diagram_for_raw_bugs(
     )
 
     data = lines + [nodes]
-    gob.Figure(data=data, layout=layout)
+    figure = gob.Figure(data=data, layout=layout)
     ply.iplot(figure, filename='test')
 
 
