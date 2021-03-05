@@ -14,9 +14,9 @@ from varats.provider.bug.bug import RawBug
 from varats.provider.bug.bug_provider import BugProvider
 
 
-def _plot_chord_diagram_for_raw_bugs(
+def _create_chord_diagram_for_raw_bugs(
     project_name: str, bug_set: tp.Set[RawBug]
-) -> None:
+) -> gob.Figure:
     """Creates a chord diagram representing relations between introducing/fixing
     commits for a given set of RawBugs."""
     project_repo = get_local_project_git(project_name)
@@ -35,22 +35,25 @@ def _plot_chord_diagram_for_raw_bugs(
     theta_vals = np.linspace(0, 2 * np.pi, commit_count)
     commit_coordinates: tp.List = list()
     for theta in theta_vals:
-        commit_coordinates.append(np.cos(theta), np.sin(theta))
+        commit_coordinates.append(np.array(np.cos(theta), np.sin(theta)))
 
     def get_distance(p1, p2):
         # Returns distance between two points
         return np.linalg.norm(np.array(p1) - np.array(p2))
 
+    #defining some constants for diagram generation
     cp_parameters = [1.2, 1.5, 1.8, 2.1]
-    #thresholds for different distance intervals
     distance_thresholds[
-        0,
+        0.0,
         get_distance([1, 0], 2 * [np.sqrt(2) / 2]),
         np.sqrt(2),
         get_distance([1, 0], [-np.sqrt(2) / 2, np.sqrt(2) / 2]), 2.0]
+    edge_colors = ['#d4daff', '#84a9dd', '#5588c8', '#6d8acf']
+    node_color = 'rgba(0,51,181, 0.85)'
 
     def get_interval(distance):
         #get right interval for given distance using distance thresholds
+        #interval indices are in [0,3] for 5 thresholds
         k = 0
         while distance_thresholds[k] < distance:
             k += 1
@@ -74,15 +77,79 @@ def _plot_chord_diagram_for_raw_bugs(
         ])
 
     lines = []
+    fixes_x = []
+    fixes_y = []
+    fixes_label = []
     for bug in bug_set:
         bug_fix = bug.fixing_commit
         fix_ind = map_commits_to_nodes[bug_fix]
+        fix_coordinates = commit_coordinates[fix_ind]
 
         for bug_introduction in bug.introducing_commits:
             intro_ind = map_commits_to_nodes[bug_introduction]
-            # TODO draw line between them
+            intro_coordinates = commit_coordinates[intro_ind]
 
-    # TODO draw graph
+            # get distance between the points and the respective interval index
+            dist = get_distance(fix_coordinates, intro_coordinates)
+            interval = get_interval(dist)
+            color = edge_colors[interval]
+
+            control_points = [
+                fix_coordinates, fix_coordinates / cp_parameters[interval],
+                intro_coordinates / cp_parameters[interval], intro_coordinates
+            ]
+            curve_points = get_bezier_curve(control_points)
+
+            lines.append(
+                gob.Scatter(
+                    x=curve_points[:, 0],
+                    y=curve_points[:, 1],
+                    mode='lines',
+                    line=dict(color=color, shape='spline'),
+                    hoverinfo='none'
+                )
+            )
+
+        #add fixing commits as vertices
+        fixes_x.append(fix_coordinates[0])
+        fixes_y.append(fix_coordinates[1])
+        fixes_label.append(bug_fix)
+
+    nodes = go.Scater(
+        x=fixes_x,
+        y=fixes_y,
+        mode='markers',
+        name='',
+        marker=dict(
+            symbol='circle',
+            size=10,
+            color=node_color,
+            line=dict(color=edge_colors, width=0.5)
+        ),
+        text=fixes_label,
+        hoverinfo='text'
+    )
+
+    title = f'Bug fixing relations for {project_name}'
+    axis = dict(
+        showline=False,
+        zeroline=False,
+        showgrid=False,
+        showticklabels=False,
+        title=''
+    )  #hide the axis
+
+    layout = gob.Layout(
+        title=title,
+        showlegend=False,
+        autosize=True,
+        xaxis=dict(axis),
+        yaxis=dict(axis),
+        hovermode='closest'
+    )
+
+    data = lines + [nodes]
+    return gob.Figure(data=data, layout=layout)
 
 
 class BugFixingRelationPlot(Plot):
@@ -105,7 +172,9 @@ class BugFixingRelationPlot(Plot):
         )
 
         raw_bugs = bug_provider.find_all_raw_bugs()
-        _plot_chord_diagram_for_raw_bugs(project_name, raw_bugs)
+        figure = _create_chord_diagram_for_raw_bugs(project_name, raw_bugs)
+
+        ply.iplot(figure, filename='test')
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return set()
