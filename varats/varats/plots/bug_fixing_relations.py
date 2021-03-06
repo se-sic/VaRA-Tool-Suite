@@ -16,7 +16,7 @@ from varats.provider.bug.bug_provider import BugProvider
 
 def _plot_chord_diagram_for_raw_bugs(
     project_name: str, bug_set: tp.Set[RawBug]
-):
+) -> gob.Figure:
     """Creates a chord diagram representing relations between introducing/fixing
     commits for a given set of RawBugs."""
     project_repo = get_local_project_git(project_name)
@@ -150,8 +150,7 @@ def _plot_chord_diagram_for_raw_bugs(
     )
 
     data = lines + [nodes]
-    figure = gob.Figure(data=data, layout=layout)
-    ply.iplot(figure, filename='test')
+    return gob.Figure(data=data, layout=layout)
 
 
 class BugFixingRelationPlot(Plot):
@@ -174,7 +173,9 @@ class BugFixingRelationPlot(Plot):
         )
 
         raw_bugs = bug_provider.find_all_raw_bugs()
-        _plot_chord_diagram_for_raw_bugs(project_name, raw_bugs)
+        figure = _plot_chord_diagram_for_raw_bugs(project_name, raw_bugs)
+        #filename must be left empty for iplot command
+        ply.plot(figure, filename=self.plot_file_name(""))
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return set()
