@@ -468,14 +468,16 @@ def _build_sankey_color_mappings(
     return lib_to_colormap, lib_to_idx_shades
 
 
-def _get_verified_revision(
+def _get_completed_revision(
     revision: str, unique_revisions: tp.List[str]
 ) -> str:
     """
-    Returns the passed revision in full length after checking its validity.
+    Returns the passed revision prefix as completed revision string.
 
-    If the passed revision is a unique prefix of an existing one, it will be
-    extended it to its full length.
+    Args:
+        revision: the revision prefix to be completed
+        unique_revisions: the list of unique revisions in which the prefix is
+                          searched for
     """
 
     revision = revision.strip()
@@ -698,6 +700,32 @@ def _add_diff_amount_col_to_df(
     return merged_df
 
 
+def _get_completed_c_hash(
+    df: pd.DataFrame, show_only_interactions_of_commit: str
+) -> str:
+    """
+    Returns the passed commit hash prefix as completed commit hash.
+
+    Args:
+        df: the dataframe in which the prefix is searched for
+        show_only_interactions_of_commit: the commit hash prefix to be completed
+    """
+
+    unique_base_hashes = list(
+        np.unique([str(base_hash) for base_hash in df.base_hash])
+    )
+    unique_inter_hashes = list(
+        np.unique([str(inter_hash) for inter_hash in df.inter_hash])
+    )
+    all_unique_hashes = list(
+        np.unique(unique_base_hashes + unique_inter_hashes)
+    )
+
+    return _get_completed_revision(
+        show_only_interactions_of_commit, all_unique_hashes
+    )
+
+
 LibraryToHashesMapping = tp.Dict[str, tp.List[str]]
 
 
@@ -705,8 +733,15 @@ def _build_graphviz_edges(
     df: pd.DataFrame,
     graph: Digraph,
     show_edge_weight: bool,
-    edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None
+    edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
+    show_only_interactions_of_commit: tp.Optional[str] = None
 ) -> LibraryToHashesMapping:
+
+    if show_only_interactions_of_commit is not None:
+        show_only_interactions_of_commit = _get_completed_c_hash(
+            df, show_only_interactions_of_commit
+        )
+
     base_lib_names = _get_distinct_base_lib_names(df)
     inter_lib_names = _get_distinct_inter_lib_names(df)
     all_distinct_lib_names = sorted(set(base_lib_names + inter_lib_names))
@@ -720,6 +755,15 @@ def _build_graphviz_edges(
         base_lib = row['base_lib']
         inter_hash = row['inter_hash']
         inter_lib = row['inter_lib']
+
+        base_inter_hash_tuple = (base_hash, inter_hash)
+
+        # Skip edges that do not connect with the specified
+        # ``show_only_interactions_of_commit`` node.
+        if show_only_interactions_of_commit is not None and (
+            show_only_interactions_of_commit not in base_inter_hash_tuple
+        ):
+            continue
 
         label = None
         color = "black"
@@ -758,7 +802,8 @@ def _build_graphviz_fig(
     show_edge_weight: bool,
     shown_revision_length: int,
     edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
-    layout_engine: str = 'fdp'
+    layout_engine: str = 'fdp',
+    show_only_interactions_of_commit: tp.Optional[str] = None
 ) -> Digraph:
     graph = Digraph(name="Digraph", strict=True, engine=layout_engine)
     graph.attr(label=f"Revision: {revision}")
@@ -770,7 +815,8 @@ def _build_graphviz_fig(
         graph.attr(nodesep="1")
 
     lib_to_hashes_mapping = _build_graphviz_edges(
-        df, graph, show_edge_weight, edge_weight_threshold
+        df, graph, show_edge_weight, edge_weight_threshold,
+        show_only_interactions_of_commit
     )
 
     for lib_name, c_hash_list in lib_to_hashes_mapping.items():
@@ -847,6 +893,7 @@ class BlameLibraryInteraction(Plot):
         shown_revision_length: int = 10,
         edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
         layout_engine: str = 'fdp',
+        show_only_interactions_of_commit: tp.Optional[str] = None,
         save_path: tp.Optional[Path] = None,
         filetype: str = 'png'
     ) -> tp.Optional[Digraph]:
@@ -865,8 +912,8 @@ class BlameLibraryInteraction(Plot):
                 inter_df = self._get_interaction_data(False)
             else:
                 inter_df = self._get_interaction_data(True)
-                
-            if  blame_diff:
+
+            if blame_diff:
                 diff_df = self._get_interaction_data(True)
                 return _add_diff_amount_col_to_df(inter_df, diff_df)
 
@@ -882,14 +929,15 @@ class BlameLibraryInteraction(Plot):
 
         for rev in unique_revisions:
             if view_mode and 'revision' in self.plot_kwargs:
-                rev = _get_verified_revision(
+                rev = _get_completed_revision(
                     self.plot_kwargs['revision'], unique_revisions
                 )
 
             dataframe = df.loc[df['revision'] == rev]
             fig = _build_graphviz_fig(
                 dataframe, rev, show_edge_weight, shown_revision_length,
-                edge_weight_threshold, layout_engine
+                edge_weight_threshold, layout_engine,
+                show_only_interactions_of_commit
             )
 
             if view_mode and 'revision' in self.plot_kwargs:
@@ -1155,7 +1203,7 @@ class BlameDegree(Plot):
         # browser.
         for rev in unique_revisions:
             if view_mode and 'revision' in self.plot_kwargs:
-                rev = _get_verified_revision(
+                rev = _get_completed_revision(
                     self.plot_kwargs['revision'], unique_revisions
                 )
 
