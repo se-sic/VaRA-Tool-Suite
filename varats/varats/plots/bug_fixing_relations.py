@@ -1,6 +1,5 @@
 import typing as tp
 
-import chart_studio.plotly as ply
 import numpy as np
 import plotly.graph_objs as gob
 import plotly.offline as offply
