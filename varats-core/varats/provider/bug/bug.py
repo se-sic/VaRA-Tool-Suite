@@ -2,6 +2,7 @@
 
 import typing as tp
 
+import pydriller
 import pygit2
 from github import Github
 from github.IssueEvent import IssueEvent
@@ -190,7 +191,8 @@ def _create_corresponding_pygit_bug(
     issue_number: tp.Optional[int] = None
 ) -> PygitBug:
     """
-    Returns the PygitBug corresponding to a given closing commit.
+    Returns the PygitBug corresponding to a given closing commit. Applies simple
+    SZZ algorithm to find introducing commits.
 
     Args:
         closing_commit: ID of the commit closing the bug.
@@ -202,12 +204,22 @@ def _create_corresponding_pygit_bug(
         A PygitBug Object or None.
     """
 
+    pydrill_repo = pydriller.GitRepository(project_repo.path)
+
     closing_pycommit: pygit2.Commit = project_repo.revparse_single(
         closing_commit
     )
-
     introducing_pycommits: tp.Set[pygit2.Commit] = set()
-    # TODO find introducing commits
+
+    blame_dict = pydrill_repo.get_commits_last_modified_lines(
+        pydrill_repo.get_commit(closing_commit)
+    )
+
+    for _, introducing_set in blame_dict.items():
+        for introducing_id in introducing_set:
+            introducing_pycommits.add(
+                project_repo.revparse_single(introducing_id)
+            )
 
     return PygitBug(closing_pycommit, introducing_pycommits, issue_number)
 
@@ -218,7 +230,8 @@ def _create_corresponding_raw_bug(
     issue_number: tp.Optional[int] = None
 ) -> RawBug:
     """
-    Returns the RawBug corresponding to a given closing commit.
+    Returns the RawBug corresponding to a given closing commit. Applies simple
+    SZZ algorithm to find introducing commits.
 
     Args:
         closing_commit: ID of the commit closing the bug.
@@ -229,10 +242,16 @@ def _create_corresponding_raw_bug(
     Returns:
         A RawBug Object or None.
     """
+    pydrill_repo = pydriller.GitRepository(project_repo.path)
 
     introducing_ids: tp.Set[str] = set()
 
-    # TODO find introducing commits
+    blame_dict = pydrill_repo.get_commits_last_modified_lines(
+        pydrill_repo.get_commit(closing_commit)
+    )
+
+    for _, introducing_set in blame_dict.items():
+        introducing_ids.update(introducing_set)
 
     return RawBug(closing_commit, introducing_ids, issue_number)
 
