@@ -32,7 +32,8 @@ def _plot_chord_diagram_for_raw_bugs(
         commit_count += 1
 
     # compute unit circle coordinates for each commit
-    theta_vals = np.linspace(0, 2 * np.pi, commit_count)
+    # move unit circle such that HEAD is on top
+    theta_vals = np.linspace(-3 * np.pi / 2, np.pi / 2, commit_count)
     commit_coordinates: tp.List = list()
     for theta in theta_vals:
         commit_coordinates.append(np.array([np.cos(theta), np.sin(theta)]))
