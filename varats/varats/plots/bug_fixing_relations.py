@@ -51,6 +51,7 @@ def _plot_chord_diagram_for_raw_bugs(
     ]
     edge_colors = ['#d4daff', '#84a9dd', '#5588c8', '#6d8acf']
     node_color = 'rgba(0,51,181, 0.85)'
+    init_color = 'rgba(207, 0, 15, 1)'
 
     def get_interval(distance):
         #get right interval for given distance using distance thresholds
@@ -64,7 +65,7 @@ def _plot_chord_diagram_for_raw_bugs(
     def get_bezier_curve(ctrl_points, num_points=5):
         n = len(ctrl_points)
 
-        def get_coordinate(factor):
+        def get_coordinate_on_curve(factor):
             points_cp = np.copy(ctrl_points)
             for r in range(1, n):
                 points_cp[:n - r, :] = (
@@ -74,13 +75,14 @@ def _plot_chord_diagram_for_raw_bugs(
 
         point_space = np.linspace(0, 1, num_points)
         return np.array([
-            get_coordinate(point_space[k]) for k in range(num_points)
+            get_coordinate_on_curve(point_space[k]) for k in range(num_points)
         ])
 
     lines = []
-    fixes_x: tp.List = []
-    fixes_y: tp.List = []
-    fixes_label: tp.List = []
+    intro_annotations = []
+    fixes_x = []
+    fixes_y = []
+    fixes_label = []
     for bug in bug_set:
         bug_fix = bug.fixing_commit
         fix_ind = map_commits_to_nodes[bug_fix]
@@ -111,10 +113,36 @@ def _plot_chord_diagram_for_raw_bugs(
                 )
             )
 
+            intro_annotations.append(
+                gob.Scatter(
+                    x=curve_points[:, 0],
+                    y=curve_points[:, 1],
+                    mode='markers',
+                    marker=dict(size=0.5, color=edge_colors),
+                    text=f'introduced by {bug_introduction}',
+                    hoverinfo='text'
+                )
+            )
+
         #add fixing commits as vertices
         fixes_x.append(fix_coordinates[0])
         fixes_y.append(fix_coordinates[1])
         fixes_label.append(bug_fix)
+
+    init = gob.Scatter(
+        x=[commit_coordinates[0][0]],
+        y=[commit_coordinates[0][1]],
+        mode='markers',
+        name='',
+        marker=dict(
+            symbol='circle',
+            size=12,
+            color=init_color,
+            line=dict(color=edge_colors, width=0.5)
+        ),
+        text='HEAD',
+        hoverinfo='text'
+    )
 
     nodes = gob.Scatter(
         x=np.array(fixes_x),
@@ -140,8 +168,8 @@ def _plot_chord_diagram_for_raw_bugs(
         title=''
     )  #hide the axis
 
-    width = 800
-    height = 800
+    width = 900
+    height = 900
     layout = gob.Layout(
         title=title,
         showlegend=False,
@@ -150,10 +178,11 @@ def _plot_chord_diagram_for_raw_bugs(
         height=height,
         xaxis=dict(axis),
         yaxis=dict(axis),
-        hovermode='closest'
+        hovermode='closest',
+        plot_bgcolor='rgba(0,0,0,0)'
     )
 
-    data = lines + [nodes]
+    data = lines + intro_annotations + [nodes] + [init]
     return gob.Figure(data=data, layout=layout)
 
 
