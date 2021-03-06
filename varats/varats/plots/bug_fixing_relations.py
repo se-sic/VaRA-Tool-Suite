@@ -3,6 +3,7 @@ import typing as tp
 import chart_studio.plotly as ply
 import numpy as np
 import plotly.graph_objs as gob
+import plotly.offline as offply
 import pygit2
 
 from varats.plot.plot import Plot
@@ -175,8 +176,8 @@ class BugFixingRelationPlot(Plot):
 
         raw_bugs = bug_provider.find_all_raw_bugs()
         figure = _plot_chord_diagram_for_raw_bugs(project_name, raw_bugs)
-        #filename must be left empty for iplot command
-        ply.plot(figure, filename=self.plot_file_name(""))
+        #filename must be left empty for plot command
+        offply.plot(figure, filename=self.plot_file_name(""))
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return set()
