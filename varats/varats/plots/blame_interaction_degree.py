@@ -223,7 +223,8 @@ def _generate_stackplot(
 
 
 def _calc_fractions(
-    unique_revisions: tp.List[str],
+    unique_revisions: tp.List[str], all_base_lib_names: tp.List[str],
+    all_inter_lib_names: tp.List[str],
     revision_to_base_names_mapping: tp.Dict[str, tp.List[str]],
     revision_to_inter_names_mapping: tp.Dict[str, tp.List[str]],
     revision_to_dataframes_mapping: tp.Dict[str, pd.DataFrame],
@@ -244,6 +245,15 @@ def _calc_fractions(
             )
             base_fraction_map.add_fraction_to_lib(base_name, current_fraction)
 
+        # Add fraction value 0 to all libraries that are not yet present in a
+        # revision
+        absent_base_lib_names = set(all_base_lib_names) - set(
+            revision_to_base_names_mapping[rev]
+        )
+
+        for base_name in absent_base_lib_names:
+            base_fraction_map.add_fraction_to_lib(base_name, 0)
+
         for inter_name in revision_to_inter_names_mapping[rev]:
             current_fraction = np.divide(
                 revision_to_dataframes_mapping[rev].loc[
@@ -251,6 +261,12 @@ def _calc_fractions(
                 ].amount.sum(), revision_to_total_amount_mapping[rev]
             )
             inter_fraction_map.add_fraction_to_lib(inter_name, current_fraction)
+
+        absent_inter_lib_names = set(all_inter_lib_names) - set(
+            revision_to_inter_names_mapping[rev]
+        )
+        for inter_name in absent_inter_lib_names:
+            inter_fraction_map.add_fraction_to_lib(inter_name, 0)
 
     return base_fraction_map, inter_fraction_map
 
@@ -450,14 +466,16 @@ def _build_sankey_color_mappings(
     return lib_to_colormap, lib_to_idx_shades
 
 
-def _get_verified_revision(
+def _get_completed_revision(
     revision: str, unique_revisions: tp.List[str]
 ) -> str:
     """
-    Returns the passed revision in full length after checking its validity.
+    Returns the passed revision prefix as completed revision string.
 
-    If the passed revision is a unique prefix of an existing one, it will be
-    extended it to its full length.
+    Args:
+        revision: the revision prefix to be completed
+        unique_revisions: the list of unique revisions in which the prefix is
+                          searched for
     """
 
     revision = revision.strip()
@@ -652,6 +670,32 @@ def _build_sankey_figure(
     return fig
 
 
+def _get_completed_c_hash(
+    df: pd.DataFrame, show_only_interactions_of_commit: str
+) -> str:
+    """
+    Returns the passed commit hash prefix as completed commit hash.
+
+    Args:
+        df: the dataframe in which the prefix is searched for
+        show_only_interactions_of_commit: the commit hash prefix to be completed
+    """
+
+    unique_base_hashes = list(
+        np.unique([str(base_hash) for base_hash in df.base_hash])
+    )
+    unique_inter_hashes = list(
+        np.unique([str(inter_hash) for inter_hash in df.inter_hash])
+    )
+    all_unique_hashes = list(
+        np.unique(unique_base_hashes + unique_inter_hashes)
+    )
+
+    return _get_completed_revision(
+        show_only_interactions_of_commit, all_unique_hashes
+    )
+
+
 LibraryToHashesMapping = tp.Dict[str, tp.List[str]]
 
 
@@ -659,8 +703,14 @@ def _build_graphviz_edges(
     df: pd.DataFrame,
     graph: Digraph,
     show_edge_weight: bool,
-    edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None
+    edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
+    show_only_interactions_of_commit: tp.Optional[str] = None
 ) -> LibraryToHashesMapping:
+
+    if show_only_interactions_of_commit is not None:
+        show_only_interactions_of_commit = _get_completed_c_hash(
+            df, show_only_interactions_of_commit
+        )
 
     base_lib_names = _get_distinct_base_lib_names(df)
     inter_lib_names = _get_distinct_inter_lib_names(df)
@@ -675,6 +725,15 @@ def _build_graphviz_edges(
         base_lib = row['base_lib']
         inter_hash = row['inter_hash']
         inter_lib = row['inter_lib']
+
+        base_inter_hash_tuple = (base_hash, inter_hash)
+
+        # Skip edges that do not connect with the specified
+        # ``show_only_interactions_of_commit`` node.
+        if show_only_interactions_of_commit is not None and (
+            show_only_interactions_of_commit not in base_inter_hash_tuple
+        ):
+            continue
 
         label = None
         weight = row['amount']
@@ -701,13 +760,15 @@ def _build_graphviz_fig(
     show_edge_weight: bool,
     shown_revision_length: int,
     edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
+    show_only_interactions_of_commit: tp.Optional[str] = None,
 ) -> Digraph:
     graph = Digraph(name="Digraph", strict=True)
     graph.attr(label=f"Revision: {revision}")
     graph.attr(labelloc="t")
 
     lib_to_hashes_mapping = _build_graphviz_edges(
-        df, graph, show_edge_weight, edge_weight_threshold
+        df, graph, show_edge_weight, edge_weight_threshold,
+        show_only_interactions_of_commit
     )
 
     for lib_name, c_hash_list in lib_to_hashes_mapping.items():
@@ -768,6 +829,7 @@ class BlameLibraryInteraction(Plot):
         show_edge_weight: bool = False,
         shown_revision_length: int = 10,
         edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
+        show_only_interactions_of_commit: tp.Optional[str] = None,
         save_path: tp.Optional[Path] = None,
         filetype: str = 'pdf'
     ) -> tp.Optional[Digraph]:
@@ -780,14 +842,14 @@ class BlameLibraryInteraction(Plot):
 
         for rev in unique_revisions:
             if view_mode and 'revision' in self.plot_kwargs:
-                rev = _get_verified_revision(
+                rev = _get_completed_revision(
                     self.plot_kwargs['revision'], unique_revisions
                 )
 
             dataframe = df.loc[df['revision'] == rev]
             fig = _build_graphviz_fig(
                 dataframe, rev, show_edge_weight, shown_revision_length,
-                edge_weight_threshold
+                edge_weight_threshold, show_only_interactions_of_commit
             )
 
             if view_mode and 'revision' in self.plot_kwargs:
@@ -968,6 +1030,8 @@ class BlameDegree(Plot):
         df = df[df.degree_type == degree_type.value]
         df.sort_values(by=['time_id'], inplace=True)
         df.reset_index(inplace=True)
+        all_base_lib_names = _get_distinct_base_lib_names(df)
+        all_inter_lib_names = _get_distinct_inter_lib_names(df)
         revision_df = pd.DataFrame(df["revision"])
         unique_revisions = _get_unique_revisions(revision_df)
         grouped_df: pd.DataFrame = df.groupby(['revision'])
@@ -997,9 +1061,9 @@ class BlameDegree(Plot):
                 )
 
         base_lib_fraction_map, inter_lib_fraction_map = _calc_fractions(
-            unique_revisions, revision_to_base_names_mapping,
-            revision_to_inter_names_mapping, revision_to_dataframes_mapping,
-            revision_to_total_amount_mapping
+            unique_revisions, all_base_lib_names, all_inter_lib_names,
+            revision_to_base_names_mapping, revision_to_inter_names_mapping,
+            revision_to_dataframes_mapping, revision_to_total_amount_mapping
         )
 
         _plot_fraction_overview(
@@ -1051,7 +1115,7 @@ class BlameDegree(Plot):
         # browser.
         for rev in unique_revisions:
             if view_mode and 'revision' in self.plot_kwargs:
-                rev = _get_verified_revision(
+                rev = _get_completed_revision(
                     self.plot_kwargs['revision'], unique_revisions
                 )
 
@@ -1337,7 +1401,8 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
                 "ignored."
             )
         self.__graph = self._graphviz_plot(
-            view_mode=view_mode, show_edge_weight=True
+            view_mode=view_mode,
+            show_edge_weight=True,
         )
 
     def show(self) -> None:
