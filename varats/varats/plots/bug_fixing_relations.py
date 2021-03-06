@@ -140,10 +140,14 @@ def _plot_chord_diagram_for_raw_bugs(
         title=''
     )  #hide the axis
 
+    width = 800
+    height = 800
     layout = gob.Layout(
         title=title,
         showlegend=False,
-        autosize=True,
+        autosize=False,
+        width=width,
+        height=height,
         xaxis=dict(axis),
         yaxis=dict(axis),
         hovermode='closest'
@@ -176,7 +180,10 @@ class BugFixingRelationPlot(Plot):
         raw_bugs = bug_provider.find_all_raw_bugs()
         figure = _plot_chord_diagram_for_raw_bugs(project_name, raw_bugs)
         #filename must be left empty for plot command
-        offply.plot(figure, filename=self.plot_file_name(""))
+        if view_mode:
+            figure.show()
+        else:
+            offply.plot(figure, filename=self.plot_file_name(""))
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return set()
