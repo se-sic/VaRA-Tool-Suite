@@ -81,9 +81,7 @@ def _plot_chord_diagram_for_raw_bugs(
 
     lines = []
     intro_annotations = []
-    fixes_x = []
-    fixes_y = []
-    fixes_label = []
+    nodes = []
     for bug in bug_set:
         bug_fix = bug.fixing_commit
         fix_ind = map_commits_to_nodes[bug_fix]
@@ -126,9 +124,22 @@ def _plot_chord_diagram_for_raw_bugs(
             )
 
         #add fixing commits as vertices
-        fixes_x.append(fix_coordinates[0])
-        fixes_y.append(fix_coordinates[1])
-        fixes_label.append(bug_fix)
+        nodes.append(
+            gob.Scatter(
+                x=[fix_coordinates[0]],
+                y=[fix_coordinates[1]],
+                mode='markers',
+                name='',
+                marker=dict(
+                    symbol='circle',
+                    size=10,
+                    color=node_color,
+                    line=dict(color=edge_colors, width=0.5)
+                ),
+                text=f'bug fix: {bug_fix}',
+                hoverinfo='text'
+            )
+        )
 
     init = gob.Scatter(
         x=[commit_coordinates[0][0]],
@@ -142,21 +153,6 @@ def _plot_chord_diagram_for_raw_bugs(
             line=dict(color=edge_colors, width=0.5)
         ),
         text='HEAD',
-        hoverinfo='text'
-    )
-
-    nodes = gob.Scatter(
-        x=np.array(fixes_x),
-        y=np.array(fixes_y),
-        mode='markers',
-        name='',
-        marker=dict(
-            symbol='circle',
-            size=10,
-            color=node_color,
-            line=dict(color=edge_colors, width=0.5)
-        ),
-        text=fixes_label,
         hoverinfo='text'
     )
 
@@ -183,7 +179,7 @@ def _plot_chord_diagram_for_raw_bugs(
         plot_bgcolor='rgba(0,0,0,0)'
     )
 
-    data = lines + intro_annotations + [nodes] + [init]
+    data = lines + intro_annotations + nodes + [init]
     return gob.Figure(data=data, layout=layout)
 
 
