@@ -161,6 +161,7 @@ class BugFixingRelationPlot(Plot):
     def __init__(self, **kwargs: tp.Any) -> None:
         super().__init__(self.NAME, **kwargs)
 
+    @staticmethod
     def supports_stage_separation() -> bool:
         return False
 
