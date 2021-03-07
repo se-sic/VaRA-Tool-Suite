@@ -17,7 +17,7 @@ from benchbuild.utils.cmd import mkdir
 from graphviz import Digraph  # type: ignore
 from matplotlib import cm
 from plotly import graph_objs as go  # type: ignore
-from plotly import io as pio
+from plotly import io as pio  # type: ignore
 
 from varats.data.databases.blame_diff_library_interaction_database import (
     BlameDiffLibraryInteractionDatabase,
