@@ -38,16 +38,46 @@ from varats.utils.git_util import (
 
 
 def id_from_paths(paths: tp.Tuple[Path, Path]) -> str:
+    """
+    Concatenates the commit hashes of two result files separated by an
+    underscore.
+
+    Args:
+        paths: the path tuple of the result file paths
+
+    Returns:
+        the combined commit hash string of the result files
+    """
+
     return \
         f"{MetaReport.get_commit_hash_from_result_file(paths[0].name)}_" \
         f"{MetaReport.get_commit_hash_from_result_file(paths[1].name)}"
 
 
 def timestamp_from_paths(paths: tp.Tuple[Path, Path]) -> str:
+    """
+    Concatenates the timestamp of two result files separated by an underscore.
+
+    Args:
+        paths: the path tuple of the result file paths
+
+    Returns:
+        the combined timestamp string of the result files
+    """
     return f"{paths[0].stat().st_mtime_ns}_{paths[1].stat().st_mtime_ns}"
 
 
 def compare_timestamps(ts1: str, ts2: str) -> bool:
+    """
+    Compares the timestamp of two combined timestamp strings and determines if
+    the first one is newer than the second one.
+
+    Args:
+        ts1: the first combined timestamp string
+        ts2: the second combined timestamp string
+
+    Returns: True if ``ts1`` is newer than ``ts2``
+    """
     ts1_head, ts1_pred = ts1.split("_")
     ts2_head, ts2_pred = ts2.split("_")
     return int(ts1_head) > int(ts2_head) or int(ts1_pred) > int(ts2_pred)
@@ -56,6 +86,20 @@ def compare_timestamps(ts1: str, ts2: str) -> bool:
 def build_report_files_tuple(
     project_name: str, case_study: tp.Optional[CaseStudy]
 ) -> tp.Tuple[tp.Dict[str, Path], tp.Dict[str, Path]]:
+    """
+    Build the mappings between commit hash to its corresponding report file
+    path, where the first mapping corresponds to commit hashes and their
+    successful report files and the second mapping to commit hashes and their
+    failed report files.
+
+    Args:
+        project_name: the name of the project
+        case_study: the selected CaseStudy
+
+    Returns:
+        the mappings from commit hash to successful and failed report files as
+        tuple
+    """
     report_files: tp.Dict[str, Path] = {
         MetaReport.get_commit_hash_from_result_file(report.name): report
         for report in get_processed_revisions_files(
@@ -84,6 +128,21 @@ ReportPairTupleList = tp.List[tp.Tuple[Path, Path]]
 def build_report_pairs_tuple(
     project_name: str, commit_map: CommitMap, case_study: tp.Optional[CaseStudy]
 ) -> tp.Tuple[ReportPairTupleList, ReportPairTupleList]:
+    """
+    Builds a tuple of tuples (ReportPairTupleList, ReportPairTupleList) of
+    successful report files with their their corresponding predecessors and
+    tuples of failed report files with their corresponding predecessor.
+
+    Args:
+        project_name: the name of the project
+        commit_map: the selected CommitMap
+        case_study: the selected CaseStudy
+
+    Returns:
+        the tuple of report file to predecessor tuples for all successful and
+        failed reports
+    """
+
     report_files, failed_report_files = build_report_files_tuple(
         project_name, case_study
     )
@@ -130,6 +189,20 @@ def get_predecessor_report_file(
     c_hash: str, commit_map: CommitMap, short_time_id_cache: tp.Dict[str, int],
     report_files: tp.Dict[str, Path], sampled_revs: tp.List[str]
 ) -> tp.Optional[Path]:
+    """
+    Finds the preceding report file of the report that corresponds to the passed
+    commit hash within the sampled revisions of the passed report files.
+
+    Args:
+        c_hash: the selected commit hash
+        commit_map: the selected CommitMap
+        short_time_id_cache: the short time id cache
+        report_files: the report files
+        sampled_revs: the sampled revisions
+
+    Returns:
+        the path to the preceding report file if it exists
+    """
     commit_time_id = commit_map.short_time_id(c_hash)
     pred_commits = [(short_time_id_cache[rev], rev)
                     for rev in sampled_revs
@@ -146,6 +219,21 @@ def get_successor_report_file(
     c_hash: str, commit_map: CommitMap, short_time_id_cache: tp.Dict[str, int],
     report_files: tp.Dict[str, Path], sampled_revs: tp.List[str]
 ) -> tp.Optional[Path]:
+    """
+    Finds the subsequent report file of the report that corresponds to the
+    passed commit hash within the sampled revisions of the passed report files.
+
+    Args:
+        c_hash: the selected commit hash
+        commit_map: the selected CommitMap
+        short_time_id_cache: the short time id cache
+        report_files: the report files
+        sampled_revs: the sampled revisions
+
+    Returns:
+        the path to the subsequent report file if it exists
+    """
+
     commit_time_id = commit_map.short_time_id(c_hash)
     succ_commits = [(short_time_id_cache[rev], rev)
                     for rev in sampled_revs
