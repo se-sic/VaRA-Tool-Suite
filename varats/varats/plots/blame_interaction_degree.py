@@ -1331,6 +1331,8 @@ class BlameInteractionDegree(BlameDegree):
             'legend_title': 'Interaction degrees',
             'fig_title': 'Blame interactions'
         }
+        # TODO (se-passau/VaRA#545): make params configurable in user call
+        #  with plot config rework
         self._degree_plot(view_mode, DegreeType.interaction, extra_plot_cfg)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
@@ -1367,6 +1369,8 @@ class BlameInteractionDegreeMultiLib(BlameDegree):
             'base_lib': base_lib,
             'inter_lib': inter_lib
         }
+        # TODO (se-passau/VaRA#545): make params configurable in user call
+        #  with plot config rework
         self._multi_lib_degree_plot(
             view_mode, DegreeType.interaction, extra_plot_cfg
         )
@@ -1391,6 +1395,8 @@ class BlameInteractionFractionOverview(BlameDegree):
             'legend_title': 'Fraction ratio',
             'fig_title': 'Distribution of fractions'
         }
+        # TODO (se-passau/VaRA#545): make params configurable in user call
+        #  with plot config rework
         self._fraction_overview_plot(
             view_mode, DegreeType.interaction, extra_plot_cfg
         )
@@ -1436,6 +1442,8 @@ class BlameLibraryInteractions(BlameDegree):
             'width': 1500,
             'height': 1000
         }
+        # TODO (se-passau/VaRA#545): make params configurable in user call
+        #  with plot config rework
         self.__figure = self._multi_lib_interaction_sankey_plot(
             view_mode, DegreeType.interaction, extra_plot_cfg, filetype='png'
         )
@@ -1490,6 +1498,8 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
                 "View mode is turned off. The specified revision will be "
                 "ignored."
             )
+        # TODO (se-passau/VaRA#545): make params configurable in user call
+        #  with plot config rework
         self.__graph = self._graphviz_plot(
             view_mode=view_mode, show_edge_weight=True
         )
@@ -1528,6 +1538,8 @@ class BlameAuthorDegree(BlameDegree):
             'legend_title': 'Author interaction degrees',
             'fig_title': 'Author blame interactions'
         }
+        # TODO (se-passau/VaRA#545): make params configurable in user call
+        #  with plot config rework
         self._degree_plot(view_mode, DegreeType.author, extra_plot_cfg)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
@@ -1551,6 +1563,8 @@ class BlameMaxTimeDistribution(BlameDegree):
             'fig_title': 'Max time distribution',
             'edgecolor': None,
         }
+        # TODO (se-passau/VaRA#545): make params configurable in user call
+        #  with plot config rework
         self._degree_plot(view_mode, DegreeType.max_time, extra_plot_cfg)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
@@ -1574,6 +1588,8 @@ class BlameAvgTimeDistribution(BlameDegree):
             'fig_title': 'Average time distribution',
             'edgecolor': None,
         }
+        # TODO (se-passau/VaRA#545): make params configurable in user call
+        #  with plot config rework
         self._degree_plot(view_mode, DegreeType.avg_time, extra_plot_cfg)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
