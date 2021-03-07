@@ -6,10 +6,10 @@ import pandas as pd
 
 from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.blame_diff_metrics_database import (
-    _build_report_pairs_tuple,
-    _id_from_paths,
-    _timestamp_from_paths,
-    _compare_timestamps,
+    build_report_pairs_tuple,
+    id_from_paths,
+    timestamp_from_paths,
+    compare_timestamps,
 )
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.data.reports.blame_report import (
@@ -99,11 +99,11 @@ class BlameDiffLibraryInteractionDatabase(
                     )
 
             return (
-                pd.DataFrame(result_data_dicts), _id_from_paths(report_paths),
-                _timestamp_from_paths(report_paths)
+                pd.DataFrame(result_data_dicts), id_from_paths(report_paths),
+                timestamp_from_paths(report_paths)
             )
 
-        report_pairs, failed_report_pairs = _build_report_pairs_tuple(
+        report_pairs, failed_report_pairs = build_report_pairs_tuple(
             project_name, commit_map, case_study
         )
 
@@ -112,7 +112,7 @@ class BlameDiffLibraryInteractionDatabase(
         data_frame = build_cached_report_table(
             cls.CACHE_ID, project_name, report_pairs, failed_report_pairs,
             create_dataframe_layout, create_data_frame_for_report,
-            _id_from_paths, _timestamp_from_paths, _compare_timestamps
+            id_from_paths, timestamp_from_paths, compare_timestamps
         )
 
         return data_frame

@@ -37,23 +37,23 @@ from varats.utils.git_util import (
 )
 
 
-def _id_from_paths(paths: tp.Tuple[Path, Path]) -> str:
+def id_from_paths(paths: tp.Tuple[Path, Path]) -> str:
     return \
         f"{MetaReport.get_commit_hash_from_result_file(paths[0].name)}_" \
         f"{MetaReport.get_commit_hash_from_result_file(paths[1].name)}"
 
 
-def _timestamp_from_paths(paths: tp.Tuple[Path, Path]) -> str:
+def timestamp_from_paths(paths: tp.Tuple[Path, Path]) -> str:
     return f"{paths[0].stat().st_mtime_ns}_{paths[1].stat().st_mtime_ns}"
 
 
-def _compare_timestamps(ts1: str, ts2: str) -> bool:
+def compare_timestamps(ts1: str, ts2: str) -> bool:
     ts1_head, ts1_pred = ts1.split("_")
     ts2_head, ts2_pred = ts2.split("_")
     return int(ts1_head) > int(ts2_head) or int(ts1_pred) > int(ts2_pred)
 
 
-def _build_report_files_tuple(
+def build_report_files_tuple(
     project_name: str, case_study: tp.Optional[CaseStudy]
 ) -> tp.Tuple[tp.Dict[str, Path], tp.Dict[str, Path]]:
     report_files: tp.Dict[str, Path] = {
@@ -81,10 +81,10 @@ def _build_report_files_tuple(
 ReportPairTupleList = tp.List[tp.Tuple[Path, Path]]
 
 
-def _build_report_pairs_tuple(
+def build_report_pairs_tuple(
     project_name: str, commit_map: CommitMap, case_study: tp.Optional[CaseStudy]
 ) -> tp.Tuple[ReportPairTupleList, ReportPairTupleList]:
-    report_files, failed_report_files = _build_report_files_tuple(
+    report_files, failed_report_files = build_report_files_tuple(
         project_name, case_study
     )
 
@@ -99,7 +99,7 @@ def _build_report_pairs_tuple(
     report_pairs: tp.List[tp.Tuple[Path, Path]] = [
         (report, pred) for report, pred in [(
             report_file,
-            _get_predecessor_report_file(
+            get_predecessor_report_file(
                 c_hash, commit_map, short_time_id_cache, report_files,
                 sampled_revs
             )
@@ -110,13 +110,13 @@ def _build_report_pairs_tuple(
         (report, pred) for report, pred in chain.from_iterable(
             [[(
                 report_file,
-                _get_predecessor_report_file(
+                get_predecessor_report_file(
                     c_hash, commit_map, short_time_id_cache, report_files,
                     sampled_revs
                 )
             ),
               (
-                  _get_successor_report_file(
+                  get_successor_report_file(
                       c_hash, commit_map, short_time_id_cache, report_files,
                       sampled_revs
                   ), report_file
@@ -126,7 +126,7 @@ def _build_report_pairs_tuple(
     return report_pairs, failed_report_pairs
 
 
-def _get_predecessor_report_file(
+def get_predecessor_report_file(
     c_hash: str, commit_map: CommitMap, short_time_id_cache: tp.Dict[str, int],
     report_files: tp.Dict[str, Path], sampled_revs: tp.List[str]
 ) -> tp.Optional[Path]:
@@ -142,7 +142,7 @@ def _get_predecessor_report_file(
     return report_files.get(pred_report_commit_hash[:10], None)
 
 
-def _get_successor_report_file(
+def get_successor_report_file(
     c_hash: str, commit_map: CommitMap, short_time_id_cache: tp.Dict[str, int],
     report_files: tp.Dict[str, Path], sampled_revs: tp.List[str]
 ) -> tp.Optional[Path]:
@@ -273,11 +273,11 @@ class BlameDiffMetricsDatabase(
                     'year':
                         commit_date.year,
                 },
-                             index=[0]), _id_from_paths(report_paths),
-                _timestamp_from_paths(report_paths)
+                             index=[0]), id_from_paths(report_paths),
+                timestamp_from_paths(report_paths)
             )
 
-        report_pairs, failed_report_pairs = _build_report_pairs_tuple(
+        report_pairs, failed_report_pairs = build_report_pairs_tuple(
             project_name, commit_map, case_study
         )
 
@@ -286,7 +286,7 @@ class BlameDiffMetricsDatabase(
         data_frame = build_cached_report_table(
             cls.CACHE_ID, project_name, report_pairs, failed_report_pairs,
             create_dataframe_layout, create_data_frame_for_report,
-            _id_from_paths, _timestamp_from_paths, _compare_timestamps
+            id_from_paths, timestamp_from_paths, compare_timestamps
         )
 
         return data_frame
