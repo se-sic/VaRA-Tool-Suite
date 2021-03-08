@@ -11,6 +11,7 @@ from varats.project.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     BinaryType,
+    verify_binaries,
 )
 from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
@@ -59,6 +60,8 @@ class Curl(bb.Project, CVEProviderHook):  # type: ignore
                 bb.watch(local["./configure"])()
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+            verify_binaries(self)
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

@@ -12,8 +12,8 @@ from varats.data.reports.blame_report import (
     BlameReport,
     generate_author_degree_tuples,
     generate_avg_time_distribution_tuples,
-    generate_degree_tuples,
     generate_max_time_distribution_tuples,
+    generate_lib_dependent_degrees,
 )
 from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
@@ -40,10 +40,40 @@ class DegreeType(Enum):
     avg_time = "avg_time"
 
 
+def _split_tuple_values_in_lists_tuple(
+    list_of_occurrences: tp.List[tp.Tuple[int, int]]
+) -> tp.Tuple[tp.List[int], tp.List[int]]:
+    """
+    Maps the first and second value of the passed tuples to two separate lists
+    respectively and returns them as a tuple.
+
+    Args:
+        list_of_occurrences: list of tuples that are going to be separated
+
+    Returns:
+        a tuple of lists containing the first and second values of the passed
+        tuples
+    """
+
+    degrees: tp.List[int] = []
+    amounts: tp.List[int] = []
+
+    if not list_of_occurrences:
+        return degrees, amounts
+
+    degrees_untyped, amounts_untyped = map(list, zip(*list_of_occurrences))
+    degrees = tp.cast(tp.List[int], degrees_untyped)
+    amounts = tp.cast(tp.List[int], amounts_untyped)
+
+    return degrees, amounts
+
+
 class BlameInteractionDegreeDatabase(
     EvaluationDatabase,
     cache_id="blame_interaction_degree_data",
-    columns=["degree_type", "degree", "amount", "fraction"]
+    columns=[
+        "degree_type", "base_lib", "inter_lib", "degree", "amount", "fraction"
+    ]
 ):
     """Provides access to blame interaction degree data."""
 
@@ -56,73 +86,147 @@ class BlameInteractionDegreeDatabase(
 
         def create_dataframe_layout() -> pd.DataFrame:
             df_layout = pd.DataFrame(columns=cls.COLUMNS)
+            df_layout.base_lib = df_layout.base_lib.astype('str')
+            df_layout.inter_lib = df_layout.inter_lib.astype('str')
             df_layout.degree = df_layout.degree.astype('int64')
             df_layout.amount = df_layout.amount.astype('int64')
             df_layout.fraction = df_layout.fraction.astype('int64')
+
             return df_layout
 
         def create_data_frame_for_report(
             report_path: Path
         ) -> tp.Tuple[pd.DataFrame, str, str]:
             report = load_blame_report(report_path)
-            list_of_degree_occurrences = generate_degree_tuples(report)
-            degrees, amounts = map(list, zip(*list_of_degree_occurrences))
-            total = sum(amounts)
+
+            categorised_degree_occurrences = generate_lib_dependent_degrees(
+                report
+            )
+
+            def calc_total_amounts() -> int:
+                total = 0
+
+                for _, lib_dict in categorised_degree_occurrences.items():
+                    for _, tuple_list in lib_dict.items():
+                        for degree_amount_tuple in tuple_list:
+                            total += degree_amount_tuple[1]
+                return total
+
+            total_amounts_of_all_libs = calc_total_amounts()
 
             list_of_author_degree_occurrences = generate_author_degree_tuples(
                 report, commit_lookup
             )
-            author_degrees, author_amounts = map(
-                list, zip(*list_of_author_degree_occurrences)
+            author_degrees, author_amounts = _split_tuple_values_in_lists_tuple(
+                list_of_author_degree_occurrences
             )
             author_total = sum(author_amounts)
 
             list_of_max_time_deltas = generate_max_time_distribution_tuples(
                 report, commit_lookup, MAX_TIME_BUCKET_SIZE
             )
-            max_time_buckets, max_time_amounts = map(
-                list, zip(*list_of_max_time_deltas)
-            )
+            (max_time_buckets, max_time_amounts
+            ) = _split_tuple_values_in_lists_tuple(list_of_max_time_deltas)
             total_max_time_amounts = sum(max_time_amounts)
 
             list_of_avg_time_deltas = generate_avg_time_distribution_tuples(
                 report, commit_lookup, AVG_TIME_BUCKET_SIZE
             )
-            avg_time_buckets, avg_time_amounts = map(
-                list, zip(*list_of_avg_time_deltas)
-            )
+            (avg_time_buckets, avg_time_amounts
+            ) = _split_tuple_values_in_lists_tuple(list_of_avg_time_deltas)
             total_avg_time_amounts = sum(avg_time_amounts)
 
-            amount_of_entries = len(
-                degrees + author_degrees + max_time_buckets + avg_time_buckets
+            def build_dataframe_row(
+                degree_type: DegreeType,
+                degree: int,
+                amount: int,
+                total_amount: int,
+                base_library: tp.Optional[str] = None,
+                inter_library: tp.Optional[str] = None
+            ) -> tp.Dict:
+
+                data_dict: tp.Dict[str, tp.Any] = {
+                    'revision': report.head_commit,
+                    'time_id': commit_map.short_time_id(report.head_commit),
+                    'degree_type': degree_type.value,
+                    'base_lib': base_library,
+                    'inter_lib': inter_library,
+                    'degree': degree,
+                    'amount': amount,
+                    'fraction': np.divide(amount, total_amount)
+                }
+                return data_dict
+
+            result_data_dicts: tp.List[tp.Dict] = []
+
+            # Append interaction rows
+            for base_lib_name, inter_lib_dict \
+                    in categorised_degree_occurrences.items():
+
+                for inter_lib_name, list_of_lib_degree_amount_tuples in \
+                        inter_lib_dict.items():
+
+                    (inter_degrees,
+                     inter_amounts) = _split_tuple_values_in_lists_tuple(
+                         list_of_lib_degree_amount_tuples
+                     )
+
+                    for i, _ in enumerate(inter_degrees):
+                        degree = inter_degrees[i]
+                        lib_amount = inter_amounts[i]
+
+                        interaction_data_dict = build_dataframe_row(
+                            degree_type=DegreeType.interaction,
+                            degree=degree,
+                            amount=lib_amount,
+                            total_amount=total_amounts_of_all_libs,
+                            base_library=base_lib_name,
+                            inter_library=inter_lib_name,
+                        )
+                        result_data_dicts.append(interaction_data_dict)
+
+            def append_rows_of_degree_type(
+                degree_type: DegreeType,
+                degrees: tp.List[int],
+                amounts: tp.List[int],
+                sum_amounts: int,
+            ) -> None:
+                for k, _ in enumerate(degrees):
+                    data_dict = build_dataframe_row(
+                        degree_type=degree_type,
+                        degree=degrees[k],
+                        amount=amounts[k],
+                        total_amount=sum_amounts
+                    )
+                    result_data_dicts.append(data_dict)
+
+            # Append author rows
+            append_rows_of_degree_type(
+                degree_type=DegreeType.author,
+                degrees=author_degrees,
+                amounts=author_amounts,
+                sum_amounts=author_total
             )
 
-            return pd.DataFrame(
-                {
-                    'revision': [report.head_commit] * amount_of_entries,
-                    'time_id': [commit_map.short_time_id(report.head_commit)] *
-                               amount_of_entries,
-                    'degree_type':
-                        [DegreeType.interaction.value] * len(degrees) +
-                        [DegreeType.author.value] * len(author_degrees) +
-                        [DegreeType.max_time.value] * len(max_time_buckets) +
-                        [DegreeType.avg_time.value] * len(avg_time_buckets),
-                    'degree':
-                        degrees + author_degrees + max_time_buckets +
-                        avg_time_buckets,
-                    'amount':
-                        amounts + author_amounts + max_time_amounts +
-                        avg_time_amounts,
-                    'fraction':
-                        np.concatenate([
-                            np.divide(amounts, total),
-                            np.divide(author_amounts, author_total),
-                            np.divide(max_time_amounts, total_max_time_amounts),
-                            np.divide(avg_time_amounts, total_avg_time_amounts)
-                        ]),
-                },
-                index=range(0, amount_of_entries)
-            ), report.head_commit, str(report_path.stat().st_mtime_ns)
+            # Append max_time rows
+            append_rows_of_degree_type(
+                degree_type=DegreeType.max_time,
+                degrees=max_time_buckets,
+                amounts=max_time_amounts,
+                sum_amounts=total_max_time_amounts
+            )
+
+            # Append avg_time rows
+            append_rows_of_degree_type(
+                degree_type=DegreeType.avg_time,
+                degrees=avg_time_buckets,
+                amounts=avg_time_amounts,
+                sum_amounts=total_avg_time_amounts
+            )
+
+            return pd.DataFrame(result_data_dicts), report.head_commit, str(
+                report_path.stat().st_mtime_ns
+            )
 
         report_files = get_processed_revisions_files(
             project_name, BlameReport,

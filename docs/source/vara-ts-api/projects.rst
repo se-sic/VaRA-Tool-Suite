@@ -34,6 +34,7 @@ template for your own project::
     from varats.project.project_util import (
         ProjectBinaryWrapper,
         wrap_paths_to_binaries,
+        verify_binaries,
     )
 
     class Gravity(bb.Project, CVEProviderHook):  # type: ignore
@@ -72,6 +73,8 @@ template for your own project::
                 with local.env(CC=str(clang)):
                     bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
+                verify_binaries(self)
+
 
 .. note::
 
@@ -92,6 +95,13 @@ an analysis, a list of
 :class:`~varats.project.project_util.ProjectBinaryWrapper`\ s is returned,
 where every wrapper specifies the name, location of the binary, and the
 :class:`~varats.project.project_util.BinaryType`.
+To guarantee that all specified binaries were produced during compilation, one
+should add a :func:`~varats.project.project_util.verify_binaries` call after
+the compilation is done.
+In our example, the :func:`~varats.project.project_util.verify_binaries` call
+is directly after the call to `make` and still located within the
+`gravity_version_source` context, meaning the execution is still in the
+projects source folder.
 
 Binary wrappers can be created automatically with the provided helper functions
 :class:`~varats.project.project_util.wrap_paths_to_binaries` or
