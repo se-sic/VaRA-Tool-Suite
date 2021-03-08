@@ -2,12 +2,18 @@
 import unittest
 import unittest.mock as mock
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
+from tests.paper.test_case_study import YAML_CASE_STUDY
 from varats.data.databases.blame_diff_metrics_database import (
     id_from_paths,
     timestamp_from_paths,
     compare_timestamps,
+    build_report_files_tuple,
 )
+from varats.data.reports.blame_report import BlameReport
+from varats.paper.case_study import load_case_study_from_file
+from varats.revision.revisions import get_processed_revisions_files
 
 
 class TestBlameDiffMetricsUtils(unittest.TestCase):
@@ -15,6 +21,12 @@ class TestBlameDiffMetricsUtils(unittest.TestCase):
 
     @classmethod
     def setUp(cls) -> None:
+
+        with NamedTemporaryFile('w') as yaml_file:
+            yaml_file.write(YAML_CASE_STUDY)
+            yaml_file.seek(0)
+            cls.case_study = load_case_study_from_file(Path(yaml_file.name))
+
         cls.br_paths_list = [
             Path(__file__).parents[2] / Path(
                 "TEST_INPUTS/results/xz/BR-xz-xz-2f0bc9cd40"
@@ -72,3 +84,34 @@ class TestBlameDiffMetricsUtils(unittest.TestCase):
         self.assertTrue(comp1)
         self.assertTrue(comp2)
         self.assertFalse(comp3)
+
+    @mock.patch(
+        "varats.data.databases.blame_diff_metrics_database"
+        ".get_failed_revisions_files"
+    )
+    @mock.patch(
+        "varats.data.databases.blame_diff_metrics_database"
+        ".get_processed_revisions_files"
+    )
+    def test_build_report_files_tuple(
+        self, mock_processed_revisions, mock_failed_revisions
+    ) -> None:
+        """Test if the mappings from commit hash to successful and failed report
+        files are correctly returned as tuple."""
+        mock_processed_revisions.return_value = self.br_paths_list
+        mock_failed_revisions.return_value = self.br_paths_list[0:2]
+        report_files_tuple = build_report_files_tuple("mocked", None)
+
+        successful_revisions = {
+            '2f0bc9cd40': self.br_paths_list[0],
+            'c5c7ceb08a': self.br_paths_list[1],
+            'ef364d3abc': self.br_paths_list[2]
+        }
+        failed_revisions = {
+            '2f0bc9cd40': self.br_paths_list[0],
+            'c5c7ceb08a': self.br_paths_list[1]
+        }
+
+        self.assertTrue(
+            report_files_tuple, (successful_revisions, failed_revisions)
+        )
