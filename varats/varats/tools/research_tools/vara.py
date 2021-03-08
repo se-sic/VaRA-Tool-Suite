@@ -114,12 +114,16 @@ class VaRA(ResearchTool[VaRACodeBase]):
     Find the main repo online on github: https://github.com/se-passau/VaRA
     """
 
-    DEPENDENCIES = Dependencies({})
+    __DEPENDENCIES = Dependencies({})
 
     def __init__(self, base_dir: Path) -> None:
         super().__init__("VaRA", [BuildType.DEV], VaRACodeBase(base_dir))
         vara_cfg()["vara"]["llvm_source_dir"] = str(base_dir)
         save_config()
+
+    @classmethod
+    def get_dependencies(cls) -> Dependencies:
+        return cls.__DEPENDENCIES
 
     @staticmethod
     def source_location() -> Path:
@@ -277,11 +281,13 @@ class VaRA(ResearchTool[VaRACodeBase]):
             )
 
         container_vara_dir = image_context.varats_root / "tools/VaRA"
-        if self.DEPENDENCIES.has_distro(image_context.distro):
+        if self.get_dependencies().has_dependencies_for_distro(
+            image_context.distro
+        ):
             image_context.layers.run(
                 *(
-                    self.DEPENDENCIES.get_install_command(image_context.distro
-                                                         ).split(" ")
+                    self.get_dependencies().
+                    get_install_command(image_context.distro).split(" ")
                 )
             )
         image_context.layers.copy_([str(self.install_location())],

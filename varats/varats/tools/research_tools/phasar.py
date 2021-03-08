@@ -13,6 +13,7 @@ from varats.tools.research_tools.research_tool import (
     CodeBase,
     ResearchTool,
     SubProject,
+    Dependencies,
 )
 from varats.tools.research_tools.vara_manager import (
     BuildType,
@@ -75,10 +76,17 @@ class Phasar(ResearchTool[PhasarCodeBase]):
     https://github.com/secure-software-engineering/phasar.git
     """
 
+    # TODO: see se-passau/VaRA#740
+    __DEPENDENCIES = Dependencies({})
+
     def __init__(self, base_dir: Path) -> None:
         super().__init__("phasar", [BuildType.DEV], PhasarCodeBase(base_dir))
         vara_cfg()["phasar"]["source_dir"] = str(base_dir)
         save_config()
+
+    @classmethod
+    def get_dependencies(cls) -> Dependencies:
+        return cls.__DEPENDENCIES
 
     @staticmethod
     def source_location() -> Path:

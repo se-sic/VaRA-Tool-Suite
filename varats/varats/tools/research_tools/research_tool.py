@@ -49,24 +49,27 @@ class Dependencies:
     def __init__(self, dependencies: tp.Dict[Distro, tp.List[str]]):
         self.__dependencies = dependencies
 
-    def has_distro(self, distro: Distro) -> bool:
+    def has_dependencies_for_distro(self, distro: Distro) -> bool:
         """
-        Check whether the given distro occurs in the dependencies.
+        Check whether the deendency object has any entries for the given distro.
 
         Args:
             distro: the distro to check
 
         Returns:
-            whether the given distro occurs in the dependencies
+            whether there are any dependencies for the given distro
 
         Test:
         >>> deps = Dependencies({Distro.DEBIAN: ["foo", "bar"]})
-        >>> deps.has_distro(Distro.DEBIAN)
+        >>> deps.has_dependencies_for_distro(Distro.DEBIAN)
         True
-        >>> deps.has_distro(Distro.ARCH)
+        >>> deps.has_dependencies_for_distro(Distro.ARCH)
+        False
+        >>> deps = Dependencies({Distro.DEBIAN: []})
+        >>> deps.has_dependencies_for_distro(Distro.DEBIAN)
         False
         """
-        return distro in self.__dependencies.keys()
+        return bool(self.__dependencies.get(distro, None))
 
     def get_install_command(self, distro: Distro) -> str:
         """
@@ -358,6 +361,11 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
 
     def is_build_type_supported(self, build_type: BuildType) -> bool:
         return build_type in self.__supported_build_types
+
+    @classmethod
+    @abc.abstractmethod
+    def get_dependencies(cls) -> Dependencies:
+        """Returns the dependencies for this research tool."""
 
     @staticmethod
     @abc.abstractmethod
