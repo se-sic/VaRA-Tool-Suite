@@ -15,7 +15,6 @@ setup(
     tests_require=["pytest", "pytest-cov"],
     install_requires=[
         "benchbuild>=6.0.1",
-        "graphviz>=0.14.2",
         "plumbum>=1.6.6",
         "PyGithub>=1.47",
         "tabulate>=0.8.6",
