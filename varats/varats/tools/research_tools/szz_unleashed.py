@@ -14,7 +14,7 @@ from varats.tools.research_tools.research_tool import (
     ResearchTool,
     SubProject,
 )
-from varats.tools.research_tools.vara_manager import BuildType, ProcessManager
+from varats.tools.research_tools.vara_manager import BuildType
 from varats.utils.settings import vara_cfg, save_config
 
 LOG = logging.getLogger(__name__)
