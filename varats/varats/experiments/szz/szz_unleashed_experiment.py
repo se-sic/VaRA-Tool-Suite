@@ -45,13 +45,18 @@ class PrepareSZZUnleashedData(actions.Step):  # type: ignore
         for bug in bugs:
             # SZZUnleashed uses some strange timezone format that cannot be
             # produced by datetime, so we just fake it.
-            commitdate = str(
+            def fix_date(date: datetime) -> str:
+                return str(date) + " +0000"
+
+            commitdate = fix_date(
                 datetime.fromtimestamp(bug.fixing_commit.commit_time)
-            ) + " +0000"
-            creationdate = commitdate
-            resolutiondate = commitdate
-            # if bug.issue_id:
-            # TODO: find issue creation/resolution date
+            )
+            creationdate = fix_date(
+                bug.creationdate
+            ) if bug.creationdate else commitdate
+            resolutiondate = fix_date(
+                bug.resolutiondate
+            ) if bug.resolutiondate else commitdate
             fixers_dict[str(bug.fixing_commit.id)] = {
                 "hash": str(bug.fixing_commit.id),
                 "commitdate": commitdate,
