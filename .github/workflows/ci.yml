@@ -38,7 +38,6 @@ jobs:
         pip install pytest-cov
         pip install coverage
         pip install mypy
-        pip install https://github.com/plotly/Kaleido/releases/download/v0.2.1/kaleido-0.2.1-py2.py3-none-manylinux1_x86_64.whl
     - name: Run unittests
       run: |
         echo $BB_TMP_DIR
