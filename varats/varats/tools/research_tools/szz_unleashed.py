@@ -28,7 +28,7 @@ class SZZUnleashedCodeBase(CodeBase):
             base_dir, [
                 SubProject(
                     self, "SZZUnleashed",
-                    "https://github.com/wogscpar/SZZUnleashed.git", "origin",
+                    "https://github.com/boehmseb/SZZUnleashed.git", "origin",
                     "szzunleashed"
                 )
             ]
@@ -37,7 +37,7 @@ class SZZUnleashedCodeBase(CodeBase):
 
 class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
     """
-    Research tool implementation for VaRA.
+    Research tool implementation for SZZUnleashed.
 
     Find the main repo on github: https://github.com/wogscpar/SZZUnleashed
     """
