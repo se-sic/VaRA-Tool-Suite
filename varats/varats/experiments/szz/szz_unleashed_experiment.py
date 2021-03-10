@@ -83,6 +83,7 @@ class RunSZZUnleashed(actions.Step):  # type: ignore
         results_dir = Path(self.obj.source_of_primary).parent
         szzunleashed_jar = SZZUnleashed.install_location(
         ) / SZZUnleashed.get_jar_name()
+
         with local.cwd(results_dir):
             bb.watch(java)(
                 "-jar", str(szzunleashed_jar), "-d", "1", "-i",
@@ -122,6 +123,7 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
         with (bb_results_folder / "results" /
               "fix_and_introducers_pairs.json").open("r") as result_json:
             szz_result = json.load(result_json)
+
         bugs: tp.Dict[str, tp.Set[str]] = {}
         # entries are lists of the form [<fix>, <introducing>]
         for result_entry in szz_result:
