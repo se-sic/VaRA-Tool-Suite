@@ -85,7 +85,7 @@ class RunSZZUnleashed(actions.Step):  # type: ignore
         ) / SZZUnleashed.get_jar_name()
         with local.cwd(results_dir):
             bb.watch(java)(
-                "-jar", str(szzunleashed_jar), "-i",
+                "-jar", str(szzunleashed_jar), "-d", "1", "-i",
                 str(results_dir / "issue_list.json"), "-r",
                 self.obj.source_of_primary
             )
