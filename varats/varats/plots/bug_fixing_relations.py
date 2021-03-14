@@ -51,8 +51,9 @@ def _plot_chord_diagram_for_raw_bugs(
         get_distance([1, 0], [-np.sqrt(2) / 2, np.sqrt(2) / 2]), 2.0
     ]
     edge_colors = ['#d4daff', '#84a9dd', '#5588c8', '#6d8acf']
-    node_color = 'rgba(0,51,181, 0.85)'
+    node_color = 'rgba(0, 51, 181, 0.85)'
     init_color = 'rgba(207, 0, 15, 1)'
+    default_color = 'rgba(232, 236, 241, 1)'
 
     def get_interval(distance):
         #get right interval for given distance using distance thresholds
@@ -79,6 +80,30 @@ def _plot_chord_diagram_for_raw_bugs(
             get_coordinate_on_curve(point_space[k]) for k in range(num_points)
         ])
 
+    # draw ordinary commit nodes
+    default_nodes = []
+    for commit in project_repo.walk(
+        project_repo.head.target.hex, pygit2.GIT_SORT_TIME
+    ):
+        coordinates = commit_coordinates[map_commits_to_nodes[commit.hex]]
+        default_nodes.append(
+            gob.Scatter(
+                x=[coordinates[0]],
+                y=[coordinates[1]],
+                mode='markers',
+                name='',
+                marker=dict(
+                    symbol='circle',
+                    size=10,
+                    color=default_color,
+                    line=dict(color=edge_colors, width=0.5)
+                ),
+                text=f'{commit.hex}',
+                hoverinfo='text'
+            )
+        )
+
+    # draw fixing commit nodes and relations
     lines = []
     intro_annotations = []
     nodes = []
@@ -118,7 +143,7 @@ def _plot_chord_diagram_for_raw_bugs(
                     y=curve_points[:, 1],
                     mode='markers',
                     marker=dict(size=0.5, color=edge_colors),
-                    text=f'introduced by {bug_introduction}',
+                    text=f'bug fix {bug_fix} induced by {bug_introduction}',
                     hoverinfo='text'
                 )
             )
@@ -176,10 +201,11 @@ def _plot_chord_diagram_for_raw_bugs(
         xaxis=dict(axis),
         yaxis=dict(axis),
         hovermode='closest',
+        margin=dict(l=0, r=0, b=0, t=50),
         plot_bgcolor='rgba(0,0,0,0)'
     )
 
-    data = lines + intro_annotations + nodes + [init]
+    data = lines + intro_annotations + default_nodes + nodes + [init]
     return gob.Figure(data=data, layout=layout)
 
 
@@ -209,7 +235,8 @@ class BugFixingRelationPlot(Plot):
         if view_mode:
             figure.show()
         else:
-            offply.plot(figure, filename=self.plot_file_name(""))
+            offply.plot(figure, filename=self.plot_file_name("html"))
+            figure.write_image(self.plot_file_name("png"))
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return set()
