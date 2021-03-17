@@ -12,6 +12,8 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
 )
+
+from varats.containers.containers import get_base_image, ImageBase
 from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
@@ -37,6 +39,8 @@ class Libpng(bb.Project, CVEProviderHook):  # type: ignore
             version_filter=project_filter_generator("libpng")
         )
     ]
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10)
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
