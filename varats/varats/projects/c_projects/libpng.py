@@ -11,6 +11,7 @@ from varats.project.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     BinaryType,
+    verify_binaries,
 )
 
 from varats.containers.containers import get_base_image, ImageBase
@@ -63,6 +64,8 @@ class Libpng(bb.Project, CVEProviderHook):  # type: ignore
                 bb.watch(cmake)("-G", "Unix Makefiles", "..")
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+            verify_binaries(self)
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:

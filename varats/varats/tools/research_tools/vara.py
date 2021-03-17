@@ -6,7 +6,6 @@ import shutil
 import typing as tp
 from pathlib import Path
 
-from benchbuild.environments.domain.declarative import ContainerImage
 from benchbuild.utils.cmd import ln, mkdir
 from plumbum import local
 from PyQt5.QtCore import QProcess
@@ -16,6 +15,8 @@ from varats.tools.research_tools.research_tool import (
     CodeBase,
     ResearchTool,
     SubProject,
+    Dependencies,
+    Distro,
 )
 from varats.tools.research_tools.vara_manager import (
     BuildType,
@@ -26,6 +27,9 @@ from varats.tools.research_tools.vara_manager import (
 from varats.utils.exceptions import ProcessTerminatedError
 from varats.utils.logger_util import log_without_linesep
 from varats.utils.settings import save_config, vara_cfg
+
+if tp.TYPE_CHECKING:
+    from varats.containers.containers import BaseImageCreationContext
 
 LOG = logging.getLogger(__name__)
 
@@ -110,10 +114,16 @@ class VaRA(ResearchTool[VaRACodeBase]):
     Find the main repo online on github: https://github.com/se-passau/VaRA
     """
 
+    __DEPENDENCIES = Dependencies({})
+
     def __init__(self, base_dir: Path) -> None:
         super().__init__("VaRA", [BuildType.DEV], VaRACodeBase(base_dir))
         vara_cfg()["vara"]["llvm_source_dir"] = str(base_dir)
         save_config()
+
+    @classmethod
+    def get_dependencies(cls) -> Dependencies:
+        return cls.__DEPENDENCIES
 
     @staticmethod
     def source_location() -> Path:
@@ -256,14 +266,30 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
         return status_ok
 
-    def add_container_layers(self, layers: ContainerImage) -> ContainerImage:
+    def add_container_layers(
+        self, image_context: 'BaseImageCreationContext'
+    ) -> None:
         """
         Add the layers required for this research tool to the given container.
 
         Args:
-            layers: the container to add the layers to
-
-        Returns:
-            the container with the added layers
+            image_context: the base image creation context
         """
-        raise NotImplementedError("See se-passau/VaRA#718")
+        if not self.verify_install(self.install_location()):
+            raise AssertionError(
+                "VaRA is not correctly installed on your system."
+            )
+
+        container_vara_dir = image_context.varats_root / "tools/VaRA"
+        if self.get_dependencies().has_dependencies_for_distro(
+            image_context.distro
+        ):
+            image_context.layers.run(
+                *(
+                    self.get_dependencies().
+                    get_install_command(image_context.distro).split(" ")
+                )
+            )
+        image_context.layers.copy_([str(self.install_location())],
+                                   str(container_vara_dir))
+        image_context.append_to_env("PATH", [str(container_vara_dir / 'bin')])

@@ -1,11 +1,13 @@
 """Utilities for tool handling."""
 
 import typing as tp
+from functools import wraps
 from pathlib import Path
 
 from varats.tools.research_tools.phasar import Phasar
 from varats.tools.research_tools.research_tool import ResearchTool
 from varats.tools.research_tools.vara import VaRA
+from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.settings import vara_cfg
 
 
@@ -64,3 +66,24 @@ def get_research_tool(
 def get_supported_research_tool_names() -> tp.List[str]:
     """Returns a list of all supported research tools."""
     return ["phasar", "vara"]
+
+
+def configuration_lookup_error_handler(
+    func: tp.Callable[..., None]
+) -> tp.Callable[..., None]:
+    """Wrapper for drivers to catch internal Exceptions and provide a helpful
+    message to the user."""
+
+    @wraps(func)
+    def wrapper_configuration_lookup_error_handler(
+        *args: tp.Any, **kwargs: tp.Any
+    ) -> None:
+        try:
+            func(*args, *kwargs)
+        except ConfigurationLookupError:
+            print(
+                "No paper config was set. "
+                "To create or select a paper config use vara-pc"
+            )
+
+    return wrapper_configuration_lookup_error_handler
