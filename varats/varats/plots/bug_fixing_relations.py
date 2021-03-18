@@ -1,11 +1,12 @@
 import typing as tp
+from pathlib import Path
 
 import numpy as np
 import plotly.graph_objs as gob
 import plotly.offline as offply
 import pygit2
 
-from varats.plot.plot import Plot
+from varats.plot.plot import Plot, PlotDataEmpty
 from varats.project.project_util import (
     get_project_cls_by_name,
     get_local_project_git,
@@ -30,6 +31,10 @@ def _plot_chord_diagram_for_raw_bugs(
         # node ids are sorted by time
         map_commits_to_nodes[commit.hex] = commit_count
         commit_count += 1
+
+    # if less than 2 commits, no graph can be drawn!
+    if commit_count < 2:
+        raise PlotDataEmpty
 
     # compute unit circle coordinates for each commit
     # move unit circle such that HEAD is on top
@@ -223,20 +228,43 @@ class BugFixingRelationPlot(Plot):
 
     def plot(self, view_mode: bool) -> None:
         """Plots bug plot for the whole project."""
-        project_name = self.plot_kwargs["project"]
+        project_name = self.plot_kwargs['project']
 
         bug_provider = BugProvider.get_provider_for_project(
             get_project_cls_by_name(project_name)
         )
 
         raw_bugs = bug_provider.find_all_raw_bugs()
-        figure = _plot_chord_diagram_for_raw_bugs(project_name, raw_bugs)
-        #filename must be left empty for plot command
-        if view_mode:
-            figure.show()
+        self.__figure = _plot_chord_diagram_for_raw_bugs(project_name, raw_bugs)
+
+    def show(self) -> None:
+        try:
+            self.plot(True)
+        except PlotDataEmpty:
+            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            return
+        self.__figure.show()
+
+    def save(
+        self, path: tp.Optional[Path] = None, filetype: str = 'html'
+    ) -> None:
+        try:
+            self.plot(False)
+        except PlotDataEmpty:
+            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            return
+
+        if path is None:
+            plot_dir = Path(self.plot_kwargs["plot_dir"])
         else:
-            offply.plot(figure, filename=self.plot_file_name("html"))
-            figure.write_image(self.plot_file_name("png"))
+            plot_dir = path
+
+        if filetype == 'html':
+            self.__figure.write_html(self.plot_file_name(filetype))
+        elif filetype == 'json':
+            self.__figure.write_json(self.plot_file_name(filetype))
+        else:
+            self.__figure.write_image(self.plot_file_name(filetype))
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return set()
