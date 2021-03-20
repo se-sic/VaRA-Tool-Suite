@@ -52,7 +52,8 @@ def _plot_chord_diagram_for_raw_bugs(
 
     def get_commit_distance(fix, intro):
         # Returns distance betweeen fix and intro of a bug
-        return map_commit_to_id[fix] - map_commit_to_id[intro]
+        # commit ids are sorted after time in descending order
+        return map_commit_to_id[intro] - map_commit_to_id[fix]
 
     #defining some constants for diagram generation
     cp_parameters = [1.2, 1.5, 1.8, 2.1]
