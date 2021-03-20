@@ -61,6 +61,12 @@ def _plot_chord_diagram_for_raw_bugs(
         np.sqrt(2),
         get_distance([1, 0], [-np.sqrt(2) / 2, np.sqrt(2) / 2]), 2.0
     ]
+    commit_distance_thresholds = [
+        0,
+        round(0.25 * commit_count),
+        round(0.5 * commit_count),
+        round(0.75 * commit_count), commit_count
+    ]
     edge_colors = ['#d4daff', '#84a9dd', '#5588c8', '#6d8acf']
 
     node_colors = {
@@ -77,6 +83,12 @@ def _plot_chord_diagram_for_raw_bugs(
         #interval indices are in [0,3] for 5 thresholds
         k = 0
         while distance_thresholds[k] < distance:
+            k += 1
+        return k - 1
+
+    def get_commit_interval(distance):
+        k = 0
+        while commit_distance_thresholds[k] < distance:
             k += 1
         return k - 1
 
@@ -119,7 +131,10 @@ def _plot_chord_diagram_for_raw_bugs(
             # get distance between the points and the respective interval index
             dist = get_distance(fix_coordinates, intro_coordinates)
             interval = get_interval(dist)
-            color = edge_colors[interval]
+
+            commit_dist = get_commit_distance(bug_fix, bug_introduction)
+            commit_interval = get_commit_interval(commit_dist)
+            color = edge_colors[commit_interval]
 
             control_points = [
                 fix_coordinates, fix_coordinates / cp_parameters[interval],
