@@ -24,12 +24,14 @@ def _plot_chord_diagram_for_raw_bugs(
 
     # maps commit hex -> node id
     commit_count = 0
-    map_commits_to_nodes: tp.Dict[str, int] = {}
+    map_commit_to_id: tp.Dict[str, int] = {}
+    commit_type: tp.Dict[str, str] = {}
     for commit in project_repo.walk(
         project_repo.head.target.hex, pygit2.GIT_SORT_TIME
     ):
         # node ids are sorted by time
-        map_commits_to_nodes[commit.hex] = commit_count
+        map_commit_to_id[commit.hex] = commit_count
+        commit_type[commit.hex] = 'default'
         commit_count += 1
 
     # if less than 2 commits, no graph can be drawn!
@@ -47,18 +49,28 @@ def _plot_chord_diagram_for_raw_bugs(
         # Returns distance between two points
         return np.linalg.norm(np.array(p1) - np.array(p2))
 
+    def get_commit_distance(fix, intro):
+        # Returns distance betweeen fix and intro of a bug
+        return map_commit_to_id[fix] - map_commit_to_id[intro]
+
     #defining some constants for diagram generation
     cp_parameters = [1.2, 1.5, 1.8, 2.1]
     distance_thresholds = [
-        0.0,
+        0,
         get_distance([1, 0], 2 * [np.sqrt(2) / 2]),
         np.sqrt(2),
         get_distance([1, 0], [-np.sqrt(2) / 2, np.sqrt(2) / 2]), 2.0
     ]
     edge_colors = ['#d4daff', '#84a9dd', '#5588c8', '#6d8acf']
-    node_color = 'rgba(0, 51, 181, 0.85)'
-    init_color = 'rgba(207, 0, 15, 1)'
-    default_color = 'rgba(232, 236, 241, 1)'
+
+    node_colors = {
+        'fix': 'rgba(0, 177, 106, 1)',
+        'introduction': 'rgba(240, 52, 52, 1)',
+        'introducing fix': 'rgba(235, 149, 50, 1)',
+        'head': 'rgba(142, 68, 173, 1)',
+        'fixing head': 'rgba(142, 68, 173, 1)',
+        'default': 'rgba(232, 236, 241, 1)'
+    }
 
     def get_interval(distance):
         #get right interval for given distance using distance thresholds
@@ -85,41 +97,24 @@ def _plot_chord_diagram_for_raw_bugs(
             get_coordinate_on_curve(point_space[k]) for k in range(num_points)
         ])
 
-    # draw ordinary commit nodes
-    default_nodes = []
-    for commit in project_repo.walk(
-        project_repo.head.target.hex, pygit2.GIT_SORT_TIME
-    ):
-        coordinates = commit_coordinates[map_commits_to_nodes[commit.hex]]
-        default_nodes.append(
-            gob.Scatter(
-                x=[coordinates[0]],
-                y=[coordinates[1]],
-                mode='markers',
-                name='',
-                marker=dict(
-                    symbol='circle',
-                    size=10,
-                    color=default_color,
-                    line=dict(color=edge_colors, width=0.5)
-                ),
-                text=f'{commit.hex}',
-                hoverinfo='text'
-            )
-        )
-
-    # draw fixing commit nodes and relations
+    # draw relations and preprocess commit types
     lines = []
     intro_annotations = []
     nodes = []
     for bug in bug_set:
         bug_fix = bug.fixing_commit
-        fix_ind = map_commits_to_nodes[bug_fix]
+        fix_ind = map_commit_to_id[bug_fix]
         fix_coordinates = commit_coordinates[fix_ind]
 
+        commit_type[bug_fix] = 'introducing fix' if commit_type[
+            bug_fix] == 'introduction' else 'fix'
+
         for bug_introduction in bug.introducing_commits:
-            intro_ind = map_commits_to_nodes[bug_introduction]
+            intro_ind = map_commit_to_id[bug_introduction]
             intro_coordinates = commit_coordinates[intro_ind]
+
+            commit_type[bug_introduction] = 'introducing fix' if commit_type[
+                bug_introduction] == 'fix' else 'introduction'
 
             # get distance between the points and the respective interval index
             dist = get_distance(fix_coordinates, intro_coordinates)
@@ -142,49 +137,34 @@ def _plot_chord_diagram_for_raw_bugs(
                 )
             )
 
-            intro_annotations.append(
-                gob.Scatter(
-                    x=curve_points[:, 0],
-                    y=curve_points[:, 1],
-                    mode='markers',
-                    marker=dict(size=0.5, color=edge_colors),
-                    text=f'bug fix {bug_fix} induced by {bug_introduction}',
-                    hoverinfo='text'
-                )
-            )
+    for commit in project_repo.walk(
+        project_repo.head.target.hex, pygit2.GIT_SORT_TIME
+    ):
+        # draw commit nodes using preprocessed commit types
+        commit_id = map_commit_to_id[commit.hex]
 
-        #add fixing commits as vertices
+        if commit.hex == project_repo.head.target.hex:
+            commit_type[commit.hex
+                       ] = 'fixing head' if commit_type[commit.hex
+                                                       ] == 'fix' else 'head'
+
+        # set node data according to commit type
+        node_size = 10 if commit_type[commit.hex] == 'head' or commit_type[
+            commit.hex] == 'fixing head' else 8
+        node_label = f'{commit_type[commit.hex]} - {commit.hex}'
+        node_color = node_colors[commit_type[commit.hex]]
+
         nodes.append(
             gob.Scatter(
-                x=[fix_coordinates[0]],
-                y=[fix_coordinates[1]],
+                x=[commit_coordinates[commit_id][0]],
+                y=[commit_coordinates[commit_id][1]],
                 mode='markers',
                 name='',
-                marker=dict(
-                    symbol='circle',
-                    size=10,
-                    color=node_color,
-                    line=dict(color=edge_colors, width=0.5)
-                ),
-                text=f'bug fix: {bug_fix}',
+                marker=dict(symbol='circle', size=node_size, color=node_color),
+                text=node_label,
                 hoverinfo='text'
             )
         )
-
-    init = gob.Scatter(
-        x=[commit_coordinates[0][0]],
-        y=[commit_coordinates[0][1]],
-        mode='markers',
-        name='',
-        marker=dict(
-            symbol='circle',
-            size=12,
-            color=init_color,
-            line=dict(color=edge_colors, width=0.5)
-        ),
-        text='HEAD',
-        hoverinfo='text'
-    )
 
     title = f'Bug fixing relations for {project_name}'
     axis = dict(
@@ -210,7 +190,7 @@ def _plot_chord_diagram_for_raw_bugs(
         plot_bgcolor='rgba(0,0,0,0)'
     )
 
-    data = lines + intro_annotations + default_nodes + nodes + [init]
+    data = lines + intro_annotations + nodes
     return gob.Figure(data=data, layout=layout)
 
 
