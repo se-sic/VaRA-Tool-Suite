@@ -4,6 +4,7 @@ graphviz>=0.14.2
 jupyter>=1.0.0
 kaleido>=0.2.1
 matplotlib>=3.1.2
+networkx>=2.5
 packaging>=20.1
 pandas>=0.22.0
 plotly>=4.14.1
@@ -11,6 +12,7 @@ plumbum>=1.6.6
 pre-commit>=2.3.0
 pygit2>=0.28.2
 PyGithub>=1.47
+pygraphviz>=1.7
 pygtrie
 pylatex>=1.4.1
 PyQt5-stubs>=5.10.0,<5.14.0
