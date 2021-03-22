@@ -198,7 +198,7 @@ class TestVaraTestRepoSource(unittest.TestCase):
                     # Are repositories checked out at correct commit hash?
                     with local.cwd(self.bb_result_lib_path / "Elementalist"):
                         self.assertEqual(
-                            "e64923e",
+                            "5e8fe16",
                             git('rev-parse', '--short', 'HEAD').rstrip()
                         )
 
@@ -211,5 +211,11 @@ class TestVaraTestRepoSource(unittest.TestCase):
                     with local.cwd(self.bb_result_lib_path / "water_lib"):
                         self.assertEqual(
                             "58ec513",
+                            git('rev-parse', '--short', 'HEAD').rstrip()
+                        )
+
+                    with local.cwd(self.bb_result_lib_path / "earth_lib"):
+                        self.assertEqual(
+                            "1db6fbe",
                             git('rev-parse', '--short', 'HEAD').rstrip()
                         )

@@ -5,7 +5,6 @@ import shutil
 import typing as tp
 from pathlib import Path
 
-from benchbuild.environments.domain.declarative import ContainerImage
 from plumbum import local
 from PyQt5.QtCore import QProcess
 
@@ -14,6 +13,7 @@ from varats.tools.research_tools.research_tool import (
     CodeBase,
     ResearchTool,
     SubProject,
+    Dependencies,
 )
 from varats.tools.research_tools.vara_manager import (
     BuildType,
@@ -24,6 +24,9 @@ from varats.tools.research_tools.vara_manager import (
 from varats.utils.exceptions import ProcessTerminatedError
 from varats.utils.logger_util import log_without_linesep
 from varats.utils.settings import save_config, vara_cfg
+
+if tp.TYPE_CHECKING:
+    from varats.containers.containers import BaseImageCreationContext
 
 
 class PhasarCodeBase(CodeBase):
@@ -73,10 +76,17 @@ class Phasar(ResearchTool[PhasarCodeBase]):
     https://github.com/secure-software-engineering/phasar.git
     """
 
+    # TODO: see se-passau/VaRA#740
+    __DEPENDENCIES = Dependencies({})
+
     def __init__(self, base_dir: Path) -> None:
         super().__init__("phasar", [BuildType.DEV], PhasarCodeBase(base_dir))
         vara_cfg()["phasar"]["source_dir"] = str(base_dir)
         save_config()
+
+    @classmethod
+    def get_dependencies(cls) -> Dependencies:
+        return cls.__DEPENDENCIES
 
     @staticmethod
     def source_location() -> Path:
@@ -196,14 +206,13 @@ class Phasar(ResearchTool[PhasarCodeBase]):
 
         return status_ok
 
-    def add_container_layers(self, layers: ContainerImage) -> ContainerImage:
+    def add_container_layers(
+        self, image_context: 'BaseImageCreationContext'
+    ) -> None:
         """
         Add the layers required for this research tool to the given container.
 
         Args:
-            layers: the container to add the layers to
-
-        Returns:
-            the container with the added layers
+            image_context: the base image creation context
         """
         raise NotImplementedError("See se-passau/VaRA#718")

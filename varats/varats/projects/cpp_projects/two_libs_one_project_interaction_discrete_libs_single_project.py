@@ -15,6 +15,7 @@ from varats.project.project_util import (
     wrap_paths_to_binaries,
     BinaryType,
     VaraTestRepoSubmodule,
+    verify_binaries,
 )
 from varats.utils.settings import bb_cfg
 
@@ -68,6 +69,19 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
             version_filter=project_filter_generator(
                 "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             )
+        ),
+        VaraTestRepoSubmodule(
+            remote="LibraryAnalysisRepos"
+            "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            "/earth_lib",
+            local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            "/earth_lib",
+            refspec="HEAD",
+            limit=None,
+            shallow=False,
+            version_filter=project_filter_generator(
+                "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+            )
         )
     ]
 
@@ -96,3 +110,5 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
             with local.env(CC=str(c_compiler), CXX=str(cxx_compiler)):
                 bb.watch(cmake)("-G", "Unix Makefiles", "..")
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
+            verify_binaries(self)
