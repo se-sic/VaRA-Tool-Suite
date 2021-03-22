@@ -14,6 +14,9 @@ from benchbuild.source.base import target_prefix
 from benchbuild.utils.cmd import git, mkdir, cp
 from plumbum import local
 
+if tp.TYPE_CHECKING:
+    from varats.utils.git_util import CommitRepoPair
+
 LOG = logging.getLogger(__name__)
 
 
@@ -118,6 +121,48 @@ def get_local_project_git(
     git_path = get_local_project_git_path(project_name, git_name)
     repo_path = pygit2.discover_repository(str(git_path))
     return pygit2.Repository(repo_path)
+
+
+def get_local_project_gits(
+    project_name: str
+) -> tp.Dict[str, pygit2.Repository]:
+    """
+    Get the all git repositories for a given benchbuild project.
+
+    Args:
+        project_name: name of the given benchbuild project
+
+    Returns:
+        dict with the git repositories for the project's sources
+    """
+    repos: tp.Dict[str, pygit2.Repository] = {}
+    project_cls = get_project_cls_by_name(project_name)
+
+    for source in project_cls.SOURCE:
+        source_name = os.path.basename(source.local)
+        repos[source_name] = get_local_project_git(project_name, source_name)
+
+    return repos
+
+
+def create_commit_lookup_for_project(
+    project_name: str
+) -> tp.Callable[['CommitRepoPair'], pygit2.Commit]:
+    """
+
+
+    Args:
+        project_name:
+
+    Returns:
+
+    """
+    repos = get_local_project_gits(project_name)
+
+    def commit_factory(crp: 'CommitRepoPair') -> pygit2.Commit:
+        return repos[crp.repository_name].get(crp.commit_hash)
+
+    return commit_factory
 
 
 def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
