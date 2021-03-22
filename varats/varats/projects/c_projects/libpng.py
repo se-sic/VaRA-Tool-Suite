@@ -6,6 +6,7 @@ from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
+from varats.containers.containers import get_base_image, ImageBase
 from varats.paper_mgmt.paper_config import project_filter_generator
 from varats.project.project_util import (
     wrap_paths_to_binaries,
@@ -13,8 +14,6 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
-
-from varats.containers.containers import get_base_image, ImageBase
 from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
@@ -41,7 +40,8 @@ class Libpng(bb.Project, CVEProviderHook):  # type: ignore
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10)
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10
+                              ).run('apt', 'install', '-y', 'cmake')
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
