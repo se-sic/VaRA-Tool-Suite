@@ -69,7 +69,10 @@ def get_local_project_git_path(
     if is_git_source(source):
         source.fetch()
 
-    return tp.cast(Path, Path(target_prefix()) / source.local)
+    return tp.cast(
+        Path,
+        Path(target_prefix()) / source.local.replace(os.sep, '-')
+    )
 
 
 def get_extended_commit_lookup_source(
@@ -147,15 +150,16 @@ def get_local_project_gits(
 
 def create_commit_lookup_for_project(
     project_name: str
-) -> tp.Callable[['CommitRepoPair'], pygit2.Commit]:
+) -> tp.Callable[['CommitRepoPair'], tp.Optional[pygit2.Commit]]:
     """
-
+    Creates a function that given a ``CommitRepoPair`` returns the corresponding
+    commit from any of the project's sources.
 
     Args:
-        project_name:
+        project_name: name of the project to create the lookup function for
 
     Returns:
-
+        the lookup function
     """
     repos = get_local_project_gits(project_name)
 
