@@ -1,10 +1,11 @@
 import typing as tp
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 import plotly.graph_objs as gob
-import plotly.offline as offply
 import pygit2
+import pyperclip
 
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.project.project_util import (
@@ -17,7 +18,7 @@ from varats.provider.bug.bug_provider import BugProvider
 
 def _plot_chord_diagram_for_raw_bugs(
     project_name: str, bug_set: tp.Set[RawBug]
-) -> gob.Figure:
+) -> gob.FigureWidget:
     """Creates a chord diagram representing relations between introducing/fixing
     commits for a given set of RawBugs."""
     project_repo = get_local_project_git(project_name)
@@ -112,9 +113,8 @@ def _plot_chord_diagram_for_raw_bugs(
         ])
 
     # draw relations and preprocess commit types
-    lines = []
-    intro_annotations = []
     nodes = []
+    lines = []
     for bug in bug_set:
         bug_fix = bug.fixing_commit
         fix_ind = map_commit_to_id[bug_fix]
@@ -168,20 +168,29 @@ def _plot_chord_diagram_for_raw_bugs(
         # set node data according to commit type
         node_size = 10 if commit_type[commit.hex] == 'head' or commit_type[
             commit.hex] == 'fixing head' else 8
-        node_label = f'{commit_type[commit.hex]} - {commit.hex}'
+        displayed_message = commit.message.partition('\n')[0]
+        node_label = f'Type: {commit_type[commit.hex]}<br>' \
+                     f'Hash: {commit.hex}<br>' \
+                     f'Author: {commit.author.name}<br>' \
+                     f'Date: {datetime.fromtimestamp(commit.commit_time)}<br>' \
+                     f'Message: {displayed_message}'
         node_color = node_colors[commit_type[commit.hex]]
 
-        nodes.append(
-            gob.Scatter(
-                x=[commit_coordinates[commit_id][0]],
-                y=[commit_coordinates[commit_id][1]],
-                mode='markers',
-                name='',
-                marker=dict(symbol='circle', size=node_size, color=node_color),
-                text=node_label,
-                hoverinfo='text'
-            )
+        node_scatter = gob.Scatter(
+            x=[commit_coordinates[commit_id][0]],
+            y=[commit_coordinates[commit_id][1]],
+            mode='markers',
+            name='',
+            marker=dict(symbol='circle', size=node_size, color=node_color),
+            text=node_label,
+            hoverinfo='text'
         )
+
+        def copy_hash(trace, points, *_):
+            pyperclip.copy(f'{commit.hex}')
+
+        node_scatter.on_click(copy_hash)
+        nodes.append(node_scatter)
 
     title = f'Bug fixing relations for {project_name}'
     axis = dict(
@@ -203,12 +212,13 @@ def _plot_chord_diagram_for_raw_bugs(
         xaxis=dict(axis),
         yaxis=dict(axis),
         hovermode='closest',
+        clickmode='event',
         margin=dict(l=0, r=0, b=0, t=50),
         plot_bgcolor='rgba(0,0,0,0)'
     )
 
-    data = lines + intro_annotations + nodes
-    return gob.Figure(data=data, layout=layout)
+    data = nodes + lines
+    return gob.FigureWidget(data=data, layout=layout)
 
 
 class BugFixingRelationPlot(Plot):
