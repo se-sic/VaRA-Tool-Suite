@@ -47,7 +47,7 @@ class BlameInteractionGraph():
         self.__interaction_graph = interaction_graph
 
     @property
-    def commit_interaction_graph(self) -> nx.Graph:
+    def commit_interaction_graph(self) -> nx.DiGraph:
         """
         Return a digraph with commits as nodes and interactions as edges.
 
