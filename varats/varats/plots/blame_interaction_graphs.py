@@ -14,7 +14,7 @@ from varats.data.reports.blame_interaction_graph import BlameInteractionGraph
 from varats.data.reports.blame_report import BlameReport
 from varats.jupyterhelper.file import load_blame_report
 from varats.plot.plot import Plot, PlotDataEmpty, PlotArgMissing
-from varats.plots.chord_plot_utils import make_chord_plot
+from varats.plots.chord_plot_utils import make_chord_plot, make_arc_plot
 from varats.project.project_util import create_commit_lookup_for_project
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import CommitRepoPair
@@ -125,7 +125,61 @@ class CommitInteractionGraphChordPlot(Plot):
 
 
 class CommitInteractionGraphArcPlot(Plot):
-    pass
+    """Arc plot for a commit interaction graph."""
+
+    NAME = 'cig_arc_plot'
+
+    def __init__(self, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, **kwargs)
+
+    def plot(self, view_mode: bool) -> None:
+        project_name = self.plot_kwargs["project"]
+        revision = self.plot_kwargs.get("revision", None)
+        if not revision:
+            raise PlotArgMissing(f"'revision' was not specified.")
+
+        commit_lookup = create_commit_lookup_for_project(project_name)
+
+        interaction_graph = _get_interaction_graph(
+            project_name, revision
+        ).commit_interaction_graph
+
+        def filter_nodes(node: CommitRepoPair) -> bool:
+            commit = commit_lookup(node)
+            if not commit:
+                return False
+            return datetime.utcfromtimestamp(commit.commit_time
+                                            ) >= datetime(2015, 1, 1)
+
+        nodes = [(
+            node, {
+                "info": interaction_graph.nodes[node]["commit_hash"],
+                "color": interaction_graph.degree(node)
+            }
+        ) for node in interaction_graph.nodes if filter_nodes(node)]
+        nodes.sort(key=lambda x: commit_lookup(x[0]).commit_time, reverse=True)
+        edges = [(
+            source, sink, {
+                "size": interaction_graph[source][sink]["amount"],
+                "color": interaction_graph[source][sink]["amount"],
+                "info":
+                    f"{interaction_graph.nodes[source]['commit_hash']} "
+                    f"-> {interaction_graph.nodes[sink]['commit_hash']}"
+            }
+        )
+                 for source, sink in interaction_graph.edges
+                 if filter_nodes(source) and filter_nodes(sink)]
+
+        figure = make_arc_plot(nodes, edges, "Commit Interaction Graph")
+
+        if view_mode:
+            figure.show()
+        else:
+            # figure.write_image(self.plot_file_name("svg"))
+            offply.plot(figure, filename=self.plot_file_name("html"))
+
+    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+        raise NotImplementedError
 
 
 class CommitInteractionGraphNodeDegreePlot(Plot):

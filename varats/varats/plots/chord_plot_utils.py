@@ -13,6 +13,104 @@ import plotly.colors as colors
 import plotly.graph_objs as go
 
 
+def _control_pts(angle: tp.List[float],
+                 radius: float) -> tp.List[tp.Tuple[float, float]]:
+    if len(angle) != 3:
+        raise ValueError("angle must have len = 3")
+    b_cplx = np.array([np.exp(1j * angle[k]) for k in range(3)])
+    b_cplx[1] = radius * b_cplx[1]
+    return list(zip(b_cplx.real, b_cplx.imag))
+
+
+def _ctrl_rib_chords(
+    left_arc: tp.Tuple[float, float], right_arc: tp.Tuple[float, float],
+    radius: float
+) -> tp.Tuple[tp.List[tp.Tuple[float, float]], tp.List[tp.Tuple[float, float]]]:
+    return (
+        _control_pts([
+            left_arc[0], (left_arc[0] + right_arc[0]) / 2, right_arc[0]
+        ], radius),
+        _control_pts([
+            left_arc[1], (left_arc[1] + right_arc[1]) / 2, right_arc[1]
+        ], radius)
+    )
+
+
+def _make_q_bezier(b):
+    if len(b) != 3:
+        raise ValueError("Control poligon must have 3 points")
+    A, B, C = b
+    return 'M ' + str(A[0]) + ',' + str(A[1]) + ' ' + 'Q ' + \
+           str(B[0]) + ', ' + str(B[1]) + ' ' + \
+           str(C[0]) + ', ' + str(C[1])
+
+
+PointTy = np.array
+
+
+def _get_b1(b0: PointTy, b2: PointTy) -> PointTy:
+    """Given two points b0 and b2, finds a point b1 such that b0b1b2 forms an
+    equilateral triangle."""
+    if len(b0) != 2 and len(b2) != 2:
+        raise ValueError('b0 and b2 must have exactly 2 elements.')
+    b1 = 0.5 * (b0 + b2) + 0.5 * np.array(
+        [0, 1.0 * np.sign(b2[0] - b0[0])]
+    ) * np.sqrt(3) * np.linalg.norm(b2 - b0)
+    return b1
+
+
+def _dim_plus_1(
+    points: tp.List[PointTy], weights: tp.List[float]
+) -> np.ndarray:
+    """Add weights by lifting the points in b to 3D points."""
+    if len(points) != len(weights):
+        raise ValueError(
+            "The number of weights must be equal to the number of points."
+        )
+
+    lifted_points = np.array([
+        np.append(point, weights[i]) for (i, point) in enumerate(points)
+    ])
+    lifted_points[1, :2] *= weights[1]
+    return lifted_points
+
+
+def _make_bezier_curve(control_points: np.ndarray, nr: int) -> tp.List[PointTy]:
+    """Evaluate nr equally spaced points on a bezier curve defined by the given
+    control points."""
+    n = control_points.shape[0]
+    nr = max(0, nr)
+    t = np.linspace(0, 1, nr)
+    points = []
+    # For each parameter t[i] evaluate a point on the Bezier curve with the
+    # de Casteljau algorithm.
+    for i in range(nr):
+        aa = np.copy(control_points)
+        for r in range(1, n):
+            aa[:n - r, :] = \
+                (1 - t[i]) * aa[:n - r, :] + t[i] * aa[1:n - r + 1, :]
+        points.append(aa[0, :])
+    return points
+
+
+def _make_arc(b0: PointTy, b2: PointTy, num_points: int) -> tp.List[PointTy]:
+    """
+    Make an arc (half-circle) with the given end points.
+
+    Args:
+        b0: left end-point
+        b2: right end-point
+        num_points: number of points to evaluate on the arc
+
+    Returns:
+        a list of points on the arc
+    """
+    b1 = _get_b1(b0, b2)
+    a = _dim_plus_1([b0, b1, b2], [1, 0.5, 1])
+    discrete_curve = _make_bezier_curve(a, num_points)
+    return [p[:2] / p[2] for p in discrete_curve]
+
+
 def _modulo_ab(x: float, a: float, b: float) -> float:
     """
     Map a real number onto the unit circle identified by the interval [a, b)
@@ -121,38 +219,6 @@ def _calculate_ribbon_ends(
         ribbon_ends.append((left, right))
         left = right
     return ribbon_ends
-
-
-def _control_pts(angle: tp.List[float],
-                 radius: float) -> tp.List[tp.Tuple[float, float]]:
-    if len(angle) != 3:
-        raise ValueError("angle must have len = 3")
-    b_cplx = np.array([np.exp(1j * angle[k]) for k in range(3)])
-    b_cplx[1] = radius * b_cplx[1]
-    return list(zip(b_cplx.real, b_cplx.imag))
-
-
-def _ctrl_rib_chords(
-    left_arc: tp.Tuple[float, float], right_arc: tp.Tuple[float, float],
-    radius: float
-) -> tp.Tuple[tp.List[tp.Tuple[float, float]], tp.List[tp.Tuple[float, float]]]:
-    return (
-        _control_pts([
-            left_arc[0], (left_arc[0] + right_arc[0]) / 2, right_arc[0]
-        ], radius),
-        _control_pts([
-            left_arc[1], (left_arc[1] + right_arc[1]) / 2, right_arc[1]
-        ], radius)
-    )
-
-
-def _make_q_bezier(b):
-    if len(b) != 3:
-        raise ValueError("Control poligon must have 3 points")
-    A, B, C = b
-    return 'M ' + str(A[0]) + ',' + str(A[1]) + ' ' + 'Q ' + \
-           str(B[0]) + ', ' + str(B[1]) + ' ' + \
-           str(C[0]) + ', ' + str(C[1])
 
 
 def _make_ribbon_arc(theta0: float, theta1: float) -> str:
@@ -438,5 +504,120 @@ def make_chord_plot(
 
     layout = _make_layout(title, size, shapes)
     data = ideogram_info + ribbon_info
+    figure = go.Figure(data=data, layout=layout)
+    return figure
+
+
+def make_arc_plot(
+    nodes: tp.List[tp.Tuple[NodeTy, NodeInfoTy]],
+    edges: tp.List[tp.Tuple[NodeTy, NodeTy, EdgeInfoTy]],
+    title: str,
+    size: int = 400
+):
+    """
+    Create a chord plot from the given graph.
+
+    Nodes can have the following information in their NodeInfo dict:
+      - color:
+      - info:
+
+    Edges can have the following information in their EdgeInfo dict:
+      - color:
+      - info:
+      - size: size of the transition relation relative to others; 1 by default
+
+    Args:
+        nodes:
+        edges: list of edges
+
+    Returns:
+    """
+    colorswatch = colors.sequential.Agsunset
+    colorscheme = colors.make_colorscale(colorswatch)
+    node_color_values = [node[1].get("color", 0) for node in nodes]
+    edge_color_values = [edge[2].get("color", 0) for edge in edges]
+    edge_min_value = min(edge_color_values)
+    edge_max_value = max(edge_color_values)
+    edge_diff_value = edge_max_value - edge_min_value
+    edge_colors = [
+        get_color_at(colorscheme, (v - edge_min_value) / edge_diff_value)
+        for v in edge_color_values
+    ]
+
+    node_infos = [node[1].get("info", "") for node in nodes]
+
+    # calculate size of nodes by adding the sizes of incident edges
+    # group the edges by node along the way
+    node_size_dict: tp.Dict[NodeTy, float] = defaultdict(lambda: 0)
+    incoming_edges: tp.Dict[NodeTy, tp.List[int]] = defaultdict(list)
+    outgoing_edges: tp.Dict[NodeTy, tp.List[int]] = defaultdict(list)
+    for idx, edge in enumerate(edges):
+        source, sink, info = edge
+        node_size_dict[source] += info.get("size", 1)
+        node_size_dict[sink] += info.get("size", 1)
+        outgoing_edges[source].append(idx)
+        incoming_edges[sink].append(idx)
+    node_sizes = []
+    # we need to keep the order of the nodes
+    for node, _ in nodes:
+        node_sizes.append(node_size_dict[node])
+
+    shapes = []
+
+    node_scatter = go.Scatter(
+        x=list(range(len(nodes))),
+        y=[0] * len(nodes),
+        mode='markers',
+        marker=dict(
+            size=12,
+            color=node_color_values,
+            colorscale=colorswatch,
+            showscale=False,
+            line=dict(color='rgb(50,50,50)', width=0.75)
+        ),
+        text=node_infos,
+        hoverinfo="text"
+    )
+
+    arc_bounds: tp.Dict[int, tp.List[tp.Tuple[float,
+                                              float]]] = defaultdict(list)
+    arc_sizes: tp.Dict[int, int] = {}
+    for node_idx, node in enumerate(nodes):
+        node_edge_sizes: tp.List[float] = []
+        for edge_idx in sorted(
+            outgoing_edges[node[0]],
+            key=lambda x: edges[x][2]["size"],
+            reverse=True
+        ):
+            arc_bounds[edge_idx].insert(0, (node_idx, 0))
+            arc_sizes[edge_idx] = edges[edge_idx][2].get("size", 1)
+        for edge_idx in sorted(
+            incoming_edges[node[0]],
+            key=lambda x: edges[x][2]["size"],
+            reverse=True
+        ):
+            arc_bounds[edge_idx].append((node_idx, 0))
+
+    arcs: tp.List[go.scatter] = []
+    for idx, arc_ends in arc_bounds.items():
+        b0 = arc_ends[0]
+        b2 = arc_ends[1]
+        points = _make_arc(np.asarray(b0), np.asarray(b2), 25)
+        x, y = zip(*points)
+
+        arcs.append(
+            go.Scatter(
+                x=x,
+                y=y,
+                name='',
+                mode='lines',
+                line=dict(width=1, color=edge_colors[idx], shape='spline'),
+                text=edges[idx][2].get("info", ""),
+                hoverinfo="text"
+            )
+        )
+
+    layout = _make_layout(title, size, shapes)
+    data = arcs + [node_scatter]
     figure = go.Figure(data=data, layout=layout)
     return figure
