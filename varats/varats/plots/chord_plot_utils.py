@@ -12,40 +12,28 @@ import numpy as np
 import plotly.colors as colors
 import plotly.graph_objs as go
 
-
-def _control_pts(angle: tp.List[float],
-                 radius: float) -> tp.List[tp.Tuple[float, float]]:
-    if len(angle) != 3:
-        raise ValueError("angle must have len = 3")
-    b_cplx = np.array([np.exp(1j * angle[k]) for k in range(3)])
-    b_cplx[1] = radius * b_cplx[1]
-    return list(zip(b_cplx.real, b_cplx.imag))
+PointTy = np.array
 
 
-def _ctrl_rib_chords(
+def _ribbon_control_points(
     left_arc: tp.Tuple[float, float], right_arc: tp.Tuple[float, float],
     radius: float
-) -> tp.Tuple[tp.List[tp.Tuple[float, float]], tp.List[tp.Tuple[float, float]]]:
-    return (
-        _control_pts([
-            left_arc[0], (left_arc[0] + right_arc[0]) / 2, right_arc[0]
-        ], radius),
-        _control_pts([
-            left_arc[1], (left_arc[1] + right_arc[1]) / 2, right_arc[1]
-        ], radius)
-    )
+) -> tp.Tuple[tp.List[PointTy], tp.List[PointTy]]:
+    return ([
+        _angular_to_cartesian((1, left_arc[0])),
+        _angular_to_cartesian((radius, (left_arc[0] + right_arc[0]) / 2)),
+        _angular_to_cartesian((1, right_arc[0]))
+    ], [
+        _angular_to_cartesian((1, left_arc[1])),
+        _angular_to_cartesian((radius, (left_arc[1] + right_arc[0]) / 2)),
+        _angular_to_cartesian((1, right_arc[1]))
+    ])
 
 
-def _make_q_bezier(b):
-    if len(b) != 3:
-        raise ValueError("Control poligon must have 3 points")
-    A, B, C = b
-    return 'M ' + str(A[0]) + ',' + str(A[1]) + ' ' + 'Q ' + \
-           str(B[0]) + ', ' + str(B[1]) + ' ' + \
-           str(C[0]) + ', ' + str(C[1])
-
-
-PointTy = np.array
+def _angular_to_cartesian(angular: PointTy) -> PointTy:
+    return np.array([
+        angular[0] * np.cos(angular[1]), angular[0] * np.sin(angular[1])
+    ])
 
 
 def _get_b1(b0: PointTy, b2: PointTy) -> PointTy:
@@ -192,7 +180,7 @@ def _make_ideogram_arc(
     length = (ends[1] - ends[0]) % 2 * np.pi
     nr = 5 if length <= np.pi / 4 else int(num_points * length / np.pi)
 
-    if ends[0] < ends[1]:
+    if ends[0] <= ends[1]:
         theta = np.linspace(ends[0], ends[1], nr)
     else:
         ends = (
@@ -200,7 +188,8 @@ def _make_ideogram_arc(
                        np.pi), _modulo_ab(ends[1], -np.pi, np.pi)
         )
         theta = np.linspace(ends[0], ends[1], nr)
-    return radius * np.exp(1j * theta)
+    points = zip([radius] * nr, theta)
+    return [_angular_to_cartesian(point) for point in points]
 
 
 def _calculate_ribbon_ends(
@@ -260,47 +249,11 @@ def _make_layout(title, plot_size, shapes):
         xaxis=dict(axis),
         yaxis=dict(axis),
         showlegend=False,
-        width=plot_size,
+        width=plot_size * 2,
         height=plot_size,
         margin=dict(t=25, b=25, l=25, r=25),
         hovermode='closest',
         shapes=shapes
-    )
-
-
-def _make_ideogram_shape(path, line_color, fill_color):
-    return dict(
-        line={
-            "color": line_color,
-            "width": 0.45
-        },
-        path=path,
-        type="path",
-        fillcolor=fill_color,
-        layer="below"
-    )
-
-
-def _make_ribbon(
-    left_arc: tp.Tuple[float, float],
-    right_arc: tp.Tuple[float, float],
-    line_color,
-    fill_color,
-    radius=0.2
-):
-    b, c = _ctrl_rib_chords(left_arc, right_arc, radius)
-    path = _make_q_bezier(b) + _make_ribbon_arc(right_arc[0], right_arc[1]) + \
-             _make_q_bezier(c[::-1]) + _make_ribbon_arc(left_arc[1], left_arc[0])
-
-    return dict(
-        line={
-            "color": line_color,
-            "width": 0.45
-        },
-        path=path,
-        type="path",
-        fillcolor=fill_color,
-        layer="below"
     )
 
 
@@ -402,7 +355,7 @@ def make_chord_plot(
     ideogram_lengths = _calculate_ideogram_lengths(node_sizes, gap)
     ideogram_ends = _calculate_ideogram_ends(ideogram_lengths, gap)
     ideogram_colors = [
-        get_color_at(colors.PLOTLY_SCALES["Viridis"], idx / len(ideogram_ends))
+        get_color_at(colors.PLOTLY_SCALES["RdBu"], idx / len(ideogram_ends))
         for idx, ends in enumerate(ideogram_ends)
     ]
     # random.shuffle(ideogram_colors)
@@ -410,32 +363,23 @@ def make_chord_plot(
     for idx, ends in enumerate(ideogram_ends):
         z = _make_ideogram_arc(1.1, ends)
         zi = _make_ideogram_arc(1.0, ends)
+
+        points = []
+        points.extend(z)
+        points.extend(zi[::-1])
+        points.append(z[0])
+        x, y = zip(*points)
+
         ideogram_info.append(
             go.Scatter(
-                x=z.real,
-                y=z.imag,
+                x=x,
+                y=y,
                 mode='lines',
-                line=dict(
-                    color=ideogram_colors[idx], shape='spline', width=0.25
-                ),
+                line=dict(color='rgb(50,50,50)', width=1),
+                fill="toself",
+                fillcolor=ideogram_colors[idx],
                 text=nodes[idx][1].get("info", ""),
                 hoverinfo="text"
-            )
-        )
-
-        path = "M "
-        for s in range(len(z)):
-            path += f"{z.real[s]}, {z.imag[s]} L "
-
-        Zi = np.array(zi.tolist()[::-1])
-
-        for s in range(len(Zi)):
-            path += str(Zi.real[s]) + ', ' + str(Zi.imag[s]) + ' L '
-        path += str(z.real[0]) + ' ,' + str(z.imag[0])
-
-        shapes.append(
-            _make_ideogram_shape(
-                path, 'rgb(150,150,150)', ideogram_colors[idx]
             )
         )
 
@@ -471,34 +415,27 @@ def make_chord_plot(
             ribbon_bounds[edge_idx].append(ribbon_end)
 
     for idx, ribbon_ends in ribbon_bounds.items():
-        l = ribbon_ends[0]
-        r = ribbon_ends[1]
-        zi = 0.9 * np.exp(1j * (l[0] + l[1]) / 2)
-        zf = 0.9 * np.exp(1j * (r[0] + r[1]) / 2)
+        left_arc = ribbon_ends[0]
+        right_arc = ribbon_ends[1]
+        radius = 0.2
+        num_points = 25
+        b, c = _ribbon_control_points(left_arc, right_arc[::-1], radius)
+        points = []
+        points.extend(_make_bezier_curve(np.asarray(c), num_points))
+        points.extend(_make_ideogram_arc(1.0, right_arc))
+        points.extend(_make_bezier_curve(np.asarray(b[::-1]), num_points))
+        points.extend(_make_ideogram_arc(1.0, left_arc))
+        x, y = zip(*points)
+
         ribbon_info.append(
             go.Scatter(
-                x=[zi.real],
-                y=[zi.imag],
-                mode='markers',
-                marker=dict(size=0.5, color=ribbon_colors[idx]),
+                x=x,
+                y=y,
+                mode='lines',
+                line=dict(width=0, color=ribbon_colors[idx]),
+                fill="toself",
                 text=edges[idx][2].get("info", ""),
                 hoverinfo='text'
-            )
-        ),
-        ribbon_info.append(
-            go.Scatter(
-                x=[zf.real],
-                y=[zf.imag],
-                mode='markers',
-                marker=dict(size=0.5, color=ribbon_colors[idx]),
-                text=edges[idx][2].get("info", ""),
-                hoverinfo='text'
-            )
-        )
-        shapes.append(
-            _make_ribbon(
-                ribbon_ends[0], tuple(reversed(ribbon_ends[1])),
-                ribbon_colors[idx], ribbon_colors[idx]
             )
         )
 
@@ -532,7 +469,7 @@ def make_arc_plot(
 
     Returns:
     """
-    colorswatch = colors.sequential.Agsunset
+    colorswatch = colors.sequential.YlOrRd
     colorscheme = colors.make_colorscale(colorswatch)
     node_color_values = [node[1].get("color", 0) for node in nodes]
     edge_color_values = [edge[2].get("color", 0) for edge in edges]

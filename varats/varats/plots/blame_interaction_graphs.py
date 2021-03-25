@@ -106,7 +106,8 @@ class CommitInteractionGraphChordPlot(Plot):
                 "size": interaction_graph[source][sink]["amount"],
                 "info":
                     f"{interaction_graph.nodes[source]['commit_hash']} "
-                    f"-> {interaction_graph.nodes[sink]['commit_hash']}"
+                    f"--{{{interaction_graph[source][sink]['amount']}}}--> "
+                    f"{interaction_graph.nodes[sink]['commit_hash']}"
             }
         )
                  for source, sink in interaction_graph.edges
@@ -164,7 +165,8 @@ class CommitInteractionGraphArcPlot(Plot):
                 "color": interaction_graph[source][sink]["amount"],
                 "info":
                     f"{interaction_graph.nodes[source]['commit_hash']} "
-                    f"-> {interaction_graph.nodes[sink]['commit_hash']}"
+                    f"--{{{interaction_graph[source][sink]['amount']}}}--> "
+                    f"{interaction_graph.nodes[sink]['commit_hash']}"
             }
         )
                  for source, sink in interaction_graph.edges
