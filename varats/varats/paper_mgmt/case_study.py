@@ -16,7 +16,7 @@ from varats.base.sampling_method import (
     UniformSamplingMethod,
     HalfNormalSamplingMethod,
 )
-from varats.mapping.commit_map import CommitMap
+from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot_utils import check_required_args
 from varats.plot.plots import PlotRegistry
@@ -43,6 +43,22 @@ class ExtenderStrategy(Enum):
     smooth_plot = 3
     per_year_add = 4
     release_add = 5
+
+
+def newest_processed_revision_for_case_study(
+    case_study: CaseStudy, result_file_type: MetaReport
+) -> tp.Optional[str]:
+    processed_revisions = processed_revisions_for_case_study(
+        case_study, result_file_type
+    )
+    if not processed_revisions:
+        return None
+
+    commit_map = get_commit_map(case_study.project_name)
+    processed_revisions.sort(
+        key=lambda rev: commit_map.time_id(rev), reverse=True
+    )
+    return processed_revisions[0]
 
 
 def processed_revisions_for_case_study(
