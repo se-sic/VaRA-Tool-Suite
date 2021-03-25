@@ -317,6 +317,8 @@ def make_chord_plot(
     """
     Create a chord plot from the given graph.
 
+    Based on this guide: https://plotly.com/python/v3/filled-chord-diagram/
+
     Nodes can have the following information in their NodeInfo dict:
       - color:
       - info:
@@ -454,8 +456,13 @@ def make_arc_plot(
     """
     Create a chord plot from the given graph.
 
+    Code based on this plot:
+    https://github.com/empet/Plotly-plots/blob/master/Arc-diagram-Force-Awakens.ipynb
+
     Nodes can have the following information in their NodeInfo dict:
-      - color:
+      - fill_color:
+      - line_color:
+      - size:
       - info:
 
     Edges can have the following information in their EdgeInfo dict:
@@ -469,9 +476,10 @@ def make_arc_plot(
 
     Returns:
     """
-    colorswatch = colors.sequential.YlOrRd
+    colorswatch = colors.sequential.RdBu[::-1]
     colorscheme = colors.make_colorscale(colorswatch)
-    node_color_values = [node[1].get("color", 0) for node in nodes]
+    node_fill_color_values = [node[1].get("fill_color", 0) for node in nodes]
+    node_line_color_values = [node[1].get("line_color", 0) for node in nodes]
     edge_color_values = [edge[2].get("color", 0) for edge in edges]
     edge_min_value = min(edge_color_values)
     edge_max_value = max(edge_color_values)
@@ -485,55 +493,60 @@ def make_arc_plot(
 
     # calculate size of nodes by adding the sizes of incident edges
     # group the edges by node along the way
-    node_size_dict: tp.Dict[NodeTy, float] = defaultdict(lambda: 0)
     incoming_edges: tp.Dict[NodeTy, tp.List[int]] = defaultdict(list)
     outgoing_edges: tp.Dict[NodeTy, tp.List[int]] = defaultdict(list)
     for idx, edge in enumerate(edges):
         source, sink, info = edge
-        node_size_dict[source] += info.get("size", 1)
-        node_size_dict[sink] += info.get("size", 1)
         outgoing_edges[source].append(idx)
         incoming_edges[sink].append(idx)
-    node_sizes = []
-    # we need to keep the order of the nodes
-    for node, _ in nodes:
-        node_sizes.append(node_size_dict[node])
+    node_sizes = [np.log(max(1, node[1].get("size", 1))) * 5 for node in nodes]
+    node_placements = []
+    x = 0
+    for node_size in node_sizes:
+        x += node_size / 2
+        node_placements.append(x)
+        x += node_size / 2
 
     shapes = []
-
-    node_scatter = go.Scatter(
-        x=list(range(len(nodes))),
-        y=[0] * len(nodes),
-        mode='markers',
-        marker=dict(
-            size=12,
-            color=node_color_values,
-            colorscale=colorswatch,
-            showscale=False,
-            line=dict(color='rgb(50,50,50)', width=0.75)
-        ),
-        text=node_infos,
-        hoverinfo="text"
-    )
 
     arc_bounds: tp.Dict[int, tp.List[tp.Tuple[float,
                                               float]]] = defaultdict(list)
     arc_sizes: tp.Dict[int, int] = {}
     for node_idx, node in enumerate(nodes):
-        node_edge_sizes: tp.List[float] = []
         for edge_idx in sorted(
             outgoing_edges[node[0]],
             key=lambda x: edges[x][2]["size"],
             reverse=True
         ):
-            arc_bounds[edge_idx].insert(0, (node_idx, 0))
+            arc_bounds[edge_idx].insert(0, (node_placements[node_idx], 0))
             arc_sizes[edge_idx] = edges[edge_idx][2].get("size", 1)
         for edge_idx in sorted(
             incoming_edges[node[0]],
             key=lambda x: edges[x][2]["size"],
             reverse=True
         ):
-            arc_bounds[edge_idx].append((node_idx, 0))
+            arc_bounds[edge_idx].append((node_placements[node_idx], 0))
+
+    node_scatter = go.Scatter(
+        x=node_placements,
+        y=[0] * len(nodes),
+        mode='markers',
+        opacity=1,
+        marker=go.scatter.Marker(
+            size=node_sizes,
+            color=node_fill_color_values,
+            colorscale=colorswatch,
+            opacity=1,
+            showscale=False,
+            line=go.scatter.marker.Line(
+                color=node_line_color_values,
+                colorscale=colorscheme,
+                width=[node_size / 3 for node_size in node_sizes]
+            )
+        ),
+        text=node_infos,
+        hoverinfo="text"
+    )
 
     arcs: tp.List[go.scatter] = []
     for idx, arc_ends in arc_bounds.items():
@@ -548,7 +561,9 @@ def make_arc_plot(
                 y=y,
                 name='',
                 mode='lines',
-                line=dict(width=1, color=edge_colors[idx], shape='spline'),
+                line=go.scatter.Line(
+                    width=1, color=edge_colors[idx], shape='spline'
+                ),
                 text=edges[idx][2].get("info", ""),
                 hoverinfo="text"
             )

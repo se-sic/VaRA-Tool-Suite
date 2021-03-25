@@ -161,7 +161,9 @@ class CommitInteractionGraphArcPlot(Plot):
         nodes = [(
             node, {
                 "info": interaction_graph.nodes[node]["commit_hash"],
-                "color": interaction_graph.degree(node)
+                "size": interaction_graph.degree(node),
+                "fill_color": interaction_graph.out_degree(node),
+                "line_color": interaction_graph.in_degree(node)
             }
         ) for node in interaction_graph.nodes if filter_nodes(node)]
         nodes.sort(key=lambda x: commit_lookup(x[0]).commit_time, reverse=True)
