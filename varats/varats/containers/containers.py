@@ -49,8 +49,7 @@ class ImageBase(Enum):
         image_name = self.__name
         configured_research_tool = vara_cfg()["container"]["research_tool"]
         if configured_research_tool:
-            research_tool = get_research_tool(str(configured_research_tool))
-            image_name += f"_{research_tool.name.lower()}"
+            image_name += f"_{str(configured_research_tool).lower()}"
         return image_name
 
     @property
