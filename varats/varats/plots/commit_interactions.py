@@ -100,9 +100,9 @@ def _plot_interaction_graph(
                 def cf_removal_helper(
                     row: pd.Series,
                     stage: CSStage = stage
-                ) -> tp.Union[np.int64]:
+                ) -> tp.Union[pd.Series, float]:
                     if stage.has_revision(row.revision):
-                        return np.NaN
+                        return np.nan
                     return row['CFInteractions']
 
                 data_frame['CFInteractions'] = data_frame.apply(
@@ -112,9 +112,9 @@ def _plot_interaction_graph(
                 def df_removal_helper(
                     row: pd.Series,
                     stage: CSStage = stage
-                ) -> tp.Union[np.int64]:
+                ) -> tp.Union[pd.Series, float]:
                     if stage.has_revision(row.revision):
-                        return np.NaN
+                        return np.nan
                     return row['DFInteractions']
 
                 data_frame['DFInteractions'] = data_frame.apply(

@@ -68,7 +68,7 @@ def _create_cluster_objects(
 
 
 def _plot_cluster_comparison(
-    datasets: tp.List[tp.Tuple[np.array, str, str, tp.Dict[str, tp.Any]]]
+    datasets: tp.List[tp.Tuple[np.ndarray, str, str, tp.Dict[str, tp.Any]]]
 ) -> None:
     scale_factor = 1.5
     plt.figure(
@@ -144,7 +144,7 @@ def _plot_cluster_comparison(
                 algorithm.fit(dataset2)
 
             if hasattr(algorithm, 'labels_'):
-                y_pred = algorithm.labels_.astype(np.int)
+                y_pred = algorithm.labels_.astype(int)
             else:
                 y_pred = algorithm.predict(dataset2)
 

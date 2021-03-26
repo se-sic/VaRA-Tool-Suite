@@ -100,7 +100,7 @@ def logit_scatterplot(
     align_yaxis(ax, 0, ax2, 0)
 
 
-def _cluster_data_by_quantile(data: pd.Series, quantile: float) -> np.array:
+def _cluster_data_by_quantile(data: pd.Series, quantile: float) -> np.ndarray:
     n_rows = len(data)
     quantile_border = quantile * n_rows
 
@@ -110,8 +110,8 @@ def _cluster_data_by_quantile(data: pd.Series, quantile: float) -> np.array:
     return np.array([to_quantile_index(i) for i, _ in enumerate(data)])
 
 
-def _cluster_data_by_kmeans(data: pd.Series) -> np.array:
-    data2 = data.to_numpy(copy=True).reshape(-1, 1)
+def _cluster_data_by_kmeans(data: pd.Series) -> np.ndarray:
+    data2 = np.reshape(data.to_numpy(copy=True), (-1, 1))
     stscaler = StandardScaler().fit(data2)
     data2 = stscaler.transform(data2)
     cluster = KMeans(
@@ -119,7 +119,7 @@ def _cluster_data_by_kmeans(data: pd.Series) -> np.array:
         init=np.array([[np.min(data2)], [np.max(data2)]]),
         n_init=1
     ).fit(data2)
-    return cluster.labels_
+    return np.asarray(cluster.labels_)
 
 
 def _hist(

@@ -16,7 +16,7 @@ import plumbum as pb
 from benchbuild.utils.cmd import mkdir
 from graphviz import Digraph  # type: ignore
 from matplotlib import cm
-from plotly import graph_objs as go  # type: ignore
+from plotly import graph_objs as go
 from plotly import io as pio
 
 from varats.data.databases.blame_interaction_degree_database import (
