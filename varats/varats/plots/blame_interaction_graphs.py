@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import plotly.offline as offply
 from matplotlib import style
+from pygit2 import Commit
 
 from varats.data.reports.blame_interaction_graph import BlameInteractionGraph
 from varats.data.reports.blame_report import BlameReport
@@ -46,6 +47,16 @@ def _get_interaction_graph(
         raise PlotDataEmpty(f"Found no BlameReport for project {project_name}")
     report = load_blame_report(report_files[0])
     return BlameInteractionGraph(project_name, report)
+
+
+def _get_commit_or_raise(
+    commit_repo_pair: CommitRepoPair,
+    commit_lookup: tp.Callable[[CommitRepoPair], tp.Optional[Commit]]
+) -> Commit:
+    commit = commit_lookup(commit_repo_pair)
+    if not commit:
+        raise KeyError(f"Could not find commit {commit_repo_pair}.")
+    return commit
 
 
 class CommitInteractionGraphPlot(Plot):
@@ -106,7 +117,10 @@ class CommitInteractionGraphChordPlot(Plot):
         nodes = [(node, {
             "info": interaction_graph.nodes[node]["commit_hash"]
         }) for node in interaction_graph.nodes if filter_nodes(node)]
-        nodes.sort(key=lambda x: commit_lookup(x[0]).commit_time)
+        nodes.sort(
+            key=lambda x:
+            int(_get_commit_or_raise(x[0], commit_lookup).commit_time)
+        )
         edges = [(
             source, sink, {
                 "size": interaction_graph[source][sink]["amount"],
@@ -166,7 +180,11 @@ class CommitInteractionGraphArcPlot(Plot):
                 "line_color": interaction_graph.in_degree(node)
             }
         ) for node in interaction_graph.nodes if filter_nodes(node)]
-        nodes.sort(key=lambda x: commit_lookup(x[0]).commit_time, reverse=True)
+        nodes.sort(
+            key=lambda x:
+            int(_get_commit_or_raise(x[0], commit_lookup).commit_time),
+            reverse=True
+        )
         edges = [(
             source, sink, {
                 "size": interaction_graph[source][sink]["amount"],
@@ -260,7 +278,7 @@ class CommitInteractionGraphNodeDegreePlot(Plot):
 
             def commit_time(node: CommitRepoPair) -> datetime:
                 return datetime.utcfromtimestamp(
-                    commit_lookup(node).commit_time
+                    _get_commit_or_raise(node, commit_lookup).commit_time
                 )
 
             data = pd.DataFrame([{
@@ -344,7 +362,7 @@ class CommitInteractionGraphNodeDegreeScatterPlot(Plot):
 
             def commit_time(node: CommitRepoPair) -> datetime:
                 return datetime.utcfromtimestamp(
-                    commit_lookup(node).commit_time
+                    _get_commit_or_raise(node, commit_lookup).commit_time
                 )
 
             data = pd.DataFrame([{

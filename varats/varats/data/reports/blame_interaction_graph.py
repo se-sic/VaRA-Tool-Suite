@@ -18,13 +18,10 @@ class BlameInteractionGraph():
         self, project_name: str, report: tp.Union[BlameReport, BlameReportDiff]
     ):
         self.__report = report
-        self.__interaction_graph: tp.Optional[nx.Graph] = None
+        self.__interaction_graph: tp.Optional[nx.DiGraph] = None
         self.__project_name = project_name
 
-    def __build_interaction_graph(self) -> None:
-        if self.__interaction_graph:
-            return
-
+    def __build_interaction_graph(self) -> nx.DiGraph:
         interaction_graph = nx.DiGraph()
         interactions = gen_base_to_inter_commit_repo_pair_mapping(self.__report)
         commits = {
@@ -44,7 +41,7 @@ class BlameInteractionGraph():
             for inter, amount in inters.items()
         ])
 
-        self.__interaction_graph = interaction_graph
+        return interaction_graph
 
     @property
     def commit_interaction_graph(self) -> nx.DiGraph:
@@ -61,7 +58,7 @@ class BlameInteractionGraph():
             the commit interaction graph
         """
         if self.__interaction_graph is None:
-            self.__build_interaction_graph()
+            self.__interaction_graph = self.__build_interaction_graph()
         return self.__interaction_graph.copy(as_view=False)
 
     @property
