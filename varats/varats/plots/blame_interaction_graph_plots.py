@@ -78,7 +78,13 @@ class CommitInteractionGraphPlot(Plot):
         revision = self.plot_kwargs.get("revision", None)
         if not revision:
             raise PlotArgMissing(f"'revision' was not specified.")
-        cig = _get_interaction_graph(project_name, revision)
+        cig = _get_interaction_graph(
+            project_name, revision
+        ).commit_interaction_graph
+        nx.set_node_attributes(
+            cig, {node: cig.nodes[node]["commit_hash"] for node in cig.nodes},
+            "label"
+        )
 
         from networkx.drawing.nx_agraph import write_dot
         write_dot(cig, self.plot_file_name("dot"))
