@@ -235,7 +235,7 @@ def _make_ribbon_arc(theta0: float, theta1: float) -> str:
         )
 
 
-def _make_layout(title, plot_size, shapes):
+def _make_layout(title, plot_size, shapes) -> go.Layout:
     axis = {
         "showline": False,
         "zeroline": False,
@@ -499,7 +499,10 @@ def make_arc_plot(
         source, sink, info = edge
         outgoing_edges[source].append(idx)
         incoming_edges[sink].append(idx)
-    node_sizes = [np.log(max(1, node[1].get("size", 1))) * 5 for node in nodes]
+    node_sizes = [
+        np.log(max(np.e, node[1].get("size", 1))) * 5 for node in nodes
+    ]
+    node_indices = {node[0]: idx for idx, node in enumerate(nodes)}
     node_placements = []
     x = 0
     for node_size in node_sizes:
@@ -513,19 +516,31 @@ def make_arc_plot(
                                               float]]] = defaultdict(list)
     arc_sizes: tp.Dict[int, int] = {}
     for node_idx, node in enumerate(nodes):
-        for edge_idx in sorted(
-            outgoing_edges[node[0]],
-            key=lambda x: edges[x][2]["size"],
-            reverse=True
+        for i, edge_idx in enumerate(
+            sorted(
+                outgoing_edges[node[0]],
+                key=lambda x: node_placements[node_indices[edges[x][1]]],
+                reverse=True
+            )
         ):
-            arc_bounds[edge_idx].insert(0, (node_placements[node_idx], 0))
+            arc_bounds[edge_idx].insert(
+                0, (
+                    node_placements[node_idx] + i -
+                    len(outgoing_edges[node[0]]) * 0.5, 0
+                )
+            )
             arc_sizes[edge_idx] = edges[edge_idx][2].get("size", 1)
-        for edge_idx in sorted(
-            incoming_edges[node[0]],
-            key=lambda x: edges[x][2]["size"],
-            reverse=True
+        for i, edge_idx in enumerate(
+            sorted(
+                incoming_edges[node[0]],
+                key=lambda x: node_placements[node_indices[edges[x][0]]],
+                reverse=True
+            )
         ):
-            arc_bounds[edge_idx].append((node_placements[node_idx], 0))
+            arc_bounds[edge_idx].append((
+                node_placements[node_idx] + i -
+                len(incoming_edges[node[0]]) * 0.5, 0
+            ))
 
     node_scatter = go.Scatter(
         x=node_placements,
