@@ -35,6 +35,7 @@ setup(
         "plumbum>=1.6.6",
         "wllvm>=1.1.4",
         "argparse-utils>=1.2.0",
+        "numpy>=1.20.0",
         "pygit2>=0.28.2",
         "pygtrie",
         "pyzmq>=19.0.0",

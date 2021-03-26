@@ -4,7 +4,6 @@ Utility module for creating chord plots with plotly.
 Much of the code is adapted from here: https://plotly.com/python/v3/filled-
 chord-diagram/
 """
-import random
 import typing as tp
 from collections import defaultdict
 
@@ -12,13 +11,13 @@ import numpy as np
 import plotly.colors as colors
 import plotly.graph_objs as go
 
-PointTy = np.array
+PointTy = np.typing.ArrayLike
 
 
 def _ribbon_control_points(
     left_arc: tp.Tuple[float, float], right_arc: tp.Tuple[float, float],
     radius: float
-) -> tp.Tuple[tp.List[PointTy], tp.List[PointTy]]:
+) -> tp.Tuple[tp.List[np.typing.ArrayLike], tp.List[np.typing.ArrayLike]]:
     return ([
         _angular_to_cartesian((1, left_arc[0])),
         _angular_to_cartesian((radius, (left_arc[0] + right_arc[0]) / 2)),
@@ -30,25 +29,26 @@ def _ribbon_control_points(
     ])
 
 
-def _angular_to_cartesian(angular: PointTy) -> PointTy:
+def _angular_to_cartesian(angular: np.typing.ArrayLike) -> np.ndarray:
+    angular = np.asarray(angular)
     return np.array([
         angular[0] * np.cos(angular[1]), angular[0] * np.sin(angular[1])
     ])
 
 
-def _get_b1(b0: PointTy, b2: PointTy) -> PointTy:
+def _get_b1(b0: np.ndarray, b2: np.ndarray) -> np.ndarray:
     """Given two points b0 and b2, finds a point b1 such that b0b1b2 forms an
     equilateral triangle."""
     if len(b0) != 2 and len(b2) != 2:
         raise ValueError('b0 and b2 must have exactly 2 elements.')
-    b1 = 0.5 * (b0 + b2) + 0.5 * np.array(
+    b1 = 0.5 * (b0 + b2) + 0.5 * np.asarray(
         [0, 1.0 * np.sign(b2[0] - b0[0])]
     ) * np.sqrt(3) * np.linalg.norm(b2 - b0)
-    return b1
+    return np.asarray(b1)
 
 
 def _dim_plus_1(
-    points: tp.List[PointTy], weights: tp.List[float]
+    points: tp.List[np.typing.ArrayLike], weights: tp.List[float]
 ) -> np.ndarray:
     """Add weights by lifting the points in b to 3D points."""
     if len(points) != len(weights):
@@ -63,9 +63,11 @@ def _dim_plus_1(
     return lifted_points
 
 
-def _make_bezier_curve(control_points: np.ndarray, nr: int) -> tp.List[PointTy]:
+def _make_bezier_curve(control_points: np.ndarray,
+                       nr: int) -> tp.List[np.ndarray]:
     """Evaluate nr equally spaced points on a bezier curve defined by the given
     control points."""
+    control_points = np.asarray(control_points)
     n = control_points.shape[0]
     nr = max(0, nr)
     t = np.linspace(0, 1, nr)
@@ -81,7 +83,8 @@ def _make_bezier_curve(control_points: np.ndarray, nr: int) -> tp.List[PointTy]:
     return points
 
 
-def _make_arc(b0: PointTy, b2: PointTy, num_points: int) -> tp.List[PointTy]:
+def _make_arc(b0: np.ndarray, b2: np.ndarray,
+              num_points: int) -> tp.List[np.ndarray]:
     """
     Make an arc (half-circle) with the given end points.
 
@@ -111,13 +114,13 @@ def _modulo_ab(x: float, a: float, b: float) -> float:
     return y + b if y < 0 else y + a
 
 
-def _is_between_zero_and_2pi(x: float):
-    return 0 <= x < 2 * np.pi + 0.00001
+def _is_between_zero_and_2pi(x: float) -> bool:
+    return 0 <= x < float(2 * np.pi + 0.00001)
 
 
 def _calculate_ideogram_lengths(
-    sizes: tp.List[float], gap: float = 0.005 * 2 * np.pi
-) -> tp.List[float]:
+    sizes: np.ndarray, gap: float = 0.005 * 2 * np.pi
+) -> np.ndarray:
     """
     Calculate the lengths for the ideograms.
 
@@ -128,14 +131,14 @@ def _calculate_ideogram_lengths(
     Returns:
         lengths of the ideograms on the unit circle
     """
-    return 2 * np.pi * np.asarray(sizes) / sum(sizes
-                                              ) - gap * np.ones(len(sizes))
+    return np.asarray(
+        2 * np.pi * np.asarray(sizes) / sum(sizes) - gap * np.ones(len(sizes))
+    )
 
 
 def _calculate_ideogram_ends(
-    lengths: tp.List[float],
-    gap: float = 0.005 * 2 * np.pi
-) -> tp.List[tp.Tuple[float, float]]:
+    lengths: np.ndarray, gap: float = 0.005 * 2 * np.pi
+) -> np.ndarray:
     """
     Calculate the ends of the ideograms as azimuths.
 
@@ -147,19 +150,19 @@ def _calculate_ideogram_ends(
         ends for the ideograms as azimuths
     """
     ideogram_ends: tp.List[tp.Tuple[float, float]] = []
-    left = 0
+    left = 0.0
     for length in lengths:
         right = left + length
         ideogram_ends.append((left, right))
         left = right + gap
-    return ideogram_ends
+    return np.asarray(ideogram_ends)
 
 
 def _make_ideogram_arc(
     radius: float,
     ends: tp.Tuple[float, float],
     num_points: int = 50
-) -> np.array:
+) -> tp.List[np.ndarray]:
     """
     Create a set of points defining an ideogram arc.
 
@@ -235,7 +238,7 @@ def _make_ribbon_arc(theta0: float, theta1: float) -> str:
         )
 
 
-def _make_layout(title, plot_size, shapes) -> go.Layout:
+def _make_layout(title: str, plot_size: int) -> go.Layout:
     axis = {
         "showline": False,
         "zeroline": False,
@@ -252,8 +255,7 @@ def _make_layout(title, plot_size, shapes) -> go.Layout:
         width=plot_size * 2,
         height=plot_size,
         margin=dict(t=25, b=25, l=25, r=25),
-        hovermode='closest',
-        shapes=shapes
+        hovermode='closest'
     )
 
 
@@ -267,7 +269,7 @@ def get_color_at(colorscale: ColorScaleTy, s: float) -> str:
 
     Args:
         colorscale: a plotly continuous colorscale defined with RGB string colors
-        intermed: value in the range [0, 1]
+        s: value in the range [0, 1]
     Returns:
         color in rgb string format
     """
@@ -275,26 +277,29 @@ def get_color_at(colorscale: ColorScaleTy, s: float) -> str:
         raise ValueError("colorscale must have at least one color")
 
     if s <= 0 or len(colorscale) == 1:
-        return colors.convert_colors_to_same_type(colorscale[0][1])[0][0]
+        return str(colors.convert_colors_to_same_type(colorscale[0][1])[0][0])
     if s >= 1:
-        return colors.convert_colors_to_same_type(colorscale[-1][1])[0][0]
+        return str(colors.convert_colors_to_same_type(colorscale[-1][1])[0][0])
 
+    low_color = high_color = ""
     for cutoff, color in colorscale:
-        if s > cutoff:
-            low_cutoff, low_color = cutoff, color
+        if s > float(cutoff):
+            low_cutoff, low_color = float(cutoff), str(color)
         else:
-            high_cutoff, high_color = cutoff, color
+            high_cutoff, high_color = float(cutoff), str(color)
             break
 
     low_color = colors.convert_colors_to_same_type(low_color)[0][0]
     high_color = colors.convert_colors_to_same_type(high_color)[0][0]
 
     # noinspection PyUnboundLocalVariable
-    return colors.find_intermediate_color(
-        lowcolor=low_color,
-        highcolor=high_color,
-        intermed=((s - low_cutoff) / (high_cutoff - low_cutoff)),
-        colortype="rgb"
+    return str(
+        colors.find_intermediate_color(
+            lowcolor=low_color,
+            highcolor=high_color,
+            intermed=((s - low_cutoff) / (high_cutoff - low_cutoff)),
+            colortype="rgb"
+        )
     )
 
 
@@ -313,7 +318,7 @@ def make_chord_plot(
     edges: tp.List[tp.Tuple[NodeTy, NodeTy, EdgeInfoTy]],
     title: str,
     size: int = 400
-):
+) -> go.Figure:
     """
     Create a chord plot from the given graph.
 
@@ -350,11 +355,9 @@ def make_chord_plot(
     for node, _ in nodes:
         node_sizes.append(node_size_dict[node])
 
-    shapes = []
-
     # calculate ideograms
     gap = 2 * np.pi * 0.000
-    ideogram_lengths = _calculate_ideogram_lengths(node_sizes, gap)
+    ideogram_lengths = _calculate_ideogram_lengths(np.asarray(node_sizes), gap)
     ideogram_ends = _calculate_ideogram_ends(ideogram_lengths, gap)
     ideogram_colors = [
         get_color_at(colors.PLOTLY_SCALES["RdBu"], idx / len(ideogram_ends))
@@ -366,7 +369,7 @@ def make_chord_plot(
         z = _make_ideogram_arc(1.1, ends)
         zi = _make_ideogram_arc(1.0, ends)
 
-        points = []
+        points: tp.List[np.ndarray] = []
         points.extend(z)
         points.extend(zi[::-1])
         points.append(z[0])
@@ -390,12 +393,12 @@ def make_chord_plot(
                                                  float]]] = defaultdict(list)
     ribbon_colors: tp.Dict[int, str] = {}
     ribbon_info: tp.List[go.scatter] = []
-    for node_idx, node in enumerate(nodes):
+    for node_idx, (node, _) in enumerate(nodes):
         node_edges: tp.List[int] = []
         node_edge_sizes: tp.List[float] = []
         for edge_idx in sorted(
             outgoing_edges[node[0]],
-            key=lambda x: edges[x][2]["size"],
+            key=lambda x: float(edges[x][2]["size"]),
             reverse=True
         ):
             node_edges.append(edge_idx)
@@ -405,7 +408,7 @@ def make_chord_plot(
             )
         for edge_idx in sorted(
             incoming_edges[node[0]],
-            key=lambda x: edges[x][2]["size"],
+            key=lambda x: float(edges[x][2]["size"]),
             reverse=True
         ):
             node_edges.append(edge_idx)
@@ -441,7 +444,7 @@ def make_chord_plot(
             )
         )
 
-    layout = _make_layout(title, size, shapes)
+    layout = _make_layout(title, size)
     data = ideogram_info + ribbon_info
     figure = go.Figure(data=data, layout=layout)
     return figure
@@ -452,7 +455,7 @@ def make_arc_plot(
     edges: tp.List[tp.Tuple[NodeTy, NodeTy, EdgeInfoTy]],
     title: str,
     size: int = 400
-):
+) -> go.Figure:
     """
     Create a chord plot from the given graph.
 
@@ -504,13 +507,11 @@ def make_arc_plot(
     ]
     node_indices = {node[0]: idx for idx, node in enumerate(nodes)}
     node_placements = []
-    x = 0
+    dx = 0
     for node_size in node_sizes:
-        x += node_size / 2
-        node_placements.append(x)
-        x += node_size / 2
-
-    shapes = []
+        dx += node_size / 2
+        node_placements.append(dx)
+        dx += node_size / 2
 
     arc_bounds: tp.Dict[int, tp.List[tp.Tuple[float,
                                               float]]] = defaultdict(list)
@@ -584,7 +585,7 @@ def make_arc_plot(
             )
         )
 
-    layout = _make_layout(title, size, shapes)
+    layout = _make_layout(title, size)
     data = arcs + [node_scatter]
     figure = go.Figure(data=data, layout=layout)
     return figure
