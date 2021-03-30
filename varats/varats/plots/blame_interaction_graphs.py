@@ -12,41 +12,19 @@ import plotly.offline as offply
 from matplotlib import style
 from pygit2 import Commit
 
-from varats.data.reports.blame_interaction_graph import BlameInteractionGraph
+from varats.data.reports.blame_interaction_graph import (
+    create_blame_interaction_graph,
+)
 from varats.data.reports.blame_report import BlameReport
-from varats.jupyterhelper.file import load_blame_report
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
-from varats.plot.plot import Plot, PlotDataEmpty, PlotArgMissing
+from varats.plot.plot import Plot, PlotArgMissing
 from varats.plots.chord_plot_utils import make_chord_plot, make_arc_plot
 from varats.plots.scatter_plot_utils import multivariate_grid
 from varats.project.project_util import create_commit_lookup_for_project
-from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import CommitRepoPair
-
-
-def _get_interaction_graph(
-    project_name: str, revision: str
-) -> BlameInteractionGraph:
-    """Create a blame interaction graph for a certain project revision."""
-    file_name_filter: tp.Callable[[str], bool] = lambda x: False
-
-    if revision:
-
-        def match_revision(rev: str) -> bool:
-            return True if rev == revision else False
-
-        file_name_filter = match_revision
-
-    report_files = get_processed_revisions_files(
-        project_name, BlameReport, file_name_filter
-    )
-    if len(report_files) == 0:
-        raise PlotDataEmpty(f"Found no BlameReport for project {project_name}")
-    report = load_blame_report(report_files[0])
-    return BlameInteractionGraph(project_name, report)
 
 
 def _get_commit_or_raise(
@@ -103,7 +81,7 @@ class CommitInteractionGraphChordPlot(Plot):
 
         commit_lookup = create_commit_lookup_for_project(project_name)
 
-        interaction_graph = _get_interaction_graph(
+        interaction_graph = create_blame_interaction_graph(
             project_name, revision
         ).commit_interaction_graph
 
@@ -161,7 +139,7 @@ class CommitInteractionGraphArcPlot(Plot):
 
         commit_lookup = create_commit_lookup_for_project(project_name)
 
-        interaction_graph = _get_interaction_graph(
+        interaction_graph = create_blame_interaction_graph(
             project_name, revision
         ).commit_interaction_graph
 
@@ -268,7 +246,7 @@ class CommitInteractionGraphNodeDegreePlot(Plot):
             if not revision:
                 continue
 
-            cig = _get_interaction_graph(
+            cig = create_blame_interaction_graph(
                 project_name, revision
             ).commit_interaction_graph
             commit_lookup = create_commit_lookup_for_project(project_name)
@@ -352,7 +330,7 @@ class CommitInteractionGraphNodeDegreeScatterPlot(Plot):
             if not revision:
                 continue
 
-            cig = _get_interaction_graph(
+            cig = create_blame_interaction_graph(
                 project_name, revision
             ).commit_interaction_graph
             commit_lookup = create_commit_lookup_for_project(project_name)

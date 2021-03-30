@@ -9,6 +9,9 @@ from varats.data.reports.blame_report import (
     gen_base_to_inter_commit_repo_pair_mapping,
     BlameReportDiff,
 )
+from varats.jupyterhelper.file import load_blame_report
+from varats.plot.plot import PlotDataEmpty
+from varats.revision.revisions import get_processed_revisions_files
 
 
 class BlameInteractionGraph():
@@ -65,3 +68,34 @@ class BlameInteractionGraph():
     def author_interaction_graph(self) -> nx.Graph:
         # TODO
         pass
+
+
+def create_blame_interaction_graph(
+    project_name: str, revision: str
+) -> BlameInteractionGraph:
+    """
+    Create a blame interaction graph for a certain project revision.
+
+    Args:
+        project_name: name of the project
+        revision: project revision
+
+    Returns:
+        the blame interaction graph
+    """
+    file_name_filter: tp.Callable[[str], bool] = lambda x: False
+
+    if revision:
+
+        def match_revision(rev: str) -> bool:
+            return True if rev == revision else False
+
+        file_name_filter = match_revision
+
+    report_files = get_processed_revisions_files(
+        project_name, BlameReport, file_name_filter
+    )
+    if len(report_files) == 0:
+        raise PlotDataEmpty(f"Found no BlameReport for project {project_name}")
+    report = load_blame_report(report_files[0])
+    return BlameInteractionGraph(project_name, report)
