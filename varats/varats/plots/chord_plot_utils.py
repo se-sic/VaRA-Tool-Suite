@@ -397,7 +397,7 @@ def make_chord_plot(
         node_edges: tp.List[int] = []
         node_edge_sizes: tp.List[float] = []
         for edge_idx in sorted(
-            outgoing_edges[node[0]],
+            outgoing_edges[node],
             key=lambda x: float(edges[x][2]["size"]),
             reverse=True
         ):
@@ -407,7 +407,7 @@ def make_chord_plot(
                 ideogram_colors[node_idx], 0.75
             )
         for edge_idx in sorted(
-            incoming_edges[node[0]],
+            incoming_edges[node],
             key=lambda x: float(edges[x][2]["size"]),
             reverse=True
         ):
