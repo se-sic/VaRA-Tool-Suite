@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import plotly.offline as offply
 from matplotlib import style
-from pygit2 import Commit
 
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
@@ -23,18 +22,11 @@ from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot, PlotArgMissing
 from varats.plots.chord_plot_utils import make_chord_plot, make_arc_plot
 from varats.plots.scatter_plot_utils import multivariate_grid
-from varats.project.project_util import create_commit_lookup_for_project
-from varats.utils.git_util import CommitRepoPair
-
-
-def _get_commit_or_raise(
-    commit_repo_pair: CommitRepoPair,
-    commit_lookup: tp.Callable[[CommitRepoPair], tp.Optional[Commit]]
-) -> Commit:
-    commit = commit_lookup(commit_repo_pair)
-    if not commit:
-        raise KeyError(f"Could not find commit {commit_repo_pair}.")
-    return commit
+from varats.utils.git_util import (
+    CommitRepoPair,
+    create_commit_lookup_helper,
+    DUMMY_COMMIT,
+)
 
 
 class CommitInteractionGraphPlot(Plot):
@@ -79,13 +71,15 @@ class CommitInteractionGraphChordPlot(Plot):
         if not revision:
             raise PlotArgMissing(f"'revision' was not specified.")
 
-        commit_lookup = create_commit_lookup_for_project(project_name)
+        commit_lookup = create_commit_lookup_helper(project_name)
 
         interaction_graph = create_blame_interaction_graph(
             project_name, revision
         ).commit_interaction_graph
 
         def filter_nodes(node: CommitRepoPair) -> bool:
+            if node.commit_hash == DUMMY_COMMIT:
+                return False
             commit = commit_lookup(node)
             if not commit:
                 return False
@@ -95,10 +89,7 @@ class CommitInteractionGraphChordPlot(Plot):
         nodes = [(node, {
             "info": interaction_graph.nodes[node]["commit_hash"]
         }) for node in interaction_graph.nodes if filter_nodes(node)]
-        nodes.sort(
-            key=lambda x:
-            int(_get_commit_or_raise(x[0], commit_lookup).commit_time)
-        )
+        nodes.sort(key=lambda x: int(commit_lookup(x[0]).commit_time))
         edges = [(
             source, sink, {
                 "size": interaction_graph[source][sink]["amount"],
@@ -137,13 +128,15 @@ class CommitInteractionGraphArcPlot(Plot):
         if not revision:
             raise PlotArgMissing(f"'revision' was not specified.")
 
-        commit_lookup = create_commit_lookup_for_project(project_name)
+        commit_lookup = create_commit_lookup_helper(project_name)
 
         interaction_graph = create_blame_interaction_graph(
             project_name, revision
         ).commit_interaction_graph
 
         def filter_nodes(node: CommitRepoPair) -> bool:
+            if node.commit_hash == DUMMY_COMMIT:
+                return False
             commit = commit_lookup(node)
             if not commit:
                 return False
@@ -158,10 +151,7 @@ class CommitInteractionGraphArcPlot(Plot):
                 "line_color": interaction_graph.in_degree(node)
             }
         ) for node in interaction_graph.nodes if filter_nodes(node)]
-        nodes.sort(
-            key=lambda x:
-            int(_get_commit_or_raise(x[0], commit_lookup).commit_time)
-        )
+        nodes.sort(key=lambda x: int(commit_lookup(x[0]).commit_time))
         edges = [(
             source, sink, {
                 "size": interaction_graph[source][sink]["amount"],
@@ -248,14 +238,16 @@ class CommitInteractionGraphNodeDegreePlot(Plot):
             cig = create_blame_interaction_graph(
                 project_name, revision
             ).commit_interaction_graph
-            commit_lookup = create_commit_lookup_for_project(project_name)
+            commit_lookup = create_commit_lookup_helper(project_name)
 
             def filter_nodes(node: CommitRepoPair) -> bool:
+                if node.commit_hash == DUMMY_COMMIT:
+                    return False
                 return bool(commit_lookup(node))
 
             def commit_time(node: CommitRepoPair) -> datetime:
                 return datetime.utcfromtimestamp(
-                    _get_commit_or_raise(node, commit_lookup).commit_time
+                    commit_lookup(node).commit_time
                 )
 
             data = pd.DataFrame([{
@@ -332,14 +324,16 @@ class CommitInteractionGraphNodeDegreeScatterPlot(Plot):
             cig = create_blame_interaction_graph(
                 project_name, revision
             ).commit_interaction_graph
-            commit_lookup = create_commit_lookup_for_project(project_name)
+            commit_lookup = create_commit_lookup_helper(project_name)
 
             def filter_nodes(node: CommitRepoPair) -> bool:
+                if node.commit_hash == DUMMY_COMMIT:
+                    return False
                 return bool(commit_lookup(node))
 
             def commit_time(node: CommitRepoPair) -> datetime:
                 return datetime.utcfromtimestamp(
-                    _get_commit_or_raise(node, commit_lookup).commit_time
+                    commit_lookup(node).commit_time
                 )
 
             data = pd.DataFrame([{
