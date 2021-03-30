@@ -479,7 +479,16 @@ def make_arc_plot(
 
     Returns:
     """
-    colorswatch = colors.sequential.RdBu[::-1]
+    colorswatch = [
+        "rgb(103,0,31)",
+        "rgb(178,24,43)",
+        "rgb(214,96,77)",
+        "rgb(234,155,120)",
+        "rgb(146,197,222)",
+        "rgb(67,147,195)",
+        "rgb(33,102,172)",
+        "rgb(5,48,97)",
+    ][::-1]
     colorscheme = colors.make_colorscale(colorswatch)
     node_fill_color_values = [node[1].get("fill_color", 0) for node in nodes]
     node_line_color_values = [node[1].get("line_color", 0) for node in nodes]
