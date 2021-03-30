@@ -160,8 +160,7 @@ class CommitInteractionGraphArcPlot(Plot):
         ) for node in interaction_graph.nodes if filter_nodes(node)]
         nodes.sort(
             key=lambda x:
-            int(_get_commit_or_raise(x[0], commit_lookup).commit_time),
-            reverse=True
+            int(_get_commit_or_raise(x[0], commit_lookup).commit_time)
         )
         edges = [(
             source, sink, {
