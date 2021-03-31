@@ -253,6 +253,7 @@ class BugFixingRelationPlot(Plot):
         self.__figure = _plot_chord_diagram_for_raw_bugs(project_name, raw_bugs)
 
     def show(self) -> None:
+        """Show the finished plot."""
         try:
             self.plot(True)
         except PlotDataEmpty:
@@ -263,6 +264,14 @@ class BugFixingRelationPlot(Plot):
     def save(
         self, path: tp.Optional[Path] = None, filetype: str = 'html'
     ) -> None:
+        """
+        Save the current plot to a file. Supports html, json and image
+        filetypes.
+
+        Args:
+            path: The path where the file is stored (excluding the file name).
+            filetype: The file type of the plot.
+        """
         try:
             self.plot(False)
         except PlotDataEmpty:
@@ -281,5 +290,22 @@ class BugFixingRelationPlot(Plot):
         else:
             self.__figure.write_image(self.plot_file_name(filetype))
 
+    def plot_file_name(self, filetype: str) -> str:
+        """
+        Get the file name for this plot; will be stored to when calling save.
+
+        Args:
+            filetype: the file type for the plot
+
+        Returns:
+            the file name the plot will be stored to
+        """
+        plot_indent = ''
+        if 'project' in self.plot_kwargs:
+            plot_indent = f"{self.plot_kwargs['project']}_"
+
+        return f"{plot_indent}{self.name}_{self.__szz_tool}.{filetype}"
+
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+        """Plot always includes all revisions."""
         return set()
