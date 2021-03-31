@@ -186,7 +186,8 @@ def _plot_chord_diagram_for_raw_bugs(
             hoverinfo='text'
         )
 
-        def copy_hash(trace, points, *_):
+        #onclick callback function
+        def copy_hash(*args: tp.Any):
             pyperclip.copy(f'{commit.hex}')
 
         node_scatter.on_click(copy_hash)
@@ -237,11 +238,18 @@ class BugFixingRelationPlot(Plot):
         """Plots bug plot for the whole project."""
         project_name = self.plot_kwargs['project']
 
-        bug_provider = BugProvider.get_provider_for_project(
-            get_project_cls_by_name(project_name)
-        )
+        self.__szz_tool = self.plot_kwargs.get('szz_tool', 'provider')
 
-        raw_bugs = bug_provider.find_all_raw_bugs()
+        if self.__szz_tool == 'provider':
+            bug_provider = BugProvider.get_provider_for_project(
+                get_project_cls_by_name(project_name)
+            )
+            raw_bugs = bug_provider.find_all_raw_bugs()
+        elif self.__szz_tool == 'szz_unleashed':
+            pass
+        else:
+            raise PlotDataEmpty
+
         self.__figure = _plot_chord_diagram_for_raw_bugs(project_name, raw_bugs)
 
     def show(self) -> None:
