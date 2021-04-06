@@ -93,7 +93,7 @@ def show_major_release_prompt(
     if not research_tool.is_up_to_date():
         print_up_to_date_message(research_tool)
         user_choice = cli_yn_choice(
-            question=f"Do you want to upgrade?", default='y'
+            question="Do you want to upgrade?", default='y'
         )
         if user_choice:
             research_tool.upgrade()
