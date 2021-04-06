@@ -21,7 +21,7 @@ from varats.tools.tool_util import (
     get_research_tool,
     get_supported_research_tool_names,
 )
-from varats.utils.cli_util import initialize_cli_tool
+from varats.utils.cli_util import initialize_cli_tool, cli_yn_choice
 from varats.utils.settings import save_config
 
 
@@ -92,25 +92,14 @@ def show_major_release_prompt(
 
     if not research_tool.is_up_to_date():
         print_up_to_date_message(research_tool)
-        print(
-            "Press:\n"
-            f"  {colors.bold}1{colors.bold.reset} to upgrade and continue.\n"
-            f"  {colors.bold}2{colors.bold.reset} to continue without "
-            f"upgrading.\n "
+        user_choice = cli_yn_choice(
+            question=f"Do you want to upgrade?", default='y'
         )
-        user_choice = input("> ")
-
-        if user_choice == '1':
+        if user_choice:
             research_tool.upgrade()
             return
-        if user_choice == '2':
-            return
 
-        print(
-            f"{colors.Red}Your selection is invalid. Aborting."
-            f"{colors.Red.reset}"
-        )
-        raise IOError
+        return
 
 
 def parse_string_to_build_type(build_type: str) -> BuildType:
