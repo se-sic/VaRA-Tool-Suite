@@ -11,9 +11,8 @@ from varats.data.databases.blame_diff_metrics_database import (
     compare_timestamps,
     build_report_files_tuple,
 )
-from varats.data.reports.blame_report import BlameReport
 from varats.paper.case_study import load_case_study_from_file
-from varats.revision.revisions import get_processed_revisions_files
+from varats.utils.filesystem_util import get_path_to_test_inputs
 
 
 class TestBlameDiffMetricsUtils(unittest.TestCase):
@@ -28,16 +27,16 @@ class TestBlameDiffMetricsUtils(unittest.TestCase):
             cls.case_study = load_case_study_from_file(Path(yaml_file.name))
 
         cls.br_paths_list = [
-            Path(__file__).parents[2] / Path(
-                "TEST_INPUTS/results/xz/BR-xz-xz-2f0bc9cd40"
+            get_path_to_test_inputs() / Path(
+                "results/xz/BR-xz-xz-2f0bc9cd40"
                 "_9e238675-ee7c-4325-8e9f-8ccf6fd3f05c_success.yaml"
             ),
-            Path(__file__).parents[2] / Path(
-                "TEST_INPUTS/results/xz/BR-xz-xz-c5c7ceb08a"
+            get_path_to_test_inputs() / Path(
+                "results/xz/BR-xz-xz-c5c7ceb08a"
                 "_77a6c5bc-e5c7-4532-8814-70dbcc6b5dda_success.yaml"
             ),
-            Path(__file__).parents[2] / Path(
-                "TEST_INPUTS/results/xz/BR-xz-xz-ef364d3abc"
+            get_path_to_test_inputs() / Path(
+                "results/xz/BR-xz-xz-ef364d3abc"
                 "_feeeecb2-1826-49e5-a188-d4d883f06d00_success.yaml"
             )
         ]
