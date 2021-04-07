@@ -12,7 +12,7 @@ from varats.data.databases.blame_diff_metrics_database import (
     build_report_files_tuple,
 )
 from varats.paper.case_study import load_case_study_from_file
-from varats.utils.filesystem_util import get_path_to_test_inputs
+from varats.utils.yaml_util import get_path_to_test_inputs
 
 
 class TestBlameDiffMetricsUtils(unittest.TestCase):

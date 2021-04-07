@@ -3,15 +3,6 @@
 import typing as tp
 from pathlib import Path
 
-from varats.utils.settings import get_varats_base_folder
-
-
-def get_path_to_test_inputs() -> Path:
-    """Returns the path to the ``TEST_INPUTS`` directory."""
-
-    return tp.cast(Path, get_varats_base_folder()
-                  ) / Path("VaRA-Tool-Suite/tests/TEST_INPUTS")
-
 
 class FolderAlreadyPresentError(Exception):
     """Exception raised if an operation could not be performed because a folder
