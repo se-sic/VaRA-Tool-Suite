@@ -114,7 +114,7 @@ class Xz(bb.Project, CVEProviderHook):  # type: ignore
                 else:
                     configure()
 
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()), "--debug=b")
+            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
             verify_binaries(self)
 
