@@ -130,8 +130,8 @@ def build_report_pairs_tuple(
 ) -> tp.Tuple[ReportPairTupleList, ReportPairTupleList]:
     """
     Builds a tuple of tuples (ReportPairTupleList, ReportPairTupleList) of
-    successful report files with their their corresponding predecessors and
-    tuples of failed report files with their corresponding predecessor.
+    successful report files with their corresponding predecessors and tuples of
+    failed report files with their corresponding predecessor.
 
     Args:
         project_name: the name of the project

@@ -1,6 +1,8 @@
 """Test blame diff based commit-data metrics."""
+import typing as tp
 import unittest
 import unittest.mock as mock
+from collections import defaultdict
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -10,8 +12,15 @@ from varats.data.databases.blame_diff_metrics_database import (
     timestamp_from_paths,
     compare_timestamps,
     build_report_files_tuple,
+    build_report_pairs_tuple,
+    get_predecessor_report_file,
+    get_successor_report_file,
 )
+from varats.data.reports.blame_report import BlameReport
+from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import load_case_study_from_file
+from varats.projects.discover_projects import initialize_projects
+from varats.revision.revisions import get_processed_revisions
 from varats.utils.yaml_util import get_path_to_test_inputs
 
 
@@ -38,6 +47,18 @@ class TestBlameDiffMetricsUtils(unittest.TestCase):
             get_path_to_test_inputs() / Path(
                 "results/xz/BR-xz-xz-ef364d3abc"
                 "_feeeecb2-1826-49e5-a188-d4d883f06d00_success.yaml"
+            ),
+            get_path_to_test_inputs() / Path(
+                "results/TwoLibsOneProjectInteractionDiscreteLibsSingleProject/"
+                "BR-TwoLibsOneProjectInteractionDiscreteLibsSingleProject-"
+                "elementalist-5e8fe1616d_11ca651c-2d41-42bd-aa4e-8c37ba67b75f"
+                "_success.yaml"
+            ),
+            get_path_to_test_inputs() / Path(
+                "results/TwoLibsOneProjectInteractionDiscreteLibsSingleProject/"
+                "BR-TwoLibsOneProjectInteractionDiscreteLibsSingleProject-"
+                "elementalist-e64923e69e_0b22c10c-4adb-4885-b3d2-416749b53aa8"
+                "_success.yaml"
             )
         ]
 
@@ -48,7 +69,7 @@ class TestBlameDiffMetricsUtils(unittest.TestCase):
         combined_c_hash = id_from_paths(
             (self.br_paths_list[0], self.br_paths_list[1])
         )
-        self.assertTrue("2f0bc9cd40_c5c7ceb08a", combined_c_hash)
+        self.assertEqual("2f0bc9cd40_c5c7ceb08a", combined_c_hash)
 
     def test_timestamp_from_paths(self) -> None:
         """Test if the timestamp of two result files are extracted and
@@ -59,10 +80,10 @@ class TestBlameDiffMetricsUtils(unittest.TestCase):
         combined_timestamp2 = timestamp_from_paths(
             (self.br_paths_list[1], self.br_paths_list[2])
         )
-        self.assertTrue(
+        self.assertEqual(
             "1612953595877546924_1612953595881546917", combined_timestamp1
         )
-        self.assertTrue(
+        self.assertEqual(
             "1612953595881546917_1612953595881546917", combined_timestamp2
         )
 
@@ -84,33 +105,156 @@ class TestBlameDiffMetricsUtils(unittest.TestCase):
         self.assertTrue(comp2)
         self.assertFalse(comp3)
 
-    @mock.patch(
-        "varats.data.databases.blame_diff_metrics_database"
-        ".get_failed_revisions_files"
-    )
-    @mock.patch(
-        "varats.data.databases.blame_diff_metrics_database"
-        ".get_processed_revisions_files"
-    )
-    def test_build_report_files_tuple(
-        self, mock_processed_revisions, mock_failed_revisions
-    ) -> None:
+    @mock.patch("varats.revision.revisions.__get_result_files_dict")
+    def test_build_report_files_tuple(self, mock_result_files_dict) -> None:
         """Test if the mappings from commit hash to successful and failed report
         files are correctly returned as tuple."""
-        mock_processed_revisions.return_value = self.br_paths_list
-        mock_failed_revisions.return_value = self.br_paths_list[0:2]
-        report_files_tuple = build_report_files_tuple("mocked", None)
 
-        successful_revisions = {
-            '2f0bc9cd40': self.br_paths_list[0],
-            'c5c7ceb08a': self.br_paths_list[1],
-            'ef364d3abc': self.br_paths_list[2]
-        }
-        failed_revisions = {
-            '2f0bc9cd40': self.br_paths_list[0],
-            'c5c7ceb08a': self.br_paths_list[1]
-        }
+        mock_result_files = defaultdict(list)
+        mock_result_files["5e8fe1616d"] = [self.br_paths_list[3]]
+        mock_result_files["e64923e69e"] = [self.br_paths_list[4]]
 
-        self.assertTrue(
+        mock_result_files_dict.return_value = mock_result_files
+
+        case_study = load_case_study_from_file(
+            get_path_to_test_inputs() / Path(
+                "paper_configs/test_blame_diff_metrics_database/"
+                "TwoLibsOneProjectInteractionDiscreteLibsSingleProject_0."
+                "case_study"
+            )
+        )
+        report_files_tuple = build_report_files_tuple(
+            case_study.project_name, case_study
+        )
+
+        successful_revisions: tp.Dict[str, tp.List[Path]] = {
+            '5e8fe1616d': self.br_paths_list[3],
+            'e64923e69e': self.br_paths_list[4],
+        }
+        failed_revisions: tp.Dict[str, tp.List[Path]] = {}
+
+        self.assertEqual(
             report_files_tuple, (successful_revisions, failed_revisions)
         )
+
+    @mock.patch("varats.revision.revisions.__get_result_files_dict")
+    def test_build_report_pairs_tuple(self, mock_result_files_dict) -> None:
+        """Test if the tuple of ReportPairTupleList tuples is correctly
+        built."""
+
+        mock_result_files = defaultdict(list)
+        mock_result_files["5e8fe1616d"] = [self.br_paths_list[3]]
+        mock_result_files["e64923e69e"] = [self.br_paths_list[4]]
+
+        mock_result_files_dict.return_value = mock_result_files
+
+        initialize_projects()
+        commit_map = get_commit_map(
+            "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+        )
+        case_study = load_case_study_from_file(
+            get_path_to_test_inputs() / Path(
+                "paper_configs/test_blame_diff_metrics_database/"
+                "TwoLibsOneProjectInteractionDiscreteLibsSingleProject_0."
+                "case_study"
+            )
+        )
+
+        report_pairs_tuple = build_report_pairs_tuple(
+            case_study.project_name, commit_map, case_study
+        )
+
+        mock_report_pairs_list: tp.List[tp.Tuple[Path, Path]] = [
+            (self.br_paths_list[3], self.br_paths_list[4])
+        ]
+        mock_failed_report_pairs_list: tp.List[tp.Tuple[Path, Path]] = []
+
+        self.assertEqual(
+            report_pairs_tuple,
+            (mock_report_pairs_list, mock_failed_report_pairs_list)
+        )
+
+    @mock.patch("varats.revision.revisions.__get_result_files_dict")
+    def test_get_predecessor_report_file(self, mock_result_files_dict) -> None:
+        """Test if the correct preceding report file of a report is found."""
+        mock_result_files = defaultdict(list)
+        mock_result_files["5e8fe1616d"] = [self.br_paths_list[3]]
+        mock_result_files["e64923e69e"] = [self.br_paths_list[4]]
+
+        mock_result_files_dict.return_value = mock_result_files
+
+        initialize_projects()
+        commit_map = get_commit_map(
+            "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+        )
+        case_study = load_case_study_from_file(
+            get_path_to_test_inputs() / Path(
+                "paper_configs/test_blame_diff_metrics_database/"
+                "TwoLibsOneProjectInteractionDiscreteLibsSingleProject_0."
+                "case_study"
+            )
+        )
+        report_files, _ = build_report_files_tuple(
+            case_study.project_name, case_study
+        )
+        sampled_revs = get_processed_revisions(
+            case_study.project_name, BlameReport
+        )
+        short_time_id_cache: tp.Dict[str, int] = {
+            rev: commit_map.short_time_id(rev) for rev in sampled_revs
+        }
+
+        predecessor_of_e6 = get_predecessor_report_file(
+            "e64923e69e", commit_map, short_time_id_cache, report_files,
+            sampled_revs
+        )
+        predecessor_of_5e = get_predecessor_report_file(
+            "5e8fe1616d", commit_map, short_time_id_cache, report_files,
+            sampled_revs
+        )
+
+        self.assertEqual(predecessor_of_e6, None)
+        self.assertEqual(predecessor_of_5e, self.br_paths_list[4])
+
+    @mock.patch("varats.revision.revisions.__get_result_files_dict")
+    def test_get_successor_report_file(self, mock_result_files_dict) -> None:
+        """Test if the correct succeeding report file of a report is found."""
+
+        mock_result_files = defaultdict(list)
+        mock_result_files["5e8fe1616d"] = [self.br_paths_list[3]]
+        mock_result_files["e64923e69e"] = [self.br_paths_list[4]]
+
+        mock_result_files_dict.return_value = mock_result_files
+
+        initialize_projects()
+        commit_map = get_commit_map(
+            "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
+        )
+        case_study = load_case_study_from_file(
+            get_path_to_test_inputs() / Path(
+                "paper_configs/test_blame_diff_metrics_database/"
+                "TwoLibsOneProjectInteractionDiscreteLibsSingleProject_0."
+                "case_study"
+            )
+        )
+        report_files, _ = build_report_files_tuple(
+            case_study.project_name, case_study
+        )
+        sampled_revs = get_processed_revisions(
+            case_study.project_name, BlameReport
+        )
+        short_time_id_cache: tp.Dict[str, int] = {
+            rev: commit_map.short_time_id(rev) for rev in sampled_revs
+        }
+
+        successor_of_e6 = get_successor_report_file(
+            "e64923e69e", commit_map, short_time_id_cache, report_files,
+            sampled_revs
+        )
+        successor_of_5e = get_successor_report_file(
+            "5e8fe1616d", commit_map, short_time_id_cache, report_files,
+            sampled_revs
+        )
+
+        self.assertEqual(successor_of_e6, self.br_paths_list[3])
+        self.assertEqual(successor_of_5e, None)
