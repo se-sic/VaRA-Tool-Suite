@@ -3,6 +3,7 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.utils.cmd import make, cmake, mkdir
+from benchbuild.utils.revision_ranges import block_revisions, GoodBadSubgraph
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -30,13 +31,22 @@ class Libpng(bb.Project, CVEProviderHook):  # type: ignore
     DOMAIN = 'library'
 
     SOURCE = [
-        bb.source.Git(
-            remote="https://github.com/glennrp/libpng.git",
-            local="libpng",
-            refspec="HEAD",
-            limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("libpng")
+        block_revisions([
+            GoodBadSubgraph(["8694cd8bf5f7d0d2739e503218eaf749c6cb7071"],
+                            ["0e13545712dc39db5689452ff3299992fc0a8377"],
+                            "missing generic symlink"),
+            GoodBadSubgraph(["4491fa237ff21aa0bbccef52b4df25e05657fabd"],
+                            ["715423c8d61fceea615b99d84aacdb546050fa99"],
+                            "missing generic symlink")
+        ])(
+            bb.source.Git(
+                remote="https://github.com/glennrp/libpng.git",
+                local="libpng",
+                refspec="HEAD",
+                limit=None,
+                shallow=False,
+                version_filter=project_filter_generator("libpng")
+            )
         )
     ]
 
