@@ -81,8 +81,8 @@ class Libpng(bb.Project, CVEProviderHook):  # type: ignore
                 bb.watch(cmake)("-G", "Unix Makefiles", "..")
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-
-        verify_binaries(self)
+        with local.cwd(libpng_source):
+            verify_binaries(self)
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
