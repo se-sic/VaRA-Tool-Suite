@@ -74,22 +74,6 @@ class TestBlameDiffMetricsUtils(unittest.TestCase):
         )
         self.assertEqual("2f0bc9cd40_c5c7ceb08a", combined_c_hash)
 
-    def test_timestamp_from_paths(self) -> None:
-        """Test if the timestamp of two result files are extracted and
-        concatenated correctly to a combined timestamp."""
-        combined_timestamp1 = timestamp_from_paths(
-            (self.br_paths_list[0], self.br_paths_list[1])
-        )
-        combined_timestamp2 = timestamp_from_paths(
-            (self.br_paths_list[1], self.br_paths_list[2])
-        )
-        self.assertEqual(
-            "1612953595877546924_1612953595881546917", combined_timestamp1
-        )
-        self.assertEqual(
-            "1612953595881546917_1612953595881546917", combined_timestamp2
-        )
-
     def test_compare_timestamps(self) -> None:
         """Test if newer timestamp is correctly determined."""
         comp1 = compare_timestamps(
