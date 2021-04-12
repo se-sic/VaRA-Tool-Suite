@@ -12,6 +12,38 @@ from varats.data.reports.blame_report import (
 from varats.jupyterhelper.file import load_blame_report
 from varats.plot.plot import PlotDataEmpty
 from varats.revision.revisions import get_processed_revisions_files
+from varats.utils.git_util import CommitRepoPair, create_commit_lookup_helper
+
+
+class _BIGNodeAttrs(tp.TypedDict):
+    """Blame interaction graph node attributes."""
+    commit: CommitRepoPair
+
+
+class _BIGEdgeAttrs(tp.TypedDict):
+    """Blame interaction graph edge attributes."""
+    amount: int
+
+
+class CIGNodeAttrs(tp.TypedDict):
+    """Commit interaction graph node attributes."""
+    commit: CommitRepoPair
+
+
+class CIGEdgeAttrs(tp.TypedDict):
+    """Commit interaction graph edge attributes."""
+    amount: int
+
+
+class AIGNodeAttrs(tp.TypedDict):
+    """Author interaction graph node attributes."""
+    author: str
+    num_commits: int
+
+
+class AIGEdgeAttrs(tp.TypedDict):
+    """Author interaction graph edge attributes."""
+    amount: int
 
 
 class BlameInteractionGraph():
@@ -21,30 +53,40 @@ class BlameInteractionGraph():
         self, project_name: str, report: tp.Union[BlameReport, BlameReportDiff]
     ):
         self.__report = report
-        self.__interaction_graph: tp.Optional[nx.DiGraph] = None
         self.__project_name = project_name
+        self.__cached_interaction_graph: tp.Optional[nx.DiGraph] = None
 
-    def __build_interaction_graph(self) -> nx.DiGraph:
-        interaction_graph = nx.DiGraph()
+    def __interaction_graph(self) -> nx.DiGraph:
+        if self.__cached_interaction_graph:
+            return self.__cached_interaction_graph
+
+        self.__cached_interaction_graph = nx.DiGraph()
         interactions = gen_base_to_inter_commit_repo_pair_mapping(self.__report)
         commits = {
             commit for base, inters in interactions.items()
             for commit in [base, *inters.keys()]
         }
-        interaction_graph.add_nodes_from([
-            (commit, {
-                "commit_hash": commit.commit_hash[:10],
-            }) for commit in commits
+
+        def create_node_attrs(commit: CommitRepoPair) -> _BIGNodeAttrs:
+            return {
+                "commit": commit,
+            }
+
+        def create_edge_attrs(
+            base: CommitRepoPair, inter: CommitRepoPair, amount: int
+        ) -> _BIGEdgeAttrs:
+            return {"amount": amount}
+
+        self.__cached_interaction_graph.add_nodes_from([
+            (commit, create_node_attrs(commit)) for commit in commits
         ])
-        interaction_graph.add_edges_from([
-            (base, inter, {
-                "amount": amount
-            })
+        self.__cached_interaction_graph.add_edges_from([
+            (base, inter, create_edge_attrs(base, inter, amount))
             for base, inters in interactions.items()
             for inter, amount in inters.items()
         ])
 
-        return interaction_graph
+        return self.__cached_interaction_graph
 
     @property
     def commit_interaction_graph(self) -> nx.DiGraph:
@@ -53,21 +95,88 @@ class BlameInteractionGraph():
 
         The graph has the following attributes:
         Nodes:
-          - commit_hash: commit hash of the commit represented by the node
+          - commit: CommitRepoPair for this commit
         Edges:
           - amount: how often this interaction was found
 
         Returns:
             the commit interaction graph
         """
-        if self.__interaction_graph is None:
-            self.__interaction_graph = self.__build_interaction_graph()
-        return self.__interaction_graph.copy(as_view=False)
+        ig = self.__interaction_graph()
+
+        def edge_data(
+            b: tp.Set[CommitRepoPair], c: tp.Set[CommitRepoPair]
+        ) -> CIGEdgeAttrs:
+            assert len(b) == len(c) == 1, "Some node has more than one commit."
+            return tp.cast(CIGEdgeAttrs, ig[b.pop()][c.pop()].copy())
+
+        def node_data(b: tp.Set[CommitRepoPair]) -> CIGNodeAttrs:
+            assert len(b) == 1, "Some node has more than one commit."
+            return tp.cast(CIGNodeAttrs, ig.nodes[b.pop()].copy())
+
+        return nx.quotient_graph(
+            ig,
+            partition=lambda u, v: False,
+            edge_data=edge_data,
+            node_data=node_data,
+            # Use relabel=True so users cannot rely on the node type
+            # but only on the graph attributes
+            relabel=True,
+            create_using=nx.DiGraph
+        )
 
     @property
     def author_interaction_graph(self) -> nx.Graph:
-        # TODO
-        pass
+        """
+        Return a digraph with authors as nodes and interactions as edges.
+
+        The graph has the following attributes:
+        Nodes:
+          - author: name of the author
+          - num_commits: number of commits aggregated in this node
+        Edges:
+          - amount: how often an interaction between two authors was found
+
+        Returns:
+            the author interaction graph
+        """
+        ig = self.__interaction_graph()
+        commit_lookup = create_commit_lookup_helper(self.__project_name)
+
+        def partition(u: CommitRepoPair, v: CommitRepoPair) -> bool:
+            return str(commit_lookup(u).author) == str(commit_lookup(v).author)
+
+        def edge_data(
+            b: tp.Set[CommitRepoPair], c: tp.Set[CommitRepoPair]
+        ) -> AIGEdgeAttrs:
+            amount = 0
+            for source in b:
+                for sink in c:
+                    if ig.has_edge(source, sink):
+                        amount += int(ig[source][sink]["amount"])
+
+            return {
+                "amount": amount,
+            }
+
+        def node_data(b: tp.Set[CommitRepoPair]) -> AIGNodeAttrs:
+            authors = [str(commit_lookup(commit).author) for commit in b]
+            assert len(authors) == 1, "Some node has more then one author."
+            return {
+                "author": authors[0],
+                "num_commits": len(b),
+            }
+
+        return nx.quotient_graph(
+            ig,
+            partition=partition,
+            edge_data=edge_data,
+            node_data=node_data,
+            # Use relabel=True so users cannot rely on the node type
+            # but only on the graph attributes
+            relabel=True,
+            create_using=nx.DiGraph
+        )
 
 
 def create_blame_interaction_graph(
@@ -99,3 +208,6 @@ def create_blame_interaction_graph(
         raise PlotDataEmpty(f"Found no BlameReport for project {project_name}")
     report = load_blame_report(report_files[0])
     return BlameInteractionGraph(project_name, report)
+
+
+AttrType = tp.TypeVar("AttrType")

@@ -309,13 +309,22 @@ def add_alpha_channel(rgb_color: str, alpha: float) -> str:
 
 
 NodeTy = str
-NodeInfoTy = tp.Dict[str, tp.Any]
-EdgeInfoTy = tp.Dict[str, tp.Any]
+
+
+class ChordPlotNodeInfo(tp.TypedDict):
+    color: int
+    info: str
+
+
+class ChordPlotEdgeInfo(tp.TypedDict):
+    color: int
+    info: str
+    size: int
 
 
 def make_chord_plot(
-    nodes: tp.List[tp.Tuple[NodeTy, NodeInfoTy]],
-    edges: tp.List[tp.Tuple[NodeTy, NodeTy, EdgeInfoTy]],
+    nodes: tp.List[tp.Tuple[NodeTy, ChordPlotNodeInfo]],
+    edges: tp.List[tp.Tuple[NodeTy, NodeTy, ChordPlotEdgeInfo]],
     title: str,
     size: int = 400
 ) -> go.Figure:
@@ -450,9 +459,22 @@ def make_chord_plot(
     return figure
 
 
+class ArcPlotNodeInfo(tp.TypedDict):
+    fill_color: int
+    line_color: int
+    info: str
+    size: int
+
+
+class ArcPlotEdgeInfo(tp.TypedDict):
+    color: int
+    info: str
+    size: int
+
+
 def make_arc_plot(
-    nodes: tp.List[tp.Tuple[NodeTy, NodeInfoTy]],
-    edges: tp.List[tp.Tuple[NodeTy, NodeTy, EdgeInfoTy]],
+    nodes: tp.List[tp.Tuple[NodeTy, ArcPlotNodeInfo]],
+    edges: tp.List[tp.Tuple[NodeTy, NodeTy, ArcPlotEdgeInfo]],
     title: str,
     size: int = 400
 ) -> go.Figure:
