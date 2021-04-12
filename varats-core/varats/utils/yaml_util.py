@@ -6,8 +6,6 @@ from pathlib import Path
 
 import yaml
 
-from varats.utils.settings import get_varats_base_folder
-
 
 def store_as_yaml(file_path: Path, objects: tp.Iterable[tp.Any]) -> None:
     """
