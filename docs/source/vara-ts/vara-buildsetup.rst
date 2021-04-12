@@ -92,6 +92,12 @@ Usage
 Install VaRA
 ************
 
+Required system dependencies for building VaRA.
+
+.. code-block:: console
+
+    sudo apt install libsqlite3-dev libcurl4-openssl-dev libboost-all-dev libpapi-dev googletest libxml2-dev
+
 The following example shows how to setup VaRA via command line.
 
 .. code-block:: console
