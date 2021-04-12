@@ -44,9 +44,3 @@ def load_yaml(file_path: Path) -> tp.Iterator[tp.Any]:
     raise FileNotFoundError(
         errno.ENOENT, os.strerror(errno.ENOENT), str(file_path)
     )
-
-
-def get_path_to_test_inputs() -> Path:
-    """Returns the path to the ``TEST_INPUTS`` directory."""
-
-    return get_varats_base_folder() / Path("VaRA-Tool-Suite/tests/TEST_INPUTS")
