@@ -309,13 +309,22 @@ def add_alpha_channel(rgb_color: str, alpha: float) -> str:
 
 
 NodeTy = str
-NodeInfoTy = tp.Dict[str, tp.Any]
-EdgeInfoTy = tp.Dict[str, tp.Any]
+
+
+class ChordPlotNodeInfo(tp.TypedDict):
+    color: int
+    info: str
+
+
+class ChordPlotEdgeInfo(tp.TypedDict):
+    color: int
+    info: str
+    size: int
 
 
 def make_chord_plot(
-    nodes: tp.List[tp.Tuple[NodeTy, NodeInfoTy]],
-    edges: tp.List[tp.Tuple[NodeTy, NodeTy, EdgeInfoTy]],
+    nodes: tp.List[tp.Tuple[NodeTy, ChordPlotNodeInfo]],
+    edges: tp.List[tp.Tuple[NodeTy, NodeTy, ChordPlotEdgeInfo]],
     title: str,
     size: int = 400
 ) -> go.Figure:
@@ -397,7 +406,7 @@ def make_chord_plot(
         node_edges: tp.List[int] = []
         node_edge_sizes: tp.List[float] = []
         for edge_idx in sorted(
-            outgoing_edges[node[0]],
+            outgoing_edges[node],
             key=lambda x: float(edges[x][2]["size"]),
             reverse=True
         ):
@@ -407,7 +416,7 @@ def make_chord_plot(
                 ideogram_colors[node_idx], 0.75
             )
         for edge_idx in sorted(
-            incoming_edges[node[0]],
+            incoming_edges[node],
             key=lambda x: float(edges[x][2]["size"]),
             reverse=True
         ):
@@ -450,9 +459,22 @@ def make_chord_plot(
     return figure
 
 
+class ArcPlotNodeInfo(tp.TypedDict):
+    fill_color: int
+    line_color: int
+    info: str
+    size: int
+
+
+class ArcPlotEdgeInfo(tp.TypedDict):
+    color: int
+    info: str
+    size: int
+
+
 def make_arc_plot(
-    nodes: tp.List[tp.Tuple[NodeTy, NodeInfoTy]],
-    edges: tp.List[tp.Tuple[NodeTy, NodeTy, EdgeInfoTy]],
+    nodes: tp.List[tp.Tuple[NodeTy, ArcPlotNodeInfo]],
+    edges: tp.List[tp.Tuple[NodeTy, NodeTy, ArcPlotEdgeInfo]],
     title: str,
     size: int = 400
 ) -> go.Figure:

@@ -14,9 +14,6 @@ from benchbuild.source.base import target_prefix
 from benchbuild.utils.cmd import git, mkdir, cp
 from plumbum import local
 
-if tp.TYPE_CHECKING:
-    from varats.utils.git_util import CommitRepoPair
-
 LOG = logging.getLogger(__name__)
 
 
@@ -146,27 +143,6 @@ def get_local_project_gits(
         repos[source_name] = get_local_project_git(project_name, source_name)
 
     return repos
-
-
-def create_commit_lookup_for_project(
-    project_name: str
-) -> tp.Callable[['CommitRepoPair'], tp.Optional[pygit2.Commit]]:
-    """
-    Creates a function that given a ``CommitRepoPair`` returns the corresponding
-    commit from any of the project's sources.
-
-    Args:
-        project_name: name of the project to create the lookup function for
-
-    Returns:
-        the lookup function
-    """
-    repos = get_local_project_gits(project_name)
-
-    def commit_factory(crp: 'CommitRepoPair') -> pygit2.Commit:
-        return repos[crp.repository_name].get(crp.commit_hash)
-
-    return commit_factory
 
 
 def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
