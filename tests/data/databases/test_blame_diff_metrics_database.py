@@ -8,7 +8,6 @@ from pathlib import Path
 from tests.test_utils import TEST_INPUTS_DIR
 from varats.data.databases.blame_diff_metrics_database import (
     id_from_paths,
-    timestamp_from_paths,
     compare_timestamps,
     build_report_files_tuple,
     build_report_pairs_tuple,
@@ -27,6 +26,8 @@ class TestBlameDiffMetricsUtils(unittest.TestCase):
 
     @classmethod
     def setUp(cls) -> None:
+        """Initialize projects and set up report paths, a case study, and a
+        commit map."""
 
         initialize_projects()
 
