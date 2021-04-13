@@ -113,11 +113,13 @@ class BlameInteractionGraph():
             b: tp.Set[CommitRepoPair], c: tp.Set[CommitRepoPair]
         ) -> CIGEdgeAttrs:
             assert len(b) == len(c) == 1, "Some node has more than one commit."
-            return tp.cast(CIGEdgeAttrs, ig[b.pop()][c.pop()].copy())
+            return tp.cast(
+                CIGEdgeAttrs, ig[next(iter(b))][next(iter(c))].copy()
+            )
 
         def node_data(b: tp.Set[CommitRepoPair]) -> CIGNodeAttrs:
             assert len(b) == 1, "Some node has more than one commit."
-            return tp.cast(CIGNodeAttrs, ig.nodes[b.pop()].copy())
+            return tp.cast(CIGNodeAttrs, ig.nodes[next(iter(b))].copy())
 
         return nx.quotient_graph(
             ig,

@@ -9,6 +9,7 @@ import typing as tp
 from collections import defaultdict
 
 import numpy as np
+import numpy.typing as nptp
 import plotly.colors as colors
 import plotly.graph_objs as go
 
@@ -17,7 +18,7 @@ if sys.version_info <= (3, 8):
 else:
     from typing import TypedDict
 
-PointTy = np.typing.ArrayLike
+PointTy = nptp.ArrayLike
 
 
 def _ribbon_control_points(
