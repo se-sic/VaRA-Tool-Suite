@@ -562,12 +562,7 @@ def make_arc_plot(
                 reverse=True
             )
         ):
-            arc_bounds[edge_idx].insert(
-                0, (
-                    node_placements[node_idx] + i -
-                    len(outgoing_edges[node[0]]) * 0.5, 0
-                )
-            )
+            arc_bounds[edge_idx].insert(0, (node_placements[node_idx], 0))
             arc_sizes[edge_idx] = edges[edge_idx][2].get("size", 1)
         for i, edge_idx in enumerate(
             sorted(
@@ -576,10 +571,7 @@ def make_arc_plot(
                 reverse=True
             )
         ):
-            arc_bounds[edge_idx].append((
-                node_placements[node_idx] + i -
-                len(incoming_edges[node[0]]) * 0.5, 0
-            ))
+            arc_bounds[edge_idx].append((node_placements[node_idx], 0))
 
     node_scatter = go.Scatter(
         x=node_placements,
