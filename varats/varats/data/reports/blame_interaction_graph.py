@@ -1,5 +1,5 @@
 """Module for representing blame interaction data in a graph/network."""
-
+import sys
 import typing as tp
 
 import networkx as nx
@@ -14,34 +14,39 @@ from varats.plot.plot import PlotDataEmpty
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import CommitRepoPair, create_commit_lookup_helper
 
+if sys.version_info <= (3, 8):
+    from typing_extensions import TypedDict
+else:
+    from typing import TypedDict
 
-class _BIGNodeAttrs(tp.TypedDict):
+
+class _BIGNodeAttrs(TypedDict):
     """Blame interaction graph node attributes."""
     commit: CommitRepoPair
 
 
-class _BIGEdgeAttrs(tp.TypedDict):
+class _BIGEdgeAttrs(TypedDict):
     """Blame interaction graph edge attributes."""
     amount: int
 
 
-class CIGNodeAttrs(tp.TypedDict):
+class CIGNodeAttrs(TypedDict):
     """Commit interaction graph node attributes."""
     commit: CommitRepoPair
 
 
-class CIGEdgeAttrs(tp.TypedDict):
+class CIGEdgeAttrs(TypedDict):
     """Commit interaction graph edge attributes."""
     amount: int
 
 
-class AIGNodeAttrs(tp.TypedDict):
+class AIGNodeAttrs(TypedDict):
     """Author interaction graph node attributes."""
     author: str
     num_commits: int
 
 
-class AIGEdgeAttrs(tp.TypedDict):
+class AIGEdgeAttrs(TypedDict):
     """Author interaction graph edge attributes."""
     amount: int
 

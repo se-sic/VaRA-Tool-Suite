@@ -4,12 +4,18 @@ Utility module for creating chord plots with plotly.
 Much of the code is adapted from here: https://plotly.com/python/v3/filled-
 chord-diagram/
 """
+import sys
 import typing as tp
 from collections import defaultdict
 
 import numpy as np
 import plotly.colors as colors
 import plotly.graph_objs as go
+
+if sys.version_info <= (3, 8):
+    from typing_extensions import TypedDict
+else:
+    from typing import TypedDict
 
 PointTy = np.typing.ArrayLike
 
@@ -311,12 +317,12 @@ def add_alpha_channel(rgb_color: str, alpha: float) -> str:
 NodeTy = str
 
 
-class ChordPlotNodeInfo(tp.TypedDict):
+class ChordPlotNodeInfo(TypedDict):
     color: int
     info: str
 
 
-class ChordPlotEdgeInfo(tp.TypedDict):
+class ChordPlotEdgeInfo(TypedDict):
     color: int
     info: str
     size: int
@@ -459,14 +465,14 @@ def make_chord_plot(
     return figure
 
 
-class ArcPlotNodeInfo(tp.TypedDict):
+class ArcPlotNodeInfo(TypedDict):
     fill_color: int
     line_color: int
     info: str
     size: int
 
 
-class ArcPlotEdgeInfo(tp.TypedDict):
+class ArcPlotEdgeInfo(TypedDict):
     color: int
     info: str
     size: int
