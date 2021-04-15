@@ -134,7 +134,7 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
 
         result_file = SZZUnleashedReport.get_file_name(
             project_name=str(project.name),
-            binary_name="",
+            binary_name="none",  # we don't rely on binaries in this experiment
             project_version=project.version_of_primary,
             project_uuid=str(project.run_uuid),
             extension_type=FSE.Success
