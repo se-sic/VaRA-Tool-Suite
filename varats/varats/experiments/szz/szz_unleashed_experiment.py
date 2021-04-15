@@ -36,7 +36,7 @@ class PrepareSZZUnleashedData(actions.Step):  # type: ignore
 
     def prepare_szz_data(self) -> actions.StepResult:
         """Prepare data needed for running SZZUnleashed."""
-        results_dir = Path(self.obj.source_of_primary).parent
+        run_dir = Path(self.obj.source_of_primary).parent
 
         bug_provider = BugProvider.get_provider_for_project(self.obj)
         bugs = bug_provider.find_all_pygit_bugs()
@@ -64,7 +64,7 @@ class PrepareSZZUnleashedData(actions.Step):  # type: ignore
                 "resolutiondate": resolutiondate
             }
 
-        with (results_dir / "issue_list.json").open("w") as issues_file:
+        with (run_dir / "issue_list.json").open("w") as issues_file:
             json.dump(fixers_dict, issues_file, indent=2)
 
         return actions.StepResult.OK
@@ -80,14 +80,14 @@ class RunSZZUnleashed(actions.Step):  # type: ignore
 
     def run_szz(self) -> actions.StepResult:
         """Prepare data needed for running SZZUnleashed."""
-        results_dir = Path(self.obj.source_of_primary).parent
+        run_dir = Path(self.obj.source_of_primary).parent
         szzunleashed_jar = SZZUnleashed.install_location(
         ) / SZZUnleashed.get_jar_name()
 
-        with local.cwd(results_dir):
+        with local.cwd(run_dir):
             bb.watch(java)(
                 "-jar", str(szzunleashed_jar), "-d", "1", "-i",
-                str(results_dir / "issue_list.json"), "-r",
+                str(run_dir / "issue_list.json"), "-r",
                 self.obj.source_of_primary
             )
 
@@ -119,8 +119,8 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
         )
         mkdir("-p", varats_result_folder)
 
-        bb_results_folder = Path(project.source_of_primary).parent
-        with (bb_results_folder / "results" /
+        run_dir = Path(project.source_of_primary).parent
+        with (run_dir / "results" /
               "fix_and_introducers_pairs.json").open("r") as result_json:
             szz_result = json.load(result_json)
 
