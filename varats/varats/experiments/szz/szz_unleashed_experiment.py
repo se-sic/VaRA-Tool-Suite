@@ -15,6 +15,10 @@ from plumbum import local
 
 from varats.base.version_header import VersionHeader
 from varats.data.reports.szz_report import SZZReport, SZZUnleashedReport
+from varats.experiment.experiment_util import (
+    create_default_analysis_failure_handler,
+    exec_func_with_pe_error_handler,
+)
 from varats.provider.bug.bug_provider import BugProvider
 from varats.report.report import FileStatusExtension as FSE
 from varats.tools.research_tools.szz_unleashed import SZZUnleashed
@@ -36,9 +40,10 @@ class PrepareSZZUnleashedData(actions.Step):  # type: ignore
 
     def prepare_szz_data(self) -> actions.StepResult:
         """Prepare data needed for running SZZUnleashed."""
-        run_dir = Path(self.obj.source_of_primary).parent
+        project: Project = self.obj
+        run_dir = Path(project.source_of_primary).parent
 
-        bug_provider = BugProvider.get_provider_for_project(self.obj)
+        bug_provider = BugProvider.get_provider_for_project(project)
         bugs = bug_provider.find_all_pygit_bugs()
 
         fixers_dict = {}
@@ -75,20 +80,34 @@ class RunSZZUnleashed(actions.Step):  # type: ignore
     NAME = "RunSZZUnleashed"
     DESCRIPTION = "Run SZZUnleashed on a project"
 
+    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
+
     def __init__(self, project: Project):
         super().__init__(obj=project, action_fn=self.run_szz)
 
     def run_szz(self) -> actions.StepResult:
         """Prepare data needed for running SZZUnleashed."""
-        run_dir = Path(self.obj.source_of_primary).parent
+        project: Project = self.obj
+        run_dir = Path(project.source_of_primary).parent
         szzunleashed_jar = SZZUnleashed.install_location(
         ) / SZZUnleashed.get_jar_name()
 
+        varats_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
+            result_dir=str(bb_cfg()["varats"]["outfile"]),
+            project_dir=str(project.name)
+        )
+        mkdir("-p", varats_result_folder)
+
         with local.cwd(run_dir):
-            bb.watch(java)(
-                "-jar", str(szzunleashed_jar), "-d", "1", "-i",
-                str(run_dir / "issue_list.json"), "-r",
-                self.obj.source_of_primary
+            run_cmd = java["-jar",
+                           str(szzunleashed_jar), "-d", "1", "-i",
+                           str(run_dir / "issue_list.json"), "-r",
+                           project.source_of_primary]
+            exec_func_with_pe_error_handler(
+                run_cmd,
+                create_default_analysis_failure_handler(
+                    project, SZZUnleashedReport, Path(varats_result_folder)
+                )
             )
 
         return actions.StepResult.OK
@@ -106,13 +125,8 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
 
     def run_szz(self) -> actions.StepResult:
         """Prepare data needed for running SZZUnleashed."""
-        if not self.obj:
-            return actions.StepResult.ERROR
         project = self.obj
 
-        # Add to the user-defined path for saving the results of the
-        # analysis also the name and the unique id of the project of every
-        # run.
         varats_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
             result_dir=str(bb_cfg()["varats"]["outfile"]),
             project_dir=str(project.name)
