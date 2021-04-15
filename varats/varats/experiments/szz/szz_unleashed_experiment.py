@@ -5,7 +5,6 @@ import typing as tp
 from datetime import datetime
 from pathlib import Path
 
-import benchbuild as bb
 import yaml
 from benchbuild import Experiment, Project, source
 from benchbuild.experiment import ProjectT
