@@ -45,7 +45,7 @@ setup(
         "packaging>=20.1",
         "requests>=2.24.0",
         "requests_cache>=0.5.2",
-        "scikit-learn~=0.23.1",
+        "scikit-learn>=0.24",
         "tabulate>=0.8.6",
         "rich>=1.3.1",
         "statsmodels~=0.11.1",
