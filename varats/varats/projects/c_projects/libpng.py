@@ -46,7 +46,8 @@ class Libpng(bb.Project, CVEProviderHook):  # type: ignore
                 "6611322a8b29103a160c971819f1c5a031cd9d4f"
             ], "cmake not available"),
             GoodBadSubgraph(["a04b5352310727f20b38e360006feeca94b7201f"],
-                            ["master"], "Not libpng")
+                            ["0e13545712dc39db5689452ff3299992fc0a8377"],
+                            "Not libpng")
         ])(
             bb.source.Git(
                 remote="https://github.com/glennrp/libpng.git",
