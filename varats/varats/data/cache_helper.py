@@ -24,8 +24,8 @@ def get_data_file_path(data_id: str, project_name: str) -> Path:
         project_name: name of the project
 
     Test:
-    >>> str(get_data_file_path("foo", "tmux"))
-    'data_cache/foo-tmux.csv.gz'
+    >>> get_data_file_path("foo", "tmux").name == 'foo-tmux.csv.gz'
+    True
 
     >>> isinstance(get_data_file_path("foo.csv", "tmux"), Path)
     True
