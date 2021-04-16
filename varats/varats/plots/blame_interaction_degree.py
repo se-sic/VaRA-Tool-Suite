@@ -582,6 +582,8 @@ def _collect_sankey_plotting_data(
         "degrees": [],
     }
 
+    dataframe = dataframe.sort_values(["degree"])
+
     base_lib_name_index_mapping, inter_lib_name_index_mapping = \
         _gen_sankey_lib_name_to_idx_mapping(lib_name_dict)
 
