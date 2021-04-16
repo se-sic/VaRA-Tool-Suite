@@ -1,6 +1,7 @@
 """Module for representing blame interaction data in a graph/network."""
 import sys
 import typing as tp
+from collections import defaultdict
 
 import networkx as nx
 
@@ -48,6 +49,17 @@ class AIGNodeAttrs(TypedDict):
 
 class AIGEdgeAttrs(TypedDict):
     """Author interaction graph edge attributes."""
+    amount: int
+
+
+class CAIGNodeAttrs(TypedDict):
+    """Commit-author interaction graph node attributes."""
+    commit: tp.Optional[CommitRepoPair]
+    author: tp.Optional[str]
+
+
+class CAIGEdgeAttrs(TypedDict):
+    """Commit-author interaction graph edge attributes."""
     amount: int
 
 
@@ -184,6 +196,72 @@ class BlameInteractionGraph():
             relabel=True,
             create_using=nx.DiGraph
         )
+
+    @property
+    def commit_author_interaction_graph(
+        self,
+        outgoing_interactions: bool = True,
+        incoming_interactions: bool = False
+    ) -> nx.Graph:
+        """
+        Return a digraph connecting commits to interacting authors.
+
+        The graph has the following attributes:
+        Nodes:
+          - commit: commit hash if the node is a commit
+          - author: name of the author if the node is an author
+        Edges:
+          - amount: how often a commit interacts with an author
+
+        Args:
+            outgoing_interactions: whether to include outgoing interactions
+            incoming_interactions: whether to include incoming interactions
+
+        Returns:
+            the commit-author interaction graph
+        """
+        ig = self.__interaction_graph()
+        commit_lookup = create_commit_lookup_helper(self.__project_name)
+
+        commit_author_mapping = {
+            commit: commit_lookup(commit).author for commit in (list(ig.nodes))
+        }
+        caig = nx.DiGraph()
+        # add commits as nodes
+        caig.add_nodes_from([
+            (commit, {
+                "commit": ig.nodes[commit]["commit"],
+                "author": None
+            }) for commit in (list(ig.nodes))
+        ])
+        # add authors as nodes
+        caig.add_nodes_from([(author, {
+            "commit": None,
+            "author": author
+        }) for author in (set(commit_author_mapping.values()))])
+
+        # add edges and aggregate edge attributes
+        for node in ig.nodes:
+            if incoming_interactions:
+                for source, sink, data in ig.in_edges(node):
+                    if not caig.has_edge(source, commit_author_mapping[sink]):
+                        caig.add_edge(
+                            source, commit_author_mapping[sink], amount=0
+                        )
+                    caig[source][commit_author_mapping[sink]
+                                ]["amount"] += data["amount"]
+            if outgoing_interactions:
+                for source, sink, data in ig.out_edges(node):
+                    if not caig.has_edge(sink, commit_author_mapping[source]):
+                        caig.add_edge(
+                            source, commit_author_mapping[source], amount=0
+                        )
+                    caig[sink][commit_author_mapping[source]
+                              ]["amount"] += data["amount"]
+
+        # Relabel nodes to integers so users cannot rely on the node type
+        # but only on the graph attributes
+        return nx.convert_node_labels_to_integers(caig)
 
 
 def create_blame_interaction_graph(
