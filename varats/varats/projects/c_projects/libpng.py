@@ -35,16 +35,18 @@ class Libpng(bb.Project, CVEProviderHook):  # type: ignore
             GoodBadSubgraph(["8694cd8bf5f7d0d2739e503218eaf749c6cb7071"],
                             ["0e13545712dc39db5689452ff3299992fc0a8377"],
                             "missing generic symlink"),
-            GoodBadSubgraph(["4491fa237ff21aa0bbccef52b4df25e05657fabd"],
-                            ["715423c8d61fceea615b99d84aacdb546050fa99"],
+            GoodBadSubgraph(["9d2ab7b40505c5e94a7783e80217b60f474488fe"],
+                            ["b17c75b222942a31394e65c0c1da9fd7ec9f3a4c"],
                             "missing generic symlink"),
             GoodBadSubgraph(["0d5805822f8817a17937462a2fd0606ffdad378e"],
                             ["917648ecb92f45537924b3c46a4a811b956c7023"],
                             "build not atomatable"),
             GoodBadSubgraph(["917648ecb92f45537924b3c46a4a811b956c7023"], [
-                "5b754aac0d59a5b4900360ed4e2e7dfaf1048ac8",
+                "9d2ab7b40505c5e94a7783e80217b60f474488fe",
                 "6611322a8b29103a160c971819f1c5a031cd9d4f"
-            ], "cmake not available")
+            ], "cmake not available"),
+            GoodBadSubgraph(["a04b5352310727f20b38e360006feeca94b7201f"],
+                            ["master"], "Not libpng")
         ])(
             bb.source.Git(
                 remote="https://github.com/glennrp/libpng.git",
