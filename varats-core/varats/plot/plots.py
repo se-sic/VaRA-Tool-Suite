@@ -180,3 +180,7 @@ def prepare_plots(**args: tp.Any) -> tp.Iterable['varats.plot.plot.Plot']:
         args['plot_case_study'] = load_case_study_from_file(case_study_path)
 
     return [prepare_plot(**args)]
+
+
+class PlotGenerator():
+    """A plot generator is responsible for generating one or more plots."""
