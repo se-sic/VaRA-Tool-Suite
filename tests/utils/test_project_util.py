@@ -3,7 +3,6 @@ import tempfile
 import typing as tp
 import unittest
 import unittest.mock as mock
-from copy import deepcopy
 from os.path import isdir
 from pathlib import Path
 
@@ -16,7 +15,6 @@ from varats.project.project_util import (
     VaraTestRepoSubmodule,
 )
 from varats.tools.bb_config import generate_benchbuild_config
-from varats.utils.settings import vara_cfg, bb_cfg
 
 
 class TestVaraTestRepoSource(unittest.TestCase):
@@ -72,12 +70,6 @@ class TestVaraTestRepoSource(unittest.TestCase):
             limit=None,
             shallow=False,
         )
-
-        # Setup and generate the benchbuild config file
-        cls.tmp_file = tempfile.NamedTemporaryFile()
-        generate_benchbuild_config(vara_cfg(), cls.tmp_file.name)
-        cls.bb_cfg = deepcopy(bb_cfg())
-        cls.bb_cfg.load(cls.tmp_file.name)
 
     @mock.patch('benchbuild.source.base.target_prefix')
     @mock.patch('varats.project.project_util.target_prefix')
@@ -234,8 +226,12 @@ class TestVaraTestRepoSource(unittest.TestCase):
         """Tests if project names are well formed, e.g., they must not contain a
         dash."""
 
-        loaded_project_paths: tp.List[str] = self.bb_cfg["plugins"]["projects"
-                                                                   ].value
+        with replace_config(replace_bb_config=True) as (vara_cfg, bb_cfg):
+            tmp_file = tempfile.NamedTemporaryFile()
+            generate_benchbuild_config(vara_cfg, tmp_file.name)
+            bb_cfg.load(tmp_file.name)
+
+        loaded_project_paths: tp.List[str] = bb_cfg["plugins"]["projects"].value
         loaded_project_names = [
             project_path.rsplit(sep='.', maxsplit=1)[1]
             for project_path in loaded_project_paths
