@@ -1,12 +1,26 @@
-"""Driver module for `vara-plot`."""
+"""
+Driver module for `vara-plot`.
+
+This module automatically detects plot generators and creates a separate
+subcommand for each generator. For this to work, plot generators must be placed
+in the module `varats.plot.plots`.
+"""
 
 import argparse
 import logging
 import typing as tp
 from pathlib import Path
 
+import click as click
+
 from varats.data.discover_reports import initialize_reports
-from varats.plot.plots import PlotRegistry, build_plots
+from varats.plot.plots import (
+    PlotRegistry,
+    build_plots,
+    PlotGenerator,
+    CommonPlotOptions,
+    PlotConfig,
+)
 from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
 from varats.utils.cli_util import initialize_cli_tool
@@ -14,7 +28,59 @@ from varats.utils.cli_util import initialize_cli_tool
 LOG = logging.getLogger(__name__)
 
 
-def main() -> None:
+@click.group()
+@click.option(
+    "-v",
+    "--view",
+    type=bool,
+    help="View the plot instead of saving it to a file."
+)
+@click.option(
+    "--output-dir",
+    type=click.Path(
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        writable=True,
+        resolve_path=True
+    ),
+    default=lambda: str(CommonPlotOptions.default_plot_dir()),
+    help="Set the directory the plots will be written to."
+    "Uses the config value 'plots/plot_dir' by default."
+)
+@click.pass_context
+def main(context: click.Context, view: bool, output_dir: str) -> None:
+    """Entry point for the plot generation tool."""
+    # store common options in context so they can be passed to subcommands
+    context.obj = CommonPlotOptions(view, Path(output_dir))
+
+    initialize_cli_tool()
+    initialize_projects()
+    initialize_reports()
+
+
+# plot discovery also discovers plot generators
+initialize_plots()
+
+# create a click command for each generator
+for generator_name, generator_cls in PlotGenerator.GENERATORS.items():
+
+    @click.pass_context
+    def command_template(context, **kwargs):
+        # extract common arguments from context
+        common_options: CommonPlotOptions = context.obj
+        generator_instance = generator_cls(PlotConfig(), **kwargs)
+        generator_instance(common_options)
+
+    # wrap command with options specified in the generator class
+    command = command_template
+    for option in reversed(generator_cls.OPTIONS):
+        command = option(command)
+    main.command(generator_name)(command)
+
+
+#  Old code begins here --------------------------------------------------------
+def old_main() -> None:
     """
     Main function for the graph generator.
 

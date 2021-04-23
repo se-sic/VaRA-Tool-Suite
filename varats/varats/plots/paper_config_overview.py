@@ -19,8 +19,9 @@ from varats.mapping.commit_map import CommitMap
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plot.plot import Plot
 from varats.plot.plot_utils import check_required_args, find_missing_revisions
+from varats.plot.plots import PlotGenerator, PlotConfig, CommonPlotOptions
 from varats.project.project_util import get_local_project_git
-from varats.report.report import FileStatusExtension, MetaReport
+from varats.report.report import FileStatusExtension, MetaReport, BaseReport
 
 # colors taken from seaborn's default palette
 SUCCESS_COLOR = np.asarray(
@@ -298,3 +299,19 @@ class PaperConfigOverviewPlot(Plot):
             revisions.iterrows(), Path(self.plot_kwargs['git_path']), cmap,
             should_insert_revision, get_commit_hash, head_cm_neighbours
         )
+
+
+class PaperConfigOverviewGenerator(
+    PlotGenerator,
+    generator_name="overview-plot",
+    plot=PaperConfigOverviewPlot,
+    options=[PlotGenerator.REQUIRE_REPORT_TYPE]
+):
+
+    @check_required_args(["report_type"])
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        super().__init__(plot_config, **plot_kwargs)
+        self.__report_type = plot_kwargs["report_type"]
+
+    def generate(self) -> tp.List[Plot]:
+        return [self.PLOT(report_type=self.__report_type)]

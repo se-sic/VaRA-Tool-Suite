@@ -1,4 +1,5 @@
 """General plots module."""
+import abc
 import logging
 import re
 import typing as tp
@@ -6,6 +7,7 @@ from pathlib import Path
 
 from varats.mapping.commit_map import create_lazy_commit_map_loader
 from varats.plot.plot_utils import check_required_args
+from varats.utils.cli_util import make_cli_option, CLIOptionTy
 from varats.utils.settings import vara_cfg
 
 if tp.TYPE_CHECKING:
@@ -14,7 +16,7 @@ if tp.TYPE_CHECKING:
 LOG = logging.getLogger(__name__)
 
 
-class PlotRegistry(type):
+class PlotRegistry(abc.ABCMeta):
     """Registry for all supported plots."""
 
     to_snake_case_pattern = re.compile(r'(?<!^)(?=[A-Z])')
@@ -182,5 +184,109 @@ def prepare_plots(**args: tp.Any) -> tp.Iterable['varats.plot.plot.Plot']:
     return [prepare_plot(**args)]
 
 
-class PlotGenerator():
+# New plot generation begins here ----------------------------------------------
+
+
+class CommonPlotOptions():
+    """This class stores options common to all plots."""
+
+    def __init__(self, view: bool, plot_dir: Path):
+        """
+        Construct a `CommonPlotOptions` object.
+
+        Args:
+            view: if `True`, view the plot instead of writing it to a file
+        """
+        self.view = view
+        self.plot_dir = plot_dir
+
+    @classmethod
+    def default_plot_dir(cls) -> Path:
+        return Path(str(vara_cfg()['plots']['plot_dir']))
+
+
+class PlotConfig():
+    """Class with parameters that influence a plot's appearance."""
+
+    def __init__(self):
+        pass
+
+
+class PlotGenerator(abc.ABC):
     """A plot generator is responsible for generating one or more plots."""
+
+    REQUIRE_CASE_STUDY: CLIOptionTy = make_cli_option(
+        "--cs",
+        required=True,
+        metavar="case_study",
+        help="The case study to use for the plot."
+    )
+    REQUIRE_REVISION: CLIOptionTy = make_cli_option(
+        "--rev",
+        required=True,
+        metavar="revision",
+        help="The revision to use for the plot."
+    )
+    REQUIRE_REPORT_TYPE: CLIOptionTy = make_cli_option(
+        "--report-type",
+        required=True,
+        metavar="report_type",
+        help="The report type to use for the plot."
+    )
+
+    GENERATORS: tp.Dict[str, tp.Type['PlotGenerator']] = {}
+    NAME: str
+    PLOT: tp.Type['varats.plot.plot.Plot']
+    OPTIONS: tp.List[CLIOptionTy]
+
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        self.__plot_config = plot_config
+        self.__plot_kwargs = plot_kwargs
+
+    @classmethod
+    def __init_subclass__(
+        cls, generator_name: str, plot: tp.Type['varats.plot.plot.Plot'],
+        options: tp.List[CLIOptionTy], **kwargs: tp.Any
+    ) -> None:
+        """
+        Register concrete plot generators.
+
+        Args:
+            generator_name: name for the plot generator as will be used in the
+                            CLI interface
+            plot:           plot class used by the generator
+            options:        command line options needed by the generator
+        """
+        # mypy does not yet fully understand __init_subclass__()
+        # https://github.com/python/mypy/issues/4660
+        super().__init_subclass__(**kwargs)  # type: ignore
+        cls.NAME = generator_name
+        cls.PLOT = plot
+        cls.OPTIONS = options
+        cls.GENERATORS[generator_name] = cls
+
+    @property
+    def plot_config(self) -> PlotConfig:
+        """Option with options that influence a plot's appearance."""
+        return self.__plot_config
+
+    @abc.abstractmethod
+    def generate(self) -> tp.List['varats.plot.plot.Plot']:
+        """This function is called to generate the plot instance(s)."""
+
+    def __call__(self, common_options: CommonPlotOptions):
+        """
+        Generate the plots as specified by this generator.
+
+        Args:
+            common_options: common options to use for the plot(s)
+        """
+        # Handle everything that depends on stuff stored in the
+        # common_options object
+
+        plots = self.generate()
+        for plot in plots:
+            if common_options.view:
+                plot.show()
+            else:
+                plot.save(common_options.plot_dir)
