@@ -95,7 +95,7 @@ def build_plot(plot: 'varats.plot.plot.Plot') -> None:
         plot.save(filetype=plot.plot_kwargs['file_type'])
 
 
-@check_required_args(['plot_type', 'sep_stages'])
+@check_required_args('plot_type', 'sep_stages')
 def prepare_plot(**kwargs: tp.Any) -> 'varats.plot.plot.Plot':
     """
     Instantiate a plot with the given args.

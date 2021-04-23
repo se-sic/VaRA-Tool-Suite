@@ -24,7 +24,7 @@ MISSING_COLOR = (0.984313725490196, 0.7568627450980392, 0.3686274509803922)
 BACKGROUND_COLOR = (0.4666666666666667, 0.4666666666666667, 0.4666666666666667)
 
 
-@check_required_args(["plot_case_study", "project", "get_cmap"])
+@check_required_args("plot_case_study", "project", "get_cmap")
 def _gen_overview_data(tag_blocked: bool,
                        **kwargs: tp.Any) -> tp.Dict[str, tp.List[int]]:
     case_study: CaseStudy = kwargs["plot_case_study"]

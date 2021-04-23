@@ -23,7 +23,7 @@ def __check_required_args_impl(
 
 
 def check_required_args(
-    required_args: tp.List[str]
+    *required_args: str
 ) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.Callable[..., tp.Any]]:
     """Check if all required graph args are passed by the user."""
 
@@ -33,7 +33,7 @@ def check_required_args(
 
         @functools.wraps(func)
         def wrapper_func(*args: tp.Any, **kwargs: tp.Any) -> tp.Any:
-            __check_required_args_impl(required_args, kwargs)
+            __check_required_args_impl(list(required_args), kwargs)
             return func(*args, **kwargs)
 
         return wrapper_func

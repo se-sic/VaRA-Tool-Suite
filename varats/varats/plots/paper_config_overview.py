@@ -33,7 +33,7 @@ BLOCKED_COLOR = np.asarray(
 FAILED_COLOR = np.asarray((0.8862745098039215, 0.2901960784313726, 0.2))
 
 
-@check_required_args(["cmap", "project"])
+@check_required_args("cmap", "project")
 def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
     current_config = PC.get_paper_config()
 
@@ -308,7 +308,7 @@ class PaperConfigOverviewGenerator(
     options=[PlotGenerator.REQUIRE_REPORT_TYPE]
 ):
 
-    @check_required_args(["report_type"])
+    @check_required_args("report_type")
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type = plot_kwargs["report_type"]
