@@ -243,13 +243,11 @@ def _compute_node_placement(commit_count: int) -> tp.List[np.array]:
 def _map_commits_to_nodes(project_repo: pygit2.Repository) -> tp.Dict[str, int]:
     """Maps commit hex -> node id."""
     commits_to_nodes_map: tp.Dict[str, int] = {}
-    commit_count = 0
     for commit in project_repo.walk(
         project_repo.head.target.hex, pygit2.GIT_SORT_TIME
     ):
         # node ids are sorted by time
         commits_to_nodes_map[commit.hex] = commit_count
-        commit_count += 1
     return commits_to_nodes_map
 
 
