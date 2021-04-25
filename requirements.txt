@@ -14,6 +14,7 @@ pygit2>=0.28.2
 PyGithub>=1.47
 pygtrie
 pylatex>=1.4.1
+pyperclip>=1.8.2
 PyQt5-stubs>=5.10.0,<5.14.0
 PyQt5>=5.10.0,<5.14.0
 pytest
