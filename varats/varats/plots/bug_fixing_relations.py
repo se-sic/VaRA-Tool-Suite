@@ -114,7 +114,9 @@ def _plot_chord_diagram_for_raw_bugs(
                      f'Message: {displayed_message}'
         node_color = node_colors[commit_type[commit.hex]]
 
-        node_scatter = _create_node(commit_coordinates, node_color, node_label)
+        node_scatter = _create_node(
+            commit_coordinates[commit_id], node_color, node_label
+        )
 
         #onclick callback function
         def copy_hash(*args: tp.Any):
