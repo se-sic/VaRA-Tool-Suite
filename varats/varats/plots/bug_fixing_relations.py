@@ -24,52 +24,36 @@ def _plot_chord_diagram_for_raw_bugs(
     project_repo = get_local_project_git(project_name)
 
     # maps commit hex -> node id
-    commit_count = 0
-    map_commit_to_id: tp.Dict[str, int] = {}
+    map_commit_to_id: tp.Dict[str, int] = _map_commits_to_nodes(project_repo)
+    commit_count = len(map_commit_to_id.keys())
     commit_type: tp.Dict[str, str] = {}
+
     for commit in project_repo.walk(
         project_repo.head.target.hex, pygit2.GIT_SORT_TIME
     ):
-        # node ids are sorted by time
-        map_commit_to_id[commit.hex] = commit_count
         commit_type[commit.hex] = 'default'
-        commit_count += 1
 
     # if less than 2 commits, no graph can be drawn!
     if commit_count < 2:
         raise PlotDataEmpty
 
-    # compute unit circle coordinates for each commit
-    # move unit circle such that HEAD is on top
-    # use commit_count + 1 since first and last coordinates are equal
-    theta_vals = np.linspace(-3 * np.pi / 2, np.pi / 2, commit_count + 1)
-    commit_coordinates: tp.List = list()
-    for theta in theta_vals:
-        commit_coordinates.append(np.array([np.cos(theta), np.sin(theta)]))
+    commit_coordinates = _compute_node_placement(commit_count)
 
-    def get_distance(p1, p2):
-        # Returns distance between two points
-        return np.linalg.norm(np.array(p1) - np.array(p2))
-
-    def get_commit_distance(fix, intro):
-        # Returns distance betweeen fix and intro of a bug
-        # commit ids are sorted after time in descending order
-        return map_commit_to_id[intro] - map_commit_to_id[fix]
-
-    #defining some constants for diagram generation
-    cp_parameters = [1.2, 1.5, 1.8, 2.1]
-    distance_thresholds = [
-        0,
-        get_distance([1, 0], 2 * [np.sqrt(2) / 2]),
-        np.sqrt(2),
-        get_distance([1, 0], [-np.sqrt(2) / 2, np.sqrt(2) / 2]), 2.0
-    ]
     commit_distance_thresholds = [
         0,
         round(0.25 * commit_count),
         round(0.5 * commit_count),
         round(0.75 * commit_count), commit_count
     ]
+
+    def _get_commit_interval(distance):
+        """Get right interval for given commit distance using distance
+        thresholds, interval indices are in [0,3] for 5 thresholds."""
+        k = 0
+        while commit_distance_thresholds[k] < distance:
+            k += 1
+        return k - 1
+
     edge_colors = ['#d4daff', '#84a9dd', '#5588c8', '#6d8acf']
 
     node_colors = {
@@ -80,37 +64,6 @@ def _plot_chord_diagram_for_raw_bugs(
         'fixing head': 'rgba(142, 68, 173, 1)',
         'default': 'rgba(232, 236, 241, 1)'
     }
-
-    def get_interval(distance):
-        #get right interval for given distance using distance thresholds
-        #interval indices are in [0,3] for 5 thresholds
-        k = 0
-        while distance_thresholds[k] < distance:
-            k += 1
-        return k - 1
-
-    def get_commit_interval(distance):
-        k = 0
-        while commit_distance_thresholds[k] < distance:
-            k += 1
-        return k - 1
-
-    # implements bezier edges to display between commit nodes
-    def get_bezier_curve(ctrl_points, num_points=5):
-        n = len(ctrl_points)
-
-        def get_coordinate_on_curve(factor):
-            points_cp = np.copy(ctrl_points)
-            for r in range(1, n):
-                points_cp[:n - r, :] = (
-                    1 - factor
-                ) * points_cp[:n - r, :] + factor * points_cp[1:n - r + 1, :]
-            return points_cp[0, :]
-
-        point_space = np.linspace(0, 1, num_points)
-        return np.array([
-            get_coordinate_on_curve(point_space[k]) for k in range(num_points)
-        ])
 
     # draw relations and preprocess commit types
     nodes = []
@@ -130,28 +83,13 @@ def _plot_chord_diagram_for_raw_bugs(
             commit_type[bug_introduction] = 'introducing fix' if commit_type[
                 bug_introduction] == 'fix' else 'introduction'
 
-            # get distance between the points and the respective interval index
-            dist = get_distance(fix_coordinates, intro_coordinates)
-            interval = get_interval(dist)
-
-            commit_dist = get_commit_distance(bug_fix, bug_introduction)
-            commit_interval = get_commit_interval(commit_dist)
+            commit_dist = map_commit_to_id[bug_fix] - map_commit_to_id[
+                bug_introduction]
+            commit_interval = _get_commit_interval(commit_dist)
             color = edge_colors[commit_interval]
 
-            control_points = [
-                fix_coordinates, fix_coordinates / cp_parameters[interval],
-                intro_coordinates / cp_parameters[interval], intro_coordinates
-            ]
-            curve_points = get_bezier_curve(control_points)
-
             lines.append(
-                gob.Scatter(
-                    x=curve_points[:, 0],
-                    y=curve_points[:, 1],
-                    mode='lines',
-                    line=dict(color=color, shape='spline'),
-                    hoverinfo='none'
-                )
+                _create_line(fix_coordinates, intro_coordinates, color)
             )
 
     for commit in project_repo.walk(
@@ -176,15 +114,7 @@ def _plot_chord_diagram_for_raw_bugs(
                      f'Message: {displayed_message}'
         node_color = node_colors[commit_type[commit.hex]]
 
-        node_scatter = gob.Scatter(
-            x=[commit_coordinates[commit_id][0]],
-            y=[commit_coordinates[commit_id][1]],
-            mode='markers',
-            name='',
-            marker=dict(symbol='circle', size=node_size, color=node_color),
-            text=node_label,
-            hoverinfo='text'
-        )
+        node_scatter = _create_node(commit_coordinates, node_color, node_label)
 
         #onclick callback function
         def copy_hash(*args: tp.Any):
@@ -193,18 +123,54 @@ def _plot_chord_diagram_for_raw_bugs(
         node_scatter.on_click(copy_hash)
         nodes.append(node_scatter)
 
-    title = f'Bug fixing relations for {project_name}'
+    data = nodes + lines
+    layout = _create_layout(f'Bug fixing relations for {project_name}')
+    return gob.FigureWidget(data=data, layout=layout)
+
+
+def _create_line(start: np.array, end: np.array, color: str) -> gob.Scatter:
+    dist = _get_distance(start, end)
+    interval = _get_interval(dist)
+
+    control_points = [
+        start, start / __cp_parameters[interval],
+        end / __cp_parameters[interval], end
+    ]
+    curve_points = _get_bezier_curve(control_points)
+
+    return gob.Scatter(
+        x=curve_points[:, 0],
+        y=curve_points[:, 1],
+        mode='lines',
+        line=dict(color=color, shape='spline'),
+        hoverinfo='none'
+    )
+
+
+def _create_node(coordinates: np.array, color: str, text: str) -> gob.Scatter:
+    return gob.Scatter(
+        x=[coordinates[0]],
+        y=[coordinates[1]],
+        mode='markers',
+        name='',
+        marker=dict(symbol='circle', size=8, color=color),
+        text=text,
+        hoverinfo='text'
+    )
+
+
+def _create_layout(title: str) -> gob.Layout:
     axis = dict(
         showline=False,
         zeroline=False,
         showgrid=False,
         showticklabels=False,
         title=''
-    )  #hide the axis
+    )  # hide the axis
 
     width = 900
     height = 900
-    layout = gob.Layout(
+    return gob.Layout(
         title=title,
         showlegend=False,
         autosize=False,
@@ -218,8 +184,71 @@ def _plot_chord_diagram_for_raw_bugs(
         plot_bgcolor='rgba(0,0,0,0)'
     )
 
-    data = nodes + lines
-    return gob.FigureWidget(data=data, layout=layout)
+
+def _get_distance(p1, p2):
+    """Returns distance between two points."""
+    return np.linalg.norm(np.array(p1) - np.array(p2))
+
+
+def _get_interval(distance):
+    """Get right interval for given node distance using distance thresholds,
+    interval indices are in [0,3] for 5 thresholds."""
+    k = 0
+    while __distance_thresholds[k] < distance:
+        k += 1
+    return k - 1
+
+
+#defining some constants for diagram generation
+__cp_parameters = [1.2, 1.5, 1.8, 2.1]
+__distance_thresholds = [
+    0,
+    _get_distance([1, 0], 2 * [np.sqrt(2) / 2]),
+    np.sqrt(2),
+    _get_distance([1, 0], [-np.sqrt(2) / 2, np.sqrt(2) / 2]), 2.0
+]
+
+
+def _get_bezier_curve(ctrl_points: np.array, num_points: int = 5) -> np.array:
+    """Implements bezier edges to display between commit nodes."""
+    n = len(ctrl_points)
+
+    def get_coordinate_on_curve(factor: float) -> np.array:
+        points_cp = np.copy(ctrl_points)
+        for r in range(1, n):
+            points_cp[:n - r, :] = (
+                1 - factor
+            ) * points_cp[:n - r, :] + factor * points_cp[1:n - r + 1, :]
+        return points_cp[0, :]
+
+    point_space = np.linspace(0, 1, num_points)
+    return np.array([
+        get_coordinate_on_curve(point_space[k]) for k in range(num_points)
+    ])
+
+
+def _compute_node_placement(commit_count: int) -> tp.List[np.array]:
+    """Compute unit circle coordinates for each commit; move unit circle such
+    that HEAD is on top."""
+    # use commit_count + 1 since first and last coordinates are equal
+    theta_vals = np.linspace(-3 * np.pi / 2, np.pi / 2, commit_count + 1)
+    commit_coordinates: tp.List[np.array] = list()
+    for theta in theta_vals:
+        commit_coordinates.append(np.array([np.cos(theta), np.sin(theta)]))
+    return commit_coordinates
+
+
+def _map_commits_to_nodes(project_repo: pygit2.Repository) -> tp.Dict[str, int]:
+    """Maps commit hex -> node id."""
+    commits_to_nodes_map: tp.Dict[str, int] = {}
+    commit_count = 0
+    for commit in project_repo.walk(
+        project_repo.head.target.hex, pygit2.GIT_SORT_TIME
+    ):
+        # node ids are sorted by time
+        commits_to_nodes_map[commit.hex] = commit_count
+        commit_count += 1
+    return commits_to_nodes_map
 
 
 class BugFixingRelationPlot(Plot):
