@@ -230,8 +230,9 @@ class TestVaraTestRepoSource(unittest.TestCase):
             tmp_file = tempfile.NamedTemporaryFile()
             generate_benchbuild_config(vara_cfg, tmp_file.name)
             bb_cfg.load(tmp_file.name)
+            loaded_project_paths: tp.List[str] = bb_cfg["plugins"]["projects"
+                                                                  ].value
 
-        loaded_project_paths: tp.List[str] = bb_cfg["plugins"]["projects"].value
         loaded_project_names = [
             project_path.rsplit(sep='.', maxsplit=1)[1]
             for project_path in loaded_project_paths
