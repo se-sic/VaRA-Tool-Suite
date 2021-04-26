@@ -5,9 +5,11 @@ import re
 import typing as tp
 from pathlib import Path
 
+import click
+
 from varats.mapping.commit_map import create_lazy_commit_map_loader
 from varats.plot.plot_utils import check_required_args
-from varats.utils.cli_util import make_cli_option, CLIOptionTy
+from varats.utils.cli_util import make_cli_option, CLIOptionTy, add_cli_options
 from varats.utils.settings import vara_cfg
 
 if tp.TYPE_CHECKING:
@@ -204,12 +206,44 @@ class CommonPlotOptions():
     def default_plot_dir(cls) -> Path:
         return Path(str(vara_cfg()['plots']['plot_dir']))
 
+    __options = [
+        make_cli_option(
+            "-v",
+            "--view",
+            type=bool,
+            help="View the plot instead of saving it to a file."
+        ),
+        make_cli_option(
+            "--output-dir",
+            type=click.Path(
+                exists=True,
+                file_okay=False,
+                dir_okay=True,
+                writable=True,
+                resolve_path=True
+            ),
+            default=lambda: str(CommonPlotOptions.default_plot_dir()),
+            help="Set the directory the plots will be written to."
+            "Uses the config value 'plots/plot_dir' by default."
+        )
+    ]
+
+    @classmethod
+    def cli_options(cls, command: tp.Any) -> tp.Any:
+        return add_cli_options(command, *cls.__options)
+
 
 class PlotConfig():
     """Class with parameters that influence a plot's appearance."""
 
     def __init__(self):
         pass
+
+    __options = []
+
+    @classmethod
+    def cli_options(cls, command: tp.Any) -> tp.Any:
+        return add_cli_options(command, *cls.__options)
 
 
 class PlotGenerator(abc.ABC):

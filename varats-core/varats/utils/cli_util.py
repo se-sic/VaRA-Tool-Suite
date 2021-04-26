@@ -100,3 +100,19 @@ def make_cli_option(*param_decls: str, **attrs: tp.Any) -> CLIOptionTy:
         a click CLI option that can be wrapped around a function
     """
     return click.option(*param_decls, **attrs)
+
+
+def add_cli_options(command: tp.Any, *options: CLIOptionTy) -> tp.Any:
+    """
+    Adds click CLI options to a click command.
+
+    Args:
+        command: the command
+        *options: the options to add
+
+    Returns:
+        the command with the added options
+    """
+    for option in options:
+        command = option(command)
+    return command
