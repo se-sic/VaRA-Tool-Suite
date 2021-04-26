@@ -65,7 +65,7 @@ class _ReplaceConfig():
         self.replace_bb_config = replace_bb_config
         if self.replace_bb_config:
             # pylint: disable=protected-access
-            self.old_bb_config = settings._BB_CFG
+            self.old_bb_config = settings.bb_cfg()
             if bb_config:
                 self.new_bb_config = bb_config
             else:
@@ -78,7 +78,7 @@ class _ReplaceConfig():
             tmp_path = Path(self.tmp_path.name)
 
         # pylint: disable=protected-access
-        self.old_config = settings._CFG
+        self.old_config = settings.vara_cfg()
         if vara_config:
             self.new_config = vara_config
         else:
