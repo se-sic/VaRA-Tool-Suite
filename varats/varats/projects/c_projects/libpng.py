@@ -34,10 +34,10 @@ class Libpng(bb.Project, CVEProviderHook):  # type: ignore
         block_revisions([
             GoodBadSubgraph(["8694cd8bf5f7d0d2739e503218eaf749c6cb7071"],
                             ["0e13545712dc39db5689452ff3299992fc0a8377"],
-                            "missing generic symlink"),
+                            "missing generic libpng.so"),
             GoodBadSubgraph(["9d2ab7b40505c5e94a7783e80217b60f474488fe"],
                             ["b17c75b222942a31394e65c0c1da9fd7ec9f3a4c"],
-                            "missing generic symlink"),
+                            "missing generic libpng.so"),
             GoodBadSubgraph(["0d5805822f8817a17937462a2fd0606ffdad378e"],
                             ["917648ecb92f45537924b3c46a4a811b956c7023"],
                             "build not atomatable"),
@@ -48,7 +48,10 @@ class Libpng(bb.Project, CVEProviderHook):  # type: ignore
             GoodBadSubgraph(["a04b5352310727f20b38e360006feeca94b7201f"],
                             ["0e13545712dc39db5689452ff3299992fc0a8377"],
                             "Not libpng")
-        ])(
+        ]),
+        GoodBadSubgraph(["e209df47c4b821f277504e0cc248d9022b639e55"], [
+            "d61b42c81d9d6f0905039ccc66870b2a27eafdd9"
+        ], "Error in CMakeList")(
             bb.source.Git(
                 remote="https://github.com/glennrp/libpng.git",
                 local="libpng",
