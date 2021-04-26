@@ -47,11 +47,12 @@ class Libpng(bb.Project, CVEProviderHook):  # type: ignore
             ], "cmake not available"),
             GoodBadSubgraph(["a04b5352310727f20b38e360006feeca94b7201f"],
                             ["0e13545712dc39db5689452ff3299992fc0a8377"],
-                            "Not libpng")
+                            "Not libpng"),
+            GoodBadSubgraph(["e209df47c4b821f277504e0cc248d9022b639e55"],
+                            ["d61b42c81d9d6f0905039ccc66870b2a27eafdd9"],
+                            "Error in CMakeList")
         ]),
-        GoodBadSubgraph(["e209df47c4b821f277504e0cc248d9022b639e55"], [
-            "d61b42c81d9d6f0905039ccc66870b2a27eafdd9"
-        ], "Error in CMakeList")(
+        (
             bb.source.Git(
                 remote="https://github.com/glennrp/libpng.git",
                 local="libpng",
