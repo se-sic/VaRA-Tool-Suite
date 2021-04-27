@@ -27,8 +27,10 @@ class PygitBug:
     """Bug representation using the ``pygit2.Commit`` class."""
 
     def __init__(
-        self, fixing_commit: pygit2.Commit,
-        introducing_commits: tp.Set[pygit2.Commit], issue_id: tp.Optional[int]
+        self,
+        fixing_commit: pygit2.Commit,
+        introducing_commits: tp.Set[pygit2.Commit],
+        issue_id: tp.Optional[int] = None
     ) -> None:
         self.__fixing_commit = fixing_commit
         self.__introducing_commits = frozenset(introducing_commits)
@@ -49,6 +51,15 @@ class PygitBug:
         """ID of the issue associated with the bug, if there is one."""
         return self.__issue_id
 
+    def create_corresponding_raw_bug(self) -> RawBug:
+        """Uses pygit2 Commit Hashes of own parameters to create a RawBug."""
+        introducing_ids: tp.Set[str]
+        for introducing_commit in self.__introducing_commits:
+            introducing_ids.add(introducing_commit.hex)
+        return RawBug(
+            self.__fixing_commit.hex, introducing_ids, self.__issue_id
+        )
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, PygitBug):
             return (
@@ -68,8 +79,10 @@ class RawBug:
     """Bug representation using the Commit Hashes as Strings."""
 
     def __init__(
-        self, fixing_commit: str, introducing_commits: tp.Set[str],
-        issue_id: tp.Optional[int]
+        self,
+        fixing_commit: str,
+        introducing_commits: tp.Set[str],
+        issue_id: tp.Optional[int] = None
     ) -> None:
         self.__fixing_commit = fixing_commit
         self.__introducing_commits = frozenset(introducing_commits)
@@ -102,6 +115,56 @@ class RawBug:
     def __hash__(self) -> int:
         return hash(
             (self.fixing_commit, self.introducing_commits, self.issue_id)
+        )
+
+
+class PygitSuspectTuple:
+    """
+    Suspect tuple representation using the ``pygit2.Commit`` class.
+
+    Only used for GitHub Issue bugs.
+    """
+
+    def __init__(
+        self, fixing_commit: pygit2.Commit, non_suspects: tp.Set[pygit2.Commit],
+        uncleared_suspects: tp.Set[pygit2.Commit], issue_id: int
+    ) -> None:
+        self.__fixing_commit = fixing_commit
+        self.__non_suspects = non_suspects
+        self.__cleared_suspects = set()
+        self.__uncleared_suspects = uncleared_suspects
+        self.__issue_id = issue_id
+
+    @property
+    def fixing_commit(self) -> pygit2.Commit:
+        """Hash of the commit fixing the bug as pygit2 Commit."""
+        return self.__fixing_commit
+
+    @property
+    def non_suspects(self) -> tp.FrozenSet[pygit2.Commit]:
+        """Introducing Commits that were authored before the bug report."""
+        return frozenset(self.__non_suspects)
+
+    def extract_next_uncleared_suspect(self) -> tp.Optional[pygit2.Commit]:
+        """
+        Extracts one uncleared suspect from the set and returns it.
+
+        Returns None if the set is empty.
+        """
+        if self.__uncleared_suspects:
+            return self.__uncleared_suspects.pop()
+        else:
+            return None
+
+    def clear_suspect(self, cleared_suspect: pygit2.Commit) -> None:
+        """Adds parameter cleared_suspect to cleared suspects."""
+        self.__cleared_suspects.add(cleared_suspect)
+
+    def create_corresponding_bug(self) -> PygitBug:
+        """Uses cleared suspects and non-suspects to create a PygitBug."""
+        introducing_commits = self.__non_suspects.union(self.__cleared_suspects)
+        return PygitBug(
+            self.__fixing_commit, introducing_commits, self.__issue_id
         )
 
 
