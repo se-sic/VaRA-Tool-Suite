@@ -169,13 +169,13 @@ If you understand how BenchBuild uses containers to run experiments you can prep
 
     - You need to set the container root and runroot paths to some location that is not on a NFS, e.g., to a directory in ``tmp``:
 
-    .. code-block:: yaml
+      .. code-block:: yaml
 
-      container:
-        root:
-          value: /tmp/<username>/containers/lib
-        runroot:
-          value: /tmp/<username>/containers/run
+        container:
+          root:
+            value: /tmp/<username>/containers/lib
+          runroot:
+            value: /tmp/<username>/containers/run
 
     - BenchBuild allows to export and import container images.
       That means that you can build the base images once, e.g., on your local machine, and export them so that the cluster nodes do not need to rebuild them over and over again.
