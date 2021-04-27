@@ -21,7 +21,7 @@ from varats.containers.containers import (
 from varats.tools.bb_config import load_bb_config
 from varats.tools.tool_util import get_supported_research_tool_names
 from varats.utils.cli_util import initialize_cli_tool, cli_list_choice
-from varats.utils.settings import vara_cfg, save_config
+from varats.utils.settings import vara_cfg, save_config, bb_cfg
 
 
 def main() -> None:
@@ -41,6 +41,12 @@ def main() -> None:
         'build',
         help="Build base containers for the current research tool."
         "By default builds all base containers."
+    )
+    build_parser.add_argument(
+        "--debug",
+        help="Debug failed image builds interactively.",
+        action="store_true",
+        default=False,
     )
     build_parser.add_argument(
         "-i",
@@ -89,6 +95,9 @@ def main() -> None:
 
 
 def __container_build(args: tp.Dict[str, tp.Any]) -> None:
+    if "debug" in args.keys():
+        bb_cfg()["container"]["keep"] = args["debug"]
+
     if "image" in args.keys():
         create_base_image(args["image"])
         if args.get("export", False):
