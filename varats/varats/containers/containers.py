@@ -14,26 +14,19 @@ from benchbuild.environments.domain.commands import (
     CreateImage,
     fs_compliant_name,
     ExportImage,
+    DeleteImage,
 )
 from benchbuild.environments.domain.declarative import (
     add_benchbuild_layers,
     ContainerImage,
 )
-from benchbuild.utils.cmd import buildah
 from plumbum import local
-from plumbum.commands import ConcreteCommand
 
 from varats.tools.research_tools.research_tool import Distro
 from varats.tools.tool_util import get_research_tool
 from varats.utils.settings import bb_cfg, vara_cfg
 
 LOG = logging.getLogger(__name__)
-
-
-def prepare_buildah() -> ConcreteCommand:
-    return buildah["--root",
-                   bb_cfg()["container"]["root"].value, "--runroot",
-                   bb_cfg()["container"]["runroot"].value]
 
 
 class ImageBase(Enum):
@@ -300,7 +293,8 @@ def delete_base_image(base: ImageBase) -> None:
     Args:
         base: the image base
     """
-    prepare_buildah()("rmi", "--force", base.image_name)
+    publish = bootstrap.bus()
+    publish(DeleteImage(base.image_name))
 
 
 def delete_base_images() -> None:
