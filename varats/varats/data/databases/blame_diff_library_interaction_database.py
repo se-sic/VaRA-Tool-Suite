@@ -1,32 +1,32 @@
-"""Module for the BlameLibraryInteractionsDatabase class."""
+"""Module for the BlameDiffLibraryInteractionDatabase class."""
 import typing as tp
 from pathlib import Path
 
 import pandas as pd
 
 from varats.data.cache_helper import build_cached_report_table
+from varats.data.databases.blame_diff_metrics_database import (
+    build_report_pairs_tuple,
+    id_from_paths,
+    timestamp_from_paths,
+    compare_timestamps,
+)
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.data.reports.blame_report import (
-    BlameReport,
     gen_base_to_inter_commit_repo_pair_mapping,
+    BlameReportDiff,
 )
 from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
-from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.report import MetaReport
-from varats.revision.revisions import (
-    get_failed_revisions_files,
-    get_processed_revisions_files,
-)
 
 
-class BlameLibraryInteractionsDatabase(
+class BlameDiffLibraryInteractionDatabase(
     EvaluationDatabase,
-    cache_id="blame_library_interaction_data",
+    cache_id="blame_diff_library_interaction_data",
     columns=["base_hash", "base_lib", "inter_hash", "inter_lib", "amount"]
 ):
-    """Provides access to blame library interaction data."""
+    """Provides access to blame diff library interaction data."""
 
     @classmethod
     def _load_dataframe(
@@ -45,11 +45,18 @@ class BlameLibraryInteractionsDatabase(
             return df_layout
 
         def create_data_frame_for_report(
-            report_path: Path
+            report_paths: tp.Tuple[Path, Path]
         ) -> tp.Tuple[pd.DataFrame, str, str]:
-            report = load_blame_report(report_path)
+
+            head_report = load_blame_report(report_paths[0])
+            pred_report = load_blame_report(report_paths[1])
+
+            diff_report = BlameReportDiff(head_report, pred_report)
+
             base_inter_c_repo_pair_mapping = \
-                gen_base_to_inter_commit_repo_pair_mapping(report)
+                gen_base_to_inter_commit_repo_pair_mapping(
+                diff_report
+            )
 
             def build_dataframe_row(
                 base_hash: str, base_library: str, inter_hash: str,
@@ -57,13 +64,20 @@ class BlameLibraryInteractionsDatabase(
             ) -> tp.Dict[str, tp.Any]:
 
                 data_dict: tp.Dict[str, tp.Any] = {
-                    'revision': report.head_commit,
-                    'time_id': commit_map.short_time_id(report.head_commit),
-                    'base_hash': base_hash,
-                    'base_lib': base_library,
-                    'inter_hash': inter_hash,
-                    'inter_lib': inter_library,
-                    'amount': amount
+                    'revision':
+                        head_report.head_commit,
+                    'time_id':
+                        commit_map.short_time_id(head_report.head_commit),
+                    'base_hash':
+                        base_hash,
+                    'base_lib':
+                        base_library,
+                    'inter_hash':
+                        inter_hash,
+                    'inter_lib':
+                        inter_library,
+                    'amount':
+                        amount
                 }
                 return data_dict
 
@@ -84,28 +98,21 @@ class BlameLibraryInteractionsDatabase(
                         )
                     )
 
-            return pd.DataFrame(result_data_dicts), report.head_commit, str(
-                report_path.stat().st_mtime_ns
+            return (
+                pd.DataFrame(result_data_dicts), id_from_paths(report_paths),
+                timestamp_from_paths(report_paths)
             )
 
-        report_files = get_processed_revisions_files(
-            project_name, BlameReport,
-            get_case_study_file_name_filter(case_study)
-        )
-
-        failed_report_files = get_failed_revisions_files(
-            project_name, BlameReport,
-            get_case_study_file_name_filter(case_study)
+        report_pairs, failed_report_pairs = build_report_pairs_tuple(
+            project_name, commit_map, case_study
         )
 
         # cls.CACHE_ID is set by superclass
         # pylint: disable=E1101
         data_frame = build_cached_report_table(
-            cls.CACHE_ID, project_name, report_files, failed_report_files,
+            cls.CACHE_ID, project_name, report_pairs, failed_report_pairs,
             create_dataframe_layout, create_data_frame_for_report,
-            lambda path: MetaReport.get_commit_hash_from_result_file(path.name),
-            lambda path: str(path.stat().st_mtime_ns),
-            lambda a, b: int(a) > int(b)
+            id_from_paths, timestamp_from_paths, compare_timestamps
         )
 
         return data_frame
