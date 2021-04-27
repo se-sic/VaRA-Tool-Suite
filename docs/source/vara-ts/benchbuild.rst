@@ -111,40 +111,40 @@ If you generated your configuration via :ref:`vara-gen-bbconfig`, these options 
 
 .. code-block:: yaml
 
-container:
+  container:
     export:
-        desc: Export path for container images.
-        value: !create-if-needed '<path-to-varats-root>/containers/export'
+      desc: Export path for container images.
+      value: !create-if-needed '<path-to-varats-root>/containers/export'
     from_source:
-        desc: Install BenchBuild from source or from pip (default)
-        value: false
+      desc: Install BenchBuild from source or from pip (default)
+      value: false
     import:
-        desc: Import path for container images.
-        value: !create-if-needed '<path-to-varats-root>/containers/export'
+      desc: Import path for container images.
+      value: !create-if-needed '<path-to-varats-root>/containers/export'
     keep:
-        desc: Keep failed image builds at their last known good state.
-        value: false
+      desc: Keep failed image builds at their last known good state.
+      value: false
     keep_suffix:
-        desc: Suffix to add to failed image builds, if we keep them.
-        value: failed
+      desc: Suffix to add to failed image builds, if we keep them.
+      value: failed
     mounts:
-        desc: List of paths that will be mounted inside the container.
-        value:
+      desc: List of paths that will be mounted inside the container.
+      value:
         - [<path-to-varats-root>/results, /varats_root/results]
         - [<path-to-varats-root>/benchbuild/BC_files, /varats_root/BC_files]
         - [<path-to-varats-root>/vara/paper_configs, /varats_root/paper_configs]
     root:
-        desc: Permanent storage for container images
-        value: !create-if-needed '<path-to-varats-root>/containers/lib'
+      desc: Permanent storage for container images
+      value: !create-if-needed '<path-to-varats-root>/containers/lib'
     runroot:
-        desc: Runtime storage for containers
-        value: !create-if-needed '<path-to-varats-root>/containers/run'
+      desc: Runtime storage for containers
+      value: !create-if-needed '<path-to-varats-root>/containers/run'
     runtime:
-        desc: Default container runtime used by podman
-        value: /usr/bin/crun
+      desc: Default container runtime used by podman
+      value: /usr/bin/crun
     source:
-        desc: Path to benchbuild's source directory
-        value: '</path/to/benchbuild>'
+      desc: Path to benchbuild's source directory
+      value: '</path/to/benchbuild>'
 
 
 Executing Experiments in a Container
