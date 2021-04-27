@@ -198,7 +198,7 @@ _BB_CFG: tp.Optional[s.Configuration] = None
 
 
 def bb_cfg() -> s.Configuration:
-    """Get the current behcnbuild config."""
+    """Get the current benchbuild config."""
     global _BB_CFG  # pylint: disable=global-statement
     if not _BB_CFG:
         from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
