@@ -111,10 +111,22 @@ If you generated your configuration via :ref:`vara-gen-bbconfig`, these options 
 
 .. code-block:: yaml
 
-  container:
+container:
+    export:
+        desc: Export path for container images.
+        value: !create-if-needed '<path-to-varats-root>/containers/export'
     from_source:
-      desc: Install BenchBuild from source or from pip (default)
-      value: false
+        desc: Install BenchBuild from source or from pip (default)
+        value: false
+    import:
+        desc: Import path for container images.
+        value: !create-if-needed '<path-to-varats-root>/containers/export'
+    keep:
+        desc: Keep failed image builds at their last known good state.
+        value: false
+    keep_suffix:
+        desc: Suffix to add to failed image builds, if we keep them.
+        value: failed
     mounts:
         desc: List of paths that will be mounted inside the container.
         value:
@@ -143,12 +155,12 @@ Afterwards, you need to build the base containers.
 Both tasks can be accomplished using the :ref:`vara-container` tool.
 Remember to first select a research tool and then build the base containers afterwards.
 
-You can now run your experiments in a container simply by replacing the ``run`` in your BenchBuild command with ``container``, for example, like this:
+You can now run your experiments in a container simply by replacing the ``run`` in your BenchBuild command with ``container run``, for example, like this:
 
 .. code-block:: bash
 
   cd $VARA_ROOT/benchbuild
-  benchbuild -vv container -E GenerateBlameReport gzip
+  benchbuild -vv container run -E GenerateBlameReport gzip
 
 Note, that each project is responsible for providing a :ref:`base container image <Using Containers>` to run in.
 
