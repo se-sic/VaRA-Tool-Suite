@@ -13,7 +13,11 @@ from varats.data.reports.blame_report import (
 from varats.jupyterhelper.file import load_blame_report
 from varats.plot.plot import PlotDataEmpty
 from varats.revision.revisions import get_processed_revisions_files
-from varats.utils.git_util import CommitRepoPair, create_commit_lookup_helper
+from varats.utils.git_util import (
+    CommitRepoPair,
+    create_commit_lookup_helper,
+    DUMMY_COMMIT,
+)
 
 if sys.version_info <= (3, 8):
     from typing_extensions import TypedDict
@@ -163,7 +167,10 @@ class BlameInteractionGraph():
         commit_lookup = create_commit_lookup_helper(self.__project_name)
 
         def partition(u: CommitRepoPair, v: CommitRepoPair) -> bool:
-            return str(commit_lookup(u).author) == str(commit_lookup(v).author)
+            if u.commit_hash == DUMMY_COMMIT or v.commit_hash == DUMMY_COMMIT:
+                return u.commit_hash == v.commit_hash
+            return str(commit_lookup(u).author.name
+                      ) == str(commit_lookup(v).author.name)
 
         def edge_data(
             b: tp.Set[CommitRepoPair], c: tp.Set[CommitRepoPair]
@@ -179,10 +186,14 @@ class BlameInteractionGraph():
             }
 
         def node_data(b: tp.Set[CommitRepoPair]) -> AIGNodeAttrs:
-            authors = [str(commit_lookup(commit).author) for commit in b]
+            authors = {
+                str(commit_lookup(commit).author.name)
+                if commit.commit_hash != DUMMY_COMMIT else "Unknown"
+                for commit in b
+            }
             assert len(authors) == 1, "Some node has more then one author."
             return {
-                "author": authors[0],
+                "author": next(iter(authors)),
                 "num_commits": len(b),
             }
 
