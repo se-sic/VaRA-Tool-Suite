@@ -149,16 +149,16 @@ class PygitSuspectTuple:
         """Returns whether all suspects inside this tuple have been cleared."""
         return len(self.__uncleared_suspects) == 0
 
-    def extract_next_uncleared_suspect(self) -> tp.Optional[pygit2.Commit]:
+    def extract_next_uncleared_suspect(self) -> pygit2.Commit:
         """
         Extracts one uncleared suspect from the set and returns it.
 
         Returns None if the set is empty.
         """
-        if self.__uncleared_suspects:
-            return self.__uncleared_suspects.pop()
+        if self.is_cleared():
+            raise ValueError
         else:
-            return None
+            return self.__uncleared_suspects.pop()
 
     def clear_suspect(self, cleared_suspect: pygit2.Commit) -> None:
         """Adds parameter cleared_suspect to cleared suspects."""
@@ -205,16 +205,16 @@ class RawSuspectTuple:
         """Returns whether all suspects inside this tuple have been cleared."""
         return len(self.__uncleared_suspects) == 0
 
-    def extract_next_uncleared_suspect(self) -> tp.Optional[str]:
+    def extract_next_uncleared_suspect(self) -> str:
         """
         Extracts one uncleared suspect from the set and returns it.
 
         Returns None if the set is empty.
         """
-        if self.__uncleared_suspects:
-            return self.__uncleared_suspects.pop()
+        if self.is_cleared():
+            raise ValueError
         else:
-            return None
+            return self.__uncleared_suspects.pop()
 
     def clear_suspect(self, cleared_suspect: str) -> None:
         """Adds parameter cleared_suspect to cleared suspects."""
@@ -382,6 +382,105 @@ def _create_corresponding_raw_bug(
     return RawBug(closing_commit, introducing_ids, issue_id)
 
 
+def _find_corresponding_pygit_suspect_tuple(
+    project_name: str, issue_event: IssueEvent
+) -> tp.Optional[PygitSuspectTuple]:
+    """
+    Creates, given an IssueEvent, the corresponding suspect tuple in case it
+    represents a bug. Divides the commits found via git blame on the fixing
+    commit into suspects (commits after bug report) and non-suspects (commits
+    before bug report).
+
+    Args:
+        project_name: Name of the project to draw the fixing and introducing
+            commits from.
+        issue_event: The IssueEvent potentially associated with a bug.
+
+    Returns:
+        A PygitSuspectTuple if the issue event represents the closing of a bug,
+        None otherwise
+    """
+    pygit_repo: pygit2.Repository = get_local_project_git(project_name)
+    pydrill_repo = pydriller.GitRepository(pygit_repo.path)
+
+    if _has_closed_a_bug(issue_event) and issue_event.commit_id:
+        fixing_commit = pygit_repo.revparse_single(issue_event.commit_id)
+        blame_dict = pydrill_repo.get_commits_last_modified_lines(
+            pydrill_repo.get_commit(issue_event.commit_id)
+        )
+
+        non_suspect_commits = set()
+        suspect_commits = set()
+        for _, introducing_set in blame_dict.items():
+            for introducing_id in introducing_set:
+                issue_date = issue_event.issue.created_at
+                introduction_date = pydrill_repo.get_commit(
+                    introducing_id
+                ).committer_date
+                if introduction_date > issue_date:  # commit is a suspect
+                    suspect_commits.add(
+                        pygit_repo.revparse_single(introducing_id)
+                    )
+                else:
+                    non_suspect_commits.add(
+                        pygit_repo.revparse_single(introducing_id)
+                    )
+
+            return PygitSuspectTuple(
+                fixing_commit, introducing_commits, suspect_commits,
+                issue_event.issue.number
+            )
+    else:
+        return None
+
+
+def _find_corresponding_raw_suspect_tuple(
+    project_name: str, issue_event: IssueEvent
+) -> tp.Optional[RawSuspectTuple]:
+    """
+    Creates, given an IssueEvent, the corresponding suspect tuple in case it
+    represents a bug. Divides the commits found via git blame on the fixing
+    commit into suspects (commits after bug report) and non-suspects (commits
+    before bug report).
+
+    Args:
+        project_name: Name of the project to draw the fixing and introducing
+            commits from.
+        issue_event: The IssueEvent potentially associated with a bug.
+
+    Returns:
+        A RawSuspectTuple if the issue event represents the closing of a bug,
+        None otherwise
+    """
+    pydrill_repo = pydriller.GitRepository(pygit_repo.path)
+
+    if _has_closed_a_bug(issue_event) and issue_event.commit_id:
+        fixing_commit = issue_event.commit_id
+        blame_dict = pydrill_repo.get_commits_last_modified_lines(
+            pydrill_repo.get_commit(fixing_commit)
+        )
+
+        non_suspect_commits = set()
+        suspect_commits = set()
+        for _, introducing_set in blame_dict.items():
+            for introducing_id in introducing_set:
+                issue_date = issue_event.issue.created_at
+                introduction_date = pydrill_repo.get_commit(
+                    introducing_id
+                ).committer_date
+                if introduction_date > issue_date:  # commit is a suspect
+                    suspect_commits.add(introducing_id)
+                else:
+                    non_suspect_commits.add(introducing_id)
+
+            return RawSuspectTuple(
+                fixing_commit, introducing_commits, suspect_commits,
+                issue_event.issue.number
+            )
+    else:
+        return None
+
+
 def _filter_all_issue_pygit_bugs(
     project_name: str,
     suspect_filter_function: tp.Callable[[PygitSuspectTuple],
@@ -403,56 +502,34 @@ def _filter_all_issue_pygit_bugs(
     resulting_pygit_bugs = set()
 
     issue_events = _get_all_issue_events(project_name)
-    pygit_repo: pygit2.Repository = get_local_project_git(project_name)
-    pydrill_repo = pydriller.GitRepository(pygit_repo.path)
 
     # IDENTIFY SUSPECTS
-    suspect_tuple_map: tp.Dict[str, PygitSuspectTuple]
+    suspect_tuples: tp.Set[PygitSuspectTuple]
     for issue_event in issue_events:
-        if _has_closed_a_bug(issue_event) and issue_event.commit_id:
-            fixing_commit = pygit_repo.revparse_single(issue_event.commit_id)
-            blame_dict = pydrill_repo.get_commits_last_modified_lines(
-                pydrill_repo.get_commit(issue_event.commit_id)
-            )
-
-            introducing_commits = set()
-            suspect_commits = set()
-            for _, introducing_set in blame_dict.items():
-                for introducing_id in introducing_set:
-                    issue_date = issue_event.issue.created_at
-                    introduction_date = pydrill_repo.get_commit(
-                        introducing_id
-                    ).committer_date
-                    if introduction_date > issue_date:  # commit is a suspect
-                        suspect_commits.add(
-                            pygit_repo.revparse_single(introducing_id)
-                        )
-                    else:
-                        introducing_commits.add(
-                            pygit_repo.revparse_single(introducing_id)
-                        )
-
-            suspect_tuple_map[issue_event.commit_id] = PygitSuspectTuple(
-                fixing_commit, introducing_commits, suspect_commits,
-                issue_event.issue.number
-            )
+        suspect_tuple = _find_corresponding_pygit_suspect_tuple(
+            project_name, issue_event
+        )
+        if suspect_tuple:
+            suspect_tuples.add(suspect_tuple)
 
     # CLASSIFY SUSPECTS
-    for _, suspect_tuple in suspect_tuple_map:
+    for suspect_tuple in suspect_tuples:
         while not suspect_tuple.is_cleared():  # iterate over uncleared suspects
             suspect = suspect_tuple.extract_next_uncleared_suspect()
 
             # partial fix?
-            if suspect.hex in suspect_tuple_map.keys():
-                suspect_tuple.clear_suspect(suspect)
+            for other_tuple in suspect_tuples:
+                if suspect == other_tuple.fixing_commit:
+                    suspect_tuple.clear_suspect(suspect)
 
             # weak suspect?
-            for _, other_tuple in suspect_tuple_map:
+            for other_tuple in suspect_tuples:
                 if suspect in other_tuple.non_suspects:
                     suspect_tuple.clear_suspect(suspect)
 
-        if suspect_filter_function(suspect_tuple):
-            resulting_pygit_bugs.add(suspect_tuple.create_corresponding_bug())
+        pygit_bug = suspect_filter_function(suspect_tuple)
+        if pygit_bug:
+            resulting_pygit_bugs.add(pygit_bug)
 
     return frozenset(resulting_pygit_bugs)
 
@@ -476,10 +553,35 @@ def _filter_all_issue_raw_bugs(
     """
     resulting_raw_bugs = set()
 
-    # iterate over all issue events
     issue_events = _get_all_issue_events(project_name)
+
+    # IDENTIFY SUSPECTS
+    suspect_tuples: tp.Set[RawSuspectTuple]
     for issue_event in issue_events:
-        pass  #implement as soon as PygitBug version is clean
+        suspect_tuple = _find_corresponding_raw_suspect_tuple(
+            project_name, issue_event
+        )
+        if suspect_tuple:
+            suspect_tuples.add(suspect_tuple)
+
+    # CLASSIFY SUSPECTS
+    for suspect_tuple in suspect_tuples:
+        while not suspect_tuple.is_cleared():  # iterate over uncleared suspects
+            suspect = suspect_tuple.extract_next_uncleared_suspect()
+
+            # partial fix?
+            for other_tuple in suspect_tuples:
+                if suspect == other_tuple.fixing_commit:
+                    suspect_tuple.clear_suspect(suspect)
+
+            # weak suspect?
+            for other_tuple in suspect_tuples:
+                if suspect in other_tuple.non_suspects:
+                    suspect_tuple.clear_suspect(suspect)
+
+        raw_bug = suspect_filter_function(suspect_tuple)
+        if raw_bug:
+            resulting_raw_bugs.add(pygit_bug)
 
     return frozenset(resulting_raw_bugs)
 
@@ -556,17 +658,12 @@ def find_all_issue_pygit_bugs(project_name: str) -> tp.FrozenSet[PygitBug]:
         A set of PygitBugs.
     """
 
-    def accept_all_issue_pybugs(
-        issue_event: IssueEvent
+    def accept_all_suspects(
+        suspect: PygitSuspectTuple
     ) -> tp.Optional[PygitBug]:
-        if _has_closed_a_bug(issue_event) and issue_event.commit_id:
-            pygit_repo: pygit2.Repository = get_local_project_git(project_name)
-            return _create_corresponding_pygit_bug(
-                issue_event.commit_id, pygit_repo, issue_event.issue
-            )
-        return None
+        return suspect.create_corresponding_bug()
 
-    return _filter_all_issue_pygit_bugs(project_name, accept_all_issue_pybugs)
+    return _filter_all_issue_pygit_bugs(project_name, accept_all_suspects)
 
 
 def find_all_issue_raw_bugs(project_name: str) -> tp.FrozenSet[RawBug]:
@@ -580,17 +677,10 @@ def find_all_issue_raw_bugs(project_name: str) -> tp.FrozenSet[RawBug]:
         A set of RawBugs.
     """
 
-    def accept_all_issue_rawbugs(
-        issue_event: IssueEvent
-    ) -> tp.Optional[RawBug]:
-        if _has_closed_a_bug(issue_event) and issue_event.commit_id:
-            pygit_repo: pygit2.Repository = get_local_project_git(project_name)
-            return _create_corresponding_raw_bug(
-                issue_event.commit_id, pygit_repo, issue_event.issue
-            )
-        return None
+    def accept_all_suspects(suspect: RawSuspectTuple) -> tp.Optional[RawBug]:
+        return suspect.create_corresponding_bug()
 
-    return _filter_all_issue_raw_bugs(project_name, accept_all_issue_rawbugs)
+    return _filter_all_issue_raw_bugs(project_name, accept_all_suspects)
 
 
 def find_issue_pygit_bugs_by_fix(project_name: str,
@@ -607,20 +697,16 @@ def find_issue_pygit_bugs_by_fix(project_name: str,
         A set of PygitBugs fixed by fixing_commit
     """
 
-    def accept_issue_pybug_with_certain_fix(
-        issue_event: IssueEvent
+    def accept_suspects_with_certain_fix(
+        suspect: PygitSuspectTuple
     ) -> tp.Optional[PygitBug]:
-        if _has_closed_a_bug(issue_event) and issue_event.commit_id:
-            pygit_repo: pygit2.Repository = get_local_project_git(project_name)
-            pybug = _create_corresponding_pygit_bug(
-                issue_event.commit_id, pygit_repo, issue_event.issue
-            )
-            if pybug.fixing_commit.hex == fixing_commit:
-                return pybug
+        pybug = suspect.create_corresponding_bug()
+        if pybug.fixing_commit == fixing_commit:
+            return pybug
         return None
 
     return _filter_all_issue_pygit_bugs(
-        project_name, accept_issue_pybug_with_certain_fix
+        project_name, accept_suspects_with_certain_fix
     )
 
 
@@ -638,20 +724,16 @@ def find_issue_raw_bugs_by_fix(project_name: str,
         A set of RawBugs fixed by fixing_commit
     """
 
-    def accept_issue_rawbug_with_certain_fix(
-        issue_event: IssueEvent
+    def accept_suspects_with_certain_fix(
+        suspect: RawSuspectTuple
     ) -> tp.Optional[RawBug]:
-        if _has_closed_a_bug(issue_event) and issue_event.commit_id:
-            pygit_repo: pygit2.Repository = get_local_project_git(project_name)
-            rawbug = _create_corresponding_raw_bug(
-                issue_event.commit_id, pygit_repo, issue_event.issue
-            )
-            if rawbug.fixing_commit == fixing_commit:
-                return rawbug
+        rawbug = suspect.create_corresponding_bug()
+        if rawbug.fixing_commit == fixing_commit:
+            return rawbug
         return None
 
     return _filter_all_issue_raw_bugs(
-        project_name, accept_issue_rawbug_with_certain_fix
+        project_name, accept_suspects_with_certain_fix
     )
 
 
@@ -670,23 +752,17 @@ def find_issue_pygit_bugs_by_introduction(
         A set of PygitBugs introduced by introducing_commit
     """
 
-    def accept_issue_pybug_with_certain_introduction(
-        issue_event: IssueEvent
+    def accept_suspect_with_certain_introduction(
+        suspect: PygitSuspectTuple
     ) -> tp.Optional[PygitBug]:
-        if _has_closed_a_bug(issue_event) and issue_event.commit_id:
-            pygit_repo = get_local_project_git(project_name)
-            pybug = _create_corresponding_pygit_bug(
-                issue_event.commit_id, pygit_repo, issue_event.issue
-            )
-
-            for introducing_pycommit in pybug.introducing_commits:
-                if introducing_pycommit.hex == introducing_commit:
-                    return pybug
-                    # found wanted ID
+        pybug = suspect.create_corresponding_bug()
+        for intro in pybug.introducing_commits:
+            if intro.hex == introducing_commit:
+                return pybug
         return None
 
     return _filter_all_issue_pygit_bugs(
-        project_name, accept_issue_pybug_with_certain_introduction
+        project_name, accept_suspect_with_certain_introduction
     )
 
 
@@ -705,23 +781,17 @@ def find_issue_raw_bugs_by_introduction(
         A set of RawBugs introduced by introducing_commit
     """
 
-    def accept_issue_rawbug_with_certain_introduction(
-        issue_event: IssueEvent
+    def accept_suspect_with_certain_introduction(
+        suspect: RawSuspectTuple
     ) -> tp.Optional[RawBug]:
-        if _has_closed_a_bug(issue_event) and issue_event.commit_id:
-            pygit_repo: pygit2.Repository = get_local_project_git(project_name)
-            rawbug = _create_corresponding_raw_bug(
-                issue_event.commit_id, pygit_repo, issue_event.issue
-            )
-
-            for introducing_id in rawbug.introducing_commits:
-                if introducing_id == introducing_commit:
-                    return rawbug
-                    # found wanted ID
+        rawbug = suspect.create_corresponding_bug()
+        for intro_id in rawbug.introducing_commits:
+            if intro_id == introducing_commit:
+                return rawbug
         return None
 
     return _filter_all_issue_raw_bugs(
-        project_name, accept_issue_rawbug_with_certain_introduction
+        project_name, accept_suspect_with_certain_introduction
     )
 
 
