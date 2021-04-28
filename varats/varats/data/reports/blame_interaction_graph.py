@@ -1,7 +1,6 @@
 """Module for representing blame interaction data in a graph/network."""
 import sys
 import typing as tp
-from collections import defaultdict
 
 import networkx as nx
 
@@ -235,7 +234,9 @@ class BlameInteractionGraph():
         commit_lookup = create_commit_lookup_helper(self.__project_name)
 
         commit_author_mapping = {
-            commit: commit_lookup(commit).author for commit in (list(ig.nodes))
+            commit: commit_lookup(commit).author.name
+            if commit.commit_hash != DUMMY_COMMIT else "Unknown"
+            for commit in (list(ig.nodes))
         }
         caig = nx.DiGraph()
         # add commits as nodes
@@ -254,7 +255,7 @@ class BlameInteractionGraph():
         # add edges and aggregate edge attributes
         for node in ig.nodes:
             if incoming_interactions:
-                for source, sink, data in ig.in_edges(node):
+                for source, sink, data in ig.in_edges(node, data=True):
                     if not caig.has_edge(source, commit_author_mapping[sink]):
                         caig.add_edge(
                             source, commit_author_mapping[sink], amount=0
@@ -262,10 +263,10 @@ class BlameInteractionGraph():
                     caig[source][commit_author_mapping[sink]
                                 ]["amount"] += data["amount"]
             if outgoing_interactions:
-                for source, sink, data in ig.out_edges(node):
+                for source, sink, data in ig.out_edges(node, data=True):
                     if not caig.has_edge(sink, commit_author_mapping[source]):
                         caig.add_edge(
-                            source, commit_author_mapping[source], amount=0
+                            sink, commit_author_mapping[source], amount=0
                         )
                     caig[sink][commit_author_mapping[source]
                               ]["amount"] += data["amount"]
