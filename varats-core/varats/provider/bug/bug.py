@@ -495,7 +495,7 @@ def _filter_all_issue_pygit_bugs(
     issue_events = _get_all_issue_events(project_name)
 
     # IDENTIFY SUSPECTS
-    suspect_tuples: tp.Set[PygitSuspectTuple]
+    suspect_tuples: tp.Set[PygitSuspectTuple] = set()
     for issue_event in issue_events:
         suspect_tuple = _find_corresponding_pygit_suspect_tuple(
             project_name, issue_event
@@ -547,7 +547,7 @@ def _filter_all_issue_raw_bugs(
     issue_events = _get_all_issue_events(project_name)
 
     # IDENTIFY SUSPECTS
-    suspect_tuples: tp.Set[RawSuspectTuple]
+    suspect_tuples: tp.Set[RawSuspectTuple] = set()
     for issue_event in issue_events:
         suspect_tuple = _find_corresponding_raw_suspect_tuple(
             project_name, issue_event
