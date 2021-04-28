@@ -13,11 +13,6 @@ from varats.paper_mgmt.case_study import (
 )
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.table.table import Table, wrap_table_in_document, TableFormat
-from varats.utils.git_util import (
-    CommitRepoPair,
-    create_commit_lookup_helper,
-    DUMMY_COMMIT,
-)
 
 
 class BlameInteractionGraphMetricsTable(Table):
@@ -48,21 +43,18 @@ class BlameInteractionGraphMetricsTable(Table):
             if not revision:
                 continue
 
-            cig = create_blame_interaction_graph(
-                project_name, revision
-            ).commit_interaction_graph
-            commit_lookup = create_commit_lookup_helper(project_name)
+            cig = create_blame_interaction_graph(project_name, revision
+                                                ).commit_interaction_graph()
 
-            def filter_nodes(node: CommitRepoPair) -> bool:
-                if node.commit_hash == DUMMY_COMMIT:
-                    return False
-                return bool(commit_lookup(node))
+            nodes: tp.List[tp.Dict[str, tp.Any]] = []
+            for node in cig.nodes:
+                nodes.append(({
+                    "node_degree": cig.degree(node),
+                    "node_out_degree": cig.out_degree(node),
+                    "node_in_degree": cig.in_degree(node),
+                }))
 
-            data = pd.DataFrame([{
-                "node_degree": cig.degree(node),
-                "node_out_degree": cig.out_degree(node),
-                "node_in_degree": cig.in_degree(node),
-            } for node in cig.nodes if filter_nodes(node)])
+            data = pd.DataFrame(nodes)
             degree_data.append(
                 pd.DataFrame.from_dict({
                     project_name: {
