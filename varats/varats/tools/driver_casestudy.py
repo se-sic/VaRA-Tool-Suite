@@ -23,6 +23,7 @@ from varats.paper_mgmt.case_study import (
     generate_case_study,
 )
 from varats.paper_mgmt.paper_config import get_paper_config
+from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
@@ -43,6 +44,7 @@ def main() -> None:
     initialize_cli_tool()
     initialize_projects()
     initialize_reports()
+    initialize_plots()  # needed for vara-cs ext smooth_plot
     parser = ArgumentParser("vara-cs")
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
 
