@@ -51,15 +51,6 @@ class PygitBug:
         """ID of the issue associated with the bug, if there is one."""
         return self.__issue_id
 
-    def create_corresponding_raw_bug(self) -> RawBug:
-        """Uses pygit2 Commit Hashes of own parameters to create a RawBug."""
-        introducing_ids: tp.Set[str]
-        for introducing_commit in self.__introducing_commits:
-            introducing_ids.add(introducing_commit.hex)
-        return RawBug(
-            self.__fixing_commit.hex, introducing_ids, self.__issue_id
-        )
-
     def __eq__(self, other: object) -> bool:
         if isinstance(other, PygitBug):
             return (
