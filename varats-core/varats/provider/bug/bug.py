@@ -443,7 +443,9 @@ def _find_corresponding_raw_suspect_tuple(
         A RawSuspectTuple if the issue event represents the closing of a bug,
         None otherwise
     """
-    pydrill_repo = pydriller.GitRepository(pygit_repo.path)
+    pydrill_repo = pydriller.GitRepository(
+        get_local_project_git(project_name).path
+    )
 
     if _has_closed_a_bug(issue_event) and issue_event.commit_id:
         fixing_commit = issue_event.commit_id
