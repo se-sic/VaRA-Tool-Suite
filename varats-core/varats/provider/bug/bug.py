@@ -417,10 +417,10 @@ def _find_corresponding_pygit_suspect_tuple(
                         pygit_repo.revparse_single(introducing_id)
                     )
 
-            return PygitSuspectTuple(
-                fixing_commit, introducing_commits, suspect_commits,
-                issue_event.issue.number
-            )
+        return PygitSuspectTuple(
+            fixing_commit, non_suspect_commits, suspect_commits,
+            issue_event.issue.number
+        )
     else:
         return None
 
@@ -466,10 +466,10 @@ def _find_corresponding_raw_suspect_tuple(
                 else:
                     non_suspect_commits.add(introducing_id)
 
-            return RawSuspectTuple(
-                fixing_commit, introducing_commits, suspect_commits,
-                issue_event.issue.number
-            )
+        return RawSuspectTuple(
+            fixing_commit, non_suspect_commits, suspect_commits,
+            issue_event.issue.number
+        )
     else:
         return None
 
@@ -574,7 +574,7 @@ def _filter_all_issue_raw_bugs(
 
         raw_bug = suspect_filter_function(suspect_tuple)
         if raw_bug:
-            resulting_raw_bugs.add(pygit_bug)
+            resulting_raw_bugs.add(raw_bug)
 
     return frozenset(resulting_raw_bugs)
 

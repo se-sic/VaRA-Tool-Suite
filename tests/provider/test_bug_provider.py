@@ -1,4 +1,5 @@
 """Test bug_provider and bug modules."""
+import datetime
 import unittest
 from unittest.mock import create_autospec, patch
 
@@ -20,6 +21,8 @@ from varats.provider.bug.bug import (
     _filter_all_issue_pygit_bugs,
     _filter_all_commit_message_raw_bugs,
     _filter_all_commit_message_pygit_bugs,
+    PygitSuspectTuple,
+    RawSuspectTuple,
 )
 from varats.provider.bug.bug_provider import BugProvider
 
@@ -157,14 +160,17 @@ class TestBugDetectionStrategies(unittest.TestCase):
         issue_firstbug = create_autospec(Issue)
         issue_firstbug.number = 5
         issue_firstbug.labels = [bug_label]
+        issue_firstbug.created_at = datetime.datetime(2020, 4, 20)
 
         issue_nobug = create_autospec(Issue)
         issue_nobug.number = 6
         issue_nobug.labels = []
+        issue_nobug.created_at = datetime.datetime(2019, 4, 20)
 
         issue_secondbug = create_autospec(Issue)
         issue_secondbug.number = 7
         issue_secondbug.labels = [bug_label]
+        issue_secondbug.created_at = datetime.datetime(2020, 4, 22)
 
         event_close_first_nocommit = create_autospec(IssueEvent)
         event_close_first_nocommit.event = "closed"
@@ -211,20 +217,12 @@ class TestBugDetectionStrategies(unittest.TestCase):
                 self.mock_pydrill_repo):
 
             # issue filter method for pygit bugs
-            def accept_pybugs(event: IssueEvent):
-                if _has_closed_a_bug(event) and event.commit_id:
-                    return _create_corresponding_pygit_bug(
-                        event.commit_id, self.mock_repo, event.issue.number
-                    )
-                return None
+            def accept_pybugs(sus_tuple: PygitSuspectTuple):
+                return sus_tuple.create_corresponding_bug()
 
             # issue filter method for raw bugs
-            def accept_rawbugs(event: IssueEvent):
-                if _has_closed_a_bug(event) and event.commit_id:
-                    return _create_corresponding_raw_bug(
-                        event.commit_id, self.mock_repo, event.issue.number
-                    )
-                return None
+            def accept_rawbugs(sus_tuple: RawSuspectTuple):
+                return sus_tuple.create_corresponding_bug()
 
             # create set of fixing IDs of found bugs
             pybug_ids = set(
