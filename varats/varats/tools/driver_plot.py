@@ -32,10 +32,10 @@ LOG = logging.getLogger(__name__)
 @PlotConfig.cli_options
 @CommonPlotOptions.cli_options
 @click.pass_context
-def main(context: click.Context, view: bool, output_dir: str) -> None:
+def main(context: click.Context, **kwargs: tp.Any) -> None:
     """Entry point for the plot generation tool."""
     # store common options in context so they can be passed to subcommands
-    common_options = CommonPlotOptions(view, Path(output_dir))
+    common_options = CommonPlotOptions.from_kwargs(**kwargs)
     plot_config = PlotConfig()
     context.obj = (common_options, plot_config)
 

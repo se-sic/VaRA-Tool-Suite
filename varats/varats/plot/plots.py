@@ -192,15 +192,26 @@ def prepare_plots(**args: tp.Any) -> tp.Iterable['varats.plot.plot.Plot']:
 class CommonPlotOptions():
     """This class stores options common to all plots."""
 
-    def __init__(self, view: bool, plot_dir: Path):
+    def __init__(self, view: bool, plot_dir: Path, file_type: str):
         """
         Construct a `CommonPlotOptions` object.
 
         Args:
             view: if `True`, view the plot instead of writing it to a file
+            plot_dir: the directory to write plots to
+            file_type: the file type for the written plot file
         """
         self.view = view
         self.plot_dir = plot_dir
+        self.file_type = file_type
+
+    @staticmethod
+    @check_required_args("view", "plot_dir", "file_type")
+    def from_kwargs(**kwargs: tp.Any) -> 'CommonPlotOptions':
+        """Construct a ``CommonPlotOptions`` object from a kwargs dict."""
+        return CommonPlotOptions(
+            kwargs['view'], Path(kwargs["plot_dir"]), kwargs["file_type"]
+        )
 
     @classmethod
     def default_plot_dir(cls) -> Path:
@@ -211,7 +222,14 @@ class CommonPlotOptions():
             "-v",
             "--view",
             type=bool,
+            default=False,
             help="View the plot instead of saving it to a file."
+        ),
+        make_cli_option(
+            "--file-type",
+            type=str,
+            default="svg",  # todo: provide choices
+            help="File type for the plot."
         ),
         make_cli_option(
             "--output-dir",
@@ -335,12 +353,15 @@ class PlotGenerator(abc.ABC):
         Args:
             common_options: common options to use for the plot(s)
         """
-        # Handle everything that depends on stuff stored in the
-        # common_options object
+        if not common_options.plot_dir.exists():
+            LOG.error(f"Could not find output dir {common_options.plot_dir}")
+            return []
 
         plots = self.generate()
         for plot in plots:
             if common_options.view:
                 plot.show()
             else:
-                plot.save(common_options.plot_dir)
+                plot.save(
+                    common_options.plot_dir, filetype=common_options.file_type
+                )
