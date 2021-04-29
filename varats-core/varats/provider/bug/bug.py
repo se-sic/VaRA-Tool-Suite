@@ -122,7 +122,7 @@ class PygitSuspectTuple:
     ) -> None:
         self.__fixing_commit = fixing_commit
         self.__non_suspects = non_suspects
-        self.__cleared_suspects = set()
+        self.__cleared_suspects: tp.Set[pygit2.Commit] = set()
         self.__uncleared_suspects = uncleared_suspects
         self.__issue_id = issue_id
 
@@ -178,7 +178,7 @@ class RawSuspectTuple:
     ) -> None:
         self.__fixing_commit = fixing_commit
         self.__non_suspects = non_suspects
-        self.__cleared_suspects = set()
+        self.__cleared_suspects: tp.Set[str] = set()
         self.__uncleared_suspects = uncleared_suspects
         self.__issue_id = issue_id
 
