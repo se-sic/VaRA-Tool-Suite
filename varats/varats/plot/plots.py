@@ -7,7 +7,6 @@ from pathlib import Path
 
 import click
 
-from varats.mapping.commit_map import create_lazy_commit_map_loader
 from varats.plot.plot_utils import check_required_args
 from varats.utils.cli_util import make_cli_option, CLIOptionTy, add_cli_options
 from varats.utils.settings import vara_cfg
@@ -71,122 +70,6 @@ class PlotRegistry(abc.ABCMeta):
         if not issubclass(plot_cls, Plot):
             raise AssertionError()
         return plot_cls
-
-
-def build_plots(**args: tp.Any) -> None:
-    """
-    Build the specfied plot(s).
-
-    Args:
-        **args: the arguments for the plot(s)
-    """
-    for plot in prepare_plots(**args):
-        build_plot(plot)
-
-
-def build_plot(plot: 'varats.plot.plot.Plot') -> None:
-    """
-    Builds the given plot.
-
-    Args:
-        plot: the plot to build
-    """
-    if plot.plot_kwargs["view"]:
-        plot.show()
-    else:
-        plot.save(filetype=plot.plot_kwargs['file_type'])
-
-
-@check_required_args('plot_type', 'sep_stages')
-def prepare_plot(**kwargs: tp.Any) -> 'varats.plot.plot.Plot':
-    """
-    Instantiate a plot with the given args.
-
-    Args:
-        **kwargs: the arguments for the plot
-
-    Returns:
-        the instantiated plot
-    """
-    plot_type = PlotRegistry.get_class_for_plot_type(kwargs['plot_type'])
-
-    if kwargs['sep_stages'] and not plot_type.supports_stage_separation():
-        LOG.warning(
-            f"{kwargs['plot_type']} does not support stage "
-            "separation but separation flag '--sep-stages' was set."
-        )
-
-    plot = plot_type(**kwargs)
-    plot.style = "ggplot"
-    return plot
-
-
-def prepare_plots(**args: tp.Any) -> tp.Iterable['varats.plot.plot.Plot']:
-    """
-    Instantiate the specified plot(s).
-
-    First, compute missing arguments that are needed by most plots.
-
-    Args:
-        **args: the arguments for the plot(s)
-
-    Returns:
-        an iterable of instantiated plots
-    """
-    # pylint: disable=C0415
-    from varats.paper.case_study import load_case_study_from_file
-    from varats.paper_mgmt.paper_config import get_paper_config
-    # pylint: enable=C0415
-
-    # Setup default result folder
-    if 'result_output' not in args:
-        args['plot_dir'] = str(vara_cfg()['plots']['plot_dir'])
-    else:
-        args['plot_dir'] = args['result_output']
-        del args['result_output']  # clear parameter
-
-    if not Path(args['plot_dir']).exists():
-        LOG.error(f"Could not find output dir {args['plot_dir']}")
-        return []
-
-    if 'file_type' not in args:
-        args['file_type'] = 'png'
-    if 'view' not in args:
-        args['view'] = False
-    if 'sep_stages' not in args:
-        args['sep_stages'] = False
-    if 'paper_config' not in args:
-        args['paper_config'] = False
-
-    LOG.info(f"Writing plots to: {args['plot_dir']}")
-
-    args['plot_case_study'] = None
-
-    if args['paper_config']:
-        plots: tp.List['varats.plot.plot.Plot'] = []
-        paper_config = get_paper_config()
-        for case_study in paper_config.get_all_case_studies():
-            project_name = case_study.project_name
-            args['project'] = project_name
-            args['get_cmap'] = create_lazy_commit_map_loader(
-                project_name, args.get('cmap', None)
-            )
-            args['plot_case_study'] = case_study
-            plots.append(prepare_plot(**args))
-        return plots
-
-    if 'project' in args:
-        args['get_cmap'] = create_lazy_commit_map_loader(
-            args['project'], args.get('cmap', None)
-        )
-    if 'cs_path' in args:
-        case_study_path = Path(args['cs_path'])
-        args['plot_case_study'] = load_case_study_from_file(case_study_path)
-
-    return [prepare_plot(**args)]
-
-
-# New plot generation begins here ----------------------------------------------
 
 
 class CommonPlotOptions():
