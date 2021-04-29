@@ -55,7 +55,7 @@ class TableRegistry(type):
         Returns:
             the class implementing the table
         """
-        from varats.table.table import Table  # pylint: disable=C0415
+        from varats.table import Table  # pylint: disable=C0415
         if table_type not in TableRegistry.tables:
             raise LookupError(
                 f"Unknown table '{table_type}'.\n" +
@@ -141,7 +141,7 @@ def prepare_tables(**args: tp.Any) -> tp.Iterable['table.Table']:
     if 'view' not in args:
         args['view'] = False
     if 'output-format' not in args:
-        from varats.table.table import TableFormat  # pylint: disable=C0415
+        from varats.table import TableFormat  # pylint: disable=C0415
         if args['view']:
             args['output-format'] = TableFormat.fancy_grid
         else:

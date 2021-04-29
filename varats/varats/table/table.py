@@ -8,7 +8,7 @@ from pathlib import Path
 from pylatex import Document, Package, NoEscape, UnsafeCommand
 
 from varats.paper.case_study import CaseStudy
-from varats.table.tables import TableRegistry
+from varats.table import TableRegistry
 
 
 class TableFormat(Enum):
