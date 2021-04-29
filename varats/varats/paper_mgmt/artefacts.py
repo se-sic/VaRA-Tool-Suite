@@ -17,7 +17,7 @@ from pathlib import Path
 
 from varats.base.version_header import VersionHeader
 from varats.plot.plot import Plot
-from varats.plot.plots import PlotRegistry, build_plots
+from varats.plot.plots import build_plots
 from varats.table.table import TableFormat, Table
 from varats.table.tables import TableRegistry, build_tables
 from varats.utils.settings import vara_cfg
@@ -115,7 +115,7 @@ class PlotArtefact(Artefact):
     ) -> None:
         super().__init__(ArtefactType.plot, name, output_path)
         self.__plot_type = plot_type
-        self.__plot_type_class = PlotRegistry.get_class_for_plot_type(plot_type)
+        self.__plot_type_class = Plot.get_class_for_plot_type(plot_type)
         self.__file_format = file_format
         self.__plot_kwargs = kwargs
 

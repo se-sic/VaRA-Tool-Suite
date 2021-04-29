@@ -1,7 +1,6 @@
 """General plots module."""
 import abc
 import logging
-import re
 import typing as tp
 from pathlib import Path
 
@@ -15,61 +14,6 @@ if tp.TYPE_CHECKING:
     import varats.plot.plot  # pylint: disable=W0611
 
 LOG = logging.getLogger(__name__)
-
-
-class PlotRegistry(abc.ABCMeta):
-    """Registry for all supported plots."""
-
-    to_snake_case_pattern = re.compile(r'(?<!^)(?=[A-Z])')
-
-    plots: tp.Dict[str, tp.Type[tp.Any]] = {}
-    plots_discovered = False
-
-    def __init__(
-        cls, name: str, bases: tp.Tuple[tp.Any], attrs: tp.Dict[tp.Any, tp.Any]
-    ):
-        super(PlotRegistry, cls).__init__(name, bases, attrs)
-        if hasattr(cls, 'NAME'):
-            key = getattr(cls, 'NAME')
-        else:
-            key = PlotRegistry.to_snake_case_pattern.sub('_', name).lower()
-        PlotRegistry.plots[key] = cls
-
-    @staticmethod
-    def get_plot_types_help_string() -> str:
-        """
-        Generates help string for visualizing all available plots.
-
-        Returns:
-            a help string that contains all available plot names.
-        """
-        return "The following plots are available:\n  " + "\n  ".join([
-            key for key in PlotRegistry.plots if key != "plot"
-        ])
-
-    @staticmethod
-    def get_class_for_plot_type(
-        plot_type: str
-    ) -> tp.Type['varats.plot.plot.Plot']:
-        """
-        Get the class for plot from the plot registry.
-
-        Args:
-            plot_type: The name of the plot.
-
-        Returns: The class implementing the plot.
-        """
-        from varats.plot.plot import Plot  # pylint: disable=W0611
-        if plot_type not in PlotRegistry.plots:
-            raise LookupError(
-                f"Unknown plot '{plot_type}'.\n" +
-                PlotRegistry.get_plot_types_help_string()
-            )
-
-        plot_cls = PlotRegistry.plots[plot_type]
-        if not issubclass(plot_cls, Plot):
-            raise AssertionError()
-        return plot_cls
 
 
 class CommonPlotOptions():

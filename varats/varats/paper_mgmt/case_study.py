@@ -18,8 +18,8 @@ from varats.base.sampling_method import (
 )
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
+from varats.plot.plot import Plot
 from varats.plot.plot_utils import check_required_args
-from varats.plot.plots import PlotRegistry
 from varats.project.project_util import get_project_cls_by_name
 from varats.provider.release.release_provider import ReleaseProvider
 from varats.report.report import FileStatusExtension, MetaReport
@@ -501,7 +501,7 @@ def extend_with_smooth_revs(
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
     """
-    plot_type = PlotRegistry.get_class_for_plot_type(kwargs['plot_type'])
+    plot_type = Plot.get_class_for_plot_type(kwargs['plot_type'])
 
     kwargs['plot_case_study'] = case_study
     kwargs['cmap'] = cmap
