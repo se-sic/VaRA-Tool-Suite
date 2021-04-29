@@ -5,7 +5,6 @@ import typing as tp
 import pydriller
 import pygit2
 from github import Github
-from github.Issue import Issue
 from github.IssueEvent import IssueEvent
 from github.Repository import Repository
 
@@ -148,8 +147,7 @@ class PygitSuspectTuple:
         """
         if self.is_cleared():
             raise ValueError
-        else:
-            return self.__uncleared_suspects.pop()
+        return self.__uncleared_suspects.pop()
 
     def clear_suspect(self, cleared_suspect: pygit2.Commit) -> None:
         """Adds parameter cleared_suspect to cleared suspects."""
@@ -204,8 +202,7 @@ class RawSuspectTuple:
         """
         if self.is_cleared():
             raise ValueError
-        else:
-            return self.__uncleared_suspects.pop()
+        return self.__uncleared_suspects.pop()
 
     def clear_suspect(self, cleared_suspect: str) -> None:
         """Adds parameter cleared_suspect to cleared suspects."""
@@ -326,7 +323,6 @@ def _create_corresponding_pygit_bug(
         closing_commit
     )
     introducing_pycommits: tp.Set[pygit2.Commit] = set()
-    suspect_pycommits: tp.Set[pygit2.Commit] = set()
 
     blame_dict = pydrill_repo.get_commits_last_modified_lines(
         pydrill_repo.get_commit(closing_commit)
@@ -361,7 +357,6 @@ def _create_corresponding_raw_bug(
     pydrill_repo = pydriller.GitRepository(project_repo.path)
 
     introducing_ids: tp.Set[str] = set()
-    suspect_ids: tp.Set[str] = set()
 
     blame_dict = pydrill_repo.get_commits_last_modified_lines(
         pydrill_repo.get_commit(closing_commit)
@@ -421,8 +416,7 @@ def _find_corresponding_pygit_suspect_tuple(
             fixing_commit, non_suspect_commits, suspect_commits,
             issue_event.issue.number
         )
-    else:
-        return None
+    return None
 
 
 def _find_corresponding_raw_suspect_tuple(
@@ -470,8 +464,7 @@ def _find_corresponding_raw_suspect_tuple(
             fixing_commit, non_suspect_commits, suspect_commits,
             issue_event.issue.number
         )
-    else:
-        return None
+    return None
 
 
 def _filter_all_issue_pygit_bugs(
