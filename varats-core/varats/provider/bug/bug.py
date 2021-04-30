@@ -140,11 +140,7 @@ class PygitSuspectTuple:
         return len(self.__uncleared_suspects) == 0
 
     def extract_next_uncleared_suspect(self) -> pygit2.Commit:
-        """
-        Extracts one uncleared suspect from the set and returns it.
-
-        Returns None if the set is empty.
-        """
+        """Extracts one uncleared suspect from the set and returns it."""
         if self.is_cleared():
             raise ValueError
         return self.__uncleared_suspects.pop()
@@ -195,11 +191,7 @@ class RawSuspectTuple:
         return len(self.__uncleared_suspects) == 0
 
     def extract_next_uncleared_suspect(self) -> str:
-        """
-        Extracts one uncleared suspect from the set and returns it.
-
-        Returns None if the set is empty.
-        """
+        """Extracts one uncleared suspect from the set and returns it."""
         if self.is_cleared():
             raise ValueError
         return self.__uncleared_suspects.pop()
@@ -502,16 +494,24 @@ def _filter_all_issue_pygit_bugs(
     for suspect_tuple in suspect_tuples:
         while not suspect_tuple.is_cleared():  # iterate over uncleared suspects
             suspect = suspect_tuple.extract_next_uncleared_suspect()
+            partial_fix = False
+            weak_suspect = False
 
             # partial fix?
             for other_tuple in suspect_tuples:
                 if suspect == other_tuple.fixing_commit:
-                    suspect_tuple.clear_suspect(suspect)
+                    partial_fix = True
+                    break
 
             # weak suspect?
-            for other_tuple in suspect_tuples:
-                if suspect in other_tuple.non_suspects:
-                    suspect_tuple.clear_suspect(suspect)
+            if not partial_fix:
+                for other_tuple in suspect_tuples:
+                    if suspect in other_tuple.non_suspects:
+                        weak_suspect = True
+                        break
+
+            if partial_fix or weak_suspect:
+                suspect_tuple.clear_suspect(suspect)
 
         pygit_bug = suspect_filter_function(suspect_tuple)
         if pygit_bug:
@@ -554,16 +554,24 @@ def _filter_all_issue_raw_bugs(
     for suspect_tuple in suspect_tuples:
         while not suspect_tuple.is_cleared():  # iterate over uncleared suspects
             suspect = suspect_tuple.extract_next_uncleared_suspect()
+            partial_fix = False
+            weak_suspect = False
 
             # partial fix?
             for other_tuple in suspect_tuples:
                 if suspect == other_tuple.fixing_commit:
-                    suspect_tuple.clear_suspect(suspect)
+                    partial_fix = True
+                    break
 
             # weak suspect?
-            for other_tuple in suspect_tuples:
-                if suspect in other_tuple.non_suspects:
-                    suspect_tuple.clear_suspect(suspect)
+            if not partial_fix:
+                for other_tuple in suspect_tuples:
+                    if suspect in other_tuple.non_suspects:
+                        weak_suspect = True
+                        break
+
+            if partial_fix or weak_suspect:
+                suspect_tuple.clear_suspect(suspect)
 
         raw_bug = suspect_filter_function(suspect_tuple)
         if raw_bug:
