@@ -32,7 +32,7 @@ LOG = logging.getLogger(__name__)
 @click.option(
     "-v",
     "--view",
-    type=bool,
+    is_flag=True,
     help="View the plot instead of saving it to a file."
 )
 @click.option(
