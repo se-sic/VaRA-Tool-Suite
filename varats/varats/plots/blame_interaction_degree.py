@@ -17,8 +17,11 @@ from benchbuild.utils.cmd import mkdir
 from graphviz import Digraph  # type: ignore
 from matplotlib import cm
 from plotly import graph_objs as go  # type: ignore
-from plotly import io as pio
+from plotly import io as pio  # type: ignore
 
+from varats.data.databases.blame_diff_library_interaction_database import (
+    BlameDiffLibraryInteractionDatabase,
+)
 from varats.data.databases.blame_interaction_degree_database import (
     BlameInteractionDegreeDatabase,
     DegreeType,
@@ -304,7 +307,6 @@ def _plot_fraction_overview(
     with_churn: bool, unique_revisions: tp.List[str],
     plot_cfg: tp.Dict[str, tp.Any], plot_kwargs: tp.Dict[str, tp.Any]
 ) -> None:
-
     fig = plt.figure()
     grid_spec = fig.add_gridspec(3, 1)
     out_axis = fig.add_subplot(grid_spec[0, :])
@@ -537,12 +539,12 @@ def _save_figure(
     padded_idx_str = str(revision_idx).rjust(max_idx_digit_num, str(0))
 
     if path is None:
-        plot_dir = plot_kwargs["plot_dir"]
+        plot_dir = Path(plot_kwargs["plot_dir"])
     else:
         plot_dir = path
 
     file_name = plot_file_name.rsplit('.', 1)[0]
-    plot_subdir = plot_kwargs["plot_type"]
+    plot_subdir = Path(plot_kwargs["plot_type"])
 
     with pb.local.cwd(plot_dir):
         if not isdir(plot_subdir):
@@ -553,7 +555,7 @@ def _save_figure(
 
         pio.write_image(
             fig=figure,
-            file=str(plot_dir) + "/" + plot_subdir + "/" + file_name,
+            file=str(plot_dir / plot_subdir / file_name),
             format=filetype
         )
 
@@ -561,8 +563,8 @@ def _save_figure(
         file_name = f"{file_name}_{padded_idx_str}"
 
         figure.render(
-            filename=str(plot_dir) + "/" + plot_subdir + "/" + file_name,
-            directory=plot_dir,
+            filename=file_name,
+            directory=str(plot_dir / plot_subdir),
             format=filetype,
             cleanup=True
         )
@@ -672,6 +674,34 @@ def _build_sankey_figure(
     return fig
 
 
+def _add_diff_amount_col_to_df(
+    inter_df: pd.DataFrame, diff_df: pd.DataFrame
+) -> pd.DataFrame:
+    """Adds the ``amount`` of rows from ``diff_df`` to the same rows of
+    ``inter_df`` in a new column named ``diff_amount``."""
+
+    merged_df = pd.merge(
+        inter_df,
+        diff_df,
+        on=[
+            "revision", "time_id", "base_hash", "base_lib", "inter_hash",
+            "inter_lib"
+        ],
+        how='left',
+        indicator="diff_amount"
+    )
+
+    # Adds the amount from diff_df to rows that exist in both dataframes
+    merged_df['diff_amount'] = np.where(
+        merged_df.diff_amount == 'both', merged_df.amount_y, 0
+    )
+
+    merged_df.rename(columns={"amount_x": "amount"}, inplace=True)
+    del merged_df["amount_y"]
+
+    return merged_df
+
+
 def _get_completed_c_hash(
     df: pd.DataFrame, show_only_interactions_of_commit: str
 ) -> str:
@@ -738,16 +768,28 @@ def _build_graphviz_edges(
             continue
 
         label = None
+        color = "black"
         weight = row['amount']
+
+        if 'diff_amount' in row:
+            diff_weight = int(row['diff_amount'])
+        else:
+            diff_weight = 0
 
         if not edge_weight_threshold or weight >= edge_weight_threshold.value:
             if show_edge_weight:
                 label = str(weight)
 
+            if diff_weight > 0:
+                color = "orange"
+                plus_minus = u'\u00b1'
+                label = f"{label} ({plus_minus}{str(diff_weight)})"
+
             graph.edge(
                 f'{base_hash}_{base_lib}',
                 f'{inter_hash}_{inter_lib}',
-                label=label
+                label=label,
+                color=color
             )
 
         lib_to_hashes_mapping[base_lib].append(base_hash)
@@ -762,11 +804,17 @@ def _build_graphviz_fig(
     show_edge_weight: bool,
     shown_revision_length: int,
     edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
-    show_only_interactions_of_commit: tp.Optional[str] = None,
+    layout_engine: str = 'fdp',
+    show_only_interactions_of_commit: tp.Optional[str] = None
 ) -> Digraph:
-    graph = Digraph(name="Digraph", strict=True)
+    graph = Digraph(name="Digraph", strict=True, engine=layout_engine)
     graph.attr(label=f"Revision: {revision}")
     graph.attr(labelloc="t")
+
+    if layout_engine == "fdp":
+        graph.attr(splines="True")
+        graph.attr(overlap="False")
+        graph.attr(nodesep="1")
 
     lib_to_hashes_mapping = _build_graphviz_edges(
         df, graph, show_edge_weight, edge_weight_threshold,
@@ -807,20 +855,33 @@ class BlameLibraryInteraction(Plot):
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
 
-    def _get_interaction_data(self) -> pd.DataFrame:
+    def _get_interaction_data(self, blame_diff: bool = False) -> pd.DataFrame:
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
         case_study = self.plot_kwargs.get('plot_case_study', None)
         project_name = self.plot_kwargs["project"]
-        lib_interaction_df = \
-            BlameLibraryInteractionsDatabase.get_data_for_project(
-                project_name, ["revision", "time_id", "base_hash", "base_lib",
-                               "inter_hash", "inter_lib", "amount"],
-                commit_map, case_study)
+
+        variables = [
+            "time_id", "base_hash", "base_lib", "inter_hash", "inter_lib",
+            "amount"
+        ]
+
+        if blame_diff:
+            lib_interaction_df = \
+                BlameDiffLibraryInteractionDatabase.get_data_for_project(
+                    project_name, ["revision", *variables], commit_map,
+                    case_study
+                )
+        else:
+            lib_interaction_df = \
+                BlameLibraryInteractionsDatabase.get_data_for_project(
+                    project_name, ["revision", *variables], commit_map,
+                    case_study
+                )
 
         length = len(np.unique(lib_interaction_df['revision']))
         is_empty = lib_interaction_df.empty
 
-        if is_empty or length == 1:
+        if not blame_diff and (is_empty or length == 1):
             # Need more than one data point
             raise PlotDataEmpty
         return lib_interaction_df
@@ -828,15 +889,41 @@ class BlameLibraryInteraction(Plot):
     def _graphviz_plot(
         self,
         view_mode: bool,
+        show_blame_interactions: bool = True,
+        show_blame_diff: bool = False,
         show_edge_weight: bool = False,
         shown_revision_length: int = 10,
         edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
+        layout_engine: str = 'fdp',
         show_only_interactions_of_commit: tp.Optional[str] = None,
         save_path: tp.Optional[Path] = None,
-        filetype: str = 'pdf'
+        filetype: str = 'png'
     ) -> tp.Optional[Digraph]:
 
-        df = self._get_interaction_data()
+        def _get_graphviz_project_data(
+            blame_interactions: bool, blame_diff: bool
+        ) -> pd.DataFrame:
+            if not blame_interactions and not blame_diff:
+                LOG.warning(
+                    "You have to set either 'show_blame_interactions', "
+                    "'show_blame_diff', or both to 'True'. Aborting."
+                )
+                raise PlotDataEmpty
+
+            if blame_interactions:
+                inter_df = self._get_interaction_data(False)
+            else:
+                inter_df = self._get_interaction_data(True)
+
+            if blame_diff:
+                diff_df = self._get_interaction_data(True)
+                return _add_diff_amount_col_to_df(inter_df, diff_df)
+
+            return inter_df
+
+        df = _get_graphviz_project_data(
+            show_blame_interactions, show_blame_diff
+        )
         df.sort_values(by=['time_id'], inplace=True)
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
         df.reset_index(inplace=True)
@@ -851,7 +938,8 @@ class BlameLibraryInteraction(Plot):
             dataframe = df.loc[df['revision'] == rev]
             fig = _build_graphviz_fig(
                 dataframe, rev, show_edge_weight, shown_revision_length,
-                edge_weight_threshold, show_only_interactions_of_commit
+                edge_weight_threshold, layout_engine,
+                show_only_interactions_of_commit
             )
 
             if view_mode and 'revision' in self.plot_kwargs:
@@ -1245,6 +1333,8 @@ class BlameInteractionDegree(BlameDegree):
             'legend_title': 'Interaction degrees',
             'fig_title': 'Blame interactions'
         }
+        # TODO (se-passau/VaRA#545): make params configurable in user call
+        #  with plot config rework
         self._degree_plot(view_mode, DegreeType.interaction, extra_plot_cfg)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
@@ -1281,6 +1371,8 @@ class BlameInteractionDegreeMultiLib(BlameDegree):
             'base_lib': base_lib,
             'inter_lib': inter_lib
         }
+        # TODO (se-passau/VaRA#545): make params configurable in user call
+        #  with plot config rework
         self._multi_lib_degree_plot(
             view_mode, DegreeType.interaction, extra_plot_cfg
         )
@@ -1305,6 +1397,8 @@ class BlameInteractionFractionOverview(BlameDegree):
             'legend_title': 'Fraction ratio',
             'fig_title': 'Distribution of fractions'
         }
+        # TODO (se-passau/VaRA#545): make params configurable in user call
+        #  with plot config rework
         self._fraction_overview_plot(
             view_mode, DegreeType.interaction, extra_plot_cfg
         )
@@ -1350,6 +1444,8 @@ class BlameLibraryInteractions(BlameDegree):
             'width': 1500,
             'height': 1000
         }
+        # TODO (se-passau/VaRA#545): make params configurable in user call
+        #  with plot config rework
         self.__figure = self._multi_lib_interaction_sankey_plot(
             view_mode, DegreeType.interaction, extra_plot_cfg, filetype='png'
         )
@@ -1383,7 +1479,9 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
     Plotting the interactions between all commits of multiple libraries.
 
     To view one plot, select view_mode=True and pass the selected revision as
-    key-value pair after the plot name. E.g., revision=Foo
+    key-value pair after the plot name. E.g., revision=Foo. When the layout
+    engine fdp is chosen, the additional graph attributes 'splines=True',
+    'overlap=False', and 'nodesep=1' are added.
     """
 
     NAME = 'b_multi_lib_interaction_graphviz'
@@ -1402,9 +1500,10 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
                 "View mode is turned off. The specified revision will be "
                 "ignored."
             )
+        # TODO (se-passau/VaRA#545): make params configurable in user call
+        #  with plot config rework
         self.__graph = self._graphviz_plot(
-            view_mode=view_mode,
-            show_edge_weight=True,
+            view_mode=view_mode, show_edge_weight=True
         )
 
     def show(self) -> None:
@@ -1441,6 +1540,8 @@ class BlameAuthorDegree(BlameDegree):
             'legend_title': 'Author interaction degrees',
             'fig_title': 'Author blame interactions'
         }
+        # TODO (se-passau/VaRA#545): make params configurable in user call
+        #  with plot config rework
         self._degree_plot(view_mode, DegreeType.author, extra_plot_cfg)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
@@ -1464,6 +1565,8 @@ class BlameMaxTimeDistribution(BlameDegree):
             'fig_title': 'Max time distribution',
             'edgecolor': None,
         }
+        # TODO (se-passau/VaRA#545): make params configurable in user call
+        #  with plot config rework
         self._degree_plot(view_mode, DegreeType.max_time, extra_plot_cfg)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
@@ -1487,6 +1590,8 @@ class BlameAvgTimeDistribution(BlameDegree):
             'fig_title': 'Average time distribution',
             'edgecolor': None,
         }
+        # TODO (se-passau/VaRA#545): make params configurable in user call
+        #  with plot config rework
         self._degree_plot(view_mode, DegreeType.avg_time, extra_plot_cfg)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
