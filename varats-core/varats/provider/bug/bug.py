@@ -1,6 +1,7 @@
 """Bug Classes used by bug_provider."""
 
 import typing as tp
+from datetime import datetime
 
 import pydriller
 import pygit2
@@ -22,49 +23,6 @@ if tp.TYPE_CHECKING:
     from github.PaginatedList import PaginatedList
 
 
-class RawBug:
-    """Bug representation using the Commit Hashes as Strings."""
-
-    def __init__(
-        self,
-        fixing_commit: str,
-        introducing_commits: tp.Set[str],
-        issue_id: tp.Optional[int] = None
-    ) -> None:
-        self.__fixing_commit = fixing_commit
-        self.__introducing_commits = frozenset(introducing_commits)
-        self.__issue_id = issue_id
-
-    @property
-    def fixing_commit(self) -> str:
-        """Hash of the commit fixing the bug as string."""
-        return self.__fixing_commit
-
-    @property
-    def introducing_commits(self) -> tp.FrozenSet[str]:
-        """Hashes of the commits introducing the bug as List of strings."""
-        return self.__introducing_commits
-
-    @property
-    def issue_id(self) -> tp.Optional[int]:
-        """ID of the issue associated with the bug, if there is one."""
-        return self.__issue_id
-
-    def __eq__(self, other: object) -> bool:
-        if isinstance(other, RawBug):
-            return (
-                self.fixing_commit == other.fixing_commit and
-                self.introducing_commits == other.introducing_commits and
-                self.issue_id == other.issue_id
-            )
-        return False
-
-    def __hash__(self) -> int:
-        return hash(
-            (self.fixing_commit, self.introducing_commits, self.issue_id)
-        )
-
-
 class PygitBug:
     """Bug representation using the ``pygit2.Commit`` class."""
 
@@ -72,11 +30,15 @@ class PygitBug:
         self,
         fixing_commit: pygit2.Commit,
         introducing_commits: tp.Set[pygit2.Commit],
-        issue_id: tp.Optional[int] = None
+        issue_id: tp.Optional[int] = None,
+        creationdate: tp.Optional[datetime] = None,
+        resolutiondate: tp.Optional[datetime] = None
     ) -> None:
         self.__fixing_commit = fixing_commit
         self.__introducing_commits = frozenset(introducing_commits)
         self.__issue_id = issue_id
+        self.__creationdate = creationdate
+        self.__resolutiondate = resolutiondate
 
     @property
     def fixing_commit(self) -> pygit2.Commit:
@@ -93,18 +55,86 @@ class PygitBug:
         """ID of the issue associated with the bug, if there is one."""
         return self.__issue_id
 
-    def convert_to_raw_bug(self) -> RawBug:
+    @property
+    def creationdate(self) -> tp.Optional[datetime]:
+        """Creation date of the associated issue, if there is one."""
+        return self.__creationdate
+
+    @property
+    def resolutiondate(self) -> tp.Optional[datetime]:
+        """Resolution date of the associated issue, if there is one."""
+        return self.__resolutiondate
+
+    def convert_to_raw_bug(self) -> 'RawBug':
         """Uses hashes of own pygit2 Commits to create the corresponding
         RawBug."""
         introducing_commits: tp.Set[str] = set()
         for intro_pycommit in self.__introducing_commits:
             introducing_commits.add(intro_pycommit.hex)
         return RawBug(
-            self.__fixing_commit.hex, introducing_commits, self.__issue_id
+            self.__fixing_commit.hex, introducing_commits, self.__issue_id,
+            self.__creationdate, self.__resolutiondate
         )
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, PygitBug):
+            return (
+                self.fixing_commit == other.fixing_commit and
+                self.introducing_commits == other.introducing_commits and
+                self.issue_id == other.issue_id
+            )
+        return False
+
+    def __hash__(self) -> int:
+        return hash(
+            (self.fixing_commit, self.introducing_commits, self.issue_id)
+        )
+
+
+class RawBug:
+    """Bug representation using the Commit Hashes as Strings."""
+
+    def __init__(
+        self,
+        fixing_commit: str,
+        introducing_commits: tp.Set[str],
+        issue_id: tp.Optional[int] = None,
+        creationdate: tp.Optional[datetime] = None,
+        resolutiondate: tp.Optional[datetime] = None
+    ) -> None:
+        self.__fixing_commit = fixing_commit
+        self.__introducing_commits = frozenset(introducing_commits)
+        self.__issue_id = issue_id
+        self.__creationdate = creationdate
+        self.__resolutiondate = resolutiondate
+
+    @property
+    def fixing_commit(self) -> str:
+        """Hash of the commit fixing the bug as string."""
+        return self.__fixing_commit
+
+    @property
+    def introducing_commits(self) -> tp.FrozenSet[str]:
+        """Hashes of the commits introducing the bug as List of strings."""
+        return self.__introducing_commits
+
+    @property
+    def issue_id(self) -> tp.Optional[int]:
+        """ID of the issue associated with the bug, if there is one."""
+        return self.__issue_id
+
+    @property
+    def creationdate(self) -> tp.Optional[datetime]:
+        """Creation date of the associated issue, if there is one."""
+        return self.__creationdate
+
+    @property
+    def resolutiondate(self) -> tp.Optional[datetime]:
+        """Resolution date of the associated issue, if there is one."""
+        return self.__resolutiondate
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, RawBug):
             return (
                 self.fixing_commit == other.fixing_commit and
                 self.introducing_commits == other.introducing_commits and
@@ -127,13 +157,16 @@ class PygitSuspectTuple:
 
     def __init__(
         self, fixing_commit: pygit2.Commit, non_suspects: tp.Set[pygit2.Commit],
-        uncleared_suspects: tp.Set[pygit2.Commit], issue_id: int
+        uncleared_suspects: tp.Set[pygit2.Commit], issue_id: int,
+        creationdate: datetime, resolutiondate: datetime
     ) -> None:
         self.__fixing_commit = fixing_commit
         self.__non_suspects = non_suspects
         self.__cleared_suspects: tp.Set[pygit2.Commit] = set()
         self.__uncleared_suspects = uncleared_suspects
         self.__issue_id = issue_id
+        self.__creationdate = creationdate
+        self.__resolutiondate = resolutiondate
 
     @property
     def fixing_commit(self) -> pygit2.Commit:
@@ -165,7 +198,8 @@ class PygitSuspectTuple:
             raise ValueError
         introducing_commits = self.__non_suspects.union(self.__cleared_suspects)
         return PygitBug(
-            self.__fixing_commit, introducing_commits, self.__issue_id
+            self.__fixing_commit, introducing_commits, self.__issue_id,
+            self.__creationdate, self.__resolutiondate
         )
 
 
@@ -253,7 +287,9 @@ def _get_all_issue_events(project_name: str) -> tp.List[IssueEvent]:
 def _create_corresponding_pygit_bug(
     closing_commit: str,
     project_repo: pygit2.Repository,
-    issue_id: tp.Optional[int] = None
+    issue_id: tp.Optional[int] = None,
+    creationdate: tp.Optional[datetime] = None,
+    resolutiondate: tp.Optional[datetime] = None
 ) -> PygitBug:
     """
     Returns the PygitBug corresponding to a given closing commit. Applies simple
@@ -285,7 +321,10 @@ def _create_corresponding_pygit_bug(
                 project_repo.revparse_single(introducing_id)
             )
 
-    return PygitBug(closing_pycommit, introducing_pycommits, issue_id)
+    return PygitBug(
+        closing_pycommit, introducing_pycommits, issue_id, creationdate,
+        resolutiondate
+    )
 
 
 def _find_corresponding_pygit_suspect_tuple(
@@ -311,8 +350,9 @@ def _find_corresponding_pygit_suspect_tuple(
 
     if _has_closed_a_bug(issue_event) and issue_event.commit_id:
         fixing_commit = pygit_repo.revparse_single(issue_event.commit_id)
+        pydrill_fixing_commit = pydrill_repo.get_commit(issue_event.commit_id)
         blame_dict = pydrill_repo.get_commits_last_modified_lines(
-            pydrill_repo.get_commit(issue_event.commit_id)
+            pydrill_fixing_commit
         )
 
         non_suspect_commits = set()
@@ -334,7 +374,8 @@ def _find_corresponding_pygit_suspect_tuple(
 
         return PygitSuspectTuple(
             fixing_commit, non_suspect_commits, suspect_commits,
-            issue_event.issue.number
+            issue_event.issue.number, issue_event.issue.created_at,
+            pydrill_fixing_commit.committer_date
         )
     return None
 
