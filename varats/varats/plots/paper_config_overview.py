@@ -282,18 +282,18 @@ class PaperConfigOverviewPlot(Plot):
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         revisions = _gen_overview_plot_for_project(**self.plot_kwargs)
-        revisions.sort_values(by=['commit_id'], inplace=True)
+        revisions.sort_values(by=['revision'], inplace=True)
         cmap: CommitMap = self.plot_kwargs['cmap']
 
         def head_cm_neighbours(lhs_cm: str, rhs_cm: str) -> bool:
-            return cmap.time_id(lhs_cm) + 1 == cmap.time_id(rhs_cm)
+            return cmap.short_time_id(lhs_cm) + 1 == cmap.short_time_id(rhs_cm)
 
         def should_insert_revision(last_row: tp.Any,
                                    row: tp.Any) -> tp.Tuple[bool, float]:
-            return last_row["status"] != row["status"], 1.0
+            return last_row["file_status"] != row["file_status"], 1.0
 
         def get_commit_hash(row: tp.Any) -> str:
-            return str(row["commit_hash"])
+            return str(row["revision"])
 
         return find_missing_revisions(
             revisions.iterrows(), Path(self.plot_kwargs['git_path']), cmap,
