@@ -17,6 +17,7 @@ setup(
         "benchbuild>=6.0.1",
         "plumbum>=1.6.6",
         "PyGithub>=1.47",
+        "PyDriller>=1.15.5",
         "tabulate>=0.8.6",
         "requests>=2.23.0",
         "packaging>=20.1",

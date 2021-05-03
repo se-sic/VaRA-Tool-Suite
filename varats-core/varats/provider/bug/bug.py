@@ -1,7 +1,9 @@
 """Bug Classes used by bug_provider."""
 
 import typing as tp
+from datetime import datetime
 
+import pydriller
 import pygit2
 from github import Github
 from github.IssueEvent import IssueEvent
@@ -25,12 +27,18 @@ class PygitBug:
     """Bug representation using the ``pygit2.Commit`` class."""
 
     def __init__(
-        self, fixing_commit: pygit2.Commit,
-        introducing_commits: tp.Set[pygit2.Commit], issue_id: tp.Optional[int]
+        self,
+        fixing_commit: pygit2.Commit,
+        introducing_commits: tp.Set[pygit2.Commit],
+        issue_id: tp.Optional[int],
+        creationdate: tp.Optional[datetime] = None,
+        resolutiondate: tp.Optional[datetime] = None
     ) -> None:
         self.__fixing_commit = fixing_commit
         self.__introducing_commits = frozenset(introducing_commits)
         self.__issue_id = issue_id
+        self.__creationdate = creationdate
+        self.__resolutiondate = resolutiondate
 
     @property
     def fixing_commit(self) -> pygit2.Commit:
@@ -46,6 +54,16 @@ class PygitBug:
     def issue_id(self) -> tp.Optional[int]:
         """ID of the issue associated with the bug, if there is one."""
         return self.__issue_id
+
+    @property
+    def creationdate(self) -> tp.Optional[datetime]:
+        """Creation date of the associated issue, if there is one."""
+        return self.__creationdate
+
+    @property
+    def resolutiondate(self) -> tp.Optional[datetime]:
+        """Resolution date of the associated issue, if there is one."""
+        return self.__resolutiondate
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, PygitBug):
@@ -66,12 +84,18 @@ class RawBug:
     """Bug representation using the Commit Hashes as Strings."""
 
     def __init__(
-        self, fixing_commit: str, introducing_commits: tp.Set[str],
-        issue_id: tp.Optional[int]
+        self,
+        fixing_commit: str,
+        introducing_commits: tp.Set[str],
+        issue_id: tp.Optional[int],
+        creationdate: tp.Optional[datetime] = None,
+        resolutiondate: tp.Optional[datetime] = None
     ) -> None:
         self.__fixing_commit = fixing_commit
         self.__introducing_commits = frozenset(introducing_commits)
         self.__issue_id = issue_id
+        self.__creationdate = creationdate
+        self.__resolutiondate = resolutiondate
 
     @property
     def fixing_commit(self) -> str:
@@ -87,6 +111,16 @@ class RawBug:
     def issue_id(self) -> tp.Optional[int]:
         """ID of the issue associated with the bug, if there is one."""
         return self.__issue_id
+
+    @property
+    def creationdate(self) -> tp.Optional[datetime]:
+        """Creation date of the associated issue, if there is one."""
+        return self.__creationdate
+
+    @property
+    def resolutiondate(self) -> tp.Optional[datetime]:
+        """Resolution date of the associated issue, if there is one."""
+        return self.__resolutiondate
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, RawBug):
@@ -187,10 +221,13 @@ def _get_all_issue_events(project_name: str) -> tp.List[IssueEvent]:
 def _create_corresponding_pygit_bug(
     closing_commit: str,
     project_repo: pygit2.Repository,
-    issue_number: tp.Optional[int] = None
+    issue_number: tp.Optional[int] = None,
+    creationdate: tp.Optional[datetime] = None,
+    resolutiondate: tp.Optional[datetime] = None
 ) -> PygitBug:
     """
-    Returns the PygitBug corresponding to a given closing commit.
+    Returns the PygitBug corresponding to a given closing commit. Applies simple
+    SZZ algorithm to find introducing commits.
 
     Args:
         closing_commit: ID of the commit closing the bug.
@@ -202,23 +239,39 @@ def _create_corresponding_pygit_bug(
         A PygitBug Object or None.
     """
 
+    pydrill_repo = pydriller.GitRepository(project_repo.path)
+
     closing_pycommit: pygit2.Commit = project_repo.revparse_single(
         closing_commit
     )
-
     introducing_pycommits: tp.Set[pygit2.Commit] = set()
-    # TODO find introducing commits
 
-    return PygitBug(closing_pycommit, introducing_pycommits, issue_number)
+    blame_dict = pydrill_repo.get_commits_last_modified_lines(
+        pydrill_repo.get_commit(closing_commit)
+    )
+
+    for _, introducing_set in blame_dict.items():
+        for introducing_id in introducing_set:
+            introducing_pycommits.add(
+                project_repo.revparse_single(introducing_id)
+            )
+
+    return PygitBug(
+        closing_pycommit, introducing_pycommits, issue_number, creationdate,
+        resolutiondate
+    )
 
 
 def _create_corresponding_raw_bug(
     closing_commit: str,
     project_repo: pygit2.Repository,
-    issue_number: tp.Optional[int] = None
+    issue_number: tp.Optional[int] = None,
+    creationdate: tp.Optional[datetime] = None,
+    resolutiondate: tp.Optional[datetime] = None
 ) -> RawBug:
     """
-    Returns the RawBug corresponding to a given closing commit.
+    Returns the RawBug corresponding to a given closing commit. Applies simple
+    SZZ algorithm to find introducing commits.
 
     Args:
         closing_commit: ID of the commit closing the bug.
@@ -229,12 +282,21 @@ def _create_corresponding_raw_bug(
     Returns:
         A RawBug Object or None.
     """
+    pydrill_repo = pydriller.GitRepository(project_repo.path)
 
     introducing_ids: tp.Set[str] = set()
 
-    # TODO find introducing commits
+    blame_dict = pydrill_repo.get_commits_last_modified_lines(
+        pydrill_repo.get_commit(closing_commit)
+    )
 
-    return RawBug(closing_commit, introducing_ids, issue_number)
+    for _, introducing_set in blame_dict.items():
+        introducing_ids.update(introducing_set)
+
+    return RawBug(
+        closing_commit, introducing_ids, issue_number, creationdate,
+        resolutiondate
+    )
 
 
 def _filter_all_issue_pygit_bugs(
@@ -373,7 +435,8 @@ def find_all_issue_pygit_bugs(project_name: str) -> tp.FrozenSet[PygitBug]:
         if _has_closed_a_bug(issue_event) and issue_event.commit_id:
             pygit_repo: pygit2.Repository = get_local_project_git(project_name)
             return _create_corresponding_pygit_bug(
-                issue_event.commit_id, pygit_repo, issue_event.issue.number
+                issue_event.commit_id, pygit_repo, issue_event.issue.number,
+                issue_event.issue.created_at, issue_event.issue.closed_at
             )
         return None
 
@@ -397,7 +460,8 @@ def find_all_issue_raw_bugs(project_name: str) -> tp.FrozenSet[RawBug]:
         if _has_closed_a_bug(issue_event) and issue_event.commit_id:
             pygit_repo: pygit2.Repository = get_local_project_git(project_name)
             return _create_corresponding_raw_bug(
-                issue_event.commit_id, pygit_repo, issue_event.issue.number
+                issue_event.commit_id, pygit_repo, issue_event.issue.number,
+                issue_event.issue.created_at, issue_event.issue.closed_at
             )
         return None
 
@@ -424,7 +488,8 @@ def find_issue_pygit_bugs_by_fix(project_name: str,
         if _has_closed_a_bug(issue_event) and issue_event.commit_id:
             pygit_repo: pygit2.Repository = get_local_project_git(project_name)
             pybug = _create_corresponding_pygit_bug(
-                issue_event.commit_id, pygit_repo, issue_event.issue.number
+                issue_event.commit_id, pygit_repo, issue_event.issue.number,
+                issue_event.issue.created_at, issue_event.issue.closed_at
             )
             if pybug.fixing_commit.hex == fixing_commit:
                 return pybug
@@ -455,7 +520,8 @@ def find_issue_raw_bugs_by_fix(project_name: str,
         if _has_closed_a_bug(issue_event) and issue_event.commit_id:
             pygit_repo: pygit2.Repository = get_local_project_git(project_name)
             rawbug = _create_corresponding_raw_bug(
-                issue_event.commit_id, pygit_repo, issue_event.issue.number
+                issue_event.commit_id, pygit_repo, issue_event.issue.number,
+                issue_event.issue.created_at, issue_event.issue.closed_at
             )
             if rawbug.fixing_commit == fixing_commit:
                 return rawbug
@@ -487,7 +553,8 @@ def find_issue_pygit_bugs_by_introduction(
         if _has_closed_a_bug(issue_event) and issue_event.commit_id:
             pygit_repo = get_local_project_git(project_name)
             pybug = _create_corresponding_pygit_bug(
-                issue_event.commit_id, pygit_repo, issue_event.issue.number
+                issue_event.commit_id, pygit_repo, issue_event.issue.number,
+                issue_event.issue.created_at, issue_event.issue.closed_at
             )
 
             for introducing_pycommit in pybug.introducing_commits:
@@ -522,7 +589,8 @@ def find_issue_raw_bugs_by_introduction(
         if _has_closed_a_bug(issue_event) and issue_event.commit_id:
             pygit_repo: pygit2.Repository = get_local_project_git(project_name)
             rawbug = _create_corresponding_raw_bug(
-                issue_event.commit_id, pygit_repo, issue_event.issue.number
+                issue_event.commit_id, pygit_repo, issue_event.issue.number,
+                issue_event.issue.created_at, issue_event.issue.closed_at
             )
 
             for introducing_id in rawbug.introducing_commits:
