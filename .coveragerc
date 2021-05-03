@@ -9,9 +9,11 @@ source_pkgs = varats
 parallel = True
 
 [paths]
-source =
+varats =
   varats/varats/
   */site-packages/varats/
+varats-core =
+  varats-core/varats/
   */site-packages/varats-core/
 
 [report]
