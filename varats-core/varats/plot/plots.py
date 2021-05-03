@@ -216,13 +216,15 @@ class PlotGenerator(abc.ABC):
     """A plot generator is responsible for generating one or more plots."""
 
     REQUIRE_CASE_STUDY: CLIOptionTy = make_cli_option(
-        "--cs",
+        "-cs"
+        "--case-study",
         required=True,
         metavar="case_study",
         help="The case study to use for the plot."
     )
     REQUIRE_REVISION: CLIOptionTy = make_cli_option(
-        "--rev",
+        "-rev",
+        "--revision",
         required=True,
         metavar="revision",
         help="The revision to use for the plot."
