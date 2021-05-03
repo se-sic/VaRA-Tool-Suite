@@ -16,13 +16,9 @@ from varats.provider.bug.bug import (
     _has_closed_a_bug,
     _is_closing_message,
     _create_corresponding_pygit_bug,
-    _create_corresponding_raw_bug,
-    _filter_all_issue_raw_bugs,
     _filter_all_issue_pygit_bugs,
-    _filter_all_commit_message_raw_bugs,
     _filter_all_commit_message_pygit_bugs,
     PygitSuspectTuple,
-    RawSuspectTuple,
 )
 from varats.provider.bug.bug_provider import BugProvider
 
@@ -34,8 +30,8 @@ class TestBugDetectionStrategies(unittest.TestCase):
     def setUp(self) -> None:
         """Set up repo dummy objects needed for multiple tests."""
 
-        # Method that creates simple pygit2 Commit mocks for given ID
         def mock_revparse(commit_id: str):
+            """Method that creates simple pygit2 Commit mocks for given ID."""
             mock_commit = create_autospec(pygit2.Commit)
             mock_commit.hex = commit_id
             return mock_commit
@@ -220,23 +216,14 @@ class TestBugDetectionStrategies(unittest.TestCase):
             def accept_pybugs(sus_tuple: PygitSuspectTuple):
                 return sus_tuple.create_corresponding_bug()
 
-            # issue filter method for raw bugs
-            def accept_rawbugs(sus_tuple: RawSuspectTuple):
-                return sus_tuple.create_corresponding_bug()
-
             # create set of fixing IDs of found bugs
             pybug_ids = set(
                 pybug.fixing_commit.hex
                 for pybug in _filter_all_issue_pygit_bugs("", accept_pybugs)
             )
-            rawbug_ids = set(
-                rawbug.fixing_commit
-                for rawbug in _filter_all_issue_raw_bugs("", accept_rawbugs)
-            )
             expected_ids = {"1239", "1240"}
 
             self.assertEqual(pybug_ids, expected_ids)
-            self.assertEqual(rawbug_ids, expected_ids)
 
     def test_filter_commit_message_bugs(self):
         """Test on the commit history of a project whether the corresponding set
@@ -288,26 +275,13 @@ class TestBugDetectionStrategies(unittest.TestCase):
                     )
                 return None
 
-            # commit filter method for raw bugs
-            def accept_rawbugs(commit: pygit2.Commit):
-                if _is_closing_message(commit.message):
-                    return _create_corresponding_raw_bug(
-                        commit.hex, self.mock_repo
-                    )
-                return None
-
             pybug_ids = set(
                 pybug.fixing_commit.hex for pybug in
                 _filter_all_commit_message_pygit_bugs("", accept_pybugs)
             )
-            rawbug_ids = set(
-                rawbug.fixing_commit for rawbug in
-                _filter_all_commit_message_raw_bugs("", accept_rawbugs)
-            )
             expected_ids = {"1241", "1244"}
 
             self.assertEqual(pybug_ids, expected_ids)
-            self.assertEqual(rawbug_ids, expected_ids)
 
 
 class TestBugProvider(unittest.TestCase):
