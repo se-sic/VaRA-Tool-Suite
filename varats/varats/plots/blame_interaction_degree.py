@@ -31,6 +31,8 @@ from varats.data.databases.blame_library_interactions_database import (
 )
 from varats.mapping.commit_map import CommitMap
 from varats.plot.plot import Plot, PlotDataEmpty
+from varats.plot.plot_utils import check_required_args
+from varats.plot.plots import PlotGenerator, PlotConfig
 from varats.plots.bug_annotation import draw_bugs
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.repository_churn import draw_code_churn_for_revisions
@@ -1472,6 +1474,25 @@ class BlameLibraryInteractions(BlameDegree):
         return self._calc_missing_revisions(
             DegreeType.interaction, boundary_gradient
         )
+
+
+class SankeyLibraryInteractionsGenerator(
+    PlotGenerator,
+    generator_name="sankey-plot",
+    plot=BlameLibraryInteractions,
+    options=[PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_REVISION]
+):
+
+    @check_required_args("report_type", "revision")
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        super().__init__(plot_config, **plot_kwargs)
+        self.__report_type = plot_kwargs["report_type"]
+        self.__revision = plot_kwargs["revision"]
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            self.PLOT(report_type=self.__report_type, revision=self.__revision)
+        ]
 
 
 class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
