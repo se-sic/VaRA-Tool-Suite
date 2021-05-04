@@ -1,0 +1,18 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: TwoLibsOneProjectInteractionDiscreteLibsSingleProject
+stages:
+- revisions:
+  - commit_hash: 5e8fe1616d90b21b956acd4b79c89f04bc570d6b
+    commit_id: 9
+    config_ids:
+    - -1
+  - commit_hash: e64923e69eab82332c1bed7fe1e80e14c2c5cb7f
+    commit_id: 8
+    config_ids:
+    - -1
+version: 0
+...

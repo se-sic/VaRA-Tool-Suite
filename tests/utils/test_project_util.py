@@ -1,5 +1,6 @@
 """Test VaRA project utilities."""
 import tempfile
+import typing as tp
 import unittest
 import unittest.mock as mock
 from os.path import isdir
@@ -13,6 +14,7 @@ from varats.project.project_util import (
     VaraTestRepoSource,
     VaraTestRepoSubmodule,
 )
+from varats.tools.bb_config import generate_benchbuild_config
 
 
 class TestVaraTestRepoSource(unittest.TestCase):
@@ -219,3 +221,25 @@ class TestVaraTestRepoSource(unittest.TestCase):
                             "1db6fbe",
                             git('rev-parse', '--short', 'HEAD').rstrip()
                         )
+
+    def test_if_project_names_are_well_formed(self) -> None:
+        """Tests if project names are well formed, e.g., they must not contain a
+        dash."""
+
+        with replace_config(replace_bb_config=True) as (vara_cfg, bb_cfg):
+            tmp_file = tempfile.NamedTemporaryFile()
+            generate_benchbuild_config(vara_cfg, tmp_file.name)
+            bb_cfg.load(tmp_file.name)
+            loaded_project_paths: tp.List[str] = bb_cfg["plugins"]["projects"
+                                                                  ].value
+
+        loaded_project_names = [
+            project_path.rsplit(sep='.', maxsplit=1)[1]
+            for project_path in loaded_project_paths
+        ]
+        for project_name in loaded_project_names:
+            if '-' in project_name:
+                self.fail(
+                    f"The project name {project_name} must not contain the "
+                    f"dash character."
+                )
