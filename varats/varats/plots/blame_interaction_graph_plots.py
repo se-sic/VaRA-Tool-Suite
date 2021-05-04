@@ -312,8 +312,8 @@ class CommitInteractionGraphNodeDegreePlot(Plot):
                 if not filter_nodes(commit):
                     continue
                 nodes.append(({
-                    "commit_hash": node.commit_hash,
-                    "commit_time": commit_time(node),
+                    "commit_hash": commit.commit_hash,
+                    "commit_time": commit_time(commit),
                     "node_degree": cig.degree(node),
                     "node_out_degree": cig.out_degree(node),
                     "node_in_degree": cig.in_degree(node),
