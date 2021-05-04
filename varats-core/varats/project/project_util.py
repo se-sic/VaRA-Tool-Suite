@@ -66,10 +66,7 @@ def get_local_project_git_path(
     if is_git_source(source):
         source.fetch()
 
-    return tp.cast(
-        Path,
-        Path(target_prefix()) / source.local.replace(os.sep, '-')
-    )
+    return tp.cast(Path, Path(target_prefix()) / source.local)
 
 
 def get_extended_commit_lookup_source(
