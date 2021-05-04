@@ -19,6 +19,7 @@ from matplotlib import cm
 from plotly import graph_objs as go  # type: ignore
 from plotly import io as pio  # type: ignore
 
+import varats.paper_mgmt.paper_config as PC
 from varats.data.databases.blame_diff_library_interaction_database import (
     BlameDiffLibraryInteractionDatabase,
 )
@@ -29,7 +30,7 @@ from varats.data.databases.blame_interaction_degree_database import (
 from varats.data.databases.blame_library_interactions_database import (
     BlameLibraryInteractionsDatabase,
 )
-from varats.mapping.commit_map import CommitMap
+from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import check_required_args
 from varats.plot.plots import PlotGenerator, PlotConfig
@@ -970,9 +971,14 @@ class BlameDegree(Plot):
         """Plot the current plot to a file."""
 
     def _get_degree_data(self) -> pd.DataFrame:
-        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
-        case_study = self.plot_kwargs.get('plot_case_study', None)
-        project_name = self.plot_kwargs["project"]
+
+        # TODO (se-passau/VaRA#545): Find correct paper_config or cs in top
+        #  level
+        current_config = PC.get_paper_config()
+        case_study = current_config.get_all_case_studies()[0]
+        project_name = case_study.project_name
+        commit_map = get_commit_map(project_name)
+
         interaction_plot_df = \
             BlameInteractionDegreeDatabase.get_data_for_project(
                 project_name, [
@@ -1199,7 +1205,11 @@ class BlameDegree(Plot):
         interaction_plot_df.reset_index(inplace=True)
         unique_revisions = _get_unique_revisions(interaction_plot_df)
 
-        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
+        # TODO (se-passau/VaRA#545): Find correct paper_config or cs in top
+        #  level
+        commit_map = get_commit_map(
+            PC.get_paper_config().get_all_case_studies()[0].project_name
+        )
         highest_degree = interaction_plot_df["degree"].max()
 
         # Generate and save sankey plots for all revs if no revision was
@@ -1427,7 +1437,7 @@ class BlameLibraryInteractions(BlameDegree):
         self.__figure = go.Figure()
 
     def plot(self, view_mode: bool) -> None:
-        if view_mode and 'revision' not in self.plot_kwargs:
+        if view_mode and not self.plot_kwargs["revision"]:
             LOG.warning(
                 "The interactive view mode requires a selected revision."
             )
@@ -1480,7 +1490,9 @@ class SankeyLibraryInteractionsGenerator(
     PlotGenerator,
     generator_name="sankey-plot",
     plot=BlameLibraryInteractions,
-    options=[PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_REVISION]
+    options=[
+        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.OPTIONAL_REVISION
+    ]
 ):
 
     @check_required_args("report_type", "revision")

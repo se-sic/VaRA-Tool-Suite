@@ -215,6 +215,7 @@ class PlotConfig():
 class PlotGenerator(abc.ABC):
     """A plot generator is responsible for generating one or more plots."""
 
+    # Required
     REQUIRE_CASE_STUDY: CLIOptionTy = make_cli_option(
         "-cs"
         "--case-study",
@@ -234,6 +235,15 @@ class PlotGenerator(abc.ABC):
         required=True,
         metavar="report_type",
         help="The report type to use for the plot."
+    )
+
+    # Optional
+    OPTIONAL_REVISION: CLIOptionTy = make_cli_option(
+        "-rev",
+        "--revision",
+        required=False,
+        metavar="revision",
+        help="The revision to use for the plot."
     )
 
     GENERATORS: tp.Dict[str, tp.Type['PlotGenerator']] = {}
