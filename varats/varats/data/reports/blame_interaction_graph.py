@@ -108,7 +108,6 @@ class BlameInteractionGraph():
 
         return self.__cached_interaction_graph
 
-    @property
     def commit_interaction_graph(self) -> nx.DiGraph:
         """
         Return a digraph with commits as nodes and interactions as edges.
@@ -147,7 +146,6 @@ class BlameInteractionGraph():
             create_using=nx.DiGraph
         )
 
-    @property
     def author_interaction_graph(self) -> nx.Graph:
         """
         Return a digraph with authors as nodes and interactions as edges.
@@ -207,7 +205,6 @@ class BlameInteractionGraph():
             create_using=nx.DiGraph
         )
 
-    @property
     def commit_author_interaction_graph(
         self,
         outgoing_interactions: bool = True,

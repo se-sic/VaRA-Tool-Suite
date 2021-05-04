@@ -65,9 +65,8 @@ class CommitInteractionGraphPlot(Plot):
         revision = self.plot_kwargs.get("revision", None)
         if not revision:
             raise PlotArgMissing(f"'revision' was not specified.")
-        cig = create_blame_interaction_graph(
-            project_name, revision
-        ).commit_interaction_graph
+        cig = create_blame_interaction_graph(project_name, revision
+                                            ).commit_interaction_graph()
         nx.set_node_attributes(
             cig, {node: cig.nodes[node]["commit_hash"] for node in cig.nodes},
             "label"
@@ -96,9 +95,8 @@ class CommitInteractionGraphChordPlot(Plot):
 
         commit_lookup = create_commit_lookup_helper(project_name)
 
-        cig = create_blame_interaction_graph(
-            project_name, revision
-        ).commit_interaction_graph
+        cig = create_blame_interaction_graph(project_name, revision
+                                            ).commit_interaction_graph()
 
         def filter_nodes(node: CommitRepoPair) -> bool:
             if node.commit_hash == DUMMY_COMMIT:
@@ -172,9 +170,8 @@ class CommitInteractionGraphArcPlot(Plot):
 
         commit_lookup = create_commit_lookup_helper(project_name)
 
-        cig = create_blame_interaction_graph(
-            project_name, revision
-        ).commit_interaction_graph
+        cig = create_blame_interaction_graph(project_name, revision
+                                            ).commit_interaction_graph()
 
         def filter_nodes(node: CommitRepoPair) -> bool:
             if node.commit_hash == DUMMY_COMMIT:
@@ -294,9 +291,8 @@ class CommitInteractionGraphNodeDegreePlot(Plot):
             if not revision:
                 continue
 
-            cig = create_blame_interaction_graph(
-                project_name, revision
-            ).commit_interaction_graph
+            cig = create_blame_interaction_graph(project_name, revision
+                                                ).commit_interaction_graph()
             commit_lookup = create_commit_lookup_helper(project_name)
 
             def filter_nodes(node: CommitRepoPair) -> bool:
@@ -388,9 +384,8 @@ class CommitInteractionGraphNodeDegreeScatterPlot(Plot):
             if not revision:
                 continue
 
-            cig = create_blame_interaction_graph(
-                project_name, revision
-            ).commit_interaction_graph
+            cig = create_blame_interaction_graph(project_name, revision
+                                                ).commit_interaction_graph()
             commit_lookup = create_commit_lookup_helper(project_name)
 
             def filter_nodes(node: CommitRepoPair) -> bool:
