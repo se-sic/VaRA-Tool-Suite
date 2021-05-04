@@ -96,7 +96,7 @@ def build_table(table_to_build: 'table.Table') -> None:
         )
 
 
-@check_required_args(['table_type'])
+@check_required_args('table_type')
 def prepare_table(**kwargs: tp.Any) -> 'table.Table':
     """
     Instantiate a table with the given args.

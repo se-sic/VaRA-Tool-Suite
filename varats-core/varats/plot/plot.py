@@ -118,26 +118,19 @@ class Plot(metaclass=PlotRegistry):
 
         return f"{plot_ident}{self.name}{sep_stages}.{filetype}"
 
-    def save(
-        self, path: tp.Optional[Path] = None, filetype: str = 'svg'
-    ) -> None:
+    def save(self, plot_dir: Path, filetype: str = 'svg') -> None:
         """
         Save the current plot to a file.
 
         Args:
-            path: The path where the file is stored (excluding the file name).
-            filetype: The file type of the plot.
+            plot_dir: the path where the file is stored(excluding the file name)
+            filetype: the file type of the plot
         """
         try:
             self.plot(False)
         except PlotDataEmpty:
             LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
             return
-
-        if path is None:
-            plot_dir = Path(self.plot_kwargs["plot_dir"])
-        else:
-            plot_dir = path
 
         # TODO (se-passau/VaRA#545): refactor dpi into plot_config.
         plt.savefig(

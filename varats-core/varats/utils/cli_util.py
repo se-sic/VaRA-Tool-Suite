@@ -4,6 +4,7 @@ import logging
 import os
 import typing as tp
 
+import click
 from rich.traceback import install
 
 
@@ -80,3 +81,22 @@ def initialize_logger_config() -> None:
     to pass the warning level via an environment variable ``LOG_LEVEL``."""
     log_level = os.environ.get('LOG_LEVEL', "WARNING").upper()
     logging.basicConfig(level=log_level)
+
+
+CLIOptionTy = tp.Callable[..., tp.Any]
+
+
+# TODO: make this have a typed version of the click.core.Option constructor?
+def make_cli_option(*param_decls: str, **attrs: tp.Any) -> CLIOptionTy:
+    """
+    Create an object that represents a click command line option, i.e., the
+    decorator object that is created by ``click.option()``.
+
+    Args:
+        *param_decls: parameter declarations, i.e., how this option can be used
+        **attrs: attributes used to construct the option
+
+    Returns:
+        a click CLI option that can be wrapped around a function
+    """
+    return click.option(*param_decls, **attrs)

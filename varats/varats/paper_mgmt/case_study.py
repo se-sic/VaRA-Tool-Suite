@@ -277,7 +277,7 @@ def get_unique_cs_name(case_studies: tp.List[CaseStudy]) -> tp.List[str]:
 ###############################################################################
 
 
-@check_required_args(['extra_revs', 'git_path'])
+@check_required_args('extra_revs', 'git_path')
 def generate_case_study(
     sampling_method: NormalSamplingMethod, cmap: CommitMap,
     case_study_version: int, project_name: str, **kwargs: tp.Any
@@ -348,7 +348,7 @@ def extend_case_study(
         extend_with_release_revs(case_study, cmap, **kwargs)
 
 
-@check_required_args(['extra_revs', 'merge_stage'])
+@check_required_args('extra_revs', 'merge_stage')
 def extend_with_extra_revs(
     case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
 ) -> None:
@@ -371,9 +371,9 @@ def extend_with_extra_revs(
     case_study.include_revisions(new_rev_items, merge_stage, True)
 
 
-@check_required_args([
+@check_required_args(
     'git_path', 'revs_per_year', 'merge_stage', 'revs_year_sep'
-])
+)
 def extend_with_revs_per_year(
     case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
 ) -> None:
@@ -453,7 +453,7 @@ def extend_with_revs_per_year(
         new_rev_items.clear()
 
 
-@check_required_args(['distribution', 'merge_stage', 'num_rev'])
+@check_required_args('distribution', 'merge_stage', 'num_rev')
 def extend_with_distrib_sampling(
     case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
 ) -> None:
@@ -488,7 +488,7 @@ def extend_with_distrib_sampling(
     )
 
 
-@check_required_args(['plot_type', 'boundary_gradient'])
+@check_required_args('plot_type', 'boundary_gradient')
 def extend_with_smooth_revs(
     case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
 ) -> None:
@@ -535,7 +535,7 @@ def extend_with_smooth_revs(
         )
 
 
-@check_required_args(['project', 'release_type', 'merge_stage'])
+@check_required_args('project', 'release_type', 'merge_stage')
 def extend_with_release_revs(
     case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
 ) -> None:

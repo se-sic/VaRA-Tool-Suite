@@ -17,7 +17,7 @@ from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import check_required_args
 
 
-@check_required_args(["project", "get_cmap"])
+@check_required_args("project", "get_cmap")
 def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
     """Generate a DataFrame, containing the amount of interactions between
     commits and interactions between the HEAD commit and all others."""
