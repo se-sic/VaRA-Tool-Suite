@@ -146,7 +146,7 @@ class BlameInteractionGraph():
             create_using=nx.DiGraph
         )
 
-    def author_interaction_graph(self) -> nx.Graph:
+    def author_interaction_graph(self) -> nx.DiGraph:
         """
         Return a digraph with authors as nodes and interactions as edges.
 
@@ -209,7 +209,7 @@ class BlameInteractionGraph():
         self,
         outgoing_interactions: bool = True,
         incoming_interactions: bool = False
-    ) -> nx.Graph:
+    ) -> nx.DiGraph:
         """
         Return a digraph connecting commits to interacting authors.
 
