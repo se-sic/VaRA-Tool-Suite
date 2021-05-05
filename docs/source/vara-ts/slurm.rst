@@ -227,9 +227,9 @@ If you understand how BenchBuild uses containers to run experiments you can prep
 
       .. code-block:: bash
 
-        benchbuild slurm -S container run --import -E <report_type> <project>
+        benchbuild slurm -E <report_type> <project> -- container run --import
 
-      The additional ``-S container run --import`` tells BenchBuild to use the ``container run`` command in the script instead of the default ``run`` command.
+      The additional ``-container run --import`` after the two dashes tells BenchBuild to use the ``container run`` command in the script instead of the default ``run`` command.
       The ``--import`` is actually a parameter for the ``container`` command and specifies that we want to import container images from the path specified a couple of steps above if possible.
 
 5. That's it! the script obtained from the previous step can be used like any other slurm script.
