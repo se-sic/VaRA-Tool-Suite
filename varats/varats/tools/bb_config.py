@@ -60,6 +60,7 @@ def generate_benchbuild_config(
         'varats.projects.c_projects.xz',
         'varats.projects.cpp_projects.mongodb',
         'varats.projects.cpp_projects.poppler',
+        'varats.projects.test_projects.test_suite',
     ]
     projects_conf.value[:] += [
         'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'
