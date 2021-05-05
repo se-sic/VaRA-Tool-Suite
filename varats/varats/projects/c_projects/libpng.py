@@ -3,7 +3,11 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.utils.cmd import make, cmake, mkdir
-from benchbuild.utils.revision_ranges import block_revisions, GoodBadSubgraph
+from benchbuild.utils.revision_ranges import (
+    block_revisions,
+    GoodBadSubgraph,
+    SingleRevision,
+)
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -53,7 +57,14 @@ class Libpng(bb.Project, CVEProviderHook):  # type: ignore
                             "Error in CMakeList"),
             GoodBadSubgraph(["8d9e494dfb208c88a9497038977b539310c7fca5"],
                             ["bf15ac7e86f4fc95b6b33831f212c3f13f955623"],
-                            "Build Error")
+                            "Build Error in libpng"),
+            GoodBadSubgraph(["7de02e722f8f6bdb2756e20091c42fa4ffaa89c1"],
+                            ["8596468e5156b804ae65f4a0e6bdd20cc2ec5749"],
+                            "Build Error in libpng"),
+            SingleRevision(
+                "79b7e4e621fd611df658ec24a07080708fffe1de",
+                "Build Error in libpng"
+            )
         ])(
             bb.source.Git(
                 remote="https://github.com/glennrp/libpng.git",
