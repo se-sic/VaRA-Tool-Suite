@@ -4,10 +4,9 @@ Driver module for `vara-container`.
 This module handles command-line parsing and maps the commands to tool suite
 internal functionality.
 """
-import argparse
 import typing as tp
 
-from argparse_utils import enum_action
+import click
 
 from varats.containers.containers import (
     create_base_images,
@@ -20,113 +19,67 @@ from varats.containers.containers import (
 )
 from varats.tools.bb_config import load_bb_config
 from varats.tools.tool_util import get_supported_research_tool_names
-from varats.utils.cli_util import initialize_cli_tool, cli_list_choice
+from varats.utils.cli_util import initialize_cli_tool, cli_list_choice, EnumType
 from varats.utils.settings import vara_cfg, save_config, bb_cfg
 
 
+@click.group(help="Manage base container images.")
 def main() -> None:
-    """
-    Main function for managing container related functionality.
-
-    `vara-container`
-    """
     initialize_cli_tool()
     load_bb_config()
 
-    parser = argparse.ArgumentParser("vara-container")
-    sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
 
-    # vara-container build
-    build_parser = sub_parsers.add_parser(
-        'build',
-        help="Build base containers for the current research tool."
-        "By default builds all base containers."
-    )
-    build_parser.add_argument(
-        "--debug",
-        help="Debug failed image builds interactively.",
-        action="store_true",
-        default=False,
-    )
-    build_parser.add_argument(
-        "-i",
-        "--image",
-        help="Only build the given image",
-        action=enum_action(ImageBase)
-    )
-    build_parser.add_argument(
-        "--export",
-        help="Export the built images to the filesystem.",
-        action="store_true",
-        default=False,
-    )
+@main.command(help="Build base containers for the current research tool.")
+@click.option(
+    "--debug", is_flag=True, help="Debug failed image builds interactively."
+)
+@click.option(
+    "--export", is_flag=True, help="Export the built images to the filesystem."
+)
+@click.option(
+    "-i",
+    "--image",
+    type=EnumType(ImageBase),
+    help="Only build the given image."
+)
+def build(image: tp.Optional[ImageBase], export: bool, debug: bool) -> None:
+    bb_cfg()["container"]["keep"] = debug
 
-    # vara-container delete
-    delete_parser = sub_parsers.add_parser(
-        'delete',
-        help="Delete base containers for the current research tool."
-        "By default deletes all base containers."
-    )
-    delete_parser.add_argument(
-        "-i",
-        "--image",
-        help="Only delete the given image",
-        action=enum_action(ImageBase)
-    )
-
-    # vara-container select-tool
-    sub_parsers.add_parser(
-        'select-tool',
-        help="Select the research tool to be used in base containers."
-    )
-
-    args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
-
-    if 'subcommand' not in args:
-        parser.print_help()
-        return
-
-    if args['subcommand'] == 'build':
-        __container_build(args)
-    elif args['subcommand'] == 'delete':
-        __container_delete(args)
-    elif args['subcommand'] == 'select-tool':
-        __select_research_tool()
-
-
-def __container_build(args: tp.Dict[str, tp.Any]) -> None:
-    if "debug" in args.keys():
-        bb_cfg()["container"]["keep"] = args["debug"]
-
-    if "image" in args.keys():
-        create_base_image(args["image"])
-        if args.get("export", False):
-            export_base_image(args["image"])
+    if image:
+        create_base_image(image)
+        if export:
+            export_base_image(image)
     else:
         create_base_images()
-        if args.get("export", False):
+        if export:
             export_base_images()
 
 
-def __container_delete(args: tp.Dict[str, tp.Any]) -> None:
-    if "image" in args.keys():
-        delete_base_image(args["image"])
+@main.command(help="Delete base containers for the current research tool.")
+@click.option(
+    "-i",
+    "--image",
+    type=EnumType(ImageBase),
+    help="Only delete the given image."
+)
+def delete(image: ImageBase) -> None:
+    if image:
+        delete_base_image(image)
     else:
         delete_base_images()
 
 
-def __select_research_tool() -> None:
-
-    def set_research_tool(tool: str) -> None:
-        vara_cfg()["container"]["research_tool"] = tool
-        save_config()
-
-    current_tool = vara_cfg()["container"]["research_tool"].value
-    cli_list_choice(
-        "Choose a number to select a research tool",
-        get_supported_research_tool_names(), lambda x: f"{x} *"
-        if current_tool and x == current_tool else x, set_research_tool
-    )
+@main.command(help="Select the research tool to be used in base containers.")
+@click.option(
+    "-t",
+    "--tool",
+    type=click.Choice(get_supported_research_tool_names()),
+    prompt="Select a research tool to activate.",
+    help="The research tool to activate"
+)
+def select(tool) -> None:
+    vara_cfg()["container"]["research_tool"] = tool
+    save_config()
 
 
 if __name__ == '__main__':
