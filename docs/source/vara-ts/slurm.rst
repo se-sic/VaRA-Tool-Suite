@@ -165,7 +165,33 @@ If you understand how BenchBuild uses containers to run experiments you can prep
 
 3. Make sure that also the slurm cluster has rootless buildah and podman installed and configured (don't forget the subuid and subgid mappings for the users submitting the slurm jobs).
 
-4. Rootless containers do not work on NFS (see `here <https://github.com/containers/podman/blob/master/rootless.md>`_), so we have to take some extra steps if we want to run containers via slurm:
+4. Rootless containers do not work on NFS (see `here <https://github.com/containers/podman/blob/master/rootless.md>`_), so we have to take some extra steps if we want to run containers via slurm.
+   These steps can be executed easily using the following command (:ref:`documentation <vara-container>`):
+
+    .. code-block:: bash
+
+      vara-container prepare-slurm
+
+   If you want to know in detail what happens in this command, take a look at the section :ref:`Step 4 in Detail`.
+
+5. After the preparation is complete, you can generate the slurm script from the `benchbuild` directory as follows:
+
+    .. code-block:: bash
+
+      benchbuild slurm -E <report_type> <project> -- container run --import
+
+    The additional ``-container run --import`` after the two dashes tells BenchBuild to use the ``container run`` command in the script instead of the default ``run`` command.
+    The ``--import`` is actually a parameter for the ``container`` command and specifies that we want to import container images from the path specified a couple of steps above if possible.
+
+6. That's it! the script obtained from the previous step can be used like any other slurm script.
+   You can now make any adjustments to the script if needed or just submit it to slurm as described in the slurm guide.
+
+
+Step 4 in Detail
+................
+
+As explained above, rootless containers do not work on NFS (see `here <https://github.com/containers/podman/blob/master/rootless.md>`_), so we have to take some extra steps if we want to run containers via slurm.
+The recommended way to do this is using the `vara-container prepare-slurm command, but in some situations it might be handy to know what happens under the hood:
 
     - You need to set the container root and runroot paths to some location that is not on a NFS, e.g., to a directory in ``tmp``:
 
@@ -213,7 +239,7 @@ If you understand how BenchBuild uses containers to run experiments you can prep
 
     - Now it is time to generate the slurm script (cf. step 5 of the slurm guide).
       Because of our NFS workarounds, we cannot use the default script provided by BenchBuild, but we need to provide our own script template.
-      You can download the template :download:`here <slurm_container.sh.inc>`.
+      You can find our default template in the `varats.tools` module.
       This template is very similar to the original template provided by BenchBuild, but it takes care of pointing all relevant environment variables to the slurm node directory as described in the points above.
       To activate the template, simply save it to the ``/scratch/<username>/varats/benchbuild`` directory and set the appropriate value in the BenchBuild config:
 
@@ -223,14 +249,4 @@ If you understand how BenchBuild uses containers to run experiments you can prep
           template:
             value: /scratch/<username>/varats/benchbuild/slurm_container.sh.inc
 
-      You can now generate the slurm script:
-
-      .. code-block:: bash
-
-        benchbuild slurm -E <report_type> <project> -- container run --import
-
-      The additional ``-container run --import`` after the two dashes tells BenchBuild to use the ``container run`` command in the script instead of the default ``run`` command.
-      The ``--import`` is actually a parameter for the ``container`` command and specifies that we want to import container images from the path specified a couple of steps above if possible.
-
-5. That's it! the script obtained from the previous step can be used like any other slurm script.
-   You can now make any adjustments to the script if needed or just submit it to slurm as described in the slurm guide.
+      You can now continue with generating the slurm script as described above.
