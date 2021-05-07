@@ -146,7 +146,7 @@ def prepare_slurm(
 
     click.echo(
         "Run `benchbuild slurm -E <report_type> <project> -- "
-        "container run --import` inside the `benchbuild` directory"
+        "container run --import` inside the `benchbuild` directory "
         "to generate a slurm script."
     )
 
