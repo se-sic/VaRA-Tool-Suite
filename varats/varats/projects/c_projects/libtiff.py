@@ -3,6 +3,12 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.utils.cmd import make
+from benchbuild.utils.revision_ranges import (
+    block_revisions,
+    GoodBadSubgraph,
+    RevisionRange,
+    SingleRevision,
+)
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -27,13 +33,27 @@ class Libtiff(bb.Project, CVEProviderHook):  # type: ignore
     DOMAIN = 'Image File Format'
 
     SOURCE = [
-        bb.source.Git(
-            remote="https://gitlab.com/libtiff/libtiff.git",
-            local="libtiff",
-            refspec="HEAD",
-            limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("libtiff")
+        block_revisions([
+            GoodBadSubgraph(["0ef31e1f62aa7a8b1c488a59c4930775ee0046e4"], [
+                "a63512c436c64ad94b8eff09d6d7faa7e638d45d"
+            ], "Requires older version of libtool could maybe be done with containers"
+                           ),
+            GoodBadSubgraph(["de8132768f4345f4fc465a1cf6195faa032b1bf5"], [
+                "901535247413d30d9380ee837ecdb9fb661350c6",
+                "5ef6de4c7055a3b426d97d5af1a77484ee92eb30"
+            ], "Does not build"),
+            GoodBadSubgraph(["6d46b8e4642f372192e94976576b13dcb89970d8"], [
+                "88df59e89cfb096085bc5299f087eaceda73f12e"
+            ], "Does not build because of libtool version discrepancy")
+        ])(
+            bb.source.Git(
+                remote="https://gitlab.com/libtiff/libtiff.git",
+                local="libtiff",
+                refspec="HEAD",
+                limit=None,
+                shallow=False,
+                version_filter=project_filter_generator("libtiff")
+            )
         )
     ]
 
