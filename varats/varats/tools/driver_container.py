@@ -168,7 +168,7 @@ def __build_images(
 
 def __set_research_tool(tool: str) -> None:
     if tool == "none":
-        tool = "null"  # correct way of specifying absence in yaml
+        tool = None
     vara_cfg()["container"]["research_tool"] = tool
     save_config()
 
@@ -176,7 +176,7 @@ def __set_research_tool(tool: str) -> None:
 def __render_slurm_script_template(
     output_path: Path, env_vars: tp.List[str]
 ) -> None:
-    loader = jinja2.PackageLoader('varats', 'tools')
+    loader = jinja2.PackageLoader('varats.tools', 'templates')
     env = jinja2.Environment(
         trim_blocks=True, lstrip_blocks=True, loader=loader
     )
