@@ -8,6 +8,7 @@ from tabulate import tabulate
 
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
+    CIGNodeAttrs,
 )
 from varats.data.reports.blame_report import BlameReport
 from varats.paper.case_study import CaseStudy
@@ -16,7 +17,12 @@ from varats.paper_mgmt.case_study import (
 )
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.project.project_util import get_local_project_git
-from varats.table.table import Table, wrap_table_in_document, TableFormat
+from varats.table.table import (
+    Table,
+    wrap_table_in_document,
+    TableFormat,
+    TableDataEmpty,
+)
 
 
 def _generate_graph_table(
@@ -83,7 +89,9 @@ def _generate_graph_table(
     if table_format in [
         TableFormat.latex, TableFormat.latex_booktabs, TableFormat.latex_raw
     ]:
-        table = df.to_latex(bold_rows=True, multicolumn_format="c")
+        table = df.to_latex(
+            bold_rows=True, multicolumn_format="c", multirow=True
+        )
         return str(table) if table else ""
     return tabulate(df, df.columns, table_format.value)
 
@@ -100,8 +108,8 @@ class CommitInteractionGraphMetricsTable(Table):
         if "project" not in self.table_kwargs:
             case_studies = get_loaded_paper_config().get_all_case_studies()
         else:
-            if "plot_case_study" in self.table_kwargs:
-                case_studies = [self.table_kwargs["plot_case_study"]]
+            if "table_case_study" in self.table_kwargs:
+                case_studies = [self.table_kwargs["table_case_study"]]
             else:
                 case_studies = get_loaded_paper_config().get_case_studies(
                     self.table_kwargs["project"]
@@ -129,8 +137,8 @@ class AuthorInteractionGraphMetricsTable(Table):
         if "project" not in self.table_kwargs:
             case_studies = get_loaded_paper_config().get_all_case_studies()
         else:
-            if "plot_case_study" in self.table_kwargs:
-                case_studies = [self.table_kwargs["plot_case_study"]]
+            if "table_case_study" in self.table_kwargs:
+                case_studies = [self.table_kwargs["table_case_study"]]
             else:
                 case_studies = get_loaded_paper_config().get_case_studies(
                     self.table_kwargs["project"]
@@ -158,8 +166,8 @@ class CommitAuthorInteractionGraphMetricsTable(Table):
         if "project" not in self.table_kwargs:
             case_studies = get_loaded_paper_config().get_all_case_studies()
         else:
-            if "plot_case_study" in self.table_kwargs:
-                case_studies = [self.table_kwargs["plot_case_study"]]
+            if "table_case_study" in self.table_kwargs:
+                case_studies = [self.table_kwargs["table_case_study"]]
             else:
                 case_studies = get_loaded_paper_config().get_case_studies(
                     self.table_kwargs["project"]
@@ -171,6 +179,75 @@ class CommitAuthorInteractionGraphMetricsTable(Table):
             ).commit_author_interaction_graph()
 
         return _generate_graph_table(case_studies, create_graph, self.format)
+
+    def wrap_table(self, table: str) -> str:
+        return wrap_table_in_document(table=table, landscape=True)
+
+
+class CommitInteractionGraphTopDegreeTable(Table):
+    """Table showing commits with highest commit interaction graph node
+    degrees."""
+
+    NAME = "cig_top_degrees_table"
+
+    def __init__(self, **kwargs: tp.Any):
+        super().__init__(self.NAME, **kwargs)
+
+    def tabulate(self) -> str:
+        case_study = self.table_kwargs["table_case_study"]
+        num_commits = self.table_kwargs.get("num_commits", 10)
+
+        project_name = case_study.project_name
+        revision = newest_processed_revision_for_case_study(
+            case_study, BlameReport
+        )
+        if not revision:
+            raise TableDataEmpty()
+
+        graph = create_blame_interaction_graph(project_name, revision
+                                              ).commit_interaction_graph()
+
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+        for node in graph.nodes:
+            node_attrs = tp.cast(CIGNodeAttrs, graph.nodes[node])
+            commit = node_attrs["commit"]
+            nodes.append(({
+                "commit": commit.commit_hash[:10],
+                "node_degree": graph.degree(node),
+                "node_out_degree": graph.out_degree(node),
+                "node_in_degree": graph.in_degree(node),
+            }))
+
+        data = pd.DataFrame(nodes)
+        data.set_index("commit", inplace=True)
+
+        top_degree = data["node_degree"].nlargest(num_commits)
+        top_out_degree = data["node_out_degree"].nlargest(num_commits)
+        top_in_degree = data["node_in_degree"].nlargest(num_commits)
+
+        degree_data = pd.DataFrame.from_dict({
+            (f"Top {num_commits} Node Degree", "commit"):
+                top_degree.index.values,
+            (f"Top {num_commits} Node Degree", "degree"):
+                top_degree.values,
+            (f"Top {num_commits} Node Out-Degree", "commit"):
+                top_out_degree.index.values,
+            (f"Top {num_commits} Node Out-Degree", "degree"):
+                top_out_degree.values,
+            (f"Top {num_commits} Node In-Degree", "commit"):
+                top_in_degree.index.values,
+            (f"Top {num_commits} Node In-Degree", "degree"):
+                top_in_degree.values,
+        })
+
+        if self.format in [
+            TableFormat.latex, TableFormat.latex_booktabs, TableFormat.latex_raw
+        ]:
+            table = degree_data.to_latex(
+                index=False, multicolumn_format="c", multirow=True
+            )
+            return str(table) if table else ""
+        return tabulate(degree_data, degree_data.columns, self.format.value)
 
     def wrap_table(self, table: str) -> str:
         return wrap_table_in_document(table=table, landscape=True)
