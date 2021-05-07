@@ -80,6 +80,9 @@ class Libpng(bb.Project, CVEProviderHook):  # type: ignore
                             "Build Error"),
             GoodBadSubgraph(["9c946e22fcad10c2a44c0380c0909da6732097ce"],
                             ["342c4eab2a0565de456f1f3efcc41b635544160e"],
+                            "Build Error"),
+            GoodBadSubgraph(["40afb685704f1a5bf8d9edc0b5c7ec7f25e94b77"],
+                            ["619cf868e60807d759639cfb070987ad059fa0c9"],
                             "Build Error")
         ])(
             bb.source.Git(
