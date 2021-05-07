@@ -312,14 +312,12 @@ class CommitInteractionGraphNodeDegreePlot(Plot):
             node_out_degrees.sort_values(by="node_out_degree", inplace=True)
             node_in_degrees.sort_values(by="node_in_degree", inplace=True)
 
-        x = np.linspace(0, 1, len(data.index))
-        axes.plot(x, node_degrees["node_degree"].values, label="degree")
+        # x = np.linspace(0, 1, len(data.index))
+        axes.plot(node_degrees["node_degree"].values, label="degree")
         axes.plot(
-            x, node_out_degrees["node_out_degree"].values, label="out_degree"
+            node_out_degrees["node_out_degree"].values, label="out_degree"
         )
-        axes.plot(
-            x, node_in_degrees["node_in_degree"].values, label="in_degree"
-        )
+        axes.plot(node_in_degrees["node_in_degree"].values, label="in_degree")
 
         axes.legend()
 
