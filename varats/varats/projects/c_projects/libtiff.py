@@ -44,7 +44,10 @@ class Libtiff(bb.Project, CVEProviderHook):  # type: ignore
             ], "Does not build"),
             GoodBadSubgraph(["6d46b8e4642f372192e94976576b13dcb89970d8"], [
                 "88df59e89cfb096085bc5299f087eaceda73f12e"
-            ], "Does not build because of libtool version discrepancy")
+            ], "Does not build because of libtool version discrepancy"),
+            GoodBadSubgraph(["f182ef17da5322794bad69644aa5dbf58d254ba4"],
+                            ["608412f5c7e92f0f81a63ccf530d192c2316f6bf"],
+                            "Bug in Libtiff")
         ])(
             bb.source.Git(
                 remote="https://gitlab.com/libtiff/libtiff.git",
