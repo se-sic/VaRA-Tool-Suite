@@ -266,9 +266,9 @@ def create_base_image(base: ImageBase) -> None:
         publish(CreateImage(base.image_name, image_context.layers))
 
 
-def create_base_images() -> None:
+def create_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
     """Builds all base images for the current research tool."""
-    for base in ImageBase:
+    for base in images:
         LOG.info(f"Building base image {base.image_name}.")
         create_base_image(base)
 
@@ -298,9 +298,9 @@ def delete_base_image(base: ImageBase) -> None:
     publish(DeleteImage(base.image_name))
 
 
-def delete_base_images() -> None:
+def delete_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
     """Deletes all base images for the current research tool."""
-    for base in ImageBase:
+    for base in images:
         LOG.info(f"Deleting base image {base.image_name}.")
         delete_base_image(base)
 
@@ -315,8 +315,8 @@ def export_base_image(base: ImageBase) -> None:
     publish(ExportImage(base.image_name, str(export_path)))
 
 
-def export_base_images() -> None:
+def export_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
     """Exports all base images for the current research tool."""
-    for base in ImageBase:
+    for base in images:
         LOG.info(f"Exporting base image {base.image_name}.")
         export_base_image(base)
