@@ -171,11 +171,12 @@ class BaseImageCreationContext():
 
 def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
     crun = bb_cfg()['container']['runtime'].value
-    src_dir = Path(vara_cfg()['container']['varats_source'].value)
-    tgt_dir = Path('/varats')
 
     def from_source(image: ContainerImage) -> None:
-        LOG.debug('installing benchbuild from source.')
+        LOG.debug('installing varats from source.')
+
+        src_dir = Path(vara_cfg()['container']['varats_source'].value)
+        tgt_dir = Path('/varats')
         LOG.debug(f'src_dir: {src_dir} tgt_dir: {tgt_dir}')
 
         image.run('mkdir', f'{tgt_dir}', runtime=crun)
