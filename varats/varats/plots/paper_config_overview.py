@@ -180,7 +180,7 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
         f_success = n_success / float(n_total)
         f_blocked = n_blocked / float(n_total)
         f_failed = 1.0 - f_success - f_blocked
-        return (
+        return np.asarray(
             f_success * SUCCESS_COLOR + f_blocked * BLOCKED_COLOR +
             f_failed * FAILED_COLOR
         )

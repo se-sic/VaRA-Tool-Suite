@@ -12,7 +12,12 @@ import yaml
 
 from varats.base.version_header import VersionHeader
 from varats.report.report import BaseReport, FileStatusExtension, MetaReport
-from varats.utils.git_util import map_commits, CommitRepoPair, CommitLookupTy
+from varats.utils.git_util import (
+    map_commits,
+    CommitRepoPair,
+    CommitLookupTy,
+    DUMMY_COMMIT,
+)
 
 
 class BlameInstInteractions():
@@ -699,16 +704,10 @@ def generate_time_delta_distribution_tuples(
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            if (
-                interaction.base_commit.commit_hash ==
-                "0000000000000000000000000000000000000000"
-            ):
+            if (interaction.base_commit.commit_hash == DUMMY_COMMIT):
                 continue
 
-            base_commit = commit_lookup(
-                interaction.base_commit.commit_hash,
-                interaction.base_commit.repository_name
-            )
+            base_commit = commit_lookup(interaction.base_commit)
             base_c_time = datetime.utcfromtimestamp(base_commit.commit_time)
 
             def translate_to_time_deltas2(

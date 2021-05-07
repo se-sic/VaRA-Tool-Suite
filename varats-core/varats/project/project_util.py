@@ -120,6 +120,28 @@ def get_local_project_git(
     return pygit2.Repository(repo_path)
 
 
+def get_local_project_gits(
+    project_name: str
+) -> tp.Dict[str, pygit2.Repository]:
+    """
+    Get the all git repositories for a given benchbuild project.
+
+    Args:
+        project_name: name of the given benchbuild project
+
+    Returns:
+        dict with the git repositories for the project's sources
+    """
+    repos: tp.Dict[str, pygit2.Repository] = {}
+    project_cls = get_project_cls_by_name(project_name)
+
+    for source in project_cls.SOURCE:
+        source_name = os.path.basename(source.local)
+        repos[source_name] = get_local_project_git(project_name, source_name)
+
+    return repos
+
+
 def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
     """Get a list of all tagged commits along with their respective tags."""
     repo_loc = get_local_project_git_path(project_name)
