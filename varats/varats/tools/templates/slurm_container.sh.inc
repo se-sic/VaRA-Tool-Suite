@@ -1,5 +1,4 @@
-{% raw %}
-#!/bin/bash
+{% raw %}#!/bin/bash
 #SBATCH -o /dev/null
 #SBATCH --ntasks {{ ntasks|default(1) }}
 #SBATCH --cpus-per-task {{ cpus|default(1) }}
