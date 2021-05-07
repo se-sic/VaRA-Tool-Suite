@@ -66,7 +66,7 @@ def get_local_project_git_path(
     if is_git_source(source):
         source.fetch()
 
-    return tp.cast(Path, Path(target_prefix()) / source.local)
+    return Path(target_prefix()) / Path(source.local)
 
 
 def get_extended_commit_lookup_source(
@@ -85,14 +85,6 @@ def get_extended_commit_lookup_source(
     """
 
     project_cls = get_project_cls_by_name(project_name)
-
-    primary_source_name = os.path.basename(
-        get_primary_project_source(project_name).local
-    )
-
-    if git_name == primary_source_name:
-        return get_primary_project_source(project_name)
-
     for source in project_cls.SOURCE:
         if git_name == os.path.basename(source.local):
             return source

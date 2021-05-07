@@ -48,7 +48,7 @@ class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
         """
 
         if not self.obj:
-            return
+            return actions.StepResult.ERROR
         project = self.obj
         # Define the output directory.
         result_folder = self.RESULT_FOLDER_TEMPLATE.format(
@@ -163,7 +163,9 @@ class VaRAFileCheckTaintPropagation(VaRATaintPropagation):
 
     REPORT_TYPE = TPR
 
-    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
+    def actions_for_project(
+        self, project: Project
+    ) -> tp.MutableSequence[actions.Step]:
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
         analysis_actions = super().actions_for_project(project)

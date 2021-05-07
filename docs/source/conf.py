@@ -77,6 +77,21 @@ autodoc_member_order = "bysource"
 add_function_parentheses = True
 add_module_names = True
 
+# Import pandas without the type checking flag to avoid import errors.
+# The exact reason for these errors is unknown but might be related to
+# incompatible cython versions (https://github.com/cython/cython/issues/1953)
+import pandas  # isort:skip
+
+# The autodocs typehints plugin does not resolve circular imports caused by type
+# annotations, so we have to manually break the circles.
+import rich.console  # isort:skip
+
+import typing as tp  # isort:skip
+tp.TYPE_CHECKING = True
+import varats.plot.plot  # isort:skip
+tp.TYPE_CHECKING = False
+
+# set the type checking flag so all types can be resolved in the docs
 set_type_checking_flag = True
 
 # -- Prevent import warnings -------------------------------------------------

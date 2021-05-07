@@ -11,6 +11,7 @@ creating plots, configuring the tool-suite itself and more.
     tools/vara-buildsetup
     tools/vara-gen-bbconfig
     tools/vara-config
+    tools/vara-container
 
 
 .. toctree::

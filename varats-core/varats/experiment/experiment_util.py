@@ -244,7 +244,7 @@ class VersionExperiment(Experiment):  # type: ignore
     revisions."""
 
     @abstractmethod
-    def actions_for_project(self, project: Project) -> tp.List[Step]:
+    def actions_for_project(self, project: Project) -> tp.MutableSequence[Step]:
         """Get the actions a project wants to run."""
 
     @staticmethod
@@ -263,7 +263,8 @@ class VersionExperiment(Experiment):  # type: ignore
         ]
         return versions
 
-    def sample(self,
+    @classmethod
+    def sample(cls,
                prj_cls: tp.Type[Project]) -> tp.List[source.VariantContext]:
         """
         Adapt version sampling process if needed, otherwise fallback to default
@@ -295,14 +296,14 @@ class VersionExperiment(Experiment):  # type: ignore
                 for x in fs_whitelist
             }
 
-            if not hasattr(self, 'REPORT_TYPE'):
+            if not hasattr(cls, 'REPORT_TYPE'):
                 raise TypeError(
                     "Experiment sub class does not implement REPORT_TYPE."
                 )
 
             bad_revisions = [
                 revision for revision, file_status in
-                get_tagged_revisions(prj_cls, getattr(self, 'REPORT_TYPE'))
+                get_tagged_revisions(prj_cls, getattr(cls, 'REPORT_TYPE'))
                 if file_status not in fs_good
             ]
 
@@ -314,7 +315,7 @@ class VersionExperiment(Experiment):  # type: ignore
             print("Could not find any unprocessed variants.")
             return []
 
-        variants = self._sample_num_versions(variants)
+        variants = cls._sample_num_versions(variants)
 
         if bool(bb_cfg()["versions"]["full"]):
             return [source.context(*var) for var in variants]

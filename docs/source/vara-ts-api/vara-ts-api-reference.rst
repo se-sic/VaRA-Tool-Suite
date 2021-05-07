@@ -8,8 +8,9 @@ VaRA-TS API Reference
    experiments
    projects
    paper
+   containers
    tools
    plots
    tables
    data
-   utils.rst
+   utils

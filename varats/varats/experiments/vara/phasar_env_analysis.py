@@ -56,7 +56,7 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
         """
 
         if not self.obj:
-            return
+            return actions.StepResult.ERROR
         project = self.obj
 
         # Define the output directory.
@@ -115,7 +115,9 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
 
     REPORT_TYPE = ENVR
 
-    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
+    def actions_for_project(
+        self, project: Project
+    ) -> tp.MutableSequence[actions.Step]:
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
 

@@ -21,8 +21,8 @@ setup(
     setup_requires=["pytest-runner", "setuptools_scm"],
     tests_require=["pytest", "pytest-cov"],
     install_requires=[
-        "PyQt5>=5.10.0,<5.14.0",
-        "PyQt5-stubs>=5.10.0,<5.14.0",
+        "PyQt5>=5.10.0",
+        "PyQt5-stubs>=5.10.0",
         "PyYAML>=5.1",
         "seaborn>=0.8.0",
         "kaleido>=0.2.1",
@@ -61,6 +61,7 @@ setup(
             'vara-art = varats.tools.driver_artefacts:main',
             'vara-buildsetup = varats.tools.driver_build_setup:main',
             'vara-config = varats.tools.driver_config:main',
+            'vara-container = varats.tools.driver_container:main',
             'vara-cs = varats.tools.driver_casestudy:main',
             'vara-develop = varats.tools.driver_develop:main',
             'vd = varats.tools.driver_develop:main',
