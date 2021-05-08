@@ -246,6 +246,14 @@ class PlotGenerator(abc.ABC):
         help="The revision to use for the plot."
     )
 
+    OPTIONAL_CASE_STUDY: CLIOptionTy = make_cli_option(
+        "-cs"
+        "--case-study",
+        required=False,
+        metavar="case_study",
+        help="The case study to use for the plot."
+    )
+
     GENERATORS: tp.Dict[str, tp.Type['PlotGenerator']] = {}
     NAME: str
     PLOT: tp.Type['varats.plot.plot.Plot']

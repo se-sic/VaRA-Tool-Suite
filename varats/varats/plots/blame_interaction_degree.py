@@ -1491,7 +1491,8 @@ class SankeyLibraryInteractionsGenerator(
     generator_name="sankey-plot",
     plot=BlameLibraryInteractions,
     options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.OPTIONAL_REVISION
+        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.OPTIONAL_CASE_STUDY,
+        PlotGenerator.OPTIONAL_REVISION
     ]
 ):
 
@@ -1499,11 +1500,16 @@ class SankeyLibraryInteractionsGenerator(
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type = plot_kwargs["report_type"]
+        self.__case_study = plot_kwargs["case_study"]
         self.__revision = plot_kwargs["revision"]
 
     def generate(self) -> tp.List[Plot]:
         return [
-            self.PLOT(report_type=self.__report_type, revision=self.__revision)
+            self.PLOT(
+                report_type=self.__report_type,
+                case_study=self.__case_study,
+                revision=self.__revision
+            )
         ]
 
 
