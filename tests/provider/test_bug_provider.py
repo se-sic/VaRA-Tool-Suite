@@ -91,7 +91,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
             fix_secondbug
         }
 
-        def mock_get_commit(commit_id: str):
+        def mock_get_commit(commit_id: str) -> pydriller.Commit:
             """Method that creates pydriller Commit mocks for given ID."""
             for important_commit in important_commits:
                 if commit_id == important_commit.hash:
@@ -219,8 +219,8 @@ class TestBugDetectionStrategies(unittest.TestCase):
                 issue_event.commit_id, self.mock_repo, issue_event.issue.number
             )
 
-            self.assertEqual(pybug.fixing_commit.hex, issue_event.commit_id)
-            self.assertEqual(pybug.issue_id, issue_event.issue.number)
+            self.assertEqual(issue_event.commit_id, pybug.fixing_commit.hex)
+            self.assertEqual(issue_event.issue.number, pybug.issue_id)
 
     def test_filter_issue_bugs(self):
         """Test on a set of IssueEvents whether the corresponding set of bugs is
@@ -279,20 +279,20 @@ class TestBugDetectionStrategies(unittest.TestCase):
             pybug_fix_ids = set(pybug.fixing_commit.hex for pybug in pybugs)
             expected_fix_ids = {"1239", "1240"}
 
-            intro_fist_bug = set
+            intro_first_bug = set
             intro_second_bug = set
             for pybug in pybugs:
                 if pybug.fixing_commit.hex == "1239":
                     intro_second_bug = pybug.introducing_commits
                 if pybug.fixing_commit.hex == "1240":
-                    intro_fist_bug = pybug.introducing_commits
+                    intro_first_bug = pybug.introducing_commits
 
             expected_first_bug_intro_ids = {"1239i1", "1239"}
             expected_second_bug_intro_ids = {"1239i1"}
 
-            self.assertEqual(pybug_fix_ids, expected_fix_ids)
-            self.assertEqual(intro_fist_bug, expected_first_bug_intro_ids)
-            self.assertEqual(intro_second_bug, expected_second_bug_intro_ids)
+            self.assertEqual(expected_fix_ids, pybug_fix_ids)
+            self.assertEqual(expected_first_bug_intro_ids, intro_first_bug)
+            self.assertEqual(expected_second_bug_intro_ids, intro_second_bug)
 
     def test_filter_commit_message_bugs(self):
         """Test on the commit history of a project whether the corresponding set
@@ -350,7 +350,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
             )
             expected_ids = {"1241", "1244"}
 
-            self.assertEqual(pybug_ids, expected_ids)
+            self.assertEqual(expected_ids, pybug_ids)
 
 
 class TestBugProvider(unittest.TestCase):
@@ -430,16 +430,16 @@ class TestBugProvider(unittest.TestCase):
         )
 
         self.assertEqual(
-            pybug_first_intro_ids, self.basic_expected_first_introduction
+            self.basic_expected_first_introduction, pybug_first_intro_ids
         )
         self.assertEqual(
-            pybug_second_intro_ids, self.basic_expected_second_introduction
+            self.basic_expected_second_introduction, pybug_second_intro_ids
         )
         self.assertEqual(
-            pybug_third_intro_ids, self.basic_expected_third_introduction
+            self.basic_expected_third_introduction, pybug_third_intro_ids
         )
         self.assertEqual(
-            pybug_fourth_intro_ids, self.basic_expected_fourth_introduction
+            self.basic_expected_fourth_introduction, pybug_fourth_intro_ids
         )
 
     def test_basic_repo_raw_bugs(self):
@@ -477,14 +477,14 @@ class TestBugProvider(unittest.TestCase):
         rawbug_fourth_intro_ids = next(iter(rawbug_fourth)).introducing_commits
 
         self.assertEqual(
-            rawbug_first_intro_ids, self.basic_expected_first_introduction
+            self.basic_expected_first_introduction, rawbug_first_intro_ids
         )
         self.assertEqual(
-            rawbug_second_intro_ids, self.basic_expected_second_introduction
+            self.basic_expected_second_introduction, rawbug_second_intro_ids
         )
         self.assertEqual(
-            rawbug_third_intro_ids, self.basic_expected_third_introduction
+            self.basic_expected_third_introduction, rawbug_third_intro_ids
         )
         self.assertEqual(
-            rawbug_fourth_intro_ids, self.basic_expected_fourth_introduction
+            self.basic_expected_fourth_introduction, rawbug_fourth_intro_ids
         )
