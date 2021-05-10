@@ -10,6 +10,7 @@ from os import makedirs, path
 from pathlib import Path
 
 import benchbuild.utils.settings as s
+from plumbum import local
 
 _CFG = s.Configuration(
     "varats",
@@ -263,6 +264,13 @@ def save_config() -> None:
 
     create_missing_folders()
     _CFG.store(config_file)
+
+
+def save_bb_config() -> None:
+    """Persist BenchBuild config to a yaml file."""
+    bb_cfg().store(
+        local.path(str(vara_cfg()["benchbuild_root"])) / ".benchbuild.yml"
+    )
 
 
 def get_varats_base_folder() -> Path:
