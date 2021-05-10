@@ -90,7 +90,7 @@ class PlotConfig():
     def __init__(self):
         pass
 
-    __options = []
+    __options: tp.List[tp.Any] = []
 
     @classmethod
     def cli_options(cls, command: tp.Any) -> tp.Any:
@@ -215,7 +215,7 @@ class PlotGenerator(abc.ABC):
     def generate(self) -> tp.List['varats.plot.plot.Plot']:
         """This function is called to generate the plot instance(s)."""
 
-    def __call__(self, common_options: CommonPlotOptions):
+    def __call__(self, common_options: CommonPlotOptions) -> None:
         """
         Generate the plots as specified by this generator.
 
@@ -224,7 +224,6 @@ class PlotGenerator(abc.ABC):
         """
         if not common_options.plot_dir.exists():
             LOG.error(f"Could not find output dir {common_options.plot_dir}")
-            return []
 
         plots = self.generate()
         for plot in plots:

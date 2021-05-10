@@ -43,7 +43,7 @@ initialize_plots()
 for generator_name, generator_cls in PlotGenerator.GENERATORS.items():
 
     @click.pass_context
-    def command_template(context, **kwargs):
+    def command_template(context: click.Context, **kwargs: tp.Any) -> None:
         # extract common arguments and plot config from context
         common_options: CommonPlotOptions
         plot_config: PlotConfig
