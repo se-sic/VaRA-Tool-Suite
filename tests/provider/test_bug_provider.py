@@ -2,7 +2,7 @@
 import datetime
 import typing as tp
 import unittest
-from unittest.mock import create_autospec, patch
+from unittest.mock import create_autospec, patch, MagicMock
 
 import pydriller
 import pygit2
@@ -91,39 +91,39 @@ class TestBugDetectionStrategies(unittest.TestCase):
             fix_secondbug
         }
 
-        def mock_get_commit(commit_id: str) -> pydriller.Commit:
-            """Method that creates pydriller Commit mocks for given ID."""
-            for important_commit in important_commits:
-                if commit_id == important_commit.hash:
-                    return important_commit
+        class DummyPydrillRepo(pydriller.GitRepository):
+            """Dummy pydriller repo class that overrides basic functionality."""
 
-            # create new mocks for not already predetermined commits
-            mock_commit = create_autospec(pydriller.Commit)
-            mock_commit.hash = commit_id
-            return mock_commit
+            def get_commit(self, commit_id: str) -> MagicMock:
+                """Method that creates pydriller Commit mocks for given ID."""
+                for important_commit in important_commits:
+                    if commit_id == important_commit.hash:
+                        return important_commit
 
-        def mock_find_intros(commit_id: str) -> tp.Dict[str, tp.Set[str]]:
-            """Method that returns corresponding introducing ids."""
-            if commit_id == fix_firstbug.hash:
-                return {
-                    "important line": {
-                        fix_secondbug.hash, intro_secondbug_pre_report.hash,
-                        intro_firstbug_post_hard.hash
+                # create new mocks for not already predetermined commits
+                mock_commit = create_autospec(pydriller.Commit)
+                mock_commit.hash = commit_id
+                return mock_commit
+
+            def get_commits_last_modified_lines(
+                self,
+                commit: pydriller.Commit,
+                modification: pydriller.Modification = None,
+                hashes_to_ignore_path: str = None
+            ) -> tp.Dict[str, tp.Set[str]]:
+                """Method that returns corresponding introducing ids."""
+                if commit.hash == fix_firstbug.hash:
+                    return {
+                        "important line": {
+                            fix_secondbug.hash, intro_secondbug_pre_report.hash,
+                            intro_firstbug_post_hard.hash
+                        }
                     }
-                }
-            if commit_id == fix_secondbug.hash:
-                return {"important line": {intro_secondbug_pre_report.hash}}
-            return {}
+                if commit.hash == fix_secondbug.hash:
+                    return {"important line": {intro_secondbug_pre_report.hash}}
+                return {}
 
-        # pydriller dummy repo
-        self.mock_pydrill_repo = create_autospec(pydriller.GitRepository)
-        self.mock_pydrill_repo.get_commits_last_modified_lines = create_autospec(
-            pydriller.GitRepository.get_commits_last_modified_lines,
-            side_effect=mock_find_intros
-        )
-        self.mock_pydrill_repo.get_commit = create_autospec(
-            pydriller.GitRepository.get_commit, side_effect=mock_get_commit
-        )
+        self.dummy_pydrill_repo_class = DummyPydrillRepo
 
     def test_issue_events_closing_bug(self):
         """Test identifying issue events that close a bug related issue, with
@@ -213,7 +213,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
 
         with patch(
             'varats.provider.bug.bug.pydriller.GitRepository',
-            self.mock_pydrill_repo
+            self.dummy_pydrill_repo_class
         ):
             pybug = _create_corresponding_pygit_bug(
                 issue_event.commit_id, self.mock_repo, issue_event.issue.number
@@ -268,7 +268,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
                 mock_get_repo),\
             patch(
                 'varats.provider.bug.bug.pydriller.GitRepository',
-                self.mock_pydrill_repo):
+                self.dummy_pydrill_repo_class):
 
             # issue filter method for pygit bugs
             def accept_pybugs(sus_tuple: PygitSuspectTuple):
@@ -334,7 +334,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
                 mock_get_repo),\
             patch(
                 'varats.provider.bug.bug.pydriller.GitRepository',
-                self.mock_pydrill_repo):
+                self.dummy_pydrill_repo_class):
 
             # commit filter method for pygit bugs
             def accept_pybugs(commit: pygit2.Commit):
