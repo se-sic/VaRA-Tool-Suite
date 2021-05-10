@@ -96,7 +96,7 @@ def select(tool: str) -> None:
 @click.option(
     "--export-dir",
     type=click.Path(),
-    prompt="Where should base images be exported to?",
+    prompt="Where should base images be exported to for storage?",
     help="Base image export directory. \n"
     "Must be accessible by this machine and all slurm nodes."
 )

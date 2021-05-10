@@ -57,8 +57,8 @@ Furthermore, this guide assumes that your vara-root directory is ``/scratch/<use
 
    .. code-block:: yaml
 
-      jobs: '10' # TODO: find good default
-      parallel_processes: '4' # TODO: find good default
+      jobs: '20'
+      parallel_processes: '1'
 
       slurm:
           account:
@@ -72,7 +72,7 @@ Furthermore, this guide assumes that your vara-root directory is ``/scratch/<use
 
    .. code-block:: yaml
 
-      vara:
+      varats:
           outfile: /scratch/<user>/varats/results
           result: BC_files
 
