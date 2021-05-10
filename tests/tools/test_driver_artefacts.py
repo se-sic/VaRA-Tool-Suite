@@ -17,7 +17,6 @@ from varats.paper_mgmt.artefacts import (
 )
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plot.plot import Plot
-from varats.plot.plots import prepare_plots
 from varats.plots.discover_plots import initialize_plots
 from varats.table.table import Table
 from varats.table.tables import prepare_tables
@@ -76,15 +75,15 @@ class TestDriverArtefacts(unittest.TestCase):
         artefact_file_names: tp.List[str] = []
         if artefact.artefact_type == ArtefactType.plot:
             artefact = tp.cast(PlotArtefact, artefact)
-            plots = prepare_plots(
-                plot_type=artefact.plot_type,
-                result_output=artefact.output_path,
-                file_format=artefact.file_format,
-                **artefact.plot_kwargs
-            )
-            artefact_file_names = [
-                plot.plot_file_name(artefact.file_format) for plot in plots
-            ]
+            # plots = prepare_plots(
+            #     plot_type=artefact.plot_type,
+            #     result_output=artefact.output_path,
+            #     file_format=artefact.file_format,
+            #     **artefact.plot_kwargs
+            # )
+            # artefact_file_names = [
+            #     plot.plot_file_name(artefact.file_format) for plot in plots
+            # ]
         elif artefact.artefact_type == ArtefactType.table:
             artefact = tp.cast(TableArtefact, artefact)
             tables = prepare_tables(

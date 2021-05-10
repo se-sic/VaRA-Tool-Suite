@@ -8,6 +8,7 @@ import argparse
 import logging
 import textwrap
 import typing as tp
+from collections import defaultdict
 from pathlib import Path
 
 import yaml
@@ -24,7 +25,6 @@ from varats.paper_mgmt.artefacts import (
     TableArtefact,
 )
 from varats.paper_mgmt.paper_config import get_paper_config
-from varats.plot.plots import prepare_plots
 from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
 from varats.table.tables import prepare_tables
@@ -207,7 +207,7 @@ def _artefact_add(args: tp.Dict[str, tp.Any]) -> None:
     else:
         LOG.info(f"Creating new artefact '{name}'.")
     artefact = create_artefact(
-        args['artefact_type'], name, args['output_path'], **extra_args
+        args['artefact_type'], name, Path(args['output_path']), **extra_args
     )
     paper_config.add_artefact(artefact)
     store_artefacts(paper_config.artefacts, paper_config.path)
@@ -254,22 +254,28 @@ def _generate_html_plot_matrix(
         artefacts: the artefacts to include in the overview
         outfile: the path to store the overview in
     """
+    files: tp.Dict[str, tp.Dict[str, Path]] = defaultdict(dict)
+    for artefact in artefacts:
+        file_infos = artefact.get_artefact_file_infos()
+        for file_info in file_infos:
+            if file_info.case_study:
+                file_path = _locate_artefact_file(
+                    Path(file_info.file_name), artefact.output_path,
+                    outfile.parent
+                )
+                if not file_path:
+                    continue
+                files[file_info.case_study.project_name][artefact.name
+                                                        ] = file_path
 
     columns: tp.List[str] = []
     for case_study in get_paper_config().get_all_case_studies():
         images: tp.List[str] = []
         for artefact in artefacts:
-            kwargs = dict(artefact.plot_kwargs)
-            kwargs['project'] = case_study.project_name
-            kwargs['plot_case_study'] = case_study
-            plot_name = artefact.plot_type_class(**kwargs).plot_file_name(
-                artefact.file_format
-            )
-            if not (artefact.output_path / plot_name).exists():
-                LOG.info(f"Could not find image {plot_name}")
+
+            image_path = files[case_study.project_name].get(artefact.name, None)
+            if not image_path:
                 continue
-            image_path = (artefact.output_path /
-                          plot_name).relative_to(outfile.parent)
             images.append(__IMAGE_TEMPLATE.format(str(image_path)))
         if images:
             columns.append(__COLUMN_TEMPLATE.format("\n".join(images)))
@@ -315,53 +321,22 @@ def _generate_artefact_html(artefact: Artefact,
                             cwd: Path) -> tp.Tuple[str, str]:
     artefact_info = f"{artefact.name} ({artefact.artefact_type.name})"
     list_entries: tp.List[str] = []
-    entries = _get_artefact_files_info(artefact)
-    for entry in entries:
-        artefact_file = entry["file_name"]
+    file_infos = artefact.get_artefact_file_infos()
+    for file_info in file_infos:
+        artefact_file = file_info.file_name
         artefact_file_path = _locate_artefact_file(
             Path(artefact_file), artefact.output_path, cwd
         )
         if artefact_file_path:
             list_entries.append(
                 __INDEX_ENTRY_TEMPLATE.format(
-                    project=entry["project"],
+                    project=file_info.case_study.project_name
+                    if file_info.case_study else "[UNKNOWN]",
                     link=str(artefact_file_path),
                     name=artefact_file
                 )
             )
     return artefact_info, "\n".join(list_entries)
-
-
-def _get_artefact_files_info(artefact: Artefact) -> tp.List[tp.Dict[str, str]]:
-    if artefact.artefact_type == ArtefactType.plot:
-        artefact = tp.cast(PlotArtefact, artefact)
-        plots = prepare_plots(
-            plot_type=artefact.plot_type,
-            result_output=artefact.output_path,
-            file_format=artefact.file_format,
-            **artefact.plot_kwargs
-        )
-        return [{
-            "file_name": plot.plot_file_name(artefact.file_format),
-            "project": plot.plot_kwargs.get("project", "[UNKNOWN]")
-        } for plot in plots]
-
-    if artefact.artefact_type == ArtefactType.table:
-        artefact = tp.cast(TableArtefact, artefact)
-        tables = prepare_tables(
-            table_type=artefact.table_type,
-            result_output=artefact.output_path,
-            file_format=artefact.file_format,
-            **artefact.table_kwargs
-        )
-        return [{
-            "file_name": table.table_file_name(),
-            "project": table.table_kwargs.get("project", "[UNKNOWN]")
-        } for table in tables]
-
-    raise AssertionError(
-        f"Missing implementation for artefact type {artefact.artefact_type}"
-    )
 
 
 def _locate_artefact_file(artefact_file: Path, output_path: Path,

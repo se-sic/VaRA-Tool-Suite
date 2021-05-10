@@ -6,7 +6,6 @@ from pathlib import Path
 
 import click
 
-from varats.plot.plot_utils import check_required_args
 from varats.utils.cli_util import make_cli_option, CLIOptionTy, add_cli_options
 from varats.utils.settings import vara_cfg
 
@@ -33,15 +32,16 @@ class CommonPlotOptions():
         self.file_type = file_type
 
     @staticmethod
-    @check_required_args("view", "plot_dir", "file_type")
     def from_kwargs(**kwargs: tp.Any) -> 'CommonPlotOptions':
         """Construct a ``CommonPlotOptions`` object from a kwargs dict."""
         return CommonPlotOptions(
-            kwargs['view'], Path(kwargs["plot_dir"]), kwargs["file_type"]
+            kwargs.get("view", False),
+            Path(kwargs.get("plot_dir", CommonPlotOptions.default_plot_dir())),
+            kwargs.get("file_type", "svg")
         )
 
-    @classmethod
-    def default_plot_dir(cls) -> Path:
+    @staticmethod
+    def default_plot_dir() -> Path:
         return Path(str(vara_cfg()['plots']['plot_dir']))
 
     __options = [
@@ -58,7 +58,7 @@ class CommonPlotOptions():
             help="File type for the plot."
         ),
         make_cli_option(
-            "--output-dir",
+            "--plot-dir",
             type=click.Path(
                 exists=True,
                 file_okay=False,
@@ -76,6 +76,13 @@ class CommonPlotOptions():
     def cli_options(cls, command: tp.Any) -> tp.Any:
         return add_cli_options(command, *cls.__options)
 
+    def get_dict(self) -> tp.Dict[str, tp.Any]:
+        return {
+            "view": self.view,
+            "file_type": self.file_type,
+            "plot_dir": self.plot_dir
+        }
+
 
 class PlotConfig():
     """Class with parameters that influence a plot's appearance."""
@@ -88,6 +95,9 @@ class PlotConfig():
     @classmethod
     def cli_options(cls, command: tp.Any) -> tp.Any:
         return add_cli_options(command, *cls.__options)
+
+    def get_dict(self) -> tp.Dict[str, tp.Any]:
+        return {}
 
 
 class PlotGenerator(abc.ABC):
@@ -162,6 +172,39 @@ class PlotGenerator(abc.ABC):
         cls.PLOT = plot
         cls.OPTIONS = options
         cls.GENERATORS[generator_name] = cls
+
+    @staticmethod
+    def get_plot_generator_types_help_string() -> str:
+        """
+        Generates help string for visualizing all available plots.
+
+        Returns:
+            a help string that contains all available plot names.
+        """
+        return "The following plot generators are available:\n  " + "\n  ".join(
+            [key for key in PlotGenerator.GENERATORS]
+        )
+
+    @staticmethod
+    def get_class_for_plot_generator_type(
+        plot_type: str
+    ) -> tp.Type['PlotGenerator']:
+        """
+        Get the class for plot from the plot registry.
+
+        Args:
+            plot_type: The name of the plot.
+
+        Returns: The class implementing the plot.
+        """
+        if plot_type not in PlotGenerator.GENERATORS:
+            raise LookupError(
+                f"Unknown plot generator '{plot_type}'.\n" +
+                PlotGenerator.get_plot_generator_types_help_string()
+            )
+
+        plot_cls = PlotGenerator.GENERATORS[plot_type]
+        return plot_cls
 
     @property
     def plot_config(self) -> PlotConfig:
