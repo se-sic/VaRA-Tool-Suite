@@ -48,8 +48,7 @@ class CommonPlotOptions():
         make_cli_option(
             "-v",
             "--view",
-            type=bool,
-            default=False,
+            is_flag=True,
             help="View the plot instead of saving it to a file."
         ),
         make_cli_option(
