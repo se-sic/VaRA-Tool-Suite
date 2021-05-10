@@ -14,26 +14,19 @@ from benchbuild.environments.domain.commands import (
     CreateImage,
     fs_compliant_name,
     ExportImage,
+    DeleteImage,
 )
 from benchbuild.environments.domain.declarative import (
     add_benchbuild_layers,
     ContainerImage,
 )
-from benchbuild.utils.cmd import buildah
 from plumbum import local
-from plumbum.commands import ConcreteCommand
 
 from varats.tools.research_tools.research_tool import Distro
 from varats.tools.tool_util import get_research_tool
 from varats.utils.settings import bb_cfg, vara_cfg
 
 LOG = logging.getLogger(__name__)
-
-
-def prepare_buildah() -> ConcreteCommand:
-    return buildah["--root",
-                   bb_cfg()["container"]["root"].value, "--runroot",
-                   bb_cfg()["container"]["runroot"].value]
 
 
 class ImageBase(Enum):
@@ -178,11 +171,12 @@ class BaseImageCreationContext():
 
 def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
     crun = bb_cfg()['container']['runtime'].value
-    src_dir = Path(vara_cfg()['container']['varats_source'].value)
-    tgt_dir = Path('/varats')
 
     def from_source(image: ContainerImage) -> None:
-        LOG.debug('installing benchbuild from source.')
+        LOG.debug('installing varats from source.')
+
+        src_dir = Path(vara_cfg()['container']['varats_source'].value)
+        tgt_dir = Path('/varats')
         LOG.debug(f'src_dir: {src_dir} tgt_dir: {tgt_dir}')
 
         image.run('mkdir', f'{tgt_dir}', runtime=crun)
@@ -300,7 +294,8 @@ def delete_base_image(base: ImageBase) -> None:
     Args:
         base: the image base
     """
-    prepare_buildah()("rmi", "--force", base.image_name)
+    publish = bootstrap.bus()
+    publish(DeleteImage(base.image_name))
 
 
 def delete_base_images() -> None:

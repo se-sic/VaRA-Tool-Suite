@@ -1,7 +1,7 @@
 vara-container
 ==============
 
-This tool is used to manage the container images used when :ref:`running benchbuild in container mode<Running BenchBuild in a container>`.
+This tool is used to manage the base container images used when :ref:`running benchbuild in container mode<Running BenchBuild in a container>`.
 
 .. program-output:: vara-container -h
     :nostderr:
@@ -20,3 +20,8 @@ Existing base images can also be deleted:
 
 .. program-output:: vara-container delete -h
     :nostderr:
+
+.. note::
+
+  This command does not delete project and experiment images, it only deletes base images.
+  To delete project and experiment images use BenchBuild's `benchbuild container rmi` command.
