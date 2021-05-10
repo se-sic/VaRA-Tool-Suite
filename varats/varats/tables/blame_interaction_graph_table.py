@@ -9,6 +9,7 @@ from tabulate import tabulate
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
     CIGNodeAttrs,
+    AIGNodeAttrs,
 )
 from varats.data.reports.blame_report import BlameReport
 from varats.paper.case_study import CaseStudy
@@ -237,6 +238,78 @@ class CommitInteractionGraphTopDegreeTable(Table):
             (f"Top {num_commits} Node In-Degree", "commit"):
                 top_in_degree.index.values,
             (f"Top {num_commits} Node In-Degree", "degree"):
+                top_in_degree.values,
+        })
+
+        if self.format in [
+            TableFormat.latex, TableFormat.latex_booktabs, TableFormat.latex_raw
+        ]:
+            table = degree_data.to_latex(
+                index=False, multicolumn_format="c", multirow=True
+            )
+            return str(table) if table else ""
+        return tabulate(degree_data, degree_data.columns, self.format.value)
+
+    def wrap_table(self, table: str) -> str:
+        return wrap_table_in_document(table=table, landscape=True)
+
+
+class AuthorInteractionGraphTopDegreeTable(Table):
+    """Table showing authors with highest author interaction graph node
+    degrees."""
+
+    NAME = "aig_top_degrees_table"
+
+    def __init__(self, **kwargs: tp.Any):
+        super().__init__(self.NAME, **kwargs)
+
+    def tabulate(self) -> str:
+        case_study = self.table_kwargs["table_case_study"]
+        num_authors = self.table_kwargs.get("num_authors", 10)
+
+        project_name = case_study.project_name
+        revision = newest_processed_revision_for_case_study(
+            case_study, BlameReport
+        )
+        if not revision:
+            raise TableDataEmpty()
+
+        graph = create_blame_interaction_graph(project_name, revision
+                                              ).author_interaction_graph()
+
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+        for node in graph.nodes:
+            node_attrs = tp.cast(AIGNodeAttrs, graph.nodes[node])
+            nodes.append(({
+                "author":
+                    f"{node_attrs['author']} ({node_attrs['num_commits']})",
+                "node_degree":
+                    graph.degree(node),
+                "node_out_degree":
+                    graph.out_degree(node),
+                "node_in_degree":
+                    graph.in_degree(node),
+            }))
+
+        data = pd.DataFrame(nodes)
+        data.set_index("author", inplace=True)
+
+        top_degree = data["node_degree"].nlargest(num_authors)
+        top_out_degree = data["node_out_degree"].nlargest(num_authors)
+        top_in_degree = data["node_in_degree"].nlargest(num_authors)
+
+        degree_data = pd.DataFrame.from_dict({
+            (f"Top {num_authors} Node Degree", "author (commits)"):
+                top_degree.index.values,
+            (f"Top {num_authors} Node Degree", "degree"):
+                top_degree.values,
+            (f"Top {num_authors} Node Out-Degree", "author (commits)"):
+                top_out_degree.index.values,
+            (f"Top {num_authors} Node Out-Degree", "degree"):
+                top_out_degree.values,
+            (f"Top {num_authors} Node In-Degree", "author (commits)"):
+                top_in_degree.index.values,
+            (f"Top {num_authors} Node In-Degree", "degree"):
                 top_in_degree.values,
         })
 
