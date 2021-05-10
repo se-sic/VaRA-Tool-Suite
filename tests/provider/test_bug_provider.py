@@ -1,5 +1,6 @@
 """Test bug_provider and bug modules."""
 import datetime
+import typing as tp
 import unittest
 from unittest.mock import create_autospec, patch
 
@@ -42,11 +43,86 @@ class TestBugDetectionStrategies(unittest.TestCase):
             pygit2.Repository.revparse_single, side_effect=mock_revparse
         )
 
+        # issue history
+        bug_label = create_autospec(Label)
+        bug_label.name = "bug"
+
+        self.issue_firstbug = create_autospec(Issue)
+        self.issue_firstbug.number = 5
+        self.issue_firstbug.labels = [bug_label]
+        self.issue_firstbug.created_at = datetime.datetime(2020, 4, 20, 13, 37)
+
+        self.issue_nobug = create_autospec(Issue)
+        self.issue_nobug.number = 6
+        self.issue_nobug.labels = []
+        self.issue_nobug.created_at = datetime.datetime(2020, 4, 21, 13, 40)
+
+        self.issue_secondbug = create_autospec(Issue)
+        self.issue_secondbug.number = 7
+        self.issue_secondbug.labels = [bug_label]
+        self.issue_secondbug.created_at = datetime.datetime(2020, 4, 22, 7, 52)
+
+        # pydriller history (for issue event tests)
+        # no suspect, weak suspect for first bug
+        intro_secondbug_pre_report = create_autospec(pydriller.Commit)
+        intro_secondbug_pre_report.hash = "1239i1"
+        intro_secondbug_pre_report.commiter_date = datetime.datetime(
+            2020, 4, 21, 13, 13
+        )
+        # second bug fix is also partial fix for first bug
+        fix_secondbug = create_autospec(pydriller.Commit)
+        fix_secondbug.hash = "1239"
+        fix_secondbug.commiter_date = datetime.datetime(2020, 4, 22, 16, 2)
+
+        # hard suspect for first bug
+        intro_firstbug_post_hard = create_autospec(pydriller.Commit)
+        intro_firstbug_post_hard.hash = "1240i1"
+        intro_firstbug_post_hard.commiter_date = datetime.datetime(
+            2020, 4, 20, 19, 34
+        )
+
+        # first bug fix
+        fix_firstbug = create_autospec(pydriller.Commit)
+        fix_firstbug.hash = "1240"
+        fix_firstbug.commiter_date = datetime.datetime(2020, 4, 23, 5, 23)
+
+        important_commits = {
+            intro_secondbug_pre_report, intro_firstbug_post_hard, fix_firstbug,
+            fix_secondbug
+        }
+
+        def mock_get_commit(commit_id: str):
+            """Method that creates pydriller Commit mocks for given ID."""
+            for important_commit in important_commits:
+                if commit_id == important_commit.hash:
+                    return important_commit
+
+            # create new mocks for not already predetermined commits
+            mock_commit = create_autospec(pydriller.Commit)
+            mock_commit.hash = commit_id
+            return mock_commit
+
+        def mock_find_intros(commit_id: str) -> tp.Dict[str, tp.Set[str]]:
+            """Method that returns corresponding introducing ids."""
+            if commit_id == fix_firstbug.hash:
+                return {
+                    "important line": {
+                        fix_secondbug.hash, intro_secondbug_pre_report.hash,
+                        intro_firstbug_post_hard
+                    }
+                }
+            if commit_id == fix_secondbug.hash:
+                return {"important line": {intro_secondbug_pre_report.hash}}
+            return {}
+
         # pydriller dummy repo
         self.mock_pydrill_repo = create_autospec(pydriller.GitRepository)
         self.mock_pydrill_repo.get_commits_last_modified_lines = create_autospec(
             pydriller.GitRepository.get_commits_last_modified_lines,
-            return_value={}
+            side_effect=mock_find_intros
+        )
+        self.mock_pydrill_repo.get_commit = create_autospec(
+            pydriller.GitRepository.get_commit, side_effect=mock_get_commit
         )
 
     def test_issue_events_closing_bug(self):
@@ -150,48 +226,30 @@ class TestBugDetectionStrategies(unittest.TestCase):
         """Test on a set of IssueEvents whether the corresponding set of bugs is
         created correctly."""
 
-        bug_label = create_autospec(Label)
-        bug_label.name = "bug"
-
-        issue_firstbug = create_autospec(Issue)
-        issue_firstbug.number = 5
-        issue_firstbug.labels = [bug_label]
-        issue_firstbug.created_at = datetime.datetime(2020, 4, 20)
-
-        issue_nobug = create_autospec(Issue)
-        issue_nobug.number = 6
-        issue_nobug.labels = []
-        issue_nobug.created_at = datetime.datetime(2019, 4, 20)
-
-        issue_secondbug = create_autospec(Issue)
-        issue_secondbug.number = 7
-        issue_secondbug.labels = [bug_label]
-        issue_secondbug.created_at = datetime.datetime(2020, 4, 22)
-
         event_close_first_nocommit = create_autospec(IssueEvent)
         event_close_first_nocommit.event = "closed"
         event_close_first_nocommit.commit_id = None
-        event_close_first_nocommit.issue = issue_firstbug
+        event_close_first_nocommit.issue = self.issue_firstbug
 
         event_close_no_bug = create_autospec(IssueEvent)
         event_close_no_bug.event = "closed"
         event_close_no_bug.commit_id = "1238"
-        event_close_no_bug.issue = issue_nobug
+        event_close_no_bug.issue = self.issue_nobug
 
         event_reopen_first = create_autospec(IssueEvent)
         event_reopen_first.event = "reopened"
         event_reopen_first.commit_id = None
-        event_reopen_first.issue = issue_firstbug
+        event_reopen_first.issue = self.issue_firstbug
 
         event_close_second = create_autospec(IssueEvent)
         event_close_second.event = "closed"
         event_close_second.commit_id = "1239"
-        event_close_second.issue = issue_secondbug
+        event_close_second.issue = self.issue_secondbug
 
         event_close_first = create_autospec(IssueEvent)
         event_close_first.event = "closed"
         event_close_first.commit_id = "1240"
-        event_close_first.issue = issue_firstbug
+        event_close_first.issue = self.issue_firstbug
 
         def mock_get_all_issue_events(_project_name: str):
             return iter([
@@ -217,13 +275,24 @@ class TestBugDetectionStrategies(unittest.TestCase):
                 return sus_tuple.create_corresponding_bug()
 
             # create set of fixing IDs of found bugs
-            pybug_ids = set(
-                pybug.fixing_commit.hex
-                for pybug in _filter_all_issue_pygit_bugs("", accept_pybugs)
-            )
-            expected_ids = {"1239", "1240"}
+            pybugs = _filter_all_issue_pygit_bugs("", accept_pybugs)
+            pybug_fix_ids = set(pybug.fixing_commit.hex for pybug in pybugs)
+            expected_fix_ids = {"1239", "1240"}
 
-            self.assertEqual(pybug_ids, expected_ids)
+            intro_fist_bug = set
+            intro_second_bug = set
+            for pybug in pybugs:
+                if pybug.fixing_commit.hex == "1239":
+                    intro_second_bug = pybug.introducing_commits
+                if pybug.fixing_commit.hex == "1240":
+                    intro_fist_bug = pybug.introducing_commits
+
+            expected_first_bug_intro_ids = {"1239i1", "1239"}
+            expected_second_bug_intro_ids = {"1239i1"}
+
+            self.assertEqual(pybug_fix_ids, expected_fix_ids)
+            self.assertEqual(intro_fist_bug, expected_first_bug_intro_ids)
+            self.assertEqual(intro_second_bug, expected_second_bug_intro_ids)
 
     def test_filter_commit_message_bugs(self):
         """Test on the commit history of a project whether the corresponding set

@@ -357,7 +357,7 @@ def _find_corresponding_pygit_suspect_tuple(
 
         non_suspect_commits = set()
         suspect_commits = set()
-        for _, introducing_set in blame_dict.items():
+        for introducing_set in blame_dict.values():
             for introducing_id in introducing_set:
                 issue_date = issue_event.issue.created_at
                 introduction_date = pydrill_repo.get_commit(
