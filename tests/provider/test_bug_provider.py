@@ -108,7 +108,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
                 return {
                     "important line": {
                         fix_secondbug.hash, intro_secondbug_pre_report.hash,
-                        intro_firstbug_post_hard
+                        intro_firstbug_post_hard.hash
                     }
                 }
             if commit_id == fix_secondbug.hash:
