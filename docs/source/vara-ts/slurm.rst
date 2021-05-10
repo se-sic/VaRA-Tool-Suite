@@ -191,7 +191,7 @@ Step 4 in Detail
 ................
 
 As explained above, rootless containers do not work on NFS (see `here <https://github.com/containers/podman/blob/master/rootless.md>`_), so we have to take some extra steps if we want to run containers via slurm.
-The recommended way to do this is using the `vara-container prepare-slurm command, but in some situations it might be handy to know what happens under the hood:
+The recommended way to do this is using the `vara-container prepare-slurm` command, but in some situations it might be handy to know what happens under the hood:
 
     - You need to set the container root and runroot paths to some location that is not on a NFS, e.g., to a directory in ``tmp``:
 
