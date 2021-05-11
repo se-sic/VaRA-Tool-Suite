@@ -4,11 +4,11 @@ import typing as tp
 import unittest
 from unittest.mock import create_autospec, patch, MagicMock
 
-import pydriller
 import pygit2
 from github.Issue import Issue
 from github.IssueEvent import IssueEvent
 from github.Label import Label
+from pydriller import git as pydrepo
 
 from varats.projects.test_projects.bug_provider_test_repos import (
     BasicBugDetectionTestRepo,
@@ -57,30 +57,30 @@ class DummyIssueData:
         return DummyIssueData.__issue_secondbug
 
 
-class DummyPydrillerRepo(pydriller.GitRepository):
+class DummyPydrillerRepo(pydrepo.Git):
     """Dummy pydriller repo class that overrides basic functionality."""
 
     # pydriller history (for issue event tests)
     # no suspect, weak suspect for first bug
-    __intro_secondbug_pre_report = create_autospec(pydriller.Commit)
+    __intro_secondbug_pre_report = create_autospec(pydrepo.Commit)
     __intro_secondbug_pre_report.hash = "1239i1"
     __intro_secondbug_pre_report.committer_date = datetime.datetime(
         2020, 4, 21, 13, 13
     )
     # second bug fix is also partial fix for first bug
-    __fix_secondbug = create_autospec(pydriller.Commit)
+    __fix_secondbug = create_autospec(pydrepo.Commit)
     __fix_secondbug.hash = "1239"
     __fix_secondbug.committer_date = datetime.datetime(2020, 4, 22, 16, 2)
 
     # hard suspect for first bug
-    __intro_firstbug_post_hard = create_autospec(pydriller.Commit)
+    __intro_firstbug_post_hard = create_autospec(pydrepo.Commit)
     __intro_firstbug_post_hard.hash = "1240i1"
     __intro_firstbug_post_hard.committer_date = datetime.datetime(
         2020, 4, 20, 19, 34
     )
 
     # first bug fix
-    __fix_firstbug = create_autospec(pydriller.Commit)
+    __fix_firstbug = create_autospec(pydrepo.Commit)
     __fix_firstbug.hash = "1240"
     __fix_firstbug.committer_date = datetime.datetime(2020, 4, 23, 5, 23)
 
@@ -88,6 +88,9 @@ class DummyPydrillerRepo(pydriller.GitRepository):
         __intro_secondbug_pre_report, __intro_firstbug_post_hard,
         __fix_firstbug, __fix_secondbug
     }
+
+    def __init__(self, _path):
+        super().__init__("")
 
     @staticmethod
     def fix_firstbug() -> MagicMock:
@@ -112,15 +115,15 @@ class DummyPydrillerRepo(pydriller.GitRepository):
                 return important_commit
 
         # create new mocks for not already predetermined commits
-        mock_commit = create_autospec(pydriller.Commit)
+        mock_commit = create_autospec(pydrepo.Commit)
         mock_commit.hash = commit_id
         mock_commit.committer_date = datetime.datetime.now()
         return mock_commit
 
     def get_commits_last_modified_lines(
         self,
-        commit: pydriller.Commit,
-        modification: pydriller.Modification = None,
+        commit: pydrepo.Commit,
+        modification: pydrepo.ModifiedFile = None,
         hashes_to_ignore_path: str = None
     ) -> tp.Dict[str, tp.Set[str]]:
         """Method that returns corresponding introducing ids."""
@@ -246,10 +249,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
         issue_event.commit_id = "1237"
         issue_event.issue = issue
 
-        with patch(
-            'varats.provider.bug.bug.pydriller.GitRepository',
-            DummyPydrillerRepo
-        ):
+        with patch('varats.provider.bug.bug.pydrepo.Git', DummyPydrillerRepo):
             pybug = _create_corresponding_pygit_bug(
                 issue_event.commit_id, self.mock_repo, issue_event.issue.number
             )
@@ -302,7 +302,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
                 'varats.provider.bug.bug.get_local_project_git',
                 mock_get_repo),\
             patch(
-                'varats.provider.bug.bug.pydriller.GitRepository',
+                'varats.provider.bug.bug.pydrepo.Git',
                 DummyPydrillerRepo):
 
             # issue filter method for pygit bugs
@@ -374,7 +374,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
                 'varats.provider.bug.bug.get_local_project_git',
                 mock_get_repo),\
             patch(
-                'varats.provider.bug.bug.pydriller.GitRepository',
+                'varats.provider.bug.bug.pydrepo.Git',
                 DummyPydrillerRepo):
 
             # commit filter method for pygit bugs

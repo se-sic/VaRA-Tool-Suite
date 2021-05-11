@@ -3,11 +3,11 @@
 import typing as tp
 from datetime import datetime
 
-import pydriller
 import pygit2
 from github import Github
 from github.IssueEvent import IssueEvent
 from github.Repository import Repository
+from pydriller import git as pydrepo
 
 from varats.project.project_util import (
     get_local_project_git,
@@ -303,8 +303,7 @@ def _create_corresponding_pygit_bug(
     Returns:
         A PygitBug Object or None.
     """
-
-    pydrill_repo = pydriller.GitRepository(project_repo.path)
+    pydrill_repo = pydrepo.Git(project_repo.path)
 
     closing_pycommit: pygit2.Commit = project_repo.revparse_single(
         closing_commit
@@ -346,7 +345,7 @@ def _find_corresponding_pygit_suspect_tuple(
         None otherwise
     """
     pygit_repo: pygit2.Repository = get_local_project_git(project_name)
-    pydrill_repo = pydriller.GitRepository(pygit_repo.path)
+    pydrill_repo = pydrepo.Git(pygit_repo.path)
 
     if _has_closed_a_bug(issue_event) and issue_event.commit_id:
         fixing_commit = pygit_repo.revparse_single(issue_event.commit_id)
