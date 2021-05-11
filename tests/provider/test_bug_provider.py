@@ -90,7 +90,7 @@ class DummyPydrillerRepo(pydrepo.Git):
     }
 
     def __init__(self, _path):
-        super().__init__("")
+        pass
 
     @staticmethod
     def fix_firstbug() -> MagicMock:
