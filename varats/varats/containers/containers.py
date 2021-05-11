@@ -14,26 +14,19 @@ from benchbuild.environments.domain.commands import (
     CreateImage,
     fs_compliant_name,
     ExportImage,
+    DeleteImage,
 )
 from benchbuild.environments.domain.declarative import (
     add_benchbuild_layers,
     ContainerImage,
 )
-from benchbuild.utils.cmd import buildah
 from plumbum import local
-from plumbum.commands import ConcreteCommand
 
 from varats.tools.research_tools.research_tool import Distro
 from varats.tools.tool_util import get_research_tool
 from varats.utils.settings import bb_cfg, vara_cfg
 
 LOG = logging.getLogger(__name__)
-
-
-def prepare_buildah() -> ConcreteCommand:
-    return buildah["--root",
-                   bb_cfg()["container"]["root"].value, "--runroot",
-                   bb_cfg()["container"]["runroot"].value]
 
 
 class ImageBase(Enum):
@@ -178,11 +171,12 @@ class BaseImageCreationContext():
 
 def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
     crun = bb_cfg()['container']['runtime'].value
-    src_dir = Path(vara_cfg()['container']['varats_source'].value)
-    tgt_dir = Path('/varats')
 
     def from_source(image: ContainerImage) -> None:
-        LOG.debug('installing benchbuild from source.')
+        LOG.debug('installing varats from source.')
+
+        src_dir = Path(vara_cfg()['container']['varats_source'].value)
+        tgt_dir = Path('/varats')
         LOG.debug(f'src_dir: {src_dir} tgt_dir: {tgt_dir}')
 
         image.run('mkdir', f'{tgt_dir}', runtime=crun)
@@ -272,9 +266,9 @@ def create_base_image(base: ImageBase) -> None:
         publish(CreateImage(base.image_name, image_context.layers))
 
 
-def create_base_images() -> None:
+def create_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
     """Builds all base images for the current research tool."""
-    for base in ImageBase:
+    for base in images:
         LOG.info(f"Building base image {base.image_name}.")
         create_base_image(base)
 
@@ -300,12 +294,13 @@ def delete_base_image(base: ImageBase) -> None:
     Args:
         base: the image base
     """
-    prepare_buildah()("rmi", "--force", base.image_name)
+    publish = bootstrap.bus()
+    publish(DeleteImage(base.image_name))
 
 
-def delete_base_images() -> None:
+def delete_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
     """Deletes all base images for the current research tool."""
-    for base in ImageBase:
+    for base in images:
         LOG.info(f"Deleting base image {base.image_name}.")
         delete_base_image(base)
 
@@ -320,8 +315,8 @@ def export_base_image(base: ImageBase) -> None:
     publish(ExportImage(base.image_name, str(export_path)))
 
 
-def export_base_images() -> None:
+def export_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
     """Exports all base images for the current research tool."""
-    for base in ImageBase:
+    for base in images:
         LOG.info(f"Exporting base image {base.image_name}.")
         export_base_image(base)

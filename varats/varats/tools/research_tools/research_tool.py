@@ -28,7 +28,7 @@ from varats.utils.git_util import get_current_branch
 from varats.utils.logger_util import log_without_linesep
 
 if tp.TYPE_CHECKING:
-    from varats.containers.containers import BaseImageCreationContext
+    import varats.containers.containers as containers
 
 
 class Distro(Enum):
@@ -426,7 +426,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
 
     @abc.abstractmethod
     def add_container_layers(
-        self, image_context: 'BaseImageCreationContext'
+        self, image_context: 'containers.BaseImageCreationContext'
     ) -> None:
         """
         Add the layers required for this research tool to the given container.
