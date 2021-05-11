@@ -54,36 +54,43 @@ class Libpng(bb.Project, CVEProviderHook):  # type: ignore
                             "Not libpng"),
             GoodBadSubgraph(["e209df47c4b821f277504e0cc248d9022b639e55"],
                             ["d61b42c81d9d6f0905039ccc66870b2a27eafdd9"],
-                            "Error in CMakeList"),
+                            "Bug in Libpng"),
             GoodBadSubgraph(["8d9e494dfb208c88a9497038977b539310c7fca5"],
                             ["bf15ac7e86f4fc95b6b33831f212c3f13f955623"],
-                            "Build Error in libpng"),
+                            "Bug in Libpng"),
             GoodBadSubgraph(["7de02e722f8f6bdb2756e20091c42fa4ffaa89c1"],
                             ["45bb9a62ba343250497c33da2b0bad78376d55b8"],
-                            "Build Error in libpng"),
+                            "Bug in Libpng"),
             SingleRevision(
-                "79b7e4e621fd611df658ec24a07080708fffe1de",
-                "Build Error in libpng"
+                "79b7e4e621fd611df658ec24a07080708fffe1de", "BBug in Libpng"
             ),
             SingleRevision(
-                "67a289ffa924a00fab96a9bd6da8c069441138fa",
-                "Build Error in libpng"
+                "67a289ffa924a00fab96a9bd6da8c069441138fa", "Bug in Libpng"
             ),
             GoodBadSubgraph(["b76ab1260d156a390a47f81c0ea6ef0524208b8e"],
                             ["e4f124e3352d63f7162ab7c1360a2db6d54f2ff2"],
-                            "Build Error in libpng "),
+                            "Bug in Libpng"),
             GoodBadSubgraph(["5bc90389bffa3cf3d2b8325bfac5c4344a206bc0"],
                             ["c35f888c46986093582f73cafcd7185472748e4b"],
-                            "Build Error"),
+                            "Bug in Libpng"),
             GoodBadSubgraph(["5b79cd52f440a7e1ce418f87b92b526765719c54"],
                             ["c4081f05c88d171cd476d5df78ed4a690296c602"],
-                            "Build Error"),
+                            "Bug in Libpng"),
             GoodBadSubgraph(["9c946e22fcad10c2a44c0380c0909da6732097ce"],
                             ["342c4eab2a0565de456f1f3efcc41b635544160e"],
-                            "Build Error"),
+                            "Bug in Libpng"),
             GoodBadSubgraph(["40afb685704f1a5bf8d9edc0b5c7ec7f25e94b77"],
                             ["619cf868e60807d759639cfb070987ad059fa0c9"],
-                            "Build Error")
+                            "Bug in Libpng"),
+            SingleRevision(
+                "7c709f039f7ff3cc92eea03af0660a171ef0673d", "Bug in Libpng"
+            ),
+            SingleRevision(
+                "3fa1df48a1c14d3004733471ce7fbce916750911", "Bug in Libpng"
+            ),
+            SingleRevision(
+                "a1312f7b190df545fb7ec90e23cc4a9b6328af00", "Bug in Libpng"
+            )
         ])(
             bb.source.Git(
                 remote="https://github.com/glennrp/libpng.git",
