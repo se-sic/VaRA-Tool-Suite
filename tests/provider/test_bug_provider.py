@@ -299,12 +299,12 @@ class TestBugDetectionStrategies(unittest.TestCase):
             pybug_fix_ids = set(pybug.fixing_commit.hex for pybug in pybugs)
             expected_fix_ids = {"1239", "1240"}
 
-            intro_first_bug = set
-            intro_second_bug = set
+            intro_first_bug = set()
+            intro_second_bug = set()
             for pybug in pybugs:
-                if pybug.fixing_commit.hex == "1239":
+                if pybug.fixing_commit.hex == event_close_second.commit_id:
                     intro_second_bug = pybug.introducing_commits
-                if pybug.fixing_commit.hex == "1240":
+                if pybug.fixing_commit.hex == event_close_first.commit_id:
                     intro_first_bug = pybug.introducing_commits
 
             expected_first_bug_intro_ids = {"1239i1", "1239"}
