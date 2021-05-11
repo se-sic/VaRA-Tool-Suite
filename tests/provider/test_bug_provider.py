@@ -24,6 +24,107 @@ from varats.provider.bug.bug import (
 from varats.provider.bug.bug_provider import BugProvider
 
 
+class DummyIssueTrackingSystem:
+    """Dummy Issue Tracking data for Issue Bug Tests."""
+    __bug_label = create_autospec(Label)
+    __bug_label.name = "bug"
+
+    __issue_firstbug = create_autospec(Issue)
+    __issue_firstbug.number = 5
+    __issue_firstbug.labels = [__bug_label]
+    __issue_firstbug.created_at = datetime.datetime(2020, 4, 20, 13, 37)
+
+    __issue_nobug = create_autospec(Issue)
+    __issue_nobug.number = 6
+    __issue_nobug.labels = []
+    __issue_nobug.created_at = datetime.datetime(2020, 4, 21, 13, 40)
+
+    __issue_secondbug = create_autospec(Issue)
+    __issue_secondbug.number = 7
+    __issue_secondbug.labels = [__bug_label]
+    __issue_secondbug.created_at = datetime.datetime(2020, 4, 22, 7, 52)
+
+    @staticmethod
+    def issue_firstbug():
+        return DummyIssueTrackingSystem.__issue_firstbug
+
+    @staticmethod
+    def issue_nobug():
+        return DummyIssueTrackingSystem.__issue_nobug
+
+    @staticmethod
+    def issue_secondbug():
+        return DummyIssueTrackingSystem.__issue_secondbug
+
+
+class DummyPydrillerRepo(pydriller.GitRepository):
+    """Dummy pydriller repo class that overrides basic functionality."""
+
+    # pydriller history (for issue event tests)
+    # no suspect, weak suspect for first bug
+    __intro_secondbug_pre_report = create_autospec(pydriller.Commit)
+    __intro_secondbug_pre_report.hash = "1239i1"
+    __intro_secondbug_pre_report.committer_date = datetime.datetime(
+        2020, 4, 21, 13, 13
+    )
+    # second bug fix is also partial fix for first bug
+    __fix_secondbug = create_autospec(pydriller.Commit)
+    __fix_secondbug.hash = "1239"
+    __fix_secondbug.committer_date = datetime.datetime(2020, 4, 22, 16, 2)
+
+    # hard suspect for first bug
+    __intro_firstbug_post_hard = create_autospec(pydriller.Commit)
+    __intro_firstbug_post_hard.hash = "1240i1"
+    __intro_firstbug_post_hard.committer_date = datetime.datetime(
+        2020, 4, 20, 19, 34
+    )
+
+    # first bug fix
+    __fix_firstbug = create_autospec(pydriller.Commit)
+    __fix_firstbug.hash = "1240"
+    __fix_firstbug.committer_date = datetime.datetime(2020, 4, 23, 5, 23)
+
+    __important_commits = {
+        __intro_secondbug_pre_report, __intro_firstbug_post_hard,
+        __fix_firstbug, __fix_secondbug
+    }
+
+    def get_commit(self, commit_id: str) -> MagicMock:
+        """Method that creates pydriller Commit mocks for given ID."""
+        for important_commit in DummyPydrillerRepo.__important_commits:
+            if commit_id == important_commit.hash:
+                return important_commit
+
+        # create new mocks for not already predetermined commits
+        mock_commit = create_autospec(pydriller.Commit)
+        mock_commit.hash = commit_id
+        mock_commit.committer_date = datetime.datetime.now()
+        return mock_commit
+
+    def get_commits_last_modified_lines(
+        self,
+        commit: pydriller.Commit,
+        modification: pydriller.Modification = None,
+        hashes_to_ignore_path: str = None
+    ) -> tp.Dict[str, tp.Set[str]]:
+        """Method that returns corresponding introducing ids."""
+        if commit.hash == DummyPydrillerRepo.__fix_firstbug.hash:
+            return {
+                "important line": {
+                    DummyPydrillerRepo.__fix_secondbug.hash,
+                    DummyPydrillerRepo.__intro_secondbug_pre_report.hash,
+                    DummyPydrillerRepo.__intro_firstbug_post_hard.hash
+                }
+            }
+        if commit.hash == DummyPydrillerRepo.__fix_secondbug.hash:
+            return {
+                "important line": {
+                    DummyPydrillerRepo.__intro_secondbug_pre_report.hash
+                }
+            }
+        return {}
+
+
 class TestBugDetectionStrategies(unittest.TestCase):
     """Test several parts of the bug detection strategies used by the
     BugProvider."""
@@ -42,88 +143,6 @@ class TestBugDetectionStrategies(unittest.TestCase):
         self.mock_repo.revparse_single = create_autospec(
             pygit2.Repository.revparse_single, side_effect=mock_revparse
         )
-
-        # issue history
-        bug_label = create_autospec(Label)
-        bug_label.name = "bug"
-
-        self.issue_firstbug = create_autospec(Issue)
-        self.issue_firstbug.number = 5
-        self.issue_firstbug.labels = [bug_label]
-        self.issue_firstbug.created_at = datetime.datetime(2020, 4, 20, 13, 37)
-
-        self.issue_nobug = create_autospec(Issue)
-        self.issue_nobug.number = 6
-        self.issue_nobug.labels = []
-        self.issue_nobug.created_at = datetime.datetime(2020, 4, 21, 13, 40)
-
-        self.issue_secondbug = create_autospec(Issue)
-        self.issue_secondbug.number = 7
-        self.issue_secondbug.labels = [bug_label]
-        self.issue_secondbug.created_at = datetime.datetime(2020, 4, 22, 7, 52)
-
-        # pydriller history (for issue event tests)
-        # no suspect, weak suspect for first bug
-        intro_secondbug_pre_report = create_autospec(pydriller.Commit)
-        intro_secondbug_pre_report.hash = "1239i1"
-        intro_secondbug_pre_report.commiter_date = datetime.datetime(
-            2020, 4, 21, 13, 13
-        )
-        # second bug fix is also partial fix for first bug
-        fix_secondbug = create_autospec(pydriller.Commit)
-        fix_secondbug.hash = "1239"
-        fix_secondbug.commiter_date = datetime.datetime(2020, 4, 22, 16, 2)
-
-        # hard suspect for first bug
-        intro_firstbug_post_hard = create_autospec(pydriller.Commit)
-        intro_firstbug_post_hard.hash = "1240i1"
-        intro_firstbug_post_hard.commiter_date = datetime.datetime(
-            2020, 4, 20, 19, 34
-        )
-
-        # first bug fix
-        fix_firstbug = create_autospec(pydriller.Commit)
-        fix_firstbug.hash = "1240"
-        fix_firstbug.commiter_date = datetime.datetime(2020, 4, 23, 5, 23)
-
-        important_commits = {
-            intro_secondbug_pre_report, intro_firstbug_post_hard, fix_firstbug,
-            fix_secondbug
-        }
-
-        class DummyPydrillRepo(pydriller.GitRepository):
-            """Dummy pydriller repo class that overrides basic functionality."""
-
-            def get_commit(self, commit_id: str) -> MagicMock:
-                """Method that creates pydriller Commit mocks for given ID."""
-                for important_commit in important_commits:
-                    if commit_id == important_commit.hash:
-                        return important_commit
-
-                # create new mocks for not already predetermined commits
-                mock_commit = create_autospec(pydriller.Commit)
-                mock_commit.hash = commit_id
-                return mock_commit
-
-            def get_commits_last_modified_lines(
-                self,
-                commit: pydriller.Commit,
-                modification: pydriller.Modification = None,
-                hashes_to_ignore_path: str = None
-            ) -> tp.Dict[str, tp.Set[str]]:
-                """Method that returns corresponding introducing ids."""
-                if commit.hash == fix_firstbug.hash:
-                    return {
-                        "important line": {
-                            fix_secondbug.hash, intro_secondbug_pre_report.hash,
-                            intro_firstbug_post_hard.hash
-                        }
-                    }
-                if commit.hash == fix_secondbug.hash:
-                    return {"important line": {intro_secondbug_pre_report.hash}}
-                return {}
-
-        self.dummy_pydrill_repo_class = DummyPydrillRepo
 
     def test_issue_events_closing_bug(self):
         """Test identifying issue events that close a bug related issue, with
@@ -213,7 +232,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
 
         with patch(
             'varats.provider.bug.bug.pydriller.GitRepository',
-            self.dummy_pydrill_repo_class
+            DummyPydrillerRepo
         ):
             pybug = _create_corresponding_pygit_bug(
                 issue_event.commit_id, self.mock_repo, issue_event.issue.number
@@ -229,27 +248,28 @@ class TestBugDetectionStrategies(unittest.TestCase):
         event_close_first_nocommit = create_autospec(IssueEvent)
         event_close_first_nocommit.event = "closed"
         event_close_first_nocommit.commit_id = None
-        event_close_first_nocommit.issue = self.issue_firstbug
+        event_close_first_nocommit.issue = DummyIssueTrackingSystem.issue_firstbug(
+        )
 
         event_close_no_bug = create_autospec(IssueEvent)
         event_close_no_bug.event = "closed"
         event_close_no_bug.commit_id = "1238"
-        event_close_no_bug.issue = self.issue_nobug
+        event_close_no_bug.issue = DummyIssueTrackingSystem.issue_nobug()
 
         event_reopen_first = create_autospec(IssueEvent)
         event_reopen_first.event = "reopened"
         event_reopen_first.commit_id = None
-        event_reopen_first.issue = self.issue_firstbug
+        event_reopen_first.issue = DummyIssueTrackingSystem.issue_firstbug()
 
         event_close_second = create_autospec(IssueEvent)
         event_close_second.event = "closed"
         event_close_second.commit_id = "1239"
-        event_close_second.issue = self.issue_secondbug
+        event_close_second.issue = DummyIssueTrackingSystem.issue_secondbug()
 
         event_close_first = create_autospec(IssueEvent)
         event_close_first.event = "closed"
         event_close_first.commit_id = "1240"
-        event_close_first.issue = self.issue_firstbug
+        event_close_first.issue = DummyIssueTrackingSystem.issue_secondbug()
 
         def mock_get_all_issue_events(_project_name: str):
             return iter([
@@ -268,7 +288,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
                 mock_get_repo),\
             patch(
                 'varats.provider.bug.bug.pydriller.GitRepository',
-                self.dummy_pydrill_repo_class):
+                DummyPydrillerRepo):
 
             # issue filter method for pygit bugs
             def accept_pybugs(sus_tuple: PygitSuspectTuple):
@@ -334,7 +354,7 @@ class TestBugDetectionStrategies(unittest.TestCase):
                 mock_get_repo),\
             patch(
                 'varats.provider.bug.bug.pydriller.GitRepository',
-                self.dummy_pydrill_repo_class):
+                DummyPydrillerRepo):
 
             # commit filter method for pygit bugs
             def accept_pybugs(commit: pygit2.Commit):
