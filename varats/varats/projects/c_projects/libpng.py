@@ -90,6 +90,12 @@ class Libpng(bb.Project, CVEProviderHook):  # type: ignore
             ),
             SingleRevision(
                 "a1312f7b190df545fb7ec90e23cc4a9b6328af00", "Bug in Libpng"
+            ),
+            SingleRevision(
+                "42369ccd85a48c0802093ecf02444cc4dfc4f1dd", "Bug in Libpng"
+            ),
+            SingleRevision(
+                "d930d36155fe79b277c11d868572769cb4ffb586", "Bug in Libpng"
             )
         ])(
             bb.source.Git(
