@@ -24,7 +24,7 @@ from varats.provider.bug.bug import (
 from varats.provider.bug.bug_provider import BugProvider
 
 
-class DummyIssueTrackingSystem:
+class DummyIssueData:
     """Dummy Issue Tracking data for Issue Bug Tests."""
     __bug_label = create_autospec(Label)
     __bug_label.name = "bug"
@@ -45,16 +45,16 @@ class DummyIssueTrackingSystem:
     __issue_secondbug.created_at = datetime.datetime(2020, 4, 22, 7, 52)
 
     @staticmethod
-    def issue_firstbug():
-        return DummyIssueTrackingSystem.__issue_firstbug
+    def issue_firstbug() -> MagicMock:
+        return DummyIssueData.__issue_firstbug
 
     @staticmethod
-    def issue_nobug():
-        return DummyIssueTrackingSystem.__issue_nobug
+    def issue_nobug() -> MagicMock:
+        return DummyIssueData.__issue_nobug
 
     @staticmethod
-    def issue_secondbug():
-        return DummyIssueTrackingSystem.__issue_secondbug
+    def issue_secondbug() -> MagicMock:
+        return DummyIssueData.__issue_secondbug
 
 
 class DummyPydrillerRepo(pydriller.GitRepository):
@@ -88,6 +88,22 @@ class DummyPydrillerRepo(pydriller.GitRepository):
         __intro_secondbug_pre_report, __intro_firstbug_post_hard,
         __fix_firstbug, __fix_secondbug
     }
+
+    @staticmethod
+    def fix_firstbug() -> MagicMock:
+        return DummyPydrillerRepo.__fix_firstbug
+
+    @staticmethod
+    def fix_secondbug() -> MagicMock:
+        return DummyPydrillerRepo.__fix_secondbug
+
+    @staticmethod
+    def intro_firstbug() -> MagicMock:
+        return DummyPydrillerRepo.__intro_firstbug_post_hard
+
+    @staticmethod
+    def intro_secondbug() -> MagicMock:
+        return DummyPydrillerRepo.__intro_secondbug_pre_report
 
     def get_commit(self, commit_id: str) -> MagicMock:
         """Method that creates pydriller Commit mocks for given ID."""
@@ -248,28 +264,27 @@ class TestBugDetectionStrategies(unittest.TestCase):
         event_close_first_nocommit = create_autospec(IssueEvent)
         event_close_first_nocommit.event = "closed"
         event_close_first_nocommit.commit_id = None
-        event_close_first_nocommit.issue = DummyIssueTrackingSystem.issue_firstbug(
-        )
+        event_close_first_nocommit.issue = DummyIssueData.issue_firstbug()
 
         event_close_no_bug = create_autospec(IssueEvent)
         event_close_no_bug.event = "closed"
         event_close_no_bug.commit_id = "1238"
-        event_close_no_bug.issue = DummyIssueTrackingSystem.issue_nobug()
+        event_close_no_bug.issue = DummyIssueData.issue_nobug()
 
         event_reopen_first = create_autospec(IssueEvent)
         event_reopen_first.event = "reopened"
         event_reopen_first.commit_id = None
-        event_reopen_first.issue = DummyIssueTrackingSystem.issue_firstbug()
+        event_reopen_first.issue = DummyIssueData.issue_firstbug()
 
         event_close_second = create_autospec(IssueEvent)
         event_close_second.event = "closed"
-        event_close_second.commit_id = "1239"
-        event_close_second.issue = DummyIssueTrackingSystem.issue_secondbug()
+        event_close_second.commit_id = DummyPydrillerRepo.fix_secondbug().hash
+        event_close_second.issue = DummyIssueData.issue_secondbug()
 
         event_close_first = create_autospec(IssueEvent)
         event_close_first.event = "closed"
-        event_close_first.commit_id = "1240"
-        event_close_first.issue = DummyIssueTrackingSystem.issue_secondbug()
+        event_close_first.commit_id = DummyPydrillerRepo.fix_firstbug().hash
+        event_close_first.issue = DummyIssueData.issue_firstbug()
 
         def mock_get_all_issue_events(_project_name: str):
             return iter([
@@ -303,9 +318,15 @@ class TestBugDetectionStrategies(unittest.TestCase):
             intro_second_bug = set()
             for pybug in pybugs:
                 if pybug.fixing_commit.hex == event_close_second.commit_id:
-                    intro_second_bug = pybug.introducing_commits
+                    intro_second_bug = {
+                        intro_commit.hex
+                        for intro_commit in pybug.introducing_commits
+                    }
                 if pybug.fixing_commit.hex == event_close_first.commit_id:
-                    intro_first_bug = pybug.introducing_commits
+                    intro_first_bug = {
+                        intro_commit.hex
+                        for intro_commit in pybug.introducing_commits
+                    }
 
             expected_first_bug_intro_ids = {"1239i1", "1239"}
             expected_second_bug_intro_ids = {"1239i1"}

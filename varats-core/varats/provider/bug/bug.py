@@ -420,14 +420,17 @@ def _filter_all_issue_pygit_bugs(
 
             # partial fix?
             for other_tuple in suspect_tuples:
-                if suspect == other_tuple.fixing_commit:
+                if suspect.hex == other_tuple.fixing_commit.hex:
                     partial_fix = True
                     break
 
             # weak suspect?
             if not partial_fix:
                 for other_tuple in suspect_tuples:
-                    if suspect in other_tuple.non_suspects:
+                    if suspect.hex in (
+                        non_suspect.hex
+                        for non_suspect in other_tuple.non_suspects
+                    ):
                         weak_suspect = True
                         break
 
