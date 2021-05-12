@@ -19,7 +19,7 @@ class MicroBenchmark(bb.Project):  # type: ignore
     """
 
     NAME = 'test_suite'
-    GROUP = 'SVF-tools'
+    GROUP = 'test_projects'
     DOMAIN = 'testing'
 
     SOURCE = [
