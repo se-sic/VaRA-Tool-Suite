@@ -10,6 +10,7 @@ from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
     CIGNodeAttrs,
     AIGNodeAttrs,
+    CAIGNodeAttrs,
 )
 from varats.data.reports.blame_report import BlameReport
 from varats.paper.case_study import CaseStudy
@@ -311,6 +312,70 @@ class AuthorInteractionGraphTopDegreeTable(Table):
                 top_in_degree.index.values,
             (f"Top {num_authors} Node In-Degree", "degree"):
                 top_in_degree.values,
+        })
+
+        if self.format in [
+            TableFormat.latex, TableFormat.latex_booktabs, TableFormat.latex_raw
+        ]:
+            table = degree_data.to_latex(
+                index=False, multicolumn_format="c", multirow=True
+            )
+            return str(table) if table else ""
+        return tabulate(degree_data, degree_data.columns, self.format.value)
+
+    def wrap_table(self, table: str) -> str:
+        return wrap_table_in_document(table=table, landscape=True)
+
+
+class CommitAuthorInteractionGraphTopDegreeTable(Table):
+    """Table showing commits interacting with the most/least authors."""
+
+    NAME = "caig_top_degrees_table"
+
+    def __init__(self, **kwargs: tp.Any):
+        super().__init__(self.NAME, **kwargs)
+
+    def tabulate(self) -> str:
+        case_study = self.table_kwargs["table_case_study"]
+        num_commits = self.table_kwargs.get("num_commits", 10)
+
+        project_name = case_study.project_name
+        revision = newest_processed_revision_for_case_study(
+            case_study, BlameReport
+        )
+        if not revision:
+            raise TableDataEmpty()
+
+        graph = create_blame_interaction_graph(
+            project_name, revision
+        ).commit_author_interaction_graph()
+
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+        for node in graph.nodes:
+            node_attrs = tp.cast(CAIGNodeAttrs, graph.nodes[node])
+            commit = node_attrs["commit"]
+
+            if commit:
+                nodes.append(({
+                    "commit": commit.commit_hash[:10],
+                    "node_degree": graph.degree(node),
+                }))
+
+        data = pd.DataFrame(nodes)
+        data.set_index("commit", inplace=True)
+
+        most_authors = data["node_degree"].nlargest(num_commits)
+        least_authors = data["node_degree"].nsmallest(num_commits)
+
+        degree_data = pd.DataFrame.from_dict({
+            (f"Top {num_commits} Most Interacting Authors", "commit"):
+                most_authors.index.values,
+            (f"Top {num_commits} Most Interacting Authors", "num authors"):
+                most_authors.values,
+            (f"Top {num_commits} Least Interacting Authors", "commit"):
+                least_authors.index.values,
+            (f"Top {num_commits} Least Interacting Authors", "num authors"):
+                least_authors.values,
         })
 
         if self.format in [

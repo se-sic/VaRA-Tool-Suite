@@ -16,6 +16,7 @@ from varats.data.reports.blame_interaction_graph import (
     CIGNodeAttrs,
     CIGEdgeAttrs,
     AIGNodeAttrs,
+    CAIGNodeAttrs,
 )
 from varats.data.reports.blame_report import BlameReport
 from varats.paper_mgmt.case_study import (
@@ -586,6 +587,56 @@ class AuthorInteractionGraphNodeDegreePlot(Plot):
         axes.plot(node_in_degrees["node_in_degree"].values, label="in_degree")
 
         axes.legend()
+
+    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+        raise NotImplementedError
+
+
+class CommitAuthorInteractionGraphNodeDegreePlot(Plot):
+    """Plot node degrees of commits in a commit-author interaction graph."""
+
+    NAME = 'caig_node_degrees'
+
+    def __init__(self, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, **kwargs)
+
+    def plot(self, view_mode: bool) -> None:
+        case_study = self.plot_kwargs["plot_case_study"]
+
+        style.use(self.style)
+        fig, axes = plt.subplots(1, 1, sharey="all")
+        fig.subplots_adjust(hspace=0.5)
+
+        fig.suptitle(f"Commit-Author Interaction Graph - # Interacting Authors")
+        axes.set_title(case_study.project_name)
+        axes.set_ylabel("Authors")
+        axes.set_xlabel("Commits")
+
+        project_name = case_study.project_name
+        revision = newest_processed_revision_for_case_study(
+            case_study, BlameReport
+        )
+        if not revision:
+            raise PlotDataEmpty()
+
+        caig = create_blame_interaction_graph(project_name, revision
+                                             ).commit_author_interaction_graph()
+
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+        for node in caig.nodes:
+            node_attrs = tp.cast(CAIGNodeAttrs, caig.nodes[node])
+            commit = node_attrs["commit"]
+
+            if commit:
+                nodes.append(({
+                    "commit": commit.commit_hash,
+                    "num_authors": caig.degree(node)
+                }))
+
+        data = pd.DataFrame(nodes)
+        num_authors = data.loc[:, ["commit", "num_authors"]]
+        num_authors.sort_values(by="num_authors", inplace=True)
+        axes.plot(num_authors["num_authors"].values)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError
