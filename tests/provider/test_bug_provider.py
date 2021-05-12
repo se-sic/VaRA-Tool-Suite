@@ -1,11 +1,14 @@
 """Test bug_provider and bug modules."""
+import datetime
+import typing as tp
 import unittest
-from unittest.mock import create_autospec, patch
+from unittest.mock import create_autospec, patch, MagicMock
 
 import pygit2
 from github.Issue import Issue
 from github.IssueEvent import IssueEvent
 from github.Label import Label
+from pydriller import git as pydrepo
 
 from varats.projects.test_projects.bug_provider_test_repos import (
     BasicBugDetectionTestRepo,
@@ -14,18 +17,151 @@ from varats.provider.bug.bug import (
     _has_closed_a_bug,
     _is_closing_message,
     _create_corresponding_pygit_bug,
-    _create_corresponding_raw_bug,
-    _filter_all_issue_raw_bugs,
     _filter_all_issue_pygit_bugs,
-    _filter_all_commit_message_raw_bugs,
     _filter_all_commit_message_pygit_bugs,
+    PygitSuspectTuple,
 )
 from varats.provider.bug.bug_provider import BugProvider
+
+
+class DummyIssueData:
+    """Dummy Issue Tracking data for Issue Bug Tests."""
+    __bug_label = create_autospec(Label)
+    __bug_label.name = "bug"
+
+    __issue_firstbug = create_autospec(Issue)
+    __issue_firstbug.number = 5
+    __issue_firstbug.labels = [__bug_label]
+    __issue_firstbug.created_at = datetime.datetime(2020, 4, 20, 13, 37)
+
+    __issue_nobug = create_autospec(Issue)
+    __issue_nobug.number = 6
+    __issue_nobug.labels = []
+    __issue_nobug.created_at = datetime.datetime(2020, 4, 21, 13, 40)
+
+    __issue_secondbug = create_autospec(Issue)
+    __issue_secondbug.number = 7
+    __issue_secondbug.labels = [__bug_label]
+    __issue_secondbug.created_at = datetime.datetime(2020, 4, 22, 7, 52)
+
+    @staticmethod
+    def issue_firstbug() -> MagicMock:
+        return DummyIssueData.__issue_firstbug
+
+    @staticmethod
+    def issue_nobug() -> MagicMock:
+        return DummyIssueData.__issue_nobug
+
+    @staticmethod
+    def issue_secondbug() -> MagicMock:
+        return DummyIssueData.__issue_secondbug
+
+
+class DummyPydrillerRepo(pydrepo.Git):
+    """Dummy pydriller repo class that overrides basic functionality."""
+
+    # pydriller history (for issue event tests)
+    # no suspect, weak suspect for first bug
+    __intro_secondbug_pre_report = create_autospec(pydrepo.Commit)
+    __intro_secondbug_pre_report.hash = "1239i1"
+    __intro_secondbug_pre_report.committer_date = datetime.datetime(
+        2020, 4, 21, 13, 13
+    )
+    # second bug fix is also partial fix for first bug
+    __fix_secondbug = create_autospec(pydrepo.Commit)
+    __fix_secondbug.hash = "1239"
+    __fix_secondbug.committer_date = datetime.datetime(2020, 4, 22, 16, 2)
+
+    # hard suspect for first bug
+    __intro_firstbug_post_hard = create_autospec(pydrepo.Commit)
+    __intro_firstbug_post_hard.hash = "1240i1"
+    __intro_firstbug_post_hard.committer_date = datetime.datetime(
+        2020, 4, 20, 19, 34
+    )
+
+    # first bug fix
+    __fix_firstbug = create_autospec(pydrepo.Commit)
+    __fix_firstbug.hash = "1240"
+    __fix_firstbug.committer_date = datetime.datetime(2020, 4, 23, 5, 23)
+
+    __important_commits = {
+        __intro_secondbug_pre_report, __intro_firstbug_post_hard,
+        __fix_firstbug, __fix_secondbug
+    }
+
+    def __init__(self, _path):
+        super().__init__("")
+
+    @staticmethod
+    def fix_firstbug() -> MagicMock:
+        return DummyPydrillerRepo.__fix_firstbug
+
+    @staticmethod
+    def fix_secondbug() -> MagicMock:
+        return DummyPydrillerRepo.__fix_secondbug
+
+    @staticmethod
+    def intro_firstbug() -> MagicMock:
+        return DummyPydrillerRepo.__intro_firstbug_post_hard
+
+    @staticmethod
+    def intro_secondbug() -> MagicMock:
+        return DummyPydrillerRepo.__intro_secondbug_pre_report
+
+    def get_commit(self, commit_id: str) -> MagicMock:
+        """Method that creates pydriller Commit mocks for given ID."""
+        for important_commit in DummyPydrillerRepo.__important_commits:
+            if commit_id == important_commit.hash:
+                return important_commit
+
+        # create new mocks for not already predetermined commits
+        mock_commit = create_autospec(pydrepo.Commit)
+        mock_commit.hash = commit_id
+        mock_commit.committer_date = datetime.datetime.now()
+        return mock_commit
+
+    def get_commits_last_modified_lines(
+        self,
+        commit: pydrepo.Commit,
+        modification: pydrepo.ModifiedFile = None,
+        hashes_to_ignore_path: str = None
+    ) -> tp.Dict[str, tp.Set[str]]:
+        """Method that returns corresponding introducing ids."""
+        if commit.hash == DummyPydrillerRepo.__fix_firstbug.hash:
+            return {
+                "important line": {
+                    DummyPydrillerRepo.__fix_secondbug.hash,
+                    DummyPydrillerRepo.__intro_secondbug_pre_report.hash,
+                    DummyPydrillerRepo.__intro_firstbug_post_hard.hash
+                }
+            }
+        if commit.hash == DummyPydrillerRepo.__fix_secondbug.hash:
+            return {
+                "important line": {
+                    DummyPydrillerRepo.__intro_secondbug_pre_report.hash
+                }
+            }
+        return {}
 
 
 class TestBugDetectionStrategies(unittest.TestCase):
     """Test several parts of the bug detection strategies used by the
     BugProvider."""
+
+    def setUp(self) -> None:
+        """Set up repo dummy objects needed for multiple tests."""
+
+        def mock_revparse(commit_id: str):
+            """Method that creates simple pygit2 Commit mocks for given ID."""
+            mock_commit = create_autospec(pygit2.Commit)
+            mock_commit.hex = commit_id
+            return mock_commit
+
+        # pygit2 dummy repo
+        self.mock_repo = create_autospec(pygit2.Repository)
+        self.mock_repo.revparse_single = create_autospec(
+            pygit2.Repository.revparse_single, side_effect=mock_revparse
+        )
 
     def test_issue_events_closing_bug(self):
         """Test identifying issue events that close a bug related issue, with
@@ -113,76 +249,42 @@ class TestBugDetectionStrategies(unittest.TestCase):
         issue_event.commit_id = "1237"
         issue_event.issue = issue
 
-        # associated commit mock
-        issue_commit = create_autospec(pygit2.Commit)
-        issue_commit.hex = "1237"
+        with patch('varats.provider.bug.bug.pydrepo.Git', DummyPydrillerRepo):
+            pybug = _create_corresponding_pygit_bug(
+                issue_event.commit_id, self.mock_repo, issue_event.issue.number
+            )
 
-        mock_repo = create_autospec(pygit2.Repository)
-        mock_repo.revparse_single = create_autospec(
-            pygit2.Repository.revparse_single, return_value=issue_commit
-        )
-
-        pybug = _create_corresponding_pygit_bug(
-            issue_event.commit_id, mock_repo, issue_event.issue.number
-        )
-
-        self.assertEqual(pybug.fixing_commit.hex, issue_event.commit_id)
-        self.assertEqual(pybug.issue_id, issue_event.issue.number)
+            self.assertEqual(issue_event.commit_id, pybug.fixing_commit.hex)
+            self.assertEqual(issue_event.issue.number, pybug.issue_id)
 
     def test_filter_issue_bugs(self):
         """Test on a set of IssueEvents whether the corresponding set of bugs is
         created correctly."""
 
-        bug_label = create_autospec(Label)
-        bug_label.name = "bug"
-
-        issue_firstbug = create_autospec(Issue)
-        issue_firstbug.number = 5
-        issue_firstbug.labels = [bug_label]
-
-        issue_nobug = create_autospec(Issue)
-        issue_nobug.number = 6
-        issue_nobug.labels = []
-
-        issue_secondbug = create_autospec(Issue)
-        issue_secondbug.number = 7
-        issue_secondbug.labels = [bug_label]
-
         event_close_first_nocommit = create_autospec(IssueEvent)
         event_close_first_nocommit.event = "closed"
         event_close_first_nocommit.commit_id = None
-        event_close_first_nocommit.issue = issue_firstbug
+        event_close_first_nocommit.issue = DummyIssueData.issue_firstbug()
 
         event_close_no_bug = create_autospec(IssueEvent)
         event_close_no_bug.event = "closed"
         event_close_no_bug.commit_id = "1238"
-        event_close_no_bug.issue = issue_nobug
+        event_close_no_bug.issue = DummyIssueData.issue_nobug()
 
         event_reopen_first = create_autospec(IssueEvent)
         event_reopen_first.event = "reopened"
         event_reopen_first.commit_id = None
-        event_reopen_first.issue = issue_firstbug
+        event_reopen_first.issue = DummyIssueData.issue_firstbug()
 
         event_close_second = create_autospec(IssueEvent)
         event_close_second.event = "closed"
-        event_close_second.commit_id = "1239"
-        event_close_second.issue = issue_secondbug
+        event_close_second.commit_id = DummyPydrillerRepo.fix_secondbug().hash
+        event_close_second.issue = DummyIssueData.issue_secondbug()
 
         event_close_first = create_autospec(IssueEvent)
         event_close_first.event = "closed"
-        event_close_first.commit_id = "1240"
-        event_close_first.issue = issue_firstbug
-
-        # Method that creates simple pygit2 Commit mocks for given ID
-        def mock_revparse(commit_id: str):
-            mock_commit = create_autospec(pygit2.Commit)
-            mock_commit.hex = commit_id
-            return mock_commit
-
-        mock_repo = create_autospec(pygit2.Repository)
-        mock_repo.revparse_single = create_autospec(
-            pygit2.Repository.revparse_single, side_effect=mock_revparse
-        )
+        event_close_first.commit_id = DummyPydrillerRepo.fix_firstbug().hash
+        event_close_first.issue = DummyIssueData.issue_firstbug()
 
         def mock_get_all_issue_events(_project_name: str):
             return iter([
@@ -191,44 +293,47 @@ class TestBugDetectionStrategies(unittest.TestCase):
             ])
 
         def mock_get_repo(_project_name: str):
-            return mock_repo
+            return self.mock_repo
 
         with patch(
                 'varats.provider.bug.bug._get_all_issue_events',
                 mock_get_all_issue_events),\
             patch(
                 'varats.provider.bug.bug.get_local_project_git',
-                mock_get_repo):
+                mock_get_repo),\
+            patch(
+                'varats.provider.bug.bug.pydrepo.Git',
+                DummyPydrillerRepo):
 
             # issue filter method for pygit bugs
-            def accept_pybugs(event: IssueEvent):
-                if _has_closed_a_bug(event) and event.commit_id:
-                    return _create_corresponding_pygit_bug(
-                        event.commit_id, mock_repo, event.issue.number
-                    )
-                return None
-
-            # issue filter method for raw bugs
-            def accept_rawbugs(event: IssueEvent):
-                if _has_closed_a_bug(event) and event.commit_id:
-                    return _create_corresponding_raw_bug(
-                        event.commit_id, mock_repo, event.issue.number
-                    )
-                return None
+            def accept_pybugs(sus_tuple: PygitSuspectTuple):
+                return sus_tuple.create_corresponding_bug()
 
             # create set of fixing IDs of found bugs
-            pybug_ids = set(
-                pybug.fixing_commit.hex
-                for pybug in _filter_all_issue_pygit_bugs("", accept_pybugs)
-            )
-            rawbug_ids = set(
-                rawbug.fixing_commit
-                for rawbug in _filter_all_issue_raw_bugs("", accept_rawbugs)
-            )
-            expected_ids = {"1239", "1240"}
+            pybugs = _filter_all_issue_pygit_bugs("", accept_pybugs)
+            pybug_fix_ids = set(pybug.fixing_commit.hex for pybug in pybugs)
+            expected_fix_ids = {"1239", "1240"}
 
-            self.assertEqual(pybug_ids, expected_ids)
-            self.assertEqual(rawbug_ids, expected_ids)
+            intro_first_bug = set()
+            intro_second_bug = set()
+            for pybug in pybugs:
+                if pybug.fixing_commit.hex == event_close_second.commit_id:
+                    intro_second_bug = {
+                        intro_commit.hex
+                        for intro_commit in pybug.introducing_commits
+                    }
+                if pybug.fixing_commit.hex == event_close_first.commit_id:
+                    intro_first_bug = {
+                        intro_commit.hex
+                        for intro_commit in pybug.introducing_commits
+                    }
+
+            expected_first_bug_intro_ids = {"1239i1", "1239"}
+            expected_second_bug_intro_ids = {"1239i1"}
+
+            self.assertEqual(expected_fix_ids, pybug_fix_ids)
+            self.assertEqual(expected_first_bug_intro_ids, intro_first_bug)
+            self.assertEqual(expected_second_bug_intro_ids, intro_second_bug)
 
     def test_filter_commit_message_bugs(self):
         """Test on the commit history of a project whether the corresponding set
@@ -251,92 +356,176 @@ class TestBugDetectionStrategies(unittest.TestCase):
         second_fixing_commit.hex = "1244"
         second_fixing_commit.message = "fixes second problem"
 
-        # Method that creates simple pygit2 Commit mocks for given ID
-        def mock_revparse(commit_id: str):
-            mock_commit = create_autospec(pygit2.Commit)
-            mock_commit.hex = commit_id
-            return mock_commit
-
         def mock_walk(_start_id: str, _sort_mode: int):
             return iter([
                 first_fixing_commit, first_non_fixing_commit,
                 second_non_fixing_commit, second_fixing_commit
             ])
 
-        mock_repo = create_autospec(pygit2.Repository)
-        mock_repo.revparse_single = create_autospec(
-            pygit2.Repository.revparse_single, side_effect=mock_revparse
-        )
-        mock_repo.walk = create_autospec(
+        # customize walk method of mock repo
+        self.mock_repo.walk = create_autospec(
             pygit2.Repository.walk, side_effect=mock_walk
         )
 
         def mock_get_repo(_project_name: str):
-            return mock_repo
+            return self.mock_repo
 
         with patch(
-            'varats.provider.bug.bug.get_local_project_git', mock_get_repo
-        ):
+                'varats.provider.bug.bug.get_local_project_git',
+                mock_get_repo),\
+            patch(
+                'varats.provider.bug.bug.pydrepo.Git',
+                DummyPydrillerRepo):
 
             # commit filter method for pygit bugs
             def accept_pybugs(commit: pygit2.Commit):
                 if _is_closing_message(commit.message):
                     return _create_corresponding_pygit_bug(
-                        commit.hex, mock_repo
+                        commit.hex, self.mock_repo
                     )
-                return None
-
-            # commit filter method for raw bugs
-            def accept_rawbugs(commit: pygit2.Commit):
-                if _is_closing_message(commit.message):
-                    return _create_corresponding_raw_bug(commit.hex, mock_repo)
                 return None
 
             pybug_ids = set(
                 pybug.fixing_commit.hex for pybug in
                 _filter_all_commit_message_pygit_bugs("", accept_pybugs)
             )
-            rawbug_ids = set(
-                rawbug.fixing_commit for rawbug in
-                _filter_all_commit_message_raw_bugs("", accept_rawbugs)
-            )
             expected_ids = {"1241", "1244"}
 
-            self.assertEqual(pybug_ids, expected_ids)
-            self.assertEqual(rawbug_ids, expected_ids)
+            self.assertEqual(expected_ids, pybug_ids)
 
 
 class TestBugProvider(unittest.TestCase):
     """Test the bug provider on test projects from vara-test-repos."""
 
-    def test_basic_repo(self):
+    def setUp(self) -> None:
+        """Set up expected data for respective test repos."""
+        self.basic_expected_fixes = {
+            "ddf0ba95408dc5508504c84e6616c49128410389",
+            "d846bdbe45e4d64a34115f5285079e1b5f84007f",
+            "2da78b2820370f6759e9086fad74155d6655e93b",
+            "3b76c8d295385358375fefdb0cf045d97ad2d193"
+        }
+        self.basic_expected_msgs = {
+            "Fixed function arguments\n", "Fixes answer to everything\n",
+            "Fixes return type of multiply\n", "Multiplication result fix\n"
+        }
+        self.basic_expected_first_introduction = {
+            "343bea18b421cfa2eb5945b2672f62f171abcc83"
+        }
+        self.basic_expected_second_introduction = {
+            "ddf0ba95408dc5508504c84e6616c49128410389"
+        }
+        self.basic_expected_third_introduction = {
+            "8fae311154a28b7928fe667b6aad09319259b1aa"
+        }
+        self.basic_expected_fourth_introduction = {
+            "c4b7bd9a2cedf1eb67d13be3cf4e826273cfe17b"
+        }
+
+    def test_basic_repo_pygit_bugs(self):
+        """Test provider on basic_bug_detection_test_repo."""
+        provider = BugProvider.get_provider_for_project(
+            BasicBugDetectionTestRepo
+        )
+
+        pybugs = provider.find_all_pygit_bugs()
+
+        pybug_fix_ids = set(pybug.fixing_commit.hex for pybug in pybugs)
+        pybug_fix_msgs = set(pybug.fixing_commit.message for pybug in pybugs)
+
+        # asserting correct fixes have been found
+        self.assertEqual(pybug_fix_ids, self.basic_expected_fixes)
+        self.assertEqual(pybug_fix_msgs, self.basic_expected_msgs)
+
+        # find certain pybugs searching them by their fixing hashes
+        pybug_first = provider.find_pygit_bug_by_fix(
+            "ddf0ba95408dc5508504c84e6616c49128410389"
+        )
+        pybug_first_intro_ids = set(
+            intro_commit.hex
+            for intro_commit in next(iter(pybug_first)).introducing_commits
+        )
+
+        pybug_second = provider.find_pygit_bug_by_fix(
+            "d846bdbe45e4d64a34115f5285079e1b5f84007f"
+        )
+        pybug_second_intro_ids = set(
+            intro_commit.hex
+            for intro_commit in next(iter(pybug_second)).introducing_commits
+        )
+
+        pybug_third = provider.find_pygit_bug_by_fix(
+            "2da78b2820370f6759e9086fad74155d6655e93b"
+        )
+        pybug_third_intro_ids = set(
+            intro_commit.hex
+            for intro_commit in next(iter(pybug_third)).introducing_commits
+        )
+
+        pybug_fourth = provider.find_pygit_bug_by_fix(
+            "3b76c8d295385358375fefdb0cf045d97ad2d193"
+        )
+        pybug_fourth_intro_ids = set(
+            intro_commit.hex
+            for intro_commit in next(iter(pybug_fourth)).introducing_commits
+        )
+
+        self.assertEqual(
+            self.basic_expected_first_introduction, pybug_first_intro_ids
+        )
+        self.assertEqual(
+            self.basic_expected_second_introduction, pybug_second_intro_ids
+        )
+        self.assertEqual(
+            self.basic_expected_third_introduction, pybug_third_intro_ids
+        )
+        self.assertEqual(
+            self.basic_expected_fourth_introduction, pybug_fourth_intro_ids
+        )
+
+    def test_basic_repo_raw_bugs(self):
         """Test provider on basic_bug_detection_test_repo."""
         provider = BugProvider.get_provider_for_project(
             BasicBugDetectionTestRepo
         )
 
         rawbugs = provider.find_all_raw_bugs()
-        pybugs = provider.find_all_pygit_bugs()
 
         rawbug_fix_ids = set(rawbug.fixing_commit for rawbug in rawbugs)
-        pybug_fix_ids = set(pybug.fixing_commit.hex for pybug in pybugs)
-        pybug_fix_msgs = set(pybug.fixing_commit.message for pybug in pybugs)
-        expected_ids = {
-            "ddf0ba95408dc5508504c84e6616c49128410389",
-            "d846bdbe45e4d64a34115f5285079e1b5f84007f",
-            "2da78b2820370f6759e9086fad74155d6655e93b",
-            "3b76c8d295385358375fefdb0cf045d97ad2d193"
-        }
-        expected_msgs = {
-            "Fixed function arguments\n", "Fixes answer to everything\n",
-            "Fixes return type of multiply\n", "Multiplication result fix\n"
-        }
 
-        self.assertEqual(rawbug_fix_ids, expected_ids)
-        self.assertEqual(pybug_fix_ids, expected_ids)
-        self.assertEqual(pybug_fix_msgs, expected_msgs)
+        # asserting correct fixes have been found
+        self.assertEqual(rawbug_fix_ids, self.basic_expected_fixes)
 
-        pybugs_last_fixed = provider.find_pygit_bug_by_fix(
+        # find certain rawbugs searching them by their fixing hashes
+        rawbug_first = provider.find_raw_bug_by_fix(
+            "ddf0ba95408dc5508504c84e6616c49128410389"
+        )
+        rawbug_first_intro_ids = next(iter(rawbug_first)).introducing_commits
+
+        rawbug_second = provider.find_raw_bug_by_fix(
+            "d846bdbe45e4d64a34115f5285079e1b5f84007f"
+        )
+        rawbug_second_intro_ids = next(iter(rawbug_second)).introducing_commits
+
+        rawbug_third = provider.find_raw_bug_by_fix(
+            "2da78b2820370f6759e9086fad74155d6655e93b"
+        )
+        rawbug_third_intro_ids = next(iter(rawbug_third)).introducing_commits
+
+        rawbug_fourth = provider.find_raw_bug_by_fix(
             "3b76c8d295385358375fefdb0cf045d97ad2d193"
         )
-        self.assertTrue(len(pybugs_last_fixed) == 1)
+        rawbug_fourth_intro_ids = next(iter(rawbug_fourth)).introducing_commits
+
+        self.assertEqual(
+            self.basic_expected_first_introduction, rawbug_first_intro_ids
+        )
+        self.assertEqual(
+            self.basic_expected_second_introduction, rawbug_second_intro_ids
+        )
+        self.assertEqual(
+            self.basic_expected_third_introduction, rawbug_third_intro_ids
+        )
+        self.assertEqual(
+            self.basic_expected_fourth_introduction, rawbug_fourth_intro_ids
+        )

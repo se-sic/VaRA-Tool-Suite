@@ -13,7 +13,7 @@ setup(
     use_scm_version={
         'root': '..',
         "relative_to": __file__,
-        "fallback_version": '10.0.4'
+        "fallback_version": '11.0.0'
     },
     url='https://github.com/se-passau/vara-tool-suite',
     packages=find_namespace_packages(include=['varats.*']),
@@ -46,7 +46,7 @@ setup(
         "tabulate>=0.8.6",
         "rich>=1.3.1",
         "statsmodels~=0.11.1",
-        "varats-core>10.0.3",
+        "varats-core>=11.0.0",
     ],
     author="Florian Sattler",
     author_email="sattlerf@cs.uni-saarland.de",
@@ -73,5 +73,5 @@ setup(
             'vara-cve = varats.tools.driver_cve:main',
         ]
     },
-    python_requires='>=3.6'
+    python_requires='>=3.7'
 )
