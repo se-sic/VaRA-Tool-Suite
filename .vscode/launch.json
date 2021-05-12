@@ -1,0 +1,22 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "benchbuild",
+            "type": "python",
+            "request": "launch",
+            "program": "~/.local/bin/benchbuild", // Default path
+            "cwd": "${workspaceFolder}/../vara-root/benchbuild", // Assuming `vara-root` is next to `VaRA-Tool-Suite`
+            "args": [
+                "run",
+                "-E",
+                "JustCompile", // Pick an experiment
+                "gzip" // Pick a project
+            ],
+            "justMyCode": false,
+            "console": "integratedTerminal"
+        }
+    ]
+}
+// Set a breakpoint (for this example) in experiments/base/just_compile.py
+// Press F5 to run benchbuild with the defined args[]
