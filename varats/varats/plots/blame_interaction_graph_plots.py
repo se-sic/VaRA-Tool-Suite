@@ -15,6 +15,7 @@ from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
     CIGNodeAttrs,
     CIGEdgeAttrs,
+    AIGNodeAttrs,
 )
 from varats.data.reports.blame_report import BlameReport
 from varats.paper_mgmt.case_study import (
@@ -522,6 +523,69 @@ class CommitInteractionGraphNodeDegreeScatterPlot(Plot):
             "node_out_degree", "node_in_degree", "project",
             pd.concat(degree_data)
         )
+
+    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+        raise NotImplementedError
+
+
+class AuthorInteractionGraphNodeDegreePlot(Plot):
+    """Plot node degrees of a author interaction graph."""
+
+    NAME = 'aig_node_degrees'
+
+    def __init__(self, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, **kwargs)
+
+    def plot(self, view_mode: bool) -> None:
+        case_study = self.plot_kwargs["plot_case_study"]
+
+        style.use(self.style)
+        fig, axes = plt.subplots(1, 1, sharey="all")
+        fig.subplots_adjust(hspace=0.5)
+
+        fig.suptitle(f"Author Interaction Graph - Node Degrees")
+        axes.set_title(case_study.project_name)
+        axes.set_ylabel("Degree")
+        axes.set_xlabel("Authors")
+
+        project_name = case_study.project_name
+        revision = newest_processed_revision_for_case_study(
+            case_study, BlameReport
+        )
+        if not revision:
+            raise PlotDataEmpty()
+
+        aig = create_blame_interaction_graph(project_name, revision
+                                            ).author_interaction_graph()
+
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+        for node in aig.nodes:
+            node_attrs = tp.cast(AIGNodeAttrs, aig.nodes[node])
+            author = node_attrs["author"]
+            num_commits = node_attrs["num_commits"]
+            nodes.append(({
+                "author": author,
+                "node_degree": aig.degree(node),
+                "node_out_degree": aig.out_degree(node),
+                "node_in_degree": aig.in_degree(node),
+            }))
+
+        data = pd.DataFrame(nodes)
+        node_degrees = data.loc[:, ["author", "node_degree"]]
+        node_out_degrees = data.loc[:, ["author", "node_out_degree"]]
+        node_in_degrees = data.loc[:, ["author", "node_in_degree"]]
+
+        node_degrees.sort_values(by="node_degree", inplace=True)
+        node_out_degrees.sort_values(by="node_out_degree", inplace=True)
+        node_in_degrees.sort_values(by="node_in_degree", inplace=True)
+
+        axes.plot(node_degrees["node_degree"].values, label="degree")
+        axes.plot(
+            node_out_degrees["node_out_degree"].values, label="out_degree"
+        )
+        axes.plot(node_in_degrees["node_in_degree"].values, label="in_degree")
+
+        axes.legend()
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError
