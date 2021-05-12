@@ -5,6 +5,8 @@ First, take a look at our :ref:`install guide<Build VaRA with vara-buildsetup>` 
 
 The :ref:`VaRA-TS API Reference` contains information about how to :ref:`work with the tool-suite<Tools>`, as well as how to add your own :ref:`research tools<Research Tool API>`, :ref:`experiments`, :ref:`reports`, :ref:`plots`, and more.
 
+:ref:`Debugging with Visual Studio Code` shows an example on how to debug benchbuild.
+
 For further information about `benchbuild <https://github.com/PolyJIT/benchbuild>`_ related concepts, like `Experiments` or `Projects`, take a look at the  `benchbuild documentation <https://pprof-study.readthedocs.io/en/master/>`_.
 
 Testing
@@ -43,3 +45,12 @@ Module: test_utils
     :members:
     :undoc-members:
     :show-inheritance:
+
+
+-----
+
+Debugging with Visual Studio Code
+..............
+
+The .vscode/launch.json file in the VaRA-Tool-Suite repository contains a configuration for Visual Studio Code. With `F5` the given example is executed. It runs the command `benchbuild run -E JustCompile gzip`.
+To step through the JustCompile experiment a breakpoint has to be set in just_compile.py. `F9` can be used to set/unset a breakpoint at the current line.
