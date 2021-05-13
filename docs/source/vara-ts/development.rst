@@ -50,7 +50,7 @@ Module: test_utils
 -----
 
 Debugging with Visual Studio Code
-..............
+.................................
 
 The .vscode/launch.json file in the VaRA-Tool-Suite repository contains a configuration for Visual Studio Code.
 With `F5` the given example is executed.
