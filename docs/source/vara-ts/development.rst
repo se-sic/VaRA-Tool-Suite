@@ -52,6 +52,8 @@ Module: test_utils
 Debugging with Visual Studio Code
 ..............
 
-The .vscode/launch.json file in the VaRA-Tool-Suite repository contains a configuration for Visual Studio Code. With `F5` the given example is executed. It runs the command `benchbuild run -E JustCompile gzip`.
+The .vscode/launch.json file in the VaRA-Tool-Suite repository contains a configuration for Visual Studio Code.
+With `F5` the given example is executed.
+It runs the command `benchbuild run -E JustCompile gzip` by default, which can be adapted to debug other projects and experiments by changing the arguments that are passed to `benchbuild`.
 To step through the JustCompile experiment a breakpoint has to be set in just_compile.py.
 `F9` can be used to set/unset a breakpoint at the current line.
