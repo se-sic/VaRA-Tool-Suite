@@ -5,7 +5,7 @@ First, take a look at our :ref:`install guide<Build VaRA with vara-buildsetup>` 
 
 The :ref:`VaRA-TS API Reference` contains information about how to :ref:`work with the tool-suite<Tools>`, as well as how to add your own :ref:`research tools<Research Tool API>`, :ref:`experiments`, :ref:`reports`, :ref:`plots`, and more.
 
-:ref:`Debugging with Visual Studio Code` shows an example on how to debug benchbuild.
+:ref:`Debugging with Visual Studio Code` shows an example on how to debug benchbuild projects and experiments using the VSCode debugger.
 
 For further information about `benchbuild <https://github.com/PolyJIT/benchbuild>`_ related concepts, like `Experiments` or `Projects`, take a look at the  `benchbuild documentation <https://pprof-study.readthedocs.io/en/master/>`_.
 
