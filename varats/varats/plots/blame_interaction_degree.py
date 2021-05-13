@@ -1499,9 +1499,9 @@ class SankeyLibraryInteractionsGenerator(
     @check_required_args("report_type")
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
-        self.__report_type = plot_kwargs["report_type"]
-        self.__case_study = plot_kwargs["case_study"]
-        self.__revision = plot_kwargs["revision"]
+        self.__report_type: str = plot_kwargs["report_type"]
+        self.__case_study: str = plot_kwargs["case_study"]
+        self.__revision: str = plot_kwargs["revision"]
 
     def generate(self) -> tp.List[Plot]:
         return [
