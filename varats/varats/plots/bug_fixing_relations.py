@@ -1,3 +1,4 @@
+import logging
 import typing as tp
 from datetime import datetime
 from pathlib import Path
@@ -48,7 +49,7 @@ def _plot_chord_diagram_for_raw_bugs(
         round(0.75 * commit_count), commit_count
     ]
 
-    def _get_commit_interval(distance) -> int:
+    def _get_commit_interval(distance: float) -> int:
         """Get right interval for given commit distance using distance
         thresholds, interval indices are in [0,3] for 5 thresholds."""
         k = 0
@@ -121,7 +122,7 @@ def _plot_chord_diagram_for_raw_bugs(
         )
 
         #onclick callback function
-        def copy_hash(*args: tp.Any):
+        def copy_hash(*args: tp.Any) -> None:
             pyperclip.copy(f'{commit.hex}')
 
         node_scatter.on_click(copy_hash)
@@ -137,8 +138,8 @@ def _create_line(start: np.array, end: np.array, color: str) -> gob.Scatter:
     interval = _get_interval(dist)
 
     control_points = [
-        start, start / __cp_parameters[interval],
-        end / __cp_parameters[interval], end
+        start, start / (__cp_parameters[interval]),
+        end / (__cp_parameters[interval]), end
     ]
     curve_points = _get_bezier_curve(control_points)
 
@@ -189,12 +190,12 @@ def _create_layout(title: str) -> gob.Layout:
     )
 
 
-def _get_distance(p1, p2) -> float:
+def _get_distance(p1: tp.List[float], p2: tp.List[float]) -> float:
     """Returns distance between two points."""
     return np.linalg.norm(np.array(p1) - np.array(p2))
 
 
-def _get_interval(distance) -> int:
+def _get_interval(distance: float) -> int:
     """Get right interval for given node distance using distance thresholds,
     interval indices are in [0,3] for 5 thresholds."""
     k = 0
