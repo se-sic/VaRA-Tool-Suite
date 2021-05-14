@@ -15,9 +15,11 @@ from varats.project.project_util import (
 from varats.provider.bug.bug import RawBug
 from varats.provider.bug.bug_provider import BugProvider
 
+LOG = logging.getLogger(__name__)
+
 
 def _plot_chord_diagram_for_raw_bugs(
-    project_name: str, bug_set: tp.Set[RawBug]
+    project_name: str, bug_set: tp.FrozenSet[RawBug]
 ) -> gob.FigureWidget:
     """Creates a chord diagram representing relations between introducing/fixing
     commits for a given set of RawBugs."""
@@ -46,7 +48,7 @@ def _plot_chord_diagram_for_raw_bugs(
         round(0.75 * commit_count), commit_count
     ]
 
-    def _get_commit_interval(distance):
+    def _get_commit_interval(distance) -> int:
         """Get right interval for given commit distance using distance
         thresholds, interval indices are in [0,3] for 5 thresholds."""
         k = 0
@@ -187,12 +189,12 @@ def _create_layout(title: str) -> gob.Layout:
     )
 
 
-def _get_distance(p1, p2):
+def _get_distance(p1, p2) -> float:
     """Returns distance between two points."""
     return np.linalg.norm(np.array(p1) - np.array(p2))
 
 
-def _get_interval(distance):
+def _get_interval(distance) -> int:
     """Get right interval for given node distance using distance thresholds,
     interval indices are in [0,3] for 5 thresholds."""
     k = 0
