@@ -49,7 +49,7 @@ class MicroBenchmark(bb.Project):  # type: ignore
         "path_tests",
     ]
 
-    FILE_PATHS = []
+    FILE_PATHS = []  # type: tp.List[str]
 
     def init_file_paths(self) -> None:
         """Initialize FILE_PATHS with .c and .cpp files found in DIRS."""
