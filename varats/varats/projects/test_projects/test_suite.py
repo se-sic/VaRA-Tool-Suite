@@ -1,13 +1,15 @@
-"""Project to run tests from the micro-benchmark Test-Suite"""
+"""Project to run tests from the micro-benchmark Test-Suite."""
 import os
 import typing as tp
+
+import benchbuild as bb
 from plumbum import local
+
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
     BinaryType,
 )
-import benchbuild as bb
 
 
 class MicroBenchmark(bb.Project):  # type: ignore
