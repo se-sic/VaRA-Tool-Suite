@@ -90,7 +90,9 @@ class DummyPydrillerRepo(pydrepo.Git):
     }
 
     def __init__(self, _path):
-        super().__init__("")
+        """Overrides superclass constructor in order to gain Independence of a
+        valid Git Repo path."""
+        pass
 
     @staticmethod
     def fix_firstbug() -> MagicMock:
