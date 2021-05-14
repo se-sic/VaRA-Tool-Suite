@@ -86,8 +86,8 @@ def _plot_chord_diagram_for_raw_bugs(
             commit_type[bug_introduction] = 'introducing fix' if commit_type[
                 bug_introduction] == 'fix' else 'introduction'
 
-            commit_dist = map_commit_to_id[bug_fix] - map_commit_to_id[
-                bug_introduction]
+            commit_dist = map_commit_to_id[bug_introduction] - map_commit_to_id[
+                bug_fix]
             commit_interval = _get_commit_interval(commit_dist)
             color = edge_colors[commit_interval]
 
