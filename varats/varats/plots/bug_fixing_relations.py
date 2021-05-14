@@ -140,7 +140,7 @@ def _create_line(start: np.array, end: np.array, color: str) -> gob.Scatter:
     control_points = [
         start,
         np.true_divide(start, (__cp_parameters[interval])),
-        np.true_divide(end / (__cp_parameters[interval])), end
+        np.true_divide(end, (__cp_parameters[interval])), end
     ]
     curve_points = _get_bezier_curve(control_points)
 
@@ -225,7 +225,7 @@ def _get_bezier_curve(ctrl_points: np.array, num_points: int = 5) -> np.array:
             points_cp[:n - r, :] = (
                 1 - factor
             ) * points_cp[:n - r, :] + factor * points_cp[1:n - r + 1, :]
-        return points_cp[0, :]
+        return np.array(points_cp[0, :])
 
     point_space = np.linspace(0, 1, num_points)
     return np.array([
@@ -247,11 +247,13 @@ def _compute_node_placement(commit_count: int) -> tp.List[np.array]:
 def _map_commits_to_nodes(project_repo: pygit2.Repository) -> tp.Dict[str, int]:
     """Maps commit hex -> node id."""
     commits_to_nodes_map: tp.Dict[str, int] = {}
+    commit_count = 0
     for commit in project_repo.walk(
         project_repo.head.target.hex, pygit2.GIT_SORT_TIME
     ):
         # node ids are sorted by time
         commits_to_nodes_map[commit.hex] = commit_count
+        commit_count += 1
     return commits_to_nodes_map
 
 
