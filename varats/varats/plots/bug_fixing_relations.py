@@ -138,8 +138,9 @@ def _create_line(start: np.array, end: np.array, color: str) -> gob.Scatter:
     interval = _get_interval(dist)
 
     control_points = [
-        start, start / (__cp_parameters[interval]),
-        end / (__cp_parameters[interval]), end
+        start,
+        np.true_divide(start, (__cp_parameters[interval])),
+        np.true_divide(end / (__cp_parameters[interval])), end
     ]
     curve_points = _get_bezier_curve(control_points)
 
@@ -192,7 +193,7 @@ def _create_layout(title: str) -> gob.Layout:
 
 def _get_distance(p1: tp.List[float], p2: tp.List[float]) -> float:
     """Returns distance between two points."""
-    return np.linalg.norm(np.array(p1) - np.array(p2))
+    return float(np.linalg.norm(np.array(p1) - np.array(p2)))
 
 
 def _get_interval(distance: float) -> int:
