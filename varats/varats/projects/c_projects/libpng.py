@@ -96,7 +96,16 @@ class Libpng(bb.Project, CVEProviderHook):  # type: ignore
             ),
             SingleRevision(
                 "d930d36155fe79b277c11d868572769cb4ffb586", "Bug in Libpng"
-            )
+            ),
+            SingleRevision(
+                "6e8ba0fab666eb6c90e929988e8fb3439449e7f9", "Bug in Libpng"
+            ),
+            SingleRevision(
+                "ad41b8838a91ab36880716c2264f70ef4651b89f", "Bug in Libpng"
+            ),
+            GoodBadSubgraph(["d332c67da7818132e462fc44ec28b0b7420bc5b5"],
+                            ["1d7f56ab64f397d5841cc277fae7aeaac44ac088"],
+                            "Bug in Libpng")
         ])(
             bb.source.Git(
                 remote="https://github.com/glennrp/libpng.git",
