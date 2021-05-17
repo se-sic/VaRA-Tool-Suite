@@ -39,7 +39,6 @@ setup(
         "pyzmq>=19.0.0",
         "PyGithub>=1.47",
         "pylatex>=1.4.1",
-        "pyperclip>=1.8.2",
         "packaging>=20.1",
         "requests>=2.24.0",
         "requests_cache>=0.5.2",

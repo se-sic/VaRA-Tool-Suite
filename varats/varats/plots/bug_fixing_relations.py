@@ -6,7 +6,6 @@ from pathlib import Path
 import numpy as np
 import plotly.graph_objs as gob
 import pygit2
-import pyperclip
 
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.project.project_util import (
@@ -121,11 +120,6 @@ def _plot_chord_diagram_for_raw_bugs(
             commit_coordinates[commit_id], node_color, node_label
         )
 
-        #onclick callback function
-        def copy_hash(*args: tp.Any) -> None:
-            pyperclip.copy(f'{commit.hex}')
-
-        node_scatter.on_click(copy_hash)
         nodes.append(node_scatter)
 
     data = nodes + lines
