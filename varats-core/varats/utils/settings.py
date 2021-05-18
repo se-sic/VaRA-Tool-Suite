@@ -97,6 +97,17 @@ _CFG["phasar"] = {
     },
 }
 
+_CFG["szzunleashed"] = {
+    "source_dir": {
+        "desc": "SZZUnleashed source directory",
+        "default": None
+    },
+    "install_dir": {
+        "desc": "SZZUnleashed install directory",
+        "default": None
+    },
+}
+
 _CFG["paper_config"] = {
     "folder": {
         "desc": "Folder with paper configs.",
