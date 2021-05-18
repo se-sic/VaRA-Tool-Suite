@@ -1,6 +1,4 @@
-"""
-TODO: write me and update docs
-"""
+"""Small helper methods that implement common functionalities."""
 
 import typing as tp
 
