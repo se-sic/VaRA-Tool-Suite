@@ -87,7 +87,7 @@ def select(tool: str) -> None:
 )
 @click.option(
     "--node-dir",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     prompt="What should be the base directory on slurm nodes?",
     help="Base directory on slurm nodes. \n"
     "Must be creatable and writeable on every slurm node and your local "
@@ -95,7 +95,7 @@ def select(tool: str) -> None:
 )
 @click.option(
     "--export-dir",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     prompt="Where should base images be exported to for storage?",
     help="Base image export directory. \n"
     "Must be accessible by this machine and all slurm nodes."
@@ -116,7 +116,7 @@ def select(tool: str) -> None:
     help="Only build the given image. \nCan be given multiple times."
 )
 def prepare_slurm(
-    images: tp.List[ImageBase], tool: str, export_dir: str, node_dir: str,
+    images: tp.List[ImageBase], tool: str, export_dir: Path, node_dir: Path,
     debug: bool
 ) -> None:
     click.echo("Preparing BenchBuild config.")
