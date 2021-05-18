@@ -10,6 +10,7 @@ from os import makedirs, path
 from pathlib import Path
 
 import benchbuild.utils.settings as s
+from plumbum import local, LocalPath
 
 _CFG = s.Configuration(
     "varats",
@@ -32,6 +33,27 @@ _CFG = s.Configuration(
         },
     }
 )
+
+_CFG["container"] = {
+    "research_tool": {
+        "desc":
+            "The currently active research tool."
+            "Base containers come with this tool preinstalled.",
+        "default": None
+    },
+    "from_source": {
+        "desc":
+            "Whether to install varats in the container from a local "
+            "source checkout or pip.",
+        "default": False
+    },
+    "varats_source": {
+        "desc":
+            "Path to the local checkout of varats to use for the source"
+            "install.",
+        "default": None
+    }
+}
 
 _CFG["vara"] = {
     "version": {
@@ -192,6 +214,7 @@ def bb_cfg() -> s.Configuration:
     global _BB_CFG  # pylint: disable=global-statement
     if not _BB_CFG:
         from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
+        BB_CFG.load(get_bb_config_file_path())
         _BB_CFG = BB_CFG
     return _BB_CFG
 
@@ -255,6 +278,13 @@ def save_config() -> None:
     _CFG.store(config_file)
 
 
+def save_bb_config() -> None:
+    """Persist BenchBuild config to a yaml file."""
+    bb_cfg().store(
+        local.path(str(vara_cfg()["benchbuild_root"])) / ".benchbuild.yml"
+    )
+
+
 def get_varats_base_folder() -> Path:
     """
     Returns the path to the tool suite base folder, i.e., the folder that
@@ -271,3 +301,13 @@ def get_varats_base_folder() -> Path:
 
 s.setup_config(_CFG, ['.varats.yaml', '.varats.yml'], "VARATS_CONFIG_FILE")
 s.update_env(_CFG)
+
+
+def get_bb_config_file_path() -> LocalPath:
+    """
+    Get the path to the benchbuild config file.
+
+    Returns:
+        the path to the benchbuild config file
+    """
+    return local.path(str(vara_cfg()["benchbuild_root"])) / ".benchbuild.yml"
