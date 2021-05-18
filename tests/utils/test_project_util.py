@@ -1,5 +1,4 @@
 """Test VaRA project utilities."""
-import tempfile
 import typing as tp
 import unittest
 import unittest.mock as mock
@@ -9,13 +8,13 @@ from pathlib import Path
 from benchbuild.utils.cmd import git, mkdir
 from plumbum import local
 
-from tests.test_utils import test_environment, run_in_test_environment
+from tests.test_utils import test_environment
 from varats.project.project_util import (
     VaraTestRepoSource,
     VaraTestRepoSubmodule,
 )
-from varats.tools.bb_config import generate_benchbuild_config
-from varats.utils.settings import vara_cfg, bb_cfg
+from varats.tools.bb_config import create_new_bb_config
+from varats.utils.settings import create_new_varats_config
 
 
 class TestVaraTestRepoSource(unittest.TestCase):
@@ -209,16 +208,13 @@ class TestVaraTestRepoSource(unittest.TestCase):
                     git('rev-parse', '--short', 'HEAD').rstrip()
                 )
 
-    @run_in_test_environment
     def test_if_project_names_are_well_formed(self) -> None:
         """Tests if project names are well formed, e.g., they must not contain a
         dash."""
 
-        tmp_file = tempfile.NamedTemporaryFile()
-        generate_benchbuild_config(vara_cfg(), tmp_file.name)
-        bb_cfg().load(tmp_file.name)
-        loaded_project_paths: tp.List[str] = bb_cfg(
-        )["plugins"]["projects"].value
+        varats_cfg = create_new_varats_config()
+        bb_cfg = create_new_bb_config(varats_cfg)
+        loaded_project_paths: tp.List[str] = bb_cfg["plugins"]["projects"].value
 
         loaded_project_names = [
             project_path.rsplit(sep='.', maxsplit=1)[1]

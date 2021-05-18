@@ -1,12 +1,10 @@
 """Test module for settings."""
 import os
-import tempfile
 import unittest
-from copy import deepcopy
 from pathlib import Path
 
-from varats.tools.bb_config import generate_benchbuild_config
-from varats.utils.settings import vara_cfg, bb_cfg
+from varats.tools.bb_config import create_new_bb_config
+from varats.utils.settings import create_new_varats_config
 
 
 class BenchBuildConfig(unittest.TestCase):
@@ -15,14 +13,8 @@ class BenchBuildConfig(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Setup and generate the benchbuild config file."""
-        cls.tmp_file = tempfile.NamedTemporaryFile()
-        generate_benchbuild_config(vara_cfg(), cls.tmp_file.name)
-        cls.bb_cfg = deepcopy(bb_cfg())
-        cls.bb_cfg.load(cls.tmp_file.name)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.tmp_file.close()
+        varats_cfg = create_new_varats_config()
+        cls.bb_cfg = create_new_bb_config(varats_cfg)
 
     def check_all_files_in_config_list(
         self, folder, config_list, exclude_list=None

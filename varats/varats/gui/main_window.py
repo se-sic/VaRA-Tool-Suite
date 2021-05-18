@@ -11,13 +11,8 @@ from varats.gui.filtertree_window import FilterWindow
 from varats.gui.ui_MainWindow import Ui_MainWindow
 from varats.gui.views.cr_bar_view import CRBarView
 from varats.gui.views.example_view import ExampleView
-from varats.tools.bb_config import generate_benchbuild_config
-from varats.utils.settings import (
-    create_missing_folders,
-    save_config,
-    vara_cfg,
-    get_bb_config_file_path,
-)
+from varats.tools.bb_config import create_new_bb_config, save_bb_config
+from varats.utils.settings import create_missing_folders, save_config, vara_cfg
 
 LOG = logging.getLogger(__name__)
 
@@ -95,7 +90,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):  # type: ignore
             ) + "/benchbuild"
         create_missing_folders()
 
-        generate_benchbuild_config(vara_cfg(), get_bb_config_file_path())
+        bb_cfg = create_new_bb_config(vara_cfg())
+        save_bb_config(bb_cfg)
 
     def __remove_tab(self, index: int) -> None:
         tab = self.tabWidget.widget(index)
