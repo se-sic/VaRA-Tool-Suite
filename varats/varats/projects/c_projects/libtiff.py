@@ -53,7 +53,10 @@ class Libtiff(bb.Project, CVEProviderHook):  # type: ignore
             ),
             SingleRevision(
                 "a1caf14ce4640eec759a801ea601bd022bdc02d3", "Bug in Libtiff"
-            )
+            ),
+            GoodBadSubgraph(["f7aebc264761adc41142e98e2285700dc51d384e"],
+                            ["9f3e08cf9409573ffa67e243c8bfbf6263b0fcb5"],
+                            "Issue on some machines, not sure whos fault it is")
         ])(
             bb.source.Git(
                 remote="https://gitlab.com/libtiff/libtiff.git",
