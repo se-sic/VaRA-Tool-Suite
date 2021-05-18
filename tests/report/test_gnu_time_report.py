@@ -96,3 +96,9 @@ class TestGNUTimeReport(unittest.TestCase):
     def test_system_time(self):
         """Test if we can extract the system time from the parsed file."""
         self.assertEqual(self.report.system_time, timedelta(seconds=3))
+
+    def test_repr_str(self):
+        """Test string representation of TimeReports."""
+        expected_result = """Command: echo
+Max Resident Size (kbytes): 1804"""
+        self.assertEqual(repr(self.report), str(expected_result))
