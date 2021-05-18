@@ -41,6 +41,36 @@ class TestGNUTimeReportParserFunctions(unittest.TestCase):
         with self.assertRaises(WrongTimeReportFormat):
             TimeReport._parse_command('  Something other timed: "echo"')
 
+    def test_user_time(self):
+        """Test if we correctly parse the user time from the input line."""
+        with self.assertRaises(WrongTimeReportFormat):
+            TimeReport._parse_user_time("  Something other timed:")
+
+    def test_system_time(self):
+        """Test if we correctly parse the system time from the input line."""
+        with self.assertRaises(WrongTimeReportFormat):
+            TimeReport._parse_system_time("  Something other timed:")
+
+    def test_wall_clock_time(self):
+        """Test if we correctly parse the wall clock time from the input
+        line."""
+        with self.assertRaises(WrongTimeReportFormat):
+            TimeReport._parse_wall_clock_time("  Something other timed:")
+
+    def test_max_resident_size(self):
+        """Test if we correctly parse the max resident size from the input
+        line."""
+        with self.assertRaises(WrongTimeReportFormat):
+            TimeReport._parse_max_resident_size("  Something other timed:")
+
+    def test_max_resident_size_byte_type(self):
+        """Test if we correctly parse the max resident size from the input
+        line."""
+        with self.assertRaises(AssertionError):
+            TimeReport._parse_max_resident_size(
+                "  Maximum resident set size (mbytes): 1804"
+            )
+
 
 class TestGNUTimeReport(unittest.TestCase):
     """Tests if we can correctly TimeReport values."""
