@@ -101,4 +101,5 @@ class TestGNUTimeReport(unittest.TestCase):
         """Test string representation of TimeReports."""
         expected_result = """Command: echo
 Max Resident Size (kbytes): 1804"""
-        self.assertEqual(repr(self.report), str(expected_result))
+        self.assertEqual(repr(self.report), expected_result)
+        self.assertEqual(str(self.report), expected_result)
