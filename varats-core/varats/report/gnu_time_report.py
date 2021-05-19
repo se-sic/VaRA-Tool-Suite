@@ -165,7 +165,6 @@ class TimeReport(BaseReport):
         """
         match = TimeReport._parse_wall_clock_time.WALL_CLOCK_REGEX.search(line)
         if match:
-            # t = datetime.strptime(, "%H:%M:%S")
             time_str = str(match.group("time"))
             if time_str.count(":") > 1:
                 time_split = time_str.split(":")
