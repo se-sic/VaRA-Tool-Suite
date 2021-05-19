@@ -27,14 +27,12 @@ class TimeReport(BaseReport):
                 line = line.strip()
 
                 if line.startswith("Command being timed"):
-                    self.__command_name: str = ""
-                    self.__command_name = TimeReport._parse_command(line)
+                    self.__command_name: str = TimeReport._parse_command(line)
                     continue
 
                 if line.startswith("Maximum resident set size"):
-                    self.__max_resident_size = int(
+                    self.__max_resident_size: int = \
                         TimeReport._parse_max_resident_size(line)
-                    )
                     continue
 
                 if line.startswith("User time"):
@@ -46,9 +44,8 @@ class TimeReport(BaseReport):
                     continue
 
                 if line.startswith("Elapsed (wall clock) time"):
-                    self.__wall_clock_time = TimeReport._parse_wall_clock_time(
-                        line
-                    )
+                    self.__wall_clock_time: timedelta = \
+                        TimeReport._parse_wall_clock_time(line)
                     continue
 
                 print("Not matched: ", line)
@@ -69,6 +66,11 @@ class TimeReport(BaseReport):
         return self.__system_time
 
     @property
+    def wall_clock_time(self) -> timedelta:
+        """Elapsed wall clock time."""
+        return self.__wall_clock_time
+
+    @property
     def max_res_size(self) -> int:
         """Maximum resident size."""
         return self.__max_resident_size
@@ -77,10 +79,12 @@ class TimeReport(BaseReport):
         return repr(self)
 
     def __repr__(self) -> str:
-        str_representation = f"Command: {self.command_name}"
-        str_representation += "\n"
-        str_representation += f"Max Resident Size (kbytes): {self.max_res_size}"
-        return str_representation
+        str_repr = f"Command: {self.command_name}\n"
+        str_repr += f"User time: {self.user_time}\n"
+        str_repr += f"System time: {self.system_time}\n"
+        str_repr += f"Elapsed wall clock time: {self.wall_clock_time}\n"
+        str_repr += f"Max Resident Size (kbytes): {self.max_res_size}"
+        return str_repr
 
     @staticmethod
     def get_file_name(

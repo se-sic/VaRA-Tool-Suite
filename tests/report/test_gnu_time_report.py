@@ -11,7 +11,7 @@ GNU_TIME_OUTPUT_1 = """  Command being timed: "echo"
   User time (seconds): 2.00
   System time (seconds): 3.00
   Percent of CPU this job got: 0%
-  Elapsed (wall clock) time (h:mm:ss or m:ss): 0:00.00
+  Elapsed (wall clock) time (h:mm:ss or m:ss): 0:42.00
   Average shared text size (kbytes): 0
   Average unshared data size (kbytes): 0
   Average stack size (kbytes): 0
@@ -100,6 +100,9 @@ class TestGNUTimeReport(unittest.TestCase):
     def test_repr_str(self):
         """Test string representation of TimeReports."""
         expected_result = """Command: echo
+User time: 0:00:02
+System time: 0:00:03
+Elapsed wall clock time: 0:00:42
 Max Resident Size (kbytes): 1804"""
         self.assertEqual(repr(self.report), expected_result)
         self.assertEqual(str(self.report), expected_result)
