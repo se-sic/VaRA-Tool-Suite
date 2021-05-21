@@ -53,6 +53,10 @@ class SVFPointsToAnalysisBenchmark(bb.Project):  # type: ignore
 
     FILE_PATHS = []  # type: tp.List[str]
 
+    def __init__(self, var) -> None:
+        super().__init__()
+        self.init_file_paths()
+
     def init_file_paths(self) -> None:
         """Initialize FILE_PATHS with .c and .cpp files found in DIRS."""
         source = os.getcwd() + '/tmp/' + self.source[0].local
@@ -88,7 +92,3 @@ class SVFPointsToAnalysisBenchmark(bb.Project):  # type: ignore
                     bb.watch(bb.compiler.cc(self))(arguments)
                 else:
                     bb.watch(bb.compiler.cxx(self))(arguments)
-
-    def __init__(self, var) -> None:
-        super().__init__()
-        self.init_file_paths()
