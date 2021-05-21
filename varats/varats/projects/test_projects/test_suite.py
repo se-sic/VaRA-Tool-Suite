@@ -77,7 +77,7 @@ class MicroBenchmark(bb.Project):  # type: ignore
         with local.cwd(source):
             for file in self.FILE_PATHS:
                 arguments = [
-                    "{source}/{file}".format(source=source, file=file),
+                    f"{source}/{file}",
                     "-I{source}".format(source=source),
                     "-g",  # Generate source-level debug information
                     "-o",
