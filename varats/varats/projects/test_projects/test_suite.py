@@ -13,14 +13,15 @@ from varats.project.project_util import (
 )
 
 
-class MicroBenchmark(bb.Project):  # type: ignore
+class SVFPointsToAnalysisBenchmark(bb.Project):  # type: ignore
     """
-    Get examples from the Test-Suite micro-benchmark suite.
+    SVFPointsToAnalysisBenchmark provides an easy way to execute the examples from
+    the Test-Suite micro-benchmark suite for testing points to analyses.
 
     Which can be found at https://github.com/SVF-tools/Test-Suite.
     """
 
-    NAME = 'test_suite'
+    NAME = 'SVFPointsToBench'
     GROUP = 'test_projects'
     DOMAIN = 'testing'
 
