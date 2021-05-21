@@ -323,12 +323,8 @@ def __calc_code_churn_range_impl(
         diff_base_params = diff_base_params + \
                            churn_config.get_extensions_repr('*.')
 
-    if revision_range:
-        stdout = repo_git(diff_base_params)
-        revs = repo_git(log_base_params).strip().split()
-    else:
-        stdout = repo_git(diff_base_params)
-        revs = repo_git(log_base_params).strip().split()
+    stdout = repo_git(diff_base_params)
+    revs = repo_git(log_base_params).strip().split()
     # initialize with 0 as otherwise commits without changes would be
     # missing from the churn data
     for rev in revs:
@@ -379,15 +375,16 @@ def calc_code_churn_range(
 
 
 def calc_commit_code_churn(
-    repo: pygit2.Repository,
-    commit: pygit2.Commit,
+    repo_path: str,
+    commit_hash: str,
     churn_config: tp.Optional[ChurnConfig] = None
 ) -> tp.Tuple[int, int, int]:
     """
     Calculates churn of a specific commit.
 
     Args:
-        repo: git repository
+        repo_path: path to git repository
+        commit_hash: commit hash to get churn for
         churn_config: churn config to customize churn generation
 
     Returns:
@@ -395,8 +392,25 @@ def calc_commit_code_churn(
         (files changed, insertions, deletions)
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
-    return calc_code_churn_range(repo, churn_config, commit,
-                                 commit)[str(commit.id)]
+    repo_git = git["-C", repo_path]
+    show_base_params = [
+        "show", "--pretty=format:'%H'", "--shortstat", "--first-parent",
+        commit_hash
+    ]
+
+    if not churn_config.include_everything:
+        show_base_params.append("--")
+        # builds a regex to select files that git includes into churn calc
+        show_base_params = show_base_params + \
+                           churn_config.get_extensions_repr('*.')
+
+    match = GIT_LOG_MATCHER.match(repo_git(show_base_params))
+    if match:
+        files_changed = int(match.group('files') or 0)
+        insertions = int(match.group('insertions') or 0)
+        deletions = int(match.group('deletions') or 0)
+        return files_changed, insertions, deletions
+    return 0, 0, 0
 
 
 def calc_code_churn(
