@@ -1,6 +1,7 @@
 """Project to run tests from the micro-benchmark Test-Suite."""
 import os
 import typing as tp
+from pathlib import Path
 
 import benchbuild as bb
 from plumbum import local
