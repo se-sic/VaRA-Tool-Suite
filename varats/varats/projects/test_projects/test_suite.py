@@ -62,10 +62,8 @@ class SVFPointsToAnalysisBenchmark(bb.Project):  # type: ignore
         source = os.getcwd() + '/tmp/' + self.source[0].local
         for directory in self.DIRS:
             for filename in os.listdir(source + '/' + directory):
-                absolute_filepath = source + '/' + directory + '/' + filename
-                ext = os.path.splitext(absolute_filepath)[1]
-                if ext in ('.cpp', '.c'):
-                    self.FILE_PATHS.append(directory + '/' + filename)
+                if Path(filename).suffix in ('.cpp', '.c'):
+                    self.FILE_PATHS.append(Path(directory) / filename)
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
@@ -83,12 +81,12 @@ class SVFPointsToAnalysisBenchmark(bb.Project):  # type: ignore
             for file in self.FILE_PATHS:
                 arguments = [
                     f"{source}/{file}",
-                    "-I{source}".format(source=source),
+                    f"-I{source}",
                     "-g",  # Generate source-level debug information
                     "-o",
                     file.with_suffix('')
                 ]
-                if os.path.splitext(file)[1] == '.c':
+                if file.suffix == '.c':
                     bb.watch(bb.compiler.cc(self))(arguments)
                 else:
                     bb.watch(bb.compiler.cxx(self))(arguments)
