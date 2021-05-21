@@ -81,7 +81,7 @@ class MicroBenchmark(bb.Project):  # type: ignore
                     "-I{source}".format(source=source),
                     "-g",  # Generate source-level debug information
                     "-o",
-                    file.replace('.cpp', '').replace('.c', '')
+                    file.with_suffix('')
                 ]
                 if os.path.splitext(file)[1] == '.c':
                     bb.watch(bb.compiler.cc(self))(arguments)
