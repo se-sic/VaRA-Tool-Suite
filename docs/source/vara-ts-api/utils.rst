@@ -4,6 +4,7 @@ Utility and helper modules
 Utilities overview
 ------------------
 * :ref:`Module: cli_util`
+* :ref:`Module: util`
 * :ref:`Module: exceptions`
 * :ref:`Module: git_util`
 * :ref:`Module: experiment_util`
@@ -16,6 +17,16 @@ Module: cli_util
 ................
 
 .. automodule:: varats.utils.cli_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+-----
+
+Module: util
+................
+
+.. automodule:: varats.utils.util
     :members:
     :undoc-members:
     :show-inheritance:
