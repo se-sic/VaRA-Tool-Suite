@@ -33,11 +33,12 @@ from varats.data.databases.blame_library_interactions_database import (
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import check_required_args
-from varats.plot.plots import PlotGenerator, PlotConfig
+from varats.plot.plots import PlotGenerator, PlotConfig, CommonPlotOptions
 from varats.plots.bug_annotation import draw_bugs
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.repository_churn import draw_code_churn_for_revisions
 from varats.project.project_util import get_project_cls_by_name
+from varats.utils.cli_util import CLIOptionTy, make_cli_option
 
 LOG = logging.getLogger(__name__)
 
@@ -547,7 +548,7 @@ def _save_figure(
         plot_dir = path
 
     file_name = plot_file_name.rsplit('.', 1)[0]
-    plot_subdir = Path(plot_kwargs["plot_type"])
+    plot_subdir = Path(file_name)
 
     with pb.local.cwd(plot_dir):
         if not isdir(plot_subdir):
@@ -670,7 +671,10 @@ def _build_sankey_figure(
         fig.layout = layout
 
     fig.update_layout(
-        title_text=f"<b>Revision: {revision}</b><br />{plot_cfg['fig_title']}",
+        title_text=
+        f"<b>Revision: {revision}</b><br />Library interactions from base(left)"
+        f" to interacting(right) libraries. Color saturation increases with the"
+        f" degree level.</b><br />{plot_cfg['fig_title']}",
         font_size=plot_cfg['font_size']
     )
 
@@ -1170,46 +1174,22 @@ class BlameDegree(Plot):
         )
 
     def _multi_lib_interaction_sankey_plot(
-        self,
-        view_mode: bool,
-        degree_type: DegreeType,
-        extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
-        save_path: tp.Optional[Path] = None,
-        filetype: str = 'png'
+        self, view_mode: bool
     ) -> tp.Optional[go.Figure]:
-
-        # Choose sequential colormaps for correct shading
-        plot_cfg = {
-            'fig_title':
-                'MISSING figure title',
-            'font_size':
-                10,
-            'width':
-                1500,
-            'height':
-                1000,
-            'colormaps': [
-                'Greens', 'Reds', 'Blues', 'Greys', 'Oranges', 'Purples',
-                'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu', 'GnBu',
-                'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn'
-            ]
-        }
-        if extra_plot_cfg is not None:
-            plot_cfg.update(extra_plot_cfg)
-
-        style.use(self.style)
         interaction_plot_df = self._get_degree_data()
         interaction_plot_df = interaction_plot_df[
-            interaction_plot_df.degree_type == degree_type.value]
+            interaction_plot_df.degree_type == DegreeType.interaction.value]
         interaction_plot_df.sort_values(by=['time_id'], inplace=True)
         interaction_plot_df.reset_index(inplace=True)
         unique_revisions = _get_unique_revisions(interaction_plot_df)
 
         # TODO (se-passau/VaRA#545): Find correct paper_config or cs in top
         #  level
-        commit_map = get_commit_map(
-            PC.get_paper_config().get_all_case_studies()[0].project_name
-        )
+        if self.plot_kwargs["case_study"]:
+            cs = self.plot_kwargs["case_study"]
+        else:
+            cs = PC.get_paper_config().get_all_case_studies()[0]
+        commit_map = get_commit_map(cs.project_name)
         highest_degree = interaction_plot_df["degree"].max()
 
         # Generate and save sankey plots for all revs if no revision was
@@ -1225,14 +1205,15 @@ class BlameDegree(Plot):
 
             lib_names_dict = _get_separated_lib_names_dict(df)
             lib_cm_mapping, lib_shades_mapping = _build_sankey_color_mappings(
-                highest_degree, plot_cfg, lib_names_dict
+                highest_degree, self.plot_kwargs, lib_names_dict
             )
 
             plotting_data_dict = _collect_sankey_plotting_data(
                 df, lib_names_dict, lib_cm_mapping, lib_shades_mapping
             )
             sankey_figure = _build_sankey_figure(
-                rev, view_mode, plotting_data_dict, lib_names_dict, plot_cfg
+                rev, view_mode, plotting_data_dict, lib_names_dict,
+                self.plot_kwargs
             )
 
             if view_mode and 'revision' in self.plot_kwargs:
@@ -1245,10 +1226,12 @@ class BlameDegree(Plot):
                 revision=rev,
                 c_map=commit_map,
                 plot_kwargs=self.plot_kwargs,
-                plot_file_name=self.plot_file_name(filetype),
+                plot_file_name=self.plot_file_name(
+                    self.plot_kwargs['file_type']
+                ),
                 plot_type=PlotTypes.SANKEY,
-                path=save_path,
-                filetype='png'
+                path=self.plot_kwargs['save_path'],
+                filetype=self.plot_kwargs['file_type']
             )
         return None
 
@@ -1437,30 +1420,23 @@ class BlameLibraryInteractions(BlameDegree):
         self.__figure = go.Figure()
 
     def plot(self, view_mode: bool) -> None:
+
+        # TODO: Move case handling to click command evaluation
         if view_mode and not self.plot_kwargs["revision"]:
             LOG.warning(
                 "The interactive view mode requires a selected revision."
             )
             raise PlotDataEmpty
 
-        if not view_mode and 'revision' in self.plot_kwargs:
+        if not view_mode and self.plot_kwargs['revision']:
             LOG.warning(
                 "View mode is turned off. The specified revision will be "
                 "ignored."
             )
 
-        extra_plot_cfg = {
-            'fig_title':
-                'Library interactions from base(left) to interacting(right) '
-                'libraries. Color saturation increases with the degree level.',
-            'width': 1500,
-            'height': 1000
-        }
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
-        self.__figure = self._multi_lib_interaction_sankey_plot(
-            view_mode, DegreeType.interaction, extra_plot_cfg, filetype='png'
-        )
+        self.__figure = self._multi_lib_interaction_sankey_plot(view_mode)
 
     def show(self) -> None:
         try:
@@ -1486,13 +1462,76 @@ class BlameLibraryInteractions(BlameDegree):
         )
 
 
+OPTIONAL_FIG_TITLE: CLIOptionTy = make_cli_option(
+    "--fig-title",
+    default="",
+    required=False,
+    metavar="fig_title",
+    help="The title of the plot figure."
+)
+
+OPTIONAL_FONT_SIZE: CLIOptionTy = make_cli_option(
+    "--font-size",
+    default=10,
+    required=False,
+    metavar="font_size",
+    help="The font size of the plot figure."
+)
+
+OPTIONAL_COLORMAPS: CLIOptionTy = make_cli_option(
+    "--colormaps",
+    default=[
+        'Greens', 'Reds', 'Blues', 'Greys', 'Oranges', 'Purples', 'YlOrBr',
+        'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu', 'GnBu', 'PuBu', 'YlGnBu',
+        'PuBuGn', 'BuGn', 'YlGn'
+    ],
+    required=False,
+    metavar="colormaps",
+    help="The colormaps used in the plot."
+)
+
+OPTIONAL_WIDTH: CLIOptionTy = make_cli_option(
+    "--width",
+    default=1500,
+    required=False,
+    metavar="width",
+    help="The width of the resulting plot file."
+)
+OPTIONAL_HEIGHT: CLIOptionTy = make_cli_option(
+    "--height",
+    default=1000,
+    required=False,
+    metavar="height",
+    help="The height of the resulting plot file."
+)
+
+OPTIONAL_FILE_TYPE: CLIOptionTy = make_cli_option(
+    "--file-type",
+    default='png',
+    required=False,
+    metavar="file_type",
+    help="The file type of the resulting plot file."
+)
+
+# TODO: Add correct default save_path from plot_dir
+OPTIONAL_SAVE_PATH: CLIOptionTy = make_cli_option(
+    "--save-path",
+    default=CommonPlotOptions.default_plot_dir(),
+    required=False,
+    metavar="save_path",
+    help="The height of the resulting plot image."
+)
+
+
 class SankeyLibraryInteractionsGenerator(
     PlotGenerator,
     generator_name="sankey-plot",
     plot=BlameLibraryInteractions,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.OPTIONAL_CASE_STUDY,
-        PlotGenerator.OPTIONAL_REVISION
+        PlotGenerator.OPTIONAL_REVISION, OPTIONAL_FIG_TITLE, OPTIONAL_WIDTH,
+        OPTIONAL_HEIGHT, OPTIONAL_FONT_SIZE, OPTIONAL_COLORMAPS,
+        OPTIONAL_FILE_TYPE, OPTIONAL_SAVE_PATH
     ]
 ):
 
@@ -1500,15 +1539,29 @@ class SankeyLibraryInteractionsGenerator(
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_study: str = plot_kwargs["case_study"]
-        self.__revision: str = plot_kwargs["revision"]
+        self.__case_study: tp.Optional[str] = plot_kwargs["case_study"]
+        self.__revision: tp.Optional[str] = plot_kwargs["revision"]
+        self.__fig_title: str = plot_kwargs["fig_title"]
+        self.__width: int = plot_kwargs["width"]
+        self.__height: int = plot_kwargs["height"]
+        self.__font_size: int = plot_kwargs["font_size"]
+        self.__colormaps: tp.List[str] = plot_kwargs["colormaps"]
+        self.__file_type: str = plot_kwargs["file_type"]
+        self.__save_path: Path = Path(plot_kwargs["save_path"])
 
     def generate(self) -> tp.List[Plot]:
         return [
             self.PLOT(
                 report_type=self.__report_type,
                 case_study=self.__case_study,
-                revision=self.__revision
+                revision=self.__revision,
+                fig_title=self.__fig_title,
+                width=self.__width,
+                height=self.__height,
+                font_size=self.__font_size,
+                colormaps=self.__colormaps,
+                file_type=self.__file_type,
+                save_path=self.__save_path
             )
         ]
 

@@ -105,7 +105,7 @@ class PlotGenerator(abc.ABC):
 
     # Required
     REQUIRE_CASE_STUDY: CLIOptionTy = make_cli_option(
-        "-cs"
+        "-cs",
         "--case-study",
         required=True,
         metavar="case_study",
@@ -135,7 +135,7 @@ class PlotGenerator(abc.ABC):
     )
 
     OPTIONAL_CASE_STUDY: CLIOptionTy = make_cli_option(
-        "-cs"
+        "-cs",
         "--case-study",
         required=False,
         metavar="case_study",
