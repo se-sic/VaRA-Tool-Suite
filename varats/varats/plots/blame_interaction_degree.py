@@ -42,6 +42,66 @@ from varats.utils.cli_util import CLIOptionTy, make_cli_option
 
 LOG = logging.getLogger(__name__)
 
+OPTIONAL_FIG_TITLE: CLIOptionTy = make_cli_option(
+    "--fig-title",
+    default="",
+    required=False,
+    metavar="fig_title",
+    help="The title of the plot figure."
+)
+
+OPTIONAL_FONT_SIZE: CLIOptionTy = make_cli_option(
+    "--font-size",
+    default=10,
+    required=False,
+    metavar="font_size",
+    help="The font size of the plot figure."
+)
+
+OPTIONAL_COLORMAPS: CLIOptionTy = make_cli_option(
+    "--colormaps",
+    default=[
+        'Greens', 'Reds', 'Blues', 'Greys', 'Oranges', 'Purples', 'YlOrBr',
+        'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu', 'GnBu', 'PuBu', 'YlGnBu',
+        'PuBuGn', 'BuGn', 'YlGn'
+    ],
+    required=False,
+    metavar="colormaps",
+    help="The colormaps used in the plot."
+)
+
+OPTIONAL_WIDTH: CLIOptionTy = make_cli_option(
+    "--width",
+    default=1500,
+    required=False,
+    metavar="width",
+    help="The width of the resulting plot file."
+)
+OPTIONAL_HEIGHT: CLIOptionTy = make_cli_option(
+    "--height",
+    default=1000,
+    required=False,
+    metavar="height",
+    help="The height of the resulting plot file."
+)
+
+OPTIONAL_FILE_TYPE: CLIOptionTy = make_cli_option(
+    "--file-type",
+    default='png',
+    required=False,
+    metavar="file_type",
+    help="The file type of the resulting plot file."
+)
+
+# TODO: Add correct default save_path from plot_dir
+OPTIONAL_SAVE_PATH: CLIOptionTy = make_cli_option(
+    "--save-path",
+    default=CommonPlotOptions.default_plot_dir(),
+    required=False,
+    metavar="save_path",
+    help="The height of the resulting plot image."
+)
+
 
 class PlotTypes(Enum):
     GRAPHVIZ = "graphviz"
@@ -1460,67 +1520,6 @@ class BlameLibraryInteractions(BlameDegree):
         return self._calc_missing_revisions(
             DegreeType.interaction, boundary_gradient
         )
-
-
-OPTIONAL_FIG_TITLE: CLIOptionTy = make_cli_option(
-    "--fig-title",
-    default="",
-    required=False,
-    metavar="fig_title",
-    help="The title of the plot figure."
-)
-
-OPTIONAL_FONT_SIZE: CLIOptionTy = make_cli_option(
-    "--font-size",
-    default=10,
-    required=False,
-    metavar="font_size",
-    help="The font size of the plot figure."
-)
-
-OPTIONAL_COLORMAPS: CLIOptionTy = make_cli_option(
-    "--colormaps",
-    default=[
-        'Greens', 'Reds', 'Blues', 'Greys', 'Oranges', 'Purples', 'YlOrBr',
-        'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu', 'GnBu', 'PuBu', 'YlGnBu',
-        'PuBuGn', 'BuGn', 'YlGn'
-    ],
-    required=False,
-    metavar="colormaps",
-    help="The colormaps used in the plot."
-)
-
-OPTIONAL_WIDTH: CLIOptionTy = make_cli_option(
-    "--width",
-    default=1500,
-    required=False,
-    metavar="width",
-    help="The width of the resulting plot file."
-)
-OPTIONAL_HEIGHT: CLIOptionTy = make_cli_option(
-    "--height",
-    default=1000,
-    required=False,
-    metavar="height",
-    help="The height of the resulting plot file."
-)
-
-OPTIONAL_FILE_TYPE: CLIOptionTy = make_cli_option(
-    "--file-type",
-    default='png',
-    required=False,
-    metavar="file_type",
-    help="The file type of the resulting plot file."
-)
-
-# TODO: Add correct default save_path from plot_dir
-OPTIONAL_SAVE_PATH: CLIOptionTy = make_cli_option(
-    "--save-path",
-    default=CommonPlotOptions.default_plot_dir(),
-    required=False,
-    metavar="save_path",
-    help="The height of the resulting plot image."
-)
 
 
 class SankeyLibraryInteractionsGenerator(
