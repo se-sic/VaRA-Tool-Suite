@@ -309,7 +309,7 @@ def delete_base_image(base: ImageBase) -> None:
 
 
 def delete_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
-    """Deletes all base images for the current research tool."""
+    """Deletes the selected base images for the current research tool."""
     for base in images:
         LOG.info(f"Deleting base image {base.image_name}.")
         delete_base_image(base)
@@ -322,11 +322,13 @@ def export_base_image(base: ImageBase) -> None:
     export_path = local.path(
         bb_cfg()["container"]["export"].value
     ) / export_name + ".tar"
+    if export_path.exists() and export_path.is_file():
+        export_path.unlink(missing_ok=False)
     publish(ExportImage(base.image_name, str(export_path)))
 
 
 def export_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
-    """Exports all base images for the current research tool."""
+    """Exports the selected base images for the current research tool."""
     for base in images:
         LOG.info(f"Exporting base image {base.image_name}.")
         export_base_image(base)

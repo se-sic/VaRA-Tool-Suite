@@ -182,7 +182,6 @@ def prepare_slurm(
     )
 
     click.echo("Building base images. This could take a while...")
-    # TODO: clean exported images if present
     __build_images(images, True, debug)
     click.echo("Done.")
 
