@@ -47,6 +47,13 @@ _CFG["container"] = {
             "source checkout or pip.",
         "default": False
     },
+    "dev_mode": {
+        "desc":
+            "If enabled, install varats in editable mode."
+            "Implies `from_source=True` and `varats_source` must be mountable "
+            "inside the container.",
+        "default": False
+    },
     "varats_source": {
         "desc":
             "Path to the local checkout of varats to use for the source"

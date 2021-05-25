@@ -33,7 +33,7 @@ if tp.TYPE_CHECKING:
 
 class Distro(Enum):
     """Linux distributions supported by the tool suite."""
-    DEBIAN = "debian",
+    DEBIAN = "debian"
     ARCH = "arch"
 
 

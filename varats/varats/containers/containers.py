@@ -8,7 +8,6 @@ from enum import Enum
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-import yaml
 from benchbuild.environments import bootstrap
 from benchbuild.environments.domain.commands import (
     CreateImage,
@@ -20,6 +19,7 @@ from benchbuild.environments.domain.declarative import (
     add_benchbuild_layers,
     ContainerImage,
 )
+from benchbuild.utils.settings import to_yaml
 from plumbum import local
 
 from varats.tools.research_tools.research_tool import Distro
@@ -39,6 +39,7 @@ class ImageBase(Enum):
 
     @property
     def image_name(self) -> str:
+        """Name of the base image."""
         image_name = self.__name
         configured_research_tool = vara_cfg()["container"]["research_tool"]
         if configured_research_tool:
@@ -47,6 +48,7 @@ class ImageBase(Enum):
 
     @property
     def distro(self) -> Distro:
+        """Distro of the base image."""
         return self.__distro
 
 
@@ -172,7 +174,9 @@ class BaseImageCreationContext():
 def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
     crun = bb_cfg()['container']['runtime'].value
 
-    def from_source(image: ContainerImage) -> None:
+    def from_source(
+        image: ContainerImage, editable_install: bool = False
+    ) -> None:
         LOG.debug('installing varats from source.')
 
         src_dir = Path(vara_cfg()['container']['varats_source'].value)
@@ -181,10 +185,12 @@ def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
 
         image.run('mkdir', f'{tgt_dir}', runtime=crun)
         image.run('pip3', 'install', 'setuptools', runtime=crun)
+
+        pip_args = ['pip3', 'install', '--ignore-installed']
+        if editable_install:
+            pip_args.append("-e")
         image.run(
-            'pip3',
-            'install',
-            '--ignore-installed',
+            *pip_args,
             str(tgt_dir / 'varats-core'),
             str(tgt_dir / 'varats'),
             mount=f'type=bind,src={src_dir},target={tgt_dir}',
@@ -195,6 +201,8 @@ def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
         LOG.debug("installing varats from pip release.")
         image.run('pip3', 'install', 'varats-core', 'varats', runtime=crun)
 
+    if bool(vara_cfg()['container']['dev_mode']):
+        from_source(image_context.layers, editable_install=True)
     if bool(vara_cfg()['container']['from_source']):
         from_source(image_context.layers)
     else:
@@ -220,8 +228,10 @@ def _add_vara_config(image_context: BaseImageCreationContext) -> None:
 def _add_benchbuild_config(image_context: BaseImageCreationContext) -> None:
     # copy libraries to image if LD_LIBRARY_PATH is set
     if "LD_LIBRARY_PATH" in bb_cfg()["env"].value.keys():
-        image_context.layers.copy_([bb_cfg()["env"].value["LD_LIBRARY_PATH"]],
-                                   str(image_context.varats_root / "libs"))
+        image_context.layers.copy_(
+            bb_cfg()["env"].value["LD_LIBRARY_PATH"],
+            str(image_context.varats_root / "libs")
+        )
         image_context.append_to_env(
             "LD_LIBRARY_PATH", [str(image_context.varats_root / "libs")]
         )
@@ -230,7 +240,7 @@ def _add_benchbuild_config(image_context: BaseImageCreationContext) -> None:
         BB_VARATS_OUTFILE=str(image_context.varats_root / "results"),
         BB_VARATS_RESULT=str(image_context.varats_root / "BC_files"),
         BB_JOBS=str(bb_cfg()["jobs"]),
-        BB_ENV=yaml.dump(image_context.env)
+        BB_ENV=to_yaml(image_context.env)
     )
 
 
@@ -299,7 +309,7 @@ def delete_base_image(base: ImageBase) -> None:
 
 
 def delete_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
-    """Deletes all base images for the current research tool."""
+    """Deletes the selected base images for the current research tool."""
     for base in images:
         LOG.info(f"Deleting base image {base.image_name}.")
         delete_base_image(base)
@@ -312,11 +322,13 @@ def export_base_image(base: ImageBase) -> None:
     export_path = local.path(
         bb_cfg()["container"]["export"].value
     ) / export_name + ".tar"
+    if export_path.exists() and export_path.is_file():
+        export_path.unlink(missing_ok=False)
     publish(ExportImage(base.image_name, str(export_path)))
 
 
 def export_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
-    """Exports all base images for the current research tool."""
+    """Exports the selected base images for the current research tool."""
     for base in images:
         LOG.info(f"Exporting base image {base.image_name}.")
         export_base_image(base)

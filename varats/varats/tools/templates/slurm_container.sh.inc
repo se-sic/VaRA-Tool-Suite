@@ -43,7 +43,6 @@ exec 2>&1
 
 # parent of node dir (= BB_SLURM_NODE_DIR) is used as home
 node_dir=$(dirname {{ prefix }})
-mkdir -p ${node_dir}
 
 # Prepare cluster node
 exec 9> {{ lockfile }}
@@ -82,5 +81,6 @@ _project=$(echo ${_project} | sed -e "s/-/\//")
 popd > /dev/null
 
 # clean up local directory
+srun chmod -R u+w $n{node_dir} > /dev/null
 srun rm -rf ${node_dir}
 {% endraw %}

@@ -16,7 +16,6 @@ from varats.tools.research_tools.research_tool import (
     ResearchTool,
     SubProject,
     Dependencies,
-    Distro,
 )
 from varats.tools.research_tools.vara_manager import (
     BuildType,
