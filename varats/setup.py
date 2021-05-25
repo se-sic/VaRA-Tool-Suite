@@ -25,7 +25,7 @@ setup(
         "benchbuild>=6.1.1",
         "click>=8.0.1",
         "graphviz>=0.14.2",
-        "Jinja2>= 3.0.1",
+        "Jinja2",  # TODO: >=3.0.1 once BB has upgraded
         "kaleido>=0.2.1",
         "matplotlib>=3.1.2",
         "packaging>=20.1",
