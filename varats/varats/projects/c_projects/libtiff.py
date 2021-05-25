@@ -54,9 +54,18 @@ class Libtiff(bb.Project, CVEProviderHook):  # type: ignore
             SingleRevision(
                 "a1caf14ce4640eec759a801ea601bd022bdc02d3", "Bug in Libtiff"
             ),
-            GoodBadSubgraph(["f7aebc264761adc41142e98e2285700dc51d384e"],
-                            ["9f3e08cf9409573ffa67e243c8bfbf6263b0fcb5"],
-                            "Issue on some machines, not sure whos fault it is")
+            GoodBadSubgraph(["f7aebc264761adc41142e98e2285700dc51d384e"], [
+                "9f3e08cf9409573ffa67e243c8bfbf6263b0fcb5"
+            ], "Issue on some machines, not sure whos fault it is"),
+            GoodBadSubgraph(["97049062b9d1efa7b00d7a13bcf97365b57c937b"],
+                            ["66eb5c7cd07fec0647517f418e5fc81c4e26d402"],
+                            "Bug in Libpng"),
+            GoodBadSubgraph(["0769c447b7108fe616d855e1ba367ecbb90ba471"],
+                            ["40c664948371d60908328f7ccb5982aebda1d04d"],
+                            "Error in the Makefile of Libpng"),
+            GoodBadSubgraph(["0730d44a00a34db8659a16833453d231501722a7"],
+                            ["5b60852fe65b5908130e809e1011b10afcaf1c9c"],
+                            "Bub in Libpng")
         ])(
             bb.source.Git(
                 remote="https://gitlab.com/libtiff/libtiff.git",
