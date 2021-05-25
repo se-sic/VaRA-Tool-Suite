@@ -50,6 +50,14 @@ def main() -> None:
     help="Only build the given image."
 )
 def build(images: tp.List[ImageBase], export: bool, debug: bool) -> None:
+    """
+    Build base containers for the current research tool.
+
+    Args:
+        images: the images to build; build all if empty
+        export: if ``True``, export the built images to the filesystem
+        debug: if ``True``, debug failed image builds interactively
+    """
     __build_images(images, export, debug)
 
 
@@ -63,6 +71,12 @@ def build(images: tp.List[ImageBase], export: bool, debug: bool) -> None:
     help="Only delete the given image. Can be given multiple times."
 )
 def delete(images: tp.List[ImageBase]) -> None:
+    """
+    Delete base containers for the current research tool.
+
+    Args:
+        images: the images to delete; delete all if empty
+    """
     if images:
         delete_base_images(images)
     else:
@@ -76,9 +90,15 @@ def delete(images: tp.List[ImageBase]) -> None:
     type=click.Choice([*get_supported_research_tool_names(), "none"]),
     default=lambda: vara_cfg()["container"]["research_tool"].value or "none",
     prompt="Select a research tool to activate.",
-    help="The research tool to activate"
+    help="The research tool to activate."
 )
 def select(tool: str) -> None:
+    """
+    Select the research tool to be used in base containers.
+
+    Args:
+        tool: the research tool to activate
+    """
     __set_research_tool(tool)
 
 
@@ -101,7 +121,7 @@ def select(tool: str) -> None:
 @click.option(
     "--export-dir",
     type=click.Path(path_type=Path),
-    prompt="Where should base images be exported to for storage?",
+    prompt="Where should container base images be exported to for storage?",
     default=lambda: str(bb_cfg()["container"]["export"].value),
     help="Base image export directory. \n"
     "Must be accessible by this machine and all slurm nodes."
@@ -126,6 +146,17 @@ def prepare_slurm(
     images: tp.List[ImageBase], tool: str, export_dir: Path, node_dir: Path,
     debug: bool
 ) -> None:
+    """
+    Prepare everything necessary to run BenchBuild experiments with containers
+    via slurm.
+
+    Args:
+        images: the images to build; build all if empty
+        tool: the research tool to use
+        export_dir: the directory to export container images to
+        node_dir: the base directory on slurm nodes
+        debug: if ``True``, debug failed image builds interactively
+    """
     click.echo("Preparing BenchBuild config.")
     template_path = Path(
         str(vara_cfg()["benchbuild_root"])

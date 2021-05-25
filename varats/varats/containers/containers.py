@@ -39,6 +39,7 @@ class ImageBase(Enum):
 
     @property
     def image_name(self) -> str:
+        """Name of the base image."""
         image_name = self.__name
         configured_research_tool = vara_cfg()["container"]["research_tool"]
         if configured_research_tool:
@@ -47,6 +48,7 @@ class ImageBase(Enum):
 
     @property
     def distro(self) -> Distro:
+        """Distro of the base image."""
         return self.__distro
 
 
