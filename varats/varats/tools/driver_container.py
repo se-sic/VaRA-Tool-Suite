@@ -30,6 +30,7 @@ LOG = logging.Logger(__name__)
     context_settings={"help_option_names": ['-h', '--help']}
 )
 def main() -> None:
+    """Manage base container images."""
     initialize_cli_tool()
     load_bb_config()
 
