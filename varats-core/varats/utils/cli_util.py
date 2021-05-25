@@ -93,7 +93,7 @@ class EnumType(click.Choice):
 
     def __init__(self, enum: tp.Type[Enum]):
         self.__enum = enum
-        super().__init__(enum.__members__)
+        super().__init__(list(dict(enum.__members__).keys()))
 
     def convert(
         self, value: str, param: tp.Optional[click.Parameter],

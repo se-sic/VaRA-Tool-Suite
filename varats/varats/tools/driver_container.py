@@ -178,9 +178,7 @@ def __build_images(
 
 
 def __set_research_tool(tool: str) -> None:
-    if tool == "none":
-        tool = None
-    vara_cfg()["container"]["research_tool"] = tool
+    vara_cfg()["container"]["research_tool"] = None if tool == "none" else tool
     save_config()
 
 
