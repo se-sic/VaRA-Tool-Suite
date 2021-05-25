@@ -4,6 +4,7 @@ Driver module for `vara-container`.
 This module handles command-line parsing and maps the commands to tool suite
 internal functionality.
 """
+import logging
 import typing as tp
 from pathlib import Path
 
@@ -20,6 +21,8 @@ from varats.tools.bb_config import load_bb_config
 from varats.tools.tool_util import get_supported_research_tool_names
 from varats.utils.cli_util import initialize_cli_tool, EnumType
 from varats.utils.settings import vara_cfg, save_config, bb_cfg, save_bb_config
+
+LOG = logging.Logger(__name__)
 
 
 @click.group(
@@ -71,6 +74,7 @@ def delete(images: tp.List[ImageBase]) -> None:
     "-t",
     "--tool",
     type=click.Choice([*get_supported_research_tool_names(), "none"]),
+    default=lambda: vara_cfg()["container"]["research_tool"].value or "none",
     prompt="Select a research tool to activate.",
     help="The research tool to activate"
 )
@@ -89,6 +93,7 @@ def select(tool: str) -> None:
     "--node-dir",
     type=click.Path(path_type=Path),
     prompt="What should be the base directory on slurm nodes?",
+    default=lambda: str(bb_cfg()["slurm"]["node_dir"].value),
     help="Base directory on slurm nodes. \n"
     "Must be creatable and writeable on every slurm node and your local "
     "machine and must not be on a NFS."
@@ -97,6 +102,7 @@ def select(tool: str) -> None:
     "--export-dir",
     type=click.Path(path_type=Path),
     prompt="Where should base images be exported to for storage?",
+    default=lambda: str(bb_cfg()["container"]["export"].value),
     help="Base image export directory. \n"
     "Must be accessible by this machine and all slurm nodes."
 )
@@ -104,6 +110,7 @@ def select(tool: str) -> None:
     "-t",
     "--tool",
     type=click.Choice([*get_supported_research_tool_names(), "none"]),
+    default=lambda: vara_cfg()["container"]["research_tool"].value or "none",
     prompt="What research tool does your experiment need?",
     help="The research tool needed by your experiment."
 )
@@ -124,12 +131,16 @@ def prepare_slurm(
         str(vara_cfg()["benchbuild_root"])
     ) / "slurm_container.sh.inc"
     bb_cfg()["slurm"]["template"] = str(template_path)
-    bb_cfg()["slurm"]["node_dir"] = node_dir
+    bb_cfg()["slurm"]["node_dir"] = str(node_dir)
 
     bb_cfg()["container"]["root"] = f"{node_dir}/containers/lib"
     bb_cfg()["container"]["runroot"] = f"{node_dir}/containers/run"
-    bb_cfg()["container"]["export"] = export_dir
-    bb_cfg()["container"]["import"] = export_dir
+    bb_cfg()["container"]["export"] = str(export_dir)
+    bb_cfg()["container"]["import"] = str(export_dir)
+
+    if not export_dir.exists():
+        LOG.info(f"Creating container export directory at {export_dir}")
+        export_dir.mkdir(parents=True)
 
     save_bb_config()
 
