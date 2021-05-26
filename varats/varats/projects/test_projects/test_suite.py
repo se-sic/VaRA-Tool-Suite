@@ -51,7 +51,7 @@ class SVFPointsToAnalysisBenchmark(bb.Project):  # type: ignore
         "path_tests",
     ]
 
-    FILE_PATHS = []  # type: tp.List[str]
+    FILE_PATHS: tp.List[Path] = []
 
     def __init__(self, var) -> None:
         super().__init__()
