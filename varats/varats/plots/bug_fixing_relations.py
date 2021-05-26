@@ -27,8 +27,8 @@ def _plot_chord_diagram_for_raw_bugs(
 
     # maps commit hex -> node id
     map_commit_to_id: tp.Dict[str, int] = _map_commits_to_nodes(project_repo)
-    commit_count = len(map_commit_to_id.keys())
     commit_type: tp.Dict[str, str] = {}
+    commit_count = len(map_commit_to_id.keys())
 
     for commit in project_repo.walk(
         project_repo.head.target.hex, pygit2.GIT_SORT_TIME
@@ -41,39 +41,29 @@ def _plot_chord_diagram_for_raw_bugs(
 
     commit_coordinates = _compute_node_placement(commit_count)
 
-    commit_distance_thresholds = [
-        0,
-        round(0.25 * commit_count),
-        round(0.5 * commit_count),
-        round(0.75 * commit_count), commit_count
-    ]
-
-    def _get_commit_interval(distance: float) -> int:
-        """Get right interval for given commit distance using distance
-        thresholds, interval indices are in [0,3] for 5 thresholds."""
-        k = 0
-        while commit_distance_thresholds[k] < distance:
-            k += 1
-        return k - 1
-
-    edge_colors = ['#d4daff', '#84a9dd', '#5588c8', '#6d8acf']
-
-    node_colors = {
-        'fix': 'rgba(0, 177, 106, 1)',
-        'introduction': 'rgba(240, 52, 52, 1)',
-        'introducing fix': 'rgba(235, 149, 50, 1)',
-        'head': 'rgba(142, 68, 173, 1)',
-        'fixing head': 'rgba(142, 68, 173, 1)',
-        'default': 'rgba(232, 236, 241, 1)'
-    }
-
     # draw relations and preprocess commit types
-    nodes = []
+    lines = _generate_line_data(
+        bug_set, commit_coordinates, map_commit_to_id, commit_type
+    )
+    nodes = _generate_node_data(
+        project_repo, commit_coordinates, map_commit_to_id, commit_type
+    )
+
+    data = nodes + lines
+    layout = _create_layout(f'Bug fixing relations for {project_name}')
+    return gob.FigureWidget(data=data, layout=layout)
+
+
+def _generate_line_data(
+    bug_set: tp.FrozenSet[RawBug], commit_coordinates: tp.List[np.array],
+    map_commit_to_id: tp.Dict[str, int], commit_type: tp.Dict[str, str]
+) -> tp.List[gob.Scatter]:
     lines = []
+
     for bug in bug_set:
         bug_fix = bug.fixing_commit
-        fix_ind = map_commit_to_id[bug_fix]
-        fix_coordinates = commit_coordinates[fix_ind]
+        fix_id = map_commit_to_id[bug_fix]
+        fix_coordinates = commit_coordinates[fix_id]
 
         commit_type[bug_fix] = 'introducing fix' if commit_type[
             bug_fix] == 'introduction' else 'fix'
@@ -87,12 +77,23 @@ def _plot_chord_diagram_for_raw_bugs(
 
             commit_dist = map_commit_to_id[bug_introduction] - map_commit_to_id[
                 bug_fix]
-            commit_interval = _get_commit_interval(commit_dist)
-            color = edge_colors[commit_interval]
+            commit_interval = _get_commit_interval(
+                commit_dist, len(map_commit_to_id.keys())
+            )
+            color = __EDGE_COLORS[commit_interval]
 
             lines.append(
                 _create_line(fix_coordinates, intro_coordinates, color)
             )
+
+    return lines
+
+
+def _generate_node_data(
+    project_repo: pygit2.Repository, commit_coordinates: tp.List[np.array],
+    map_commit_to_id: tp.Dict[str, int], commit_type: tp.Dict[str, str]
+) -> tp.List[gob.Scatter]:
+    nodes = []
 
     for commit in project_repo.walk(
         project_repo.head.target.hex, pygit2.GIT_SORT_TIME
@@ -114,7 +115,7 @@ def _plot_chord_diagram_for_raw_bugs(
                      f'Author: {commit.author.name}<br>' \
                      f'Date: {datetime.fromtimestamp(commit.commit_time)}<br>' \
                      f'Message: {displayed_message}'
-        node_color = node_colors[commit_type[commit.hex]]
+        node_color = __NODE_COLORS[commit_type[commit.hex]]
 
         node_scatter = _create_node(
             commit_coordinates[commit_id], node_color, node_label
@@ -122,9 +123,7 @@ def _plot_chord_diagram_for_raw_bugs(
 
         nodes.append(node_scatter)
 
-    data = nodes + lines
-    layout = _create_layout(f'Bug fixing relations for {project_name}')
-    return gob.FigureWidget(data=data, layout=layout)
+    return nodes
 
 
 def _create_line(start: np.array, end: np.array, color: str) -> gob.Scatter:
@@ -133,8 +132,8 @@ def _create_line(start: np.array, end: np.array, color: str) -> gob.Scatter:
 
     control_points = [
         start,
-        np.true_divide(start, (__cp_parameters[interval])),
-        np.true_divide(end, (__cp_parameters[interval])), end
+        np.true_divide(start, (__CP_PARAMETERS[interval])),
+        np.true_divide(end, (__CP_PARAMETERS[interval])), end
     ]
     curve_points = _get_bezier_curve(control_points)
 
@@ -194,19 +193,45 @@ def _get_interval(distance: float) -> int:
     """Get right interval for given node distance using distance thresholds,
     interval indices are in [0,3] for 5 thresholds."""
     k = 0
-    while __distance_thresholds[k] < distance:
+    while __DISTANCE_THRESHOLDS[k] < distance:
         k += 1
     return k - 1
 
 
 #defining some constants for diagram generation
-__cp_parameters = [1.2, 1.5, 1.8, 2.1]
-__distance_thresholds = [
+__CP_PARAMETERS = [1.2, 1.5, 1.8, 2.1]
+__DISTANCE_THRESHOLDS = [
     0,
     _get_distance([1, 0], 2 * [np.sqrt(2) / 2]),
     np.sqrt(2),
     _get_distance([1, 0], [-np.sqrt(2) / 2, np.sqrt(2) / 2]), 2.0
 ]
+__EDGE_COLORS = ['#d4daff', '#84a9dd', '#5588c8', '#6d8acf']
+
+__NODE_COLORS = {
+    'fix': 'rgba(0, 177, 106, 1)',
+    'introduction': 'rgba(240, 52, 52, 1)',
+    'introducing fix': 'rgba(235, 149, 50, 1)',
+    'head': 'rgba(142, 68, 173, 1)',
+    'fixing head': 'rgba(142, 68, 173, 1)',
+    'default': 'rgba(232, 236, 241, 1)'
+}
+
+
+def _get_commit_interval(distance: float, commit_count: int) -> int:
+    """Get right interval for given commit distance using distance thresholds,
+    interval indices are in [0,3] for 5 thresholds."""
+    commit_distance_thresholds = [
+        0,
+        round(0.25 * commit_count),
+        round(0.5 * commit_count),
+        round(0.75 * commit_count), commit_count
+    ]
+
+    k = 0
+    while commit_distance_thresholds[k] < distance:
+        k += 1
+    return k - 1
 
 
 def _get_bezier_curve(ctrl_points: np.array, num_points: int = 5) -> np.array:
