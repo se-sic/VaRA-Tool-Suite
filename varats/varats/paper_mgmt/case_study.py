@@ -611,9 +611,8 @@ def extend_with_bug_commits(
                 "Falling back to bug provider."
             )
             return None
-        else:
-            report = load_fun(reports[0])
-            return report.get_all_raw_bugs()
+        report = load_fun(reports[0])
+        return report.get_all_raw_bugs()
 
     bugs: tp.Optional[tp.FrozenSet[RawBug]] = None
     if report_type == SZZUnleashedReport:
