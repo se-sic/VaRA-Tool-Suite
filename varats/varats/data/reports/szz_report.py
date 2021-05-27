@@ -56,7 +56,7 @@ class SZZReport(BaseReport):
             file_ext: file extension of the report file
 
         Returns:
-            name for the report file that can later be uniquly identified
+            name for the report file that can later be uniquely identified
         """
         raise NotImplementedError("Must be implemented by subclasses.")
 
@@ -112,7 +112,7 @@ class SZZUnleashedReport(SZZReport):
             file_ext: file extension of the report file
 
         Returns:
-            name for the report file that can later be uniquly identified
+            name for the report file that can later be uniquely identified
         """
         return MetaReport.get_file_name(
             SZZUnleashedReport.SHORTHAND, project_name, binary_name,
@@ -130,7 +130,7 @@ class PyDrillerSZZReport(SZZReport):
     SHORTHAND = "PySZZ"
 
     def __init__(self, path: Path):
-        super().__init__(path, "PyDriller SZZ")
+        super().__init__(path, "PyDrillerSZZ")
 
     @staticmethod
     def get_file_name(
@@ -153,7 +153,7 @@ class PyDrillerSZZReport(SZZReport):
             file_ext: file extension of the report file
 
         Returns:
-            name for the report file that can later be uniquly identified
+            name for the report file that can later be uniquely identified
         """
         return MetaReport.get_file_name(
             PyDrillerSZZReport.SHORTHAND, project_name, binary_name,
