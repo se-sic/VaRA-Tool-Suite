@@ -38,15 +38,15 @@ class SVFPointsToAnalysisBenchmark(bb.Project):  # type: ignore
     DIRS = [
         "basic_c_tests",
         "basic_cpp_tests",
-        # "complex_tests",
+        "complex_tests",
         "cpp_types",
         "cs_tests",
         "fs_tests",
-        # "fstbhc_tests",
+        "fstbhc_tests",
         "path_tests",
         "graphtxt",
-        # "mem_leak",
-        # "mta",
+        "mem_leak",
+        "mta",
         "non_annotated_tests",
         "path_tests",
     ]
@@ -83,6 +83,7 @@ class SVFPointsToAnalysisBenchmark(bb.Project):  # type: ignore
                     f"{source}/{file}",
                     f"-I{source}",
                     "-g",  # Generate source-level debug information
+                    "-S",  # Only run preprocess and compilation steps
                     "-o",
                     file.with_suffix('')
                 ]
