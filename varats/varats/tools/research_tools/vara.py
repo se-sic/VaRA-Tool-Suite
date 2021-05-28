@@ -16,7 +16,6 @@ from varats.tools.research_tools.research_tool import (
     ResearchTool,
     SubProject,
     Dependencies,
-    Distro,
 )
 from varats.tools.research_tools.vara_manager import (
     BuildType,
@@ -29,7 +28,7 @@ from varats.utils.logger_util import log_without_linesep
 from varats.utils.settings import save_config, vara_cfg
 
 if tp.TYPE_CHECKING:
-    from varats.containers.containers import BaseImageCreationContext
+    import varats.containers.containers as containers
 
 LOG = logging.getLogger(__name__)
 
@@ -267,7 +266,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         return status_ok
 
     def add_container_layers(
-        self, image_context: 'BaseImageCreationContext'
+        self, image_context: 'containers.BaseImageCreationContext'
     ) -> None:
         """
         Add the layers required for this research tool to the given container.

@@ -182,7 +182,7 @@ In these situations, it can come in handy to create some shell aliases that set 
 For debugging purposes, it can be useful to mount the file system of a container image.
 This can be done with the following steps:
 
-1. Create a buikdah unshare session with
+1. Create a buildah unshare session with
 
    .. code-block:: bash
 

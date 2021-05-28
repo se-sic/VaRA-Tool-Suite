@@ -10,6 +10,7 @@ from os import makedirs, path
 from pathlib import Path
 
 import benchbuild.utils.settings as s
+from plumbum import local
 
 _CFG = s.Configuration(
     "varats",
@@ -44,6 +45,13 @@ _CFG["container"] = {
         "desc":
             "Whether to install varats in the container from a local "
             "source checkout or pip.",
+        "default": False
+    },
+    "dev_mode": {
+        "desc":
+            "If enabled, install varats in editable mode."
+            "Implies `from_source=True` and `varats_source` must be mountable "
+            "inside the container.",
         "default": False
     },
     "varats_source": {
@@ -93,6 +101,17 @@ _CFG["phasar"] = {
     "developer_version": {
         "desc": "Setup phasar as development build.",
         "default": True,
+    },
+}
+
+_CFG["szzunleashed"] = {
+    "source_dir": {
+        "desc": "SZZUnleashed source directory",
+        "default": None
+    },
+    "install_dir": {
+        "desc": "SZZUnleashed install directory",
+        "default": None
     },
 }
 
@@ -263,6 +282,13 @@ def save_config() -> None:
 
     create_missing_folders()
     _CFG.store(config_file)
+
+
+def save_bb_config() -> None:
+    """Persist BenchBuild config to a yaml file."""
+    bb_cfg().store(
+        local.path(str(vara_cfg()["benchbuild_root"])) / ".benchbuild.yml"
+    )
 
 
 def get_varats_base_folder() -> Path:
