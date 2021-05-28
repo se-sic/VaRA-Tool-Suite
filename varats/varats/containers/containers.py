@@ -319,9 +319,9 @@ def export_base_image(base: ImageBase) -> None:
     """Export the base image to the filesystem."""
     publish = bootstrap.bus()
     export_name = fs_compliant_name(base.image_name)
-    export_path = local.path(
-        bb_cfg()["container"]["export"].value
-    ) / export_name + ".tar"
+    export_path = Path(
+        local.path(bb_cfg()["container"]["export"].value) / export_name + ".tar"
+    )
     if export_path.exists() and export_path.is_file():
         export_path.unlink(missing_ok=False)
     publish(ExportImage(base.image_name, str(export_path)))
