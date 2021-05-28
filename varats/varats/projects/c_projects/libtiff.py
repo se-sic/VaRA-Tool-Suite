@@ -38,15 +38,15 @@ class Libtiff(bb.Project, CVEProviderHook):  # type: ignore
                 "a63512c436c64ad94b8eff09d6d7faa7e638d45d"
             ], "Requires older version of libtool could maybe be done with containers"
                            ),
-            GoodBadSubgraph(["de8132768f4345f4fc465a1cf6195faa032b1bf5"], [
+            GoodBadSubgraph(["88df59e89cfb096085bc5299f087eaceda73f12e"], [
                 "901535247413d30d9380ee837ecdb9fb661350c6",
                 "5ef6de4c7055a3b426d97d5af1a77484ee92eb30"
             ], "Does not build"),
             GoodBadSubgraph(["6d46b8e4642f372192e94976576b13dcb89970d8"], [
                 "88df59e89cfb096085bc5299f087eaceda73f12e"
             ], "Does not build because of libtool version discrepancy"),
-            GoodBadSubgraph(["f182ef17da5322794bad69644aa5dbf58d254ba4"],
-                            ["608412f5c7e92f0f81a63ccf530d192c2316f6bf"],
+            GoodBadSubgraph(["5cbfc68f0625d6c29d724b6e57fa7e98017ad325"],
+                            ["59e0f5cb3316089eb81064efdc3ba0eac7145fab"],
                             "Bug in Libtiff"),
             SingleRevision(
                 "614095e3d06f6ac95fc9bb2e9333cf95c228be1c", "Bug in Libtiff"
@@ -59,13 +59,37 @@ class Libtiff(bb.Project, CVEProviderHook):  # type: ignore
             ], "Issue on some machines, not sure whos fault it is"),
             GoodBadSubgraph(["97049062b9d1efa7b00d7a13bcf97365b57c937b"],
                             ["66eb5c7cd07fec0647517f418e5fc81c4e26d402"],
-                            "Bug in Libpng"),
+                            "Bug in Libtiff"),
             GoodBadSubgraph(["0769c447b7108fe616d855e1ba367ecbb90ba471"],
                             ["40c664948371d60908328f7ccb5982aebda1d04d"],
-                            "Error in the Makefile of Libpng"),
+                            "Error in the Makefile of Libtiff"),
             GoodBadSubgraph(["0730d44a00a34db8659a16833453d231501722a7"],
                             ["5b60852fe65b5908130e809e1011b10afcaf1c9c"],
-                            "Bub in Libpng")
+                            "Bub in Libtiff"),
+            GoodBadSubgraph(["145eb81dc87441e400f2bdaf7b873c429ce8c768"],
+                            ["0e40776b337855277cf8093cdc9fa1f838642be1"],
+                            "Bug in Libtiff"),
+            SingleRevision(
+                "d7afc8c14f379f1e7dcf91d9c57cb9b2d1f2d926", "Bug in Libtiff"
+            ),
+            SingleRevision(
+                "292c431e5d99464134255e7e2dc8d24fd6f797d5", "Bug in Libtiff"
+            ),
+            SingleRevision(
+                "5b90af247ea3801ce93ec0922b8b81396caa885d", "Bug in Libtiff"
+            ),
+            SingleRevision(
+                "45efaab3950e9aeb4bb6b697e5795613c629826c", "Bug in Libtiff"
+            ),
+            SingleRevision(
+                "394965766478c9fb028b2bc2ca09e92a49a35f14", "Bug in Libtiff"
+            ),
+            SingleRevision(
+                "0e3c0d0550dc5790779bd222844ac736d83e99a5", "Bug in Libtiff"
+            ),
+            SingleRevision(
+                "d4bef27ee8361ee2d8aae6c30c7074d2547ee2f0", "Bug in Libtiff"
+            )
         ])(
             bb.source.Git(
                 remote="https://gitlab.com/libtiff/libtiff.git",
