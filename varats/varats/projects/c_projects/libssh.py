@@ -91,7 +91,7 @@ class Libssh(bb.Project, CVEProviderHook):  # type: ignore
                 bb.watch(cmake)("-G", "Unix Makefiles", "..")
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-
+        with local.cwd(libssh_source):
             verify_binaries(self)
 
     def __compile_make(self) -> None:
