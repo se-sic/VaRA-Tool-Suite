@@ -10,12 +10,12 @@ from os import makedirs, path
 from pathlib import Path
 
 import benchbuild.utils.settings as s
-from plumbum import local
+from plumbum import local, LocalPath
 
 
 def create_new_varats_config() -> s.Configuration:
     """
-    Create a new default varats config.
+    Create a new default (uninitialized) varats config.
 
     For internal use only! If you want to access the current varats config, use
     :func:`vara_cfg()` instead.
@@ -265,7 +265,7 @@ def create_missing_folders() -> None:
         """Create missing folders for a specific config path."""
 
         config_node = local_cfg[cfg_varname]
-        if config_node.has_value and\
+        if config_node.has_value() and\
                 config_node.value is not None and\
                 not path.isdir(config_node.value):
             makedirs(config_node.value)
@@ -285,6 +285,10 @@ def save_config() -> None:
     else:
         config_file = str(vara_cfg()["config_file"])
     vara_cfg()["config_file"] = path.abspath(config_file)
+    if vara_cfg()["benchbuild_root"].value is None:
+        vara_cfg()["benchbuild_root"] = path.dirname(
+            str(vara_cfg()["config_file"])
+        ) + "/benchbuild"
     if vara_cfg()["result_dir"].value is None:
         vara_cfg()["result_dir"] = path.dirname(
             str(vara_cfg()["config_file"])
@@ -297,9 +301,13 @@ def save_config() -> None:
         vara_cfg()["tables"]["table_dir"] = path.dirname(
             str(vara_cfg()["config_file"])
         ) + "/tables"
+    if vara_cfg()["artefacts"]["artefacts_dir"].value is None:
+        vara_cfg()["artefacts"]["artefacts_dir"] = path.dirname(
+            str(vara_cfg()["config_file"])
+        ) + "/artefacts"
 
     create_missing_folders()
-    vara_cfg().store(config_file)
+    vara_cfg().store(LocalPath(config_file))
 
 
 def get_varats_base_folder() -> Path:

@@ -133,6 +133,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         cfg_node[cfg_varname] = str(varats_cfg["benchbuild_root"]) + \
                                 str(cfg_node[cfg_varname])[len(getcwd()):]
 
+    replace_bb_cwd_path("config_file")
     replace_bb_cwd_path("build_dir")
     replace_bb_cwd_path("tmp_dir")
     replace_bb_cwd_path("node_dir", new_bb_cfg["slurm"])

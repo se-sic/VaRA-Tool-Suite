@@ -3,19 +3,14 @@ import os
 import unittest
 from pathlib import Path
 
-from varats.tools.bb_config import create_new_bb_config
-from varats.utils.settings import create_new_varats_config
+from tests.test_utils import run_in_test_environment
+from varats.utils.settings import bb_cfg
 
 
 class BenchBuildConfig(unittest.TestCase):
     """Test BenchBuild config."""
 
-    @classmethod
-    def setUpClass(cls):
-        """Setup and generate the benchbuild config file."""
-        varats_cfg = create_new_varats_config()
-        cls.bb_cfg = create_new_bb_config(varats_cfg)
-
+    @run_in_test_environment
     def check_all_files_in_config_list(
         self, folder, config_list, exclude_list=None
     ):
@@ -39,26 +34,29 @@ class BenchBuildConfig(unittest.TestCase):
                     "Missing: " + plugin_python_path
                 )
 
+    @run_in_test_environment
     def test_if_all_nodes_have_been_created(self):
         """Test if all the benchbuild config was created with all expected
         nodes."""
 
-        self.assertTrue(self.bb_cfg["varats"].__contains__("outfile"))
-        self.assertTrue(self.bb_cfg["varats"].__contains__("result"))
+        self.assertTrue(bb_cfg()["varats"].__contains__("outfile"))
+        self.assertTrue(bb_cfg()["varats"].__contains__("result"))
 
+    @run_in_test_environment
     def test_if_slurm_config_was_added(self):
         """Test if all the benchbuild slurm config was created."""
 
-        self.assertTrue(self.bb_cfg["slurm"].__contains__("account"))
-        self.assertTrue(self.bb_cfg["slurm"].__contains__("partition"))
+        self.assertTrue(bb_cfg()["slurm"].__contains__("account"))
+        self.assertTrue(bb_cfg()["slurm"].__contains__("partition"))
 
+    @run_in_test_environment
     def test_if_projects_were_added(self):
         """Test if all projects where added to the benchbuild config."""
         excluded_projects = [
             "llvm-all.py", "llvm-min.py", "llvm.py", "glibc.py"
         ]
 
-        loaded_plugins = self.bb_cfg["plugins"]["projects"].value
+        loaded_plugins = bb_cfg()["plugins"]["projects"].value
         self.check_all_files_in_config_list(
             "varats/projects/c_projects/", loaded_plugins, excluded_projects
         )
@@ -66,6 +64,7 @@ class BenchBuildConfig(unittest.TestCase):
             "varats/projects/cpp_projects/", loaded_plugins, excluded_projects
         )
 
+    @run_in_test_environment
     def test_if_experiments_were_added(self):
         """Test if all projects where added to the benchbuild config."""
         excluded_experiments = [
@@ -73,7 +72,7 @@ class BenchBuildConfig(unittest.TestCase):
             "commit_annotation_report.py", "blame_experiment.py"
         ]
 
-        loaded_plugins = self.bb_cfg["plugins"]["experiments"].value
+        loaded_plugins = bb_cfg()["plugins"]["experiments"].value
         self.check_all_files_in_config_list(
             "varats/experiments/", loaded_plugins, excluded_experiments
         )

@@ -1,54 +1,19 @@
 """Module for test utility functions."""
 import contextlib
-import functools
 import os
 import tempfile
 import typing as tp
-from copy import deepcopy
 from functools import wraps
 from pathlib import Path
 
-import benchbuild.utils.settings
+import benchbuild.utils.settings as bb_settings
 import plumbum as pb
 from benchbuild.source import Git, base
 
 import varats.utils.settings as settings
+from varats.tools.bb_config import create_new_bb_config, save_bb_config
 
 TEST_INPUTS_DIR = Path(os.path.dirname(__file__)) / 'TEST_INPUTS'
-
-
-def _get_test_config(tmp_path: Path) -> benchbuild.utils.settings.Configuration:
-    """
-    Get a vara config suitable for testing.
-
-    Configs returned by this function are meant to be passed to
-    :func:`replace_config()`.
-
-    Args:
-        tmp_path: path to put files that may be written during test execution
-
-    Returns:
-        a (deep)copy of the current vara config suitable for testing
-    """
-    test_config = deepcopy(settings._CFG)  # pylint: disable=protected-access
-
-    test_config["config_file"] = str(tmp_path / ".varats.yml")
-    test_config["benchbuild_root"] = str(tmp_path / "benchbuild")
-    test_config["data_cache"] = str(tmp_path / "data_cache")
-    test_config["result_dir"] = str(TEST_INPUTS_DIR / "results")
-
-    test_config["paper_config"]["folder"] = str(
-        TEST_INPUTS_DIR / "paper_configs"
-    )
-    test_config["paper_config"]["current_config"] = None
-
-    # let output config options point to test env.
-    test_config["plots"]["plot_dir"] = str(tmp_path / "plots")
-    test_config["tables"]["table_dir"] = str(tmp_path / "tables")
-    test_config["artefacts"]["artefacts_dir"] = str(tmp_path / "artefacts")
-
-    return test_config
-
 
 TestFunctionTy = tp.Callable[..., tp.Any]
 
@@ -64,28 +29,16 @@ class _TestEnvironment():
 
         # pylint: disable=protected-access
         self.__old_config = settings.vara_cfg()
-        self.__new_config = _get_test_config(self.__tmp_path)
-
         # pylint: disable=protected-access
         self.__old_bb_config = settings.bb_cfg()
-        self.__new_bb_config = deepcopy(self.__old_bb_config)
 
     @contextlib.contextmanager
     def _decoration_helper(self) -> tp.Any:
-        # pylint: disable=protected-access
-        settings._CFG = self.__new_config
-        settings.create_missing_folders()
-        # pylint: disable=protected-access
-        settings._BB_CFG = self.__new_bb_config
+        self.__enter__()
         try:
             yield
         finally:
-            # pylint: disable=protected-access
-            settings._CFG = self.__old_config
-            # pylint: disable=protected-access
-            settings._BB_CFG = self.__old_bb_config
-            if self.__tmp_dir:
-                self.__tmp_dir.cleanup()
+            self.__exit__(None, None, None)
 
     def __call__(self, func: TestFunctionTy) -> TestFunctionTy:
 
@@ -98,11 +51,17 @@ class _TestEnvironment():
 
     def __enter__(self) -> Path:
         os.chdir(self.__tmp_dir.name)
+        vara_cfg = settings.create_new_varats_config()
+        bb_settings.setup_config(vara_cfg)
         # pylint: disable=protected-access
-        settings._CFG = self.__new_config
-        settings.create_missing_folders()
+        settings._CFG = vara_cfg
+        settings.save_config()
+
+        bb_cfg = create_new_bb_config(settings.vara_cfg())
+        save_bb_config(bb_cfg, settings.vara_cfg())
         # pylint: disable=protected-access
-        settings._BB_CFG = self.__new_bb_config
+        settings._BB_CFG = bb_cfg
+
         return self.__tmp_path
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
