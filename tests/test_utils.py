@@ -1,6 +1,7 @@
 """Module for test utility functions."""
 import contextlib
 import os
+import shutil
 import tempfile
 import typing as tp
 from functools import wraps
@@ -18,14 +19,47 @@ TEST_INPUTS_DIR = Path(os.path.dirname(__file__)) / 'TEST_INPUTS'
 TestFunctionTy = tp.Callable[..., tp.Any]
 
 
+class TestInputs():
+
+    class TestInput():
+
+        def __init__(self, src: Path, dst: Path):
+            self.__src = src
+            self.__dst = dst
+
+        def copy_to_path(self, path):
+            dst = path / self.__dst
+            if self.__src.is_dir():
+                shutil.copytree(self.__src, dst)
+            else:
+                shutil.copy(self.__src, dst)
+
+    PAPER_CONFIGS = TestInput(
+        TEST_INPUTS_DIR / "paper_configs", Path("paper_configs")
+    )
+    RESULT_FILES = TestInput(TEST_INPUTS_DIR / "results", Path("results"))
+    PLOTS = TestInput(TEST_INPUTS_DIR / "plots", Path("plots"))
+    TABLES = TestInput(TEST_INPUTS_DIR / "tables", Path("tables"))
+    ARTEFACTS = TestInput(TEST_INPUTS_DIR / "artefacts", Path("artefacts"))
+
+    @staticmethod
+    def create_test_input(src: Path, dst: Path) -> TestInput:
+        return TestInputs.TestInput(src, dst)
+
+
 class _TestEnvironment():
 
-    def __init__(self) -> None:
+    def __init__(
+        self, required_test_inputs: tp.Iterable[TestInputs.TestInput]
+    ) -> None:
 
         self.__tmp_dir = tempfile.TemporaryDirectory()
         self.__tmp_path = Path(self.__tmp_dir.name)
-
         self.__cwd = os.getcwd()
+
+        if required_test_inputs:
+            for test_input in required_test_inputs:
+                test_input.copy_to_path(self.__tmp_path)
 
         # pylint: disable=protected-access
         self.__old_config = settings.vara_cfg()
@@ -74,9 +108,11 @@ class _TestEnvironment():
             self.__tmp_dir.cleanup()
 
 
-def run_in_test_environment(test_func: TestFunctionTy) -> TestFunctionTy:
+def run_in_test_environment(
+    *required_test_inputs: TestInputs.TestInput
+) -> TestFunctionTy:
     """
-    Run a test in an isolated environment.
+    Run a test in an isolated test environment.
 
     The wrapped test is run inside a temporary directory that acts as the
     varats root folder with a fresh default varats and BenchBuild config.
@@ -84,16 +120,33 @@ def run_in_test_environment(test_func: TestFunctionTy) -> TestFunctionTy:
     getters.
 
     Args:
-        test_func: the test function to wrap
+        required_test_inputs: test inputs to be copied into the test environment
 
     Returns:
         the wrapped test function
     """
-    return _TestEnvironment()(test_func)
+
+    def wrapper_func(test_func: TestFunctionTy) -> TestFunctionTy:
+        return _TestEnvironment(required_test_inputs)(test_func)
+
+    return wrapper_func
 
 
-def test_environment() -> _TestEnvironment:
-    return _TestEnvironment()
+def test_environment(
+    *required_test_inputs: TestInputs.TestInput
+) -> _TestEnvironment:
+    """
+    Context manager that creates an isolated test environment.
+
+    The wrapped test is run inside a temporary directory that acts as the
+    varats root folder with a fresh default varats and BenchBuild config.
+    The configurations can be accessed via the usual `vara_cfg()` and `bb_cfg()`
+    getters.
+
+    Args:
+        required_test_inputs: test inputs to be copied into the test environment
+    """
+    return _TestEnvironment(required_test_inputs)
 
 
 class DummyGit(Git):
