@@ -4,7 +4,10 @@ import unittest
 import pandas as pd
 
 from tests.test_utils import run_in_test_environment
-from varats.data.cache_helper import build_cached_report_table
+from varats.data.cache_helper import (
+    build_cached_report_table,
+    get_data_file_path,
+)
 
 
 class TestCacheHelper(unittest.TestCase):
@@ -18,7 +21,12 @@ class TestCacheHelper(unittest.TestCase):
         "c2": ("c", 2),
     }
 
-    @run_in_test_environment
+    @run_in_test_environment()
+    def test_get_data_file_path(self):
+        path = get_data_file_path("foo", "tmux")
+        self.assertEqual("data_cache/foo-tmux.csv.gz", str(path))
+
+    @run_in_test_environment()
     def test_build_cached_report_table(self):
         """Check whether data items are correctly cached and updated/evicted."""
         data_id = "cache_test_data"

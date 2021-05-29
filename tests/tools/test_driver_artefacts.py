@@ -4,7 +4,7 @@ import unittest
 import unittest.mock as mock
 from pathlib import Path
 
-from tests.test_utils import run_in_test_environment
+from tests.test_utils import run_in_test_environment, TestInputs
 from varats.data.discover_reports import initialize_reports
 from varats.paper_mgmt.artefacts import (
     Artefact,
@@ -44,7 +44,7 @@ class TestDriverArtefacts(unittest.TestCase):
         initialize_tables()
         initialize_plots()
 
-    @run_in_test_environment
+    @run_in_test_environment(TestInputs.PAPER_CONFIGS)
     @mock.patch('varats.table.tables.build_table', side_effect=_mock_table)
     @mock.patch('varats.plot.plots.build_plot', side_effect=_mock_plot)
     # pylint: disable=unused-argument
@@ -52,7 +52,6 @@ class TestDriverArtefacts(unittest.TestCase):
         """Test whether `vara-art generate` generates all expected files."""
 
         # setup config
-        vara_cfg()['artefacts']['artefacts_dir'] = "artefacts"
         vara_cfg()['paper_config']['current_config'] = "test_artefacts_driver"
         artefacts = get_paper_config().get_all_artefacts()
         output_path = Path("artefacts/test_artefacts_driver")

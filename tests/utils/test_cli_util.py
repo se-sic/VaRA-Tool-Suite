@@ -33,7 +33,7 @@ class ResearchToolUtils(unittest.TestCase):
                 Path("tools_src")
             )
 
-    @run_in_test_environment
+    @run_in_test_environment()
     @mock.patch('varats.tools.research_tools.vara.save_config')
     def test_research_tool_accessor_custom(self, _):
         """Checks if the source_location of a ``ResearchTool`` is correctly set
@@ -43,7 +43,7 @@ class ResearchToolUtils(unittest.TestCase):
         self.assertTrue(vara.has_source_location())
         self.assertEqual(vara.source_location(), configured_location)
 
-    @run_in_test_environment
+    @run_in_test_environment()
     @mock.patch('varats.tools.research_tools.vara.save_config')
     def test_research_tool_accessor_existing(self, _):
         """Checks if the source_location of a ``ResearchTool`` is correctly
