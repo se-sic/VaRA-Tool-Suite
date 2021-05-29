@@ -122,7 +122,7 @@ def create_new_varats_config() -> s.Configuration:
     cfg["paper_config"] = {
         "folder": {
             "desc": "Folder with paper configs.",
-            "default": None,
+            "default": "paper_configs",
         },
         "current_config": {
             "desc": "Paper config file to load.",
