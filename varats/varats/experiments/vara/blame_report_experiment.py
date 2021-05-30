@@ -87,16 +87,10 @@ class BlameReportGeneration(actions.Step):  # type: ignore
 
             run_cmd = wrap_unlimit_stack_size(run_cmd)
 
-            timeout_duration = '24h'
-            from benchbuild.utils.cmd import timeout  # pylint: disable=C0415
-
             exec_func_with_pe_error_handler(
-                timeout[timeout_duration, run_cmd],
+                run_cmd,
                 create_default_analysis_failure_handler(
-                    project,
-                    BR,
-                    Path(vara_result_folder),
-                    timeout_duration=timeout_duration
+                    project, BR, Path(vara_result_folder)
                 )
             )
 
@@ -123,7 +117,11 @@ class BlameReportExperiment(VersionExperiment):
         # build without optimizations because the used build tool/script can
         # still add optimizations flags after the experiment specified cflags.
         project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g0"]
-        bc_file_extensions = [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+        bc_file_extensions = [
+            BCFileExtensions.NO_OPT,
+            BCFileExtensions.TBAA,
+            BCFileExtensions.BLAME,
+        ]
 
         BE.setup_basic_blame_experiment(
             self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE

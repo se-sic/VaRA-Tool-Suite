@@ -165,7 +165,7 @@ class MetaReport(type):
             if not hasattr(cls, var):
                 raise NameError((
                     f"{class_name} does not define "
-                    "a static variable {var}."
+                    f"a static variable {var}."
                 ))
 
     @staticmethod
