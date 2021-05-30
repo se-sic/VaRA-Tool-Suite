@@ -300,19 +300,20 @@ class BugFixingRelationPlot(Plot):
             get_project_cls_by_name(project_name)
         )
         pydriller_bugs = bug_provider.find_all_raw_bugs()
-        reports = get_processed_revisions_files(
-            project_name, SZZUnleashedReport
-        )
-        szzunleashed_bugs = SZZUnleashedReport(reports[0]).get_all_raw_bugs()
+        # reports = get_processed_revisions_files(
+        #     project_name, SZZUnleashedReport
+        # )
+        # szzunleashed_bugs = SZZUnleashedReport(reports[0]).get_all_raw_bugs()
 
         if self.__szz_tool == 'provider':
             self.__figure = _plot_chord_diagram_for_raw_bugs(
                 project_name, pydriller_bugs
             )
         elif self.__szz_tool == 'szz_unleashed':
-            self.__figure = _plot_chord_diagram_for_raw_bugs(
-                project_name, szzunleashed_bugs
-            )
+            pass
+            # self.__figure = _plot_chord_diagram_for_raw_bugs(
+            #     project_name, szzunleashed_bugs
+            # )
         else:
             raise PlotDataEmpty
 
