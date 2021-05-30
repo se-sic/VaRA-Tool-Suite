@@ -7,6 +7,7 @@ import numpy as np
 import plotly.graph_objs as gob
 import pygit2
 
+from varats.data.reports.szz_report import SZZUnleashedReport
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.project.project_util import (
     get_project_cls_by_name,
@@ -14,6 +15,7 @@ from varats.project.project_util import (
 )
 from varats.provider.bug.bug import RawBug
 from varats.provider.bug.bug_provider import BugProvider
+from varats.revision.revisions import get_processed_revisions_files
 
 LOG = logging.getLogger(__name__)
 
