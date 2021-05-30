@@ -294,17 +294,25 @@ class BugFixingRelationPlot(Plot):
 
         self.__szz_tool = self.plot_kwargs.get('szz_tool', 'provider')
 
+        bug_provider = BugProvider.get_provider_for_project(
+            get_project_cls_by_name(project_name)
+        )
+        pydriller_bugs = bug_provider.find_all_raw_bugs()
+        reports = get_processed_revisions_files(
+            project_name, SZZUnleashedReport
+        )
+        szzunleashed_bugs = SZZUnleashedReport(reports[0]).get_all_raw_bugs()
+
         if self.__szz_tool == 'provider':
-            bug_provider = BugProvider.get_provider_for_project(
-                get_project_cls_by_name(project_name)
+            self.__figure = _plot_chord_diagram_for_raw_bugs(
+                project_name, pydriller_bugs
             )
-            raw_bugs = bug_provider.find_all_raw_bugs()
         elif self.__szz_tool == 'szz_unleashed':
-            pass
+            self.__figure = _plot_chord_diagram_for_raw_bugs(
+                project_name, szzunleashed_bugs
+            )
         else:
             raise PlotDataEmpty
-
-        self.__figure = _plot_chord_diagram_for_raw_bugs(project_name, raw_bugs)
 
     def show(self) -> None:
         """Show the finished plot."""
