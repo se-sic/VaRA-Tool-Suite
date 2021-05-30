@@ -419,6 +419,26 @@ def fetch_remote(
         pass
 
 
+def get_tags(repo_folder: Path,
+             extra_args: tp.Optional[tp.List[str]] = None) -> tp.List[str]:
+    """Get the list of available git tags."""
+
+    extra_args = [] if extra_args is None else extra_args
+    args = ["tag"]
+    args += extra_args
+
+    with local.cwd(repo_folder):
+        git_tag_string: str = git(args)
+        git_tag_list: tp.List[str] = []
+
+        if git_tag_string:
+            git_tag_list = git_tag_string.split("\n")
+            git_tag_list.remove('')
+            return git_tag_list
+
+        return git_tag_list
+
+
 def init_all_submodules(folder: Path) -> None:
     """Inits all submodules."""
     with ProcessManager.create_process(
