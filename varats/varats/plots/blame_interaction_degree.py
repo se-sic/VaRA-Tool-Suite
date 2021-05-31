@@ -8,6 +8,7 @@ from enum import Enum
 from os.path import isdir
 from pathlib import Path
 
+import click
 import matplotlib.pyplot as plt
 import matplotlib.style as style
 import numpy as np
@@ -31,6 +32,7 @@ from varats.data.databases.blame_library_interactions_database import (
     BlameLibraryInteractionsDatabase,
 )
 from varats.mapping.commit_map import CommitMap, get_commit_map
+from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import check_required_args
 from varats.plot.plots import PlotGenerator, PlotConfig, CommonPlotOptions
@@ -41,6 +43,18 @@ from varats.project.project_util import get_project_cls_by_name
 from varats.utils.cli_util import CLIOptionTy, make_cli_option
 
 LOG = logging.getLogger(__name__)
+
+
+class PlotTypes(Enum):
+    GRAPHVIZ = "graphviz"
+    SANKEY = "sankey"
+
+
+class EdgeWeightThreshold(Enum):
+    LOW = 10
+    MEDIUM = 30
+    HIGH = 70
+
 
 OPTIONAL_FIG_TITLE: CLIOptionTy = make_cli_option(
     "--fig-title",
@@ -85,6 +99,7 @@ OPTIONAL_HEIGHT: CLIOptionTy = make_cli_option(
     help="The height of the resulting plot file."
 )
 
+# TODO: Add correct default from CommonPlotOptions
 OPTIONAL_FILE_TYPE: CLIOptionTy = make_cli_option(
     "--file-type",
     default='png',
@@ -93,25 +108,73 @@ OPTIONAL_FILE_TYPE: CLIOptionTy = make_cli_option(
     help="The file type of the resulting plot file."
 )
 
-# TODO: Add correct default save_path from plot_dir
+# TODO: Add correct default save_path from plot_dir / CommonPlotOptions
 OPTIONAL_SAVE_PATH: CLIOptionTy = make_cli_option(
     "--save-path",
     default=CommonPlotOptions.default_plot_dir(),
     required=False,
     metavar="save_path",
-    help="The height of the resulting plot image."
+    help="The save path ot the resulting plot image."
 )
 
+OPTIONAL_SHOW_INTERACTIONS: CLIOptionTy = make_cli_option(
+    "--show-interactions/--hide-interactions",
+    default=True,
+    required=False,
+    metavar="show_interactions",
+    help="Enables/Disables the blame interactions."
+)
 
-class PlotTypes(Enum):
-    GRAPHVIZ = "graphviz"
-    SANKEY = "sankey"
+OPTIONAL_SHOW_DIFF: CLIOptionTy = make_cli_option(
+    "--show-diff/--hide-diff",
+    default=False,
+    required=False,
+    metavar="show_diff",
+    help="Enables/Disables the blame diff interactions."
+)
 
+OPTIONAL_REVISION_LENGTH: CLIOptionTy = make_cli_option(
+    "--revision-length",
+    default=10,
+    required=False,
+    metavar="revision_length",
+    help="Sets the number of shown revision chars."
+)
 
-class EdgeWeightThreshold(Enum):
-    LOW = 10
-    MEDIUM = 30
-    HIGH = 70
+OPTIONAL_SHOW_EDGE_WEIGHT: CLIOptionTy = make_cli_option(
+    "--show-edge-weight/--hide-edge-weight",
+    default=True,
+    required=False,
+    metavar="edge_weight",
+    help="Enables/Disables the edge weights of interactions."
+)
+
+OPTIONAL_EDGE_WEIGHT_THRESHOLD: CLIOptionTy = make_cli_option(
+    "--edge-weight-threshold",
+    default=None,
+    type=click.Choice(["LOW", "MEDIUM", "HIGH"]),
+    required=False,
+    metavar="edge_weight_threshold",
+    help="Sets the threshold to show edge weights. Options are: LOW, MEDIUM, "
+    "and HIGH."
+)
+
+# TODO provide choices
+OPTIONAL_LAYOUT_ENGINE: CLIOptionTy = make_cli_option(
+    "--layout-engine",
+    default="fdp",
+    required=False,
+    metavar="layout_engine",
+    help="The layout engine."
+)
+
+OPTIONAL_SHOW_ONLY_COMMIT: CLIOptionTy = make_cli_option(
+    "--show-only-commit",
+    default=None,
+    required=False,
+    metavar="show_only_commit",
+    help="The commit whose interactions are to be shown."
+)
 
 
 class FractionMap:
@@ -834,7 +897,7 @@ def _build_graphviz_edges(
         ):
             continue
 
-        label = None
+        label = ""
         color = "black"
         weight = row['amount']
 
@@ -866,13 +929,10 @@ def _build_graphviz_edges(
 
 
 def _build_graphviz_fig(
-    df: pd.DataFrame,
-    revision: str,
-    show_edge_weight: bool,
+    df: pd.DataFrame, revision: str, show_edge_weight: bool,
     shown_revision_length: int,
-    edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
-    layout_engine: str = 'fdp',
-    show_only_interactions_of_commit: tp.Optional[str] = None
+    edge_weight_threshold: tp.Optional[EdgeWeightThreshold], layout_engine: str,
+    show_only_interactions_of_commit: tp.Optional[str]
 ) -> Digraph:
     graph = Digraph(name="Digraph", strict=True, engine=layout_engine)
     graph.attr(label=f"Revision: {revision}")
@@ -922,11 +982,14 @@ class BlameLibraryInteraction(Plot):
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
 
-    def _get_interaction_data(self, blame_diff: bool = False) -> pd.DataFrame:
-        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
-        case_study = self.plot_kwargs.get('plot_case_study', None)
-        project_name = self.plot_kwargs["project"]
+    @staticmethod
+    def _get_interaction_data(
+        case_study: CaseStudy,
+        commit_map: CommitMap,
+        blame_diff: bool = False
+    ) -> pd.DataFrame:
 
+        project_name = case_study.project_name
         variables = [
             "time_id", "base_hash", "base_lib", "inter_hash", "inter_lib",
             "amount"
@@ -936,14 +999,12 @@ class BlameLibraryInteraction(Plot):
             lib_interaction_df = \
                 BlameDiffLibraryInteractionDatabase.get_data_for_project(
                     project_name, ["revision", *variables], commit_map,
-                    case_study
-                )
+                    case_study)
         else:
             lib_interaction_df = \
                 BlameLibraryInteractionsDatabase.get_data_for_project(
                     project_name, ["revision", *variables], commit_map,
-                    case_study
-                )
+                    case_study)
 
         length = len(np.unique(lib_interaction_df['revision']))
         is_empty = lib_interaction_df.empty
@@ -953,19 +1014,7 @@ class BlameLibraryInteraction(Plot):
             raise PlotDataEmpty
         return lib_interaction_df
 
-    def _graphviz_plot(
-        self,
-        view_mode: bool,
-        show_blame_interactions: bool = True,
-        show_blame_diff: bool = False,
-        show_edge_weight: bool = False,
-        shown_revision_length: int = 10,
-        edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
-        layout_engine: str = 'fdp',
-        show_only_interactions_of_commit: tp.Optional[str] = None,
-        save_path: tp.Optional[Path] = None,
-        filetype: str = 'png'
-    ) -> tp.Optional[Digraph]:
+    def _graphviz_plot(self, view_mode: bool) -> tp.Optional[Digraph]:
 
         def _get_graphviz_project_data(
             blame_interactions: bool, blame_diff: bool
@@ -977,22 +1026,31 @@ class BlameLibraryInteraction(Plot):
                 )
                 raise PlotDataEmpty
 
+            # TODO (se-passau/VaRA#545): Find correct paper_config or cs in top
+            #  level
             if blame_interactions:
-                inter_df = self._get_interaction_data(False)
+                inter_df = self._get_interaction_data(cs, commit_map, False)
             else:
-                inter_df = self._get_interaction_data(True)
+                inter_df = self._get_interaction_data(cs, commit_map, True)
 
             if blame_diff:
-                diff_df = self._get_interaction_data(True)
+                diff_df = self._get_interaction_data(cs, commit_map, True)
                 return _add_diff_amount_col_to_df(inter_df, diff_df)
 
             return inter_df
 
+        if self.plot_kwargs["case_study"]:
+            cs: CaseStudy = self.plot_kwargs["case_study"]
+        else:
+            cs = PC.get_paper_config().get_all_case_studies()[0]
+        commit_map = get_commit_map(cs.project_name)
+
         df = _get_graphviz_project_data(
-            show_blame_interactions, show_blame_diff
+            self.plot_kwargs["show_interactions"],
+            self.plot_kwargs["show_diff"],
         )
+
         df.sort_values(by=['time_id'], inplace=True)
-        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
         df.reset_index(inplace=True)
         unique_revisions = _get_unique_revisions(df)
 
@@ -1004,9 +1062,11 @@ class BlameLibraryInteraction(Plot):
 
             dataframe = df.loc[df['revision'] == rev]
             fig = _build_graphviz_fig(
-                dataframe, rev, show_edge_weight, shown_revision_length,
-                edge_weight_threshold, layout_engine,
-                show_only_interactions_of_commit
+                dataframe, rev, self.plot_kwargs["show_edge_weight"],
+                self.plot_kwargs["revision_length"],
+                self.plot_kwargs["edge_weight_threshold"],
+                self.plot_kwargs["layout_engine"],
+                self.plot_kwargs["show_only_commit"]
             )
 
             if view_mode and 'revision' in self.plot_kwargs:
@@ -1019,10 +1079,12 @@ class BlameLibraryInteraction(Plot):
                 revision=rev,
                 c_map=commit_map,
                 plot_kwargs=self.plot_kwargs,
-                plot_file_name=self.plot_file_name(filetype),
+                plot_file_name=self.plot_file_name(
+                    self.plot_kwargs["file_type"]
+                ),
                 plot_type=PlotTypes.GRAPHVIZ,
-                path=save_path,
-                filetype=filetype
+                path=self.plot_kwargs["save_path"],
+                filetype=self.plot_kwargs["file_type"]
             )
         return None
 
@@ -1593,9 +1655,7 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
             )
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
-        self.__graph = self._graphviz_plot(
-            view_mode=view_mode, show_edge_weight=True
-        )
+        self.__graph = self._graphviz_plot(view_mode=view_mode)
 
     def show(self) -> None:
         try:
@@ -1616,6 +1676,59 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError
+
+
+class GraphvizLibraryInteractionsGenerator(
+    PlotGenerator,
+    generator_name="graphviz-plot",
+    plot=BlameCommitInteractionsGraphviz,
+    options=[
+        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.OPTIONAL_CASE_STUDY,
+        PlotGenerator.OPTIONAL_REVISION, OPTIONAL_SHOW_INTERACTIONS,
+        OPTIONAL_SHOW_DIFF, OPTIONAL_SHOW_EDGE_WEIGHT,
+        OPTIONAL_EDGE_WEIGHT_THRESHOLD, OPTIONAL_REVISION_LENGTH,
+        OPTIONAL_LAYOUT_ENGINE, OPTIONAL_SHOW_ONLY_COMMIT, OPTIONAL_FILE_TYPE,
+        OPTIONAL_SAVE_PATH
+    ]
+):
+
+    @check_required_args("report_type")
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        super().__init__(plot_config, **plot_kwargs)
+        self.__report_type: str = plot_kwargs["report_type"]
+        self.__case_study: tp.Optional[str] = plot_kwargs["case_study"]
+        self.__revision: tp.Optional[str] = plot_kwargs["revision"]
+        self.__show_interactions: bool = plot_kwargs["show_interactions"]
+        self.__show_diff: bool = plot_kwargs["show_diff"]
+        self.__show_edge_weight: bool = plot_kwargs["show_edge_weight"]
+        self.__edge_weight_threshold: tp.Optional[
+            EdgeWeightThreshold] = EdgeWeightThreshold[
+                plot_kwargs["edge_weight_threshold"]
+            ] if plot_kwargs["edge_weight_threshold"] else None
+        self.__revision_length: int = plot_kwargs["revision_length"]
+        self.__layout_engine: str = plot_kwargs["layout_engine"]
+        self.__show_only_commit: tp.Optional[str] = plot_kwargs[
+            "show_only_commit"]
+        self.__file_type: str = plot_kwargs["file_type"]
+        self.__save_path: Path = Path(plot_kwargs["save_path"])
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            self.PLOT(
+                report_type=self.__report_type,
+                case_study=self.__case_study,
+                revision=self.__revision,
+                show_interactions=self.__show_interactions,
+                show_diff=self.__show_diff,
+                show_edge_weight=self.__show_edge_weight,
+                edge_weight_threshold=self.__edge_weight_threshold,
+                revision_length=self.__revision_length,
+                layout_engine=self.__layout_engine,
+                show_only_commit=self.__show_only_commit,
+                file_type=self.__file_type,
+                save_path=self.__save_path
+            )
+        ]
 
 
 class BlameAuthorDegree(BlameDegree):
