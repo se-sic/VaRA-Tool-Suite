@@ -56,6 +56,67 @@ def _plot_chord_diagram_for_raw_bugs(
     return gob.FigureWidget(data=data, layout=layout)
 
 
+def _bug_data_diff_plot(
+    project_name: str, bugs_a: tp.FrozenSet[RawBug],
+    bugs_b: tp.FrozenSet[RawBug]
+) -> gob.Figure:
+    project_repo = get_local_project_git(project_name)
+
+    commits_to_nodes_map = _map_commits_to_nodes(project_repo)
+    commit_count = len(commits_to_nodes_map.keys())
+    commit_coordinates = _compute_node_placement(commit_count)
+
+    init_color = 'rgba(207, 0, 15, 1)'
+    node_color_default = 'rgba(0,51,181, 0.85)'
+    node_color_a = "#ff0000"
+    node_color_b = "#00ff00"
+    edge_color_a = "#ff5555"
+    edge_color_b = "#55ff55"
+
+    lines: tp.List[gob.Scatter] = []
+    nodes: tp.List[gob.Scatter] = []
+    for revision, diff_a, diff_b in _diff_raw_bugs(bugs_a, bugs_b):
+        bug_fix = revision
+        fix_ind = commits_to_nodes_map[bug_fix]
+        fix_coordinates = commit_coordinates[fix_ind]
+
+        if diff_a:
+            for introducer in diff_a:
+                lines.append(
+                    _create_line(
+                        fix_coordinates,
+                        commit_coordinates[commits_to_nodes_map[introducer]],
+                        edge_color_a, f'introduced by {introducer}'
+                    )
+                )
+        if diff_b:
+            for introducer in diff_b:
+                lines.append(
+                    _create_line(
+                        fix_coordinates,
+                        commit_coordinates[commits_to_nodes_map[introducer]],
+                        edge_color_b, f'introduced by {introducer}'
+                    )
+                )
+
+        node_color = node_color_default
+        if diff_a is None and diff_b is not None:
+            node_color = node_color_b
+        if diff_b is None and diff_a is not None:
+            node_color = node_color_a
+        if diff_a is None and diff_b is None:
+            node_color = "#ffff00"
+
+        nodes.append(
+            _create_node(fix_coordinates, node_color, f'bug fix: {bug_fix}')
+        )
+
+    init = _create_node(commit_coordinates, init_color, "HEAD")
+    data = lines + nodes + [init]
+    layout = _create_layout(f'SZZ diff {project_name}')
+    return gob.Figure(data=data, layout=layout)
+
+
 def _generate_line_data(
     bug_set: tp.FrozenSet[RawBug], commit_coordinates: tp.List[np.array],
     map_commit_to_id: tp.Dict[str, int], commit_type: tp.Dict[str, str]
@@ -294,18 +355,19 @@ class BugFixingRelationPlot(Plot):
         """Plots bug plot for the whole project."""
         project_name = self.plot_kwargs['project']
 
-        self.__szz_tool = self.plot_kwargs.get('szz_tool', 'provider')
+        self.__szz_tool = self.plot_kwargs.get('szz_tool', 'pydriller')
 
         bug_provider = BugProvider.get_provider_for_project(
             get_project_cls_by_name(project_name)
         )
         pydriller_bugs = bug_provider.find_all_raw_bugs()
+
         # reports = get_processed_revisions_files(
         #     project_name, SZZUnleashedReport
         # )
         # szzunleashed_bugs = SZZUnleashedReport(reports[0]).get_all_raw_bugs()
 
-        if self.__szz_tool == 'provider':
+        if self.__szz_tool == 'pydriller':
             self.__figure = _plot_chord_diagram_for_raw_bugs(
                 project_name, pydriller_bugs
             )
@@ -313,6 +375,11 @@ class BugFixingRelationPlot(Plot):
             pass
             # self.__figure = _plot_chord_diagram_for_raw_bugs(
             #     project_name, szzunleashed_bugs
+            # )
+        elif self.__szz_tool == 'diff':
+            pass
+            # self.__figure = _bug_data_diff_plot(
+            #     project_name, pydriller_bugs, szzunleashed_bugs
             # )
         else:
             raise PlotDataEmpty
