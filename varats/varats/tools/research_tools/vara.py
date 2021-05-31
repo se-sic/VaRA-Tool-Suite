@@ -1,6 +1,7 @@
 """Module for the research tool VaRA that describes the VaRA code base layout
 and how to configure and setup VaRA."""
 import logging
+import math
 import os
 import re
 import shutil
@@ -243,19 +244,28 @@ class VaRA(ResearchTool[VaRACodeBase]):
             "vara-llvm-project"
         )
 
-        if (current_vara_version >= highest_vara_llvm_version
-           ) and current_vara_version >= (highest_vara_tag_version + 10):
+        if (current_vara_version >=
+            highest_vara_llvm_version) and current_vara_version >= (
+                math.ceil(highest_vara_tag_version / 10) * 10
+            ):
             return True
 
         return False
 
     def upgrade(self) -> None:
         """Upgrade the research tool to a newer version."""
-        version = 100
+        new_version = self.find_highest_sub_prj_version("vara-llvm-project")
 
-        # TODO (se-passau/VaRA#640): version upgrade
-        if str(vara_cfg()["vara"]["version"]) != str(version):
-            raise NotImplementedError
+        if new_version != (
+            math.ceil(self.find_highest_sub_prj_version("VaRA") / 10) * 10
+        ):
+            raise AssertionError("vara-llvm-project and vara tool out of sync.")
+
+        if str(vara_cfg()["vara"]["version"]) != str(new_version):
+            self.code_base.checkout_vara_version(new_version, True)
+
+            vara_cfg()["vara"]["version"] = new_version
+            save_config()
 
         self.code_base.pull()
 
