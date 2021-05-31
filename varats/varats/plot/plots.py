@@ -106,6 +106,13 @@ class PlotConfig():
         return {}
 
 
+class PlotGeneratorInitFailed(Exception):
+    """Base class for plot generator related exceptions."""
+
+    def __init__(self, message: str):
+        self.message = message
+
+
 class PlotGenerator(abc.ABC):
     """A plot generator is responsible for generating one or more plots."""
 

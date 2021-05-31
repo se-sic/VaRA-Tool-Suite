@@ -12,7 +12,12 @@ import typing as tp
 import click as click
 
 from varats.data.discover_reports import initialize_reports
-from varats.plot.plots import PlotGenerator, CommonPlotOptions, PlotConfig
+from varats.plot.plots import (
+    PlotGenerator,
+    CommonPlotOptions,
+    PlotConfig,
+    PlotGeneratorInitFailed,
+)
 from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
 from varats.ts_utils.cli_util import initialize_cli_tool, add_cli_options
@@ -49,8 +54,14 @@ for generator_name, generator_cls in PlotGenerator.GENERATORS.items():
         plot_config: PlotConfig
         common_options, plot_config = context.obj
 
-        generator_instance = generator_cls(plot_config, **kwargs)
-        generator_instance(common_options)
+        try:
+            generator_instance = generator_cls(plot_config, **kwargs)
+            generator_instance(common_options)
+        except PlotGeneratorInitFailed as ex:
+            print(
+                f"Failed to create plot generator {generator_cls.NAME}: "
+                f"{ex.message}"
+            )
 
     # wrap command with options specified in the generator class
     command = add_cli_options(command_template, *generator_cls.OPTIONS)
