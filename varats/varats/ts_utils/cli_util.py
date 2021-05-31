@@ -3,6 +3,7 @@
 import logging
 import os
 import typing as tp
+from enum import Enum
 
 import click
 from rich.traceback import install
@@ -116,3 +117,21 @@ def add_cli_options(command: tp.Any, *options: CLIOptionTy) -> tp.Any:
     for option in options:
         command = option(command)
     return command
+
+
+class EnumType(click.Choice):
+    """
+    Enum choice type for click.
+
+    This type can be used with click to specify a choice from the given enum.
+    """
+
+    def __init__(self, enum: tp.Type[Enum]):
+        self.__enum = enum
+        super().__init__(list(dict(enum.__members__).keys()))
+
+    def convert(
+        self, value: str, param: tp.Optional[click.Parameter],
+        ctx: tp.Optional[click.Context]
+    ) -> tp.Any:
+        return self.__enum[super().convert(value, param, ctx)]
