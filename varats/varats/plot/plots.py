@@ -64,9 +64,10 @@ class CommonPlotOptions():
                 file_okay=False,
                 dir_okay=True,
                 writable=True,
-                resolve_path=True
+                resolve_path=True,
+                path_type=Path
             ),
-            default=lambda: str(CommonPlotOptions.default_plot_dir()),
+            default=lambda: CommonPlotOptions.default_plot_dir(),
             help="Set the directory the plots will be written to."
             "Uses the config value 'plots/plot_dir' by default."
         )

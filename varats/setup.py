@@ -23,7 +23,7 @@ setup(
     install_requires=[
         "argparse-utils>=1.2.0",
         "benchbuild>=6.0.1",
-        "click>=7.0",
+        "click>=8.0.1",
         "graphviz>=0.14.2",
         "kaleido>=0.2.1",
         "matplotlib>=3.1.2",
