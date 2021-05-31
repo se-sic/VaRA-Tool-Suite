@@ -10,6 +10,7 @@ from varats.ts_utils.cli_util import (
     make_cli_option,
     CLIOptionTy,
     add_cli_options,
+    cli_yn_choice,
 )
 from varats.utils.settings import vara_cfg
 
@@ -232,6 +233,13 @@ class PlotGenerator(abc.ABC):
             LOG.error(f"Could not find output dir {common_options.plot_dir}")
 
         plots = self.generate()
+
+        if len(plots) > 1 and common_options.view:
+            common_options.view = cli_yn_choice(
+                f"Do you really want to view all {len(plots)} plots? "
+                f"If you answer 'no', the plots will still be generated.", "n"
+            )
+
         for plot in plots:
             if common_options.view:
                 plot.show()
