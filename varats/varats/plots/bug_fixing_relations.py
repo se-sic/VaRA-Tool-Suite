@@ -301,7 +301,7 @@ def _get_commit_interval(distance: float, commit_count: int) -> int:
     return k - 1
 
 
-def _get_bezier_curve(ctrl_points: np.array, num_points: int = 5) -> np.array:
+def _get_bezier_curve(ctrl_points: np.array, num_points: int = 5) -> np.ndarray:
     """Implements bezier edges to display between commit nodes."""
     n = len(ctrl_points)
 
