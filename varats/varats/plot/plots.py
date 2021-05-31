@@ -53,8 +53,8 @@ class CommonPlotOptions():
         ),
         make_cli_option(
             "--file-type",
-            type=str,
-            default="svg",  # todo: provide choices
+            type=click.Choice(["png", "svg", "pdf"]),
+            default="png",
             help="File type for the plot."
         ),
         make_cli_option(
@@ -118,6 +118,7 @@ class PlotGenerator(abc.ABC):
         metavar="revision",
         help="The revision to use for the plot."
     )
+    # TODO: Add report types as choices
     REQUIRE_REPORT_TYPE: CLIOptionTy = make_cli_option(
         "--report-type",
         required=True,
