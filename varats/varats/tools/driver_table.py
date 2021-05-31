@@ -11,7 +11,7 @@ from varats.projects.discover_projects import initialize_projects
 from varats.table.table import TableFormat
 from varats.table.tables import TableRegistry, build_tables
 from varats.tables.discover_tables import initialize_tables
-from varats.utils.cli_util import initialize_cli_tool
+from varats.ts_utils.cli_util import initialize_cli_tool
 
 LOG = logging.getLogger(__name__)
 

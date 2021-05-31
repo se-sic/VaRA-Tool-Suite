@@ -22,20 +22,18 @@ from varats.paper_mgmt.artefacts import (
     store_artefacts,
     PlotArtefact,
     filter_plot_artefacts,
-    TableArtefact,
 )
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
-from varats.table.tables import prepare_tables
 from varats.tables.discover_tables import initialize_tables
+from varats.ts_utils.cli_util import initialize_cli_tool
 from varats.ts_utils.html_utils import (
     CSS_IMAGE_MATRIX,
     CSS_COMMON,
     html_page,
     CSS_TABLE,
 )
-from varats.utils.cli_util import initialize_cli_tool
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)

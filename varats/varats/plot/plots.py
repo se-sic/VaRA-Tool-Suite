@@ -6,7 +6,11 @@ from pathlib import Path
 
 import click
 
-from varats.utils.cli_util import make_cli_option, CLIOptionTy, add_cli_options
+from varats.ts_utils.cli_util import (
+    make_cli_option,
+    CLIOptionTy,
+    add_cli_options,
+)
 from varats.utils.settings import vara_cfg
 
 if tp.TYPE_CHECKING:

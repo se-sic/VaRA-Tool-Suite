@@ -15,7 +15,7 @@ from varats.data.discover_reports import initialize_reports
 from varats.plot.plots import PlotGenerator, CommonPlotOptions, PlotConfig
 from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
-from varats.utils.cli_util import initialize_cli_tool, add_cli_options
+from varats.ts_utils.cli_util import initialize_cli_tool, add_cli_options
 
 LOG = logging.getLogger(__name__)
 
