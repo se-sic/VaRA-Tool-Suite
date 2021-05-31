@@ -56,6 +56,8 @@ class EdgeWeightThreshold(Enum):
     HIGH = 70
 
 
+# TODO: Remove param default values in plot generation if already set in cli
+
 OPTIONAL_FIG_TITLE: CLIOptionTy = make_cli_option(
     "--fig-title",
     default="",
@@ -152,7 +154,7 @@ OPTIONAL_SHOW_EDGE_WEIGHT: CLIOptionTy = make_cli_option(
 OPTIONAL_EDGE_WEIGHT_THRESHOLD: CLIOptionTy = make_cli_option(
     "--edge-weight-threshold",
     default=None,
-    type=click.Choice(["LOW", "MEDIUM", "HIGH"]),
+    type=click.Choice(["LOW", "MEDIUM", "HIGH"], case_sensitive=False),
     required=False,
     metavar="edge_weight_threshold",
     help="Sets the threshold to show edge weights. Options are: LOW, MEDIUM, "
@@ -162,6 +164,7 @@ OPTIONAL_EDGE_WEIGHT_THRESHOLD: CLIOptionTy = make_cli_option(
 # TODO provide choices
 OPTIONAL_LAYOUT_ENGINE: CLIOptionTy = make_cli_option(
     "--layout-engine",
+    type=click.Choice(["dot", "fdp", "sfdp", "neato", "twopi", "circo"]),
     default="fdp",
     required=False,
     metavar="layout_engine",
