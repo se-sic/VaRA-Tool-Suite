@@ -36,7 +36,7 @@ _CFG = s.Configuration(
 _CFG["vara"] = {
     "version": {
         "desc": "VaRA version.",
-        "default": 100,
+        "default": 120,
     },
     "llvm_source_dir": {
         "desc": "LLVM source dir",
