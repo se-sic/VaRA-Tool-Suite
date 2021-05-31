@@ -117,6 +117,10 @@ def _bug_data_diff_plot(
     return gob.Figure(data=data, layout=layout)
 
 
+KeyT = tp.TypeVar("KeyT")
+ValueT = tp.TypeVar("ValueT")
+
+
 def _generate_line_data(
     bug_set: tp.FrozenSet[RawBug], commit_coordinates: tp.List[np.array],
     map_commit_to_id: tp.Dict[str, int], commit_type: tp.Dict[str, str]
@@ -337,6 +341,35 @@ def _map_commits_to_nodes(project_repo: pygit2.Repository) -> tp.Dict[str, int]:
         commits_to_nodes_map[commit.hex] = commit_count
         commit_count += 1
     return commits_to_nodes_map
+
+
+def _diff_raw_bugs(
+    bugs_a: tp.FrozenSet[RawBug], bugs_b: tp.FrozenSet[RawBug]
+) -> tp.Generator[tp.Tuple[str, tp.Optional[tp.FrozenSet[str]],
+                           tp.Optional[tp.FrozenSet[str]]], None, None]:
+    for fixing_commit, introducers_a, introducers_b in _zip_dicts({
+        bug.fixing_commit: bug.introducing_commits for bug in bugs_a
+    }, {bug.fixing_commit: bug.introducing_commits for bug in bugs_b}):
+        diff_a: tp.Optional[tp.FrozenSet[str]] = None
+        diff_b: tp.Optional[tp.FrozenSet[str]] = None
+        if introducers_a:
+            diff_a = introducers_a
+            if introducers_b:
+                diff_a = introducers_a.difference(introducers_b)
+        if introducers_b:
+            diff_b = introducers_b
+            if introducers_a:
+                diff_b = introducers_b.difference(introducers_a)
+
+        yield fixing_commit, diff_a, diff_b
+
+
+def _zip_dicts(
+    a: tp.Dict[KeyT, ValueT], b: tp.Dict[KeyT, ValueT]
+) -> tp.Generator[tp.Tuple[KeyT, tp.Optional[ValueT], tp.Optional[ValueT]],
+                  None, None]:
+    for i in a.keys() | b.keys():
+        yield i, a.get(i, None), b.get(i, None)
 
 
 class BugFixingRelationPlot(Plot):
