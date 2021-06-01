@@ -407,7 +407,7 @@ class BugFixingRelationPlot(Plot):
         elif self.__szz_tool == 'szz_unleashed':
             pass
             self.__figure = _plot_chord_diagram_for_raw_bugs(
-                project_name, szzunleashed_bugs
+                project_name, szzunleashed_bugs, self.__szz_tool
             )
         elif self.__szz_tool == 'diff':
             pass
