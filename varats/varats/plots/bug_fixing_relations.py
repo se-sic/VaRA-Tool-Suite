@@ -57,9 +57,11 @@ def _plot_chord_diagram_for_raw_bugs(
 
 
 def _bug_data_diff_plot(
-    project_name: str, bugs_a: tp.FrozenSet[RawBug],
-    bugs_b: tp.FrozenSet[RawBug]
+    project_name: str, bugs_left: tp.FrozenSet[RawBug],
+    bugs_right: tp.FrozenSet[RawBug]
 ) -> gob.Figure:
+    """Creates a chord diagram representing the diff between two sets of bugs as
+    relation between introducing/fixing commits."""
     project_repo = get_local_project_git(project_name)
 
     commits_to_nodes_map = _map_commits_to_nodes(project_repo)
@@ -67,49 +69,50 @@ def _bug_data_diff_plot(
     commit_count = len(commits_to_nodes_map.keys())
     commit_coordinates = _compute_node_placement(commit_count)
 
-    init_color = 'rgba(207, 0, 15, 1)'
-    edge_color_a = "#ff5555"
-    edge_color_b = "#55ff55"
+    edge_color_left = "#ff5555"
+    edge_color_right = "#55ff55"
 
     lines: tp.List[gob.Scatter] = []
     nodes: tp.List[gob.Scatter] = []
-    for revision, diff_a, diff_b in _diff_raw_bugs(bugs_a, bugs_b):
+    for revision, diff_left, diff_right in _diff_raw_bugs(
+        bugs_left, bugs_right
+    ):
         bug_fix = revision
         fix_ind = commits_to_nodes_map[bug_fix]
         fix_coordinates = commit_coordinates[fix_ind]
 
-        if diff_a:
-            for introducer in diff_a:
+        if diff_left:
+            for introducer in diff_left:
                 lines.append(
                     _create_line(
                         fix_coordinates,
                         commit_coordinates[commits_to_nodes_map[introducer]],
-                        edge_color_a
+                        edge_color_left
                     )
                 )
-        if diff_b:
-            for introducer in diff_b:
+        if diff_right:
+            for introducer in diff_right:
                 lines.append(
                     _create_line(
                         fix_coordinates,
                         commit_coordinates[commits_to_nodes_map[introducer]],
-                        edge_color_b
+                        edge_color_right
                     )
                 )
 
         commit_types[revision] = 'diff_none'
-        if diff_a is None and diff_b is not None:
+        if diff_left is None and diff_right is not None:
             commit_types[revision] = 'diff_right'
-        if diff_b is None and diff_a is not None:
+        if diff_right is None and diff_left is not None:
             commit_types[revision] = 'diff_left'
-        if diff_a is not None and diff_b is not None:
+        if diff_left is not None and diff_right is not None:
             commit_types[revision] = 'diff_both'
 
     nodes = _generate_node_data(
         project_repo, commit_coordinates, commits_to_nodes_map, commit_types
     )
     data = lines + nodes
-    layout = _create_layout(f'SZZ diff {project_name}')
+    layout = _create_layout(f'szz_diff {project_name}')
     return gob.Figure(data=data, layout=layout)
 
 
@@ -181,7 +184,7 @@ def _generate_node_data(
         node_color = __NODE_COLORS[commit_type[commit.hex]]
 
         node_scatter = _create_node(
-            commit_coordinates[commit_id], node_color, node_label
+            commit_coordinates[commit_id], node_color, node_size, node_label
         )
 
         nodes.append(node_scatter)
@@ -209,13 +212,15 @@ def _create_line(start: np.array, end: np.array, color: str) -> gob.Scatter:
     )
 
 
-def _create_node(coordinates: np.ndarray, color: str, text: str) -> gob.Scatter:
+def _create_node(
+    coordinates: np.ndarray, color: str, size: int, text: str
+) -> gob.Scatter:
     return gob.Scatter(
         x=[coordinates[0]],
         y=[coordinates[1]],
         mode='markers',
         name='',
-        marker=dict(symbol='circle', size=8, color=color),
+        marker=dict(symbol='circle', size=size, color=color),
         text=text,
         hoverinfo='text'
     )
@@ -247,9 +252,11 @@ def _create_layout(title: str) -> gob.Layout:
     )
 
 
-def _get_distance(p1: tp.List[float], p2: tp.List[float]) -> float:
+def _get_distance(
+    first_point: tp.List[float], second_point: tp.List[float]
+) -> float:
     """Returns distance between two points."""
-    return float(np.linalg.norm(np.array(p1) - np.array(p2)))
+    return float(np.linalg.norm(np.array(first_point) - np.array(second_point)))
 
 
 def _get_interval(distance: float) -> int:
@@ -307,10 +314,10 @@ def _get_bezier_curve(ctrl_points: np.array, num_points: int = 5) -> np.ndarray:
 
     def get_coordinate_on_curve(factor: float) -> np.array:
         points_cp = np.copy(ctrl_points)
-        for r in range(1, n):
-            points_cp[:n - r, :] = (
+        for i in range(1, n):
+            points_cp[:n - i, :] = (
                 1 - factor
-            ) * points_cp[:n - r, :] + factor * points_cp[1:n - r + 1, :]
+            ) * points_cp[:n - i, :] + factor * points_cp[1:n - i + 1, :]
         return np.array(points_cp[0, :])
 
     point_space = np.linspace(0, 1, num_points)
@@ -344,32 +351,32 @@ def _map_commits_to_nodes(project_repo: pygit2.Repository) -> tp.Dict[str, int]:
 
 
 def _diff_raw_bugs(
-    bugs_a: tp.FrozenSet[RawBug], bugs_b: tp.FrozenSet[RawBug]
+    bugs_left: tp.FrozenSet[RawBug], bugs_right: tp.FrozenSet[RawBug]
 ) -> tp.Generator[tp.Tuple[str, tp.Optional[tp.FrozenSet[str]],
                            tp.Optional[tp.FrozenSet[str]]], None, None]:
-    for fixing_commit, introducers_a, introducers_b in _zip_dicts({
-        bug.fixing_commit: bug.introducing_commits for bug in bugs_a
-    }, {bug.fixing_commit: bug.introducing_commits for bug in bugs_b}):
-        diff_a: tp.Optional[tp.FrozenSet[str]] = None
-        diff_b: tp.Optional[tp.FrozenSet[str]] = None
-        if introducers_a:
-            diff_a = introducers_a
-            if introducers_b:
-                diff_a = introducers_a.difference(introducers_b)
-        if introducers_b:
-            diff_b = introducers_b
-            if introducers_a:
-                diff_b = introducers_b.difference(introducers_a)
+    for fixing_commit, introducers_left, introducers_right in _zip_dicts({
+        bug.fixing_commit: bug.introducing_commits for bug in bugs_left
+    }, {bug.fixing_commit: bug.introducing_commits for bug in bugs_right}):
+        diff_left: tp.Optional[tp.FrozenSet[str]] = None
+        diff_right: tp.Optional[tp.FrozenSet[str]] = None
+        if introducers_left:
+            diff_left = introducers_left
+            if introducers_right:
+                diff_left = introducers_left.difference(introducers_right)
+        if introducers_right:
+            diff_right = introducers_right
+            if introducers_left:
+                diff_right = introducers_right.difference(introducers_left)
 
-        yield fixing_commit, diff_a, diff_b
+        yield fixing_commit, diff_left, diff_right
 
 
 def _zip_dicts(
-    a: tp.Dict[KeyT, ValueT], b: tp.Dict[KeyT, ValueT]
+    left: tp.Dict[KeyT, ValueT], right: tp.Dict[KeyT, ValueT]
 ) -> tp.Generator[tp.Tuple[KeyT, tp.Optional[ValueT], tp.Optional[ValueT]],
                   None, None]:
-    for i in a.keys() | b.keys():
-        yield i, a.get(i, None), b.get(i, None)
+    for i in left.keys() | right.keys():
+        yield i, left.get(i, None), right.get(i, None)
 
 
 class BugFixingRelationPlot(Plot):
@@ -405,12 +412,10 @@ class BugFixingRelationPlot(Plot):
                 project_name, pydriller_bugs, self.__szz_tool
             )
         elif self.__szz_tool == 'szz_unleashed':
-            pass
             self.__figure = _plot_chord_diagram_for_raw_bugs(
                 project_name, szzunleashed_bugs, self.__szz_tool
             )
-        elif self.__szz_tool == 'diff':
-            pass
+        elif self.__szz_tool == 'szz_diff':
             self.__figure = _bug_data_diff_plot(
                 project_name, pydriller_bugs, szzunleashed_bugs
             )
