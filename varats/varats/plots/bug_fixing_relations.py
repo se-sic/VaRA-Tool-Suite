@@ -21,7 +21,7 @@ LOG = logging.getLogger(__name__)
 
 
 def _plot_chord_diagram_for_raw_bugs(
-    project_name: str, bug_set: tp.FrozenSet[RawBug]
+    project_name: str, bug_set: tp.FrozenSet[RawBug], szz_tool: str
 ) -> gob.FigureWidget:
     """Creates a chord diagram representing relations between introducing/fixing
     commits for a given set of RawBugs."""
@@ -52,7 +52,7 @@ def _plot_chord_diagram_for_raw_bugs(
     )
 
     data = nodes + lines
-    layout = _create_layout(f'Bug fixing relations for {project_name}')
+    layout = _create_layout(f'{szz_tool} {project_name}')
     return gob.FigureWidget(data=data, layout=layout)
 
 
@@ -63,13 +63,11 @@ def _bug_data_diff_plot(
     project_repo = get_local_project_git(project_name)
 
     commits_to_nodes_map = _map_commits_to_nodes(project_repo)
+    commit_types: tp.Dict['str', 'str']
     commit_count = len(commits_to_nodes_map.keys())
     commit_coordinates = _compute_node_placement(commit_count)
 
     init_color = 'rgba(207, 0, 15, 1)'
-    node_color_default = 'rgba(0,51,181, 0.85)'
-    node_color_a = "#ff0000"
-    node_color_b = "#00ff00"
     edge_color_a = "#ff5555"
     edge_color_b = "#55ff55"
 
@@ -86,7 +84,7 @@ def _bug_data_diff_plot(
                     _create_line(
                         fix_coordinates,
                         commit_coordinates[commits_to_nodes_map[introducer]],
-                        edge_color_a, f'introduced by {introducer}'
+                        edge_color_a
                     )
                 )
         if diff_b:
@@ -95,24 +93,22 @@ def _bug_data_diff_plot(
                     _create_line(
                         fix_coordinates,
                         commit_coordinates[commits_to_nodes_map[introducer]],
-                        edge_color_b, f'introduced by {introducer}'
+                        edge_color_b
                     )
                 )
 
-        node_color = node_color_default
+        commit_types[revision] = 'diff_none'
         if diff_a is None and diff_b is not None:
-            node_color = node_color_b
+            commit_types[revision] = 'diff_right'
         if diff_b is None and diff_a is not None:
-            node_color = node_color_a
-        if diff_a is None and diff_b is None:
-            node_color = "#ffff00"
+            commit_types[revision] = 'diff_left'
+        if diff_a is not None and diff_b is not None:
+            commit_types[revision] = 'diff_both'
 
-        nodes.append(
-            _create_node(fix_coordinates, node_color, f'bug fix: {bug_fix}')
-        )
-
-    init = _create_node(commit_coordinates, init_color, "HEAD")
-    data = lines + nodes + [init]
+    nodes = _generate_node_data(
+        project_repo, commit_coordinates, commits_to_nodes_map, commit_types
+    )
+    data = lines + nodes
     layout = _create_layout(f'SZZ diff {project_name}')
     return gob.Figure(data=data, layout=layout)
 
@@ -213,7 +209,7 @@ def _create_line(start: np.array, end: np.array, color: str) -> gob.Scatter:
     )
 
 
-def _create_node(coordinates: np.array, color: str, text: str) -> gob.Scatter:
+def _create_node(coordinates: np.ndarray, color: str, text: str) -> gob.Scatter:
     return gob.Scatter(
         x=[coordinates[0]],
         y=[coordinates[1]],
@@ -281,7 +277,11 @@ __NODE_COLORS = {
     'introducing fix': 'rgba(235, 149, 50, 1)',
     'head': 'rgba(142, 68, 173, 1)',
     'fixing head': 'rgba(142, 68, 173, 1)',
-    'default': 'rgba(232, 236, 241, 1)'
+    'default': 'rgba(232, 236, 241, 1)',
+    'diff_left': '#ff0000',
+    'diff_right': '#00ff00',
+    'diff_both': 'rgba(0,51,181, 0.85)',
+    'diff_none': 'rgba(232, 236, 241, 1)'
 }
 
 
@@ -395,25 +395,25 @@ class BugFixingRelationPlot(Plot):
         )
         pydriller_bugs = bug_provider.find_all_raw_bugs()
 
-        # reports = get_processed_revisions_files(
-        #     project_name, SZZUnleashedReport
-        # )
-        # szzunleashed_bugs = SZZUnleashedReport(reports[0]).get_all_raw_bugs()
+        reports = get_processed_revisions_files(
+            project_name, SZZUnleashedReport
+        )
+        szzunleashed_bugs = SZZUnleashedReport(reports[0]).get_all_raw_bugs()
 
         if self.__szz_tool == 'pydriller':
             self.__figure = _plot_chord_diagram_for_raw_bugs(
-                project_name, pydriller_bugs
+                project_name, pydriller_bugs, self.__szz_tool
             )
         elif self.__szz_tool == 'szz_unleashed':
             pass
-            # self.__figure = _plot_chord_diagram_for_raw_bugs(
-            #     project_name, szzunleashed_bugs
-            # )
+            self.__figure = _plot_chord_diagram_for_raw_bugs(
+                project_name, szzunleashed_bugs
+            )
         elif self.__szz_tool == 'diff':
             pass
-            # self.__figure = _bug_data_diff_plot(
-            #     project_name, pydriller_bugs, szzunleashed_bugs
-            # )
+            self.__figure = _bug_data_diff_plot(
+                project_name, pydriller_bugs, szzunleashed_bugs
+            )
         else:
             raise PlotDataEmpty
 
