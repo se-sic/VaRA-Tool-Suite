@@ -69,7 +69,7 @@ def _bug_data_diff_plot(
     project_repo = get_local_project_git(project_name)
 
     commits_to_nodes_map = _map_commits_to_nodes(project_repo)
-    commit_type: tp.Dict['str', 'str'] = {}
+    commit_type: tp.Dict[str, str] = {}
     commit_count = len(commits_to_nodes_map.keys())
     commit_coordinates = _compute_node_placement(commit_count)
 
@@ -78,16 +78,36 @@ def _bug_data_diff_plot(
     ):
         commit_type[commit.hex] = 'diff_none'
 
+    lines: tp.List[gob.Scatter] = _generate_diff_line_data(
+        _diff_raw_bugs(bugs_left, bugs_right), commits_to_nodes_map,
+        commit_coordinates, commit_type
+    )
+
+    nodes: tp.List[gob.Scatter] = _generate_node_data(
+        project_repo, commit_coordinates, commits_to_nodes_map, commit_type
+    )
+    data = lines + nodes
+    layout = _create_layout(f'szz_diff {project_name}')
+    return gob.Figure(data=data, layout=layout)
+
+
+KeyT = tp.TypeVar("KeyT")
+ValueT = tp.TypeVar("ValueT")
+
+
+def _generate_diff_line_data(
+    diff_raw_bugs: tp.Tuple[str, tp.Optional[tp.FrozenSet[str]],
+                            tp.Optional[tp.FrozenSet[str]]],
+    map_commit_to_id: tp.Dict[str, int], commit_coordinates: tp.List[np.array],
+    commit_type: tp.Dict[str, str]
+) -> tp.List[gob.Scatter]:
+    lines: tp.List[gob.Scatter] = []
     edge_color_left = "#ff5555"
     edge_color_right = "#55ff55"
 
-    lines: tp.List[gob.Scatter] = []
-    nodes: tp.List[gob.Scatter] = []
-    for revision, diff_left, diff_right in _diff_raw_bugs(
-        bugs_left, bugs_right
-    ):
-        bug_fix = revision
-        fix_ind = commits_to_nodes_map[bug_fix]
+    for revision, diff_left, diff_right in diff_raw_bugs:
+        bug_fix = revision  # diff only
+        fix_ind = map_commit_to_id[bug_fix]
         fix_coordinates = commit_coordinates[fix_ind]
 
         if diff_left:
@@ -95,7 +115,7 @@ def _bug_data_diff_plot(
                 lines.append(
                     _create_line(
                         fix_coordinates,
-                        commit_coordinates[commits_to_nodes_map[introducer]],
+                        commit_coordinates[map_commit_to_id[introducer]],
                         edge_color_left
                     )
                 )
@@ -104,7 +124,7 @@ def _bug_data_diff_plot(
                 lines.append(
                     _create_line(
                         fix_coordinates,
-                        commit_coordinates[commits_to_nodes_map[introducer]],
+                        commit_coordinates[map_commit_to_id[introducer]],
                         edge_color_right
                     )
                 )
@@ -116,16 +136,7 @@ def _bug_data_diff_plot(
         if diff_left is not None and diff_right is not None:
             commit_type[revision] = 'diff_both'
 
-    nodes = _generate_node_data(
-        project_repo, commit_coordinates, commits_to_nodes_map, commit_type
-    )
-    data = lines + nodes
-    layout = _create_layout(f'szz_diff {project_name}')
-    return gob.Figure(data=data, layout=layout)
-
-
-KeyT = tp.TypeVar("KeyT")
-ValueT = tp.TypeVar("ValueT")
+    return lines
 
 
 def _generate_line_data(
