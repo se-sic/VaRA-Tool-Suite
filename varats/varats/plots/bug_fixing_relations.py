@@ -97,7 +97,7 @@ ValueT = tp.TypeVar("ValueT")
 
 def _generate_diff_line_data(
     diff_raw_bugs: tp.Tuple[str, tp.Optional[tp.FrozenSet[str]],
-                            tp.Optional[tp.FrozenSet[str]]],
+                            tp.Optional[tp.FrozenSet[str]], str],
     map_commit_to_id: tp.Dict[str, int], commit_coordinates: tp.List[np.array],
     commit_type: tp.Dict[str, str]
 ) -> tp.List[gob.Scatter]:
@@ -105,8 +105,7 @@ def _generate_diff_line_data(
     edge_color_left = "#ff5555"
     edge_color_right = "#55ff55"
 
-    for revision, diff_left, diff_right in diff_raw_bugs:
-        bug_fix = revision  # diff only
+    for bug_fix, diff_left, diff_right, fix_type in diff_raw_bugs:
         fix_ind = map_commit_to_id[bug_fix]
         fix_coordinates = commit_coordinates[fix_ind]
 
@@ -129,12 +128,7 @@ def _generate_diff_line_data(
                     )
                 )
 
-        if diff_left is None and diff_right is not None:
-            commit_type[revision] = 'diff_szz_unleashed_only'
-        if diff_right is None and diff_left is not None:
-            commit_type[revision] = 'diff_pydriller_only'
-        if diff_left is not None and diff_right is not None:
-            commit_type[revision] = 'diff_both'
+        commit_type[bug_fix] = fix_type
 
     return lines
 
@@ -372,10 +366,11 @@ def _map_commits_to_nodes(project_repo: pygit2.Repository) -> tp.Dict[str, int]:
 def _diff_raw_bugs(
     bugs_left: tp.FrozenSet[RawBug], bugs_right: tp.FrozenSet[RawBug]
 ) -> tp.Generator[tp.Tuple[str, tp.Optional[tp.FrozenSet[str]],
-                           tp.Optional[tp.FrozenSet[str]]], None, None]:
-    for fixing_commit, introducers_left, introducers_right in _zip_dicts({
-        bug.fixing_commit: bug.introducing_commits for bug in bugs_left
-    }, {bug.fixing_commit: bug.introducing_commits for bug in bugs_right}):
+                           tp.Optional[tp.FrozenSet[str]], str], None, None]:
+    for fixing_commit, introducers_left, introducers_right, fixing_type in _zip_dicts(
+        {bug.fixing_commit: bug.introducing_commits for bug in bugs_left},
+        {bug.fixing_commit: bug.introducing_commits for bug in bugs_right}
+    ):
         diff_left: tp.Optional[tp.FrozenSet[str]] = None
         diff_right: tp.Optional[tp.FrozenSet[str]] = None
         if introducers_left:
@@ -387,15 +382,23 @@ def _diff_raw_bugs(
             if introducers_left:
                 diff_right = introducers_right.difference(introducers_left)
 
-        yield fixing_commit, diff_left, diff_right
+        yield fixing_commit, diff_left, diff_right, fixing_type
 
 
 def _zip_dicts(
     left: tp.Dict[KeyT, ValueT], right: tp.Dict[KeyT, ValueT]
-) -> tp.Generator[tp.Tuple[KeyT, tp.Optional[ValueT], tp.Optional[ValueT]],
+) -> tp.Generator[tp.Tuple[KeyT, tp.Optional[ValueT], tp.Optional[ValueT], str],
                   None, None]:
     for i in left.keys() | right.keys():
-        yield i, left.get(i, None), right.get(i, None)
+        if i in left.keys() & right.keys():
+            fixing_type = 'diff_both'
+        elif i in left.keys():
+            fixing_type = 'diff_pydriller_only'
+        elif i in right.keys():
+            fixing_type = 'diff_szz_unleashed_only'
+        else:
+            fixing_type = 'diff_none'
+        yield i, left.get(i, None), right.get(i, None), fixing_type
 
 
 class BugFixingRelationPlot(Plot):
