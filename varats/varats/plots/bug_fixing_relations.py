@@ -96,10 +96,11 @@ ValueT = tp.TypeVar("ValueT")
 
 
 def _generate_diff_line_data(
-    diff_raw_bugs: tp.Tuple[str, tp.Optional[tp.FrozenSet[str]],
-                            tp.Optional[tp.FrozenSet[str]], str],
-    map_commit_to_id: tp.Dict[str, int], commit_coordinates: tp.List[np.array],
-    commit_type: tp.Dict[str, str]
+    diff_raw_bugs: tp.Generator[tp.Tuple[str, tp.Optional[tp.FrozenSet[str]],
+                                         tp.Optional[tp.FrozenSet[str]], str],
+                                None, None], map_commit_to_id: tp.Dict[str,
+                                                                       int],
+    commit_coordinates: tp.List[np.array], commit_type: tp.Dict[str, str]
 ) -> tp.List[gob.Scatter]:
     lines: tp.List[gob.Scatter] = []
     edge_color_left = "#ff5555"
@@ -387,8 +388,8 @@ def _diff_raw_bugs(
 
 def _zip_dicts(
     left: tp.Dict[KeyT, ValueT], right: tp.Dict[KeyT, ValueT]
-) -> tp.Generator[tp.Tuple[KeyT, tp.Optional[ValueT], tp.Optional[ValueT], str],
-                  None, None]:
+) -> tp.Generator[tp.Tuple[KeyT, tp.Optional[ValueT], tp.Optional[ValueT],
+                           KeyT], None, None]:
     for i in left.keys() | right.keys():
         if i in left.keys() & right.keys():
             fixing_type = 'diff_both'
