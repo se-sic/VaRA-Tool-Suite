@@ -69,9 +69,14 @@ def _bug_data_diff_plot(
     project_repo = get_local_project_git(project_name)
 
     commits_to_nodes_map = _map_commits_to_nodes(project_repo)
-    commit_types: tp.Dict['str', 'str']
+    commit_type: tp.Dict['str', 'str'] = {}
     commit_count = len(commits_to_nodes_map.keys())
     commit_coordinates = _compute_node_placement(commit_count)
+
+    for commit in project_repo.walk(
+        project_repo.head.target.hex, pygit2.GIT_SORT_TIME
+    ):
+        commit_type[commit.hex] = 'diff_none'
 
     edge_color_left = "#ff5555"
     edge_color_right = "#55ff55"
@@ -104,16 +109,15 @@ def _bug_data_diff_plot(
                     )
                 )
 
-        commit_types[revision] = 'diff_none'
         if diff_left is None and diff_right is not None:
-            commit_types[revision] = 'diff_right'
+            commit_type[revision] = 'diff_szz_unleashed_only'
         if diff_right is None and diff_left is not None:
-            commit_types[revision] = 'diff_left'
+            commit_type[revision] = 'diff_pydriller_only'
         if diff_left is not None and diff_right is not None:
-            commit_types[revision] = 'diff_both'
+            commit_type[revision] = 'diff_both'
 
     nodes = _generate_node_data(
-        project_repo, commit_coordinates, commits_to_nodes_map, commit_types
+        project_repo, commit_coordinates, commits_to_nodes_map, commit_type
     )
     data = lines + nodes
     layout = _create_layout(f'szz_diff {project_name}')
@@ -289,8 +293,8 @@ __NODE_COLORS = {
     'head': 'rgba(142, 68, 173, 1)',
     'fixing head': 'rgba(142, 68, 173, 1)',
     'default': 'rgba(232, 236, 241, 1)',
-    'diff_left': '#ff0000',
-    'diff_right': '#00ff00',
+    'diff_pydriller_only': '#ff0000',
+    'diff_szz_unleashed_only': '#00ff00',
     'diff_both': 'rgba(0,51,181, 0.85)',
     'diff_none': 'rgba(232, 236, 241, 1)'
 }
