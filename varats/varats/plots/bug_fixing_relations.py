@@ -34,6 +34,8 @@ def _plot_chord_diagram_for_raw_bugs(
     commit_type: tp.Dict[str, str] = {}
     commit_count = len(map_commit_to_id.keys())
 
+    edge_colors = ['#d4daff', '#84a9dd', '#5588c8', '#6d8acf']
+
     for commit in project_repo.walk(
         project_repo.head.target.hex, pygit2.GIT_SORT_TIME
     ):
@@ -47,7 +49,7 @@ def _plot_chord_diagram_for_raw_bugs(
 
     # draw relations and preprocess commit types
     lines = _generate_line_data(
-        bug_set, commit_coordinates, map_commit_to_id, commit_type
+        bug_set, commit_coordinates, map_commit_to_id, commit_type, edge_colors
     )
     nodes = _generate_node_data(
         project_repo, commit_coordinates, map_commit_to_id, commit_type
@@ -124,7 +126,8 @@ ValueT = tp.TypeVar("ValueT")
 
 def _generate_line_data(
     bug_set: tp.FrozenSet[RawBug], commit_coordinates: tp.List[np.array],
-    map_commit_to_id: tp.Dict[str, int], commit_type: tp.Dict[str, str]
+    map_commit_to_id: tp.Dict[str, int], commit_type: tp.Dict[str, str],
+    edge_colors: tp.List[str]
 ) -> tp.List[gob.Scatter]:
     lines = []
 
@@ -148,7 +151,7 @@ def _generate_line_data(
             commit_interval = _get_commit_interval(
                 commit_dist, len(map_commit_to_id.keys())
             )
-            color = __EDGE_COLORS[commit_interval]
+            color = edge_colors[commit_interval]
 
             lines.append(
                 _create_line(fix_coordinates, intro_coordinates, color)
@@ -278,7 +281,6 @@ __DISTANCE_THRESHOLDS = [
     np.sqrt(2),
     _get_distance([1, 0], [-np.sqrt(2) / 2, np.sqrt(2) / 2]), 2.0
 ]
-__EDGE_COLORS = ['#d4daff', '#84a9dd', '#5588c8', '#6d8acf']
 
 __NODE_COLORS = {
     'fix': 'rgba(0, 177, 106, 1)',
