@@ -368,10 +368,21 @@ def _diff_raw_bugs(
     bugs_left: tp.FrozenSet[RawBug], bugs_right: tp.FrozenSet[RawBug]
 ) -> tp.Generator[tp.Tuple[str, tp.Optional[tp.FrozenSet[str]],
                            tp.Optional[tp.FrozenSet[str]], str], None, None]:
-    for fixing_commit, introducers_left, introducers_right, fixing_type in _zip_dicts(
-        {bug.fixing_commit: bug.introducing_commits for bug in bugs_left},
-        {bug.fixing_commit: bug.introducing_commits for bug in bugs_right}
-    ):
+    fixes_left: tp.Set[str] = {bug.fixing_commit for bug in bugs_left}
+    fixes_right: tp.Set[str] = {bug.fixing_commit for bug in bugs_right}
+
+    for fixing_commit, introducers_left, introducers_right in _zip_dicts({
+        bug.fixing_commit: bug.introducing_commits for bug in bugs_left
+    }, {bug.fixing_commit: bug.introducing_commits for bug in bugs_right}):
+        if fixing_commit in fixes_left & fixes_right:
+            fixing_type = 'diff_both'
+        elif fixing_commit in fixes_left:
+            fixing_type = 'diff_pydriller_only'
+        elif fixing_commit in fixes_right:
+            fixing_type = 'diff_szz_unleashed_only'
+        else:
+            fixing_type = 'diff_none'
+
         diff_left: tp.Optional[tp.FrozenSet[str]] = None
         diff_right: tp.Optional[tp.FrozenSet[str]] = None
         if introducers_left:
@@ -388,18 +399,10 @@ def _diff_raw_bugs(
 
 def _zip_dicts(
     left: tp.Dict[KeyT, ValueT], right: tp.Dict[KeyT, ValueT]
-) -> tp.Generator[tp.Tuple[KeyT, tp.Optional[ValueT], tp.Optional[ValueT],
-                           KeyT], None, None]:
+) -> tp.Generator[tp.Tuple[KeyT, tp.Optional[ValueT], tp.Optional[ValueT]],
+                  None, None]:
     for i in left.keys() | right.keys():
-        if i in left.keys() & right.keys():
-            fixing_type = 'diff_both'
-        elif i in left.keys():
-            fixing_type = 'diff_pydriller_only'
-        elif i in right.keys():
-            fixing_type = 'diff_szz_unleashed_only'
-        else:
-            fixing_type = 'diff_none'
-        yield i, left.get(i, None), right.get(i, None), fixing_type
+        yield i, left.get(i, None), right.get(i, None)
 
 
 class BugFixingRelationPlot(Plot):
