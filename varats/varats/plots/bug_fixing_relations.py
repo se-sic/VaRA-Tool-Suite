@@ -1,3 +1,5 @@
+"""Plots the relation between introducing/fixing commits of bugs."""
+
 import logging
 import typing as tp
 from datetime import datetime
@@ -453,12 +455,20 @@ class BugFixingRelationPlot(Plot):
         else:
             plot_dir = path
 
+        output_path_prefix = f"{plot_dir}/" if plot_dir else ""
+
         if filetype == 'html':
-            self.__figure.write_html(self.plot_file_name(filetype))
+            self.__figure.write_html(
+                f"{output_path_prefix}{self.plot_file_name(filetype)}"
+            )
         elif filetype == 'json':
-            self.__figure.write_json(self.plot_file_name(filetype))
+            self.__figure.write_json(
+                f"{output_path_prefix}{self.plot_file_name(filetype)}"
+            )
         else:
-            self.__figure.write_image(self.plot_file_name(filetype))
+            self.__figure.write_image(
+                f"{output_path_prefix}{self.plot_file_name(filetype)}"
+            )
 
     def plot_file_name(self, filetype: str) -> str:
         """
