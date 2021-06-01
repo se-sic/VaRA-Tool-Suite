@@ -412,6 +412,8 @@ class BugFixingRelationPlot(Plot):
 
     def __init__(self, **kwargs: tp.Any) -> None:
         super().__init__(self.NAME, **kwargs)
+        self.__szz_tool: str = kwargs.get('szz_tool', 'pydriller')
+        self.__figure: gob.Figure = gob.Figure()
 
     @staticmethod
     def supports_stage_separation() -> bool:
@@ -420,8 +422,6 @@ class BugFixingRelationPlot(Plot):
     def plot(self, view_mode: bool) -> None:
         """Plots bug plot for the whole project."""
         project_name = self.plot_kwargs['project']
-
-        self.__szz_tool = self.plot_kwargs.get('szz_tool', 'pydriller')
 
         bug_provider = BugProvider.get_provider_for_project(
             get_project_cls_by_name(project_name)
