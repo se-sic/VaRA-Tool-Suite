@@ -117,9 +117,19 @@ class PlotGenerator(abc.ABC):
         metavar="case_study",
         help="The case study to use for the plot."
     )
+
+    REQUIRE_PROJECT_NAME: CLIOptionTy = make_cli_option(
+        "--project-name",
+        type=str,
+        required=True,
+        metavar="project_name",
+        help="The name of the project."
+    )
+
     REQUIRE_REVISION: CLIOptionTy = make_cli_option(
         "-rev",
         "--revision",
+        type=str,
         required=True,
         metavar="revision",
         help="The revision to use for the plot."

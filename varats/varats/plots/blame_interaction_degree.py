@@ -101,24 +101,6 @@ OPTIONAL_HEIGHT: CLIOptionTy = make_cli_option(
     help="The height of the resulting plot file."
 )
 
-# TODO: Add correct default from CommonPlotOptions
-OPTIONAL_FILE_TYPE: CLIOptionTy = make_cli_option(
-    "--file-type",
-    default='png',
-    required=False,
-    metavar="file_type",
-    help="The file type of the resulting plot file."
-)
-
-# TODO: Add correct default save_path from plot_dir / CommonPlotOptions
-OPTIONAL_SAVE_PATH: CLIOptionTy = make_cli_option(
-    "--save-path",
-    default=CommonPlotOptions.default_plot_dir(),
-    required=False,
-    metavar="save_path",
-    help="The save path ot the resulting plot image."
-)
-
 OPTIONAL_SHOW_INTERACTIONS: CLIOptionTy = make_cli_option(
     "--show-interactions/--hide-interactions",
     default=True,
@@ -161,7 +143,6 @@ OPTIONAL_EDGE_WEIGHT_THRESHOLD: CLIOptionTy = make_cli_option(
     "and HIGH."
 )
 
-# TODO provide choices
 OPTIONAL_LAYOUT_ENGINE: CLIOptionTy = make_cli_option(
     "--layout-engine",
     type=click.Choice(["dot", "fdp", "sfdp", "neato", "twopi", "circo"]),
@@ -641,17 +622,14 @@ def _get_completed_revision(
 
 
 def _save_figure(
-    figure: tp.Any,
-    revision: str,
-    c_map: CommitMap,
-    plot_kwargs: tp.Dict[str, tp.Any],
-    plot_file_name: str,
-    plot_type: PlotTypes,
-    path: tp.Optional[Path] = None,
-    filetype: str = 'png'
+    figure: tp.Any, revision: str, project_name: str, plot_type: PlotTypes,
+    plot_file_name: str, plot_dir: Path, file_type: str
 ) -> None:
+
     revision_idx = -1
     max_idx = -1
+    c_map: CommitMap = get_commit_map(project_name)
+
     for c_hash, idx in c_map.mapping_items():
         if idx > max_idx:
             max_idx = idx
@@ -667,12 +645,6 @@ def _save_figure(
 
     max_idx_digit_num = len(str(max_idx))
     padded_idx_str = str(revision_idx).rjust(max_idx_digit_num, str(0))
-
-    if path is None:
-        plot_dir = Path(plot_kwargs["plot_dir"])
-    else:
-        plot_dir = path
-
     file_name = plot_file_name.rsplit('.', 1)[0]
     plot_subdir = Path(file_name)
 
@@ -681,12 +653,12 @@ def _save_figure(
             mkdir(plot_subdir)
 
     if plot_type == PlotTypes.SANKEY:
-        file_name = f"{file_name}_{padded_idx_str}.{filetype}"
+        file_name = f"{file_name}_{padded_idx_str}.{file_type}"
 
         pio.write_image(
             fig=figure,
             file=str(plot_dir / plot_subdir / file_name),
-            format=filetype
+            format=file_type
         )
 
     if plot_type == PlotTypes.GRAPHVIZ:
@@ -695,7 +667,7 @@ def _save_figure(
         figure.render(
             filename=file_name,
             directory=str(plot_dir / plot_subdir),
-            format=filetype,
+            format=file_type,
             cleanup=True
         )
 
@@ -1298,66 +1270,48 @@ class BlameDegree(Plot, plot_name=None):
             unique_revisions, plot_cfg, self.plot_kwargs
         )
 
-    def _multi_lib_interaction_sankey_plot(
-        self, view_mode: bool
-    ) -> tp.Optional[go.Figure]:
+    def _multi_lib_interaction_sankey_plot(self, view_mode: bool) -> go.Figure:
         interaction_plot_df = self._get_degree_data()
         interaction_plot_df = interaction_plot_df[
             interaction_plot_df.degree_type == DegreeType.interaction.value]
+
         interaction_plot_df.sort_values(by=['time_id'], inplace=True)
         interaction_plot_df.reset_index(inplace=True)
         unique_revisions = _get_unique_revisions(interaction_plot_df)
-
-        # TODO (se-passau/VaRA#545): Find correct paper_config or cs in top
-        #  level
-        if self.plot_kwargs["case_study"]:
-            cs = self.plot_kwargs["case_study"]
-        else:
-            cs = PC.get_paper_config().get_all_case_studies()[0]
-        commit_map = get_commit_map(cs.project_name)
         highest_degree = interaction_plot_df["degree"].max()
 
-        # Generate and save sankey plots for all revs if no revision was
-        # specified. If specified, show an interactive sankey plot in the
-        # browser.
-        for rev in unique_revisions:
-            if view_mode and 'revision' in self.plot_kwargs:
-                rev = _get_completed_revision(
-                    self.plot_kwargs['revision'], unique_revisions
-                )
+        rev = _get_completed_revision(
+            self.plot_kwargs['revision'], unique_revisions
+        )
 
-            df = interaction_plot_df.loc[interaction_plot_df['revision'] == rev]
+        df = interaction_plot_df.loc[interaction_plot_df['revision'] == rev]
 
-            lib_names_dict = _get_separated_lib_names_dict(df)
-            lib_cm_mapping, lib_shades_mapping = _build_sankey_color_mappings(
-                highest_degree, self.plot_kwargs, lib_names_dict
-            )
+        lib_names_dict = _get_separated_lib_names_dict(df)
+        lib_cm_mapping, lib_shades_mapping = _build_sankey_color_mappings(
+            highest_degree, self.plot_kwargs, lib_names_dict
+        )
 
-            plotting_data_dict = _collect_sankey_plotting_data(
-                df, lib_names_dict, lib_cm_mapping, lib_shades_mapping
-            )
-            sankey_figure = _build_sankey_figure(
-                rev, view_mode, plotting_data_dict, lib_names_dict,
-                self.plot_kwargs
-            )
+        plotting_data_dict = _collect_sankey_plotting_data(
+            df, lib_names_dict, lib_cm_mapping, lib_shades_mapping
+        )
+        sankey_figure = _build_sankey_figure(
+            rev, view_mode, plotting_data_dict, lib_names_dict, self.plot_kwargs
+        )
 
-            if view_mode and 'revision' in self.plot_kwargs:
-                return sankey_figure
+        return sankey_figure
 
-            # TODO (se-passau/VaRA#545): move plot file saving to top level,
-            #  which currently breaks the plot abstraction.
-            _save_figure(
-                figure=sankey_figure,
-                revision=rev,
-                c_map=commit_map,
-                plot_kwargs=self.plot_kwargs,
-                plot_file_name=self.plot_file_name(
-                    self.plot_kwargs['file_type']
-                ),
-                plot_type=PlotTypes.SANKEY,
-                path=self.plot_kwargs['save_path'],
-                filetype=self.plot_kwargs['file_type']
-            )
+        # TODO (se-passau/VaRA#545): move plot file saving to top level,
+        #  which currently breaks the plot abstraction.
+        _save_figure(
+            figure=sankey_figure,
+            revision=rev,
+            c_map=commit_map,
+            plot_kwargs=self.plot_kwargs,
+            plot_file_name=self.plot_file_name(self.plot_kwargs['file_type']),
+            plot_type=PlotTypes.SANKEY,
+            path=self.plot_kwargs['save_path'],
+            filetype=self.plot_kwargs['file_type']
+        )
         return None
 
     def _calc_missing_revisions(
@@ -1552,19 +1506,6 @@ class BlameLibraryInteractions(
 
     def plot(self, view_mode: bool) -> None:
 
-        # TODO: Move case handling to click command evaluation
-        if view_mode and not self.plot_kwargs["revision"]:
-            LOG.warning(
-                "The interactive view mode requires a selected revision."
-            )
-            raise PlotDataEmpty
-
-        if not view_mode and self.plot_kwargs['revision']:
-            LOG.warning(
-                "View mode is turned off. The specified revision will be "
-                "ignored."
-            )
-
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
         self.__figure = self._multi_lib_interaction_sankey_plot(view_mode)
@@ -1573,18 +1514,24 @@ class BlameLibraryInteractions(
         try:
             self.plot(True)
         except PlotDataEmpty:
-            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            LOG.warning(
+                f"No data for project {self.plot_kwargs['project_name']}."
+            )
             return
         self.__figure.show()
 
-    # Skip save method to save one figure for each revision
-    def save(
-        self, path: tp.Optional[Path] = None, filetype: str = 'png'
-    ) -> None:
+    def save(self, plot_dir: Path, filetype: str = 'png') -> None:
         try:
             self.plot(False)
+            _save_figure(
+                self.__figure, self.plot_kwargs["revision"],
+                self.plot_kwargs["project_name"], PlotTypes.SANKEY,
+                self.plot_file_name(filetype), plot_dir, filetype
+            )
         except PlotDataEmpty:
-            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            LOG.warning(
+                f"No data for project {self.plot_kwargs['project_name']}."
+            )
             return
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
@@ -1598,10 +1545,9 @@ class SankeyLibraryInteractionsGenerator(
     generator_name="sankey-plot",
     plot=BlameLibraryInteractions,
     options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.OPTIONAL_CASE_STUDY,
-        PlotGenerator.OPTIONAL_REVISION, OPTIONAL_FIG_TITLE, OPTIONAL_WIDTH,
-        OPTIONAL_HEIGHT, OPTIONAL_FONT_SIZE, OPTIONAL_COLORMAPS,
-        OPTIONAL_FILE_TYPE, OPTIONAL_SAVE_PATH
+        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_PROJECT_NAME,
+        PlotGenerator.REQUIRE_REVISION, OPTIONAL_FIG_TITLE, OPTIONAL_WIDTH,
+        OPTIONAL_HEIGHT, OPTIONAL_FONT_SIZE, OPTIONAL_COLORMAPS
     ]
 ):
 
@@ -1609,29 +1555,25 @@ class SankeyLibraryInteractionsGenerator(
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_study: tp.Optional[str] = plot_kwargs["case_study"]
-        self.__revision: tp.Optional[str] = plot_kwargs["revision"]
+        self.__project_name: str = plot_kwargs["project_name"]
+        self.__revision: str = plot_kwargs["revision"]
         self.__fig_title: str = plot_kwargs["fig_title"]
         self.__width: int = plot_kwargs["width"]
         self.__height: int = plot_kwargs["height"]
         self.__font_size: int = plot_kwargs["font_size"]
         self.__colormaps: tp.List[str] = plot_kwargs["colormaps"]
-        self.__file_type: str = plot_kwargs["file_type"]
-        self.__save_path: Path = Path(plot_kwargs["save_path"])
 
     def generate(self) -> tp.List[Plot]:
         return [
             self.PLOT(
                 report_type=self.__report_type,
-                case_study=self.__case_study,
+                project_name=self.__project_name,
                 revision=self.__revision,
                 fig_title=self.__fig_title,
                 width=self.__width,
                 height=self.__height,
                 font_size=self.__font_size,
                 colormaps=self.__colormaps,
-                file_type=self.__file_type,
-                save_path=self.__save_path
             )
         ]
 
@@ -1672,7 +1614,9 @@ class BlameCommitInteractionsGraphviz(
         try:
             self.plot(True)
         except PlotDataEmpty:
-            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            LOG.warning(
+                f"No data for project {self.plot_kwargs['project_name']}."
+            )
             return
         self.__graph.view(tempfile.mktemp())
 
@@ -1682,7 +1626,9 @@ class BlameCommitInteractionsGraphviz(
         try:
             self.plot(False)
         except PlotDataEmpty:
-            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            LOG.warning(
+                f"No data for project {self.plot_kwargs['project_name']}."
+            )
             return
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
@@ -1698,8 +1644,7 @@ class GraphvizLibraryInteractionsGenerator(
         PlotGenerator.OPTIONAL_REVISION, OPTIONAL_SHOW_INTERACTIONS,
         OPTIONAL_SHOW_DIFF, OPTIONAL_SHOW_EDGE_WEIGHT,
         OPTIONAL_EDGE_WEIGHT_THRESHOLD, OPTIONAL_REVISION_LENGTH,
-        OPTIONAL_LAYOUT_ENGINE, OPTIONAL_SHOW_ONLY_COMMIT, OPTIONAL_FILE_TYPE,
-        OPTIONAL_SAVE_PATH
+        OPTIONAL_LAYOUT_ENGINE, OPTIONAL_SHOW_ONLY_COMMIT
     ]
 ):
 
@@ -1718,8 +1663,6 @@ class GraphvizLibraryInteractionsGenerator(
         self.__layout_engine: str = plot_kwargs["layout_engine"]
         self.__show_only_commit: tp.Optional[str] = plot_kwargs[
             "show_only_commit"]
-        self.__file_type: str = plot_kwargs["file_type"]
-        self.__save_path: Path = Path(plot_kwargs["save_path"])
 
     def generate(self) -> tp.List[Plot]:
         return [
@@ -1734,8 +1677,6 @@ class GraphvizLibraryInteractionsGenerator(
                 revision_length=self.__revision_length,
                 layout_engine=self.__layout_engine,
                 show_only_commit=self.__show_only_commit,
-                file_type=self.__file_type,
-                save_path=self.__save_path
             )
         ]
 
