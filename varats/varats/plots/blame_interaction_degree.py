@@ -40,7 +40,7 @@ from varats.plots.bug_annotation import draw_bugs
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.repository_churn import draw_code_churn_for_revisions
 from varats.project.project_util import get_project_cls_by_name
-from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
+from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option, EnumType
 
 LOG = logging.getLogger(__name__)
 
@@ -154,7 +154,7 @@ OPTIONAL_SHOW_EDGE_WEIGHT: CLIOptionTy = make_cli_option(
 OPTIONAL_EDGE_WEIGHT_THRESHOLD: CLIOptionTy = make_cli_option(
     "--edge-weight-threshold",
     default=None,
-    type=click.Choice(["LOW", "MEDIUM", "HIGH"], case_sensitive=False),
+    type=EnumType(EdgeWeightThreshold),
     required=False,
     metavar="edge_weight_threshold",
     help="Sets the threshold to show edge weights. Options are: LOW, MEDIUM, "
@@ -1713,9 +1713,7 @@ class GraphvizLibraryInteractionsGenerator(
         self.__show_diff: bool = plot_kwargs["show_diff"]
         self.__show_edge_weight: bool = plot_kwargs["show_edge_weight"]
         self.__edge_weight_threshold: tp.Optional[
-            EdgeWeightThreshold] = EdgeWeightThreshold[
-                plot_kwargs["edge_weight_threshold"]
-            ] if plot_kwargs["edge_weight_threshold"] else None
+            EdgeWeightThreshold] = plot_kwargs["edge_weight_threshold"]
         self.__revision_length: int = plot_kwargs["revision_length"]
         self.__layout_engine: str = plot_kwargs["layout_engine"]
         self.__show_only_commit: tp.Optional[str] = plot_kwargs[
