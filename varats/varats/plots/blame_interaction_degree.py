@@ -1300,20 +1300,6 @@ class BlameDegree(Plot, plot_name=None):
 
         return sankey_figure
 
-        # TODO (se-passau/VaRA#545): move plot file saving to top level,
-        #  which currently breaks the plot abstraction.
-        _save_figure(
-            figure=sankey_figure,
-            revision=rev,
-            c_map=commit_map,
-            plot_kwargs=self.plot_kwargs,
-            plot_file_name=self.plot_file_name(self.plot_kwargs['file_type']),
-            plot_type=PlotTypes.SANKEY,
-            path=self.plot_kwargs['save_path'],
-            filetype=self.plot_kwargs['file_type']
-        )
-        return None
-
     def _calc_missing_revisions(
         self, degree_type: DegreeType, boundary_gradient: float
     ) -> tp.Set[str]:
