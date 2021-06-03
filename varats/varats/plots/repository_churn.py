@@ -222,7 +222,7 @@ def draw_code_churn_for_revisions(
     )
 
 
-class RepoChurnPlot(Plot):
+class RepoChurnPlot(Plot, plot_name="repo_churn"):
     """Plot to visualize code churn for a git repository."""
 
     NAME = 'repo_churn'

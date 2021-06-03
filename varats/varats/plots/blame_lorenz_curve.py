@@ -128,7 +128,7 @@ def filter_non_code_changes(
     )]
 
 
-class BlameLorenzCurve(Plot):
+class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
     """Plots the lorenz curve for IN/OUT interactions for a given project."""
 
     NAME = 'b_lorenz_curve'
@@ -324,7 +324,7 @@ def draw_gini_blame_over_time(
     )
 
 
-class BlameGiniOverTime(Plot):
+class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
     """
     Plots the gini coefficient over time for a project.
 

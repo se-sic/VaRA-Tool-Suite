@@ -263,7 +263,7 @@ def _verifier_plot_multiple(
     )
 
 
-class BlameVerifierReportPlot(Plot):
+class BlameVerifierReportPlot(Plot, plot_name=None):
     """Base plot for blame verifier plots."""
 
     @abc.abstractmethod
@@ -278,7 +278,9 @@ class BlameVerifierReportPlot(Plot):
         return f"{self.name}.{filetype}"
 
 
-class BlameVerifierReportNoOptPlot(BlameVerifierReportPlot):
+class BlameVerifierReportNoOptPlot(
+    BlameVerifierReportPlot, plot_name="b_verifier_report_no_opt_plot"
+):
     """Plotting the successful and failed annotations of reports without
     optimization."""
     NAME = 'b_verifier_report_no_opt_plot'
@@ -304,7 +306,9 @@ class BlameVerifierReportNoOptPlot(BlameVerifierReportPlot):
         )
 
 
-class BlameVerifierReportOptPlot(BlameVerifierReportPlot):
+class BlameVerifierReportOptPlot(
+    BlameVerifierReportPlot, plot_name="b_verifier_report_opt_plot"
+):
     """Plotting the successful and failed annotations of reports with
     optimization."""
     NAME = 'b_verifier_report_opt_plot'

@@ -171,7 +171,7 @@ def _plot_interaction_graph(
     axis.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
 
 
-class InteractionPlot(Plot):
+class InteractionPlot(Plot, plot_name="interaction_graph"):
     """Plot showing the total amount of commit interactions."""
 
     NAME = 'interaction_graph'

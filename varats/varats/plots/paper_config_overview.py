@@ -253,7 +253,7 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
     )
 
 
-class PaperConfigOverviewPlot(Plot):
+class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
     """
     Plot showing an overview of current experiment results for the current paper
     config.

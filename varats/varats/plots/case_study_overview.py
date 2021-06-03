@@ -90,7 +90,7 @@ def _gen_overview_data(tag_blocked: bool,
     return positions
 
 
-class PaperConfigOverviewPlot(Plot):
+class PaperConfigOverviewPlot(Plot, plot_name="case_study_overview_plot"):
     """Plot showing an overview of all case-studies."""
 
     NAME = 'case_study_overview_plot'

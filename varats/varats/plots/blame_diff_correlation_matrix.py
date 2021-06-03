@@ -177,7 +177,7 @@ def log_interesting_revisions(
         LOG.info(f"  {rev} ({x_var}={item[x_var]}, {y_var}={item[y_var]})")
 
 
-class BlameDiffCorrelationMatrix(Plot):
+class BlameDiffCorrelationMatrix(Plot, plot_name="b_correlation_matrix"):
     """Draws a scatter-plot matrix for blame-data metrics, comparing the
     different independent and dependent variables."""
 
@@ -284,7 +284,7 @@ def _multivariate_grid(
     grid.fig.suptitle(f"{x_col} vs. {y_col}")
 
 
-class BlameDiffDistribution(Plot):
+class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
     """Draws a scatter-plot matrix for blame-data metrics, comparing the
     different independent and dependent variables."""
 

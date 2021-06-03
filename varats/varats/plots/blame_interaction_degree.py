@@ -978,7 +978,7 @@ def _build_graphviz_fig(
     return graph
 
 
-class BlameLibraryInteraction(Plot):
+class BlameLibraryInteraction(Plot, plot_name=None):
     """Base plot for blame library interaction plots."""
 
     @abc.abstractmethod
@@ -1092,7 +1092,7 @@ class BlameLibraryInteraction(Plot):
         return None
 
 
-class BlameDegree(Plot):
+class BlameDegree(Plot, plot_name=None):
     """Base plot for blame degree plots."""
 
     @abc.abstractmethod
@@ -1440,7 +1440,7 @@ class BlameDegree(Plot):
         return new_revs
 
 
-class BlameInteractionDegree(BlameDegree):
+class BlameInteractionDegree(BlameDegree, plot_name="b_interaction_degree"):
     """Plotting the degree of blame interactions."""
 
     NAME = 'b_interaction_degree'
@@ -1463,7 +1463,9 @@ class BlameInteractionDegree(BlameDegree):
         )
 
 
-class BlameInteractionDegreeMultiLib(BlameDegree):
+class BlameInteractionDegreeMultiLib(
+    BlameDegree, plot_name="b_interaction_degree_multi_lib"
+):
     """
     Plotting the degree of blame interactions between two libraries.
 
@@ -1503,7 +1505,9 @@ class BlameInteractionDegreeMultiLib(BlameDegree):
         )
 
 
-class BlameInteractionFractionOverview(BlameDegree):
+class BlameInteractionFractionOverview(
+    BlameDegree, plot_name="b_interaction_fraction_overview"
+):
     """Plotting the fraction distribution of in-/outgoing blame interactions
     from all project libraries."""
 
@@ -1529,7 +1533,9 @@ class BlameInteractionFractionOverview(BlameDegree):
         )
 
 
-class BlameLibraryInteractions(BlameDegree):
+class BlameLibraryInteractions(
+    BlameDegree, plot_name="b_multi_lib_interaction_sankey_plot"
+):
     """
     Plotting the dependencies of blame interactions from all project libraries
     either as interactive plot in the browser or as static image.
@@ -1630,7 +1636,9 @@ class SankeyLibraryInteractionsGenerator(
         ]
 
 
-class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
+class BlameCommitInteractionsGraphviz(
+    BlameLibraryInteraction, plot_name="b_multi_lib_interaction_graphviz"
+):
     """
     Plotting the interactions between all commits of multiple libraries.
 
@@ -1734,7 +1742,7 @@ class GraphvizLibraryInteractionsGenerator(
         ]
 
 
-class BlameAuthorDegree(BlameDegree):
+class BlameAuthorDegree(BlameDegree, plot_name="b_author_degree"):
     """Plotting the degree of authors for all blame interactions."""
 
     NAME = 'b_author_degree'
@@ -1757,7 +1765,7 @@ class BlameAuthorDegree(BlameDegree):
         )
 
 
-class BlameMaxTimeDistribution(BlameDegree):
+class BlameMaxTimeDistribution(BlameDegree, plot_name="b_maxtime_distribution"):
     """Plotting the degree of max times differences for all blame
     interactions."""
 
@@ -1782,7 +1790,7 @@ class BlameMaxTimeDistribution(BlameDegree):
         )
 
 
-class BlameAvgTimeDistribution(BlameDegree):
+class BlameAvgTimeDistribution(BlameDegree, plot_name="b_avgtime_distribution"):
     """Plotting the degree of avg times differences for all blame
     interactions."""
 

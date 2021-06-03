@@ -179,7 +179,7 @@ def _plot_cluster_comparison(
             plot_num += 1
 
 
-class BlameDiffClusterAnalysis(Plot):
+class BlameDiffClusterAnalysis(Plot, plot_name="b_cluster_analysis"):
     """Performs different cluster algorithms on blame-diff data."""
 
     NAME = "b_cluster_analysis"
