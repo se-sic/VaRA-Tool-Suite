@@ -64,14 +64,7 @@ class CommonPlotOptions():
         ),
         make_cli_option(
             "--plot-dir",
-            type=click.Path(
-                exists=True,
-                file_okay=False,
-                dir_okay=True,
-                writable=True,
-                resolve_path=True,
-                path_type=Path
-            ),
+            type=Path,
             default=lambda: CommonPlotOptions.default_plot_dir(),
             help="Set the directory the plots will be written to."
             "Uses the config value 'plots/plot_dir' by default."
