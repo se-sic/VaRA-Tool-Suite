@@ -15,6 +15,64 @@ from varats.utils.github_util import get_github_repo_name_for_project
 LOG = logging.getLogger(__name__)
 
 
+def _union_commit_message_and_issue_event_pygit_bugs(
+    issue_event_bugs: tp.FrozenSet[bug.PygitBug],
+    commit_message_bugs: tp.FrozenSet[bug.PygitBug]
+) -> tp.FrozenSet[bug.PygitBug]:
+    """
+    Customized unionizing of bug sets of commit message and issue event origin.
+    Commit message bugs only get added if there is no issue event bug with the
+    same fixing commit.
+
+    Args:
+        issue_event_bugs: The set of bugs originating from issue events.
+        commit_message_bugs: The set of bugs originating from commit messages.
+
+    Returns:
+        The resulting set of all bugs.
+    """
+    resulting_bugs: tp.Set[bug.PygitBug] = set()
+    resulting_bugs.union(issue_event_bugs)
+
+    for commit_message_bug in commit_message_bugs:
+        if commit_message_bug.fixing_commit.hex not in {
+            issue_event_bug.fixing_commit.hex
+            for issue_event_bug in issue_event_bugs
+        }:
+            resulting_bugs.add(commit_message_bug)
+
+    return frozenset(resulting_bugs)
+
+
+def _union_commit_message_and_issue_event_raw_bugs(
+    issue_event_bugs: tp.FrozenSet[bug.RawBug],
+    commit_message_bugs: tp.FrozenSet[bug.RawBug]
+) -> tp.FrozenSet[bug.RawBug]:
+    """
+    Customized unionizing of bug sets of commit message and issue event origin.
+    Commit message bugs only get added if there is no issue event bug with the
+    same fixing commit.
+
+    Args:
+        issue_event_bugs: The set of bugs originating from issue events.
+        commit_message_bugs: The set of bugs originating from commit messages.
+
+    Returns:
+        The resulting set of all bugs.
+    """
+    resulting_bugs: tp.Set[bug.RawBug] = set()
+    resulting_bugs.union(issue_event_bugs)
+
+    for commit_message_bug in commit_message_bugs:
+        if commit_message_bug.fixing_commit not in {
+            issue_event_bug.fixing_commit
+            for issue_event_bug in issue_event_bugs
+        }:
+            resulting_bugs.add(commit_message_bug)
+
+    return frozenset(resulting_bugs)
+
+
 class BugProvider(Provider):
     """Provides bug information for a project."""
 
@@ -50,15 +108,18 @@ class BugProvider(Provider):
         Returns:
             A set of PygitBugs.
         """
-        resulting_bugs: tp.Set[bug.PygitBug] = set()
         if self.__github_project_name:
-            resulting_bugs = resulting_bugs.union(
-                bug.find_all_issue_pygit_bugs(self.project.NAME)
-            )
-        resulting_bugs = resulting_bugs.union(
-            bug.find_all_commit_message_pygit_bugs(self.project.NAME)
+            issue_event_bugs = bug.find_all_issue_pygit_bugs(self.project.NAME)
+        else:
+            issue_event_bugs = frozenset()
+
+        commit_message_bugs = bug.find_all_commit_message_pygit_bugs(
+            self.project.NAME
         )
-        return frozenset(resulting_bugs)
+
+        return _union_commit_message_and_issue_event_pygit_bugs(
+            issue_event_bugs, commit_message_bugs
+        )
 
     def find_all_raw_bugs(self) -> tp.FrozenSet[bug.RawBug]:
         """
@@ -67,15 +128,18 @@ class BugProvider(Provider):
         Returns:
             A set of RawBugs.
         """
-        resulting_bugs: tp.Set[bug.RawBug] = set()
         if self.__github_project_name:
-            resulting_bugs = resulting_bugs.union(
-                bug.find_all_issue_raw_bugs(self.project.NAME)
-            )
-        resulting_bugs = resulting_bugs.union(
-            bug.find_all_commit_message_raw_bugs(self.project.NAME)
+            issue_event_bugs = bug.find_all_issue_raw_bugs(self.project.NAME)
+        else:
+            issue_event_bugs = frozenset()
+
+        commit_message_bugs = bug.find_all_commit_message_raw_bugs(
+            self.project.NAME
         )
-        return frozenset(resulting_bugs)
+
+        return _union_commit_message_and_issue_event_raw_bugs(
+            issue_event_bugs, commit_message_bugs
+        )
 
     def find_pygit_bug_by_fix(self,
                               fixing_commit: str) -> tp.FrozenSet[bug.PygitBug]:
@@ -89,20 +153,20 @@ class BugProvider(Provider):
         Returns:
             A set of PygitBugs fixed by fixing_commit
         """
-        resulting_bugs: tp.Set[bug.PygitBug] = set()
         if self.__github_project_name:
-            resulting_bugs = resulting_bugs.union(
-                bug.find_issue_pygit_bugs_by_fix(
-                    self.project.NAME, fixing_commit
-                )
-            )
-
-        resulting_bugs = resulting_bugs.union(
-            bug.find_commit_message_pygit_bugs_by_fix(
+            issue_event_bugs = bug.find_issue_pygit_bugs_by_fix(
                 self.project.NAME, fixing_commit
             )
+        else:
+            issue_event_bugs = frozenset()
+
+        commit_message_bugs = bug.find_commit_message_pygit_bugs_by_fix(
+            self.project.NAME, fixing_commit
         )
-        return frozenset(resulting_bugs)
+
+        return _union_commit_message_and_issue_event_pygit_bugs(
+            issue_event_bugs, commit_message_bugs
+        )
 
     def find_raw_bug_by_fix(self,
                             fixing_commit: str) -> tp.FrozenSet[bug.RawBug]:
@@ -116,20 +180,20 @@ class BugProvider(Provider):
         Returns:
             A set of RawBugs fixed by fixing_commit
         """
-        resulting_bugs: tp.Set[bug.RawBug] = set()
         if self.__github_project_name:
-            resulting_bugs = resulting_bugs.union(
-                bug.find_issue_raw_bugs_by_fix(
-                    self.project.NAME, fixing_commit
-                )
-            )
-
-        resulting_bugs = resulting_bugs.union(
-            bug.find_commit_message_raw_bugs_by_fix(
+            issue_event_bugs = bug.find_issue_raw_bugs_by_fix(
                 self.project.NAME, fixing_commit
             )
+        else:
+            issue_event_bugs = frozenset()
+
+        commit_message_bugs = bug.find_commit_message_raw_bugs_by_fix(
+            self.project.NAME, fixing_commit
         )
-        return frozenset(resulting_bugs)
+
+        return _union_commit_message_and_issue_event_raw_bugs(
+            issue_event_bugs, commit_message_bugs
+        )
 
     def find_pygit_bug_by_introduction(
         self, introducing_commit: str
@@ -147,18 +211,19 @@ class BugProvider(Provider):
         """
         resulting_bugs: tp.Set[bug.PygitBug] = set()
         if self.__github_project_name:
-            resulting_bugs = resulting_bugs.union(
-                bug.find_issue_pygit_bugs_by_introduction(
-                    self.project.NAME, introducing_commit
-                )
-            )
-
-        resulting_bugs = resulting_bugs.union(
-            bug.find_commit_message_pygit_bugs_by_introduction(
+            issue_event_bugs = bug.find_issue_pygit_bugs_by_introduction(
                 self.project.NAME, introducing_commit
             )
+        else:
+            issue_event_bugs = frozenset()
+
+        commit_message_bugs = bug.find_commit_message_pygit_bugs_by_introduction(
+            self.project.NAME, introducing_commit
         )
-        return frozenset(resulting_bugs)
+
+        return _union_commit_message_and_issue_event_pygit_bugs(
+            issue_event_bugs, commit_message_bugs
+        )
 
     def find_raw_bug_by_introduction(
         self, introducing_commit: str
@@ -174,20 +239,20 @@ class BugProvider(Provider):
         Returns:
             A set of RawBugs introduced by introducing_commit
         """
-        resulting_bugs: tp.Set[bug.RawBug] = set()
         if self.__github_project_name:
-            resulting_bugs = resulting_bugs.union(
-                bug.find_issue_raw_bugs_by_introduction(
-                    self.project.NAME, introducing_commit
-                )
-            )
-
-        resulting_bugs = resulting_bugs.union(
-            bug.find_commit_message_raw_bugs_by_introduction(
+            issue_event_bugs = bug.find_issue_raw_bugs_by_introduction(
                 self.project.NAME, introducing_commit
             )
+        else:
+            issue_event_bugs = frozenset()
+
+        commit_message_bugs = bug.find_commit_message_raw_bugs_by_introduction(
+            self.project.NAME, introducing_commit
         )
-        return frozenset(resulting_bugs)
+
+        return _union_commit_message_and_issue_event_raw_bugs(
+            issue_event_bugs, commit_message_bugs
+        )
 
 
 class BugDefaultProvider(BugProvider):
