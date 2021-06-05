@@ -113,12 +113,12 @@ class BugProvider(Provider):
         else:
             issue_event_bugs = frozenset()
 
-        commit_message_bugs = bug.find_all_commit_message_pygit_bugs(
+        commit_msg_bugs = bug.find_all_commit_message_pygit_bugs(
             self.project.NAME
         )
 
         return _union_commit_message_and_issue_event_pygit_bugs(
-            issue_event_bugs, commit_message_bugs
+            issue_event_bugs, commit_msg_bugs
         )
 
     def find_all_raw_bugs(self) -> tp.FrozenSet[bug.RawBug]:
@@ -133,12 +133,12 @@ class BugProvider(Provider):
         else:
             issue_event_bugs = frozenset()
 
-        commit_message_bugs = bug.find_all_commit_message_raw_bugs(
+        commit_msg_bugs = bug.find_all_commit_message_raw_bugs(
             self.project.NAME
         )
 
         return _union_commit_message_and_issue_event_raw_bugs(
-            issue_event_bugs, commit_message_bugs
+            issue_event_bugs, commit_msg_bugs
         )
 
     def find_pygit_bug_by_fix(self,
@@ -160,12 +160,12 @@ class BugProvider(Provider):
         else:
             issue_event_bugs = frozenset()
 
-        commit_message_bugs = bug.find_commit_message_pygit_bugs_by_fix(
+        commit_msg_bugs = bug.find_commit_message_pygit_bugs_by_fix(
             self.project.NAME, fixing_commit
         )
 
         return _union_commit_message_and_issue_event_pygit_bugs(
-            issue_event_bugs, commit_message_bugs
+            issue_event_bugs, commit_msg_bugs
         )
 
     def find_raw_bug_by_fix(self,
@@ -187,12 +187,12 @@ class BugProvider(Provider):
         else:
             issue_event_bugs = frozenset()
 
-        commit_message_bugs = bug.find_commit_message_raw_bugs_by_fix(
+        commit_msg_bugs = bug.find_commit_message_raw_bugs_by_fix(
             self.project.NAME, fixing_commit
         )
 
         return _union_commit_message_and_issue_event_raw_bugs(
-            issue_event_bugs, commit_message_bugs
+            issue_event_bugs, commit_msg_bugs
         )
 
     def find_pygit_bug_by_introduction(
@@ -217,12 +217,12 @@ class BugProvider(Provider):
         else:
             issue_event_bugs = frozenset()
 
-        commit_message_bugs = bug.find_commit_message_pygit_bugs_by_introduction(
+        commit_msg_bugs = bug.find_commit_message_pygit_bugs_by_introduction(
             self.project.NAME, introducing_commit
         )
 
         return _union_commit_message_and_issue_event_pygit_bugs(
-            issue_event_bugs, commit_message_bugs
+            issue_event_bugs, commit_msg_bugs
         )
 
     def find_raw_bug_by_introduction(
@@ -246,12 +246,12 @@ class BugProvider(Provider):
         else:
             issue_event_bugs = frozenset()
 
-        commit_message_bugs = bug.find_commit_message_raw_bugs_by_introduction(
+        commit_msg_bugs = bug.find_commit_message_raw_bugs_by_introduction(
             self.project.NAME, introducing_commit
         )
 
         return _union_commit_message_and_issue_event_raw_bugs(
-            issue_event_bugs, commit_message_bugs
+            issue_event_bugs, commit_msg_bugs
         )
 
 
