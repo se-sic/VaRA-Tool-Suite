@@ -23,6 +23,7 @@ setup(
         "packaging>=20.1",
         "requests_cache>=0.5.2",
         "pygit2>=0.28.2",
+        "pytz>=2021.1",
     ],
     author="Florian Sattler",
     author_email="sattlerf@cs.uni-saarland.de",

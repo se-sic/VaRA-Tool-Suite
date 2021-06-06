@@ -18,6 +18,7 @@ PyQt5-stubs>=5.10.0,<5.14.0
 PyQt5>=5.10.0,<5.14.0
 pytest
 pytest-cov
+pytz>=2021.1
 PyYAML>=3.12
 pyzmq>=19.0.0
 requests>=2.23.0
