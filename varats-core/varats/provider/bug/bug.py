@@ -4,6 +4,7 @@ import typing as tp
 from datetime import datetime
 
 import pygit2
+import pytz
 from github import Github
 from github.IssueEvent import IssueEvent
 from github.Repository import Repository
@@ -21,6 +22,8 @@ from varats.utils.github_util import (
 if tp.TYPE_CHECKING:
     # pylint: disable=ungrouped-imports,unused-import
     from github.PaginatedList import PaginatedList
+
+utc = pytz.utc
 
 
 class PygitBug:
@@ -358,10 +361,11 @@ def _find_corresponding_pygit_suspect_tuple(
         suspect_commits = set()
         for introducing_set in blame_dict.values():
             for introducing_id in introducing_set:
-                issue_date = issue_event.issue.created_at
+                issue_date = issue_event.issue.created_at.replace(tzinfo=utc)
                 introduction_date = pydrill_repo.get_commit(
                     introducing_id
-                ).committer_date
+                ).committer_date.replace(tzinfo=utc)
+
                 if introduction_date > issue_date:  # commit is a suspect
                     suspect_commits.add(
                         pygit_repo.revparse_single(introducing_id)
