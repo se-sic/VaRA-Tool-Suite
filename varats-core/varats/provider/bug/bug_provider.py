@@ -32,7 +32,8 @@ def _union_commit_message_and_issue_event_pygit_bugs(
         The resulting set of all bugs.
     """
     resulting_bugs: tp.Set[bug.PygitBug] = set()
-    resulting_bugs.union(issue_event_bugs)
+    for issue_event_bug in issue_event_bugs:
+        resulting_bugs.add(issue_event_bug)
 
     for commit_message_bug in commit_message_bugs:
         if commit_message_bug.fixing_commit.hex not in {
@@ -61,7 +62,8 @@ def _union_commit_message_and_issue_event_raw_bugs(
         The resulting set of all bugs.
     """
     resulting_bugs: tp.Set[bug.RawBug] = set()
-    resulting_bugs.union(issue_event_bugs)
+    for issue_event_bug in issue_event_bugs:
+        resulting_bugs.add(issue_event_bug)
 
     for commit_message_bug in commit_message_bugs:
         if commit_message_bug.fixing_commit not in {
