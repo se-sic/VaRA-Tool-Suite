@@ -45,31 +45,10 @@ def create_new_varats_config() -> s.Configuration:
         }
     )
 
-    cfg["container"] = {
-        "research_tool": {
-            "desc":
-                "The currently active research tool."
-                "Base containers come with this tool preinstalled.",
-            "default": None
-        },
-        "from_source": {
-            "desc":
-                "Whether to install varats in the container from a local "
-                "source checkout or pip.",
-            "default": False
-        },
-        "varats_source": {
-            "desc":
-                "Path to the local checkout of varats to use for the source"
-                "install.",
-            "default": None
-        }
-    }
-
     cfg["vara"] = {
         "version": {
             "desc": "VaRA version.",
-            "default": 100,
+            "default": 120,
         },
         "llvm_source_dir": {
             "desc": "LLVM source dir",
