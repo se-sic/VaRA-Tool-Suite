@@ -141,13 +141,10 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
     return new_bb_cfg
 
 
-def save_bb_config(
-    bb_cfg: s.Configuration = bb_cfg(),
-    varats_cfg: s.Configuration = vara_cfg()
-) -> None:
+def save_bb_config(bb_cfg: s.Configuration) -> None:
     """Persist BenchBuild config to a yaml file."""
     # Create caching folder for .bc files
-    bc_cache_path = Path(varats_cfg["benchbuild_root"].value
+    bc_cache_path = Path(vara_cfg()["benchbuild_root"].value
                         ) / bb_cfg["varats"]["result"].value
     if not bc_cache_path.exists():
         bc_cache_path.mkdir(parents=True)
