@@ -32,13 +32,10 @@ class Plot():
         cls, plot_name: tp.Optional[str], **kwargs: tp.Any
     ) -> None:
         """
-        Register concrete plot generators.
+        Register concrete plots.
 
         Args:
-            generator_name: name for the plot generator as will be used in the
-                            CLI interface
-            plot:           plot class used by the generator
-            options:        command line options needed by the generator
+            plot_name: name for the plot; in ``None``, do not register the plot
         """
         # mypy does not yet fully understand __init_subclass__()
         # https://github.com/python/mypy/issues/4660
