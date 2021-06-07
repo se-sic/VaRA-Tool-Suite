@@ -61,7 +61,7 @@ class Libssh(bb.Project, CVEProviderHook):  # type: ignore
                           ).run('apt', 'install', '-y', 'openssh')
         ),
         (
-            GoodBadSubgraph(
+            RevisionRange(
                 "c65f56aefa50a2e2a78a0e45564526ecc921d74f",
                 "0151b6e17041c56813c882a3de6330c82acc8d93"
             ),
