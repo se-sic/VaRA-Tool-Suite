@@ -28,7 +28,9 @@ class Plot():
         self.__saved_extra_args = kwargs
 
     @classmethod
-    def __init_subclass__(cls, plot_name: str, **kwargs: tp.Any) -> None:
+    def __init_subclass__(
+        cls, plot_name: tp.Optional[str], **kwargs: tp.Any
+    ) -> None:
         """
         Register concrete plot generators.
 
@@ -41,7 +43,10 @@ class Plot():
         # mypy does not yet fully understand __init_subclass__()
         # https://github.com/python/mypy/issues/4660
         super().__init_subclass__(**kwargs)  # type: ignore
-        cls.PLOTS[plot_name] = cls
+
+        if plot_name:
+            cls.NAME = plot_name
+            cls.PLOTS[plot_name] = cls
 
     @staticmethod
     def get_plot_types_help_string() -> str:
