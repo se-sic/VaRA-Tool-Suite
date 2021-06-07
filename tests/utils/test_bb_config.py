@@ -1,5 +1,7 @@
 """Test module for settings."""
+import importlib
 import pkgutil
+import sys
 import typing as tp
 import unittest
 
@@ -21,17 +23,20 @@ class BenchBuildConfig(unittest.TestCase):
         if exclude_list is None:
             exclude_list = []
 
-        for _, plugin_name, is_pkg in pkgutil.walk_packages([package_name]):
-            qname = f"{package_name}/{plugin_name}"
-            if qname in exclude_list:
+        importlib.import_module(package_name)
+        path = getattr(sys.modules[package_name], '__path__', None) or []
+        for _, plugin_name, is_pkg in pkgutil.walk_packages(
+            path, f"{package_name}."
+        ):
+            if plugin_name in exclude_list:
                 continue
 
             if is_pkg:
                 self.check_all_files_in_config_list(
-                    qname, config_list, exclude_list
+                    plugin_name, config_list, exclude_list
                 )
             else:
-                self.assertTrue(qname in config_list, "Missing: " + plugin_name)
+                self.assertIn(plugin_name, config_list)
 
     @run_in_test_environment()
     def test_if_all_nodes_have_been_created(self):
