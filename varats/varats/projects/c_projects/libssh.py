@@ -54,23 +54,8 @@ class Libssh(bb.Project, CVEProviderHook):  # type: ignore
         )
     ]
 
-    CONTAINER = [
-        (
-            get_all_revisions_between(
-                "ee54acb417c5589a8dc9dab0676f34b3d40a182b",
-                "cd15043656280e92714c139d820ef271d00876a4"
-            ), get_base_image(ImageBase.DEBIAN_10
-                             ).run('apt', 'install', '-y', 'openssh')
-        ),
-        (
-            get_all_revisions_between(
-                "c65f56aefa50a2e2a78a0e45564526ecc921d74f",
-                "0151b6e17041c56813c882a3de6330c82acc8d93"
-            ),
-            get_base_image(ImageBase.DEBIAN_10
-                          ).run('apt', 'install', '-y', 'autoconf', 'openssh')
-        )
-    ]
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10
+                              ).run('apt', 'install', '-y', 'openssh')
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
