@@ -22,13 +22,6 @@ def get_data_file_path(data_id: str, project_name: str) -> Path:
     Args:
         data_id: identifier or identifier_name of the dataframe
         project_name: name of the project
-
-    Test:
-    >>> get_data_file_path("foo", "tmux").name == 'foo-tmux.csv.gz'
-    True
-
-    >>> isinstance(get_data_file_path("foo.csv", "tmux"), Path)
-    True
     """
     return Path(
         str(vara_cfg()["data_cache"])
