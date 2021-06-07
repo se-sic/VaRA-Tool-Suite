@@ -5,20 +5,32 @@ It can automatically create different preconfigured configs for BB.
 """
 
 from copy import deepcopy
-from os import getcwd, makedirs, path
+from os import getcwd
+from pathlib import Path
 
-import benchbuild.utils.settings as s
+from benchbuild.utils import settings as s
+from plumbum import local
 
 from varats.tools.tool_util import (
     get_supported_research_tool_names,
     get_research_tool_type,
 )
+from varats.utils.settings import vara_cfg
 
 
-def generate_benchbuild_config(
-    varats_cfg: s.Configuration, bb_config_path: str
-) -> None:
-    """Generate a configuration file for benchbuild."""
+def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
+    """
+    Create a new default bb config.
+
+    For internal use only! If you want to access the current bb config, use
+    :func:`bb_cfg()` instead.
+
+    Args:
+        varats_cfg: the varats config this bb config is based on
+
+    Returns:
+        a new default bb config object
+    """
     from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
     new_bb_cfg = deepcopy(BB_CFG)
 
@@ -35,6 +47,7 @@ def generate_benchbuild_config(
         'varats.projects.c_projects.coreutils',
         'varats.projects.c_projects.curl',
         'varats.projects.c_projects.gawk',
+        'varats.projects.c_projects.glibc',
         'varats.projects.c_projects.git',
         'varats.projects.c_projects.gravity',
         'varats.projects.c_projects.grep',
@@ -119,18 +132,24 @@ def generate_benchbuild_config(
     def replace_bb_cwd_path(
         cfg_varname: str, cfg_node: s.Configuration = new_bb_cfg
     ) -> None:
-        cfg_node[cfg_varname] = str(varats_cfg["benchbuild_root"]) +\
-            str(cfg_node[cfg_varname])[len(getcwd()):]
+        cfg_node[cfg_varname] = str(varats_cfg["benchbuild_root"]) + \
+                                str(cfg_node[cfg_varname])[len(getcwd()):]
 
+    replace_bb_cwd_path("config_file")
     replace_bb_cwd_path("build_dir")
     replace_bb_cwd_path("tmp_dir")
-    # replace_bb_cwd_path("test_dir")
     replace_bb_cwd_path("node_dir", new_bb_cfg["slurm"])
 
-    # Create caching folder for .bc files
-    bc_cache_path = str(varats_cfg["benchbuild_root"])
-    bc_cache_path += "/" + str(new_bb_cfg["varats"]["result"])
-    if not path.isdir(bc_cache_path):
-        makedirs(bc_cache_path)
+    return new_bb_cfg
 
-    new_bb_cfg.store(bb_config_path)
+
+def save_bb_config(benchbuild_cfg: s.Configuration) -> None:
+    """Persist BenchBuild config to a yaml file."""
+    # Create caching folder for .bc files
+    bc_cache_path = Path(vara_cfg()["benchbuild_root"].value
+                        ) / benchbuild_cfg["varats"]["result"].value
+    if not bc_cache_path.exists():
+        bc_cache_path.mkdir(parents=True)
+    benchbuild_cfg.store(
+        local.path(str(vara_cfg()["benchbuild_root"])) / ".benchbuild.yml"
+    )
