@@ -214,9 +214,8 @@ def bb_cfg() -> s.Configuration:
     if not _BB_CFG:
         from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
         bb_root = vara_cfg()["benchbuild_root"].value
-        if bb_root is None:
-            raise ValueError("BenchBuild directory not set in varats config.")
-        BB_CFG.load(local.path(str(bb_root)) / ".benchbuild.yml")
+        if bb_root:
+            BB_CFG.load(local.path(str(bb_root)) / ".benchbuild.yml")
         _BB_CFG = BB_CFG
     return _BB_CFG
 
