@@ -38,11 +38,11 @@ class Libssh(bb.Project, CVEProviderHook):  # type: ignore
     DOMAIN = 'library'
 
     SOURCE = [
-        block_revisions(
+        block_revisions([
             GoodBadSubgraph(["c65f56aefa50a2e2a78a0e45564526ecc921d74f"],
                             ["0151b6e17041c56813c882a3de6330c82acc8d93"],
                             "Disabled to quickly get is running")
-        )(
+        ])(
             bb.source.Git(
                 remote="https://github.com/libssh/libssh-mirror.git",
                 local="libssh",
