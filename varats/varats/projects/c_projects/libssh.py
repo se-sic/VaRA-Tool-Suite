@@ -57,7 +57,8 @@ class Libssh(bb.Project, CVEProviderHook):  # type: ignore
     CONTAINER = [
         (
             get_all_revisions_between(
-                "ee54acb417c5589a8dc9dab0676f34b3d40a182b", "master"
+                "ee54acb417c5589a8dc9dab0676f34b3d40a182b",
+                "cd15043656280e92714c139d820ef271d00876a4"
             ), get_base_image(ImageBase.DEBIAN_10
                              ).run('apt', 'install', '-y', 'openssh')
         ),
