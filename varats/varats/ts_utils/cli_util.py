@@ -126,9 +126,9 @@ class EnumType(click.Choice):
     This type can be used with click to specify a choice from the given enum.
     """
 
-    def __init__(self, enum: tp.Type[Enum]):
+    def __init__(self, enum: tp.Type[Enum], case_sensitive: bool = True):
         self.__enum = enum
-        super().__init__(list(dict(enum.__members__).keys()))
+        super().__init__(list(dict(enum.__members__).keys()), case_sensitive)
 
     def convert(
         self, value: str, param: tp.Optional[click.Parameter],
