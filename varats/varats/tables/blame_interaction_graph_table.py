@@ -58,6 +58,10 @@ def _generate_graph_table(
                 project_name: {
                     ("commits", ""):
                         int(project_git("rev-list", "--count", "HEAD")),
+                    ("authors", ""):
+                        len(
+                            project_git("shortlog", "-s", "--all").splitlines()
+                        ),
                     ("nodes", ""):
                         len(graph.nodes),
                     ("edges", ""):

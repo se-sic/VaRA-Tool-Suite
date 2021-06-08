@@ -65,8 +65,6 @@ class CommitInteractionGraphPlot(Plot):
     ) -> None:
         project_name = self.plot_kwargs["project"]
         revision = self.plot_kwargs.get("revision", None)
-        if not revision:
-            raise PlotArgMissing(f"'revision' was not specified.")
         cig = create_blame_interaction_graph(project_name, revision
                                             ).commit_interaction_graph()
         nx.set_node_attributes(
