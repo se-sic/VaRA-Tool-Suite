@@ -164,24 +164,3 @@ def save_bb_config(benchbuild_cfg: s.Configuration) -> None:
     benchbuild_cfg.store(
         local.path(str(vara_cfg()["benchbuild_root"])) / ".benchbuild.yml"
     )
-
-
-def get_bb_config_file_path() -> LocalPath:
-    """
-    Get the path to the benchbuild config file.
-
-    Returns:
-        the path to the benchbuild config file
-    """
-    return local.path(str(vara_cfg()["benchbuild_root"])) / ".benchbuild.yml"
-
-
-def load_bb_config() -> None:
-    """
-    Manually load the benchbuild config.
-
-    This is useful for tools that use benchbuild and need benchbuild to use our
-    config instead of the default config.
-    """
-    from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
-    BB_CFG.load(get_bb_config_file_path())
