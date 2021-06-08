@@ -21,6 +21,7 @@ from varats.tools.research_tools.vara_manager import (
     pull_current_branch,
     push_current_branch,
     show_status,
+    get_tags,
     update_all_submodules,
 )
 from varats.utils.filesystem_util import FolderAlreadyPresentError
@@ -281,6 +282,14 @@ class SubProject():
             name=self.name, url=self.url, remote=self.remote, folder=self.path
         )
 
+    def get_tags(self,
+                 extra_args: tp.Optional[tp.List[str]] = None) -> tp.List[str]:
+        """Get the list of available git tags."""
+        tag_list = get_tags(
+            self.__parent_code_base.base_dir / self.path, extra_args
+        )
+        return tag_list
+
 
 class CodeBase():
     """
@@ -398,6 +407,15 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         Args:
             source_folder: location to store the code base in
         """
+
+    @abc.abstractmethod
+    def find_highest_sub_prj_version(self, sub_prj_name: str) -> int:
+        """Returns the highest release version number for the specified
+        ``SubProject`` name."""
+
+    @abc.abstractmethod
+    def is_up_to_date(self) -> bool:
+        """Returns true if VaRA's major release version is up to date."""
 
     @abc.abstractmethod
     def upgrade(self) -> None:
