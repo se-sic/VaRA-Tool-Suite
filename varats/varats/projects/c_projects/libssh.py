@@ -55,7 +55,7 @@ class Libssh(bb.Project, CVEProviderHook):  # type: ignore
     ]
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10
-                              ).run('apt', 'install', '-y', 'openssl')
+                              ).run('apt', 'install', '-y', 'openssl', 'cmake')
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
