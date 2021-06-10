@@ -12,7 +12,12 @@ from varats.data.databases.blame_diff_metrics_database import (
     compare_timestamps,
 )
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
-from varats.data.reports.blame_report import BlameReport
+from varats.data.reports.blame_report import (
+    BlameReport,
+    generate_in_head_interactions,
+    generate_out_head_interactions,
+    get_interacting_commits_for_commit,
+)
 from varats.data.reports.szz_report import (
     SZZReport,
     SZZUnleashedReport,
@@ -54,21 +59,6 @@ def _get_requested_report_paths(
             report_map[report_revision] = report_path
 
     return requested_report_revisions, report_map
-
-
-def _get_interactions_for_commit(
-    report: BlameReport, commit: CommitRepoPair
-) -> tp.Tuple[tp.Set[CommitRepoPair], tp.Set[CommitRepoPair]]:
-    in_commits: tp.Set[CommitRepoPair] = set()
-    out_commits: tp.Set[CommitRepoPair] = set()
-    for func_entry in report.function_entries:
-        for interaction in func_entry.interactions:
-            if commit == interaction.base_commit:
-                out_commits.update(interaction.interacting_commits)
-            if commit in interaction.interacting_commits:
-                in_commits.add(interaction.base_commit)
-
-    return in_commits, out_commits
 
 
 def _calculate_szz_quality_score(
@@ -135,10 +125,10 @@ def _load_dataframe_for_report(
         fix_commit = commit_lookup(fix_report.head_commit, prj_src.local)
         intro_commit = commit_lookup(intro_report.head_commit, prj_src.local)
 
-        fix_in, fix_out = _get_interactions_for_commit(
+        fix_in, fix_out = get_interacting_commits_for_commit(
             fix_report, CommitRepoPair(str(fix_commit.id), prj_src.local)
         )
-        intro_in, intro_out = _get_interactions_for_commit(
+        intro_in, intro_out = get_interacting_commits_for_commit(
             intro_report, CommitRepoPair(str(intro_commit.id), prj_src.local)
         )
 

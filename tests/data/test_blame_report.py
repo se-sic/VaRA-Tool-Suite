@@ -14,6 +14,7 @@ from varats.data.reports.blame_report import (
     generate_degree_tuples,
     generate_lib_dependent_degrees,
     gen_base_to_inter_commit_repo_pair_mapping,
+    get_interacting_commits_for_commit,
 )
 from varats.utils.git_util import CommitRepoPair
 
@@ -783,3 +784,34 @@ class TestBlameReportHelperFunctions(unittest.TestCase):
         self.assertEqual(base_inter_mapping[elem_bd][elem_5e], 1)
         self.assertEqual(base_inter_mapping[elem_bd][elem_97], 1)
         self.assertEqual(base_inter_mapping[elem_bd][elem_e6], 1)
+
+    def test_get_interacting_commits_for_commit(self) -> None:
+        """Test if retrieving of interacting commits works."""
+        report = self.reports[1]  # YAML_DOC_BR_6
+        commit = CommitRepoPair(
+            "e64923e69eab82332c1bed7fe1e80e14c2c5cb7f", "Elementalist"
+        )
+
+        expected_in = {
+            CommitRepoPair(
+                "5e030723d70f4894c21881e32dba4decec815c7e", "Elementalist"
+            ),
+            CommitRepoPair(
+                "bd693d7bc2e4ae5be93e300506ba1efea149e5b7", "Elementalist"
+            )
+        }
+        expected_out = {
+            CommitRepoPair(
+                "5e030723d70f4894c21881e32dba4decec815c7e", "Elementalist"
+            ),
+            CommitRepoPair(
+                "97c573ee98a1c2143b6876433697e363c9eca98b", "Elementalist"
+            )
+        }
+
+        actual_in, actual_out = get_interacting_commits_for_commit(
+            report, commit
+        )
+
+        self.assertSetEqual(expected_in, actual_in)
+        self.assertSetEqual(expected_out, actual_out)

@@ -819,3 +819,30 @@ def generate_out_head_interactions(
                     head_interactions.append(interaction)
                     break
     return head_interactions
+
+
+def get_interacting_commits_for_commit(
+    report: BlameReport, commit: CommitRepoPair
+) -> tp.Tuple[tp.Set[CommitRepoPair], tp.Set[CommitRepoPair]]:
+    """
+    Get all commits a given commits interacts with separated by incoming and
+    outgoing interactions.
+
+    Args:
+        report: BlameReport to get the interactions from
+        commit: commit to get the interacting commits for
+
+    Returns:
+        two sets for the interacting commits seperated by incoming and outgoing
+        interactions
+    """
+    in_commits: tp.Set[CommitRepoPair] = set()
+    out_commits: tp.Set[CommitRepoPair] = set()
+    for func_entry in report.function_entries:
+        for interaction in func_entry.interactions:
+            if commit == interaction.base_commit:
+                out_commits.update(interaction.interacting_commits)
+            if commit in interaction.interacting_commits:
+                in_commits.add(interaction.base_commit)
+
+    return in_commits, out_commits
