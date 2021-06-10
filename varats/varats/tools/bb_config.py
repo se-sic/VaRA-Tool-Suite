@@ -73,6 +73,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         'varats.projects.c_projects.xz',
         'varats.projects.cpp_projects.mongodb',
         'varats.projects.cpp_projects.poppler',
+        'varats.projects.test_projects.test_suite',
     ]
     projects_conf.value[:] += [
         'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'
@@ -96,6 +97,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.phasar.ide_linear_constant_experiment',
         'varats.experiments.szz.szz_unleashed_experiment',
+        'varats.experiments.szz.pydriller_szz_experiment',
     ]
 
     # Enable version exploration by default
