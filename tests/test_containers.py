@@ -50,7 +50,7 @@ class TestContainerSupport(unittest.TestCase):
 
     @run_in_test_environment()
     def test_create_base_image(self):
-        """Test function with mocked method for file access."""
+        """Test base image creation."""
         vara_cfg()["container"]["research_tool"] = None
         vara_cfg()["container"]["from_source"] = False
         bb_cfg()["container"]["from_source"] = False
@@ -93,8 +93,8 @@ class TestContainerSupport(unittest.TestCase):
         self.assertEqual("/app", cwd_layer.directory)
 
     @run_in_test_environment()
-    def test_create_base_image(self) -> None:
-        """Test function with mocked method for file access."""
+    def test_create_base_image_from_source(self) -> None:
+        """Test varats install from source."""
         vara_cfg()["container"]["research_tool"] = None
         vara_cfg()["container"]["from_source"] = True
         vara_cfg()["container"]["varats_source"] = "varats_src"
@@ -120,6 +120,7 @@ class TestContainerSupport(unittest.TestCase):
 
     @run_in_test_environment()
     def test_ld_library_path(self) -> None:
+        """Test mapping of LD_LIBRARY_PATH into container."""
         vara_cfg()["container"]["research_tool"] = None
         vara_cfg()["container"]["from_source"] = False
         bb_cfg()["container"]["from_source"] = False
@@ -148,6 +149,7 @@ class TestContainerSupport(unittest.TestCase):
     @run_in_test_environment()
     @mock.patch("varats.tools.research_tools.vara.VaRA.verify_install")
     def test_vara_install(self, mock_verify_install) -> None:
+        """Test VaRA install inside container."""
         mock_verify_install.return_value = True
         vara_cfg()["container"]["research_tool"] = "vara"
         vara_cfg()["vara"]["llvm_source_dir"] = "tools_src/vara-llvm-project"
