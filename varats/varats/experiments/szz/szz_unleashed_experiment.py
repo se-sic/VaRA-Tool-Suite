@@ -13,7 +13,11 @@ from benchbuild.utils.cmd import java, mkdir
 from plumbum import local
 
 from varats.base.version_header import VersionHeader
-from varats.data.reports.szz_report import SZZReport, SZZUnleashedReport
+from varats.data.reports.szz_report import (
+    SZZReport,
+    SZZUnleashedReport,
+    SZZTool,
+)
 from varats.experiment.experiment_util import (
     create_default_analysis_failure_handler,
     exec_func_with_pe_error_handler,
@@ -143,7 +147,7 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
             bugs.setdefault(result_entry[0], set())
             bugs[result_entry[0]].add(result_entry[1])
         raw_szz_report = {
-            "szz_tool": "SZZUnleashed",
+            "szz_tool": SZZTool.SZZ_UNLEASHED.tool_name,
             "bugs": {k: sorted(list(v)) for k, v in bugs.items()}
         }
 

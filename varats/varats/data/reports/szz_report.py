@@ -1,5 +1,6 @@
 """Module for SZZReport."""
 import typing as tp
+from enum import Enum
 from pathlib import Path
 
 import yaml
@@ -7,6 +8,16 @@ import yaml
 from varats.base.version_header import VersionHeader
 from varats.provider.bug.bug import RawBug
 from varats.report.report import BaseReport, FileStatusExtension, MetaReport
+
+
+class SZZTool(Enum):
+
+    def __init__(self, tool_name: str, shorthand: str):
+        self.tool_name = tool_name
+        self.shorthand = shorthand
+
+    SZZ_UNLEASHED = ("SZZUnleashed", "SZZU")
+    PYDRILLER_SZZ = ("PyDrillerSZZ", "PySZZ")
 
 
 class SZZReport(BaseReport):
@@ -86,10 +97,10 @@ class SZZUnleashedReport(SZZReport):
     :class:`~varats.experiments.szz.szz_unleashed.SZZUnleashedExperiment`.
     """
 
-    SHORTHAND = "SZZU"
+    SHORTHAND = SZZTool.SZZ_UNLEASHED.shorthand
 
     def __init__(self, path: Path):
-        super().__init__(path, "SZZUnleashed")
+        super().__init__(path, SZZTool.SZZ_UNLEASHED.tool_name)
 
     @staticmethod
     def get_file_name(
@@ -127,10 +138,10 @@ class PyDrillerSZZReport(SZZReport):
     :class:`~varats.experiments.szz.pydriller_szz.PyDrillerSZZExperiment`.
     """
 
-    SHORTHAND = "PySZZ"
+    SHORTHAND = SZZTool.PYDRILLER_SZZ.shorthand
 
     def __init__(self, path: Path):
-        super().__init__(path, "PyDrillerSZZ")
+        super().__init__(path, SZZTool.PYDRILLER_SZZ.tool_name)
 
     @staticmethod
     def get_file_name(
