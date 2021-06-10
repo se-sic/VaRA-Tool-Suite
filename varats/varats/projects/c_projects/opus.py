@@ -36,10 +36,9 @@ class Opus(bb.Project):  # type: ignore
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
-        'apt', 'install', '-y', 'autoconf', 'autopoint', 'automake',
-        'autotools-dev', 'libtool', 'pkg-config'
-    )
+    CONTAINER = get_base_image(
+        ImageBase.DEBIAN_10
+    ).run('apt', 'install', '-y', 'autoconf', 'automake', 'libtool')
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
