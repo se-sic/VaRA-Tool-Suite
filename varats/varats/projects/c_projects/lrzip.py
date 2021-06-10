@@ -38,7 +38,7 @@ class Lrzip(bb.Project, CVEProviderHook):  # type: ignore
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
         'apt', 'install', '-y', 'tar', 'libz-dev', 'autoconf', 'libbz2-dev',
-        'liblzo2-dev', 'liblz4-dev', 'coreutils'
+        'liblzo2-dev', 'liblz4-dev', 'coreutils', 'libtool'
     )
 
     @property
