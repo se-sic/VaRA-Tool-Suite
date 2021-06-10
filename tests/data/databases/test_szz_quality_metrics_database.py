@@ -48,7 +48,7 @@ class TestSZZQualityMetricsDatabase(unittest.TestCase):
     def test_calculate_szz_quality_score_empty_interactions(self) -> None:
         """Test SZZ quality score calculation."""
         self.assertEqual(
-            -2, _calculate_szz_quality_score(set(), set(), set(), set())
+            -1, _calculate_szz_quality_score(set(), set(), set(), set())
         )
 
     def test_calculate_szz_quality_score_partial_match(self) -> None:
