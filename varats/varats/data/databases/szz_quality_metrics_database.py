@@ -89,8 +89,6 @@ def _calculate_szz_quality_score(
     total = in_all + out_all
     score: float
     if len(fix_in) + len(fix_out) == 0 or len(intro_in) + len(intro_out) == 0:
-        score = -2
-    elif total == 0:
         score = -1
     else:
         score = 1 - in_frac * (in_all / total) - out_frac * (out_all / total)
