@@ -64,7 +64,7 @@ def _get_requested_report_paths(
 def _calculate_szz_quality_score(
     fix_in: tp.Set[CommitRepoPair], fix_out: tp.Set[CommitRepoPair],
     intro_in: tp.Set[CommitRepoPair], intro_out: tp.Set[CommitRepoPair]
-):
+) -> float:
     """
     Calculates a quality score that estimates how likely it is that a commit
     introduced a bug that is fixed in another commit.
@@ -95,6 +95,7 @@ def _calculate_szz_quality_score(
     out_diff = len(fix_out.symmetric_difference(intro_out))
     out_frac = out_diff / out_all if out_all else 0
     total = in_all + out_all
+    score: float
     if len(fix_in) + len(fix_out) == 0 or len(intro_in) + len(intro_out) == 0:
         score = -2
     elif total == 0:
