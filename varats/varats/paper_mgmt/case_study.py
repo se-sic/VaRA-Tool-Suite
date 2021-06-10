@@ -1,5 +1,6 @@
 """A case study is used to pin down the exact set of revisions that should be
 analysed for a project."""
+import logging
 import random
 import typing as tp
 from collections import defaultdict
@@ -16,11 +17,22 @@ from varats.base.sampling_method import (
     UniformSamplingMethod,
     HalfNormalSamplingMethod,
 )
+from varats.data.reports.szz_report import (
+    SZZReport,
+    SZZUnleashedReport,
+    PyDrillerSZZReport,
+)
+from varats.jupyterhelper.file import (
+    load_szzunleashed_report,
+    load_pydriller_szz_report,
+)
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot_utils import check_required_args
 from varats.plot.plots import PlotRegistry
 from varats.project.project_util import get_project_cls_by_name
+from varats.provider.bug.bug import RawBug
+from varats.provider.bug.bug_provider import BugProvider
 from varats.provider.release.release_provider import ReleaseProvider
 from varats.report.report import FileStatusExtension, MetaReport
 from varats.revision.revisions import (
@@ -30,7 +42,10 @@ from varats.revision.revisions import (
     get_tagged_revisions,
     filter_blocked_revisions,
     is_revision_blocked,
+    get_processed_revisions_files,
 )
+
+LOG = logging.Logger(__name__)
 
 
 class ExtenderStrategy(Enum):
@@ -43,6 +58,7 @@ class ExtenderStrategy(Enum):
     smooth_plot = 3
     per_year_add = 4
     release_add = 5
+    add_bugs = 6
 
 
 def processed_revisions_for_case_study(
@@ -346,6 +362,8 @@ def extend_case_study(
         extend_with_revs_per_year(case_study, cmap, **kwargs)
     elif ext_strategy is ExtenderStrategy.release_add:
         extend_with_release_revs(case_study, cmap, **kwargs)
+    elif ext_strategy is ExtenderStrategy.add_bugs:
+        extend_with_bug_commits(case_study, cmap, **kwargs)
 
 
 @check_required_args(['extra_revs', 'merge_stage'])
@@ -562,3 +580,65 @@ def extend_with_release_revs(
     case_study.include_revisions([
         (rev, cmap.time_id(rev)) for rev in release_revisions
     ], kwargs['merge_stage'])
+
+
+@check_required_args(['report_type', 'merge_stage'])
+def extend_with_bug_commits(
+    case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
+) -> None:
+    """
+    Extend a case study with revisions that either introduced or fixed a bug as
+    determined by the given SZZ tool.
+
+    Args:
+        case_study: to extend
+        cmap: commit map to map revisions to unique IDs
+    """
+    report_type: MetaReport = MetaReport.REPORT_TYPES[kwargs['report_type']]
+    project_cls: tp.Type[Project] = get_project_cls_by_name(
+        case_study.project_name
+    )
+
+    def load_bugs_from_szz_report(
+        load_fun: tp.Callable[[Path], SZZReport]
+    ) -> tp.Optional[tp.FrozenSet[RawBug]]:
+        reports = get_processed_revisions_files(
+            case_study.project_name, report_type
+        )
+        if not reports:
+            LOG.warning(
+                f"I could not find any {report_type} reports. "
+                "Falling back to bug provider."
+            )
+            return None
+        report = load_fun(reports[0])
+        return report.get_all_raw_bugs()
+
+    bugs: tp.Optional[tp.FrozenSet[RawBug]] = None
+    if report_type == SZZUnleashedReport:
+        bugs = load_bugs_from_szz_report(load_szzunleashed_report)
+    elif report_type == PyDrillerSZZReport:
+        bugs = load_bugs_from_szz_report(load_pydriller_szz_report)
+    else:
+        LOG.warning(
+            f"Report type {report_type} is not supported by this extender "
+            f"strategy. Falling back to bug provider."
+        )
+
+    if bugs is None:
+        bug_provider = BugProvider.get_provider_for_project(
+            get_project_cls_by_name(case_study.project_name)
+        )
+        bugs = bug_provider.find_all_raw_bugs()
+
+    revisions: tp.Set[str] = set()
+    for bug in bugs:
+        revisions.add(bug.fixing_commit)
+        revisions.update(bug.introducing_commits)
+
+    rev_list = list(revisions)
+    if kwargs["ignore_blocked"]:
+        rev_list = filter_blocked_revisions(rev_list, project_cls)
+
+    case_study.include_revisions([(rev, cmap.time_id(rev)) for rev in rev_list],
+                                 kwargs['merge_stage'])

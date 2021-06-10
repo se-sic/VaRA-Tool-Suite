@@ -61,8 +61,8 @@ def create_new_varats_config() -> s.Configuration:
         "dev_mode": {
             "desc":
                 "If enabled, install varats in editable mode."
-                "Implies `from_source=True` and `varats_source` must be mountable "
-                "inside the container.",
+                "Implies `from_source=True` and `varats_source` must be "
+                "mountable inside the container.",
             "default": False
         },
         "varats_source": {
