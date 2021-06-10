@@ -14,8 +14,6 @@ from varats.data.databases.blame_diff_metrics_database import (
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.data.reports.blame_report import (
     BlameReport,
-    generate_in_head_interactions,
-    generate_out_head_interactions,
     get_interacting_commits_for_commit,
 )
 from varats.data.reports.szz_report import (
@@ -24,24 +22,18 @@ from varats.data.reports.szz_report import (
     PyDrillerSZZReport,
 )
 from varats.jupyterhelper.file import load_blame_report
-from varats.mapping.commit_map import CommitMap, get_commit_map
+from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
-from varats.project.project_util import (
-    get_project_cls_by_name,
-    get_primary_project_source,
-)
-from varats.projects.discover_projects import initialize_projects
+from varats.project.project_util import get_primary_project_source
 from varats.report.report import MetaReport
 from varats.revision.revisions import get_processed_revisions_files
-from varats.utils.cli_util import initialize_cli_tool
 from varats.utils.git_util import CommitRepoPair, create_commit_lookup_helper
 
 LOG = logging.getLogger(__name__)
 
 
-def _get_requested_report_paths(
-    project_name: str, szz_report: SZZReport
-) -> tp.Tuple[tp.Set[str], tp.Dict[str, Path]]:
+def _get_requested_report_paths(project_name: str,
+                                szz_report: SZZReport) -> tp.Dict[str, Path]:
     bugs = szz_report.get_all_raw_bugs()
     requested_report_revisions: tp.Set[str] = set()
     for bug in bugs:
@@ -58,7 +50,7 @@ def _get_requested_report_paths(
         if report_revision in requested_report_revisions:
             report_map[report_revision] = report_path
 
-    return requested_report_revisions, report_map
+    return report_map
 
 
 def _calculate_szz_quality_score(
@@ -110,7 +102,6 @@ def _load_dataframe_for_report(
     commit_map: CommitMap, szz_report: SZZReport
 ) -> pd.DataFrame:
     commit_lookup = create_commit_lookup_helper(project_name)
-    project = get_project_cls_by_name(project_name)
     prj_src = get_primary_project_source(project_name)
 
     def create_dataframe_layout() -> pd.DataFrame:
@@ -148,9 +139,7 @@ def _load_dataframe_for_report(
             timestamp_from_paths(report_paths)
         )
 
-    requested_revisions, report_map = _get_requested_report_paths(
-        project_name, szz_report
-    )
+    report_map = _get_requested_report_paths(project_name, szz_report)
     available_revisions = report_map.keys()
 
     new_entries: tp.List[tp.Tuple[Path, Path]] = []

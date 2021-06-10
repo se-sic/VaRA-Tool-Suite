@@ -11,6 +11,7 @@ from varats.report.report import BaseReport, FileStatusExtension, MetaReport
 
 
 class SZZTool(Enum):
+    """Enum for available SZZ tools."""
 
     def __init__(self, tool_name: str, shorthand: str):
         self.tool_name = tool_name

@@ -1,8 +1,6 @@
 """Module for writing SZZ quality metrics tables."""
 import typing as tp
 
-import numpy as np
-import pandas as pd
 from tabulate import tabulate
 
 from varats.data.databases.szz_quality_metrics_database import (
@@ -11,8 +9,6 @@ from varats.data.databases.szz_quality_metrics_database import (
 )
 from varats.data.reports.szz_report import SZZTool
 from varats.mapping.commit_map import get_commit_map
-from varats.project.project_util import get_project_cls_by_name
-from varats.provider.bug.bug_provider import BugProvider
 from varats.table.table import Table, TableFormat, wrap_table_in_document
 
 
