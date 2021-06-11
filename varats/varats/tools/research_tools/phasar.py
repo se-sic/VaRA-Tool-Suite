@@ -215,4 +215,4 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         Args:
             image_context: the base image creation context
         """
-        raise NotImplementedError("See se-passau/VaRA#718")
+        raise NotImplementedError("Implement phasar container install.")
