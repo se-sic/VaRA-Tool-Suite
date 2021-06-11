@@ -62,7 +62,7 @@ class Libpng(bb.Project, CVEProviderHook):  # type: ignore
                             ["45bb9a62ba343250497c33da2b0bad78376d55b8"],
                             "Bug in Libpng"),
             SingleRevision(
-                "79b7e4e621fd611df658ec24a07080708fffe1de", "BBug in Libpng"
+                "79b7e4e621fd611df658ec24a07080708fffe1de", "Bug in Libpng"
             ),
             SingleRevision(
                 "67a289ffa924a00fab96a9bd6da8c069441138fa", "Bug in Libpng"
