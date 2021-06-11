@@ -17,7 +17,6 @@ from varats.containers.containers import (
     delete_base_images,
     export_base_images,
 )
-from varats.tools.bb_config import load_bb_config
 from varats.tools.tool_util import get_supported_research_tool_names
 from varats.utils.cli_util import initialize_cli_tool, EnumType
 from varats.utils.settings import vara_cfg, save_config, bb_cfg, save_bb_config
@@ -32,7 +31,7 @@ LOG = logging.Logger(__name__)
 def main() -> None:
     """Manage base container images."""
     initialize_cli_tool()
-    load_bb_config()
+    bb_cfg()
 
 
 @main.command(help="Build base containers for the current research tool.")

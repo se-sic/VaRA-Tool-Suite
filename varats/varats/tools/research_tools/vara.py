@@ -1,7 +1,9 @@
 """Module for the research tool VaRA that describes the VaRA code base layout
 and how to configure and setup VaRA."""
 import logging
+import math
 import os
+import re
 import shutil
 import typing as tp
 from pathlib import Path
@@ -28,14 +30,14 @@ from varats.utils.logger_util import log_without_linesep
 from varats.utils.settings import save_config, vara_cfg
 
 if tp.TYPE_CHECKING:
-    import varats.containers.containers as containers
+    import varats.containers.containers as containers  # pylint: disable=W0611
 
 LOG = logging.getLogger(__name__)
 
 
 class VaRACodeBase(CodeBase):
     """Layout of the VaRA code base: setting up vara-llvm-project fork, VaRA,
-    and optinaly phasar for static analysis."""
+    and optionally phasar for static analysis."""
 
     def __init__(self, base_dir: Path) -> None:
         sub_projects = [
@@ -104,6 +106,28 @@ class VaRACodeBase(CodeBase):
         """Pull and update all ``SubProject`` s."""
         self.map_sub_projects(lambda prj: prj.pull())
         self.setup_submodules()
+
+    def fetch(
+        self,
+        sub_prj_name: str,
+        remote: tp.Optional[str] = None,
+        extra_args: tp.Optional[tp.List[str]] = None
+    ) -> None:
+        """Fetch the `SubProject` corresponding to the passed subproject
+        name."""
+        sub_prj: SubProject = self.get_sub_project(sub_prj_name)
+        sub_prj.fetch(remote, extra_args)
+
+    def get_tags(
+        self,
+        sub_prj_name: str,
+        extra_args: tp.Optional[tp.List[str]] = None
+    ) -> tp.List[str]:
+        """Get a list of available git tags of the `SubProject` corresponding to
+        the passed subproject name."""
+        sub_prj: SubProject = self.get_sub_project(sub_prj_name)
+        tag_list = sub_prj.get_tags(extra_args)
+        return tag_list
 
 
 class VaRA(ResearchTool[VaRACodeBase]):
@@ -180,13 +204,78 @@ class VaRA(ResearchTool[VaRACodeBase]):
         self.code_base.setup_submodules()
         self.code_base.setup_build_link()
 
+    def find_highest_sub_prj_version(self, sub_prj_name: str) -> int:
+        """Returns the highest release version number for the specified
+        ``SubProject`` name."""
+
+        self.code_base.fetch(sub_prj_name)
+
+        unfiltered_version_list: tp.List[str]
+        highest_version = -1
+
+        if sub_prj_name == "VaRA":
+            unfiltered_version_list = self.code_base.get_tags("VaRA")
+            version_pattern = re.compile(r"vara-([0-9]+\.[0-9])")
+
+        elif sub_prj_name == "vara-llvm-project":
+            unfiltered_version_list = self.code_base.get_sub_project(
+                "vara-llvm-project"
+            ).get_branches(["-r"])
+            version_pattern = re.compile(r"vara-([0-9]+)-dev")
+        else:
+            LOG.warning(
+                "The version retrieval of the specified subproject is not "
+                "implemented yet."
+            )
+            raise NotImplementedError
+
+        for unfiltered_version in unfiltered_version_list:
+            match = version_pattern.search(unfiltered_version)
+            if match:
+                match_version = int(re.sub(r"\D", "", match.group()))
+                if match_version > highest_version:
+                    highest_version = match_version
+
+        if highest_version == -1:
+            warning_str = f"No version in {sub_prj_name} matched the release " \
+                          f"pattern."
+            LOG.warning(warning_str)
+            raise LookupError
+
+        return highest_version
+
+    def is_up_to_date(self) -> bool:
+        """Returns true if VaRA's major release version is up to date."""
+
+        current_vara_version = int(vara_cfg()["vara"]["version"])
+
+        highest_vara_tag_version = self.find_highest_sub_prj_version("VaRA")
+        highest_vara_llvm_version = self.find_highest_sub_prj_version(
+            "vara-llvm-project"
+        )
+
+        if (current_vara_version >=
+            highest_vara_llvm_version) and current_vara_version >= (
+                math.ceil(highest_vara_tag_version / 10) * 10
+            ):
+            return True
+
+        return False
+
     def upgrade(self) -> None:
         """Upgrade the research tool to a newer version."""
-        version = 100
+        new_version = self.find_highest_sub_prj_version("vara-llvm-project")
 
-        # TODO (se-passau/VaRA#640): version upgrade
-        if str(vara_cfg()["vara"]["version"]) != str(version):
-            raise NotImplementedError
+        if new_version != (
+            math.ceil(self.find_highest_sub_prj_version("VaRA") / 10) * 10
+        ):
+            raise AssertionError("vara-llvm-project and vara tool out of sync.")
+
+        if str(vara_cfg()["vara"]["version"]) != str(new_version):
+            self.code_base.checkout_vara_version(new_version, True)
+
+            vara_cfg()["vara"]["version"] = new_version
+            save_config()
 
         self.code_base.pull()
 
