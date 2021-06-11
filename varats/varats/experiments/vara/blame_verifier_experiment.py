@@ -65,7 +65,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
                 * Status: prints if the module as a whole passed or failed
         """
         if not self.obj:
-            return
+            return actions.StepResult.ERROR
         project = self.obj
 
         # Add to the user-defined path for saving the results of the
@@ -142,7 +142,9 @@ class BlameVerifierReportExperiment(VersionExperiment):
         self.__bc_file_extensions = bc_file_extensions
         self.__report_type = report_type
 
-    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
+    def actions_for_project(
+        self, project: Project
+    ) -> tp.MutableSequence[actions.Step]:
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
 

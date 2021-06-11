@@ -12,10 +12,10 @@ You can create tables for your data either by directly using the :ref:`vara-tabl
 How to add a new table in VaRA-TS
 ---------------------------------
 
-You can create a new table type by creating a subclass of :class:`~varats.tables.table.Table`.
+You can create a new table type by creating a subclass of :class:`~varats.table.table.Table`.
 The table will then be available under the name you declare in the class-level field ``NAME``.
-Each table class must override the abstract function :func:`~varats.tables.table.Table.tabulate()` that returns a string of the rendered table.
-By convention, the returned string should be produced by `python-tabulate`'s ``tabulate()`` function using the table class' :attr:`~varats.tables.table.Table.format` attribute.
+Each table class must override the abstract function :func:`~varats.table.table.Table.tabulate()` that returns a string of the rendered table.
+By convention, the returned string should be produced by `python-tabulate`'s ``tabulate()`` function using the table class' :attr:`~varats.table.table.Table.format` attribute.
 
 The data for tables should be retrieved using our :ref:`data storage abstraction<Data management>`.
 
@@ -25,7 +25,7 @@ Table helper modules
 Module: table
 .............
 
-.. automodule:: varats.tables.table
+.. automodule:: varats.table.table
     :members:
     :undoc-members:
     :show-inheritance:
@@ -35,7 +35,7 @@ Module: table
 Module: tables
 ..............
 
-.. automodule:: varats.tables.tables
+.. automodule:: varats.table.tables
     :members:
     :undoc-members:
     :show-inheritance:
