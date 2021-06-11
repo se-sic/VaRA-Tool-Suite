@@ -1,8 +1,7 @@
 argparse-utils>=1.2.0
-benchbuild>=6.1.1
-click>=8.0.1
+benchbuild>=6.2
 graphviz>=0.14.2
-Jinja2
+Jinja2>=3.0.1
 jupyter>=1.0.0
 kaleido>=0.2.1
 matplotlib>=3.1.2
@@ -29,5 +28,6 @@ scikit-learn~=0.23.1
 seaborn>=0.8.0
 statsmodels~=0.11.1
 tabulate>=0.8.6
+types-PyYAML
 virtualenv>=20.0.8
 wllvm>=1.1.4

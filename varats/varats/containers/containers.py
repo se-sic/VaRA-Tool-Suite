@@ -244,6 +244,24 @@ def _add_benchbuild_config(image_context: BaseImageCreationContext) -> None:
     )
 
 
+def _create_base_image_layers(image_context: BaseImageCreationContext) -> None:
+    # we need an up-to-date pip version to get the prebuilt pygit2 package
+    # with an up-to-date libgit2
+    image_context.layers.run('pip3', 'install', '--upgrade', 'pip')
+    _add_varats_layers(image_context)
+    # override bb with custom version if bb install from source is active
+    if bb_cfg()['container']['from_source']:
+        add_benchbuild_layers(image_context.layers)
+    # add research tool if configured
+    configured_research_tool = vara_cfg()["container"]["research_tool"]
+    if configured_research_tool:
+        research_tool = get_research_tool(str(configured_research_tool))
+        research_tool.add_container_layers(image_context)
+    _add_vara_config(image_context)
+    _add_benchbuild_config(image_context)
+    image_context.layers.workingdir(str(image_context.bb_root))
+
+
 def create_base_image(base: ImageBase) -> None:
     """
     Build a base image for the given image base and the current research tool.
@@ -254,25 +272,7 @@ def create_base_image(base: ImageBase) -> None:
     with TemporaryDirectory() as tmpdir:
         publish = bootstrap.bus()
         image_context = BaseImageCreationContext(base, Path(tmpdir))
-
-        # we need an up-to-date pip version to get the prebuilt pygit2 package
-        # with an up-to-date libgit2
-        image_context.layers.run('pip3', 'install', '--upgrade', 'pip')
-        _add_varats_layers(image_context)
-        # override bb with custom version if bb install from source is active
-        if bb_cfg()['container']['from_source']:
-            add_benchbuild_layers(image_context.layers)
-
-        # add research tool if configured
-        configured_research_tool = vara_cfg()["container"]["research_tool"]
-        if configured_research_tool:
-            research_tool = get_research_tool(str(configured_research_tool))
-            research_tool.add_container_layers(image_context)
-
-        _add_vara_config(image_context)
-        _add_benchbuild_config(image_context)
-
-        image_context.layers.workingdir(str(image_context.bb_root))
+        _create_base_image_layers(image_context)
         publish(CreateImage(base.image_name, image_context.layers))
 
 
@@ -323,7 +323,7 @@ def export_base_image(base: ImageBase) -> None:
         local.path(bb_cfg()["container"]["export"].value) / export_name + ".tar"
     )
     if export_path.exists() and export_path.is_file():
-        export_path.unlink(missing_ok=False)
+        export_path.unlink()
     publish(ExportImage(base.image_name, str(export_path)))
 
 
