@@ -57,6 +57,5 @@ After the setup, you find prepared build scripts in the build folder to automati
     :caption: Additional setup information
 
     add_setup_infos/clion_setup
-    add_setup_infos/slurm_setup
     add_setup_infos/buildbot_setup
     add_setup_infos/python_scripting_tips

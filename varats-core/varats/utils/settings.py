@@ -45,6 +45,34 @@ def create_new_varats_config() -> s.Configuration:
         }
     )
 
+    cfg["container"] = {
+        "research_tool": {
+            "desc":
+                "The currently active research tool."
+                "Base containers come with this tool preinstalled.",
+            "default": None
+        },
+        "from_source": {
+            "desc":
+                "Whether to install varats in the container from a local "
+                "source checkout or pip.",
+            "default": False
+        },
+        "dev_mode": {
+            "desc":
+                "If enabled, install varats in editable mode."
+                "Implies `from_source=True` and `varats_source` must be "
+                "mountable inside the container.",
+            "default": False
+        },
+        "varats_source": {
+            "desc":
+                "Path to the local checkout of varats to use for the source"
+                "install.",
+            "default": None
+        }
+    }
+
     cfg["vara"] = {
         "version": {
             "desc": "VaRA version.",
@@ -287,6 +315,13 @@ def save_config() -> None:
 
     create_missing_folders()
     vara_cfg().store(LocalPath(config_file))
+
+
+def save_bb_config() -> None:
+    """Persist BenchBuild config to a yaml file."""
+    bb_cfg().store(
+        local.path(str(vara_cfg()["benchbuild_root"])) / ".benchbuild.yml"
+    )
 
 
 def get_varats_base_folder() -> Path:
