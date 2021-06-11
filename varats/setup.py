@@ -22,7 +22,7 @@ setup(
     tests_require=["pytest", "pytest-cov"],
     install_requires=[
         "argparse-utils>=1.2.0",
-        "benchbuild>=6.1.1",
+        "benchbuild>=6.2.0",
         "click>=8.0.1",
         "graphviz>=0.14.2",
         "Jinja2>=3.0.1",
