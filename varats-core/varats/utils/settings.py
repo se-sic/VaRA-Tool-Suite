@@ -242,9 +242,10 @@ def bb_cfg() -> s.Configuration:
     if not _BB_CFG:
         from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
         bb_root = vara_cfg()["benchbuild_root"].value
-        bb_cfg_path = Path(bb_root) / ".benchbuild.yml"
-        if bb_root and bb_cfg_path.exists():
-            BB_CFG.load(local.path(str(bb_cfg_path)))
+        if bb_root:
+            bb_cfg_path = Path(bb_root) / ".benchbuild.yml"
+            if bb_cfg_path.exists():
+                BB_CFG.load(local.path(str(bb_cfg_path)))
         _BB_CFG = BB_CFG
     return _BB_CFG
 
