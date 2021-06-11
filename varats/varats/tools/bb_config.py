@@ -108,9 +108,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
     new_bb_cfg["slurm"]["partition"] = "anywhere"
 
     # Container pre Configuration
-    container_conf = new_bb_cfg["container"]["mounts"]
-    container_conf.value[:] = []
-    container_conf.value[:] = [
+    new_bb_cfg["container"]["mounts"] = [
         [varats_cfg["result_dir"].value, "/varats_root/results"],
         [f"{varats_cfg['benchbuild_root']}/BC_files", "/varats_root/BC_files"],
         [
