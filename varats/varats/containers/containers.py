@@ -24,7 +24,7 @@ from plumbum import local
 
 from varats.tools.research_tools.research_tool import Distro
 from varats.tools.tool_util import get_research_tool
-from varats.utils.settings import bb_cfg, vara_cfg
+from varats.utils.settings import bb_cfg, vara_cfg, save_bb_config
 
 LOG = logging.getLogger(__name__)
 
@@ -189,6 +189,16 @@ def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
         pip_args = ['pip3', 'install', '--ignore-installed']
         if editable_install:
             pip_args.append("-e")
+            print(
+                "Dev-mode active: VaRA-TS will be installed in editable mode.\n"
+                "Make sure that the benchbuild config contains an entry\n"
+                "  container:\n"
+                "    mounts:\n"
+                "      value:\n"
+                f"      -   - {src_dir}\n"
+                f"          - {tgt_dir}\n"
+            )
+
         image.run(
             *pip_args,
             str(tgt_dir / 'varats-core'),
@@ -203,7 +213,7 @@ def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
 
     if bool(vara_cfg()['container']['dev_mode']):
         from_source(image_context.layers, editable_install=True)
-    if bool(vara_cfg()['container']['from_source']):
+    elif bool(vara_cfg()['container']['from_source']):
         from_source(image_context.layers)
     else:
         from_pip(image_context.layers)
