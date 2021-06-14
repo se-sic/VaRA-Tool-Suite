@@ -34,10 +34,9 @@ class Libtiff(bb.Project, CVEProviderHook):  # type: ignore
 
     SOURCE = [
         block_revisions([
-            GoodBadSubgraph(["0ef31e1f62aa7a8b1c488a59c4930775ee0046e4"], [
-                "a63512c436c64ad94b8eff09d6d7faa7e638d45d"
-            ], "Requires older version of libtool could maybe be done with containers"
-                           ),
+            GoodBadSubgraph(["0ef31e1f62aa7a8b1c488a59c4930775ee0046e4"],
+                            ["a63512c436c64ad94b8eff09d6d7faa7e638d45d"],
+                            "Bug in Libtiff"),
             GoodBadSubgraph(["88df59e89cfb096085bc5299f087eaceda73f12e"], [
                 "901535247413d30d9380ee837ecdb9fb661350c6",
                 "5ef6de4c7055a3b426d97d5af1a77484ee92eb30"
