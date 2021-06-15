@@ -116,23 +116,16 @@ class PlotGeneratorInitFailed(Exception):
 class PlotGenerator(abc.ABC):
     """A plot generator is responsible for generating one or more plots."""
 
+    # TODO: Add choices for CaseStudies
     # Required
     REQUIRE_CASE_STUDY: CLIOptionTy = make_cli_option(
         "-cs",
         "--case-study",
+        type=str,
         required=True,
         metavar="case_study",
         help="The case study to use for the plot."
     )
-
-    REQUIRE_PROJECT_NAME: CLIOptionTy = make_cli_option(
-        "--project-name",
-        type=str,
-        required=True,
-        metavar="project_name",
-        help="The name of the project."
-    )
-
     REQUIRE_REVISION: CLIOptionTy = make_cli_option(
         "-rev",
         "--revision",

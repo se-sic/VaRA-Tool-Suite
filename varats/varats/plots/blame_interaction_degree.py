@@ -56,6 +56,27 @@ class EdgeWeightThreshold(Enum):
     HIGH = 70
 
 
+class Colormap(Enum):
+    GREENS = 'Greens'
+    REDS = 'Reds'
+    BLUES = 'Blues'
+    GREYS = 'Greys'
+    ORANGES = 'Oranges'
+    PURPLES = 'Purples'
+    YLORBR = 'YlOrBr'
+    YLORRD = 'YlOrRd'
+    ORRD = 'OrRd'
+    PURD = 'PuRd'
+    RDPU = 'RdPu'
+    BUPU = 'BuPu'
+    GNBU = 'GnBu'
+    PUBU = 'PuBu'
+    YLGNBU = 'YlGnBu'
+    PUBUGN = 'PuBuGn'
+    BUGN = 'BuGn'
+    YLGN = 'YlGn'
+
+
 # TODO: Remove param default values in plot generation if already set in cli
 
 OPTIONAL_FIG_TITLE: CLIOptionTy = make_cli_option(
@@ -72,18 +93,6 @@ OPTIONAL_FONT_SIZE: CLIOptionTy = make_cli_option(
     required=False,
     metavar="font_size",
     help="The font size of the plot figure."
-)
-
-OPTIONAL_COLORMAPS: CLIOptionTy = make_cli_option(
-    "--colormaps",
-    default=[
-        'Greens', 'Reds', 'Blues', 'Greys', 'Oranges', 'Purples', 'YlOrBr',
-        'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu', 'GnBu', 'PuBu', 'YlGnBu',
-        'PuBuGn', 'BuGn', 'YlGn'
-    ],
-    required=False,
-    metavar="colormaps",
-    help="The colormaps used in the plot."
 )
 
 OPTIONAL_WIDTH: CLIOptionTy = make_cli_option(
@@ -549,7 +558,9 @@ def _build_sankey_color_mappings(
     lib_to_idx_shades: LibraryToIndexShadesMapping = dict(
         (name, dict()) for name in lib_name_dict["all_distinct_lib_names"]
     )
-    num_colormaps: int = len(tp.cast(tp.List[str], plot_cfg['colormaps']))
+
+    colormaps: tp.List[Colormap] = [c for c in Colormap]
+    num_colormaps: int = len(tp.cast(tp.List[str], colormaps))
 
     if len(lib_name_dict["all_distinct_lib_names"]) > num_colormaps:
         LOG.warning(
@@ -562,13 +573,10 @@ def _build_sankey_color_mappings(
         if num_colormaps <= lib_idx:
             lib_idx = 0
 
-        shade_lists = cm.get_cmap(
-            tp.cast(tp.List[str], plot_cfg['colormaps'])[lib_idx]
-        )(np.linspace(0.25, 1, highest_degree + 1))
+        shade_lists = cm.get_cmap(colormaps[lib_idx].value
+                                 )(np.linspace(0.25, 1, highest_degree + 1))
 
-        lib_to_colormap[lib_name] = cm.get_cmap(
-            tp.cast(tp.List[str], plot_cfg['colormaps'])[lib_idx]
-        )
+        lib_to_colormap[lib_name] = cm.get_cmap(colormaps[lib_idx].value)
         tmp_idx_to_shades_mapping: tp.Dict[int, str] = {}
 
         for shade_idx, shades in enumerate(shade_lists):
@@ -1072,11 +1080,7 @@ class BlameDegree(Plot, plot_name=None):
         """Plot the current plot to a file."""
 
     def _get_degree_data(self) -> pd.DataFrame:
-
-        # TODO (se-passau/VaRA#545): Find correct paper_config or cs in top
-        #  level
-        current_config = PC.get_paper_config()
-        case_study = current_config.get_all_case_studies()[0]
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
         project_name = case_study.project_name
         commit_map = get_commit_map(project_name)
 
@@ -1501,7 +1505,7 @@ class BlameLibraryInteractions(
             self.plot(True)
         except PlotDataEmpty:
             LOG.warning(
-                f"No data for project {self.plot_kwargs['project_name']}."
+                f"No data for project {self.plot_kwargs['case_study'].project_name}."
             )
             return
         self.__figure.show()
@@ -1511,12 +1515,12 @@ class BlameLibraryInteractions(
             self.plot(False)
             _save_figure(
                 self.__figure, self.plot_kwargs["revision"],
-                self.plot_kwargs["project_name"], PlotTypes.SANKEY,
+                self.plot_kwargs['case_study'].project_name, PlotTypes.SANKEY,
                 self.plot_file_name(filetype), plot_dir, filetype
             )
         except PlotDataEmpty:
             LOG.warning(
-                f"No data for project {self.plot_kwargs['project_name']}."
+                f"No data for project {self.plot_kwargs['case_study'].project_name}."
             )
             return
 
@@ -1531,9 +1535,9 @@ class SankeyLibraryInteractionsGenerator(
     generator_name="sankey-plot",
     plot=BlameLibraryInteractions,
     options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_PROJECT_NAME,
+        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_CASE_STUDY,
         PlotGenerator.REQUIRE_REVISION, OPTIONAL_FIG_TITLE, OPTIONAL_WIDTH,
-        OPTIONAL_HEIGHT, OPTIONAL_FONT_SIZE, OPTIONAL_COLORMAPS
+        OPTIONAL_HEIGHT, OPTIONAL_FONT_SIZE
     ]
 ):
 
@@ -1541,25 +1545,36 @@ class SankeyLibraryInteractionsGenerator(
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
-        self.__project_name: str = plot_kwargs["project_name"]
+
+        paper_conf: PC.PaperConfig = PC.get_paper_config()
+        if plot_kwargs["case_study"
+                      ] not in paper_conf.get_all_case_study_filenames():
+            all_cs_string = [
+                cs + " " for cs in paper_conf.get_all_case_study_filenames()
+            ]
+            raise FileNotFoundError(
+                f"The selected case study filename could not be found in the "
+                f"current paper config. Did you mean?\n {all_cs_string}"
+            )
+        self.__case_study: CaseStudy = PC.load_case_study_from_file(
+            PC.get_paper_config().path / plot_kwargs["case_study"]
+        )
         self.__revision: str = plot_kwargs["revision"]
         self.__fig_title: str = plot_kwargs["fig_title"]
         self.__width: int = plot_kwargs["width"]
         self.__height: int = plot_kwargs["height"]
         self.__font_size: int = plot_kwargs["font_size"]
-        self.__colormaps: tp.List[str] = plot_kwargs["colormaps"]
 
     def generate(self) -> tp.List[Plot]:
         return [
             self.PLOT(
                 report_type=self.__report_type,
-                project_name=self.__project_name,
+                case_study=self.__case_study,
                 revision=self.__revision,
                 fig_title=self.__fig_title,
                 width=self.__width,
                 height=self.__height,
                 font_size=self.__font_size,
-                colormaps=self.__colormaps,
             )
         ]
 
@@ -1601,7 +1616,7 @@ class BlameCommitInteractionsGraphviz(
             self.plot(True)
         except PlotDataEmpty:
             LOG.warning(
-                f"No data for project {self.plot_kwargs['project_name']}."
+                f"No data for project {self.plot_kwargs['case_study'].project_name}."
             )
             return
         self.__graph.view(tempfile.mktemp())
@@ -1613,7 +1628,7 @@ class BlameCommitInteractionsGraphviz(
             self.plot(False)
         except PlotDataEmpty:
             LOG.warning(
-                f"No data for project {self.plot_kwargs['project_name']}."
+                f"No data for project {self.plot_kwargs['case_study'].project_name}."
             )
             return
 

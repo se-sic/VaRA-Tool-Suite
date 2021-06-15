@@ -7,7 +7,7 @@ analyzed. Furthermore, it allows other users to reproduce the exact same set of
 projects and revisions, either with the old experiment automatically or with a
 new experiment to compare the results.
 """
-
+import os
 import typing as tp
 from pathlib import Path
 
@@ -90,6 +90,27 @@ class PaperConfig():
             case_study for case_study_list in self.__case_studies.values()
             for case_study in case_study_list
         ]
+
+    def get_all_case_study_filenames(self) -> tp.List[str]:
+        """
+        Generate a list of all case study file names in the paper config.
+
+        Returns:
+            list of all case study file names in the paper config
+        """
+        filenames: tp.List[str]
+        _, _, filenames = next(os.walk(self.__path))
+        return list(filter(lambda a: a.endswith(".case_study"), filenames))
+
+    def get_all_case_study_paths(self) -> tp.List[Path]:
+        """
+        Generate a list of all paths to case studies in the paper config.
+
+        Returns:
+            list of all case study paths in the paper config
+        """
+        filenames: tp.List[str] = self.get_all_case_study_filenames()
+        return [self.__path / filename for filename in filenames]
 
     def get_all_artefacts(self) -> tp.Iterable[Artefact]:
         """Returns an iterable of the artefacts of this paper config."""
