@@ -66,7 +66,7 @@ class CommitAnnotationReport(Experiment):  # type: ignore
 
     NAME = "CommitAnnotationReport"
 
-    def actions_for_project(self, project: Project) -> tp.List[Step]:
+    def actions_for_project(self, project: Project) -> tp.MutableSequence[Step]:
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
         # Add the required runtime extensions to the project(s).
