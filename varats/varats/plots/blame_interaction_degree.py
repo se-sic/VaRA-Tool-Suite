@@ -599,7 +599,7 @@ def _get_completed_revision(
                           searched for
     """
 
-    revision = revision.strip()
+    revision = revision.strip()[:10]
     matching_prefix_revs = []
 
     # Autocomplete the selected revision string if it's unique in all revisions.
@@ -608,9 +608,9 @@ def _get_completed_revision(
             matching_prefix_revs.append(rev)
     if not matching_prefix_revs:
         LOG.warning(
-            "The selected revision does not exist in the "
-            "database nor is it a prefix of an existing "
-            "one."
+            f"The revision {revision} does not exist in the "
+            f"database nor is it a prefix of an existing "
+            f"one."
         )
         raise PlotDataEmpty
     if len(matching_prefix_revs) > 1:
@@ -1530,9 +1530,9 @@ class BlameLibraryInteractions(
         )
 
 
-class SankeyLibraryInteractionsGenerator(
+class SankeyLibraryInteractionsGeneratorRev(
     PlotGenerator,
-    generator_name="sankey-plot",
+    generator_name="sankey-plot-rev",
     plot=BlameLibraryInteractions,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_CASE_STUDY,
@@ -1540,6 +1540,8 @@ class SankeyLibraryInteractionsGenerator(
         OPTIONAL_HEIGHT, OPTIONAL_FONT_SIZE
     ]
 ):
+    """Generates a single sankey plot for the selected revision in the case
+    study."""
 
     @check_required_args("report_type")
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
@@ -1577,6 +1579,94 @@ class SankeyLibraryInteractionsGenerator(
                 font_size=self.__font_size,
             )
         ]
+
+
+class SankeyLibraryInteractionsGeneratorCS(
+    PlotGenerator,
+    generator_name="sankey-plot-cs",
+    plot=BlameLibraryInteractions,
+    options=[
+        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_CASE_STUDY,
+        OPTIONAL_FIG_TITLE, OPTIONAL_WIDTH, OPTIONAL_HEIGHT, OPTIONAL_FONT_SIZE
+    ]
+):
+    """Generates a sankey plot for every revision in the case study."""
+
+    @check_required_args("report_type")
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        super().__init__(plot_config, **plot_kwargs)
+        self.__report_type: str = plot_kwargs["report_type"]
+
+        paper_conf: PC.PaperConfig = PC.get_paper_config()
+        if plot_kwargs["case_study"
+                      ] not in paper_conf.get_all_case_study_filenames():
+            all_cs_string = [
+                cs + " " for cs in paper_conf.get_all_case_study_filenames()
+            ]
+            raise FileNotFoundError(
+                f"The selected case study filename could not be found in the "
+                f"current paper config. Did you mean?\n {all_cs_string}"
+            )
+        self.__case_study: CaseStudy = PC.load_case_study_from_file(
+            PC.get_paper_config().path / plot_kwargs["case_study"]
+        )
+        self.__fig_title: str = plot_kwargs["fig_title"]
+        self.__width: int = plot_kwargs["width"]
+        self.__height: int = plot_kwargs["height"]
+        self.__font_size: int = plot_kwargs["font_size"]
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            self.PLOT(
+                report_type=self.__report_type,
+                case_study=self.__case_study,
+                revision=rev,
+                fig_title=self.__fig_title,
+                width=self.__width,
+                height=self.__height,
+                font_size=self.__font_size,
+            ) for rev in self.__case_study.revisions
+        ]
+
+
+class SankeyLibraryInteractionsGeneratorPC(
+    PlotGenerator,
+    generator_name="sankey-plot-pc",
+    plot=BlameLibraryInteractions,
+    options=[
+        PlotGenerator.REQUIRE_REPORT_TYPE, OPTIONAL_FIG_TITLE, OPTIONAL_WIDTH,
+        OPTIONAL_HEIGHT, OPTIONAL_FONT_SIZE
+    ]
+):
+    """Generates a sankey plot for every revision in the paper config."""
+
+    @check_required_args("report_type")
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        super().__init__(plot_config, **plot_kwargs)
+        self.__report_type: str = plot_kwargs["report_type"]
+        self.__paper_config: PC.PaperConfig = PC.get_paper_config()
+        self.__fig_title: str = plot_kwargs["fig_title"]
+        self.__width: int = plot_kwargs["width"]
+        self.__height: int = plot_kwargs["height"]
+        self.__font_size: int = plot_kwargs["font_size"]
+
+    def generate(self) -> tp.List[Plot]:
+        plots: tp.List[Plot] = []
+
+        for cs in self.__paper_config.get_all_case_studies():
+            for rev in cs.revisions:
+                plots.append(
+                    self.PLOT(
+                        report_type=self.__report_type,
+                        case_study=cs,
+                        revision=rev,
+                        fig_title=self.__fig_title,
+                        width=self.__width,
+                        height=self.__height,
+                        font_size=self.__font_size
+                    )
+                )
+        return plots
 
 
 class BlameCommitInteractionsGraphviz(
