@@ -954,8 +954,31 @@ def _build_graphviz_fig(
                     name=f'{c_hash}_{lib_name}',
                     label=c_hash[0:shown_revision_length]
                 )
-
     return graph
+
+
+def _validate_cs_filename(cs_file_name: str) -> CaseStudy:
+    """
+    Checks if the filename of the selected case study exists in the current
+    paper config.
+
+    Args:
+        The file name string of the case study
+
+    Returns:
+        the case study
+    """
+
+    paper_conf: PC.PaperConfig = PC.get_paper_config()
+    if cs_file_name not in paper_conf.get_all_case_study_filenames():
+        all_cs_string = [
+            cs + " " for cs in paper_conf.get_all_case_study_filenames()
+        ]
+        raise FileNotFoundError(
+            f"The selected case study filename could not be found in the "
+            f"current paper config. Did you mean?\n {all_cs_string}"
+        )
+    return PC.load_case_study_from_file(paper_conf.path / cs_file_name)
 
 
 class BlameLibraryInteraction(Plot, plot_name=None):
@@ -997,7 +1020,7 @@ class BlameLibraryInteraction(Plot, plot_name=None):
             raise PlotDataEmpty
         return lib_interaction_df
 
-    def _graphviz_plot(self, view_mode: bool) -> tp.Optional[Digraph]:
+    def _graphviz_plot(self) -> tp.Optional[Digraph]:
 
         def _get_graphviz_project_data(
             blame_interactions: bool, blame_diff: bool
@@ -1022,11 +1045,8 @@ class BlameLibraryInteraction(Plot, plot_name=None):
 
             return inter_df
 
-        if self.plot_kwargs["case_study"]:
-            cs: CaseStudy = self.plot_kwargs["case_study"]
-        else:
-            cs = PC.get_paper_config().get_all_case_studies()[0]
-        commit_map = get_commit_map(cs.project_name)
+        cs: CaseStudy = self.plot_kwargs["case_study"]
+        commit_map: CommitMap = get_commit_map(cs.project_name)
 
         df = _get_graphviz_project_data(
             self.plot_kwargs["show_interactions"],
@@ -1037,39 +1057,22 @@ class BlameLibraryInteraction(Plot, plot_name=None):
         df.reset_index(inplace=True)
         unique_revisions = _get_unique_revisions(df)
 
-        for rev in unique_revisions:
-            if view_mode and 'revision' in self.plot_kwargs:
-                rev = _get_completed_revision(
-                    self.plot_kwargs['revision'], unique_revisions
-                )
+        rev = _get_completed_revision(
+            self.plot_kwargs['revision'], unique_revisions
+        )
 
-            dataframe = df.loc[df['revision'] == rev]
-            fig = _build_graphviz_fig(
-                dataframe, rev, self.plot_kwargs["show_edge_weight"],
-                self.plot_kwargs["revision_length"],
-                self.plot_kwargs["edge_weight_threshold"],
-                self.plot_kwargs["layout_engine"],
-                self.plot_kwargs["show_only_commit"]
-            )
+        dataframe = df.loc[df['revision'] == rev]
+        fig = _build_graphviz_fig(
+            dataframe, rev, self.plot_kwargs["show_edge_weight"],
+            self.plot_kwargs["revision_length"],
+            self.plot_kwargs["edge_weight_threshold"],
+            self.plot_kwargs["layout_engine"],
+            self.plot_kwargs["show_only_commit"]
+        )
 
-            if view_mode and 'revision' in self.plot_kwargs:
-                return fig
-
-            # TODO (se-passau/VaRA#545): move plot file saving to top level,
-            #  which currently breaks the plot abstraction.
-            _save_figure(
-                figure=fig,
-                revision=rev,
-                c_map=commit_map,
-                plot_kwargs=self.plot_kwargs,
-                plot_file_name=self.plot_file_name(
-                    self.plot_kwargs["file_type"]
-                ),
-                plot_type=PlotTypes.GRAPHVIZ,
-                path=self.plot_kwargs["save_path"],
-                filetype=self.plot_kwargs["file_type"]
-            )
-        return None
+        # TODO (se-passau/VaRA#545): move plot file saving to top level,
+        #  which currently breaks the plot abstraction.
+        return fig
 
 
 class BlameDegree(Plot, plot_name=None):
@@ -1685,21 +1688,12 @@ class BlameCommitInteractionsGraphviz(
 
     def __init__(self, **kwargs: tp.Any):
         super().__init__(self.NAME, **kwargs)
-        self.__graph = Digraph()
+        self.__figure = Digraph()
 
     def plot(self, view_mode: bool) -> None:
-        if view_mode and 'revision' not in self.plot_kwargs:
-            LOG.warning("No revision for view mode was chosen.")
-            raise PlotDataEmpty
-
-        if not view_mode and 'revision' in self.plot_kwargs:
-            LOG.warning(
-                "View mode is turned off. The specified revision will be "
-                "ignored."
-            )
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
-        self.__graph = self._graphviz_plot(view_mode=view_mode)
+        self.__figure = self._graphviz_plot()
 
     def show(self) -> None:
         try:
@@ -1709,13 +1703,16 @@ class BlameCommitInteractionsGraphviz(
                 f"No data for project {self.plot_kwargs['case_study'].project_name}."
             )
             return
-        self.__graph.view(tempfile.mktemp())
+        self.__figure.view(tempfile.mktemp())
 
-    def save(
-        self, path: tp.Optional[Path] = None, filetype: str = 'png'
-    ) -> None:
+    def save(self, plot_dir: Path, filetype: str = 'png') -> None:
         try:
             self.plot(False)
+            _save_figure(
+                self.__figure, self.plot_kwargs["revision"],
+                self.plot_kwargs['case_study'].project_name, PlotTypes.GRAPHVIZ,
+                self.plot_file_name(filetype), plot_dir, filetype
+            )
         except PlotDataEmpty:
             LOG.warning(
                 f"No data for project {self.plot_kwargs['case_study'].project_name}."
@@ -1726,24 +1723,28 @@ class BlameCommitInteractionsGraphviz(
         raise NotImplementedError
 
 
-class GraphvizLibraryInteractionsGenerator(
+class GraphvizLibraryInteractionsGeneratorRev(
     PlotGenerator,
-    generator_name="graphviz-plot",
+    generator_name="graphviz-plot-rev",
     plot=BlameCommitInteractionsGraphviz,
     options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.OPTIONAL_CASE_STUDY,
-        PlotGenerator.OPTIONAL_REVISION, OPTIONAL_SHOW_INTERACTIONS,
+        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_CASE_STUDY,
+        PlotGenerator.REQUIRE_REVISION, OPTIONAL_SHOW_INTERACTIONS,
         OPTIONAL_SHOW_DIFF, OPTIONAL_SHOW_EDGE_WEIGHT,
         OPTIONAL_EDGE_WEIGHT_THRESHOLD, OPTIONAL_REVISION_LENGTH,
         OPTIONAL_LAYOUT_ENGINE, OPTIONAL_SHOW_ONLY_COMMIT
     ]
 ):
+    """Generates a single graphviz plot for the selected revision in the case
+    study."""
 
     @check_required_args("report_type")
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_study: tp.Optional[str] = plot_kwargs["case_study"]
+        self.__case_study: CaseStudy = _validate_cs_filename(
+            plot_kwargs["case_study"]
+        )
         self.__revision: tp.Optional[str] = plot_kwargs["revision"]
         self.__show_interactions: bool = plot_kwargs["show_interactions"]
         self.__show_diff: bool = plot_kwargs["show_diff"]
@@ -1770,6 +1771,104 @@ class GraphvizLibraryInteractionsGenerator(
                 show_only_commit=self.__show_only_commit,
             )
         ]
+
+
+class GraphvizLibraryInteractionsGeneratorCS(
+    PlotGenerator,
+    generator_name="graphviz-plot-cs",
+    plot=BlameCommitInteractionsGraphviz,
+    options=[
+        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_CASE_STUDY,
+        OPTIONAL_SHOW_INTERACTIONS, OPTIONAL_SHOW_DIFF,
+        OPTIONAL_SHOW_EDGE_WEIGHT, OPTIONAL_EDGE_WEIGHT_THRESHOLD,
+        OPTIONAL_REVISION_LENGTH, OPTIONAL_LAYOUT_ENGINE,
+        OPTIONAL_SHOW_ONLY_COMMIT
+    ]
+):
+    """Generates a graphviz plot for every revision in the case study."""
+
+    @check_required_args("report_type")
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        super().__init__(plot_config, **plot_kwargs)
+        self.__report_type: str = plot_kwargs["report_type"]
+        self.__case_study: CaseStudy = _validate_cs_filename(
+            plot_kwargs["case_study"]
+        )
+        self.__show_interactions: bool = plot_kwargs["show_interactions"]
+        self.__show_diff: bool = plot_kwargs["show_diff"]
+        self.__show_edge_weight: bool = plot_kwargs["show_edge_weight"]
+        self.__edge_weight_threshold: tp.Optional[
+            EdgeWeightThreshold] = plot_kwargs["edge_weight_threshold"]
+        self.__revision_length: int = plot_kwargs["revision_length"]
+        self.__layout_engine: str = plot_kwargs["layout_engine"]
+        self.__show_only_commit: tp.Optional[str] = plot_kwargs[
+            "show_only_commit"]
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            self.PLOT(
+                report_type=self.__report_type,
+                case_study=self.__case_study,
+                revision=rev,
+                show_interactions=self.__show_interactions,
+                show_diff=self.__show_diff,
+                show_edge_weight=self.__show_edge_weight,
+                edge_weight_threshold=self.__edge_weight_threshold,
+                revision_length=self.__revision_length,
+                layout_engine=self.__layout_engine,
+                show_only_commit=self.__show_only_commit,
+            ) for rev in self.__case_study.revisions
+        ]
+
+
+class GraphvizLibraryInteractionsGeneratorPC(
+    PlotGenerator,
+    generator_name="graphviz-plot-pc",
+    plot=BlameCommitInteractionsGraphviz,
+    options=[
+        PlotGenerator.REQUIRE_REPORT_TYPE, OPTIONAL_SHOW_INTERACTIONS,
+        OPTIONAL_SHOW_DIFF, OPTIONAL_SHOW_EDGE_WEIGHT,
+        OPTIONAL_EDGE_WEIGHT_THRESHOLD, OPTIONAL_REVISION_LENGTH,
+        OPTIONAL_LAYOUT_ENGINE, OPTIONAL_SHOW_ONLY_COMMIT
+    ]
+):
+    """Generates a graphviz plot for every revision in the paper config."""
+
+    @check_required_args("report_type")
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        super().__init__(plot_config, **plot_kwargs)
+        self.__report_type: str = plot_kwargs["report_type"]
+        self.__paper_config: PC.PaperConfig = PC.get_paper_config()
+        self.__show_interactions: bool = plot_kwargs["show_interactions"]
+        self.__show_diff: bool = plot_kwargs["show_diff"]
+        self.__show_edge_weight: bool = plot_kwargs["show_edge_weight"]
+        self.__edge_weight_threshold: tp.Optional[
+            EdgeWeightThreshold] = plot_kwargs["edge_weight_threshold"]
+        self.__revision_length: int = plot_kwargs["revision_length"]
+        self.__layout_engine: str = plot_kwargs["layout_engine"]
+        self.__show_only_commit: tp.Optional[str] = plot_kwargs[
+            "show_only_commit"]
+
+    def generate(self) -> tp.List[Plot]:
+        plots: tp.List[Plot] = []
+
+        for cs in self.__paper_config.get_all_case_studies():
+            for rev in cs.revisions:
+                plots.append(
+                    self.PLOT(
+                        report_type=self.__report_type,
+                        case_study=cs,
+                        revision=rev,
+                        show_interactions=self.__show_interactions,
+                        show_diff=self.__show_diff,
+                        show_edge_weight=self.__show_edge_weight,
+                        edge_weight_threshold=self.__edge_weight_threshold,
+                        revision_length=self.__revision_length,
+                        layout_engine=self.__layout_engine,
+                        show_only_commit=self.__show_only_commit,
+                    )
+                )
+        return plots
 
 
 class BlameAuthorDegree(BlameDegree, plot_name="b_author_degree"):
