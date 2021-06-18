@@ -1550,19 +1550,8 @@ class SankeyLibraryInteractionsGeneratorRev(
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
-
-        paper_conf: PC.PaperConfig = PC.get_paper_config()
-        if plot_kwargs["case_study"
-                      ] not in paper_conf.get_all_case_study_filenames():
-            all_cs_string = [
-                cs + " " for cs in paper_conf.get_all_case_study_filenames()
-            ]
-            raise FileNotFoundError(
-                f"The selected case study filename could not be found in the "
-                f"current paper config. Did you mean?\n {all_cs_string}"
-            )
-        self.__case_study: CaseStudy = PC.load_case_study_from_file(
-            PC.get_paper_config().path / plot_kwargs["case_study"]
+        self.__case_study: CaseStudy = _validate_cs_filename(
+            plot_kwargs["case_study"]
         )
         self.__revision: str = plot_kwargs["revision"]
         self.__fig_title: str = plot_kwargs["fig_title"]
@@ -1599,19 +1588,8 @@ class SankeyLibraryInteractionsGeneratorCS(
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
-
-        paper_conf: PC.PaperConfig = PC.get_paper_config()
-        if plot_kwargs["case_study"
-                      ] not in paper_conf.get_all_case_study_filenames():
-            all_cs_string = [
-                cs + " " for cs in paper_conf.get_all_case_study_filenames()
-            ]
-            raise FileNotFoundError(
-                f"The selected case study filename could not be found in the "
-                f"current paper config. Did you mean?\n {all_cs_string}"
-            )
-        self.__case_study: CaseStudy = PC.load_case_study_from_file(
-            PC.get_paper_config().path / plot_kwargs["case_study"]
+        self.__case_study: CaseStudy = _validate_cs_filename(
+            plot_kwargs["case_study"]
         )
         self.__fig_title: str = plot_kwargs["fig_title"]
         self.__width: int = plot_kwargs["width"]
