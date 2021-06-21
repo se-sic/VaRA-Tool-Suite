@@ -47,25 +47,30 @@ initialize_plots()
 # create a click command for each generator
 for generator_name, generator_cls in PlotGenerator.GENERATORS.items():
 
-    @click.pass_context
-    def command_template(context: click.Context, **kwargs: tp.Any) -> None:
-        # extract common arguments and plot config from context
-        common_options: CommonPlotOptions
-        plot_config: PlotConfig
-        common_options, plot_config = context.obj
+    def generate_command(
+        generator: tp.Type[PlotGenerator]
+    ) -> tp.Callable[..., None]:
 
-        try:
-            generator_instance = generator_cls(plot_config, **kwargs)
-            generator_instance(common_options)
-        except PlotGeneratorInitFailed as ex:
-            print(
-                f"Failed to create plot generator {generator_cls.NAME}: "
-                f"{ex.message}"
-            )
+        @click.pass_context
+        def command_template(context: click.Context, **kwargs: tp.Any) -> None:
+            # extract common arguments and plot config from context
+            common_options: CommonPlotOptions
+            plot_config: PlotConfig
+            common_options, plot_config = context.obj
 
-    # wrap command with options specified in the generator class
-    command = add_cli_options(command_template, *generator_cls.OPTIONS)
-    main.command(generator_name)(command)
+            try:
+                generator_instance = generator(plot_config, **kwargs)
+                generator_instance(common_options)
+            except PlotGeneratorInitFailed as ex:
+                print(
+                    f"Failed to create plot generator {generator.NAME}: "
+                    f"{ex.message}"
+                )
+
+        # return command wrapped with options specified in the generator class
+        return add_cli_options(command_template, *generator_cls.OPTIONS)
+
+    main.command(generator_name)(generate_command(generator_cls))
 
 if __name__ == '__main__':
     main()
