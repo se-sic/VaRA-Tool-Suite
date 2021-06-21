@@ -300,22 +300,17 @@ class AuthorInteractionGraphTopDegreeTable(Table):
         data.set_index("author", inplace=True)
 
         top_degree = data["node_degree"].nlargest(num_authors)
-        top_out_degree = data["node_out_degree"].nlargest(num_authors)
-        top_in_degree = data["node_in_degree"].nlargest(num_authors)
+        bot_degree = data["node_degree"].nsmallest(num_authors)
 
         degree_data = pd.DataFrame.from_dict({
             (f"Top {num_authors} Node Degree", "author (commits)"):
                 top_degree.index.values,
             (f"Top {num_authors} Node Degree", "degree"):
                 top_degree.values,
-            (f"Top {num_authors} Node Out-Degree", "author (commits)"):
-                top_out_degree.index.values,
-            (f"Top {num_authors} Node Out-Degree", "degree"):
-                top_out_degree.values,
-            (f"Top {num_authors} Node In-Degree", "author (commits)"):
-                top_in_degree.index.values,
-            (f"Top {num_authors} Node In-Degree", "degree"):
-                top_in_degree.values,
+            (f"Bottom {num_authors} Node Degree", "author (commits)"):
+                bot_degree.index.values,
+            (f"Bottom {num_authors} Node Degree", "degree"):
+                bot_degree.values
         })
 
         if self.format in [
@@ -350,9 +345,11 @@ class CommitAuthorInteractionGraphTopDegreeTable(Table):
         if not revision:
             raise TableDataEmpty()
 
-        graph = create_blame_interaction_graph(
-            project_name, revision
-        ).commit_author_interaction_graph()
+        graph = create_blame_interaction_graph(project_name, revision
+                                              ).commit_author_interaction_graph(
+                                                  outgoing_interactions=True,
+                                                  incoming_interactions=True
+                                              )
 
         nodes: tp.List[tp.Dict[str, tp.Any]] = []
         for node in graph.nodes:

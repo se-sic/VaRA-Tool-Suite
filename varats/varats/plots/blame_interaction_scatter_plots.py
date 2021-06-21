@@ -13,8 +13,7 @@ from varats.data.reports.blame_report import BlameReport
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
-from varats.paper_mgmt.paper_config import get_loaded_paper_config
-from varats.plot.plot import Plot
+from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plots.scatter_plot_utils import multivariate_grid
 from varats.project.project_util import get_local_project_gits
 from varats.utils.git_util import (
@@ -24,6 +23,38 @@ from varats.utils.git_util import (
     ChurnConfig,
     calc_repo_code_churn,
 )
+
+
+def apply_tukeys_fence(
+    data: pd.DataFrame, column: str, k: float
+) -> pd.DataFrame:
+    """
+    Removes rows which are outliers in the given column using Tukey's fence.
+
+    Tukey's fence defines all values to be outliers that are outside the range
+    `[q1 - k * (q3 - q1), q3 + k * (q3 - q1)]`, i.e., values that are further
+    than `k` times the inter-quartile range away from the first or third
+    quartile.
+
+    Common values for ``k``:
+    - 2.2 (“Fine-Tuning Some Resistant Rules for Outlier Labeling”
+           Hoaglin and Iglewicz (1987))
+    - 1.5 (outliers, “Exploratory Data Analysis”, John W. Tukey (1977))
+    - 3.0 (far out outliers, “Exploratory Data Analysis”, John W. Tukey (1977))
+
+    Args:
+        data: data to remove outliers from
+        column: column to use for outlier detection
+        k: multiplicative factor on the inter-quartile-range
+
+    Returns:
+        the data without outliers
+    """
+    q1 = data[column].quantile(0.25)
+    q3 = data[column].quantile(0.75)
+    iqr = q3 - q1
+    return data.loc[(data[column] >= q1 - k * iqr) &
+                    (data[column] <= q3 + k * iqr)]
 
 
 class CentralCodeScatterPlot(Plot):
@@ -39,71 +70,50 @@ class CentralCodeScatterPlot(Plot):
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        if "project" not in self.plot_kwargs:
-            case_studies = get_loaded_paper_config().get_all_case_studies()
-        else:
-            if "plot_case_study" in self.plot_kwargs:
-                case_studies = [self.plot_kwargs["plot_case_study"]]
-            else:
-                case_studies = get_loaded_paper_config().get_case_studies(
-                    self.plot_kwargs["project"]
-                )
+        case_study = self.plot_kwargs["plot_case_study"]
+        project_name = case_study.project_name
+        revision = newest_processed_revision_for_case_study(
+            case_study, BlameReport
+        )
+        if not revision:
+            raise PlotDataEmpty()
 
-        def normalize(values: pd.Series) -> pd.Series:
-            max_value = values.max()
-            min_value = values.min()
-            return (values - min_value) / (max_value - min_value)
+        cig = create_blame_interaction_graph(project_name, revision
+                                            ).commit_interaction_graph()
 
+        commit_lookup = create_commit_lookup_helper(project_name)
+        repo_lookup = get_local_project_gits(project_name)
         churn_config = ChurnConfig.create_c_style_languages_config()
-
-        degree_data: tp.List[pd.DataFrame] = []
-        for case_study in case_studies:
-            project_name = case_study.project_name
-            revision = newest_processed_revision_for_case_study(
-                case_study, BlameReport
+        code_churn_lookup: tp.Dict[str, tp.Dict[str, tp.Tuple[int, int,
+                                                              int]]] = {}
+        for repo_name, repo in repo_lookup.items():
+            code_churn_lookup[repo_name] = calc_repo_code_churn(
+                repo, churn_config
             )
-            if not revision:
+
+        def filter_nodes(node: CommitRepoPair) -> bool:
+            if node.commit_hash == DUMMY_COMMIT:
+                return False
+            return bool(commit_lookup(node))
+
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+        for node in cig.nodes:
+            node_attrs = tp.cast(CIGNodeAttrs, cig.nodes[node])
+            commit = node_attrs["commit"]
+            if not filter_nodes(commit):
                 continue
-
-            cig = create_blame_interaction_graph(project_name, revision
-                                                ).commit_interaction_graph()
-            commit_lookup = create_commit_lookup_helper(project_name)
-            repo_lookup = get_local_project_gits(project_name)
-            code_churn_lookup: tp.Dict[str, tp.Dict[str, tp.Tuple[int, int,
-                                                                  int]]] = {}
-            for repo_name, repo in repo_lookup.items():
-                code_churn_lookup[repo_name] = calc_repo_code_churn(
-                    repo, churn_config
-                )
-
-            def filter_nodes(node: CommitRepoPair) -> bool:
-                if node.commit_hash == DUMMY_COMMIT:
-                    return False
-                return bool(commit_lookup(node))
-
-            nodes: tp.List[tp.Dict[str, tp.Any]] = []
-            for node in cig.nodes:
-                node_attrs = tp.cast(CIGNodeAttrs, cig.nodes[node])
-                commit = node_attrs["commit"]
-                if not filter_nodes(commit):
-                    continue
-                _, insertions, _ = code_churn_lookup[commit.repository_name][
-                    commit.commit_hash]
-                nodes.append(({
-                    "project": project_name,
-                    "commit_hash": commit.commit_hash,
-                    "insertions": insertions,
-                    "node_degree": cig.degree(node),
-                }))
-            data = pd.DataFrame(nodes)
-            data["insertions"] = normalize(data["insertions"])
-            data["node_degree"] = normalize(data["node_degree"])
-            degree_data.append(data)
-
-        full_data = pd.concat(degree_data)
-        full_data = full_data[full_data["insertions"] <= 0.2]
+            _, insertions, _ = code_churn_lookup[commit.repository_name][
+                commit.commit_hash]
+            nodes.append(({
+                "Case Study": project_name,
+                "commit_hash": commit.commit_hash,
+                "Commit Size": insertions,
+                "Node Degree": cig.degree(node),
+            }))
+        data = pd.DataFrame(nodes)
+        data = apply_tukeys_fence(data, "Commit Size", 3.0)
         multivariate_grid(
-            "insertions", "node_degree", "project", full_data, global_kde=False
+            "Commit Size", "Node Degree", "Case Study", data, global_kde=False
         )
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
@@ -123,52 +133,34 @@ class AuthorInteractionScatterPlot(Plot):
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        if "project" not in self.plot_kwargs:
-            case_studies = get_loaded_paper_config().get_all_case_studies()
-        else:
-            if "plot_case_study" in self.plot_kwargs:
-                case_studies = [self.plot_kwargs["plot_case_study"]]
-            else:
-                case_studies = get_loaded_paper_config().get_case_studies(
-                    self.plot_kwargs["project"]
-                )
+        case_study = self.plot_kwargs["plot_case_study"]
 
-        def normalize(values: pd.Series) -> pd.Series:
-            max_value = values.max()
-            min_value = values.min()
-            return (values - min_value) / (max_value - min_value)
+        project_name = case_study.project_name
+        revision = newest_processed_revision_for_case_study(
+            case_study, BlameReport
+        )
+        if not revision:
+            raise PlotDataEmpty()
 
-        degree_data: tp.List[pd.DataFrame] = []
-        for case_study in case_studies:
-            project_name = case_study.project_name
-            revision = newest_processed_revision_for_case_study(
-                case_study, BlameReport
-            )
-            if not revision:
-                continue
+        aig = create_blame_interaction_graph(project_name, revision
+                                            ).author_interaction_graph()
 
-            aig = create_blame_interaction_graph(project_name, revision
-                                                ).author_interaction_graph()
-
-            nodes: tp.List[tp.Dict[str, tp.Any]] = []
-            for node in aig.nodes:
-                node_attrs = tp.cast(AIGNodeAttrs, aig.nodes[node])
-                nodes.append(({
-                    "project": project_name,
-                    "author": node_attrs["author"],
-                    "node_degree": aig.degree(node),
-                    "num_commits": node_attrs["num_commits"],
-                }))
-            data = pd.DataFrame(nodes)
-            data["num_commits"] = normalize(data["num_commits"])
-            data["node_degree"] = normalize(data["node_degree"])
-            degree_data.append(data)
-
+        nodes: tp.List[tp.Dict[str, tp.Any]] = []
+        for node in aig.nodes:
+            node_attrs = tp.cast(AIGNodeAttrs, aig.nodes[node])
+            nodes.append(({
+                "project": project_name,
+                "author": node_attrs["author"],
+                "# Interacting authors": aig.degree(node),
+                "# Commits": node_attrs["num_commits"],
+            }))
+        data = pd.DataFrame(nodes)
+        data = apply_tukeys_fence(data, "# Commits", 3.0)
         multivariate_grid(
-            "num_commits",
-            "node_degree",
+            "# Commits",
+            "# Interacting authors",
             "project",
-            pd.concat(degree_data),
+            data,
             global_kde=False
         )
 

@@ -58,7 +58,8 @@ def multivariate_grid(
     )
     color = None
     legends = []
-    for name, df_group in data.groupby(hue):
+    grouped_data = data.groupby(hue)
+    for name, df_group in grouped_data:
         legends.append(name)
         grid.plot_joint(
             colored_scatter(df_group[x_col], df_group[y_col], color)
@@ -68,7 +69,8 @@ def multivariate_grid(
     if global_kde:
         sns.kdeplot(x=data[x_col].values, ax=grid.ax_marg_x, color='grey')
         sns.kdeplot(y=data[y_col].values, ax=grid.ax_marg_y, color='grey')
-    plt.legend(legends)
+    if len(grouped_data) > 1:
+        plt.legend(legends)
 
     plt.subplots_adjust(top=0.9)
     grid.fig.suptitle(f"{x_col} vs. {y_col}")
