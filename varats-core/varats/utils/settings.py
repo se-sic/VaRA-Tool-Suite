@@ -236,11 +236,25 @@ def vara_cfg() -> s.Configuration:
     return _CFG
 
 
+def add_vara_experiment_options(benchbuild_config: s.Configuration) -> None:
+    benchbuild_config["varats"] = {
+        "outfile": {
+            "default": "",
+            "desc": "Path to store results of VaRA CFR analysis."
+        },
+        "result": {
+            "default": "missingPath/annotatedResults",
+            "desc": "Path to store already annotated projects."
+        }
+    }
+
+
 def bb_cfg() -> s.Configuration:
     """Get the current benchbuild config."""
     global _BB_CFG  # pylint: disable=global-statement
     if not _BB_CFG:
         from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
+        add_vara_experiment_options(BB_CFG)
         bb_root = vara_cfg()["benchbuild_root"].value
         if bb_root:
             bb_cfg_path = Path(bb_root) / ".benchbuild.yml"
@@ -319,9 +333,13 @@ def save_config() -> None:
     vara_cfg().store(LocalPath(config_file))
 
 
-def save_bb_config() -> None:
+def save_bb_config(benchbuild_cfg: s.Configuration = bb_cfg()) -> None:
     """Persist BenchBuild config to a yaml file."""
-    bb_cfg().store(
+    bc_cache_path = Path(vara_cfg()["benchbuild_root"].value
+                        ) / benchbuild_cfg["varats"]["result"].value
+    if not bc_cache_path.exists():
+        bc_cache_path.mkdir(parents=True)
+    benchbuild_cfg.store(
         local.path(str(vara_cfg()["benchbuild_root"])) / ".benchbuild.yml"
     )
 
