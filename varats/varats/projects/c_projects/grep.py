@@ -44,9 +44,10 @@ class Grep(bb.Project, CVEProviderHook):  # type: ignore
         )
     ]
 
-    CONTAINER = get_base_image(
-        ImageBase.DEBIAN_10
-    ).run('apt', 'install', '-y', 'autoconf', 'automake', 'autotools-dev')
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
+        'apt', 'install', '-y', 'autoconf', 'autopoint', 'gettext', 'rsync',
+        'automake', 'autotools-dev'
+    )
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
