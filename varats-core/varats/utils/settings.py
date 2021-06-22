@@ -237,6 +237,7 @@ def vara_cfg() -> s.Configuration:
 
 
 def add_vara_experiment_options(benchbuild_config: s.Configuration) -> None:
+    """Add varats specific options to a benchbuild config."""
     benchbuild_config["varats"] = {
         "outfile": {
             "default": "",
@@ -333,8 +334,11 @@ def save_config() -> None:
     vara_cfg().store(LocalPath(config_file))
 
 
-def save_bb_config(benchbuild_cfg: s.Configuration = bb_cfg()) -> None:
+def save_bb_config(benchbuild_cfg: tp.Optional[s.Configuration] = None) -> None:
     """Persist BenchBuild config to a yaml file."""
+    if not benchbuild_cfg:
+        benchbuild_cfg = bb_cfg()
+
     bc_cache_path = Path(vara_cfg()["benchbuild_root"].value
                         ) / benchbuild_cfg["varats"]["result"].value
     if not bc_cache_path.exists():
