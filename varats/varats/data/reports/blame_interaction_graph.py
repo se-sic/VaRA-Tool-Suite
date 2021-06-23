@@ -1,4 +1,5 @@
 """Module for representing blame interaction data in a graph/network."""
+import abc
 import sys
 import typing as tp
 
@@ -66,47 +67,19 @@ class CAIGEdgeAttrs(TypedDict):
     amount: int
 
 
-class BlameInteractionGraph():
-    """Graph/Network built from blame interaction data."""
+class InteractionGraph(abc.ABC):
+    """Graph/Network built from interaction data."""
 
-    def __init__(
-        self, project_name: str, report: tp.Union[BlameReport, BlameReportDiff]
-    ):
-        self.__report = report
+    def __init__(self, project_name: str):
         self.__project_name = project_name
-        self.__cached_interaction_graph: tp.Optional[nx.DiGraph] = None
 
-    def __interaction_graph(self) -> nx.DiGraph:
-        if self.__cached_interaction_graph:
-            return self.__cached_interaction_graph
+    @property
+    def project_name(self):
+        return self.__project_name
 
-        self.__cached_interaction_graph = nx.DiGraph()
-        interactions = gen_base_to_inter_commit_repo_pair_mapping(self.__report)
-        commits = {
-            commit for base, inters in interactions.items()
-            for commit in [base, *inters.keys()]
-        }
-
-        def create_node_attrs(commit: CommitRepoPair) -> _BIGNodeAttrs:
-            return {
-                "commit": commit,
-            }
-
-        def create_edge_attrs(
-            base: CommitRepoPair, inter: CommitRepoPair, amount: int
-        ) -> _BIGEdgeAttrs:
-            return {"amount": amount}
-
-        self.__cached_interaction_graph.add_nodes_from([
-            (commit, create_node_attrs(commit)) for commit in commits
-        ])
-        self.__cached_interaction_graph.add_edges_from([
-            (base, inter, create_edge_attrs(base, inter, amount))
-            for base, inters in interactions.items()
-            for inter, amount in inters.items()
-        ])
-
-        return self.__cached_interaction_graph
+    @abc.abstractmethod
+    def _interaction_graph(self) -> nx.DiGraph:
+        pass
 
     def commit_interaction_graph(self) -> nx.DiGraph:
         """
@@ -121,7 +94,7 @@ class BlameInteractionGraph():
         Returns:
             the commit interaction graph
         """
-        ig = self.__interaction_graph()
+        ig = self._interaction_graph()
 
         def edge_data(
             b: tp.Set[CommitRepoPair], c: tp.Set[CommitRepoPair]
@@ -160,8 +133,8 @@ class BlameInteractionGraph():
         Returns:
             the author interaction graph
         """
-        ig = self.__interaction_graph()
-        commit_lookup = create_commit_lookup_helper(self.__project_name)
+        ig = self._interaction_graph()
+        commit_lookup = create_commit_lookup_helper(self.project_name)
 
         def partition(u: CommitRepoPair, v: CommitRepoPair) -> bool:
             if u.commit_hash == DUMMY_COMMIT or v.commit_hash == DUMMY_COMMIT:
@@ -227,8 +200,8 @@ class BlameInteractionGraph():
         Returns:
             the commit-author interaction graph
         """
-        ig = self.__interaction_graph()
-        commit_lookup = create_commit_lookup_helper(self.__project_name)
+        ig = self._interaction_graph()
+        commit_lookup = create_commit_lookup_helper(self.project_name)
 
         commit_author_mapping = {
             commit: commit_lookup(commit).author.name
