@@ -58,7 +58,7 @@ class Gawk(bb.Project):  # type: ignore
         compiler = bb.compiler.cc(self)
         with local.cwd(gawk_source):
             with local.env(CC=str(compiler)):
-                bb.watch(local["autoreconf"])()
+                bb.watch(local["autoreconf"])("-if")
                 bb.watch(local["./configure"])()
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
