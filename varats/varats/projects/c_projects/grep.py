@@ -46,7 +46,7 @@ class Grep(bb.Project, CVEProviderHook):  # type: ignore
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
         'apt', 'install', '-y', 'autoconf', 'autopoint', 'wget', 'gettext',
-        'texinfo', 'rsync', 'automake', 'autotools-dev', 'pkg-config'
+        'texinfo', 'rsync', 'automake', 'autotools-dev', 'pkg-config', 'gperf'
     )
 
     @property
