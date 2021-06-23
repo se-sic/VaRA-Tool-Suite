@@ -60,7 +60,9 @@ class Gzip(bb.Project, ReleaseProviderHook, CVEProviderHook):  # type: ignore
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10)
+    CONTAINER = get_base_image(
+        ImageBase.DEBIAN_10
+    ).run('apt', 'install', '-y', 'autoconf', 'automake', 'libtool')
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
