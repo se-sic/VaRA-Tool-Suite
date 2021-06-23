@@ -41,7 +41,7 @@ class Gawk(bb.Project):  # type: ignore
 
     CONTAINER = get_base_image(
         ImageBase.DEBIAN_10
-    ).run('apt', 'install', '-y', 'autoconf', 'automake', 'libtool')
+    ).run('apt', 'install', '-y', 'autoconf', 'automake', 'libtool', 'perl')
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
