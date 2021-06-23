@@ -39,9 +39,10 @@ class Bison(bb.Project):  # type: ignore
         )
     ]
 
-    CONTAINER = get_base_image(
-        ImageBase.DEBIAN_10
-    ).run('apt', 'install', '-y', 'autoconf', 'automake', 'libtool', 'wget')
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
+        'apt', 'install', '-y', 'autoconf', 'automake', 'autopoint', 'libtool',
+        'wget'
+    )
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
