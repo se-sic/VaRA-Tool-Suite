@@ -39,9 +39,9 @@ class Gawk(bb.Project):  # type: ignore
         )
     ]
 
-    CONTAINER = get_base_image(
-        ImageBase.DEBIAN_10
-    ).run('apt', 'install', '-y', 'autoconf', 'automake', 'libtool', 'perl')
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
+        'apt', 'install', '-y', 'autoconf', 'automake', 'libtool', 'perl', 'm4'
+    )
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
@@ -58,6 +58,7 @@ class Gawk(bb.Project):  # type: ignore
         compiler = bb.compiler.cc(self)
         with local.cwd(gawk_source):
             with local.env(CC=str(compiler)):
+                bb.watch(local["autoreconf"])()
                 bb.watch(local["./configure"])()
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
