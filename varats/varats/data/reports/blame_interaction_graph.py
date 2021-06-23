@@ -1,9 +1,13 @@
 """Module for representing blame interaction data in a graph/network."""
 import abc
+import glob
+import itertools
 import sys
 import typing as tp
+from pathlib import Path
 
 import networkx as nx
+import pygit2
 
 from varats.data.reports.blame_report import (
     BlameReport,
@@ -12,11 +16,18 @@ from varats.data.reports.blame_report import (
 )
 from varats.jupyterhelper.file import load_blame_report
 from varats.plot.plot import PlotDataEmpty
+from varats.project.project_util import (
+    get_local_project_git,
+    get_primary_project_source,
+    get_local_project_git_path,
+)
+from varats.projects.discover_projects import initialize_projects
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import (
     CommitRepoPair,
     create_commit_lookup_helper,
     DUMMY_COMMIT,
+    ChurnConfig,
 )
 
 if sys.version_info <= (3, 8):
@@ -246,6 +257,104 @@ class InteractionGraph(abc.ABC):
         return nx.convert_node_labels_to_integers(caig)
 
 
+class BlameInteractionGraph(InteractionGraph):
+    """Graph/Network built from blame interaction data."""
+
+    def __init__(
+        self, project_name: str, report: tp.Union[BlameReport, BlameReportDiff]
+    ):
+        super().__init__(project_name)
+        self.__report = report
+        self.__cached_interaction_graph: tp.Optional[nx.DiGraph] = None
+
+    def _interaction_graph(self) -> nx.DiGraph:
+        if self.__cached_interaction_graph:
+            return self.__cached_interaction_graph
+
+        self.__cached_interaction_graph = nx.DiGraph()
+        interactions = gen_base_to_inter_commit_repo_pair_mapping(self.__report)
+        commits = {
+            commit for base, inters in interactions.items()
+            for commit in [base, *inters.keys()]
+        }
+
+        def create_node_attrs(commit: CommitRepoPair) -> _BIGNodeAttrs:
+            return {
+                "commit": commit,
+            }
+
+        def create_edge_attrs(
+            base: CommitRepoPair, inter: CommitRepoPair, amount: int
+        ) -> _BIGEdgeAttrs:
+            return {"amount": amount}
+
+        self.__cached_interaction_graph.add_nodes_from([
+            (commit, create_node_attrs(commit)) for commit in commits
+        ])
+        self.__cached_interaction_graph.add_edges_from([
+            (base, inter, create_edge_attrs(base, inter, amount))
+            for base, inters in interactions.items()
+            for inter, amount in inters.items()
+        ])
+
+        return self.__cached_interaction_graph
+
+
+class FileBasedInteractionGraph(InteractionGraph):
+
+    def __init__(self, project_name: str, head_commit: str):
+        super().__init__(project_name)
+        self.__head_commit = head_commit
+        self.__cached_interaction_graph: tp.Optional[nx.DiGraph] = None
+
+    def _interaction_graph(self) -> nx.DiGraph:
+        if self.__cached_interaction_graph:
+            return self.__cached_interaction_graph
+
+        repo = get_local_project_git(self.project_name)
+        repo_name = get_primary_project_source(self.project_name).local
+        repo_path = get_local_project_git_path(self.project_name)
+        churn_config = ChurnConfig.create_c_style_languages_config()
+
+        self.__cached_interaction_graph = nx.DiGraph()
+
+        files: tp.List[Path] = [
+            Path(path)
+            for pattern in churn_config.get_extensions_repr("**/*.")
+            for path in
+            glob.iglob(str(repo_path) + "/" + pattern, recursive=True)
+        ]
+        for file in files:
+            blame = repo.blame(
+                str(file.relative_to(repo_path)),
+                flags=pygit2.GIT_BLAME_IGNORE_WHITESPACE,
+                newest_commit=self.__head_commit
+            )
+            commits: tp.Set[CommitRepoPair] = set()
+            for hunk in blame:
+                commits.add(
+                    CommitRepoPair(str(hunk.final_commit_id), repo_name)
+                )
+
+            for commit in commits:
+                if not self.__cached_interaction_graph.has_node(commit):
+                    self.__cached_interaction_graph.add_node(
+                        commit, commit=commit
+                    )
+            for commit_a, commit_b in itertools.product(commits, repeat=2):
+                if commit_a != commit_b:
+                    if not self.__cached_interaction_graph.has_edge(
+                        commit_a, commit_b
+                    ):
+                        self.__cached_interaction_graph.add_edge(
+                            commit_a, commit_b, amount=0
+                        )
+                    self.__cached_interaction_graph[commit_a][commit_b]["amount"
+                                                                       ] += 1
+
+        return self.__cached_interaction_graph
+
+
 def create_blame_interaction_graph(
     project_name: str, revision: str
 ) -> BlameInteractionGraph:
@@ -277,4 +386,17 @@ def create_blame_interaction_graph(
     return BlameInteractionGraph(project_name, report)
 
 
-AttrType = tp.TypeVar("AttrType")
+def create_file_based_interaction_graph(
+    project_name: str, revision: str
+) -> FileBasedInteractionGraph:
+    """
+    Create a file-based interaction graph for a certain project revision.
+
+    Args:
+        project_name: name of the project
+        revision: project revision
+
+    Returns:
+        the blame interaction graph
+    """
+    return FileBasedInteractionGraph(project_name, revision)
