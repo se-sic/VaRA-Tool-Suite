@@ -37,7 +37,8 @@ class Poppler(bb.Project, CVEProviderHook):  # type: ignore
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10)
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10
+                              ).run('apt', 'install', '-y', 'cmake')
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
