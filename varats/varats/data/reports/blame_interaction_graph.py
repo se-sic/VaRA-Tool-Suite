@@ -21,7 +21,6 @@ from varats.project.project_util import (
     get_primary_project_source,
     get_local_project_git_path,
 )
-from varats.projects.discover_projects import initialize_projects
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import (
     CommitRepoPair,
@@ -96,6 +95,7 @@ class InteractionGraph(abc.ABC):
         """
         Return a digraph with commits as nodes and interactions as edges.
 
+        Nodes can be referenced via their ``CommitRepoPair``.
         The graph has the following attributes:
         Nodes:
           - commit: CommitRepoPair for this commit
@@ -119,21 +119,25 @@ class InteractionGraph(abc.ABC):
             assert len(b) == 1, "Some node has more than one commit."
             return tp.cast(CIGNodeAttrs, ig.nodes[next(iter(b))].copy())
 
-        return nx.quotient_graph(
+        cig = nx.quotient_graph(
             ig,
             partition=lambda u, v: False,
             edge_data=edge_data,
             node_data=node_data,
-            # Use relabel=True so users cannot rely on the node type
-            # but only on the graph attributes
-            relabel=True,
             create_using=nx.DiGraph
         )
+        relabel_dict: tp.Dict[tp.FrozenSet[CommitRepoPair], CommitRepoPair] = {}
+        for node in cig.nodes:
+            relabel_dict[node] = tp.cast(CIGNodeAttrs,
+                                         cig.nodes[node])["commit"]
+        nx.relabel_nodes(cig, relabel_dict, copy=False)
+        return cig
 
     def author_interaction_graph(self) -> nx.DiGraph:
         """
         Return a digraph with authors as nodes and interactions as edges.
 
+        Nodes can be referenced via their author.
         The graph has the following attributes:
         Nodes:
           - author: name of the author
@@ -178,16 +182,19 @@ class InteractionGraph(abc.ABC):
                 "num_commits": len(b),
             }
 
-        return nx.quotient_graph(
+        aig = nx.quotient_graph(
             ig,
             partition=partition,
             edge_data=edge_data,
             node_data=node_data,
-            # Use relabel=True so users cannot rely on the node type
-            # but only on the graph attributes
-            relabel=True,
             create_using=nx.DiGraph
         )
+        relabel_dict: tp.Dict[tp.FrozenSet[CommitRepoPair], str] = {}
+        for node in aig.nodes:
+            relabel_dict[node] = tp.cast(AIGNodeAttrs,
+                                         aig.nodes[node])["author"]
+        nx.relabel_nodes(aig, relabel_dict, copy=False)
+        return aig
 
     def commit_author_interaction_graph(
         self,
@@ -197,6 +204,8 @@ class InteractionGraph(abc.ABC):
         """
         Return a digraph connecting commits to interacting authors.
 
+        Nodes can be referenced via their ``CommitRepoPair`` or author,
+        whichever is present.
         The graph has the following attributes:
         Nodes:
           - commit: commit hash if the node is a commit
@@ -251,10 +260,7 @@ class InteractionGraph(abc.ABC):
                         )
                     caig[sink][commit_author_mapping[source]
                               ]["amount"] += data["amount"]
-
-        # Relabel nodes to integers so users cannot rely on the node type
-        # but only on the graph attributes
-        return nx.convert_node_labels_to_integers(caig)
+        return caig
 
 
 class BlameInteractionGraph(InteractionGraph):
