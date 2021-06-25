@@ -7,7 +7,7 @@ from benchbuild.extensions import compiler, run, time
 
 from varats.data.reports.empty_report import EmptyReport as EMPTY
 from varats.experiment.experiment_util import (
-	exec_func_with_pe_error_handler,
+    exec_func_with_pe_error_handler,
     VersionExperiment,
     wrap_unlimit_stack_size,
     PEErrorHandler,
@@ -26,7 +26,7 @@ from varats.utils.settings import bb_cfg
 
 class PhASARFTACheck(actions.Step):  # type: ignore
 
-	NAME = "PhASARFTACheck"
+    NAME = "PhASARFTACheck"
     DESCRIPTION = "Generate a full FTA."
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
@@ -37,12 +37,12 @@ class PhASARFTACheck(actions.Step):  # type: ignore
     ):
         super().__init__(obj=project, action_fn=self.analyze)
 
-	def analyze(self) -> actions.StepResult:
-		"""
+    def analyze(self) -> actions.StepResult:
+        """
         This step performs the actual analysis with the correct flags.
         """
         
-		if not self.obj:
+        if not self.obj:
             return
         project = self.obj
         
@@ -56,7 +56,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
         timeout_duration = '24h'
         
         for binary in project.binaries:
-        	# Define empty success file
+            # Define empty success file
             result_file = EMPTY.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
@@ -76,13 +76,13 @@ class PhASARFTACheck(actions.Step):  # type: ignore
             
             # Combine the input bitcode file's name
             bc_target_file = get_cached_bc_file_path(
-            	project, binary, 
-            	[BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+                project, binary, 
+                [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
             )
             
             opt_params = [
-            	"-vara-PFA", "-S", 
-            	str(bc_target_file), "-o", "/dev/null"
+                "-vara-PFA", "-S", 
+                str(bc_target_file), "-o", "/dev/null"
             ]
 
             run_cmd = opt[opt_params]
@@ -101,11 +101,11 @@ class PhASARFTACheck(actions.Step):  # type: ignore
 
 class PhASARTaintAnalysis(VersionExperiment):
 
-	NAME = "PhASARFeatureTaintAnalysis"
-	REPORT_TYPE = EMPTY
+    NAME = "PhASARFeatureTaintAnalysis"
+    REPORT_TYPE = EMPTY
 	
-	def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
-		"""
+    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
+        """
         Returns the specified steps to run the project(s) specified in the call
         in a fixed order.
 
