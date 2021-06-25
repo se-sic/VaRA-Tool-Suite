@@ -5,9 +5,9 @@ import logging
 import os
 import sys
 
-from varats.tools.bb_config import create_new_bb_config, save_bb_config
+from varats.tools.bb_config import create_new_bb_config
 from varats.utils.cli_util import cli_yn_choice
-from varats.utils.settings import save_config, vara_cfg
+from varats.utils.settings import save_config, vara_cfg, save_bb_config
 
 LOG = logging.getLogger(__name__)
 
