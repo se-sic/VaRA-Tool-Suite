@@ -11,6 +11,7 @@ Quick overview
 * :ref:`Research Tools`
 * :ref:`VaRA-TS Docs`
 * :ref:`vara-ts api reference`
+* `VaRA-feature API Reference`_
 
 Research Tools
 ==============
@@ -73,3 +74,4 @@ The logo was created using the following brushes from Axeraider70, `Galactic Bru
 .. _Galactic Brushes: https://axeraider70.deviantart.com/art/Galactic-Brushes-60845636
 .. _Green Lotus Brushes: https://axeraider70.deviantart.com/art/Green-Lotus-Brushes-52844921
 .. _Sebastian Böhm: https://www.se.cs.uni-saarland.de/people/boehm.php
+.. _VaRA-feature API Reference: https://se-sic.github.io/vara-feature/index.html
