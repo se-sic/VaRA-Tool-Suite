@@ -92,8 +92,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
             # Run the command with custom error handler and timeout
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration,
-                        vara_run_cmd] > "{res_folder}/{res_file}".
-                format(res_folder=vara_result_folder, res_file=result_file),
+                        vara_run_cmd] > f"{vara_result_folder}/{result_file)}",
                 PEErrorHandler(
                     vara_result_folder, error_file, timeout_duration
                 )
@@ -103,7 +102,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
 class PhASARTaintAnalysis(VersionExperiment):
 
 	NAME = "PhASARFeatureTaintAnalysis"
-	REPORT_TYPE = FTAR
+	REPORT_TYPE = EMPTY
 	
 	def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
 		"""
