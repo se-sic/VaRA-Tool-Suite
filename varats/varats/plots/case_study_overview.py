@@ -9,12 +9,15 @@ import matplotlib.style as style
 
 from varats.data.databases.file_status_database import FileStatusDatabase
 from varats.data.reports.empty_report import EmptyReport
-from varats.mapping.commit_map import CommitMap
+from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.plot.plot_utils import check_required_args
+from varats.plot.plots import PlotGenerator, PlotConfig
+from varats.plots.blame_interaction_degree import _validate_cs_filename
 from varats.project.project_util import get_project_cls_by_name
 from varats.report.report import FileStatusExtension, MetaReport
+from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
 
 SUCCESS_COLOR = (0.5568627450980392, 0.7294117647058823, 0.25882352941176473)
 BLOCKED_COLOR = (0.20392156862745098, 0.5411764705882353, 0.7411764705882353)
@@ -23,13 +26,28 @@ COMPILE_ERROR_COLOR = (0.8862745098039215, 0.2901960784313726, 0.2)
 MISSING_COLOR = (0.984313725490196, 0.7568627450980392, 0.3686274509803922)
 BACKGROUND_COLOR = (0.4666666666666667, 0.4666666666666667, 0.4666666666666667)
 
+OPTIONAL_SHOW_BLOCKED: CLIOptionTy = make_cli_option(
+    "--show-blocked/--hide-blocked",
+    default=True,
+    required=False,
+    metavar="show_blocked",
+    help="Shows/hides blocked revisions."
+)
 
-@check_required_args("plot_case_study", "project", "get_cmap")
+OPTIONAL_SHOW_ALL_BLOCKED: CLIOptionTy = make_cli_option(
+    "--show-all-blocked/--hide-all-blocked",
+    default=False,
+    required=False,
+    metavar="show_all_blocked",
+    help="Shows/hides all blocked revisions."
+)
+
+
 def _gen_overview_data(tag_blocked: bool,
                        **kwargs: tp.Any) -> tp.Dict[str, tp.List[int]]:
-    case_study: CaseStudy = kwargs["plot_case_study"]
-    project_name = kwargs["project"]
-    commit_map: CommitMap = kwargs["get_cmap"]()
+    case_study: CaseStudy = kwargs["case_study"]
+    project_name = case_study.project_name
+    commit_map: CommitMap = get_commit_map(project_name)
     project = get_project_cls_by_name(project_name)
 
     if 'report_type' in kwargs:
@@ -90,8 +108,8 @@ def _gen_overview_data(tag_blocked: bool,
     return positions
 
 
-class PaperConfigOverviewPlot(Plot, plot_name="case_study_overview_plot"):
-    """Plot showing an overview of all case-studies."""
+class CaseStudyOverviewPlot(Plot, plot_name="case_study_overview_plot"):
+    """Plot showing an overview of all revisions within a case study."""
 
     NAME = 'case_study_overview_plot'
 
@@ -100,16 +118,9 @@ class PaperConfigOverviewPlot(Plot, plot_name="case_study_overview_plot"):
 
     def plot(self, view_mode: bool) -> None:
         style.use(self.style)
-
-        commit_map: CommitMap = self.plot_kwargs["get_cmap"]()
-        show_blocked: bool = strtobool(
-            self.plot_kwargs.get("show_blocked", "True")
+        data = _gen_overview_data(
+            self.plot_kwargs["show_blocked"], **self.plot_kwargs
         )
-        show_all_blocked: bool = strtobool(
-            self.plot_kwargs.get("show_all_blocked", "False")
-        )
-
-        data = _gen_overview_data(show_blocked, **self.plot_kwargs)
 
         fig_width = 4
         dot_to_inch = 0.01389
@@ -117,6 +128,9 @@ class PaperConfigOverviewPlot(Plot, plot_name="case_study_overview_plot"):
 
         _, axis = plt.subplots(1, 1, figsize=(fig_width, 1))
 
+        commit_map: CommitMap = get_commit_map(
+            self.plot_kwargs["case_study"].project_name
+        )
         linewidth = (
             fig_width / len(commit_map.mapping_items())
         ) / dot_to_inch * line_width
@@ -139,7 +153,7 @@ class PaperConfigOverviewPlot(Plot, plot_name="case_study_overview_plot"):
             colors=COMPILE_ERROR_COLOR
         )
 
-        if show_all_blocked:
+        if self.plot_kwargs["show_all_blocked"]:
             axis.eventplot(
                 data["blocked_all"], linewidths=linewidth, colors=BLOCKED_COLOR
             )
@@ -152,3 +166,31 @@ class PaperConfigOverviewPlot(Plot, plot_name="case_study_overview_plot"):
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError
+
+
+class CaseStudyOverviewGenerator(
+    PlotGenerator,
+    generator_name="cs-overview-plot",
+    plot=CaseStudyOverviewPlot,
+    options=[
+        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_CASE_STUDY,
+        OPTIONAL_SHOW_BLOCKED, OPTIONAL_SHOW_ALL_BLOCKED
+    ]
+):
+
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        super().__init__(plot_config, **plot_kwargs)
+        self.__case_study: CaseStudy = _validate_cs_filename(
+            plot_kwargs["case_study"]
+        )
+        self.__show_blocked: bool = plot_kwargs["show_blocked"]
+        self.__show_all_blocked: bool = plot_kwargs["show_all_blocked"]
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            self.PLOT(
+                case_study=self.__case_study,
+                show_blocked=self.__show_blocked,
+                show_all_blocked=self.__show_all_blocked
+            )
+        ]
