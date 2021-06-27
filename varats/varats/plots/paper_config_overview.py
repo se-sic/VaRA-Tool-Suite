@@ -303,7 +303,7 @@ class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
 
 class PaperConfigOverviewGenerator(
     PlotGenerator,
-    generator_name="overview-plot",
+    generator_name="pc-overview-plot",
     plot=PaperConfigOverviewPlot,
     options=[PlotGenerator.REQUIRE_REPORT_TYPE]
 ):
