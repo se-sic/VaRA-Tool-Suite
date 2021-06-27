@@ -177,6 +177,7 @@ class CaseStudyOverviewGenerator(
         OPTIONAL_SHOW_BLOCKED, OPTIONAL_SHOW_ALL_BLOCKED
     ]
 ):
+    """Generates a case study overview plot."""
 
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
