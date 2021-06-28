@@ -957,30 +957,6 @@ def _build_graphviz_fig(
     return graph
 
 
-def _validate_cs_filename(cs_file_name: str) -> CaseStudy:
-    """
-    Checks if the filename of the selected case study exists in the current
-    paper config.
-
-    Args:
-        The file name string of the case study
-
-    Returns:
-        the case study
-    """
-
-    paper_conf: PC.PaperConfig = PC.get_paper_config()
-    if cs_file_name not in paper_conf.get_all_case_study_filenames():
-        all_cs_string = [
-            cs + " " for cs in paper_conf.get_all_case_study_filenames()
-        ]
-        raise FileNotFoundError(
-            f"The selected case study filename could not be found in the "
-            f"current paper config. Did you mean?\n {all_cs_string}"
-        )
-    return PC.load_case_study_from_file(paper_conf.path / cs_file_name)
-
-
 class BlameLibraryInteraction(Plot, plot_name=None):
     """Base plot for blame library interaction plots."""
 
@@ -1550,9 +1526,7 @@ class SankeyLibraryInteractionsGeneratorRev(
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_study: CaseStudy = _validate_cs_filename(
-            plot_kwargs["case_study"]
-        )
+        self.__case_study: CaseStudy = plot_kwargs["case_study"]
         self.__revision: str = plot_kwargs["revision"]
         self.__fig_title: str = plot_kwargs["fig_title"]
         self.__width: int = plot_kwargs["width"]
@@ -1578,19 +1552,18 @@ class SankeyLibraryInteractionsGeneratorCS(
     generator_name="sankey-plot-cs",
     plot=BlameLibraryInteractions,
     options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_CASE_STUDY,
-        OPTIONAL_FIG_TITLE, OPTIONAL_WIDTH, OPTIONAL_HEIGHT, OPTIONAL_FONT_SIZE
+        PlotGenerator.REQUIRE_REPORT_TYPE,
+        PlotGenerator.REQUIRE_MULTI_CASE_STUDY, OPTIONAL_FIG_TITLE,
+        OPTIONAL_WIDTH, OPTIONAL_HEIGHT, OPTIONAL_FONT_SIZE
     ]
 ):
-    """Generates a sankey plot for every revision in the case study."""
+    """Generates a sankey plot for every revision in every given case study."""
 
     @check_required_args("report_type")
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_study: CaseStudy = _validate_cs_filename(
-            plot_kwargs["case_study"]
-        )
+        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
         self.__fig_title: str = plot_kwargs["fig_title"]
         self.__width: int = plot_kwargs["width"]
         self.__height: int = plot_kwargs["height"]
@@ -1600,54 +1573,14 @@ class SankeyLibraryInteractionsGeneratorCS(
         return [
             self.PLOT(
                 report_type=self.__report_type,
-                case_study=self.__case_study,
+                case_study=cs,
                 revision=rev,
                 fig_title=self.__fig_title,
                 width=self.__width,
                 height=self.__height,
                 font_size=self.__font_size,
-            ) for rev in self.__case_study.revisions
+            ) for cs in self.__case_studies for rev in cs.revisions
         ]
-
-
-class SankeyLibraryInteractionsGeneratorPC(
-    PlotGenerator,
-    generator_name="sankey-plot-pc",
-    plot=BlameLibraryInteractions,
-    options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE, OPTIONAL_FIG_TITLE, OPTIONAL_WIDTH,
-        OPTIONAL_HEIGHT, OPTIONAL_FONT_SIZE
-    ]
-):
-    """Generates a sankey plot for every revision in the paper config."""
-
-    @check_required_args("report_type")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
-        self.__paper_config: PC.PaperConfig = PC.get_paper_config()
-        self.__fig_title: str = plot_kwargs["fig_title"]
-        self.__width: int = plot_kwargs["width"]
-        self.__height: int = plot_kwargs["height"]
-        self.__font_size: int = plot_kwargs["font_size"]
-
-    def generate(self) -> tp.List[Plot]:
-        plots: tp.List[Plot] = []
-
-        for cs in self.__paper_config.get_all_case_studies():
-            for rev in cs.revisions:
-                plots.append(
-                    self.PLOT(
-                        report_type=self.__report_type,
-                        case_study=cs,
-                        revision=rev,
-                        fig_title=self.__fig_title,
-                        width=self.__width,
-                        height=self.__height,
-                        font_size=self.__font_size
-                    )
-                )
-        return plots
 
 
 class BlameCommitInteractionsGraphviz(
@@ -1720,9 +1653,7 @@ class GraphvizLibraryInteractionsGeneratorRev(
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_study: CaseStudy = _validate_cs_filename(
-            plot_kwargs["case_study"]
-        )
+        self.__case_study: CaseStudy = plot_kwargs["case_study"]
         self.__revision: tp.Optional[str] = plot_kwargs["revision"]
         self.__show_interactions: bool = plot_kwargs["show_interactions"]
         self.__show_diff: bool = plot_kwargs["show_diff"]
@@ -1756,11 +1687,11 @@ class GraphvizLibraryInteractionsGeneratorCS(
     generator_name="graphviz-plot-cs",
     plot=BlameCommitInteractionsGraphviz,
     options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_CASE_STUDY,
-        OPTIONAL_SHOW_INTERACTIONS, OPTIONAL_SHOW_DIFF,
-        OPTIONAL_SHOW_EDGE_WEIGHT, OPTIONAL_EDGE_WEIGHT_THRESHOLD,
-        OPTIONAL_REVISION_LENGTH, OPTIONAL_LAYOUT_ENGINE,
-        OPTIONAL_SHOW_ONLY_COMMIT
+        PlotGenerator.REQUIRE_REPORT_TYPE,
+        PlotGenerator.REQUIRE_MULTI_CASE_STUDY, OPTIONAL_SHOW_INTERACTIONS,
+        OPTIONAL_SHOW_DIFF, OPTIONAL_SHOW_EDGE_WEIGHT,
+        OPTIONAL_EDGE_WEIGHT_THRESHOLD, OPTIONAL_REVISION_LENGTH,
+        OPTIONAL_LAYOUT_ENGINE, OPTIONAL_SHOW_ONLY_COMMIT
     ]
 ):
     """Generates a graphviz plot for every revision in the case study."""
@@ -1769,9 +1700,7 @@ class GraphvizLibraryInteractionsGeneratorCS(
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_study: CaseStudy = _validate_cs_filename(
-            plot_kwargs["case_study"]
-        )
+        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
         self.__show_interactions: bool = plot_kwargs["show_interactions"]
         self.__show_diff: bool = plot_kwargs["show_diff"]
         self.__show_edge_weight: bool = plot_kwargs["show_edge_weight"]
@@ -1786,7 +1715,7 @@ class GraphvizLibraryInteractionsGeneratorCS(
         return [
             self.PLOT(
                 report_type=self.__report_type,
-                case_study=self.__case_study,
+                case_study=cs,
                 revision=rev,
                 show_interactions=self.__show_interactions,
                 show_diff=self.__show_diff,
@@ -1795,58 +1724,8 @@ class GraphvizLibraryInteractionsGeneratorCS(
                 revision_length=self.__revision_length,
                 layout_engine=self.__layout_engine,
                 show_only_commit=self.__show_only_commit,
-            ) for rev in self.__case_study.revisions
+            ) for cs in self.__case_studies for rev in cs.revisions
         ]
-
-
-class GraphvizLibraryInteractionsGeneratorPC(
-    PlotGenerator,
-    generator_name="graphviz-plot-pc",
-    plot=BlameCommitInteractionsGraphviz,
-    options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE, OPTIONAL_SHOW_INTERACTIONS,
-        OPTIONAL_SHOW_DIFF, OPTIONAL_SHOW_EDGE_WEIGHT,
-        OPTIONAL_EDGE_WEIGHT_THRESHOLD, OPTIONAL_REVISION_LENGTH,
-        OPTIONAL_LAYOUT_ENGINE, OPTIONAL_SHOW_ONLY_COMMIT
-    ]
-):
-    """Generates a graphviz plot for every revision in the paper config."""
-
-    @check_required_args("report_type")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
-        self.__paper_config: PC.PaperConfig = PC.get_paper_config()
-        self.__show_interactions: bool = plot_kwargs["show_interactions"]
-        self.__show_diff: bool = plot_kwargs["show_diff"]
-        self.__show_edge_weight: bool = plot_kwargs["show_edge_weight"]
-        self.__edge_weight_threshold: tp.Optional[
-            EdgeWeightThreshold] = plot_kwargs["edge_weight_threshold"]
-        self.__revision_length: int = plot_kwargs["revision_length"]
-        self.__layout_engine: str = plot_kwargs["layout_engine"]
-        self.__show_only_commit: tp.Optional[str] = plot_kwargs[
-            "show_only_commit"]
-
-    def generate(self) -> tp.List[Plot]:
-        plots: tp.List[Plot] = []
-
-        for cs in self.__paper_config.get_all_case_studies():
-            for rev in cs.revisions:
-                plots.append(
-                    self.PLOT(
-                        report_type=self.__report_type,
-                        case_study=cs,
-                        revision=rev,
-                        show_interactions=self.__show_interactions,
-                        show_diff=self.__show_diff,
-                        show_edge_weight=self.__show_edge_weight,
-                        edge_weight_threshold=self.__edge_weight_threshold,
-                        revision_length=self.__revision_length,
-                        layout_engine=self.__layout_engine,
-                        show_only_commit=self.__show_only_commit,
-                    )
-                )
-        return plots
 
 
 class BlameAuthorDegree(BlameDegree, plot_name="b_author_degree"):

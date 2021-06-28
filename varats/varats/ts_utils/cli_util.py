@@ -2,10 +2,12 @@
 
 import logging
 import os
+import typing as t
 import typing as tp
 from enum import Enum
 
 import click
+from click import Context, Parameter
 from rich.traceback import install
 
 
@@ -119,19 +121,75 @@ def add_cli_options(command: tp.Any, *options: CLIOptionTy) -> tp.Any:
     return command
 
 
-class EnumType(click.Choice):
+ChoiceTy = tp.TypeVar("ChoiceTy")
+
+
+class TypedChoice(click.Choice, tp.Generic[ChoiceTy]):
+    """Typed version of click's choice parameter type."""
+
+    name = "typed choice"
+
+    def __init__(
+        self, choices: tp.Dict[str, ChoiceTy], case_sensitive: bool = True
+    ):
+        self.__choices = choices
+        super().__init__(list(choices.keys()), case_sensitive)
+
+    def convert(
+        self, value: t.Any, param: t.Optional[Parameter],
+        ctx: t.Optional[Context]
+    ) -> ChoiceTy:
+        return self.__choices[super().convert(value, param, ctx)]
+
+
+class TypedMultiChoice(click.Choice, tp.Generic[ChoiceTy]):
+    """
+    Typed choice parameter type allows giving multiple values.
+
+    Multiple values can be given as a comma separated list; no whitespace
+    allowed.
+    """
+
+    name = "typed multi choice"
+
+    def __init__(
+        self,
+        choices: tp.Dict[str, tp.List[ChoiceTy]],
+        case_sensitive: bool = True
+    ):
+        self.__choices = choices
+        super().__init__(list(choices.keys()), case_sensitive)
+
+    def convert(
+        self, value: t.Any, param: t.Optional[Parameter],
+        ctx: t.Optional[Context]
+    ) -> tp.List[ChoiceTy]:
+        values = [value]
+        if isinstance(value, str):
+            values = value.split(",")
+
+        return [
+            item for v in values
+            for item in self.__choices[super().convert(v, param, ctx)]
+        ]
+
+
+EnumTy = tp.TypeVar("EnumTy", bound=Enum)
+
+
+class EnumType(click.Choice, tp.Generic[EnumTy]):
     """
     Enum choice type for click.
 
     This type can be used with click to specify a choice from the given enum.
     """
 
-    def __init__(self, enum: tp.Type[Enum], case_sensitive: bool = True):
+    def __init__(self, enum: tp.Type[EnumTy], case_sensitive: bool = True):
         self.__enum = enum
         super().__init__(list(dict(enum.__members__).keys()), case_sensitive)
 
     def convert(
         self, value: str, param: tp.Optional[click.Parameter],
         ctx: tp.Optional[click.Context]
-    ) -> tp.Any:
+    ) -> EnumTy:
         return self.__enum[super().convert(value, param, ctx)]

@@ -6,11 +6,15 @@ from pathlib import Path
 
 import click
 
+from varats.paper.case_study import CaseStudy
+from varats.paper_mgmt.paper_config import get_paper_config
 from varats.ts_utils.cli_util import (
     make_cli_option,
     CLIOptionTy,
     add_cli_options,
     cli_yn_choice,
+    TypedMultiChoice,
+    TypedChoice,
 )
 from varats.utils.settings import vara_cfg
 
@@ -18,6 +22,34 @@ if tp.TYPE_CHECKING:
     import varats.plot.plot  # pylint: disable=W0611
 
 LOG = logging.getLogger(__name__)
+
+
+def _create_multi_case_study_choice() -> TypedMultiChoice[CaseStudy]:
+    """
+    Create a choice parameter type that allows selecting multiple case studies
+    from the current paper config.
+
+    Multiple case studies can be given as a comma separated list. The special
+    value "all" selects all case studies in the current paper config.
+    """
+    paper_config = get_paper_config()
+    value_dict = {
+        f"{cs.project_name}_{cs.version}": [cs]
+        for cs in paper_config.get_all_case_studies()
+    }
+    value_dict["all"] = paper_config.get_all_case_studies()
+    return TypedMultiChoice(value_dict)
+
+
+def _create_single_case_study_choice() -> TypedChoice[CaseStudy]:
+    """Create a choice parameter type that allows selecting exactly one case
+    study from the current paper config."""
+    paper_config = get_paper_config()
+    value_dict = {
+        f"{cs.project_name}_{cs.version}": cs
+        for cs in paper_config.get_all_case_studies()
+    }
+    return TypedChoice(value_dict)
 
 
 class CommonPlotOptions():
@@ -116,12 +148,19 @@ class PlotGeneratorInitFailed(Exception):
 class PlotGenerator(abc.ABC):
     """A plot generator is responsible for generating one or more plots."""
 
-    # TODO: Add choices for CaseStudies
     # Required
     REQUIRE_CASE_STUDY: CLIOptionTy = make_cli_option(
         "-cs",
         "--case-study",
-        type=str,
+        type=_create_single_case_study_choice(),
+        required=True,
+        metavar="case_study",
+        help="The case study to use for the plot."
+    )
+    REQUIRE_MULTI_CASE_STUDY: CLIOptionTy = make_cli_option(
+        "-cs",
+        "--case-study",
+        type=_create_multi_case_study_choice(),
         required=True,
         metavar="case_study",
         help="The case study to use for the plot."
@@ -154,6 +193,7 @@ class PlotGenerator(abc.ABC):
     OPTIONAL_CASE_STUDY: CLIOptionTy = make_cli_option(
         "-cs",
         "--case-study",
+        type=_create_single_case_study_choice(),
         required=False,
         metavar="case_study",
         help="The case study to use for the plot."
