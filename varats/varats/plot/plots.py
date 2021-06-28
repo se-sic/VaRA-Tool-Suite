@@ -55,7 +55,9 @@ def _create_single_case_study_choice() -> TypedChoice[CaseStudy]:
 class CommonPlotOptions():
     """This class stores options common to all plots."""
 
-    def __init__(self, view: bool, plot_dir: Path, file_type: str):
+    def __init__(
+        self, view: bool, plot_dir: Path, file_type: str, dry_run: bool
+    ):
         """
         Construct a `CommonPlotOptions` object.
 
@@ -67,6 +69,7 @@ class CommonPlotOptions():
         self.view = view
         self.plot_dir = plot_dir
         self.file_type = file_type
+        self.dry_run = dry_run
 
     @staticmethod
     def from_kwargs(**kwargs: tp.Any) -> 'CommonPlotOptions':
@@ -74,7 +77,7 @@ class CommonPlotOptions():
         return CommonPlotOptions(
             kwargs.get("view", False),
             Path(kwargs.get("plot_dir", CommonPlotOptions.default_plot_dir())),
-            kwargs.get("file_type", "svg")
+            kwargs.get("file_type", "svg"), kwargs.get("dry_run", False)
         )
 
     @staticmethod
@@ -107,7 +110,13 @@ class CommonPlotOptions():
             default=lambda: CommonPlotOptions.default_plot_dir(),
             help="Set the directory the plots will be written to."
             "Uses the config value 'plots/plot_dir' by default."
-        )
+        ),
+        make_cli_option(
+            "--dry_run",
+            is_flag=True,
+            help="Only log plots that would be generated but do not generate."
+            "Useful for debugging plot generators."
+        ),
     ]
 
     @classmethod
@@ -118,7 +127,8 @@ class CommonPlotOptions():
         return {
             "view": self.view,
             "file_type": self.file_type,
-            "plot_dir": self.plot_dir
+            "plot_dir": self.plot_dir,
+            "dry_run": self.dry_run
         }
 
 
@@ -291,6 +301,10 @@ class PlotGenerator(abc.ABC):
             )
 
         for plot in plots:
+            if common_options.dry_run:
+                LOG.info(repr(plot))
+                continue
+
             if common_options.view:
                 plot.show()
             else:
