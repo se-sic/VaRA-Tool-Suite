@@ -2,12 +2,14 @@
 import abc
 import glob
 import itertools
+import re
 import sys
 import typing as tp
 from pathlib import Path
 
 import networkx as nx
 import pygit2
+from benchbuild.utils.cmd import git
 
 from varats.data.reports.blame_report import (
     BlameReport,
@@ -320,15 +322,23 @@ class FileBasedInteractionGraph(InteractionGraph):
         repo = get_local_project_git(self.project_name)
         repo_name = get_primary_project_source(self.project_name).local
         repo_path = get_local_project_git_path(self.project_name)
+        project_git = git["-C", str(repo_path)]
         churn_config = ChurnConfig.create_c_style_languages_config()
 
         self.__cached_interaction_graph = nx.DiGraph()
 
+        file_pattern = re.compile(
+            r"|".join(
+                churn_config.get_extensions_repr(prefix=r"\.", suffix=r"$")
+            )
+        )
+        file_names = project_git(
+            "ls-tree", "--full-tree", "--name-only", "-r", "HEAD"
+        ).split("\n")
         files: tp.List[Path] = [
-            Path(path)
-            for pattern in churn_config.get_extensions_repr("**/*.")
-            for path in
-            glob.iglob(str(repo_path) + "/" + pattern, recursive=True)
+            repo_path / path
+            for path in file_names
+            if file_pattern.search(path)
         ]
         for file in files:
             blame = repo.blame(
