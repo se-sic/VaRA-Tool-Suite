@@ -61,11 +61,13 @@ class AIGNodeAttrs(TypedDict):
     """Author interaction graph node attributes."""
     author: str
     num_commits: int
+    commits: tp.List[CommitRepoPair]
 
 
 class AIGEdgeAttrs(TypedDict):
     """Author interaction graph edge attributes."""
     amount: int
+    interactions: tp.List[tp.Tuple[CommitRepoPair, CommitRepoPair]]
 
 
 class CAIGNodeAttrs(TypedDict):
@@ -163,14 +165,14 @@ class InteractionGraph(abc.ABC):
             b: tp.Set[CommitRepoPair], c: tp.Set[CommitRepoPair]
         ) -> AIGEdgeAttrs:
             amount = 0
+            interactions: tp.List[tp.Tuple[CommitRepoPair, CommitRepoPair]] = []
             for source in b:
                 for sink in c:
                     if ig.has_edge(source, sink):
                         amount += int(ig[source][sink]["amount"])
+                        interactions.append((source, sink))
 
-            return {
-                "amount": amount,
-            }
+            return {"amount": amount, "interactions": interactions}
 
         def node_data(b: tp.Set[CommitRepoPair]) -> AIGNodeAttrs:
             authors = {
@@ -182,6 +184,7 @@ class InteractionGraph(abc.ABC):
             return {
                 "author": next(iter(authors)),
                 "num_commits": len(b),
+                "commits": list(b)
             }
 
         aig = nx.quotient_graph(
@@ -353,10 +356,7 @@ class FileBasedInteractionGraph(InteractionGraph):
                 )
 
             for commit in commits:
-                if not self.__cached_interaction_graph.has_node(commit):
-                    self.__cached_interaction_graph.add_node(
-                        commit, commit=commit
-                    )
+                self.__cached_interaction_graph.add_node(commit, commit=commit)
             for commit_a, commit_b in itertools.product(commits, repeat=2):
                 if commit_a != commit_b:
                     if not self.__cached_interaction_graph.has_edge(
