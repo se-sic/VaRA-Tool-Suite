@@ -41,7 +41,7 @@ class Bison(bb.Project):  # type: ignore
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
         'apt', 'install', '-y', 'autoconf', 'automake', 'autopoint', 'flex',
-        'gettext', 'graphviz', 'help2man', 'perl', 'rsync', 'texinfo'
+        'gettext', 'graphviz', 'help2man', 'perl', 'rsync', 'texinfo', 'wget'
     )
 
     @property
