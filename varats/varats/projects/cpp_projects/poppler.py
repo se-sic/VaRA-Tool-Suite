@@ -39,7 +39,8 @@ class Poppler(bb.Project, CVEProviderHook):  # type: ignore
 
     CONTAINER = get_base_image(
         ImageBase.DEBIAN_10
-    ).run('apt', 'install', '-y', 'cmake', 'libfreetype-dev')
+    ).run('apt', 'install', '-y', 'cmake', 'libfreetype6-dev', 'libfontconfig-dev',
+    'libjpeg-dev', 'qt5-default', 'libopenjp2-7-dev')
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
