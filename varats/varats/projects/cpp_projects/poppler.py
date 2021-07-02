@@ -35,7 +35,7 @@ class Poppler(bb.Project, CVEProviderHook):  # type: ignore
     SOURCE = [
         block_revisions([
             RevisionRange(
-                "cd4feb323f005e3b0443572a1123683af5fab71b",
+                "e225b4b804881de02a5d1beb3f3f908a8f8ddc3d",
                 "2b2808719d2c91283ae358381391bb0b37d9061d",
                 "requiers QT6 which is not easily available"
             )
