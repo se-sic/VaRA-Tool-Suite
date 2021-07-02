@@ -3,6 +3,12 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.utils.cmd import cmake, make
+from benchbuild.utils.revision_ranges import (
+    block_revisions,
+    GoodBadSubgraph,
+    RevisionRange,
+    SingleRevision,
+)
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -27,20 +33,28 @@ class Poppler(bb.Project, CVEProviderHook):  # type: ignore
     DOMAIN = 'pdf library'
 
     SOURCE = [
-        bb.source.Git(
-            remote="https://gitlab.freedesktop.org/poppler/poppler.git",
-            local="poppler",
-            refspec="HEAD",
-            limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("poppler")
+        block_revisions([
+            RevisionRange(
+                "cd4feb323f005e3b0443572a1123683af5fab71b",
+                "2b2808719d2c91283ae358381391bb0b37d9061d",
+                "requiers QT6 which is not easily available"
+            )
+        ])(
+            bb.source.Git(
+                remote="https://gitlab.freedesktop.org/poppler/poppler.git",
+                local="poppler",
+                refspec="HEAD",
+                limit=None,
+                shallow=False,
+                version_filter=project_filter_generator("poppler")
+            )
         )
     ]
 
-    CONTAINER = get_base_image(
-        ImageBase.DEBIAN_10
-    ).run('apt', 'install', '-y', 'cmake', 'libfreetype6-dev', 'libfontconfig-dev',
-    'libjpeg-dev', 'qt5-default', 'libopenjp2-7-dev')
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
+        'apt', 'install', '-y', 'cmake', 'libfreetype6-dev',
+        'libfontconfig-dev', 'libjpeg-dev', 'qt5-default', 'libopenjp2-7-dev'
+    )
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
