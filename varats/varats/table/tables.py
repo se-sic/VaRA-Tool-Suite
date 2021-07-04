@@ -2,6 +2,7 @@
 import logging
 import re
 import typing as tp
+from enum import Enum
 from pathlib import Path
 
 from varats.mapping.commit_map import create_lazy_commit_map_loader
@@ -13,6 +14,33 @@ if tp.TYPE_CHECKING:
     import varats.table.table as table  # pylint: disable=unused-import
 
 LOG = logging.getLogger(__name__)
+
+
+class TableFormat(Enum):
+    """List of supported TableFormats."""
+    value: str
+
+    plain = "plain"
+    simple = "simple"
+    github = "github"
+    grid = "grid"
+    fancy_grid = "fancy_grid"
+    pipe = "pipe"
+    orgtbl = "orgtbl"
+    jira = "jira"
+    presto = "presto"
+    pretty = "pretty"
+    psql = "psql"
+    rst = "rst"
+    mediawiki = "mediawiki"
+    moinmoin = "moinmoin"
+    youtrack = "youtrack"
+    html = "html"
+    unsafehtml = "unsafehtml"
+    latex = "latex"
+    latex_raw = "latex_raw"
+    latex_booktabs = "latex_booktabs"
+    textile = "textile"
 
 
 class TableRegistry(type):
@@ -142,7 +170,6 @@ def prepare_tables(**args: tp.Any) -> tp.Iterable['table.Table']:
     if 'view' not in args:
         args['view'] = False
     if 'output-format' not in args:
-        from varats.table.table import TableFormat  # pylint: disable=C0415
         if args['view']:
             args['output-format'] = TableFormat.fancy_grid
         else:
@@ -207,7 +234,7 @@ class TableArtefact(Artefact, artefact_type_version=1):
         return self.__table_type
 
     @property
-    def table_type_class(self) -> tp.Type[Table]:
+    def table_type_class(self) -> tp.Type['table.Table']:
         """The class associated with :func:`table_type`."""
         return self.__table_type_class
 
