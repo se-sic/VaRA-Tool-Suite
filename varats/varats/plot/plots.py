@@ -7,6 +7,7 @@ from pathlib import Path
 import click
 
 from varats.paper.case_study import CaseStudy
+from varats.paper_mgmt.artefacts import Artefact, ArtefactFileInfo
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.ts_utils.cli_util import (
     make_cli_option,
@@ -311,3 +312,101 @@ class PlotGenerator(abc.ABC):
                 plot.save(
                     common_options.plot_dir, filetype=common_options.file_type
                 )
+
+
+class PlotArtefact(Artefact, artefact_type_version=2):
+    """
+    An artefact defining a :class:`plot<varats.plot.plot.Plot>`.
+
+    Args:
+        name: The name of this artefact.
+        output_path: the path where the plot this artefact produces will be
+                     stored
+        plot_generator_type: the
+                    :attr:`type of plot<varats.plot.plots.PlotGenerator>`
+                    to use
+        file_format: the file format of the generated plot
+        kwargs: additional arguments that will be passed to the plot class
+    """
+
+    def __init__(
+        self, name: str, output_path: Path, plot_generator_type: str,
+        common_options: CommonPlotOptions, plot_config: PlotConfig,
+        **kwargs: tp.Any
+    ) -> None:
+        super().__init__(name, output_path)
+        self.__plot_generator_type = plot_generator_type
+        self.__plot_type_class = PlotGenerator.get_class_for_plot_generator_type(
+            self.__plot_generator_type
+        )
+        self.__common_options = common_options
+        self.__plot_config = plot_config
+        self.__plot_kwargs = kwargs
+
+    @property
+    def plot_generator_type(self) -> str:
+        """The type of plot generator used to generate this artefact."""
+        return self.__plot_generator_type
+
+    @property
+    def plot_generator_class(self) -> tp.Type[PlotGenerator]:
+        """The class associated with :func:`plot_generator_type`."""
+        return self.__plot_type_class
+
+    @property
+    def common_options(self) -> CommonPlotOptions:
+        """Options that are available to all plots."""
+        return self.__common_options
+
+    @property
+    def plot_config(self) -> PlotConfig:
+        """A config object that influences the visual representation of a
+        plot."""
+        return self.__plot_config
+
+    @property
+    def plot_kwargs(self) -> tp.Any:
+        """Additional arguments that will be passed to the plot_type_class."""
+        return self.__plot_kwargs
+
+    def get_dict(self) -> tp.Dict[str, tp.Any]:
+        artefact_dict = super().get_dict()
+        artefact_dict['plot_generator'] = self.__plot_generator_type
+        artefact_dict['plot_config'] = self.__plot_config.get_dict()
+        artefact_dict = {
+            **self.__common_options.get_dict(),
+            **self.__plot_kwargs,
+            **artefact_dict
+        }
+        return artefact_dict
+
+    @classmethod
+    def create_artefact(
+        cls, name: str, output_path: Path, **kwargs: tp.Any
+    ) -> 'Artefact':
+        plot_generator_type = kwargs.pop('plot_generator')
+        common_options = CommonPlotOptions.from_kwargs(
+            plot_dir=output_path, **kwargs
+        )
+        return PlotArtefact(
+            name, output_path, plot_generator_type, common_options,
+            PlotConfig(), **kwargs
+        )
+
+    def generate_artefact(self) -> None:
+        """Generate the specified plot(s)."""
+        generator_instance = self.plot_generator_class(
+            self.plot_config, **self.__plot_kwargs
+        )
+        generator_instance(self.common_options)
+
+    def get_artefact_file_infos(self) -> tp.List[ArtefactFileInfo]:
+        generator_instance = self.plot_generator_class(
+            self.plot_config, **self.__plot_kwargs
+        )
+        return [
+            ArtefactFileInfo(
+                plot.plot_file_name(self.common_options.file_type),
+                plot.plot_kwargs.get("case_study", None)
+            ) for plot in generator_instance.generate()
+        ]

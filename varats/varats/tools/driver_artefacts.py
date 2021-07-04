@@ -17,11 +17,9 @@ from argparse_utils import enum_action
 from varats.data.discover_reports import initialize_reports
 from varats.paper_mgmt.artefacts import (
     Artefact,
-    ArtefactType,
-    create_artefact,
     store_artefacts,
-    PlotArtefact,
-    filter_plot_artefacts,
+    initialize_artefacts,
+    create_artefact,
 )
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plots.discover_plots import initialize_plots
@@ -50,6 +48,7 @@ def main() -> None:
     initialize_reports()
     initialize_tables()
     initialize_plots()
+    initialize_artefacts()
     parser = argparse.ArgumentParser("vara-art")
 
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
