@@ -22,6 +22,7 @@ from varats.paper_mgmt.artefacts import (
     create_artefact,
 )
 from varats.paper_mgmt.paper_config import get_paper_config
+from varats.plot.plots import PlotArtefact
 from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
 from varats.tables.discover_tables import initialize_tables
@@ -88,7 +89,7 @@ def main() -> None:
     add_parser.add_argument(
         "artefact_type",
         help="The type of the new artefact.",
-        action=enum_action(ArtefactType)
+        choices=Artefact.ARTEFACT_TYPES.keys()
     )
     add_parser.add_argument(
         "name",
@@ -137,7 +138,7 @@ def _artefact_list() -> None:
     paper_config = get_paper_config()
 
     for artefact in paper_config.artefacts:
-        print(f"{artefact.name} [{artefact.artefact_type.name}]")
+        print(f"{artefact.name} [{artefact.ARTEFACT_TYPE}]")
 
 
 def _artefact_show(args: tp.Dict[str, tp.Any]) -> None:
@@ -177,7 +178,7 @@ def _artefact_generate(args: tp.Dict[str, tp.Any]) -> None:
     )
     # generate plot_matrix.html
     plot_artefacts = [
-        artefact for artefact in (filter_plot_artefacts(artefacts))
+        artefact for artefact in (_filter_plot_artefacts(artefacts))
         if artefact.plot_kwargs.get('paper_config', False)
     ]
     _generate_html_plot_matrix(
@@ -239,6 +240,15 @@ __INDEX_LINKS = """  <ul>
     <li><a href=".">artefacts folder</a></li>
     <li><a href="plot_matrix.html">plot matrix</a></li>
   </ul>"""
+
+
+def _filter_plot_artefacts(
+    artefacts: tp.Iterable[Artefact]
+) -> tp.Iterable[PlotArtefact]:
+    return [
+        artefact for artefact in artefacts
+        if isinstance(artefact, PlotArtefact)
+    ]
 
 
 def _generate_html_plot_matrix(
@@ -316,7 +326,7 @@ def _generate_index_html(
 
 def _generate_artefact_html(artefact: Artefact,
                             cwd: Path) -> tp.Tuple[str, str]:
-    artefact_info = f"{artefact.name} ({artefact.artefact_type.name})"
+    artefact_info = f"{artefact.name} ({artefact.ARTEFACT_TYPE})"
     list_entries: tp.List[str] = []
     file_infos = artefact.get_artefact_file_infos()
     for file_info in file_infos:
