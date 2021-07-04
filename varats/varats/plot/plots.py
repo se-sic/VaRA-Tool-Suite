@@ -407,6 +407,9 @@ class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
 
     def generate_artefact(self) -> None:
         """Generate the specified plot(s)."""
+        if not self.output_path.exists():
+            self.output_path.mkdir(parents=True)
+
         generator_instance = self.plot_generator_class(
             self.plot_config, **self.__plot_kwargs
         )
