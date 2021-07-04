@@ -400,10 +400,12 @@ class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
             plot_dir=output_path, **kwargs
         )
         plot_config = PlotConfig.from_kwargs(**kwargs.pop("plot_config", {}))
-        return PlotArtefact(
+        artefact = PlotArtefact(
             name, output_path, plot_generator_type, common_options, plot_config,
             **kwargs
         )
+        artefact.common_options.plot_dir = artefact.output_path
+        return artefact
 
     def generate_artefact(self) -> None:
         """Generate the specified plot(s)."""
