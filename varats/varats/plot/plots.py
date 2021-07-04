@@ -384,6 +384,7 @@ class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
             **self.__plot_kwargs,
             **artefact_dict
         }
+        artefact_dict.pop("plot_dir")  # duplicate of Artefact's output_path
         return artefact_dict
 
     @classmethod
