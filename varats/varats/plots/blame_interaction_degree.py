@@ -40,7 +40,7 @@ from varats.plots.bug_annotation import draw_bugs
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.repository_churn import draw_code_churn_for_revisions
 from varats.project.project_util import get_project_cls_by_name
-from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option, EnumType
+from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option, EnumChoice
 
 LOG = logging.getLogger(__name__)
 
@@ -145,7 +145,7 @@ OPTIONAL_SHOW_EDGE_WEIGHT: CLIOptionTy = make_cli_option(
 OPTIONAL_EDGE_WEIGHT_THRESHOLD: CLIOptionTy = make_cli_option(
     "--edge-weight-threshold",
     default=None,
-    type=EnumType(EdgeWeightThreshold),
+    type=EnumChoice(EdgeWeightThreshold),
     required=False,
     metavar="edge_weight_threshold",
     help="Sets the threshold to show edge weights. Options are: LOW, MEDIUM, "

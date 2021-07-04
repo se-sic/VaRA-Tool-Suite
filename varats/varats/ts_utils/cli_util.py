@@ -178,7 +178,7 @@ class TypedMultiChoice(click.Choice, tp.Generic[ChoiceTy]):
 EnumTy = tp.TypeVar("EnumTy", bound=Enum)
 
 
-class EnumType(click.Choice, tp.Generic[EnumTy]):
+class EnumChoice(click.Choice, tp.Generic[EnumTy]):
     """
     Enum choice type for click.
 
