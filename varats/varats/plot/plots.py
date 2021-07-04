@@ -399,7 +399,7 @@ class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
         common_options = CommonPlotOptions.from_kwargs(
             plot_dir=output_path, **kwargs
         )
-        plot_config = PlotConfig.from_kwargs(**kwargs.pop("plot_config"))
+        plot_config = PlotConfig.from_kwargs(**kwargs.pop("plot_config", {}))
         return PlotArtefact(
             name, output_path, plot_generator_type, common_options, plot_config,
             **kwargs
