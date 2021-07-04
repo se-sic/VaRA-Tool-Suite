@@ -105,7 +105,8 @@ def make_cli_option(*param_decls: str, **attrs: tp.Any) -> CLIOptionTy:
     return click.option(*param_decls, **attrs)
 
 
-def add_cli_options(command: tp.Any, *options: CLIOptionTy) -> tp.Any:
+def add_cli_options(command: tp.Callable[..., None],
+                    *options: CLIOptionTy) -> tp.Callable[..., None]:
     """
     Adds click CLI options to a click command.
 

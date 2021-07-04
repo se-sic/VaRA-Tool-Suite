@@ -136,9 +136,6 @@ class CommonPlotOptions():
 class PlotConfig():
     """Class with parameters that influence a plot's appearance."""
 
-    def __init__(self):
-        pass
-
     __options: tp.List[tp.Any] = []
 
     @classmethod
