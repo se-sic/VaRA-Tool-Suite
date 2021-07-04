@@ -200,7 +200,7 @@ def prepare_tables(**args: tp.Any) -> tp.Iterable['table.Table']:
     return [prepare_table(**args)]
 
 
-class TableArtefact(Artefact, artefact_type_version=1):
+class TableArtefact(Artefact, artefact_type="table", artefact_type_version=1):
     """
     An artefact defining a :class:`table<varats.tables.table.Table>`.
 

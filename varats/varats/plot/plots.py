@@ -311,7 +311,7 @@ class PlotGenerator(abc.ABC):
                 )
 
 
-class PlotArtefact(Artefact, artefact_type_version=2):
+class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
     """
     An artefact defining a :class:`plot<varats.plot.plot.Plot>`.
 
