@@ -17,6 +17,7 @@ from varats.ts_utils.cli_util import (
     TypedMultiChoice,
     TypedChoice,
 )
+from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.settings import vara_cfg
 
 if tp.TYPE_CHECKING:
@@ -33,7 +34,11 @@ def _create_multi_case_study_choice() -> TypedMultiChoice[CaseStudy]:
     Multiple case studies can be given as a comma separated list. The special
     value "all" selects all case studies in the current paper config.
     """
-    paper_config = get_paper_config()
+    try:
+        paper_config = get_paper_config()
+    except ConfigurationLookupError:
+        empty_cs_dict: tp.Dict[str, tp.List[CaseStudy]] = {}
+        return TypedMultiChoice(empty_cs_dict)
     value_dict = {
         f"{cs.project_name}_{cs.version}": [cs]
         for cs in paper_config.get_all_case_studies()
@@ -45,7 +50,11 @@ def _create_multi_case_study_choice() -> TypedMultiChoice[CaseStudy]:
 def _create_single_case_study_choice() -> TypedChoice[CaseStudy]:
     """Create a choice parameter type that allows selecting exactly one case
     study from the current paper config."""
-    paper_config = get_paper_config()
+    try:
+        paper_config = get_paper_config()
+    except ConfigurationLookupError:
+        empty_cs_dict: tp.Dict[str, CaseStudy] = {}
+        return TypedChoice(empty_cs_dict)
     value_dict = {
         f"{cs.project_name}_{cs.version}": cs
         for cs in paper_config.get_all_case_studies()
