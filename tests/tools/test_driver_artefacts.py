@@ -1,13 +1,10 @@
 """Test artefacts config tool."""
-import tempfile
 import typing as tp
 import unittest
 import unittest.mock as mock
 from pathlib import Path
 
-from plumbum import local
-
-from tests.test_utils import replace_config
+from tests.test_utils import run_in_test_environment, TestInputs
 from varats.data.discover_reports import initialize_reports
 from varats.paper_mgmt.artefacts import Artefact
 from varats.paper_mgmt.paper_config import get_paper_config
@@ -18,6 +15,7 @@ from varats.table.table import Table
 from varats.table.tables import prepare_tables, TableArtefact
 from varats.tables.discover_tables import initialize_tables
 from varats.tools.driver_artefacts import _artefact_generate
+from varats.utils.settings import vara_cfg
 
 
 def _mock_plot(plot: Plot):
@@ -41,30 +39,26 @@ class TestDriverArtefacts(unittest.TestCase):
         initialize_tables()
         initialize_plots()
 
+    @run_in_test_environment(TestInputs.PAPER_CONFIGS)
     @mock.patch('varats.table.tables.build_table', side_effect=_mock_table)
     # pylint: disable=unused-argument
     def test_artefacts_generate(self, build_tables):
         """Test whether `vara-art generate` generates all expected files."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmppath = Path(tmpdir)
-            with replace_config(tmp_path=tmppath) as config:
-                with local.cwd(tmpdir):
-                    # setup config
-                    config['artefacts']['artefacts_dir'] = "artefacts"
-                    config['paper_config']['current_config'
-                                          ] = "test_artefacts_driver"
-                    artefacts = get_paper_config().get_all_artefacts()
-                    output_path = Path("artefacts/test_artefacts_driver")
-                    output_path.mkdir(parents=True)
 
-                    # vara-art generate
-                    _artefact_generate({})
-                    # check that overview files are present
-                    self.assertTrue((output_path / "index.html").exists())
-                    self.assertTrue((output_path / "plot_matrix.html").exists())
-                    # check that artefact files are present
-                    for artefact in artefacts:
-                        self.__check_artefact_files_present(artefact)
+        # setup config
+        vara_cfg()['paper_config']['current_config'] = "test_artefacts_driver"
+        artefacts = get_paper_config().get_all_artefacts()
+        output_path = Path("artefacts/test_artefacts_driver")
+        output_path.mkdir(parents=True)
+
+        # vara-art generate
+        _artefact_generate({})
+        # check that overview files are present
+        self.assertTrue((output_path / "index.html").exists())
+        self.assertTrue((output_path / "plot_matrix.html").exists())
+        # check that artefact files are present
+        for artefact in artefacts:
+            self.__check_artefact_files_present(artefact)
 
     def __check_artefact_files_present(self, artefact: Artefact):
         artefact_file_names: tp.List[str] = []

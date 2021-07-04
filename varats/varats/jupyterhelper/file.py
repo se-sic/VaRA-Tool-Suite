@@ -10,7 +10,11 @@ from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportNoOpt,
 )
 from varats.data.reports.commit_report import CommitReport
-from varats.data.reports.szz_report import SZZUnleashedReport, SZZReport
+from varats.data.reports.szz_report import (
+    SZZUnleashedReport,
+    SZZReport,
+    PyDrillerSZZReport,
+)
 from varats.mapping.commit_map import CommitMap
 
 
@@ -42,6 +46,16 @@ def load_szzunleashed_report(file_path: Path) -> SZZReport:
         file_path (Path): Full path to the file
     """
     return VDM.load_data_class_sync(file_path, SZZUnleashedReport)
+
+
+def load_pydriller_szz_report(file_path: Path) -> SZZReport:
+    """
+    Load a PyDrillerSZZReport from a file.
+
+    Attributes:
+        file_path (Path): Full path to the file
+    """
+    return VDM.load_data_class_sync(file_path, PyDrillerSZZReport)
 
 
 def load_commit_map(file_path: str) -> CommitMap:

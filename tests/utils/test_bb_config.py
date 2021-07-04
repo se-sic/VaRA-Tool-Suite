@@ -1,87 +1,81 @@
 """Test module for settings."""
-import os
-import tempfile
+import importlib
+import pkgutil
+import sys
+import typing as tp
 import unittest
-from copy import deepcopy
-from pathlib import Path
 
-from varats.tools.bb_config import generate_benchbuild_config
-from varats.utils.settings import vara_cfg, bb_cfg
+from tests.test_utils import run_in_test_environment
+from varats.utils.settings import bb_cfg
 
 
 class BenchBuildConfig(unittest.TestCase):
     """Test BenchBuild config."""
 
-    @classmethod
-    def setUpClass(cls):
-        """Setup and generate the benchbuild config file."""
-        cls.tmp_file = tempfile.NamedTemporaryFile()
-        generate_benchbuild_config(vara_cfg(), cls.tmp_file.name)
-        cls.bb_cfg = deepcopy(bb_cfg())
-        cls.bb_cfg.load(cls.tmp_file.name)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.tmp_file.close()
-
     def check_all_files_in_config_list(
-        self, folder, config_list, exclude_list=None
+        self,
+        package_name: str,
+        config_list: tp.List[str],
+        exclude_list: tp.Optional[tp.List[str]] = None
     ):
         """Check if all python files in a folder are added to the benchbuild
         project config."""
         if exclude_list is None:
             exclude_list = []
 
-        for plugin_file in os.listdir(Path("varats") / folder):
-            if plugin_file in exclude_list:
+        importlib.import_module(package_name)
+        path = getattr(sys.modules[package_name], '__path__', None) or []
+        for _, plugin_name, is_pkg in pkgutil.walk_packages(
+            path, f"{package_name}."
+        ):
+            if plugin_name in exclude_list:
                 continue
 
-            if os.path.isfile(folder + plugin_file) and\
-                    plugin_file.endswith(".py") and\
-                    plugin_file != "__init__.py":
-                plugin_python_path = (folder + plugin_file)\
-                    .replace(".py", "")\
-                    .replace("/", ".")
-                self.assertTrue(
-                    plugin_python_path in config_list,
-                    "Missing: " + plugin_python_path
+            if is_pkg:
+                self.check_all_files_in_config_list(
+                    plugin_name, config_list, exclude_list
                 )
+            else:
+                self.assertIn(plugin_name, config_list)
 
+    @run_in_test_environment()
     def test_if_all_nodes_have_been_created(self):
         """Test if all the benchbuild config was created with all expected
         nodes."""
 
-        self.assertTrue(self.bb_cfg["varats"].__contains__("outfile"))
-        self.assertTrue(self.bb_cfg["varats"].__contains__("result"))
+        self.assertTrue(bb_cfg()["varats"].__contains__("outfile"))
+        self.assertTrue(bb_cfg()["varats"].__contains__("result"))
 
+    @run_in_test_environment()
     def test_if_slurm_config_was_added(self):
         """Test if all the benchbuild slurm config was created."""
 
-        self.assertTrue(self.bb_cfg["slurm"].__contains__("account"))
-        self.assertTrue(self.bb_cfg["slurm"].__contains__("partition"))
+        self.assertTrue(bb_cfg()["slurm"].__contains__("account"))
+        self.assertTrue(bb_cfg()["slurm"].__contains__("partition"))
 
+    @run_in_test_environment()
     def test_if_projects_were_added(self):
-        """Test if all projects where added to the benchbuild config."""
-        excluded_projects = [
-            "llvm-all.py", "llvm-min.py", "llvm.py", "glibc.py"
-        ]
+        """Test if all projects were added to the benchbuild config."""
+        excluded_projects = ["varats.experiments.c_projects.glibc"]
 
-        loaded_plugins = self.bb_cfg["plugins"]["projects"].value
+        loaded_plugins = bb_cfg()["plugins"]["projects"].value
         self.check_all_files_in_config_list(
-            "varats/projects/c_projects/", loaded_plugins, excluded_projects
+            "varats.projects.c_projects", loaded_plugins, excluded_projects
         )
         self.check_all_files_in_config_list(
-            "varats/projects/cpp_projects/", loaded_plugins, excluded_projects
+            "varats.projects.cpp_projects", loaded_plugins, excluded_projects
         )
 
+    @run_in_test_environment()
     def test_if_experiments_were_added(self):
-        """Test if all projects where added to the benchbuild config."""
+        """Test if all projects were added to the benchbuild config."""
         excluded_experiments = [
-            "wllvm.py", "phasar.py", "region_instrumentation.py",
-            "commit_annotation_report.py", "blame_experiment.py"
+            "varats.experiments.vara.region_instrumentation",
+            "varats.experiments.vara.commit_annotation_report",
+            "varats.experiments.vara.blame_experiment"
         ]
 
-        loaded_plugins = self.bb_cfg["plugins"]["experiments"].value
+        loaded_plugins = bb_cfg()["plugins"]["experiments"].value
         self.check_all_files_in_config_list(
-            "varats/experiments/", loaded_plugins, excluded_experiments
+            "varats.experiments", loaded_plugins, excluded_experiments
         )
