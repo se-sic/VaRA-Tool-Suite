@@ -81,6 +81,7 @@ def generate_benchbuild_config(
         'varats.experiments.vara.vara_fc_taint_analysis',
         'varats.experiments.vara.vara_full_mtfa',
         'varats.experiments.vara.blame_verifier_experiment',
+        'varats.experiments.vara.phasar_fta',
         'varats.experiments.phasar.ide_linear_constant_experiment',
     ]
 

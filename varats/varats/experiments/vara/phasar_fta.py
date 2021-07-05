@@ -1,16 +1,16 @@
 """
 Implements the FTA experiment.
 
-The experiment analyses a project with VaRA's feature taint analysis
-and generates an EmptyReport.
+The experiment analyses a project with VaRA's feature taint analysis and
+generates an EmptyReport.
 """
 
 import typing as tp
 
-from benchbuild.utils import actions
 from benchbuild import Project
-from benchbuild.utils.cmd import mkdir, opt, timeout
 from benchbuild.extensions import compiler, run, time
+from benchbuild.utils import actions
+from benchbuild.utils.cmd import mkdir, opt, timeout
 
 from varats.data.reports.empty_report import EmptyReport as EMPTY
 from varats.experiment.experiment_util import (
@@ -25,15 +25,15 @@ from varats.experiment.wllvm import (
     RunWLLVM,
     BCFileExtensions,
     get_bc_cache_actions,
-    get_cached_bc_file_path
+    get_cached_bc_file_path,
 )
 from varats.report.report import FileStatusExtension as FSE
 from varats.utils.settings import bb_cfg
 
 
 class PhASARFTACheck(actions.Step):  # type: ignore
-    """Analyse a project with VaRA and generate the output of the
-    feature taint analysis."""
+    """Analyse a project with VaRA and generate the output of the feature taint
+    analysis."""
 
     NAME = "PhASARFTACheck"
     DESCRIPTION = "Generate a full FTA."
@@ -47,9 +47,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
         super().__init__(obj=project, action_fn=self.analyze)
 
     def analyze(self) -> actions.StepResult:
-        """
-        This step performs the actual analysis with the correct flags.
-        """
+        """This step performs the actual analysis with the correct flags."""
 
         if not self.obj:
             return
@@ -100,8 +98,8 @@ class PhASARFTACheck(actions.Step):  # type: ignore
 
             # Run the command with custom error handler and timeout
             exec_func_with_pe_error_handler(
-                timeout[timeout_duration,
-                        run_cmd] > f"{vara_result_folder}/{result_file}",
+                timeout[timeout_duration, run_cmd] >
+                f"{vara_result_folder}/{result_file}",
                 PEErrorHandler(
                     vara_result_folder, error_file, timeout_duration
                 )
@@ -109,8 +107,8 @@ class PhASARFTACheck(actions.Step):  # type: ignore
 
 
 class PhASARTaintAnalysis(VersionExperiment):
-    """Generates a feature taint analysis (FTA) of the project(s)
-    specified in the call."""
+    """Generates a feature taint analysis (FTA) of the project(s) specified in
+    the call."""
 
     NAME = "PhASARFeatureTaintAnalysis"
     REPORT_TYPE = EMPTY
@@ -142,9 +140,7 @@ class PhASARTaintAnalysis(VersionExperiment):
             "-O1", "-Xclang", "-disable-llvm-optzns", "-fvara-IFA"
         ]
 
-        bc_file_extensions = [
-            BCFileExtensions.NO_OPT, BCFileExtensions.TBAA
-        ]
+        bc_file_extensions = [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
 
         analysis_actions = []
 
