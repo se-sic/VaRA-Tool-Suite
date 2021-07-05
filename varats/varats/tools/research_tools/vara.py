@@ -18,6 +18,7 @@ from varats.tools.research_tools.research_tool import (
     ResearchTool,
     SubProject,
     Dependencies,
+    Distro,
 )
 from varats.tools.research_tools.vara_manager import (
     BuildType,
@@ -137,7 +138,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
     Find the main repo online on github: https://github.com/se-passau/VaRA
     """
 
-    __DEPENDENCIES = Dependencies({})
+    __DEPENDENCIES = Dependencies({Distro.DEBIAN: ["libboost-all-dev"]})
 
     def __init__(self, base_dir: Path) -> None:
         super().__init__("VaRA", [BuildType.DEV], VaRACodeBase(base_dir))
