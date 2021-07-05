@@ -1,6 +1,13 @@
+"""
+Implements the FTA experiment.
+
+The experiment analyses a project with VaRA's feature taint analysis
+and generates an EmptyReport.
+"""
+
 import typing as tp
 
-import benchbuild.utils.actions as actions
+from benchbuild.utils import actions
 from benchbuild import Project
 from benchbuild.utils.cmd import mkdir, opt, timeout
 from benchbuild.extensions import compiler, run, time
@@ -78,12 +85,12 @@ class PhASARFTACheck(actions.Step):  # type: ignore
 
             # Combine the input bitcode file's name
             bc_target_file = get_cached_bc_file_path(
-                project, binary, 
+                project, binary,
                 [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
             )
 
             opt_params = [
-                "-vara-PFA", "-S", 
+                "-vara-PFA", "-S",
                 str(bc_target_file), "-o", "/dev/null"
             ]
 
@@ -102,8 +109,8 @@ class PhASARFTACheck(actions.Step):  # type: ignore
 
 
 class PhASARTaintAnalysis(VersionExperiment):
-    """Generates a feature taint analysis (FTA) of the project(s) specified in the
-    call."""
+    """Generates a feature taint analysis (FTA) of the project(s)
+    specified in the call."""
 
     NAME = "PhASARFeatureTaintAnalysis"
     REPORT_TYPE = EMPTY
