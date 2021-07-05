@@ -30,6 +30,8 @@ Version:         4
 YAML_DOC_BR_METADATA = """---
 funcs-in-module: 3
 insts-in-module: 21
+phasar-empty-tracked-vars: 42
+phasar-total-tracked-vars: 1337
 ...
 """
 
@@ -367,6 +369,16 @@ class TestBlameReportMetaData(unittest.TestCase):
         """Tests if the number of instructions is correctly parsed from the
         file."""
         self.assertEqual(self.report.meta_data.num_instructions, 21)
+
+    def test_num_empty_tracked_vars_parsed_correctly(self):
+        """Tests if the number tracked empty variables is correctly parsed from
+        the file."""
+        self.assertEqual(self.report.meta_data.num_empty_tracked_vars, 42)
+
+    def test_num_total_tracked_vars_parsed_correctly(self):
+        """Tests if the number tracked variables is correctly parsed from the
+        file."""
+        self.assertEqual(self.report.meta_data.num_total_tracked_vars, 1337)
 
 
 class TestBlameReport(unittest.TestCase):

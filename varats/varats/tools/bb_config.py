@@ -6,16 +6,14 @@ It can automatically create different preconfigured configs for BB.
 
 from copy import deepcopy
 from os import getcwd
-from pathlib import Path
 
 from benchbuild.utils import settings as s
-from plumbum import local
 
 from varats.tools.tool_util import (
     get_supported_research_tool_names,
     get_research_tool_type,
 )
-from varats.utils.settings import vara_cfg
+from varats.utils.settings import add_vara_experiment_options
 
 
 def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
@@ -108,9 +106,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
     new_bb_cfg["slurm"]["partition"] = "anywhere"
 
     # Container pre Configuration
-    container_conf = new_bb_cfg["container"]["mounts"]
-    container_conf.value[:] = []
-    container_conf.value[:] = [
+    new_bb_cfg["container"]["mounts"] = [
         [varats_cfg["result_dir"].value, "/varats_root/results"],
         [f"{varats_cfg['benchbuild_root']}/BC_files", "/varats_root/BC_files"],
         [
@@ -129,18 +125,9 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
     }
 
     # Add VaRA experiment config variables
-    new_bb_cfg["varats"] = {
-        "outfile": {
-            "default": "",
-            "desc": "Path to store results of VaRA CFR analysis.",
-            "value": str(varats_cfg["result_dir"])
-        },
-        "result": {
-            "default": "",
-            "desc": "Path to store already annotated projects.",
-            "value": "BC_files"
-        }
-    }
+    add_vara_experiment_options(new_bb_cfg)
+    new_bb_cfg["varats"]["outfile"] = str(varats_cfg["result_dir"])
+    new_bb_cfg["varats"]["result"] = "BC_files"
 
     def replace_bb_cwd_path(
         cfg_varname: str, cfg_node: s.Configuration = new_bb_cfg
@@ -154,15 +141,3 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
     replace_bb_cwd_path("node_dir", new_bb_cfg["slurm"])
 
     return new_bb_cfg
-
-
-def save_bb_config(benchbuild_cfg: s.Configuration) -> None:
-    """Persist BenchBuild config to a yaml file."""
-    # Create caching folder for .bc files
-    bc_cache_path = Path(vara_cfg()["benchbuild_root"].value
-                        ) / benchbuild_cfg["varats"]["result"].value
-    if not bc_cache_path.exists():
-        bc_cache_path.mkdir(parents=True)
-    benchbuild_cfg.store(
-        local.path(str(vara_cfg()["benchbuild_root"])) / ".benchbuild.yml"
-    )

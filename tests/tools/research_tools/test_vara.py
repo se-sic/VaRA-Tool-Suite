@@ -3,17 +3,14 @@
 import unittest
 import unittest.mock as mock
 
+from tests.test_utils import run_in_test_environment
 from varats.tools.tool_util import get_research_tool
 
 
 class TestVara(unittest.TestCase):
     """Test the research tool implementation for VaRA."""
 
-    @classmethod
-    def setUp(cls) -> None:
-        """Set up tools to test vara."""
-        cls.research_tool_vara = get_research_tool("vara")
-
+    @run_in_test_environment()
     @mock.patch(
         'varats.tools.research_tools.research_tool.SubProject.get_branches'
     )
@@ -36,10 +33,11 @@ class TestVara(unittest.TestCase):
         mock_get_tags.return_value = mock_tag_list
         mock_get_branches_subproject.return_value = mock_branch_name_list
 
+        research_tool_vara = get_research_tool("vara")
         highest_vara_version = \
-            self.research_tool_vara.find_highest_sub_prj_version("VaRA")
+            research_tool_vara.find_highest_sub_prj_version("VaRA")
         highest_llvm_version = \
-            self.research_tool_vara.find_highest_sub_prj_version(
+            research_tool_vara.find_highest_sub_prj_version(
                 "vara-llvm-project"
             )
 
