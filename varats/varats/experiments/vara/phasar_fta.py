@@ -25,6 +25,8 @@ from varats.utils.settings import bb_cfg
 
 
 class PhASARFTACheck(actions.Step):  # type: ignore
+    """Analyse a project with VaRA and generate the output of the
+    feature taint analysis."""
 
     NAME = "PhASARFTACheck"
     DESCRIPTION = "Generate a full FTA."
@@ -41,20 +43,20 @@ class PhASARFTACheck(actions.Step):  # type: ignore
         """
         This step performs the actual analysis with the correct flags.
         """
-        
+
         if not self.obj:
             return
         project = self.obj
-        
+
         # Define the output directory.
         vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
             result_dir=str(bb_cfg()["varats"]["outfile"]),
             project_dir=str(project.name)
         )
         mkdir("-p", vara_result_folder)
-        
+
         timeout_duration = '24h'
-        
+
         for binary in project.binaries:
             # Define empty success file
             result_file = EMPTY.get_file_name(
@@ -64,7 +66,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Success
             )
-            
+
             # Define output file name of failed runs
             error_file = EMPTY.get_file_name(
                 project_name=str(project.name),
@@ -73,26 +75,26 @@ class PhASARFTACheck(actions.Step):  # type: ignore
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.Failed
             )
-            
+
             # Combine the input bitcode file's name
             bc_target_file = get_cached_bc_file_path(
                 project, binary, 
                 [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
             )
-            
+
             opt_params = [
                 "-vara-PFA", "-S", 
                 str(bc_target_file), "-o", "/dev/null"
             ]
 
             run_cmd = opt[opt_params]
-            
+
             run_cmd = wrap_unlimit_stack_size(run_cmd)
-            
+
             # Run the command with custom error handler and timeout
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration,
-                        vara_run_cmd] > f"{vara_result_folder}/{result_file}",
+                        run_cmd] > f"{vara_result_folder}/{result_file}",
                 PEErrorHandler(
                     vara_result_folder, error_file, timeout_duration
                 )
@@ -100,10 +102,12 @@ class PhASARFTACheck(actions.Step):  # type: ignore
 
 
 class PhASARTaintAnalysis(VersionExperiment):
+    """Generates a feature taint analysis (FTA) of the project(s) specified in the
+    call."""
 
     NAME = "PhASARFeatureTaintAnalysis"
     REPORT_TYPE = EMPTY
-	
+
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -112,7 +116,7 @@ class PhASARTaintAnalysis(VersionExperiment):
         Args:
             project: to analyze
         """
-        
+
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
             << time.RunWithTime()
@@ -126,10 +130,15 @@ class PhASARTaintAnalysis(VersionExperiment):
         project.compile = get_default_compile_error_wrapped(
             project, self.REPORT_TYPE, PhASARFTACheck.RESULT_FOLDER_TEMPLATE
         )
-        
-        project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-fvara-IFA"]
-        bc_file_extensions = [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
-        
+
+        project.cflags += [
+            "-O1", "-Xclang", "-disable-llvm-optzns", "-fvara-IFA"
+        ]
+
+        bc_file_extensions = [
+            BCFileExtensions.NO_OPT, BCFileExtensions.TBAA
+        ]
+
         analysis_actions = []
 
         analysis_actions += get_bc_cache_actions(
@@ -139,7 +148,7 @@ class PhASARTaintAnalysis(VersionExperiment):
                 project, self.REPORT_TYPE
             )
         )
-        
+
         analysis_actions.append(PhASARFTACheck(project))
         analysis_actions.append(actions.Clean(project))
 
