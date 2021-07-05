@@ -6,7 +6,6 @@ from benchbuild.utils.cmd import make
 from benchbuild.utils.revision_ranges import (
     block_revisions,
     GoodBadSubgraph,
-    RevisionRange,
     SingleRevision,
 )
 from benchbuild.utils.settings import get_number_of_jobs
