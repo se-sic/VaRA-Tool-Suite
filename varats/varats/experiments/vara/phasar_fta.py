@@ -43,14 +43,16 @@ class PhASARFTACheck(actions.Step):  # type: ignore
     def __init__(
         self,
         project: Project,
+        report_type,
+        bc_file_extensions,
     ):
         super().__init__(obj=project, action_fn=self.analyze)
+        self.__report_type = report_type
+        self.__bc_file_extensions = bc_file_extensions
 
     def analyze(self) -> actions.StepResult:
         """This step performs the actual analysis with the correct flags."""
 
-        if not self.obj:
-            return
         project = self.obj
 
         # Define the output directory.
@@ -60,11 +62,9 @@ class PhASARFTACheck(actions.Step):  # type: ignore
         )
         mkdir("-p", vara_result_folder)
 
-        timeout_duration = '24h'
-
         for binary in project.binaries:
             # Define empty success file
-            result_file = EMPTY.get_file_name(
+            result_file = self.__report_type.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
                 project_version=project.version_of_primary,
@@ -73,7 +73,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
             )
 
             # Define output file name of failed runs
-            error_file = EMPTY.get_file_name(
+            error_file = self.__report_type.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
                 project_version=project.version_of_primary,
@@ -84,7 +84,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
             # Combine the input bitcode file's name
             bc_target_file = get_cached_bc_file_path(
                 project, binary,
-                [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+                self.__bc_file_extensions
             )
 
             opt_params = [
@@ -96,10 +96,11 @@ class PhASARFTACheck(actions.Step):  # type: ignore
 
             run_cmd = wrap_unlimit_stack_size(run_cmd)
 
+            run_cmd = run_cmd > f"{vara_result_folder}/{result_file}"
+
             # Run the command with custom error handler and timeout
             exec_func_with_pe_error_handler(
-                timeout[timeout_duration, run_cmd] >
-                f"{vara_result_folder}/{result_file}",
+                run_cmd,
                 PEErrorHandler(
                     vara_result_folder, error_file, timeout_duration
                 )
@@ -137,10 +138,14 @@ class PhASARTaintAnalysis(VersionExperiment):
         )
 
         project.cflags += [
-            "-O1", "-Xclang", "-disable-llvm-optzns", "-fvara-IFA"
+            "-O1", "-Xclang", "-disable-llvm-optzns", "-fvara-feature"
         ]
 
-        bc_file_extensions = [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+        bc_file_extensions = [
+            BCFileExtensions.NO_OPT,
+            BCFileExtensions.TBAA,
+            BCFileExtensions.FEATURE
+        ]
 
         analysis_actions = []
 
@@ -152,7 +157,9 @@ class PhASARTaintAnalysis(VersionExperiment):
             )
         )
 
-        analysis_actions.append(PhASARFTACheck(project))
+        analysis_actions.append(
+            PhASARFTACheck(project, self.REPORT_TYPE, bc_file_extensions)
+        )
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
