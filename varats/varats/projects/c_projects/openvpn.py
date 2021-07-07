@@ -43,9 +43,10 @@ class OpenVPN(bb.Project, CVEProviderHook):  # type: ignore
         )
     ]
 
-    CONTAINER = get_base_image(
-        ImageBase.DEBIAN_10
-    ).run('apt', 'install', '-y', 'openssl', 'autoconf', 'automake', 'libtool')
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
+        'apt', 'install', '-y', 'libssl-dev', 'openssl', 'autoconf', 'automake',
+        'libtool'
+    )
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
