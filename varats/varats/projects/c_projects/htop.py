@@ -27,7 +27,7 @@ class Htop(bb.Project, CVEProviderHook):  # type: ignore
 
     SOURCE = [
         bb.source.Git(
-            remote="https://github.com/hishamhm/htop.git",
+            remote="https://github.com/htop-dev/htop.git",
             local="htop",
             refspec="HEAD",
             limit=None,
