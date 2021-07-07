@@ -72,19 +72,19 @@ class BlameVerifierReportParserMixin:
                         )
                         self.__num_undetermined = int(undetermined_str)
 
-        if self.__num_successes is -1:
+        if self.__num_successes == -1:
             raise RuntimeError(
                 f"The number of successful annotations could not be parsed "
                 f"from file: {self.__path}."
             )
 
-        if self.__num_total is -1:
+        if self.__num_total == -1:
             raise RuntimeError(
                 f"The number of total annotations could not be parsed from "
                 f"file: {self.__path}."
             )
 
-        if self.__num_undetermined is -1:
+        if self.__num_undetermined == -1:
             LOG.info(
                 f"The number of undetermined annotations is either 0 or "
                 f"could not be parsed from the file: {self.__path}. "

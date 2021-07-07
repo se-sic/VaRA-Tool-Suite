@@ -5,20 +5,30 @@ It can automatically create different preconfigured configs for BB.
 """
 
 from copy import deepcopy
-from os import getcwd, makedirs, path
+from os import getcwd
 
-import benchbuild.utils.settings as s
+from benchbuild.utils import settings as s
 
 from varats.tools.tool_util import (
     get_supported_research_tool_names,
     get_research_tool_type,
 )
+from varats.utils.settings import add_vara_experiment_options
 
 
-def generate_benchbuild_config(
-    varats_cfg: s.Configuration, bb_config_path: str
-) -> None:
-    """Generate a configuration file for benchbuild."""
+def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
+    """
+    Create a new default bb config.
+
+    For internal use only! If you want to access the current bb config, use
+    :func:`bb_cfg()` instead.
+
+    Args:
+        varats_cfg: the varats config this bb config is based on
+
+    Returns:
+        a new default bb config object
+    """
     from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
     new_bb_cfg = deepcopy(BB_CFG)
 
@@ -35,6 +45,7 @@ def generate_benchbuild_config(
         'varats.projects.c_projects.coreutils',
         'varats.projects.c_projects.curl',
         'varats.projects.c_projects.gawk',
+        'varats.projects.c_projects.glibc',
         'varats.projects.c_projects.git',
         'varats.projects.c_projects.gravity',
         'varats.projects.c_projects.grep',
@@ -60,6 +71,7 @@ def generate_benchbuild_config(
         'varats.projects.c_projects.xz',
         'varats.projects.cpp_projects.mongodb',
         'varats.projects.cpp_projects.poppler',
+        'varats.projects.test_projects.test_suite',
     ]
     projects_conf.value[:] += [
         'varats.projects.cpp_projects.doxygen', 'varats.projects.cpp_projects'
@@ -83,6 +95,8 @@ def generate_benchbuild_config(
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.phasar_fta',
         'varats.experiments.phasar.ide_linear_constant_experiment',
+        'varats.experiments.szz.szz_unleashed_experiment',
+        'varats.experiments.szz.pydriller_szz_experiment',
     ]
 
     # Enable version exploration by default
@@ -91,6 +105,16 @@ def generate_benchbuild_config(
     # Slurm Cluster Configuration
     new_bb_cfg["slurm"]["account"] = "anywhere"
     new_bb_cfg["slurm"]["partition"] = "anywhere"
+
+    # Container pre Configuration
+    new_bb_cfg["container"]["mounts"] = [
+        [varats_cfg["result_dir"].value, "/varats_root/results"],
+        [f"{varats_cfg['benchbuild_root']}/BC_files", "/varats_root/BC_files"],
+        [
+            varats_cfg["paper_config"]["folder"].value,
+            "/varats_root/paper_configs"
+        ],
+    ]
 
     new_bb_cfg["env"] = {
         "PATH": [
@@ -102,34 +126,17 @@ def generate_benchbuild_config(
     }
 
     # Add VaRA experiment config variables
-    new_bb_cfg["varats"] = {
-        "outfile": {
-            "default": "",
-            "desc": "Path to store results of VaRA CFR analysis.",
-            "value": str(varats_cfg["result_dir"])
-        },
-        "result": {
-            "default": "",
-            "desc": "Path to store already annotated projects.",
-            "value": "BC_files"
-        }
-    }
+    add_vara_experiment_options(new_bb_cfg, varats_cfg)
 
     def replace_bb_cwd_path(
         cfg_varname: str, cfg_node: s.Configuration = new_bb_cfg
     ) -> None:
-        cfg_node[cfg_varname] = str(varats_cfg["benchbuild_root"]) +\
-            str(cfg_node[cfg_varname])[len(getcwd()):]
+        cfg_node[cfg_varname] = str(varats_cfg["benchbuild_root"]) + \
+                                str(cfg_node[cfg_varname])[len(getcwd()):]
 
+    replace_bb_cwd_path("config_file")
     replace_bb_cwd_path("build_dir")
     replace_bb_cwd_path("tmp_dir")
-    # replace_bb_cwd_path("test_dir")
     replace_bb_cwd_path("node_dir", new_bb_cfg["slurm"])
 
-    # Create caching folder for .bc files
-    bc_cache_path = str(varats_cfg["benchbuild_root"])
-    bc_cache_path += "/" + str(new_bb_cfg["varats"]["result"])
-    if not path.isdir(bc_cache_path):
-        makedirs(bc_cache_path)
-
-    new_bb_cfg.store(bb_config_path)
+    return new_bb_cfg

@@ -51,7 +51,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
             * -yaml-report-outfile=<path>: specify the path to store the results
         """
         if not self.obj:
-            return
+            return actions.StepResult.ERROR
         project = self.obj
 
         # Add to the user-defined path for saving the results of the
@@ -78,8 +78,10 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                 "-vara-use-phasar",
                 f"-vara-report-outfile={vara_result_folder}/{result_file}",
                 get_cached_bc_file_path(
-                    project, binary,
-                    [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+                    project, binary, [
+                        BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
+                        BCFileExtensions.BLAME
+                    ]
                 )
             ]
 
@@ -87,16 +89,10 @@ class BlameReportGeneration(actions.Step):  # type: ignore
 
             run_cmd = wrap_unlimit_stack_size(run_cmd)
 
-            timeout_duration = '24h'
-            from benchbuild.utils.cmd import timeout  # pylint: disable=C0415
-
             exec_func_with_pe_error_handler(
-                timeout[timeout_duration, run_cmd],
+                run_cmd,
                 create_default_analysis_failure_handler(
-                    project,
-                    BR,
-                    Path(vara_result_folder),
-                    timeout_duration=timeout_duration
+                    project, BR, Path(vara_result_folder)
                 )
             )
 
@@ -110,7 +106,9 @@ class BlameReportExperiment(VersionExperiment):
     REPORT_TYPE = BR
     REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
 
-    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
+    def actions_for_project(
+        self, project: Project
+    ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
         in a fixed order.
@@ -123,7 +121,11 @@ class BlameReportExperiment(VersionExperiment):
         # build without optimizations because the used build tool/script can
         # still add optimizations flags after the experiment specified cflags.
         project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g0"]
-        bc_file_extensions = [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+        bc_file_extensions = [
+            BCFileExtensions.NO_OPT,
+            BCFileExtensions.TBAA,
+            BCFileExtensions.BLAME,
+        ]
 
         BE.setup_basic_blame_experiment(
             self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE
