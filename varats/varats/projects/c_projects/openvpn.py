@@ -45,7 +45,7 @@ class OpenVPN(bb.Project, CVEProviderHook):  # type: ignore
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
         'apt', 'install', '-y', 'libssl-dev', 'openssl', 'autoconf', 'automake',
-        'libtool', 'liblz4-dev', 'liblzo2-dev'
+        'libtool', 'liblz4-dev', 'liblzo2-dev', 'libpam0g-dev'
     )
 
     @property
