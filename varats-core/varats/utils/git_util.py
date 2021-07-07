@@ -206,6 +206,9 @@ class CommitRepoPair():
     def __str__(self) -> str:
         return f"{self.repository_name}[{self.commit_hash}]"
 
+    def __repr__(self) -> str:
+        return self.__str__()
+
 
 CommitLookupTy = tp.Callable[[CommitRepoPair], pygit2.Commit]
 
