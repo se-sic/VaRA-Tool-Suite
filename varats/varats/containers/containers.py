@@ -24,7 +24,7 @@ from plumbum import local
 
 from varats.tools.research_tools.research_tool import Distro
 from varats.tools.tool_util import get_research_tool
-from varats.utils.settings import bb_cfg, vara_cfg
+from varats.utils.settings import bb_cfg, vara_cfg, save_bb_config
 
 LOG = logging.getLogger(__name__)
 
@@ -120,6 +120,10 @@ class BaseImageCreationContext():
         return Path("/varats_root/")
 
     @property
+    def varats_source_mount_target(self) -> Path:
+        return Path("/varats")
+
+    @property
     def bb_root(self) -> Path:
         """
         BenchBuild root inside the container.
@@ -171,6 +175,24 @@ class BaseImageCreationContext():
         self.__env[env_var].extend(values)
 
 
+def _unset_varats_source_mount(image_context: BaseImageCreationContext) -> None:
+    mounts = bb_cfg()["container"]["mounts"].value
+    mounts[:] = [
+        mount for mount in mounts
+        if mount[1] != str(image_context.varats_source_mount_target)
+    ]
+    save_bb_config()
+
+
+def _set_varats_source_mount(
+    image_context: BaseImageCreationContext, mnt_src: str
+) -> None:
+    bb_cfg()["container"]["mounts"].value[:] += [[
+        mnt_src, str(image_context.varats_source_mount_target)
+    ]]
+    save_bb_config()
+
+
 def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
     crun = bb_cfg()['container']['runtime'].value
 
@@ -180,8 +202,7 @@ def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
         LOG.debug('installing varats from source.')
 
         src_dir = Path(vara_cfg()['container']['varats_source'].value)
-        tgt_dir = Path('/varats')
-        LOG.debug(f'src_dir: {src_dir} tgt_dir: {tgt_dir}')
+        tgt_dir = image_context.varats_source_mount_target
 
         image.run('mkdir', f'{tgt_dir}', runtime=crun)
         image.run('pip3', 'install', 'setuptools', runtime=crun)
@@ -189,6 +210,8 @@ def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
         pip_args = ['pip3', 'install', '--ignore-installed']
         if editable_install:
             pip_args.append("-e")
+            _set_varats_source_mount(image_context, str(src_dir))
+
         image.run(
             *pip_args,
             str(tgt_dir / 'varats-core'),
@@ -201,9 +224,10 @@ def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
         LOG.debug("installing varats from pip release.")
         image.run('pip3', 'install', 'varats-core', 'varats', runtime=crun)
 
+    _unset_varats_source_mount(image_context)
     if bool(vara_cfg()['container']['dev_mode']):
         from_source(image_context.layers, editable_install=True)
-    if bool(vara_cfg()['container']['from_source']):
+    elif bool(vara_cfg()['container']['from_source']):
         from_source(image_context.layers)
     else:
         from_pip(image_context.layers)
