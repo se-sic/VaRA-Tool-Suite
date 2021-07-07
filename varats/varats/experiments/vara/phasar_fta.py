@@ -44,7 +44,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
     def __init__(
         self,
         project: Project,
-        report_type: BaseReport,
+        report_type: Type[BaseReport],
         bc_file_extensions: tp.List[BCFileExtensions],
     ):
         super().__init__(obj=project, action_fn=self.analyze)
