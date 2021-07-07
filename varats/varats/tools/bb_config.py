@@ -8,6 +8,7 @@ from copy import deepcopy
 from os import getcwd
 
 from benchbuild.utils import settings as s
+
 from varats.tools.tool_util import (
     get_supported_research_tool_names,
     get_research_tool_type,

@@ -9,9 +9,8 @@ import typing as tp
 from os import makedirs, path
 from pathlib import Path
 
-from plumbum import local, LocalPath
-
 import benchbuild.utils.settings as s
+from plumbum import local, LocalPath
 
 
 def create_new_varats_config() -> s.Configuration:
