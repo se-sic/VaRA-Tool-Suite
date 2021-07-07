@@ -10,7 +10,7 @@ import typing as tp
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import mkdir, opt, timeout
+from benchbuild.utils.cmd import mkdir, opt
 
 from varats.data.reports.empty_report import EmptyReport as EMPTY
 from varats.experiment.experiment_util import (
@@ -27,6 +27,7 @@ from varats.experiment.wllvm import (
     get_bc_cache_actions,
     get_cached_bc_file_path,
 )
+from varats.report.report import BaseReport
 from varats.report.report import FileStatusExtension as FSE
 from varats.utils.settings import bb_cfg
 
@@ -43,8 +44,8 @@ class PhASARFTACheck(actions.Step):  # type: ignore
     def __init__(
         self,
         project: Project,
-        report_type,
-        bc_file_extensions,
+        report_type: BaseReport,
+        bc_file_extensions: tp.List[BCFileExtensions],
     ):
         super().__init__(obj=project, action_fn=self.analyze)
         self.__report_type = report_type
@@ -83,8 +84,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
 
             # Combine the input bitcode file's name
             bc_target_file = get_cached_bc_file_path(
-                project, binary,
-                self.__bc_file_extensions
+                project, binary, self.__bc_file_extensions
             )
 
             opt_params = [
@@ -100,10 +100,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
 
             # Run the command with custom error handler and timeout
             exec_func_with_pe_error_handler(
-                run_cmd,
-                PEErrorHandler(
-                    vara_result_folder, error_file, timeout_duration
-                )
+                run_cmd, PEErrorHandler(vara_result_folder, error_file)
             )
 
 
@@ -142,8 +139,7 @@ class PhASARTaintAnalysis(VersionExperiment):
         ]
 
         bc_file_extensions = [
-            BCFileExtensions.NO_OPT,
-            BCFileExtensions.TBAA,
+            BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
             BCFileExtensions.FEATURE
         ]
 
