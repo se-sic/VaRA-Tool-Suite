@@ -42,6 +42,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         'varats.projects.c_projects.bison',
         'varats.projects.c_projects.bitlbee',
         'varats.projects.c_projects.busybox',
+        'varats.projects.c_projects.brotli'
         'varats.projects.c_projects.coreutils',
         'varats.projects.c_projects.curl',
         'varats.projects.c_projects.gawk',
