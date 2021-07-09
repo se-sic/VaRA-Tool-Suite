@@ -9,6 +9,8 @@ from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
     CAIGNodeAttrs,
     CIGNodeAttrs,
+    create_file_based_interaction_graph,
+    AIGNodeAttrs,
 )
 from varats.data.reports.blame_report import BlameReport
 from varats.paper_mgmt.case_study import (
@@ -42,8 +44,6 @@ class CommitAuthorInteractionGraphViolinPlot(Plot):
         for case_study in case_studies:
             project_name = case_study.project_name
             added_project_name = False
-            # project_git = git["-C", get_local_project_git(project_name).path]
-            # authors = len(project_git("shortlog", "-s", "--all").splitlines())
             revision = newest_processed_revision_for_case_study(
                 case_study, BlameReport
             )
@@ -69,14 +69,14 @@ class CommitAuthorInteractionGraphViolinPlot(Plot):
                         project_names.append(project_name)
                         added_project_name = True
                     nodes.append(({
-                        "Case Study": project_name,
+                        "Project": project_name,
                         "commit": commit.commit_hash,
                         "# Interacting Authors": caig.degree(node) / authors
                     }))
 
         data = pd.DataFrame(nodes)
-        sns.violinplot(
-            x="Case Study",
+        ax = sns.violinplot(
+            x="Project",
             y="# Interacting Authors",
             data=data,
             order=sorted(project_names),
@@ -84,13 +84,92 @@ class CommitAuthorInteractionGraphViolinPlot(Plot):
             color=".95"
         )
         sns.stripplot(
-            x="Case Study",
+            x="Project",
             y="# Interacting Authors",
             data=data,
             order=sorted(project_names),
             alpha=.25,
             size=3
         )
+        ax.set_ylim(-0.1, 1.1)
+        ax.tick_params(axis='x', labelrotation=45)
+
+    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+        raise NotImplementedError
+
+
+class AuthorBlameVsFileDegreesViolinPlot(Plot):
+    """Box plot of commit-author interaction commit node degrees."""
+
+    NAME = 'aig_file_vs_blame_authors_box'
+
+    def __init__(self, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, **kwargs)
+
+    def plot(self, view_mode: bool) -> None:
+        case_studies = get_loaded_paper_config().get_all_case_studies()
+
+        diff_data: tp.List[tp.Dict[str, tp.Any]] = []
+        project_names: tp.List[str] = []
+        for case_study in case_studies:
+            project_name = case_study.project_name
+            revision = newest_processed_revision_for_case_study(
+                case_study, BlameReport
+            )
+            if not revision:
+                continue
+
+            blame_aig = create_blame_interaction_graph(
+                project_name, revision
+            ).author_interaction_graph()
+            file_aig = create_file_based_interaction_graph(
+                project_name, revision
+            ).author_interaction_graph()
+
+            file_nodes: tp.List[tp.Dict[str, tp.Any]] = []
+            for node in file_aig.nodes:
+                node_attrs = tp.cast(AIGNodeAttrs, file_aig.nodes[node])
+
+                if blame_aig.has_node(node):
+                    blame_neighbors = set(blame_aig.successors(node)
+                                         ).union(blame_aig.predecessors(node))
+                else:
+                    blame_neighbors = set()
+
+                file_neighbors = set(file_aig.successors(node)
+                                    ).union(file_aig.predecessors(node))
+
+                file_nodes.append(({
+                    "Project":
+                        project_name,
+                    "author":
+                        f"{node_attrs['author']}",
+                    "# Additional Authors":
+                        len(blame_neighbors.difference(file_neighbors))
+                }))
+            file_data = pd.DataFrame(file_nodes)
+            file_data.set_index("author", inplace=True)
+            diff_data.append(file_data)
+
+        data = pd.concat(diff_data)
+        ax = sns.violinplot(
+            x="Project",
+            y="# Additional Authors",
+            data=data,
+            order=sorted(project_names),
+            inner=None,
+            color=".95"
+        )
+        sns.stripplot(
+            x="Project",
+            y="# Additional Authors",
+            data=data,
+            order=sorted(project_names),
+            alpha=.25,
+            size=3
+        )
+        ax.set_ylim(-0.1, 1.1)
+        ax.tick_params(axis='x', labelrotation=45)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError
