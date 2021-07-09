@@ -322,6 +322,7 @@ class FileBasedInteractionGraph(InteractionGraph):
         if self.__cached_interaction_graph:
             return self.__cached_interaction_graph
 
+        # TODO: implement for multi-repo
         repo = get_local_project_git(self.project_name)
         repo_name = get_primary_project_source(self.project_name).local
         repo_path = get_local_project_git_path(self.project_name)
@@ -336,7 +337,7 @@ class FileBasedInteractionGraph(InteractionGraph):
             )
         )
         file_names = project_git(
-            "ls-tree", "--full-tree", "--name-only", "-r", "HEAD"
+            "ls-tree", "--full-tree", "--name-only", "-r", self.__head_commit
         ).split("\n")
         files: tp.List[Path] = [
             repo_path / path
@@ -416,3 +417,22 @@ def create_file_based_interaction_graph(
         the blame interaction graph
     """
     return FileBasedInteractionGraph(project_name, revision)
+
+
+def get_author_data(aig: nx.DiGraph, author: str) -> tp.Dict[str, tp.Any]:
+    node = aig.nodes[author]
+    node_attrs = tp.cast(AIGNodeAttrs, node)
+    in_attrs = [
+        d["interactions"] for u, v, d in aig.in_edges().data() if v == author
+    ]
+    out_attrs = [
+        d["interactions"] for u, v, d in aig.out_edges().data() if u == author
+    ]
+    neighbors = set(aig.successors(node)).union(aig.predecessors(node))
+
+    return {
+        "node_attrs": node_attrs,
+        "neighbors": neighbors,
+        "in_attrs": in_attrs,
+        "out_attrs": out_attrs
+    }
