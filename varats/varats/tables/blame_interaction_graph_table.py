@@ -11,6 +11,8 @@ from varats.data.reports.blame_interaction_graph import (
     CIGNodeAttrs,
     AIGNodeAttrs,
     CAIGNodeAttrs,
+    create_file_based_interaction_graph,
+    get_author_data,
 )
 from varats.data.reports.blame_report import BlameReport
 from varats.paper.case_study import CaseStudy
@@ -384,6 +386,74 @@ class CommitAuthorInteractionGraphTopDegreeTable(Table):
         ]:
             table = degree_data.to_latex(
                 index=False, multicolumn_format="c", multirow=True
+            )
+            return str(table) if table else ""
+        return tabulate(degree_data, degree_data.columns, self.format.value)
+
+    def wrap_table(self, table: str) -> str:
+        return wrap_table_in_document(table=table, landscape=True)
+
+
+class AuthorBlameVsFileDegreesTable(Table):
+    """Table showing authors with highest author interaction graph node
+    degrees."""
+
+    NAME = "aig_file_vs_blame_degrees_table"
+
+    def __init__(self, **kwargs: tp.Any):
+        super().__init__(self.NAME, **kwargs)
+
+    def tabulate(self) -> str:
+        case_study = self.table_kwargs["table_case_study"]
+
+        project_name = case_study.project_name
+        revision = newest_processed_revision_for_case_study(
+            case_study, BlameReport
+        )
+        if not revision:
+            raise TableDataEmpty()
+
+        blame_aig = create_blame_interaction_graph(project_name, revision
+                                                  ).author_interaction_graph()
+        file_aig = create_file_based_interaction_graph(
+            project_name, revision
+        ).author_interaction_graph()
+
+        blame_nodes: tp.List[tp.Dict[str, tp.Any]] = []
+        for node in blame_aig.nodes:
+            node_attrs = tp.cast(AIGNodeAttrs, blame_aig.nodes[node])
+
+            blame_neighbors = set(blame_aig.successors(node)
+                                 ).union(blame_aig.predecessors(node))
+            file_neighbors = set(file_aig.successors(node)
+                                ).union(file_aig.predecessors(node))
+            blame_nodes.append(({
+                "author": f"{node_attrs['author']}",
+                "blame_num_commits": node_attrs['num_commits'],
+                "blame_node_degree": blame_aig.degree(node),
+                "author_diff": len(blame_neighbors.difference(file_neighbors))
+            }))
+        blame_data = pd.DataFrame(blame_nodes)
+        blame_data.set_index("author", inplace=True)
+
+        file_nodes: tp.List[tp.Dict[str, tp.Any]] = []
+        for node in file_aig.nodes:
+            node_attrs = tp.cast(AIGNodeAttrs, file_aig.nodes[node])
+            file_nodes.append(({
+                "author": f"{node_attrs['author']}",
+                "file_num_commits": node_attrs['num_commits'],
+                "file_node_degree": file_aig.degree(node)
+            }))
+        file_data = pd.DataFrame(file_nodes)
+        file_data.set_index("author", inplace=True)
+
+        degree_data = blame_data.join(file_data, how="outer")
+
+        if self.format in [
+            TableFormat.latex, TableFormat.latex_booktabs, TableFormat.latex_raw
+        ]:
+            table = degree_data.to_latex(
+                index=True, multicolumn_format="c", multirow=True
             )
             return str(table) if table else ""
         return tabulate(degree_data, degree_data.columns, self.format.value)
