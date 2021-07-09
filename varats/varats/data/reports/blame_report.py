@@ -212,9 +212,15 @@ class BlameReportMetaData():
     """Provides extra meta data about llvm::Module, which was analyzed to
     generate this ``BlameReport``."""
 
-    def __init__(self, num_functions: int, num_instructions: int) -> None:
+    def __init__(
+        self, num_functions: int, num_instructions: int,
+        num_phasar_empty_tracked_vars: tp.Optional[int],
+        num_phasar_total_tracked_vars: tp.Optional[int]
+    ) -> None:
         self.__number_of_functions_in_module = num_functions
         self.__number_of_instructions_in_module = num_instructions
+        self.__num_phasar_empty_tracked_vars = num_phasar_empty_tracked_vars
+        self.__num_phasar_total_tracked_vars = num_phasar_total_tracked_vars
 
     @property
     def num_functions(self) -> int:
@@ -226,6 +232,16 @@ class BlameReportMetaData():
         """Number of instructions processed in the analyzed llvm::Module."""
         return self.__number_of_instructions_in_module
 
+    @property
+    def num_empty_tracked_vars(self) -> tp.Optional[int]:
+        """Number of variables tracked by phasar that had an empty taint set."""
+        return self.__num_phasar_empty_tracked_vars
+
+    @property
+    def num_total_tracked_vars(self) -> tp.Optional[int]:
+        """Number of variables tracked by phasar."""
+        return self.__num_phasar_total_tracked_vars
+
     @staticmethod
     def create_blame_report_meta_data(
         raw_document: tp.Dict[str, tp.Any]
@@ -234,7 +250,18 @@ class BlameReportMetaData():
         document."""
         num_functions = int(raw_document['funcs-in-module'])
         num_instructions = int(raw_document['insts-in-module'])
-        return BlameReportMetaData(num_functions, num_instructions)
+        num_phasar_empty_tracked_vars = int(
+            raw_document["phasar-empty-tracked-vars"]
+        ) if "phasar-empty-tracked-vars" in raw_document else None
+
+        num_phasar_total_tracked_vars = int(
+            raw_document["phasar-total-tracked-vars"]
+        ) if "phasar-total-tracked-vars" in raw_document else None
+
+        return BlameReportMetaData(
+            num_functions, num_instructions, num_phasar_empty_tracked_vars,
+            num_phasar_total_tracked_vars
+        )
 
 
 class BlameReport(BaseReport):
