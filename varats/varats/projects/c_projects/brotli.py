@@ -2,13 +2,7 @@
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.utils.cmd import cmake, mkdir
-from benchbuild.utils.revision_ranges import (
-    block_revisions,
-    GoodBadSubgraph,
-    RevisionRange,
-    SingleRevision,
-)
+from benchbuild.utils.cmd import cmake, mkdir, make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -26,7 +20,7 @@ from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
 
-class Brotly(bb.Project, CVEProviderHook):  # type: ignore
+class Brotli(bb.Project, CVEProviderHook):  # type: ignore
     """Brotli compression format."""
 
     NAME = 'brotli'
@@ -36,7 +30,7 @@ class Brotly(bb.Project, CVEProviderHook):  # type: ignore
     SOURCE = [
         bb.source.Git(
             remote="https://github.com/google/brotli.git",
-            local="brotli",
+            local="brot",
             refspec="HEAD",
             limit=None,
             shallow=False,
@@ -65,8 +59,8 @@ class Brotly(bb.Project, CVEProviderHook):  # type: ignore
             with local.env(CC=str(c_compiler)):
                 bb.watch(local["../configure-cmake"])()
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-
-        verify_binaries(self)
+        with local.cwd(brotli_version_source):
+            verify_binaries(self)
 
     @classmethod
     def get_cve_product_info(cls) -> tp.List[tp.Tuple[str, str]]:
