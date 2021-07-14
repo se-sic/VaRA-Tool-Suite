@@ -7,7 +7,6 @@ import typing as tp
 from pathlib import Path
 
 import networkx as nx
-import pygit2
 from benchbuild.utils.cmd import git
 
 from varats.data.cache_helper import build_cached_graph
@@ -19,9 +18,9 @@ from varats.data.reports.blame_report import (
 from varats.jupyterhelper.file import load_blame_report
 from varats.plot.plot import PlotDataEmpty
 from varats.project.project_util import (
-    get_primary_project_source,
     get_local_project_git_path,
     get_local_project_gits,
+    get_submodule_head,
 )
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import (
@@ -312,7 +311,7 @@ class BlameInteractionGraph(InteractionGraph):
 
         if not self.__cached_interaction_graph:
             self.__cached_interaction_graph = build_cached_graph(
-                f"blame-ig-{self.project_name}", create_graph
+                f"ig-blame-{self.project_name}", create_graph
             )
         return self.__cached_interaction_graph
 
@@ -336,33 +335,36 @@ class FileBasedInteractionGraph(InteractionGraph):
                 )
             )
 
-            for repo in repos.values():
-                repo_name = get_primary_project_source(self.project_name).local
-                repo_path = get_local_project_git_path(self.project_name)
+            blame_regex = re.compile(r"([0-9a-f]+) (?:.+)? [\d]+\) (.*)\n")
+
+            for repo_name, repo in repos.items():
+                repo_path = get_local_project_git_path(
+                    self.project_name, repo_name
+                )
                 project_git = git["-C", str(repo_path)]
+                head_commit = get_submodule_head(
+                    self.project_name, repo_name, self.__head_commit
+                )
 
                 file_names = project_git(
-                    "ls-tree", "--full-tree", "--name-only", "-r",
-                    self.__head_commit
+                    "ls-tree", "--full-tree", "--name-only", "-r", head_commit
                 ).split("\n")
                 files: tp.List[Path] = [
                     repo_path / path
                     for path in file_names
                     if file_pattern.search(path)
                 ]
-                for file in files:
-                    blame = repo.blame(
-                        str(file.relative_to(repo_path)),
-                        flags=pygit2.GIT_BLAME_IGNORE_WHITESPACE,
-                        newest_commit=self.__head_commit
-                    )
+                for num, file in enumerate(files):
                     commits: tp.Set[CommitRepoPair] = set()
-                    for hunk in blame:
-                        commits.add(
-                            CommitRepoPair(
-                                str(hunk.final_commit_id), repo_name
+                    blame_lines = project_git(
+                        "blame", "-w", "-s", "-l", head_commit, "--",
+                        str(file.relative_to(repo_path))
+                    )
+                    for match in blame_regex.finditer(blame_lines):
+                        if match.group(2):
+                            commits.add(
+                                CommitRepoPair(match.group(1), repo_name)
                             )
-                        )
 
                     for commit in commits:
                         interaction_graph.add_node(commit, commit=commit)
@@ -381,7 +383,7 @@ class FileBasedInteractionGraph(InteractionGraph):
 
         if not self.__cached_interaction_graph:
             self.__cached_interaction_graph = build_cached_graph(
-                f"file-ig-{self.project_name}", create_graph
+                f"ig-file-{self.project_name}", create_graph
             )
         return self.__cached_interaction_graph
 
