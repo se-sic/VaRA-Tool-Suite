@@ -189,22 +189,22 @@ GraphTy = tp.TypeVar("GraphTy", bound=nx.Graph)
 
 
 def build_cached_graph(
-    id: str, create_graph: tp.Callable[[], GraphTy]
+    graph_id: str, create_graph: tp.Callable[[], GraphTy]
 ) -> GraphTy:
     """
     Create an automatically cached networkx graph.
 
     Args:
-        id: graph cache identifier
+        graph_id: graph cache identifier
         create_graph: function that creates the graph
 
     Returns:
         the cached or created graph
     """
-    path = Path(str(vara_cfg()["data_cache"])) / f"graph-{id}.gz"
+    path = Path(str(vara_cfg()["data_cache"])) / f"graph-{graph_id}.gz"
 
     if path.exists():
-        return nx.read_gpickle(path)
+        return tp.cast(GraphTy, nx.read_gpickle(path))
     else:
         graph = create_graph()
         nx.write_gpickle(graph, path)
