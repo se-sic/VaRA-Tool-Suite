@@ -6,15 +6,15 @@
 #
 mkdir -p ../vara-root
 # Install requirements
-cd ../varats-core && python3 -m pip install --user --upgrade -e . && cd -
-cd ../varats && python3 -m pip install --user --upgrade -e . && cd -
+cd varats-core && python3 -m pip install --user --upgrade -e . && cd -
+cd varats && python3 -m pip install --user --upgrade -e . && cd -
 # Create benchbuild config
-cd ../vara-root && /usr/bin/yes | vara-gen-bbconfig
+cd $VARA_ROOT && /usr/bin/yes | vara-gen-bbconfig
 # Add OTFB experiment to benchbuild.yml
-awk '/ide_linear_constant_experiment/ { print; print "        - varats.experiments.phasar.otfb_experiment"; next }1' ../vara-root/benchbuild/.benchbuild.yml > ../vara-root/benchbuild/.benchbuild_new.yml
-mv ../vara-root/benchbuild/.benchbuild_new.yml ../vara-root/benchbuild/.benchbuild.yml
-#
-# Place your custom phasar-llvm binary at
+awk '/ide_linear_constant_experiment/ { print; print "        - varats.experiments.phasar.otfb_experiment"; next }1' $VARA_ROOT/benchbuild/.benchbuild.yml > $VARA_ROOT/benchbuild/.benchbuild_new.yml
+mv $VARA_ROOT/benchbuild/.benchbuild_new.yml $VARA_ROOT/benchbuild/.benchbuild.yml
+mkdir -p $VARA_ROOT/tools/bin
+# TODO: Place your custom phasar-llvm binary at
 # ../vara-root/tools/phasar/bin/phasar-with-otfb-llvm
 #
 # To start an analysis:
