@@ -64,10 +64,10 @@ def get_local_project_git_path(
     else:
         source = get_primary_project_source(project_name)
 
-    if is_git_source(source):
-        source.fetch()
+    if not is_git_source(source):
+        raise AssertionError(f"Project {project_name} does not use git.")
 
-    return Path(target_prefix()) / Path(source.local)
+    return Path(source.fetch())
 
 
 def get_extended_commit_lookup_source(
