@@ -58,7 +58,7 @@ class Otfb(actions.Step):  # type: ignore
 
         mkdir("-p", varats_result_folder)
 
-        phasar = local["phasar-with-otfb-llvm"]
+        phasar = local["evaltool"]
         for binary in project.binaries:
             bc_file = get_cached_bc_file_path(project, binary)
 
@@ -70,8 +70,7 @@ class Otfb(actions.Step):  # type: ignore
                 extension_type=FSE.Success
             )
 
-            phasar_params = ["-m", bc_file, "--emit-cg-as-dot",
-                             "-C", "OTFB"]
+            phasar_params = [bc_file]
 
             run_cmd = wrap_unlimit_stack_size(phasar[phasar_params])
 
