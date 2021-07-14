@@ -81,6 +81,7 @@ class CommitAuthorInteractionGraphViolinPlot(Plot):
             data=data,
             order=sorted(project_names),
             inner=None,
+            linewidth=1,
             color=".95"
         )
         sns.stripplot(
@@ -92,7 +93,9 @@ class CommitAuthorInteractionGraphViolinPlot(Plot):
             size=3
         )
         ax.set_ylim(-0.1, 1.1)
+        ax.set_aspect(0.4 / ax.get_data_ratio())
         ax.tick_params(axis='x', labelrotation=45)
+        ax.set_xlabel(None)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError
@@ -109,7 +112,7 @@ class AuthorBlameVsFileDegreesViolinPlot(Plot):
     def plot(self, view_mode: bool) -> None:
         case_studies = get_loaded_paper_config().get_all_case_studies()
 
-        diff_data: tp.List[tp.Dict[str, tp.Any]] = []
+        diff_data: tp.List[pd.DataFrame] = []
         project_names: tp.List[str] = []
         for case_study in case_studies:
             project_name = case_study.project_name
@@ -118,6 +121,8 @@ class AuthorBlameVsFileDegreesViolinPlot(Plot):
             )
             if not revision:
                 continue
+
+            project_names.append(project_name)
 
             blame_aig = create_blame_interaction_graph(
                 project_name, revision
@@ -158,6 +163,7 @@ class AuthorBlameVsFileDegreesViolinPlot(Plot):
             data=data,
             order=sorted(project_names),
             inner=None,
+            linewidth=1,
             color=".95"
         )
         sns.stripplot(
@@ -168,8 +174,10 @@ class AuthorBlameVsFileDegreesViolinPlot(Plot):
             alpha=.25,
             size=3
         )
-        ax.set_ylim(-0.1, 1.1)
+        ax.set_ylim(bottom=0, top=1.1 * data["# Additional Authors"].max())
+        ax.set_aspect(0.4 / ax.get_data_ratio())
         ax.tick_params(axis='x', labelrotation=45)
+        ax.set_xlabel(None)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError
