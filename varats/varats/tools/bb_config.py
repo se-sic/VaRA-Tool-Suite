@@ -42,6 +42,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         'varats.projects.c_projects.bison',
         'varats.projects.c_projects.bitlbee',
         'varats.projects.c_projects.busybox',
+        'varats.projects.c_projects.brotli',
         'varats.projects.c_projects.coreutils',
         'varats.projects.c_projects.curl',
         'varats.projects.c_projects.gawk',
@@ -125,9 +126,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
     }
 
     # Add VaRA experiment config variables
-    add_vara_experiment_options(new_bb_cfg)
-    new_bb_cfg["varats"]["outfile"] = str(varats_cfg["result_dir"])
-    new_bb_cfg["varats"]["result"] = "BC_files"
+    add_vara_experiment_options(new_bb_cfg, varats_cfg)
 
     def replace_bb_cwd_path(
         cfg_varname: str, cfg_node: s.Configuration = new_bb_cfg
