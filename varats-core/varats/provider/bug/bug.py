@@ -25,6 +25,8 @@ CommitTy = tp.TypeVar("CommitTy")
 
 
 class Bug(tp.Generic[CommitTy]):
+    """Generic class for representing bugs along with its introducing and fixing
+    commits."""
 
     def __init__(
         self,
