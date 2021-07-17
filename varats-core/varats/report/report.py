@@ -114,7 +114,7 @@ class ReportFilename():
         "{project_version}_" + "{project_uuid}_" + "{status_ext}" + "{file_ext}"
     )
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass  # TODO
 
     @staticmethod
@@ -227,23 +227,6 @@ class ReportFilename():
         """
         match = ReportFilename.__RESULT_FILE_REGEX.search(file_name)
         return match is not None
-
-    def is_correct_report_type(cls, file_name: str) -> bool:
-        """
-        Check if the passed file belongs to this report type.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            True, if the file belongs to this report type
-        """
-        match = ReportFilename.__RESULT_FILE_REGEX.search(file_name)
-        if match:
-            return match.group("project_shorthand") == str(
-                getattr(cls, "SHORTHAND")
-            )
-        return False
 
     @staticmethod
     def get_commit_hash_from_result_file(file_name: str) -> str:
@@ -703,7 +686,15 @@ class MetaReport(type):
         Returns:
             True, if the file belongs to this report type
         """
-        return ReportFilename.is_correct_report_type(cls, file_name)
+        try:
+            short_hand = ReportFilename.get_shorthand_from_result_file(
+                file_name
+            )
+            return short_hand == str(getattr(cls, "SHORTHAND"))
+        except ValueError:
+            return False
+
+        return False
 
 
 class BaseReport(metaclass=MetaReport):
