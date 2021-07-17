@@ -101,6 +101,8 @@ class FileStatusExtension(Enum):
 
 
 class ReportFilename():
+    """ReportFilename wraps special semantics about our report filenames around
+    strings and paths."""
 
     __RESULT_FILE_REGEX = re.compile(
         r"(?P<project_shorthand>.*)-" +
@@ -115,10 +117,10 @@ class ReportFilename():
     )
 
     def __init__(self, file_name: tp.Union[str, Path]) -> None:
-        if type(file_name) == Path or type(file_name) == PosixPath:
+        if isinstance(file_name, (Path, PosixPath)):
             self.__filename = file_name.name
         else:
-            self.__filename = file_name
+            self.__filename = str(file_name)
 
     @property
     def filename(self) -> str:
@@ -554,6 +556,13 @@ class BaseReport(metaclass=MetaReport):
 
 
 class ReportSpecification():
+    """Groups together multiple report types into a specification that can be
+    used, e.g., by experiments, to request multiple reports."""
 
     def __init__(self, report_types: tp.List[tp.Type[BaseReport]]) -> None:
         self.__reports_types = report_types
+
+    @property
+    def report_types(self) -> tp.List[tp.Type[BaseReport]]:
+        """Report types in this report specification."""
+        return self.__reports_types

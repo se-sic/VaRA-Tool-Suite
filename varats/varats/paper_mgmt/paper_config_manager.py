@@ -17,7 +17,7 @@ from varats.paper_mgmt.case_study import (
     get_revisions_status_for_case_study,
     get_newest_result_files_for_case_study,
 )
-from varats.report.report import FileStatusExtension, MetaReport
+from varats.report.report import FileStatusExtension, MetaReport, ReportFilename
 from varats.revision.revisions import get_all_revisions_files
 from varats.utils.settings import vara_cfg
 
