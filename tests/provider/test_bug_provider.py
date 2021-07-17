@@ -4,11 +4,11 @@ import typing as tp
 import unittest
 from unittest.mock import create_autospec, patch, MagicMock
 
+import pydriller.git as pydrepo
 import pygit2
 from github.Issue import Issue
 from github.IssueEvent import IssueEvent
 from github.Label import Label
-from pydriller import git as pydrepo
 
 from varats.projects.test_projects.bug_provider_test_repos import (
     BasicBugDetectionTestRepo,
@@ -430,7 +430,7 @@ class TestBugProvider(unittest.TestCase):
             BasicBugDetectionTestRepo
         )
 
-        pybugs = provider.find_all_pygit_bugs()
+        pybugs = provider.find_pygit_bugs()
 
         pybug_fix_ids = set(pybug.fixing_commit.hex for pybug in pybugs)
         pybug_fix_msgs = set(pybug.fixing_commit.message for pybug in pybugs)
@@ -440,32 +440,32 @@ class TestBugProvider(unittest.TestCase):
         self.assertEqual(pybug_fix_msgs, self.basic_expected_msgs)
 
         # find certain pybugs searching them by their fixing hashes
-        pybug_first = provider.find_pygit_bug_by_fix(
-            "ddf0ba95408dc5508504c84e6616c49128410389"
+        pybug_first = provider.find_pygit_bugs(
+            fixing_commit="ddf0ba95408dc5508504c84e6616c49128410389"
         )
         pybug_first_intro_ids = set(
             intro_commit.hex
             for intro_commit in next(iter(pybug_first)).introducing_commits
         )
 
-        pybug_second = provider.find_pygit_bug_by_fix(
-            "d846bdbe45e4d64a34115f5285079e1b5f84007f"
+        pybug_second = provider.find_pygit_bugs(
+            fixing_commit="d846bdbe45e4d64a34115f5285079e1b5f84007f"
         )
         pybug_second_intro_ids = set(
             intro_commit.hex
             for intro_commit in next(iter(pybug_second)).introducing_commits
         )
 
-        pybug_third = provider.find_pygit_bug_by_fix(
-            "2da78b2820370f6759e9086fad74155d6655e93b"
+        pybug_third = provider.find_pygit_bugs(
+            fixing_commit="2da78b2820370f6759e9086fad74155d6655e93b"
         )
         pybug_third_intro_ids = set(
             intro_commit.hex
             for intro_commit in next(iter(pybug_third)).introducing_commits
         )
 
-        pybug_fourth = provider.find_pygit_bug_by_fix(
-            "3b76c8d295385358375fefdb0cf045d97ad2d193"
+        pybug_fourth = provider.find_pygit_bugs(
+            fixing_commit="3b76c8d295385358375fefdb0cf045d97ad2d193"
         )
         pybug_fourth_intro_ids = set(
             intro_commit.hex
@@ -491,7 +491,7 @@ class TestBugProvider(unittest.TestCase):
             BasicBugDetectionTestRepo
         )
 
-        rawbugs = provider.find_all_raw_bugs()
+        rawbugs = provider.find_raw_bugs()
 
         rawbug_fix_ids = set(rawbug.fixing_commit for rawbug in rawbugs)
 
@@ -499,23 +499,23 @@ class TestBugProvider(unittest.TestCase):
         self.assertEqual(rawbug_fix_ids, self.basic_expected_fixes)
 
         # find certain rawbugs searching them by their fixing hashes
-        rawbug_first = provider.find_raw_bug_by_fix(
-            "ddf0ba95408dc5508504c84e6616c49128410389"
+        rawbug_first = provider.find_raw_bugs(
+            fixing_commit="ddf0ba95408dc5508504c84e6616c49128410389"
         )
         rawbug_first_intro_ids = next(iter(rawbug_first)).introducing_commits
 
-        rawbug_second = provider.find_raw_bug_by_fix(
-            "d846bdbe45e4d64a34115f5285079e1b5f84007f"
+        rawbug_second = provider.find_raw_bugs(
+            fixing_commit="d846bdbe45e4d64a34115f5285079e1b5f84007f"
         )
         rawbug_second_intro_ids = next(iter(rawbug_second)).introducing_commits
 
-        rawbug_third = provider.find_raw_bug_by_fix(
-            "2da78b2820370f6759e9086fad74155d6655e93b"
+        rawbug_third = provider.find_raw_bugs(
+            fixing_commit="2da78b2820370f6759e9086fad74155d6655e93b"
         )
         rawbug_third_intro_ids = next(iter(rawbug_third)).introducing_commits
 
-        rawbug_fourth = provider.find_raw_bug_by_fix(
-            "3b76c8d295385358375fefdb0cf045d97ad2d193"
+        rawbug_fourth = provider.find_raw_bugs(
+            fixing_commit="3b76c8d295385358375fefdb0cf045d97ad2d193"
         )
         rawbug_fourth_intro_ids = next(iter(rawbug_fourth)).introducing_commits
 
