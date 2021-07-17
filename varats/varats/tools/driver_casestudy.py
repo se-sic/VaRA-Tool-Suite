@@ -387,7 +387,7 @@ def __casestudy_create_or_extend(
 
         # Setup default result folder
         if 'result_folder' not in args and args[
-            'strategy'] is ExtenderStrategy.smooth_plot:
+            'strategy'] is ExtenderStrategy.SMOOTH_PLOT:
             args['project'] = case_study.project_name
             args['result_folder'] = str(vara_cfg()['result_dir']
                                        ) + "/" + args['project']
