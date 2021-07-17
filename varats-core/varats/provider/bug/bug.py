@@ -6,7 +6,6 @@ from datetime import datetime
 import pygit2
 from github import Github
 from github.IssueEvent import IssueEvent
-from github.Repository import Repository
 from pydriller import git as pydrepo
 
 from varats.project.project_util import (
@@ -68,17 +67,6 @@ class Bug(tp.Generic[CommitTy]):
         """Resolution date of the associated issue, if there is one."""
         return self.__resolutiondate
 
-    def as_raw_bug(self) -> 'RawBug':
-        """Uses hashes of own pygit2 Commits to create the corresponding
-        RawBug."""
-        introducing_commits: tp.Set[str] = set()
-        for intro_pycommit in self.__introducing_commits:
-            introducing_commits.add(str(intro_pycommit))
-        return RawBug(
-            str(self.__fixing_commit), introducing_commits, self.__issue_id,
-            self.__creationdate, self.__resolutiondate
-        )
-
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Bug):
             return (
@@ -96,6 +84,17 @@ class Bug(tp.Generic[CommitTy]):
 
 RawBug = Bug[str]
 PygitBug = Bug[pygit2.Commit]
+
+
+def as_raw_bug(pygit_bug: PygitBug) -> RawBug:
+    """Uses hashes of own pygit2 Commits to create the corresponding RawBug."""
+    introducing_commits: tp.Set[str] = set()
+    for intro_pycommit in pygit_bug.introducing_commits:
+        introducing_commits.add(str(intro_pycommit.id))
+    return RawBug(
+        str(pygit_bug.fixing_commit.id), introducing_commits,
+        pygit_bug.issue_id, pygit_bug.creation_date, pygit_bug.resolution_date
+    )
 
 
 class PygitSuspectTuple:
@@ -248,7 +247,7 @@ def _create_corresponding_bug(
 
     introducing_commits: tp.Set[pygit2.Commit] = set()
     blame_dict = pydrill_repo.get_commits_last_modified_lines(
-        pydrill_repo.get_commit(closing_commit)
+        pydrill_repo.get_commit(str(closing_commit.id))
     )
 
     for _, introducing_set in blame_dict.items():
@@ -427,7 +426,7 @@ def find_issue_bugs(
             return None
 
         if introducing_commit and introducing_commit not in [
-            str(fix) for fix in bug.introducing_commits
+            str(fix.id) for fix in bug.introducing_commits
         ]:
             return None
 
@@ -466,7 +465,7 @@ def find_commit_message_bugs(
                 return None
 
             if introducing_commit and introducing_commit not in [
-                str(fix) for fix in bug.introducing_commits
+                str(fix.id) for fix in bug.introducing_commits
             ]:
                 return None
 

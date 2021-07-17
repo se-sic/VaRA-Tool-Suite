@@ -123,8 +123,8 @@ class BugProvider(Provider):
             a set of ``RawBugs``
         """
         return frozenset([
-            bug.as_raw_bug()
-            for bug in self.find_pygit_bugs(fixing_commit, introducing_commit)
+            bug.as_raw_bug(pygit_bug) for pygit_bug in
+            self.find_pygit_bugs(fixing_commit, introducing_commit)
         ])
 
 

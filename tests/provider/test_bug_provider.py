@@ -139,7 +139,7 @@ class TestBugProvider(unittest.TestCase):
 
         pybugs = provider.find_pygit_bugs()
 
-        pybug_fix_ids = set(str(pybug.fixing_commit) for pybug in pybugs)
+        pybug_fix_ids = set(str(pybug.fixing_commit.id) for pybug in pybugs)
         pybug_fix_msgs = set(pybug.fixing_commit.message for pybug in pybugs)
 
         # asserting correct fixes have been found
