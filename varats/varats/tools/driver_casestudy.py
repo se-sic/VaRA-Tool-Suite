@@ -535,9 +535,7 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
     ])
 
     def result_file_to_list_entry(result_file: Path) -> str:
-        file_status = result_file_type.get_status_from_result_file(
-            result_file.name
-        )
+        file_status = ReportFilename(result_file.name).file_status
         status = (
             file_status.get_colored_status().rjust(
                 longest_file_status_extension +

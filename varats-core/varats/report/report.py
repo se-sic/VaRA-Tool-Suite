@@ -226,36 +226,30 @@ class ReportFilename():
 
         raise ValueError(f'File {self.filename} name was wrongly formated.')
 
-    @staticmethod
-    def get_shorthand_from_result_file(file_name: str) -> str:
+    @property
+    def shorthand(self) -> str:
         """
-        Get the report shorthand from a result file name.
-
-        Args:
-            file_name: name of the file
+        Report shorthand of the result file.
 
         Returns:
             the report shorthand from a result file
         """
 
-        match = ReportFilename.__RESULT_FILE_REGEX.search(file_name)
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
         if match:
             return match.group("project_shorthand")
 
-        raise ValueError(f'File {file_name} name was wrongly formated.')
+        raise ValueError(f'File {self.filename} name was wrongly formated.')
 
-    @staticmethod
-    def get_status_from_result_file(file_name: str) -> FileStatusExtension:
+    @property
+    def file_status(self) -> FileStatusExtension:
         """
-        Get the FileStatusExtension from a result file name.
-
-        Args:
-            file_name: name of the file to check
+        Get the FileStatusExtension from a result file.
 
         Returns:
             the FileStatusExtension of the result file
         """
-        match = ReportFilename.__RESULT_FILE_REGEX.search(file_name)
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
         if match:
             return FileStatusExtension.get_file_status_from_str(
                 match.group("status_ext")
@@ -359,9 +353,7 @@ class MetaReport(type):
             corresponding report class
         """
         try:
-            short_hand = ReportFilename.get_shorthand_from_result_file(
-                file_name
-            )
+            short_hand = ReportFilename(file_name).shorthand
             for report_type in MetaReport.REPORT_TYPES.values():
                 if getattr(report_type, "SHORTHAND") == short_hand:
                     return report_type
@@ -427,19 +419,6 @@ class MetaReport(type):
                 file_name=file_name
             )
         )
-
-    @staticmethod
-    def get_status_from_result_file(file_name: str) -> FileStatusExtension:
-        """
-        Get the FileStatusExtension from a result file name.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            the FileStatusExtension of the result file
-        """
-        return ReportFilename.get_status_from_result_file(file_name)
 
     @staticmethod
     def get_file_name(
@@ -522,9 +501,7 @@ class MetaReport(type):
             True, if the file belongs to this report type
         """
         try:
-            short_hand = ReportFilename.get_shorthand_from_result_file(
-                file_name
-            )
+            short_hand = ReportFilename(file_name).shorthand
             return short_hand == str(getattr(cls, "SHORTHAND"))
         except ValueError:
             return False

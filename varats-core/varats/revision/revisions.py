@@ -161,9 +161,7 @@ def __get_files_with_status(
         for result_file in sorted_res_files:
             if file_name_filter(result_file.name):
                 continue
-            if result_file_type.get_status_from_result_file(
-                result_file.name
-            ) in file_statuses:
+            if ReportFilename(result_file.name).file_status in file_statuses:
                 processed_revisions_paths.append(result_file)
 
     return processed_revisions_paths
@@ -318,9 +316,7 @@ def __get_tag_for_revision(
 
     newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
     if result_file_type.is_correct_report_type(str(newest_res_file.name)):
-        return result_file_type.get_status_from_result_file(
-            str(newest_res_file)
-        )
+        return ReportFilename(str(newest_res_file)).file_status
 
     return FileStatusExtension.Missing
 
