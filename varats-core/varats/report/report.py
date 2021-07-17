@@ -114,11 +114,18 @@ class ReportFilename():
         "{project_version}_" + "{project_uuid}_" + "{status_ext}" + "{file_ext}"
     )
 
-    def __init__(self) -> None:
-        pass  # TODO
+    def __init__(self, file_name: tp.Union[str, Path]) -> None:
+        if type(file_name) == Path:
+            self.__filename = Path(file_name.name)
+        else:
+            self.__filename = Path(file_name)
 
-    @staticmethod
-    def result_file_has_status_success(file_name: str) -> bool:
+    @property
+    def name() -> str:
+        """Literal file name."""
+        return self.__filename.name
+
+    def has_status_success(file_name: str) -> bool:
         """
         Checks if the passed file name is a (Success) result file.
 
