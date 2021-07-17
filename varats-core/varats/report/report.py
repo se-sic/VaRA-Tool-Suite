@@ -116,16 +116,16 @@ class ReportFilename():
 
     def __init__(self, file_name: tp.Union[str, Path]) -> None:
         if type(file_name) == Path:
-            self.__filename = Path(file_name.name)
+            self.__filename = file_name.name
         else:
-            self.__filename = Path(file_name)
+            self.__filename = file_name
 
     @property
     def name() -> str:
         """Literal file name."""
         return self.__filename.name
 
-    def has_status_success(file_name: str) -> bool:
+    def has_status_success(self) -> bool:
         """
         Checks if the passed file name is a (Success) result file.
 
@@ -136,7 +136,7 @@ class ReportFilename():
             True, if the file name is for a success file
         """
         return ReportFilename.result_file_has_status(
-            file_name, FileStatusExtension.Success
+            self.__filename, FileStatusExtension.Success
         )
 
     @staticmethod
@@ -366,28 +366,28 @@ class MetaReport(type):
                                                                         tp.Any]
     ) -> None:
         super(MetaReport, cls).__init__(name, bases, attrs)
-        MetaReport.__check_accessor_methods(cls)
+        #MetaReport.__check_accessor_methods(cls)
 
         if name != 'BaseReport':
             MetaReport.__check_required_vars(cls, name, ["SHORTHAND"])
             if name not in cls.REPORT_TYPES:
                 cls.REPORT_TYPES[name] = cls
 
-    def __check_accessor_methods(cls: tp.Any) -> None:
-        """
-        Check if all static accessor methods like `is_result_file_*` for every
-        FileStatusExtension enum exist.
+    #def __check_accessor_methods(cls: tp.Any) -> None:
+    #    """
+    #    Check if all static accessor methods like `is_result_file_*` for every
+    #    FileStatusExtension enum exist.
 
-        For example: Report.result_file_has_status_success("file/path")
-        """
-        for file_status in FileStatusExtension:
-            method_name = 'result_file_has_status_' + file_status.name.lower()
-            if not hasattr(cls, method_name):
-                raise NotImplementedError(
-                    "Missing file accesser method {method_name}".format(
-                        method_name=method_name
-                    )
-                )
+    #    For example: Report.filename.has_status_success()
+    #    """
+    #    for file_status in FileStatusExtension:
+    #        method_name = 'result_file_has_status_' + file_status.name.lower()
+    #        if not hasattr(cls, method_name):
+    #            raise NotImplementedError(
+    #                "Missing file accesser method {method_name}".format(
+    #                    method_name=method_name
+    #                )
+    #            )
 
     def __check_required_vars(
         cls: tp.Any, class_name: str, req_vars: tp.List[str]
@@ -423,21 +423,6 @@ class MetaReport(type):
             return None
 
         return None
-
-    @staticmethod
-    def result_file_has_status_success(file_name: str) -> bool:
-        """
-        Checks if the passed file name is a (Success) result file.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            True, if the file name is for a success file
-        """
-        return ReportFilename.result_file_has_status(
-            file_name, FileStatusExtension.Success
-        )
 
     @staticmethod
     def result_file_has_status_failed(file_name: str) -> bool:
@@ -710,6 +695,7 @@ class BaseReport(metaclass=MetaReport):
 
     def __init__(self, path: Path) -> None:
         self.__path = path
+        self.__filename = ReportFilename(path)
 
     @staticmethod
     @abstractmethod
@@ -740,6 +726,11 @@ class BaseReport(metaclass=MetaReport):
     def path(self) -> Path:
         """Path to the report file."""
         return self.__path
+
+    @property
+    def filename(self) -> ReportFilename:
+        """Filename of the report."""
+        return self.__filename
 
 
 class ReportSpecification():

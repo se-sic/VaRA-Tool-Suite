@@ -4,7 +4,7 @@ import unittest
 
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.data.reports.empty_report import EmptyReport
-from varats.report.report import FileStatusExtension, MetaReport
+from varats.report.report import FileStatusExtension, MetaReport, ReportFilename
 
 
 class TestReportFilename(unittest.TestCase):
@@ -89,10 +89,10 @@ class TestMetaReport(unittest.TestCase):
     def test_file_status(self):
         """Check if the correct file status is returned for MetaReport names."""
         self.assertTrue(
-            MetaReport.result_file_has_status_success(self.success_filename)
+            ReportFilename(self.success_filename).has_status_success()
         )
         self.assertFalse(
-            MetaReport.result_file_has_status_success(self.fail_filename)
+            ReportFilename(self.fail_filename).has_status_success()
         )
 
         self.assertTrue(
