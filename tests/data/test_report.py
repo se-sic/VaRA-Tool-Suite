@@ -57,9 +57,10 @@ class TestReportFilename(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Setup file and CommitReport."""
+        cls.correct_UUID = "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be"
         cls.raw_filename = (
             "CR-foo-foo-7bb9ef5f8c_"
-            "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
+            f"{cls.correct_UUID}_"
             "success.txt"
         )
         cls.report_filename = ReportFilename(cls.raw_filename)
@@ -99,6 +100,10 @@ class TestReportFilename(unittest.TestCase):
         self.assertEqual(
             self.report_filename.file_status, FileStatusExtension.Success
         )
+
+    def test_get_UUID(self):
+        """Check if we can extract the UUID from a filename."""
+        self.assertEqual(self.report_filename.UUID, self.correct_UUID)
 
 
 class TestMetaReport(unittest.TestCase):

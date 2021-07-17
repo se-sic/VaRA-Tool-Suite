@@ -259,6 +259,16 @@ class ReportFilename():
 
         raise ValueError('File {file_name} name was wrongly formated.')
 
+    @property
+    def UUID(self) -> str:
+        """Report UUID of the result file, genereated by BenchBuild during the
+        experiment."""
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
+        if match:
+            return match.group("UUID")
+
+        raise ValueError(f'File {self.filename} name was wrongly formated.')
+
     @staticmethod
     def get_file_name(
         report_shorthand: str,
@@ -299,6 +309,12 @@ class ReportFilename():
             status_ext=status_ext,
             file_ext=file_ext
         )
+
+    def __str__(self) -> str:
+        return self.filename
+
+    def __repr__(self) -> str:
+        return self.filename
 
 
 class MetaReport(type):

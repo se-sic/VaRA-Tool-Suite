@@ -194,6 +194,11 @@ def get_newest_result_files_for_case_study(
     Return all result files of a specific type that belong to a given case
     study. For revision with multiple files, the newest file will be selected.
 
+    Args:
+        case_study: to load
+        result_dir: to load the results from
+        report_type: type of report that should be loaded
+
     Returns:
         list of result file paths
     """
