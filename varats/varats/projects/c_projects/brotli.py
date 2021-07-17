@@ -30,7 +30,7 @@ class Brotli(bb.Project, CVEProviderHook):  # type: ignore
     SOURCE = [
         bb.source.Git(
             remote="https://github.com/google/brotli.git",
-            local="brot",
+            local="brotli_git",
             refspec="HEAD",
             limit=None,
             shallow=False,
