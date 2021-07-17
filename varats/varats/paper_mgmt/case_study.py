@@ -634,7 +634,7 @@ def extend_with_bug_commits(
         bug_provider = BugProvider.get_provider_for_project(
             get_project_cls_by_name(case_study.project_name)
         )
-        bugs = bug_provider.find_all_raw_bugs()
+        bugs = bug_provider.find_raw_bugs()
 
     revisions: tp.Set[str] = set()
     for bug in bugs:
