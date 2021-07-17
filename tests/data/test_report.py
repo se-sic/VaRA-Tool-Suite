@@ -7,6 +7,15 @@ from varats.data.reports.empty_report import EmptyReport
 from varats.report.report import FileStatusExtension, MetaReport
 
 
+class TestReportFilename(unittest.TestCase):
+    """Test basic CommitReport functionality."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Setup file and CommitReport."""
+        pass
+
+
 class TestMetaReport(unittest.TestCase):
     """Test basic CommitReport functionality."""
 
