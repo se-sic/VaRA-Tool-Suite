@@ -28,7 +28,7 @@ class BugOverviewTable(Table):
         variables = [
             "fixing hash", "fixing message", "fixing author", "issue_number"
         ]
-        pybugs = bug_provider.find_all_pygit_bugs()
+        pybugs = bug_provider.find_pygit_bugs()
 
         data_rows = [[
             pybug.fixing_commit.hex, pybug.fixing_commit.message,

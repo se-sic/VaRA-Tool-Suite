@@ -43,7 +43,7 @@ class PrepareSZZUnleashedData(actions.Step):  # type: ignore
         run_dir = Path(project.source_of_primary).parent
 
         bug_provider = BugProvider.get_provider_for_project(project)
-        bugs = bug_provider.find_all_pygit_bugs()
+        bugs = bug_provider.find_pygit_bugs()
 
         fixers_dict = {}
         for bug in bugs:
@@ -56,11 +56,11 @@ class PrepareSZZUnleashedData(actions.Step):  # type: ignore
                 datetime.fromtimestamp(bug.fixing_commit.commit_time)
             )
             creationdate = fix_date(
-                bug.creationdate
-            ) if bug.creationdate else commitdate
+                bug.creation_date
+            ) if bug.creation_date else commitdate
             resolutiondate = fix_date(
-                bug.resolutiondate
-            ) if bug.resolutiondate else commitdate
+                bug.resolution_date
+            ) if bug.resolution_date else commitdate
             fixers_dict[str(bug.fixing_commit.id)] = {
                 "hash": str(bug.fixing_commit.id),
                 "commitdate": commitdate,

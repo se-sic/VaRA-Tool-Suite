@@ -35,7 +35,7 @@ class CreatePyDrillerSZZReport(actions.Step):  # type: ignore
         project = self.obj
 
         bug_provider = BugProvider.get_provider_for_project(project)
-        pygit_bugs = bug_provider.find_all_pygit_bugs()
+        pygit_bugs = bug_provider.find_pygit_bugs()
 
         varats_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
             result_dir=str(bb_cfg()["varats"]["outfile"]),
