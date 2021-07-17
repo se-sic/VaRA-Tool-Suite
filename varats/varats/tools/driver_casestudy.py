@@ -634,11 +634,10 @@ def _remove_error_result_files() -> None:
         result_file_names = os.listdir(result_dir_path)
 
         for result_file_name in result_file_names:
-            # TODO: clean up
-            if MetaReport.is_result_file(result_file_name) and (
-                MetaReport.
-                result_file_has_status_compileerror(result_file_name) or
-                ReportFilename(result_file_name).has_status_failed()
+            report_file_name = ReportFilename(result_file_name)
+            if report_file_name.is_result_file() and (
+                report_file_name.has_status_compileerror() or
+                report_file_name.has_status_failed()
             ):
                 os.remove(result_dir_path / result_file_name)
 

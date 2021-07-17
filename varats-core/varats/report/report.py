@@ -5,7 +5,7 @@ import re
 import typing as tp
 from abc import abstractmethod
 from enum import Enum
-from pathlib import Path
+from pathlib import Path, PosixPath
 
 from plumbum import colors
 from plumbum.colorlib.styles import Color
@@ -115,7 +115,7 @@ class ReportFilename():
     )
 
     def __init__(self, file_name: tp.Union[str, Path]) -> None:
-        if type(file_name) == Path:
+        if type(file_name) == Path or type(file_name) == PosixPath:
             self.__filename = file_name.name
         else:
             self.__filename = file_name
@@ -147,8 +147,7 @@ class ReportFilename():
             self.filename, FileStatusExtension.Failed
         )
 
-    @staticmethod
-    def result_file_has_status_compileerror(file_name: str) -> bool:
+    def has_status_compileerror(self) -> bool:
         """
         Check if the filename is a (CompileError) result file.
 
@@ -156,11 +155,10 @@ class ReportFilename():
             True, if the file name is for a compile error file
         """
         return ReportFilename.result_file_has_status(
-            file_name, FileStatusExtension.CompileError
+            self.filename, FileStatusExtension.CompileError
         )
 
-    @staticmethod
-    def result_file_has_status_missing(file_name: str) -> bool:
+    def has_status_missing(self) -> bool:
         """
         Check if the filename is a (Missing) result file.
 
@@ -168,11 +166,10 @@ class ReportFilename():
             True, if the file name is for a missing file
         """
         return ReportFilename.result_file_has_status(
-            file_name, FileStatusExtension.Missing
+            self.filename, FileStatusExtension.Missing
         )
 
-    @staticmethod
-    def result_file_has_status_blocked(file_name: str) -> bool:
+    def has_status_blocked(self) -> bool:
         """
         Check if the filename is a (Blocked) result file.
 
@@ -180,7 +177,7 @@ class ReportFilename():
             True, if the file name is for a blocked file
         """
         return ReportFilename.result_file_has_status(
-            file_name, FileStatusExtension.Blocked
+            self.filename, FileStatusExtension.Blocked
         )
 
     @staticmethod
@@ -205,18 +202,14 @@ class ReportFilename():
             )
         return False
 
-    @staticmethod
-    def is_result_file(file_name: str) -> bool:
+    def is_result_file(self) -> bool:
         """
-        Check if the passed file name is formated like a result file.
-
-        Args:
-            file_name: name of the file to check
+        Check if the file name is formated like a result file.
 
         Returns:
             True, if the file name is correctly formated
         """
-        match = ReportFilename.__RESULT_FILE_REGEX.search(file_name)
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
         return match is not None
 
     @staticmethod
@@ -357,22 +350,6 @@ class MetaReport(type):
             if name not in cls.REPORT_TYPES:
                 cls.REPORT_TYPES[name] = cls
 
-    #def __check_accessor_methods(cls: tp.Any) -> None:
-    #    """
-    #    Check if all static accessor methods like `is_result_file_*` for every
-    #    FileStatusExtension enum exist.
-
-    #    For example: Report.filename.has_status_success()
-    #    """
-    #    for file_status in FileStatusExtension:
-    #        method_name = 'result_file_has_status_' + file_status.name.lower()
-    #        if not hasattr(cls, method_name):
-    #            raise NotImplementedError(
-    #                "Missing file accesser method {method_name}".format(
-    #                    method_name=method_name
-    #                )
-    #            )
-
     def __check_required_vars(
         cls: tp.Any, class_name: str, req_vars: tp.List[str]
     ) -> None:
@@ -409,51 +386,6 @@ class MetaReport(type):
         return None
 
     @staticmethod
-    def result_file_has_status_compileerror(file_name: str) -> bool:
-        """
-        Check if the passed file name is a (CompileError) result file.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            True, if the file name is for a compile error file
-        """
-        return ReportFilename.result_file_has_status(
-            file_name, FileStatusExtension.CompileError
-        )
-
-    @staticmethod
-    def result_file_has_status_missing(file_name: str) -> bool:
-        """
-        Check if the passed file name is a (Missing) result file.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            True, if the file name is for a missing file
-        """
-        return ReportFilename.result_file_has_status(
-            file_name, FileStatusExtension.Missing
-        )
-
-    @staticmethod
-    def result_file_has_status_blocked(file_name: str) -> bool:
-        """
-        Check if the passed file name is a (Blocked) result file.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            True, if the file name is for a blocked file
-        """
-        return ReportFilename.result_file_has_status(
-            file_name, FileStatusExtension.Blocked
-        )
-
-    @staticmethod
     def result_file_has_status(
         file_name: str, extension_type: FileStatusExtension
     ) -> bool:
@@ -469,19 +401,6 @@ class MetaReport(type):
             ``extension_type``
         """
         return ReportFilename.result_file_has_status(file_name, extension_type)
-
-    @staticmethod
-    def is_result_file(file_name: str) -> bool:
-        """
-        Check if the passed file name is formated like a result file.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            True, if the file name is correctly formated
-        """
-        return ReportFilename.is_result_file(file_name)
 
     @staticmethod
     def is_result_file_supplementary(file_name: str) -> bool:

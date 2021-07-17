@@ -13,7 +13,7 @@ from varats.data.reports.commit_report import (
     RegionMapping,
     generate_interactions,
 )
-from varats.report.report import FileStatusExtension
+from varats.report.report import FileStatusExtension, ReportFilename
 
 YAML_DOC_1 = """---
 DocType:         CommitReport
@@ -263,18 +263,23 @@ class TestCommitReport(unittest.TestCase):
 
     def test_is_result_file(self):
         """Check if the result file matcher works."""
-        self.assertTrue(CommitReport.is_result_file(self.success_filename))
-        self.assertTrue(CommitReport.is_result_file(self.fail_filename))
+        self.assertTrue(self.commit_report_success.filename.is_result_file())
+        self.assertTrue(self.commit_report_fail.filename.is_result_file())
+
         self.assertFalse(
-            CommitReport.is_result_file(self.success_filename.replace("_", ""))
+            ReportFilename(
+                self.commit_report_success.filename.filename.replace("_", "")
+            ).is_result_file()
         )
         self.assertFalse(
-            CommitReport.is_result_file(self.success_filename.replace("-", ""))
+            ReportFilename(
+                self.commit_report_success.filename.filename.replace("-", "")
+            ).is_result_file()
         )
         self.assertFalse(
-            CommitReport.is_result_file(
-                self.success_filename.replace(".", "f")
-            )
+            ReportFilename(
+                self.commit_report_success.filename.filename.replace(".", "f")
+            ).is_result_file()
         )
 
     def test_file_status(self):

@@ -76,8 +76,7 @@ def __get_result_files_dict(
         return result_files
 
     for res_file in res_dir.iterdir():
-        if result_file_type.is_result_file(
-            res_file.name
+        if ReportFilename(res_file).is_result_file(
         ) and result_file_type.is_correct_report_type(res_file.name):
             commit_hash = result_file_type.get_commit_hash_from_result_file(
                 res_file.name

@@ -63,13 +63,14 @@ class TestMetaReport(unittest.TestCase):
 
     def test_is_result_file(self):
         """Check if the result file matcher works."""
-        self.assertTrue(MetaReport.is_result_file(self.success_filename))
-        self.assertTrue(MetaReport.is_result_file(self.fail_filename))
+        self.assertTrue(ReportFilename(self.success_filename).is_result_file())
+        self.assertTrue(ReportFilename(self.fail_filename).is_result_file())
         self.assertFalse(
-            MetaReport.is_result_file(self.success_filename.replace("_", ""))
+            ReportFilename(self.success_filename.replace("_",
+                                                         "")).is_result_file()
         )
         self.assertFalse(
-            MetaReport.is_result_file(self.fail_filename.replace("-", ""))
+            ReportFilename(self.fail_filename.replace("-", "")).is_result_file()
         )
 
     def test_is_supplementary_result_file(self):
@@ -84,7 +85,9 @@ class TestMetaReport(unittest.TestCase):
                 self.supplementary_filename.replace("_", "")
             )
         )
-        self.assertFalse(MetaReport.is_result_file(self.supplementary_filename))
+        self.assertFalse(
+            ReportFilename(self.supplementary_filename).is_result_file()
+        )
 
     def test_file_status(self):
         """Check if the correct file status is returned for MetaReport names."""
