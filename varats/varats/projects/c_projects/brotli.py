@@ -59,6 +59,7 @@ class Brotli(bb.Project, CVEProviderHook):  # type: ignore
             with local.env(CC=str(c_compiler)):
                 bb.watch(local["../configure-cmake"])()
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+
         with local.cwd(brotli_version_source):
             verify_binaries(self)
 
