@@ -3,10 +3,10 @@
 import typing as tp
 from datetime import datetime
 
+import pydriller
 import pygit2
 from github import Github
 from github.IssueEvent import IssueEvent
-from pydriller import git as pydrepo
 
 from varats.project.project_util import (
     get_local_project_git,
@@ -245,7 +245,7 @@ def _create_corresponding_bug(
     Returns:
         the specified bug
     """
-    pydrill_repo = pydrepo.Git(project_repo.path)
+    pydrill_repo = pydriller.Git(project_repo.path)
 
     introducing_commits: tp.Set[pygit2.Commit] = set()
     blame_dict = pydrill_repo.get_commits_last_modified_lines(
@@ -282,7 +282,7 @@ def _find_corresponding_pygit_suspect_tuple(
         None otherwise
     """
     pygit_repo: pygit2.Repository = get_local_project_git(project_name)
-    pydrill_repo = pydrepo.Git(pygit_repo.path)
+    pydrill_repo = pydriller.Git(pygit_repo.path)
 
     if _has_closed_a_bug(issue_event) and issue_event.commit_id:
         issue_date = issue_event.issue.created_at
@@ -300,13 +300,9 @@ def _find_corresponding_pygit_suspect_tuple(
                     introducing_id
                 ).committer_date
                 if introduction_date > issue_date:  # commit is a suspect
-                    suspect_commits.add(
-                        pygit_repo.revparse_single(introducing_id)
-                    )
+                    suspect_commits.add(pygit_repo.get(introducing_id))
                 else:
-                    non_suspect_commits.add(
-                        pygit_repo.revparse_single(introducing_id)
-                    )
+                    non_suspect_commits.add(pygit_repo.get(introducing_id))
 
         return PygitSuspectTuple(
             fixing_commit, non_suspect_commits, suspect_commits,
@@ -316,8 +312,8 @@ def _find_corresponding_pygit_suspect_tuple(
     return None
 
 
-def _filter_all_issue_pygit_bugs(
-    project_name: str,
+def _filter_issue_bugs(
+    project_name: str, issue_events: tp.List[IssueEvent],
     suspect_filter_function: tp.Callable[[PygitSuspectTuple],
                                          tp.Optional[PygitBug]]
 ) -> tp.FrozenSet[PygitBug]:
@@ -332,8 +328,6 @@ def _filter_all_issue_pygit_bugs(
         the set of bugs created by the given filter
     """
     filtered_bugs = set()
-
-    issue_events = _get_all_issue_events(project_name)
 
     # IDENTIFY SUSPECTS
     suspect_tuples: tp.Set[PygitSuspectTuple] = set()
@@ -352,14 +346,14 @@ def _filter_all_issue_pygit_bugs(
 
             # partial fix?
             for other_tuple in suspect_tuples:
-                if suspect == other_tuple.fixing_commit:
+                if suspect.id == other_tuple.fixing_commit.id:
                     partial_fix = True
                     break
 
             # weak suspect?
             if not partial_fix:
                 for other_tuple in suspect_tuples:
-                    if suspect in other_tuple.non_suspects:
+                    if suspect.id in [ns.id for ns in other_tuple.non_suspects]:
                         weak_suspect = True
                         break
 
@@ -373,7 +367,7 @@ def _filter_all_issue_pygit_bugs(
     return frozenset(filtered_bugs)
 
 
-def _filter_all_commit_message_pygit_bugs(
+def _filter_commit_message_bugs(
     project_name: str,
     commit_filter_function: tp.Callable[[pygit2.Repository, pygit2.Commit],
                                         tp.Optional[PygitBug]]
@@ -434,8 +428,9 @@ def find_issue_bugs(
 
         return bug
 
-    return _filter_all_issue_pygit_bugs(
-        project_name, accept_suspect_with_certain_introduction
+    return _filter_issue_bugs(
+        project_name, _get_all_issue_events(project_name),
+        accept_suspect_with_certain_introduction
     )
 
 
@@ -474,6 +469,6 @@ def find_commit_message_bugs(
             return bug
         return None
 
-    return _filter_all_commit_message_pygit_bugs(
+    return _filter_commit_message_bugs(
         project_name, accept_commit_message_pybug
     )
