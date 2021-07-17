@@ -402,8 +402,9 @@ def package_paper_config(
             case_study_files_to_include.append(cs_file)
 
     vara_root = Path(str(vara_cfg()['config_file'])).parent
-    # TODO(python3.7): add ZipFile(compresslevel=9)
-    with ZipFile(output_file, "w", compression=ZIP_DEFLATED) as pc_zip:
+    with ZipFile(
+        output_file, "w", compression=ZIP_DEFLATED, compresslevel=9
+    ) as pc_zip:
         for file_path in files_to_store:
             pc_zip.write(file_path.relative_to(vara_root))
 
