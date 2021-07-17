@@ -8,9 +8,9 @@ aware region analyzer (VaRA). For annotation we use the git-blame data of git.
 import typing as tp
 from pathlib import Path
 
-import benchbuild.utils.actions as actions
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import mkdir, opt
 
 from varats.data.reports.commit_report import CommitReport as CR
@@ -130,6 +130,8 @@ class CRAnalysis(actions.Step):  # type: ignore
                     timeout_duration=timeout_duration
                 )
             )
+
+        return actions.StepResult.CAN_CONTINUE
 
 
 class CommitReportExperiment(VersionExperiment):

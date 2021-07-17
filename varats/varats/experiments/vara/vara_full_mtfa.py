@@ -12,9 +12,9 @@ executed binary.
 
 import typing as tp
 
-import benchbuild.utils.actions as actions
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import mkdir, opt, timeout
 
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
@@ -104,6 +104,8 @@ class VaraMTFACheck(actions.Step):  # type: ignore
                     vara_result_folder, error_file, timeout_duration
                 )
             )
+
+        return actions.StepResult.CAN_CONTINUE
 
 
 class VaRATaintPropagation(VersionExperiment):

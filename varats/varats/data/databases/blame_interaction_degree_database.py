@@ -32,12 +32,12 @@ AVG_TIME_BUCKET_SIZE = 1
 
 class DegreeType(Enum):
     """Degree types of blame interaction data."""
-    value: str
+    value: str  # pylint: disable=invalid-name
 
-    interaction = "interaction"
-    author = "author"
-    max_time = "max_time"
-    avg_time = "avg_time"
+    INTERACTION = "interaction"
+    AUTHOR = "author"
+    MAX_TIME = "max_time"
+    AVG_TIME = "avg_time"
 
 
 def _split_tuple_values_in_lists_tuple(
@@ -176,7 +176,7 @@ class BlameInteractionDegreeDatabase(
                         lib_amount = inter_amounts[i]
 
                         interaction_data_dict = build_dataframe_row(
-                            degree_type=DegreeType.interaction,
+                            degree_type=DegreeType.INTERACTION,
                             degree=degree,
                             amount=lib_amount,
                             total_amount=total_amounts_of_all_libs,
@@ -202,7 +202,7 @@ class BlameInteractionDegreeDatabase(
 
             # Append author rows
             append_rows_of_degree_type(
-                degree_type=DegreeType.author,
+                degree_type=DegreeType.AUTHOR,
                 degrees=author_degrees,
                 amounts=author_amounts,
                 sum_amounts=author_total
@@ -210,7 +210,7 @@ class BlameInteractionDegreeDatabase(
 
             # Append max_time rows
             append_rows_of_degree_type(
-                degree_type=DegreeType.max_time,
+                degree_type=DegreeType.MAX_TIME,
                 degrees=max_time_buckets,
                 amounts=max_time_amounts,
                 sum_amounts=total_max_time_amounts
@@ -218,7 +218,7 @@ class BlameInteractionDegreeDatabase(
 
             # Append avg_time rows
             append_rows_of_degree_type(
-                degree_type=DegreeType.avg_time,
+                degree_type=DegreeType.AVG_TIME,
                 degrees=avg_time_buckets,
                 amounts=avg_time_amounts,
                 sum_amounts=total_avg_time_amounts

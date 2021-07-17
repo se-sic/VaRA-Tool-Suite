@@ -8,8 +8,8 @@ order to generate a BlameVerifierReport.
 
 import typing as tp
 
-import benchbuild.utils.actions as actions
 from benchbuild.project import Project
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt, mkdir, timeout
 
 import varats.experiments.vara.blame_experiment as BE
@@ -119,6 +119,8 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
                     vara_result_folder, error_file, timeout_duration
                 )
             )
+
+        return actions.StepResult.CAN_CONTINUE
 
 
 class BlameVerifierReportExperiment(VersionExperiment):

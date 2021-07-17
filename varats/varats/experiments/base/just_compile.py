@@ -3,9 +3,9 @@
 import typing as tp
 from pathlib import Path
 
-import benchbuild.utils.actions as actions
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import mkdir, touch
 
 from varats.data.reports.empty_report import EmptyReport
@@ -67,6 +67,8 @@ class EmptyAnalysis(actions.Step):  # type: ignore
                     project, EmptyReport, Path(vara_result_folder)
                 )
             )
+
+        return actions.StepResult.CAN_CONTINUE
 
 
 # Please take care when changing this file, see docs experiments/just_compile

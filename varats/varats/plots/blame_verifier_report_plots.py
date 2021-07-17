@@ -4,10 +4,10 @@ import logging
 import typing as tp
 
 import matplotlib.pyplot as plt
-import matplotlib.style as style
 import matplotlib.ticker as mtick
 import numpy as np
 import pandas as pd
+from matplotlib import style
 from sklearn import preprocessing
 
 import varats.paper_mgmt.paper_config as PC

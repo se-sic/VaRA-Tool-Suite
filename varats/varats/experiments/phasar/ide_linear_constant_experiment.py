@@ -2,9 +2,9 @@
 import typing as tp
 from pathlib import Path
 
-import benchbuild.utils.actions as actions
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import mkdir
 from plumbum import local
 
@@ -84,6 +84,8 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
                     project, EmptyReport, Path(varats_result_folder)
                 )
             )
+
+        return actions.StepResult.CAN_CONTINUE
 
 
 class IDELinearConstantAnalysisExperiment(VersionExperiment):

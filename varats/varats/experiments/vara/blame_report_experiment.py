@@ -8,8 +8,8 @@ BlameReport.
 import typing as tp
 from pathlib import Path
 
-import benchbuild.utils.actions as actions
 from benchbuild import Project
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import mkdir, opt
 from benchbuild.utils.requirements import Requirement, SlurmMem
 
@@ -95,6 +95,8 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                     project, BR, Path(vara_result_folder)
                 )
             )
+
+        return actions.StepResult.CAN_CONTINUE
 
 
 class BlameReportExperiment(VersionExperiment):

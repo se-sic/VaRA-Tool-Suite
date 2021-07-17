@@ -10,9 +10,9 @@ valid json result and which ones failed.
 
 import typing as tp
 
-import benchbuild.utils.actions as actions
 from benchbuild import Experiment, Project
 from benchbuild.extensions import compiler, run, time
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import mkdir, phasar, timeout
 
 from varats.data.reports.env_trace_report import EnvTraceReport as ENVR
@@ -105,6 +105,8 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
                 timeout[timeout_duration, phasar_run_cmd],
                 PEErrorHandler(result_folder, error_file, timeout_duration)
             )
+
+        return actions.StepResult.CAN_CONTINUE
 
 
 class PhasarEnvironmentTracing(Experiment):  # type: ignore
