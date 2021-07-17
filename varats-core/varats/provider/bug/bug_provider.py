@@ -20,29 +20,29 @@ def _union_commit_message_and_issue_event_bugs(
     commit_message_bugs: tp.FrozenSet[bug.PygitBug]
 ) -> tp.FrozenSet[bug.PygitBug]:
     """
-    Customized unionizing of bug sets of commit message and issue event origin.
+    Custom union of sets of commit message and issue event bugs.
+
     Commit message bugs only get added if there is no issue event bug with the
     same fixing commit.
 
     Args:
-        issue_event_bugs: The set of bugs originating from issue events.
-        commit_message_bugs: The set of bugs originating from commit messages.
+        issue_event_bugs: set of issue event bugs
+        commit_message_bugs: set of commit message bugs
 
     Returns:
-        The resulting set of all bugs.
+        union of the sets of bugs
     """
-    resulting_bugs: tp.Set[bug.PygitBug] = set()
-    for issue_event_bug in issue_event_bugs:
-        resulting_bugs.add(issue_event_bug)
+    union: tp.Set[bug.PygitBug] = set()
+    union.update(issue_event_bugs)
 
     for commit_message_bug in commit_message_bugs:
-        if commit_message_bug.fixing_commit.hex not in {
-            issue_event_bug.fixing_commit.hex
+        if commit_message_bug.fixing_commit not in {
+            issue_event_bug.fixing_commit
             for issue_event_bug in issue_event_bugs
         }:
-            resulting_bugs.add(commit_message_bug)
+            union.add(commit_message_bug)
 
-    return frozenset(resulting_bugs)
+    return frozenset(union)
 
 
 class BugProvider(Provider):

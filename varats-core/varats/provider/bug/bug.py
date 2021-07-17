@@ -22,7 +22,7 @@ if tp.TYPE_CHECKING:
     # pylint: disable=ungrouped-imports,unused-import
     from github.PaginatedList import PaginatedList
 
-CommitTy = tp.TypeVar("CommitTy", str, pygit2.Commit)
+CommitTy = tp.TypeVar("CommitTy")
 
 
 class Bug(tp.Generic[CommitTy]):
@@ -99,24 +99,20 @@ PygitBug = Bug[pygit2.Commit]
 
 
 class PygitSuspectTuple:
-    """
-    Suspect tuple representation using the ``pygit2.Commit`` class.
-
-    Only used for GitHub Issue bugs.
-    """
+    """Helper class to classify bug suspects."""
 
     def __init__(
         self, fixing_commit: pygit2.Commit, non_suspects: tp.Set[pygit2.Commit],
         uncleared_suspects: tp.Set[pygit2.Commit], issue_id: int,
-        creationdate: datetime, resolutiondate: datetime
+        creation_date: datetime, resolution_date: datetime
     ) -> None:
         self.__fixing_commit = fixing_commit
         self.__non_suspects = non_suspects
         self.__cleared_suspects: tp.Set[pygit2.Commit] = set()
         self.__uncleared_suspects = uncleared_suspects
         self.__issue_id = issue_id
-        self.__creationdate = creationdate
-        self.__resolutiondate = resolutiondate
+        self.__creationdate = creation_date
+        self.__resolutiondate = resolution_date
 
     @property
     def fixing_commit(self) -> pygit2.Commit:
@@ -132,11 +128,12 @@ class PygitSuspectTuple:
         """Returns whether all suspects inside this tuple have been cleared."""
         return len(self.__uncleared_suspects) == 0
 
-    def extract_next_uncleared_suspect(self) -> pygit2.Commit:
-        """Extracts one uncleared suspect from the set and returns it."""
-        if self.is_cleared():
-            raise ValueError
-        return self.__uncleared_suspects.pop()
+    def consume_uncleared_suspects(
+        self
+    ) -> tp.Generator[pygit2.Commit, None, None]:
+        """Iterate over and comsume uncleared suspects."""
+        while not self.is_cleared():
+            yield self.__uncleared_suspects.pop()
 
     def clear_suspect(self, cleared_suspect: pygit2.Commit) -> None:
         """Adds parameter cleared_suspect to cleared suspects."""
@@ -145,7 +142,7 @@ class PygitSuspectTuple:
     def create_corresponding_bug(self) -> PygitBug:
         """Uses cleared suspects and non-suspects to create a PygitBug."""
         if not self.is_cleared():
-            raise ValueError
+            raise AssertionError
         introducing_commits = self.__non_suspects.union(self.__cleared_suspects)
         return PygitBug(
             self.__fixing_commit, introducing_commits, self.__issue_id,
@@ -155,15 +152,13 @@ class PygitSuspectTuple:
 
 def _has_closed_a_bug(issue_event: IssueEvent) -> bool:
     """
-    Determines for a given issue event whether it closes an issue representing a
-    bug or not.
+    Determines for a given issue event whether it closes a bug or not.
 
     Args:
         issue_event: the issue event to be checked
 
     Returns:
-        true if the issue represents a bug and the issue event closed that issue
-        false ow.
+        whether the issue event closed a bug or not
     """
     if issue_event.event != "closed" or issue_event.commit_id is None:
         return False
@@ -182,8 +177,7 @@ def _is_closing_message(commit_message: str) -> bool:
         commit_message: the commit message to be checked
 
     Returns:
-        true if the commit message contains key words that indicate the
-        closing of a bug, false ow.
+        whether the commit message closes a bug or not
     """
     # only look for keyword in first line of commit message
     first_line = commit_message.partition('\n')[0]
@@ -213,16 +207,11 @@ def _get_all_issue_events(project_name: str) -> tp.List[IssueEvent]:
 
         def load_issue_events(github: Github) -> 'PaginatedList[IssueEvent]':
             if github_repo_name:
-                repository: Repository = github.get_repo(github_repo_name)
-                return repository.get_issues_events()
-            # Method should only be called when loading issue
-            # events for a github repo
-            raise AssertionError(
-                f"No github repo found for project {project_name}"
-            )
+                return github.get_repo(github_repo_name).get_issues_events()
+
+            raise AssertionError(f"{project_name} is not a github project")
 
         cache_file_name = github_repo_name.replace("/", "_") + "_issues_events"
-
         issue_events = get_cached_github_object_list(
             cache_file_name, load_issue_events
         )
@@ -230,49 +219,45 @@ def _get_all_issue_events(project_name: str) -> tp.List[IssueEvent]:
         if issue_events:
             return issue_events
         return []
-    # No github repo; Should not occur at this point
-    raise AssertionError(f"No github repo found for project {project_name}")
+
+    raise AssertionError(f"{project_name} is not a github project")
 
 
-def _create_corresponding_pygit_bug(
-    closing_commit: str,
+def _create_corresponding_bug(
+    closing_commit: pygit2.Commit,
     project_repo: pygit2.Repository,
     issue_id: tp.Optional[int] = None,
-    creationdate: tp.Optional[datetime] = None,
-    resolutiondate: tp.Optional[datetime] = None
+    creation_date: tp.Optional[datetime] = None,
+    resolution_date: tp.Optional[datetime] = None
 ) -> PygitBug:
     """
-    Returns the PygitBug corresponding to a given closing commit. Applies simple
-    SZZ algorithm to find introducing commits.
+    Create the bug corresponding to a given closing commit.
+
+    Applies simple SZZ algorithm as implemented in pydriller to find introducing
+    commits.
 
     Args:
-        closing_commit: ID of the commit closing the bug.
-        project_repo: The related pygit2 project Repository
-        issue_id: The issue number related to the bug, if there is any.
+        closing_commit: commit closing the bug.
+        project_repo: pygit2 repository of the project
+        issue_id: optional issue number related to the bug
 
     Returns:
-        A PygitBug Object or None.
+        the specified bug
     """
     pydrill_repo = pydrepo.Git(project_repo.path)
 
-    closing_pycommit: pygit2.Commit = project_repo.revparse_single(
-        closing_commit
-    )
-    introducing_pycommits: tp.Set[pygit2.Commit] = set()
-
+    introducing_commits: tp.Set[pygit2.Commit] = set()
     blame_dict = pydrill_repo.get_commits_last_modified_lines(
         pydrill_repo.get_commit(closing_commit)
     )
 
     for _, introducing_set in blame_dict.items():
         for introducing_id in introducing_set:
-            introducing_pycommits.add(
-                project_repo.revparse_single(introducing_id)
-            )
+            introducing_commits.add(project_repo.get(introducing_id))
 
     return PygitBug(
-        closing_pycommit, introducing_pycommits, issue_id, creationdate,
-        resolutiondate
+        closing_commit, introducing_commits, issue_id, creation_date,
+        resolution_date
     )
 
 
@@ -280,10 +265,11 @@ def _find_corresponding_pygit_suspect_tuple(
     project_name: str, issue_event: IssueEvent
 ) -> tp.Optional[PygitSuspectTuple]:
     """
-    Creates, given an IssueEvent, the corresponding suspect tuple in case it
-    represents a bug. Divides the commits found via git blame on the fixing
-    commit into suspects (commits after bug report) and non-suspects (commits
-    before bug report).
+    Creates a suspect tuple given an issue event.
+
+    Partitions the commits found via git blame on the fixing commit into
+    suspects (commits after bug report) and non-suspects (commits before bug
+    report).
 
     Args:
         project_name: Name of the project to draw the fixing and introducing
@@ -298,7 +284,8 @@ def _find_corresponding_pygit_suspect_tuple(
     pydrill_repo = pydrepo.Git(pygit_repo.path)
 
     if _has_closed_a_bug(issue_event) and issue_event.commit_id:
-        fixing_commit = pygit_repo.revparse_single(issue_event.commit_id)
+        issue_date = issue_event.issue.created_at
+        fixing_commit = pygit_repo.get(issue_event.commit_id)
         pydrill_fixing_commit = pydrill_repo.get_commit(issue_event.commit_id)
         blame_dict = pydrill_repo.get_commits_last_modified_lines(
             pydrill_fixing_commit
@@ -308,7 +295,6 @@ def _find_corresponding_pygit_suspect_tuple(
         suspect_commits = set()
         for introducing_set in blame_dict.values():
             for introducing_id in introducing_set:
-                issue_date = issue_event.issue.created_at
                 introduction_date = pydrill_repo.get_commit(
                     introducing_id
                 ).committer_date
@@ -335,19 +321,16 @@ def _filter_all_issue_pygit_bugs(
                                          tp.Optional[PygitBug]]
 ) -> tp.FrozenSet[PygitBug]:
     """
-    Wrapper function that uses given function to filter out a certain type of
-    PygitBugs using issue events.
+    Find bugs based on issues using the given filter function.
 
     Args:
-        project_name: Name of the project to draw the issue events and
-            commit history out of.
-        suspect_filter_function: Function that determines for a fully cleared
-            suspect tuple whether it produces an acceptable PygitBug or not.
+        project_name: name of the project to draw the commit history from
+        suspect_filter_function: function that creates and filters bugs
 
     Returns:
-        The set of PygitBugs considered acceptable by the filtering method.
+        the set of bugs created by the given filter
     """
-    resulting_pygit_bugs = set()
+    filtered_bugs = set()
 
     issue_events = _get_all_issue_events(project_name)
 
@@ -362,24 +345,20 @@ def _filter_all_issue_pygit_bugs(
 
     # CLASSIFY SUSPECTS
     for suspect_tuple in suspect_tuples:
-        while not suspect_tuple.is_cleared():  # iterate over uncleared suspects
-            suspect = suspect_tuple.extract_next_uncleared_suspect()
+        for suspect in suspect_tuple.consume_uncleared_suspects():
             partial_fix = False
             weak_suspect = False
 
             # partial fix?
             for other_tuple in suspect_tuples:
-                if suspect.hex == other_tuple.fixing_commit.hex:
+                if suspect == other_tuple.fixing_commit:
                     partial_fix = True
                     break
 
             # weak suspect?
             if not partial_fix:
                 for other_tuple in suspect_tuples:
-                    if suspect.hex in (
-                        non_suspect.hex
-                        for non_suspect in other_tuple.non_suspects
-                    ):
+                    if suspect in other_tuple.non_suspects:
                         weak_suspect = True
                         break
 
@@ -388,39 +367,37 @@ def _filter_all_issue_pygit_bugs(
 
         pygit_bug = suspect_filter_function(suspect_tuple)
         if pygit_bug:
-            resulting_pygit_bugs.add(pygit_bug)
+            filtered_bugs.add(pygit_bug)
 
-    return frozenset(resulting_pygit_bugs)
+    return frozenset(filtered_bugs)
 
 
 def _filter_all_commit_message_pygit_bugs(
     project_name: str,
-    commit_filter_function: tp.Callable[[pygit2.Commit], tp.Optional[PygitBug]]
+    commit_filter_function: tp.Callable[[pygit2.Repository, pygit2.Commit],
+                                        tp.Optional[PygitBug]]
 ) -> tp.FrozenSet[PygitBug]:
     """
-    Wrapper function that uses given function to filter out a certain type of
-    PygitBugs using the commit history.
+    Find bugs based on commit messages using the given filter function.
 
     Args:
-        project_name: Name of the project to draw the commit history from.
-        commit_filter_function: Function that determines for a commit
-            whether it produces an acceptable PygitBug or not.
+        project_name: name of the project to draw the commit history from
+        commit_filter_function: function that creates and filters bugs
 
     Returns:
-        The set of PygitBugs considered acceptable by the filtering method.
+        the set of bugs created by the given filter
     """
-    resulting_pygit_bugs = set()
+    filtered_bugs = set()
     project_repo = get_local_project_git(project_name)
 
-    # traverse commit history
     for commit in project_repo.walk(
-        project_repo.head.target.hex, pygit2.GIT_SORT_TIME
+        project_repo.head.target, pygit2.GIT_SORT_TIME
     ):
-        pybug = commit_filter_function(commit)
+        pybug = commit_filter_function(project_repo, commit)
         if pybug:
-            resulting_pygit_bugs.add(pybug)
+            filtered_bugs.add(pybug)
 
-    return frozenset(resulting_pygit_bugs)
+    return frozenset(filtered_bugs)
 
 
 def find_issue_bugs(
@@ -480,11 +457,10 @@ def find_commit_message_bugs(
     """
 
     def accept_commit_message_pybug(
-        commit: pygit2.Commit
+        repo: pygit2.Repository, commit: pygit2.Commit
     ) -> tp.Optional[PygitBug]:
         if _is_closing_message(commit.message):
-            repo: pygit2.Repository = get_local_project_git(project_name)
-            bug = _create_corresponding_pygit_bug(str(commit), repo)
+            bug = _create_corresponding_bug(commit, repo)
 
             if fixing_commit and bug.fixing_commit.hex != fixing_commit:
                 return None
