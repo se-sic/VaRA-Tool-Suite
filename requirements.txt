@@ -29,5 +29,7 @@ seaborn>=0.8.0
 statsmodels~=0.11.1
 tabulate>=0.8.6
 types-PyYAML
+types-requests
+types-tabulate
 virtualenv>=20.0.8
 wllvm>=1.1.4
