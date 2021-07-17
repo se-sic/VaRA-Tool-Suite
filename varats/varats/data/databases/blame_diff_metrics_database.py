@@ -111,7 +111,7 @@ def build_report_files_tuple(
     }
 
     failed_report_files: tp.Dict[str, Path] = {
-        ReportFilename(report): report for report in get_failed_revisions_files(
+        ReportFilename(report).commit_hash: report for report in get_failed_revisions_files(
             project_name,
             BlameReport,
             get_case_study_file_name_filter(case_study)
