@@ -124,9 +124,7 @@ class BlameVerifierReportNoOpt(BlameVerifierReportParserMixin, BaseReport):
     def head_commit(self) -> str:
         """The current HEAD commit under which this BlameVerifierReportNoOpt was
         created."""
-        return BlameVerifierReportNoOpt.get_commit_hash_from_result_file(
-            Path(self.path).name
-        )
+        return ReportFilename(Path(self.path)).commit_hash
 
     @staticmethod
     def get_file_name(
@@ -175,9 +173,7 @@ class BlameVerifierReportOpt(BlameVerifierReportParserMixin, BaseReport):
     def head_commit(self) -> str:
         """The current HEAD commit under which this BlameVerifierReportOpt was
         created."""
-        return BlameVerifierReportOpt.get_commit_hash_from_result_file(
-            Path(self.path).name
-        )
+        return ReportFilename(Path(self.path)).commit_hash
 
     @staticmethod
     def get_file_name(
@@ -227,9 +223,7 @@ class BlameVerifierReportNoOptTBAA(BlameVerifierReportParserMixin, BaseReport):
     def head_commit(self) -> str:
         """The current HEAD commit under which this BlameVerifierReportNoOpt was
         created."""
-        return BlameVerifierReportNoOptTBAA.get_commit_hash_from_result_file(
-            Path(self.path).name
-        )
+        return self.filename.commit_hash
 
     @staticmethod
     def get_file_name(

@@ -130,9 +130,7 @@ def get_result_files(
     """
 
     def file_name_filter(file_name: str) -> bool:
-        file_commit_hash = MetaReport.get_commit_hash_from_result_file(
-            file_name
-        )
+        file_commit_hash = ReportFilename(file_name).commit_hash
         return not file_commit_hash.startswith(commit_hash)
 
     return get_all_revisions_files(

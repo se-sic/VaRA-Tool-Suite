@@ -298,13 +298,10 @@ class TestCommitReport(unittest.TestCase):
     def test_get_commit(self):
         """Check if the correct commit hash is returned."""
         self.assertEqual(
-            CommitReport.get_commit_hash_from_result_file(
-                self.success_filename
-            ), "7bb9ef5f8c"
+            self.commit_report_success.filename.commit_hash, "7bb9ef5f8c"
         )
         self.assertEqual(
-            CommitReport.get_commit_hash_from_result_file(self.fail_filename),
-            "7bb9ef5f8c"
+            self.commit_report_fail.filename.commit_hash, "7bb9ef5f8c"
         )
 
     def test_file_name_creation(self):

@@ -24,7 +24,7 @@ from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.project.project_util import get_local_project_git
-from varats.report.report import MetaReport
+from varats.report.report import MetaReport, ReportFilename
 from varats.revision.revisions import (
     get_processed_revisions_files,
     get_failed_revisions_files,
@@ -50,8 +50,8 @@ def id_from_paths(paths: tp.Tuple[Path, Path]) -> str:
     """
 
     return \
-        f"{MetaReport.get_commit_hash_from_result_file(paths[0].name)}_" \
-        f"{MetaReport.get_commit_hash_from_result_file(paths[1].name)}"
+        f"{ReportFilename(paths[0]).commit_hash}_" \
+        f"{ReportFilename(paths[1]).commit_hash}"
 
 
 def timestamp_from_paths(paths: tp.Tuple[Path, Path]) -> str:
@@ -101,7 +101,7 @@ def build_report_files_tuple(
         tuple
     """
     report_files: tp.Dict[str, Path] = {
-        MetaReport.get_commit_hash_from_result_file(report.name): report
+        ReportFilename(report).commit_hash: report
         for report in get_processed_revisions_files(
             project_name,
             BlameReport,
@@ -111,8 +111,7 @@ def build_report_files_tuple(
     }
 
     failed_report_files: tp.Dict[str, Path] = {
-        MetaReport.get_commit_hash_from_result_file(report.name): report
-        for report in get_failed_revisions_files(
+        ReportFilename(report): report for report in get_failed_revisions_files(
             project_name,
             BlameReport,
             get_case_study_file_name_filter(case_study)

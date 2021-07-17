@@ -34,7 +34,7 @@ from varats.project.project_util import get_project_cls_by_name
 from varats.provider.bug.bug import RawBug
 from varats.provider.bug.bug_provider import BugProvider
 from varats.provider.release.release_provider import ReleaseProvider
-from varats.report.report import FileStatusExtension, MetaReport
+from varats.report.report import FileStatusExtension, MetaReport, ReportFilename
 from varats.revision.revisions import (
     get_failed_revisions,
     get_processed_revisions,
@@ -204,10 +204,9 @@ def get_newest_result_files_for_case_study(
         return []
 
     for opt_res_file in result_dir.iterdir():
-        if report_type.is_correct_report_type(opt_res_file.name):
-            commit_hash = report_type.get_commit_hash_from_result_file(
-                opt_res_file.name
-            )
+        report_file = ReportFilename(opt_res_file.name)
+        if report_type.is_correct_report_type(report_file.filename):
+            commit_hash = report_file.commit_hash
             if case_study.has_revision(commit_hash):
                 current_file = files_to_store.get(commit_hash, None)
                 if current_file is None:
@@ -245,8 +244,9 @@ def get_case_study_file_name_filter(
         if case_study is None:
             return False
 
-        commit_hash = MetaReport.get_commit_hash_from_result_file(file_name)
-        return not case_study.has_revision(commit_hash)
+        return not case_study.has_revision(
+            ReportFilename(file_name).commit_hash
+        )
 
     return cs_filter
 

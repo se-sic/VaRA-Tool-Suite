@@ -106,12 +106,10 @@ class TestMetaReport(unittest.TestCase):
     def test_get_commit(self):
         """Check if the correct commit hash is returned."""
         self.assertEqual(
-            MetaReport.get_commit_hash_from_result_file(self.success_filename),
-            "7bb9ef5f8c"
+            ReportFilename(self.success_filename).commit_hash, "7bb9ef5f8c"
         )
         self.assertEqual(
-            MetaReport.get_commit_hash_from_result_file(self.fail_filename),
-            "7bb9ef5f8c"
+            ReportFilename(self.fail_filename).commit_hash, "7bb9ef5f8c"
         )
 
     def test_get_commit_supplementary(self):

@@ -212,26 +212,19 @@ class ReportFilename():
         match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
         return match is not None
 
-    @staticmethod
-    def get_commit_hash_from_result_file(file_name: str) -> str:
+    @property
+    def commit_hash(self) -> str:
         """
-        Get the commit hash from a result file name.
-
-        Args:
-            file_name: name of the file to check
+        Commit hash of the result file.
 
         Returns:
             the commit hash from a result file name
         """
-        match = ReportFilename.__RESULT_FILE_REGEX.search(file_name)
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
         if match:
             return match.group("file_commit_hash")
 
-        raise ValueError(
-            'File {file_name} name was wrongly formated.'.format(
-                file_name=file_name
-            )
-        )
+        raise ValueError(f'File {self.filename} name was wrongly formated.')
 
     @staticmethod
     def get_shorthand_from_result_file(file_name: str) -> str:
@@ -249,11 +242,7 @@ class ReportFilename():
         if match:
             return match.group("project_shorthand")
 
-        raise ValueError(
-            'File {file_name} name was wrongly formated.'.format(
-                file_name=file_name
-            )
-        )
+        raise ValueError(f'File {file_name} name was wrongly formated.')
 
     @staticmethod
     def get_status_from_result_file(file_name: str) -> FileStatusExtension:
@@ -272,11 +261,7 @@ class ReportFilename():
                 match.group("status_ext")
             )
 
-        raise ValueError(
-            'File {file_name} name was wrongly formated.'.format(
-                file_name=file_name
-            )
-        )
+        raise ValueError('File {file_name} name was wrongly formated.')
 
     @staticmethod
     def get_file_name(
@@ -386,23 +371,6 @@ class MetaReport(type):
         return None
 
     @staticmethod
-    def result_file_has_status(
-        file_name: str, extension_type: FileStatusExtension
-    ) -> bool:
-        """
-        Check if the passed file name is of the expected file status.
-
-        Args:
-            file_name: name of the file to check
-            extension_type: expected file status extension
-
-        Returns:
-            True, if the file name is for a file with the the specified
-            ``extension_type``
-        """
-        return ReportFilename.result_file_has_status(file_name, extension_type)
-
-    @staticmethod
     def is_result_file_supplementary(file_name: str) -> bool:
         """
         Check if the passed file name is a supplementary result file.
@@ -459,19 +427,6 @@ class MetaReport(type):
                 file_name=file_name
             )
         )
-
-    @staticmethod
-    def get_commit_hash_from_result_file(file_name: str) -> str:
-        """
-        Get the commit hash from a result file name.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            the commit hash from a result file name
-        """
-        return ReportFilename.get_commit_hash_from_result_file(file_name)
 
     @staticmethod
     def get_status_from_result_file(file_name: str) -> FileStatusExtension:

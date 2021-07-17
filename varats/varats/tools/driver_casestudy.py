@@ -591,9 +591,8 @@ def _remove_old_result_files() -> None:
         if not result_dir_cs.exists():
             continue
         for opt_res_file in result_dir_cs.iterdir():
-            commit_hash = MetaReport.get_commit_hash_from_result_file(
-                opt_res_file.name
-            )
+            report_file = ReportFilename(opt_res_file.name)
+            commit_hash = report_file.commit_hash
             if case_study.has_revision(commit_hash):
                 current_file = newer_files.get(commit_hash)
                 if current_file is None:

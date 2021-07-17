@@ -76,11 +76,10 @@ def __get_result_files_dict(
         return result_files
 
     for res_file in res_dir.iterdir():
-        if ReportFilename(res_file).is_result_file(
+        report_file = ReportFilename(res_file)
+        if report_file.is_result_file(
         ) and result_file_type.is_correct_report_type(res_file.name):
-            commit_hash = result_file_type.get_commit_hash_from_result_file(
-                res_file.name
-            )
+            commit_hash = report_file.commit_hash
             result_files[commit_hash].append(res_file)
 
     return result_files
@@ -267,7 +266,7 @@ def get_processed_revisions(project_name: str,
         list of correctly process revisions
     """
     return [
-        result_file_type.get_commit_hash_from_result_file(x.name)
+        ReportFilename(x.name).commit_hash
         for x in get_processed_revisions_files(project_name, result_file_type)
     ]
 

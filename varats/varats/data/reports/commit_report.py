@@ -172,9 +172,7 @@ class CommitReport(BaseReport):
     @property
     def head_commit(self) -> str:
         """The current HEAD commit under which this CommitReport was created."""
-        return CommitReport.get_commit_hash_from_result_file(
-            Path(self.path).name
-        )
+        return self.filename.commit_hash
 
     @staticmethod
     def get_file_name(
