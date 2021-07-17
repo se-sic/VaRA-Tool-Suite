@@ -2,7 +2,7 @@
 import typing as tp
 
 import benchbuild as bb
-from benchbuild.utils.cmd import cmake, mkdir, make
+from benchbuild.utils.cmd import mkdir, make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -10,9 +10,7 @@ from varats.containers.containers import get_base_image, ImageBase
 from varats.paper_mgmt.paper_config import project_filter_generator
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    get_all_revisions_between,
     wrap_paths_to_binaries,
-    get_local_project_git_path,
     BinaryType,
     verify_binaries,
 )
