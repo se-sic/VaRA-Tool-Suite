@@ -51,7 +51,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
             * -yaml-report-outfile=<path>: specify the path to store the results
         """
         if not self.obj:
-            return
+            return actions.StepResult.ERROR
         project = self.obj
 
         # Add to the user-defined path for saving the results of the
@@ -78,8 +78,10 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                 "-vara-use-phasar",
                 f"-vara-report-outfile={vara_result_folder}/{result_file}",
                 get_cached_bc_file_path(
-                    project, binary,
-                    [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+                    project, binary, [
+                        BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
+                        BCFileExtensions.BLAME
+                    ]
                 )
             ]
 
@@ -104,7 +106,9 @@ class BlameReportExperiment(VersionExperiment):
     REPORT_TYPE = BR
     REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
 
-    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
+    def actions_for_project(
+        self, project: Project
+    ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
         in a fixed order.
