@@ -101,9 +101,9 @@ class TestReportFilename(unittest.TestCase):
             self.report_filename.file_status, FileStatusExtension.Success
         )
 
-    def test_get_UUID(self):
+    def test_get_uuid(self):
         """Check if we can extract the UUID from a filename."""
-        self.assertEqual(self.report_filename.UUID, self.correct_UUID)
+        self.assertEqual(self.report_filename.uuid, self.correct_UUID)
 
 
 class TestMetaReport(unittest.TestCase):

@@ -260,7 +260,7 @@ class ReportFilename():
         raise ValueError('File {file_name} name was wrongly formated.')
 
     @property
-    def UUID(self) -> str:
+    def uuid(self) -> str:
         """Report UUID of the result file, genereated by BenchBuild during the
         experiment."""
         match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
