@@ -95,11 +95,9 @@ class TestMetaReport(unittest.TestCase):
             ReportFilename(self.fail_filename).has_status_success()
         )
 
-        self.assertTrue(
-            MetaReport.result_file_has_status_failed(self.fail_filename)
-        )
+        self.assertTrue(ReportFilename(self.fail_filename).has_status_failed())
         self.assertFalse(
-            MetaReport.result_file_has_status_failed(self.success_filename)
+            ReportFilename(self.success_filename).has_status_failed()
         )
 
     def test_get_commit(self):

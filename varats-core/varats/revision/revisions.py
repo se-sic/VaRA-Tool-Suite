@@ -17,7 +17,7 @@ from varats.project.project_util import (
     get_project_cls_by_name,
     get_primary_project_source,
 )
-from varats.report.report import FileStatusExtension, MetaReport
+from varats.report.report import FileStatusExtension, MetaReport, ReportFilename
 from varats.utils.settings import vara_cfg
 
 
@@ -290,7 +290,7 @@ def get_failed_revisions(project_name: str,
     result_files = __get_result_files_dict(project_name, result_file_type)
     for commit_hash, value in result_files.items():
         newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
-        if result_file_type.result_file_has_status_failed(newest_res_file.name):
+        if ReportFilename(newest_res_file.name).has_status_failed():
             failed_revisions.append(commit_hash)
 
     return failed_revisions

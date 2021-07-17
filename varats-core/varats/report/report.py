@@ -121,46 +121,36 @@ class ReportFilename():
             self.__filename = file_name
 
     @property
-    def name() -> str:
+    def filename(self) -> str:
         """Literal file name."""
-        return self.__filename.name
+        return self.__filename
 
     def has_status_success(self) -> bool:
         """
-        Checks if the passed file name is a (Success) result file.
-
-        Args:
-            file_name: name of the file to check
+        Checks if the file name is a (Success) result file.
 
         Returns:
             True, if the file name is for a success file
         """
         return ReportFilename.result_file_has_status(
-            self.__filename, FileStatusExtension.Success
+            self.filename, FileStatusExtension.Success
         )
 
-    @staticmethod
-    def result_file_has_status_failed(file_name: str) -> bool:
+    def has_status_failed(self) -> bool:
         """
-        Check if the passed file name is a (Failed) result file.
-
-        Args:
-            file_name: name of the file to check
+        Check if the file name is a (Failed) result file.
 
         Returns:
             True, if the file name is for a failed file
         """
         return ReportFilename.result_file_has_status(
-            file_name, FileStatusExtension.Failed
+            self.filename, FileStatusExtension.Failed
         )
 
     @staticmethod
     def result_file_has_status_compileerror(file_name: str) -> bool:
         """
-        Check if the passed file name is a (CompileError) result file.
-
-        Args:
-            file_name: name of the file to check
+        Check if the filename is a (CompileError) result file.
 
         Returns:
             True, if the file name is for a compile error file
@@ -172,10 +162,7 @@ class ReportFilename():
     @staticmethod
     def result_file_has_status_missing(file_name: str) -> bool:
         """
-        Check if the passed file name is a (Missing) result file.
-
-        Args:
-            file_name: name of the file to check
+        Check if the filename is a (Missing) result file.
 
         Returns:
             True, if the file name is for a missing file
@@ -187,10 +174,7 @@ class ReportFilename():
     @staticmethod
     def result_file_has_status_blocked(file_name: str) -> bool:
         """
-        Check if the passed file name is a (Blocked) result file.
-
-        Args:
-            file_name: name of the file to check
+        Check if the filename is a (Blocked) result file.
 
         Returns:
             True, if the file name is for a blocked file
@@ -423,21 +407,6 @@ class MetaReport(type):
             return None
 
         return None
-
-    @staticmethod
-    def result_file_has_status_failed(file_name: str) -> bool:
-        """
-        Check if the passed file name is a (Failed) result file.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            True, if the file name is for a failed file
-        """
-        return ReportFilename.result_file_has_status(
-            file_name, FileStatusExtension.Failed
-        )
 
     @staticmethod
     def result_file_has_status_compileerror(file_name: str) -> bool:

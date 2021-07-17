@@ -27,7 +27,7 @@ from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
-from varats.report.report import FileStatusExtension, MetaReport
+from varats.report.report import FileStatusExtension, MetaReport, ReportFilename
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.utils.cli_util import (
     cli_list_choice,
@@ -634,10 +634,11 @@ def _remove_error_result_files() -> None:
         result_file_names = os.listdir(result_dir_path)
 
         for result_file_name in result_file_names:
+            # TODO: clean up
             if MetaReport.is_result_file(result_file_name) and (
                 MetaReport.
                 result_file_has_status_compileerror(result_file_name) or
-                MetaReport.result_file_has_status_failed(result_file_name)
+                ReportFilename(result_file_name).has_status_failed()
             ):
                 os.remove(result_dir_path / result_file_name)
 

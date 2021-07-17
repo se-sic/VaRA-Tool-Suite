@@ -285,11 +285,9 @@ class TestCommitReport(unittest.TestCase):
         )
         self.assertFalse(self.commit_report_fail.filename.has_status_success())
 
-        self.assertTrue(
-            CommitReport.result_file_has_status_failed(self.fail_filename)
-        )
+        self.assertTrue(self.commit_report_fail.filename.has_status_failed())
         self.assertFalse(
-            CommitReport.result_file_has_status_failed(self.success_filename)
+            self.commit_report_success.filename.has_status_failed()
         )
 
     def test_get_commit(self):
