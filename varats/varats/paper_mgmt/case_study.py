@@ -50,7 +50,7 @@ LOG = logging.Logger(__name__)
 
 class ExtenderStrategy(Enum):
     """Enum for all currently supported extender strategies."""
-    value: int  # pylint: disable=C0103
+    value: int  # pylint: disable=invalid-name
 
     MIXED = -1
     SIMPLE_ADD = 1

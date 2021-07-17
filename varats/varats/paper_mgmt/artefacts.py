@@ -237,7 +237,7 @@ class ArtefactType(Enum):
     of the class responsible for that kind of artefact and a version number to
     allow evolution of artefacts.
     """
-    value: tp.Tuple[Artefact, int]  # pylint: disable=C0103
+    value: tp.Tuple[Artefact, int]  # pylint: disable=invalid-name
 
     PLOT = (PlotArtefact, 1)
     TABLE = (TableArtefact, 1)
