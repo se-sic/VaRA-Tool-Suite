@@ -91,7 +91,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
                 binary_name=binary.name,
                 project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.Success,
+                extension_type=FSE.SUCCESS,
                 file_ext=".txt"
             )
 
@@ -101,7 +101,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
                 binary_name=binary.name,
                 project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.Failed,
+                extension_type=FSE.FAILED,
                 file_ext=".txt"
             )
 

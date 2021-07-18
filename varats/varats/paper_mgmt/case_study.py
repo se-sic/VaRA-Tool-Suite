@@ -145,11 +145,11 @@ def get_revisions_status_for_case_study(
             if not found:
                 if tag_blocked and is_revision_blocked(short_rev, project_cls):
                     filtered_revisions.append(
-                        (short_rev, FileStatusExtension.Blocked)
+                        (short_rev, FileStatusExtension.BLOCKED)
                     )
                 else:
                     filtered_revisions.append(
-                        (short_rev, FileStatusExtension.Missing)
+                        (short_rev, FileStatusExtension.MISSING)
                     )
         return filtered_revisions
 

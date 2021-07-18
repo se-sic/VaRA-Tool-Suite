@@ -152,7 +152,7 @@ def create_default_compiler_error_handler(
     Retruns: a initialized PEErrorHandler
     """
     return create_default_error_handler(
-        project, report_type, FileStatusExtension.CompileError, output_folder,
+        project, report_type, FileStatusExtension.COMPILE_ERROR, output_folder,
         binary
     )
 
@@ -178,7 +178,7 @@ def create_default_analysis_failure_handler(
     Retruns: a initialized PEErrorHandler
     """
     return create_default_error_handler(
-        project, report_type, FileStatusExtension.Failed, output_folder, binary,
+        project, report_type, FileStatusExtension.FAILED, output_folder, binary,
         timeout_duration
     )
 

@@ -155,7 +155,7 @@ def get_occurrences(
     """
     status = ""
 
-    num_succ_rev = len(status_occurrences[FileStatusExtension.Success])
+    num_succ_rev = len(status_occurrences[FileStatusExtension.SUCCESS])
     num_rev = sum(map(len, status_occurrences.values()))
 
     color = None
@@ -350,9 +350,9 @@ def get_legend(use_color: bool = False) -> str:
 
     for file_status in FileStatusExtension:
         if use_color:
-            legend_str += file_status.status_color[file_status.name] + "/"
+            legend_str += file_status.get_colored_status() + "/"
         else:
-            legend_str += file_status.name + "/"
+            legend_str += file_status.nice_name() + "/"
 
     legend_str = legend_str[:-1]
     legend_str += "]\n"

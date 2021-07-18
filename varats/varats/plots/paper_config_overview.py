@@ -127,11 +127,11 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
                 num_revs = len(revs_in_year)
                 num_successful_revs = len([
                     rev for (rev, status) in revs_in_year
-                    if status == FileStatusExtension.Success
+                    if status == FileStatusExtension.SUCCESS
                 ])
                 num_blocked_revs = len([
                     rev for (rev, status) in revs_in_year
-                    if status == FileStatusExtension.Blocked
+                    if status == FileStatusExtension.BLOCKED
                 ])
 
             revs_successful_per_year.append(num_successful_revs)
