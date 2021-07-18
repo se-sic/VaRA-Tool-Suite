@@ -163,7 +163,7 @@ class DummyGit(Git):
         return []
 
 
-class ConfigHelper:
+class ConfigurationHelper:
     """
     This class is a helper for various tests.
     """
