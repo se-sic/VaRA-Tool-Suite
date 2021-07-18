@@ -27,7 +27,7 @@ from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
-from varats.report.report import FileStatusExtension, MetaReport
+from varats.report.report import FileStatusExtension, MetaReport, ReportFilename
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.utils.cli_util import (
     cli_list_choice,
@@ -535,9 +535,7 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
     ])
 
     def result_file_to_list_entry(result_file: Path) -> str:
-        file_status = result_file_type.get_status_from_result_file(
-            result_file.name
-        )
+        file_status = ReportFilename(result_file.name).file_status
         status = (
             file_status.get_colored_status().rjust(
                 longest_file_status_extension +
@@ -591,9 +589,8 @@ def _remove_old_result_files() -> None:
         if not result_dir_cs.exists():
             continue
         for opt_res_file in result_dir_cs.iterdir():
-            commit_hash = MetaReport.get_commit_hash_from_result_file(
-                opt_res_file.name
-            )
+            report_file = ReportFilename(opt_res_file.name)
+            commit_hash = report_file.commit_hash
             if case_study.has_revision(commit_hash):
                 current_file = newer_files.get(commit_hash)
                 if current_file is None:
@@ -634,10 +631,10 @@ def _remove_error_result_files() -> None:
         result_file_names = os.listdir(result_dir_path)
 
         for result_file_name in result_file_names:
-            if MetaReport.is_result_file(result_file_name) and (
-                MetaReport.
-                result_file_has_status_compileerror(result_file_name) or
-                MetaReport.result_file_has_status_failed(result_file_name)
+            report_file_name = ReportFilename(result_file_name)
+            if report_file_name.is_result_file() and (
+                report_file_name.has_status_compileerror() or
+                report_file_name.has_status_failed()
             ):
                 os.remove(result_dir_path / result_file_name)
 

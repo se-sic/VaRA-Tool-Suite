@@ -309,7 +309,7 @@ class BlameReport(BaseReport):
     @property
     def head_commit(self) -> str:
         """The current HEAD commit under which this CommitReport was created."""
-        return BlameReport.get_commit_hash_from_result_file(self.path.name)
+        return self.filename.commit_hash
 
     @property
     def meta_data(self) -> BlameReportMetaData:
