@@ -427,8 +427,8 @@ class BaseReport():
         """Filename of the report."""
         return self.__filename
 
-    @abstractmethod
     @classmethod
+    @abstractmethod
     def shorthand(cls) -> str:
         """Shorthand for this report."""
 
