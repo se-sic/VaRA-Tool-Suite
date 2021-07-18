@@ -63,7 +63,7 @@ class ExtenderStrategy(Enum):
 
 
 def processed_revisions_for_case_study(
-    case_study: CaseStudy, result_file_type: BaseReport
+    case_study: CaseStudy, result_file_type: tp.Type[BaseReport]
 ) -> tp.List[CommitHash]:
     """
     Computes all revisions of this case study that have been processed.
@@ -85,7 +85,7 @@ def processed_revisions_for_case_study(
 
 
 def failed_revisions_for_case_study(
-    case_study: CaseStudy, result_file_type: BaseReport
+    case_study: CaseStudy, result_file_type: tp.Type[BaseReport]
 ) -> tp.List[CommitHash]:
     """
     Computes all revisions of this case study that have failed.
@@ -108,7 +108,7 @@ def failed_revisions_for_case_study(
 
 def get_revisions_status_for_case_study(
     case_study: CaseStudy,
-    result_file_type: BaseReport,
+    result_file_type: tp.Type[BaseReport],
     stage_num: int = -1,
     tag_blocked: bool = True
 ) -> tp.List[tp.Tuple[CommitHash, FileStatusExtension]]:
@@ -165,7 +165,7 @@ def get_revisions_status_for_case_study(
 def get_revision_status_for_case_study(
     case_study: CaseStudy,
     revision: CommitHash,
-    result_file_type: BaseReport,
+    result_file_type: tp.Type[BaseReport],
 ) -> FileStatusExtension:
     """
     Computes the file status for the given revision in this case study.
@@ -187,7 +187,7 @@ def get_revision_status_for_case_study(
 
 
 def get_newest_result_files_for_case_study(
-    case_study: CaseStudy, result_dir: Path, report_type: BaseReport
+    case_study: CaseStudy, result_dir: Path, report_type: tp.Type[BaseReport]
 ) -> tp.List[Path]:
     """
     Return all result files of a specific type that belong to a given case
@@ -600,7 +600,8 @@ def extend_with_bug_commits(
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
     """
-    report_type: BaseReport = BaseReport.REPORT_TYPES[kwargs['report_type']]
+    report_type: tp.Type[BaseReport] = BaseReport.REPORT_TYPES[
+        kwargs['report_type']]
     project_cls: tp.Type[Project] = get_project_cls_by_name(
         case_study.project_name
     )
