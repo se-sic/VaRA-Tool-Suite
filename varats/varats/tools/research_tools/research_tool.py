@@ -47,7 +47,7 @@ class Distro(Enum):
         elif distro.id() == "arch":
             return Distro.ARCH
         else:
-            None
+            return None
 
 
 _install_commands = {
@@ -109,7 +109,7 @@ class Dependencies:
         Returns:
             a list containing all not installed dependencies
         """
-        not_installed = []
+        not_installed: tp.List[str] = []
         base_command = _checker_commands[distro]
         for package in self.__dependencies:
             output = base_command(package)
