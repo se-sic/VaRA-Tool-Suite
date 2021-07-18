@@ -9,7 +9,7 @@ artefacts:
   output_path: .
   paper_config: true
   plot_type: b_correlation_matrix
-- artefact_type: plot
+- artefact_type: table
   artefact_type_version: 1
   name: "Correlation Table"
   output_path: .
