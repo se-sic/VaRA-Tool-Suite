@@ -15,7 +15,7 @@ YAML_ARTEFACTS = """DocType: Artefacts
 Version: 1
 ---
 artefacts:
-- artefact_type: PLOT
+- artefact_type: plot
   artefact_type_version: 1
   file_format: png
   name: overview

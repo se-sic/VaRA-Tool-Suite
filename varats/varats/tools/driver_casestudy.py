@@ -216,7 +216,7 @@ def __create_ext_parser(sub_parsers: _SubParsersAction) -> None:
     ext_parser.add_argument("case_study_path", help="Path to case_study")
     ext_parser.add_argument(
         "strategy",
-        action=enum_action(ExtenderStrategy),
+        action=enum_action(ExtenderStrategy, str.upper),
         help="Extender strategy"
     )
     ext_parser.add_argument(

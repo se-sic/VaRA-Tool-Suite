@@ -2,14 +2,14 @@ DocType: Artefacts
 Version: 1
 ---
 artefacts:
-- artefact_type: PLOT
+- artefact_type: plot
   artefact_type_version: 1
   file_format: png
   name: "Correlation Matrix"
   output_path: .
   paper_config: true
   plot_type: b_correlation_matrix
-- artefact_type: PLOT
+- artefact_type: plot
   artefact_type_version: 1
   name: "Correlation Table"
   output_path: .

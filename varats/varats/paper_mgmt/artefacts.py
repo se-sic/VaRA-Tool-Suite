@@ -346,7 +346,7 @@ def load_artefacts_from_file(file_path: Path) -> Artefacts:
     for raw_artefact in raw_artefacts.pop('artefacts'):
         name = raw_artefact.pop('name')
         output_path = raw_artefact.pop('output_path')
-        artefact_type = ArtefactType[raw_artefact.pop('artefact_type')]
+        artefact_type = ArtefactType[raw_artefact.pop('artefact_type').upper()]
         artefact_type_version = raw_artefact.pop('artefact_type_version')
         if artefact_type_version < artefact_type.value[1]:
             LOG.warning(
