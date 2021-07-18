@@ -68,7 +68,7 @@ class TestDriverArtefacts(unittest.TestCase):
 
     def __check_artefact_files_present(self, artefact: Artefact):
         artefact_file_names: tp.List[str] = []
-        if artefact.artefact_type == ArtefactType.plot:
+        if artefact.artefact_type == ArtefactType.PLOT:
             artefact = tp.cast(PlotArtefact, artefact)
             plots = prepare_plots(
                 plot_type=artefact.plot_type,
@@ -79,7 +79,7 @@ class TestDriverArtefacts(unittest.TestCase):
             artefact_file_names = [
                 plot.plot_file_name(artefact.file_format) for plot in plots
             ]
-        elif artefact.artefact_type == ArtefactType.table:
+        elif artefact.artefact_type == ArtefactType.TABLE:
             artefact = tp.cast(TableArtefact, artefact)
             tables = prepare_tables(
                 table_type=artefact.table_type,

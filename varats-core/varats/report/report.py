@@ -5,7 +5,7 @@ import re
 import typing as tp
 from abc import abstractmethod
 from enum import Enum
-from pathlib import Path
+from pathlib import Path, PosixPath
 
 from plumbum import colors
 from plumbum.colorlib.styles import Color
@@ -100,11 +100,9 @@ class FileStatusExtension(Enum):
         raise ValueError(f"Unknown file status extension name: {status_name}")
 
 
-class MetaReport(type):
-    """Meta class for report to manage all reports and implement the basic
-    static functionality for handling report-file names."""
-
-    REPORT_TYPES: tp.Dict[str, 'MetaReport'] = dict()
+class ReportFilename():
+    """ReportFilename wraps special semantics about our report filenames around
+    strings and paths."""
 
     __RESULT_FILE_REGEX = re.compile(
         r"(?P<project_shorthand>.*)-" +
@@ -117,6 +115,213 @@ class MetaReport(type):
         "{shorthand}-" + "{project_name}-" + "{binary_name}-" +
         "{project_version}_" + "{project_uuid}_" + "{status_ext}" + "{file_ext}"
     )
+
+    def __init__(self, file_name: tp.Union[str, Path]) -> None:
+        if isinstance(file_name, (Path, PosixPath)):
+            self.__filename = file_name.name
+        else:
+            self.__filename = str(file_name)
+
+    @property
+    def filename(self) -> str:
+        """Literal file name."""
+        return self.__filename
+
+    def has_status_success(self) -> bool:
+        """
+        Checks if the file name is a (Success) result file.
+
+        Returns:
+            True, if the file name is for a success file
+        """
+        return ReportFilename.result_file_has_status(
+            self.filename, FileStatusExtension.Success
+        )
+
+    def has_status_failed(self) -> bool:
+        """
+        Check if the file name is a (Failed) result file.
+
+        Returns:
+            True, if the file name is for a failed file
+        """
+        return ReportFilename.result_file_has_status(
+            self.filename, FileStatusExtension.Failed
+        )
+
+    def has_status_compileerror(self) -> bool:
+        """
+        Check if the filename is a (CompileError) result file.
+
+        Returns:
+            True, if the file name is for a compile error file
+        """
+        return ReportFilename.result_file_has_status(
+            self.filename, FileStatusExtension.CompileError
+        )
+
+    def has_status_missing(self) -> bool:
+        """
+        Check if the filename is a (Missing) result file.
+
+        Returns:
+            True, if the file name is for a missing file
+        """
+        return ReportFilename.result_file_has_status(
+            self.filename, FileStatusExtension.Missing
+        )
+
+    def has_status_blocked(self) -> bool:
+        """
+        Check if the filename is a (Blocked) result file.
+
+        Returns:
+            True, if the file name is for a blocked file
+        """
+        return ReportFilename.result_file_has_status(
+            self.filename, FileStatusExtension.Blocked
+        )
+
+    @staticmethod
+    def result_file_has_status(
+        file_name: str, extension_type: FileStatusExtension
+    ) -> bool:
+        """
+        Check if the passed file name is of the expected file status.
+
+        Args:
+            file_name: name of the file to check
+            extension_type: expected file status extension
+
+        Returns:
+            True, if the file name is for a file with the the specified
+            ``extension_type``
+        """
+        match = ReportFilename.__RESULT_FILE_REGEX.search(file_name)
+        if match:
+            return match.group("status_ext") == (
+                FileStatusExtension.get_status_extension(extension_type)
+            )
+        return False
+
+    def is_result_file(self) -> bool:
+        """
+        Check if the file name is formated like a result file.
+
+        Returns:
+            True, if the file name is correctly formated
+        """
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
+        return match is not None
+
+    @property
+    def commit_hash(self) -> str:
+        """
+        Commit hash of the result file.
+
+        Returns:
+            the commit hash from a result file name
+        """
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
+        if match:
+            return match.group("file_commit_hash")
+
+        raise ValueError(f'File {self.filename} name was wrongly formated.')
+
+    @property
+    def shorthand(self) -> str:
+        """
+        Report shorthand of the result file.
+
+        Returns:
+            the report shorthand from a result file
+        """
+
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
+        if match:
+            return match.group("project_shorthand")
+
+        raise ValueError(f'File {self.filename} name was wrongly formated.')
+
+    @property
+    def file_status(self) -> FileStatusExtension:
+        """
+        Get the FileStatusExtension from a result file.
+
+        Returns:
+            the FileStatusExtension of the result file
+        """
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
+        if match:
+            return FileStatusExtension.get_file_status_from_str(
+                match.group("status_ext")
+            )
+
+        raise ValueError('File {file_name} name was wrongly formated.')
+
+    @property
+    def uuid(self) -> str:
+        """Report UUID of the result file, genereated by BenchBuild during the
+        experiment."""
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
+        if match:
+            return match.group("UUID")
+
+        raise ValueError(f'File {self.filename} name was wrongly formated.')
+
+    @staticmethod
+    def get_file_name(
+        report_shorthand: str,
+        project_name: str,
+        binary_name: str,
+        project_version: str,
+        project_uuid: str,
+        extension_type: FileStatusExtension,
+        file_ext: str = ".txt"
+    ) -> str:
+        """
+        Generates a filename for a report file out the different parts.
+
+        Args:
+            report_shorthand: unique shorthand of the report
+            project_name: name of the project for which the report was generated
+            binary_name: name of the binary for which the report was generated
+            project_version: version of the analyzed project, i.e., commit hash
+            project_uuid: benchbuild uuid for the experiment run
+            extension_type: to specify the status of the generated report
+            file_ext: file extension of the report file
+
+        Returns:
+            name for the report file that can later be uniquly identified
+        """
+        status_ext = FileStatusExtension.get_status_extension(extension_type)
+
+        # Add the missing '.' if none was given by the report
+        if file_ext and not file_ext.startswith("."):
+            file_ext = "." + file_ext
+
+        return ReportFilename.__RESULT_FILE_TEMPLATE.format(
+            shorthand=report_shorthand,
+            project_name=project_name,
+            binary_name=binary_name,
+            project_version=project_version,
+            project_uuid=project_uuid,
+            status_ext=status_ext,
+            file_ext=file_ext
+        )
+
+    def __str__(self) -> str:
+        return self.filename
+
+    def __repr__(self) -> str:
+        return self.filename
+
+
+class MetaReport(type):
+    """Meta class for report to manage all reports and implement the basic
+    static functionality for handling report-file names."""
+
+    REPORT_TYPES: tp.Dict[str, 'MetaReport'] = dict()
 
     __SUPPLEMENTARY_RESULT_FILE_REGEX = re.compile(
         r"(?P<project_shorthand>.*)-" + r"SUPPL-" +
@@ -135,28 +340,11 @@ class MetaReport(type):
                                                                         tp.Any]
     ) -> None:
         super(MetaReport, cls).__init__(name, bases, attrs)
-        MetaReport.__check_accessor_methods(cls)
 
         if name != 'BaseReport':
             MetaReport.__check_required_vars(cls, name, ["SHORTHAND"])
             if name not in cls.REPORT_TYPES:
                 cls.REPORT_TYPES[name] = cls
-
-    def __check_accessor_methods(cls: tp.Any) -> None:
-        """
-        Check if all static accessor methods like `is_result_file_*` for every
-        FileStatusExtension enum exist.
-
-        For example: Report.result_file_has_status_success("file/path")
-        """
-        for file_status in FileStatusExtension:
-            method_name = 'result_file_has_status_' + file_status.name.lower()
-            if not hasattr(cls, method_name):
-                raise NotImplementedError(
-                    "Missing file accesser method {method_name}".format(
-                        method_name=method_name
-                    )
-                )
 
     def __check_required_vars(
         cls: tp.Any, class_name: str, req_vars: tp.List[str]
@@ -181,124 +369,15 @@ class MetaReport(type):
         Returns:
             corresponding report class
         """
-        match = MetaReport.__RESULT_FILE_REGEX.search(file_name)
-        if match:
-            short_hand = match.group("project_shorthand")
+        try:
+            short_hand = ReportFilename(file_name).shorthand
             for report_type in MetaReport.REPORT_TYPES.values():
                 if getattr(report_type, "SHORTHAND") == short_hand:
                     return report_type
+        except ValueError:
+            return None
+
         return None
-
-    @staticmethod
-    def result_file_has_status_success(file_name: str) -> bool:
-        """
-        Checks if the passed file name is a (Success) result file.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            True, if the file name is for a success file
-        """
-        return MetaReport.result_file_has_status(
-            file_name, FileStatusExtension.Success
-        )
-
-    @staticmethod
-    def result_file_has_status_failed(file_name: str) -> bool:
-        """
-        Check if the passed file name is a (Failed) result file.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            True, if the file name is for a failed file
-        """
-        return MetaReport.result_file_has_status(
-            file_name, FileStatusExtension.Failed
-        )
-
-    @staticmethod
-    def result_file_has_status_compileerror(file_name: str) -> bool:
-        """
-        Check if the passed file name is a (CompileError) result file.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            True, if the file name is for a compile error file
-        """
-        return MetaReport.result_file_has_status(
-            file_name, FileStatusExtension.CompileError
-        )
-
-    @staticmethod
-    def result_file_has_status_missing(file_name: str) -> bool:
-        """
-        Check if the passed file name is a (Missing) result file.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            True, if the file name is for a missing file
-        """
-        return MetaReport.result_file_has_status(
-            file_name, FileStatusExtension.Missing
-        )
-
-    @staticmethod
-    def result_file_has_status_blocked(file_name: str) -> bool:
-        """
-        Check if the passed file name is a (Blocked) result file.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            True, if the file name is for a blocked file
-        """
-        return MetaReport.result_file_has_status(
-            file_name, FileStatusExtension.Blocked
-        )
-
-    @staticmethod
-    def result_file_has_status(
-        file_name: str, extension_type: FileStatusExtension
-    ) -> bool:
-        """
-        Check if the passed file name is of the expected file status.
-
-        Args:
-            file_name: name of the file to check
-            extension_type: expected file status extension
-
-        Returns:
-            True, if the file name is for a file with the the specified
-            ``extension_type``
-        """
-        match = MetaReport.__RESULT_FILE_REGEX.search(file_name)
-        if match:
-            return match.group("status_ext") == (
-                FileStatusExtension.get_status_extension(extension_type)
-            )
-        return False
-
-    @staticmethod
-    def is_result_file(file_name: str) -> bool:
-        """
-        Check if the passed file name is formated like a result file.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            True, if the file name is correctly formated
-        """
-        match = MetaReport.__RESULT_FILE_REGEX.search(file_name)
-        return match is not None
 
     @staticmethod
     def is_result_file_supplementary(file_name: str) -> bool:
@@ -359,50 +438,6 @@ class MetaReport(type):
         )
 
     @staticmethod
-    def get_commit_hash_from_result_file(file_name: str) -> str:
-        """
-        Get the commit hash from a result file name.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            the commit hash from a result file name
-        """
-        match = MetaReport.__RESULT_FILE_REGEX.search(file_name)
-        if match:
-            return match.group("file_commit_hash")
-
-        raise ValueError(
-            'File {file_name} name was wrongly formated.'.format(
-                file_name=file_name
-            )
-        )
-
-    @staticmethod
-    def get_status_from_result_file(file_name: str) -> FileStatusExtension:
-        """
-        Get the FileStatusExtension from a result file name.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            the FileStatusExtension of the result file
-        """
-        match = MetaReport.__RESULT_FILE_REGEX.search(file_name)
-        if match:
-            return FileStatusExtension.get_file_status_from_str(
-                match.group("status_ext")
-            )
-
-        raise ValueError(
-            'File {file_name} name was wrongly formated.'.format(
-                file_name=file_name
-            )
-        )
-
-    @staticmethod
     def get_file_name(
         report_shorthand: str,
         project_name: str,
@@ -427,20 +462,9 @@ class MetaReport(type):
         Returns:
             name for the report file that can later be uniquly identified
         """
-        status_ext = FileStatusExtension.get_status_extension(extension_type)
-
-        # Add the missing '.' if none was given by the report
-        if file_ext and not file_ext.startswith("."):
-            file_ext = "." + file_ext
-
-        return MetaReport.__RESULT_FILE_TEMPLATE.format(
-            shorthand=report_shorthand,
-            project_name=project_name,
-            binary_name=binary_name,
-            project_version=project_version,
-            project_uuid=project_uuid,
-            status_ext=status_ext,
-            file_ext=file_ext
+        return ReportFilename.get_file_name(
+            report_shorthand, project_name, binary_name, project_version,
+            project_uuid, extension_type, file_ext
         )
 
     @staticmethod
@@ -493,11 +517,12 @@ class MetaReport(type):
         Returns:
             True, if the file belongs to this report type
         """
-        match = MetaReport.__RESULT_FILE_REGEX.search(file_name)
-        if match:
-            return match.group("project_shorthand") == str(
-                getattr(cls, "SHORTHAND")
-            )
+        try:
+            short_hand = ReportFilename(file_name).shorthand
+            return short_hand == str(getattr(cls, "SHORTHAND"))
+        except ValueError:
+            return False
+
         return False
 
 
@@ -507,6 +532,7 @@ class BaseReport(metaclass=MetaReport):
 
     def __init__(self, path: Path) -> None:
         self.__path = path
+        self.__filename = ReportFilename(path)
 
     @staticmethod
     @abstractmethod
@@ -537,3 +563,21 @@ class BaseReport(metaclass=MetaReport):
     def path(self) -> Path:
         """Path to the report file."""
         return self.__path
+
+    @property
+    def filename(self) -> ReportFilename:
+        """Filename of the report."""
+        return self.__filename
+
+
+class ReportSpecification():
+    """Groups together multiple report types into a specification that can be
+    used, e.g., by experiments, to request multiple reports."""
+
+    def __init__(self, report_types: tp.List[tp.Type[BaseReport]]) -> None:
+        self.__reports_types = report_types
+
+    @property
+    def report_types(self) -> tp.List[tp.Type[BaseReport]]:
+        """Report types in this report specification."""
+        return self.__reports_types

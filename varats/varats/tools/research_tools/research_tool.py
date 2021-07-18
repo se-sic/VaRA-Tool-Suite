@@ -29,7 +29,7 @@ from varats.utils.git_util import get_current_branch
 from varats.utils.logger_util import log_without_linesep
 
 if tp.TYPE_CHECKING:
-    import varats.containers.containers as containers  # pylint: disable=W0611
+    from varats.containers import containers  # pylint: disable=W0611
 
 
 class Distro(Enum):

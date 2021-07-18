@@ -5,7 +5,7 @@ import typing as tp
 from distutils.util import strtobool
 
 import matplotlib.pyplot as plt
-import matplotlib.style as style
+from matplotlib import style
 
 from varats.data.databases.file_status_database import FileStatusDatabase
 from varats.data.reports.empty_report import EmptyReport

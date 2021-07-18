@@ -17,7 +17,7 @@ from varats.project.project_util import (
     get_project_cls_by_name,
     get_primary_project_source,
 )
-from varats.report.report import FileStatusExtension, MetaReport
+from varats.report.report import FileStatusExtension, MetaReport, ReportFilename
 from varats.utils.settings import vara_cfg
 
 
@@ -76,12 +76,10 @@ def __get_result_files_dict(
         return result_files
 
     for res_file in res_dir.iterdir():
-        if result_file_type.is_result_file(
-            res_file.name
+        report_file = ReportFilename(res_file)
+        if report_file.is_result_file(
         ) and result_file_type.is_correct_report_type(res_file.name):
-            commit_hash = result_file_type.get_commit_hash_from_result_file(
-                res_file.name
-            )
+            commit_hash = report_file.commit_hash
             result_files[commit_hash].append(res_file)
 
     return result_files
@@ -163,9 +161,7 @@ def __get_files_with_status(
         for result_file in sorted_res_files:
             if file_name_filter(result_file.name):
                 continue
-            if result_file_type.get_status_from_result_file(
-                result_file.name
-            ) in file_statuses:
+            if ReportFilename(result_file.name).file_status in file_statuses:
                 processed_revisions_paths.append(result_file)
 
     return processed_revisions_paths
@@ -268,7 +264,7 @@ def get_processed_revisions(project_name: str,
         list of correctly process revisions
     """
     return [
-        result_file_type.get_commit_hash_from_result_file(x.name)
+        ReportFilename(x.name).commit_hash
         for x in get_processed_revisions_files(project_name, result_file_type)
     ]
 
@@ -290,7 +286,7 @@ def get_failed_revisions(project_name: str,
     result_files = __get_result_files_dict(project_name, result_file_type)
     for commit_hash, value in result_files.items():
         newest_res_file = max(value, key=lambda x: Path(x).stat().st_mtime)
-        if result_file_type.result_file_has_status_failed(newest_res_file.name):
+        if ReportFilename(newest_res_file.name).has_status_failed():
             failed_revisions.append(commit_hash)
 
     return failed_revisions
@@ -320,9 +316,7 @@ def __get_tag_for_revision(
 
     newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
     if result_file_type.is_correct_report_type(str(newest_res_file.name)):
-        return result_file_type.get_status_from_result_file(
-            str(newest_res_file)
-        )
+        return ReportFilename(str(newest_res_file)).file_status
 
     return FileStatusExtension.Missing
 

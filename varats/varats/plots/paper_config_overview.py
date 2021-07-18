@@ -6,10 +6,10 @@ from datetime import datetime
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import matplotlib.style as style
 import numpy as np
 import pandas as pd
 import seaborn as sb
+from matplotlib import style
 from matplotlib.patches import Patch
 
 import varats.paper_mgmt.paper_config as PC

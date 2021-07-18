@@ -172,9 +172,7 @@ class CommitReport(BaseReport):
     @property
     def head_commit(self) -> str:
         """The current HEAD commit under which this CommitReport was created."""
-        return CommitReport.get_commit_hash_from_result_file(
-            Path(self.path).name
-        )
+        return self.filename.commit_hash
 
     @staticmethod
     def get_file_name(
@@ -302,9 +300,9 @@ class CommitReport(BaseReport):
         """
         cf_map: tp.Dict[str, tp.List[int]] = dict()
         self.init_cf_map_with_edges(cf_map)
-        for key in cf_map:
+        for key, value in cf_map.items():
             if key.startswith(self.head_commit):
-                interaction_tuple = cf_map[key]
+                interaction_tuple = value
                 return (interaction_tuple[0], interaction_tuple[1])
 
         return (0, 0)
@@ -343,9 +341,9 @@ class CommitReport(BaseReport):
         other commits."""
         df_map: tp.Dict[str, tp.List[int]] = dict()
         self.init_df_map_with_edges(df_map)
-        for key in df_map:
+        for key, value in df_map.items():
             if key.startswith(self.head_commit):
-                interaction_tuple = df_map[key]
+                interaction_tuple = value
                 return (interaction_tuple[0], interaction_tuple[1])
 
         return (0, 0)

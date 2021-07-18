@@ -267,7 +267,7 @@ class BlameReport(BaseReport):
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
-        self.__path = path
+
         with open(path, 'r') as stream:
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
             version_header = VersionHeader(next(documents))
@@ -309,7 +309,7 @@ class BlameReport(BaseReport):
     @property
     def head_commit(self) -> str:
         """The current HEAD commit under which this CommitReport was created."""
-        return BlameReport.get_commit_hash_from_result_file(self.path.name)
+        return self.filename.commit_hash
 
     @property
     def meta_data(self) -> BlameReportMetaData:
