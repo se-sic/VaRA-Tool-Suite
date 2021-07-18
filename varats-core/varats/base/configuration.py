@@ -214,9 +214,9 @@ class ConfigurationImpl(Configuration):
 
                 return option_value
 
-            if option_value is not False and option_value is not True and type(
-                option_value
-            ) != int:
+            if option_value is not False and option_value is not True and isinstance(
+                option_value, int
+            ):
                 option_value = make_possible_type_conversion(
                     option_value.strip()
                 )
