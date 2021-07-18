@@ -321,7 +321,7 @@ class BaseReport():
     """Report base class to add general report properties and helper
     functions."""
 
-    REPORT_TYPES: tp.Dict[str, 'BaseReport'] = dict()
+    REPORT_TYPES: tp.Dict[str, tp.Type['BaseReport']] = dict()
 
     def __init__(self, path: Path) -> None:
         self.__path = path
@@ -416,10 +416,6 @@ class BaseReport():
         Returns:
             name for the report file that can later be uniquly identified
         """
-        return ReportFilename.get_file_name(
-            report_shorthand, project_name, binary_name, project_version,
-            project_uuid, extension_type, file_ext
-        )
 
     @property
     def path(self) -> Path:
@@ -431,8 +427,13 @@ class BaseReport():
         """Filename of the report."""
         return self.__filename
 
+    @abstractmethod
     @classmethod
-    def is_correct_report_type(cls, file_name: str) -> bool:  # TODO fix up
+    def shorthand(cls) -> str:
+        """Shorthand for this report."""
+
+    @classmethod
+    def is_correct_report_type(cls, file_name: str) -> bool:
         """
         Check if the passed file belongs to this report type.
 
@@ -447,8 +448,6 @@ class BaseReport():
             return short_hand == str(getattr(cls, "SHORTHAND"))
         except ValueError:
             return False
-
-        return False
 
 
 class ReportSpecification():

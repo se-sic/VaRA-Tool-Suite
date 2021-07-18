@@ -12,6 +12,11 @@ class EmptyReport(BaseReport):
 
     SHORTHAND = "EMPTY"
 
+    @classmethod
+    def shorthand(cls) -> str:
+        """Shorthand for this report."""
+        return cls.SHORTHAND
+
     @staticmethod
     def get_file_name(
         project_name: str,

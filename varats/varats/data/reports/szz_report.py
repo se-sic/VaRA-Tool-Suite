@@ -35,6 +35,11 @@ class SZZReport(BaseReport):
             for fix, introducers in raw_report["bugs"].items():
                 self.__bugs[fix] = RawBug(fix, set(introducers), None)
 
+    @classmethod
+    def shorthand(cls) -> str:
+        """Shorthand for this report."""
+        return cls.SHORTHAND
+
     @staticmethod
     def get_file_name(
         project_name: str,

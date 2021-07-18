@@ -174,6 +174,11 @@ class CommitReport(BaseReport):
         """The current HEAD commit under which this CommitReport was created."""
         return self.filename.commit_hash
 
+    @classmethod
+    def shorthand(cls) -> str:
+        """Shorthand for this report."""
+        return cls.SHORTHAND
+
     @staticmethod
     def get_file_name(
         project_name: str,

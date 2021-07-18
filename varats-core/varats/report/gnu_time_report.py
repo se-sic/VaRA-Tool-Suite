@@ -86,6 +86,11 @@ class TimeReport(BaseReport):
         str_repr += f"Max Resident Size (kbytes): {self.max_res_size}"
         return str_repr
 
+    @classmethod
+    def shorthand(cls) -> str:
+        """Shorthand for this report."""
+        return cls.SHORTHAND
+
     @staticmethod
     def get_file_name(
         project_name: str,

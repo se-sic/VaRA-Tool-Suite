@@ -105,7 +105,7 @@ class JustCompileReport(VersionExperiment):
 
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(EmptyAnalysis(project))
+        analysis_actions.append(EmptyAnalysis(project, self.REPORT_SPEC))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
