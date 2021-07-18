@@ -29,6 +29,7 @@ from varats.experiment.wllvm import (
 )
 from varats.report.report import BaseReport
 from varats.report.report import FileStatusExtension as FSE
+from varats.report.report import ReportSpecification
 from varats.utils.settings import bb_cfg
 
 
@@ -109,7 +110,7 @@ class PhASARTaintAnalysis(VersionExperiment):
     the call."""
 
     NAME = "PhASARFeatureTaintAnalysis"
-    REPORT_TYPE = EMPTY
+    REPORT_SPEC = ReportSpecification(EMPTY)
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """

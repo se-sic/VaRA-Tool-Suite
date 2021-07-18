@@ -370,9 +370,29 @@ class MetaReport(type):
             corresponding report class
         """
         try:
-            short_hand = ReportFilename(file_name).shorthand
+            shorthand = ReportFilename(file_name).shorthand
+        except ValueError:
+            # Return nothing if we cannot correctly identify a shothand for the
+            # specified file name
+            return None
+        return MetaReport.lookup_report_type_by_shorthand(shorthand)
+
+    @staticmethod
+    def lookup_report_type_by_shorthand(
+        shorthand: str
+    ) -> tp.Optional['MetaReport']:
+        """
+        Looks-up the correct report class from a given report `shorthand`.
+
+        Args:
+            shorthand: of the report file
+
+        Returns:
+            corresponding report class
+        """
+        try:
             for report_type in MetaReport.REPORT_TYPES.values():
-                if getattr(report_type, "SHORTHAND") == short_hand:
+                if getattr(report_type, "SHORTHAND") == shorthand:
                     return report_type
         except ValueError:
             return None
@@ -574,10 +594,45 @@ class ReportSpecification():
     """Groups together multiple report types into a specification that can be
     used, e.g., by experiments, to request multiple reports."""
 
-    def __init__(self, report_types: tp.List[tp.Type[BaseReport]]) -> None:
-        self.__reports_types = report_types
+    def __init__(self, *report_types: tp.Type[BaseReport]) -> None:
+        if len(report_types) == 0:
+            raise AssertionError(
+                "ReportSpecification needs at least one report type."
+            )
+        self.__reports_types = list(report_types)
 
     @property
     def report_types(self) -> tp.List[tp.Type[BaseReport]]:
         """Report types in this report specification."""
-        return self.__reports_types
+        return list(self.__reports_types)
+
+    @property
+    def main_report(self) -> BaseReport:
+        """Main report of this specification."""
+        return self.__reports_types[0]
+
+    def in_spec(self, report_type: tp.Type[BaseReport]) -> bool:
+        """Checks if a report type is specified in this spec."""
+        return report_type in self.report_types
+
+    def get_report_type(self, shorthand: str) -> BaseReport:
+        """
+        Look up a report type by it's shorthand.
+
+        Args:
+            shorthand: notation for the report
+
+        Returns:
+            the report if, should it be part of this spec
+        """
+        report_type = MetaReport.lookup_report_type_by_shorthand(shorthand)
+
+        if report_type and self.in_spec(report_type):
+            return report_type
+
+        raise LookupError(
+            f"Report corresponding to {shorthand} was not specified."
+        )
+
+    def __contains__(self, report_type: tp.Type[BaseReport]) -> bool:
+        return self.in_spec(report_type)

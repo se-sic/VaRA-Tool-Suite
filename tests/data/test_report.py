@@ -2,9 +2,16 @@
 
 import unittest
 
+from varats.data.reports.blame_report import BlameReport as BR
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.data.reports.empty_report import EmptyReport
-from varats.report.report import FileStatusExtension, MetaReport, ReportFilename
+from varats.report.gnu_time_report import TimeReport as TR
+from varats.report.report import (
+    FileStatusExtension,
+    MetaReport,
+    ReportFilename,
+    ReportSpecification,
+)
 
 
 class TestFileStatusExtension(unittest.TestCase):
@@ -107,7 +114,7 @@ class TestReportFilename(unittest.TestCase):
 
 
 class TestMetaReport(unittest.TestCase):
-    """Test basic CommitReport functionality."""
+    """Test basic MetaReport functionality."""
 
     @classmethod
     def setUpClass(cls):
@@ -149,6 +156,17 @@ class TestMetaReport(unittest.TestCase):
                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
                 "success.txt"
             ), None
+        )
+
+    def test_report_type_lookup_by_shorthand(self):
+        """Check if we can lookup report types with a report shorthand."""
+        self.assertEqual(
+            MetaReport.lookup_report_type_by_shorthand("CR"),
+            MetaReport.REPORT_TYPES['CommitReport']
+        )
+        self.assertEqual(
+            MetaReport.lookup_report_type_by_shorthand("NONEXISTINGSHORTHAND"),
+            None
         )
 
     def test_is_result_file(self):
@@ -244,3 +262,32 @@ class TestMetaReport(unittest.TestCase):
                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be", "test", "txt"
             ), self.supplementary_filename
         )
+
+
+class TestRepoprtSpecification(unittest.TestCase):
+    """Test basic ReportSpecification functionality."""
+
+    def test_wrong_spec_setup(self):
+        """Check if we correctly reject empty specs."""
+        self.assertRaises(AssertionError, ReportSpecification)
+
+    def test_spec_properties(self):
+        """Check if the basic properties work."""
+        spec = ReportSpecification(CR, BR)
+
+        # First report should be the main report
+        self.assertEqual(spec.main_report, CR)
+
+        self.assertListEqual(spec.report_types, [CR, BR])
+
+    def test_if_report_is_in_spec(self):
+        """Check if we correctly verify that a report is in the spec."""
+        spec = ReportSpecification(CR, BR)
+
+        self.assertTrue(spec.in_spec(CR))
+        self.assertTrue(spec.in_spec(BR))
+        self.assertFalse(spec.in_spec(TR))
+
+        self.assertTrue(CR in spec)
+        self.assertTrue(BR in spec)
+        self.assertFalse(TR in spec)

@@ -296,14 +296,14 @@ class VersionExperiment(Experiment):  # type: ignore
                 for x in fs_whitelist
             }
 
-            if not hasattr(cls, 'REPORT_TYPE'):
+            if not hasattr(cls, 'REPORT_SPEC'):
                 raise TypeError(
-                    "Experiment sub class does not implement REPORT_TYPE."
+                    "Experiment sub class does not implement REPORT_SPEC."
                 )
 
             bad_revisions = [
                 revision for revision, file_status in
-                get_tagged_revisions(prj_cls, getattr(cls, 'REPORT_TYPE'))
+                get_tagged_revisions(prj_cls, getattr(cls, 'REPORT_SPEC'))
                 if file_status not in fs_good
             ]
 

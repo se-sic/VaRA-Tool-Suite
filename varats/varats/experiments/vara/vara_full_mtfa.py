@@ -31,6 +31,7 @@ from varats.experiment.wllvm import (
     get_bc_cache_actions,
 )
 from varats.report.report import FileStatusExtension as FSE
+from varats.report.report import ReportSpecification
 from varats.utils.settings import bb_cfg
 
 
@@ -113,7 +114,7 @@ class VaRATaintPropagation(VersionExperiment):
     call."""
 
     NAME = "VaRATaintPropagation"
-    REPORT_TYPE = TPR
+    REPORT_SPEC = ReportSpecification(TPR)
 
     def actions_for_project(
         self, project: Project

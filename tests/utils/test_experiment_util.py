@@ -12,7 +12,7 @@ import varats.experiment.experiment_util as EU
 from tests.test_helper import BBTestSource
 from tests.test_utils import run_in_test_environment
 from varats.data.reports.commit_report import CommitReport as CR
-from varats.report.report import FileStatusExtension
+from varats.report.report import FileStatusExtension, ReportSpecification
 from varats.utils.settings import vara_cfg, bb_cfg
 
 
@@ -21,7 +21,7 @@ class MockExperiment(EU.VersionExperiment):
     experiments."""
 
     NAME = "CommitReportExperiment"
-    REPORT_TYPE = CR
+    REPORT_SPEC = ReportSpecification(CR)
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         return []
