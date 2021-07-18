@@ -43,6 +43,7 @@ class BCFileExtensions(Enum):
     NO_OPT = 'O0'
     OPT = 'O2'
     TBAA = "TBAA"
+    FEATURE = 'feature'
     BLAME = "blame"
 
     def __lt__(self, other: tp.Any) -> bool:
@@ -69,10 +70,10 @@ class RunWLLVM(base.Extension):  # type: ignore
 
         env = bb_cfg()["env"].value
         env_path_list = path_to_list(getenv("PATH", ""))
-        env_path_list.extend(env.get("PATH", []))
+        env_path_list = env.get("PATH", []) + env_path_list
 
         libs_path = path_to_list(getenv("LD_LIBRARY_PATH", ""))
-        libs_path.extend(env.get("LD_LIBRARY_PATH", []))
+        libs_path = env.get("LD_LIBRARY_PATH", []) + libs_path
 
         wllvm = wllvm.with_env(
             LLVM_COMPILER="clang",

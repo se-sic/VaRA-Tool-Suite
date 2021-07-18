@@ -28,7 +28,7 @@ As a simple example and help to implement your own report, take a look at the :r
 Report module
 .............
 
-.. automodule:: varats.data.report
+.. automodule:: varats.report.report
     :members:
     :undoc-members:
     :show-inheritance:

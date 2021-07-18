@@ -41,7 +41,7 @@ def draw_bugs(
     revision_time_ids = [cmap.short_time_id(rev) for rev in revisions]
 
     bug_provider = BugProvider.get_provider_for_project(project)
-    for rawbug in bug_provider.find_all_raw_bugs():
+    for rawbug in bug_provider.find_raw_bugs():
         bug_time_id = cmap.time_id(rawbug.fixing_commit)
         if bug_time_id in revision_time_ids:
             index = float(revisions.index(rawbug.fixing_commit[:10]))
