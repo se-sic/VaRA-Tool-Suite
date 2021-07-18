@@ -1,13 +1,15 @@
 """Test case study."""
+import os
 import typing as tp
 import unittest
 import unittest.mock as mock
+from datetime import datetime
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import varats.paper_mgmt.case_study as MCS
 from tests.test_helper_config import ConfigurationTestImpl
-from tests.test_utils import run_in_test_environment, TestInputs
+from tests.test_utils import run_in_test_environment, UnitTestInputs
 from varats.base.sampling_method import UniformSamplingMethod
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.mapping.commit_map import CommitMap
@@ -19,7 +21,9 @@ from varats.utils.settings import vara_cfg
 class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
     """Test if revision look up functions find the correct revisions."""
 
-    @run_in_test_environment(TestInputs.PAPER_CONFIGS, TestInputs.RESULT_FILES)
+    @run_in_test_environment(
+        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+    )
     def test_get_failed_revisions(self):
         """Check if we can correctly find all failed revisions of a case
         study."""
@@ -35,7 +39,9 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
             'aaa4424d9bdeb10f8af5cb4599a0fc2bbaac5553' in failed_revs
         )
 
-    @run_in_test_environment(TestInputs.PAPER_CONFIGS, TestInputs.RESULT_FILES)
+    @run_in_test_environment(
+        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+    )
     def test_get_processed_revisions(self):
         """Check if we can correctly find all processed revisions of a case
         study."""
@@ -51,7 +57,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
             '21ac39f7c8ca61c855be0bc38900abe7b5a0f67f' in process_revs
         )
 
-    @run_in_test_environment(TestInputs.PAPER_CONFIGS)
+    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
     def test_get_revisions_status_for_case_study_to_high_stage(self):
         """Check if we correctly handle look ups where the stage selected is
         larger than the biggest one in the case study."""
@@ -64,7 +70,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
             ), []
         )
 
-    @run_in_test_environment(TestInputs.PAPER_CONFIGS)
+    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
     def test_get_revision_not_in_case_study(self):
         """Check if we correctly handle the lookup of a revision that is not in
         the case study."""
@@ -76,7 +82,9 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
             get_paper_config().get_case_studies('brotli')[0], '0000000000', CR
         )
 
-    @run_in_test_environment(TestInputs.PAPER_CONFIGS, TestInputs.RESULT_FILES)
+    @run_in_test_environment(
+        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+    )
     def test_get_revisions_in_case_study(self):
         """Check if we correctly handle the lookup of a revision that is in a
         case study."""
@@ -90,11 +98,24 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
             ), FileStatusExtension.Success
         )
 
-    @run_in_test_environment(TestInputs.PAPER_CONFIGS, TestInputs.RESULT_FILES)
+    @run_in_test_environment(
+        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+    )
     def test_get_newest_result_files_for_case_study(self):
         """Check that when we have two files, the newes one get's selected."""
         vara_cfg()['paper_config']['current_config'] = "test_revision_lookup"
         load_paper_config()
+
+        good_file = ReportFilename(
+            'CR-brotli-brotli-21ac39f7c8_'
+            '34d4d1b5-7212-4244-9adc-b19bff599142_success.yaml'
+        )
+
+        now = datetime.now().timestamp()
+        file_path = Path(
+            str(vara_cfg()['result_dir'])
+        ) / 'brotli' / good_file.filename
+        os.utime(file_path, (now, now))
 
         newest_res_files = MCS.get_newest_result_files_for_case_study(
             get_paper_config().get_case_studies('brotli')[0],
@@ -102,18 +123,56 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         )
 
         # remove unnecessary files
-        newest_res_files = list(
+        filtered_newest_res_files = list(
             filter(
-                lambda res_file: res_file.commit_hash.startswith('21ac39f7'),
+                lambda res_file: res_file.commit_hash.
+                startswith(good_file.commit_hash),
                 map(
                     lambda res_file: ReportFilename(res_file), newest_res_files
                 )
             )
         )
 
-        self.assertTrue(newest_res_files[0].uuid.endswith('42'))
+        self.assertTrue(filtered_newest_res_files[0].uuid.endswith('42'))
 
-    @run_in_test_environment(TestInputs.PAPER_CONFIGS)
+    @run_in_test_environment(
+        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+    )
+    def test_get_newest_result_files_for_case_study_fail(self):
+        """Check that when we have two files, the newes one get's selected."""
+        vara_cfg()['paper_config']['current_config'] = "test_revision_lookup"
+        load_paper_config()
+
+        bad_file = ReportFilename(
+            'CR-brotli-brotli-21ac39f7c8_'
+            '34d4d1b5-7212-4244-9adc-b19bff599cf1_success.yaml'
+        )
+
+        now = datetime.now().timestamp()
+        file_path = Path(
+            str(vara_cfg()['result_dir'])
+        ) / 'brotli' / bad_file.filename
+        os.utime(file_path, (now, now))
+
+        newest_res_files = MCS.get_newest_result_files_for_case_study(
+            get_paper_config().get_case_studies('brotli')[0],
+            Path(vara_cfg()['result_dir'].value), CR
+        )
+
+        # remove unnecessary files
+        filtered_newest_res_files = list(
+            filter(
+                lambda res_file: res_file.commit_hash.
+                startswith(bad_file.commit_hash),
+                map(
+                    lambda res_file: ReportFilename(res_file), newest_res_files
+                )
+            )
+        )
+
+        self.assertFalse(filtered_newest_res_files[0].uuid.endswith('42'))
+
+    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
     def test_get_newest_result_files_for_case_study_with_empty_res_dir(self):
         """Check that we correctly handle the edge case where no result dir
         exists."""

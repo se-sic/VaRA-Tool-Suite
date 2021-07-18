@@ -19,9 +19,9 @@ TEST_INPUTS_DIR = Path(os.path.dirname(__file__)) / 'TEST_INPUTS'
 TestFunctionTy = tp.Callable[..., tp.Any]
 
 
-class TestInputs():
+class UnitTestInputs():
 
-    class TestInput():
+    class UnitTestInput():
 
         def __init__(self, src: Path, dst: Path):
             self.__src = src
@@ -34,23 +34,23 @@ class TestInputs():
             else:
                 shutil.copy(self.__src, dst)
 
-    PAPER_CONFIGS = TestInput(
+    PAPER_CONFIGS = UnitTestInput(
         TEST_INPUTS_DIR / "paper_configs", Path("paper_configs")
     )
-    RESULT_FILES = TestInput(TEST_INPUTS_DIR / "results", Path("results"))
-    PLOTS = TestInput(TEST_INPUTS_DIR / "plots", Path("plots"))
-    TABLES = TestInput(TEST_INPUTS_DIR / "tables", Path("tables"))
-    ARTEFACTS = TestInput(TEST_INPUTS_DIR / "artefacts", Path("artefacts"))
+    RESULT_FILES = UnitTestInput(TEST_INPUTS_DIR / "results", Path("results"))
+    PLOTS = UnitTestInput(TEST_INPUTS_DIR / "plots", Path("plots"))
+    TABLES = UnitTestInput(TEST_INPUTS_DIR / "tables", Path("tables"))
+    ARTEFACTS = UnitTestInput(TEST_INPUTS_DIR / "artefacts", Path("artefacts"))
 
     @staticmethod
-    def create_test_input(src: Path, dst: Path) -> TestInput:
-        return TestInputs.TestInput(src, dst)
+    def create_test_input(src: Path, dst: Path) -> UnitTestInput:
+        return UnitTestInputs.UnitTestInput(src, dst)
 
 
 class _TestEnvironment():
 
     def __init__(
-        self, required_test_inputs: tp.Iterable[TestInputs.TestInput]
+        self, required_test_inputs: tp.Iterable[UnitTestInputs.UnitTestInput]
     ) -> None:
 
         self.__tmp_dir = tempfile.TemporaryDirectory()
@@ -109,7 +109,7 @@ class _TestEnvironment():
 
 
 def run_in_test_environment(
-    *required_test_inputs: TestInputs.TestInput
+    *required_test_inputs: UnitTestInputs.UnitTestInput
 ) -> TestFunctionTy:
     """
     Run a test in an isolated test environment.
@@ -133,7 +133,7 @@ def run_in_test_environment(
 
 
 def test_environment(
-    *required_test_inputs: TestInputs.TestInput
+    *required_test_inputs: UnitTestInputs.UnitTestInput
 ) -> _TestEnvironment:
     """
     Context manager that creates an isolated test environment.
