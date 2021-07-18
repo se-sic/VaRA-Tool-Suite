@@ -15,6 +15,70 @@ from varats.project.project_util import (
     get_primary_project_source,
 )
 
+FULL_COMMIT_HASH_LENGTH = 40
+SHORT_COMMIT_HASH_LENGTH = 10
+
+
+class CommitHash():
+    """Shortened commit hash."""
+
+    COMMIT_HASH_LENGTH = SHORT_COMMIT_HASH_LENGTH
+
+    def __init__(self, short_commit_hash: str):
+        if len(short_commit_hash) >= self.COMMIT_HASH_LENGTH:
+            raise ValueError("Commit hash too short")
+        self.__commit_hash = short_commit_hash[:self.COMMIT_HASH_LENGTH]
+
+    @property
+    def hash(self) -> str:
+        return self.__commit_hash
+
+    @staticmethod
+    def from_pygit_commit(commit: pygit2.Commit) -> 'FullCommitHash':
+        return FullCommitHash(str(commit.id))
+
+    def __str__(self) -> str:
+        return self.hash
+
+    def __repr__(self) -> str:
+        return self.hash
+
+    def __lt__(self, other: tp.Any) -> bool:
+        if isinstance(other, CommitHash):
+            return self.hash < other.hash
+        return False
+
+    def __eq__(self, other: tp.Any) -> bool:
+        if isinstance(other, CommitHash):
+            return self.hash == other.hash
+        return False
+
+    def __hash__(self) -> int:
+        return hash(self.hash)
+
+
+class FullCommitHash(CommitHash):
+    """Full-length commit hash."""
+
+    COMMIT_HASH_LENGTH = FULL_COMMIT_HASH_LENGTH
+
+    def __init__(self, commit_hash: str):
+        super().__init__(commit_hash)
+
+    @property
+    def short_hash(self) -> str:
+        """Abbreviated commit hash."""
+        return self.hash[:SHORT_COMMIT_HASH_LENGTH]
+
+    def to_short_commit_hash(self) -> CommitHash:
+        return CommitHash(self.hash)
+
+    def startswith(self, short_hash: CommitHash) -> bool:
+        return self.hash.startswith(short_hash.hash)
+
+
+DUMMY_COMMIT_HASH = FullCommitHash("0000000000000000000000000000000000000000")
+
 ################################################################################
 # Git interaction helpers
 
@@ -174,7 +238,7 @@ class ChurnConfig():
         return extensions_list
 
 
-CommitLookupTy = tp.Callable[[str, str], pygit2.Commit]
+CommitLookupTy = tp.Callable[[FullCommitHash, str], pygit2.Commit]
 
 
 def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
@@ -197,10 +261,11 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
     repos: tp.Dict[str, pygit2.Repository] = {}
 
     # Maps hash to commit within corresponding git_name
-    cache_dict: tp.Dict[str, tp.Dict[str, pygit2.Commit]] = {}
+    cache_dict: tp.Dict[str, tp.Dict[FullCommitHash, pygit2.Commit]] = {}
 
     def get_commit(
-        c_hash: str, git_name: tp.Optional[str] = None
+        c_hash: FullCommitHash,
+        git_name: tp.Optional[str] = None
     ) -> pygit2.Commit:
         """
         Gets the commit from a given commit hash within its corresponding
@@ -260,12 +325,12 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
 class CommitRepoPair():
     """Pair of a commit hash and the name of the repository it is based in."""
 
-    def __init__(self, commit_hash: str, repo_name: str) -> None:
+    def __init__(self, commit_hash: FullCommitHash, repo_name: str) -> None:
         self.__commit_hash = commit_hash
         self.__repo_name = repo_name
 
     @property
-    def commit_hash(self) -> str:
+    def commit_hash(self) -> FullCommitHash:
         return self.__commit_hash
 
     @property
@@ -300,14 +365,14 @@ MappedCommitResultType = tp.TypeVar("MappedCommitResultType")
 def map_commits(
     func: tp.Callable[[pygit2.Commit], MappedCommitResultType],
     cr_pair_list: tp.Iterable[CommitRepoPair],
-    commit_lookup: tp.Callable[[str, str], pygit2.Commit],
+    commit_lookup: CommitLookupTy,
 ) -> tp.Sequence[MappedCommitResultType]:
     """Maps a function over a range of commits."""
     # Skip 0000 hashes that we added to mark uncommitted files
     return [
         func(commit_lookup(cr_pair.commit_hash, cr_pair.repository_name))
         for cr_pair in cr_pair_list
-        if cr_pair.commit_hash != "0000000000000000000000000000000000000000"
+        if cr_pair.commit_hash != DUMMY_COMMIT_HASH
     ]
 
 
