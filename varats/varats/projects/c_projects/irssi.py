@@ -13,11 +13,10 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
-from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
 
-class Irssi(bb.Project, CVEProviderHook):  # type: ignore
+class Irssi(bb.Project):  # type: ignore
     """
     Irssi is a modular chat client that is most commonly known for its text mode
     user interface.

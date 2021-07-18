@@ -13,11 +13,10 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
-from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
 
-class LibjpegTurbo(bb.Project, CVEProviderHook):  # type: ignore
+class LibjpegTurbo(bb.Project):  # type: ignore
     """libjpeg-turbo is a JPEG image codec."""
 
     NAME = 'libjpeg_turbo'

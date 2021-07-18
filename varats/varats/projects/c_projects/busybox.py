@@ -13,11 +13,10 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
-from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
 
-class Busybox(bb.Project, CVEProviderHook):  # type: ignore
+class Busybox(bb.Project):  # type: ignore
     """UNIX utility wrapper BusyBox."""
 
     NAME = 'busybox'

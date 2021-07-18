@@ -14,11 +14,10 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
-from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
 
-class Brotli(bb.Project, CVEProviderHook):  # type: ignore
+class Brotli(bb.Project):  # type: ignore
     """Brotli compression format."""
 
     NAME = 'brotli'
