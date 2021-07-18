@@ -13,6 +13,7 @@ from benchbuild.source import Git, base
 
 import varats.utils.settings as settings
 from varats.tools.bb_config import create_new_bb_config
+from varats.base.configuration import ConfigurationImpl
 
 TEST_INPUTS_DIR = Path(os.path.dirname(__file__)) / 'TEST_INPUTS'
 
@@ -160,3 +161,20 @@ class DummyGit(Git):
 
     def versions(self) -> tp.List[base.Variant]:
         return []
+
+
+class ConfigHelper:
+    """
+    This class is a helper for various tests.
+    """
+
+    @staticmethod
+    def create_test_config() -> 'ConfigurationImpl':
+        """This method creates a test configuration."""
+        test_config = ConfigurationImpl()
+        test_config.add_config_option(ConfigurationOptionImpl("foo", True))
+        test_config.add_config_option(ConfigurationOptionImpl("bar", False))
+        test_config.add_config_option(
+            ConfigurationOptionImpl("bazz", "bazz-value")
+        )
+        return test_config

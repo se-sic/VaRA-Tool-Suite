@@ -1,19 +1,20 @@
 """Configuration base classes, the correct implementation are provided by other
 varats-* libraries."""
 import abc
+import json
 import typing as tp
 
 
 class ConfigurationOption():
     """A configuration option for a software project."""
 
-    @abc.abstractproperty
+    @abc.abstractmethod
     def name(self) -> str:
         """The option name, refering to the feature from which this options
         stems."""
         raise NotImplementedError  # pragma: no cover
 
-    @abc.abstractproperty
+    @abc.abstractmethod
     def value(self) -> tp.Any:
         """Currently set value of the option."""
         raise NotImplementedError  # pragma: no cover
@@ -164,3 +165,101 @@ part which accesses Configurations something is wrong with your setup."""
         Returns: Configuration as a string
         """
         raise AssertionError(DummyConfiguration.USAGE_ERROR_TEXT)
+
+
+class ConfigurationOptionImpl(ConfigurationOption):
+
+    def __init__(self, name: str, value: tp.Any) -> None:
+        self.__name = name
+        self.__value = value
+
+    @property
+    def name(self) -> str:
+        return self.__name
+
+    @property
+    def value(self) -> tp.Any:
+        return self.__value
+
+
+class ConfigurationImpl(Configuration):
+
+    @staticmethod
+    def create_configuration_from_str(config_str: str) -> 'Configuration':
+        """
+        Creates a `Configuration` from its string representation.
+
+        This function is the inverse to `dump_to_string` to reparse a
+        configuration dumped previously.
+
+        Returns: new Configuration
+        """
+        loaded_dict = json.loads(config_str)
+        config = ConfigurationImpl()
+        for _, option in loaded_dict.items():
+            option_name, option_value = option.split(":", maxsplit=1)
+
+            def make_possible_type_conversion(option_value: str) -> tp.Any:
+                """Converts string to correct type for special cases like bool
+                or None."""
+                if option_value.lower() == "true":
+                    return True
+                if option_value.lower() == "false":
+                    return False
+                if option_value.lower() == "none":
+                    return None
+
+                return option_value
+
+            config.add_config_option(
+                ConfigurationOptionImpl(
+                    option_name.strip(),
+                    make_possible_type_conversion(option_value.strip())
+                )
+            )
+
+        return config
+
+    def __init__(self) -> None:
+        self.__config_values: tp.Dict[str, ConfigurationOption] = dict()
+
+    def add_config_option(self, option: ConfigurationOption) -> None:
+        """
+        Adds a new key:value mapping to the configuration.
+
+        Args:
+            option: the feature to add
+        """
+        self.__config_values[option.name] = option
+
+    def set_config_option(self, option_name: str, value: tp.Any) -> None:
+        """
+        Sets the value of a `ConfigurationOption` with the corresponding key.
+
+        Args:
+            option_name: config key, i.e., option/feature name
+            value: of the specified feature
+        """
+        self.add_config_option(ConfigurationOptionImpl(option_name, value))
+
+    def get_config_value(self, option_name) -> tp.Optional[tp.Any]:
+        """
+        Returns the set value for the given feature.
+
+        Args:
+            option_name: name of the option/feature to look up
+
+        Returns: set value for the feature
+        """
+        if option_name in self.__config_values:
+            return self.__config_values[option_name]
+
+        return None
+
+    def options(self) -> tp.List[ConfigurationOption]:
+        return list(self.__config_values.values())
+
+    def dump_to_string(self) -> str:
+        return str({
+            str(idx[0]): str(idx[1]) for idx in self.__config_values.items()
+        })
