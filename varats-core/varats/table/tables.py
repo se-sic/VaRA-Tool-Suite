@@ -143,9 +143,9 @@ def prepare_tables(**args: tp.Any) -> tp.Iterable['table.Table']:
     if 'output-format' not in args:
         from varats.table.table import TableFormat  # pylint: disable=C0415
         if args['view']:
-            args['output-format'] = TableFormat.fancy_grid
+            args['output-format'] = TableFormat.FANCY_GRID
         else:
-            args['output-format'] = TableFormat.latex_booktabs
+            args['output-format'] = TableFormat.LATEX_BOOKTABS
     if 'paper_config' not in args:
         args['paper_config'] = False
 
