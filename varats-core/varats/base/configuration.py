@@ -200,8 +200,7 @@ class ConfigurationImpl(Configuration):
         """
         loaded_dict = json.loads(config_str)
         config = ConfigurationImpl()
-        for _, option in loaded_dict.items():
-            option_name, option_value = option.split(":", maxsplit=1)
+        for option_name, option_value in loaded_dict.items():
 
             def make_possible_type_conversion(option_value: str) -> tp.Any:
                 """Converts string to correct type for special cases like bool
