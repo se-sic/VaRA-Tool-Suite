@@ -159,7 +159,7 @@ class TestConfigurationMapStoreAndLoad(unittest.TestCase):
         """Tests if we can create a `ConfigurationMap` from a dict, similar to a
         yaml doc."""
         config_map = create_configuration_map_from_yaml_doc({
-            '0':"{'foo': 'True', 'bar': 'False', 'bazz': 'bazz-value'}",
+            '0': "{'foo': 'True', 'bar': 'False', 'bazz': 'bazz-value'}",
             '1': "{}"
         }, ConfigurationImpl)
 
