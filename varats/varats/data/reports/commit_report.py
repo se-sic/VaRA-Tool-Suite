@@ -202,31 +202,6 @@ class CommitReport(BaseReport):
             project_uuid, extension_type, file_ext
         )
 
-    @staticmethod
-    def get_supplementary_file_name(
-        project_name: str, binary_name: str, project_version: str,
-        project_uuid: str, info_type: str, file_ext: str
-    ) -> str:
-        """
-        Generates a filename for a commit report supplementary file.
-
-        Args:
-            project_name: name of the project for which the report was generated
-            binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
-            project_uuid: benchbuild uuid for the experiment run
-            info_type: specifies the kind of supplementary file
-            file_ext: file extension of the report file
-
-        Returns:
-            name for the supplementary report file that can later be uniquly
-            identified
-        """
-        return BaseReport.get_supplementary_file_name(
-            CommitReport.SHORTHAND, project_name, binary_name, project_version,
-            project_uuid, info_type, file_ext
-        )
-
     def calc_max_cf_edges(self) -> int:
         """Calculate the highest amount of control-flow interactions of a single
         commit region."""

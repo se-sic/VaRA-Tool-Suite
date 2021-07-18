@@ -323,18 +323,6 @@ class MetaReport(type):
 
     REPORT_TYPES: tp.Dict[str, 'MetaReport'] = dict()
 
-    __SUPPLEMENTARY_RESULT_FILE_REGEX = re.compile(
-        r"(?P<project_shorthand>.*)-" + r"SUPPL-" +
-        r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
-        r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)_" +
-        r"(?P<info_type>[^\.]*)" + r"?(?P<file_ext>\..*)?" + "$"
-    )
-
-    __SUPPLEMENTARY_RESULT_FILE_TEMPLATE = (
-        "{shorthand}-" + "SUPPL-" + "{project_name}-" + "{binary_name}-" +
-        "{project_version}_" + "{project_uuid}_" + "{info_type}" + "{file_ext}"
-    )
-
     def __init__(
         cls: tp.Any, name: str, bases: tp.Tuple[tp.Any], attrs: tp.Dict[str,
                                                                         tp.Any]
@@ -400,64 +388,6 @@ class MetaReport(type):
         return None
 
     @staticmethod
-    def is_result_file_supplementary(file_name: str) -> bool:
-        """
-        Check if the passed file name is a supplementary result file.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            True, if the file name is a supplementary file
-        """
-        match = MetaReport.__SUPPLEMENTARY_RESULT_FILE_REGEX.search(file_name)
-        if match:
-            return True
-        return False
-
-    @staticmethod
-    def get_info_type_from_supplementary_result_file(file_name: str) -> str:
-        """
-        Get the type of a supplementary result file from the file name.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            the info type of a supplementray results file name
-        """
-        match = MetaReport.__SUPPLEMENTARY_RESULT_FILE_REGEX.search(file_name)
-        if match:
-            return match.group("info_type")
-
-        raise ValueError(
-            'File {file_name} name was wrongly formated.'.format(
-                file_name=file_name
-            )
-        )
-
-    @staticmethod
-    def get_commit_hash_from_supplementary_result_file(file_name: str) -> str:
-        """
-        Get the commit hash from a supplementary result file name.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            the commit hash from a supplementary result file name
-        """
-        match = MetaReport.__SUPPLEMENTARY_RESULT_FILE_REGEX.search(file_name)
-        if match:
-            return match.group("file_commit_hash")
-
-        raise ValueError(
-            'File {file_name} name was wrongly formated.'.format(
-                file_name=file_name
-            )
-        )
-
-    @staticmethod
     def get_file_name(
         report_shorthand: str,
         project_name: str,
@@ -485,46 +415,6 @@ class MetaReport(type):
         return ReportFilename.get_file_name(
             report_shorthand, project_name, binary_name, project_version,
             project_uuid, extension_type, file_ext
-        )
-
-    @staticmethod
-    def get_supplementary_file_name(
-        report_shorthand: str,
-        project_name: str,
-        binary_name: str,
-        project_version: str,
-        project_uuid: str,
-        info_type: str,
-        file_ext: str = ""
-    ) -> str:
-        """
-        Generates a filename for a supplementary report file.
-
-        Args:
-            report_shorthand: unique shorthand of the report
-            project_name: name of the project for which the report was generated
-            binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
-            project_uuid: benchbuild uuid for the experiment run
-            info_type: specifies the kind of supplementary file
-            file_ext: file extension of the report file
-
-        Returns:
-            name for the supplementary report file that can later be uniquly
-            identified
-        """
-        # Add the missing '.' if none was given by the report
-        if file_ext and not file_ext.startswith("."):
-            file_ext = "." + file_ext
-
-        return MetaReport.__SUPPLEMENTARY_RESULT_FILE_TEMPLATE.format(
-            shorthand=report_shorthand,
-            project_name=project_name,
-            binary_name=binary_name,
-            project_version=project_version,
-            project_uuid=project_uuid,
-            info_type=info_type,
-            file_ext=file_ext
         )
 
     def is_correct_report_type(cls, file_name: str) -> bool:
@@ -607,7 +497,7 @@ class ReportSpecification():
         return list(self.__reports_types)
 
     @property
-    def main_report(self) -> BaseReport:
+    def main_report(self) -> tp.Type[BaseReport]:
         """Main report of this specification."""
         return self.__reports_types[0]
 
@@ -615,7 +505,7 @@ class ReportSpecification():
         """Checks if a report type is specified in this spec."""
         return report_type in self.report_types
 
-    def get_report_type(self, shorthand: str) -> BaseReport:
+    def get_report_type(self, shorthand: str) -> tp.Type[BaseReport]:
         """
         Look up a report type by it's shorthand.
 
@@ -626,6 +516,10 @@ class ReportSpecification():
             the report if, should it be part of this spec
         """
         report_type = MetaReport.lookup_report_type_by_shorthand(shorthand)
+        if not isinstance(report_type, BaseReport):
+            raise AssertionError(
+                "Found report that base not a subclass of BaseReport."
+            )
 
         if report_type and self.in_spec(report_type):
             return report_type
