@@ -340,7 +340,6 @@ class MetaReport(type):
                                                                         tp.Any]
     ) -> None:
         super(MetaReport, cls).__init__(name, bases, attrs)
-        #MetaReport.__check_accessor_methods(cls)
 
         if name != 'BaseReport':
             MetaReport.__check_required_vars(cls, name, ["SHORTHAND"])
