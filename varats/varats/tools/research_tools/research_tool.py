@@ -6,6 +6,8 @@ import typing as tp
 from enum import Enum
 from pathlib import Path
 
+from benchbuild.utils.cmd import apt, pacman
+
 from varats.tools.research_tools.vara_manager import (
     BuildType,
     add_remote,
@@ -43,6 +45,10 @@ _install_commands = {
     Distro.ARCH: "pacman -S --noconfirm"
 }
 
+_checker_commands = {Distro.DEBIAN: apt["list"], Distro.ARCH: pacman["-Qi"]}
+
+_expected_check_output = {Distro.DEBIAN: "installed", Distro.ARCH: "Installed"}
+
 
 class Dependencies:
     """Models the dependencies for a research tool."""
@@ -71,6 +77,36 @@ class Dependencies:
         False
         """
         return bool(self.__dependencies.get(distro, None))
+
+    def has_all_dependencies_for_distro(self, distro: Distro) -> bool:
+        """
+        Given a distro, return if all specified dependencies are installed.
+        Args:
+            distro: the distro tu use
+
+        Returns:
+            True if all dependencies are installed and False otherwise
+        """
+        return len(self.check_dependencies_for_distro(distro)) == 0
+
+    def check_dependencies_for_distro(self, distro: Distro) -> tp.List[str]:
+        """
+        Given a distro, check if all specified dependencies are installed
+        and return the list of not installed dependencies.
+        Args:
+            distro: the distro to use
+
+        Returns:
+            a list containing all not installed dependencies
+        """
+        not_installed = []
+        base_command = _checker_commands[distro]
+        for package in self.__dependencies:
+            output = base_command(package)
+            output_list = output.split()
+            if _expected_check_output[distro] not in output_list:
+                not_installed.append(package)
+        return not_installed
 
     def get_install_command(self, distro: Distro) -> str:
         """
