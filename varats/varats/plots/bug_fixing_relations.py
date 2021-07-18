@@ -3,6 +3,7 @@
 import logging
 import typing as tp
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 
 import numpy as np
@@ -15,31 +16,76 @@ from varats.project.project_util import (
     get_project_cls_by_name,
     get_local_project_git,
 )
-from varats.provider.bug.bug import RawBug
+from varats.provider.bug.bug import PygitBug, as_pygit_bug
 from varats.provider.bug.bug_provider import BugProvider
 from varats.revision.revisions import get_processed_revisions_files
 
 LOG = logging.getLogger(__name__)
 
 
+class NodeType(Enum):
+
+    def __init__(self, color: str):
+        self.color = color
+
+    FIX = 'rgba(0, 177, 106, 1)'
+    INTRODUCTION = 'rgba(240, 52, 52, 1)'
+    INTRODUCING_FIX = 'rgba(235, 149, 50, 1)'
+    HEAD = 'rgba(142, 68, 173, 1)'
+    FIXING_HEAD = 'rgba(142, 68, 173, 1)'
+    DEFAULT = 'rgba(232, 236, 241, 1)'
+    DIFF_NONE = 'rgba(232, 236, 241, 1)'
+    DIFF_PYDRILLER_ONLY = '#ff0000'
+    DIFF_SZZ_UNLEASHED_ONLY = '#00ff00'
+    DIFF_BOTH = 'rgba(0,51,181, 0.85)'
+
+
+class DiffOccurrence(Enum):
+    NONE = 0
+    LEFT = 1
+    RIGHT = 2
+    BOTH = 3
+
+
+class DiffEntry():
+
+    def __init__(
+        self, fixing_commit: str, occurrence: DiffOccurrence,
+        only_left: tp.FrozenSet[str], only_right: tp.FrozenSet[str]
+    ):
+        self.fixing_commit = fixing_commit
+        self.occurrence = occurrence
+        self.only_left = only_left
+        self.only_right = only_right
+
+
+__DIFF_TO_NODE_TYPE = {
+    DiffOccurrence.NONE: NodeType.DIFF_NONE,
+    DiffOccurrence.LEFT: NodeType.DIFF_PYDRILLER_ONLY,
+    DiffOccurrence.RIGHT: NodeType.DIFF_SZZ_UNLEASHED_ONLY,
+    DiffOccurrence.BOTH: NodeType.DIFF_BOTH
+}
+
+
 def _plot_chord_diagram_for_raw_bugs(
-    project_name: str, bug_set: tp.FrozenSet[RawBug], szz_tool: str
+    project_name: str, project_repo: pygit2.Repository,
+    bug_set: tp.FrozenSet[PygitBug], szz_tool: str
 ) -> gob.FigureWidget:
     """Creates a chord diagram representing relations between introducing/fixing
     commits for a given set of RawBugs."""
-    project_repo = get_local_project_git(project_name)
 
     # maps commit hex -> node id
-    map_commit_to_id: tp.Dict[str, int] = _map_commits_to_nodes(project_repo)
-    commit_type: tp.Dict[str, str] = {}
+    map_commit_to_id: tp.Dict[pygit2.Commit,
+                              int] = _map_commits_to_nodes(project_repo)
+    commit_type: tp.Dict[pygit2.Commit, NodeType] = {}
     commit_count = len(map_commit_to_id.keys())
 
     edge_colors = ['#d4daff', '#84a9dd', '#5588c8', '#6d8acf']
 
     for commit in project_repo.walk(
-        project_repo.head.target.hex, pygit2.GIT_SORT_TIME
+        project_repo.head.target.id, pygit2.GIT_SORT_TIME
     ):
-        commit_type[commit.hex] = 'default'
+        commit_type[commit] = NodeType.DEFAULT
 
     # if less than 2 commits, no graph can be drawn!
     if commit_count < 2:
@@ -61,30 +107,33 @@ def _plot_chord_diagram_for_raw_bugs(
 
 
 def _bug_data_diff_plot(
-    project_name: str, bugs_left: tp.FrozenSet[RawBug],
-    bugs_right: tp.FrozenSet[RawBug]
+    project_name: str, project_repo: pygit2.Repository,
+    bugs_left: tp.FrozenSet[PygitBug], bugs_right: tp.FrozenSet[PygitBug]
 ) -> gob.Figure:
     """Creates a chord diagram representing the diff between two sets of bugs as
     relation between introducing/fixing commits."""
-    project_repo = get_local_project_git(project_name)
-
     commits_to_nodes_map = _map_commits_to_nodes(project_repo)
-    commit_type: tp.Dict[str, str] = {}
+    commit_occurrences: tp.Dict[pygit2.Commit, DiffOccurrence] = {}
     commit_count = len(commits_to_nodes_map.keys())
     commit_coordinates = _compute_node_placement(commit_count)
 
     for commit in project_repo.walk(
         project_repo.head.target.hex, pygit2.GIT_SORT_TIME
     ):
-        commit_type[commit.hex] = 'diff_none'
+        commit_occurrences[commit] = DiffOccurrence.NONE
 
     lines: tp.List[gob.Scatter] = _generate_diff_line_data(
         _diff_raw_bugs(bugs_left, bugs_right), commits_to_nodes_map,
-        commit_coordinates, commit_type
+        commit_coordinates, commit_occurrences
     )
 
+    commit_types = {
+        commit: __DIFF_TO_NODE_TYPE[do]
+        for commit, do in commit_occurrences.items()
+    }
+
     nodes: tp.List[gob.Scatter] = _generate_node_data(
-        project_repo, commit_coordinates, commits_to_nodes_map, commit_type
+        project_repo, commit_coordinates, commits_to_nodes_map, commit_types
     )
     data = lines + nodes
     layout = _create_layout(f'szz_diff {project_name}')
@@ -96,48 +145,45 @@ ValueT = tp.TypeVar("ValueT")
 
 
 def _generate_diff_line_data(
-    diff_raw_bugs: tp.Generator[tp.Tuple[str, tp.Optional[tp.FrozenSet[str]],
-                                         tp.Optional[tp.FrozenSet[str]], str],
-                                None, None], map_commit_to_id: tp.Dict[str,
-                                                                       int],
-    commit_coordinates: tp.List[np.array], commit_type: tp.Dict[str, str]
+    diff_raw_bugs: tp.Generator[DiffEntry, None,
+                                None], map_commit_to_id: tp.Dict[str, int],
+    commit_coordinates: tp.List[np.ndarray],
+    commit_type: tp.Dict[str, DiffOccurrence]
 ) -> tp.List[gob.Scatter]:
     lines: tp.List[gob.Scatter] = []
     edge_color_left = "#ff5555"
     edge_color_right = "#55ff55"
 
-    for bug_fix, diff_left, diff_right, fix_type in diff_raw_bugs:
-        fix_ind = map_commit_to_id[bug_fix]
+    for diff_entry in diff_raw_bugs:
+        fix_ind = map_commit_to_id[diff_entry.fixing_commit]
         fix_coordinates = commit_coordinates[fix_ind]
 
-        if diff_left:
-            for introducer in diff_left:
-                lines.append(
-                    _create_line(
-                        fix_coordinates,
-                        commit_coordinates[map_commit_to_id[introducer]],
-                        edge_color_left
-                    )
+        for introducer in diff_entry.only_left:
+            lines.append(
+                _create_line(
+                    fix_coordinates,
+                    commit_coordinates[map_commit_to_id[introducer]],
+                    edge_color_left
                 )
-        if diff_right:
-            for introducer in diff_right:
-                lines.append(
-                    _create_line(
-                        fix_coordinates,
-                        commit_coordinates[map_commit_to_id[introducer]],
-                        edge_color_right
-                    )
+            )
+        for introducer in diff_entry.only_right:
+            lines.append(
+                _create_line(
+                    fix_coordinates,
+                    commit_coordinates[map_commit_to_id[introducer]],
+                    edge_color_right
                 )
+            )
 
-        commit_type[bug_fix] = fix_type
+        commit_type[diff_entry.fixing_commit] = diff_entry.occurrence
 
     return lines
 
 
 def _generate_line_data(
-    bug_set: tp.FrozenSet[RawBug], commit_coordinates: tp.List[np.array],
-    map_commit_to_id: tp.Dict[str, int], commit_type: tp.Dict[str, str],
-    edge_colors: tp.List[str]
+    bug_set: tp.FrozenSet[PygitBug], commit_coordinates: tp.List[np.ndarray],
+    map_commit_to_id: tp.Dict[pygit2.Commit, int],
+    commit_type: tp.Dict[pygit2.Commit, NodeType], edge_colors: tp.List[str]
 ) -> tp.List[gob.Scatter]:
     lines = []
 
@@ -146,15 +192,16 @@ def _generate_line_data(
         fix_id = map_commit_to_id[bug_fix]
         fix_coordinates = commit_coordinates[fix_id]
 
-        commit_type[bug_fix] = 'introducing fix' if commit_type[
-            bug_fix] == 'introduction' else 'fix'
+        commit_type[bug_fix] = NodeType.INTRODUCING_FIX if commit_type[
+            bug_fix] == NodeType.INTRODUCTION else NodeType.FIX
 
         for bug_introduction in bug.introducing_commits:
             intro_ind = map_commit_to_id[bug_introduction]
             intro_coordinates = commit_coordinates[intro_ind]
 
-            commit_type[bug_introduction] = 'introducing fix' if commit_type[
-                bug_introduction] == 'fix' else 'introduction'
+            commit_type[
+                bug_introduction] = NodeType.INTRODUCING_FIX if commit_type[
+                    bug_introduction] == NodeType.FIX else NodeType.INTRODUCTION
 
             commit_dist = map_commit_to_id[bug_introduction] - map_commit_to_id[
                 bug_fix]
@@ -171,32 +218,31 @@ def _generate_line_data(
 
 
 def _generate_node_data(
-    project_repo: pygit2.Repository, commit_coordinates: tp.List[np.array],
-    map_commit_to_id: tp.Dict[str, int], commit_type: tp.Dict[str, str]
+    project_repo: pygit2.Repository, commit_coordinates: tp.List[np.ndarray],
+    map_commit_to_id: tp.Dict[str, int], commit_type: tp.Dict[str, NodeType]
 ) -> tp.List[gob.Scatter]:
     nodes = []
 
     for commit in project_repo.walk(
-        project_repo.head.target.hex, pygit2.GIT_SORT_TIME
+        project_repo.head.target.id, pygit2.GIT_SORT_TIME
     ):
         # draw commit nodes using preprocessed commit types
-        commit_id = map_commit_to_id[commit.hex]
+        commit_id = map_commit_to_id[commit]
 
-        if commit.hex == project_repo.head.target.hex:
-            commit_type[commit.hex
-                       ] = 'fixing head' if commit_type[commit.hex
-                                                       ] == 'fix' else 'head'
+        if commit.id == project_repo.head.target.id:
+            commit_type[commit] = NodeType.FIXING_HEAD if commit_type[
+                commit] == NodeType.FIX else NodeType.HEAD
 
         # set node data according to commit type
-        node_size = 10 if commit_type[commit.hex] == 'head' or commit_type[
-            commit.hex] == 'fixing head' else 8
+        node_size = 10 if commit_type[commit] == NodeType.HEAD or commit_type[
+            commit] == NodeType.FIXING_HEAD else 8
         displayed_message = commit.message.partition('\n')[0]
         node_label = f'Type: {commit_type[commit.hex]}<br>' \
                      f'Hash: {commit.hex}<br>' \
                      f'Author: {commit.author.name}<br>' \
                      f'Date: {datetime.fromtimestamp(commit.commit_time)}<br>' \
                      f'Message: {displayed_message}'
-        node_color = __NODE_COLORS[commit_type[commit.hex]]
+        node_color = commit_type[commit].color
 
         node_scatter = _create_node(
             commit_coordinates[commit_id], node_color, node_size, node_label
@@ -207,15 +253,15 @@ def _generate_node_data(
     return nodes
 
 
-def _create_line(start: np.array, end: np.array, color: str) -> gob.Scatter:
+def _create_line(start: np.ndarray, end: np.ndarray, color: str) -> gob.Scatter:
     dist = _get_distance(start, end)
     interval = _get_interval(dist)
 
-    control_points = [
+    control_points = np.array([
         start,
         np.true_divide(start, (__CP_PARAMETERS[interval])),
         np.true_divide(end, (__CP_PARAMETERS[interval])), end
-    ]
+    ])
     curve_points = _get_bezier_curve(control_points)
 
     return gob.Scatter(
@@ -267,9 +313,7 @@ def _create_layout(title: str) -> gob.Layout:
     )
 
 
-def _get_distance(
-    first_point: tp.List[float], second_point: tp.List[float]
-) -> float:
+def _get_distance(first_point: np.ndarray, second_point: np.ndarray) -> float:
     """Returns distance between two points."""
     return float(np.linalg.norm(np.array(first_point) - np.array(second_point)))
 
@@ -283,27 +327,18 @@ def _get_interval(distance: float) -> int:
     return k - 1
 
 
-#defining some constants for diagram generation
+# defining some constants for diagram generation
 __CP_PARAMETERS = [1.2, 1.5, 1.8, 2.1]
+
 __DISTANCE_THRESHOLDS = [
     0,
-    _get_distance([1, 0], 2 * [np.sqrt(2) / 2]),
+    _get_distance(np.array([1, 0]), 2 * np.array([np.sqrt(2) / 2])),
     np.sqrt(2),
-    _get_distance([1, 0], [-np.sqrt(2) / 2, np.sqrt(2) / 2]), 2.0
+    _get_distance(
+        np.array([1, 0]), np.array([-np.sqrt(2) / 2,
+                                    np.sqrt(2) / 2])
+    ), 2.0
 ]
-
-__NODE_COLORS = {
-    'fix': 'rgba(0, 177, 106, 1)',
-    'introduction': 'rgba(240, 52, 52, 1)',
-    'introducing fix': 'rgba(235, 149, 50, 1)',
-    'head': 'rgba(142, 68, 173, 1)',
-    'fixing head': 'rgba(142, 68, 173, 1)',
-    'default': 'rgba(232, 236, 241, 1)',
-    'diff_pydriller_only': '#ff0000',
-    'diff_szz_unleashed_only': '#00ff00',
-    'diff_both': 'rgba(0,51,181, 0.85)',
-    'diff_none': 'rgba(232, 236, 241, 1)'
-}
 
 
 def _get_commit_interval(distance: float, commit_count: int) -> int:
@@ -322,11 +357,13 @@ def _get_commit_interval(distance: float, commit_count: int) -> int:
     return k - 1
 
 
-def _get_bezier_curve(ctrl_points: np.array, num_points: int = 5) -> np.ndarray:
+def _get_bezier_curve(
+    ctrl_points: np.ndarray, num_points: int = 5
+) -> np.ndarray:
     """Implements bezier edges to display between commit nodes."""
-    n = len(ctrl_points)
+    n = ctrl_points.shape[0]
 
-    def get_coordinate_on_curve(factor: float) -> np.array:
+    def get_coordinate_on_curve(factor: float) -> np.ndarray:
         points_cp = np.copy(ctrl_points)
         for i in range(1, n):
             points_cp[:n - i, :] = (
@@ -340,51 +377,51 @@ def _get_bezier_curve(ctrl_points: np.array, num_points: int = 5) -> np.ndarray:
     ])
 
 
-def _compute_node_placement(commit_count: int) -> tp.List[np.array]:
+def _compute_node_placement(commit_count: int) -> tp.List[np.ndarray]:
     """Compute unit circle coordinates for each commit; move unit circle such
     that HEAD is on top."""
     # use commit_count + 1 since first and last coordinates are equal
     theta_vals = np.linspace(-3 * np.pi / 2, np.pi / 2, commit_count + 1)
-    commit_coordinates: tp.List[np.array] = list()
+    commit_coordinates: tp.List[np.ndarray] = list()
     for theta in theta_vals:
         commit_coordinates.append(np.array([np.cos(theta), np.sin(theta)]))
     return commit_coordinates
 
 
-def _map_commits_to_nodes(project_repo: pygit2.Repository) -> tp.Dict[str, int]:
+def _map_commits_to_nodes(
+    project_repo: pygit2.Repository
+) -> tp.Dict[pygit2.Commit, int]:
     """Maps commit hex -> node id."""
-    commits_to_nodes_map: tp.Dict[str, int] = {}
+    commits_to_nodes_map: tp.Dict[pygit2.Commit, int] = {}
     commit_count = 0
     for commit in project_repo.walk(
         project_repo.head.target.hex, pygit2.GIT_SORT_TIME
     ):
         # node ids are sorted by time
-        commits_to_nodes_map[commit.hex] = commit_count
+        commits_to_nodes_map[commit] = commit_count
         commit_count += 1
     return commits_to_nodes_map
 
 
 def _diff_raw_bugs(
-    bugs_left: tp.FrozenSet[RawBug], bugs_right: tp.FrozenSet[RawBug]
-) -> tp.Generator[tp.Tuple[str, tp.Optional[tp.FrozenSet[str]],
-                           tp.Optional[tp.FrozenSet[str]], str], None, None]:
+    bugs_left: tp.FrozenSet[PygitBug], bugs_right: tp.FrozenSet[PygitBug]
+) -> tp.Generator[DiffEntry, None, None]:
     fixes_left: tp.Set[str] = {bug.fixing_commit for bug in bugs_left}
     fixes_right: tp.Set[str] = {bug.fixing_commit for bug in bugs_right}
 
     for fixing_commit, introducers_left, introducers_right in _zip_dicts({
         bug.fixing_commit: bug.introducing_commits for bug in bugs_left
     }, {bug.fixing_commit: bug.introducing_commits for bug in bugs_right}):
+        occurrence = DiffOccurrence.NONE
         if fixing_commit in fixes_left & fixes_right:
-            fixing_type = 'diff_both'
+            occurrence = DiffOccurrence.BOTH
         elif fixing_commit in fixes_left:
-            fixing_type = 'diff_pydriller_only'
+            occurrence = DiffOccurrence.LEFT
         elif fixing_commit in fixes_right:
-            fixing_type = 'diff_szz_unleashed_only'
-        else:
-            fixing_type = 'diff_none'
+            occurrence = DiffOccurrence.RIGHT
 
-        diff_left: tp.Optional[tp.FrozenSet[str]] = None
-        diff_right: tp.Optional[tp.FrozenSet[str]] = None
+        diff_left: tp.FrozenSet[str] = frozenset()
+        diff_right: tp.FrozenSet[str] = frozenset()
         if introducers_left:
             diff_left = introducers_left
             if introducers_right:
@@ -394,7 +431,7 @@ def _diff_raw_bugs(
             if introducers_left:
                 diff_right = introducers_right.difference(introducers_left)
 
-        yield fixing_commit, diff_left, diff_right, fixing_type
+        yield DiffEntry(fixing_commit, occurrence, diff_left, diff_right)
 
 
 def _zip_dicts(
@@ -422,28 +459,32 @@ class BugFixingRelationPlot(Plot):
     def plot(self, view_mode: bool) -> None:
         """Plots bug plot for the whole project."""
         project_name = self.plot_kwargs['project']
+        project_repo = get_local_project_git(project_name)
 
         bug_provider = BugProvider.get_provider_for_project(
             get_project_cls_by_name(project_name)
         )
-        pydriller_bugs = bug_provider.find_all_raw_bugs()
+        pydriller_bugs = bug_provider.find_pygit_bugs()
 
         reports = get_processed_revisions_files(
             project_name, SZZUnleashedReport
         )
-        szzunleashed_bugs = SZZUnleashedReport(reports[0]).get_all_raw_bugs()
+        szzunleashed_bugs = frozenset([
+            as_pygit_bug(raw_bug, project_repo)
+            for raw_bug in SZZUnleashedReport(reports[0]).get_all_raw_bugs()
+        ])
 
         if self.__szz_tool == 'pydriller':
             self.__figure = _plot_chord_diagram_for_raw_bugs(
-                project_name, pydriller_bugs, self.__szz_tool
+                project_name, project_repo, pydriller_bugs, self.__szz_tool
             )
         elif self.__szz_tool == 'szz_unleashed':
             self.__figure = _plot_chord_diagram_for_raw_bugs(
-                project_name, szzunleashed_bugs, self.__szz_tool
+                project_name, project_repo, szzunleashed_bugs, self.__szz_tool
             )
         elif self.__szz_tool == 'szz_diff':
             self.__figure = _bug_data_diff_plot(
-                project_name, pydriller_bugs, szzunleashed_bugs
+                project_name, project_repo, pydriller_bugs, szzunleashed_bugs
             )
         else:
             raise PlotDataEmpty
