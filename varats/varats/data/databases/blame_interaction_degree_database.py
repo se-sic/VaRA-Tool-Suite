@@ -143,7 +143,7 @@ class BlameInteractionDegreeDatabase(
                 total_amount: int,
                 base_library: tp.Optional[str] = None,
                 inter_library: tp.Optional[str] = None
-            ) -> tp.Dict:
+            ) -> tp.Dict[str, tp.Any]:
 
                 data_dict: tp.Dict[str, tp.Any] = {
                     'revision': report.head_commit,
@@ -157,7 +157,7 @@ class BlameInteractionDegreeDatabase(
                 }
                 return data_dict
 
-            result_data_dicts: tp.List[tp.Dict] = []
+            result_data_dicts: tp.List[tp.Dict[str, tp.Any]] = []
 
             # Append interaction rows
             for base_lib_name, inter_lib_dict \
@@ -224,9 +224,10 @@ class BlameInteractionDegreeDatabase(
                 sum_amounts=total_avg_time_amounts
             )
 
-            return pd.DataFrame(result_data_dicts), report.head_commit, str(
-                report_path.stat().st_mtime_ns
-            )
+            return pd.DataFrame(result_data_dicts
+                               ), report.head_commit.hash, str(
+                                   report_path.stat().st_mtime_ns
+                               )
 
         report_files = get_processed_revisions_files(
             project_name, BlameReport,
@@ -243,7 +244,7 @@ class BlameInteractionDegreeDatabase(
         data_frame = build_cached_report_table(
             cls.CACHE_ID, project_name, report_files, failed_report_files,
             create_dataframe_layout, create_data_frame_for_report,
-            lambda path: ReportFilename(path).commit_hash,
+            lambda path: ReportFilename(path).commit_hash.hash,
             lambda path: str(path.stat().st_mtime_ns),
             lambda a, b: int(a) > int(b)
         )

@@ -113,7 +113,7 @@ class BlameVerifierReportDatabase(
                 index=[0]
                 # Add prefix of report name to head_commit to differentiate
                 # between reports with and without optimization
-            ), report.head_commit + report_path.name.split("-", 1)[0], str(
+            ), report.head_commit.hash + report_path.name.split("-", 1)[0], str(
                 report_path.stat().st_mtime_ns
             )
 
@@ -147,7 +147,7 @@ class BlameVerifierReportDatabase(
         data_frame = build_cached_report_table(
             cls.CACHE_ID, project_name, report_files, failed_report_files,
             create_dataframe_layout, create_data_frame_for_report, lambda path:
-            ReportFilename(path).commit_hash + path.name.split("-", 1)[0],
+            ReportFilename(path).commit_hash.hash + path.name.split("-", 1)[0],
             lambda path: str(path.stat().st_mtime_ns),
             lambda a, b: int(a) > int(b)
         )

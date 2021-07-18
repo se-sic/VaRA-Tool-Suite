@@ -15,14 +15,19 @@ from varats.data.databases.blame_diff_metrics_database import (
     get_successor_report_file,
 )
 from varats.data.reports.blame_report import BlameReport
-from varats.mapping.commit_map import get_commit_map
-from varats.paper.case_study import load_case_study_from_file
+from varats.mapping.commit_map import get_commit_map, CommitMap
+from varats.paper.case_study import load_case_study_from_file, CaseStudy
 from varats.projects.discover_projects import initialize_projects
 from varats.revision.revisions import get_processed_revisions
+from varats.utils.git_util import CommitHash
 
 
 class TestBlameDiffMetricsUtils(unittest.TestCase):
     """Test functions to create blame diff dependent databases."""
+
+    br_paths_list: tp.List[Path]
+    case_study: CaseStudy
+    commit_map: CommitMap
 
     @classmethod
     def setUp(cls) -> None:
@@ -108,9 +113,9 @@ class TestBlameDiffMetricsUtils(unittest.TestCase):
             self.case_study.project_name, self.case_study
         )
 
-        successful_revisions: tp.Dict[str, tp.List[Path]] = {
-            '5e8fe1616d': self.br_paths_list[3],
-            'e64923e69e': self.br_paths_list[4],
+        successful_revisions: tp.Dict[CommitHash, tp.List[Path]] = {
+            CommitHash('5e8fe1616d'): [self.br_paths_list[3]],
+            CommitHash('e64923e69e'): [self.br_paths_list[4]],
         }
         failed_revisions: tp.Dict[str, tp.List[Path]] = {}
 
@@ -158,17 +163,17 @@ class TestBlameDiffMetricsUtils(unittest.TestCase):
         sampled_revs = get_processed_revisions(
             self.case_study.project_name, BlameReport
         )
-        short_time_id_cache: tp.Dict[str, int] = {
+        short_time_id_cache: tp.Dict[CommitHash, int] = {
             rev: self.commit_map.short_time_id(rev) for rev in sampled_revs
         }
 
         predecessor_of_e6 = get_predecessor_report_file(
-            "e64923e69e", self.commit_map, short_time_id_cache, report_files,
-            sampled_revs
+            CommitHash("e64923e69e"), self.commit_map, short_time_id_cache,
+            report_files, sampled_revs
         )
         predecessor_of_5e = get_predecessor_report_file(
-            "5e8fe1616d", self.commit_map, short_time_id_cache, report_files,
-            sampled_revs
+            CommitHash("5e8fe1616d"), self.commit_map, short_time_id_cache,
+            report_files, sampled_revs
         )
 
         self.assertEqual(predecessor_of_e6, None)
@@ -190,17 +195,17 @@ class TestBlameDiffMetricsUtils(unittest.TestCase):
         sampled_revs = get_processed_revisions(
             self.case_study.project_name, BlameReport
         )
-        short_time_id_cache: tp.Dict[str, int] = {
+        short_time_id_cache: tp.Dict[CommitHash, int] = {
             rev: self.commit_map.short_time_id(rev) for rev in sampled_revs
         }
 
         successor_of_e6 = get_successor_report_file(
-            "e64923e69e", self.commit_map, short_time_id_cache, report_files,
-            sampled_revs
+            CommitHash("e64923e69e"), self.commit_map, short_time_id_cache,
+            report_files, sampled_revs
         )
         successor_of_5e = get_successor_report_file(
-            "5e8fe1616d", self.commit_map, short_time_id_cache, report_files,
-            sampled_revs
+            CommitHash("5e8fe1616d"), self.commit_map, short_time_id_cache,
+            report_files, sampled_revs
         )
 
         self.assertEqual(successor_of_e6, self.br_paths_list[3])
