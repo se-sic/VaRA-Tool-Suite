@@ -13,11 +13,10 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
-from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
 
-class Bitlbee(bb.Project, CVEProviderHook):  # type: ignore
+class Bitlbee(bb.Project):  # type: ignore
     """
     BitlBee brings IM (instant messaging) to IRC clients.
 

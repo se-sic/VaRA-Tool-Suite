@@ -13,11 +13,10 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
-from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
 
-class Lrzip(bb.Project, CVEProviderHook):  # type: ignore
+class Lrzip(bb.Project):  # type: ignore
     """Compression and decompression tool lrzip (fetched by Git)"""
 
     NAME = 'lrzip'

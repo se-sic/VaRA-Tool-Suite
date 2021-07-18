@@ -1,4 +1,5 @@
 """Module for the :class:`CVEProvider`."""
+import sys
 import typing as tp
 
 from benchbuild.project import Project
@@ -8,8 +9,16 @@ from varats.provider.cve.cve import CVE, find_all_cve, find_cve, find_cwe
 from varats.provider.cve.cve_map import generate_cve_map
 from varats.provider.provider import Provider
 
+if sys.version_info <= (3, 8):
+    from typing_extensions import Protocol
+    from typing_extensions import runtime_checkable
+else:
+    from typing import Protocol
+    from typing import runtime_checkable
 
-class CVEProviderHook():
+
+@runtime_checkable
+class CVEProviderHook(Protocol):
     """
     Gives the :class:`CVEProvider` the necessary information how to find CVEs
     and CWEs for a project.
@@ -25,7 +34,6 @@ class CVEProviderHook():
         Returns:
             a tuple ``(vendor, product)``
         """
-        raise NotImplementedError("Must be overridden by the project.")
 
 
 class CVEProvider(Provider):
@@ -33,7 +41,7 @@ class CVEProvider(Provider):
 
     def __init__(self, project: tp.Type[Project]) -> None:
         super().__init__(project)
-        if hasattr(project, "get_cve_product_info"):
+        if isinstance(project, CVEProviderHook):
             self.__cve_map = generate_cve_map(
                 get_local_project_git_path(project.NAME),
                 project.get_cve_product_info()
@@ -48,7 +56,7 @@ class CVEProvider(Provider):
     def create_provider_for_project(
         cls, project: tp.Type[Project]
     ) -> tp.Optional['CVEProvider']:
-        if hasattr(project, "get_cve_product_info"):
+        if isinstance(project, CVEProviderHook):
             return CVEProvider(project)
         return None
 

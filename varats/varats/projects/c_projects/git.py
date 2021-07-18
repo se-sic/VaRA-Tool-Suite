@@ -14,11 +14,10 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
-from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
 
-class Git(bb.Project, CVEProviderHook):  # type: ignore
+class Git(bb.Project):  # type: ignore
     """Git."""
 
     NAME = 'git'
