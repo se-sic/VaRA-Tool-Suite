@@ -1,18 +1,12 @@
 """Test case study."""
 import os
-import typing as tp
 import unittest
-import unittest.mock as mock
 from datetime import datetime
 from pathlib import Path
-from tempfile import NamedTemporaryFile
 
 import varats.paper_mgmt.case_study as MCS
-from tests.test_helper_config import ConfigurationTestImpl
 from tests.test_utils import run_in_test_environment, UnitTestInputs
-from varats.base.sampling_method import UniformSamplingMethod
 from varats.data.reports.commit_report import CommitReport as CR
-from varats.mapping.commit_map import CommitMap
 from varats.paper_mgmt.paper_config import get_paper_config, load_paper_config
 from varats.report.report import FileStatusExtension, ReportFilename
 from varats.utils.settings import vara_cfg
