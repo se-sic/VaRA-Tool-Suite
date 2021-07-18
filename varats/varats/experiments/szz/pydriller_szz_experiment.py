@@ -13,6 +13,7 @@ from varats.base.version_header import VersionHeader
 from varats.data.reports.szz_report import SZZReport, PyDrillerSZZReport
 from varats.provider.bug.bug_provider import BugProvider
 from varats.report.report import FileStatusExtension as FSE
+from varats.report.report import ReportSpecification
 from varats.utils.settings import bb_cfg
 
 
@@ -86,7 +87,7 @@ class PyDrillerSZZExperiment(Experiment):  # type: ignore
 
     NAME = "PyDrillerSZZ"
 
-    REPORT_TYPE = SZZReport
+    REPORT_SPEC = ReportSpecification(SZZReport)
 
     @classmethod
     def sample(cls, prj_cls: ProjectT) -> tp.List[source.VariantContext]:

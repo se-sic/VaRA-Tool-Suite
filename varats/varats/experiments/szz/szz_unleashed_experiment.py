@@ -20,6 +20,7 @@ from varats.experiment.experiment_util import (
 )
 from varats.provider.bug.bug_provider import BugProvider
 from varats.report.report import FileStatusExtension as FSE
+from varats.report.report import ReportSpecification
 from varats.tools.research_tools.szz_unleashed import SZZUnleashed
 from varats.utils.settings import bb_cfg
 
@@ -179,7 +180,7 @@ class SZZUnleashedExperiment(Experiment):  # type: ignore
 
     NAME = "SZZUnleashed"
 
-    REPORT_TYPE = SZZReport
+    REPORT_SPEC = ReportSpecification(SZZReport)
 
     @classmethod
     def sample(cls, prj_cls: ProjectT) -> tp.List[source.VariantContext]:

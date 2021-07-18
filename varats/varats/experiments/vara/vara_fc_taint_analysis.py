@@ -22,6 +22,7 @@ from varats.experiment.experiment_util import (
 )
 from varats.experiments.vara.vara_full_mtfa import VaRATaintPropagation
 from varats.report.report import FileStatusExtension as FSE
+from varats.report.report import ReportSpecification
 from varats.utils.settings import bb_cfg
 
 
@@ -163,7 +164,7 @@ class VaRAFileCheckTaintPropagation(VaRATaintPropagation):
 
     NAME = "VaRAFileCheckTaintPropagation"
 
-    REPORT_TYPE = TPR
+    REPORT_SPEC = ReportSpecification(TPR)
 
     def actions_for_project(
         self, project: Project

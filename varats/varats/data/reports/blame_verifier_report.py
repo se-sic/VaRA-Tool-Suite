@@ -5,12 +5,7 @@ import typing as tp
 from enum import Enum
 from pathlib import Path
 
-from varats.report.report import (
-    BaseReport,
-    MetaReport,
-    FileStatusExtension,
-    ReportFilename,
-)
+from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
 
 LOG = logging.getLogger(__name__)
 
@@ -131,6 +126,11 @@ class BlameVerifierReportNoOpt(BlameVerifierReportParserMixin, BaseReport):
         created."""
         return ReportFilename(Path(self.path)).commit_hash
 
+    @classmethod
+    def shorthand(cls) -> str:
+        """Shorthand for this report."""
+        return cls.SHORTHAND
+
     @staticmethod
     def get_file_name(
         project_name: str,
@@ -155,7 +155,7 @@ class BlameVerifierReportNoOpt(BlameVerifierReportParserMixin, BaseReport):
         Returns:
             name for the report file that can later be uniquely identified
         """
-        return MetaReport.get_file_name(
+        return ReportFilename.get_file_name(
             BlameVerifierReportNoOpt.SHORTHAND, project_name, binary_name,
             project_version, project_uuid, extension_type, file_ext
         )
@@ -179,6 +179,11 @@ class BlameVerifierReportOpt(BlameVerifierReportParserMixin, BaseReport):
         """The current HEAD commit under which this BlameVerifierReportOpt was
         created."""
         return ReportFilename(Path(self.path)).commit_hash
+
+    @classmethod
+    def shorthand(cls) -> str:
+        """Shorthand for this report."""
+        return cls.SHORTHAND
 
     @staticmethod
     def get_file_name(
@@ -204,7 +209,7 @@ class BlameVerifierReportOpt(BlameVerifierReportParserMixin, BaseReport):
         Returns:
             name for the report file that can later be uniquely identified
         """
-        return MetaReport.get_file_name(
+        return ReportFilename.get_file_name(
             BlameVerifierReportOpt.SHORTHAND, project_name, binary_name,
             project_version, project_uuid, extension_type, file_ext
         )
@@ -230,6 +235,11 @@ class BlameVerifierReportNoOptTBAA(BlameVerifierReportParserMixin, BaseReport):
         created."""
         return self.filename.commit_hash
 
+    @classmethod
+    def shorthand(cls) -> str:
+        """Shorthand for this report."""
+        return cls.SHORTHAND
+
     @staticmethod
     def get_file_name(
         project_name: str,
@@ -254,7 +264,7 @@ class BlameVerifierReportNoOptTBAA(BlameVerifierReportParserMixin, BaseReport):
         Returns:
             name for the report file that can later be uniquely identified
         """
-        return MetaReport.get_file_name(
+        return ReportFilename.get_file_name(
             BlameVerifierReportNoOptTBAA.SHORTHAND, project_name, binary_name,
             project_version, project_uuid, extension_type, file_ext
         )

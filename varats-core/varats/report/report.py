@@ -317,34 +317,26 @@ class ReportFilename():
         return self.filename
 
 
-class MetaReport(type):
-    """Meta class for report to manage all reports and implement the basic
-    static functionality for handling report-file names."""
+class BaseReport():
+    """Report base class to add general report properties and helper
+    functions."""
 
-    REPORT_TYPES: tp.Dict[str, 'MetaReport'] = dict()
+    REPORT_TYPES: tp.Dict[str, tp.Type['BaseReport']] = dict()
 
-    __SUPPLEMENTARY_RESULT_FILE_REGEX = re.compile(
-        r"(?P<project_shorthand>.*)-" + r"SUPPL-" +
-        r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
-        r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)_" +
-        r"(?P<info_type>[^\.]*)" + r"?(?P<file_ext>\..*)?" + "$"
-    )
+    def __init__(self, path: Path) -> None:
+        self.__path = path
+        self.__filename = ReportFilename(path)
 
-    __SUPPLEMENTARY_RESULT_FILE_TEMPLATE = (
-        "{shorthand}-" + "SUPPL-" + "{project_name}-" + "{binary_name}-" +
-        "{project_version}_" + "{project_uuid}_" + "{info_type}" + "{file_ext}"
-    )
+    @classmethod
+    def __init_subclass__(cls, *args: tp.Any, **kwargs: tp.Any) -> None:
+        # mypy does not yet fully understand __init_subclass__()
+        # https://github.com/python/mypy/issues/4660
+        super().__init_subclass__(*args, **kwargs)  # type: ignore
 
-    def __init__(
-        cls: tp.Any, name: str, bases: tp.Tuple[tp.Any], attrs: tp.Dict[str,
-                                                                        tp.Any]
-    ) -> None:
-        super(MetaReport, cls).__init__(name, bases, attrs)
-
-        if name != 'BaseReport':
-            MetaReport.__check_required_vars(cls, name, ["SHORTHAND"])
-            if name not in cls.REPORT_TYPES:
-                cls.REPORT_TYPES[name] = cls
+        name = cls.__name__
+        BaseReport.__check_required_vars(cls, name, ["SHORTHAND"])
+        if name not in cls.REPORT_TYPES:
+            cls.REPORT_TYPES[name] = cls
 
     def __check_required_vars(
         cls: tp.Any, class_name: str, req_vars: tp.List[str]
@@ -359,7 +351,7 @@ class MetaReport(type):
     @staticmethod
     def lookup_report_type_from_file_name(
         file_name: str
-    ) -> tp.Optional['MetaReport']:
+    ) -> tp.Optional[tp.Type['BaseReport']]:
         """
         Looks-up the correct report class from a given `file_name`.
 
@@ -370,169 +362,34 @@ class MetaReport(type):
             corresponding report class
         """
         try:
-            short_hand = ReportFilename(file_name).shorthand
-            for report_type in MetaReport.REPORT_TYPES.values():
-                if getattr(report_type, "SHORTHAND") == short_hand:
+            shorthand = ReportFilename(file_name).shorthand
+        except ValueError:
+            # Return nothing if we cannot correctly identify a shothand for the
+            # specified file name
+            return None
+        return BaseReport.lookup_report_type_by_shorthand(shorthand)
+
+    @staticmethod
+    def lookup_report_type_by_shorthand(
+        shorthand: str
+    ) -> tp.Optional[tp.Type['BaseReport']]:
+        """
+        Looks-up the correct report class from a given report `shorthand`.
+
+        Args:
+            shorthand: of the report file
+
+        Returns:
+            corresponding report class
+        """
+        try:
+            for report_type in BaseReport.REPORT_TYPES.values():
+                if getattr(report_type, "SHORTHAND") == shorthand:
                     return report_type
         except ValueError:
             return None
 
         return None
-
-    @staticmethod
-    def is_result_file_supplementary(file_name: str) -> bool:
-        """
-        Check if the passed file name is a supplementary result file.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            True, if the file name is a supplementary file
-        """
-        match = MetaReport.__SUPPLEMENTARY_RESULT_FILE_REGEX.search(file_name)
-        if match:
-            return True
-        return False
-
-    @staticmethod
-    def get_info_type_from_supplementary_result_file(file_name: str) -> str:
-        """
-        Get the type of a supplementary result file from the file name.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            the info type of a supplementray results file name
-        """
-        match = MetaReport.__SUPPLEMENTARY_RESULT_FILE_REGEX.search(file_name)
-        if match:
-            return match.group("info_type")
-
-        raise ValueError(
-            'File {file_name} name was wrongly formated.'.format(
-                file_name=file_name
-            )
-        )
-
-    @staticmethod
-    def get_commit_hash_from_supplementary_result_file(file_name: str) -> str:
-        """
-        Get the commit hash from a supplementary result file name.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            the commit hash from a supplementary result file name
-        """
-        match = MetaReport.__SUPPLEMENTARY_RESULT_FILE_REGEX.search(file_name)
-        if match:
-            return match.group("file_commit_hash")
-
-        raise ValueError(
-            'File {file_name} name was wrongly formated.'.format(
-                file_name=file_name
-            )
-        )
-
-    @staticmethod
-    def get_file_name(
-        report_shorthand: str,
-        project_name: str,
-        binary_name: str,
-        project_version: str,
-        project_uuid: str,
-        extension_type: FileStatusExtension,
-        file_ext: str = ".txt"
-    ) -> str:
-        """
-        Generates a filename for a report file out the different parts.
-
-        Args:
-            report_shorthand: unique shorthand of the report
-            project_name: name of the project for which the report was generated
-            binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
-            project_uuid: benchbuild uuid for the experiment run
-            extension_type: to specify the status of the generated report
-            file_ext: file extension of the report file
-
-        Returns:
-            name for the report file that can later be uniquly identified
-        """
-        return ReportFilename.get_file_name(
-            report_shorthand, project_name, binary_name, project_version,
-            project_uuid, extension_type, file_ext
-        )
-
-    @staticmethod
-    def get_supplementary_file_name(
-        report_shorthand: str,
-        project_name: str,
-        binary_name: str,
-        project_version: str,
-        project_uuid: str,
-        info_type: str,
-        file_ext: str = ""
-    ) -> str:
-        """
-        Generates a filename for a supplementary report file.
-
-        Args:
-            report_shorthand: unique shorthand of the report
-            project_name: name of the project for which the report was generated
-            binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
-            project_uuid: benchbuild uuid for the experiment run
-            info_type: specifies the kind of supplementary file
-            file_ext: file extension of the report file
-
-        Returns:
-            name for the supplementary report file that can later be uniquly
-            identified
-        """
-        # Add the missing '.' if none was given by the report
-        if file_ext and not file_ext.startswith("."):
-            file_ext = "." + file_ext
-
-        return MetaReport.__SUPPLEMENTARY_RESULT_FILE_TEMPLATE.format(
-            shorthand=report_shorthand,
-            project_name=project_name,
-            binary_name=binary_name,
-            project_version=project_version,
-            project_uuid=project_uuid,
-            info_type=info_type,
-            file_ext=file_ext
-        )
-
-    def is_correct_report_type(cls, file_name: str) -> bool:
-        """
-        Check if the passed file belongs to this report type.
-
-        Args:
-            file_name: name of the file to check
-
-        Returns:
-            True, if the file belongs to this report type
-        """
-        try:
-            short_hand = ReportFilename(file_name).shorthand
-            return short_hand == str(getattr(cls, "SHORTHAND"))
-        except ValueError:
-            return False
-
-        return False
-
-
-class BaseReport(metaclass=MetaReport):
-    """Report base class to add general report properties and helper
-    functions."""
-
-    def __init__(self, path: Path) -> None:
-        self.__path = path
-        self.__filename = ReportFilename(path)
 
     @staticmethod
     @abstractmethod
@@ -569,15 +426,72 @@ class BaseReport(metaclass=MetaReport):
         """Filename of the report."""
         return self.__filename
 
+    @classmethod
+    @abstractmethod
+    def shorthand(cls) -> str:
+        """Shorthand for this report."""
+
+    @classmethod
+    def is_correct_report_type(cls, file_name: str) -> bool:
+        """
+        Check if the passed file belongs to this report type.
+
+        Args:
+            file_name: name of the file to check
+
+        Returns:
+            True, if the file belongs to this report type
+        """
+        try:
+            short_hand = ReportFilename(file_name).shorthand
+            return short_hand == str(getattr(cls, "SHORTHAND"))
+        except ValueError:
+            return False
+
 
 class ReportSpecification():
     """Groups together multiple report types into a specification that can be
     used, e.g., by experiments, to request multiple reports."""
 
-    def __init__(self, report_types: tp.List[tp.Type[BaseReport]]) -> None:
-        self.__reports_types = report_types
+    def __init__(self, *report_types: tp.Type[BaseReport]) -> None:
+        if len(report_types) == 0:
+            raise AssertionError(
+                "ReportSpecification needs at least one report type."
+            )
+        self.__reports_types = list(report_types)
 
     @property
     def report_types(self) -> tp.List[tp.Type[BaseReport]]:
         """Report types in this report specification."""
-        return self.__reports_types
+        return list(self.__reports_types)
+
+    @property
+    def main_report(self) -> tp.Type[BaseReport]:
+        """Main report of this specification."""
+        return self.__reports_types[0]
+
+    def in_spec(self, report_type: tp.Type[BaseReport]) -> bool:
+        """Checks if a report type is specified in this spec."""
+        return report_type in self.report_types
+
+    def get_report_type(self, shorthand: str) -> tp.Type[BaseReport]:
+        """
+        Look up a report type by it's shorthand.
+
+        Args:
+            shorthand: notation for the report
+
+        Returns:
+            the report if, should it be part of this spec
+        """
+        report_type = BaseReport.lookup_report_type_by_shorthand(shorthand)
+
+        if report_type and self.in_spec(report_type):
+            return report_type
+
+        raise LookupError(
+            f"Report corresponding to {shorthand} was not specified."
+        )
+
+    def __contains__(self, report_type: tp.Type[BaseReport]) -> bool:
+        return self.in_spec(report_type)

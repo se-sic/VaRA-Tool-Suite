@@ -2,9 +2,16 @@
 
 import unittest
 
+from varats.data.reports.blame_report import BlameReport as BR
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.data.reports.empty_report import EmptyReport
-from varats.report.report import FileStatusExtension, MetaReport, ReportFilename
+from varats.report.gnu_time_report import TimeReport as TR
+from varats.report.report import (
+    FileStatusExtension,
+    BaseReport,
+    ReportFilename,
+    ReportSpecification,
+)
 
 
 class TestFileStatusExtension(unittest.TestCase):
@@ -106,12 +113,12 @@ class TestReportFilename(unittest.TestCase):
         self.assertEqual(self.report_filename.uuid, self.correct_UUID)
 
 
-class TestMetaReport(unittest.TestCase):
-    """Test basic CommitReport functionality."""
+class TestBaseReport(unittest.TestCase):
+    """Test basic BaseReport functionality."""
 
     @classmethod
     def setUpClass(cls):
-        """Setup file and CommitReport."""
+        """Setup report file paths."""
         cls.success_filename_cr = (
             "CR-foo-foo-7bb9ef5f8c_"
             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
@@ -127,28 +134,35 @@ class TestMetaReport(unittest.TestCase):
             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
             "failed.txt"
         )
-        cls.supplementary_filename = (
-            "CR-SUPPL-foo-foo-7bb9ef5f8c_"
-            "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_test.txt"
-        )
 
     def test_report_type_lookup(self):
         """Check if we can lookup report types with file names."""
         self.assertEqual(
-            MetaReport.lookup_report_type_from_file_name(
+            BaseReport.lookup_report_type_from_file_name(
                 self.success_filename_cr
-            ), MetaReport.REPORT_TYPES['CommitReport']
+            ), BaseReport.REPORT_TYPES['CommitReport']
         )
         self.assertEqual(
-            MetaReport.
+            BaseReport.
             lookup_report_type_from_file_name("some_wrong_file_path"), None
         )
         self.assertEqual(
-            MetaReport.lookup_report_type_from_file_name(
+            BaseReport.lookup_report_type_from_file_name(
                 "NONEXISTINGSHORTHAND-foo-foo-7bb9ef5f8c_"
                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
                 "success.txt"
             ), None
+        )
+
+    def test_report_type_lookup_by_shorthand(self):
+        """Check if we can lookup report types with a report shorthand."""
+        self.assertEqual(
+            BaseReport.lookup_report_type_by_shorthand("CR"),
+            BaseReport.REPORT_TYPES['CommitReport']
+        )
+        self.assertEqual(
+            BaseReport.lookup_report_type_by_shorthand("NONEXISTINGSHORTHAND"),
+            None
         )
 
     def test_is_result_file(self):
@@ -163,24 +177,8 @@ class TestMetaReport(unittest.TestCase):
             ReportFilename(self.fail_filename.replace("-", "")).is_result_file()
         )
 
-    def test_is_supplementary_result_file(self):
-        """Check if the supplementary result file matcher works."""
-        self.assertTrue(
-            MetaReport.is_result_file_supplementary(
-                self.supplementary_filename
-            )
-        )
-        self.assertFalse(
-            MetaReport.is_result_file_supplementary(
-                self.supplementary_filename.replace("_", "")
-            )
-        )
-        self.assertFalse(
-            ReportFilename(self.supplementary_filename).is_result_file()
-        )
-
     def test_file_status(self):
-        """Check if the correct file status is returned for MetaReport names."""
+        """Check if the correct file status is returned for BaseReport names."""
         self.assertTrue(
             ReportFilename(self.success_filename).has_status_success()
         )
@@ -202,22 +200,6 @@ class TestMetaReport(unittest.TestCase):
             ReportFilename(self.fail_filename).commit_hash, "7bb9ef5f8c"
         )
 
-    def test_get_commit_supplementary(self):
-        """Check if the correct commit hash is returned."""
-        self.assertEqual(
-            MetaReport.get_commit_hash_from_supplementary_result_file(
-                self.supplementary_filename
-            ), "7bb9ef5f8c"
-        )
-
-    def test_get_info_type_supplementary(self):
-        """Check if the correct info_type is returned."""
-        self.assertEqual(
-            MetaReport.get_info_type_from_supplementary_result_file(
-                self.supplementary_filename
-            ), "test"
-        )
-
     def test_file_name_creation(self):
         """Check if file names are created correctly."""
         self.assertEqual(
@@ -236,11 +218,31 @@ class TestMetaReport(unittest.TestCase):
             ), self.fail_filename
         )
 
-    def test_supplementary_file_name_creation(self):
-        """Check if file names are created correctly."""
-        self.assertEqual(
-            CR.get_supplementary_file_name(
-                "foo", "foo", "7bb9ef5f8c",
-                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be", "test", "txt"
-            ), self.supplementary_filename
-        )
+
+class TestRepoprtSpecification(unittest.TestCase):
+    """Test basic ReportSpecification functionality."""
+
+    def test_wrong_spec_setup(self):
+        """Check if we correctly reject empty specs."""
+        self.assertRaises(AssertionError, ReportSpecification)
+
+    def test_spec_properties(self):
+        """Check if the basic properties work."""
+        spec = ReportSpecification(CR, BR)
+
+        # First report should be the main report
+        self.assertEqual(spec.main_report, CR)
+
+        self.assertListEqual(spec.report_types, [CR, BR])
+
+    def test_if_report_is_in_spec(self):
+        """Check if we correctly verify that a report is in the spec."""
+        spec = ReportSpecification(CR, BR)
+
+        self.assertTrue(spec.in_spec(CR))
+        self.assertTrue(spec.in_spec(BR))
+        self.assertFalse(spec.in_spec(TR))
+
+        self.assertTrue(CR in spec)
+        self.assertTrue(BR in spec)
+        self.assertFalse(TR in spec)

@@ -8,7 +8,7 @@ from varats.data.reports.empty_report import EmptyReport
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
-from varats.report.report import FileStatusExtension, MetaReport
+from varats.report.report import FileStatusExtension, BaseReport
 
 
 class FileStatusDatabase(
@@ -27,7 +27,7 @@ class FileStatusDatabase(
         case_study: tp.Optional[CaseStudy], **kwargs: tp.Any
     ) -> pd.DataFrame:
         result_file_type = tp.cast(
-            MetaReport, kwargs.get("result_file_type", EmptyReport)
+            BaseReport, kwargs.get("result_file_type", EmptyReport)
         )
         tag_blocked = tp.cast(bool, kwargs.get("tag_blocked", True))
 

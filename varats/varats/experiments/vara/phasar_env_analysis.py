@@ -29,6 +29,7 @@ from varats.experiment.wllvm import (
     get_bc_cache_actions,
 )
 from varats.report.report import FileStatusExtension as FSE
+from varats.report.report import ReportSpecification
 from varats.utils.settings import bb_cfg
 
 
@@ -115,7 +116,7 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
 
     NAME = "PhasarEnvironmentTracing"
 
-    REPORT_TYPE = ENVR
+    REPORT_SPEC = ReportSpecification(ENVR)
 
     def actions_for_project(
         self, project: Project
