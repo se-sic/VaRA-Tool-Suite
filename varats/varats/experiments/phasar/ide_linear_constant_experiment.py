@@ -2,9 +2,9 @@
 import typing as tp
 from pathlib import Path
 
-import benchbuild.utils.actions as actions
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import mkdir
 from plumbum import local
 
@@ -47,7 +47,7 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
     def analyze(self) -> actions.StepResult:
         """Run phasar's IDELinearConstantAnalysis analysis."""
         if not self.obj:
-            return
+            return actions.StepResult.ERROR
         project = self.obj
 
         # Add to the user-defined path for saving the results of the
@@ -85,6 +85,8 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
                 )
             )
 
+        return actions.StepResult.OK
+
 
 class IDELinearConstantAnalysisExperiment(VersionExperiment):
     """Experiment class to build and analyse a project with an
@@ -94,7 +96,9 @@ class IDELinearConstantAnalysisExperiment(VersionExperiment):
 
     REPORT_TYPE = EmptyReport
 
-    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
+    def actions_for_project(
+        self, project: Project
+    ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
         in a fixed order.

@@ -117,7 +117,8 @@ class DataManager():
     ) -> LoadableType:
         # pylint: disable=invalid-name
         """Load a DataClass of type <DataClassTy> from a file."""
-        self.loader_lock.acquire()
+        self.loader_lock.acquire()  # pylint: disable=consider-using-with
+        # unlocking in the happy path is performed by the loading function
 
         key = sha256_checksum(file_path)
         if key in self.file_map:

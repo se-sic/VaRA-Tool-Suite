@@ -8,8 +8,8 @@ order to generate a BlameVerifierReport.
 
 import typing as tp
 
-import benchbuild.utils.actions as actions
 from benchbuild.project import Project
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import opt, mkdir, timeout
 
 import varats.experiments.vara.blame_experiment as BE
@@ -65,7 +65,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
                 * Status: prints if the module as a whole passed or failed
         """
         if not self.obj:
-            return
+            return actions.StepResult.ERROR
         project = self.obj
 
         # Add to the user-defined path for saving the results of the
@@ -120,6 +120,8 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
                 )
             )
 
+        return actions.StepResult.OK
+
 
 class BlameVerifierReportExperiment(VersionExperiment):
     """BlameVerifierReportExperiment generalizes the implementation and usage
@@ -142,7 +144,9 @@ class BlameVerifierReportExperiment(VersionExperiment):
         self.__bc_file_extensions = bc_file_extensions
         self.__report_type = report_type
 
-    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
+    def actions_for_project(
+        self, project: Project
+    ) -> tp.MutableSequence[actions.Step]:
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
 

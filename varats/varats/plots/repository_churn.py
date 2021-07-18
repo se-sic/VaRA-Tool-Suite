@@ -6,10 +6,9 @@ For code churn, we only consider changes in source files.
 import typing as tp
 from itertools import islice
 
-import matplotlib.axes as axes
 import matplotlib.pyplot as plt
-import matplotlib.style as style
 import pandas as pd
+from matplotlib import axes, style
 
 #import varats.data.discover_reports
 #from varats.data.discover_reports import foo

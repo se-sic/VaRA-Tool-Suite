@@ -3,7 +3,9 @@
 import logging
 import os
 import typing as tp
+from enum import Enum
 
+import click
 from rich.traceback import install
 
 
@@ -80,3 +82,21 @@ def initialize_logger_config() -> None:
     to pass the warning level via an environment variable ``LOG_LEVEL``."""
     log_level = os.environ.get('LOG_LEVEL', "WARNING").upper()
     logging.basicConfig(level=log_level)
+
+
+class EnumType(click.Choice):
+    """
+    Enum choice type for click.
+
+    This type can be used with click to specify a choice from the given enum.
+    """
+
+    def __init__(self, enum: tp.Type[Enum]):
+        self.__enum = enum
+        super().__init__(list(dict(enum.__members__).keys()))
+
+    def convert(
+        self, value: str, param: tp.Optional[click.Parameter],
+        ctx: tp.Optional[click.Context]
+    ) -> tp.Any:
+        return self.__enum[super().convert(value, param, ctx)]

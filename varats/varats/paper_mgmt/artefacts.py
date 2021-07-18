@@ -113,7 +113,7 @@ class PlotArtefact(Artefact):
         self, name: str, output_path: Path, plot_type: str, file_format: str,
         **kwargs: tp.Any
     ) -> None:
-        super().__init__(ArtefactType.plot, name, output_path)
+        super().__init__(ArtefactType.PLOT, name, output_path)
         self.__plot_type = plot_type
         self.__plot_type_class = PlotRegistry.get_class_for_plot_type(plot_type)
         self.__file_format = file_format
@@ -179,7 +179,7 @@ class TableArtefact(Artefact):
         self, name: str, output_path: Path, table_type: str,
         table_format: TableFormat, **kwargs: tp.Any
     ) -> None:
-        super().__init__(ArtefactType.table, name, output_path)
+        super().__init__(ArtefactType.TABLE, name, output_path)
         self.__table_type = table_type
         self.__table_type_class = TableRegistry.get_class_for_table_type(
             table_type
@@ -237,10 +237,10 @@ class ArtefactType(Enum):
     of the class responsible for that kind of artefact and a version number to
     allow evolution of artefacts.
     """
-    value: tp.Tuple[Artefact, int]
+    value: tp.Tuple[Artefact, int]  # pylint: disable=invalid-name
 
-    plot = (PlotArtefact, 1)
-    table = (TableArtefact, 1)
+    PLOT = (PlotArtefact, 1)
+    TABLE = (TableArtefact, 1)
 
 
 class Artefacts:
@@ -310,11 +310,11 @@ def create_artefact(
     Returns:
         the created artefact
     """
-    if artefact_type is ArtefactType.plot:
+    if artefact_type is ArtefactType.PLOT:
         plot_type = kwargs.pop('plot_type')
         file_format = kwargs.pop('file_format', 'png')
         return PlotArtefact(name, output_path, plot_type, file_format, **kwargs)
-    if artefact_type is ArtefactType.table:
+    if artefact_type is ArtefactType.TABLE:
         table_type = kwargs.pop('table_type')
         table_format = TableFormat[kwargs.pop('file_format', 'latex_booktabs')]
         return TableArtefact(
@@ -346,7 +346,7 @@ def load_artefacts_from_file(file_path: Path) -> Artefacts:
     for raw_artefact in raw_artefacts.pop('artefacts'):
         name = raw_artefact.pop('name')
         output_path = raw_artefact.pop('output_path')
-        artefact_type = ArtefactType[raw_artefact.pop('artefact_type')]
+        artefact_type = ArtefactType[raw_artefact.pop('artefact_type').upper()]
         artefact_type_version = raw_artefact.pop('artefact_type_version')
         if artefact_type_version < artefact_type.value[1]:
             LOG.warning(
@@ -401,7 +401,7 @@ def filter_plot_artefacts(
     return [
         tp.cast(PlotArtefact, artefact)
         for artefact in artefacts
-        if artefact.artefact_type == ArtefactType.plot
+        if artefact.artefact_type == ArtefactType.PLOT
     ]
 
 
@@ -420,5 +420,5 @@ def filter_table_artefacts(
     return [
         tp.cast(TableArtefact, artefact)
         for artefact in artefacts
-        if artefact.artefact_type == ArtefactType.table
+        if artefact.artefact_type == ArtefactType.TABLE
     ]

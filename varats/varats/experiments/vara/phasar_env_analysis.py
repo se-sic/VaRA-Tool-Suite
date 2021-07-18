@@ -10,9 +10,9 @@ valid json result and which ones failed.
 
 import typing as tp
 
-import benchbuild.utils.actions as actions
 from benchbuild import Experiment, Project
 from benchbuild.extensions import compiler, run, time
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import mkdir, phasar, timeout
 
 from varats.data.reports.env_trace_report import EnvTraceReport as ENVR
@@ -56,7 +56,7 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
         """
 
         if not self.obj:
-            return
+            return actions.StepResult.ERROR
         project = self.obj
 
         # Define the output directory.
@@ -106,6 +106,8 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
                 PEErrorHandler(result_folder, error_file, timeout_duration)
             )
 
+        return actions.StepResult.OK
+
 
 class PhasarEnvironmentTracing(Experiment):  # type: ignore
     """Generates a inter-procedural data flow analysis (IFDS) on a project's
@@ -115,7 +117,9 @@ class PhasarEnvironmentTracing(Experiment):  # type: ignore
 
     REPORT_TYPE = ENVR
 
-    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
+    def actions_for_project(
+        self, project: Project
+    ) -> tp.MutableSequence[actions.Step]:
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
 

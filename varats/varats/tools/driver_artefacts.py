@@ -91,7 +91,7 @@ def main() -> None:
     add_parser.add_argument(
         "artefact_type",
         help="The type of the new artefact.",
-        action=enum_action(ArtefactType)
+        action=enum_action(ArtefactType, str.upper)
     )
     add_parser.add_argument(
         "name",
@@ -333,7 +333,7 @@ def _generate_artefact_html(artefact: Artefact,
 
 
 def _get_artefact_files_info(artefact: Artefact) -> tp.List[tp.Dict[str, str]]:
-    if artefact.artefact_type == ArtefactType.plot:
+    if artefact.artefact_type == ArtefactType.PLOT:
         artefact = tp.cast(PlotArtefact, artefact)
         plots = prepare_plots(
             plot_type=artefact.plot_type,
@@ -346,7 +346,7 @@ def _get_artefact_files_info(artefact: Artefact) -> tp.List[tp.Dict[str, str]]:
             "project": plot.plot_kwargs.get("project", "[UNKNOWN]")
         } for plot in plots]
 
-    if artefact.artefact_type == ArtefactType.table:
+    if artefact.artefact_type == ArtefactType.TABLE:
         artefact = tp.cast(TableArtefact, artefact)
         tables = prepare_tables(
             table_type=artefact.table_type,

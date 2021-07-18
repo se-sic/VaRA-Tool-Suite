@@ -13,7 +13,7 @@ from varats.data.reports.commit_report import (
     RegionMapping,
     generate_interactions,
 )
-from varats.report.report import FileStatusExtension
+from varats.report.report import FileStatusExtension, ReportFilename
 
 YAML_DOC_1 = """---
 DocType:         CommitReport
@@ -230,6 +230,16 @@ class TestCommitReport(unittest.TestCase):
             'builtins.open', new=mock.mock_open(read_data=file_content)
         ):
             cls.commit_report = CommitReport("fake_file_path")
+            cls.commit_report_success = CommitReport(
+                "CR-foo-foo-7bb9ef5f8c_"
+                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
+                "success.yaml"
+            )
+            cls.commit_report_fail = CommitReport(
+                "CR-foo-foo-7bb9ef5f8c_"
+                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be"
+                "_failed.txt"
+            )
 
         cls.success_filename = (
             "CR-foo-foo-7bb9ef5f8c_"
@@ -253,47 +263,45 @@ class TestCommitReport(unittest.TestCase):
 
     def test_is_result_file(self):
         """Check if the result file matcher works."""
-        self.assertTrue(CommitReport.is_result_file(self.success_filename))
-        self.assertTrue(CommitReport.is_result_file(self.fail_filename))
+        self.assertTrue(self.commit_report_success.filename.is_result_file())
+        self.assertTrue(self.commit_report_fail.filename.is_result_file())
+
         self.assertFalse(
-            CommitReport.is_result_file(self.success_filename.replace("_", ""))
+            ReportFilename(
+                self.commit_report_success.filename.filename.replace("_", "")
+            ).is_result_file()
         )
         self.assertFalse(
-            CommitReport.is_result_file(self.success_filename.replace("-", ""))
+            ReportFilename(
+                self.commit_report_success.filename.filename.replace("-", "")
+            ).is_result_file()
         )
         self.assertFalse(
-            CommitReport.is_result_file(
-                self.success_filename.replace(".", "f")
-            )
+            ReportFilename(
+                self.commit_report_success.filename.filename.replace(".", "f")
+            ).is_result_file()
         )
 
     def test_file_status(self):
         """Check if the correct file status is returned for CommitReport
         names."""
         self.assertTrue(
-            CommitReport.result_file_has_status_success(self.success_filename)
+            self.commit_report_success.filename.has_status_success()
         )
-        self.assertFalse(
-            CommitReport.result_file_has_status_success(self.fail_filename)
-        )
+        self.assertFalse(self.commit_report_fail.filename.has_status_success())
 
-        self.assertTrue(
-            CommitReport.result_file_has_status_failed(self.fail_filename)
-        )
+        self.assertTrue(self.commit_report_fail.filename.has_status_failed())
         self.assertFalse(
-            CommitReport.result_file_has_status_failed(self.success_filename)
+            self.commit_report_success.filename.has_status_failed()
         )
 
     def test_get_commit(self):
         """Check if the correct commit hash is returned."""
         self.assertEqual(
-            CommitReport.get_commit_hash_from_result_file(
-                self.success_filename
-            ), "7bb9ef5f8c"
+            self.commit_report_success.filename.commit_hash, "7bb9ef5f8c"
         )
         self.assertEqual(
-            CommitReport.get_commit_hash_from_result_file(self.fail_filename),
-            "7bb9ef5f8c"
+            self.commit_report_fail.filename.commit_hash, "7bb9ef5f8c"
         )
 
     def test_file_name_creation(self):

@@ -8,9 +8,9 @@ aware region analyzer (VaRA). For annotation we use the git-blame data of git.
 import typing as tp
 from pathlib import Path
 
-import benchbuild.utils.actions as actions
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import mkdir, opt
 
 from varats.data.reports.commit_report import CommitReport as CR
@@ -58,7 +58,7 @@ class CRAnalysis(actions.Step):  # type: ignore
             -vara-report-outfile=<path>: specify the path to store the results
         """
         if not self.obj:
-            return
+            return actions.StepResult.ERROR
         project = self.obj
 
         if self.__interaction_filter_experiment_name is None:
@@ -131,6 +131,8 @@ class CRAnalysis(actions.Step):  # type: ignore
                 )
             )
 
+        return actions.StepResult.OK
+
 
 class CommitReportExperiment(VersionExperiment):
     """Generates a commit report (CR) of the project(s) specified in the
@@ -139,7 +141,9 @@ class CommitReportExperiment(VersionExperiment):
     NAME = "GenerateCommitReport"
     REPORT_TYPE = CR
 
-    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
+    def actions_for_project(
+        self, project: Project
+    ) -> tp.MutableSequence[actions.Step]:
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
 

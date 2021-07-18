@@ -17,7 +17,7 @@ from varats.paper_mgmt.case_study import (
     get_revisions_status_for_case_study,
     get_newest_result_files_for_case_study,
 )
-from varats.report.report import FileStatusExtension, MetaReport
+from varats.report.report import FileStatusExtension, MetaReport, ReportFilename
 from varats.revision.revisions import get_all_revisions_files
 from varats.utils.settings import vara_cfg
 
@@ -130,9 +130,7 @@ def get_result_files(
     """
 
     def file_name_filter(file_name: str) -> bool:
-        file_commit_hash = MetaReport.get_commit_hash_from_result_file(
-            file_name
-        )
+        file_commit_hash = ReportFilename(file_name).commit_hash
         return not file_commit_hash.startswith(commit_hash)
 
     return get_all_revisions_files(
@@ -402,8 +400,9 @@ def package_paper_config(
             case_study_files_to_include.append(cs_file)
 
     vara_root = Path(str(vara_cfg()['config_file'])).parent
-    # TODO(python3.7): add ZipFile(compresslevel=9)
-    with ZipFile(output_file, "w", compression=ZIP_DEFLATED) as pc_zip:
+    with ZipFile(
+        output_file, "w", compression=ZIP_DEFLATED, compresslevel=9
+    ) as pc_zip:
         for file_path in files_to_store:
             pc_zip.write(file_path.relative_to(vara_root))
 

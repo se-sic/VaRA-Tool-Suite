@@ -12,9 +12,9 @@ executed binary.
 
 import typing as tp
 
-import benchbuild.utils.actions as actions
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import mkdir, opt, timeout
 
 from varats.data.reports.taint_report import TaintPropagationReport as TPR
@@ -55,7 +55,7 @@ class VaraMTFACheck(actions.Step):  # type: ignore
         """
 
         if not self.obj:
-            return
+            return actions.StepResult.ERROR
         project = self.obj
 
         # Define the output directory.
@@ -105,6 +105,8 @@ class VaraMTFACheck(actions.Step):  # type: ignore
                 )
             )
 
+        return actions.StepResult.OK
+
 
 class VaRATaintPropagation(VersionExperiment):
     """Generates a taint flow analysis (MTFA) of the project(s) specified in the
@@ -113,7 +115,9 @@ class VaRATaintPropagation(VersionExperiment):
     NAME = "VaRATaintPropagation"
     REPORT_TYPE = TPR
 
-    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
+    def actions_for_project(
+        self, project: Project
+    ) -> tp.MutableSequence[actions.Step]:
         """Returns the specified steps to run the project(s) specified in the
         call in a fixed order."""
 

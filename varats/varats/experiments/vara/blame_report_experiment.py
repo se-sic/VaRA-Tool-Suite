@@ -8,8 +8,8 @@ BlameReport.
 import typing as tp
 from pathlib import Path
 
-import benchbuild.utils.actions as actions
 from benchbuild import Project
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import mkdir, opt
 from benchbuild.utils.requirements import Requirement, SlurmMem
 
@@ -51,7 +51,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
             * -yaml-report-outfile=<path>: specify the path to store the results
         """
         if not self.obj:
-            return
+            return actions.StepResult.ERROR
         project = self.obj
 
         # Add to the user-defined path for saving the results of the
@@ -78,8 +78,10 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                 "-vara-use-phasar",
                 f"-vara-report-outfile={vara_result_folder}/{result_file}",
                 get_cached_bc_file_path(
-                    project, binary,
-                    [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+                    project, binary, [
+                        BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
+                        BCFileExtensions.BLAME
+                    ]
                 )
             ]
 
@@ -94,6 +96,8 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                 )
             )
 
+        return actions.StepResult.OK
+
 
 class BlameReportExperiment(VersionExperiment):
     """Generates a commit flow report (CFR) of the project(s) specified in the
@@ -104,7 +108,9 @@ class BlameReportExperiment(VersionExperiment):
     REPORT_TYPE = BR
     REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
 
-    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
+    def actions_for_project(
+        self, project: Project
+    ) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
         in a fixed order.
