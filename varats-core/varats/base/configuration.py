@@ -230,7 +230,7 @@ class ConfigurationImpl(Configuration):
         Args:
             option: the feature to add
         """
-        self.__config_values[option.name()] = option
+        self.__config_values[option.name] = option
 
     def set_config_option(self, option_name: str, value: tp.Any) -> None:
         """
