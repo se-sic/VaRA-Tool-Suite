@@ -255,10 +255,11 @@ def __build_setup_init(
     if distro:
         if not tool.get_dependencies().has_dependencies_for_distro(distro):
             missing_deps = tool.get_dependencies(
-            ).check_dependencies_for_distro(distro)
+            ).get_missing_dependencies_for_distro(distro)
             print(
                 f"The following dependencies have to be installed: {missing_deps}"
             )
+            return
 
     tool.setup(
         source_location,

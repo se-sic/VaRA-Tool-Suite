@@ -41,7 +41,7 @@ class Distro(Enum):
     ARCH = "arch"
 
     @staticmethod
-    def get_current_distro() -> tp.Optional[Distro]:
+    def get_current_distro() -> tp.Optional['Distro']:
         if distro.id() == "debian":
             return Distro.DEBIAN
         elif distro.id() == "arch":
@@ -97,12 +97,12 @@ class Dependencies:
         Returns:
             True if all dependencies are installed and False otherwise
         """
-        return len(self.check_dependencies_for_distro(distro)) == 0
+        return len(self.get_missing_dependencies_for_distro(distro)) == 0
 
-    def check_dependencies_for_distro(self, distro: Distro) -> tp.List[str]:
+    def get_missing_dependencies_for_distro(self,
+                                            distro: Distro) -> tp.List[str]:
         """
-        Given a distro, check if all specified dependencies are installed
-        and return the list of not installed dependencies.
+        Given a distro, return all not installed dependencies.
         Args:
             distro: the distro to use
 
@@ -111,7 +111,7 @@ class Dependencies:
         """
         not_installed: tp.List[str] = []
         base_command = _checker_commands[distro]
-        for package in self.__dependencies:
+        for package in self.__dependencies[distro]:
             output = base_command(package)
             output_list = output.split()
             if _expected_check_output[distro] not in output_list:
