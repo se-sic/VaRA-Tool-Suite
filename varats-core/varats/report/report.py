@@ -17,7 +17,7 @@ class FileStatusExtension(Enum):
 
     Specific report files can map these to their own specific representation.
     """
-    value: tp.Tuple[str, Color]
+    value: tp.Tuple[str, Color]  # pylint: disable=invalid-name
 
     Success = ("success", colors.green)
     Failed = ("failed", colors.lightred)
@@ -338,6 +338,7 @@ class BaseReport():
         if name not in cls.REPORT_TYPES:
             cls.REPORT_TYPES[name] = cls
 
+    @classmethod
     def __check_required_vars(
         cls: tp.Any, class_name: str, req_vars: tp.List[str]
     ) -> None:
