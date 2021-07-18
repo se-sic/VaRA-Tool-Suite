@@ -396,7 +396,6 @@ class BaseReport():
             corresponding report class
         """
         try:
-            print(BaseReport.REPORT_TYPES.items())
             for report_type in BaseReport.REPORT_TYPES.values():
                 if getattr(report_type, "SHORTHAND") == shorthand:
                     return report_type
