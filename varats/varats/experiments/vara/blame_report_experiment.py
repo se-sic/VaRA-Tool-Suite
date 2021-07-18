@@ -96,7 +96,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                 )
             )
 
-        return actions.StepResult.CAN_CONTINUE
+        return actions.StepResult.OK
 
 
 class BlameReportExperiment(VersionExperiment):

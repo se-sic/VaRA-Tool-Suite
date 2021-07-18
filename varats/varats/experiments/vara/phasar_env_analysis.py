@@ -106,7 +106,7 @@ class PhasarEnvIFDS(actions.Step):  # type: ignore
                 PEErrorHandler(result_folder, error_file, timeout_duration)
             )
 
-        return actions.StepResult.CAN_CONTINUE
+        return actions.StepResult.OK
 
 
 class PhasarEnvironmentTracing(Experiment):  # type: ignore

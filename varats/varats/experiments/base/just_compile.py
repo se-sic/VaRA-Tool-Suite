@@ -68,7 +68,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
                 )
             )
 
-        return actions.StepResult.CAN_CONTINUE
+        return actions.StepResult.OK
 
 
 # Please take care when changing this file, see docs experiments/just_compile
