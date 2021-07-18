@@ -17,17 +17,24 @@ class FileStatusExtension(Enum):
 
     Specific report files can map these to their own specific representation.
     """
-    value: tp.Tuple[str, Color]
+    value: tp.Tuple[str, Color]  # pylint: disable=invalid-name
 
-    Success = ("success", colors.green)
-    Failed = ("failed", colors.lightred)
-    CompileError = ("cerror", colors.red)
-    Missing = ("###", colors.orange3)
-    Blocked = ("blocked", colors.blue)
+    SUCCESS = ("success", colors.green)
+    FAILED = ("failed", colors.lightred)
+    COMPILE_ERROR = ("cerror", colors.red)
+    MISSING = ("###", colors.orange3)
+    BLOCKED = ("blocked", colors.blue)
 
     def get_status_extension(self) -> str:
         """Returns the corresponding file ending to the status."""
         return str(self.value[0])
+
+    def nice_name(self) -> str:
+        """Returns a nicely formatted name."""
+        if self == FileStatusExtension.COMPILE_ERROR:
+            return "CompileError"
+
+        return self.name.lower().capitalize()
 
     @property
     def status_color(self) -> Color:
@@ -37,7 +44,7 @@ class FileStatusExtension(Enum):
     def get_colored_status(self) -> str:
         """Returns the corresponding file status, colored in the specific status
         color."""
-        return tp.cast(str, self.status_color[self.name])
+        return tp.cast(str, self.status_color[self.nice_name()])
 
     def num_color_characters(self) -> int:
         """Returns the number of non printable color characters."""
@@ -48,15 +55,15 @@ class FileStatusExtension(Enum):
         """Returns the set of file status extensions that are associated with
         real result files."""
         return {
-            FileStatusExtension.Success, FileStatusExtension.Failed,
-            FileStatusExtension.CompileError
+            FileStatusExtension.SUCCESS, FileStatusExtension.FAILED,
+            FileStatusExtension.COMPILE_ERROR
         }
 
     @staticmethod
     def get_virtual_file_statuses() -> tp.Set['FileStatusExtension']:
         """Returns the set of file status extensions that are not associated
         with real result files."""
-        return {FileStatusExtension.Missing, FileStatusExtension.Blocked}
+        return {FileStatusExtension.MISSING, FileStatusExtension.BLOCKED}
 
     @staticmethod
     def get_regex_grp() -> str:
@@ -85,16 +92,21 @@ class FileStatusExtension(Enum):
 
         Test:
         >>> FileStatusExtension.get_file_status_from_str('success')
-        <FileStatusExtension.Success: ('success', <ANSIStyle: Green>)>
+        <FileStatusExtension.SUCCESS: ('success', <ANSIStyle: Green>)>
+
+        >>> FileStatusExtension.get_file_status_from_str('SUCCESS')
+        <FileStatusExtension.SUCCESS: ('success', <ANSIStyle: Green>)>
 
         >>> FileStatusExtension.get_file_status_from_str('###')
-        <FileStatusExtension.Missing: ('###', <ANSIStyle: Full: Orange3>)>
+        <FileStatusExtension.MISSING: ('###', <ANSIStyle: Full: Orange3>)>
 
         >>> FileStatusExtension.get_file_status_from_str('CompileError')
-        <FileStatusExtension.CompileError: ('cerror', <ANSIStyle: Red>)>
+        <FileStatusExtension.COMPILE_ERROR: ('cerror', <ANSIStyle: Red>)>
         """
         for fs_enum in FileStatusExtension:
-            if status_name in (fs_enum.name, fs_enum.value[0]):
+            if status_name.upper(
+            ) == fs_enum.name or status_name == fs_enum.value[
+                0] or status_name == fs_enum.nice_name():
                 return fs_enum
 
         raise ValueError(f"Unknown file status extension name: {status_name}")
@@ -135,7 +147,7 @@ class ReportFilename():
             True, if the file name is for a success file
         """
         return ReportFilename.result_file_has_status(
-            self.filename, FileStatusExtension.Success
+            self.filename, FileStatusExtension.SUCCESS
         )
 
     def has_status_failed(self) -> bool:
@@ -146,7 +158,7 @@ class ReportFilename():
             True, if the file name is for a failed file
         """
         return ReportFilename.result_file_has_status(
-            self.filename, FileStatusExtension.Failed
+            self.filename, FileStatusExtension.FAILED
         )
 
     def has_status_compileerror(self) -> bool:
@@ -157,7 +169,7 @@ class ReportFilename():
             True, if the file name is for a compile error file
         """
         return ReportFilename.result_file_has_status(
-            self.filename, FileStatusExtension.CompileError
+            self.filename, FileStatusExtension.COMPILE_ERROR
         )
 
     def has_status_missing(self) -> bool:
@@ -168,7 +180,7 @@ class ReportFilename():
             True, if the file name is for a missing file
         """
         return ReportFilename.result_file_has_status(
-            self.filename, FileStatusExtension.Missing
+            self.filename, FileStatusExtension.MISSING
         )
 
     def has_status_blocked(self) -> bool:
@@ -179,7 +191,7 @@ class ReportFilename():
             True, if the file name is for a blocked file
         """
         return ReportFilename.result_file_has_status(
-            self.filename, FileStatusExtension.Blocked
+            self.filename, FileStatusExtension.BLOCKED
         )
 
     @staticmethod
@@ -338,11 +350,12 @@ class BaseReport():
         if name not in cls.REPORT_TYPES:
             cls.REPORT_TYPES[name] = cls
 
+    @staticmethod
     def __check_required_vars(
-        cls: tp.Any, class_name: str, req_vars: tp.List[str]
+        class_type: tp.Any, class_name: str, req_vars: tp.List[str]
     ) -> None:
         for var in req_vars:
-            if not hasattr(cls, var):
+            if not hasattr(class_type, var):
                 raise NameError((
                     f"{class_name} does not define "
                     f"a static variable {var}."

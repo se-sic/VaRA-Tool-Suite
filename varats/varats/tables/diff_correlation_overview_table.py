@@ -48,7 +48,7 @@ class DiffCorrelationOverviewTable(Table):
         )
 
         if self.format in [
-            TableFormat.latex, TableFormat.latex_booktabs, TableFormat.latex_raw
+            TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
         ]:
             table = df.to_latex(bold_rows=True, multicolumn_format="c")
             return str(table) if table else ""

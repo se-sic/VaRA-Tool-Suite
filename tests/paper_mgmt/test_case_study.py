@@ -89,7 +89,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
             MCS.get_revision_status_for_case_study(
                 get_paper_config().get_case_studies('brotli')[0], '21ac39f7c8',
                 CR
-            ), FileStatusExtension.Success
+            ), FileStatusExtension.SUCCESS
         )
 
     @run_in_test_environment(

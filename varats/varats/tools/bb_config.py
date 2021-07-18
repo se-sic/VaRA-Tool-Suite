@@ -87,12 +87,9 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
     projects_conf.value[:] = []
     projects_conf.value[:] += [
         'varats.experiments.base.just_compile',
-        'varats.experiments.vara.phasar_env_analysis',
         'varats.experiments.vara.blame_report_experiment',
         'varats.experiments.vara.commit_report_experiment',
         'varats.experiments.vara.marker_tester',
-        'varats.experiments.vara.vara_fc_taint_analysis',
-        'varats.experiments.vara.vara_full_mtfa',
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.phasar_fta',
         'varats.experiments.phasar.ide_linear_constant_experiment',

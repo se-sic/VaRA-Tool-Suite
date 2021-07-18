@@ -92,7 +92,7 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(
 
         return wrap_paths_to_binaries([(
             version_source / "build/test_prog/elementalist/elementalist",
-            BinaryType.executable
+            BinaryType.EXECUTABLE
         )])
 
     def run_tests(self) -> None:

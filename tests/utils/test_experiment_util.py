@@ -83,11 +83,11 @@ class TestVersionExperiment(unittest.TestCase):
     def generate_get_tagged_revisions_output(
     ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
         """Generate get_tagged_revisions output for mocking."""
-        return [('rev1', FileStatusExtension.Success),
-                ('rev2', FileStatusExtension.Blocked),
-                ('rev3', FileStatusExtension.CompileError),
-                ('rev4', FileStatusExtension.Failed),
-                ('rev5', FileStatusExtension.Missing)]
+        return [('rev1', FileStatusExtension.SUCCESS),
+                ('rev2', FileStatusExtension.BLOCKED),
+                ('rev3', FileStatusExtension.COMPILE_ERROR),
+                ('rev4', FileStatusExtension.FAILED),
+                ('rev5', FileStatusExtension.MISSING)]
 
     @run_in_test_environment()
     def test_sample_limit(self):

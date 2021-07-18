@@ -7,11 +7,11 @@ import abc
 import logging
 import typing as tp
 
-import matplotlib.axes as axes
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib import axes
 from scipy.stats import pearsonr, spearmanr
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler

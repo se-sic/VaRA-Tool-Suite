@@ -176,7 +176,7 @@ def get_processed_revisions_files(
         a list of file paths to correctly processed revision files
     """
     return __get_files_with_status(
-        project_name, result_file_type, [FileStatusExtension.Success],
+        project_name, result_file_type, [FileStatusExtension.SUCCESS],
         file_name_filter, only_newest
     )
 
@@ -204,7 +204,7 @@ def get_failed_revisions_files(
     """
     return __get_files_with_status(
         project_name, result_file_type,
-        [FileStatusExtension.Failed, FileStatusExtension.CompileError],
+        [FileStatusExtension.FAILED, FileStatusExtension.COMPILE_ERROR],
         file_name_filter, only_newest
     )
 
@@ -271,13 +271,13 @@ def __get_tag_for_revision(
         the status for the revision
     """
     if tag_blocked and is_revision_blocked(revision, project_cls):
-        return FileStatusExtension.Blocked
+        return FileStatusExtension.BLOCKED
 
     newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
     if result_file_type.is_correct_report_type(str(newest_res_file.name)):
         return ReportFilename(str(newest_res_file)).file_status
 
-    return FileStatusExtension.Missing
+    return FileStatusExtension.MISSING
 
 
 def get_tagged_revisions(
@@ -330,7 +330,7 @@ def get_tagged_revision(
     result_files = __get_result_files_dict(project_name, result_file_type)
 
     if revision not in result_files.keys():
-        return FileStatusExtension.Missing
+        return FileStatusExtension.MISSING
     return __get_tag_for_revision(
         revision, result_files[revision], project_cls, result_file_type
     )

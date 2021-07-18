@@ -7,7 +7,7 @@ import typing as tp
 from abc import abstractmethod
 from pathlib import Path
 
-import benchbuild.source as source
+from benchbuild import source
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
 from benchbuild.utils.actions import Step
@@ -89,6 +89,7 @@ class FunctionPEErrorWrapper():
             return self.__func(*args, **kwargs)
         except Exception as ex:  # pylint: disable=broad-except
             self.__handler(ex, self.__func)
+            return None
 
 
 def exec_func_with_pe_error_handler(
@@ -152,7 +153,7 @@ def create_default_compiler_error_handler(
     Retruns: a initialized PEErrorHandler
     """
     return create_default_error_handler(
-        project, report_type, FileStatusExtension.CompileError, output_folder,
+        project, report_type, FileStatusExtension.COMPILE_ERROR, output_folder,
         binary
     )
 
@@ -178,7 +179,7 @@ def create_default_analysis_failure_handler(
     Retruns: a initialized PEErrorHandler
     """
     return create_default_error_handler(
-        project, report_type, FileStatusExtension.Failed, output_folder, binary,
+        project, report_type, FileStatusExtension.FAILED, output_folder, binary,
         timeout_duration
     )
 

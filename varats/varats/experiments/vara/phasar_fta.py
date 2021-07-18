@@ -71,7 +71,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
                 binary_name=binary.name,
                 project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.Success
+                extension_type=FSE.SUCCESS
             )
 
             # Define output file name of failed runs
@@ -80,7 +80,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
                 binary_name=binary.name,
                 project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.Failed
+                extension_type=FSE.FAILED
             )
 
             # Combine the input bitcode file's name
@@ -132,7 +132,8 @@ class PhASARTaintAnalysis(VersionExperiment):
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            project, self.REPORT_TYPE, PhASARFTACheck.RESULT_FOLDER_TEMPLATE
+            project, self.REPORT_SPEC.main_report,
+            PhASARFTACheck.RESULT_FOLDER_TEMPLATE
         )
 
         project.cflags += [
@@ -150,12 +151,14 @@ class PhASARTaintAnalysis(VersionExperiment):
             project,
             bc_file_extensions,
             extraction_error_handler=create_default_compiler_error_handler(
-                project, self.REPORT_TYPE
+                project, self.REPORT_SPEC.main_report
             )
         )
 
         analysis_actions.append(
-            PhASARFTACheck(project, self.REPORT_TYPE, bc_file_extensions)
+            PhASARFTACheck(
+                project, self.REPORT_SPEC.main_report, bc_file_extensions
+            )
         )
         analysis_actions.append(actions.Clean(project))
 

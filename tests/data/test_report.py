@@ -20,19 +20,19 @@ class TestFileStatusExtension(unittest.TestCase):
     def test_status_extension(self):
         """"""
         self.assertEqual(
-            FileStatusExtension.Success.get_status_extension(), "success"
+            FileStatusExtension.SUCCESS.get_status_extension(), "success"
         )
 
     def test_physical_stati(self):
         """Check if the correct stati are marked as physical."""
         phy_stati = FileStatusExtension.get_physical_file_statuses()
 
-        self.assertTrue(FileStatusExtension.Success in phy_stati)
-        self.assertTrue(FileStatusExtension.Failed in phy_stati)
-        self.assertTrue(FileStatusExtension.CompileError in phy_stati)
+        self.assertTrue(FileStatusExtension.SUCCESS in phy_stati)
+        self.assertTrue(FileStatusExtension.FAILED in phy_stati)
+        self.assertTrue(FileStatusExtension.COMPILE_ERROR in phy_stati)
 
-        self.assertFalse(FileStatusExtension.Missing in phy_stati)
-        self.assertFalse(FileStatusExtension.Blocked in phy_stati)
+        self.assertFalse(FileStatusExtension.MISSING in phy_stati)
+        self.assertFalse(FileStatusExtension.BLOCKED in phy_stati)
 
         self.assertEqual(len(phy_stati), 3)
 
@@ -40,12 +40,12 @@ class TestFileStatusExtension(unittest.TestCase):
         """Check if the correct stati are marked as virtual."""
         virt_stati = FileStatusExtension.get_virtual_file_statuses()
 
-        self.assertFalse(FileStatusExtension.Success in virt_stati)
-        self.assertFalse(FileStatusExtension.Failed in virt_stati)
-        self.assertFalse(FileStatusExtension.CompileError in virt_stati)
+        self.assertFalse(FileStatusExtension.SUCCESS in virt_stati)
+        self.assertFalse(FileStatusExtension.FAILED in virt_stati)
+        self.assertFalse(FileStatusExtension.COMPILE_ERROR in virt_stati)
 
-        self.assertTrue(FileStatusExtension.Missing in virt_stati)
-        self.assertTrue(FileStatusExtension.Blocked in virt_stati)
+        self.assertTrue(FileStatusExtension.MISSING in virt_stati)
+        self.assertTrue(FileStatusExtension.BLOCKED in virt_stati)
 
         self.assertEqual(len(virt_stati), 2)
 
@@ -105,7 +105,7 @@ class TestReportFilename(unittest.TestCase):
         self.assertEqual(self.report_filename.commit_hash, "7bb9ef5f8c")
         self.assertEqual(self.report_filename.shorthand, "CR")
         self.assertEqual(
-            self.report_filename.file_status, FileStatusExtension.Success
+            self.report_filename.file_status, FileStatusExtension.SUCCESS
         )
 
     def test_get_uuid(self):
@@ -206,7 +206,7 @@ class TestBaseReport(unittest.TestCase):
             EmptyReport.get_file_name(
                 "foo", "foo", "7bb9ef5f8c",
                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                FileStatusExtension.Success
+                FileStatusExtension.SUCCESS
             ), self.success_filename
         )
 
@@ -214,7 +214,7 @@ class TestBaseReport(unittest.TestCase):
             EmptyReport.get_file_name(
                 "foo", "foo", "7bb9ef5f8c",
                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                FileStatusExtension.Failed
+                FileStatusExtension.FAILED
             ), self.fail_filename
         )
 

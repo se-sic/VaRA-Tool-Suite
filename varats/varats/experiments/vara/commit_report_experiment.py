@@ -98,7 +98,7 @@ class CRAnalysis(actions.Step):  # type: ignore
                 binary_name=binary.name,
                 project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.Success
+                extension_type=FSE.SUCCESS
             )
 
             opt_params = [
@@ -171,7 +171,7 @@ class CommitReportExperiment(VersionExperiment):
         analysis_actions += get_bc_cache_actions(
             project,
             extraction_error_handler=create_default_compiler_error_handler(
-                project, self.REPORT_TYPE
+                project, self.REPORT_SPEC.main_report
             )
         )
 
