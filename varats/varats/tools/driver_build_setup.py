@@ -250,6 +250,16 @@ def __build_setup_init(
     if source_location and not source_location.exists():
         source_location.mkdir(parents=True)
 
+    if Distro.get_current_distro():
+        if not tool.get_dependencies().has_dependencies_for_distro(
+            Distro.get_current_distro()
+        ):
+            missing_deps = tool.get_dependencies(
+            ).check_dependencies_for_distro(Distro.get_current_distro())
+            print(
+                f"The following dependencies have to be installed: {missing_deps}"
+            )
+
     tool.setup(
         source_location,
         install_prefix=__get_install_prefix(tool, raw_install_prefix),

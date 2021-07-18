@@ -6,6 +6,7 @@ import typing as tp
 from enum import Enum
 from pathlib import Path
 
+import distro
 from benchbuild.utils.cmd import apt, pacman
 
 from varats.tools.research_tools.vara_manager import (
@@ -38,6 +39,15 @@ class Distro(Enum):
     """Linux distributions supported by the tool suite."""
     DEBIAN = "debian"
     ARCH = "arch"
+
+    @staticmethod
+    def get_current_distro() -> tp.Optional[Distro]:
+        if distro.id() == "debian":
+            return Distro.DEBIAN
+        elif distro.id() == "arch":
+            return Distro.ARCH
+        else:
+            None
 
 
 _install_commands = {
