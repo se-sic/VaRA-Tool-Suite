@@ -309,7 +309,7 @@ class VersionExperiment(Experiment):  # type: ignore
             ]
 
             variants = list(
-                filter(lambda var: str(var[0]) not in bad_revisions, variants)
+                filter(lambda var: var[0] not in bad_revisions, variants)
             )
 
         if not variants:
