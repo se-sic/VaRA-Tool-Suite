@@ -29,7 +29,7 @@ from varats.revision.revisions import (
 class OptLevel(Enum):
     """Enum for the different optimization levels used to create the verifier
     report."""
-    value: int
+    value: int  # pylint: disable=invalid-name
 
     NO_OPT = 0
     OPT = 2

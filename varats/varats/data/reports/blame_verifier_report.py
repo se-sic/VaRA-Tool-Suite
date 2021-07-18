@@ -18,7 +18,7 @@ LOG = logging.getLogger(__name__)
 class ResultRegexForBlameVerifier(Enum):
     """An enum containing the available parsing options for BlameMDVerifier
     results."""
-    value: str
+    value: str  # pylint: disable=invalid-name
 
     SUCCESSES = r"\(\d+/"
     TOTAL = r"/\d+\)"

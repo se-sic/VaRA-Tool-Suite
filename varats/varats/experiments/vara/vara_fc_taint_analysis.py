@@ -10,8 +10,8 @@ regions of the cpp file.
 import typing as tp
 from typing import List
 
-import benchbuild.utils.actions as actions
 from benchbuild import Project
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import FileCheck, echo, rm
 from plumbum import ProcessExecutionError
 
@@ -147,6 +147,8 @@ class ParseAndValidateVaRAOutput(actions.Step):  # type: ignore
                         res_folder=result_folder, res_file=result_file
                     )
                 )
+
+        return actions.StepResult.OK
 
 
 class VaRAFileCheckTaintPropagation(VaRATaintPropagation):

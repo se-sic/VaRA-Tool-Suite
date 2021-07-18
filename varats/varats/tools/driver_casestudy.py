@@ -216,7 +216,7 @@ def __create_ext_parser(sub_parsers: _SubParsersAction) -> None:
     ext_parser.add_argument("case_study_path", help="Path to case_study")
     ext_parser.add_argument(
         "strategy",
-        action=enum_action(ExtenderStrategy),
+        action=enum_action(ExtenderStrategy, str.upper),
         help="Extender strategy"
     )
     ext_parser.add_argument(
@@ -387,7 +387,7 @@ def __casestudy_create_or_extend(
 
         # Setup default result folder
         if 'result_folder' not in args and args[
-            'strategy'] is ExtenderStrategy.smooth_plot:
+            'strategy'] is ExtenderStrategy.SMOOTH_PLOT:
             args['project'] = case_study.project_name
             args['result_folder'] = str(vara_cfg()['result_dir']
                                        ) + "/" + args['project']
@@ -492,8 +492,8 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
                 start_label=1,
                 default=1,
             )
-        except EOFError:
-            raise LookupError
+        except EOFError as exc:
+            raise LookupError from exc
         if commit_hash == "":
             print("Could not find processed commit hash.")
             raise LookupError
@@ -569,11 +569,11 @@ def __casestudy_cleanup(
     args: tp.Dict[str, tp.Any], parser: ArgumentParser
 ) -> None:
     cleanup_type = args['cleanup_type']
-    if cleanup_type == CleanupType.error:
+    if cleanup_type == CleanupType.ERROR:
         _remove_error_result_files()
-    if cleanup_type == CleanupType.old:
+    if cleanup_type == CleanupType.OLD:
         _remove_old_result_files()
-    if cleanup_type == CleanupType.regex:
+    if cleanup_type == CleanupType.REGEX:
         if not args['filter_regex']:
             parser.error("Specify a regex filter with --filter-regex or -f")
         _remove_result_files_by_regex(args['filter_regex'], args['silent'])
@@ -670,9 +670,9 @@ def _remove_result_files_by_regex(regex_filter: str, hide: bool) -> None:
 
 
 class CleanupType(Enum):
-    old = 0
-    error = 1
-    regex = 2
+    OLD = 0
+    ERROR = 1
+    REGEX = 2
 
 
 if __name__ == '__main__':

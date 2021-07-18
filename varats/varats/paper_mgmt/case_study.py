@@ -50,15 +50,15 @@ LOG = logging.Logger(__name__)
 
 class ExtenderStrategy(Enum):
     """Enum for all currently supported extender strategies."""
-    value: int
+    value: int  # pylint: disable=invalid-name
 
-    mixed = -1
-    simple_add = 1
-    distrib_add = 2
-    smooth_plot = 3
-    per_year_add = 4
-    release_add = 5
-    add_bugs = 6
+    MIXED = -1
+    SIMPLE_ADD = 1
+    DISTRIB_ADD = 2
+    SMOOTH_PLOT = 3
+    PER_YEAR_ADD = 4
+    RELEASE_ADD = 5
+    ADD_BUGS = 6
 
 
 def processed_revisions_for_case_study(
@@ -357,17 +357,17 @@ def extend_case_study(
         ext_strategy: determines how the case study should be extended
     """
 
-    if ext_strategy is ExtenderStrategy.simple_add:
+    if ext_strategy is ExtenderStrategy.SIMPLE_ADD:
         extend_with_extra_revs(case_study, cmap, **kwargs)
-    elif ext_strategy is ExtenderStrategy.distrib_add:
+    elif ext_strategy is ExtenderStrategy.DISTRIB_ADD:
         extend_with_distrib_sampling(case_study, cmap, **kwargs)
-    elif ext_strategy is ExtenderStrategy.smooth_plot:
+    elif ext_strategy is ExtenderStrategy.SMOOTH_PLOT:
         extend_with_smooth_revs(case_study, cmap, **kwargs)
-    elif ext_strategy is ExtenderStrategy.per_year_add:
+    elif ext_strategy is ExtenderStrategy.PER_YEAR_ADD:
         extend_with_revs_per_year(case_study, cmap, **kwargs)
-    elif ext_strategy is ExtenderStrategy.release_add:
+    elif ext_strategy is ExtenderStrategy.RELEASE_ADD:
         extend_with_release_revs(case_study, cmap, **kwargs)
-    elif ext_strategy is ExtenderStrategy.add_bugs:
+    elif ext_strategy is ExtenderStrategy.ADD_BUGS:
         extend_with_bug_commits(case_study, cmap, **kwargs)
 
 
