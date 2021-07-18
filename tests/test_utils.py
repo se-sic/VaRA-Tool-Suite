@@ -13,7 +13,10 @@ from benchbuild.source import Git, base
 
 import varats.utils.settings as settings
 from varats.tools.bb_config import create_new_bb_config
-from varats.base.configuration import ConfigurationImpl
+from varats.base.configuration import (
+    ConfigurationImpl,
+    ConfigurationOptionImpl
+)
 
 TEST_INPUTS_DIR = Path(os.path.dirname(__file__)) / 'TEST_INPUTS'
 
