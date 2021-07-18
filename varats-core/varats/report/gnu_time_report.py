@@ -5,7 +5,7 @@ import re
 from datetime import timedelta
 from pathlib import Path
 
-from varats.report.report import BaseReport, FileStatusExtension, MetaReport
+from varats.report.report import BaseReport, FileStatusExtension
 from varats.utils.util import static_vars
 
 
@@ -109,7 +109,7 @@ class TimeReport(BaseReport):
         Returns:
             name for the report file that can later be uniquly identified
         """
-        return MetaReport.get_file_name(
+        return BaseReport.get_file_name(
             TimeReport.SHORTHAND, project_name, binary_name, project_version,
             project_uuid, extension_type, file_ext
         )

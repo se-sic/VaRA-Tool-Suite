@@ -11,7 +11,7 @@ from varats.jupyterhelper.file import load_commit_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.report import ReportFilename
+from varats.report.report import BaseReport, ReportFilename
 from varats.revision.revisions import (
     get_failed_revisions_files,
     get_processed_revisions_files,

@@ -8,7 +8,7 @@ from varats.data.reports.empty_report import EmptyReport
 from varats.report.gnu_time_report import TimeReport as TR
 from varats.report.report import (
     FileStatusExtension,
-    MetaReport,
+    BaseReport,
     ReportFilename,
     ReportSpecification,
 )
@@ -113,12 +113,12 @@ class TestReportFilename(unittest.TestCase):
         self.assertEqual(self.report_filename.uuid, self.correct_UUID)
 
 
-class TestMetaReport(unittest.TestCase):
-    """Test basic MetaReport functionality."""
+class TestBaseReport(unittest.TestCase):
+    """Test basic BaseReport functionality."""
 
     @classmethod
     def setUpClass(cls):
-        """Setup file and CommitReport."""
+        """Setup report file paths."""
         cls.success_filename_cr = (
             "CR-foo-foo-7bb9ef5f8c_"
             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
@@ -138,16 +138,16 @@ class TestMetaReport(unittest.TestCase):
     def test_report_type_lookup(self):
         """Check if we can lookup report types with file names."""
         self.assertEqual(
-            MetaReport.lookup_report_type_from_file_name(
+            BaseReport.lookup_report_type_from_file_name(
                 self.success_filename_cr
-            ), MetaReport.REPORT_TYPES['CommitReport']
+            ), BaseReport.REPORT_TYPES['CommitReport']
         )
         self.assertEqual(
-            MetaReport.
+            BaseReport.
             lookup_report_type_from_file_name("some_wrong_file_path"), None
         )
         self.assertEqual(
-            MetaReport.lookup_report_type_from_file_name(
+            BaseReport.lookup_report_type_from_file_name(
                 "NONEXISTINGSHORTHAND-foo-foo-7bb9ef5f8c_"
                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
                 "success.txt"
@@ -157,11 +157,11 @@ class TestMetaReport(unittest.TestCase):
     def test_report_type_lookup_by_shorthand(self):
         """Check if we can lookup report types with a report shorthand."""
         self.assertEqual(
-            MetaReport.lookup_report_type_by_shorthand("CR"),
-            MetaReport.REPORT_TYPES['CommitReport']
+            BaseReport.lookup_report_type_by_shorthand("CR"),
+            BaseReport.REPORT_TYPES['CommitReport']
         )
         self.assertEqual(
-            MetaReport.lookup_report_type_by_shorthand("NONEXISTINGSHORTHAND"),
+            BaseReport.lookup_report_type_by_shorthand("NONEXISTINGSHORTHAND"),
             None
         )
 
@@ -178,7 +178,7 @@ class TestMetaReport(unittest.TestCase):
         )
 
     def test_file_status(self):
-        """Check if the correct file status is returned for MetaReport names."""
+        """Check if the correct file status is returned for BaseReport names."""
         self.assertTrue(
             ReportFilename(self.success_filename).has_status_success()
         )

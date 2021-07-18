@@ -27,7 +27,7 @@ from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
-from varats.report.report import FileStatusExtension, MetaReport, ReportFilename
+from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.utils.cli_util import (
     cli_list_choice,
@@ -88,7 +88,7 @@ def __create_status_parser(sub_parsers: _SubParsersAction) -> None:
             "Provide a report name to "
             "select which files are considered for the status"
         ),
-        choices=MetaReport.REPORT_TYPES.keys(),
+        choices=BaseReport.REPORT_TYPES.keys(),
         type=str,
         default=".*"
     )
@@ -278,7 +278,7 @@ def __create_package_parser(sub_parsers: _SubParsersAction) -> None:
             "Provide a report name to "
             "select which files are considered for the status"
         ),
-        choices=MetaReport.REPORT_TYPES.keys(),
+        choices=BaseReport.REPORT_TYPES.keys(),
         type=str,
         nargs="*",
         default=[]
@@ -290,7 +290,7 @@ def __create_view_parser(sub_parsers: _SubParsersAction) -> None:
     view_parser.add_argument(
         "report_type",
         help="Report type of the result files.",
-        choices=MetaReport.REPORT_TYPES.keys(),
+        choices=BaseReport.REPORT_TYPES.keys(),
         type=str
     )
     view_parser.add_argument(
@@ -437,7 +437,7 @@ def __casestudy_package(
 
 
 def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
-    result_file_type = MetaReport.REPORT_TYPES[args["report_type"]]
+    result_file_type = BaseReport.REPORT_TYPES[args["report_type"]]
     project_name = args["project"]
     if "commit_hash" not in args:
         # Ask the user to provide a commit hash
@@ -502,7 +502,7 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
 
 
 def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
-    result_file_type = MetaReport.REPORT_TYPES[args["report_type"]]
+    result_file_type = BaseReport.REPORT_TYPES[args["report_type"]]
     project_name = args["project"]
 
     try:

@@ -1,6 +1,6 @@
 """Report that simply takes the output of an phasar analysis."""
 
-from varats.report.report import BaseReport, FileStatusExtension, MetaReport
+from varats.report.report import BaseReport, FileStatusExtension
 
 
 class EnvTraceReport(BaseReport):
@@ -33,7 +33,7 @@ class EnvTraceReport(BaseReport):
         Returns:
             name for the report file that can later be uniquly identified
         """
-        return MetaReport.get_file_name(
+        return BaseReport.get_file_name(
             EnvTraceReport.SHORTHAND, project_name, binary_name,
             project_version, project_uuid, extension_type, file_ext
         )

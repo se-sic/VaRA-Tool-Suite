@@ -1,6 +1,6 @@
 """Module for all reports generated for taint flow analyses."."""
 
-from varats.report.report import BaseReport, FileStatusExtension, MetaReport
+from varats.report.report import BaseReport, FileStatusExtension
 
 
 class TaintPropagationReport(BaseReport):
@@ -34,7 +34,7 @@ class TaintPropagationReport(BaseReport):
         Returns:
             name for the report file that can later be uniquly identified
         """
-        return MetaReport.get_file_name(
+        return BaseReport.get_file_name(
             TaintPropagationReport.SHORTHAND, project_name, binary_name,
             project_version, project_uuid, extension_type, file_ext
         )

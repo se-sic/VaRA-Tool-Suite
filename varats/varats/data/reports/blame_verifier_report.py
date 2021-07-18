@@ -5,12 +5,7 @@ import typing as tp
 from enum import Enum
 from pathlib import Path
 
-from varats.report.report import (
-    BaseReport,
-    MetaReport,
-    FileStatusExtension,
-    ReportFilename,
-)
+from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
 
 LOG = logging.getLogger(__name__)
 
@@ -155,7 +150,7 @@ class BlameVerifierReportNoOpt(BlameVerifierReportParserMixin, BaseReport):
         Returns:
             name for the report file that can later be uniquely identified
         """
-        return MetaReport.get_file_name(
+        return ReportFilename.get_file_name(
             BlameVerifierReportNoOpt.SHORTHAND, project_name, binary_name,
             project_version, project_uuid, extension_type, file_ext
         )
@@ -204,7 +199,7 @@ class BlameVerifierReportOpt(BlameVerifierReportParserMixin, BaseReport):
         Returns:
             name for the report file that can later be uniquely identified
         """
-        return MetaReport.get_file_name(
+        return ReportFilename.get_file_name(
             BlameVerifierReportOpt.SHORTHAND, project_name, binary_name,
             project_version, project_uuid, extension_type, file_ext
         )
@@ -254,7 +249,7 @@ class BlameVerifierReportNoOptTBAA(BlameVerifierReportParserMixin, BaseReport):
         Returns:
             name for the report file that can later be uniquely identified
         """
-        return MetaReport.get_file_name(
+        return BaseReport.get_file_name(
             BlameVerifierReportNoOptTBAA.SHORTHAND, project_name, binary_name,
             project_version, project_uuid, extension_type, file_ext
         )

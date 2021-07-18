@@ -11,7 +11,7 @@ import pygit2
 import yaml
 
 from varats.base.version_header import VersionHeader
-from varats.report.report import BaseReport, FileStatusExtension, MetaReport
+from varats.report.report import BaseReport, FileStatusExtension
 from varats.utils.git_util import map_commits, CommitRepoPair, CommitLookupTy
 
 
@@ -339,7 +339,7 @@ class BlameReport(BaseReport):
         Returns:
             name for the report file that can later be uniquly identified
         """
-        return MetaReport.get_file_name(
+        return BaseReport.get_file_name(
             BlameReport.SHORTHAND, project_name, binary_name, project_version,
             project_uuid, extension_type, file_ext
         )
