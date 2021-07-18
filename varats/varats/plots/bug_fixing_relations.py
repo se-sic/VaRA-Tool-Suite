@@ -24,6 +24,7 @@ LOG = logging.getLogger(__name__)
 
 
 class NodeType(Enum):
+    """Enum for different Node types in the chord plots."""
 
     def __init__(self, color: str):
         self.color = color
@@ -41,6 +42,7 @@ class NodeType(Enum):
 
 
 class DiffOccurrence(Enum):
+    """Enum indicating on which side of a diff an diff entry occurrs."""
     NONE = 0
     LEFT = 1
     RIGHT = 2
@@ -48,6 +50,7 @@ class DiffOccurrence(Enum):
 
 
 class DiffEntry():
+    """Class representing an element in a diff."""
 
     def __init__(
         self, fixing_commit: str, occurrence: DiffOccurrence,
