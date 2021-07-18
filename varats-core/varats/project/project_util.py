@@ -167,14 +167,14 @@ def is_git_source(source: bb.source.FetchableSource) -> bool:
 
 class BinaryType(Enum):
     """Enum for different binary types."""
-    value: int
+    value: int  # pylint: disable=invalid-name
 
-    executable = 1
-    shared_library = 2
-    static_library = 3
+    EXECUTABLE = 1
+    SHARED_LIBRARY = 2
+    STATIC_LIBRARY = 3
 
     def __str__(self) -> str:
-        return str(self.name)
+        return str(self.name.lower())
 
 
 class ProjectBinaryWrapper():
@@ -182,7 +182,7 @@ class ProjectBinaryWrapper():
     Wraps project binaries which get generated during compilation.
 
     >>> ProjectBinaryWrapper("binary_name", "path/to/binary", \
-                             BinaryType.executable)
+                             BinaryType.EXECUTABLE)
     (binary_name: path/to/binary | executable)
     """
 
@@ -223,13 +223,13 @@ def wrap_paths_to_binaries_with_name(
     Generates a wrapper for project binaries.
 
     >>> wrap_paths_to_binaries_with_name([("fooer", "src/foo", \
-                                           BinaryType.executable)])
+                                           BinaryType.EXECUTABLE)])
     [(fooer: src/foo | executable)]
 
     >>> wrap_paths_to_binaries_with_name([("fooer", "src/foo", \
-                                           BinaryType.executable), \
+                                           BinaryType.EXECUTABLE), \
                                           ("barer", "src/bar", \
-                                           BinaryType.shared_library)])
+                                           BinaryType.SHARED_LIBRARY)])
     [(fooer: src/foo | executable), (barer: src/bar | shared_library)]
     """
     return [ProjectBinaryWrapper(x[0], Path(x[1]), x[2]) for x in binaries]
@@ -242,14 +242,14 @@ def wrap_paths_to_binaries(
     Generates a wrapper for project binaries, automatically infering the binary
     name.
 
-    >>> wrap_paths_to_binaries([("src/foo", BinaryType.executable)])
+    >>> wrap_paths_to_binaries([("src/foo", BinaryType.EXECUTABLE)])
     [(foo: src/foo | executable)]
 
-    >>> wrap_paths_to_binaries([("src/foo.so", BinaryType.shared_library)])
+    >>> wrap_paths_to_binaries([("src/foo.so", BinaryType.SHARED_LIBRARY)])
     [(foo: src/foo.so | shared_library)]
 
-    >>> wrap_paths_to_binaries([("src/foo", BinaryType.static_library), \
-                                ("src/bar",BinaryType.executable)])
+    >>> wrap_paths_to_binaries([("src/foo", BinaryType.STATIC_LIBRARY), \
+                                ("src/bar",BinaryType.EXECUTABLE)])
     [(foo: src/foo | static_library), (bar: src/bar | executable)]
     """
     return wrap_paths_to_binaries_with_name([

@@ -13,6 +13,7 @@ from plumbum import local
 from PyQt5.QtCore import QProcess
 
 from varats.plot.plot_utils import check_required_args
+from varats.tools.research_tools.cmake_util import set_cmake_var
 from varats.tools.research_tools.research_tool import (
     CodeBase,
     ResearchTool,
@@ -24,7 +25,6 @@ from varats.tools.research_tools.vara_manager import (
     BuildType,
     ProcessManager,
     run_process_with_output,
-    set_vara_cmake_variables,
 )
 from varats.utils.exceptions import ProcessTerminatedError
 from varats.utils.logger_util import log_without_linesep
@@ -34,6 +34,14 @@ if tp.TYPE_CHECKING:
     from varats.containers import containers  # pylint: disable=W0611
 
 LOG = logging.getLogger(__name__)
+
+
+def set_vara_cmake_variables(
+    install_prefix: str,
+    post_out: tp.Callable[[str], None] = lambda x: None
+) -> None:
+    """Set all wanted/needed cmake flags."""
+    set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix, post_out)
 
 
 class VaRACodeBase(CodeBase):

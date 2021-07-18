@@ -34,7 +34,7 @@ from varats.project.project_util import get_project_cls_by_name
 from varats.provider.bug.bug import RawBug
 from varats.provider.bug.bug_provider import BugProvider
 from varats.provider.release.release_provider import ReleaseProvider
-from varats.report.report import FileStatusExtension, MetaReport, ReportFilename
+from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
 from varats.revision.revisions import (
     get_failed_revisions,
     get_processed_revisions,
@@ -62,7 +62,7 @@ class ExtenderStrategy(Enum):
 
 
 def processed_revisions_for_case_study(
-    case_study: CaseStudy, result_file_type: MetaReport
+    case_study: CaseStudy, result_file_type: BaseReport
 ) -> tp.List[str]:
     """
     Computes all revisions of this case study that have been processed.
@@ -85,7 +85,7 @@ def processed_revisions_for_case_study(
 
 
 def failed_revisions_for_case_study(
-    case_study: CaseStudy, result_file_type: MetaReport
+    case_study: CaseStudy, result_file_type: BaseReport
 ) -> tp.List[str]:
     """
     Computes all revisions of this case study that have failed.
@@ -109,7 +109,7 @@ def failed_revisions_for_case_study(
 
 def get_revisions_status_for_case_study(
     case_study: CaseStudy,
-    result_file_type: MetaReport,
+    result_file_type: BaseReport,
     stage_num: int = -1,
     tag_blocked: bool = True
 ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
@@ -145,11 +145,11 @@ def get_revisions_status_for_case_study(
             if not found:
                 if tag_blocked and is_revision_blocked(short_rev, project_cls):
                     filtered_revisions.append(
-                        (short_rev, FileStatusExtension.Blocked)
+                        (short_rev, FileStatusExtension.BLOCKED)
                     )
                 else:
                     filtered_revisions.append(
-                        (short_rev, FileStatusExtension.Missing)
+                        (short_rev, FileStatusExtension.MISSING)
                     )
         return filtered_revisions
 
@@ -166,7 +166,7 @@ def get_revisions_status_for_case_study(
 def get_revision_status_for_case_study(
     case_study: CaseStudy,
     revision: str,
-    result_file_type: MetaReport,
+    result_file_type: BaseReport,
 ) -> FileStatusExtension:
     """
     Computes the file status for the given revision in this case study.
@@ -188,7 +188,7 @@ def get_revision_status_for_case_study(
 
 
 def get_newest_result_files_for_case_study(
-    case_study: CaseStudy, result_dir: Path, report_type: MetaReport
+    case_study: CaseStudy, result_dir: Path, report_type: BaseReport
 ) -> tp.List[Path]:
     """
     Return all result files of a specific type that belong to a given case
@@ -599,7 +599,7 @@ def extend_with_bug_commits(
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
     """
-    report_type: MetaReport = MetaReport.REPORT_TYPES[kwargs['report_type']]
+    report_type: BaseReport = BaseReport.REPORT_TYPES[kwargs['report_type']]
     project_cls: tp.Type[Project] = get_project_cls_by_name(
         case_study.project_name
     )

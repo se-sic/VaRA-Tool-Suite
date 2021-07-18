@@ -9,13 +9,12 @@ from os.path import isdir
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import matplotlib.style as style
 import numpy as np
 import pandas as pd
 import plumbum as pb
 from benchbuild.utils.cmd import mkdir
 from graphviz import Digraph  # type: ignore
-from matplotlib import cm
+from matplotlib import style, cm
 from plotly import graph_objs as go  # type: ignore
 from plotly import io as pio  # type: ignore
 
@@ -1358,7 +1357,8 @@ class BlameInteractionDegreeMultiLib(BlameDegree):
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        if 'base_lib' and 'inter_lib' not in self.plot_kwargs:
+        if 'base_lib' not in self.plot_kwargs or \
+                'inter_lib' not in self.plot_kwargs:
             LOG.warning("No library names were provided.")
             raise PlotDataEmpty
 

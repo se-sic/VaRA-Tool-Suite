@@ -164,7 +164,7 @@ def __collect_via_version(
     # Check versions
     for cve in cve_list:
         for version in sorted(tag_list.keys()):
-            if all([version > x for x in cve.vulnerable_versions]):
+            if all(version > x for x in cve.vulnerable_versions):
                 results[tag_list[version]['commit']]['cve'].add(cve)
                 break
 
