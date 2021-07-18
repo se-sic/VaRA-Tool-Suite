@@ -8,12 +8,14 @@ import typing as tp
 class ConfigurationOption():
     """A configuration option for a software project."""
 
+    @abc.abstractproperty
     @abc.abstractmethod
     def name(self) -> str:
         """The option name, refering to the feature from which this options
         stems."""
         raise NotImplementedError  # pragma: no cover
 
+    @abc.abstractproperty
     @abc.abstractmethod
     def value(self) -> tp.Any:
         """Currently set value of the option."""
