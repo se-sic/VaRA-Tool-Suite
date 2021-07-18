@@ -13,7 +13,7 @@ from varats.project.project_util import (
     get_local_project_git_path,
     get_primary_project_source,
 )
-from varats.utils.git_util import get_current_branch
+from varats.utils.git_util import get_current_branch, FullCommitHash, CommitHash
 
 LOG = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class CommitMap():
             slices = line.strip().split(', ')
             self.__hash_to_id[slices[1]] = int(slices[0])
 
-    def time_id(self, c_hash: str) -> int:
+    def time_id(self, c_hash: FullCommitHash) -> int:
         """
         Convert a commit hash to a time id that allows a total order on the
         commits, based on the c_map, e.g., created from the analyzed git
@@ -39,9 +39,9 @@ class CommitMap():
         Returns:
             unique time-ordered id
         """
-        return tp.cast(int, self.__hash_to_id[c_hash])
+        return tp.cast(int, self.__hash_to_id[c_hash.hash])
 
-    def short_time_id(self, c_hash: str) -> int:
+    def short_time_id(self, c_hash: CommitHash) -> int:
         """
         Convert a short commit hash to a time id that allows a total order on
         the commits, based on the c_map, e.g., created from the analyzed git
@@ -56,14 +56,14 @@ class CommitMap():
         Returns:
             unique time-ordered id
         """
-        subtrie = self.__hash_to_id.items(prefix=c_hash)
+        subtrie = self.__hash_to_id.items(prefix=c_hash.hash)
         if subtrie:
             if len(subtrie) > 1:
-                LOG.warning(f"Short commit hash is ambiguous: {c_hash}.")
+                LOG.warning(f"Short commit hash is ambiguous: {c_hash.hash}.")
             return tp.cast(int, subtrie[0][1])
         raise KeyError
 
-    def c_hash(self, time_id: int) -> str:
+    def c_hash(self, time_id: int) -> FullCommitHash:
         """
         Get the hash belonging to the time id.
 
@@ -75,7 +75,7 @@ class CommitMap():
         """
         for c_hash, t_id in self.__hash_to_id.items():
             if t_id == time_id:
-                return tp.cast(str, c_hash)
+                return FullCommitHash(tp.cast(str, c_hash))
         raise KeyError
 
     def mapping_items(self) -> tp.ItemsView[str, int]:

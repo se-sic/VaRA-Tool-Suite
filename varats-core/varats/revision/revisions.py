@@ -17,11 +17,16 @@ from varats.project.project_util import (
     get_project_cls_by_name,
     get_primary_project_source,
 )
-from varats.report.report import FileStatusExtension, ReportFilename, BaseReport
+from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
+from varats.utils.git_util import CommitHash, FullCommitHash
 from varats.utils.settings import vara_cfg
 
+CommitHashTy = tp.TypeVar("CommitHashTy", bound=CommitHash)
 
-def is_revision_blocked(revision: str, project_cls: tp.Type[Project]) -> bool:
+
+def is_revision_blocked(
+    revision: CommitHash, project_cls: tp.Type[Project]
+) -> bool:
     """
     Checks if a revision is blocked on a given project.
 
@@ -34,13 +39,13 @@ def is_revision_blocked(revision: str, project_cls: tp.Type[Project]) -> bool:
     """
     source = get_primary_project_source(project_cls.NAME)
     if hasattr(source, "is_blocked_revision"):
-        return tp.cast(bool, source.is_blocked_revision(revision)[0])
+        return tp.cast(bool, source.is_blocked_revision(revision.hash)[0])
     return False
 
 
 def filter_blocked_revisions(
-    revisions: tp.List[str], project_cls: tp.Type[Project]
-) -> tp.List[str]:
+    revisions: tp.List[CommitHashTy], project_cls: tp.Type[Project]
+) -> tp.List[CommitHashTy]:
     """
     Filter out all blocked revisions.
 
@@ -58,7 +63,7 @@ def filter_blocked_revisions(
 
 def __get_result_files_dict(
     project_name: str, result_file_type: BaseReport
-) -> tp.Dict[str, tp.List[Path]]:
+) -> tp.Dict[CommitHash, tp.List[Path]]:
     """
     Returns a dict that maps the commit_hash to a list of all result files, of
     type result_file_type, for that commit.
@@ -69,7 +74,7 @@ def __get_result_files_dict(
     """
     res_dir = Path(f"{vara_cfg()['result_dir']}/{project_name}/")
 
-    result_files: tp.DefaultDict[str, tp.List[Path]] = defaultdict(
+    result_files: tp.DefaultDict[CommitHash, tp.List[Path]] = defaultdict(
         list
     )  # maps commit hash -> list of res files (success or fail)
     if not res_dir.exists():
@@ -209,8 +214,9 @@ def get_failed_revisions_files(
     )
 
 
-def get_processed_revisions(project_name: str,
-                            result_file_type: BaseReport) -> tp.List[str]:
+def get_processed_revisions(
+    project_name: str, result_file_type: BaseReport
+) -> tp.List[CommitHash]:
     """
     Calculates a list of revisions of a project that have already been processed
     successfully.
@@ -229,7 +235,7 @@ def get_processed_revisions(project_name: str,
 
 
 def get_failed_revisions(project_name: str,
-                         result_file_type: BaseReport) -> tp.List[str]:
+                         result_file_type: BaseReport) -> tp.List[CommitHash]:
     """
     Calculates a list of revisions of a project that have failed.
 
@@ -252,7 +258,7 @@ def get_failed_revisions(project_name: str,
 
 
 def __get_tag_for_revision(
-    revision: str,
+    revision: CommitHash,
     file_list: tp.List[Path],
     project_cls: tp.Type[Project],
     result_file_type: BaseReport,
@@ -284,7 +290,7 @@ def get_tagged_revisions(
     project_cls: tp.Type[Project],
     result_file_type: BaseReport,
     tag_blocked: bool = True
-) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
+) -> tp.List[tp.Tuple[CommitHash, FileStatusExtension]]:
     """
     Calculates a list of revisions of a project tagged with the file status. If
     two files exists the newest is considered for detecting the status.
@@ -312,7 +318,7 @@ def get_tagged_revisions(
 
 
 def get_tagged_revision(
-    revision: str, project_name: str, result_file_type: BaseReport
+    revision: CommitHash, project_name: str, result_file_type: BaseReport
 ) -> FileStatusExtension:
     """
     Calculates the file status for a revision. If two files exists the newest is

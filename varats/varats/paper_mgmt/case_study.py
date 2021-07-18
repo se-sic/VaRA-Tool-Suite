@@ -44,6 +44,7 @@ from varats.revision.revisions import (
     is_revision_blocked,
     get_processed_revisions_files,
 )
+from varats.utils.git_util import CommitHash, FullCommitHash
 
 LOG = logging.Logger(__name__)
 
@@ -63,7 +64,7 @@ class ExtenderStrategy(Enum):
 
 def processed_revisions_for_case_study(
     case_study: CaseStudy, result_file_type: BaseReport
-) -> tp.List[str]:
+) -> tp.List[CommitHash]:
     """
     Computes all revisions of this case study that have been processed.
 
@@ -74,19 +75,18 @@ def processed_revisions_for_case_study(
     Returns:
         a list of processed revisions
     """
-    total_processed_revisions = set(
-        get_processed_revisions(case_study.project_name, result_file_type)
+    total_processed_revisions = get_processed_revisions(
+        case_study.project_name, result_file_type
     )
 
     return [
-        rev for rev in case_study.revisions
-        if rev[:10] in total_processed_revisions
+        rev for rev in case_study.revisions if rev in total_processed_revisions
     ]
 
 
 def failed_revisions_for_case_study(
     case_study: CaseStudy, result_file_type: BaseReport
-) -> tp.List[str]:
+) -> tp.List[CommitHash]:
     """
     Computes all revisions of this case study that have failed.
 
@@ -97,13 +97,12 @@ def failed_revisions_for_case_study(
     Returns:
         a list of failed revisions
     """
-    total_failed_revisions = set(
-        get_failed_revisions(case_study.project_name, result_file_type)
+    total_failed_revisions = get_failed_revisions(
+        case_study.project_name, result_file_type
     )
 
     return [
-        rev for rev in case_study.revisions
-        if rev[:10] in total_failed_revisions
+        rev for rev in case_study.revisions if rev in total_failed_revisions
     ]
 
 
@@ -112,7 +111,7 @@ def get_revisions_status_for_case_study(
     result_file_type: BaseReport,
     stage_num: int = -1,
     tag_blocked: bool = True
-) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
+) -> tp.List[tp.Tuple[CommitHash, FileStatusExtension]]:
     """
     Computes the file status for all revisions in this case study.
 
@@ -131,14 +130,14 @@ def get_revisions_status_for_case_study(
     )
 
     def filtered_tagged_revs(
-        rev_provider: tp.Iterable[str]
-    ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
+        rev_provider: tp.Iterable[FullCommitHash]
+    ) -> tp.List[tp.Tuple[CommitHash, FileStatusExtension]]:
         filtered_revisions = []
         for rev in rev_provider:
+            short_rev = rev.to_short_commit_hash()
             found = False
-            short_rev = rev[:10]
             for tagged_rev in tagged_revisions:
-                if short_rev == tagged_rev[0][:10]:
+                if short_rev == tagged_rev[0]:
                     filtered_revisions.append(tagged_rev)
                     found = True
                     break
@@ -165,7 +164,7 @@ def get_revisions_status_for_case_study(
 
 def get_revision_status_for_case_study(
     case_study: CaseStudy,
-    revision: str,
+    revision: CommitHash,
     result_file_type: BaseReport,
 ) -> FileStatusExtension:
     """
@@ -202,7 +201,7 @@ def get_newest_result_files_for_case_study(
     Returns:
         list of result file paths
     """
-    files_to_store: tp.Dict[str, Path] = dict()
+    files_to_store: tp.Dict[CommitHash, Path] = dict()
 
     result_dir /= case_study.project_name
     if not result_dir.exists():
@@ -386,10 +385,9 @@ def extend_with_extra_revs(
     extra_revs = kwargs['extra_revs']
     merge_stage = kwargs['merge_stage']
 
-    new_rev_items = [
-        rev_item for rev_item in cmap.mapping_items()
-        if any(map(rev_item[0].startswith, extra_revs))
-    ]
+    new_rev_items = [(FullCommitHash(rev), idx)
+                     for rev, idx in cmap.mapping_items()
+                     if any(map(rev.startswith, extra_revs))]
 
     case_study.include_revisions(new_rev_items, merge_stage, True)
 
@@ -444,12 +442,14 @@ def extend_with_revs_per_year(
     last_commit = repo[repo.head.target]
     revs_year_sep = kwargs['revs_year_sep']
 
-    commits: tp.DefaultDict[int, tp.List[str]] = defaultdict(
+    commits: tp.DefaultDict[int, tp.List[FullCommitHash]] = defaultdict(
         list
     )  # maps year -> list of commits
     for commit in repo.walk(last_commit.id, pygit2.GIT_SORT_TIME):
         commit_date = datetime.utcfromtimestamp(commit.commit_time)
-        commits[commit_date.year].append(str(commit.id))
+        commits[commit_date.year].append(
+            FullCommitHash.from_pygit_commit(commit)
+        )
 
     new_rev_items = []  # new revisions that get added to to case_study
     for year, commits_in_year in commits.items():
@@ -488,7 +488,8 @@ def extend_with_distrib_sampling(
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
     """
-    is_blocked: tp.Callable[[str, tp.Type[tp.Any]], bool] = lambda rev, _: False
+    is_blocked: tp.Callable[[CommitHash, tp.Type[Project]],
+                            bool] = lambda rev, _: False
     if kwargs["ignore_blocked"]:
         is_blocked = is_revision_blocked
 
@@ -496,14 +497,14 @@ def extend_with_distrib_sampling(
     # of the list is the same as the distribution over the commits age history
     project_cls = get_project_cls_by_name(case_study.project_name)
     revision_list = [
-        rev_item
-        for rev_item in sorted(list(cmap.mapping_items()), key=lambda x: x[1])
+        (FullCommitHash(rev), idx)
+        for rev, idx in sorted(list(cmap.mapping_items()), key=lambda x: x[1])
         if not case_study.
-        has_revision_in_stage(rev_item[0], kwargs['merge_stage']) and
-        not is_blocked(rev_item[0], project_cls)
+        has_revision_in_stage(CommitHash(rev), kwargs['merge_stage']) and
+        not is_blocked(CommitHash(rev), project_cls)
     ]
 
-    sampling_method = kwargs['distribution']
+    sampling_method: NormalSamplingMethod = kwargs['distribution']
 
     case_study.include_revisions(
         sampling_method.sample_n(revision_list, kwargs['num_rev']),
@@ -572,7 +573,7 @@ def extend_with_release_revs(
     """
     project_cls: tp.Type[Project] = get_project_cls_by_name(kwargs['project'])
     release_provider = ReleaseProvider.get_provider_for_project(project_cls)
-    release_revisions: tp.List[str] = [
+    release_revisions: tp.List[FullCommitHash] = [
         revision for revision, release in
         release_provider.get_release_revisions(kwargs['release_type'])
     ]
@@ -636,7 +637,7 @@ def extend_with_bug_commits(
         )
         bugs = bug_provider.find_raw_bugs()
 
-    revisions: tp.Set[str] = set()
+    revisions: tp.Set[FullCommitHash] = set()
     for bug in bugs:
         revisions.add(bug.fixing_commit)
         revisions.update(bug.introducing_commits)
