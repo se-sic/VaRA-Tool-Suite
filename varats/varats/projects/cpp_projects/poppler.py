@@ -13,11 +13,10 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
-from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
 
-class Poppler(bb.Project, CVEProviderHook):  # type: ignore
+class Poppler(bb.Project):  # type: ignore
     """Poppler is a free software utility library for rendering Portable
     Document Format documents."""
 
