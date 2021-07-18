@@ -1,7 +1,7 @@
 """Bug Classes used by bug_provider."""
 
 import typing as tp
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pydriller
 import pygit2
@@ -296,9 +296,13 @@ def _find_corresponding_pygit_suspect_tuple(
         suspect_commits = set()
         for introducing_set in blame_dict.values():
             for introducing_id in introducing_set:
+                issue_date = issue_event.issue.created_at.astimezone(
+                    timezone.utc
+                )
                 introduction_date = pydrill_repo.get_commit(
                     introducing_id
-                ).committer_date
+                ).committer_date.astimezone(timezone.utc)
+
                 if introduction_date > issue_date:  # commit is a suspect
                     suspect_commits.add(pygit_repo.get(introducing_id))
                 else:
