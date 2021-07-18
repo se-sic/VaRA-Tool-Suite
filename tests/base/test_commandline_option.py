@@ -3,11 +3,8 @@
 import unittest
 
 import varats.base.commandline_option as CO
-from varats.base.configuration import (
-    Configuration,
-    ConfigurationImpl
-)
 from tests.test_utils import ConfigurationHelper
+from varats.base.configuration import Configuration, ConfigurationImpl
 
 
 class TestCommandlineOptionSwitch(unittest.TestCase):

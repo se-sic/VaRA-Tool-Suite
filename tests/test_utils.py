@@ -12,11 +12,8 @@ import plumbum as pb
 from benchbuild.source import Git, base
 
 import varats.utils.settings as settings
+from varats.base.configuration import ConfigurationImpl, ConfigurationOptionImpl
 from varats.tools.bb_config import create_new_bb_config
-from varats.base.configuration import (
-    ConfigurationImpl,
-    ConfigurationOptionImpl
-)
 
 TEST_INPUTS_DIR = Path(os.path.dirname(__file__)) / 'TEST_INPUTS'
 
@@ -167,9 +164,7 @@ class DummyGit(Git):
 
 
 class ConfigurationHelper:
-    """
-    This class is a helper for various tests.
-    """
+    """This class is a helper for various tests."""
 
     @staticmethod
     def create_test_config() -> 'ConfigurationImpl':
