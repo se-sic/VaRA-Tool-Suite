@@ -91,9 +91,12 @@ class DummyPydrillerRepo(pydriller.Git):  # noqa
     }
 
     def __init__(self, path: str) -> None:  # noqa
-        """Overrides superclass constructor in order to gain Independence of a
-        valid Git Repo path."""
+        # "Mock" repo by not calling super
         self.path = path
+
+    def __del__(self) -> None:
+        # Override because we did not call super in constructor
+        pass
 
     @staticmethod
     def fix_firstbug() -> pydriller.Commit:
