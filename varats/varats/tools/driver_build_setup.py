@@ -14,6 +14,7 @@ from varats.gui.buildsetup_window import BuildSetup
 from varats.tools.research_tools.research_tool import (
     ResearchTool,
     SpecificCodeBase,
+    Distro,
 )
 from varats.tools.research_tools.vara import VaRACodeBase
 from varats.tools.research_tools.vara_manager import BuildType
