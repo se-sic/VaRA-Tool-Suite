@@ -42,6 +42,13 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
     Find the main repo on github: https://github.com/wogscpar/SZZUnleashed
     """
 
+    __DEPENDENCIES = Dependencies({
+        Distro.DEBIAN: ["python", "default-jdk", "gradle"]
+    })
+    __DEPENDENCIES = Dependencies({
+        Distro.ARCH: ["python", "jre-openjdk", "jdk-openjdk", "gradle"]
+    })
+
     def __init__(self, base_dir: Path) -> None:
         super().__init__(
             "SZZUnleashed", [BuildType.DEV], SZZUnleashedCodeBase(base_dir)
