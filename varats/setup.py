@@ -28,6 +28,7 @@ setup(
         "Jinja2>=3.0.1",
         "kaleido>=0.2.1",
         "matplotlib>=3.1.2",
+        "numpy>=1.20",
         "packaging>=20.1",
         "pandas>=0.22.0",
         "plotly>=4.14.1",
