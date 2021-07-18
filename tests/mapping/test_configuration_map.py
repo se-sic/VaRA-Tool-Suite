@@ -5,6 +5,7 @@ import unittest.mock as mock
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
+from tests.test_utils import ConfigurationHelper
 from varats.base.configuration import (
     DummyConfiguration,
     ConfigurationImpl,
@@ -23,7 +24,7 @@ Version: 1
 ...
 """
 YAML_DOC_CONFIG_MAP = """---
-0: '{'foo': 'True', 'bar': 'False', 'bazz': 'bazz-value'}'
+0: '{''foo'': ''True'', ''bar'': ''False'', ''bazz'': ''bazz-value''}'
 1: '{}'
 2: '{}'
 ...
@@ -118,7 +119,7 @@ class TestConfigurationMapStoreAndLoad(unittest.TestCase):
     def setUpClass(cls):
         """Setup test ConfigurationMap."""
         cls.config_map = ConfigurationMap()
-        cls.test_config_1 = ConfigurationImpl.create_test_config()
+        cls.test_config_1 = ConfigurationHelper.create_test_config()
         cls.test_config_2 = ConfigurationImpl()
         cls.test_config_3 = ConfigurationImpl()
 
@@ -159,8 +160,10 @@ class TestConfigurationMapStoreAndLoad(unittest.TestCase):
         """Tests if we can create a `ConfigurationMap` from a dict, similar to a
         yaml doc."""
         config_map = create_configuration_map_from_yaml_doc({
-            '0': "{'foo': 'True', 'bar': 'False', 'bazz': 'bazz-value'}",
-            '1': "{}"
+            '0':
+                "{''foo'': ''True'', ''bar'': ''False'', ''bazz'': ''bazz-value''}",
+            '1':
+                "{}"
         }, ConfigurationImpl)
 
         self.assertSetEqual({0, 1}, set(config_map.ids()))
