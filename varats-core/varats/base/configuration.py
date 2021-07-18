@@ -214,11 +214,14 @@ class ConfigurationImpl(Configuration):
 
                 return option_value
 
-            config.add_config_option(
-                ConfigurationOptionImpl(
-                    option_name.strip(),
-                    make_possible_type_conversion(option_value.strip())
+            if option_value is not False and option_value is not True and type(
+                option_value
+            ) != int:
+                option_value = make_possible_type_conversion(
+                    option_value.strip()
                 )
+            config.add_config_option(
+                ConfigurationOptionImpl(option_name.strip(), option_value)
             )
 
         return config
