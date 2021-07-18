@@ -83,6 +83,16 @@ Module: filesystem_util
 
 -----
 
+Module: cmake_util
+.......................
+
+.. automodule:: varats.tools.research_tools.cmake_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+-----
+
 Logger usage
 ------------
 

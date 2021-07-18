@@ -74,11 +74,11 @@ class Xz(bb.Project):  # type: ignore
             )
             if xz_version in old_xz_location:
                 return wrap_paths_to_binaries([
-                    ('src/xz/xz', BinaryType.executable)
+                    ('src/xz/xz', BinaryType.EXECUTABLE)
                 ])
 
             return wrap_paths_to_binaries([
-                ('src/xz/.libs/xz', BinaryType.executable)
+                ('src/xz/.libs/xz', BinaryType.EXECUTABLE)
             ])
 
     def run_tests(self) -> None:

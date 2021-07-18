@@ -9,6 +9,7 @@ from plumbum import local
 from PyQt5.QtCore import QProcess
 
 from varats.plot.plot_utils import check_required_args
+from varats.tools.research_tools.cmake_util import set_cmake_var
 from varats.tools.research_tools.research_tool import (
     CodeBase,
     ResearchTool,
@@ -20,7 +21,6 @@ from varats.tools.research_tools.vara_manager import (
     BuildType,
     ProcessManager,
     run_process_with_output,
-    set_cmake_var,
 )
 from varats.utils.exceptions import ProcessTerminatedError
 from varats.utils.logger_util import log_without_linesep

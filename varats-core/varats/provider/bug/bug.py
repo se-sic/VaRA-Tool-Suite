@@ -194,10 +194,10 @@ def _is_closing_message(commit_message: str) -> bool:
     # only look for keyword in first line of commit message
     first_line = commit_message.partition('\n')[0]
 
-    return any([
+    return any(
         keyword in first_line.split()
         for keyword in ['fix', 'Fix', 'fixed', 'Fixed', 'fixes', 'Fixes']
-    ])
+    )
 
 
 def _get_all_issue_events(project_name: str) -> tp.List[IssueEvent]:

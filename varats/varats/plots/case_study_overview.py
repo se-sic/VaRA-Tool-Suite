@@ -64,27 +64,27 @@ def _gen_overview_data(tag_blocked: bool,
     )
     positions["success"] = (
         revisions[revisions["file_status"] ==
-                  FileStatusExtension.Success.get_status_extension()]
+                  FileStatusExtension.SUCCESS.get_status_extension()]
     )["time_id"].tolist()
     positions["failed"] = (
         revisions[revisions["file_status"] ==
-                  FileStatusExtension.Failed.get_status_extension()]
+                  FileStatusExtension.FAILED.get_status_extension()]
     )["time_id"].tolist()
     positions["blocked"] = (
         revisions[revisions["file_status"] ==
-                  FileStatusExtension.Blocked.get_status_extension()]
+                  FileStatusExtension.BLOCKED.get_status_extension()]
     )["time_id"].tolist()
     positions["blocked_all"].extend((
         revisions[revisions["file_status"] ==
-                  FileStatusExtension.Blocked.get_status_extension()]
+                  FileStatusExtension.BLOCKED.get_status_extension()]
     )["time_id"].tolist())
     positions["missing"] = (
         revisions[revisions["file_status"] ==
-                  FileStatusExtension.Missing.get_status_extension()]
+                  FileStatusExtension.MISSING.get_status_extension()]
     )["time_id"].tolist()
     positions["compile_error"] = (
         revisions[revisions["file_status"] ==
-                  FileStatusExtension.CompileError.get_status_extension()]
+                  FileStatusExtension.COMPILE_ERROR.get_status_extension()]
     )["time_id"].tolist()
 
     return positions

@@ -58,7 +58,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
                 binary_name=binary.name,
                 project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.Success
+                extension_type=FSE.SUCCESS
             )
 
             run_cmd = touch["{res_folder}/{res_file}".format(

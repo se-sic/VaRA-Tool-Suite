@@ -310,7 +310,7 @@ class TestCommitReport(unittest.TestCase):
             CommitReport.get_file_name(
                 "foo", "foo", "7bb9ef5f8c",
                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                FileStatusExtension.Success
+                FileStatusExtension.SUCCESS
             ), self.success_filename
         )
 
@@ -318,7 +318,7 @@ class TestCommitReport(unittest.TestCase):
             CommitReport.get_file_name(
                 "foo", "foo", "7bb9ef5f8c",
                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                FileStatusExtension.Failed, ".txt"
+                FileStatusExtension.FAILED, ".txt"
             ), self.fail_filename
         )
 

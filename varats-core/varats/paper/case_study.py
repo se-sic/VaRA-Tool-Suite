@@ -288,8 +288,8 @@ class CaseStudy():
         Returns:
             the stage index, corresponding with the 'stage_name', or ``None``
         """
-        for i in range(len(self.__stages)):
-            if self.__stages[i].name == stage_name:
+        for i, stage in enumerate(self.__stages):
+            if stage.name == stage_name:
                 return i
 
         return None

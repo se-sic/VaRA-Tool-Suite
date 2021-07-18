@@ -153,7 +153,7 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
             binary_name="none",  # we don't rely on binaries in this experiment
             project_version=project.version_of_primary,
             project_uuid=str(project.run_uuid),
-            extension_type=FSE.Success
+            extension_type=FSE.SUCCESS
         )
 
         with open(f"{varats_result_folder}/{result_file}", "w") as yaml_file:

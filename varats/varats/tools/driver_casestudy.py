@@ -226,7 +226,9 @@ def __create_ext_parser(sub_parsers: _SubParsersAction) -> None:
             for x in NormalSamplingMethod.normal_sampling_method_types()
         ]
     )
-    ext_parser.add_argument("--release-type", action=enum_action(ReleaseType))
+    ext_parser.add_argument(
+        "--release-type", action=enum_action(ReleaseType, str.upper)
+    )
     ext_parser.add_argument(
         "--merge-stage",
         default=-1,
@@ -314,7 +316,7 @@ def __create_cleanup_parser(sub_parsers: _SubParsersAction) -> None:
     cleanup_parser.add_argument(
         "cleanup_type",
         help="The type of the performed cleanup action.",
-        action=enum_action(CleanupType)
+        action=enum_action(CleanupType, str.upper)
     )
     cleanup_parser.add_argument(
         "-f",

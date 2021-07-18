@@ -4,11 +4,11 @@ import typing as tp
 
 from benchbuild.project import Project
 
-import varats.provider.bug.bug as bug
 from varats.project.project_util import (
     get_primary_project_source,
     is_git_source,
 )
+from varats.provider.bug import bug
 from varats.provider.provider import Provider
 from varats.utils.github_util import get_github_repo_name_for_project
 
