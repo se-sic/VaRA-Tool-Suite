@@ -168,6 +168,7 @@ part which accesses Configurations something is wrong with your setup."""
 
 
 class ConfigurationOptionImpl(ConfigurationOption):
+    """A configuration option of a software project."""
 
     def __init__(self, name: str, value: tp.Any) -> None:
         self.__name = name
@@ -183,6 +184,7 @@ class ConfigurationOptionImpl(ConfigurationOption):
 
 
 class ConfigurationImpl(Configuration):
+    """A configuration of a software project."""
 
     @staticmethod
     def create_configuration_from_str(config_str: str) -> 'Configuration':
