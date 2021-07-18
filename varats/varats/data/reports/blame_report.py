@@ -12,7 +12,14 @@ import yaml
 
 from varats.base.version_header import VersionHeader
 from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
-from varats.utils.git_util import map_commits, CommitRepoPair, CommitLookupTy
+from varats.utils.git_util import (
+    map_commits,
+    CommitRepoPair,
+    CommitLookupTy,
+    FullCommitHash,
+    DUMMY_COMMIT_HASH,
+    CommitHash,
+)
 
 
 class BlameInstInteractions():
@@ -41,7 +48,8 @@ class BlameInstInteractions():
         base_commit, *base_repo = str(raw_inst_entry['base-hash']
                                      ).split('-', maxsplit=1)
         base_hash = CommitRepoPair(
-            base_commit, base_repo[0] if base_repo else "Unknown"
+            FullCommitHash(base_commit),
+            base_repo[0] if base_repo else "Unknown"
         )
         interacting_hashes: tp.List[CommitRepoPair] = []
         for raw_inst_hash in raw_inst_entry['interacting-hashes']:
@@ -49,7 +57,8 @@ class BlameInstInteractions():
                                            ).split('-', maxsplit=1)
             interacting_hashes.append(
                 CommitRepoPair(
-                    inter_commit, inter_repo[0] if inter_repo else "Unknown"
+                    FullCommitHash(inter_commit),
+                    inter_repo[0] if inter_repo else "Unknown"
                 )
             )
         amount = int(raw_inst_entry['amount'])
@@ -307,7 +316,7 @@ class BlameReport(BaseReport):
         return self.__function_entries.values()
 
     @property
-    def head_commit(self) -> str:
+    def head_commit(self) -> CommitHash:
         """The current HEAD commit under which this CommitReport was created."""
         return self.filename.commit_hash
 
@@ -369,11 +378,11 @@ class BlameReportDiff():
         self.__calc_diff_br(base_report, prev_report)
 
     @property
-    def base_head_commit(self) -> str:
+    def base_head_commit(self) -> CommitHash:
         return self.__base_head
 
     @property
-    def prev_head_commit(self) -> str:
+    def prev_head_commit(self) -> CommitHash:
         return self.__prev_head
 
     @property
@@ -560,7 +569,7 @@ def generate_degree_tuples(
             degree = len(interaction.interacting_commits)
             degree_dict[degree] += interaction.amount
 
-    return list(degree_dict.items())
+    return [(degree, amount) for degree, amount in degree_dict.items()]
 
 
 InteractingCommitRepoPairToAmountMapping = tp.Dict[CommitRepoPair, int]
@@ -662,9 +671,10 @@ def generate_lib_dependent_degrees(
     ):
         result_dict[base_name] = {}
         for inter_lib_name, degree_amount_dict in inter_lib_dict.items():
-            result_dict[base_name][inter_lib_name] = list(
-                degree_amount_dict.items()
-            )
+            result_dict[base_name][inter_lib_name] = [
+                (degree, amount)
+                for degree, amount in degree_amount_dict.items()
+            ]
 
     return result_dict
 
@@ -701,7 +711,7 @@ def generate_author_degree_tuples(
             degree = len(set(author_list))
             degree_dict[degree] += interaction.amount
 
-    return list(degree_dict.items())
+    return [(degree, amount) for degree, amount in degree_dict.items()]
 
 
 def generate_time_delta_distribution_tuples(
@@ -731,10 +741,7 @@ def generate_time_delta_distribution_tuples(
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            if (
-                interaction.base_commit.commit_hash ==
-                "0000000000000000000000000000000000000000"
-            ):
+            if (interaction.base_commit.commit_hash == DUMMY_COMMIT_HASH):
                 continue
 
             base_commit = commit_lookup(
@@ -759,7 +766,7 @@ def generate_time_delta_distribution_tuples(
             bucket = round(degree / bucket_size)
             degree_dict[bucket] += interaction.amount
 
-    return list(degree_dict.items())
+    return [(degree, amount) for degree, amount in degree_dict.items()]
 
 
 def generate_avg_time_distribution_tuples(

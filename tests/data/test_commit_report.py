@@ -1,19 +1,22 @@
 """Test VaRA commit reports."""
 
+import typing as tp
 import unittest
 import unittest.mock as mock
+from pathlib import Path
 
 import yaml
 
 from varats.data.reports.commit_report import (
-    CommitMap,
     CommitReport,
     FunctionGraphEdges,
     FunctionInfo,
     RegionMapping,
     generate_interactions,
 )
+from varats.mapping.commit_map import CommitMap
 from varats.report.report import FileStatusExtension, ReportFilename
+from varats.utils.git_util import FullCommitHash, CommitHash
 
 YAML_DOC_1 = """---
 DocType:         CommitReport
@@ -82,8 +85,10 @@ YAML_DOC_3 = """---
 class TestFunctionInfo(unittest.TestCase):
     """Test if function infos are reconstruction from yaml."""
 
+    finfos: tp.Dict[str, FunctionInfo]
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """Load and parse function infos from yaml file."""
         with mock.patch(
             "builtins.open", new=mock.mock_open(read_data=YAML_DOC_2)
@@ -95,7 +100,7 @@ class TestFunctionInfo(unittest.TestCase):
                     finfo = FunctionInfo(raw_finfo)
                     cls.finfos[finfo.name] = finfo
 
-    def test_function_infos(self):
+    def test_function_infos(self) -> None:
         """Test if function infos where parsed correctly."""
         bi_init = self.finfos["bi_init"]
         self.assertEqual(bi_init.id, "bi_init")
@@ -115,8 +120,10 @@ class TestFunctionInfo(unittest.TestCase):
 class TestRegionMapping(unittest.TestCase):
     """Test if region mappings are reconstruction from yaml."""
 
+    r_mappings: tp.Dict[str, RegionMapping]
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """Load and parse region mappings from yaml file."""
         with mock.patch(
             "builtins.open", new=mock.mock_open(read_data=YAML_DOC_2)
@@ -128,7 +135,7 @@ class TestRegionMapping(unittest.TestCase):
                     r_mapping = RegionMapping(raw_r_mapping)
                     cls.r_mappings[r_mapping.id] = r_mapping
 
-    def test_id_hash_mapping(self):
+    def test_id_hash_mapping(self) -> None:
         """Test if id -> hash mappings are correct."""
         self.assertEqual(
             self.r_mappings["8ac1b3f73baceb4a16e99504807d23d38e5123b1"].hash,
@@ -144,8 +151,10 @@ class TestRegionMapping(unittest.TestCase):
 class TestFunctionGraphEdges(unittest.TestCase):
     """Test function graph edges reconstruction from yaml."""
 
+    edge_dict: tp.Dict[str, FunctionGraphEdges]
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """Load and parse FunctionGraphEdges from yaml file."""
         with mock.patch(
             "builtins.open", new=mock.mock_open(read_data=YAML_DOC_3)
@@ -157,17 +166,17 @@ class TestFunctionGraphEdges(unittest.TestCase):
                     f_edge = FunctionGraphEdges(raw_fg_edges)
                     cls.edge_dict[f_edge.fid] = f_edge
 
-    def test_function_id(self):
+    def test_function_id(self) -> None:
         """Verify if IDs are correctly loaded."""
         bi_init = self.edge_dict['bi_init']
         self.assertEqual(bi_init.fid, "bi_init")
 
-    def test_function_id_2(self):
+    def test_function_id_2(self) -> None:
         """Verify if IDs are correctly loaded."""
         send_bits = self.edge_dict['send_bits']
         self.assertEqual(send_bits.fid, "send_bits")
 
-    def test_call_graph_edges(self):
+    def test_call_graph_edges(self) -> None:
         """Check if call-graph edges are parsed correctly."""
         bi_init = self.edge_dict['bi_init']
         self.assertEqual(
@@ -176,7 +185,7 @@ class TestFunctionGraphEdges(unittest.TestCase):
         )
         self.assertEqual(bi_init.cg_edges[0].function, "llvm.dbg.value")
 
-    def test_control_flow_edges(self):
+    def test_control_flow_edges(self) -> None:
         """Check if control-flow edges are parsed correctly."""
         bi_init = self.edge_dict['bi_init']
         self.assertEqual(
@@ -197,7 +206,7 @@ class TestFunctionGraphEdges(unittest.TestCase):
             "3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5"
         )
 
-    def test_data_flow_edges(self):
+    def test_data_flow_edges(self) -> None:
         """Check if data-flow edges are parsed correctly."""
         bi_init = self.edge_dict['bi_init']
         self.assertEqual(
@@ -222,24 +231,16 @@ class TestFunctionGraphEdges(unittest.TestCase):
 class TestCommitReport(unittest.TestCase):
     """Test basic CommitReport functionality."""
 
+    commit_report: CommitReport
+    commit_report_success: CommitReport
+    commit_report_fail: CommitReport
+    success_filename: str
+    fail_filename: str
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """Setup file and CommitReport."""
         file_content = YAML_DOC_1 + YAML_DOC_2 + YAML_DOC_3
-        with mock.patch(
-            'builtins.open', new=mock.mock_open(read_data=file_content)
-        ):
-            cls.commit_report = CommitReport("fake_file_path")
-            cls.commit_report_success = CommitReport(
-                "CR-foo-foo-7bb9ef5f8c_"
-                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
-                "success.yaml"
-            )
-            cls.commit_report_fail = CommitReport(
-                "CR-foo-foo-7bb9ef5f8c_"
-                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be"
-                "_failed.txt"
-            )
 
         cls.success_filename = (
             "CR-foo-foo-7bb9ef5f8c_"
@@ -252,16 +253,23 @@ class TestCommitReport(unittest.TestCase):
             "_failed.txt"
         )
 
-    def test_path(self):
+        with mock.patch(
+            'builtins.open', new=mock.mock_open(read_data=file_content)
+        ):
+            cls.commit_report = CommitReport(Path("fake_file_path"))
+            cls.commit_report_success = CommitReport(Path(cls.success_filename))
+            cls.commit_report_fail = CommitReport(Path(cls.fail_filename))
+
+    def test_path(self) -> None:
         """Check if path is set correctly."""
         self.assertEqual(self.commit_report.path, "fake_file_path")
 
-    def test_calc_max_func_edges(self):
+    def test_calc_max_func_edges(self) -> None:
         """Check if max edges are correctly calculated."""
         self.assertEqual(self.commit_report.calc_max_cf_edges(), 2)
         self.assertEqual(self.commit_report.calc_max_df_edges(), 3)
 
-    def test_is_result_file(self):
+    def test_is_result_file(self) -> None:
         """Check if the result file matcher works."""
         self.assertTrue(self.commit_report_success.filename.is_result_file())
         self.assertTrue(self.commit_report_fail.filename.is_result_file())
@@ -282,7 +290,7 @@ class TestCommitReport(unittest.TestCase):
             ).is_result_file()
         )
 
-    def test_file_status(self):
+    def test_file_status(self) -> None:
         """Check if the correct file status is returned for CommitReport
         names."""
         self.assertTrue(
@@ -295,7 +303,7 @@ class TestCommitReport(unittest.TestCase):
             self.commit_report_success.filename.has_status_failed()
         )
 
-    def test_get_commit(self):
+    def test_get_commit(self) -> None:
         """Check if the correct commit hash is returned."""
         self.assertEqual(
             self.commit_report_success.filename.commit_hash, "7bb9ef5f8c"
@@ -304,7 +312,7 @@ class TestCommitReport(unittest.TestCase):
             self.commit_report_fail.filename.commit_hash, "7bb9ef5f8c"
         )
 
-    def test_file_name_creation(self):
+    def test_file_name_creation(self) -> None:
         """Check if file names are created correctly."""
         self.assertEqual(
             CommitReport.get_file_name(
@@ -358,10 +366,10 @@ ae332f2a5d2f6f3e0a23443f8a9bcb068c8af74d
 ef58a957a6c1887930cc70d6199ae7e48aa8d716"""
 
 
-def testing_gen_commit_map():
+def testing_gen_commit_map() -> CommitMap:
     """Generate a local commit map for testing."""
 
-    def commit_log_stream():
+    def commit_log_stream() -> tp.Generator[str, None, None]:
         for number, line in enumerate(reversed(RAW_COMMIT_LOG.split('\n'))):
             yield "{}, {}\n".format(number, line)
 
@@ -371,46 +379,57 @@ def testing_gen_commit_map():
 class TestCommitMap(unittest.TestCase):
     """Test CommitMap generation and Usage."""
 
+    cmap: CommitMap
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """Setup file and CommitReport."""
 
         cls.cmap = testing_gen_commit_map()
 
-    def test_time_id(self):
+    def test_time_id(self) -> None:
         """Test time id look up."""
         self.assertEqual(
-            self.cmap.time_id("ae332f2a5d2f6f3e0a23443f8a9bcb068c8af74d"), 1
+            self.cmap.time_id(
+                FullCommitHash("ae332f2a5d2f6f3e0a23443f8a9bcb068c8af74d")
+            ), 1
         )
         self.assertEqual(
-            self.cmap.time_id("ef58a957a6c1887930cc70d6199ae7e48aa8d716"), 0
+            self.cmap.time_id(
+                FullCommitHash("ef58a957a6c1887930cc70d6199ae7e48aa8d716")
+            ), 0
         )
         self.assertEqual(
-            self.cmap.time_id("20540be6186c159880dda3a49a5827722c1a0ac9"), 32
+            self.cmap.time_id(
+                FullCommitHash("20540be6186c159880dda3a49a5827722c1a0ac9")
+            ), 32
         )
 
-    def test_short_time_id(self):
+    def test_short_time_id(self) -> None:
         """Test short time id look up."""
-        self.assertEqual(self.cmap.short_time_id("ae332f2"), 1)
-        self.assertEqual(self.cmap.short_time_id("ef58a957a6c1"), 0)
-        self.assertEqual(self.cmap.short_time_id("2054"), 32)
+        self.assertEqual(self.cmap.short_time_id(CommitHash("ae332f2a5d")), 1)
+        self.assertEqual(self.cmap.short_time_id(CommitHash("ef58a957a6c1")), 0)
+        self.assertEqual(self.cmap.short_time_id(CommitHash("20540be618")), 32)
 
 
 class TestCommitConnectionGenerators(unittest.TestCase):
     """Test basic CommitReport functionality."""
 
+    commit_report: CommitReport
+    cmap: CommitMap
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """Setup file and CommitReport."""
         file_content = YAML_DOC_1 + YAML_DOC_2 + YAML_DOC_3
         with mock.patch(
             'builtins.open', new=mock.mock_open(read_data=file_content)
         ):
-            cls.commit_report = CommitReport("fake_file_path")
+            cls.commit_report = CommitReport(Path("fake_file_path"))
 
         cls.cmap = testing_gen_commit_map()
 
-    def test_gen_interactions_nodes(self):
+    def test_gen_interactions_nodes(self) -> None:
         """Test generation of interaction node."""
         nodes = generate_interactions(self.commit_report, self.cmap)[0]
         self.assertEqual(
@@ -422,7 +441,7 @@ class TestCommitConnectionGenerators(unittest.TestCase):
         )
         self.assertEqual(nodes.at[3, 'id'], 9)
 
-    def test_gen_interactions_links(self):
+    def test_gen_interactions_links(self) -> None:
         """Test generation of interaction links."""
         links = generate_interactions(self.commit_report, self.cmap)[1]
         links = links.sort_values(by=['source']).reset_index(drop=True)
