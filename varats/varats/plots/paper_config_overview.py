@@ -20,7 +20,7 @@ from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plot.plot import Plot
 from varats.plot.plot_utils import check_required_args, find_missing_revisions
 from varats.project.project_util import get_local_project_git
-from varats.report.report import FileStatusExtension, MetaReport
+from varats.report.report import FileStatusExtension, BaseReport
 
 # colors taken from seaborn's default palette
 SUCCESS_COLOR = np.asarray(
@@ -37,7 +37,7 @@ def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
     current_config = PC.get_paper_config()
 
     if 'report_type' in kwargs:
-        result_file_type: MetaReport = MetaReport.REPORT_TYPES[
+        result_file_type: BaseReport = BaseReport.REPORT_TYPES[
             kwargs['report_type']]
     else:
         result_file_type = EmptyReport
@@ -55,7 +55,7 @@ def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
 
 
 def _load_projects_ordered_by_year(
-    current_config: PC.PaperConfig, result_file_type: MetaReport
+    current_config: PC.PaperConfig, result_file_type: BaseReport
 ) -> tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[str, FileStatusExtension]]]]:
     projects: tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[
         str, FileStatusExtension]]]] = OrderedDict()
@@ -88,7 +88,7 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
     current_config = PC.get_paper_config()
 
     if 'report_type' in kwargs:
-        result_file_type: MetaReport = MetaReport.REPORT_TYPES[
+        result_file_type: BaseReport = BaseReport.REPORT_TYPES[
             kwargs['report_type']]
     else:
         result_file_type = EmptyReport
@@ -127,11 +127,11 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
                 num_revs = len(revs_in_year)
                 num_successful_revs = len([
                     rev for (rev, status) in revs_in_year
-                    if status == FileStatusExtension.Success
+                    if status == FileStatusExtension.SUCCESS
                 ])
                 num_blocked_revs = len([
                     rev for (rev, status) in revs_in_year
-                    if status == FileStatusExtension.Blocked
+                    if status == FileStatusExtension.BLOCKED
                 ])
 
             revs_successful_per_year.append(num_successful_revs)

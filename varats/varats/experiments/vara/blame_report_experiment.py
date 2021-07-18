@@ -24,6 +24,7 @@ from varats.experiment.experiment_util import (
 )
 from varats.experiment.wllvm import get_cached_bc_file_path, BCFileExtensions
 from varats.report.report import FileStatusExtension as FSE
+from varats.report.report import ReportSpecification
 from varats.utils.settings import bb_cfg
 
 
@@ -38,8 +39,10 @@ class BlameReportGeneration(actions.Step):  # type: ignore
     def __init__(
         self,
         project: Project,
+        report_spec: ReportSpecification,
     ):
         super().__init__(obj=project, action_fn=self.analyze)
+        self.__report_spec = report_spec
 
     def analyze(self) -> actions.StepResult:
         """
@@ -65,12 +68,14 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         mkdir("-p", vara_result_folder)
 
         for binary in project.binaries:
-            result_file = BR.get_file_name(
+            result_file = self.__report_spec.get_report_type(
+                "BR"
+            ).get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
                 project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.Success
+                extension_type=FSE.SUCCESS
             )
 
             opt_params = [
@@ -105,7 +110,7 @@ class BlameReportExperiment(VersionExperiment):
 
     NAME = "GenerateBlameReport"
 
-    REPORT_TYPE = BR
+    REPORT_SPEC = ReportSpecification(BR)
     REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
 
     def actions_for_project(
@@ -137,11 +142,13 @@ class BlameReportExperiment(VersionExperiment):
             project,
             bc_file_extensions,
             extraction_error_handler=create_default_compiler_error_handler(
-                project, self.REPORT_TYPE
+                project, self.REPORT_SPEC.main_report
             )
         )
 
-        analysis_actions.append(BlameReportGeneration(project))
+        analysis_actions.append(
+            BlameReportGeneration(project, self.REPORT_SPEC)
+        )
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
