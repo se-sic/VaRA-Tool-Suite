@@ -6,7 +6,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import varats.paper.case_study as CS
-from tests.test_helper_config import ConfigurationTestImpl
+from varats.base.configuration import ConfigurationImpl
 from varats.base.sampling_method import UniformSamplingMethod
 from varats.mapping.commit_map import CommitMap
 
@@ -48,7 +48,7 @@ stages:
     commit_id: 494
 ...
 ---
-0: '{''foo'': ''foo: True'', ''bar'': ''bar: False'', ''bazz'': ''bazz: bazz-value''}'
+0: '{"foo": true, "bar": false, "bazz": "bazz-value", "buzz": "None"}'
 1: '{}'
 2: '{}'
 ...
@@ -202,7 +202,7 @@ class TestCaseStudyConfigurationMap(unittest.TestCase):
         ]
 
         config_map = CS.load_configuration_map_from_case_study_file(
-            Path("fake_file_path"), ConfigurationTestImpl
+            Path("fake_file_path"), ConfigurationImpl
         )
 
         self.assertSetEqual({0, 1, 2}, set(config_map.ids()))
