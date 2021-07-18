@@ -352,10 +352,10 @@ class BaseReport():
 
     @staticmethod
     def __check_required_vars(
-        cls: tp.Any, class_name: str, req_vars: tp.List[str]
+        class_type: tp.Any, class_name: str, req_vars: tp.List[str]
     ) -> None:
         for var in req_vars:
-            if not hasattr(cls, var):
+            if not hasattr(class_type, var):
                 raise NameError((
                     f"{class_name} does not define "
                     f"a static variable {var}."

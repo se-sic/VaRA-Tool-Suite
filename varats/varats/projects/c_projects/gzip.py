@@ -95,7 +95,7 @@ class Gzip(bb.Project, ReleaseProviderHook):  # type: ignore
         minor_release_regex = "^v[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
 
         tagged_commits = get_tagged_commits(cls.NAME)
-        if release_type == ReleaseType.major:
+        if release_type == ReleaseType.MAJOR:
             return [(h, tag)
                     for h, tag in tagged_commits
                     if re.match(major_release_regex, tag)]

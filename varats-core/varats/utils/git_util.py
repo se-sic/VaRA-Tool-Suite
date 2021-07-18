@@ -52,7 +52,7 @@ class ChurnConfig():
     class Language(Enum):
         """Enum for different languages that can be used to filter code
         churn."""
-        value: tp.Set[str]
+        value: tp.Set[str]  # pylint: disable=invalid-name
 
         C = {"h", "c"}
         CPP = {"h", "hxx", "hpp", "cxx", "cpp"}

@@ -50,7 +50,7 @@ class Brotli(bb.Project):  # type: ignore
         """Compile the project."""
         brotli_version_source = local.path(self.source_of_primary)
 
-        c_compiler = bb.compiler.cc(self)  # type: ignore
+        c_compiler = bb.compiler.cc(self)
         mkdir(brotli_version_source / "out")
         with local.cwd(brotli_version_source / "out"):
             with local.env(CC=str(c_compiler)):

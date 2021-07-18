@@ -5,7 +5,7 @@ import typing as tp
 from benchbuild.project import Project
 
 from varats.project.project_util import get_local_project_git_path
-from varats.provider.cve.cve import CVE, find_all_cve, find_cve, find_cwe
+from varats.provider.cve.cve import CVE
 from varats.provider.cve.cve_map import generate_cve_map
 from varats.provider.provider import Provider
 
