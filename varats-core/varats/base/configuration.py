@@ -263,7 +263,6 @@ class ConfigurationImpl(Configuration):
         return list(self.__config_values.values())
 
     def dump_to_string(self) -> str:
-        return str({
-            f"\"{idx[1].name}\"": f"\"{idx[1].value}\""
-            for idx in self.__config_values.items()
+        return json.dumps({
+            idx[1].name: idx[1].value for idx in self.__config_values.items()
         })
