@@ -33,7 +33,7 @@ class BasicBugDetectionTestRepo(bb.Project):  # type: ignore
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
-        return wrap_paths_to_binaries([("main", BinaryType.executable)])
+        return wrap_paths_to_binaries([("main", BinaryType.EXECUTABLE)])
 
     def run_tests(self) -> None:
         pass

@@ -7,7 +7,7 @@ import typing as tp
 from abc import abstractmethod
 from pathlib import Path
 
-import benchbuild.source as source
+from benchbuild import source
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
 from benchbuild.utils.actions import Step
@@ -89,6 +89,7 @@ class FunctionPEErrorWrapper():
             return self.__func(*args, **kwargs)
         except Exception as ex:  # pylint: disable=broad-except
             self.__handler(ex, self.__func)
+            return None
 
 
 def exec_func_with_pe_error_handler(

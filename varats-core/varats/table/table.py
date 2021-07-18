@@ -13,7 +13,7 @@ from varats.table.tables import TableRegistry
 
 class TableFormat(Enum):
     """List of supported TableFormats."""
-    value: str
+    value: str  # pylint: disable=invalid-name
 
     PLAIN = "plain"
     SIMPLE = "simple"
@@ -74,7 +74,7 @@ class Table(metaclass=TableRegistry):
 
         Test:
         >>> Table('test').format
-        <TableFormat.latex_booktabs: 'latex_booktabs'>
+        <TableFormat.LATEX_BOOKTABS: 'latex_booktabs'>
         """
         return self.__format
 
@@ -129,7 +129,7 @@ class Table(metaclass=TableRegistry):
         'bar_test.tex'
         >>> p = Table('foo', project='bar', table_case_study=CaseStudy('baz',\
                                                                        42))
-        >>> p.format = TableFormat.fancy_grid
+        >>> p.format = TableFormat.FANCY_GRID
         >>> p.table_file_name()
         'baz_42_foo.txt'
         """

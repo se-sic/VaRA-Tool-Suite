@@ -9,7 +9,7 @@ from varats.plot.plot_utils import check_required_args
 from varats.utils.settings import vara_cfg
 
 if tp.TYPE_CHECKING:
-    import varats.table.table as table  # pylint: disable=unused-import
+    from varats.table import table  # pylint: disable=unused-import
 
 LOG = logging.getLogger(__name__)
 
@@ -169,4 +169,5 @@ def prepare_tables(**args: tp.Any) -> tp.Iterable['table.Table']:
         args['table_case_study'] = load_case_study_from_file(case_study_path)
     else:
         args['table_case_study'] = None
+
     return [prepare_table(**args)]

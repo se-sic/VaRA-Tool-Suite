@@ -53,11 +53,11 @@ class Libssh(bb.Project):  # type: ignore
             )
             if libssh_version in versions_with_src_library_folder:
                 return wrap_paths_to_binaries([
-                    ('build/src/libssh.so', BinaryType.shared_library)
+                    ('build/src/libssh.so', BinaryType.SHARED_LIBRARY)
                 ])
 
             return wrap_paths_to_binaries([
-                ('build/lib/libssh.so', BinaryType.shared_library)
+                ('build/lib/libssh.so', BinaryType.SHARED_LIBRARY)
             ])
 
     def run_tests(self) -> None:
