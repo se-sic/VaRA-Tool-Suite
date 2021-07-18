@@ -48,7 +48,7 @@ stages:
     commit_id: 494
 ...
 ---
-0: '{"foo": "True", "bar": "False", "bazz": "bazz-value"}'
+0: '{"foo": true, "bar": false, "bazz": "bazz-value"}'
 1: '{}'
 2: '{}'
 ...
