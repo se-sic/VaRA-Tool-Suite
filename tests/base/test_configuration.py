@@ -26,6 +26,12 @@ class TestConfigurationOption(unittest.TestCase):
 
         self.assertEqual(str(config_option), "foo: 42")
 
+    def test_set_config_option(self) -> None:
+        """Test to set the value of a configuration option."""
+        config = ConfigurationHelper.create_test_config()
+        config.set_config_option("foo", False)
+        self.assertFalse(config.get_config_value("foo"))
+
     def test_convert_to_bool(self) -> None:
         """Test to convert config option to bool."""
         config_option_int = ConfigurationOptionImpl("foo", 42)

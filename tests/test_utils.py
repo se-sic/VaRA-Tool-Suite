@@ -175,4 +175,5 @@ class ConfigurationHelper:
         test_config.add_config_option(
             ConfigurationOptionImpl("bazz", "bazz-value")
         )
+        test_config.add_config_option(ConfigurationOptionImpl("buzz", "None"))
         return test_config

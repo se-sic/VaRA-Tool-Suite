@@ -24,7 +24,7 @@ Version: 1
 ...
 """
 YAML_DOC_CONFIG_MAP = """---
-0: '{"foo": true, "bar": false, "bazz": "bazz-value"}'
+0: '{"foo": true, "bar": false, "bazz": "bazz-value", "buzz": "None"}'
 1: '{}'
 2: '{}'
 ...
