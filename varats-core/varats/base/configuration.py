@@ -264,5 +264,6 @@ class ConfigurationImpl(Configuration):
 
     def dump_to_string(self) -> str:
         return str({
-            str(idx[0]): str(idx[1]) for idx in self.__config_values.items()
+            f"\"{idx[1].name}\"": f"\"{idx[1].value}\""
+            for idx in self.__config_values.items()
         })
