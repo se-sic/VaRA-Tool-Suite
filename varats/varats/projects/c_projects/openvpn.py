@@ -13,11 +13,10 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
-from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
 
-class OpenVPN(bb.Project, CVEProviderHook):  # type: ignore
+class OpenVPN(bb.Project):  # type: ignore
     """
     OpenVPN is open-source commercial software that implements virtual private
     network techniques to create secure point-to-point or site-to-site

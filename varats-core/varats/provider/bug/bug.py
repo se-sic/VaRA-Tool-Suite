@@ -89,13 +89,24 @@ PygitBug = Bug[pygit2.Commit]
 
 
 def as_raw_bug(pygit_bug: PygitBug) -> RawBug:
-    """Uses hashes of own pygit2 Commits to create the corresponding RawBug."""
+    """Converts a ``PygitBug`` to a ``RawBug``."""
     introducing_commits: tp.Set[str] = set()
-    for intro_pycommit in pygit_bug.introducing_commits:
-        introducing_commits.add(str(intro_pycommit.id))
+    for intro_commit in pygit_bug.introducing_commits:
+        introducing_commits.add(str(intro_commit.id))
     return RawBug(
         str(pygit_bug.fixing_commit.id), introducing_commits,
         pygit_bug.issue_id, pygit_bug.creation_date, pygit_bug.resolution_date
+    )
+
+
+def as_pygit_bug(raw_bug: RawBug, repo: pygit2.Repository) -> PygitBug:
+    """Converts a ``RawBug`` to a ``PygitBug``."""
+    introducing_commits: tp.Set[str] = set()
+    for intro_commit in raw_bug.introducing_commits:
+        introducing_commits.add(repo.get(intro_commit))
+    return RawBug(
+        repo.get(raw_bug.fixing_commit), introducing_commits, raw_bug.issue_id,
+        raw_bug.creation_date, raw_bug.resolution_date
     )
 
 

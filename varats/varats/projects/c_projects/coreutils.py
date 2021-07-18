@@ -13,11 +13,10 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
-from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
 
-class Coreutils(bb.Project, CVEProviderHook):  # type: ignore
+class Coreutils(bb.Project):  # type: ignore
     """GNU coretuils / UNIX command-line tools (fetched by Git)"""
 
     NAME = 'coreutils'

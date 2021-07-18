@@ -12,11 +12,10 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
 )
-from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
 
-class Glibc(bb.Project, CVEProviderHook):  # type: ignore
+class Glibc(bb.Project):  # type: ignore
     """Standard GNU C-library."""
 
     NAME = 'glibc'

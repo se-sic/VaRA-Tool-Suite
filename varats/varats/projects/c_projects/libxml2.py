@@ -13,11 +13,10 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
-from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
 
-class Libxml2(bb.Project, CVEProviderHook):  # type: ignore
+class Libxml2(bb.Project):  # type: ignore
     """libxml2 is a software library for parsing XML documents."""
 
     NAME = 'libxml2'

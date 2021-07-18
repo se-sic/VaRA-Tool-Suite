@@ -19,11 +19,10 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
-from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
 
-class Libtiff(bb.Project, CVEProviderHook):  # type: ignore
+class Libtiff(bb.Project):  # type: ignore
     """Libtiff is a library for reading and writing Tagged Image File Format
     files."""
 
