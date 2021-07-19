@@ -78,6 +78,9 @@ class CommitMap():
                 return FullCommitHash(tp.cast(str, c_hash))
         raise KeyError
 
+    def completed_c_hash(self, short_commit: CommitHash):
+        return self.c_hash(self.short_time_id(short_commit))
+
     def mapping_items(self) -> tp.ItemsView[str, int]:
         """Get an iterator over the mapping items."""
         return ItemsView(self.__hash_to_id)

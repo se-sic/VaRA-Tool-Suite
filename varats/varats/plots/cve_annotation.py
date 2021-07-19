@@ -6,12 +6,13 @@ from matplotlib import axes
 
 from varats.mapping.commit_map import create_lazy_commit_map_loader
 from varats.provider.cve.cve_provider import CVEProvider
+from varats.utils.git_util import FullCommitHash
 
 
 def draw_cves(
     axis: axes.Axes,
     project: tp.Type[Project],
-    revisions: tp.List[str],
+    revisions: tp.List[FullCommitHash],
     extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None
 ) -> None:
     """

@@ -79,6 +79,8 @@ class FullCommitHash(CommitHash):
 
 DUMMY_COMMIT_HASH = FullCommitHash("0000000000000000000000000000000000000000")
 
+CommitHashTy = tp.TypeVar("CommitHashTy", bound=CommitHash)
+
 ################################################################################
 # Git interaction helpers
 
@@ -393,7 +395,7 @@ def __calc_code_churn_range_impl(
     churn_config: ChurnConfig,
     start_range: tp.Optional[str] = None,
     end_range: tp.Optional[str] = None
-) -> tp.Dict[str, tp.Tuple[int, int, int]]:
+) -> tp.Dict[FullCommitHash, tp.Tuple[int, int, int]]:
     """
     Calculates all churn values for the commits in the specified range.
 
@@ -409,7 +411,7 @@ def __calc_code_churn_range_impl(
         end_range: end churn calculation at end commit
     """
 
-    churn_values: tp.Dict[str, tp.Tuple[int, int, int]] = {}
+    churn_values: tp.Dict[FullCommitHash, tp.Tuple[int, int, int]] = {}
 
     if start_range is None and end_range is None:
         revision_range = None
@@ -446,7 +448,7 @@ def __calc_code_churn_range_impl(
     for rev in revs:
         churn_values[rev] = (0, 0, 0)
     for match in GIT_LOG_MATCHER.finditer(stdout):
-        commit_hash = match.group('hash')
+        commit_hash = FullCommitHash(match.group('hash'))
 
         def value_or_zero(match_result: tp.Any) -> int:
             if match_result is not None:
@@ -466,7 +468,7 @@ def calc_code_churn_range(
     churn_config: tp.Optional[ChurnConfig] = None,
     start_range: tp.Optional[tp.Union[pygit2.Commit, str]] = None,
     end_range: tp.Optional[tp.Union[pygit2.Commit, str]] = None
-) -> tp.Dict[str, tp.Tuple[int, int, int]]:
+) -> tp.Dict[FullCommitHash, tp.Tuple[int, int, int]]:
     """
     Calculates all churn values for the commits in the specified range.
 
@@ -507,8 +509,8 @@ def calc_commit_code_churn(
         (files changed, insertions, deletions)
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
-    return calc_code_churn_range(repo, churn_config, commit,
-                                 commit)[str(commit.id)]
+    return calc_code_churn_range(repo, churn_config, commit, commit)[
+        FullCommitHash.from_pygit_commit(commit)]
 
 
 def calc_code_churn(
@@ -566,7 +568,7 @@ def calc_code_churn(
 def calc_repo_code_churn(
     repo: pygit2.Repository,
     churn_config: tp.Optional[ChurnConfig] = None
-) -> tp.Dict[str, tp.Tuple[int, int, int]]:
+) -> tp.Dict[FullCommitHash, tp.Tuple[int, int, int]]:
     """
     Calculates code churn for a repository.
 
@@ -591,7 +593,7 @@ def __print_calc_repo_code_churn(
     churn_map = calc_repo_code_churn(repo, churn_config)
 
     for commit in repo.walk(repo.head.target, pygit2.GIT_SORT_TIME):
-        commit_hash = str(commit.id)
+        commit_hash = FullCommitHash.from_pygit_commit(commit)
         print(commit_hash)
 
         try:

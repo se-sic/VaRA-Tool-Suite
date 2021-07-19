@@ -18,10 +18,8 @@ from varats.project.project_util import (
     get_primary_project_source,
 )
 from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
-from varats.utils.git_util import CommitHash
+from varats.utils.git_util import CommitHash, CommitHashTy
 from varats.utils.settings import vara_cfg
-
-CommitHashTy = tp.TypeVar("CommitHashTy", bound=CommitHash)
 
 
 def is_revision_blocked(
