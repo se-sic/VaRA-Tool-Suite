@@ -25,7 +25,7 @@ class CommitHash():
     COMMIT_HASH_LENGTH = SHORT_COMMIT_HASH_LENGTH
 
     def __init__(self, short_commit_hash: str):
-        if len(short_commit_hash) >= self.COMMIT_HASH_LENGTH:
+        if not len(short_commit_hash) >= self.COMMIT_HASH_LENGTH:
             raise ValueError("Commit hash too short")
         self.__commit_hash = short_commit_hash[:self.COMMIT_HASH_LENGTH]
 
