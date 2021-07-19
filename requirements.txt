@@ -5,6 +5,7 @@ Jinja2>=3.0.1
 jupyter>=1.0.0
 kaleido>=0.2.1
 matplotlib>=3.1.2
+numpy>=1.20
 packaging>=20.1
 pandas>=0.22.0
 plotly>=4.14.1
@@ -29,5 +30,7 @@ seaborn>=0.8.0
 statsmodels~=0.11.1
 tabulate>=0.8.6
 types-PyYAML
+types-requests
+types-tabulate
 virtualenv>=20.0.8
 wllvm>=1.1.4

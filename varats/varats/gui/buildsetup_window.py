@@ -20,78 +20,11 @@ class WorkerSignals(QObject):
     text_update = pyqtSignal(object)
 
 
-class SetupWorker(QRunnable):
-    """Setup worker to handle the setup of VaRA."""
-
-    def __init__(self, path):
-        super(SetupWorker, self).__init__()
-        self.path = path
-        self.signals = WorkerSignals()
-        self.steps = vara_manager.get_download_steps() + 2
-
-    def _update_progress(self, val):
-        self.signals.update.emit(val)
-
-    def _update_text(self, text):
-        self.signals.text_update.emit(text)
-
-    def get_steps(self):
-        """Get the amount of sets to init VaRA."""
-        return self.steps
-
-    @pyqtSlot()
-    def run(self):
-        """Run, initializes VaRA in a different thread."""
-        try:
-            vara_manager.download_vara(
-                self.path, self._update_progress, self._update_text
-            )
-
-            self._update_progress(7)
-            vara_manager.checkout_vara_version(
-                self.path, True,
-                vara_cfg()['vara']['version'], True
-            )
-
-            self._update_progress(8)
-            self.signals.finished.emit()
-        except ProcessTerminatedError:
-            print("Process was terminated")
-
-
 class BuilderSignals(QObject):
     """Builder singals to communicate information back to the GUI."""
     finished = pyqtSignal()
     update = pyqtSignal(object)
     text_update = pyqtSignal(object)
-
-
-class BuildWorker(QRunnable):
-    """BuildWorker to build an install VaRA."""
-
-    def __init__(
-        self, path_to_llvm, install_prefix, build_type: vara_manager.BuildType
-    ):
-        super(BuildWorker, self).__init__()
-        self.signals = BuilderSignals()
-        self.path_to_llvm = path_to_llvm
-        self.install_prefix = install_prefix
-        self.build_type = build_type
-
-    def _update_text(self, text):
-        self.signals.text_update.emit(text)
-
-    @pyqtSlot()
-    def run(self):
-        """Run, build an installs VaRA in a diffrent thread."""
-        try:
-            vara_manager.build_vara(
-                Path(self.path_to_llvm), self.install_prefix, self.build_type,
-                self._update_text
-            )
-            self.signals.finished.emit()
-        except ProcessTerminatedError:
-            print("Process was terminated")
 
 
 class BuildSetup(QWidget, Ui_BuildSetup):
@@ -131,13 +64,6 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         self._set_advanced_view()
         self.advancedMode.clicked.connect(self._toggle_advanced_view)
 
-        self.vara_state_mgr = \
-            vara_manager.VaRAStateManager(self.__get_llvm_source_path())
-        self.updateButton.clicked\
-            .connect(self.vara_state_mgr.update_current_branch)
-        self.vara_state_mgr.state_signal\
-            .status_update.connect(self._update_version)
-
         self._update_source_dir()
         self._update_install_dir()
 
@@ -162,37 +88,14 @@ class BuildSetup(QWidget, Ui_BuildSetup):
 
     def _setup_vara(self):
         """Downloads VaRA to the current working directory."""
-        self.statusLabel.setText("Setting up VaRA...")
-        self.statusLabel.show()
-        path = self.__get_llvm_source_path()
-
-        if os.path.exists(path):
-            self.statusLabel.setText("VaRA already checkout.")
-        else:
-            worker = SetupWorker(path)
-            worker.signals.finished.connect(self._setup_done)
-            worker.signals.update.connect(self._update_progress)
-            worker.signals.text_update.connect(self._update_text)
-            self.progressBar.setMaximum(worker.get_steps())
-            self.thread_pool.start(worker)
+        raise RuntimeError("Was removed")
 
     def _setup_done(self):
         self.statusLabel.setText("Finished setup")
         self._check_state()
 
     def _build_vara(self):
-        self.statusLabel.setText("Building VaRA")
-        if self.checkDev.isChecked():
-            worker = BuildWorker(
-                self.__get_llvm_source_path(), self.__get_install_path(),
-                vara_manager.BuildType.DEV
-            )
-            worker.signals.finished.connect(self._build_done)
-            worker.signals.text_update.connect(self._update_build_text)
-            self.thread_pool.start(worker)
-
-        if self.checkOpt.isChecked():
-            raise NotImplementedError
+        raise RuntimeError("Was removed")
 
     def _build_done(self):
         self.progressBar.setValue(self.progressBar.maximum())
@@ -217,16 +120,7 @@ class BuildSetup(QWidget, Ui_BuildSetup):
         self._check_versions()
 
     def _check_init(self):
-        path = self.__get_llvm_source_path()
-        self.vara_state_mgr.change_llvm_source_folder(path)
-        if not os.path.exists(path):
-            self.initButton.setEnabled(True)
-            self.updateButton.setDisabled(True)
-            self.buildButton.setDisabled(True)
-        else:
-            self.initButton.setDisabled(True)
-            self.updateButton.setEnabled(True)
-            self.buildButton.setEnabled(True)
+        pass
 
     def _check_versions(self):
         if not os.path.exists(self.__get_llvm_source_path()):
@@ -243,7 +137,6 @@ class BuildSetup(QWidget, Ui_BuildSetup):
             self.clangStatus.setStyleSheet("QLabel { color : black; }")
             self.varaStatus.setText("checking...")
             self.varaStatus.setStyleSheet("QLabel { color : black; }")
-            self.vara_state_mgr.check_repo_state()
 
     def _update_version(self, llvm_status, clang_status, vara_status):
         self.llvmStatus.setText(str(llvm_status))

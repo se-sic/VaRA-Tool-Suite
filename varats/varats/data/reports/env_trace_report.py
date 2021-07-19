@@ -1,6 +1,6 @@
 """Report that simply takes the output of an phasar analysis."""
 
-from varats.report.report import BaseReport, FileStatusExtension, MetaReport
+from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
 
 
 class EnvTraceReport(BaseReport):
@@ -8,6 +8,11 @@ class EnvTraceReport(BaseReport):
 
     SHORTHAND = "ENV-TRACE"
     FILETYPE = "json"
+
+    @classmethod
+    def shorthand(cls) -> str:
+        """Shorthand for this report."""
+        return cls.SHORTHAND
 
     @staticmethod
     def get_file_name(
@@ -33,7 +38,7 @@ class EnvTraceReport(BaseReport):
         Returns:
             name for the report file that can later be uniquly identified
         """
-        return MetaReport.get_file_name(
+        return ReportFilename.get_file_name(
             EnvTraceReport.SHORTHAND, project_name, binary_name,
             project_version, project_uuid, extension_type, file_ext
         )

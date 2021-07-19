@@ -18,22 +18,22 @@ class ReleaseType(Enum):
     It is assumed that a major release is also a minor release and that a minor
     release is also a patch release.
     """
-    value: int
+    value: int  # pylint: disable=invalid-name
 
-    major = 1
-    minor = 2
-    patch = 3
+    MAJOR = 1
+    MINOR = 2
+    PATCH = 3
 
     def merge(self, other: tp.Optional["ReleaseType"]) -> "ReleaseType":
         """
         Merges two release type. It is assumed that minor releases include major
         releases and patch releases include minor releases.
 
-        >>> ReleaseType.minor.merge(ReleaseType.major)
-        <ReleaseType.minor: 2>
+        >>> ReleaseType.MINOR.merge(ReleaseType.MAJOR)
+        <ReleaseType.MINOR: 2>
 
-        >>> ReleaseType.major.merge(ReleaseType.patch)
-        <ReleaseType.patch: 3>
+        >>> ReleaseType.MAJOR.merge(ReleaseType.PATCH)
+        <ReleaseType.PATCH: 3>
         """
         if other is None:
             return self
@@ -146,7 +146,7 @@ class ReleaseDefaultProvider(ReleaseProvider):
                     if version.minor == 0]
 
         return {
-            ReleaseType.patch: get_patch_releases,
-            ReleaseType.minor: get_minor_releases,
-            ReleaseType.major: get_major_releases
+            ReleaseType.PATCH: get_patch_releases,
+            ReleaseType.MINOR: get_minor_releases,
+            ReleaseType.MAJOR: get_major_releases
         }[release_type]()

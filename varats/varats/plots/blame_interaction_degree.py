@@ -9,13 +9,12 @@ from os.path import isdir
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import matplotlib.style as style
 import numpy as np
 import pandas as pd
 import plumbum as pb
 from benchbuild.utils.cmd import mkdir
 from graphviz import Digraph  # type: ignore
-from matplotlib import cm
+from matplotlib import style, cm
 from plotly import graph_objs as go  # type: ignore
 from plotly import io as pio  # type: ignore
 
@@ -116,7 +115,7 @@ def _filter_data_frame(
         })
         return aggregated_df
 
-    if degree_type == DegreeType.interaction:
+    if degree_type == DegreeType.INTERACTION:
         interaction_plot_df = aggregate_data(interaction_plot_df)
 
     interaction_plot_df = interaction_plot_df.reindex(
@@ -1335,11 +1334,11 @@ class BlameInteractionDegree(BlameDegree):
         }
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
-        self._degree_plot(view_mode, DegreeType.interaction, extra_plot_cfg)
+        self._degree_plot(view_mode, DegreeType.INTERACTION, extra_plot_cfg)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
-            DegreeType.interaction, boundary_gradient
+            DegreeType.INTERACTION, boundary_gradient
         )
 
 
@@ -1358,7 +1357,8 @@ class BlameInteractionDegreeMultiLib(BlameDegree):
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        if 'base_lib' and 'inter_lib' not in self.plot_kwargs:
+        if 'base_lib' not in self.plot_kwargs or \
+                'inter_lib' not in self.plot_kwargs:
             LOG.warning("No library names were provided.")
             raise PlotDataEmpty
 
@@ -1374,12 +1374,12 @@ class BlameInteractionDegreeMultiLib(BlameDegree):
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
         self._multi_lib_degree_plot(
-            view_mode, DegreeType.interaction, extra_plot_cfg
+            view_mode, DegreeType.INTERACTION, extra_plot_cfg
         )
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
-            DegreeType.interaction, boundary_gradient
+            DegreeType.INTERACTION, boundary_gradient
         )
 
 
@@ -1400,12 +1400,12 @@ class BlameInteractionFractionOverview(BlameDegree):
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
         self._fraction_overview_plot(
-            view_mode, DegreeType.interaction, extra_plot_cfg
+            view_mode, DegreeType.INTERACTION, extra_plot_cfg
         )
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
-            DegreeType.interaction, boundary_gradient
+            DegreeType.INTERACTION, boundary_gradient
         )
 
 
@@ -1447,7 +1447,7 @@ class BlameLibraryInteractions(BlameDegree):
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
         self.__figure = self._multi_lib_interaction_sankey_plot(
-            view_mode, DegreeType.interaction, extra_plot_cfg, filetype='png'
+            view_mode, DegreeType.INTERACTION, extra_plot_cfg, filetype='png'
         )
 
     def show(self) -> None:
@@ -1470,7 +1470,7 @@ class BlameLibraryInteractions(BlameDegree):
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
-            DegreeType.interaction, boundary_gradient
+            DegreeType.INTERACTION, boundary_gradient
         )
 
 
@@ -1542,11 +1542,11 @@ class BlameAuthorDegree(BlameDegree):
         }
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
-        self._degree_plot(view_mode, DegreeType.author, extra_plot_cfg)
+        self._degree_plot(view_mode, DegreeType.AUTHOR, extra_plot_cfg)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
-            DegreeType.author, boundary_gradient
+            DegreeType.AUTHOR, boundary_gradient
         )
 
 
@@ -1567,11 +1567,11 @@ class BlameMaxTimeDistribution(BlameDegree):
         }
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
-        self._degree_plot(view_mode, DegreeType.max_time, extra_plot_cfg)
+        self._degree_plot(view_mode, DegreeType.MAX_TIME, extra_plot_cfg)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
-            DegreeType.max_time, boundary_gradient
+            DegreeType.MAX_TIME, boundary_gradient
         )
 
 
@@ -1592,9 +1592,9 @@ class BlameAvgTimeDistribution(BlameDegree):
         }
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
-        self._degree_plot(view_mode, DegreeType.avg_time, extra_plot_cfg)
+        self._degree_plot(view_mode, DegreeType.AVG_TIME, extra_plot_cfg)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
-            DegreeType.avg_time, boundary_gradient
+            DegreeType.AVG_TIME, boundary_gradient
         )

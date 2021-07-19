@@ -21,11 +21,10 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
-from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
 
-class Xz(bb.Project, CVEProviderHook):  # type: ignore
+class Xz(bb.Project):  # type: ignore
     """Compression and decompression tool xz (fetched by Git)"""
 
     NAME = 'xz'
@@ -75,11 +74,11 @@ class Xz(bb.Project, CVEProviderHook):  # type: ignore
             )
             if xz_version in old_xz_location:
                 return wrap_paths_to_binaries([
-                    ('src/xz/xz', BinaryType.executable)
+                    ('src/xz/xz', BinaryType.EXECUTABLE)
                 ])
 
             return wrap_paths_to_binaries([
-                ('src/xz/.libs/xz', BinaryType.executable)
+                ('src/xz/.libs/xz', BinaryType.EXECUTABLE)
             ])
 
     def run_tests(self) -> None:

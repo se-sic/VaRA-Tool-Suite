@@ -20,6 +20,7 @@ from varats.experiment.experiment_util import (
 )
 from varats.provider.bug.bug_provider import BugProvider
 from varats.report.report import FileStatusExtension as FSE
+from varats.report.report import ReportSpecification
 from varats.tools.research_tools.szz_unleashed import SZZUnleashed
 from varats.utils.settings import bb_cfg
 
@@ -43,7 +44,7 @@ class PrepareSZZUnleashedData(actions.Step):  # type: ignore
         run_dir = Path(project.source_of_primary).parent
 
         bug_provider = BugProvider.get_provider_for_project(project)
-        bugs = bug_provider.find_all_pygit_bugs()
+        bugs = bug_provider.find_pygit_bugs()
 
         fixers_dict = {}
         for bug in bugs:
@@ -56,11 +57,11 @@ class PrepareSZZUnleashedData(actions.Step):  # type: ignore
                 datetime.fromtimestamp(bug.fixing_commit.commit_time)
             )
             creationdate = fix_date(
-                bug.creationdate
-            ) if bug.creationdate else commitdate
+                bug.creation_date
+            ) if bug.creation_date else commitdate
             resolutiondate = fix_date(
-                bug.resolutiondate
-            ) if bug.resolutiondate else commitdate
+                bug.resolution_date
+            ) if bug.resolution_date else commitdate
             fixers_dict[str(bug.fixing_commit.id)] = {
                 "hash": str(bug.fixing_commit.id),
                 "commitdate": commitdate,
@@ -152,7 +153,7 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
             binary_name="none",  # we don't rely on binaries in this experiment
             project_version=project.version_of_primary,
             project_uuid=str(project.run_uuid),
-            extension_type=FSE.Success
+            extension_type=FSE.SUCCESS
         )
 
         with open(f"{varats_result_folder}/{result_file}", "w") as yaml_file:
@@ -179,7 +180,7 @@ class SZZUnleashedExperiment(Experiment):  # type: ignore
 
     NAME = "SZZUnleashed"
 
-    REPORT_TYPE = SZZReport
+    REPORT_SPEC = ReportSpecification(SZZReport)
 
     @classmethod
     def sample(cls, prj_cls: ProjectT) -> tp.List[source.VariantContext]:

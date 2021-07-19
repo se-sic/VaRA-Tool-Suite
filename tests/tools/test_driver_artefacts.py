@@ -4,7 +4,7 @@ import unittest
 import unittest.mock as mock
 from pathlib import Path
 
-from tests.test_utils import run_in_test_environment, TestInputs
+from tests.test_utils import run_in_test_environment, UnitTestInputs
 from varats.data.discover_reports import initialize_reports
 from varats.paper_mgmt.artefacts import (
     Artefact,
@@ -44,7 +44,7 @@ class TestDriverArtefacts(unittest.TestCase):
         initialize_tables()
         initialize_plots()
 
-    @run_in_test_environment(TestInputs.PAPER_CONFIGS)
+    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
     @mock.patch('varats.table.tables.build_table', side_effect=_mock_table)
     @mock.patch('varats.plot.plots.build_plot', side_effect=_mock_plot)
     # pylint: disable=unused-argument
@@ -68,7 +68,7 @@ class TestDriverArtefacts(unittest.TestCase):
 
     def __check_artefact_files_present(self, artefact: Artefact):
         artefact_file_names: tp.List[str] = []
-        if artefact.artefact_type == ArtefactType.plot:
+        if artefact.artefact_type == ArtefactType.PLOT:
             artefact = tp.cast(PlotArtefact, artefact)
             plots = prepare_plots(
                 plot_type=artefact.plot_type,
@@ -79,7 +79,7 @@ class TestDriverArtefacts(unittest.TestCase):
             artefact_file_names = [
                 plot.plot_file_name(artefact.file_format) for plot in plots
             ]
-        elif artefact.artefact_type == ArtefactType.table:
+        elif artefact.artefact_type == ArtefactType.TABLE:
             artefact = tp.cast(TableArtefact, artefact)
             tables = prepare_tables(
                 table_type=artefact.table_type,
