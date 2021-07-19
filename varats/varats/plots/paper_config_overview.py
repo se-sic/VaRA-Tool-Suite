@@ -76,7 +76,7 @@ def _load_projects_ordered_by_year(
 
         # dict: year -> [ (revision: str, status: FileStatusExtension) ]
         for rev, status in processed_revisions:
-            commit = repo.get(rev)
+            commit = repo.get(rev.hash)
             commit_date = datetime.utcfromtimestamp(commit.commit_time)
             revisions[commit_date.year].append((rev, status))
 
