@@ -303,13 +303,14 @@ class VersionExperiment(Experiment):  # type: ignore
                 )
 
             bad_revisions = [
-                revision for revision, file_status in
+                revision.hash
+                for revision, file_status in
                 get_tagged_revisions(prj_cls, getattr(cls, 'REPORT_SPEC'))
                 if file_status not in fs_good
             ]
 
             variants = list(
-                filter(lambda var: var[0] not in bad_revisions, variants)
+                filter(lambda var: str(var[0]) not in bad_revisions, variants)
             )
 
         if not variants:

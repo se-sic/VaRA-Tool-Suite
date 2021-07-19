@@ -20,7 +20,7 @@ from varats.utils.git_util import (
     ChurnConfig,
     calc_repo_code_churn,
     calc_code_churn,
-    CommitHash,
+    ShortCommitHash,
     FullCommitHash,
 )
 
@@ -116,7 +116,7 @@ def build_revisions_churn_table(
     ])
     churn_data = pd.DataFrame({
         "revision": revisions,
-        "time_id": [commit_map.short_time_id(x) for x in revisions],
+        "time_id": [commit_map.time_id(x) for x in revisions],
         "insertions": [x[1] for x in code_churn],
         "deletions": [x[2] for x in code_churn],
         "changed_files": [x[0] for x in code_churn]
@@ -133,7 +133,7 @@ def draw_code_churn(
     axis: axes.Axes,
     project_name: str,
     commit_map: CommitMap,
-    revision_selector: tp.Callable[[CommitHash], bool] = lambda x: True,
+    revision_selector: tp.Callable[[ShortCommitHash], bool] = lambda x: True,
     sort_df: tp.Callable[
         [pd.DataFrame],
         pd.DataFrame] = lambda data: data.sort_values(by=['time_id'])

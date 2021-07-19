@@ -239,7 +239,7 @@ class TestBlameInstInteractions(unittest.TestCase):
         """Test if base_hash is loaded correctly."""
         self.assertEqual(
             self.blame_interaction_1.base_commit.commit_hash,
-            '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33'
+            FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
         self.assertEqual(
             self.blame_interaction_1.base_commit.repository_name, 'Unknown'
@@ -247,7 +247,7 @@ class TestBlameInstInteractions(unittest.TestCase):
 
         self.assertEqual(
             self.blame_interaction_2.base_commit.commit_hash,
-            '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33'
+            FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
         self.assertEqual(
             self.blame_interaction_2.base_commit.repository_name, 'Unknown'
@@ -257,7 +257,7 @@ class TestBlameInstInteractions(unittest.TestCase):
         """Test if interactions are loaded correctly."""
         self.assertEqual(
             self.blame_interaction_1.interacting_commits[0].commit_hash,
-            'a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9'
+            FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
         )
         self.assertEqual(
             self.blame_interaction_1.interacting_commits[0].repository_name,
@@ -266,7 +266,7 @@ class TestBlameInstInteractions(unittest.TestCase):
 
         self.assertEqual(
             self.blame_interaction_2.interacting_commits[0].commit_hash,
-            'a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9'
+            FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
         )
         self.assertEqual(
             self.blame_interaction_2.interacting_commits[0].repository_name,
@@ -274,7 +274,7 @@ class TestBlameInstInteractions(unittest.TestCase):
         )
         self.assertEqual(
             self.blame_interaction_2.interacting_commits[1].commit_hash,
-            'e8999a84efbd9c3e739bff7af39500d14e61bfbc'
+            FullCommitHash('e8999a84efbd9c3e739bff7af39500d14e61bfbc')
         )
         self.assertEqual(
             self.blame_interaction_2.interacting_commits[1].repository_name,
@@ -336,12 +336,12 @@ class TestResultFunctionEntry(unittest.TestCase):
         self.assertEqual(len(c_interaction_list), 2)
         self.assertEqual(
             c_interaction_list[0].base_commit.commit_hash,
-            '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33'
+            FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
         self.assertEqual(c_interaction_list[0].amount, 22)
         self.assertEqual(
             c_interaction_list[1].base_commit.commit_hash,
-            '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33'
+            FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
         self.assertEqual(c_interaction_list[1].amount, 5)
 
@@ -463,7 +463,7 @@ class TestBlameReportWithRepoData(unittest.TestCase):
 
         self.assertEqual(
             interaction.interacting_commits[0].commit_hash,
-            "a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9"
+            FullCommitHash("a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9")
         )
         self.assertEqual(
             interaction.interacting_commits[0].repository_name, "Unknown"
@@ -476,7 +476,7 @@ class TestBlameReportWithRepoData(unittest.TestCase):
 
         self.assertEqual(
             interaction.interacting_commits[1].commit_hash,
-            "e8999a84efbd9c3e739bff7af39500d14e61bfbc"
+            FullCommitHash("e8999a84efbd9c3e739bff7af39500d14e61bfbc")
         )
         self.assertEqual(
             interaction.interacting_commits[1].repository_name, "gzip"
@@ -489,7 +489,7 @@ class TestBlameReportWithRepoData(unittest.TestCase):
 
         self.assertEqual(
             interaction.interacting_commits[2].commit_hash,
-            "ff999a84efbd9c3e739bff7af39500d14e61bfbc"
+            FullCommitHash("ff999a84efbd9c3e739bff7af39500d14e61bfbc")
         )
         self.assertEqual(
             interaction.interacting_commits[2].repository_name,
@@ -503,7 +503,7 @@ class TestBlameReportWithRepoData(unittest.TestCase):
 
         self.assertEqual(
             interaction.base_commit.commit_hash,
-            "48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33"
+            FullCommitHash("48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33")
         )
         self.assertEqual(interaction.base_commit.repository_name, "xz")
 
@@ -541,12 +541,12 @@ class TestBlameReportDiff(unittest.TestCase):
         self.assertEqual(len(new_func.interactions), 1)
         self.assertEqual(
             new_func.interactions[0].base_commit.commit_hash,
-            '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33'
+            FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
         self.assertEqual(len(new_func.interactions[0].interacting_commits), 1)
         self.assertEqual(
             new_func.interactions[0].interacting_commits[0].commit_hash,
-            'a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9'
+            FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
         )
         self.assertEqual(new_func.interactions[0].amount, 2)
 
@@ -574,28 +574,28 @@ class TestBlameReportDiff(unittest.TestCase):
         # Check first interaction
         self.assertEqual(
             del_func.interactions[0].base_commit.commit_hash,
-            '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33'
+            FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
         self.assertEqual(len(del_func.interactions[0].interacting_commits), 1)
         self.assertEqual(
             del_func.interactions[0].interacting_commits[0].commit_hash,
-            'a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9'
+            FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
         )
         self.assertEqual(del_func.interactions[0].amount, 22)
 
         # Check second interaction
         self.assertEqual(
             del_func.interactions[1].base_commit.commit_hash,
-            '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33'
+            FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
         self.assertEqual(len(del_func.interactions[1].interacting_commits), 2)
         self.assertEqual(
             del_func.interactions[1].interacting_commits[0].commit_hash,
-            'a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9'
+            FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
         )
         self.assertEqual(
             del_func.interactions[1].interacting_commits[1].commit_hash,
-            'e8999a84efbd9c3e739bff7af39500d14e61bfbc'
+            FullCommitHash('e8999a84efbd9c3e739bff7af39500d14e61bfbc')
         )
         self.assertEqual(del_func.interactions[1].amount, 5)
 
@@ -622,14 +622,14 @@ class TestBlameReportDiff(unittest.TestCase):
         # Check first interaction
         self.assertEqual(
             changed_func.interactions[0].base_commit.commit_hash,
-            '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33'
+            FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
         self.assertEqual(
             len(changed_func.interactions[0].interacting_commits), 1
         )
         self.assertEqual(
             changed_func.interactions[0].interacting_commits[0].commit_hash,
-            'a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9'
+            FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
         )
         self.assertEqual(changed_func.interactions[0].amount, 3)
 
@@ -646,12 +646,12 @@ class TestBlameReportDiff(unittest.TestCase):
         # Check first interaction
         self.assertEqual(
             del_func.interactions[0].base_commit.commit_hash,
-            '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33'
+            FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
         self.assertEqual(len(del_func.interactions[0].interacting_commits), 1)
         self.assertEqual(
             del_func.interactions[0].interacting_commits[0].commit_hash,
-            'a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9'
+            FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
         )
         self.assertEqual(del_func.interactions[0].amount, 22)
 
@@ -669,18 +669,18 @@ class TestBlameReportDiff(unittest.TestCase):
         # Check second interaction, that was increased
         self.assertEqual(
             changed_func.interactions[1].base_commit.commit_hash,
-            '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33'
+            FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
         self.assertEqual(
             len(changed_func.interactions[1].interacting_commits), 2
         )
         self.assertEqual(
             changed_func.interactions[1].interacting_commits[0].commit_hash,
-            'a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9'
+            FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
         )
         self.assertEqual(
             changed_func.interactions[1].interacting_commits[1].commit_hash,
-            'e8999a84efbd9c3e739bff7af39500d14e61bfbc'
+            FullCommitHash('e8999a84efbd9c3e739bff7af39500d14e61bfbc')
         )
         self.assertEqual(changed_func.interactions[1].amount, 2)
 
@@ -698,14 +698,14 @@ class TestBlameReportDiff(unittest.TestCase):
         # Check first interaction, that was decreased
         self.assertEqual(
             changed_func.interactions[0].base_commit.commit_hash,
-            '48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33'
+            FullCommitHash('48f8ed5347aeb9d54e7ea041b1f8d67ffe74db33')
         )
         self.assertEqual(
             len(changed_func.interactions[0].interacting_commits), 1
         )
         self.assertEqual(
             changed_func.interactions[0].interacting_commits[0].commit_hash,
-            'a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9'
+            FullCommitHash('a387695a1a2e52dcb1c5b21e73d2fd5a6aadbaf9')
         )
         self.assertEqual(changed_func.interactions[0].amount, -3)
 

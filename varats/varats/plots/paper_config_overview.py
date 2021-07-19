@@ -22,7 +22,7 @@ from varats.plot.plot_utils import check_required_args, find_missing_revisions
 from varats.project.project_util import get_local_project_git
 from varats.report.report import FileStatusExtension, BaseReport
 # colors taken from seaborn's default palette
-from varats.utils.git_util import CommitHash, FullCommitHash
+from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 SUCCESS_COLOR = np.asarray(
     (0.5568627450980392, 0.7294117647058823, 0.25882352941176473)
@@ -57,10 +57,10 @@ def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
 
 def _load_projects_ordered_by_year(
     current_config: PC.PaperConfig, result_file_type: tp.Type[BaseReport]
-) -> tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[CommitHash,
+) -> tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[ShortCommitHash,
                                                 FileStatusExtension]]]]:
     projects: tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[
-        CommitHash, FileStatusExtension]]]] = OrderedDict()
+        ShortCommitHash, FileStatusExtension]]]] = OrderedDict()
 
     for case_study in sorted(
         current_config.get_all_case_studies(),
@@ -72,7 +72,7 @@ def _load_projects_ordered_by_year(
 
         repo = get_local_project_git(case_study.project_name)
         revisions: tp.Dict[int, tp.List[tp.Tuple[
-            CommitHash, FileStatusExtension]]] = defaultdict(list)
+            ShortCommitHash, FileStatusExtension]]] = defaultdict(list)
 
         # dict: year -> [ (revision: str, status: FileStatusExtension) ]
         for rev, status in processed_revisions:
@@ -288,15 +288,17 @@ class PaperConfigOverviewPlot(Plot):
         revisions.sort_values(by=['revision'], inplace=True)
         cmap: CommitMap = self.plot_kwargs['cmap']
 
-        def head_cm_neighbours(lhs_cm: CommitHash, rhs_cm: CommitHash) -> bool:
+        def head_cm_neighbours(
+            lhs_cm: ShortCommitHash, rhs_cm: ShortCommitHash
+        ) -> bool:
             return cmap.short_time_id(lhs_cm) + 1 == cmap.short_time_id(rhs_cm)
 
         def should_insert_revision(last_row: tp.Any,
                                    row: tp.Any) -> tp.Tuple[bool, float]:
             return last_row["file_status"] != row["file_status"], 1.0
 
-        def get_commit_hash(row: tp.Any) -> CommitHash:
-            return CommitHash(str(row["revision"]))
+        def get_commit_hash(row: tp.Any) -> ShortCommitHash:
+            return ShortCommitHash(str(row["revision"]))
 
         return find_missing_revisions(
             revisions.iterrows(), Path(self.plot_kwargs['git_path']), cmap,

@@ -9,7 +9,7 @@ import varats.paper.case_study as CS
 from tests.test_helper_config import ConfigurationTestImpl
 from varats.base.sampling_method import UniformSamplingMethod
 from varats.mapping.commit_map import CommitMap
-from varats.utils.git_util import FullCommitHash, CommitHash
+from varats.utils.git_util import FullCommitHash, ShortCommitHash
 
 YAML_CASE_STUDY = """---
 DocType: CaseStudy
@@ -132,8 +132,12 @@ class TestCaseStudy(unittest.TestCase):
                 FullCommitHash("b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
             )
         )
-        self.assertTrue(self.case_study.has_revision(CommitHash("b8b25e7f15")))
-        self.assertTrue(self.case_study.has_revision(CommitHash("a3db5806d01")))
+        self.assertTrue(
+            self.case_study.has_revision(ShortCommitHash("b8b25e7f15"))
+        )
+        self.assertTrue(
+            self.case_study.has_revision(ShortCommitHash("a3db5806d01"))
+        )
 
         self.assertFalse(
             self.case_study.has_revision(
@@ -149,7 +153,7 @@ class TestCaseStudy(unittest.TestCase):
                 FullCommitHash("b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
             )
         )
-        self.assertTrue(revision_filter(CommitHash("b8b25e7f15")))
+        self.assertTrue(revision_filter(ShortCommitHash("b8b25e7f15")))
 
         self.assertFalse(
             revision_filter(

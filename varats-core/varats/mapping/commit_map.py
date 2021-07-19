@@ -13,7 +13,11 @@ from varats.project.project_util import (
     get_local_project_git_path,
     get_primary_project_source,
 )
-from varats.utils.git_util import get_current_branch, FullCommitHash, CommitHash
+from varats.utils.git_util import (
+    get_current_branch,
+    FullCommitHash,
+    ShortCommitHash,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -41,7 +45,7 @@ class CommitMap():
         """
         return tp.cast(int, self.__hash_to_id[c_hash.hash])
 
-    def short_time_id(self, c_hash: CommitHash) -> int:
+    def short_time_id(self, c_hash: ShortCommitHash) -> int:
         """
         Convert a short commit hash to a time id that allows a total order on
         the commits, based on the c_map, e.g., created from the analyzed git
@@ -78,7 +82,7 @@ class CommitMap():
                 return FullCommitHash(tp.cast(str, c_hash))
         raise KeyError
 
-    def completed_c_hash(self, short_commit: CommitHash):
+    def completed_c_hash(self, short_commit: ShortCommitHash) -> FullCommitHash:
         return self.c_hash(self.short_time_id(short_commit))
 
     def mapping_items(self) -> tp.ItemsView[str, int]:

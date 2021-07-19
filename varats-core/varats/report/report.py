@@ -10,7 +10,7 @@ from pathlib import Path, PosixPath
 from plumbum import colors
 from plumbum.colorlib.styles import Color
 
-from varats.utils.git_util import CommitHash
+from varats.utils.git_util import ShortCommitHash
 
 
 class FileStatusExtension(Enum):
@@ -229,7 +229,7 @@ class ReportFilename():
         return match is not None
 
     @property
-    def commit_hash(self) -> CommitHash:
+    def commit_hash(self) -> ShortCommitHash:
         """
         Commit hash of the result file.
 
@@ -238,7 +238,7 @@ class ReportFilename():
         """
         match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
         if match:
-            return CommitHash(match.group("file_commit_hash"))
+            return ShortCommitHash(match.group("file_commit_hash"))
 
         raise ValueError(f'File {self.filename} name was wrongly formated.')
 

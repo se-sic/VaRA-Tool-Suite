@@ -44,7 +44,7 @@ from varats.revision.revisions import (
     is_revision_blocked,
     get_processed_revisions_files,
 )
-from varats.utils.git_util import CommitHash, FullCommitHash
+from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 LOG = logging.Logger(__name__)
 
@@ -64,7 +64,7 @@ class ExtenderStrategy(Enum):
 
 def processed_revisions_for_case_study(
     case_study: CaseStudy, result_file_type: tp.Type[BaseReport]
-) -> tp.List[CommitHash]:
+) -> tp.List[FullCommitHash]:
     """
     Computes all revisions of this case study that have been processed.
 
@@ -80,13 +80,14 @@ def processed_revisions_for_case_study(
     )
 
     return [
-        rev for rev in case_study.revisions if rev in total_processed_revisions
+        rev for rev in case_study.revisions
+        if rev.to_short_commit_hash() in total_processed_revisions
     ]
 
 
 def failed_revisions_for_case_study(
     case_study: CaseStudy, result_file_type: tp.Type[BaseReport]
-) -> tp.List[CommitHash]:
+) -> tp.List[FullCommitHash]:
     """
     Computes all revisions of this case study that have failed.
 
@@ -102,7 +103,8 @@ def failed_revisions_for_case_study(
     )
 
     return [
-        rev for rev in case_study.revisions if rev in total_failed_revisions
+        rev for rev in case_study.revisions
+        if rev.to_short_commit_hash() in total_failed_revisions
     ]
 
 
@@ -111,7 +113,7 @@ def get_revisions_status_for_case_study(
     result_file_type: tp.Type[BaseReport],
     stage_num: int = -1,
     tag_blocked: bool = True
-) -> tp.List[tp.Tuple[CommitHash, FileStatusExtension]]:
+) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
     """
     Computes the file status for all revisions in this case study.
 
@@ -131,7 +133,7 @@ def get_revisions_status_for_case_study(
 
     def filtered_tagged_revs(
         rev_provider: tp.Iterable[FullCommitHash]
-    ) -> tp.List[tp.Tuple[CommitHash, FileStatusExtension]]:
+    ) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
         filtered_revisions = []
         for rev in rev_provider:
             short_rev = rev.to_short_commit_hash()
@@ -164,7 +166,7 @@ def get_revisions_status_for_case_study(
 
 def get_revision_status_for_case_study(
     case_study: CaseStudy,
-    revision: CommitHash,
+    revision: ShortCommitHash,
     result_file_type: tp.Type[BaseReport],
 ) -> FileStatusExtension:
     """
@@ -201,7 +203,7 @@ def get_newest_result_files_for_case_study(
     Returns:
         list of result file paths
     """
-    files_to_store: tp.Dict[CommitHash, Path] = dict()
+    files_to_store: tp.Dict[ShortCommitHash, Path] = dict()
 
     result_dir /= case_study.project_name
     if not result_dir.exists():
@@ -461,7 +463,8 @@ def extend_with_revs_per_year(
         for commit_index in sample_commit_indices:
             commit_hash = commits_in_year[commit_index]
             if kwargs["ignore_blocked"] and is_revision_blocked(
-                commit_hash, get_project_cls_by_name(case_study.project_name)
+                commit_hash.to_short_commit_hash(),
+                get_project_cls_by_name(case_study.project_name)
             ):
                 continue
             time_id = cmap.time_id(commit_hash)
@@ -488,7 +491,7 @@ def extend_with_distrib_sampling(
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
     """
-    is_blocked: tp.Callable[[CommitHash, tp.Type[Project]],
+    is_blocked: tp.Callable[[ShortCommitHash, tp.Type[Project]],
                             bool] = lambda rev, _: False
     if kwargs["ignore_blocked"]:
         is_blocked = is_revision_blocked
@@ -500,8 +503,8 @@ def extend_with_distrib_sampling(
         (FullCommitHash(rev), idx)
         for rev, idx in sorted(list(cmap.mapping_items()), key=lambda x: x[1])
         if not case_study.
-        has_revision_in_stage(CommitHash(rev), kwargs['merge_stage']) and
-        not is_blocked(CommitHash(rev), project_cls)
+        has_revision_in_stage(ShortCommitHash(rev), kwargs['merge_stage']) and
+        not is_blocked(ShortCommitHash(rev), project_cls)
     ]
 
     sampling_method: NormalSamplingMethod = kwargs['distribution']

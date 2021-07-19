@@ -9,7 +9,7 @@ import yaml
 from varats.base.version_header import VersionHeader
 from varats.mapping.commit_map import CommitMap
 from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
-from varats.utils.git_util import CommitHash, FullCommitHash
+from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 LOG = logging.getLogger(__name__)
 
@@ -171,7 +171,7 @@ class CommitReport(BaseReport):
                 self.graph_info[f_edge.fid] = f_edge
 
     @property
-    def head_commit(self) -> CommitHash:
+    def head_commit(self) -> ShortCommitHash:
         """The current HEAD commit under which this CommitReport was created."""
         return self.filename.commit_hash
 

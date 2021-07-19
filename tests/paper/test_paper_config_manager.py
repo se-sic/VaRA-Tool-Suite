@@ -18,7 +18,7 @@ from varats.data.reports.commit_report import CommitReport
 from varats.paper.case_study import load_case_study_from_file, CaseStudy
 from varats.projects.c_projects.gzip import Gzip
 from varats.report.report import FileStatusExtension
-from varats.utils.git_util import CommitHash
+from varats.utils.git_util import ShortCommitHash
 
 
 class TestPaperConfigManager(unittest.TestCase):
@@ -71,7 +71,7 @@ class TestPaperConfigManager(unittest.TestCase):
 
         # Revision not in set
         mock_get_tagged_revisions.return_value = [
-            ('42b25e7f15', FileStatusExtension.SUCCESS)
+            (ShortCommitHash('42b25e7f15'), FileStatusExtension.SUCCESS)
         ]
 
         status = PCM.get_short_status(self.case_study, CommitReport, 5)
@@ -80,7 +80,7 @@ class TestPaperConfigManager(unittest.TestCase):
 
         mock_get_tagged_revisions.reset_mock()
         mock_get_tagged_revisions.return_value = [
-            ('b8b25e7f15', FileStatusExtension.SUCCESS)
+            (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS)
         ]
 
         status = PCM.get_short_status(self.case_study, CommitReport, 5)
@@ -97,7 +97,7 @@ class TestPaperConfigManager(unittest.TestCase):
         """
         # Revision not in set
         mock_get_tagged_revisions.return_value = [
-            ('42b25e7f15', FileStatusExtension.SUCCESS)
+            (ShortCommitHash('42b25e7f15'), FileStatusExtension.SUCCESS)
         ]
 
         status = PCM.get_short_status(self.case_study, CommitReport, 5, True)
@@ -106,7 +106,7 @@ class TestPaperConfigManager(unittest.TestCase):
 
         mock_get_tagged_revisions.reset_mock()
         mock_get_tagged_revisions.return_value = [
-            ('b8b25e7f15', FileStatusExtension.SUCCESS)
+            (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS)
         ]
 
         status = PCM.get_short_status(self.case_study, CommitReport, 5, True)
@@ -123,7 +123,7 @@ class TestPaperConfigManager(unittest.TestCase):
         """Check if the case study can show a short status."""
         # Revision not in set
         mock_get_tagged_revisions.return_value = [
-            ('42b25e7f15', FileStatusExtension.SUCCESS)
+            (ShortCommitHash('42b25e7f15'), FileStatusExtension.SUCCESS)
         ]
 
         status = PCM.get_status(self.case_study, CommitReport, 5, False, False)
@@ -145,10 +145,10 @@ class TestPaperConfigManager(unittest.TestCase):
 
         mock_get_tagged_revisions.reset_mock()
         mock_get_tagged_revisions.return_value = [
-            ('b8b25e7f15', FileStatusExtension.SUCCESS),
-            ('622e9b1d02', FileStatusExtension.FAILED),
-            ('1e7e3769dc', FileStatusExtension.COMPILE_ERROR),
-            ('2e654f9963', FileStatusExtension.BLOCKED)
+            (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS),
+            (ShortCommitHash('622e9b1d02'), FileStatusExtension.FAILED),
+            (ShortCommitHash('1e7e3769dc'), FileStatusExtension.COMPILE_ERROR),
+            (ShortCommitHash('2e654f9963'), FileStatusExtension.BLOCKED)
         ]
 
         status = PCM.get_status(self.case_study, CommitReport, 5, False, False)
@@ -170,10 +170,10 @@ class TestPaperConfigManager(unittest.TestCase):
 
         mock_get_tagged_revisions.reset_mock()
         mock_get_tagged_revisions.return_value = [
-            ('b8b25e7f15', FileStatusExtension.SUCCESS),
-            ('622e9b1d02', FileStatusExtension.FAILED),
-            ('1e7e3769dc', FileStatusExtension.COMPILE_ERROR),
-            ('2e654f9963', FileStatusExtension.BLOCKED)
+            (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS),
+            (ShortCommitHash('622e9b1d02'), FileStatusExtension.FAILED),
+            (ShortCommitHash('1e7e3769dc'), FileStatusExtension.COMPILE_ERROR),
+            (ShortCommitHash('2e654f9963'), FileStatusExtension.BLOCKED)
         ]
 
         status = PCM.get_status(self.case_study, CommitReport, 5, False, True)
@@ -205,7 +205,7 @@ class TestPaperConfigManager(unittest.TestCase):
         """Check if the case study can show a short status."""
         # Revision not in set
         mock_get_tagged_revisions.return_value = [
-            ('42b25e7f15', FileStatusExtension.SUCCESS)
+            (ShortCommitHash('42b25e7f15'), FileStatusExtension.SUCCESS)
         ]
 
         status = PCM.get_status(self.case_study, CommitReport, 5, True, False)
@@ -230,10 +230,10 @@ class TestPaperConfigManager(unittest.TestCase):
 
         mock_get_tagged_revisions.reset_mock()
         mock_get_tagged_revisions.return_value = [
-            ('b8b25e7f15', FileStatusExtension.SUCCESS),
-            ('622e9b1d02', FileStatusExtension.FAILED),
-            ('1e7e3769dc', FileStatusExtension.COMPILE_ERROR),
-            ('2e654f9963', FileStatusExtension.BLOCKED)
+            (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS),
+            (ShortCommitHash('622e9b1d02'), FileStatusExtension.FAILED),
+            (ShortCommitHash('1e7e3769dc'), FileStatusExtension.COMPILE_ERROR),
+            (ShortCommitHash('2e654f9963'), FileStatusExtension.BLOCKED)
         ]
 
         status = PCM.get_status(self.case_study, CommitReport, 5, True, False)
@@ -258,10 +258,10 @@ class TestPaperConfigManager(unittest.TestCase):
 
         mock_get_tagged_revisions.reset_mock()
         mock_get_tagged_revisions.return_value = [
-            ('b8b25e7f15', FileStatusExtension.SUCCESS),
-            ('622e9b1d02', FileStatusExtension.FAILED),
-            ('1e7e3769dc', FileStatusExtension.COMPILE_ERROR),
-            ('2e654f9963', FileStatusExtension.BLOCKED)
+            (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS),
+            (ShortCommitHash('622e9b1d02'), FileStatusExtension.FAILED),
+            (ShortCommitHash('1e7e3769dc'), FileStatusExtension.COMPILE_ERROR),
+            (ShortCommitHash('2e654f9963'), FileStatusExtension.BLOCKED)
         ]
 
         status = PCM.get_status(self.case_study, CommitReport, 5, True, True)
@@ -294,7 +294,7 @@ class TestPaperConfigManager(unittest.TestCase):
         """
         # Revision not in set
         mock_get_tagged_revisions.return_value = [
-            ('42b25e7f15', FileStatusExtension.SUCCESS)
+            (ShortCommitHash('42b25e7f15'), FileStatusExtension.SUCCESS)
         ]
 
         status = PCM.get_status(
@@ -318,10 +318,10 @@ class TestPaperConfigManager(unittest.TestCase):
 
         mock_get_tagged_revisions.reset_mock()
         mock_get_tagged_revisions.return_value = [
-            ('b8b25e7f15', FileStatusExtension.SUCCESS),
-            ('622e9b1d02', FileStatusExtension.FAILED),
-            ('1e7e3769dc', FileStatusExtension.COMPILE_ERROR),
-            ('2e654f9963', FileStatusExtension.BLOCKED)
+            (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS),
+            (ShortCommitHash('622e9b1d02'), FileStatusExtension.FAILED),
+            (ShortCommitHash('1e7e3769dc'), FileStatusExtension.COMPILE_ERROR),
+            (ShortCommitHash('2e654f9963'), FileStatusExtension.BLOCKED)
         ]
 
         status = PCM.get_status(
@@ -367,10 +367,10 @@ class TestPaperConfigManager(unittest.TestCase):
     def test_total_status_color(self, mock_get_tagged_revisions) -> None:
         """Check if the total status is correctly generated."""
         total_status_occurrences: tp.DefaultDict[
-            FileStatusExtension, tp.Set[CommitHash]] = defaultdict(set)
+            FileStatusExtension, tp.Set[ShortCommitHash]] = defaultdict(set)
         # Revision not in set
         mock_get_tagged_revisions.return_value = [
-            ('42b25e7f15', FileStatusExtension.SUCCESS)
+            (ShortCommitHash('42b25e7f15'), FileStatusExtension.SUCCESS)
         ]
 
         PCM.get_status(
@@ -388,10 +388,10 @@ Total:         (  0/10) processed [0/0/0/10/0]"""
 
         mock_get_tagged_revisions.reset_mock()
         mock_get_tagged_revisions.return_value = [
-            ('b8b25e7f15', FileStatusExtension.SUCCESS),
-            ('622e9b1d02', FileStatusExtension.FAILED),
-            ('1e7e3769dc', FileStatusExtension.COMPILE_ERROR),
-            ('2e654f9963', FileStatusExtension.BLOCKED)
+            (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS),
+            (ShortCommitHash('622e9b1d02'), FileStatusExtension.FAILED),
+            (ShortCommitHash('1e7e3769dc'), FileStatusExtension.COMPILE_ERROR),
+            (ShortCommitHash('2e654f9963'), FileStatusExtension.BLOCKED)
         ]
 
         PCM.get_status(
@@ -412,10 +412,10 @@ Total:         (  1/14) processed [1/1/1/10/1]"""
 
         mock_get_tagged_revisions.reset_mock()
         mock_get_tagged_revisions.return_value = [
-            ('b8b25e7f15', FileStatusExtension.SUCCESS),
-            ('622e9b1d02', FileStatusExtension.FAILED),
-            ('1e7e3769dc', FileStatusExtension.COMPILE_ERROR),
-            ('2e654f9963', FileStatusExtension.BLOCKED)
+            (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS),
+            (ShortCommitHash('622e9b1d02'), FileStatusExtension.FAILED),
+            (ShortCommitHash('1e7e3769dc'), FileStatusExtension.COMPILE_ERROR),
+            (ShortCommitHash('2e654f9963'), FileStatusExtension.BLOCKED)
         ]
 
         PCM.get_status(

@@ -23,7 +23,7 @@ from varats.utils.git_util import (
     ChurnConfig,
     calc_repo_code_churn,
     FullCommitHash,
-    CommitHash,
+    ShortCommitHash,
 )
 
 
@@ -93,7 +93,7 @@ def draw_interaction_code_churn(
 
     unique_revs = data['revision'].unique()
 
-    def remove_revisions_without_data(revision: CommitHash) -> bool:
+    def remove_revisions_without_data(revision: ShortCommitHash) -> bool:
         """Removes all churn data where this plot has no data."""
         return revision.hash in unique_revs
 

@@ -39,7 +39,7 @@ def draw_cves(
         plot_cfg.update(extra_plot_cfg)
 
     cmap = create_lazy_commit_map_loader(project.NAME)()
-    revision_time_ids = [cmap.short_time_id(rev) for rev in revisions]
+    revision_time_ids = [cmap.time_id(rev) for rev in revisions]
 
     cve_provider = CVEProvider.get_provider_for_project(project)
     for revision, cves in cve_provider.get_revision_cve_tuples():

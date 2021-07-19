@@ -9,7 +9,7 @@ from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.report.report import FileStatusExtension
-from varats.utils.git_util import CommitHash
+from varats.utils.git_util import ShortCommitHash
 
 
 class FileStatusDatabase(
@@ -35,7 +35,7 @@ class FileStatusDatabase(
             return df_layout
 
         def create_data_frame_for_revision(
-            revision: CommitHash, status: FileStatusExtension
+            revision: ShortCommitHash, status: FileStatusExtension
         ) -> pd.DataFrame:
             return pd.DataFrame({
                 'revision': revision,

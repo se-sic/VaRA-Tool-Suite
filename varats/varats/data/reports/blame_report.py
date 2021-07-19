@@ -18,7 +18,7 @@ from varats.utils.git_util import (
     CommitLookupTy,
     FullCommitHash,
     DUMMY_COMMIT_HASH,
-    CommitHash,
+    ShortCommitHash,
 )
 
 
@@ -316,7 +316,7 @@ class BlameReport(BaseReport):
         return self.__function_entries.values()
 
     @property
-    def head_commit(self) -> CommitHash:
+    def head_commit(self) -> ShortCommitHash:
         """The current HEAD commit under which this CommitReport was created."""
         return self.filename.commit_hash
 
@@ -378,11 +378,11 @@ class BlameReportDiff():
         self.__calc_diff_br(base_report, prev_report)
 
     @property
-    def base_head_commit(self) -> CommitHash:
+    def base_head_commit(self) -> ShortCommitHash:
         return self.__base_head
 
     @property
-    def prev_head_commit(self) -> CommitHash:
+    def prev_head_commit(self) -> ShortCommitHash:
         return self.__prev_head
 
     @property

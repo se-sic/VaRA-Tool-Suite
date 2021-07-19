@@ -1,5 +1,5 @@
 """Utility module for handling git repos."""
-
+import abc
 import os
 import re
 import typing as tp
@@ -19,19 +19,21 @@ FULL_COMMIT_HASH_LENGTH = 40
 SHORT_COMMIT_HASH_LENGTH = 10
 
 
-class CommitHash():
-    """Shortened commit hash."""
-
-    COMMIT_HASH_LENGTH = SHORT_COMMIT_HASH_LENGTH
+class CommitHash(abc.ABC):
 
     def __init__(self, short_commit_hash: str):
-        if not len(short_commit_hash) >= self.COMMIT_HASH_LENGTH:
+        if not len(short_commit_hash) >= self.hash_length():
             raise ValueError("Commit hash too short")
-        self.__commit_hash = short_commit_hash[:self.COMMIT_HASH_LENGTH]
+        self.__commit_hash = short_commit_hash[:self.hash_length()]
 
     @property
     def hash(self) -> str:
         return self.__commit_hash
+
+    @staticmethod
+    @abc.abstractmethod
+    def hash_length() -> int:
+        pass
 
     @staticmethod
     def from_pygit_commit(commit: pygit2.Commit) -> 'FullCommitHash':
@@ -57,21 +59,28 @@ class CommitHash():
         return hash(self.hash)
 
 
+class ShortCommitHash(CommitHash):
+    """Shortened commit hash."""
+
+    @staticmethod
+    def hash_length() -> int:
+        return SHORT_COMMIT_HASH_LENGTH
+
+
 class FullCommitHash(CommitHash):
     """Full-length commit hash."""
 
-    COMMIT_HASH_LENGTH = FULL_COMMIT_HASH_LENGTH
-
-    def __init__(self, commit_hash: str):
-        super().__init__(commit_hash)
+    @staticmethod
+    def hash_length() -> int:
+        return FULL_COMMIT_HASH_LENGTH
 
     @property
     def short_hash(self) -> str:
         """Abbreviated commit hash."""
         return self.hash[:SHORT_COMMIT_HASH_LENGTH]
 
-    def to_short_commit_hash(self) -> CommitHash:
-        return CommitHash(self.hash)
+    def to_short_commit_hash(self) -> ShortCommitHash:
+        return ShortCommitHash(self.hash)
 
     def startswith(self, short_hash: CommitHash) -> bool:
         return self.hash.startswith(short_hash.hash)
@@ -296,7 +305,7 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
             if c_hash in cache_dict[primary_source_name]:
                 return cache_dict[primary_source_name][c_hash]
 
-            commit = primary_project_repo.get(c_hash)
+            commit = primary_project_repo.get(c_hash.hash)
             if commit is None:
                 raise LookupError(
                     f"Could not find commit {c_hash} in {project_name}"

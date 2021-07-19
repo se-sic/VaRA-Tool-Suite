@@ -39,7 +39,7 @@ def draw_bugs(
         plot_cfg.update(extra_plot_cfg)
 
     cmap = create_lazy_commit_map_loader(project.NAME)()
-    revision_time_ids = [cmap.short_time_id(rev) for rev in revisions]
+    revision_time_ids = [cmap.time_id(rev) for rev in revisions]
 
     bug_provider = BugProvider.get_provider_for_project(project)
     for rawbug in bug_provider.find_raw_bugs():

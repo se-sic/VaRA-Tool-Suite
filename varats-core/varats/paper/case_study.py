@@ -16,7 +16,7 @@ from varats.mapping.configuration_map import (
     create_configuration_map_from_yaml_doc,
 )
 from varats.provider.release.release_provider import ReleaseType
-from varats.utils.git_util import CommitHash, FullCommitHash
+from varats.utils.git_util import ShortCommitHash, FullCommitHash, CommitHash
 from varats.utils.yaml_util import load_yaml, store_as_yaml
 
 CSEntryMapTypes = tp.Union[str, int, tp.List[int]]
@@ -165,7 +165,8 @@ class CSStage():
         if not self.has_revision(revision):
             self.__revisions.append(CSEntry(revision, commit_id, config_ids))
 
-    def get_config_ids_for_revision(self, revision: CommitHash) -> tp.List[int]:
+    def get_config_ids_for_revision(self,
+                                    revision: ShortCommitHash) -> tp.List[int]:
         """
         Returns a list of all configuration IDs specified for this revision.
 
@@ -308,7 +309,7 @@ class CaseStudy():
         return False
 
     def has_revision_in_stage(
-        self, revision: CommitHash, num_stage: int
+        self, revision: ShortCommitHash, num_stage: int
     ) -> bool:
         """
         Checks if a revision is in a specific stage.
@@ -321,7 +322,8 @@ class CaseStudy():
             return False
         return self.__stages[num_stage].has_revision(revision)
 
-    def get_config_ids_for_revision(self, revision: CommitHash) -> tp.List[int]:
+    def get_config_ids_for_revision(self,
+                                    revision: ShortCommitHash) -> tp.List[int]:
         """
         Returns a list of all configuration IDs specified for this revision.
 
@@ -342,7 +344,7 @@ class CaseStudy():
         return config_ids
 
     def get_config_ids_for_revision_in_stage(
-        self, revision: CommitHash, num_stage: int
+        self, revision: ShortCommitHash, num_stage: int
     ) -> tp.List[int]:
         """
         Returns a list of all configuration IDs specified for this revision.
@@ -456,7 +458,7 @@ class CaseStudy():
         if stage_num < self.num_stages:
             self.__stages[stage_num].name = name
 
-    def get_revision_filter(self) -> tp.Callable[[CommitHash], bool]:
+    def get_revision_filter(self) -> tp.Callable[[ShortCommitHash], bool]:
         """
         Generate a case study specific revision filter that only allows revision
         that are part of the case study.
@@ -465,7 +467,7 @@ class CaseStudy():
             a callable filter function
         """
 
-        def revision_filter(revision: CommitHash) -> bool:
+        def revision_filter(revision: ShortCommitHash) -> bool:
             return self.has_revision(revision)
 
         return revision_filter

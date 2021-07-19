@@ -34,7 +34,7 @@ from varats.utils.cli_util import (
     initialize_cli_tool,
     cli_yn_choice,
 )
-from varats.utils.git_util import CommitHash
+from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
@@ -439,13 +439,13 @@ def __casestudy_package(
         )
 
 
-def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> CommitHash:
+def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> ShortCommitHash:
     result_file_type = BaseReport.REPORT_TYPES[args["report_type"]]
     project_name = args["project"]
     if "commit_hash" not in args:
         # Ask the user to provide a commit hash
         print("No commit hash was provided.")
-        commit_hash: tp.Optional[CommitHash] = None
+        commit_hash: tp.Optional[ShortCommitHash] = None
         paper_config = get_paper_config()
         available_commit_hashes = []
         # Compute available commit hashes
@@ -462,7 +462,7 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> CommitHash:
 
         # Create call backs for cli choice
         def set_commit_hash(
-            choice_pair: tp.Tuple[CommitHash, FileStatusExtension]
+            choice_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
         ) -> None:
             nonlocal commit_hash
             commit_hash = choice_pair[0]
@@ -476,7 +476,7 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> CommitHash:
         ])
 
         def result_file_to_list_entry(
-            commit_status_pair: tp.Tuple[CommitHash, FileStatusExtension]
+            commit_status_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
         ) -> str:
             status = commit_status_pair[1].get_colored_status().rjust(
                 longest_file_status_extension +
@@ -501,7 +501,7 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> CommitHash:
             print("Could not find processed commit hash.")
             raise LookupError
         return commit_hash
-    return CommitHash(args["commit_hash"])
+    return ShortCommitHash(args["commit_hash"])
 
 
 def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
@@ -587,7 +587,7 @@ def _remove_old_result_files() -> None:
     result_dir = Path(str(vara_cfg()['result_dir']))
     for case_study in paper_config.get_all_case_studies():
         old_files: tp.List[Path] = []
-        newer_files: tp.Dict[CommitHash, Path] = dict()
+        newer_files: tp.Dict[ShortCommitHash, Path] = dict()
         result_dir_cs = result_dir / case_study.project_name
         if not result_dir_cs.exists():
             continue

@@ -16,7 +16,7 @@ from varats.data.reports.commit_report import (
 )
 from varats.mapping.commit_map import CommitMap
 from varats.report.report import FileStatusExtension, ReportFilename
-from varats.utils.git_util import FullCommitHash, CommitHash
+from varats.utils.git_util import FullCommitHash, ShortCommitHash
 
 YAML_DOC_1 = """---
 DocType:         CommitReport
@@ -139,12 +139,12 @@ class TestRegionMapping(unittest.TestCase):
         """Test if id -> hash mappings are correct."""
         self.assertEqual(
             self.r_mappings["8ac1b3f73baceb4a16e99504807d23d38e5123b1"].hash,
-            "8ac1b3f73baceb4a16e99504807d23d38e5123b1"
+            FullCommitHash("8ac1b3f73baceb4a16e99504807d23d38e5123b1")
         )
 
         self.assertEqual(
             self.r_mappings["38f87b03c2763bb2af05ae98905b0ac8ba55b3eb"].hash,
-            "38f87b03c2763bb2af05ae98905b0ac8ba55b3eb"
+            FullCommitHash("38f87b03c2763bb2af05ae98905b0ac8ba55b3eb")
         )
 
 
@@ -262,7 +262,7 @@ class TestCommitReport(unittest.TestCase):
 
     def test_path(self) -> None:
         """Check if path is set correctly."""
-        self.assertEqual(self.commit_report.path, "fake_file_path")
+        self.assertEqual(self.commit_report.path, Path("fake_file_path"))
 
     def test_calc_max_func_edges(self) -> None:
         """Check if max edges are correctly calculated."""
@@ -306,10 +306,12 @@ class TestCommitReport(unittest.TestCase):
     def test_get_commit(self) -> None:
         """Check if the correct commit hash is returned."""
         self.assertEqual(
-            self.commit_report_success.filename.commit_hash, "7bb9ef5f8c"
+            self.commit_report_success.filename.commit_hash,
+            ShortCommitHash("7bb9ef5f8c")
         )
         self.assertEqual(
-            self.commit_report_fail.filename.commit_hash, "7bb9ef5f8c"
+            self.commit_report_fail.filename.commit_hash,
+            ShortCommitHash("7bb9ef5f8c")
         )
 
     def test_file_name_creation(self) -> None:
@@ -407,9 +409,15 @@ class TestCommitMap(unittest.TestCase):
 
     def test_short_time_id(self) -> None:
         """Test short time id look up."""
-        self.assertEqual(self.cmap.short_time_id(CommitHash("ae332f2a5d")), 1)
-        self.assertEqual(self.cmap.short_time_id(CommitHash("ef58a957a6c1")), 0)
-        self.assertEqual(self.cmap.short_time_id(CommitHash("20540be618")), 32)
+        self.assertEqual(
+            self.cmap.short_time_id(ShortCommitHash("ae332f2a5d")), 1
+        )
+        self.assertEqual(
+            self.cmap.short_time_id(ShortCommitHash("ef58a957a6c1")), 0
+        )
+        self.assertEqual(
+            self.cmap.short_time_id(ShortCommitHash("20540be618")), 32
+        )
 
 
 class TestCommitConnectionGenerators(unittest.TestCase):
@@ -433,11 +441,13 @@ class TestCommitConnectionGenerators(unittest.TestCase):
         """Test generation of interaction node."""
         nodes = generate_interactions(self.commit_report, self.cmap)[0]
         self.assertEqual(
-            nodes.at[0, 'hash'], '38f87b03c2763bb2af05ae98905b0ac8ba55b3eb'
+            nodes.at[0, 'hash'],
+            FullCommitHash('38f87b03c2763bb2af05ae98905b0ac8ba55b3eb')
         )
         self.assertEqual(nodes.at[0, 'id'], 12)
         self.assertEqual(
-            nodes.at[3, 'hash'], '95ace546d3f6c5909a636017f141784105f9dab2'
+            nodes.at[3, 'hash'],
+            FullCommitHash('95ace546d3f6c5909a636017f141784105f9dab2')
         )
         self.assertEqual(nodes.at[3, 'id'], 9)
 

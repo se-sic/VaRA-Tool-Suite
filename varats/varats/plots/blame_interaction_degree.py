@@ -34,7 +34,7 @@ from varats.plots.bug_annotation import draw_bugs
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.repository_churn import draw_code_churn_for_revisions
 from varats.project.project_util import get_project_cls_by_name
-from varats.utils.git_util import CommitHash, FullCommitHash
+from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 LOG = logging.getLogger(__name__)
 
@@ -675,8 +675,8 @@ def _build_graphviz_edges(
 
     if show_only_interactions_of_commit is not None:
         show_only_interactions_of_commit = commit_map.completed_c_hash(
-            CommitHash(show_only_interactions_of_commit)
-        )
+            ShortCommitHash(show_only_interactions_of_commit)
+        ).hash
 
     base_lib_names = _get_distinct_base_lib_names(df)
     inter_lib_names = _get_distinct_inter_lib_names(df)
@@ -867,7 +867,7 @@ class BlameLibraryInteraction(Plot):
         for rev in unique_revisions:
             if view_mode and 'revision' in self.plot_kwargs:
                 rev = commit_map.completed_c_hash(
-                    CommitHash(self.plot_kwargs['revision'])
+                    ShortCommitHash(self.plot_kwargs['revision'])
                 )
 
             dataframe = df.loc[df['revision'] == rev.hash]
@@ -1144,7 +1144,7 @@ class BlameDegree(Plot):
         for rev in unique_revisions:
             if view_mode and 'revision' in self.plot_kwargs:
                 rev = commit_map.completed_c_hash(
-                    CommitHash(self.plot_kwargs['revision'])
+                    ShortCommitHash(self.plot_kwargs['revision'])
                 )
 
             df = interaction_plot_df.loc[interaction_plot_df['revision'] == rev]
@@ -1200,7 +1200,9 @@ class BlameDegree(Plot):
             degree_type, interaction_plot_df, commit_map
         )
 
-        def head_cm_neighbours(lhs_cm: CommitHash, rhs_cm: CommitHash) -> bool:
+        def head_cm_neighbours(
+            lhs_cm: ShortCommitHash, rhs_cm: ShortCommitHash
+        ) -> bool:
             return commit_map.short_time_id(
                 lhs_cm
             ) + 1 == commit_map.short_time_id(rhs_cm)
