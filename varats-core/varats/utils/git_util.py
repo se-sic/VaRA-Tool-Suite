@@ -20,6 +20,7 @@ SHORT_COMMIT_HASH_LENGTH = 10
 
 
 class CommitHash(abc.ABC):
+    """Base class for commit hash abstractions."""
 
     def __init__(self, short_commit_hash: str):
         if not len(short_commit_hash) >= self.hash_length():

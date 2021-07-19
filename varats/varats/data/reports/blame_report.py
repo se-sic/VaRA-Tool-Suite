@@ -569,7 +569,7 @@ def generate_degree_tuples(
             degree = len(interaction.interacting_commits)
             degree_dict[degree] += interaction.amount
 
-    return [(degree, amount) for degree, amount in degree_dict.items()]
+    return list(degree_dict.items())
 
 
 InteractingCommitRepoPairToAmountMapping = tp.Dict[CommitRepoPair, int]
@@ -671,10 +671,9 @@ def generate_lib_dependent_degrees(
     ):
         result_dict[base_name] = {}
         for inter_lib_name, degree_amount_dict in inter_lib_dict.items():
-            result_dict[base_name][inter_lib_name] = [
-                (degree, amount)
-                for degree, amount in degree_amount_dict.items()
-            ]
+            result_dict[base_name][inter_lib_name] = list(
+                degree_amount_dict.items()
+            )
 
     return result_dict
 
@@ -711,7 +710,7 @@ def generate_author_degree_tuples(
             degree = len(set(author_list))
             degree_dict[degree] += interaction.amount
 
-    return [(degree, amount) for degree, amount in degree_dict.items()]
+    return list(degree_dict.items())
 
 
 def generate_time_delta_distribution_tuples(
@@ -741,7 +740,7 @@ def generate_time_delta_distribution_tuples(
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            if (interaction.base_commit.commit_hash == DUMMY_COMMIT_HASH):
+            if interaction.base_commit.commit_hash == DUMMY_COMMIT_HASH:
                 continue
 
             base_commit = commit_lookup(
@@ -766,7 +765,7 @@ def generate_time_delta_distribution_tuples(
             bucket = round(degree / bucket_size)
             degree_dict[bucket] += interaction.amount
 
-    return [(degree, amount) for degree, amount in degree_dict.items()]
+    return list(degree_dict.items())
 
 
 def generate_avg_time_distribution_tuples(
