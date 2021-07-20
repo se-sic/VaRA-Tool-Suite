@@ -42,6 +42,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         'varats.projects.c_projects.bison',
         'varats.projects.c_projects.bitlbee',
         'varats.projects.c_projects.busybox',
+        'varats.projects.c_projects.brotli',
         'varats.projects.c_projects.coreutils',
         'varats.projects.c_projects.curl',
         'varats.projects.c_projects.gawk',
@@ -86,13 +87,11 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
     projects_conf.value[:] = []
     projects_conf.value[:] += [
         'varats.experiments.base.just_compile',
-        'varats.experiments.vara.phasar_env_analysis',
         'varats.experiments.vara.blame_report_experiment',
         'varats.experiments.vara.commit_report_experiment',
         'varats.experiments.vara.marker_tester',
-        'varats.experiments.vara.vara_fc_taint_analysis',
-        'varats.experiments.vara.vara_full_mtfa',
         'varats.experiments.vara.blame_verifier_experiment',
+        'varats.experiments.vara.phasar_fta',
         'varats.experiments.phasar.ide_linear_constant_experiment',
         'varats.experiments.szz.szz_unleashed_experiment',
         'varats.experiments.szz.pydriller_szz_experiment',

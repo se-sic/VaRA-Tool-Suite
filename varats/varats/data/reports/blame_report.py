@@ -11,7 +11,7 @@ import pygit2
 import yaml
 
 from varats.base.version_header import VersionHeader
-from varats.report.report import BaseReport, FileStatusExtension, MetaReport
+from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
 from varats.utils.git_util import (
     map_commits,
     CommitRepoPair,
@@ -272,7 +272,7 @@ class BlameReport(BaseReport):
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
-        self.__path = path
+
         with open(path, 'r') as stream:
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
             version_header = VersionHeader(next(documents))
@@ -314,12 +314,17 @@ class BlameReport(BaseReport):
     @property
     def head_commit(self) -> str:
         """The current HEAD commit under which this CommitReport was created."""
-        return BlameReport.get_commit_hash_from_result_file(self.path.name)
+        return self.filename.commit_hash
 
     @property
     def meta_data(self) -> BlameReportMetaData:
         """Access the meta data that was gathered with the ``BlameReport``."""
         return self.__meta_data
+
+    @classmethod
+    def shorthand(cls) -> str:
+        """Shorthand for this report."""
+        return cls.SHORTHAND
 
     @staticmethod
     def get_file_name(
@@ -344,7 +349,7 @@ class BlameReport(BaseReport):
         Returns:
             name for the report file that can later be uniquly identified
         """
-        return MetaReport.get_file_name(
+        return ReportFilename.get_file_name(
             BlameReport.SHORTHAND, project_name, binary_name, project_version,
             project_uuid, extension_type, file_ext
         )

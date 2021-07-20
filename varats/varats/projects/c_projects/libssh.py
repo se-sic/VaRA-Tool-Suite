@@ -15,11 +15,10 @@ from varats.project.project_util import (
     BinaryType,
     verify_binaries,
 )
-from varats.provider.cve.cve_provider import CVEProviderHook
 from varats.utils.settings import bb_cfg
 
 
-class Libssh(bb.Project, CVEProviderHook):  # type: ignore
+class Libssh(bb.Project):  # type: ignore
     """
     SSH library.
 
@@ -54,11 +53,11 @@ class Libssh(bb.Project, CVEProviderHook):  # type: ignore
             )
             if libssh_version in versions_with_src_library_folder:
                 return wrap_paths_to_binaries([
-                    ('build/src/libssh.so', BinaryType.shared_library)
+                    ('build/src/libssh.so', BinaryType.SHARED_LIBRARY)
                 ])
 
             return wrap_paths_to_binaries([
-                ('build/lib/libssh.so', BinaryType.shared_library)
+                ('build/lib/libssh.so', BinaryType.SHARED_LIBRARY)
             ])
 
     def run_tests(self) -> None:

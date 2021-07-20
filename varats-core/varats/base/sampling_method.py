@@ -300,7 +300,7 @@ class Solver(Enum):
     """Represents the type of solver used in the background of the
     `SamplingMethod`."""
 
-    NoSolver = None
+    NO_SOLVER = None
     Z3 = 1
 
 
@@ -309,7 +309,7 @@ class FeatureSamplingMethod(SamplingMethodBase['FeatureSamplingMethod']):
     configurations from a feature model based on different sampling
     strategies."""
 
-    def __init__(self, solver: Solver = Solver.NoSolver) -> None:
+    def __init__(self, solver: Solver = Solver.NO_SOLVER) -> None:
         self.__solver = solver
 
     def _extend_config(self) -> tp.Dict[str, tp.Any]:

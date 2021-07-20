@@ -4,10 +4,9 @@ import typing as tp
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import matplotlib.style as style
 import numpy as np
 import pandas as pd
-from matplotlib import cm
+from matplotlib import style, cm
 
 from varats.data.databases.commit_interaction_database import (
     CommitInteractionDatabase,

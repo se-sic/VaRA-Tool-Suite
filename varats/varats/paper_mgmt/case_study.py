@@ -34,7 +34,7 @@ from varats.project.project_util import get_project_cls_by_name
 from varats.provider.bug.bug import RawBug
 from varats.provider.bug.bug_provider import BugProvider
 from varats.provider.release.release_provider import ReleaseProvider
-from varats.report.report import FileStatusExtension, MetaReport
+from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
 from varats.revision.revisions import (
     get_failed_revisions,
     get_processed_revisions,
@@ -50,15 +50,15 @@ LOG = logging.Logger(__name__)
 
 class ExtenderStrategy(Enum):
     """Enum for all currently supported extender strategies."""
-    value: int
+    value: int  # pylint: disable=invalid-name
 
-    mixed = -1
-    simple_add = 1
-    distrib_add = 2
-    smooth_plot = 3
-    per_year_add = 4
-    release_add = 5
-    add_bugs = 6
+    MIXED = -1
+    SIMPLE_ADD = 1
+    DISTRIB_ADD = 2
+    SMOOTH_PLOT = 3
+    PER_YEAR_ADD = 4
+    RELEASE_ADD = 5
+    ADD_BUGS = 6
 
 
 def newest_processed_revision_for_case_study(
@@ -78,7 +78,7 @@ def newest_processed_revision_for_case_study(
 
 
 def processed_revisions_for_case_study(
-    case_study: CaseStudy, result_file_type: MetaReport
+    case_study: CaseStudy, result_file_type: BaseReport
 ) -> tp.List[str]:
     """
     Computes all revisions of this case study that have been processed.
@@ -101,7 +101,7 @@ def processed_revisions_for_case_study(
 
 
 def failed_revisions_for_case_study(
-    case_study: CaseStudy, result_file_type: MetaReport
+    case_study: CaseStudy, result_file_type: BaseReport
 ) -> tp.List[str]:
     """
     Computes all revisions of this case study that have failed.
@@ -125,7 +125,7 @@ def failed_revisions_for_case_study(
 
 def get_revisions_status_for_case_study(
     case_study: CaseStudy,
-    result_file_type: MetaReport,
+    result_file_type: BaseReport,
     stage_num: int = -1,
     tag_blocked: bool = True
 ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
@@ -161,11 +161,11 @@ def get_revisions_status_for_case_study(
             if not found:
                 if tag_blocked and is_revision_blocked(short_rev, project_cls):
                     filtered_revisions.append(
-                        (short_rev, FileStatusExtension.Blocked)
+                        (short_rev, FileStatusExtension.BLOCKED)
                     )
                 else:
                     filtered_revisions.append(
-                        (short_rev, FileStatusExtension.Missing)
+                        (short_rev, FileStatusExtension.MISSING)
                     )
         return filtered_revisions
 
@@ -182,7 +182,7 @@ def get_revisions_status_for_case_study(
 def get_revision_status_for_case_study(
     case_study: CaseStudy,
     revision: str,
-    result_file_type: MetaReport,
+    result_file_type: BaseReport,
 ) -> FileStatusExtension:
     """
     Computes the file status for the given revision in this case study.
@@ -204,11 +204,16 @@ def get_revision_status_for_case_study(
 
 
 def get_newest_result_files_for_case_study(
-    case_study: CaseStudy, result_dir: Path, report_type: MetaReport
+    case_study: CaseStudy, result_dir: Path, report_type: BaseReport
 ) -> tp.List[Path]:
     """
     Return all result files of a specific type that belong to a given case
     study. For revision with multiple files, the newest file will be selected.
+
+    Args:
+        case_study: to load
+        result_dir: to load the results from
+        report_type: type of report that should be loaded
 
     Returns:
         list of result file paths
@@ -220,10 +225,9 @@ def get_newest_result_files_for_case_study(
         return []
 
     for opt_res_file in result_dir.iterdir():
-        if report_type.is_correct_report_type(opt_res_file.name):
-            commit_hash = report_type.get_commit_hash_from_result_file(
-                opt_res_file.name
-            )
+        report_file = ReportFilename(opt_res_file.name)
+        if report_type.is_correct_report_type(report_file.filename):
+            commit_hash = report_file.commit_hash
             if case_study.has_revision(commit_hash):
                 current_file = files_to_store.get(commit_hash, None)
                 if current_file is None:
@@ -261,8 +265,9 @@ def get_case_study_file_name_filter(
         if case_study is None:
             return False
 
-        commit_hash = MetaReport.get_commit_hash_from_result_file(file_name)
-        return not case_study.has_revision(commit_hash)
+        return not case_study.has_revision(
+            ReportFilename(file_name).commit_hash
+        )
 
     return cs_filter
 
@@ -368,17 +373,17 @@ def extend_case_study(
         ext_strategy: determines how the case study should be extended
     """
 
-    if ext_strategy is ExtenderStrategy.simple_add:
+    if ext_strategy is ExtenderStrategy.SIMPLE_ADD:
         extend_with_extra_revs(case_study, cmap, **kwargs)
-    elif ext_strategy is ExtenderStrategy.distrib_add:
+    elif ext_strategy is ExtenderStrategy.DISTRIB_ADD:
         extend_with_distrib_sampling(case_study, cmap, **kwargs)
-    elif ext_strategy is ExtenderStrategy.smooth_plot:
+    elif ext_strategy is ExtenderStrategy.SMOOTH_PLOT:
         extend_with_smooth_revs(case_study, cmap, **kwargs)
-    elif ext_strategy is ExtenderStrategy.per_year_add:
+    elif ext_strategy is ExtenderStrategy.PER_YEAR_ADD:
         extend_with_revs_per_year(case_study, cmap, **kwargs)
-    elif ext_strategy is ExtenderStrategy.release_add:
+    elif ext_strategy is ExtenderStrategy.RELEASE_ADD:
         extend_with_release_revs(case_study, cmap, **kwargs)
-    elif ext_strategy is ExtenderStrategy.add_bugs:
+    elif ext_strategy is ExtenderStrategy.ADD_BUGS:
         extend_with_bug_commits(case_study, cmap, **kwargs)
 
 
@@ -610,7 +615,7 @@ def extend_with_bug_commits(
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
     """
-    report_type: MetaReport = MetaReport.REPORT_TYPES[kwargs['report_type']]
+    report_type: BaseReport = BaseReport.REPORT_TYPES[kwargs['report_type']]
     project_cls: tp.Type[Project] = get_project_cls_by_name(
         case_study.project_name
     )
@@ -645,7 +650,7 @@ def extend_with_bug_commits(
         bug_provider = BugProvider.get_provider_for_project(
             get_project_cls_by_name(case_study.project_name)
         )
-        bugs = bug_provider.find_all_raw_bugs()
+        bugs = bug_provider.find_raw_bugs()
 
     revisions: tp.Set[str] = set()
     for bug in bugs:

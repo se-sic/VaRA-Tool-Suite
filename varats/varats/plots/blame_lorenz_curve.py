@@ -2,11 +2,10 @@
 interactions."""
 import typing as tp
 
-import matplotlib.axes as axes
 import matplotlib.pyplot as plt
-import matplotlib.style as style
 import numpy as np
 import pandas as pd
+from matplotlib import axes, style
 
 from varats.data.databases.blame_interaction_database import (
     BlameInteractionDatabase,
