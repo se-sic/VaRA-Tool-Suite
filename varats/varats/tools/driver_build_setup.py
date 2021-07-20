@@ -257,7 +257,8 @@ def __build_setup_init(
             missing_deps = tool.get_dependencies(
             ).get_missing_dependencies_for_distro(distro)
             print(
-                f"The following dependencies have to be installed: {missing_deps}"
+                f"The following dependencies "
+                f"have to be installed: {missing_deps}"
             )
             return
 

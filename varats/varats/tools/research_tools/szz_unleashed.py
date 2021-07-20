@@ -48,9 +48,7 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
     """
 
     __DEPENDENCIES = Dependencies({
-        Distro.DEBIAN: ["python", "default-jdk", "gradle"]
-    })
-    __DEPENDENCIES = Dependencies({
+        Distro.DEBIAN: ["python", "default-jdk", "gradle"],
         Distro.ARCH: ["python", "jre-openjdk", "jdk-openjdk", "gradle"]
     })
 

@@ -85,9 +85,7 @@ class Phasar(ResearchTool[PhasarCodeBase]):
             "build-essential", "g++", "cmake", "libz3-dev", "libedit-dev",
             "python3-sphinx", "libomp-dev", "libcurl4-openssl-dev",
             "ninja-build"
-        ]
-    })
-    __DEPENDENCIES = Dependencies({
+        ],
         Distro.ARCH: [
             "boost-libs", "boost", "which", "zlib", "sqlite3", "ncurses",
             "make", "python3", "doxygen", "libxml2", "swig", "gcc", "cmake",
