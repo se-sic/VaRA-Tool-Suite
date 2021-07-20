@@ -152,10 +152,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
             "libxml2-dev", "libcurl4-openssl-dev"
         ],
         Distro.ARCH: [
-            "boost-libs", "boost", "which", "zlib", "sqlite3", "ncurses",
-            "make", "python3", "doxygen", "libxml2", "swig", "gcc", "cmake",
-            "z3", "libedit", "graphviz", "python-sphinx", "openmp", "curl",
-            "python-pip"
+            "boost-libs", "boost", "sqlite3", "libxml2", "cmake", "curl"
         ]
     })
 
