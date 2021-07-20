@@ -146,7 +146,15 @@ class VaRA(ResearchTool[VaRACodeBase]):
     Find the main repo online on github: https://github.com/se-passau/VaRA
     """
 
-    __DEPENDENCIES = Dependencies({Distro.DEBIAN: ["libboost-all-dev"]})
+    __DEPENDENCIES = Dependencies({
+        Distro.DEBIAN: [
+            "libboost-all-dev", "libpapi-dev", "googletest", "libsqlite3-dev",
+            "libxml2-dev", "libcurl4-openssl-dev"
+        ],
+        Distro.ARCH: [
+            "boost-libs", "boost", "sqlite3", "libxml2", "cmake", "curl"
+        ]
+    })
 
     def __init__(self, base_dir: Path) -> None:
         super().__init__("VaRA", [BuildType.DEV], VaRACodeBase(base_dir))

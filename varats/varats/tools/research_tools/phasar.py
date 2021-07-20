@@ -15,6 +15,7 @@ from varats.tools.research_tools.research_tool import (
     ResearchTool,
     SubProject,
     Dependencies,
+    Distro,
 )
 from varats.tools.research_tools.vara_manager import (
     BuildType,
@@ -76,8 +77,22 @@ class Phasar(ResearchTool[PhasarCodeBase]):
     https://github.com/secure-software-engineering/phasar.git
     """
 
-    # TODO: see se-passau/VaRA#740
-    __DEPENDENCIES = Dependencies({})
+    __DEPENDENCIES = Dependencies({
+        Distro.DEBIAN: [
+            "libboost-all-dev", "zlib1g-dev", "sqlite3", "libsqlite3-dev",
+            "bear", "python3", "doxygen", "graphviz", "python3-pip", "libxml2",
+            "libxml2-dev", "libncurses5-dev", "libncursesw5-dev", "swig",
+            "build-essential", "g++", "cmake", "libz3-dev", "libedit-dev",
+            "python3-sphinx", "libomp-dev", "libcurl4-openssl-dev",
+            "ninja-build"
+        ],
+        Distro.ARCH: [
+            "boost-libs", "boost", "which", "zlib", "sqlite3", "ncurses",
+            "make", "python3", "doxygen", "libxml2", "swig", "gcc", "cmake",
+            "z3", "libedit", "graphviz", "python-sphinx", "openmp", "curl",
+            "python-pip"
+        ]
+    })
 
     def __init__(self, base_dir: Path) -> None:
         super().__init__("phasar", [BuildType.DEV], PhasarCodeBase(base_dir))
