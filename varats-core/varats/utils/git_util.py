@@ -10,6 +10,7 @@ import pygit2
 from benchbuild.utils.cmd import git
 from plumbum import local
 
+from varats.mapping.commit_map import CommitMap
 from varats.project.project_util import (
     get_local_project_git,
     get_primary_project_source,
@@ -45,11 +46,6 @@ class CommitHash(abc.ABC):
 
     def __repr__(self) -> str:
         return self.hash
-
-    def __lt__(self, other: tp.Any) -> bool:
-        if isinstance(other, CommitHash):
-            return self.hash < other.hash
-        return False
 
     def __eq__(self, other: tp.Any) -> bool:
         if isinstance(other, CommitHash):
@@ -92,6 +88,25 @@ UNCOMMITED_COMMIT_HASH = FullCommitHash("000000000000000000000000000000000000000
 CommitHashTy = tp.TypeVar("CommitHashTy", bound=CommitHash)
 ShortCH = ShortCommitHash
 FullCH = FullCommitHash
+
+
+def commit_hashes_sorted_lexicographically(
+    commit_hashes: tp.Iterable[CommitHashTy]
+) -> tp.Iterable[CommitHashTy]:
+    return sorted(commit_hashes, key=CommitHashTy.hash)
+
+
+def short_commit_hashes_sorted_by_time_id(
+    commit_hashes: tp.Iterable[ShortCommitHash], commit_map: CommitMap
+) -> tp.Iterable[ShortCommitHash]:
+    return sorted(commit_hashes, key=lambda c: commit_map.short_time_id(c))
+
+
+def full_commit_hashes_sorted_by_time_id(
+    commit_hashes: tp.Iterable[FullCommitHash], commit_map: CommitMap
+) -> tp.Iterable[FullCommitHash]:
+    return sorted(commit_hashes, key=lambda c: commit_map.time_id(c))
+
 
 ################################################################################
 # Git interaction helpers
@@ -353,7 +368,7 @@ class CommitRepoPair():
 
     def __lt__(self, other: tp.Any) -> bool:
         if isinstance(other, CommitRepoPair):
-            if self.commit_hash == other.commit_hash:
+            if self.commit_hash.hash == other.commit_hash.hash:
                 return self.repository_name < other.repository_name
             return self.commit_hash < other.commit_hash
         return False
