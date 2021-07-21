@@ -16,7 +16,7 @@ from varats.project.project_util import (
 )
 
 if tp.TYPE_CHECKING:
-    from varats.mapping.commit_map import CommitMap
+    from varats.mapping.commit_map import CommitMap  # pylint: disable=W0611
 
 _FULL_COMMIT_HASH_LENGTH = 40
 _SHORT_COMMIT_HASH_LENGTH = 10
