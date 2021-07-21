@@ -22,6 +22,10 @@ from varats.utils.git_util import (
 LOG = logging.getLogger(__name__)
 
 
+class AmbiguousCommitHash(Exception):
+    """Raised if an ambiguous commit hash is encountered."""
+
+
 class CommitMap():
     """Provides a mapping from commit hash to additional information."""
 
@@ -30,6 +34,40 @@ class CommitMap():
         for line in stream:
             slices = line.strip().split(', ')
             self.__hash_to_id[slices[1]] = int(slices[0])
+
+    def convert_to_full_or_warn(
+        self, short_commit: ShortCommitHash
+    ) -> FullCommitHash:
+        """
+        Warn if a short-form commit hash is ambiguous.
+
+        Args:
+            short_commit: the short-form commit hash to complete
+
+        Returns:
+            a full-length commit hash that starts with the short-form hash
+        """
+        full_commits = self.complete_c_hash(short_commit)
+        if len(full_commits):
+            LOG.warning(f"Short commit hash is ambiguous: {short_commit.hash}.")
+        return next(iter(full_commits))
+
+    def convert_to_full_or_raise(
+        self, short_commit: ShortCommitHash
+    ) -> FullCommitHash:
+        """
+        Raise an exception if a short-form commit hash is ambiguous.
+
+        Args:
+            short_commit: the short-form commit hash to complete
+
+        Returns:
+            a full-length commit hash that starts with the short-form hash
+        """
+        full_commits = self.complete_c_hash(short_commit)
+        if len(full_commits):
+            raise AmbiguousCommitHash
+        return next(iter(full_commits))
 
     def time_id(self, c_hash: FullCommitHash) -> int:
         """
@@ -60,12 +98,7 @@ class CommitMap():
         Returns:
             unique time-ordered id
         """
-        subtrie = self.__hash_to_id.items(prefix=c_hash.hash)
-        if subtrie:
-            if len(subtrie) > 1:
-                LOG.warning(f"Short commit hash is ambiguous: {c_hash.hash}.")
-            return tp.cast(int, subtrie[0][1])
-        raise KeyError
+        return self.time_id(self.convert_to_full_or_warn(c_hash))
 
     def c_hash(self, time_id: int) -> FullCommitHash:
         """
@@ -82,8 +115,23 @@ class CommitMap():
                 return FullCommitHash(tp.cast(str, c_hash))
         raise KeyError
 
-    def completed_c_hash(self, short_commit: ShortCommitHash) -> FullCommitHash:
-        return self.c_hash(self.short_time_id(short_commit))
+    def complete_c_hash(
+        self, short_commit: ShortCommitHash
+    ) -> tp.Set[FullCommitHash]:
+        """
+        Get a set of all commit hashes that start with a given short-form hash.
+
+        Args:
+            short_commit: the short-form commit hash to complete
+
+        Returns:
+            a set of full-length commit hashes that start with the short-form
+            commit hash
+        """
+        subtrie = self.__hash_to_id.items(prefix=short_commit.hash)
+        if subtrie:
+            return {FullCommitHash(c_hash) for c_hash, _ in subtrie}
+        raise KeyError
 
     def mapping_items(self) -> tp.ItemsView[str, int]:
         """Get an iterator over the mapping items."""

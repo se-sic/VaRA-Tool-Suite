@@ -674,7 +674,7 @@ def _build_graphviz_edges(
 ) -> LibraryToHashesMapping:
 
     if show_only_interactions_of_commit is not None:
-        show_only_interactions_of_commit = commit_map.completed_c_hash(
+        show_only_interactions_of_commit = commit_map.convert_to_full_or_warn(
             ShortCommitHash(show_only_interactions_of_commit)
         ).hash
 
@@ -866,7 +866,7 @@ class BlameLibraryInteraction(Plot):
 
         for rev in unique_revisions:
             if view_mode and 'revision' in self.plot_kwargs:
-                rev = commit_map.completed_c_hash(
+                rev = commit_map.convert_to_full_or_warn(
                     ShortCommitHash(self.plot_kwargs['revision'])
                 )
 
@@ -1143,7 +1143,7 @@ class BlameDegree(Plot):
         # browser.
         for rev in unique_revisions:
             if view_mode and 'revision' in self.plot_kwargs:
-                rev = commit_map.completed_c_hash(
+                rev = commit_map.convert_to_full_or_warn(
                     ShortCommitHash(self.plot_kwargs['revision'])
                 )
 
