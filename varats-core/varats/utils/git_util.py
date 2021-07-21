@@ -90,6 +90,8 @@ class FullCommitHash(CommitHash):
 UNCOMMITED_COMMIT_HASH = FullCommitHash("0000000000000000000000000000000000000000")
 
 CommitHashTy = tp.TypeVar("CommitHashTy", bound=CommitHash)
+ShortCH = ShortCommitHash
+FullCH = FullCommitHash
 
 ################################################################################
 # Git interaction helpers
