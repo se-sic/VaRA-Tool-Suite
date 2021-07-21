@@ -97,19 +97,19 @@ FullCH = FullCommitHash
 def commit_hashes_sorted_lexicographically(
     commit_hashes: tp.Iterable[CommitHashTy]
 ) -> tp.Iterable[CommitHashTy]:
-    return sorted(commit_hashes, key=CommitHashTy.hash)
+    return sorted(commit_hashes, key=lambda x: x.hash)
 
 
 def short_commit_hashes_sorted_by_time_id(
     commit_hashes: tp.Iterable[ShortCommitHash], commit_map: 'CommitMap'
 ) -> tp.Iterable[ShortCommitHash]:
-    return sorted(commit_hashes, key=lambda c: commit_map.short_time_id(c))
+    return sorted(commit_hashes, key=commit_map.short_time_id)
 
 
 def full_commit_hashes_sorted_by_time_id(
     commit_hashes: tp.Iterable[FullCommitHash], commit_map: 'CommitMap'
 ) -> tp.Iterable[FullCommitHash]:
-    return sorted(commit_hashes, key=lambda c: commit_map.time_id(c))
+    return sorted(commit_hashes, key=commit_map.time_id)
 
 
 ################################################################################
