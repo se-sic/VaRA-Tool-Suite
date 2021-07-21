@@ -34,7 +34,7 @@ class CommitHash(abc.ABC):
     @staticmethod
     @abc.abstractmethod
     def hash_length() -> int:
-        pass
+        """Required length of the CommitHash"""
 
     @staticmethod
     def from_pygit_commit(commit: pygit2.Commit) -> 'FullCommitHash':
