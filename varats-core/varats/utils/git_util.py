@@ -87,7 +87,7 @@ class FullCommitHash(CommitHash):
         return self.hash.startswith(short_hash.hash)
 
 
-DUMMY_COMMIT_HASH = FullCommitHash("0000000000000000000000000000000000000000")
+UNCOMMITED_COMMIT_HASH = FullCommitHash("0000000000000000000000000000000000000000")
 
 CommitHashTy = tp.TypeVar("CommitHashTy", bound=CommitHash)
 
