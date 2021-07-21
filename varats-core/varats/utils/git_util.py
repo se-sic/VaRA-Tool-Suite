@@ -35,7 +35,7 @@ class CommitHash(abc.ABC):
     @staticmethod
     @abc.abstractmethod
     def hash_length() -> int:
-        """Required length of the CommitHash"""
+        """Required length of the CommitHash."""
 
     @staticmethod
     def from_pygit_commit(commit: pygit2.Commit) -> 'FullCommitHash':
@@ -83,7 +83,9 @@ class FullCommitHash(CommitHash):
         return self.hash.startswith(short_hash.hash)
 
 
-UNCOMMITED_COMMIT_HASH = FullCommitHash("0000000000000000000000000000000000000000")
+UNCOMMITED_COMMIT_HASH = FullCommitHash(
+    "0000000000000000000000000000000000000000"
+)
 
 CommitHashTy = tp.TypeVar("CommitHashTy", bound=CommitHash)
 ShortCH = ShortCommitHash
