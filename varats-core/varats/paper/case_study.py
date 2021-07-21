@@ -165,8 +165,7 @@ class CSStage():
         if not self.has_revision(revision):
             self.__revisions.append(CSEntry(revision, commit_id, config_ids))
 
-    def get_config_ids_for_revision(self,
-                                    revision: ShortCommitHash) -> tp.List[int]:
+    def get_config_ids_for_revision(self, revision: CommitHash) -> tp.List[int]:
         """
         Returns a list of all configuration IDs specified for this revision.
 
@@ -322,8 +321,7 @@ class CaseStudy():
             return False
         return self.__stages[num_stage].has_revision(revision)
 
-    def get_config_ids_for_revision(self,
-                                    revision: ShortCommitHash) -> tp.List[int]:
+    def get_config_ids_for_revision(self, revision: CommitHash) -> tp.List[int]:
         """
         Returns a list of all configuration IDs specified for this revision.
 
@@ -344,7 +342,7 @@ class CaseStudy():
         return config_ids
 
     def get_config_ids_for_revision_in_stage(
-        self, revision: ShortCommitHash, num_stage: int
+        self, revision: CommitHash, num_stage: int
     ) -> tp.List[int]:
         """
         Returns a list of all configuration IDs specified for this revision.
@@ -458,7 +456,7 @@ class CaseStudy():
         if stage_num < self.num_stages:
             self.__stages[stage_num].name = name
 
-    def get_revision_filter(self) -> tp.Callable[[ShortCommitHash], bool]:
+    def get_revision_filter(self) -> tp.Callable[[CommitHash], bool]:
         """
         Generate a case study specific revision filter that only allows revision
         that are part of the case study.
@@ -467,7 +465,7 @@ class CaseStudy():
             a callable filter function
         """
 
-        def revision_filter(revision: ShortCommitHash) -> bool:
+        def revision_filter(revision: CommitHash) -> bool:
             return self.has_revision(revision)
 
         return revision_filter

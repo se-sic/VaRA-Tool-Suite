@@ -10,11 +10,13 @@ import pygit2
 from benchbuild.utils.cmd import git
 from plumbum import local
 
-from varats.mapping.commit_map import CommitMap
 from varats.project.project_util import (
     get_local_project_git,
     get_primary_project_source,
 )
+
+if tp.TYPE_CHECKING:
+    from varats.mapping.commit_map import CommitMap
 
 _FULL_COMMIT_HASH_LENGTH = 40
 _SHORT_COMMIT_HASH_LENGTH = 10
@@ -83,7 +85,7 @@ class FullCommitHash(CommitHash):
         return self.hash.startswith(short_hash.hash)
 
 
-UNCOMMITED_COMMIT_HASH = FullCommitHash(
+UNCOMMITTED_COMMIT_HASH = FullCommitHash(
     "0000000000000000000000000000000000000000"
 )
 
@@ -99,13 +101,13 @@ def commit_hashes_sorted_lexicographically(
 
 
 def short_commit_hashes_sorted_by_time_id(
-    commit_hashes: tp.Iterable[ShortCommitHash], commit_map: CommitMap
+    commit_hashes: tp.Iterable[ShortCommitHash], commit_map: 'CommitMap'
 ) -> tp.Iterable[ShortCommitHash]:
     return sorted(commit_hashes, key=lambda c: commit_map.short_time_id(c))
 
 
 def full_commit_hashes_sorted_by_time_id(
-    commit_hashes: tp.Iterable[FullCommitHash], commit_map: CommitMap
+    commit_hashes: tp.Iterable[FullCommitHash], commit_map: 'CommitMap'
 ) -> tp.Iterable[FullCommitHash]:
     return sorted(commit_hashes, key=lambda c: commit_map.time_id(c))
 
@@ -372,7 +374,7 @@ class CommitRepoPair():
         if isinstance(other, CommitRepoPair):
             if self.commit_hash.hash == other.commit_hash.hash:
                 return self.repository_name < other.repository_name
-            return self.commit_hash < other.commit_hash
+            return self.commit_hash.hash < other.commit_hash.hash
         return False
 
     def __eq__(self, other: tp.Any) -> bool:
@@ -403,7 +405,7 @@ def map_commits(
     return [
         func(commit_lookup(cr_pair.commit_hash, cr_pair.repository_name))
         for cr_pair in cr_pair_list
-        if cr_pair.commit_hash != DUMMY_COMMIT_HASH
+        if cr_pair.commit_hash != UNCOMMITTED_COMMIT_HASH
     ]
 
 

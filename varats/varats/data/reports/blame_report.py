@@ -17,8 +17,8 @@ from varats.utils.git_util import (
     CommitRepoPair,
     CommitLookupTy,
     FullCommitHash,
-    DUMMY_COMMIT_HASH,
     ShortCommitHash,
+    UNCOMMITTED_COMMIT_HASH,
 )
 
 
@@ -740,7 +740,7 @@ def generate_time_delta_distribution_tuples(
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            if interaction.base_commit.commit_hash == DUMMY_COMMIT_HASH:
+            if interaction.base_commit.commit_hash == UNCOMMITTED_COMMIT_HASH:
                 continue
 
             base_commit = commit_lookup(
