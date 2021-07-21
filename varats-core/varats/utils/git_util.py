@@ -15,8 +15,8 @@ from varats.project.project_util import (
     get_primary_project_source,
 )
 
-FULL_COMMIT_HASH_LENGTH = 40
-SHORT_COMMIT_HASH_LENGTH = 10
+_FULL_COMMIT_HASH_LENGTH = 40
+_SHORT_COMMIT_HASH_LENGTH = 10
 
 
 class CommitHash(abc.ABC):
@@ -65,7 +65,7 @@ class ShortCommitHash(CommitHash):
 
     @staticmethod
     def hash_length() -> int:
-        return SHORT_COMMIT_HASH_LENGTH
+        return _SHORT_COMMIT_HASH_LENGTH
 
 
 class FullCommitHash(CommitHash):
@@ -73,12 +73,12 @@ class FullCommitHash(CommitHash):
 
     @staticmethod
     def hash_length() -> int:
-        return FULL_COMMIT_HASH_LENGTH
+        return _FULL_COMMIT_HASH_LENGTH
 
     @property
     def short_hash(self) -> str:
         """Abbreviated commit hash."""
-        return self.hash[:SHORT_COMMIT_HASH_LENGTH]
+        return self.hash[:_SHORT_COMMIT_HASH_LENGTH]
 
     def to_short_commit_hash(self) -> ShortCommitHash:
         return ShortCommitHash(self.hash)
