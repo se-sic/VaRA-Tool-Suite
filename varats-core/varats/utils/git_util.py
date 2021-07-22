@@ -7,7 +7,7 @@ from enum import Enum
 from pathlib import Path
 
 import pygit2
-from benchbuild.utils.cmd import git
+from benchbuild.utils.cmd import git, wc
 from plumbum import local
 
 from varats.project.project_util import (
@@ -659,3 +659,23 @@ def __print_calc_repo_code_churn(
         if churn[0] > 0:
             print(changed_files + insertions + deletions)
             print()
+
+
+__WC_TOTAL_REGEX = re.compile(r"\s*(\d+)\s*total")
+
+
+def calc_repo_loc(repo: pygit2.Repository) -> int:
+    project_path = repo.path[:-5]
+    churn_config = ChurnConfig.create_c_style_languages_config()
+
+    loc: int = 0
+    with local.cwd(project_path):
+        wc_out = wc(
+            "-l",
+            *git("ls-files",
+                 churn_config.get_extensions_repr("*.")).splitlines()
+        )
+        for match in __WC_TOTAL_REGEX.finditer(wc_out):
+            loc = int(match.group(1))
+
+    return loc
