@@ -25,7 +25,7 @@ from varats.utils.git_util import (
     calc_commit_code_churn,
     create_commit_lookup_helper,
     CommitRepoPair,
-    DUMMY_COMMIT,
+    UNCOMMITTED_COMMIT_HASH,
 )
 
 LOG = logging.Logger(__name__)
@@ -58,7 +58,7 @@ class TopCentralCodeCommitsTable(Table):
         repo_lookup = get_local_project_gits(project_name)
 
         def filter_nodes(node: CommitRepoPair) -> bool:
-            if node.commit_hash == DUMMY_COMMIT:
+            if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
                 return False
             return bool(commit_lookup(node))
 
@@ -76,7 +76,7 @@ class TopCentralCodeCommitsTable(Table):
                 LOG.warning(f"Churn for commit {commit} is 0.")
                 insertions = 1
             nodes.append(({
-                "commit_hash": commit.commit_hash[:10],
+                "commit_hash": commit.commit_hash.hash,
                 "degree": cig.degree(node),
                 "insertions": insertions,
             }))
@@ -93,7 +93,7 @@ class TopCentralCodeCommitsTable(Table):
         })
 
         if self.format in [
-            TableFormat.latex, TableFormat.latex_booktabs, TableFormat.latex_raw
+            TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
         ]:
             table = degree_data.to_latex(
                 index=False, multicolumn_format="c", multirow=True

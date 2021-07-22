@@ -19,9 +19,10 @@ from varats.project.project_util import get_local_project_gits
 from varats.utils.git_util import (
     CommitRepoPair,
     create_commit_lookup_helper,
-    DUMMY_COMMIT,
     ChurnConfig,
     calc_commit_code_churn,
+    UNCOMMITTED_COMMIT_HASH,
+    FullCommitHash,
 )
 
 LOG = logging.Logger(__name__)
@@ -61,7 +62,7 @@ class CodeCentralityPlot(Plot):
         repo_lookup = get_local_project_gits(project_name)
 
         def filter_nodes(node: CommitRepoPair) -> bool:
-            if node.commit_hash == DUMMY_COMMIT:
+            if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
                 return False
             return bool(commit_lookup(node))
 
@@ -92,5 +93,7 @@ class CodeCentralityPlot(Plot):
         axes.plot(centrality_scores["code_centrality"].values)
         axes.set_ylim(bottom=0)
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError

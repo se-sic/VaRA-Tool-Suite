@@ -20,14 +20,15 @@ from varats.plot.plot import PlotDataEmpty
 from varats.project.project_util import (
     get_local_project_git_path,
     get_local_project_gits,
-    get_submodule_head,
 )
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import (
     CommitRepoPair,
     create_commit_lookup_helper,
-    DUMMY_COMMIT,
     ChurnConfig,
+    UNCOMMITTED_COMMIT_HASH,
+    FullCommitHash,
+    get_submodule_head,
 )
 
 if sys.version_info <= (3, 8):
@@ -87,7 +88,7 @@ class InteractionGraph(abc.ABC):
         self.__project_name = project_name
 
     @property
-    def project_name(self):
+    def project_name(self) -> str:
         return self.__project_name
 
     @abc.abstractmethod
@@ -155,7 +156,7 @@ class InteractionGraph(abc.ABC):
         commit_lookup = create_commit_lookup_helper(self.project_name)
 
         def partition(u: CommitRepoPair, v: CommitRepoPair) -> bool:
-            if u.commit_hash == DUMMY_COMMIT or v.commit_hash == DUMMY_COMMIT:
+            if u.commit_hash == UNCOMMITTED_COMMIT_HASH or v.commit_hash == UNCOMMITTED_COMMIT_HASH:
                 return u.commit_hash == v.commit_hash
             return str(commit_lookup(u).author.name
                       ) == str(commit_lookup(v).author.name)
@@ -176,7 +177,7 @@ class InteractionGraph(abc.ABC):
         def node_data(b: tp.Set[CommitRepoPair]) -> AIGNodeAttrs:
             authors = {
                 str(commit_lookup(commit).author.name)
-                if commit.commit_hash != DUMMY_COMMIT else "Unknown"
+                if commit.commit_hash != UNCOMMITTED_COMMIT_HASH else "Unknown"
                 for commit in b
             }
             assert len(authors) == 1, "Some node has more then one author."
@@ -229,7 +230,7 @@ class InteractionGraph(abc.ABC):
 
         commit_author_mapping = {
             commit: commit_lookup(commit).author.name
-            if commit.commit_hash != DUMMY_COMMIT else "Unknown"
+            if commit.commit_hash != UNCOMMITTED_COMMIT_HASH else "Unknown"
             for commit in (list(ig.nodes))
         }
         caig = nx.DiGraph()
@@ -318,7 +319,7 @@ class BlameInteractionGraph(InteractionGraph):
 
 class FileBasedInteractionGraph(InteractionGraph):
 
-    def __init__(self, project_name: str, head_commit: str):
+    def __init__(self, project_name: str, head_commit: FullCommitHash):
         super().__init__(project_name)
         self.__head_commit = head_commit
         self.__cached_interaction_graph: tp.Optional[nx.DiGraph] = None
@@ -363,7 +364,9 @@ class FileBasedInteractionGraph(InteractionGraph):
                     for match in blame_regex.finditer(blame_lines):
                         if match.group(2):
                             commits.add(
-                                CommitRepoPair(match.group(1), repo_name)
+                                CommitRepoPair(
+                                    FullCommitHash(match.group(1)), repo_name
+                                )
                             )
 
                     for commit in commits:
@@ -389,7 +392,7 @@ class FileBasedInteractionGraph(InteractionGraph):
 
 
 def create_blame_interaction_graph(
-    project_name: str, revision: str
+    project_name: str, revision: FullCommitHash
 ) -> BlameInteractionGraph:
     """
     Create a blame interaction graph for a certain project revision.
@@ -420,7 +423,7 @@ def create_blame_interaction_graph(
 
 
 def create_file_based_interaction_graph(
-    project_name: str, revision: str
+    project_name: str, revision: FullCommitHash
 ) -> FileBasedInteractionGraph:
     """
     Create a file-based interaction graph for a certain project revision.

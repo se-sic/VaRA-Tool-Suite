@@ -10,7 +10,11 @@ import pygit2
 from benchbuild.utils.cmd import git
 from plumbum import local
 
-from varats.project.project_util import get_local_project_gits
+from varats.project.project_util import (
+    get_local_project_gits,
+    get_primary_project_source,
+    get_local_project_git_path,
+)
 
 if tp.TYPE_CHECKING:
     from varats.mapping.commit_map import CommitMap  # pylint: disable=W0611
@@ -347,6 +351,35 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
     return get_commit
 
 
+def get_submodule_head(
+    project_name: str, submodule_name: str, commit: FullCommitHash
+) -> FullCommitHash:
+    """
+    Retrieve the checked out commit for a submodule of a project.
+
+    Args:
+        project_name: name of the project
+        submodule_name: name of the submodule
+        commit: commit of the project's main repo
+
+    Returns:
+        checked out commit of the submodule
+    """
+    if submodule_name == get_primary_project_source(project_name).local:
+        return commit
+
+    main_repo = get_local_project_git_path(project_name)
+    submodule_status = git("-C", str(main_repo), "ls-tree", commit)
+    commit_pattern = re.compile(
+        r"[0-9]* commit ([0-9abcdef]*)\t" + submodule_name
+    )
+    match = commit_pattern.search(submodule_status)
+    if match:
+        return FullCommitHash(match.group(1))
+    else:
+        raise AssertionError(f"Unknown submodule {submodule_name}")
+
+
 MappedCommitResultType = tp.TypeVar("MappedCommitResultType")
 
 
@@ -476,7 +509,7 @@ def calc_code_churn_range(
 
 def calc_commit_code_churn(
     repo_path: str,
-    commit_hash: str,
+    commit_hash: CommitHash,
     churn_config: tp.Optional[ChurnConfig] = None
 ) -> tp.Tuple[int, int, int]:
     """
@@ -495,7 +528,7 @@ def calc_commit_code_churn(
     repo_git = git["-C", repo_path]
     show_base_params = [
         "show", "--pretty=format:'%H'", "--shortstat", "--first-parent",
-        commit_hash
+        commit_hash.hash
     ]
 
     if not churn_config.include_everything:

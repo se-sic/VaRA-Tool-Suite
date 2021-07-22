@@ -23,8 +23,9 @@ from varats.utils.git_util import (
     ChurnConfig,
     create_commit_lookup_helper,
     CommitRepoPair,
-    DUMMY_COMMIT,
     calc_repo_code_churn,
+    FullCommitHash,
+    UNCOMMITTED_COMMIT_HASH,
 )
 
 
@@ -97,7 +98,9 @@ class CommitAuthorInteractionGraphViolinPlot(Plot):
         ax.tick_params(axis='x', labelrotation=45)
         ax.set_xlabel(None)
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
 
 
@@ -179,7 +182,9 @@ class AuthorBlameVsFileDegreesViolinPlot(Plot):
         ax.tick_params(axis='x', labelrotation=45)
         ax.set_xlabel(None)
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
 
 
@@ -209,15 +214,16 @@ class CommitAuthorInteractionGraphGrid(Plot):
 
             commit_lookup = create_commit_lookup_helper(project_name)
             repo_lookup = get_local_project_gits(project_name)
-            code_churn_lookup: tp.Dict[str, tp.Dict[str, tp.Tuple[int, int,
-                                                                  int]]] = {}
+            code_churn_lookup: tp.Dict[str, tp.Dict[FullCommitHash,
+                                                    tp.Tuple[int, int,
+                                                             int]]] = {}
             for repo_name, repo in repo_lookup.items():
                 code_churn_lookup[repo_name] = calc_repo_code_churn(
                     repo, churn_config
                 )
 
             def filter_nodes(node: CommitRepoPair) -> bool:
-                if node.commit_hash == DUMMY_COMMIT:
+                if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
                     return False
                 return bool(commit_lookup(node))
 
@@ -239,32 +245,32 @@ class CommitAuthorInteractionGraphGrid(Plot):
 
             cig_data: tp.Dict[CommitRepoPair, int] = {}
             for node in cig.nodes:
-                node_attrs = tp.cast(CIGNodeAttrs, cig.nodes[node])
-                commit = node_attrs["commit"]
-                if not filter_nodes(commit):
+                cig_node_attrs = tp.cast(CIGNodeAttrs, cig.nodes[node])
+                cig_commit = cig_node_attrs["commit"]
+                if not filter_nodes(cig_commit):
                     continue
-                cig_data[commit] = cig.degree(node)
+                cig_data[cig_commit] = cig.degree(node)
 
             nodes: tp.List[tp.Dict[str, tp.Any]] = []
             for node in caig.nodes:
-                node_attrs = tp.cast(CAIGNodeAttrs, caig.nodes[node])
-                commit = node_attrs["commit"]
+                caig_node_attrs = tp.cast(CAIGNodeAttrs, caig.nodes[node])
+                caig_commit = caig_node_attrs["commit"]
 
-                if commit:
-                    if not filter_nodes(commit):
+                if caig_commit:
+                    if not filter_nodes(caig_commit):
                         continue
                     if not added_project_name:
                         project_names.append(project_name)
                         added_project_name = True
 
-                    _, insertions, _ = code_churn_lookup[commit.repository_name
-                                                        ][commit.commit_hash]
+                    _, insertions, _ = code_churn_lookup[
+                        caig_commit.repository_name][caig_commit.commit_hash]
                     nodes.append(({
                         "project": project_name,
-                        "commit": commit.commit_hash,
+                        "commit": caig_commit.commit_hash,
                         "num_authors": caig.degree(node) / authors,
                         "insertions": insertions,
-                        "node_degree": cig_data[commit]
+                        "node_degree": cig_data[caig_commit]
                     }))
 
             data = pd.DataFrame(nodes)
@@ -283,5 +289,7 @@ class CommitAuthorInteractionGraphGrid(Plot):
         grid.map(sns.scatterplot, size=2, alpha=0.25)
         grid.add_legend()
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError

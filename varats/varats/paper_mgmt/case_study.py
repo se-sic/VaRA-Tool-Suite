@@ -63,8 +63,8 @@ class ExtenderStrategy(Enum):
 
 
 def newest_processed_revision_for_case_study(
-    case_study: CaseStudy, result_file_type: MetaReport
-) -> tp.Optional[str]:
+    case_study: CaseStudy, result_file_type: tp.Type[BaseReport]
+) -> tp.Optional[FullCommitHash]:
     processed_revisions = processed_revisions_for_case_study(
         case_study, result_file_type
     )

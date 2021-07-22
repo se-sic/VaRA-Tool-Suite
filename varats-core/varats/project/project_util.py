@@ -1,7 +1,6 @@
 """Utility module for BenchBuild project handling."""
 import logging
 import os
-import re
 import typing as tp
 from distutils.dir_util import copy_tree
 from enum import Enum
@@ -133,32 +132,6 @@ def get_local_project_gits(
         repos[source_name] = get_local_project_git(project_name, source_name)
 
     return repos
-
-
-def get_submodule_head(
-    project_name: str, submodule_name: str, commit: str
-) -> str:
-    """
-    Retrieve the checked out commit for a submodule of a project.
-
-    Args:
-        project_name: name of the project
-        submodule_name: name of the submodule
-        commit: commit of the project's main repo
-
-    Returns:
-        checked out commit of the submodule
-    """
-    main_repo = get_local_project_git_path(project_name)
-    submodule_status = git("-C", str(main_repo), "ls-tree", commit)
-    commit_pattern = re.compile(
-        r"[0-9]* commit ([0-9abcdef]*)\t" + submodule_name
-    )
-    match = commit_pattern.search(submodule_status)
-    if match:
-        return match.group(1)
-    else:
-        raise AssertionError(f"Unknown submodule {submodule_name}")
 
 
 def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
