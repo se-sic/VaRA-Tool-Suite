@@ -21,8 +21,9 @@ from varats.plot.plot import Plot
 from varats.plot.plot_utils import check_required_args, find_missing_revisions
 from varats.project.project_util import get_local_project_git
 from varats.report.report import FileStatusExtension, BaseReport
-
 # colors taken from seaborn's default palette
+from varats.utils.git_util import ShortCommitHash, FullCommitHash
+
 SUCCESS_COLOR = np.asarray(
     (0.5568627450980392, 0.7294117647058823, 0.25882352941176473)
 )
@@ -37,7 +38,7 @@ def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
     current_config = PC.get_paper_config()
 
     if 'report_type' in kwargs:
-        result_file_type: BaseReport = BaseReport.REPORT_TYPES[
+        result_file_type: tp.Type[BaseReport] = BaseReport.REPORT_TYPES[
             kwargs['report_type']]
     else:
         result_file_type = EmptyReport
@@ -55,10 +56,11 @@ def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
 
 
 def _load_projects_ordered_by_year(
-    current_config: PC.PaperConfig, result_file_type: BaseReport
-) -> tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[str, FileStatusExtension]]]]:
+    current_config: PC.PaperConfig, result_file_type: tp.Type[BaseReport]
+) -> tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[ShortCommitHash,
+                                                FileStatusExtension]]]]:
     projects: tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[
-        str, FileStatusExtension]]]] = OrderedDict()
+        ShortCommitHash, FileStatusExtension]]]] = OrderedDict()
 
     for case_study in sorted(
         current_config.get_all_case_studies(),
@@ -70,11 +72,11 @@ def _load_projects_ordered_by_year(
 
         repo = get_local_project_git(case_study.project_name)
         revisions: tp.Dict[int, tp.List[tp.Tuple[
-            str, FileStatusExtension]]] = defaultdict(list)
+            ShortCommitHash, FileStatusExtension]]] = defaultdict(list)
 
         # dict: year -> [ (revision: str, status: FileStatusExtension) ]
         for rev, status in processed_revisions:
-            commit = repo.get(rev)
+            commit = repo.get(rev.hash)
             commit_date = datetime.utcfromtimestamp(commit.commit_time)
             revisions[commit_date.year].append((rev, status))
 
@@ -88,7 +90,7 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
     current_config = PC.get_paper_config()
 
     if 'report_type' in kwargs:
-        result_file_type: BaseReport = BaseReport.REPORT_TYPES[
+        result_file_type: tp.Type[BaseReport] = BaseReport.REPORT_TYPES[
             kwargs['report_type']]
     else:
         result_file_type = EmptyReport
@@ -279,20 +281,24 @@ class PaperConfigOverviewPlot(Plot):
     def plot_file_name(self, filetype: str) -> str:
         return f"{self.name}.{filetype}"
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         revisions = _gen_overview_plot_for_project(**self.plot_kwargs)
         revisions.sort_values(by=['revision'], inplace=True)
         cmap: CommitMap = self.plot_kwargs['cmap']
 
-        def head_cm_neighbours(lhs_cm: str, rhs_cm: str) -> bool:
+        def head_cm_neighbours(
+            lhs_cm: ShortCommitHash, rhs_cm: ShortCommitHash
+        ) -> bool:
             return cmap.short_time_id(lhs_cm) + 1 == cmap.short_time_id(rhs_cm)
 
         def should_insert_revision(last_row: tp.Any,
                                    row: tp.Any) -> tp.Tuple[bool, float]:
             return last_row["file_status"] != row["file_status"], 1.0
 
-        def get_commit_hash(row: tp.Any) -> str:
-            return str(row["revision"])
+        def get_commit_hash(row: tp.Any) -> ShortCommitHash:
+            return ShortCommitHash(str(row["revision"]))
 
         return find_missing_revisions(
             revisions.iterrows(), Path(self.plot_kwargs['git_path']), cmap,

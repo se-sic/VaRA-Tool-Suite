@@ -12,6 +12,7 @@ from varats.report.report import (
     ReportFilename,
     ReportSpecification,
 )
+from varats.utils.git_util import ShortCommitHash
 
 
 class TestFileStatusExtension(unittest.TestCase):
@@ -102,7 +103,9 @@ class TestReportFilename(unittest.TestCase):
 
     def test_accessors(self):
         """Tests if the different accessor functions work."""
-        self.assertEqual(self.report_filename.commit_hash, "7bb9ef5f8c")
+        self.assertEqual(
+            self.report_filename.commit_hash, ShortCommitHash("7bb9ef5f8c")
+        )
         self.assertEqual(self.report_filename.shorthand, "CR")
         self.assertEqual(
             self.report_filename.file_status, FileStatusExtension.SUCCESS
@@ -194,10 +197,12 @@ class TestBaseReport(unittest.TestCase):
     def test_get_commit(self):
         """Check if the correct commit hash is returned."""
         self.assertEqual(
-            ReportFilename(self.success_filename).commit_hash, "7bb9ef5f8c"
+            ReportFilename(self.success_filename).commit_hash,
+            ShortCommitHash("7bb9ef5f8c")
         )
         self.assertEqual(
-            ReportFilename(self.fail_filename).commit_hash, "7bb9ef5f8c"
+            ReportFilename(self.fail_filename).commit_hash,
+            ShortCommitHash("7bb9ef5f8c")
         )
 
     def test_file_name_creation(self):

@@ -24,6 +24,7 @@ setup(
         "argparse-utils>=1.2.0",
         "benchbuild>=6.2.0",
         "click>=8.0.1",
+        "distro>=1.5.0",
         "graphviz>=0.14.2",
         "Jinja2>=3.0.1",
         "kaleido>=0.2.1",

@@ -19,6 +19,7 @@ from varats.project.project_util import (
 from varats.provider.bug.bug import PygitBug, as_pygit_bug
 from varats.provider.bug.bug_provider import BugProvider
 from varats.revision.revisions import get_processed_revisions_files
+from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
 
@@ -554,6 +555,8 @@ class BugFixingRelationPlot(Plot):
 
         return f"{plot_indent}{self.name}_{self.__szz_tool}.{filetype}"
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         """Plot always includes all revisions."""
         return set()

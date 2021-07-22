@@ -9,6 +9,7 @@ import yaml
 from varats.base.version_header import VersionHeader
 from varats.mapping.commit_map import CommitMap
 from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
+from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 LOG = logging.getLogger(__name__)
 
@@ -45,10 +46,10 @@ class RegionMapping():
 
     def __init__(self, raw_yaml: tp.Dict[str, tp.Any]) -> None:
         self.id = str(raw_yaml['id'])
-        self.hash = str(raw_yaml['hash'])
+        self.hash = FullCommitHash(str(raw_yaml['hash']))
 
     def __str__(self) -> str:
-        return "{} = {}".format(self.id, self.hash)
+        return "{} = {}".format(self.id, self.hash.hash)
 
 
 class RegionToFunctionEdge():
@@ -170,7 +171,7 @@ class CommitReport(BaseReport):
                 self.graph_info[f_edge.fid] = f_edge
 
     @property
-    def head_commit(self) -> str:
+    def head_commit(self) -> ShortCommitHash:
         """The current HEAD commit under which this CommitReport was created."""
         return self.filename.commit_hash
 
@@ -281,7 +282,7 @@ class CommitReport(BaseReport):
         cf_map: tp.Dict[str, tp.List[int]] = dict()
         self.init_cf_map_with_edges(cf_map)
         for key, value in cf_map.items():
-            if key.startswith(self.head_commit):
+            if key.startswith(self.head_commit.hash):
                 interaction_tuple = value
                 return (interaction_tuple[0], interaction_tuple[1])
 
@@ -322,7 +323,7 @@ class CommitReport(BaseReport):
         df_map: tp.Dict[str, tp.List[int]] = dict()
         self.init_df_map_with_edges(df_map)
         for key, value in df_map.items():
-            if key.startswith(self.head_commit):
+            if key.startswith(self.head_commit.hash):
                 interaction_tuple = value
                 return (interaction_tuple[0], interaction_tuple[1])
 
@@ -413,7 +414,7 @@ def generate_inout_cfg_cf(
 
 def generate_interactions(
     commit_report: CommitReport, c_map: CommitMap
-) -> pd.DataFrame:
+) -> tp.Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Converts the commit analysis interaction data from a ``CommitReport`` into a
     pandas data frame for plotting.
@@ -434,7 +435,7 @@ def generate_interactions(
         for cf_edge in func_g_edge.cf_edges:
             link_rows.append([
                 cf_edge.edge_from, cf_edge.edge_to, 1,
-                c_map.time_id(cf_edge.edge_from)
+                c_map.time_id(FullCommitHash(cf_edge.edge_from))
             ])
 
     links = pd.DataFrame(
