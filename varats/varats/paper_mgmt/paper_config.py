@@ -23,6 +23,7 @@ from varats.paper_mgmt.artefacts import (
     store_artefacts,
 )
 from varats.utils.exceptions import ConfigurationLookupError
+from varats.utils.git_util import FullCommitHash
 from varats.utils.settings import vara_cfg
 
 
@@ -130,7 +131,7 @@ class PaperConfig():
 
             def multi_case_study_rev_filter(revision: str) -> bool:
                 for rev_filter in rev_filters:
-                    if rev_filter(revision):
+                    if rev_filter(FullCommitHash(revision)):
                         return True
                 return False
 

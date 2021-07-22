@@ -66,7 +66,7 @@ class BlameInteractionDatabase(
                 'HEAD_Interactions':
                     in_head_interactions + out_head_interactions
             },
-                                index=[0]), report.head_commit, str(
+                                index=[0]), report.head_commit.hash, str(
                                     report_path.stat().st_mtime_ns
                                 )
 
@@ -85,7 +85,7 @@ class BlameInteractionDatabase(
         data_frame = build_cached_report_table(
             cls.CACHE_ID, project_name, report_files, failed_report_files,
             create_dataframe_layout, create_data_frame_for_report,
-            lambda path: ReportFilename(path).commit_hash,
+            lambda path: ReportFilename(path).commit_hash.hash,
             lambda path: str(path.stat().st_mtime_ns),
             lambda a, b: int(a) > int(b)
         )

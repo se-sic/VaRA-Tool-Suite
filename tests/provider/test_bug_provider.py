@@ -497,7 +497,7 @@ class TestBugProvider(unittest.TestCase):
 
         rawbugs = provider.find_raw_bugs()
 
-        rawbug_fix_ids = set(rawbug.fixing_commit for rawbug in rawbugs)
+        rawbug_fix_ids = set(rawbug.fixing_commit.hash for rawbug in rawbugs)
 
         # asserting correct fixes have been found
         self.assertEqual(rawbug_fix_ids, self.basic_expected_fixes)
@@ -506,22 +506,34 @@ class TestBugProvider(unittest.TestCase):
         rawbug_first = provider.find_raw_bugs(
             fixing_commit="ddf0ba95408dc5508504c84e6616c49128410389"
         )
-        rawbug_first_intro_ids = next(iter(rawbug_first)).introducing_commits
+        rawbug_first_intro_ids = {
+            commit.hash
+            for commit in next(iter(rawbug_first)).introducing_commits
+        }
 
         rawbug_second = provider.find_raw_bugs(
             fixing_commit="d846bdbe45e4d64a34115f5285079e1b5f84007f"
         )
-        rawbug_second_intro_ids = next(iter(rawbug_second)).introducing_commits
+        rawbug_second_intro_ids = {
+            commit.hash
+            for commit in next(iter(rawbug_second)).introducing_commits
+        }
 
         rawbug_third = provider.find_raw_bugs(
             fixing_commit="2da78b2820370f6759e9086fad74155d6655e93b"
         )
-        rawbug_third_intro_ids = next(iter(rawbug_third)).introducing_commits
+        rawbug_third_intro_ids = {
+            commit.hash
+            for commit in next(iter(rawbug_third)).introducing_commits
+        }
 
         rawbug_fourth = provider.find_raw_bugs(
             fixing_commit="3b76c8d295385358375fefdb0cf045d97ad2d193"
         )
-        rawbug_fourth_intro_ids = next(iter(rawbug_fourth)).introducing_commits
+        rawbug_fourth_intro_ids = {
+            commit.hash
+            for commit in next(iter(rawbug_fourth)).introducing_commits
+        }
 
         self.assertEqual(
             self.basic_expected_first_introduction, rawbug_first_intro_ids

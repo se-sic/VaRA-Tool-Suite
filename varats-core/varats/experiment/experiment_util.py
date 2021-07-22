@@ -303,7 +303,8 @@ class VersionExperiment(Experiment):  # type: ignore
                 )
 
             bad_revisions = [
-                revision for revision, file_status in
+                revision.hash
+                for revision, file_status in
                 get_tagged_revisions(prj_cls, getattr(cls, 'REPORT_SPEC'))
                 if file_status not in fs_good
             ]

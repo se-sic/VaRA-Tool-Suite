@@ -12,6 +12,7 @@ from varats.project.project_util import (
     get_local_project_git,
     get_project_cls_by_name,
 )
+from varats.utils.git_util import FullCommitHash
 from varats.utils.github_util import (
     get_cached_github_object_list,
     get_github_repo_name_for_project,
@@ -84,29 +85,30 @@ class Bug(tp.Generic[CommitTy]):
         )
 
 
-RawBug = Bug[str]
+RawBug = Bug[FullCommitHash]
 PygitBug = Bug[pygit2.Commit]
 
 
 def as_raw_bug(pygit_bug: PygitBug) -> RawBug:
     """Converts a ``PygitBug`` to a ``RawBug``."""
-    introducing_commits: tp.Set[str] = set()
+    introducing_commits: tp.Set[FullCommitHash] = set()
     for intro_commit in pygit_bug.introducing_commits:
-        introducing_commits.add(str(intro_commit.id))
+        introducing_commits.add(FullCommitHash.from_pygit_commit(intro_commit))
     return RawBug(
-        str(pygit_bug.fixing_commit.id), introducing_commits,
-        pygit_bug.issue_id, pygit_bug.creation_date, pygit_bug.resolution_date
+        FullCommitHash.from_pygit_commit(pygit_bug.fixing_commit),
+        introducing_commits, pygit_bug.issue_id, pygit_bug.creation_date,
+        pygit_bug.resolution_date
     )
 
 
 def as_pygit_bug(raw_bug: RawBug, repo: pygit2.Repository) -> PygitBug:
     """Converts a ``RawBug`` to a ``PygitBug``."""
-    introducing_commits: tp.Set[str] = set()
+    introducing_commits: tp.Set[pygit2.Commit] = set()
     for intro_commit in raw_bug.introducing_commits:
         introducing_commits.add(repo.get(intro_commit))
-    return RawBug(
-        repo.get(raw_bug.fixing_commit), introducing_commits, raw_bug.issue_id,
-        raw_bug.creation_date, raw_bug.resolution_date
+    return PygitBug(
+        repo.get(raw_bug.fixing_commit.hash), introducing_commits,
+        raw_bug.issue_id, raw_bug.creation_date, raw_bug.resolution_date
     )
 
 

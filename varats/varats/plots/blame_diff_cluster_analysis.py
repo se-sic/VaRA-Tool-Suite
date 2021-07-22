@@ -20,6 +20,7 @@ from varats.data.databases.blame_diff_metrics_database import (
 )
 from varats.mapping.commit_map import CommitMap
 from varats.plot.plot import Plot, PlotDataEmpty
+from varats.utils.git_util import FullCommitHash
 
 
 def _create_cluster_objects(
@@ -68,7 +69,7 @@ def _create_cluster_objects(
 
 
 def _plot_cluster_comparison(
-    datasets: tp.List[tp.Tuple[np.array, str, str, tp.Dict[str, tp.Any]]]
+    datasets: tp.List[tp.Tuple[np.ndarray, str, str, tp.Dict[str, tp.Any]]]
 ) -> None:
     scale_factor = 1.5
     plt.figure(
@@ -213,5 +214,7 @@ class BlameDiffClusterAnalysis(Plot):
             for var in variables
         ])
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
