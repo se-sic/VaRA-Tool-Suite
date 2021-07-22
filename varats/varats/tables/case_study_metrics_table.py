@@ -3,7 +3,7 @@ import logging
 import typing as tp
 
 import pandas as pd
-from benchbuild.utils.cmd import git, wc
+from benchbuild.utils.cmd import git
 from tabulate import tabulate
 
 from varats.paper_mgmt.paper_config import get_loaded_paper_config

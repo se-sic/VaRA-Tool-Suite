@@ -665,6 +665,15 @@ __WC_TOTAL_REGEX = re.compile(r"\s*(\d+)\s*total")
 
 
 def calc_repo_loc(repo: pygit2.Repository) -> int:
+    """
+    Calculate the LOC for a project at its HEAD.
+
+    Args:
+        repo: the repository to calculate the LOC for
+
+    Returns:
+        the number of lines in source-code files
+    """
     project_path = repo.path[:-5]
     churn_config = ChurnConfig.create_c_style_languages_config()
 
