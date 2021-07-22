@@ -21,17 +21,13 @@ Module: cli_util
     :undoc-members:
     :show-inheritance:
 
------
-
 Module: util
-................
+............
 
 .. automodule:: varats.utils.util
     :members:
     :undoc-members:
     :show-inheritance:
-
------
 
 Module: exceptions
 ..................
@@ -41,8 +37,6 @@ Module: exceptions
     :undoc-members:
     :show-inheritance:
 
------
-
 Module: git_util
 ................
 
@@ -50,8 +44,6 @@ Module: git_util
     :members:
     :undoc-members:
     :show-inheritance:
-
------
 
 Module: experiment_util
 .......................
@@ -61,8 +53,6 @@ Module: experiment_util
     :undoc-members:
     :show-inheritance:
 
------
-
 Module: project_util
 ....................
 
@@ -70,8 +60,6 @@ Module: project_util
     :members:
     :undoc-members:
     :show-inheritance:
-
------
 
 Module: filesystem_util
 .......................
@@ -81,17 +69,13 @@ Module: filesystem_util
     :undoc-members:
     :show-inheritance:
 
------
-
 Module: cmake_util
-.......................
+..................
 
 .. automodule:: varats.tools.research_tools.cmake_util
     :members:
     :undoc-members:
     :show-inheritance:
-
------
 
 Logger usage
 ------------
@@ -122,7 +106,7 @@ Logging is used to add additional information or highlight warning or error case
 For logging categories, we follow the default python logging `HOWTO <https://docs.python.org/3/howto/logging.html>`_.
 
 Module: logger_util
-.......................
+...................
 
 .. automodule:: varats.utils.logger_util
     :members:
@@ -130,7 +114,7 @@ Module: logger_util
     :show-inheritance:
 
 Module: tool_util
-.......................
+.................
 
 .. automodule:: varats.tools.tool_util
     :members:
