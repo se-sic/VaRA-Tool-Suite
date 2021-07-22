@@ -41,7 +41,7 @@ class Gawk(bb.Project):  # type: ignore
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
         'apt', 'install', '-y', 'autoconf', 'automake', 'libtool', 'perl', 'm4',
-        'autopoint', 'gettext'
+        'autopoint', 'gettext', 'bison'
     )
 
     @property
