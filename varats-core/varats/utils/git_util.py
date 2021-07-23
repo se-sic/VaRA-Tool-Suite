@@ -16,7 +16,7 @@ from varats.project.project_util import (
 )
 
 if tp.TYPE_CHECKING:
-    from varats.mapping.commit_map import CommitMap  # pylint: disable=W0611
+    import varats.mapping.commit_map as cm  # pylint: disable=W0611
 
 _FULL_COMMIT_HASH_LENGTH = 40
 _SHORT_COMMIT_HASH_LENGTH = 10
@@ -101,13 +101,13 @@ def commit_hashes_sorted_lexicographically(
 
 
 def short_commit_hashes_sorted_by_time_id(
-    commit_hashes: tp.Iterable[ShortCommitHash], commit_map: 'CommitMap'
+    commit_hashes: tp.Iterable[ShortCommitHash], commit_map: 'cm.CommitMap'
 ) -> tp.Iterable[ShortCommitHash]:
     return sorted(commit_hashes, key=commit_map.short_time_id)
 
 
 def full_commit_hashes_sorted_by_time_id(
-    commit_hashes: tp.Iterable[FullCommitHash], commit_map: 'CommitMap'
+    commit_hashes: tp.Iterable[FullCommitHash], commit_map: 'cm.CommitMap'
 ) -> tp.Iterable[FullCommitHash]:
     return sorted(commit_hashes, key=commit_map.time_id)
 
