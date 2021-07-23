@@ -19,7 +19,9 @@ class TestCSMetricsTable(unittest.TestCase):
         load_paper_config()
 
         # latex booktabs is default format
-        table_str = CaseStudyMetricsTable().tabulate()
+        table_str = CaseStudyMetricsTable(
+            revision="ce222e317e36aa362e83fc50c7a6226d238e03fd"
+        ).tabulate()
 
         self.assertEqual(
             r"""\begin{tabular}{llrrr}

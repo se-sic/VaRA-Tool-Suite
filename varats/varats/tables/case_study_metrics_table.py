@@ -28,6 +28,7 @@ class CaseStudyMetricsTable(Table):
 
     def tabulate(self) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
+        revision = self.table_kwargs.get("revision", "HEAD")
 
         cs_data: tp.List[pd.DataFrame] = []
         for case_study in case_studies:
@@ -44,7 +45,7 @@ class CaseStudyMetricsTable(Table):
                     "LOC":
                         calc_repo_loc(project_repo),
                     "Commits":
-                        int(project_git("rev-list", "--count", "HEAD")),
+                        int(project_git("rev-list", "--count", revision)),
                     "Authors":
                         len(
                             project_git("shortlog", "-s", "--all").splitlines()
