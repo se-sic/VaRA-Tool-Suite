@@ -21,6 +21,10 @@ Module: cli_util
     :undoc-members:
     :show-inheritance:
 
+.. raw:: html
+
+    <hr>
+
 Module: util
 ............
 
@@ -28,6 +32,10 @@ Module: util
     :members:
     :undoc-members:
     :show-inheritance:
+
+.. raw:: html
+
+    <hr>
 
 Module: exceptions
 ..................
@@ -37,6 +45,10 @@ Module: exceptions
     :undoc-members:
     :show-inheritance:
 
+.. raw:: html
+
+    <hr>
+
 Module: git_util
 ................
 
@@ -44,6 +56,10 @@ Module: git_util
     :members:
     :undoc-members:
     :show-inheritance:
+
+.. raw:: html
+
+    <hr>
 
 Module: experiment_util
 .......................
@@ -53,6 +69,10 @@ Module: experiment_util
     :undoc-members:
     :show-inheritance:
 
+.. raw:: html
+
+    <hr>
+
 Module: project_util
 ....................
 
@@ -60,6 +80,10 @@ Module: project_util
     :members:
     :undoc-members:
     :show-inheritance:
+
+.. raw:: html
+
+    <hr>
 
 Module: filesystem_util
 .......................
@@ -69,6 +93,10 @@ Module: filesystem_util
     :undoc-members:
     :show-inheritance:
 
+.. raw:: html
+
+    <hr>
+
 Module: cmake_util
 ..................
 
@@ -76,6 +104,10 @@ Module: cmake_util
     :members:
     :undoc-members:
     :show-inheritance:
+
+.. raw:: html
+
+    <hr>
 
 Logger usage
 ------------
@@ -112,6 +144,10 @@ Module: logger_util
     :members:
     :undoc-members:
     :show-inheritance:
+
+.. raw:: html
+
+    <hr>
 
 Module: tool_util
 .................
