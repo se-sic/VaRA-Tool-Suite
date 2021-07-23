@@ -28,7 +28,6 @@ class CaseStudyMetricsTable(Table):
 
     def tabulate(self) -> str:
         case_studies = get_loaded_paper_config().get_all_case_studies()
-        revision = self.table_kwargs.get("revision", "HEAD")
 
         cs_data: tp.List[pd.DataFrame] = []
         for case_study in case_studies:
@@ -38,23 +37,31 @@ class CaseStudyMetricsTable(Table):
             project_path = project_repo.path[:-5]
             project_git = git["-C", project_path]
 
+            revision = self.table_kwargs.get("revisions", {}).get(
+                case_study.project_name, None
+            )
+            revisions = case_study.revisions
+            if not revision and len(revisions) == 1:
+                revision = revisions[0]
+            rev_range = revision.hash if revision else "HEAD"
+
             cs_dict = {
                 project_name: {
                     "Domain":
                         project_cls.DOMAIN,
                     "LOC":
-                        calc_repo_loc(project_repo),
+                        calc_repo_loc(project_repo, rev_range),
                     "Commits":
-                        int(project_git("rev-list", "--count", revision)),
+                        int(project_git("rev-list", "--count", rev_range)),
                     "Authors":
                         len(
-                            project_git("shortlog", "-s", "--all").splitlines()
+                            project_git("shortlog", "-s", "--all",
+                                        rev_range).splitlines()
                         )
                 }
             }
-            revisions = case_study.revisions
-            if len(revisions) == 1:
-                cs_dict["Analyzed Commit"] = revisions[0].short_hash
+            if revision:
+                cs_dict[project_name]["Analyzed Commit"] = revision.short_hash
 
             cs_data.append(pd.DataFrame.from_dict(cs_dict, orient="index"))
 
