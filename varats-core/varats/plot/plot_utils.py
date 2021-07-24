@@ -7,6 +7,7 @@ from pathlib import Path
 from matplotlib.axes import Axes
 
 from varats.mapping.commit_map import CommitMap
+from varats.utils.git_util import FullCommitHash, ShortCommitHash
 
 
 def __check_required_args_impl(
@@ -45,13 +46,12 @@ def find_missing_revisions(
     data: tp.Generator[tp.Any, None, None], git_path: Path, cmap: CommitMap,
     should_insert_revision: tp.Callable[[tp.Any, tp.Any], tp.Tuple[bool,
                                                                    float]],
-    to_commit_hash: tp.Callable[[tp.Any],
-                                str], are_neighbours: tp.Callable[[str, str],
-                                                                  bool]
-) -> tp.Set[str]:
+    to_commit_hash: tp.Callable[[tp.Any], ShortCommitHash],
+    are_neighbours: tp.Callable[[ShortCommitHash, ShortCommitHash], bool]
+) -> tp.Set[FullCommitHash]:
     """Calculate a set of revisions that could be missing because the changes
     between certain points are to steep."""
-    new_revs: tp.Set[str] = set()
+    new_revs: tp.Set[FullCommitHash] = set()
 
     _, last_row = next(data)
     for _, row in data:

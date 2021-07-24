@@ -6,8 +6,9 @@ from benchbuild.project import Project
 
 from varats.project.project_util import get_local_project_git_path
 from varats.provider.cve.cve import CVE
-from varats.provider.cve.cve_map import generate_cve_map
+from varats.provider.cve.cve_map import generate_cve_map, CVEDict
 from varats.provider.provider import Provider
+from varats.utils.git_util import FullCommitHash
 
 if sys.version_info <= (3, 8):
     from typing_extensions import Protocol
@@ -42,7 +43,7 @@ class CVEProvider(Provider):
     def __init__(self, project: tp.Type[Project]) -> None:
         super().__init__(project)
         if isinstance(project, CVEProviderHook):
-            self.__cve_map = generate_cve_map(
+            self.__cve_map: CVEDict = generate_cve_map(
                 get_local_project_git_path(project.NAME),
                 project.get_cve_product_info()
             )
@@ -68,7 +69,7 @@ class CVEProvider(Provider):
 
     def get_revision_cve_tuples(
         self
-    ) -> tp.Set[tp.Tuple[str, tp.FrozenSet[CVE]]]:
+    ) -> tp.Set[tp.Tuple[FullCommitHash, tp.FrozenSet[CVE]]]:
         """
         Get all CVEs associated with this provider's project along with the
         fixing commits/versions.
@@ -76,8 +77,7 @@ class CVEProvider(Provider):
         Return:
             a set of tuples of commit hash and cves
         """
-        return {(k, frozenset(tp.cast(tp.Set[CVE], v["cve"])))
-                for k, v in self.__cve_map.items()}
+        return {(k, frozenset(v["cve"])) for k, v in self.__cve_map.items()}
 
 
 class CVEDefaultProvider(CVEProvider):
@@ -90,5 +90,5 @@ class CVEDefaultProvider(CVEProvider):
 
     def get_revision_cve_tuples(
         self
-    ) -> tp.Set[tp.Tuple[str, tp.FrozenSet[CVE]]]:
+    ) -> tp.Set[tp.Tuple[FullCommitHash, tp.FrozenSet[CVE]]]:
         return set()

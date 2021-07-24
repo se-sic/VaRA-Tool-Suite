@@ -15,6 +15,7 @@ from varats.plot.plot import Plot
 from varats.plot.plot_utils import check_required_args
 from varats.project.project_util import get_project_cls_by_name
 from varats.report.report import FileStatusExtension, BaseReport
+from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 SUCCESS_COLOR = (0.5568627450980392, 0.7294117647058823, 0.25882352941176473)
 BLOCKED_COLOR = (0.20392156862745098, 0.5411764705882353, 0.7411764705882353)
@@ -33,7 +34,7 @@ def _gen_overview_data(tag_blocked: bool,
     project = get_project_cls_by_name(project_name)
 
     if 'report_type' in kwargs:
-        result_file_type: BaseReport = BaseReport.REPORT_TYPES[
+        result_file_type: tp.Type[BaseReport] = BaseReport.REPORT_TYPES[
             kwargs['report_type']]
     else:
         result_file_type = EmptyReport
@@ -49,7 +50,7 @@ def _gen_overview_data(tag_blocked: bool,
     }
 
     for c_hash, index in commit_map.mapping_items():
-        if not case_study.has_revision(c_hash):
+        if not case_study.has_revision(ShortCommitHash(c_hash)):
             positions["background"].append(index)
             if hasattr(project, "is_blocked_revision"
                       ) and project.is_blocked_revision(c_hash)[0]:
@@ -150,5 +151,7 @@ class PaperConfigOverviewPlot(Plot):
 
         axis.set_axis_off()
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError

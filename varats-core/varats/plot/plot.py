@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 
 from varats.paper.case_study import CaseStudy
 from varats.plot.plots import PlotRegistry
+from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
 
@@ -149,7 +150,9 @@ class Plot(metaclass=PlotRegistry):
         plt.close()
 
     @abc.abstractmethod
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         """
         Calculate a list of revisions that could improve precisions of this
         plot.

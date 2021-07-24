@@ -19,6 +19,7 @@ from varats.data.reports.blame_report import (
 from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
+from varats.utils.git_util import FullCommitHash
 
 
 class BlameDiffLibraryInteractionDatabase(
@@ -59,8 +60,8 @@ class BlameDiffLibraryInteractionDatabase(
             )
 
             def build_dataframe_row(
-                base_hash: str, base_library: str, inter_hash: str,
-                inter_library: str, amount: int
+                base_hash: FullCommitHash, base_library: str,
+                inter_hash: FullCommitHash, inter_library: str, amount: int
             ) -> tp.Dict[str, tp.Any]:
 
                 data_dict: tp.Dict[str, tp.Any] = {
@@ -69,11 +70,11 @@ class BlameDiffLibraryInteractionDatabase(
                     'time_id':
                         commit_map.short_time_id(head_report.head_commit),
                     'base_hash':
-                        base_hash,
+                        base_hash.hash,
                     'base_lib':
                         base_library,
                     'inter_hash':
-                        inter_hash,
+                        inter_hash.hash,
                     'inter_lib':
                         inter_library,
                     'amount':
@@ -81,7 +82,7 @@ class BlameDiffLibraryInteractionDatabase(
                 }
                 return data_dict
 
-            result_data_dicts: tp.List[tp.Dict] = []
+            result_data_dicts: tp.List[tp.Dict[str, tp.Any]] = []
 
             for base_pair in base_inter_c_repo_pair_mapping:
                 inter_pair_amount_dict = base_inter_c_repo_pair_mapping[
