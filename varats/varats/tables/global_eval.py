@@ -40,7 +40,13 @@ class PhasarGlobalsDataComparision(Table):
 
         cs_data: tp.List[pd.DataFrame] = []
 
-        for case_study in case_studies:
+        for case_study in sorted(case_studies, key=lambda x: x.project_name):
+            if case_study.project_name in (
+                'gawk', 'redis', 'x264', 'irssi', 'bitlbee'
+            ):
+                # Skip broken projects
+                continue
+
             report_files_with = get_processed_revisions_files(
                 case_study.project_name, GlobalsReportWith,
                 get_case_study_file_name_filter(case_study)
@@ -54,14 +60,14 @@ class PhasarGlobalsDataComparision(Table):
                 print(f"{report_files_with=}")
                 raise AssertionError
 
-            if len(report_files_with) == 0 or len(report_files_without) == 0:
-                # Skip projects where we don't have both reports
-                continue
+            # if len(report_files_with) == 0 or len(report_files_without) == 0:
+            #     # Skip projects where we don't have both reports
+            #     continue
 
             def fill_in_data(
                 cs_dict: tp.Dict[str, tp.Any], report: GlobalsReport
             ) -> None:
-                cs_dict["auto-Gs"] = report.auto_globals
+                cs_dict["auto-Gs"] = "Yes" if report.auto_globals else "No"
 
                 cs_dict["#agc"] = report.num_analyzed_global_ctors
                 cs_dict["#agd"] = report.num_analyzed_global_dtors
@@ -74,14 +80,37 @@ class PhasarGlobalsDataComparision(Table):
                 cs_dict["#ntvae"] = report.num_non_top_vals_at_end
                 cs_dict["#RGG"] = report.num_required_globals_generation
 
-                cs_dict["Time"] = report.runtime_in_secs.mean
-                cs_dict["Stddev"] = report.runtime_in_secs.stddev
+                cs_dict["Time"] = float(f"{report.runtime_in_secs.mean:.2f}")
+                cs_dict["Stddev"] = float(
+                    f"{report.runtime_in_secs.stddev:.2f}"
+                )
                 cs_dict["Runs"] = report.runs
 
+            def fill_in_empty(cs_dict: tp.Dict[str, tp.Any]) -> None:
+                cs_dict["auto-Gs"] = "-"
+
+                cs_dict["#agc"] = "-"
+                cs_dict["#agd"] = "-"
+                cs_dict["#g-distinct"] = "-"
+                cs_dict["#g-int"] = "-"
+                cs_dict["#g-uses"] = "-"
+                cs_dict["#g-vars"] = "-"
+                cs_dict["#globals"] = "-"
+                cs_dict["#ntvas"] = "-"
+                cs_dict["#ntvae"] = "-"
+                cs_dict["#RGG"] = "-"
+
+                cs_dict["Time"] = "-"
+                cs_dict["Stddev"] = "-"
+                cs_dict["Runs"] = "-"
+
             # Handle with
-            report_with = load_globals_with_report(report_files_with[0])
             cs_dict = {}
-            fill_in_data(cs_dict, report_with)
+            if len(report_files_with) == 0:
+                fill_in_empty(cs_dict)
+            else:
+                report_with = load_globals_with_report(report_files_with[0])
+                fill_in_data(cs_dict, report_with)
 
             cs_data.append(
                 pd.DataFrame.from_dict({case_study.project_name: cs_dict},
@@ -89,12 +118,14 @@ class PhasarGlobalsDataComparision(Table):
             )
 
             # Handle without
-            report_without = load_globals_without_report(
-                report_files_without[0]
-            )
-
             cs_dict = {}
-            fill_in_data(cs_dict, report_without)
+            if len(report_files_without) == 0:
+                fill_in_empty(cs_dict)
+            else:
+                report_without = load_globals_without_report(
+                    report_files_without[0]
+                )
+                fill_in_data(cs_dict, report_without)
 
             cs_data.append(
                 pd.DataFrame.from_dict({case_study.project_name: cs_dict},
@@ -107,7 +138,10 @@ class PhasarGlobalsDataComparision(Table):
             TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
         ]:
             table = df.to_latex(
-                bold_rows=True, multicolumn_format="c", multirow=True
+                bold_rows=True,
+                multicolumn_format="c",
+                multirow=True,
+                longtable=True
             )
             return str(table) if table else ""
         return tabulate(df, df.columns, self.format.value)
