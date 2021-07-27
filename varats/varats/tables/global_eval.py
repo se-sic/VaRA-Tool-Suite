@@ -3,6 +3,7 @@ import logging
 import typing as tp
 
 import pandas as pd
+from scipy.stats import pearsonr, spearmanr
 from tabulate import tabulate
 
 from varats.data.reports.globals_report import (
@@ -63,6 +64,14 @@ class PhasarGlobalsDataComparision(Table):
             # if len(report_files_with) == 0 or len(report_files_without) == 0:
             #     # Skip projects where we don't have both reports
             #     continue
+
+            if (len(report_files_with) == 1 and
+                len(report_files_without) == 0) or (
+                    len(report_files_with) == 0 and
+                    len(report_files_without) == 1
+                ):
+                # Skip projects where we don't have both reports
+                continue
 
             def fill_in_data(
                 cs_dict: tp.Dict[str, tp.Any], report: GlobalsReport
@@ -134,14 +143,27 @@ class PhasarGlobalsDataComparision(Table):
 
         df = pd.concat(cs_data).sort_index()
         df = df.round(2)
+
+        div_series = df[df['auto-Gs'] == 'No'].Time / df[df['auto-Gs'] == 'Yes'
+                                                        ].Time
+        rggs = df[df['auto-Gs'] == 'No']['#RGG']
+        rho_p = pearsonr(rggs, div_series)
+
         if self.format in [
             TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
         ]:
+            caption = (
+                "Pearson correlation coefficient between RGG and Speedup "
+                "(TimeWithout / TimeWith) "
+                f"is: $\\rho$ = {rho_p[0]:.3f} with a two-sided p-value of "
+                f"{rho_p[1]:.3f}."
+            )
             table = df.to_latex(
                 bold_rows=True,
                 multicolumn_format="c",
                 multirow=True,
-                longtable=True
+                longtable=True,
+                caption=caption
             )
             return str(table) if table else ""
         return tabulate(df, df.columns, self.format.value)

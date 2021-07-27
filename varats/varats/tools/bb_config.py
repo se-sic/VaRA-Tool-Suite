@@ -45,6 +45,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         'varats.projects.c_projects.brotli',
         'varats.projects.c_projects.coreutils',
         'varats.projects.c_projects.curl',
+        'varats.projects.c_projects.file',
         'varats.projects.c_projects.gawk',
         'varats.projects.c_projects.glibc',
         'varats.projects.c_projects.git',
