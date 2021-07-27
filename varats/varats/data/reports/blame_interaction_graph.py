@@ -336,7 +336,7 @@ class FileBasedInteractionGraph(InteractionGraph):
                 )
             )
 
-            blame_regex = re.compile(r"([0-9a-f]+) (?:.+)? [\d]+\) (.*)\n")
+            blame_regex = re.compile(r"^([0-9a-f]+)\s+(?:.+\s+)?[\d]+\) ?(.*)$")
 
             for repo_name, repo in repos.items():
                 repo_path = get_local_project_git_path(
@@ -357,11 +357,16 @@ class FileBasedInteractionGraph(InteractionGraph):
                 ]
                 for num, file in enumerate(files):
                     commits: tp.Set[CommitRepoPair] = set()
-                    blame_lines = project_git(
-                        "blame", "-w", "-s", "-l", head_commit, "--",
+                    blame_lines: str = project_git(
+                        "blame", "-w", "-s", "-l", "--root", head_commit, "--",
                         str(file.relative_to(repo_path))
                     )
-                    for match in blame_regex.finditer(blame_lines):
+
+                    for line in blame_lines.strip().split("\n"):
+                        match = blame_regex.match(line)
+                        if not match:
+                            raise AssertionError
+
                         if match.group(2):
                             commits.add(
                                 CommitRepoPair(
