@@ -44,14 +44,18 @@ class GlobalsReport():
         del self.__data_from_first["runtime-in-seconds"]
 
         # Calculate timeings
-        timings: tp.List[int] = []
+        self.__timings: tp.List[int] = []
         for run_blob in run_blobs:
             loaded_data = json.loads(run_blob)
-            timings.append(int(loaded_data["runtime-in-seconds"]))
+            self.__timings.append(int(loaded_data["runtime-in-seconds"]))
 
-        # print(timings)
-        self.__runs = len(timings)
-        self.__runtime = TimeMeasure(np.mean(timings), np.std(timings))
+        self.__update_run_values()
+
+    def __update_run_values(self) -> None:
+        self.__runs = len(self.__timings)
+        self.__runtime = TimeMeasure(
+            np.mean(self.__timings), np.std(self.__timings)
+        )
 
     @property
     def num_analyzed_global_ctors(self) -> int:
@@ -112,6 +116,11 @@ class GlobalsReport():
     @property
     def runtime_in_secs(self) -> TimeMeasure:
         return self.__runtime
+
+    def extend_runs(self, other_report: 'GlobalsReport') -> None:
+        """Add more runs to this report."""
+        self.__timings.extend(other_report.__timings)
+        self.__update_run_values()
 
     def __str__(self) -> str:
         output_data = dict(self.__data_from_first)
