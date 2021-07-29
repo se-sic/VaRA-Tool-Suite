@@ -304,7 +304,7 @@ class VersionExperiment(Experiment):  # type: ignore
 
             bad_revisions = [
                 # TODO: clean up
-                revision for revision, file_status in get_tagged_revisions(
+                revision.hash for revision, file_status in get_tagged_revisions(
                     prj_cls,
                     getattr(cls, 'REPORT_SPEC').main_report
                 ) if file_status not in fs_good
