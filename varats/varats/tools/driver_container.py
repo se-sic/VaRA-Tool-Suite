@@ -18,7 +18,7 @@ from varats.containers.containers import (
     export_base_images,
 )
 from varats.tools.tool_util import get_supported_research_tool_names
-from varats.utils.cli_util import initialize_cli_tool, EnumType
+from varats.utils.cli_util import initialize_cli_tool, EnumChoice
 from varats.utils.settings import vara_cfg, save_config, bb_cfg, save_bb_config
 
 LOG = logging.Logger(__name__)
@@ -45,7 +45,7 @@ def main() -> None:
     "-i",
     "--image",
     "images",
-    type=EnumType(ImageBase),
+    type=EnumChoice(ImageBase),
     multiple=True,
     help="Only build the given image."
 )
@@ -66,7 +66,7 @@ def build(images: tp.List[ImageBase], export: bool, debug: bool) -> None:
     "-i",
     "--image",
     "images",
-    type=EnumType(ImageBase),
+    type=EnumChoice(ImageBase),
     multiple=True,
     help="Only delete the given image. Can be given multiple times."
 )
@@ -138,7 +138,7 @@ def select(tool: str) -> None:
     "-i",
     "--image",
     "images",
-    type=EnumType(ImageBase),
+    type=EnumChoice(ImageBase),
     multiple=True,
     help="Only build the given image. \nCan be given multiple times."
 )
