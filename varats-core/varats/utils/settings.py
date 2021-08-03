@@ -35,8 +35,8 @@ def create_new_varats_config() -> s.Configuration:
                 "default": None,
             },
             "data_cache": {
-                "default": "data_cache",
-                "desc": "Local data cache to store preprocessed files."
+                "desc": "Local data cache to store preprocessed files.",
+                "default": None,
             },
             "result_dir": {
                 "desc": "Result folder for collected results",
@@ -129,7 +129,7 @@ def create_new_varats_config() -> s.Configuration:
     cfg["paper_config"] = {
         "folder": {
             "desc": "Folder with paper configs.",
-            "default": "paper_configs",
+            "default": None,
         },
         "current_config": {
             "desc": "Paper config file to load.",
@@ -300,7 +300,8 @@ def create_missing_folders() -> None:
 
     create_missing_folder_for_cfg("benchbuild_root")
     create_missing_folder_for_cfg("result_dir")
-    create_missing_folder_for_cfg("data_cache", vara_cfg())
+    create_missing_folder_for_cfg("data_cache")
+    create_missing_folder_for_cfg("folder", vara_cfg()["paper_config"])
     create_missing_folder_for_cfg("plot_dir", vara_cfg()["plots"])
     create_missing_folder_for_cfg("table_dir", vara_cfg()["tables"])
     create_missing_folder_for_cfg("artefacts_dir", vara_cfg()["artefacts"])
@@ -321,6 +322,14 @@ def save_config() -> None:
         vara_cfg()["result_dir"] = path.dirname(
             str(vara_cfg()["config_file"])
         ) + "/results"
+    if vara_cfg()["data_cache"].value is None:
+        vara_cfg()["data_cache"] = path.dirname(
+            str(vara_cfg()["config_file"])
+        ) + "/data_cache"
+    if vara_cfg()["paper_config"]["folder"].value is None:
+        vara_cfg()["paper_config"]["folder"] = path.dirname(
+            str(vara_cfg()["config_file"])
+        ) + "/paper_configs"
     if vara_cfg()["plots"]["plot_dir"].value is None:
         vara_cfg()["plots"]["plot_dir"] = path.dirname(
             str(vara_cfg()["config_file"])
