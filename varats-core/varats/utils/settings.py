@@ -4,7 +4,7 @@ Settings module for VaRA.
 All settings are stored in a simple dictionary. Each setting should be
 modifiable via environment variable.
 """
-
+import os
 import typing as tp
 from os import makedirs, path
 from pathlib import Path
@@ -244,12 +244,19 @@ def add_vara_experiment_options(
         "outfile": {
             "default": "",
             "desc": "Path to store results of VaRA CFR analysis.",
-            "value": str(varats_config["result_dir"])
+            "value": s.ConfigPath(str(varats_config["result_dir"]))
         },
         "result": {
-            "default": "missingPath/annotatedResults",
-            "desc": "Path to store already annotated projects.",
-            "value": "BC_files"
+            "default":
+                "missingPath/annotatedResults",
+            "desc":
+                "Path to store already annotated projects.",
+            "value":
+                s.ConfigPath(
+                    os.path.join(
+                        vara_cfg()["benchbuild_root"].value, "BC_files"
+                    )
+                )
         }
     }
 
@@ -260,11 +267,11 @@ def bb_cfg() -> s.Configuration:
     if not _BB_CFG:
         from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
         add_vara_experiment_options(BB_CFG, vara_cfg())
-        bb_root = vara_cfg()["benchbuild_root"].value
+        bb_root = str(vara_cfg()["benchbuild_root"])
         if bb_root:
             bb_cfg_path = Path(bb_root) / ".benchbuild.yml"
             if bb_cfg_path.exists():
-                BB_CFG.load(local.path(str(bb_cfg_path)))
+                BB_CFG.load(local.path(bb_cfg_path))
         _BB_CFG = BB_CFG
     return _BB_CFG
 
@@ -352,13 +359,11 @@ def save_bb_config(benchbuild_cfg: tp.Optional[s.Configuration] = None) -> None:
     if not benchbuild_cfg:
         benchbuild_cfg = bb_cfg()
 
-    bc_cache_path = Path(vara_cfg()["benchbuild_root"].value
-                        ) / benchbuild_cfg["varats"]["result"].value
-    if not bc_cache_path.exists():
-        bc_cache_path.mkdir(parents=True)
-    benchbuild_cfg.store(
-        local.path(str(vara_cfg()["benchbuild_root"])) / ".benchbuild.yml"
-    )
+    config_file = local.path(
+        str(vara_cfg()["benchbuild_root"])
+    ) / ".benchbuild.yml"
+    benchbuild_cfg["config_file"] = str(config_file)
+    benchbuild_cfg.store(config_file)
 
 
 def get_varats_base_folder() -> Path:
