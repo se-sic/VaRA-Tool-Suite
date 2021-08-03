@@ -6,22 +6,29 @@ internal functionality.
 """
 import itertools
 import logging
+import re
 import typing as tp
+from pathlib import Path
 
 import click
+from benchbuild.utils.cmd import benchbuild, sbatch
+from plumbum import local
 
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
-from varats.utils.cli_util import initialize_cli_tool, make_cli_option
+from varats.tools import driver_container
+from varats.utils.cli_util import initialize_cli_tool
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.git_util import ShortCommitHash
-from varats.utils.settings import bb_cfg
+from varats.utils.settings import bb_cfg, vara_cfg
 
 LOG = logging.Logger(__name__)
 
+__SLURM_SCRIPT_PATTERN = re.compile(r"SLURM script written to (.*\.sh)")
 
-def _validate_project_parameters(
+
+def __validate_project_parameters(
     ctx: tp.Optional[click.Context], param: tp.Optional[click.Parameter],
     value: tp.Tuple[str, ...]
 ) -> tp.Tuple[str, ...]:
@@ -72,34 +79,48 @@ def _validate_project_parameters(
 @click.option(
     "-E", "--experiment", required=True, help="The experiment to run."
 )
-@make_cli_option(
-    "-p",
+@click.option(
+    "-P",
     "--project",
     "projects",
     multiple=True,
-    callback=_validate_project_parameters,
+    callback=__validate_project_parameters,
     help="Only run experiments for the given project."
     "Can be passed multiple times."
 )
+@click.option("-p", "--pretend", is_flag=True, help="Do not run experiments.")
 def main(
     slurm: bool,
     container: bool,
     experiment: str,
     projects: tp.List[str],
+    pretend: bool,
 ) -> None:
     """Manage base container images."""
     initialize_cli_tool()
     initialize_projects()
 
     bb_command_args: tp.List[str] = []
-    bb_extra_args = tp.List[str] = []
+    bb_extra_args: tp.List[str] = []
+
+    if pretend:
+        click.echo("Running in pretend mode. No experiments will be executed.")
+        # benchbuild only supports pretend in the normal run command
+        slurm = False
+        container = False
 
     if slurm:
         bb_command_args.append("slurm")
 
     if container:
         if slurm:
-            # TODO: detect whether user should run prepare-slurm
+            if not __is_slurm_prepared():
+                click.echo(
+                    "It seems like benchbuild is not properly "
+                    "configured for slurm + containers. "
+                    "Please run 'vara-container prepare-slurm' first."
+                )
+                exit(1)
             bb_extra_args = ["--", "container", "run"]
             if bb_cfg()["container"]["import"].value:
                 bb_extra_args.append("--import")
@@ -109,21 +130,43 @@ def main(
     if not slurm:
         bb_command_args.append("run")
 
+    if pretend:
+        bb_command_args.append("-p")
+
     if not projects:
         projects = list({
             cs.project_name for cs in get_paper_config().get_all_case_studies()
         })
 
-    bb_args = itertools.chain(
-        bb_command_args, ["-E", experiment], projects, bb_extra_args
+    bb_args = list(
+        itertools.chain(
+            bb_command_args, ["-E", experiment], projects, bb_extra_args
+        )
     )
 
-    print(bb_args)
-    # TODO: run BB command
+    with local.cwd(vara_cfg()["benchbuild_root"].value):
+        bb_out = benchbuild(*bb_args)
+        click.echo(bb_out)
 
     if slurm:
-        # TODO: run sbatch
-        pass
+        match = __SLURM_SCRIPT_PATTERN.search(bb_out)
+        if match:
+            slurm_script = match.group(1)
+            click.echo(f"Submitting slurm script via sbatch {slurm_script}")
+            # sbatch(slurm_script)
+        else:
+            click.echo("Could not find slurm script.")
+            exit(1)
+
+
+def __is_slurm_prepared() -> bool:
+    """Check whether the slurm/container setup seems to be configured
+    properly."""
+    if not bb_cfg()["container"]["root"].value:
+        return False
+    if not Path(bb_cfg()["slurm"]["template"].value).exists():
+        return False
+    return True
 
 
 if __name__ == '__main__':

@@ -5,7 +5,6 @@ from io import StringIO
 from pathlib import Path
 
 from tests.test_utils import run_in_test_environment
-from varats.paper_mgmt import paper_config
 from varats.paper_mgmt.paper_config import load_paper_config
 from varats.tools.driver_paper_config import _pc_list, _pc_set
 from varats.utils.settings import vara_cfg
