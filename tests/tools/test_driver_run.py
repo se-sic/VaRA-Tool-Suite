@@ -18,16 +18,16 @@ class TestDriverRun(unittest.TestCase):
     __NUM_ACTIONS_PATTERN = re.compile(r"Number of actions to execute: (\d*)")
 
     @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
-    def test_bb_run_just_compile_brotli(self) -> None:
+    def test_bb_run_select_project(self) -> None:
         runner = CliRunner()
-        vara_cfg()['paper_config']['current_config'] = "test_revision_lookup"
+        vara_cfg()['paper_config']['current_config'] = "test_artefacts_driver"
         # needed so we see the paper config
         load_paper_config()
         # needed so benchbuild sees the paper config
         save_config()
 
         result = runner.invoke(
-            driver_run.main, ["-p", "-E", "JustCompile", "-P", "brotli"]
+            driver_run.main, ["-p", "-E", "JustCompile", "-P", "xz"]
         )
         self.assertEqual(0, result.exit_code, result.exception)
         match = self.__NUM_ACTIONS_PATTERN.search(result.stdout)
@@ -36,23 +36,38 @@ class TestDriverRun(unittest.TestCase):
         self.assertEqual("44", match.group(1))
 
     @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
-    def test_bb_run_just_compile_brotli_single_revision(self) -> None:
+    def test_bb_run_select_revision(self) -> None:
         runner = CliRunner()
-        vara_cfg()['paper_config']['current_config'] = "test_revision_lookup"
+        vara_cfg()['paper_config']['current_config'] = "test_artefacts_driver"
         # needed so we see the paper config
         load_paper_config()
         # needed so benchbuild sees the paper config
         save_config()
 
         result = runner.invoke(
-            driver_run.main,
-            ["-p", "-E", "JustCompile", "-P", "brotli@3bb19efbb8"]
+            driver_run.main, ["-p", "-E", "JustCompile", "-P", "xz@2f0bc9cd40"]
         )
         self.assertEqual(0, result.exit_code, result.exception)
         match = self.__NUM_ACTIONS_PATTERN.search(result.stdout)
         if not match:
             self.fail("Could not parse benchbuild output")
         self.assertEqual("12", match.group(1))
+
+    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
+    def test_bb_run_all(self) -> None:
+        runner = CliRunner()
+        vara_cfg()['paper_config']['current_config'] = "test_artefacts_driver"
+        # needed so we see the paper config
+        load_paper_config()
+        # needed so benchbuild sees the paper config
+        save_config()
+
+        result = runner.invoke(driver_run.main, ["-p", "-E", "JustCompile"])
+        self.assertEqual(0, result.exit_code, result.exception)
+        match = self.__NUM_ACTIONS_PATTERN.search(result.stdout)
+        if not match:
+            self.fail("Could not parse benchbuild output")
+        self.assertEqual("52", match.group(1))
 
     @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
     @mock.patch("varats.tools.driver_run.sbatch")
