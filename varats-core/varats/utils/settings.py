@@ -32,15 +32,15 @@ def create_new_varats_config() -> s.Configuration:
             },
             "benchbuild_root": {
                 "desc": "Root folder to run BenchBuild in",
-                "default": None,
+                "default": os.getcwd() + "/benchbuild",
             },
             "data_cache": {
                 "desc": "Local data cache to store preprocessed files.",
-                "default": None,
+                "default": os.getcwd() + "/data_cache",
             },
             "result_dir": {
                 "desc": "Result folder for collected results",
-                "default": None,
+                "default": os.getcwd() + "/results",
             },
         }
     )
@@ -129,7 +129,7 @@ def create_new_varats_config() -> s.Configuration:
     cfg["paper_config"] = {
         "folder": {
             "desc": "Folder with paper configs.",
-            "default": None,
+            "default": os.getcwd() + "/paper_configs",
         },
         "current_config": {
             "desc": "Paper config file to load.",
@@ -189,21 +189,21 @@ def create_new_varats_config() -> s.Configuration:
     cfg['plots'] = {
         "plot_dir": {
             "desc": "Folder for generated plots",
-            "default": None,
+            "default": os.getcwd() + "/plots",
         },
     }
 
     cfg['tables'] = {
         "table_dir": {
             "desc": "Folder for generated tables",
-            "default": None,
+            "default": os.getcwd() + "/tables",
         },
     }
 
     cfg['artefacts'] = {
         "artefacts_dir": {
             "desc": "Folder for generated artefacts",
-            "default": None,
+            "default": os.getcwd() + "/artefacts",
         },
     }
 
@@ -254,7 +254,7 @@ def add_vara_experiment_options(
             "value":
                 s.ConfigPath(
                     os.path.join(
-                        vara_cfg()["benchbuild_root"].value, "BC_files"
+                        str(vara_cfg()["benchbuild_root"]), "BC_files"
                     )
                 )
         }
@@ -320,36 +320,8 @@ def save_config() -> None:
         config_file = ".varats.yaml"
     else:
         config_file = str(vara_cfg()["config_file"])
-    vara_cfg()["config_file"] = path.abspath(config_file)
-    if vara_cfg()["benchbuild_root"].value is None:
-        vara_cfg()["benchbuild_root"] = path.dirname(
-            str(vara_cfg()["config_file"])
-        ) + "/benchbuild"
-    if vara_cfg()["result_dir"].value is None:
-        vara_cfg()["result_dir"] = path.dirname(
-            str(vara_cfg()["config_file"])
-        ) + "/results"
-    if vara_cfg()["data_cache"].value is None:
-        vara_cfg()["data_cache"] = path.dirname(
-            str(vara_cfg()["config_file"])
-        ) + "/data_cache"
-    if vara_cfg()["paper_config"]["folder"].value is None:
-        vara_cfg()["paper_config"]["folder"] = path.dirname(
-            str(vara_cfg()["config_file"])
-        ) + "/paper_configs"
-    if vara_cfg()["plots"]["plot_dir"].value is None:
-        vara_cfg()["plots"]["plot_dir"] = path.dirname(
-            str(vara_cfg()["config_file"])
-        ) + "/plots"
-    if vara_cfg()["tables"]["table_dir"].value is None:
-        vara_cfg()["tables"]["table_dir"] = path.dirname(
-            str(vara_cfg()["config_file"])
-        ) + "/tables"
-    if vara_cfg()["artefacts"]["artefacts_dir"].value is None:
-        vara_cfg()["artefacts"]["artefacts_dir"] = path.dirname(
-            str(vara_cfg()["config_file"])
-        ) + "/artefacts"
 
+    vara_cfg()["config_file"] = path.abspath(config_file)
     create_missing_folders()
     vara_cfg().store(LocalPath(config_file))
 
