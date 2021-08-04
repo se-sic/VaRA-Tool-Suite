@@ -7,6 +7,7 @@ internal functionality.
 import itertools
 import logging
 import re
+import sys
 import typing as tp
 from pathlib import Path
 
@@ -17,7 +18,6 @@ from plumbum import local
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
-from varats.tools import driver_container
 from varats.utils.cli_util import initialize_cli_tool
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.git_util import ShortCommitHash
@@ -120,7 +120,7 @@ def main(
                     "configured for slurm + containers. "
                     "Please run 'vara-container prepare-slurm' first."
                 )
-                exit(1)
+                sys.exit(1)
             bb_extra_args = ["--", "container", "run"]
             if bb_cfg()["container"]["import"].value:
                 bb_extra_args.append("--import")
@@ -153,10 +153,10 @@ def main(
         if match:
             slurm_script = match.group(1)
             click.echo(f"Submitting slurm script via sbatch {slurm_script}")
-            # sbatch(slurm_script)
+            sbatch(slurm_script)
         else:
             click.echo("Could not find slurm script.")
-            exit(1)
+            sys.exit(1)
 
 
 def __is_slurm_prepared() -> bool:
@@ -170,4 +170,4 @@ def __is_slurm_prepared() -> bool:
 
 
 if __name__ == '__main__':
-    main()
+    main()  # nolint

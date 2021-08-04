@@ -4,9 +4,7 @@ This module handles the configuration of Benchbuild.
 It can automatically create different preconfigured configs for BB.
 """
 import os.path
-import typing as tp
 from copy import deepcopy
-from pathlib import Path
 
 from benchbuild.utils import settings as s
 
