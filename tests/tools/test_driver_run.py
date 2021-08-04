@@ -88,13 +88,13 @@ class TestDriverRun(unittest.TestCase):
         save_bb_config()
 
         # Easiest way to configure slurm + container is 'vara-container'
-        # As a side-effect, this command is now also tested :)
+        # As a side-effect, this command is now even more tested :)
         prepare_result = runner.invoke(driver_container.main, ["prepare-slurm"])
         self.assertEqual(0, prepare_result.exit_code, prepare_result.exception)
         self.assertTrue(Path(str(bb_cfg()["slurm"]["template"])).exists())
 
         result = runner.invoke(
-            driver_run.main, ["--slurm", "-E", "JustCompile"]
+            driver_run.main, ["--slurm", "--container", "-E", "JustCompile"]
         )
         self.assertEqual(0, result.exit_code, result.exception)
         self.assertTrue(
