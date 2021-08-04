@@ -39,6 +39,7 @@ def __validate_project_parameters(
     whether ``project`` and (if available) ``version`` is selected by one of the
     case studies in the current paper config.
     """
+    # pylint: disable=unused-argument
     for project_specifier in value:
         split_input = project_specifier.rsplit('@', maxsplit=1)
         project = split_input[0]
@@ -97,6 +98,7 @@ def main(
     pretend: bool,
 ) -> None:
     """Manage base container images."""
+    # pylint: disable=too-many-branches
     initialize_cli_tool()
     initialize_projects()
 
@@ -152,7 +154,7 @@ def main(
         match = __SLURM_SCRIPT_PATTERN.search(bb_out)
         if match:
             slurm_script = match.group(1)
-            click.echo(f"Submitting slurm script via sbatch {slurm_script}")
+            click.echo(f"Submitting slurm script via sbatch: {slurm_script}")
             sbatch(slurm_script)
         else:
             click.echo("Could not find slurm script.")
@@ -170,4 +172,4 @@ def __is_slurm_prepared() -> bool:
 
 
 if __name__ == '__main__':
-    main()  # nolint
+    main()  # pylint: disable=no-value-for-parameter
