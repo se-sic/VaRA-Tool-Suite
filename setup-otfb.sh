@@ -25,6 +25,7 @@ mv $VARA_ROOT/benchbuild/.benchbuild_new.yml $VARA_ROOT/benchbuild/.benchbuild.y
 # Add paper-config
 ./add-paper-config.sh
 cd ${VARA_ROOT} && printf "0\n" | vara-pc select
+printf "\n\n\n"
 #
 echo 'TODO: Set the correct paper-config-path in .varats.yml'
 #
