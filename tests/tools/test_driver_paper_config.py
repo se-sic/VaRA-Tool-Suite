@@ -1,13 +1,13 @@
 """Test paper config tool."""
-import tempfile
 import unittest
 import unittest.mock as mock
 from io import StringIO
 from pathlib import Path
 
-from tests.test_utils import replace_config
+from tests.test_utils import run_in_test_environment
 from varats.paper_mgmt import paper_config
 from varats.tools.driver_paper_config import _pc_list, _pc_set
+from varats.utils.settings import vara_cfg
 
 
 class PaperConfigMock():
@@ -29,6 +29,7 @@ def _create_paper_config_mock(path: Path):
 class TestDriverPaperConfig(unittest.TestCase):
     """Tests for the driver_paper_config module."""
 
+    @run_in_test_environment()
     @mock.patch('sys.stdout', new_callable=StringIO)
     @mock.patch('varats.paper_mgmt.paper_config.PaperConfig')
     @mock.patch('varats.tools.driver_paper_config._get_paper_configs')
@@ -39,16 +40,20 @@ class TestDriverPaperConfig(unittest.TestCase):
 
         mock_get_paper_configs.return_value = ["foo", "bar", "baz"]
         mock_paper_config.return_value.path = Path("foo")
-        with replace_config() as config:
-            config["paper_config"]["current_config"] = "foo"
-            # pylint: disable=protected-access
-            paper_config._G_PAPER_CONFIG = paper_config.PaperConfig(Path("foo"))
-            _pc_list({})
-            output = stdout.getvalue()
-            self.assertEqual(
-                "Found the following paper_configs:\nfoo *\nbar\nbaz\n", output
-            )
+        pc_path = Path(vara_cfg()["paper_config"]["folder"].value)
+        pc_path.mkdir()
+        for pc in mock_get_paper_configs.return_value:
+            (pc_path / pc).mkdir()
+        vara_cfg()["paper_config"]["current_config"] = "foo"
+        # pylint: disable=protected-access
+        paper_config._G_PAPER_CONFIG = paper_config.PaperConfig(Path("foo"))
+        _pc_list({})
+        output = stdout.getvalue()
+        self.assertEqual(
+            "Found the following paper_configs:\nfoo *\nbar\nbaz\n", output
+        )
 
+    @run_in_test_environment()
     @mock.patch('builtins.input')
     @mock.patch('sys.stdout', new_callable=StringIO)
     @mock.patch(
@@ -64,22 +69,17 @@ class TestDriverPaperConfig(unittest.TestCase):
 
         stdin.return_value = "1"
         mock_get_paper_configs.return_value = ["foo", "bar", "baz"]
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmppath = Path(tmpdir)
-            pc_path = tmppath / "paper_configs"
-            pc_path.mkdir()
-            for pc in mock_get_paper_configs.return_value:
-                (pc_path / pc).mkdir()
-            with replace_config(tmp_path=tmppath) as config:
-                config["paper_config"]["folder"] = str(pc_path)
-                config["paper_config"]["current_config"] = "foo"
-                # pylint: disable=protected-access
-                paper_config._G_PAPER_CONFIG = paper_config.PaperConfig(
-                    Path("foo")
-                )
-                _pc_set({})
-                output = stdout.getvalue()
-                self.assertEqual(output, "0. foo *\n1. bar\n2. baz\n")
-                self.assertEqual(
-                    "bar", config["paper_config"]["current_config"].value
-                )
+        pc_path = Path(vara_cfg()["paper_config"]["folder"].value)
+        pc_path.mkdir()
+        for pc in mock_get_paper_configs.return_value:
+            (pc_path / pc).mkdir()
+        vara_cfg()["paper_config"]["current_config"] = "foo"
+        # pylint: disable=protected-access
+        paper_config._G_PAPER_CONFIG = paper_config.PaperConfig(Path("foo"))
+        _pc_set({})
+        output = stdout.getvalue()
+        self.assertEqual("0. foo *\n1. bar\n2. baz\n", output)
+        self.assertEqual(
+            "bar",
+            vara_cfg()["paper_config"]["current_config"].value
+        )

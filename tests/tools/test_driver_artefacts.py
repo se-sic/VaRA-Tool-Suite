@@ -1,27 +1,21 @@
 """Test artefacts config tool."""
-import tempfile
 import typing as tp
 import unittest
 import unittest.mock as mock
 from pathlib import Path
 
-from plumbum import local
-
-from tests.test_utils import replace_config
+from tests.test_utils import run_in_test_environment, TestInputs
 from varats.data.discover_reports import initialize_reports
-from varats.paper_mgmt.artefacts import (
-    Artefact,
-    ArtefactType,
-    TableArtefact,
-    PlotArtefact,
-)
+from varats.paper_mgmt.artefacts import Artefact
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plot.plot import Plot
+from varats.plot.plots import PlotArtefact
 from varats.plots.discover_plots import initialize_plots
 from varats.table.table import Table
-from varats.table.tables import prepare_tables
+from varats.table.tables import prepare_tables, TableArtefact
 from varats.tables.discover_tables import initialize_tables
 from varats.tools.driver_artefacts import _artefact_generate
+from varats.utils.settings import vara_cfg
 
 
 def _mock_plot(plot: Plot):
@@ -45,47 +39,38 @@ class TestDriverArtefacts(unittest.TestCase):
         initialize_tables()
         initialize_plots()
 
+    @run_in_test_environment(TestInputs.PAPER_CONFIGS)
     @mock.patch('varats.table.tables.build_table', side_effect=_mock_table)
-    @mock.patch('varats.plot.plots.build_plot', side_effect=_mock_plot)
     # pylint: disable=unused-argument
-    def test_artefacts_generate(self, build_plots, build_tables):
+    def test_artefacts_generate(self, build_tables):
         """Test whether `vara-art generate` generates all expected files."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmppath = Path(tmpdir)
-            with replace_config(tmp_path=tmppath) as config:
-                with local.cwd(tmpdir):
-                    # setup config
-                    config['artefacts']['artefacts_dir'] = "artefacts"
-                    config['paper_config']['current_config'
-                                          ] = "test_artefacts_driver"
-                    artefacts = get_paper_config().get_all_artefacts()
-                    output_path = Path("artefacts/test_artefacts_driver")
-                    output_path.mkdir(parents=True)
 
-                    # vara-art generate
-                    _artefact_generate({})
-                    # check that overview files are present
-                    self.assertTrue((output_path / "index.html").exists())
-                    self.assertTrue((output_path / "plot_matrix.html").exists())
-                    # check that artefact files are present
-                    for artefact in artefacts:
-                        self.__check_artefact_files_present(artefact)
+        # setup config
+        vara_cfg()['paper_config']['current_config'] = "test_artefacts_driver"
+        artefacts = get_paper_config().get_all_artefacts()
+        output_path = Path("artefacts/test_artefacts_driver")
+        output_path.mkdir(parents=True)
+
+        # vara-art generate
+        _artefact_generate({})
+        # check that overview files are present
+        self.assertTrue((output_path / "index.html").exists())
+        self.assertTrue((output_path / "plot_matrix.html").exists())
+        # check that artefact files are present
+        for artefact in artefacts:
+            self.__check_artefact_files_present(artefact)
 
     def __check_artefact_files_present(self, artefact: Artefact):
         artefact_file_names: tp.List[str] = []
-        if artefact.artefact_type == ArtefactType.plot:
-            artefact = tp.cast(PlotArtefact, artefact)
-            # plots = prepare_plots(
-            #     plot_type=artefact.plot_type,
-            #     result_output=artefact.output_path,
-            #     file_format=artefact.file_format,
-            #     **artefact.plot_kwargs
-            # )
-            # artefact_file_names = [
-            #     plot.plot_file_name(artefact.file_format) for plot in plots
-            # ]
-        elif artefact.artefact_type == ArtefactType.table:
-            artefact = tp.cast(TableArtefact, artefact)
+        if isinstance(artefact, PlotArtefact):
+            plots = artefact.plot_generator_class(
+                artefact.plot_config, **artefact.plot_kwargs
+            ).generate()
+            artefact_file_names = [
+                plot.plot_file_name(artefact.common_options.file_type)
+                for plot in plots
+            ]
+        elif isinstance(artefact, TableArtefact):
             tables = prepare_tables(
                 table_type=artefact.table_type,
                 result_output=artefact.output_path,

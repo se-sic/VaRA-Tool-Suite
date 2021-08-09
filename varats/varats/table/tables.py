@@ -2,9 +2,11 @@
 import logging
 import re
 import typing as tp
+from enum import Enum
 from pathlib import Path
 
 from varats.mapping.commit_map import create_lazy_commit_map_loader
+from varats.paper_mgmt.artefacts import Artefact, ArtefactFileInfo
 from varats.plot.plot_utils import check_required_args
 from varats.utils.settings import vara_cfg
 
@@ -12,6 +14,33 @@ if tp.TYPE_CHECKING:
     import varats.table.table as table  # pylint: disable=unused-import
 
 LOG = logging.getLogger(__name__)
+
+
+class TableFormat(Enum):
+    """List of supported TableFormats."""
+    value: str
+
+    plain = "plain"
+    simple = "simple"
+    github = "github"
+    grid = "grid"
+    fancy_grid = "fancy_grid"
+    pipe = "pipe"
+    orgtbl = "orgtbl"
+    jira = "jira"
+    presto = "presto"
+    pretty = "pretty"
+    psql = "psql"
+    rst = "rst"
+    mediawiki = "mediawiki"
+    moinmoin = "moinmoin"
+    youtrack = "youtrack"
+    html = "html"
+    unsafehtml = "unsafehtml"
+    latex = "latex"
+    latex_raw = "latex_raw"
+    latex_booktabs = "latex_booktabs"
+    textile = "textile"
 
 
 class TableRegistry(type):
@@ -141,7 +170,6 @@ def prepare_tables(**args: tp.Any) -> tp.Iterable['table.Table']:
     if 'view' not in args:
         args['view'] = False
     if 'output-format' not in args:
-        from varats.table.table import TableFormat  # pylint: disable=C0415
         if args['view']:
             args['output-format'] = TableFormat.fancy_grid
         else:
@@ -170,3 +198,95 @@ def prepare_tables(**args: tp.Any) -> tp.Iterable['table.Table']:
     else:
         args['table_case_study'] = None
     return [prepare_table(**args)]
+
+
+class TableArtefact(Artefact, artefact_type="table", artefact_type_version=1):
+    """
+    An artefact defining a :class:`table<varats.tables.table.Table>`.
+
+    Args:
+        name: The name of this artefact.
+        output_path: the path where the table this artefact produces will be
+                     stored
+        table_type: the :attr:`type of table
+                    <varats.tables.tables.TableRegistry.tables>`
+                    that will be generated
+        table_format: the format of the generated table
+        kwargs: additional arguments that will be passed to the table class
+    """
+
+    def __init__(
+        self, name: str, output_path: Path, table_type: str,
+        table_format: TableFormat, **kwargs: tp.Any
+    ) -> None:
+        super().__init__(name, output_path)
+        self.__table_type = table_type
+        self.__table_type_class = TableRegistry.get_class_for_table_type(
+            table_type
+        )
+        self.__table_format = table_format
+        self.__table_kwargs = kwargs
+
+    @property
+    def table_type(self) -> str:
+        """The :attr:`type of table<varats.table.tables.TableRegistry.plots>`
+        that will be generated."""
+        return self.__table_type
+
+    @property
+    def table_type_class(self) -> tp.Type['table.Table']:
+        """The class associated with :func:`table_type`."""
+        return self.__table_type_class
+
+    @property
+    def file_format(self) -> TableFormat:
+        """The file format of the generated table."""
+        return self.__table_format
+
+    @property
+    def table_kwargs(self) -> tp.Any:
+        """Additional arguments that will be passed to the table_type_class."""
+        return self.__table_kwargs
+
+    def get_dict(self) -> tp.Dict[str, tp.Any]:
+        artefact_dict = super().get_dict()
+        artefact_dict['table_type'] = self.__table_type
+        artefact_dict['table_format'] = self.__table_format.name
+        artefact_dict = {**self.__table_kwargs, **artefact_dict}
+        return artefact_dict
+
+    @classmethod
+    def create_artefact(
+        cls, name: str, output_path: Path, **kwargs: tp.Any
+    ) -> 'Artefact':
+        table_type = kwargs.pop('table_type')
+        table_format = TableFormat[kwargs.pop('file_format', 'latex_booktabs')]
+        return TableArtefact(
+            name, output_path, table_type, table_format, **kwargs
+        )
+
+    def generate_artefact(self) -> None:
+        """Generate the specified table."""
+        if not self.output_path.exists():
+            self.output_path.mkdir(parents=True)
+
+        build_tables(
+            table_type=self.table_type,
+            result_output=self.output_path,
+            file_format=self.file_format,
+            **self.table_kwargs
+        )
+
+    def get_artefact_file_infos(self) -> tp.List[ArtefactFileInfo]:
+        tables = prepare_tables(
+            table_type=self.table_type,
+            result_output=self.output_path,
+            file_format=self.file_format,
+            **self.table_kwargs
+        )
+        return [
+            ArtefactFileInfo(
+                table.table_file_name(),
+                table.table_kwargs.get("case_study", None)
+            ) for table in tables
+        ]

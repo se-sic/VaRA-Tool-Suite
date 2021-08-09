@@ -6,6 +6,7 @@ import sys
 import typing as tp
 from pathlib import Path
 
+from plumbum import colors
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 
@@ -14,12 +15,13 @@ from varats.tools.research_tools.research_tool import (
     ResearchTool,
     SpecificCodeBase,
 )
+from varats.tools.research_tools.vara import VaRACodeBase
 from varats.tools.research_tools.vara_manager import BuildType
 from varats.tools.tool_util import (
     get_research_tool,
     get_supported_research_tool_names,
 )
-from varats.ts_utils.cli_util import initialize_cli_tool
+from varats.ts_utils.cli_util import initialize_cli_tool, cli_yn_choice
 from varats.utils.settings import save_config
 
 
@@ -56,6 +58,48 @@ def update_term(text: str, enable_inline: bool = False) -> None:
         print(text, end=(int(columns) - len(text) - 1) * ' ' + '\r', flush=True)
     else:
         print(text)
+
+
+def print_up_to_date_message(research_tool: ResearchTool[VaRACodeBase]) -> None:
+    """
+    Checks if VaRA's major release version is up to date and prints a message in
+    the terminal if VaRA is outdated.
+
+    Args:
+        research_tool: The loaded research tool
+    """
+    highest_release_version = research_tool.find_highest_sub_prj_version(
+        "vara-llvm-project"
+    )
+    if not research_tool.is_up_to_date():
+        print(
+            f"{colors.LightYellow}VaRA is outdated! Newest major release "
+            f"version is {colors.bold}{colors.LightBlue}"
+            f"{highest_release_version}{colors.bold.reset}{colors.fg.reset}\n"
+        )
+
+
+def show_major_release_prompt(
+    research_tool: ResearchTool[VaRACodeBase]
+) -> None:
+    """
+    Shows a prompt if VaRA's major release version is not up to date to decide
+    if the user wants to upgrade.
+
+    Args:
+        research_tool: The loaded research tool
+    """
+
+    if not research_tool.is_up_to_date():
+        print_up_to_date_message(research_tool)
+        user_choice = cli_yn_choice(
+            question="Do you want to upgrade?", default='y'
+        )
+        if user_choice:
+            research_tool.upgrade()
+            return
+
+        return
 
 
 def parse_string_to_build_type(build_type: str) -> BuildType:
@@ -167,8 +211,8 @@ def main() -> None:
 
     if not (args.config or args.init or args.update or args.build):
         parser.error(
-            "At least one argument of --config, --init, --update or --build " +
-            "must be given."
+            "At least one argument of --config, --init, --update or --build "
+            "must be given. "
         )
 
     if args.config:
@@ -182,8 +226,10 @@ def main() -> None:
             tool, args.sourcelocation, args.installprefix, args.version
         )
     if args.update:
+        print_up_to_date_message(tool)
         tool.upgrade()
     if args.build:
+        show_major_release_prompt(tool)
         build_type = parse_string_to_build_type(args.buildtype)
         tool.build(build_type, __get_install_prefix(tool, args.installprefix))
         if tool.verify_install(__get_install_prefix(tool, args.installprefix)):

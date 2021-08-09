@@ -3,6 +3,7 @@ developers to setup and configure their own research tool by inheriting and
 implementing the base classes ``ResearchTool`` and ``CodeBase``."""
 import abc
 import typing as tp
+from enum import Enum
 from pathlib import Path
 
 from varats.tools.research_tools.vara_manager import (
@@ -20,11 +21,76 @@ from varats.tools.research_tools.vara_manager import (
     pull_current_branch,
     push_current_branch,
     show_status,
+    get_tags,
     update_all_submodules,
 )
 from varats.utils.filesystem_util import FolderAlreadyPresentError
 from varats.utils.git_util import get_current_branch
 from varats.utils.logger_util import log_without_linesep
+
+if tp.TYPE_CHECKING:
+    import varats.containers.containers as containers  # pylint: disable=W0611
+
+
+class Distro(Enum):
+    """Linux distributions supported by the tool suite."""
+    DEBIAN = "debian"
+    ARCH = "arch"
+
+
+_install_commands = {
+    Distro.DEBIAN: "apt install -y",
+    Distro.ARCH: "pacman -S --noconfirm"
+}
+
+
+class Dependencies:
+    """Models the dependencies for a research tool."""
+
+    def __init__(self, dependencies: tp.Dict[Distro, tp.List[str]]):
+        self.__dependencies = dependencies
+
+    def has_dependencies_for_distro(self, distro: Distro) -> bool:
+        """
+        Check whether the deendency object has any entries for the given distro.
+
+        Args:
+            distro: the distro to check
+
+        Returns:
+            whether there are any dependencies for the given distro
+
+        Test:
+        >>> deps = Dependencies({Distro.DEBIAN: ["foo", "bar"]})
+        >>> deps.has_dependencies_for_distro(Distro.DEBIAN)
+        True
+        >>> deps.has_dependencies_for_distro(Distro.ARCH)
+        False
+        >>> deps = Dependencies({Distro.DEBIAN: []})
+        >>> deps.has_dependencies_for_distro(Distro.DEBIAN)
+        False
+        """
+        return bool(self.__dependencies.get(distro, None))
+
+    def get_install_command(self, distro: Distro) -> str:
+        """
+        Given a distro, return a command how the dependencies can be installed.
+        Args:
+            distro: the distro to use
+
+        Returns:
+            the command how the dependencies can be installed
+
+        Test:
+        >>> deps = Dependencies({Distro.DEBIAN: ["foo", "bar"], \
+            Distro.ARCH: ["baz"]})
+        >>> deps.get_install_command(Distro.DEBIAN)
+        'apt install -y foo bar'
+        >>> deps.get_install_command(Distro.ARCH)
+        'pacman -S --noconfirm baz'
+        """
+        return f"{_install_commands[distro]} " \
+               f"{' '.join(self.__dependencies[distro])}"
 
 
 class SubProject():
@@ -216,6 +282,14 @@ class SubProject():
             name=self.name, url=self.url, remote=self.remote, folder=self.path
         )
 
+    def get_tags(self,
+                 extra_args: tp.Optional[tp.List[str]] = None) -> tp.List[str]:
+        """Get the list of available git tags."""
+        tag_list = get_tags(
+            self.__parent_code_base.base_dir / self.path, extra_args
+        )
+        return tag_list
+
 
 class CodeBase():
     """
@@ -297,6 +371,11 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
     def is_build_type_supported(self, build_type: BuildType) -> bool:
         return build_type in self.__supported_build_types
 
+    @classmethod
+    @abc.abstractmethod
+    def get_dependencies(cls) -> Dependencies:
+        """Returns the dependencies for this research tool."""
+
     @staticmethod
     @abc.abstractmethod
     def source_location() -> Path:
@@ -330,6 +409,15 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """
 
     @abc.abstractmethod
+    def find_highest_sub_prj_version(self, sub_prj_name: str) -> int:
+        """Returns the highest release version number for the specified
+        ``SubProject`` name."""
+
+    @abc.abstractmethod
+    def is_up_to_date(self) -> bool:
+        """Returns true if VaRA's major release version is up to date."""
+
+    @abc.abstractmethod
     def upgrade(self) -> None:
         """Upgrade the research tool to a newer version."""
 
@@ -352,4 +440,15 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
 
         Returns:
             True, if the tool was correctly installed
+        """
+
+    @abc.abstractmethod
+    def add_container_layers(
+        self, image_context: 'containers.BaseImageCreationContext'
+    ) -> None:
+        """
+        Add the layers required for this research tool to the given container.
+
+        Args:
+            image_context: the base image creation context
         """
