@@ -4,6 +4,15 @@
 # WARNING USE AT YOUR OWN RISK #
 ################################
 #
+echo 'Current VARA_ROOT content: "'${VARA_ROOT}'"'
+while true; do
+    read -p "Have you set the VARA_ROOT environment variable? [y/n] " yn
+    case $yn in
+        [Yy]* ) break;;
+        [Nn]* ) echo "Please set the VARA_ROOT env variable before running this script."; exit;;
+        * ) echo "Please answer yes or no.";;
+    esac
+done
 mkdir -p ../vara-root
 # Install requirements
 cd varats-core && python3 -m pip install --user --upgrade -e . && cd -
@@ -17,9 +26,9 @@ mv $VARA_ROOT/benchbuild/.benchbuild_new.yml $VARA_ROOT/benchbuild/.benchbuild.y
 ./add-paper-config.sh
 cd ${VARA_ROOT} && printf "0\n" | vara-pc select
 #
-# TODO: Set the correct paper-config-path in .varats.yml
+echo 'TODO: Set the correct paper-config-path in .varats.yml'
 #
-# TODO: Place your custom phasar-llvm binary at ../vara-root/tools/phasar/bin/evaltool or add it to $PATH
+echo 'TODO: Place your custom phasar-llvm binary at ../vara-root/tools/phasar/bin/evaltool or add it to $PATH'
 #
 # To start the otfb analysis:
 # cd ${VARA_ROOT}/benchbuild && benchbuild -vv run -E PhasarOtfb gzip grep vim [MORE TOOLS]
