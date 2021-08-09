@@ -13,10 +13,13 @@ cd $VARA_ROOT && /usr/bin/yes | vara-gen-bbconfig
 # Add OTFB experiment to benchbuild.yml
 awk '/ide_linear_constant_experiment/ { print; print "        - varats.experiments.phasar.otfb_experiment"; next }1' $VARA_ROOT/benchbuild/.benchbuild.yml > $VARA_ROOT/benchbuild/.benchbuild_new.yml
 mv $VARA_ROOT/benchbuild/.benchbuild_new.yml $VARA_ROOT/benchbuild/.benchbuild.yml
-mkdir -p $VARA_ROOT/tools/bin
-# TODO: Place your custom phasar-llvm binary at
-# ../vara-root/tools/phasar/bin/phasar-with-otfb-llvm
+# Add paper-config
+./add-paper-config.sh
+cd ${VARA_ROOT} && printf "0\n" | vara-pc select
 #
-# To start an analysis:
-# cd ../vara-root/benchbuild
-# benchbuild -vvvv run -E PhasarOtfb gzip
+# TODO: Set the correct paper-config-path in .varats.yml
+#
+# TODO: Place your custom phasar-llvm binary at ../vara-root/tools/phasar/bin/evaltool or add it to $PATH
+#
+# To start the otfb analysis:
+# cd ${VARA_ROOT}/benchbuild && benchbuild -vv run -E PhasarOtfb gzip grep vim [MORE TOOLS]
