@@ -27,9 +27,9 @@ mv $VARA_ROOT/benchbuild/.benchbuild_new.yml $VARA_ROOT/benchbuild/.benchbuild.y
 cd ${VARA_ROOT} && printf "0\n" | vara-pc select
 printf "\n\n\n"
 #
-echo 'TODO: Set the correct paper-config-path in .varats.yml'
+echo 'TODO: Set the correct paper-config-path in '${VARA_ROOT}'/.varats.yml'
 #
-echo 'TODO: Place your custom phasar-llvm binary at ../vara-root/tools/phasar/bin/evaltool or add it to $PATH'
+echo 'TODO: Add your custom phasar-llvm binary to $PATH'
 #
 # To start the otfb analysis:
 # cd ${VARA_ROOT}/benchbuild && benchbuild -vv run -E PhasarOtfb gzip grep vim [MORE TOOLS]
