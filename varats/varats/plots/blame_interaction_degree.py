@@ -82,10 +82,9 @@ class Colormap(Enum):
     GST_STRN = 'gist_stern'
 
 
-# TODO: Remove param default values in plot generation if already set in cli
-
 OPTIONAL_FIG_TITLE: CLIOptionTy = make_cli_option(
     "--fig-title",
+    type=str,
     default="",
     required=False,
     metavar="fig_title",
@@ -94,6 +93,7 @@ OPTIONAL_FIG_TITLE: CLIOptionTy = make_cli_option(
 
 OPTIONAL_FONT_SIZE: CLIOptionTy = make_cli_option(
     "--font-size",
+    type=int,
     default=10,
     required=False,
     metavar="font_size",
@@ -102,6 +102,7 @@ OPTIONAL_FONT_SIZE: CLIOptionTy = make_cli_option(
 
 OPTIONAL_WIDTH: CLIOptionTy = make_cli_option(
     "--width",
+    type=int,
     default=1500,
     required=False,
     metavar="width",
@@ -109,6 +110,7 @@ OPTIONAL_WIDTH: CLIOptionTy = make_cli_option(
 )
 OPTIONAL_HEIGHT: CLIOptionTy = make_cli_option(
     "--height",
+    type=int,
     default=1000,
     required=False,
     metavar="height",
@@ -117,6 +119,7 @@ OPTIONAL_HEIGHT: CLIOptionTy = make_cli_option(
 
 OPTIONAL_SHOW_INTERACTIONS: CLIOptionTy = make_cli_option(
     "--show-interactions/--hide-interactions",
+    type=bool,
     default=True,
     required=False,
     metavar="show_interactions",
@@ -125,6 +128,7 @@ OPTIONAL_SHOW_INTERACTIONS: CLIOptionTy = make_cli_option(
 
 OPTIONAL_SHOW_DIFF: CLIOptionTy = make_cli_option(
     "--show-diff/--hide-diff",
+    type=bool,
     default=False,
     required=False,
     metavar="show_diff",
@@ -133,6 +137,7 @@ OPTIONAL_SHOW_DIFF: CLIOptionTy = make_cli_option(
 
 OPTIONAL_REVISION_LENGTH: CLIOptionTy = make_cli_option(
     "--revision-length",
+    type=int,
     default=10,
     required=False,
     metavar="revision_length",
@@ -141,6 +146,7 @@ OPTIONAL_REVISION_LENGTH: CLIOptionTy = make_cli_option(
 
 OPTIONAL_SHOW_EDGE_WEIGHT: CLIOptionTy = make_cli_option(
     "--show-edge-weight/--hide-edge-weight",
+    type=bool,
     default=True,
     required=False,
     metavar="edge_weight",
@@ -149,8 +155,8 @@ OPTIONAL_SHOW_EDGE_WEIGHT: CLIOptionTy = make_cli_option(
 
 OPTIONAL_EDGE_WEIGHT_THRESHOLD: CLIOptionTy = make_cli_option(
     "--edge-weight-threshold",
-    default=None,
     type=EnumChoice(EdgeWeightThreshold, case_sensitive=False),
+    default=None,
     required=False,
     metavar="edge_weight_threshold",
     help="Sets the threshold to show edge weights. Options are: LOW, MEDIUM, "
@@ -168,6 +174,7 @@ OPTIONAL_LAYOUT_ENGINE: CLIOptionTy = make_cli_option(
 
 OPTIONAL_SHOW_ONLY_COMMIT: CLIOptionTy = make_cli_option(
     "--show-only-commit",
+    type=str,
     default=None,
     required=False,
     metavar="show_only_commit",
@@ -176,6 +183,7 @@ OPTIONAL_SHOW_ONLY_COMMIT: CLIOptionTy = make_cli_option(
 
 OPTIONAL_SHOW_CHURN: CLIOptionTy = make_cli_option(
     "--show-churn/--hide-churn",
+    type=bool,
     default=True,
     required=False,
     metavar="show_churn",
@@ -184,6 +192,7 @@ OPTIONAL_SHOW_CHURN: CLIOptionTy = make_cli_option(
 
 OPTIONAL_LEGEND_TITLE: CLIOptionTy = make_cli_option(
     "--legend-title",
+    type=str,
     default="",
     required=False,
     metavar="legend_title",
@@ -192,6 +201,7 @@ OPTIONAL_LEGEND_TITLE: CLIOptionTy = make_cli_option(
 
 OPTIONAL_LEGEND_SIZE: CLIOptionTy = make_cli_option(
     "--legend-size",
+    type=int,
     default=2,
     required=False,
     metavar="legend_size",
@@ -200,6 +210,7 @@ OPTIONAL_LEGEND_SIZE: CLIOptionTy = make_cli_option(
 
 OPTIONAL_SHOW_LEGEND: CLIOptionTy = make_cli_option(
     "--show-legend/--hide-legend",
+    type=bool,
     default=True,
     required=False,
     metavar="show_legend",
@@ -208,6 +219,7 @@ OPTIONAL_SHOW_LEGEND: CLIOptionTy = make_cli_option(
 
 OPTIONAL_LINE_WIDTH: CLIOptionTy = make_cli_option(
     "--line-width",
+    type=float,
     default=0.25,
     required=False,
     metavar="line_width",
@@ -216,6 +228,7 @@ OPTIONAL_LINE_WIDTH: CLIOptionTy = make_cli_option(
 
 OPTIONAL_X_TICK_SIZE: CLIOptionTy = make_cli_option(
     "--x-tick-size",
+    type=int,
     default=2,
     required=False,
     metavar="x_tick_size",
@@ -224,6 +237,7 @@ OPTIONAL_X_TICK_SIZE: CLIOptionTy = make_cli_option(
 
 OPTIONAL_EDGE_COLOR: CLIOptionTy = make_cli_option(
     "--edge-color",
+    type=str,
     default="black",
     required=False,
     metavar="edge_color",
@@ -232,16 +246,17 @@ OPTIONAL_EDGE_COLOR: CLIOptionTy = make_cli_option(
 
 OPTIONAL_COLORMAP: CLIOptionTy = make_cli_option(
     "--colormap",
-    default=Colormap.GST_STRN,
-    required=False,
     # TODO: Add EnumChoice(Colormap)
     type=Colormap,
+    default=Colormap.GST_STRN,
+    required=False,
     metavar="colormap",
     help="The colormap used in the plot."
 )
 
 OPTIONAL_SHOW_CVE: CLIOptionTy = make_cli_option(
     "--show-cve/--hide-cve",
+    type=bool,
     default=False,
     required=False,
     metavar="show_cve",
@@ -250,6 +265,7 @@ OPTIONAL_SHOW_CVE: CLIOptionTy = make_cli_option(
 
 OPTIONAL_SHOW_BUGS: CLIOptionTy = make_cli_option(
     "--show-bugs/--hide-bugs",
+    type=bool,
     default=False,
     required=False,
     metavar="show_bugs",
@@ -258,6 +274,7 @@ OPTIONAL_SHOW_BUGS: CLIOptionTy = make_cli_option(
 
 OPTIONAL_CVE_BUG_LINE_WIDTH: CLIOptionTy = make_cli_option(
     "--cve-bug-line-width",
+    type=int,
     default=1,
     required=False,
     metavar="cve_bug_line_width",
@@ -266,6 +283,7 @@ OPTIONAL_CVE_BUG_LINE_WIDTH: CLIOptionTy = make_cli_option(
 
 OPTIONAL_CVE_BUG_COLOR: CLIOptionTy = make_cli_option(
     "--cve-bug-color",
+    type=str,
     default="green",
     required=False,
     metavar="cve_bug_color",
@@ -274,15 +292,16 @@ OPTIONAL_CVE_BUG_COLOR: CLIOptionTy = make_cli_option(
 
 OPTIONAL_VERTICAL_ALIGNMENT: CLIOptionTy = make_cli_option(
     "--vertical-alignment",
+    type=click.Choice(['center', 'top', 'bottom', 'baseline']),
     default="bottom",
     required=False,
-    # TODO: Use choice
     metavar="vertical_alignment",
     help="The vertical alignment of CVE/bug annotations."
 )
 
 OPTIONAL_LABEL_SIZE: CLIOptionTy = make_cli_option(
     "--label-size",
+    type=int,
     default=2,
     required=False,
     metavar="label_size",
@@ -1159,9 +1178,6 @@ class BlameLibraryInteraction(Plot, plot_name=None):
             self.plot_kwargs["layout_engine"],
             self.plot_kwargs["show_only_commit"]
         )
-
-        # TODO (se-passau/VaRA#545): move plot file saving to top level,
-        #  which currently breaks the plot abstraction.
         return fig
 
 
@@ -1501,7 +1517,7 @@ class BlameInteractionDegreeGenerator(
 ):
     """Generates degree plot(s) for the selected case study(ies)."""
 
-    @check_required_args("report_type")
+    @check_required_args("report_type", "case_study")
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
@@ -1634,9 +1650,6 @@ class BlameLibraryInteractions(
         self.__figure = go.Figure()
 
     def plot(self, view_mode: bool) -> None:
-
-        # TODO (se-passau/VaRA#545): make params configurable in user call
-        #  with plot config rework
         self.__figure = self._multi_lib_interaction_sankey_plot(view_mode)
 
     def show(self) -> None:
@@ -1682,7 +1695,7 @@ class SankeyLibraryInteractionsGeneratorRev(
     """Generates a single sankey plot for the selected revision in the case
     study."""
 
-    @check_required_args("report_type")
+    @check_required_args("report_type", "case_study", "revision")
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
@@ -1719,7 +1732,7 @@ class SankeyLibraryInteractionsGeneratorCS(
 ):
     """Generates a sankey plot for every revision in every given case study."""
 
-    @check_required_args("report_type")
+    @check_required_args("report_type", "case_study")
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
@@ -1762,8 +1775,6 @@ class BlameCommitInteractionsGraphviz(
         self.__figure = Digraph()
 
     def plot(self, view_mode: bool) -> None:
-        # TODO (se-passau/VaRA#545): make params configurable in user call
-        #  with plot config rework
         self.__figure = self._graphviz_plot()
 
     def show(self) -> None:
@@ -1809,7 +1820,7 @@ class GraphvizLibraryInteractionsGeneratorRev(
     """Generates a single graphviz plot for the selected revision in the case
     study."""
 
-    @check_required_args("report_type")
+    @check_required_args("report_type", "case_study", "revision")
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
@@ -1856,7 +1867,7 @@ class GraphvizLibraryInteractionsGeneratorCS(
 ):
     """Generates a graphviz plot for every revision in the case study."""
 
-    @check_required_args("report_type")
+    @check_required_args("report_type", "case_study")
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]

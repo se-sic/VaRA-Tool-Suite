@@ -27,6 +27,7 @@ BACKGROUND_COLOR = (0.4666666666666667, 0.4666666666666667, 0.4666666666666667)
 
 OPTIONAL_SHOW_BLOCKED: CLIOptionTy = make_cli_option(
     "--show-blocked/--hide-blocked",
+    type=bool,
     default=True,
     required=False,
     metavar="show_blocked",
@@ -35,6 +36,7 @@ OPTIONAL_SHOW_BLOCKED: CLIOptionTy = make_cli_option(
 
 OPTIONAL_SHOW_ALL_BLOCKED: CLIOptionTy = make_cli_option(
     "--show-all-blocked/--hide-all-blocked",
+    type=bool,
     default=False,
     required=False,
     metavar="show_all_blocked",
@@ -178,8 +180,10 @@ class CaseStudyOverviewGenerator(
 ):
     """Generates a case study overview plot."""
 
+    @check_required_args("report_type", "case_study")
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
+        self.__report_type: str = plot_kwargs["report_type"]
         self.__case_study: CaseStudy = plot_kwargs["case_study"]
         self.__show_blocked: bool = plot_kwargs["show_blocked"]
         self.__show_all_blocked: bool = plot_kwargs["show_all_blocked"]

@@ -194,30 +194,13 @@ class PlotGenerator(abc.ABC):
         metavar="revision",
         help="The revision to use for the plot."
     )
-    # TODO: Add report types as choices
     REQUIRE_REPORT_TYPE: CLIOptionTy = make_cli_option(
         "--report-type",
+        # TODO: Add report types as choices
+        type=str,
         required=True,
         metavar="report_type",
         help="The report type to use for the plot."
-    )
-
-    # Optional
-    OPTIONAL_REVISION: CLIOptionTy = make_cli_option(
-        "-rev",
-        "--revision",
-        required=False,
-        metavar="revision",
-        help="The revision to use for the plot."
-    )
-
-    OPTIONAL_CASE_STUDY: CLIOptionTy = make_cli_option(
-        "-cs",
-        "--case-study",
-        type=_create_single_case_study_choice(),
-        required=False,
-        metavar="case_study",
-        help="The case study to use for the plot."
     )
 
     GENERATORS: tp.Dict[str, tp.Type['PlotGenerator']] = {}
