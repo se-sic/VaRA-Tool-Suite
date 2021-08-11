@@ -153,13 +153,13 @@ class Plot():
         >>> p.plot_file_name('svg')
         'bar_test.svg'
         >>> from varats.paper.case_study import CaseStudy
-        >>> p = Plot('foo', project='bar', plot_case_study=CaseStudy('baz', 42))
+        >>> p = Plot('foo', project='bar', case_study=CaseStudy('baz', 42))
         >>> p.plot_file_name('png')
         'baz_42_foo.png'
         """
         plot_ident = ''
-        if self.plot_kwargs.get('plot_case_study', None):
-            case_study: 'CaseStudy' = self.plot_kwargs['plot_case_study']
+        if self.plot_kwargs.get('case_study', None):
+            case_study: 'CaseStudy' = self.plot_kwargs['case_study']
             plot_ident = f"{case_study.project_name}_{case_study.version}_"
         elif 'project' in self.plot_kwargs:
             plot_ident = f"{self.plot_kwargs['project']}_"

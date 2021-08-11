@@ -158,6 +158,9 @@ class TypedMultiChoice(click.Choice, tp.Generic[ChoiceTy]):
         choices: tp.Dict[str, tp.List[ChoiceTy]],
         case_sensitive: bool = True
     ):
+        # Relates to: https://thingspython.wordpress.com/2010/09/27/another
+        # -super-wrinkle-raising-typeerror/
+        self.as_super = super(TypedMultiChoice, self)
         self.__choices = choices
         super().__init__(list(choices.keys()), case_sensitive)
 
@@ -171,7 +174,7 @@ class TypedMultiChoice(click.Choice, tp.Generic[ChoiceTy]):
 
         return [
             item for v in values
-            for item in self.__choices[super().convert(v, param, ctx)]
+            for item in self.__choices[self.as_super.convert(v, param, ctx)]
         ]
 
 

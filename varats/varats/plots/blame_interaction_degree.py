@@ -1475,14 +1475,13 @@ class BlameInteractionDegree(BlameDegree, plot_name="b_interaction_degree"):
         )
 
 
-class BlameInteractionDegreeGeneratorRev(
+class BlameInteractionDegreeGenerator(
     PlotGenerator,
-    generator_name="interaction-degree-plot-rev",
+    generator_name="interaction-degree-plot",
     plot=BlameInteractionDegree,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE,
-        PlotGenerator.REQUIRE_CASE_STUDY,
-        PlotGenerator.REQUIRE_REVISION,
+        PlotGenerator.REQUIRE_MULTI_CASE_STUDY,
         OPTIONAL_FIG_TITLE,
         OPTIONAL_SHOW_CHURN,
         OPTIONAL_LEGEND_TITLE,
@@ -1500,15 +1499,13 @@ class BlameInteractionDegreeGeneratorRev(
         OPTIONAL_LABEL_SIZE,
     ]
 ):
-    """Generates a single degree plot for the selected revision in the case
-    study."""
+    """Generates degree plot(s) for the selected case study(ies)."""
 
     @check_required_args("report_type")
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_study: CaseStudy = plot_kwargs["case_study"]
-        self.__revision: str = plot_kwargs["revision"]
+        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
         self.__fig_title: str = plot_kwargs["fig_title"]
         self.__show_churn: bool = plot_kwargs["show_churn"]
         self.__legend_title: str = plot_kwargs["legend_title"]
@@ -1529,8 +1526,7 @@ class BlameInteractionDegreeGeneratorRev(
         return [
             self.PLOT(
                 report_type=self.__report_type,
-                case_study=self.__case_study,
-                revision=self.__revision,
+                case_study=cs,
                 fig_title=self.__fig_title,
                 show_churn=self.__show_churn,
                 legend_title=self.__legend_title,
@@ -1546,7 +1542,7 @@ class BlameInteractionDegreeGeneratorRev(
                 cve_bug_color=self.__cve_bug_color,
                 vertical_alignment=self.__vertical_alignment,
                 label_size=self.__label_size
-            )
+            ) for cs in self.__case_studies
         ]
 
 
