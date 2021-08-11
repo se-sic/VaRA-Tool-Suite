@@ -9,10 +9,8 @@ from varats.provider.cve.cve_provider import CVEProvider
 
 
 def draw_cves(
-    axis: axes.Axes,
-    project: tp.Type[Project],
-    revisions: tp.List[str],
-    extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None
+    axis: axes.Axes, project: tp.Type[Project], revisions: tp.List[str],
+    plot_kwargs: tp.Any
 ) -> None:
     """
     Annotates CVEs for a project in an existing plot.
@@ -22,21 +20,8 @@ def draw_cves(
         project: the project to add CVEs for
         revisions: a list of revisions included in the plot in the order they
                    appear on the x-axis
-        extra_plot_cfg:
-            * linewidth
-            * color
-            * vertical_alignment
-            * label_size
+        plot_kwargs: the arguments that specify a plots style
     """
-    plot_cfg = {
-        "linewidth": 1,
-        "color": "green",
-        "vertical_alignment": "bottom",
-        "label_size": 2,
-    }
-    if extra_plot_cfg is not None:
-        plot_cfg.update(extra_plot_cfg)
-
     cmap = create_lazy_commit_map_loader(project.NAME)()
     revision_time_ids = [cmap.short_time_id(rev) for rev in revisions]
 
@@ -54,8 +39,8 @@ def draw_cves(
             axis.axvline(
                 index,
                 label=cve.cve_id,
-                linewidth=plot_cfg["linewidth"],
-                color=plot_cfg["color"]
+                linewidth=plot_kwargs["cve_bug_line_width"],
+                color=plot_kwargs["cve_bug_color"]
             )
             axis.text(
                 index + 0.1,
@@ -63,7 +48,7 @@ def draw_cves(
                 cve.cve_id,
                 transform=transform,
                 rotation=90,
-                size=plot_cfg["label_size"],
-                color=plot_cfg["color"],
-                va=plot_cfg["vertical_alignment"]
+                size=plot_kwargs["label_size"],
+                color=plot_kwargs["cve_bug_color"],
+                va=plot_kwargs["vertical_alignment"]
             )

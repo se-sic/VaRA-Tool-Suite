@@ -14,7 +14,6 @@ from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.plot.plot_utils import check_required_args
 from varats.plot.plots import PlotGenerator, PlotConfig
-from varats.plots.blame_interaction_degree import _validate_cs_filename
 from varats.project.project_util import get_project_cls_by_name
 from varats.report.report import FileStatusExtension, MetaReport
 from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
@@ -181,9 +180,7 @@ class CaseStudyOverviewGenerator(
 
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
-        self.__case_study: CaseStudy = _validate_cs_filename(
-            plot_kwargs["case_study"]
-        )
+        self.__case_study: CaseStudy = plot_kwargs["case_study"]
         self.__show_blocked: bool = plot_kwargs["show_blocked"]
         self.__show_all_blocked: bool = plot_kwargs["show_all_blocked"]
 

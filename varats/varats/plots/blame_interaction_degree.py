@@ -20,7 +20,6 @@ from matplotlib import cm
 from plotly import graph_objs as go  # type: ignore
 from plotly import io as pio  # type: ignore
 
-import varats.paper_mgmt.paper_config as PC
 from varats.data.databases.blame_diff_library_interaction_database import (
     BlameDiffLibraryInteractionDatabase,
 )
@@ -35,7 +34,7 @@ from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import check_required_args
-from varats.plot.plots import PlotGenerator, PlotConfig, CommonPlotOptions
+from varats.plot.plots import PlotGenerator, PlotConfig
 from varats.plots.bug_annotation import draw_bugs
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.repository_churn import draw_code_churn_for_revisions
@@ -57,6 +56,9 @@ class EdgeWeightThreshold(Enum):
 
 
 class Colormap(Enum):
+
+    # https://matplotlib.org/stable/tutorials/colors/colormaps.html
+    # Sequential
     GREENS = 'Greens'
     REDS = 'Reds'
     BLUES = 'Blues'
@@ -75,6 +77,9 @@ class Colormap(Enum):
     PUBUGN = 'PuBuGn'
     BUGN = 'BuGn'
     YLGN = 'YlGn'
+
+    # Miscellaneous
+    GST_STRN = 'gist_stern'
 
 
 # TODO: Remove param default values in plot generation if already set in cli
@@ -145,7 +150,7 @@ OPTIONAL_SHOW_EDGE_WEIGHT: CLIOptionTy = make_cli_option(
 OPTIONAL_EDGE_WEIGHT_THRESHOLD: CLIOptionTy = make_cli_option(
     "--edge-weight-threshold",
     default=None,
-    type=EnumChoice(EdgeWeightThreshold),
+    type=EnumChoice(EdgeWeightThreshold, case_sensitive=False),
     required=False,
     metavar="edge_weight_threshold",
     help="Sets the threshold to show edge weights. Options are: LOW, MEDIUM, "
@@ -167,6 +172,121 @@ OPTIONAL_SHOW_ONLY_COMMIT: CLIOptionTy = make_cli_option(
     required=False,
     metavar="show_only_commit",
     help="The commit whose interactions are to be shown."
+)
+
+OPTIONAL_SHOW_CHURN: CLIOptionTy = make_cli_option(
+    "--show-churn/--hide-churn",
+    default=True,
+    required=False,
+    metavar="show_churn",
+    help="Shows/hides the code churn."
+)
+
+OPTIONAL_LEGEND_TITLE: CLIOptionTy = make_cli_option(
+    "--legend-title",
+    default="",
+    required=False,
+    metavar="legend_title",
+    help="The title of the legend."
+)
+
+OPTIONAL_LEGEND_SIZE: CLIOptionTy = make_cli_option(
+    "--legend-size",
+    default=2,
+    required=False,
+    metavar="legend_size",
+    help="The size of the legend."
+)
+
+OPTIONAL_SHOW_LEGEND: CLIOptionTy = make_cli_option(
+    "--show-legend/--hide-legend",
+    default=True,
+    required=False,
+    metavar="show_legend",
+    help="Shows/hides the legend."
+)
+
+OPTIONAL_LINE_WIDTH: CLIOptionTy = make_cli_option(
+    "--line-width",
+    default=0.25,
+    required=False,
+    metavar="line_width",
+    help="The width of the plot line(s)."
+)
+
+OPTIONAL_X_TICK_SIZE: CLIOptionTy = make_cli_option(
+    "--x-tick-size",
+    default=2,
+    required=False,
+    metavar="x_tick_size",
+    help="The size of the x-ticks."
+)
+
+OPTIONAL_EDGE_COLOR: CLIOptionTy = make_cli_option(
+    "--edge-color",
+    default="black",
+    required=False,
+    metavar="edge_color",
+    help="The color of an edge."
+)
+
+OPTIONAL_COLORMAP: CLIOptionTy = make_cli_option(
+    "--colormap",
+    default=Colormap.GST_STRN,
+    required=False,
+    # TODO: Add EnumChoice(Colormap)
+    type=Colormap,
+    metavar="colormap",
+    help="The colormap used in the plot."
+)
+
+OPTIONAL_SHOW_CVE: CLIOptionTy = make_cli_option(
+    "--show-cve/--hide-cve",
+    default=False,
+    required=False,
+    metavar="show_cve",
+    help="Shows/hides CVE annotations."
+)
+
+OPTIONAL_SHOW_BUGS: CLIOptionTy = make_cli_option(
+    "--show-bugs/--hide-bugs",
+    default=False,
+    required=False,
+    metavar="show_bugs",
+    help="Shows/hides bug annotations."
+)
+
+OPTIONAL_CVE_BUG_LINE_WIDTH: CLIOptionTy = make_cli_option(
+    "--cve-bug-line-width",
+    default=1,
+    required=False,
+    metavar="cve_bug_line_width",
+    help="The line width of CVE/bug annotations."
+)
+
+OPTIONAL_CVE_BUG_COLOR: CLIOptionTy = make_cli_option(
+    "--cve-bug-color",
+    default="green",
+    required=False,
+    metavar="cve_bug_color",
+    help="The color of CVE/bug annotations."
+)
+
+OPTIONAL_VERTICAL_ALIGNMENT: CLIOptionTy = make_cli_option(
+    "--vertical-alignment",
+    default="bottom",
+    required=False,
+    # TODO: Use choice
+    metavar="vertical_alignment",
+    help="The vertical alignment of CVE/bug annotations."
+)
+
+OPTIONAL_LABEL_SIZE: CLIOptionTy = make_cli_option(
+    "--label-size",
+    default=2,
+    required=False,
+    metavar="label_size",
+    help="The label size of CVE/bug annotations."
 )
 
 
@@ -272,13 +392,12 @@ def _get_distinct_inter_lib_names(df: pd.DataFrame) -> tp.List[str]:
 
 def _generate_stackplot(
     df: pd.DataFrame, unique_revisions: tp.List[str],
-    sub_df_list: tp.List[pd.Series], with_churn: bool,
-    plot_cfg: tp.Dict[str, tp.Any], plot_kwargs: tp.Any
+    sub_df_list: tp.List[pd.Series], plot_kwargs: tp.Any
 ) -> None:
     fig = plt.figure()
     grid_spec = fig.add_gridspec(3, 1)
 
-    if with_churn:
+    if plot_kwargs["show_churn"]:
         main_axis = fig.add_subplot(grid_spec[:-1, :])
         main_axis.get_xaxis().set_visible(False)
         churn_axis = fig.add_subplot(grid_spec[2, :], sharex=main_axis)
@@ -288,58 +407,58 @@ def _generate_stackplot(
         x_axis = main_axis
 
     fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
-    fig.suptitle(plot_cfg["fig_suptitle"], fontsize=8)
+    fig.suptitle(plot_kwargs["fig_suptitle"], fontsize=8)
 
     main_axis.stackplot(
         unique_revisions,
         sub_df_list,
-        edgecolor=plot_cfg['edgecolor'],
+        edgecolor=plot_kwargs['edge_color'],
         colors=reversed(
-            plot_cfg['color_map'](np.linspace(0, 1, len(sub_df_list)))
+            cm.get_cmap(plot_kwargs['colormap'].value
+                       )(np.linspace(0, 1, len(sub_df_list)))
         ),
         # TODO (se-passau/VaRA#545): remove cast with plot config rework
         labels=map(
-            tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
+            tp.cast(tp.Callable[[str], str], lambda x: x),
             sorted(np.unique(df['degree']))
         ),
-        linewidth=plot_cfg['linewidth']
+        linewidth=plot_kwargs['line_width']
     )
     legend = main_axis.legend(
-        title=plot_cfg['legend_title'],
+        title=plot_kwargs['legend_title'],
         loc='upper left',
         prop={
-            'size': plot_cfg['legend_size'],
+            'size': plot_kwargs['legend_size'],
             'family': 'monospace'
         }
     )
     plt.setp(
         legend.get_title(),
-        fontsize=plot_cfg['legend_size'],
+        fontsize=plot_kwargs['legend_size'],
         family='monospace'
     )
-    legend.set_visible(plot_cfg['legend_visible'])
+    legend.set_visible(plot_kwargs['show_legend'])
     # annotate CVEs
-    with_cve = plot_kwargs.get("with_cve", False)
-    with_bugs = plot_kwargs.get("with_bugs", False)
+    with_cve = plot_kwargs["show_cve"]
+    with_bugs = plot_kwargs["show_bugs"]
+    cs = plot_kwargs["case_study"]
+    project_name = cs.project_name
+    commit_map = get_commit_map(project_name)
     if with_cve or with_bugs:
-        if "project" not in plot_kwargs:
-            LOG.error("Need a project to annotate bug or CVE data.")
-        else:
-            project = get_project_cls_by_name(plot_kwargs["project"])
-            if with_cve:
-                draw_cves(main_axis, project, unique_revisions, plot_cfg)
-            if with_bugs:
-                draw_bugs(main_axis, project, unique_revisions, plot_cfg)
+        project = get_project_cls_by_name(project_name)
+        if with_cve:
+            draw_cves(main_axis, project, unique_revisions, plot_kwargs)
+        if with_bugs:
+            draw_bugs(main_axis, project, unique_revisions, plot_kwargs)
     # draw churn subplot
-    if with_churn:
+    if plot_kwargs["show_churn"]:
         draw_code_churn_for_revisions(
-            churn_axis, plot_kwargs['project'], plot_kwargs['get_cmap'](),
-            unique_revisions
+            churn_axis, project_name, commit_map, unique_revisions
         )
     plt.setp(x_axis.get_yticklabels(), fontsize=8, fontfamily='monospace')
     plt.setp(
         x_axis.get_xticklabels(),
-        fontsize=plot_cfg['xtick_size'],
+        fontsize=plot_kwargs['x_tick_size'],
         fontfamily='monospace',
         rotation=270
     )
@@ -403,10 +522,7 @@ def _gen_fraction_overview_legend(
         title=f'{plot_cfg["legend_title"]} | {legend_title_suffix}',
         # TODO (se-passau/VaRA#545): remove cast with plot config
         #  rework
-        labels=map(
-            tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
-            legend_items
-        ),
+        labels=map(tp.cast(tp.Callable[[str], str], lambda x: x), legend_items),
         loc='upper left',
         prop={
             'size': plot_cfg['legend_size'],
@@ -1008,8 +1124,6 @@ class BlameLibraryInteraction(Plot, plot_name=None):
                 )
                 raise PlotDataEmpty
 
-            # TODO (se-passau/VaRA#545): Find correct paper_config or cs in top
-            #  level
             if blame_interactions:
                 inter_df = self._get_interaction_data(cs, commit_map, False)
             else:
@@ -1078,33 +1192,15 @@ class BlameDegree(Plot, plot_name=None):
             raise PlotDataEmpty
         return interaction_plot_df
 
-    def _degree_plot(
-        self,
-        view_mode: bool,
-        degree_type: DegreeType,
-        extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
-        with_churn: bool = True
-    ) -> None:
-        plot_cfg = {
-            'linewidth': 1 if view_mode else 0.25,
-            'legend_size': 8 if view_mode else 2,
-            'xtick_size': 10 if view_mode else 2,
-            'lable_modif': lambda x: x,
-            'legend_title': 'MISSING legend_title',
-            'legend_visible': True,
-            'fig_title': 'MISSING figure title',
-            'edgecolor': 'black',
-            'color_map': cm.get_cmap('gist_stern'),
-        }
-        if extra_plot_cfg is not None:
-            plot_cfg.update(extra_plot_cfg)
+    def _degree_plot(self, degree_type: DegreeType) -> None:
 
-        fig_suptitle = f'{str(plot_cfg["fig_title"])} - ' \
-                       f'Project {self.plot_kwargs["project"]}'
-        plot_cfg["fig_suptitle"] = fig_suptitle
+        project_name = self.plot_kwargs['case_study'].project_name
+        fig_suptitle = f'{str(self.plot_kwargs["fig_title"])} - ' \
+                       f'Project {project_name}'
+        self.plot_kwargs["fig_suptitle"] = fig_suptitle
 
         style.use(self.style)
-        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
+        commit_map: CommitMap = get_commit_map(project_name)
         interaction_plot_df = self._get_degree_data()
 
         unique_revisions, sub_df_list = _filter_data_frame(
@@ -1112,8 +1208,7 @@ class BlameDegree(Plot, plot_name=None):
         )
 
         _generate_stackplot(
-            interaction_plot_df, unique_revisions, sub_df_list, with_churn,
-            plot_cfg, self.plot_kwargs
+            interaction_plot_df, unique_revisions, sub_df_list, self.plot_kwargs
         )
 
     def _multi_lib_degree_plot(
@@ -1372,18 +1467,87 @@ class BlameInteractionDegree(BlameDegree, plot_name="b_interaction_degree"):
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        extra_plot_cfg = {
-            'legend_title': 'Interaction degrees',
-            'fig_title': 'Blame interactions'
-        }
-        # TODO (se-passau/VaRA#545): make params configurable in user call
-        #  with plot config rework
-        self._degree_plot(view_mode, DegreeType.interaction, extra_plot_cfg)
+        self._degree_plot(DegreeType.interaction)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
             DegreeType.interaction, boundary_gradient
         )
+
+
+class BlameInteractionDegreeGeneratorRev(
+    PlotGenerator,
+    generator_name="interaction-degree-plot-rev",
+    plot=BlameInteractionDegree,
+    options=[
+        PlotGenerator.REQUIRE_REPORT_TYPE,
+        PlotGenerator.REQUIRE_CASE_STUDY,
+        PlotGenerator.REQUIRE_REVISION,
+        OPTIONAL_FIG_TITLE,
+        OPTIONAL_SHOW_CHURN,
+        OPTIONAL_LEGEND_TITLE,
+        OPTIONAL_LEGEND_SIZE,
+        OPTIONAL_SHOW_LEGEND,
+        OPTIONAL_LINE_WIDTH,
+        OPTIONAL_X_TICK_SIZE,
+        OPTIONAL_EDGE_COLOR,
+        OPTIONAL_COLORMAP,
+        OPTIONAL_SHOW_CVE,
+        OPTIONAL_SHOW_BUGS,
+        OPTIONAL_CVE_BUG_LINE_WIDTH,
+        OPTIONAL_CVE_BUG_COLOR,
+        OPTIONAL_VERTICAL_ALIGNMENT,
+        OPTIONAL_LABEL_SIZE,
+    ]
+):
+    """Generates a single degree plot for the selected revision in the case
+    study."""
+
+    @check_required_args("report_type")
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        super().__init__(plot_config, **plot_kwargs)
+        self.__report_type: str = plot_kwargs["report_type"]
+        self.__case_study: CaseStudy = plot_kwargs["case_study"]
+        self.__revision: str = plot_kwargs["revision"]
+        self.__fig_title: str = plot_kwargs["fig_title"]
+        self.__show_churn: bool = plot_kwargs["show_churn"]
+        self.__legend_title: str = plot_kwargs["legend_title"]
+        self.__legend_size: int = plot_kwargs["legend_size"]
+        self.__show_legend: bool = plot_kwargs["show_legend"]
+        self.__line_width: int = plot_kwargs["line_width"]
+        self.__x_tick_size: int = plot_kwargs["x_tick_size"]
+        self.__edge_color: str = plot_kwargs["edge_color"]
+        self.__colormap: Colormap = plot_kwargs["colormap"]
+        self.__show_cve: bool = plot_kwargs["show_cve"]
+        self.__show_bugs: bool = plot_kwargs["show_bugs"]
+        self.__cve_bug_line_width: int = plot_kwargs["cve_bug_line_width"]
+        self.__cve_bug_color: str = plot_kwargs["cve_bug_color"]
+        self.__vertical_alignment: str = plot_kwargs["vertical_alignment"]
+        self.__label_size: int = plot_kwargs["label_size"]
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            self.PLOT(
+                report_type=self.__report_type,
+                case_study=self.__case_study,
+                revision=self.__revision,
+                fig_title=self.__fig_title,
+                show_churn=self.__show_churn,
+                legend_title=self.__legend_title,
+                legend_size=self.__legend_size,
+                show_legend=self.__show_legend,
+                line_width=self.__line_width,
+                x_tick_size=self.__x_tick_size,
+                edge_color=self.__edge_color,
+                colormap=self.__colormap,
+                show_cve=self.__show_cve,
+                show_bugs=self.__show_bugs,
+                cve_bug_line_width=self.__cve_bug_line_width,
+                cve_bug_color=self.__cve_bug_color,
+                vertical_alignment=self.__vertical_alignment,
+                label_size=self.__label_size
+            )
+        ]
 
 
 class BlameInteractionDegreeMultiLib(
