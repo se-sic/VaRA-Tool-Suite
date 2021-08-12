@@ -1485,6 +1485,11 @@ class BlameInteractionDegree(BlameDegree, plot_name="b_interaction_degree"):
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
+        if not self.plot_kwargs["legend_title"]:
+            self.plot_kwargs["legend_title"] = "Interaction degrees"
+        if not self.plot_kwargs["fig_title"]:
+            self.plot_kwargs["fig_title"] = "Blame interactions"
+
         self._degree_plot(DegreeType.interaction)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
