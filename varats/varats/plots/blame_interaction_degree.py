@@ -534,33 +534,32 @@ def _calc_fractions(
 
 def _gen_fraction_overview_legend(
     legends_axis: tp.Any, handles: tp.Any, legend_title_suffix: str,
-    legend_items: tp.List[str], plot_cfg: tp.Dict[str, tp.Any]
+    legend_items: tp.List[str], plot_kwargs: tp.Any
 ) -> None:
     legend = legends_axis.legend(
         handles=handles,
-        title=f'{plot_cfg["legend_title"]} | {legend_title_suffix}',
+        title=f'{plot_kwargs["legend_title"]} | {legend_title_suffix}',
         # TODO (se-passau/VaRA#545): remove cast with plot config
         #  rework
         labels=map(tp.cast(tp.Callable[[str], str], lambda x: x), legend_items),
         loc='upper left',
         prop={
-            'size': plot_cfg['legend_size'],
+            'size': plot_kwargs['legend_size'],
             'family': 'monospace'
         }
     )
     plt.setp(
         legend.get_title(),
-        fontsize=plot_cfg['legend_size'],
+        fontsize=plot_kwargs['legend_size'],
         family='monospace',
     )
     legends_axis.add_artist(legend)
-    legend.set_visible(plot_cfg['legend_visible'])
+    legend.set_visible(plot_kwargs['show_legend'])
 
 
 def _plot_fraction_overview(
     base_lib_fraction_map: FractionMap, inter_lib_fraction_map: FractionMap,
-    with_churn: bool, unique_revisions: tp.List[str],
-    plot_cfg: tp.Dict[str, tp.Any], plot_kwargs: tp.Dict[str, tp.Any]
+    unique_revisions: tp.List[str], plot_kwargs: tp.Any
 ) -> None:
     fig = plt.figure()
     grid_spec = fig.add_gridspec(3, 1)
@@ -568,20 +567,21 @@ def _plot_fraction_overview(
     out_axis.get_xaxis().set_visible(False)
     in_axis = fig.add_subplot(grid_spec[1, :])
 
-    if with_churn:
+    if plot_kwargs["show_churn"]:
         in_axis.get_xaxis().set_visible(False)
         churn_axis = fig.add_subplot(grid_spec[-1, :], sharex=out_axis)
         x_axis = churn_axis
     else:
         x_axis = in_axis
 
+    project_name: str = plot_kwargs["case_study"].project_name
     fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
     fig.suptitle(
-        str(plot_cfg['fig_title']) + f' - Project {plot_kwargs["project"]}',
+        str(plot_kwargs['fig_title']) + f' - Project {project_name}',
         fontsize=8
     )
 
-    colormap = plot_cfg['color_map'](
+    colormap = cm.get_cmap(plot_kwargs['colormap'].value)(
         np.linspace(
             0, 1,
             max(
@@ -597,63 +597,63 @@ def _plot_fraction_overview(
     outgoing_plot_lines += out_axis.stackplot(
         unique_revisions,
         base_lib_fraction_map.get_all_fraction_lists(),
-        linewidth=plot_cfg['linewidth'],
+        linewidth=plot_kwargs['line_width'],
         colors=colormap,
-        edgecolor=plot_cfg['edgecolor'],
+        edgecolor=plot_kwargs['edge_color'],
         alpha=0.7
     )
 
     # Setup outgoing interactions legend
     _gen_fraction_overview_legend(
         out_axis, outgoing_plot_lines, "Outgoing interactions",
-        base_lib_fraction_map.get_lib_names(), plot_cfg
+        base_lib_fraction_map.get_lib_names(), plot_kwargs
     )
 
     ingoing_plot_lines += in_axis.stackplot(
         unique_revisions,
         inter_lib_fraction_map.get_all_fraction_lists(),
-        linewidth=plot_cfg['linewidth'],
+        linewidth=plot_kwargs['line_width'],
         colors=colormap,
-        edgecolor=plot_cfg['edgecolor'],
+        edgecolor=plot_kwargs['edge_color'],
         alpha=0.7
     )
 
     # Setup ingoing interactions legend
     _gen_fraction_overview_legend(
         in_axis, ingoing_plot_lines, "Ingoing interactions",
-        inter_lib_fraction_map.get_lib_names(), plot_cfg
+        inter_lib_fraction_map.get_lib_names(), plot_kwargs
     )
 
     # annotate CVEs
     with_cve = plot_kwargs.get("with_cve", False)
     with_bugs = plot_kwargs.get("with_bugs", False)
+    commit_map = get_commit_map(project_name)
     if with_cve or with_bugs:
         if "project" not in plot_kwargs:
             LOG.error("Need a project to annotate bug or CVE data.")
         else:
             project = get_project_cls_by_name(plot_kwargs["project"])
             if with_cve:
-                draw_cves(in_axis, project, unique_revisions, plot_cfg)
+                draw_cves(in_axis, project, unique_revisions, plot_kwargs)
             if with_bugs:
-                draw_bugs(in_axis, project, unique_revisions, plot_cfg)
+                draw_bugs(in_axis, project, unique_revisions, plot_kwargs)
 
     # draw churn subplot
-    if with_churn:
+    if plot_kwargs["show_churn"]:
         draw_code_churn_for_revisions(
-            churn_axis, plot_kwargs['project'], plot_kwargs['get_cmap'](),
-            unique_revisions
+            churn_axis, project_name, commit_map, unique_revisions
         )
 
     # Format labels of axes
     plt.setp(
         x_axis.get_xticklabels(),
-        fontsize=plot_cfg['xtick_size'],
+        fontsize=plot_kwargs['x_tick_size'],
         fontfamily='monospace',
         rotation=270
     )
 
     axes = [out_axis, in_axis]
-    if with_churn:
+    if plot_kwargs["show_churn"]:
         axes.append(churn_axis)
 
     for axis in axes:
@@ -1296,27 +1296,7 @@ class BlameDegree(Plot, plot_name=None):
             plot_cfg, self.plot_kwargs
         )
 
-    def _fraction_overview_plot(
-        self,
-        view_mode: bool,
-        degree_type: DegreeType,
-        extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
-        with_churn: bool = True
-    ) -> None:
-        plot_cfg = {
-            'linewidth': 1 if view_mode else 0.25,
-            'legend_size': 8 if view_mode else 2,
-            'xtick_size': 10 if view_mode else 2,
-            'lable_modif': lambda x: x,
-            'legend_title': 'MISSING legend_title',
-            'legend_visible': True,
-            'fig_title': 'MISSING figure title',
-            'edgecolor': 'black',
-            'color_map': cm.get_cmap('tab10')
-        }
-        if extra_plot_cfg is not None:
-            plot_cfg.update(extra_plot_cfg)
-
+    def _fraction_overview_plot(self, degree_type: DegreeType) -> None:
         style.use(self.style)
 
         df = self._get_degree_data()
@@ -1360,8 +1340,8 @@ class BlameDegree(Plot, plot_name=None):
         )
 
         _plot_fraction_overview(
-            base_lib_fraction_map, inter_lib_fraction_map, with_churn,
-            unique_revisions, plot_cfg, self.plot_kwargs
+            base_lib_fraction_map, inter_lib_fraction_map, unique_revisions,
+            self.plot_kwargs
         )
 
     def _multi_lib_interaction_sankey_plot(self, view_mode: bool) -> go.Figure:
@@ -1621,20 +1601,88 @@ class BlameInteractionFractionOverview(
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        extra_plot_cfg = {
-            'legend_title': 'Fraction ratio',
-            'fig_title': 'Distribution of fractions'
-        }
-        # TODO (se-passau/VaRA#545): make params configurable in user call
-        #  with plot config rework
-        self._fraction_overview_plot(
-            view_mode, DegreeType.interaction, extra_plot_cfg
-        )
+        if not self.plot_kwargs["legend_title"]:
+            self.plot_kwargs["legend_title"] = "Fraction ratio"
+        if not self.plot_kwargs["fig_title"]:
+            self.plot_kwargs["fig_title"] = "Distribution of fractions"
+
+        self._fraction_overview_plot(DegreeType.interaction)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
             DegreeType.interaction, boundary_gradient
         )
+
+
+class BlameInteractionFractionOverviewGenerator(
+    PlotGenerator,
+    generator_name="fraction-overview-plot",
+    plot=BlameInteractionFractionOverview,
+    options=[
+        PlotGenerator.REQUIRE_REPORT_TYPE,
+        PlotGenerator.REQUIRE_MULTI_CASE_STUDY,
+        OPTIONAL_FIG_TITLE,
+        OPTIONAL_SHOW_CHURN,
+        OPTIONAL_LEGEND_TITLE,
+        OPTIONAL_LEGEND_SIZE,
+        OPTIONAL_SHOW_LEGEND,
+        OPTIONAL_LINE_WIDTH,
+        OPTIONAL_X_TICK_SIZE,
+        OPTIONAL_EDGE_COLOR,
+        OPTIONAL_COLORMAP,
+        OPTIONAL_SHOW_CVE,
+        OPTIONAL_SHOW_BUGS,
+        OPTIONAL_CVE_BUG_LINE_WIDTH,
+        OPTIONAL_CVE_BUG_COLOR,
+        OPTIONAL_VERTICAL_ALIGNMENT,
+        OPTIONAL_LABEL_SIZE,
+    ]
+):
+    """Generates fraction-overview plot(s) for the selected case study(ies)."""
+
+    @check_required_args("report_type", "case_study")
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        super().__init__(plot_config, **plot_kwargs)
+        self.__report_type: str = plot_kwargs["report_type"]
+        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
+        self.__fig_title: str = plot_kwargs["fig_title"]
+        self.__show_churn: bool = plot_kwargs["show_churn"]
+        self.__legend_title: str = plot_kwargs["legend_title"]
+        self.__legend_size: int = plot_kwargs["legend_size"]
+        self.__show_legend: bool = plot_kwargs["show_legend"]
+        self.__line_width: int = plot_kwargs["line_width"]
+        self.__x_tick_size: int = plot_kwargs["x_tick_size"]
+        self.__edge_color: str = plot_kwargs["edge_color"]
+        self.__colormap: Colormap = plot_kwargs["colormap"]
+        self.__show_cve: bool = plot_kwargs["show_cve"]
+        self.__show_bugs: bool = plot_kwargs["show_bugs"]
+        self.__cve_bug_line_width: int = plot_kwargs["cve_bug_line_width"]
+        self.__cve_bug_color: str = plot_kwargs["cve_bug_color"]
+        self.__vertical_alignment: str = plot_kwargs["vertical_alignment"]
+        self.__label_size: int = plot_kwargs["label_size"]
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            self.PLOT(
+                report_type=self.__report_type,
+                case_study=cs,
+                fig_title=self.__fig_title,
+                show_churn=self.__show_churn,
+                legend_title=self.__legend_title,
+                legend_size=self.__legend_size,
+                show_legend=self.__show_legend,
+                line_width=self.__line_width,
+                x_tick_size=self.__x_tick_size,
+                edge_color=self.__edge_color,
+                colormap=self.__colormap,
+                show_cve=self.__show_cve,
+                show_bugs=self.__show_bugs,
+                cve_bug_line_width=self.__cve_bug_line_width,
+                cve_bug_color=self.__cve_bug_color,
+                vertical_alignment=self.__vertical_alignment,
+                label_size=self.__label_size
+            ) for cs in self.__case_studies
+        ]
 
 
 class BlameLibraryInteractions(
