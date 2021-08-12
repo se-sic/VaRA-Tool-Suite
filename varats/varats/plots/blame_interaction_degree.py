@@ -1520,7 +1520,7 @@ class BlameInteractionDegreeGenerator(
         OPTIONAL_LABEL_SIZE,
     ]
 ):
-    """Generates degree plot(s) for the selected case study(ies)."""
+    """Generates interaction-degree plot(s) for the selected case study(ies)."""
 
     @check_required_args("report_type", "case_study")
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
