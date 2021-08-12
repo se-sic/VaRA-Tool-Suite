@@ -1913,18 +1913,88 @@ class BlameAuthorDegree(BlameDegree, plot_name="b_author_degree"):
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        extra_plot_cfg = {
-            'legend_title': 'Author interaction degrees',
-            'fig_title': 'Author blame interactions'
-        }
-        # TODO (se-passau/VaRA#545): make params configurable in user call
-        #  with plot config rework
-        self._degree_plot(view_mode, DegreeType.author, extra_plot_cfg)
+        if not self.plot_kwargs["legend_title"]:
+            self.plot_kwargs["legend_title"] = "Author interaction degrees"
+        if not self.plot_kwargs["fig_title"]:
+            self.plot_kwargs["fig_title"] = "Author blame interactions"
+
+        self._degree_plot(DegreeType.author)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
             DegreeType.author, boundary_gradient
         )
+
+
+class BlameAuthorDegreeGenerator(
+    PlotGenerator,
+    generator_name="author-degree-plot",
+    plot=BlameAuthorDegree,
+    options=[
+        PlotGenerator.REQUIRE_REPORT_TYPE,
+        PlotGenerator.REQUIRE_MULTI_CASE_STUDY,
+        OPTIONAL_FIG_TITLE,
+        OPTIONAL_SHOW_CHURN,
+        OPTIONAL_LEGEND_TITLE,
+        OPTIONAL_LEGEND_SIZE,
+        OPTIONAL_SHOW_LEGEND,
+        OPTIONAL_LINE_WIDTH,
+        OPTIONAL_X_TICK_SIZE,
+        OPTIONAL_EDGE_COLOR,
+        OPTIONAL_COLORMAP,
+        OPTIONAL_SHOW_CVE,
+        OPTIONAL_SHOW_BUGS,
+        OPTIONAL_CVE_BUG_LINE_WIDTH,
+        OPTIONAL_CVE_BUG_COLOR,
+        OPTIONAL_VERTICAL_ALIGNMENT,
+        OPTIONAL_LABEL_SIZE,
+    ]
+):
+    """Generates author-degree plot(s) for the selected case study(ies)."""
+
+    @check_required_args("report_type", "case_study")
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        super().__init__(plot_config, **plot_kwargs)
+        self.__report_type: str = plot_kwargs["report_type"]
+        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
+        self.__fig_title: str = plot_kwargs["fig_title"]
+        self.__show_churn: bool = plot_kwargs["show_churn"]
+        self.__legend_title: str = plot_kwargs["legend_title"]
+        self.__legend_size: int = plot_kwargs["legend_size"]
+        self.__show_legend: bool = plot_kwargs["show_legend"]
+        self.__line_width: int = plot_kwargs["line_width"]
+        self.__x_tick_size: int = plot_kwargs["x_tick_size"]
+        self.__edge_color: str = plot_kwargs["edge_color"]
+        self.__colormap: Colormap = plot_kwargs["colormap"]
+        self.__show_cve: bool = plot_kwargs["show_cve"]
+        self.__show_bugs: bool = plot_kwargs["show_bugs"]
+        self.__cve_bug_line_width: int = plot_kwargs["cve_bug_line_width"]
+        self.__cve_bug_color: str = plot_kwargs["cve_bug_color"]
+        self.__vertical_alignment: str = plot_kwargs["vertical_alignment"]
+        self.__label_size: int = plot_kwargs["label_size"]
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            self.PLOT(
+                report_type=self.__report_type,
+                case_study=cs,
+                fig_title=self.__fig_title,
+                show_churn=self.__show_churn,
+                legend_title=self.__legend_title,
+                legend_size=self.__legend_size,
+                show_legend=self.__show_legend,
+                line_width=self.__line_width,
+                x_tick_size=self.__x_tick_size,
+                edge_color=self.__edge_color,
+                colormap=self.__colormap,
+                show_cve=self.__show_cve,
+                show_bugs=self.__show_bugs,
+                cve_bug_line_width=self.__cve_bug_line_width,
+                cve_bug_color=self.__cve_bug_color,
+                vertical_alignment=self.__vertical_alignment,
+                label_size=self.__label_size
+            ) for cs in self.__case_studies
+        ]
 
 
 class BlameMaxTimeDistribution(BlameDegree, plot_name="b_maxtime_distribution"):
