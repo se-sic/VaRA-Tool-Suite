@@ -82,6 +82,26 @@ class Colormap(Enum):
     GST_STRN = 'gist_stern'
 
 
+# Required
+REQUIRE_BASE_LIB: CLIOptionTy = make_cli_option(
+    "--base-lib",
+    "--base-library",
+    type=str,
+    required=True,
+    metavar="base_lib",
+    help="The base library name."
+)
+
+REQUIRE_INTER_LIB: CLIOptionTy = make_cli_option(
+    "--inter-lib",
+    "--interacting-library",
+    type=str,
+    required=True,
+    metavar="inter_lib",
+    help="The interacting library name."
+)
+
+# Optional
 OPTIONAL_FIG_TITLE: CLIOptionTy = make_cli_option(
     "--fig-title",
     type=str,
@@ -1227,39 +1247,22 @@ class BlameDegree(Plot, plot_name=None):
             interaction_plot_df, unique_revisions, sub_df_list, self.plot_kwargs
         )
 
-    def _multi_lib_degree_plot(
-        self,
-        view_mode: bool,
-        degree_type: DegreeType,
-        extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
-        with_churn: bool = True
-    ) -> None:
-        plot_cfg = {
-            'linewidth': 1 if view_mode else 0.25,
-            'legend_size': 8 if view_mode else 2,
-            'xtick_size': 10 if view_mode else 2,
-            'lable_modif': lambda x: x,
-            'legend_title': 'MISSING legend_title',
-            'legend_visible': True,
-            'fig_title': 'MISSING figure title',
-            'edgecolor': 'black',
-            'color_map': cm.get_cmap('gist_stern'),
-        }
-        if extra_plot_cfg is not None:
-            plot_cfg.update(extra_plot_cfg)
+    def _multi_lib_degree_plot(self, degree_type: DegreeType) -> None:
 
-        fig_suptitle = f'{str(plot_cfg["fig_title"])} - ' \
-                       f'Project {self.plot_kwargs["project"]} | ' \
-                       f'{plot_cfg["base_lib"]} --> {plot_cfg["inter_lib"]} '
-        plot_cfg["fig_suptitle"] = fig_suptitle
+        project_name = self.plot_kwargs['case_study'].project_name
+        fig_suptitle = f'{str(self.plot_kwargs["fig_title"])} - ' \
+                       f'Project {project_name} | ' \
+                       f'{self.plot_kwargs["base_lib"]} --> ' \
+                       f'{self.plot_kwargs["inter_lib"]} '
+        self.plot_kwargs["fig_suptitle"] = fig_suptitle
 
         style.use(self.style)
-        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
+        commit_map: CommitMap = get_commit_map(project_name)
         interaction_plot_df = self._get_degree_data()
 
         interaction_plot_df = interaction_plot_df[(
             interaction_plot_df[['base_lib', 'inter_lib']] == [
-                plot_cfg['base_lib'], plot_cfg['inter_lib']
+                self.plot_kwargs['base_lib'], self.plot_kwargs['inter_lib']
             ]
         ).all(1)]
 
@@ -1274,8 +1277,8 @@ class BlameDegree(Plot, plot_name=None):
 
         if not is_lib_combination_existent():
             LOG.warning(
-                f"There is no interaction from {plot_cfg['base_lib']} to "
-                f"{plot_cfg['inter_lib']} or not enough data points."
+                f"There is no interaction from {self.plot_kwargs['base_lib']} "
+                f"to {self.plot_kwargs['inter_lib']} or not enough data points."
             )
             raise PlotDataEmpty
 
@@ -1292,8 +1295,7 @@ class BlameDegree(Plot, plot_name=None):
         )
 
         _generate_stackplot(
-            interaction_plot_df, unique_revisions, sub_df_list, with_churn,
-            plot_cfg, self.plot_kwargs
+            interaction_plot_df, unique_revisions, sub_df_list, self.plot_kwargs
         )
 
     def _fraction_overview_plot(
@@ -1579,29 +1581,94 @@ class BlameInteractionDegreeMultiLib(
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        if 'base_lib' and 'inter_lib' not in self.plot_kwargs:
-            LOG.warning("No library names were provided.")
-            raise PlotDataEmpty
+        if not self.plot_kwargs["legend_title"]:
+            self.plot_kwargs["legend_title"] = "Interaction degrees"
+        if not self.plot_kwargs["fig_title"]:
+            self.plot_kwargs["fig_title"] = "Blame interactions"
 
-        base_lib = self.plot_kwargs['base_lib']
-        inter_lib = self.plot_kwargs['inter_lib']
-
-        extra_plot_cfg = {
-            'legend_title': 'Interaction degrees',
-            'fig_title': 'Blame interactions',
-            'base_lib': base_lib,
-            'inter_lib': inter_lib
-        }
-        # TODO (se-passau/VaRA#545): make params configurable in user call
-        #  with plot config rework
-        self._multi_lib_degree_plot(
-            view_mode, DegreeType.interaction, extra_plot_cfg
-        )
+        self._multi_lib_degree_plot(DegreeType.interaction)
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         return self._calc_missing_revisions(
             DegreeType.interaction, boundary_gradient
         )
+
+
+class BlameInteractionDegreeMultiLibGenerator(
+    PlotGenerator,
+    generator_name="interaction-degree-multi-lib-plot",
+    plot=BlameInteractionDegreeMultiLib,
+    options=[
+        PlotGenerator.REQUIRE_REPORT_TYPE,
+        PlotGenerator.REQUIRE_MULTI_CASE_STUDY,
+        REQUIRE_BASE_LIB,
+        REQUIRE_INTER_LIB,
+        OPTIONAL_FIG_TITLE,
+        OPTIONAL_SHOW_CHURN,
+        OPTIONAL_LEGEND_TITLE,
+        OPTIONAL_LEGEND_SIZE,
+        OPTIONAL_SHOW_LEGEND,
+        OPTIONAL_LINE_WIDTH,
+        OPTIONAL_X_TICK_SIZE,
+        OPTIONAL_EDGE_COLOR,
+        OPTIONAL_COLORMAP,
+        OPTIONAL_SHOW_CVE,
+        OPTIONAL_SHOW_BUGS,
+        OPTIONAL_CVE_BUG_LINE_WIDTH,
+        OPTIONAL_CVE_BUG_COLOR,
+        OPTIONAL_VERTICAL_ALIGNMENT,
+        OPTIONAL_LABEL_SIZE,
+    ]
+):
+    """Generates multi-lib degree plot(s) for the selected case study(ies)."""
+
+    @check_required_args("report_type", "case_study", "base_lib", "inter_lib")
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        super().__init__(plot_config, **plot_kwargs)
+        self.__report_type: str = plot_kwargs["report_type"]
+        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
+        self.__base_lib: str = plot_kwargs["base_lib"]
+        self.__inter_lib: str = plot_kwargs["inter_lib"]
+        self.__fig_title: str = plot_kwargs["fig_title"]
+        self.__show_churn: bool = plot_kwargs["show_churn"]
+        self.__legend_title: str = plot_kwargs["legend_title"]
+        self.__legend_size: int = plot_kwargs["legend_size"]
+        self.__show_legend: bool = plot_kwargs["show_legend"]
+        self.__line_width: int = plot_kwargs["line_width"]
+        self.__x_tick_size: int = plot_kwargs["x_tick_size"]
+        self.__edge_color: str = plot_kwargs["edge_color"]
+        self.__colormap: Colormap = plot_kwargs["colormap"]
+        self.__show_cve: bool = plot_kwargs["show_cve"]
+        self.__show_bugs: bool = plot_kwargs["show_bugs"]
+        self.__cve_bug_line_width: int = plot_kwargs["cve_bug_line_width"]
+        self.__cve_bug_color: str = plot_kwargs["cve_bug_color"]
+        self.__vertical_alignment: str = plot_kwargs["vertical_alignment"]
+        self.__label_size: int = plot_kwargs["label_size"]
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            self.PLOT(
+                report_type=self.__report_type,
+                case_study=cs,
+                base_lib=self.__base_lib,
+                inter_lib=self.__inter_lib,
+                fig_title=self.__fig_title,
+                show_churn=self.__show_churn,
+                legend_title=self.__legend_title,
+                legend_size=self.__legend_size,
+                show_legend=self.__show_legend,
+                line_width=self.__line_width,
+                x_tick_size=self.__x_tick_size,
+                edge_color=self.__edge_color,
+                colormap=self.__colormap,
+                show_cve=self.__show_cve,
+                show_bugs=self.__show_bugs,
+                cve_bug_line_width=self.__cve_bug_line_width,
+                cve_bug_color=self.__cve_bug_color,
+                vertical_alignment=self.__vertical_alignment,
+                label_size=self.__label_size
+            ) for cs in self.__case_studies
+        ]
 
 
 class BlameInteractionFractionOverview(
