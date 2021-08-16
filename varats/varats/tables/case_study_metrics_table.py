@@ -48,7 +48,7 @@ class CaseStudyMetricsTable(Table):
             cs_dict = {
                 project_name: {
                     "Domain":
-                        project_cls.DOMAIN,
+                        project_cls.DOMAIN.capitalize(),
                     "LOC":
                         calc_repo_loc(project_repo, rev_range),
                     "Commits":
@@ -61,7 +61,7 @@ class CaseStudyMetricsTable(Table):
                 }
             }
             if revision:
-                cs_dict[project_name]["Analyzed Commit"] = revision.short_hash
+                cs_dict[project_name]["Revision"] = revision.short_hash
 
             cs_data.append(pd.DataFrame.from_dict(cs_dict, orient="index"))
 
