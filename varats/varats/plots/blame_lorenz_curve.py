@@ -12,9 +12,15 @@ from varats.data.databases.blame_interaction_database import (
     BlameInteractionDatabase,
 )
 from varats.data.metrics import gini_coefficient, lorenz_curve
-from varats.mapping.commit_map import CommitMap
+from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
+from varats.plot.plot_utils import check_required_args
+from varats.plot.plots import PlotGenerator, PlotConfig
+from varats.plots.blame_interaction_degree import (
+    OPTIONAL_X_TICK_SIZE,
+    OPTIONAL_LINE_WIDTH,
+)
 from varats.plots.repository_churn import (
     build_repo_churn_table,
     draw_code_churn,
@@ -25,7 +31,7 @@ from varats.utils.git_util import ChurnConfig, calc_repo_code_churn
 
 def draw_interaction_lorenz_curve(
     axis: axes.SubplotBase, data: pd.DataFrame, consider_in_interactions: bool,
-    consider_out_interactions: bool, plot_cfg: tp.Dict[str, tp.Any]
+    consider_out_interactions: bool, line_width: float
 ) -> None:
     """
     Draws a lorenz_curve onto the given axis.
@@ -47,13 +53,11 @@ def draw_interaction_lorenz_curve(
 
     data.sort_values(by=[data_selector, 'time_id'], inplace=True)
     lor = lorenz_curve(data[data_selector])
-    axis.plot(
-        data['revision'], lor, color='#cc0099', linewidth=plot_cfg['linewidth']
-    )
+    axis.plot(data['revision'], lor, color='#cc0099', linewidth=line_width)
 
 
 def draw_perfect_lorenz_curve(
-    axis: axes.SubplotBase, data: pd.DataFrame, plot_cfg: tp.Dict[str, tp.Any]
+    axis: axes.SubplotBase, data: pd.DataFrame, line_width: float
 ) -> None:
     """
     Draws a perfect lorenz curve onto the given axis, i.e., a straight line from
@@ -68,7 +72,7 @@ def draw_perfect_lorenz_curve(
         np.linspace(0.0, 1.0, len(data['revision'])),
         color='black',
         linestyle='--',
-        linewidth=plot_cfg['linewidth']
+        linewidth=line_width
     )
 
 
@@ -137,16 +141,11 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        plot_cfg = {
-            'linewidth': 2 if view_mode else 0.25,
-            'legend_size': 8 if view_mode else 2,
-            'xtick_size': 10 if view_mode else 2,
-        }
         style.use(self.style)
 
-        case_study: CaseStudy = self.plot_kwargs['plot_case_study']
-        commit_map = self.plot_kwargs['get_cmap']()
-        project_name = self.plot_kwargs['project']
+        case_study: CaseStudy = self.plot_kwargs['case_study']
+        project_name: str = case_study.project_name
+        commit_map = get_commit_map(project_name)
 
         fig = plt.figure()
         fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
@@ -174,14 +173,22 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
             raise PlotDataEmpty
 
         # Draw left side of the plot
-        draw_interaction_lorenz_curve(main_axis, data, True, False, plot_cfg)
-        draw_perfect_lorenz_curve(main_axis, data, plot_cfg)
+        draw_interaction_lorenz_curve(
+            main_axis, data, True, False, self.plot_kwargs["line_width"]
+        )
+        draw_perfect_lorenz_curve(
+            main_axis, data, self.plot_kwargs["line_width"]
+        )
 
         draw_interaction_code_churn(churn_axis, data, project_name, commit_map)
 
         # Draw right side of the plot
-        draw_interaction_lorenz_curve(main_axis_r, data, False, True, plot_cfg)
-        draw_perfect_lorenz_curve(main_axis_r, data, plot_cfg)
+        draw_interaction_lorenz_curve(
+            main_axis_r, data, False, True, self.plot_kwargs["line_width"]
+        )
+        draw_perfect_lorenz_curve(
+            main_axis_r, data, self.plot_kwargs["line_width"]
+        )
 
         draw_interaction_code_churn(
             churn_axis_r, data, project_name, commit_map
@@ -189,17 +196,48 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
 
         # Adapt axis to draw nicer plots
         for x_label in churn_axis.get_xticklabels():
-            x_label.set_fontsize(plot_cfg['xtick_size'])
+            x_label.set_fontsize(self.plot_kwargs["x_tick_size"])
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
         for x_label in churn_axis_r.get_xticklabels():
-            x_label.set_fontsize(plot_cfg['xtick_size'])
+            x_label.set_fontsize(self.plot_kwargs["x_tick_size"])
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError
+
+
+class BlameLorenzCurveGenerator(
+    PlotGenerator,
+    generator_name="lorenz-curve-plot",
+    plot=BlameLorenzCurve,
+    options=[
+        PlotGenerator.REQUIRE_REPORT_TYPE,
+        PlotGenerator.REQUIRE_MULTI_CASE_STUDY, OPTIONAL_LINE_WIDTH,
+        OPTIONAL_X_TICK_SIZE
+    ]
+):
+    """Generates lorenz-curve plot(s) for the selected case study(ies)."""
+
+    @check_required_args("report_type", "case_study")
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        super().__init__(plot_config, **plot_kwargs)
+        self.__report_type: str = plot_kwargs["report_type"]
+        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
+        self.__line_width: int = plot_kwargs["line_width"]
+        self.__x_tick_size: int = plot_kwargs["x_tick_size"]
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            self.PLOT(
+                report_type=self.__report_type,
+                case_study=cs,
+                line_width=self.__line_width,
+                x_tick_size=self.__x_tick_size,
+            ) for cs in self.__case_studies
+        ]
 
 
 def draw_gini_churn_over_time(
