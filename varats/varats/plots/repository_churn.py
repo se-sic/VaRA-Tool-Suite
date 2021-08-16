@@ -8,14 +8,16 @@ from itertools import islice
 
 import matplotlib.axes as axes
 import matplotlib.pyplot as plt
-import matplotlib.style as style
 import pandas as pd
 
 #import varats.data.discover_reports
 #from varats.data.discover_reports import foo
-from varats.mapping.commit_map import CommitMap
+from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
+from varats.plot.plot_utils import check_required_args
+from varats.plot.plots import PlotGenerator, PlotConfig
+from varats.plots.blame_interaction_degree import OPTIONAL_X_TICK_SIZE
 from varats.project.project_util import get_local_project_git
 from varats.utils.git_util import (
     ChurnConfig,
@@ -231,25 +233,49 @@ class RepoChurnPlot(Plot, plot_name="repo_churn"):
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        plot_cfg = {
-            'linewidth': 1 if view_mode else 0.25,
-            'legend_size': 8 if view_mode else 2,
-            'xtick_size': 10 if view_mode else 2,
-        }
-        style.use(self.style)
 
-        case_study: CaseStudy = self.plot_kwargs['plot_case_study']
+        case_study: CaseStudy = self.plot_kwargs['case_study']
+        project_name: str = case_study.project_name
+        commit_map: CommitMap = get_commit_map(project_name)
 
         _, axis = plt.subplots()
         draw_code_churn(
-            axis, self.plot_kwargs['project'], self.plot_kwargs['get_cmap'](),
+            axis, project_name, commit_map,
             case_study.has_revision if case_study else lambda x: True
         )
 
         for x_label in axis.get_xticklabels():
-            x_label.set_fontsize(plot_cfg['xtick_size'])
+            x_label.set_fontsize(self.plot_kwargs["x_tick_size"])
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError
+
+
+class RepoChurnPlotGenerator(
+    PlotGenerator,
+    generator_name="repo-churn-plot",
+    plot=RepoChurnPlot,
+    options=[
+        PlotGenerator.REQUIRE_REPORT_TYPE,
+        PlotGenerator.REQUIRE_MULTI_CASE_STUDY, OPTIONAL_X_TICK_SIZE
+    ]
+):
+    """Generates repo-churn plot(s) for the selected case study(ies)."""
+
+    @check_required_args("report_type", "case_study")
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        super().__init__(plot_config, **plot_kwargs)
+        self.__report_type: str = plot_kwargs["report_type"]
+        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
+        self.__x_tick_size: int = plot_kwargs["x_tick_size"]
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            self.PLOT(
+                report_type=self.__report_type,
+                case_study=cs,
+                x_tick_size=self.__x_tick_size
+            ) for cs in self.__case_studies
+        ]
