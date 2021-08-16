@@ -8,6 +8,7 @@ from itertools import islice
 
 import matplotlib.axes as axes
 import matplotlib.pyplot as plt
+import matplotlib.style as style
 import pandas as pd
 
 #import varats.data.discover_reports
@@ -234,6 +235,7 @@ class RepoChurnPlot(Plot, plot_name="repo_churn"):
 
     def plot(self, view_mode: bool) -> None:
 
+        style.use(self.style)
         case_study: CaseStudy = self.plot_kwargs['case_study']
         project_name: str = case_study.project_name
         commit_map: CommitMap = get_commit_map(project_name)
