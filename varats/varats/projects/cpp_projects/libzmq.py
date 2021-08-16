@@ -35,9 +35,10 @@ class Libzmq(bb.Project):  # type: ignore
         )
     ]
 
-    CONTAINER = get_base_image(
-        ImageBase.DEBIAN_10
-    ).run('apt', 'install', '-y', 'cmake', 'build-essential')
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
+        'apt', 'install', '-y', 'cmake', 'build-essential', 'gnutls-dev',
+        'libsodium-dev', 'pkg-config'
+    )
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
