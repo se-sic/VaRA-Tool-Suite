@@ -18,8 +18,11 @@ from sklearn.preprocessing import StandardScaler
 from varats.data.databases.blame_diff_metrics_database import (
     BlameDiffMetricsDatabase,
 )
-from varats.mapping.commit_map import CommitMap
+from varats.mapping.commit_map import CommitMap, get_commit_map
+from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
+from varats.plot.plot_utils import check_required_args
+from varats.plot.plots import PlotGenerator, PlotConfig
 
 
 def _create_cluster_objects(
@@ -190,9 +193,10 @@ class BlameDiffClusterAnalysis(Plot, plot_name="b_cluster_analysis"):
     @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
-        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
-        case_study = self.plot_kwargs.get('plot_case_study', None)
-        project_name = self.plot_kwargs["project"]
+
+        case_study: CaseStudy = self.plot_kwargs['case_study']
+        project_name: str = case_study.project_name
+        commit_map: CommitMap = get_commit_map(project_name)
 
         sns.set(style="ticks", color_codes=True)
 
@@ -215,3 +219,27 @@ class BlameDiffClusterAnalysis(Plot, plot_name="b_cluster_analysis"):
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError
+
+
+class BlameDiffClusterAnalysisGenerator(
+    PlotGenerator,
+    generator_name="cluster-analysis-plot",
+    plot=BlameDiffClusterAnalysis,
+    options=[
+        PlotGenerator.REQUIRE_REPORT_TYPE,
+        PlotGenerator.REQUIRE_MULTI_CASE_STUDY
+    ]
+):
+    """Generates cluster-analysis plot(s) for the selected case study(ies)."""
+
+    @check_required_args("report_type", "case_study")
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        super().__init__(plot_config, **plot_kwargs)
+        self.__report_type: str = plot_kwargs["report_type"]
+        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            self.PLOT(report_type=self.__report_type, case_study=cs)
+            for cs in self.__case_studies
+        ]
