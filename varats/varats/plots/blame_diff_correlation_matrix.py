@@ -20,9 +20,11 @@ from varats.data.databases.blame_diff_metrics_database import (
     BlameDiffMetricsDatabase,
 )
 from varats.mapping.commit_map import CommitMap, get_commit_map
+from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plot_utils import align_yaxis, pad_axes
+from varats.plot.plot_utils import align_yaxis, pad_axes, check_required_args
+from varats.plot.plots import PlotGenerator, PlotConfig
 
 LOG = logging.getLogger(__name__)
 
@@ -189,9 +191,10 @@ class BlameDiffCorrelationMatrix(Plot, plot_name="b_correlation_matrix"):
     @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
-        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
-        case_study = self.plot_kwargs.get('plot_case_study', None)
-        project_name = self.plot_kwargs["project"]
+
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        project_name: str = case_study.project_name
+        commit_map: CommitMap = get_commit_map(project_name)
 
         sns.set(style="ticks", color_codes=True)
 
@@ -224,12 +227,35 @@ class BlameDiffCorrelationMatrix(Plot, plot_name="b_correlation_matrix"):
 
         plt.subplots_adjust(top=0.9)
         grid.fig.suptitle(
-            str("Correlation Matrix") +
-            f' - Project {self.plot_kwargs["project"]}'
+            str("Correlation Matrix") + f' - Project {project_name}'
         )
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
         raise NotImplementedError
+
+
+class BlameDiffCorrelationMatrixGenerator(
+    PlotGenerator,
+    generator_name="correlation-matrix-plot",
+    plot=BlameDiffCorrelationMatrix,
+    options=[
+        PlotGenerator.REQUIRE_REPORT_TYPE,
+        PlotGenerator.REQUIRE_MULTI_CASE_STUDY
+    ]
+):
+    """Generates correlation-matrix plot(s) for the selected case study(ies)."""
+
+    @check_required_args("report_type", "case_study")
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        super().__init__(plot_config, **plot_kwargs)
+        self.__report_type: str = plot_kwargs["report_type"]
+        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            self.PLOT(report_type=self.__report_type, case_study=cs)
+            for cs in self.__case_studies
+        ]
 
 
 # adapted from https://stackoverflow.com/a/55165689
