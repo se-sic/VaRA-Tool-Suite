@@ -29,7 +29,7 @@ LOG = logging.Logger(__name__)
 
 def insert_data_for_case_study_reports(report_files, name_id):
     if len(report_files) > 2 or len(report_files) > 2:
-        print(f"{report_files=}")
+        print(f"report_files={report_files}")
         raise AssertionError
 
     if len(report_files) == 0 and len(report_files) == 0:
@@ -50,7 +50,6 @@ def insert_data_for_case_study_reports(report_files, name_id):
         cs_dict["#g-distinct"] = report.num_global_distrinct_types
         cs_dict["#g-int"] = report.num_global_int_typed
         cs_dict["#g-uses"] = report.num_global_uses
-        #cs_dict["#g-vars"] = report.num_global_vars
         cs_dict["#globals"] = report.num_globals
         cs_dict["#ntvas"] = report.num_non_top_vals_at_start
         cs_dict["#ntvae"] = report.num_non_top_vals_at_end
@@ -72,7 +71,6 @@ def insert_data_for_case_study_reports(report_files, name_id):
         cs_dict["#g-distinct"] = "-"
         cs_dict["#g-int"] = "-"
         cs_dict["#g-uses"] = "-"
-        #cs_dict["#g-vars"] = "-"
         cs_dict["#globals"] = "-"
         cs_dict["#ntvas"] = "-"
         cs_dict["#ntvae"] = "-"
