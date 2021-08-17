@@ -343,18 +343,52 @@ class BlameVerifierReportOptPlot(
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        legend_title: str
 
-        if _is_multi_cs_plot():
-            legend_title = "Success rate of projects"
+        if len(self.plot_kwargs["case_study"]) > 1:
+            self.plot_kwargs["legend_title"] = "Success rate of projects"
         else:
-            legend_title = "Annotation types:"
+            self.plot_kwargs["legend_title"] = "Annotation types:"
 
-        extra_plot_cfg = {
-            'fig_title': 'Annotated project revisions with optimization',
-            'legend_title': legend_title
-        }
-        _verifier_plot(
-            opt_level=OptLevel.OPT,
-            extra_plot_cfg=extra_plot_cfg,
-        )
+        if not self.plot_kwargs["fig_title"]:
+            self.plot_kwargs["fig_title"
+                            ] = "Annotated project revisions with optimization"
+
+        _verifier_plot(OptLevel.OPT, self.plot_kwargs)
+
+
+class BlameVerifierReportOptPlotGenerator(
+    PlotGenerator,
+    generator_name="verifier-opt-plot",
+    plot=BlameVerifierReportOptPlot,
+    options=[
+        PlotGenerator.REQUIRE_REPORT_TYPE,
+        PlotGenerator.REQUIRE_MULTI_CASE_STUDY,
+        OPTIONAL_FIG_TITLE,
+        OPTIONAL_LEGEND_TITLE,
+        OPTIONAL_LEGEND_SIZE,
+        OPTIONAL_SHOW_LEGEND,
+    ]
+):
+    """Generates a verifier-opt plot for the selected case study(ies)."""
+
+    @check_required_args("report_type", "case_study")
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        super().__init__(plot_config, **plot_kwargs)
+        self.__report_type: str = plot_kwargs["report_type"]
+        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
+        self.__fig_title: str = plot_kwargs["fig_title"]
+        self.__legend_title: str = plot_kwargs["legend_title"]
+        self.__legend_size: int = plot_kwargs["legend_size"]
+        self.__show_legend: bool = plot_kwargs["show_legend"]
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            self.PLOT(
+                report_type=self.__report_type,
+                case_study=self.__case_studies,
+                fig_title=self.__fig_title,
+                legend_title=self.__legend_title,
+                legend_size=self.__legend_size,
+                show_legend=self.__show_legend,
+            )
+        ]
