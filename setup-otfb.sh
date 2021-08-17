@@ -4,6 +4,7 @@
 # WARNING USE AT YOUR OWN RISK #
 ################################
 #
+CWD=$(pwd)
 echo 'Current VARA_ROOT content: "'${VARA_ROOT}'"'
 while true; do
     read -p "Have you set the VARA_ROOT environment variable? [y/n] " yn
@@ -23,7 +24,7 @@ cd $VARA_ROOT && /usr/bin/yes | vara-gen-bbconfig
 awk '/ide_linear_constant_experiment/ { print; print "        - varats.experiments.phasar.otfb_experiment"; next }1' $VARA_ROOT/benchbuild/.benchbuild.yml > $VARA_ROOT/benchbuild/.benchbuild_new.yml
 mv $VARA_ROOT/benchbuild/.benchbuild_new.yml $VARA_ROOT/benchbuild/.benchbuild.yml
 # Add paper-config
-./add-paper-config.sh
+cd ${CWD} && ./add-paper-config.sh
 cd ${VARA_ROOT} && printf "0\n" | vara-pc select
 printf "\n\n\n"
 #
