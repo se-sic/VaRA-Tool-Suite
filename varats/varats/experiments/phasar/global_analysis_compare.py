@@ -2,17 +2,14 @@
 of running an analysis with globals support."""
 
 import typing as tp
-from os import getenv, path
 from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import mkdir, opt, phasar_globals
-from benchbuild.utils.path import list_to_path, path_to_list
+from benchbuild.utils.cmd import mkdir, phasar_globals
 from benchbuild.utils.requirements import Requirement, SlurmMem
 
-import varats.experiments.vara.blame_experiment as BE
 from varats.data.reports.blame_report import BlameReport as BR
 from varats.data.reports.globals_report import (
     GlobalsReportWith,
@@ -33,7 +30,7 @@ from varats.experiment.wllvm import (
     RunWLLVM,
 )
 from varats.report.report import FileStatusExtension as FSE
-from varats.report.report import ReportSpecification, BaseReport, ReportFilename
+from varats.report.report import ReportSpecification
 from varats.utils.settings import bb_cfg
 
 

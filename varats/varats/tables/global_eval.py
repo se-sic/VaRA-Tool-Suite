@@ -3,7 +3,7 @@ import logging
 import typing as tp
 
 import pandas as pd
-from scipy.stats import pearsonr, spearmanr
+from scipy.stats import pearsonr
 from tabulate import tabulate
 
 from varats.data.reports.globals_report import (
@@ -20,15 +20,17 @@ from varats.paper_mgmt.case_study import (
     get_case_study_file_name_filter,
 )
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
+from varats.project.project_util import get_project_cls_by_case_study
 from varats.report.report import ReportFilename
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table, wrap_table_in_document, TableFormat
-from varats.project.project_util import get_project_cls_by_case_study
 
 LOG = logging.Logger(__name__)
 
 
-def insert_data_for_case_study_report(report: tp.Optional[tp.Any], name_id):
+def create_df_for_report(report: tp.Optional[tp.Any], name_id) -> pd.DataFrame:
+    """Creates a dataframe that inclues all relevant information of the
+    report."""
 
     def fill_in_data(
         cs_dict: tp.Dict[str, tp.Any], report: GlobalsReport
@@ -112,7 +114,7 @@ class PhasarGlobalsDataComparision(Table):
                 raise AssertionError("To many report files given!")
 
             def insert_data_if_present(report, name_id, cs_data):
-                res = insert_data_for_case_study_report(report, name_id)
+                res = create_df_for_report(report, name_id)
                 if res is not None:
                     cs_data.append(res)
 
