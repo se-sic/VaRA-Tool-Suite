@@ -661,9 +661,6 @@ def __print_calc_repo_code_churn(
             print()
 
 
-__WC_TOTAL_REGEX = re.compile(r"\s*(\d+)\s*total")
-
-
 def calc_repo_loc(repo: pygit2.Repository, rev_range: str) -> int:
     """
     Calculate the LOC for a project at its HEAD.
@@ -676,17 +673,22 @@ def calc_repo_loc(repo: pygit2.Repository, rev_range: str) -> int:
     """
     project_path = repo.path[:-5]
     churn_config = ChurnConfig.create_c_style_languages_config()
+    file_pattern = re.compile(
+        "|".join(churn_config.get_extensions_repr(r"^.*\.", r"$"))
+    )
 
     loc: int = 0
     with local.cwd(project_path):
-        wc_out = wc(
-            "-l",
-            *git(
-                "ls-files", rev_range, "--",
-                churn_config.get_extensions_repr("*.")
-            ).splitlines()
-        )
-        for match in __WC_TOTAL_REGEX.finditer(wc_out):
-            loc = int(match.group(1))
+        files = git(
+            "ls-tree",
+            "-r",
+            "--name-only",
+            rev_range,
+        ).splitlines()
+
+        for file in files:
+            if file_pattern.match(file):
+                lines = git("show", f"{rev_range}:{file}").splitlines()
+                loc += len([line for line in lines if line])
 
     return loc
