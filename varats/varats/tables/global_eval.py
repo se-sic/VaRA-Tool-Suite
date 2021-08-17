@@ -23,22 +23,12 @@ from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.report.report import ReportFilename
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table, wrap_table_in_document, TableFormat
+from varats.project.project_util import get_project_cls_by_case_study
 
 LOG = logging.Logger(__name__)
 
 
-def insert_data_for_case_study_reports(report_files, name_id):
-    if len(report_files) > 2 or len(report_files) > 2:
-        print(f"report_files={report_files}")
-        raise AssertionError
-
-    if len(report_files) == 0 and len(report_files) == 0:
-        # Skip projects where we don't have both reports
-        return None
-
-    if len(report_files) == 0 and len(report_files) == 1:
-        # Skip projects where we don't have both reports
-        return None
+def insert_data_for_case_study_report(report: tp.Optional[tp.Any], name_id):
 
     def fill_in_data(
         cs_dict: tp.Dict[str, tp.Any], report: GlobalsReport
@@ -83,14 +73,10 @@ def insert_data_for_case_study_reports(report_files, name_id):
 
     # Handle list
     cs_dict = {}
-    if len(report_files) == 0:
-        fill_in_empty(cs_dict)
+    if report:
+        fill_in_data(cs_dict, report)
     else:
-        report_without = load_globals_without_report(report_files[0])
-        if len(report_files) > 1:
-            second_report_without = load_globals_with_report(report_files[1])
-            report_without.extend_runs(second_report_without)
-        fill_in_data(cs_dict, report_without)
+        fill_in_empty(cs_dict)
 
     return pd.DataFrame.from_dict({name_id: cs_dict}, orient="index")
 
@@ -111,75 +97,82 @@ class PhasarGlobalsDataComparision(Table):
         cs_data: tp.List[pd.DataFrame] = []
 
         for case_study in sorted(case_studies, key=lambda x: x.project_name):
-            if case_study.project_name in (
-                'gawk', 'redis', 'x264', 'irssi', 'bitlbee'
-            ):
-                # Skip broken projects
-                continue
-
             report_files_with = get_processed_revisions_files(
-                case_study.project_name,
-                GlobalsReportWith,
-                get_case_study_file_name_filter(case_study),
-                only_newest=False
+                case_study.project_name, GlobalsReportWith,
+                get_case_study_file_name_filter(case_study)
             )
             report_files_without = get_processed_revisions_files(
-                case_study.project_name,
-                GlobalsReportWithout,
-                get_case_study_file_name_filter(case_study),
-                only_newest=False
+                case_study.project_name, GlobalsReportWithout,
+                get_case_study_file_name_filter(case_study)
             )
 
-            def insert_data_if_present(report_files, name_id, cs_data):
-                res = insert_data_for_case_study_reports(report_files, name_id)
+            if len(report_files_with) > 1 or len(report_files_without) > 1:
+                LOG.debug(f"report_files_with={report_files_with}")
+                LOG.debug(f"report_files_without={report_files_with}")
+                raise AssertionError("To many report files given!")
+
+            def insert_data_if_present(report, name_id, cs_data):
+                res = insert_data_for_case_study_report(report, name_id)
                 if res is not None:
                     cs_data.append(res)
 
-            if case_study.project_name == 'libvpx':
-                binary_name = "vpxenc"
+            project_type = get_project_cls_by_case_study(case_study)
+            # TODO: fix binary property to be static?
+            # for binary in project.binaries:
+            #     # With
+            #     report_files_with_for_binary = list(
+            #         filter(
+            #             lambda x: ReportFilename(x).binary_name == binary.name,
+            #             report_files_with
+            #         )
+            #     )
 
-                def is_from_binary(binary_name):
-                    return lambda x: ReportFilename(
-                        x
-                    ).binary_name == binary_name
+            #     report_with: tp.Optional[GlobalsReportWith] = None
+            #     if report_files_with_for_binary:
+            #         report_with = load_globals_with_report(
+            #             report_files_with_for_binary[0]
+            #         )
 
-                insert_data_if_present(
-                    list(
-                        filter(is_from_binary(binary_name), report_files_with)
-                    ), case_study.project_name + "-" + binary_name, cs_data
+            #     insert_data_if_present(
+            #         report_with, case_study.project_name, cs_data
+            #     )
+
+            #     # Without
+            #     report_files_without_for_binary = list(
+            #         filter(
+            #             lambda x: ReportFilename(x).binary_name == binary.name,
+            #             report_files_without
+            #         )
+            #     )
+
+            #     report_without: tp.Optional[GlobalsReportWithout] = None
+            #     if report_files_without_for_binary:
+            #         report_without = load_globals_without_report(
+            #             report_files_without_for_binary[0]
+            #         )
+
+            #     insert_data_if_present(
+            #         report_without, case_study.project_name, cs_data
+            #     )
+            # With
+            report_with: tp.Optional[GlobalsReportWith] = None
+            if report_files_with:
+                report_with = load_globals_with_report(report_files_with[0])
+
+            insert_data_if_present(
+                report_with, case_study.project_name, cs_data
+            )
+
+            # Without
+            report_without: tp.Optional[GlobalsReportWithout] = None
+            if report_files_without:
+                report_without = load_globals_without_report(
+                    report_files_without[0]
                 )
-                insert_data_if_present(
-                    list(
-                        filter(
-                            lambda x: ReportFilename(x).binary_name ==
-                            binary_name, report_files_without
-                        )
-                    ), case_study.project_name + "-" + binary_name, cs_data
-                )
-                binary_name = "vpxdec"
-                insert_data_if_present(
-                    list(
-                        filter(
-                            lambda x: ReportFilename(x).binary_name ==
-                            binary_name, report_files_with
-                        )
-                    ), case_study.project_name + "-" + binary_name, cs_data
-                )
-                insert_data_if_present(
-                    list(
-                        filter(
-                            lambda x: ReportFilename(x).binary_name ==
-                            binary_name, report_files_without
-                        )
-                    ), case_study.project_name + "-" + binary_name, cs_data
-                )
-            else:
-                insert_data_if_present(
-                    report_files_with, case_study.project_name, cs_data
-                )
-                insert_data_if_present(
-                    report_files_without, case_study.project_name, cs_data
-                )
+
+            insert_data_if_present(
+                report_without, case_study.project_name, cs_data
+            )
 
         df = pd.concat(cs_data)
         df = df.round(2)
@@ -189,7 +182,7 @@ class PhasarGlobalsDataComparision(Table):
         rggs = df[df['auto-Gs'] == 'No']['#RGG']
         rho_p = pearsonr(rggs, div_series)
 
-        mean_stddev = df["SDev %"].mean()
+        mean_stddev = df[df["SDev %"] != '-']["SDev %"].mean()
 
         if self.format in [
             TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
