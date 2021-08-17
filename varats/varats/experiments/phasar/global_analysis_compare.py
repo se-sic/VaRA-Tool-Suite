@@ -36,8 +36,6 @@ from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification, BaseReport, ReportFilename
 from varats.utils.settings import bb_cfg
 
-# from plumbum import local
-
 
 class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
     """Analyse a project with VaRA and generate a BlameReport."""
@@ -168,8 +166,6 @@ class GlobalsComparision(VersionExperiment):
             analysis_actions.append(
                 RunGlobalsTestAnalysis(project, self.REPORT_SPEC, True)
             )
-
-        for _ in range(0, 10):
             analysis_actions.append(
                 RunGlobalsTestAnalysis(project, self.REPORT_SPEC, False)
             )
