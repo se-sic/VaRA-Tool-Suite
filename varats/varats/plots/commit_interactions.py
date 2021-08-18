@@ -12,18 +12,36 @@ from matplotlib import cm
 from varats.data.databases.commit_interaction_database import (
     CommitInteractionDatabase,
 )
+from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy, CSStage
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import check_required_args
+from varats.plot.plots import PlotGenerator, PlotConfig
+from varats.plots.blame_interaction_degree import (
+    OPTIONAL_LINE_WIDTH,
+    OPTIONAL_X_TICK_SIZE,
+    OPTIONAL_LEGEND_SIZE,
+)
+from varats.project.project_util import get_local_project_git_path
+from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
+
+REQUIRE_SEP_STAGES: CLIOptionTy = make_cli_option(
+    "--enable-stage-sep/--disable-stage-sep",
+    "sep_stages",
+    type=bool,
+    required=True,
+    metavar="sep_stages",
+    help="Enables/Disables stage separation."
+)
 
 
-@check_required_args("project", "get_cmap")
-def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
+@check_required_args("case_study")
+def _gen_interaction_graph(**plot_kwargs: tp.Any) -> pd.DataFrame:
     """Generate a DataFrame, containing the amount of interactions between
     commits and interactions between the HEAD commit and all others."""
-    commit_map = kwargs['get_cmap']()
-    case_study = kwargs.get('plot_case_study', None)  # can be None
-    project_name = str(kwargs["project"])
+    case_study: CaseStudy = plot_kwargs["case_study"]
+    project_name: str = case_study.project_name
+    commit_map: CommitMap = get_commit_map(project_name)
 
     data_frame = CommitInteractionDatabase.get_data_for_project(
         project_name, [
@@ -38,15 +56,10 @@ def _gen_interaction_graph(**kwargs: tp.Any) -> pd.DataFrame:
 def _plot_interaction_graph(
     data_frame: pd.DataFrame,
     stages: tp.Optional[tp.List[CSStage]] = None,
-    view_mode: bool = True
+    **plot_kwargs: tp.Any
 ) -> None:
     """Plot a plot, showing the amount of interactions between commits and
     interactions between the HEAD commit and all others."""
-    plot_cfg = {
-        'linewidth': 2 if view_mode else 1,
-        'legend_size': 8 if view_mode else 4,
-        'xtick_size': 10 if view_mode else 2
-    }
 
     if stages is None:
         stages = []
@@ -82,7 +95,7 @@ def _plot_interaction_graph(
                 color=next(cf_color_iter),
                 label="CFInteractions-" + str(stage_num),
                 zorder=stage_num + 1,
-                linewidth=plot_cfg['linewidth']
+                linewidth=plot_kwargs['line_width']
             )
 
             df_mask = np.isfinite(data_frame.DFInteractions.values)
@@ -92,7 +105,7 @@ def _plot_interaction_graph(
                 color=next(df_color_iter),
                 label="DFInteractions-" + str(stage_num),
                 zorder=stage_num + 1,
-                linewidth=plot_cfg['linewidth']
+                linewidth=plot_kwargs['line_width']
             )
 
             def filter_out_stage(data_frame: pd.DataFrame) -> None:
@@ -129,17 +142,22 @@ def _plot_interaction_graph(
             'CFInteractions',
             data=data_frame,
             color='blue',
-            linewidth=plot_cfg['linewidth']
+            linewidth=plot_kwargs['line_width']
         )
         plt.plot(
             'revision',
             'DFInteractions',
             data=data_frame,
             color='red',
-            linewidth=plot_cfg['linewidth']
+            linewidth=plot_kwargs['line_width']
         )
 
-    axis.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
+    axis.legend(
+        prop={
+            'size': plot_kwargs['legend_size'],
+            'family': 'monospace'
+        }
+    )
 
     # Head interaction plot
     axis = plt.subplot(212)
@@ -147,7 +165,7 @@ def _plot_interaction_graph(
     plt.setp(axis.get_yticklabels(), fontsize=8, fontfamily='monospace')
     plt.setp(
         axis.get_xticklabels(),
-        fontsize=plot_cfg['xtick_size'],
+        fontsize=plot_kwargs['x_tick_size'],
         fontfamily='monospace',
         rotation=270
     )
@@ -157,21 +175,26 @@ def _plot_interaction_graph(
         'HEAD CF Interactions',
         data=data_frame,
         color='aqua',
-        linewidth=plot_cfg['linewidth']
+        linewidth=plot_kwargs['line_width']
     )
     plt.plot(
         'revision',
         'HEAD DF Interactions',
         data=data_frame,
         color='crimson',
-        linewidth=plot_cfg['linewidth']
+        linewidth=plot_kwargs['line_width']
     )
 
     plt.xlabel("Revisions", **{'size': '10'})
-    axis.legend(prop={'size': plot_cfg['legend_size'], 'family': 'monospace'})
+    axis.legend(
+        prop={
+            'size': plot_kwargs['legend_size'],
+            'family': 'monospace'
+        }
+    )
 
 
-class InteractionPlot(Plot, plot_name="interaction_graph"):
+class InteractionGraph(Plot, plot_name="interaction_graph"):
     """Plot showing the total amount of commit interactions."""
 
     NAME = 'interaction_graph'
@@ -186,17 +209,14 @@ class InteractionPlot(Plot, plot_name="interaction_graph"):
     def plot(self, view_mode: bool) -> None:
         """Plots the current plot."""
         style.use(self.style)
+        case_study: CaseStudy = self.plot_kwargs['case_study']
 
         def cs_filter(data_frame: pd.DataFrame) -> pd.DataFrame:
             """
-            Filter out all commit that are not in the case study, if one was
-            selected.
+            Filter out all commit that are not in the case study.
 
             This allows us to only load file related to the case-study.
             """
-            if self.plot_kwargs['plot_case_study'] is None:
-                return data_frame
-            case_study: CaseStudy = self.plot_kwargs['plot_case_study']
             return data_frame[data_frame.apply(
                 lambda x: case_study.has_revision(x['head_cm'].split('-')[1]),
                 axis=1
@@ -204,14 +224,13 @@ class InteractionPlot(Plot, plot_name="interaction_graph"):
 
         interaction_plot_df = _gen_interaction_graph(**self.plot_kwargs)
 
+        cs: tp.Optional[CaseStudy] = None
         if self.plot_kwargs['sep_stages']:
-            case_study = self.plot_kwargs.get('plot_case_study', None)
-        else:
-            case_study = None
+            cs = case_study
 
         _plot_interaction_graph(
             cs_filter(interaction_plot_df),
-            case_study.stages if case_study is not None else None, view_mode
+            cs.stages if cs is not None else None, **self.plot_kwargs
         )
 
     def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
@@ -226,6 +245,9 @@ class InteractionPlot(Plot, plot_name="interaction_graph"):
             return cm_num(lhs_cm) + 1 == cm_num(rhs_cm)
 
         def rev_calc_helper(data_frame: pd.DataFrame) -> tp.Set[str]:
+            case_study: CaseStudy = self.plot_kwargs["case_study"]
+            project_name: str = case_study.project_name
+            commit_map: CommitMap = get_commit_map(project_name)
             new_revs: tp.Set[str] = set()
 
             df_iter = data_frame.iterrows()
@@ -245,7 +267,9 @@ class InteractionPlot(Plot, plot_name="interaction_graph"):
                                 gradient=round(gradient, 5)
                             )
                         )
-                        git_path = Path(self.plot_kwargs['git_path'])
+                        git_path = Path(
+                            get_local_project_git_path(project_name)
+                        )
                         lhs = lhs_cm.split('-')[1]
                         rhs = rhs_cm.split('-')[1]
                         print(
@@ -263,7 +287,7 @@ class InteractionPlot(Plot, plot_name="interaction_graph"):
                         new_rev_id = round(
                             (cm_num(lhs_cm) + cm_num(rhs_cm)) / 2.0
                         )
-                        new_rev = self.plot_kwargs['cmap'].c_hash(new_rev_id)
+                        new_rev = commit_map.c_hash(new_rev_id)
                         print(
                             "-> Adding {rev} as new revision to the sample set".
                             format(rev=new_rev)
@@ -284,3 +308,41 @@ class InteractionPlot(Plot, plot_name="interaction_graph"):
         )
 
         return missing_revs
+
+
+class InteractionGraphGenerator(
+    PlotGenerator,
+    generator_name="interaction-graph-plot",
+    plot=InteractionGraph,
+    options=[
+        PlotGenerator.REQUIRE_REPORT_TYPE,
+        PlotGenerator.REQUIRE_MULTI_CASE_STUDY,
+        REQUIRE_SEP_STAGES,
+        OPTIONAL_LINE_WIDTH,
+        OPTIONAL_LEGEND_SIZE,
+        OPTIONAL_X_TICK_SIZE,
+    ]
+):
+    """Generates interaction-graph plot(s) for the selected case study(ies)."""
+
+    @check_required_args("report_type", "case_study", "sep_stages")
+    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
+        super().__init__(plot_config, **plot_kwargs)
+        self.__report_type: str = plot_kwargs["report_type"]
+        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
+        self.__sep_stages: bool = plot_kwargs["sep_stages"]
+        self.__line_width: int = plot_kwargs["line_width"]
+        self.__legend_size: int = plot_kwargs["legend_size"]
+        self.__x_tick_size: int = plot_kwargs["x_tick_size"]
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            self.PLOT(
+                report_type=self.__report_type,
+                case_study=cs,
+                sep_stages=self.__sep_stages,
+                line_width=self.__line_width,
+                legend_size=self.__legend_size,
+                x_tick_size=self.__x_tick_size,
+            ) for cs in self.__case_studies
+        ]
