@@ -1,5 +1,5 @@
 #!/bin/bash
-mkdir -p ${VARA_ROOT}/paper_configs/otfb
+vara-pc create ${VARA_ROOT}/paper_configs/otfb
 cd ${VARA_ROOT} && vara-cs gen paper_configs/otfb/ UniformSamplingMethod --num-rev 0 --extra-revs 849ba01b8b72c01d60dc335fc4a8207562e87ad9 -p bison
 # cd ${VARA_ROOT} && vara-cs gen paper_configs/otfb/ UniformSamplingMethod --num-rev 0 --extra-revs 18a0f99732b1cb96cbb06763561c7a2526535a67 -p bitlbee
 # cd ${VARA_ROOT} && vara-cs gen paper_configs/otfb/ UniformSamplingMethod --num-rev 0 --extra-revs 08ca313d7edb99687068b93b5d2435b59f3db23a -p busybox
