@@ -5,7 +5,7 @@ from pathlib import Path
 import benchbuild.utils.actions as actions
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
-from benchbuild.utils.cmd import mkdir
+from benchbuild.utils.cmd import mkdir, timeout
 from plumbum import local
 
 from varats.data.reports.empty_report import EmptyReport
@@ -58,6 +58,8 @@ class Otfb(actions.Step):  # type: ignore
 
         mkdir("-p", varats_result_folder)
 
+        timeout_duration = '5m'
+
         phasar = local["evaltool"]
         for binary in project.binaries:
             bc_file = get_cached_bc_file_path(project, binary)
@@ -77,9 +79,9 @@ class Otfb(actions.Step):  # type: ignore
             run_cmd = (run_cmd > f'{varats_result_folder}/{result_file}')
 
             exec_func_with_pe_error_handler(
-                run_cmd,
+                timeout[timeout_duration, run_cmd],
                 create_default_analysis_failure_handler(
-                    project, EmptyReport, Path(varats_result_folder)
+                    project, EmptyReport, Path(varats_result_folder), timeout_duration=timeout_duration
                 )
             )
 
