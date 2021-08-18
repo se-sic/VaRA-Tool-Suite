@@ -56,6 +56,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         'varats.projects.c_projects.irssi',
         'varats.projects.c_projects.libjpeg_turbo',
         'varats.projects.c_projects.libpng',
+        'varats.projects.c_projects.libsigrok',
         'varats.projects.c_projects.libssh',
         'varats.projects.c_projects.libtiff',
         'varats.projects.c_projects.libvpx',
