@@ -30,9 +30,9 @@ class TestCSMetricsTable(unittest.TestCase):
         self.assertEqual(
             r"""\begin{tabular}{llrrrl}
 \toprule
-{} &       Domain &    LOC &  Commits &  Authors & Analyzed Commit \\
+{} &       Domain &    LOC &  Commits &  Authors &    Revision \\
 \midrule
-\textbf{brotli} &  compression &  34833 &     1030 &       87 &      ce222e317e \\
+\textbf{brotli} &  Compression &  34833 &     1030 &       87 &  ce222e317e \\
 \bottomrule
 \end{tabular}
 """, table_str
@@ -56,10 +56,10 @@ class TestCSMetricsTable(unittest.TestCase):
         self.assertEqual(
             r"""\begin{tabular}{llrrrl}
 \toprule
-{} &       Domain &    LOC &  Commits &  Authors & Analyzed Commit \\
+{} &       Domain &    LOC &  Commits &  Authors &    Revision \\
 \midrule
-\textbf{gravity} &   UNIX utils &  22923 &      663 &       50 &      2c71dec8ad \\
-\textbf{xz     } &  compression &  37021 &     1143 &       22 &      c5c7ceb08a \\
+\textbf{gravity} &   UNIX utils &  22923 &      663 &       50 &  2c71dec8ad \\
+\textbf{xz     } &  Compression &  37021 &     1143 &       22 &  c5c7ceb08a \\
 \bottomrule
 \end{tabular}
 """, table_str
