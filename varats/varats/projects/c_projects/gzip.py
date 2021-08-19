@@ -21,6 +21,7 @@ from varats.provider.release.release_provider import (
     ReleaseProviderHook,
     ReleaseType,
 )
+from varats.utils.git_util import FullCommitHash
 from varats.utils.settings import bb_cfg
 
 
@@ -93,16 +94,16 @@ class Gzip(bb.Project, ReleaseProviderHook):  # type: ignore
     @classmethod
     def get_release_revisions(
         cls, release_type: ReleaseType
-    ) -> tp.List[tp.Tuple[str, str]]:
+    ) -> tp.List[tp.Tuple[FullCommitHash, str]]:
         major_release_regex = "^v[0-9]+\\.[0-9]+$"
         minor_release_regex = "^v[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
 
         tagged_commits = get_tagged_commits(cls.NAME)
         if release_type == ReleaseType.MAJOR:
-            return [(h, tag)
+            return [(FullCommitHash(h), tag)
                     for h, tag in tagged_commits
                     if re.match(major_release_regex, tag)]
-        return [(h, tag)
+        return [(FullCommitHash(h), tag)
                 for h, tag in tagged_commits
                 if re.match(minor_release_regex, tag)]
 

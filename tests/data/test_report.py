@@ -12,6 +12,7 @@ from varats.report.report import (
     ReportFilename,
     ReportSpecification,
 )
+from varats.utils.git_util import ShortCommitHash
 
 
 class TestFileStatusExtension(unittest.TestCase):
@@ -66,7 +67,7 @@ class TestReportFilename(unittest.TestCase):
         """Setup file and CommitReport."""
         cls.correct_UUID = "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be"
         cls.raw_filename = (
-            "CR-foo-foo-7bb9ef5f8c_"
+            "CR-foo-bar-7bb9ef5f8c_"
             f"{cls.correct_UUID}_"
             "success.txt"
         )
@@ -75,6 +76,10 @@ class TestReportFilename(unittest.TestCase):
     def test_filename(self):
         """Tests if filename access works."""
         self.assertEqual(self.report_filename.filename, self.raw_filename)
+
+    def test_binary_name(self):
+        """Tests if binary name access works."""
+        self.assertEqual(self.report_filename.binary_name, 'bar')
 
     def test_status_success(self):
         """Tests if status success works."""
@@ -102,7 +107,9 @@ class TestReportFilename(unittest.TestCase):
 
     def test_accessors(self):
         """Tests if the different accessor functions work."""
-        self.assertEqual(self.report_filename.commit_hash, "7bb9ef5f8c")
+        self.assertEqual(
+            self.report_filename.commit_hash, ShortCommitHash("7bb9ef5f8c")
+        )
         self.assertEqual(self.report_filename.shorthand, "CR")
         self.assertEqual(
             self.report_filename.file_status, FileStatusExtension.SUCCESS
@@ -194,10 +201,12 @@ class TestBaseReport(unittest.TestCase):
     def test_get_commit(self):
         """Check if the correct commit hash is returned."""
         self.assertEqual(
-            ReportFilename(self.success_filename).commit_hash, "7bb9ef5f8c"
+            ReportFilename(self.success_filename).commit_hash,
+            ShortCommitHash("7bb9ef5f8c")
         )
         self.assertEqual(
-            ReportFilename(self.fail_filename).commit_hash, "7bb9ef5f8c"
+            ReportFilename(self.fail_filename).commit_hash,
+            ShortCommitHash("7bb9ef5f8c")
         )
 
     def test_file_name_creation(self):

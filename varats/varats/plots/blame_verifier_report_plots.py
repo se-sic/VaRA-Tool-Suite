@@ -19,6 +19,7 @@ from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plots.case_study_overview import SUCCESS_COLOR, FAILED_COLOR
+from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
 
@@ -271,7 +272,9 @@ class BlameVerifierReportPlot(Plot):
         """Plot the current plot to a file."""
         style.use(self.style)
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         pass
 
     def plot_file_name(self, filetype: str) -> str:

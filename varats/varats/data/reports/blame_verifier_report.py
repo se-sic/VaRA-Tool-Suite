@@ -6,6 +6,7 @@ from enum import Enum
 from pathlib import Path
 
 from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
+from varats.utils.git_util import ShortCommitHash
 
 LOG = logging.getLogger(__name__)
 
@@ -121,7 +122,7 @@ class BlameVerifierReportNoOpt(BlameVerifierReportParserMixin, BaseReport):
         self.parse_verifier_results()
 
     @property
-    def head_commit(self) -> str:
+    def head_commit(self) -> ShortCommitHash:
         """The current HEAD commit under which this BlameVerifierReportNoOpt was
         created."""
         return ReportFilename(Path(self.path)).commit_hash
@@ -175,7 +176,7 @@ class BlameVerifierReportOpt(BlameVerifierReportParserMixin, BaseReport):
         self.parse_verifier_results()
 
     @property
-    def head_commit(self) -> str:
+    def head_commit(self) -> ShortCommitHash:
         """The current HEAD commit under which this BlameVerifierReportOpt was
         created."""
         return ReportFilename(Path(self.path)).commit_hash
@@ -230,7 +231,7 @@ class BlameVerifierReportNoOptTBAA(BlameVerifierReportParserMixin, BaseReport):
         self.parse_verifier_results()
 
     @property
-    def head_commit(self) -> str:
+    def head_commit(self) -> ShortCommitHash:
         """The current HEAD commit under which this BlameVerifierReportNoOpt was
         created."""
         return self.filename.commit_hash

@@ -10,6 +10,8 @@ from pathlib import Path, PosixPath
 from plumbum import colors
 from plumbum.colorlib.styles import Color
 
+from varats.utils.git_util import ShortCommitHash
+
 
 class FileStatusExtension(Enum):
     """
@@ -139,6 +141,15 @@ class ReportFilename():
         """Literal file name."""
         return self.__filename
 
+    @property
+    def binary_name(self) -> str:
+        """Name of the analyzed binary."""
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
+        if match:
+            return str(match.group("binary_name"))
+
+        raise ValueError(f'File {self.filename} name was wrongly formated.')
+
     def has_status_success(self) -> bool:
         """
         Checks if the file name is a (Success) result file.
@@ -227,7 +238,7 @@ class ReportFilename():
         return match is not None
 
     @property
-    def commit_hash(self) -> str:
+    def commit_hash(self) -> ShortCommitHash:
         """
         Commit hash of the result file.
 
@@ -236,7 +247,7 @@ class ReportFilename():
         """
         match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
         if match:
-            return match.group("file_commit_hash")
+            return ShortCommitHash(match.group("file_commit_hash"))
 
         raise ValueError(f'File {self.filename} name was wrongly formated.')
 
