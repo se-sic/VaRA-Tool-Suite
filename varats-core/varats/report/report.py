@@ -141,6 +141,15 @@ class ReportFilename():
         """Literal file name."""
         return self.__filename
 
+    @property
+    def binary_name(self) -> str:
+        """Name of the analyzed binary."""
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
+        if match:
+            return str(match.group("binary_name"))
+
+        raise ValueError(f'File {self.filename} name was wrongly formated.')
+
     def has_status_success(self) -> bool:
         """
         Checks if the file name is a (Success) result file.

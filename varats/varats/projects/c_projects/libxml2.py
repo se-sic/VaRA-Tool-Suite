@@ -6,6 +6,7 @@ from benchbuild.utils.cmd import make, cmake
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
+from varats.containers.containers import get_base_image, ImageBase
 from varats.paper_mgmt.paper_config import project_filter_generator
 from varats.project.project_util import (
     ProjectBinaryWrapper,
@@ -33,6 +34,14 @@ class Libxml2(bb.Project):  # type: ignore
             version_filter=project_filter_generator("libxml2")
         )
     ]
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10)\
+        .run('apt', 'install', '-y', 'wget', 'liblzma-dev')\
+        .run('/bin/bash', '-c',
+             'wget -qO- '
+             '\"https://cmake.org/files/v3.20'
+             '/cmake-3.20.0-linux-x86_64.tar.gz\" '
+             '| tar --strip-components=1 -xz -C /usr/local')
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:

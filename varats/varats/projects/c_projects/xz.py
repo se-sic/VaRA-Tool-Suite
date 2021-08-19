@@ -68,8 +68,8 @@ class Xz(bb.Project):  # type: ignore
         xz_version = self.version_of_primary
         with local.cwd(xz_git_path):
             old_xz_location = get_all_revisions_between(
-                "5cda29b5665004fc0f21d0c41d78022a6a559ab2",
-                "b2172cf823d3be34cb0246cb4cb32d105e2a34c9",
+                "5d018dc03549c1ee4958364712fb0c94e1bf2741",
+                "3f86532407e4ace3debb62be16035e009b56ca36",
                 short=True
             )
             if xz_version in old_xz_location:
