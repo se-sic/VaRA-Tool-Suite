@@ -5,9 +5,7 @@ import benchbuild as bb
 from benchbuild.utils.cmd import make, cmake, mkdir
 from benchbuild.utils.revision_ranges import (
     block_revisions,
-    GoodBadSubgraph,
-    RevisionRange,
-    SingleRevision,
+    GoodBadSubgraph
 )
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
@@ -20,7 +18,7 @@ from varats.project.project_util import (
     wrap_paths_to_binaries,
     get_local_project_git_path,
     BinaryType,
-    verify_binaries,
+    verify_binaries
 )
 from varats.utils.settings import bb_cfg
 
