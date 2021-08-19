@@ -35,10 +35,13 @@ class Libxml2(bb.Project):  # type: ignore
         )
     ]
 
-    CONTAINER = get_base_image(ImageBase.DEBIAN_10
-                              ).run('apt', 'install', '-y', 'wget', 'liblzma-dev')\
-        .run('/bin/bash','-c','wget -qO- \"https://cmake.org/files/v3.20/cmake-3.20.0-linux-x86_64.tar.gz\" '
-                              '| tar --strip-components=1 -xz -C /usr/local')
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10)\
+        .run('apt', 'install', '-y', 'wget', 'liblzma-dev')\
+        .run('/bin/bash', '-c',
+             'wget -qO- '
+             '\"https://cmake.org/files/v3.20'
+             '/cmake-3.20.0-linux-x86_64.tar.gz\" '
+             '| tar --strip-components=1 -xz -C /usr/local')
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
