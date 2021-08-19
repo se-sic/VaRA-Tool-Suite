@@ -67,7 +67,7 @@ class TestReportFilename(unittest.TestCase):
         """Setup file and CommitReport."""
         cls.correct_UUID = "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be"
         cls.raw_filename = (
-            "CR-foo-foo-7bb9ef5f8c_"
+            "CR-foo-bar-7bb9ef5f8c_"
             f"{cls.correct_UUID}_"
             "success.txt"
         )
@@ -76,6 +76,10 @@ class TestReportFilename(unittest.TestCase):
     def test_filename(self):
         """Tests if filename access works."""
         self.assertEqual(self.report_filename.filename, self.raw_filename)
+
+    def test_binary_name(self):
+        """Tests if binary name access works."""
+        self.assertEqual(self.report_filename.binary_name, 'bar')
 
     def test_status_success(self):
         """Tests if status success works."""
