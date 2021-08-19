@@ -35,9 +35,8 @@ class Libvpx(bb.Project):  # type: ignore
         )
     ]
 
-    CONTAINER = get_base_image(
-        ImageBase.DEBIAN_10
-    ).run('apt', 'install', '-y', 'yasm')
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10
+                              ).run('apt', 'install', '-y', 'yasm')
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:

@@ -3,10 +3,7 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.utils.cmd import cmake, make
-from benchbuild.utils.revision_ranges import (
-    block_revisions,
-    RevisionRange,
-)
+from benchbuild.utils.revision_ranges import block_revisions, RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
