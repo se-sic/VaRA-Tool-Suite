@@ -6,6 +6,7 @@ from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
+from varats.containers.containers import get_base_image, ImageBase
 from varats.paper_mgmt.paper_config import project_filter_generator
 from varats.project.project_util import (
     wrap_paths_to_binaries,
@@ -29,7 +30,7 @@ class Gawk(bb.Project):  # type: ignore
 
     SOURCE = [
         bb.source.Git(
-            remote="https://github.com/Distrotech/gawk.git",
+            remote="https://github.com/vulder/gawk.git",
             local="gawk",
             refspec="HEAD",
             limit=None,
@@ -37,6 +38,11 @@ class Gawk(bb.Project):  # type: ignore
             version_filter=project_filter_generator("gawk")
         )
     ]
+
+    CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
+        'apt', 'install', '-y', 'autoconf', 'automake', 'libtool', 'perl', 'm4',
+        'autopoint', 'gettext', 'bison'
+    )
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
