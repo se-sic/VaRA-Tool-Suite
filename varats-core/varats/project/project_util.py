@@ -36,6 +36,22 @@ def get_project_cls_by_name(project_name: str) -> tp.Type[bb.Project]:
     raise LookupError
 
 
+# TODO: move to case study or case study util?
+def get_project_cls_by_case_study(
+    case_study: 'CaseStudy'
+) -> tp.Type[bb.Project]:
+    """
+    Look up a BenchBuild project for the given case study.
+
+    Args:
+        case_study: for which to look up the project
+
+    Returns:
+        project class
+    """
+    return get_project_cls_by_name(case_study.project_name)
+
+
 def get_primary_project_source(project_name: str) -> bb.source.FetchableSource:
     project_cls = get_project_cls_by_name(project_name)
     return bb.source.primary(*project_cls.SOURCE)

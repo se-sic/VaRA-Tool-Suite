@@ -10,6 +10,10 @@ from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportNoOpt,
 )
 from varats.data.reports.commit_report import CommitReport
+from varats.data.reports.globals_report import (
+    GlobalsReportWith,
+    GlobalsReportWithout,
+)
 from varats.data.reports.szz_report import (
     SZZUnleashedReport,
     SZZReport,
@@ -89,3 +93,25 @@ def load_blame_verifier_report_opt(file_path: Path) -> \
         file_path (Path): Full path to the file
     """
     return VDM.load_data_class_sync(file_path, BlameVerifierReportOpt)
+
+
+def load_globals_with_report(file_path: Path) -> \
+        GlobalsReportWith:
+    """
+    Load a GlobalsReportWith from a file.
+
+    Attributes:
+        file_path (Path): Full path to the file
+    """
+    return VDM.load_data_class_sync(file_path, GlobalsReportWith)
+
+
+def load_globals_without_report(file_path: Path) -> \
+        GlobalsReportWithout:
+    """
+    Load a GlobalsReportWithout from a file.
+
+    Attributes:
+        file_path (Path): Full path to the file
+    """
+    return VDM.load_data_class_sync(file_path, GlobalsReportWithout)
