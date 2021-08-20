@@ -30,7 +30,7 @@ class Gawk(bb.Project):  # type: ignore
 
     SOURCE = [
         bb.source.Git(
-            remote="https://github.com/Distrotech/gawk.git",
+            remote="https://github.com/vulder/gawk.git",
             local="gawk",
             refspec="HEAD",
             limit=None,
@@ -41,7 +41,7 @@ class Gawk(bb.Project):  # type: ignore
 
     CONTAINER = get_base_image(ImageBase.DEBIAN_10).run(
         'apt', 'install', '-y', 'autoconf', 'automake', 'libtool', 'perl', 'm4',
-        'autopoint', 'gettext'
+        'autopoint', 'gettext', 'bison'
     )
 
     @property
