@@ -182,8 +182,10 @@ class BlameVerifierReportExperimentNoOpt(BlameVerifierReportExperiment):
 
     def __init__(self, projects: Project) -> None:
         super().__init__(
-            projects, '-O0', self.REPORT_SPEC.main_report,
-            [BCFileExtensions.DEBUG, BCFileExtensions.NO_OPT]
+            projects, '-O0', self.REPORT_SPEC.main_report, [
+                BCFileExtensions.DEBUG, BCFileExtensions.NO_OPT,
+                BCFileExtensions.BLAME
+            ]
         )
 
 
@@ -197,8 +199,10 @@ class BlameVerifierReportExperimentOpt(BlameVerifierReportExperiment):
 
     def __init__(self, projects: Project) -> None:
         super().__init__(
-            projects, '-O2', self.REPORT_SPEC.main_report,
-            [BCFileExtensions.DEBUG, BCFileExtensions.OPT]
+            projects, '-O2', self.REPORT_SPEC.main_report, [
+                BCFileExtensions.DEBUG, BCFileExtensions.OPT,
+                BCFileExtensions.BLAME
+            ]
         )
 
 
@@ -215,6 +219,6 @@ class BlameVerifierReportExperimentNoOptTBAA(BlameVerifierReportExperiment):
             projects, ["-O1", "-Xclang", "-disable-llvm-optzns"],
             self.REPORT_SPEC.main_report, [
                 BCFileExtensions.DEBUG, BCFileExtensions.NO_OPT,
-                BCFileExtensions.TBAA
+                BCFileExtensions.TBAA, BCFileExtensions.BLAME
             ]
         )
