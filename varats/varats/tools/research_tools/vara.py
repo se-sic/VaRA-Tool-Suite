@@ -42,6 +42,7 @@ def set_vara_cmake_variables(
 ) -> None:
     """Set all wanted/needed cmake flags."""
     set_cmake_var("CMAKE_INSTALL_PREFIX", install_prefix, post_out)
+    set_cmake_var("CMAKE_CXX_STANDARD", str(17), post_out)
 
 
 class VaRACodeBase(CodeBase):
