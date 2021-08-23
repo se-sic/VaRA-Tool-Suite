@@ -7,6 +7,8 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
+from varats.utils.git_util import FullCommitHash
+
 if tp.TYPE_CHECKING:
     from varats.paper.case_study import CaseStudy  # pylint: disable=W0611
 
@@ -196,7 +198,9 @@ class Plot():
         plt.close()
 
     @abc.abstractmethod
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         """
         Calculate a list of revisions that could improve precisions of this
         plot.

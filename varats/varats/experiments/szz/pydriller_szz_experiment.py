@@ -13,6 +13,7 @@ from varats.base.version_header import VersionHeader
 from varats.data.reports.szz_report import SZZReport, PyDrillerSZZReport
 from varats.provider.bug.bug_provider import BugProvider
 from varats.report.report import FileStatusExtension as FSE
+from varats.report.report import ReportSpecification
 from varats.utils.settings import bb_cfg
 
 
@@ -35,7 +36,7 @@ class CreatePyDrillerSZZReport(actions.Step):  # type: ignore
         project = self.obj
 
         bug_provider = BugProvider.get_provider_for_project(project)
-        pygit_bugs = bug_provider.find_all_pygit_bugs()
+        pygit_bugs = bug_provider.find_pygit_bugs()
 
         varats_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
             result_dir=str(bb_cfg()["varats"]["outfile"]),
@@ -59,7 +60,7 @@ class CreatePyDrillerSZZReport(actions.Step):  # type: ignore
             binary_name="none",  # we don't rely on binaries in this experiment
             project_version=project.version_of_primary,
             project_uuid=str(project.run_uuid),
-            extension_type=FSE.Success
+            extension_type=FSE.SUCCESS
         )
 
         with open(f"{varats_result_folder}/{result_file}", "w") as yaml_file:
@@ -86,7 +87,7 @@ class PyDrillerSZZExperiment(Experiment):  # type: ignore
 
     NAME = "PyDrillerSZZ"
 
-    REPORT_TYPE = SZZReport
+    REPORT_SPEC = ReportSpecification(SZZReport)
 
     @classmethod
     def sample(cls, prj_cls: ProjectT) -> tp.List[source.VariantContext]:

@@ -19,7 +19,7 @@ from varats.jupyterhelper.file import (
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.report import MetaReport
+from varats.report.report import ReportFilename
 from varats.revision.revisions import (
     get_failed_revisions_files,
     get_processed_revisions_files,
@@ -29,7 +29,7 @@ from varats.revision.revisions import (
 class OptLevel(Enum):
     """Enum for the different optimization levels used to create the verifier
     report."""
-    value: int
+    value: int  # pylint: disable=invalid-name
 
     NO_OPT = 0
     OPT = 2
@@ -113,7 +113,7 @@ class BlameVerifierReportDatabase(
                 index=[0]
                 # Add prefix of report name to head_commit to differentiate
                 # between reports with and without optimization
-            ), report.head_commit + report_path.name.split("-", 1)[0], str(
+            ), report.head_commit.hash + report_path.name.split("-", 1)[0], str(
                 report_path.stat().st_mtime_ns
             )
 
@@ -146,9 +146,8 @@ class BlameVerifierReportDatabase(
         # pylint: disable=E1101
         data_frame = build_cached_report_table(
             cls.CACHE_ID, project_name, report_files, failed_report_files,
-            create_dataframe_layout, create_data_frame_for_report,
-            lambda path: MetaReport.get_commit_hash_from_result_file(path.name)
-            + path.name.split("-", 1)[0],
+            create_dataframe_layout, create_data_frame_for_report, lambda path:
+            ReportFilename(path).commit_hash.hash + path.name.split("-", 1)[0],
             lambda path: str(path.stat().st_mtime_ns),
             lambda a, b: int(a) > int(b)
         )

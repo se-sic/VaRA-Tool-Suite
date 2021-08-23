@@ -164,11 +164,11 @@ class TestContainerSupport(unittest.TestCase):
             _create_base_image_layers(image_context)
 
         layers = image_context.layers
-        vara_copy_layer = self.check_layer_type(layers[5], CopyLayer)
+        vara_copy_layer = self.check_layer_type(layers[6], CopyLayer)
         self.assertEqual("/varats_root/tools/VaRA", vara_copy_layer.destination)
         self.assertTupleEqual(("tools/VaRA",), vara_copy_layer.sources)
 
-        bb_config_layer = self.check_layer_type(layers[8], UpdateEnv)
+        bb_config_layer = self.check_layer_type(layers[9], UpdateEnv)
         self.assertTupleEqual(
             ("BB_ENV", "{PATH: [/varats_root/tools/VaRA/bin]}"),
             bb_config_layer.env[3]

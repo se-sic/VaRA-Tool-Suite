@@ -4,7 +4,7 @@ import unittest
 import unittest.mock as mock
 from pathlib import Path
 
-from tests.test_utils import run_in_test_environment, TestInputs
+from tests.test_utils import run_in_test_environment, UnitTestInputs
 from varats.data.discover_reports import initialize_reports
 from varats.paper_mgmt.artefacts import Artefact
 from varats.paper_mgmt.paper_config import get_paper_config
@@ -39,7 +39,7 @@ class TestDriverArtefacts(unittest.TestCase):
         initialize_tables()
         initialize_plots()
 
-    @run_in_test_environment(TestInputs.PAPER_CONFIGS)
+    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
     @mock.patch('varats.table.tables.build_table', side_effect=_mock_table)
     # pylint: disable=unused-argument
     def test_artefacts_generate(self, build_tables):

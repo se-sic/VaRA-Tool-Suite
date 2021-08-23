@@ -24,7 +24,7 @@ from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.project.project_util import get_local_project_git
-from varats.report.report import MetaReport
+from varats.report.report import ReportFilename
 from varats.revision.revisions import (
     get_processed_revisions_files,
     get_failed_revisions_files,
@@ -34,6 +34,7 @@ from varats.utils.git_util import (
     ChurnConfig,
     calc_code_churn,
     create_commit_lookup_helper,
+    ShortCommitHash,
 )
 
 
@@ -50,8 +51,8 @@ def id_from_paths(paths: tp.Tuple[Path, Path]) -> str:
     """
 
     return \
-        f"{MetaReport.get_commit_hash_from_result_file(paths[0].name)}_" \
-        f"{MetaReport.get_commit_hash_from_result_file(paths[1].name)}"
+        f"{ReportFilename(paths[0]).commit_hash}_" \
+        f"{ReportFilename(paths[1]).commit_hash}"
 
 
 def timestamp_from_paths(paths: tp.Tuple[Path, Path]) -> str:
@@ -85,7 +86,7 @@ def compare_timestamps(ts1: str, ts2: str) -> bool:
 
 def build_report_files_tuple(
     project_name: str, case_study: tp.Optional[CaseStudy]
-) -> tp.Tuple[tp.Dict[str, Path], tp.Dict[str, Path]]:
+) -> tp.Tuple[tp.Dict[ShortCommitHash, Path], tp.Dict[ShortCommitHash, Path]]:
     """
     Build the mappings between commit hash to its corresponding report file
     path, where the first mapping corresponds to commit hashes and their
@@ -100,8 +101,8 @@ def build_report_files_tuple(
         the mappings from commit hash to successful and failed report files as
         tuple
     """
-    report_files: tp.Dict[str, Path] = {
-        MetaReport.get_commit_hash_from_result_file(report.name): report
+    report_files: tp.Dict[ShortCommitHash, Path] = {
+        ReportFilename(report).commit_hash: report
         for report in get_processed_revisions_files(
             project_name,
             BlameReport,
@@ -110,8 +111,8 @@ def build_report_files_tuple(
         )
     }
 
-    failed_report_files: tp.Dict[str, Path] = {
-        MetaReport.get_commit_hash_from_result_file(report.name): report
+    failed_report_files: tp.Dict[ShortCommitHash, Path] = {
+        ReportFilename(report).commit_hash: report
         for report in get_failed_revisions_files(
             project_name,
             BlameReport,
@@ -147,11 +148,14 @@ def build_report_pairs_tuple(
         project_name, case_study
     )
 
+    sampled_revs: tp.List[ShortCommitHash]
     if case_study:
-        sampled_revs = case_study.revisions
+        sampled_revs = [
+            rev.to_short_commit_hash() for rev in case_study.revisions
+        ]
     else:
         sampled_revs = get_processed_revisions(project_name, BlameReport)
-    short_time_id_cache: tp.Dict[str, int] = {
+    short_time_id_cache: tp.Dict[ShortCommitHash, int] = {
         rev: commit_map.short_time_id(rev) for rev in sampled_revs
     }
 
@@ -186,8 +190,10 @@ def build_report_pairs_tuple(
 
 
 def get_predecessor_report_file(
-    c_hash: str, commit_map: CommitMap, short_time_id_cache: tp.Dict[str, int],
-    report_files: tp.Dict[str, Path], sampled_revs: tp.List[str]
+    c_hash: ShortCommitHash, commit_map: CommitMap,
+    short_time_id_cache: tp.Dict[ShortCommitHash, int],
+    report_files: tp.Dict[ShortCommitHash,
+                          Path], sampled_revs: tp.List[ShortCommitHash]
 ) -> tp.Optional[Path]:
     """
     Finds the preceding report file of the report that corresponds to the passed
@@ -212,12 +218,14 @@ def get_predecessor_report_file(
         return None
 
     pred_report_commit_hash = max(pred_commits, key=lambda x: x[0])[1]
-    return report_files.get(pred_report_commit_hash[:10], None)
+    return report_files.get(pred_report_commit_hash, None)
 
 
 def get_successor_report_file(
-    c_hash: str, commit_map: CommitMap, short_time_id_cache: tp.Dict[str, int],
-    report_files: tp.Dict[str, Path], sampled_revs: tp.List[str]
+    c_hash: ShortCommitHash, commit_map: CommitMap,
+    short_time_id_cache: tp.Dict[ShortCommitHash, int],
+    report_files: tp.Dict[ShortCommitHash,
+                          Path], sampled_revs: tp.List[ShortCommitHash]
 ) -> tp.Optional[Path]:
     """
     Finds the subsequent report file of the report that corresponds to the
@@ -243,7 +251,7 @@ def get_successor_report_file(
         return None
 
     succ_report_commit_hash = min(succ_commits, key=lambda x: x[0])[1]
-    return report_files.get(succ_report_commit_hash[:10], None)
+    return report_files.get(succ_report_commit_hash, None)
 
 
 class BlameDiffMetricsDatabase(
@@ -284,14 +292,14 @@ class BlameDiffMetricsDatabase(
             # Look-up commit and infos about the HEAD commit of the report
             head_report = load_blame_report(report_paths[0])
             pred_report = load_blame_report(report_paths[1])
-            commit = repo.get(head_report.head_commit)
+            commit = repo.get(head_report.head_commit.hash)
             commit_date = datetime.utcfromtimestamp(commit.commit_time)
 
             diff_between_head_pred = BlameReportDiff(head_report, pred_report)
 
             # Calculate the total churn between pred and base commit
             code_churn = calc_code_churn(
-                repo, repo.get(pred_report.head_commit), commit,
+                repo, repo.get(pred_report.head_commit.hash), commit,
                 ChurnConfig.create_c_style_languages_config()
             )
             total_churn = code_churn[1] + code_churn[2]

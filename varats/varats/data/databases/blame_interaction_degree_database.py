@@ -19,7 +19,7 @@ from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.report import MetaReport
+from varats.report.report import ReportFilename
 from varats.revision.revisions import (
     get_failed_revisions_files,
     get_processed_revisions_files,
@@ -32,12 +32,12 @@ AVG_TIME_BUCKET_SIZE = 1
 
 class DegreeType(Enum):
     """Degree types of blame interaction data."""
-    value: str
+    value: str  # pylint: disable=invalid-name
 
-    interaction = "interaction"
-    author = "author"
-    max_time = "max_time"
-    avg_time = "avg_time"
+    INTERACTION = "interaction"
+    AUTHOR = "author"
+    MAX_TIME = "max_time"
+    AVG_TIME = "avg_time"
 
 
 def _split_tuple_values_in_lists_tuple(
@@ -143,7 +143,7 @@ class BlameInteractionDegreeDatabase(
                 total_amount: int,
                 base_library: tp.Optional[str] = None,
                 inter_library: tp.Optional[str] = None
-            ) -> tp.Dict:
+            ) -> tp.Dict[str, tp.Any]:
 
                 data_dict: tp.Dict[str, tp.Any] = {
                     'revision': report.head_commit,
@@ -157,7 +157,7 @@ class BlameInteractionDegreeDatabase(
                 }
                 return data_dict
 
-            result_data_dicts: tp.List[tp.Dict] = []
+            result_data_dicts: tp.List[tp.Dict[str, tp.Any]] = []
 
             # Append interaction rows
             for base_lib_name, inter_lib_dict \
@@ -176,7 +176,7 @@ class BlameInteractionDegreeDatabase(
                         lib_amount = inter_amounts[i]
 
                         interaction_data_dict = build_dataframe_row(
-                            degree_type=DegreeType.interaction,
+                            degree_type=DegreeType.INTERACTION,
                             degree=degree,
                             amount=lib_amount,
                             total_amount=total_amounts_of_all_libs,
@@ -202,7 +202,7 @@ class BlameInteractionDegreeDatabase(
 
             # Append author rows
             append_rows_of_degree_type(
-                degree_type=DegreeType.author,
+                degree_type=DegreeType.AUTHOR,
                 degrees=author_degrees,
                 amounts=author_amounts,
                 sum_amounts=author_total
@@ -210,7 +210,7 @@ class BlameInteractionDegreeDatabase(
 
             # Append max_time rows
             append_rows_of_degree_type(
-                degree_type=DegreeType.max_time,
+                degree_type=DegreeType.MAX_TIME,
                 degrees=max_time_buckets,
                 amounts=max_time_amounts,
                 sum_amounts=total_max_time_amounts
@@ -218,15 +218,16 @@ class BlameInteractionDegreeDatabase(
 
             # Append avg_time rows
             append_rows_of_degree_type(
-                degree_type=DegreeType.avg_time,
+                degree_type=DegreeType.AVG_TIME,
                 degrees=avg_time_buckets,
                 amounts=avg_time_amounts,
                 sum_amounts=total_avg_time_amounts
             )
 
-            return pd.DataFrame(result_data_dicts), report.head_commit, str(
-                report_path.stat().st_mtime_ns
-            )
+            return pd.DataFrame(result_data_dicts
+                               ), report.head_commit.hash, str(
+                                   report_path.stat().st_mtime_ns
+                               )
 
         report_files = get_processed_revisions_files(
             project_name, BlameReport,
@@ -243,7 +244,7 @@ class BlameInteractionDegreeDatabase(
         data_frame = build_cached_report_table(
             cls.CACHE_ID, project_name, report_files, failed_report_files,
             create_dataframe_layout, create_data_frame_for_report,
-            lambda path: MetaReport.get_commit_hash_from_result_file(path.name),
+            lambda path: ReportFilename(path).commit_hash.hash,
             lambda path: str(path.stat().st_mtime_ns),
             lambda a, b: int(a) > int(b)
         )
