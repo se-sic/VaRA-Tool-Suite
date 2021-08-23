@@ -94,7 +94,7 @@ class CommitAuthorInteractionGraphViolinPlot(Plot):
             size=3
         )
         ax.set_ylim(-0.1, 1.1)
-        ax.set_aspect(0.4 / ax.get_data_ratio())
+        ax.set_aspect(0.3 / ax.get_data_ratio())
         ax.tick_params(axis='x', labelrotation=45)
         ax.set_xlabel(None)
 
@@ -178,7 +178,7 @@ class AuthorBlameVsFileDegreesViolinPlot(Plot):
             size=3
         )
         ax.set_ylim(bottom=0, top=1.1 * data["# Additional Authors"].max())
-        ax.set_aspect(0.4 / ax.get_data_ratio())
+        ax.set_aspect(0.3 / ax.get_data_ratio())
         ax.tick_params(axis='x', labelrotation=45)
         ax.set_xlabel(None)
 
