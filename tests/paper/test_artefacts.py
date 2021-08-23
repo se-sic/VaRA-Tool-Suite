@@ -21,7 +21,7 @@ artefacts:
   file_type: png
   name: overview
   output_path: 'some/path'
-  plot_generator: overview-plot
+  plot_generator: pc-overview-plot
   report_type: EmptyReport
 """
 
@@ -68,14 +68,14 @@ class TestArtefacts(unittest.TestCase):
         self.assertEqual(artefact_dict['file_type'], 'png')
         self.assertEqual(artefact_dict['name'], 'overview')
         self.assertEqual(artefact_dict['output_path'], 'some/path')
-        self.assertEqual(artefact_dict['plot_generator'], 'overview-plot')
+        self.assertEqual(artefact_dict['plot_generator'], 'pc-overview-plot')
         self.assertEqual(artefact_dict['report_type'], 'EmptyReport')
 
     # PlotArtefact tests
 
     def test_artefact_plot_type(self):
         """Check if plot type is loaded correctly."""
-        self.assertEqual(self.artefact.plot_generator_type, "overview-plot")
+        self.assertEqual(self.artefact.plot_generator_type, "pc-overview-plot")
 
     def test_artefact_plot_type_class(self):
         """Check if plot class is resolved correctly."""
@@ -105,7 +105,7 @@ class TestArtefacts(unittest.TestCase):
             PlotArtefact.create_artefact(
                 'foo',
                 Path('some/path'),
-                plot_generator='overview-plot',
+                plot_generator='pc-overview-plot',
                 file_type='svg',
                 some='argument'
             )
