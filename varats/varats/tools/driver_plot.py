@@ -33,7 +33,7 @@ def main(context: click.Context, **kwargs: tp.Any) -> None:
     """Entry point for the plot generation tool."""
     # store common options in context so they can be passed to subcommands
     common_options = CommonPlotOptions.from_kwargs(**kwargs)
-    plot_config = PlotConfig()
+    plot_config = PlotConfig.from_kwargs(**kwargs)
     context.obj = (common_options, plot_config)
 
     initialize_cli_tool()
