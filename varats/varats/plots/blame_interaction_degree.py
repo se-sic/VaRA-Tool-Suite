@@ -1098,7 +1098,6 @@ class BlameLibraryInteraction(Plot, plot_name=None):
 
         df.sort_values(by=['time_id'], inplace=True)
         df.reset_index(inplace=True)
-        unique_revisions = _get_unique_revisions(df)
 
         rev = commit_map.convert_to_full_or_warn(
             ShortCommitHash(self.plot_kwargs['revision'])
@@ -1308,9 +1307,11 @@ class BlameDegree(Plot, plot_name=None):
 
         interaction_plot_df.sort_values(by=['time_id'], inplace=True)
         interaction_plot_df.reset_index(inplace=True)
-        unique_revisions = _get_unique_revisions(interaction_plot_df)
         highest_degree = interaction_plot_df["degree"].max()
 
+        commit_map: CommitMap = get_commit_map(
+            self.plot_kwargs["case_study"].project_name
+        )
         rev = commit_map.convert_to_full_or_warn(
             ShortCommitHash(self.plot_kwargs['revision'])
         )
@@ -1444,7 +1445,6 @@ class BlameInteractionDegreeGenerator(
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE,
         PlotGenerator.REQUIRE_MULTI_CASE_STUDY,
-        OPTIONAL_FIG_TITLE,
         OPTIONAL_SHOW_CHURN,
         OPTIONAL_LEGEND_TITLE,
         OPTIONAL_LEGEND_SIZE,
@@ -1468,7 +1468,7 @@ class BlameInteractionDegreeGenerator(
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
         self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-        self.__fig_title: str = plot_kwargs["fig_title"]
+        self.__fig_title: str = plot_config.fig_title
         self.__show_churn: bool = plot_kwargs["show_churn"]
         self.__legend_title: str = plot_kwargs["legend_title"]
         self.__legend_size: int = plot_kwargs["legend_size"]
