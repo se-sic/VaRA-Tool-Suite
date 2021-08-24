@@ -21,17 +21,21 @@ Module: cli_util
     :undoc-members:
     :show-inheritance:
 
------
+.. raw:: html
+
+    <hr>
 
 Module: util
-................
+............
 
 .. automodule:: varats.utils.util
     :members:
     :undoc-members:
     :show-inheritance:
 
------
+.. raw:: html
+
+    <hr>
 
 Module: exceptions
 ..................
@@ -41,7 +45,9 @@ Module: exceptions
     :undoc-members:
     :show-inheritance:
 
------
+.. raw:: html
+
+    <hr>
 
 Module: git_util
 ................
@@ -51,7 +57,9 @@ Module: git_util
     :undoc-members:
     :show-inheritance:
 
------
+.. raw:: html
+
+    <hr>
 
 Module: experiment_util
 .......................
@@ -61,7 +69,9 @@ Module: experiment_util
     :undoc-members:
     :show-inheritance:
 
------
+.. raw:: html
+
+    <hr>
 
 Module: project_util
 ....................
@@ -71,7 +81,9 @@ Module: project_util
     :undoc-members:
     :show-inheritance:
 
------
+.. raw:: html
+
+    <hr>
 
 Module: filesystem_util
 .......................
@@ -81,17 +93,21 @@ Module: filesystem_util
     :undoc-members:
     :show-inheritance:
 
------
+.. raw:: html
+
+    <hr>
 
 Module: cmake_util
-.......................
+..................
 
 .. automodule:: varats.tools.research_tools.cmake_util
     :members:
     :undoc-members:
     :show-inheritance:
 
------
+.. raw:: html
+
+    <hr>
 
 Logger usage
 ------------
@@ -122,15 +138,19 @@ Logging is used to add additional information or highlight warning or error case
 For logging categories, we follow the default python logging `HOWTO <https://docs.python.org/3/howto/logging.html>`_.
 
 Module: logger_util
-.......................
+...................
 
 .. automodule:: varats.utils.logger_util
     :members:
     :undoc-members:
     :show-inheritance:
 
+.. raw:: html
+
+    <hr>
+
 Module: tool_util
-.......................
+.................
 
 .. automodule:: varats.tools.tool_util
     :members:
