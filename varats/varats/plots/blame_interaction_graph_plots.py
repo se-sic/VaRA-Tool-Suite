@@ -53,13 +53,6 @@ class CommitInteractionGraphPlot(Plot):
         # Nothing to do here.
         pass
 
-        # project_name = self.plot_kwargs["project"]
-        # revision = self.plot_kwargs.get("revision", None)
-        # if not revision:
-        #     raise PlotArgMissing(f"'revision' was not specified.")
-        # cig = _get_interaction_graph(project_name, revision).commit_interaction_graph
-        # nx.draw_circular(cig)
-
     def save(
         self, path: tp.Optional[Path] = None, filetype: str = 'svg'
     ) -> None:
@@ -151,7 +144,6 @@ class CommitInteractionGraphChordPlot(Plot):
         if view_mode:
             figure.show()
         else:
-            # figure.write_image(self.plot_file_name("svg"))
             offply.plot(figure, filename=self.plot_file_name("html"))
 
     def calc_missing_revisions(
@@ -232,7 +224,6 @@ class CommitInteractionGraphArcPlot(Plot):
         if view_mode:
             figure.show()
         else:
-            # figure.write_image(self.plot_file_name("svg"))
             offply.plot(figure, filename=self.plot_file_name("html"))
 
     def calc_missing_revisions(
@@ -320,7 +311,6 @@ class CommitInteractionGraphNodeDegreePlot(Plot):
             node_out_degrees.sort_values(by="node_out_degree", inplace=True)
             node_in_degrees.sort_values(by="node_in_degree", inplace=True)
 
-        # x = np.linspace(0, 1, len(data.index))
         axes.plot(node_degrees["node_degree"].values, label="degree")
         axes.plot(
             node_out_degrees["node_out_degree"].values, label="out_degree"
@@ -328,132 +318,6 @@ class CommitInteractionGraphNodeDegreePlot(Plot):
         axes.plot(node_in_degrees["node_in_degree"].values, label="in_degree")
 
         axes.legend()
-
-    def calc_missing_revisions(
-        self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
-
-
-class CommitInteractionGraphNodeDegreeOverviewPlot(Plot):
-    """
-    Plot node degrees of all commit interaction graphs in the current paper
-    config.
-
-    Additional arguments:
-      - sort: criteria to sort the revisions [degree, time]
-    """
-
-    NAME = 'cig_node_degrees_overview'
-
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
-
-    def plot(self, view_mode: bool) -> None:
-        sort = self.plot_kwargs.get("sort", "degree")
-        case_studies = get_loaded_paper_config().get_all_case_studies()
-
-        style.use(self.style)
-        fig, axes = plt.subplots(3, 1, sharey="all")
-        fig.subplots_adjust(hspace=0.5)
-
-        degree_axis = axes[0]
-        out_degree_axis = axes[1]
-        in_degree_axis = axes[2]
-
-        fig.suptitle(f"Commit Interaction Graph - Node Degrees")
-        degree_axis.set_ylabel("Degree")
-        out_degree_axis.set_ylabel("Out-Degree")
-        in_degree_axis.set_ylabel("In-Degree")
-        xlabel = ""
-        if sort == "time":
-            xlabel = "Time (old to new)"
-        elif sort == "degree":
-            xlabel = "Commits"
-        in_degree_axis.set_xlabel(xlabel)
-
-        def normalize(
-            values: pd.Series,
-            min_value: tp.Optional[float] = None,
-            max_value: tp.Optional[float] = None
-        ) -> pd.Series:
-            if not min_value:
-                min_value = values.min()
-            if not max_value:
-                max_value = values.max()
-            # mypy cannot infer that min_value/max_value are never None here
-            return (values -
-                    min_value) / (max_value - min_value)  # type: ignore
-
-        for case_study in case_studies:
-            project_name = case_study.project_name
-            revision = newest_processed_revision_for_case_study(
-                case_study, BlameReport
-            )
-            if not revision:
-                continue
-
-            cig = create_blame_interaction_graph(project_name, revision
-                                                ).commit_interaction_graph()
-            commit_lookup = create_commit_lookup_helper(project_name)
-
-            def filter_nodes(node: CommitRepoPair) -> bool:
-                if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
-                    return False
-                return bool(commit_lookup(node))
-
-            def commit_time(node: CommitRepoPair) -> datetime:
-                return datetime.utcfromtimestamp(
-                    commit_lookup(node).commit_time
-                )
-
-            nodes: tp.List[tp.Dict[str, tp.Any]] = []
-            for node in cig.nodes:
-                node_attrs = tp.cast(CIGNodeAttrs, cig.nodes[node])
-                commit = node_attrs["commit"]
-                if not filter_nodes(commit):
-                    continue
-                nodes.append(({
-                    "commit_hash": commit.commit_hash,
-                    "commit_time": commit_time(commit),
-                    "node_degree": cig.degree(node),
-                    "node_out_degree": cig.out_degree(node),
-                    "node_in_degree": cig.in_degree(node),
-                }))
-
-            data = pd.DataFrame(nodes)
-            data_min = 0
-            data_max = data["node_degree"].max()
-            data["node_degree"] = normalize(
-                data["node_degree"], min_value=data_min, max_value=data_max
-            )
-            data["node_out_degree"] = normalize(
-                data["node_out_degree"], min_value=data_min, max_value=data_max
-            )
-            data["node_in_degree"] = normalize(
-                data["node_in_degree"], min_value=data_min, max_value=data_max
-            )
-
-            if sort == "time":
-                data.sort_values(by="commit_time", inplace=True)
-
-            node_degrees = data.loc[:, ["commit_hash", "node_degree"]]
-            node_out_degrees = data.loc[:, ["commit_hash", "node_out_degree"]]
-            node_in_degrees = data.loc[:, ["commit_hash", "node_in_degree"]]
-
-            if sort == "degree":
-                node_degrees.sort_values(by="node_degree", inplace=True)
-                node_out_degrees.sort_values(by="node_out_degree", inplace=True)
-                node_in_degrees.sort_values(by="node_in_degree", inplace=True)
-
-            x = np.linspace(0, 1, len(data.index))
-            degree_axis.plot(
-                x, node_degrees["node_degree"].values, label=project_name
-            )
-            out_degree_axis.plot(x, node_out_degrees["node_out_degree"].values)
-            in_degree_axis.plot(x, node_in_degrees["node_in_degree"].values)
-
-        degree_axis.legend()
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -495,7 +359,6 @@ class AuthorInteractionGraphNodeDegreePlot(Plot):
         for node in aig.nodes:
             node_attrs = tp.cast(AIGNodeAttrs, aig.nodes[node])
             author = node_attrs["author"]
-            num_commits = node_attrs["num_commits"]
             nodes.append(({
                 "author": author,
                 "node_degree": aig.degree(node),
