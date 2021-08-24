@@ -38,7 +38,10 @@ def multivariate_grid(
             if color is not None:
                 kwargs["c"] = color
             kwargs["alpha"] = scatter_alpha
-            sns.scatterplot(**kwargs)
+            ax = sns.scatterplot(*args, **kwargs)
+            ax.xaxis.label.set_size(20)
+            ax.yaxis.label.set_size(20)
+            ax.tick_params(labelsize=15)
 
         return scatter
 
@@ -72,6 +75,4 @@ def multivariate_grid(
     if len(grouped_data) > 1:
         plt.legend(legends)
 
-    plt.subplots_adjust(top=0.9)
-    grid.fig.suptitle(f"{x_col} vs. {y_col}")
     return grid
