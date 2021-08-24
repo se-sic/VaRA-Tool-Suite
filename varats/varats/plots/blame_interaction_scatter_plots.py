@@ -117,29 +117,29 @@ class CentralCodeScatterPlot(Plot):
             "Commit Size", "Node Degree", "Case Study", data, global_kde=False
         )
 
-        highlight_data = data[data["commit_hash"] == FullCommitHash(
-            "348e6946c187eb68839e71a03101d75b5865a389"
-        )]
-
         ax = grid.ax_joint
         ax.axvline(data["Commit Size"].quantile(0.20), color="red")
         ax.axhline(data["Node Degree"].quantile(0.80), color="red")
 
-        ax.scatter(
-            x=highlight_data["Commit Size"],
-            y=highlight_data["Node Degree"],
-            color="red",
-            marker="x",
-            linewidth=2
-        )
-        ax.annotate(
-            "348e694",
-            xy=(highlight_data["Commit Size"], highlight_data["Node Degree"]),
-            xycoords="data",
-            xytext=(0.2, 0.9),
-            textcoords='axes fraction',
-            arrowprops=dict(arrowstyle="-|>", shrinkB=5, facecolor="black")
-        )
+        # highlight_data = data[data["commit_hash"] == FullCommitHash(
+        #     "348e6946c187eb68839e71a03101d75b5865a389"
+        # )]
+        #
+        # ax.scatter(
+        #     x=highlight_data["Commit Size"],
+        #     y=highlight_data["Node Degree"],
+        #     color="red",
+        #     marker="x",
+        #     linewidth=2
+        # )
+        # ax.annotate(
+        #     "348e694",
+        #     xy=(highlight_data["Commit Size"], highlight_data["Node Degree"]),
+        #     xycoords="data",
+        #     xytext=(0.2, 0.9),
+        #     textcoords='axes fraction',
+        #     arrowprops=dict(arrowstyle="-|>", shrinkB=5, facecolor="black")
+        # )
 
     def calc_missing_revisions(
         self, boundary_gradient: float
