@@ -318,6 +318,7 @@ class BlameInteractionGraph(InteractionGraph):
 
 
 class FileBasedInteractionGraph(InteractionGraph):
+    """Graph/Network built from file-based interaction data."""
 
     def __init__(self, project_name: str, head_commit: FullCommitHash):
         super().__init__(project_name)
@@ -444,6 +445,16 @@ def create_file_based_interaction_graph(
 
 
 def get_author_data(aig: nx.DiGraph, author: str) -> tp.Dict[str, tp.Any]:
+    """
+    Collect information for a specific author from an author interaction graph.
+
+    Args:
+        aig: a author interaction graph
+        author: name of the author
+
+    Returns:
+        a dict with information about the author
+    """
     node = aig.nodes[author]
     node_attrs = tp.cast(AIGNodeAttrs, node)
     in_attrs = [
