@@ -18,7 +18,9 @@ from varats.utils.settings import bb_cfg
 
 
 class Libzmq(bb.Project):  # type: ignore
-    """File command for recognizing the type of data contained in a file."""
+    """The ZeroMQ lightweight messaging kernel is a library which extends the
+    standard socket interfaces with features traditionally provided by
+    specialised messaging middleware products."""
 
     NAME = 'libzmq'
     GROUP = 'cpp_projects'
