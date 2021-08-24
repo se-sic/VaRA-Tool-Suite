@@ -1,4 +1,4 @@
-"""Project file for gravity."""
+"""Project file for brotli."""
 import typing as tp
 
 import benchbuild as bb
