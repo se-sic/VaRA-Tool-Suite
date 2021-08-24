@@ -316,7 +316,7 @@ def create_artefact(
         return PlotArtefact(name, output_path, plot_type, file_format, **kwargs)
     if artefact_type is ArtefactType.TABLE:
         table_type = kwargs.pop('table_type')
-        table_format = TableFormat[kwargs.pop('table_format', 'latex_booktabs')]
+        table_format = TableFormat[kwargs.pop('table_format', 'LATEX_BOOKTABS')]
         return TableArtefact(
             name, output_path, table_type, table_format, **kwargs
         )
