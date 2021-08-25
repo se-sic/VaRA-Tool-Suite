@@ -1,6 +1,7 @@
 """Module for code centrality tables."""
 import logging
 import typing as tp
+from pathlib import Path
 
 import pandas as pd
 from tabulate import tabulate
@@ -69,8 +70,8 @@ class TopCentralCodeCommitsTable(Table):
             if not filter_nodes(commit):
                 continue
             _, insertions, _ = calc_commit_code_churn(
-                repo_lookup[commit.repository_name].path, commit.commit_hash,
-                churn_config
+                Path(repo_lookup[commit.repository_name].path),
+                commit.commit_hash, churn_config
             )
             if insertions == 0:
                 LOG.warning(f"Churn for commit {commit} is 0.")

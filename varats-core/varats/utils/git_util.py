@@ -508,7 +508,7 @@ def calc_code_churn_range(
 
 
 def calc_commit_code_churn(
-    repo_path: str,
+    repo_path: Path,
     commit_hash: CommitHash,
     churn_config: tp.Optional[ChurnConfig] = None
 ) -> tp.Tuple[int, int, int]:
@@ -525,7 +525,7 @@ def calc_commit_code_churn(
         (files changed, insertions, deletions)
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
-    repo_git = git["-C", repo_path]
+    repo_git = git["-C", str(repo_path)]
     show_base_params = [
         "show", "--pretty=format:'%H'", "--shortstat", "--first-parent",
         commit_hash.hash
