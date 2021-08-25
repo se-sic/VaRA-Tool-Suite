@@ -335,49 +335,9 @@ class ChordPlotEdgeInfo(TypedDict):
     size: int
 
 
-def make_chord_plot(
-    nodes: tp.List[tp.Tuple[NodeTy, ChordPlotNodeInfo]],
-    edges: tp.List[tp.Tuple[NodeTy, NodeTy, ChordPlotEdgeInfo]],
-    title: str,
-    size: int = 400
-) -> go.Figure:
-    """
-    Create a chord plot from the given graph.
-
-    Based on this guide: https://plotly.com/python/v3/filled-chord-diagram/
-
-    Nodes can have the following information in their NodeInfo dict:
-      - color:
-      - info:
-
-    Edges can have the following information in their EdgeInfo dict:
-      - color:
-      - info:
-      - size: size of the transition relation relative to others; 1 by default
-
-    Args:
-        nodes:
-        edges: list of edges
-
-    Returns:
-    """
-    # calculate size of nodes by adding the sizes of incident edges
-    # group the edges by node along the way
-    node_size_dict: tp.Dict[NodeTy, float] = defaultdict(lambda: 0)
-    incoming_edges: tp.Dict[NodeTy, tp.List[int]] = defaultdict(list)
-    outgoing_edges: tp.Dict[NodeTy, tp.List[int]] = defaultdict(list)
-    for idx, edge in enumerate(edges):
-        source, sink, info = edge
-        node_size_dict[source] += info.get("size", 1)
-        node_size_dict[sink] += info.get("size", 1)
-        outgoing_edges[source].append(idx)
-        incoming_edges[sink].append(idx)
-    node_sizes = []
-    # we need to keep the order of the nodes
-    for node, _ in nodes:
-        node_sizes.append(node_size_dict[node])
-
-    # calculate ideograms
+def _calculate_ideogram_data(
+    node_sizes: tp.List[float]
+) -> tp.Tuple[np.ndarray, tp.List[str]]:
     gap = 2 * np.pi * 0.000
     ideogram_lengths = _calculate_ideogram_lengths(np.asarray(node_sizes), gap)
     ideogram_ends = _calculate_ideogram_ends(ideogram_lengths, gap)
@@ -385,7 +345,13 @@ def make_chord_plot(
         get_color_at(colors.PLOTLY_SCALES["RdBu"], idx / len(ideogram_ends))
         for idx, ends in enumerate(ideogram_ends)
     ]
-    # random.shuffle(ideogram_colors)
+    return ideogram_ends, ideogram_colors
+
+
+def _create_ideograms(
+    nodes: tp.List[tp.Tuple[NodeTy, ChordPlotNodeInfo]],
+    ideogram_ends: np.ndarray, ideogram_colors: tp.List[str]
+) -> tp.List[go.Scatter]:
     ideogram_info: tp.List[go.Scatter] = []
     for idx, ends in enumerate(ideogram_ends):
         outer_arc_points = _make_ideogram_arc(1.1, ends)
@@ -409,12 +375,26 @@ def make_chord_plot(
                 hoverinfo="text"
             )
         )
+    return ideogram_info
 
-    # calculate ribbon bounds per ideogram
+
+def _calculate_ribbon_data(
+    nodes: tp.List[tp.Tuple[NodeTy, ChordPlotNodeInfo]],
+    edges: tp.List[tp.Tuple[NodeTy, NodeTy,
+                            ChordPlotEdgeInfo]], node_sizes: tp.List[float],
+    ideogram_ends: np.ndarray, ideogram_colors: tp.List[str]
+) -> tp.Tuple[tp.Dict[int, tp.List[tp.Tuple[float, float]]], tp.Dict[int, str]]:
+    incoming_edges: tp.Dict[NodeTy, tp.List[int]] = defaultdict(list)
+    outgoing_edges: tp.Dict[NodeTy, tp.List[int]] = defaultdict(list)
+    # group the edges by node
+    for idx, edge in enumerate(edges):
+        source, sink, _ = edge
+        outgoing_edges[source].append(idx)
+        incoming_edges[sink].append(idx)
+
     ribbon_bounds: tp.Dict[int, tp.List[tp.Tuple[float,
                                                  float]]] = defaultdict(list)
     ribbon_colors: tp.Dict[int, str] = {}
-    ribbon_info: tp.List[go.scatter] = []
     for node_idx, (node, _) in enumerate(nodes):
         node_edges: tp.List[int] = []
         node_edge_sizes: tp.List[float] = []
@@ -441,6 +421,15 @@ def make_chord_plot(
         for edge_idx, ribbon_end in zip(node_edges, ribbon_ends):
             ribbon_bounds[edge_idx].append(ribbon_end)
 
+    return ribbon_bounds, ribbon_colors
+
+
+def _create_ribbons(
+    edges: tp.List[tp.Tuple[NodeTy, NodeTy, ChordPlotEdgeInfo]],
+    ribbon_bounds: tp.Dict[int, tp.List[tp.Tuple[float, float]]],
+    ribbon_colors: tp.Dict[int, str]
+) -> tp.List[go.scatter]:
+    ribbon_info: tp.List[go.scatter] = []
     for idx, ribbon_ends in ribbon_bounds.items():
         left_arc = ribbon_ends[0]
         right_arc = ribbon_ends[1]
@@ -473,6 +462,54 @@ def make_chord_plot(
                 hoverinfo='text'
             )
         )
+    return ribbon_info
+
+
+def make_chord_plot(
+    nodes: tp.List[tp.Tuple[NodeTy, ChordPlotNodeInfo]],
+    edges: tp.List[tp.Tuple[NodeTy, NodeTy, ChordPlotEdgeInfo]],
+    title: str,
+    size: int = 400
+) -> go.Figure:
+    """
+    Create a chord plot from the given graph.
+
+    Based on this guide: https://plotly.com/python/v3/filled-chord-diagram/
+
+    Nodes can have the following information in their NodeInfo dict:
+      - color:
+      - info:
+
+    Edges can have the following information in their EdgeInfo dict:
+      - color:
+      - info:
+      - size: size of the transition relation relative to others; 1 by default
+
+    Args:
+        nodes: list of nodes
+        edges: list of edges
+        title: plot title
+        size: plot size
+
+    Returns:
+    """
+    # calculate size of nodes by adding the sizes of incident edges
+    node_size_dict: tp.Dict[NodeTy, float] = defaultdict(lambda: 0)
+    for edge in edges:
+        source, sink, info = edge
+        node_size_dict[source] += info.get("size", 1)
+        node_size_dict[sink] += info.get("size", 1)
+    node_sizes: tp.List[float] = []
+    # we need to keep the order of the nodes
+    for node, _ in nodes:
+        node_sizes.append(node_size_dict[node])
+
+    ideogram_ends, ideogram_colors = _calculate_ideogram_data(node_sizes)
+    ribbon_bounds, ribbon_colors = _calculate_ribbon_data(
+        nodes, edges, node_sizes, ideogram_ends, ideogram_colors
+    )
+    ideogram_info = _create_ideograms(nodes, ideogram_ends, ideogram_colors)
+    ribbon_info = _create_ribbons(edges, ribbon_bounds, ribbon_colors)
 
     layout = _make_layout(title, size)
     data = ideogram_info + ribbon_info
@@ -493,6 +530,77 @@ class ArcPlotEdgeInfo(TypedDict):
     color: int
     info: str
     size: int
+
+
+def _calculate_node_placements(node_sizes: tp.List[float]) -> tp.List[float]:
+    node_placements: tp.List[float] = []
+    offset_x = 0.0
+    for node_size in node_sizes:
+        offset_x += node_size / 2.0
+        node_placements.append(offset_x)
+        offset_x += node_size / 2.0
+    return node_placements
+
+
+def _calculate_arc_bounds(
+    nodes: tp.List[tp.Tuple[NodeTy, ArcPlotNodeInfo]],
+    edges: tp.List[tp.Tuple[NodeTy, NodeTy,
+                            ArcPlotEdgeInfo]], node_placements: tp.List[float]
+) -> tp.Dict[int, tp.List[tp.Tuple[float, float]]]:
+    # group the edges by node
+    node_indices = {node[0]: idx for idx, node in enumerate(nodes)}
+    incoming_edges: tp.Dict[NodeTy, tp.List[int]] = defaultdict(list)
+    outgoing_edges: tp.Dict[NodeTy, tp.List[int]] = defaultdict(list)
+    for idx, edge in enumerate(edges):
+        source, sink, _ = edge
+        outgoing_edges[source].append(idx)
+        incoming_edges[sink].append(idx)
+    arc_bounds: tp.Dict[int, tp.List[tp.Tuple[float,
+                                              float]]] = defaultdict(list)
+    arc_sizes: tp.Dict[int, int] = {}
+    for node_idx, node in enumerate(nodes):
+        for edge_idx in sorted(
+            outgoing_edges[node[0]],
+            key=lambda x: node_placements[node_indices[edges[x][1]]],
+            reverse=True
+        ):
+            arc_bounds[edge_idx].insert(0, (node_placements[node_idx], 0))
+            arc_sizes[edge_idx] = edges[edge_idx][2].get("size", 1)
+        for edge_idx in sorted(
+            incoming_edges[node[0]],
+            key=lambda x: node_placements[node_indices[edges[x][0]]],
+            reverse=True
+        ):
+            arc_bounds[edge_idx].append((node_placements[node_idx], 0))
+    return arc_bounds
+
+
+def _create_arcs(
+    edges: tp.List[tp.Tuple[NodeTy, NodeTy, ArcPlotEdgeInfo]],
+    arc_bounds: tp.Dict[int, tp.List[tp.Tuple[float, float]]],
+    edge_colors: tp.List[str]
+) -> tp.List[go.Scatter]:
+    arcs: tp.List[go.scatter] = []
+    for idx, arc_ends in arc_bounds.items():
+        point0 = arc_ends[0]
+        point2 = arc_ends[1]
+        points = _make_arc(np.asarray(point0), np.asarray(point2), 25)
+        x, y = zip(*points)
+
+        arcs.append(
+            go.Scatter(
+                x=x,
+                y=y,
+                name='',
+                mode='lines',
+                line=go.scatter.Line(
+                    width=1, color=edge_colors[idx], shape='spline'
+                ),
+                text=edges[idx][2].get("info", ""),
+                hoverinfo="text"
+            )
+        )
+    return arcs
 
 
 def make_arc_plot(
@@ -548,42 +656,11 @@ def make_arc_plot(
 
     node_infos = [node[1].get("info", "") for node in nodes]
 
-    # calculate size of nodes by adding the sizes of incident edges
-    # group the edges by node along the way
-    incoming_edges: tp.Dict[NodeTy, tp.List[int]] = defaultdict(list)
-    outgoing_edges: tp.Dict[NodeTy, tp.List[int]] = defaultdict(list)
-    for idx, edge in enumerate(edges):
-        source, sink, _ = edge
-        outgoing_edges[source].append(idx)
-        incoming_edges[sink].append(idx)
     node_sizes = [
         np.log(max(np.e, node[1].get("size", 1))) * 5 for node in nodes
     ]
-    node_indices = {node[0]: idx for idx, node in enumerate(nodes)}
-    node_placements = []
-    offset_x = 0
-    for node_size in node_sizes:
-        offset_x += node_size / 2
-        node_placements.append(offset_x)
-        offset_x += node_size / 2
-
-    arc_bounds: tp.Dict[int, tp.List[tp.Tuple[float,
-                                              float]]] = defaultdict(list)
-    arc_sizes: tp.Dict[int, int] = {}
-    for node_idx, node in enumerate(nodes):
-        for edge_idx in sorted(
-            outgoing_edges[node[0]],
-            key=lambda x: node_placements[node_indices[edges[x][1]]],
-            reverse=True
-        ):
-            arc_bounds[edge_idx].insert(0, (node_placements[node_idx], 0))
-            arc_sizes[edge_idx] = edges[edge_idx][2].get("size", 1)
-        for edge_idx in sorted(
-            incoming_edges[node[0]],
-            key=lambda x: node_placements[node_indices[edges[x][0]]],
-            reverse=True
-        ):
-            arc_bounds[edge_idx].append((node_placements[node_idx], 0))
+    node_placements = _calculate_node_placements(node_sizes)
+    arc_bounds = _calculate_arc_bounds(nodes, edges, node_placements)
 
     node_scatter = go.Scatter(
         x=node_placements,
@@ -606,26 +683,7 @@ def make_arc_plot(
         hoverinfo="text"
     )
 
-    arcs: tp.List[go.scatter] = []
-    for idx, arc_ends in arc_bounds.items():
-        point0 = arc_ends[0]
-        point2 = arc_ends[1]
-        points = _make_arc(np.asarray(point0), np.asarray(point2), 25)
-        x, y = zip(*points)
-
-        arcs.append(
-            go.Scatter(
-                x=x,
-                y=y,
-                name='',
-                mode='lines',
-                line=go.scatter.Line(
-                    width=1, color=edge_colors[idx], shape='spline'
-                ),
-                text=edges[idx][2].get("info", ""),
-                hoverinfo="text"
-            )
-        )
+    arcs = _create_arcs(edges, arc_bounds, edge_colors)
 
     layout = _make_layout(title, size)
     data = arcs + [node_scatter]
