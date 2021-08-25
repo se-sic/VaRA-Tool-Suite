@@ -43,15 +43,15 @@ def _angular_to_cartesian(angular: np.typing.ArrayLike) -> np.ndarray:
     ])
 
 
-def _get_b1(b0: np.ndarray, b2: np.ndarray) -> np.ndarray:
-    """Given two points b0 and b2, finds a point b1 such that b0b1b2 forms an
+def _get_b1(point0: np.ndarray, point2: np.ndarray) -> np.ndarray:
+    """Given two points p0 and p2, finds a point p1 such that p0p1p2 forms an
     equilateral triangle."""
-    if len(b0) != 2 and len(b2) != 2:
-        raise ValueError('b0 and b2 must have exactly 2 elements.')
-    b1 = 0.5 * (b0 + b2) + 0.5 * np.asarray(
-        [0, 1.0 * np.sign(b2[0] - b0[0])]
-    ) * np.sqrt(3) * np.linalg.norm(b2 - b0)
-    return np.asarray(b1)
+    if len(point0) != 2 and len(point2) != 2:
+        raise ValueError('p0 and p2 must have exactly 2 elements.')
+    point1 = 0.5 * (point0 + point2) + 0.5 * np.asarray([
+        0, 1.0 * np.sign(point2[0] - point0[0])
+    ]) * np.sqrt(3) * np.linalg.norm(point2 - point0)
+    return np.asarray(point1)
 
 
 def _dim_plus_1(
@@ -71,41 +71,45 @@ def _dim_plus_1(
 
 
 def _make_bezier_curve(control_points: np.ndarray,
-                       nr: int) -> tp.List[np.ndarray]:
+                       num_points: int) -> tp.List[np.ndarray]:
     """Evaluate nr equally spaced points on a bezier curve defined by the given
     control points."""
     control_points = np.asarray(control_points)
-    n = control_points.shape[0]
-    nr = max(0, nr)
-    t = np.linspace(0, 1, nr)
+    num_control_points = control_points.shape[0]
+    num_points = max(0, num_points)
+    distances = np.linspace(0, 1, num_points)
     points = []
     # For each parameter t[i] evaluate a point on the Bezier curve with the
     # de Casteljau algorithm.
-    for i in range(nr):
-        aa = np.copy(control_points)
-        for r in range(1, n):
-            aa[:n - r, :] = \
-                (1 - t[i]) * aa[:n - r, :] + t[i] * aa[1:n - r + 1, :]
-        points.append(aa[0, :])
+    for i in range(num_points):
+        control_points_copy = np.copy(control_points)
+        for ctrl_idx in range(1, num_control_points):
+            control_points_copy[:num_control_points - ctrl_idx, :] = (
+                (1 - distances[i]) *
+                control_points_copy[:num_control_points - ctrl_idx, :] +
+                distances[i] *
+                control_points_copy[1:num_control_points - ctrl_idx + 1, :]
+            )
+        points.append(control_points_copy[0, :])
     return points
 
 
-def _make_arc(b0: np.ndarray, b2: np.ndarray,
+def _make_arc(point0: np.ndarray, point2: np.ndarray,
               num_points: int) -> tp.List[np.ndarray]:
     """
     Make an arc (half-circle) with the given end points.
 
     Args:
-        b0: left end-point
-        b2: right end-point
+        point0: left end-point
+        point2: right end-point
         num_points: number of points to evaluate on the arc
 
     Returns:
         a list of points on the arc
     """
-    b1 = _get_b1(b0, b2)
-    a = _dim_plus_1([b0, b1, b2], [1, 0.5, 1])
-    discrete_curve = _make_bezier_curve(a, num_points)
+    point1 = _get_b1(point0, point2)
+    control_points = _dim_plus_1([point0, point1, point2], [1, 0.5, 1])
+    discrete_curve = _make_bezier_curve(control_points, num_points)
     return [p[:2] / p[2] for p in discrete_curve]
 
 
@@ -188,17 +192,17 @@ def _make_ideogram_arc(
                        2 * np.pi), _modulo_ab(ends[1], 0, 2 * np.pi)
         )
     length = (ends[1] - ends[0]) % 2 * np.pi
-    nr = 5 if length <= np.pi / 4 else int(num_points * length / np.pi)
+    num_points = 5 if length <= np.pi / 4 else int(num_points * length / np.pi)
 
     if ends[0] <= ends[1]:
-        theta = np.linspace(ends[0], ends[1], nr)
+        theta = np.linspace(ends[0], ends[1], num_points)
     else:
         ends = (
             _modulo_ab(ends[0], -np.pi,
                        np.pi), _modulo_ab(ends[1], -np.pi, np.pi)
         )
-        theta = np.linspace(ends[0], ends[1], nr)
-    points = zip([radius] * nr, theta)
+        theta = np.linspace(ends[0], ends[1], num_points)
+    points = zip([radius] * num_points, theta)
     return [_angular_to_cartesian(point) for point in points]
 
 
@@ -228,10 +232,10 @@ def _make_ribbon_arc(theta0: float, theta1: float) -> str:
             if theta0 * theta1 > 0:
                 raise ValueError('incorrect angle coordinates for ribbon')
 
-        nr = int(40 * (theta0 - theta1) / np.pi)
-        if nr <= 2:
-            nr = 3
-        theta = np.linspace(theta0, theta1, nr)
+        num_points = int(40 * (theta0 - theta1) / np.pi)
+        if num_points <= 2:
+            num_points = 3
+        theta = np.linspace(theta0, theta1, num_points)
         pts = np.exp(1j * theta)  # points on arc in polar complex form
 
         string_arc = ''
@@ -239,10 +243,11 @@ def _make_ribbon_arc(theta0: float, theta1: float) -> str:
             string_arc += 'L ' + str(pts.real[k]
                                     ) + ', ' + str(pts.imag[k]) + ' '
         return string_arc
-    else:
-        raise ValueError(
-            'the angle coordinates for an arc side of a ribbon must be in [0, 2*pi]'
-        )
+
+    raise ValueError(
+        "The angle coordinates for an arc side of a ribbon "
+        "must be in [0, 2*pi]"
+    )
 
 
 def _make_layout(title: str, plot_size: int) -> go.Layout:
@@ -269,28 +274,29 @@ def _make_layout(title: str, plot_size: int) -> go.Layout:
 ColorScaleTy = tp.List[tp.List[tp.Union[str, float]]]
 
 
-def get_color_at(colorscale: ColorScaleTy, s: float) -> str:
+def get_color_at(colorscale: ColorScaleTy, offset: float) -> str:
     """
     Plotly continuous colorscales assign colors to the range [0, 1]. This
     function computes the intermediate color for any value in that range.
 
     Args:
-        colorscale: a plotly continuous colorscale defined with RGB string colors
-        s: value in the range [0, 1]
+        colorscale:
+            a plotly continuous colorscale defined with RGB string colors
+        offset: value in the range [0, 1]
     Returns:
         color in rgb string format
     """
     if len(colorscale) < 1:
         raise ValueError("colorscale must have at least one color")
 
-    if s <= 0 or len(colorscale) == 1:
+    if offset <= 0 or len(colorscale) == 1:
         return str(colors.convert_colors_to_same_type(colorscale[0][1])[0][0])
-    if s >= 1:
+    if offset >= 1:
         return str(colors.convert_colors_to_same_type(colorscale[-1][1])[0][0])
 
     low_color = high_color = ""
     for cutoff, color in colorscale:
-        if s > float(cutoff):
+        if offset > float(cutoff):
             low_cutoff, low_color = float(cutoff), str(color)
         else:
             high_cutoff, high_color = float(cutoff), str(color)
@@ -304,15 +310,15 @@ def get_color_at(colorscale: ColorScaleTy, s: float) -> str:
         colors.find_intermediate_color(
             lowcolor=low_color,
             highcolor=high_color,
-            intermed=((s - low_cutoff) / (high_cutoff - low_cutoff)),
+            intermed=((offset - low_cutoff) / (high_cutoff - low_cutoff)),
             colortype="rgb"
         )
     )
 
 
 def add_alpha_channel(rgb_color: str, alpha: float) -> str:
-    r, g, b = colors.unlabel_rgb(rgb_color)
-    return f"rgba({r}, {g}, {b}, {alpha})"
+    red, green, blue = colors.unlabel_rgb(rgb_color)
+    return f"rgba({red}, {green}, {blue}, {alpha})"
 
 
 NodeTy = str
@@ -382,13 +388,13 @@ def make_chord_plot(
     # random.shuffle(ideogram_colors)
     ideogram_info: tp.List[go.Scatter] = []
     for idx, ends in enumerate(ideogram_ends):
-        z = _make_ideogram_arc(1.1, ends)
-        zi = _make_ideogram_arc(1.0, ends)
+        outer_arc_points = _make_ideogram_arc(1.1, ends)
+        inner_arc_points = _make_ideogram_arc(1.0, ends)
 
         points: tp.List[np.ndarray] = []
-        points.extend(z)
-        points.extend(zi[::-1])
-        points.append(z[0])
+        points.extend(outer_arc_points)
+        points.extend(inner_arc_points[::-1])
+        points.append(outer_arc_points[0])
         x, y = zip(*points)
 
         ideogram_info.append(
@@ -440,11 +446,19 @@ def make_chord_plot(
         right_arc = ribbon_ends[1]
         radius = 0.2
         num_points = 25
-        b, c = _ribbon_control_points(left_arc, right_arc[::-1], radius)
+        control_points_left, control_points_right = _ribbon_control_points(
+            left_arc, right_arc[::-1], radius
+        )
         points = []
-        points.extend(_make_bezier_curve(np.asarray(c), num_points))
+        points.extend(
+            _make_bezier_curve(np.asarray(control_points_right), num_points)
+        )
         points.extend(_make_ideogram_arc(1.0, right_arc))
-        points.extend(_make_bezier_curve(np.asarray(b[::-1]), num_points))
+        points.extend(
+            _make_bezier_curve(
+                np.asarray(control_points_left[::-1]), num_points
+            )
+        )
         points.extend(_make_ideogram_arc(1.0, left_arc))
         x, y = zip(*points)
 
@@ -467,6 +481,7 @@ def make_chord_plot(
 
 
 class ArcPlotNodeInfo(TypedDict):
+    """Data attached to arc plot nodes."""
     fill_color: int
     line_color: int
     info: str
@@ -474,6 +489,7 @@ class ArcPlotNodeInfo(TypedDict):
 
 
 class ArcPlotEdgeInfo(TypedDict):
+    """Data attached to arc plot edges."""
     color: int
     info: str
     size: int
@@ -537,7 +553,7 @@ def make_arc_plot(
     incoming_edges: tp.Dict[NodeTy, tp.List[int]] = defaultdict(list)
     outgoing_edges: tp.Dict[NodeTy, tp.List[int]] = defaultdict(list)
     for idx, edge in enumerate(edges):
-        source, sink, info = edge
+        source, sink, _ = edge
         outgoing_edges[source].append(idx)
         incoming_edges[sink].append(idx)
     node_sizes = [
@@ -545,31 +561,27 @@ def make_arc_plot(
     ]
     node_indices = {node[0]: idx for idx, node in enumerate(nodes)}
     node_placements = []
-    dx = 0
+    offset_x = 0
     for node_size in node_sizes:
-        dx += node_size / 2
-        node_placements.append(dx)
-        dx += node_size / 2
+        offset_x += node_size / 2
+        node_placements.append(offset_x)
+        offset_x += node_size / 2
 
     arc_bounds: tp.Dict[int, tp.List[tp.Tuple[float,
                                               float]]] = defaultdict(list)
     arc_sizes: tp.Dict[int, int] = {}
     for node_idx, node in enumerate(nodes):
-        for i, edge_idx in enumerate(
-            sorted(
-                outgoing_edges[node[0]],
-                key=lambda x: node_placements[node_indices[edges[x][1]]],
-                reverse=True
-            )
+        for edge_idx in sorted(
+            outgoing_edges[node[0]],
+            key=lambda x: node_placements[node_indices[edges[x][1]]],
+            reverse=True
         ):
             arc_bounds[edge_idx].insert(0, (node_placements[node_idx], 0))
             arc_sizes[edge_idx] = edges[edge_idx][2].get("size", 1)
-        for i, edge_idx in enumerate(
-            sorted(
-                incoming_edges[node[0]],
-                key=lambda x: node_placements[node_indices[edges[x][0]]],
-                reverse=True
-            )
+        for edge_idx in sorted(
+            incoming_edges[node[0]],
+            key=lambda x: node_placements[node_indices[edges[x][0]]],
+            reverse=True
         ):
             arc_bounds[edge_idx].append((node_placements[node_idx], 0))
 
@@ -596,9 +608,9 @@ def make_arc_plot(
 
     arcs: tp.List[go.scatter] = []
     for idx, arc_ends in arc_bounds.items():
-        b0 = arc_ends[0]
-        b2 = arc_ends[1]
-        points = _make_arc(np.asarray(b0), np.asarray(b2), 25)
+        point0 = arc_ends[0]
+        point2 = arc_ends[1]
+        points = _make_arc(np.asarray(point0), np.asarray(point2), 25)
         x, y = zip(*points)
 
         arcs.append(

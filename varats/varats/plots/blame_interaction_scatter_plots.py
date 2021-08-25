@@ -51,11 +51,11 @@ def apply_tukeys_fence(
     Returns:
         the data without outliers
     """
-    q1 = data[column].quantile(0.25)
-    q3 = data[column].quantile(0.75)
-    iqr = q3 - q1
-    return data.loc[(data[column] >= q1 - k * iqr) &
-                    (data[column] <= q3 + k * iqr)]
+    quartile_1 = data[column].quantile(0.25)
+    quartile_3 = data[column].quantile(0.75)
+    iqr = quartile_3 - quartile_1
+    return data.loc[(data[column] >= quartile_1 - k * iqr) &
+                    (data[column] <= quartile_3 + k * iqr)]
 
 
 class CentralCodeScatterPlot(Plot):

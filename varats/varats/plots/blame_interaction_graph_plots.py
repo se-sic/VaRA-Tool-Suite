@@ -6,7 +6,6 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import networkx as nx
-import numpy as np
 import pandas as pd
 import plotly.offline as offply
 from matplotlib import style
@@ -22,7 +21,6 @@ from varats.data.reports.blame_report import BlameReport
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
-from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot, PlotArgMissing, PlotDataEmpty
 from varats.plots.chord_plot_utils import (
     make_chord_plot,
@@ -86,7 +84,7 @@ class CommitInteractionGraphChordPlot(Plot):
         project_name = self.plot_kwargs["project"]
         revision = self.plot_kwargs.get("revision", None)
         if not revision:
-            raise PlotArgMissing(f"'revision' was not specified.")
+            raise PlotArgMissing("'revision' was not specified.")
 
         commit_lookup = create_commit_lookup_helper(project_name)
 
@@ -164,7 +162,7 @@ class CommitInteractionGraphArcPlot(Plot):
         project_name = self.plot_kwargs["project"]
         revision = self.plot_kwargs.get("revision", None)
         if not revision:
-            raise PlotArgMissing(f"'revision' was not specified.")
+            raise PlotArgMissing("'revision' was not specified.")
 
         commit_lookup = create_commit_lookup_helper(project_name)
 
@@ -254,7 +252,7 @@ class CommitInteractionGraphNodeDegreePlot(Plot):
         fig, axes = plt.subplots(1, 1, sharey="all")
         fig.subplots_adjust(hspace=0.5)
 
-        fig.suptitle(f"Commit Interaction Graph - Node Degrees")
+        fig.suptitle("Commit Interaction Graph - Node Degrees")
         axes.set_title(case_study.project_name)
         axes.set_ylabel("Degree")
         xlabel = ""
@@ -340,7 +338,7 @@ class AuthorInteractionGraphNodeDegreePlot(Plot):
         fig, axes = plt.subplots(1, 1, sharey="all")
         fig.subplots_adjust(hspace=0.5)
 
-        fig.suptitle(f"Author Interaction Graph - Node Degrees")
+        fig.suptitle("Author Interaction Graph - Node Degrees")
         axes.set_title(case_study.project_name)
         axes.set_ylabel("Degree")
         axes.set_xlabel("Authors")
@@ -404,7 +402,7 @@ class CommitAuthorInteractionGraphNodeDegreePlot(Plot):
         fig, axes = plt.subplots(1, 1, sharey="all")
         fig.subplots_adjust(hspace=0.5)
 
-        fig.suptitle(f"Commit-Author Interaction Graph - # Interacting Authors")
+        fig.suptitle("Commit-Author Interaction Graph - # Interacting Authors")
         axes.set_title(case_study.project_name)
         axes.set_ylabel("Authors")
         axes.set_xlabel("Commits")

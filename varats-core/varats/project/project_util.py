@@ -388,7 +388,8 @@ class VaraTestRepoSubmodule(GitSubmodule):  # type: ignore  # pylint: disable=R0
         return submodule_target
 
 
-class VaraTestRepoSource(Git):  # type: ignore
+# TODO (se-passau/VaRA#717): Remove pylint's disable when issue is fixed
+class VaraTestRepoSource(Git):  # type: ignore  # pylint: disable=R0901;
     """A project source for repositories stored in the vara-test-repos
     repository."""
 

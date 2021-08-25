@@ -44,7 +44,7 @@ class CodeCentralityPlot(Plot):
         fig, axes = plt.subplots(1, 1, sharey="all")
         fig.subplots_adjust(hspace=0.5)
 
-        fig.suptitle(f"Central Code")
+        fig.suptitle("Central Code")
         axes.set_title(case_study.project_name)
         axes.set_ylabel("Code Centrality")
         axes.set_xlabel("Commits")

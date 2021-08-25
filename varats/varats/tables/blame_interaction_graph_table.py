@@ -8,9 +8,7 @@ from tabulate import tabulate
 
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
-    CIGNodeAttrs,
     AIGNodeAttrs,
-    CAIGNodeAttrs,
     create_file_based_interaction_graph,
 )
 from varats.data.reports.blame_report import BlameReport

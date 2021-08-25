@@ -225,6 +225,7 @@ class CommitAuthorInteractionGraphGrid(Plot):
             def filter_nodes(node: CommitRepoPair) -> bool:
                 if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
                     return False
+                # pylint: disable=cell-var-from-loop
                 return bool(commit_lookup(node))
 
             revision = newest_processed_revision_for_case_study(
@@ -279,7 +280,6 @@ class CommitAuthorInteractionGraphGrid(Plot):
             degree_data.append(data)
 
         full_data = pd.concat(degree_data)
-        # full_data = full_data[full_data["insertions"] <= 0.2]
         grid = sns.PairGrid(
             x_vars=["node_degree", "insertions"],
             y_vars=["num_authors"],

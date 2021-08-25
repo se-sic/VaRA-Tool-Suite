@@ -15,7 +15,7 @@ import zipfile
 from datetime import datetime
 
 import requests
-import requests_cache  # type: ignore
+# import requests_cache  # type: ignore
 from packaging.version import LegacyVersion, Version
 from packaging.version import parse as version_parse
 from tabulate import tabulate
@@ -337,6 +337,6 @@ def find_cwe(
 
 
 # Cache all requests to limit external requests for a week
-requests_cache.install_cache(
-    f"{str(vara_cfg()['data_cache'])}/requests_cache", expire_after=604800
-)
+# requests_cache.install_cache(
+#     f"{str(vara_cfg()['data_cache'])}/requests_cache", expire_after=604800
+# )

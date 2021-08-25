@@ -205,7 +205,7 @@ def build_cached_graph(
 
     if path.exists():
         return tp.cast(GraphTy, nx.read_gpickle(path))
-    else:
-        graph = create_graph()
-        nx.write_gpickle(graph, path)
-        return graph
+
+    graph = create_graph()
+    nx.write_gpickle(graph, path)
+    return graph

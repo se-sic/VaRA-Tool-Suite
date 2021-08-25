@@ -109,22 +109,27 @@ class InteractionGraph(abc.ABC):
         Returns:
             the commit interaction graph
         """
-        ig = self._interaction_graph()
+        interaction_graph = self._interaction_graph()
 
         def edge_data(
-            b: tp.Set[CommitRepoPair], c: tp.Set[CommitRepoPair]
+            source: tp.Set[CommitRepoPair], sink: tp.Set[CommitRepoPair]
         ) -> CIGEdgeAttrs:
-            assert len(b) == len(c) == 1, "Some node has more than one commit."
+            assert len(source) == len(
+                sink
+            ) == 1, "Some node has more than one commit."
             return tp.cast(
-                CIGEdgeAttrs, ig[next(iter(b))][next(iter(c))].copy()
+                CIGEdgeAttrs,
+                interaction_graph[next(iter(source))][next(iter(sink))].copy()
             )
 
-        def node_data(b: tp.Set[CommitRepoPair]) -> CIGNodeAttrs:
-            assert len(b) == 1, "Some node has more than one commit."
-            return tp.cast(CIGNodeAttrs, ig.nodes[next(iter(b))].copy())
+        def node_data(node: tp.Set[CommitRepoPair]) -> CIGNodeAttrs:
+            assert len(node) == 1, "Some node has more than one commit."
+            return tp.cast(
+                CIGNodeAttrs, interaction_graph.nodes[next(iter(node))].copy()
+            )
 
         cig = nx.quotient_graph(
-            ig,
+            interaction_graph,
             partition=lambda u, v: False,
             edge_data=edge_data,
             node_data=node_data,
@@ -152,43 +157,46 @@ class InteractionGraph(abc.ABC):
         Returns:
             the author interaction graph
         """
-        ig = self._interaction_graph()
+        interaction_graph = self._interaction_graph()
         commit_lookup = create_commit_lookup_helper(self.project_name)
 
-        def partition(u: CommitRepoPair, v: CommitRepoPair) -> bool:
-            if u.commit_hash == UNCOMMITTED_COMMIT_HASH or v.commit_hash == UNCOMMITTED_COMMIT_HASH:
-                return u.commit_hash == v.commit_hash
-            return str(commit_lookup(u).author.name
-                      ) == str(commit_lookup(v).author.name)
+        def partition(node_u: CommitRepoPair, node_v: CommitRepoPair) -> bool:
+            if UNCOMMITTED_COMMIT_HASH in (
+                node_u.commit_hash, node_v.commit_hash
+            ):
+                return node_u.commit_hash == node_v.commit_hash
+            return str(commit_lookup(node_u).author.name
+                      ) == str(commit_lookup(node_v).author.name)
 
         def edge_data(
-            b: tp.Set[CommitRepoPair], c: tp.Set[CommitRepoPair]
+            partition_a: tp.Set[CommitRepoPair],
+            partition_b: tp.Set[CommitRepoPair]
         ) -> AIGEdgeAttrs:
             amount = 0
             interactions: tp.List[tp.Tuple[CommitRepoPair, CommitRepoPair]] = []
-            for source in b:
-                for sink in c:
-                    if ig.has_edge(source, sink):
-                        amount += int(ig[source][sink]["amount"])
+            for source in partition_a:
+                for sink in partition_b:
+                    if interaction_graph.has_edge(source, sink):
+                        amount += int(interaction_graph[source][sink]["amount"])
                         interactions.append((source, sink))
 
             return {"amount": amount, "interactions": interactions}
 
-        def node_data(b: tp.Set[CommitRepoPair]) -> AIGNodeAttrs:
+        def node_data(node: tp.Set[CommitRepoPair]) -> AIGNodeAttrs:
             authors = {
                 str(commit_lookup(commit).author.name)
                 if commit.commit_hash != UNCOMMITTED_COMMIT_HASH else "Unknown"
-                for commit in b
+                for commit in node
             }
             assert len(authors) == 1, "Some node has more then one author."
             return {
                 "author": next(iter(authors)),
-                "num_commits": len(b),
-                "commits": list(b)
+                "num_commits": len(node),
+                "commits": list(node)
             }
 
         aig = nx.quotient_graph(
-            ig,
+            interaction_graph,
             partition=partition,
             edge_data=edge_data,
             node_data=node_data,
@@ -225,32 +233,34 @@ class InteractionGraph(abc.ABC):
         Returns:
             the commit-author interaction graph
         """
-        ig = self._interaction_graph()
+        interaction_graph = self._interaction_graph()
         commit_lookup = create_commit_lookup_helper(self.project_name)
 
         commit_author_mapping = {
             commit: commit_lookup(commit).author.name
             if commit.commit_hash != UNCOMMITTED_COMMIT_HASH else "Unknown"
-            for commit in (list(ig.nodes))
+            for commit in (list(interaction_graph.nodes))
         }
         caig = nx.DiGraph()
         # add commits as nodes
-        caig.add_nodes_from([
-            (commit, {
-                "commit": ig.nodes[commit]["commit"],
+        caig.add_nodes_from([(
+            commit, {
+                "commit": interaction_graph.nodes[commit]["commit"],
                 "author": None
-            }) for commit in (list(ig.nodes))
-        ])
+            }
+        ) for commit in list(interaction_graph.nodes)])
         # add authors as nodes
         caig.add_nodes_from([(author, {
             "commit": None,
             "author": author
-        }) for author in (set(commit_author_mapping.values()))])
+        }) for author in set(commit_author_mapping.values())])
 
         # add edges and aggregate edge attributes
-        for node in ig.nodes:
+        for node in interaction_graph.nodes:
             if incoming_interactions:
-                for source, sink, data in ig.in_edges(node, data=True):
+                for source, sink, data in interaction_graph.in_edges(
+                    node, data=True
+                ):
                     if not caig.has_edge(source, commit_author_mapping[sink]):
                         caig.add_edge(
                             source, commit_author_mapping[sink], amount=0
@@ -258,7 +268,9 @@ class InteractionGraph(abc.ABC):
                     caig[source][commit_author_mapping[sink]
                                 ]["amount"] += data["amount"]
             if outgoing_interactions:
-                for source, sink, data in ig.out_edges(node, data=True):
+                for source, sink, data in interaction_graph.out_edges(
+                    node, data=True
+                ):
                     if not caig.has_edge(sink, commit_author_mapping[source]):
                         caig.add_edge(
                             sink, commit_author_mapping[source], amount=0
@@ -295,6 +307,7 @@ class BlameInteractionGraph(InteractionGraph):
                     "commit": commit,
                 }
 
+            # pylint: disable=unused-argument
             def create_edge_attrs(
                 base: CommitRepoPair, inter: CommitRepoPair, amount: int
             ) -> _BIGEdgeAttrs:
@@ -339,7 +352,7 @@ class FileBasedInteractionGraph(InteractionGraph):
 
             blame_regex = re.compile(r"^([0-9a-f]+)\s+(?:.+\s+)?[\d]+\) ?(.*)$")
 
-            for repo_name, repo in repos.items():
+            for repo_name in repos:
                 repo_path = get_local_project_git_path(
                     self.project_name, repo_name
                 )
@@ -356,7 +369,7 @@ class FileBasedInteractionGraph(InteractionGraph):
                     for path in file_names
                     if file_pattern.search(path)
                 ]
-                for num, file in enumerate(files):
+                for file in files:
                     commits: tp.Set[CommitRepoPair] = set()
                     blame_lines: str = project_git(
                         "blame", "-w", "-s", "-l", "--root", head_commit, "--",
@@ -415,7 +428,7 @@ def create_blame_interaction_graph(
     if revision:
 
         def match_revision(rev: str) -> bool:
-            return True if rev == revision else False
+            return rev == revision
 
         file_name_filter = match_revision
 

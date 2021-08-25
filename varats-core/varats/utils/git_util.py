@@ -7,7 +7,7 @@ from enum import Enum
 from pathlib import Path
 
 import pygit2
-from benchbuild.utils.cmd import git, wc
+from benchbuild.utils.cmd import git
 from plumbum import local
 
 from varats.project.project_util import (
@@ -376,8 +376,8 @@ def get_submodule_head(
     match = commit_pattern.search(submodule_status)
     if match:
         return FullCommitHash(match.group(1))
-    else:
-        raise AssertionError(f"Unknown submodule {submodule_name}")
+
+    raise AssertionError(f"Unknown submodule {submodule_name}")
 
 
 MappedCommitResultType = tp.TypeVar("MappedCommitResultType")

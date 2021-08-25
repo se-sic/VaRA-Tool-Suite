@@ -65,6 +65,16 @@ class ExtenderStrategy(Enum):
 def newest_processed_revision_for_case_study(
     case_study: CaseStudy, result_file_type: tp.Type[BaseReport]
 ) -> tp.Optional[FullCommitHash]:
+    """
+    Computes the newest revision of this case study that has been processed.
+
+    Args:
+        case_study: to work on
+        result_file_type: report type of the result files
+
+    Returns:
+        the newest processed revision if available
+    """
     processed_revisions = processed_revisions_for_case_study(
         case_study, result_file_type
     )
@@ -72,9 +82,7 @@ def newest_processed_revision_for_case_study(
         return None
 
     commit_map = get_commit_map(case_study.project_name)
-    processed_revisions.sort(
-        key=lambda rev: commit_map.time_id(rev), reverse=True
-    )
+    processed_revisions.sort(key=commit_map.time_id, reverse=True)
     return processed_revisions[0]
 
 
