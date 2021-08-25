@@ -428,7 +428,7 @@ def _create_ribbons(
     edges: tp.List[tp.Tuple[NodeTy, NodeTy, ChordPlotEdgeInfo]],
     ribbon_bounds: tp.Dict[int, tp.List[tp.Tuple[float, float]]],
     ribbon_colors: tp.Dict[int, str]
-) -> tp.List[go.scatter]:
+) -> tp.List[go.Scatter]:
     ribbon_info: tp.List[go.scatter] = []
     for idx, ribbon_ends in ribbon_bounds.items():
         left_arc = ribbon_ends[0]
