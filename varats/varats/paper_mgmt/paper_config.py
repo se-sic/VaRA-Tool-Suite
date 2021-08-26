@@ -23,7 +23,7 @@ from varats.paper_mgmt.artefacts import (
     store_artefacts,
 )
 from varats.utils.exceptions import ConfigurationLookupError
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_util import FullCommitHash, ShortCommitHash
 from varats.utils.settings import vara_cfg
 
 

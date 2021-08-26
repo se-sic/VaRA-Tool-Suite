@@ -96,6 +96,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         'varats.experiments.vara.marker_tester',
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.phasar_fta',
+        'varats.experiments.vara.feature_region_verifier_experiment',
         'varats.experiments.phasar.ide_linear_constant_experiment',
         'varats.experiments.szz.szz_unleashed_experiment',
         'varats.experiments.szz.pydriller_szz_experiment',
