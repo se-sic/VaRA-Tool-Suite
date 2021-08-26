@@ -76,7 +76,7 @@ class FeatureRegionGeneration(actions.Step):  # type: ignore
       )
 
       opt_params = [
-        "-vara-FR-verifier",
+        "-vara-PTFD", "-vara-FR-verifier",
         get_cached_bc_file_path(
           project, binary, [BCFileExtensions.NO_OPT,
             BCFileExtensions.TBAA,
