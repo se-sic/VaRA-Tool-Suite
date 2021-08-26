@@ -118,8 +118,12 @@ class CentralCodeScatterPlot(Plot):
         )
 
         ax = grid.ax_joint
-        ax.axvline(data["Commit Size"].quantile(0.20), color="red")
-        ax.axhline(data["Node Degree"].quantile(0.80), color="red")
+        ax.axvline(
+            data["Commit Size"].quantile(0.20), color="#777777", linewidth=3
+        )
+        ax.axhline(
+            data["Node Degree"].quantile(0.80), color="#777777", linewidth=3
+        )
 
         # highlight_data = data[data["commit_hash"] == FullCommitHash(
         #     "348e6946c187eb68839e71a03101d75b5865a389"
@@ -130,7 +134,9 @@ class CentralCodeScatterPlot(Plot):
         #     y=highlight_data["Node Degree"],
         #     color="red",
         #     marker="x",
-        #     linewidth=2
+        #     s=200,
+        #     linewidth=5,
+        #     zorder=2.01  # draw above lines
         # )
         # ax.annotate(
         #     "348e694",
@@ -138,7 +144,8 @@ class CentralCodeScatterPlot(Plot):
         #     xycoords="data",
         #     xytext=(0.2, 0.9),
         #     textcoords='axes fraction',
-        #     arrowprops=dict(arrowstyle="-|>", shrinkB=5, facecolor="black")
+        #     size=20,
+        #     arrowprops=dict(arrowstyle="simple", shrinkB=10, facecolor="black")
         # )
 
     def calc_missing_revisions(
