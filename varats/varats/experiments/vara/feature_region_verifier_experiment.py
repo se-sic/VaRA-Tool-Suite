@@ -27,7 +27,7 @@ from varats.experiment.experiment_util import (
 )
 from varats.experiment.wllvm import (
     RunWLLVM,
-    _create_default_bc_file_creation_actions,
+    get_bc_cache_actions,
     get_cached_bc_file_path,
     BCFileExtensions,
 )
@@ -116,6 +116,9 @@ class FeatureRegionVerificationExperiment(VersionExperiment):
     NAME = "GenerateFeatureRegionReport"
 
     REPORT_SPEC = ReportSpecification(FRR)
+    REQUIRED_EXTENSIONS = [
+        BCFileExtensions.NO_OPT, BCFileExtensions.TBAA, BCFileExtensions.FEATURE
+    ]
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """
@@ -130,6 +133,7 @@ class FeatureRegionVerificationExperiment(VersionExperiment):
         # build without optimizations because the used build tool/script can
         # still add optimizations flags after the experiment specified cflags.
         project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g0"]
+        # TODO: missing arg for feature model
 
         project.runtime_extension = run.RuntimeExtension(project, self) \
             << time.RunWithTime()
@@ -144,15 +148,13 @@ class FeatureRegionVerificationExperiment(VersionExperiment):
             FeatureRegionGeneration.RESULT_FOLDER_TEMPLATE
         )
 
-        analysis_actions = _create_default_bc_file_creation_actions(
-            project, [
-                BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
-                BCFileExtensions.BLAME
-            ],
+        analysis_actions = get_bc_cache_actions(
+            project, self.REQUIRED_EXTENSIONS,
             create_default_compiler_error_handler(
                 project, self.REPORT_SPEC.main_report
             )
         )
+
         analysis_actions.append(
             FeatureRegionGeneration(project, self.REPORT_SPEC)
         )
