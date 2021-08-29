@@ -303,7 +303,7 @@ class VersionExperiment(Experiment):  # type: ignore
                 )
 
             bad_revisions = [
-                # TODO: clean up
+                # TODO (se-sic/VaRA#791): clean up usage of report spec
                 revision.hash for revision, file_status in get_tagged_revisions(
                     prj_cls,
                     getattr(cls, 'REPORT_SPEC').main_report
