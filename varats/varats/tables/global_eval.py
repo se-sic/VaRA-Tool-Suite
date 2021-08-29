@@ -1,6 +1,7 @@
 """Module for phasar global analysis evaluation table."""
 import logging
 import typing as tp
+from pathlib import Path
 
 import pandas as pd
 from scipy.stats import pearsonr
@@ -20,7 +21,7 @@ from varats.paper_mgmt.case_study import (
     get_case_study_file_name_filter,
 )
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
-from varats.project.project_util import get_project_cls_by_case_study
+from varats.project.project_util import ProjectBinaryWrapper
 from varats.report.report import ReportFilename
 from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table, wrap_table_in_document, TableFormat
@@ -74,13 +75,23 @@ def create_df_for_report(report: tp.Optional[tp.Any], name_id) -> pd.DataFrame:
         cs_dict["Runs"] = "-"
 
     # Handle list
-    cs_dict = {}
+    cs_dict: tp.Dict[str, tp.Any] = {}
     if report:
         fill_in_data(cs_dict, report)
     else:
         fill_in_empty(cs_dict)
 
     return pd.DataFrame.from_dict({name_id: cs_dict}, orient="index")
+
+
+def filter_report_paths_binary(
+    report_files: tp.List[Path], binary: ProjectBinaryWrapper
+) -> tp.List[Path]:
+    return list(
+        filter(
+            lambda x: ReportFilename(x).binary_name == binary.name, report_files
+        )
+    )
 
 
 class PhasarGlobalsDataComparision(Table):
@@ -118,63 +129,50 @@ class PhasarGlobalsDataComparision(Table):
                 if res is not None:
                     cs_data.append(res)
 
-            project_type = get_project_cls_by_case_study(case_study)
-            # TODO: fix binary property to be static?
-            # for binary in project.binaries:
-            #     # With
-            #     report_files_with_for_binary = list(
-            #         filter(
-            #             lambda x: ReportFilename(x).binary_name == binary.name,
-            #             report_files_with
-            #         )
-            #     )
-
-            #     report_with: tp.Optional[GlobalsReportWith] = None
-            #     if report_files_with_for_binary:
-            #         report_with = load_globals_with_report(
-            #             report_files_with_for_binary[0]
-            #         )
-
-            #     insert_data_if_present(
-            #         report_with, case_study.project_name, cs_data
-            #     )
-
-            #     # Without
-            #     report_files_without_for_binary = list(
-            #         filter(
-            #             lambda x: ReportFilename(x).binary_name == binary.name,
-            #             report_files_without
-            #         )
-            #     )
-
-            #     report_without: tp.Optional[GlobalsReportWithout] = None
-            #     if report_files_without_for_binary:
-            #         report_without = load_globals_without_report(
-            #             report_files_without_for_binary[0]
-            #         )
-
-            #     insert_data_if_present(
-            #         report_without, case_study.project_name, cs_data
-            #     )
-            # With
-            report_with: tp.Optional[GlobalsReportWith] = None
-            if report_files_with:
-                report_with = load_globals_with_report(report_files_with[0])
-
-            insert_data_if_present(
-                report_with, case_study.project_name, cs_data
-            )
-
-            # Without
-            report_without: tp.Optional[GlobalsReportWithout] = None
-            if report_files_without:
-                report_without = load_globals_without_report(
-                    report_files_without[0]
+            if len(case_study.revisions) > 1:
+                LOG.debug(
+                    "This tabled is only designed for usage with one revision "
+                    "but we found more. All revisions expect for the first "
+                    "one are ignored."
                 )
 
-            insert_data_if_present(
-                report_without, case_study.project_name, cs_data
-            )
+            for binary in case_study.project_cls.binaries_for_revision(
+                case_study.revisions[0]
+            ):
+                if len(
+                    case_study.project_cls.binaries_for_revision(
+                        case_study.revisions[0]
+                    )
+                ) > 1:
+                    unique_cs_name = case_study.project_name + "-" + binary.name
+                else:
+                    unique_cs_name = case_study.project_name
+
+                # With
+                report_files_with_for_binary = filter_report_paths_binary(
+                    report_files_with, binary
+                )
+
+                report_with: tp.Optional[GlobalsReportWith] = None
+                if report_files_with_for_binary:
+                    report_with = load_globals_with_report(
+                        report_files_with_for_binary[0]
+                    )
+
+                insert_data_if_present(report_with, unique_cs_name, cs_data)
+
+                # Without
+                report_files_without_for_binary = filter_report_paths_binary(
+                    report_files_without, binary
+                )
+
+                report_without: tp.Optional[GlobalsReportWithout] = None
+                if report_files_without_for_binary:
+                    report_without = load_globals_without_report(
+                        report_files_without_for_binary[0]
+                    )
+
+                insert_data_if_present(report_without, unique_cs_name, cs_data)
 
         df = pd.concat(cs_data)
         df = df.round(2)
@@ -196,7 +194,7 @@ class PhasarGlobalsDataComparision(Table):
                 f"{rho_p[1]:.3f}."
                 f" In total we analyzed {len(rggs)} binaries from "
                 f"{len(rggs)-1} different projects. "
-                f"Relative mean stddev {mean_stddev:.1f}$\%$"
+                f"Relative mean stddev {mean_stddev:.1f}$\\%$"
             )
             table = df.to_latex(
                 bold_rows=True,
