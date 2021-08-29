@@ -35,10 +35,10 @@ from varats.utils.settings import bb_cfg
 
 
 class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
-    """Analyse a project with VaRA and generate a BlameReport."""
+    """Analyse a project with and without phasars global support."""
 
-    NAME = "BlameReportGeneration"
-    DESCRIPTION = "Analyses the bitcode with -vara-BR of VaRA."
+    NAME = "GlobalsReportGeneration"
+    DESCRIPTION = "Run phasar LCA with and without globals support"
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
@@ -51,14 +51,8 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
         self.__globals_active = globals_active
 
     def analyze(self) -> actions.StepResult:
-        """
-        This step performs the actual analysis with the correct command line
-        flags.
-
-        Flags used:
-            * -vara-BR: to run a commit flow report
-            * -yaml-report-outfile=<path>: specify the path to store the results
-        """
+        """This step performs the actual comparision, running the analysis with
+        and without phasars global support."""
         if not self.obj:
             return actions.StepResult.ERROR
         project = self.obj
