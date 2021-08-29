@@ -17,9 +17,6 @@ from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportOpt as BVR_Opt,
 )
 from varats.data.reports.blame_verifier_report import (
-    BlameVerifierReportNoOpt as BVR_NoOpt,
-)
-from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportNoOptTBAA as BVR_NoOptTBAA,
 )
 from varats.experiment.experiment_util import (
@@ -170,23 +167,6 @@ class BlameVerifierReportExperiment(VersionExperiment):
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
-
-
-class BlameVerifierReportExperimentNoOpt(BlameVerifierReportExperiment):
-    """Generates a Blame Verifier Report of the project(s) specified in the call
-    without any optimization (BVR_NoOpt)."""
-
-    NAME = "GenerateBlameVerifierReportNoOpt"
-
-    REPORT_SPEC = ReportSpecification(BVR_NoOpt)
-
-    def __init__(self, projects: Project) -> None:
-        super().__init__(
-            projects, '-O0', self.REPORT_SPEC.main_report, [
-                BCFileExtensions.DEBUG, BCFileExtensions.NO_OPT,
-                BCFileExtensions.BLAME
-            ]
-        )
 
 
 class BlameVerifierReportExperimentOpt(BlameVerifierReportExperiment):
