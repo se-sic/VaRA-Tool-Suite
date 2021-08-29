@@ -4,6 +4,8 @@ analysed for a project."""
 import typing as tp
 from pathlib import Path
 
+import benchbuild as bb
+
 from varats.base.configuration import Configuration
 from varats.base.sampling_method import (
     NormalSamplingMethod,
@@ -15,6 +17,7 @@ from varats.mapping.configuration_map import (
     ConfigurationMap,
     create_configuration_map_from_yaml_doc,
 )
+from varats.project.project_util import get_project_cls_by_name
 from varats.provider.release.release_provider import ReleaseType
 from varats.utils.git_util import ShortCommitHash, FullCommitHash, CommitHash
 from varats.utils.yaml_util import load_yaml, store_as_yaml
@@ -229,6 +232,16 @@ class CaseStudy():
         !! This name must match the name of the BB project !!
         """
         return self.__project_name
+
+    @property
+    def project_cls(self) -> tp.Type[bb.Project]:
+        """
+        Look up the BenchBuild project for this case study.
+
+        Returns:
+            project class
+        """
+        return get_project_cls_by_name(self.project_name)
 
     @property
     def version(self) -> int:
