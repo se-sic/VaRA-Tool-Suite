@@ -31,7 +31,7 @@ class GlobalsReport():
 
     def __init__(self, path: Path):
         run_blobs: tp.List[str] = []
-        with open(path, 'r') as report_file:  # pylint: disable=W212
+        with open(path, 'r') as report_file:
             tmp_blob: str = ""
             for line in report_file.readlines():
                 if line.startswith("----"):
@@ -119,8 +119,9 @@ class GlobalsReport():
 
     def extend_runs(self, other_report: 'GlobalsReport') -> None:
         """Add more runs to this report."""
-        # pylint: disable=W1514
+        # pylint: disable=W0212
         self._timings.extend(other_report._timings)
+        # pylint: enable=W0212
         self.__update_run_values()
 
     def __str__(self) -> str:
