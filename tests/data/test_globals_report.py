@@ -286,3 +286,43 @@ class TestGlobalsReport(unittest.TestCase):
         self.assertAlmostEqual(
             self.report_without.runtime_in_secs.stddev, 0.4, delta=0.02
         )
+
+    def test_str(self) -> None:
+        """Checks rendering of globals reports."""
+        self.assertEqual(
+            str(self.report_with), """{
+    "#analyzed-global-ctors": 0,
+    "#analyzed-global-dtors": 0,
+    "#global-distinct-types": 130,
+    "#global-int-typed": 49,
+    "#global-uses": 932,
+    "#global-vars": 455,
+    "#globals": 455,
+    "#non-top-vals-at-end": 46,
+    "#non-top-vals-at-start": 48,
+    "#required-globals-generation": 48,
+    "auto-globals": true,
+    "entry-points": "main (or all, if there is no main)",
+    "program": "/varats_root/BC_files/xz/xz-xz-e7da44d515-O0_TBAA.bc",
+    "mean time": "32.6 (+/- 0.80)"
+}"""
+        )
+
+        self.assertEqual(
+            str(self.report_without), """{
+    "#analyzed-global-ctors": 0,
+    "#analyzed-global-dtors": 0,
+    "#global-distinct-types": 130,
+    "#global-int-typed": 49,
+    "#global-uses": 932,
+    "#global-vars": 455,
+    "#globals": 455,
+    "#non-top-vals-at-end": 35,
+    "#non-top-vals-at-start": 0,
+    "#required-globals-generation": 48,
+    "auto-globals": false,
+    "entry-points": "main (or all, if there is no main)",
+    "program": "/varats_root/BC_files/xz/xz-xz-e7da44d515-O0_TBAA.bc",
+    "mean time": "26.2 (+/- 0.40)"
+}"""
+        )
