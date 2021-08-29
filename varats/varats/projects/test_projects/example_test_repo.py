@@ -11,9 +11,11 @@ from varats.project.project_util import (
     wrap_paths_to_binaries,
     BinaryType,
 )
+from varats.project.varats_project import VProject
+from varats.utils.git_util import ShortCommitHash
 
 
-class ExampleTestRepo(bb.Project):  # type: ignore
+class ExampleTestRepo(VProject):
     """Example project demonstrating how to use a repo from the vara-test-
     repos."""
 
@@ -31,8 +33,10 @@ class ExampleTestRepo(bb.Project):  # type: ignore
         )
     ]
 
-    @property
-    def binaries(self) -> tp.List[ProjectBinaryWrapper]:
+    @staticmethod
+    def binaries_for_revision(
+        revision: ShortCommitHash  # pylint: disable=W0613
+    ) -> tp.List[ProjectBinaryWrapper]:
         return wrap_paths_to_binaries([("main", BinaryType.EXECUTABLE)])
 
     def run_tests(self) -> None:
