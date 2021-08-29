@@ -43,7 +43,7 @@ class GlobalsReport():
         self.__data_from_first = json.loads(run_blobs[0])
         del self.__data_from_first["runtime-in-seconds"]
 
-        # Calculate timeings
+        # Calculate timings
         self._timings: tp.List[int] = []
         for run_blob in run_blobs:
             loaded_data = json.loads(run_blob)
