@@ -90,7 +90,7 @@ def build_plot(plot: 'varats.plot.plot.Plot') -> None:
     if plot.plot_kwargs["view"]:
         plot.show()
     else:
-        plot.save(filetype=plot.plot_kwargs['file_type'])
+        plot.save(filetype=plot.plot_kwargs['file_format'])
 
 
 @check_required_args(['plot_type', 'sep_stages'])
