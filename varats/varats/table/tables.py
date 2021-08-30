@@ -206,9 +206,9 @@ class TableArtefact(Artefact, artefact_type="table", artefact_type_version=1):
     An artefact defining a :class:`table<varats.tables.table.Table>`.
 
     Args:
-        name: The name of this artefact.
-        output_path: the path where the table this artefact produces will be
-                     stored
+        name: name of this artefact
+        output_dir: output dir relative to config value
+                    'artefacts/artefacts_dir'
         table_type: the :attr:`type of table
                     <varats.tables.tables.TableRegistry.tables>`
                     that will be generated
@@ -217,10 +217,10 @@ class TableArtefact(Artefact, artefact_type="table", artefact_type_version=1):
     """
 
     def __init__(
-        self, name: str, output_path: Path, table_type: str,
+        self, name: str, output_dir: Path, table_type: str,
         table_format: TableFormat, **kwargs: tp.Any
     ) -> None:
-        super().__init__(name, output_path)
+        super().__init__(name, output_dir)
         self.__table_type = table_type
         self.__table_type_class = TableRegistry.get_class_for_table_type(
             table_type
@@ -256,24 +256,24 @@ class TableArtefact(Artefact, artefact_type="table", artefact_type_version=1):
         artefact_dict = {**self.__table_kwargs, **artefact_dict}
         return artefact_dict
 
-    @classmethod
+    @staticmethod
     def create_artefact(
-        cls, name: str, output_path: Path, **kwargs: tp.Any
+        name: str, output_dir: Path, **kwargs: tp.Any
     ) -> 'Artefact':
         table_type = kwargs.pop('table_type')
         table_format = TableFormat[kwargs.pop('file_format', 'latex_booktabs')]
         return TableArtefact(
-            name, output_path, table_type, table_format, **kwargs
+            name, output_dir, table_type, table_format, **kwargs
         )
 
     def generate_artefact(self) -> None:
         """Generate the specified table."""
-        if not self.output_path.exists():
-            self.output_path.mkdir(parents=True)
+        if not self.output_dir.exists():
+            self.output_dir.mkdir(parents=True)
 
         build_tables(
             table_type=self.table_type,
-            result_output=self.output_path,
+            result_output=self.output_dir,
             file_format=self.file_format,
             **self.table_kwargs
         )
@@ -281,7 +281,7 @@ class TableArtefact(Artefact, artefact_type="table", artefact_type_version=1):
     def get_artefact_file_infos(self) -> tp.List[ArtefactFileInfo]:
         tables = prepare_tables(
             table_type=self.table_type,
-            result_output=self.output_path,
+            result_output=self.output_dir,
             file_format=self.file_format,
             **self.table_kwargs
         )

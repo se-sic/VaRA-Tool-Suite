@@ -7,27 +7,34 @@ from tempfile import NamedTemporaryFile
 from varats.paper_mgmt.artefacts import (
     load_artefacts_from_file,
     initialize_artefacts,
+    Artefacts,
+    Artefact,
 )
 from varats.plot.plots import PlotArtefact
 from varats.plots.paper_config_overview import PaperConfigOverviewGenerator
 from varats.utils.settings import vara_cfg
 
 YAML_ARTEFACTS = """DocType: Artefacts
-Version: 1
+Version: 2
 ---
 artefacts:
 - artefact_type: plot
   artefact_type_version: 2
   file_type: png
   name: overview
-  output_path: 'some/path'
+  output_dir: 'some/path'
+  plot_config: {}
   plot_generator: pc-overview-plot
   report_type: EmptyReport
+  view: false
 """
 
 
 class TestArtefacts(unittest.TestCase):
     """Test basic Artefact functionality."""
+
+    artefacts: Artefacts
+    artefact: PlotArtefact
 
     @classmethod
     def setUp(cls):
@@ -37,7 +44,7 @@ class TestArtefacts(unittest.TestCase):
             yaml_file.write(YAML_ARTEFACTS)
             yaml_file.seek(0)
             cls.artefacts = load_artefacts_from_file(Path(yaml_file.name))
-        cls.artefact = next(cls.artefacts.__iter__())
+        cls.artefact = tp.cast(PlotArtefact, next(cls.artefacts.__iter__()))
         if not isinstance(cls.artefact, PlotArtefact):
             raise AssertionError("Test artefact is not a PlotArtefact!")
 
@@ -54,10 +61,8 @@ class TestArtefacts(unittest.TestCase):
     def test_artefact_output_path(self):
         """Check if artefact output_path is loaded correctly."""
         self.assertEqual(
-            self.artefact.output_path,
-            Path(str(vara_cfg()['artefacts']['artefacts_dir'])) /
-            Path(str(vara_cfg()['paper_config']['current_config'])) /
-            'some/path'
+            self.artefact.output_dir,
+            Artefact.base_output_dir() / 'some/path'
         )
 
     def test_artefact_to_dict(self):
@@ -67,7 +72,7 @@ class TestArtefacts(unittest.TestCase):
         self.assertEqual(artefact_dict['artefact_type_version'], 2)
         self.assertEqual(artefact_dict['file_type'], 'png')
         self.assertEqual(artefact_dict['name'], 'overview')
-        self.assertEqual(artefact_dict['output_path'], 'some/path')
+        self.assertEqual(artefact_dict['output_dir'], 'some/path')
         self.assertEqual(artefact_dict['plot_generator'], 'pc-overview-plot')
         self.assertEqual(artefact_dict['report_type'], 'EmptyReport')
 
