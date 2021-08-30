@@ -151,7 +151,7 @@ def main(
     )
 
     with local.cwd(vara_cfg()["benchbuild_root"].value):
-        retcode, stdout, stderr = benchbuild[bb_args] & TEE
+        _, stdout, _ = benchbuild[bb_args] & TEE
 
     if slurm:
         match = __SLURM_SCRIPT_PATTERN.search(stdout)
