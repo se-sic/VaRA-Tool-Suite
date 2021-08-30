@@ -69,10 +69,7 @@ def __validate_project_parameters(
     return value
 
 
-@click.command(
-    help="Run benchbuild experiments.",
-    context_settings={"help_option_names": ['-h', '--help']}
-)
+@click.command(context_settings={"help_option_names": ['-h', '--help']})
 @click.option('-v', '--verbose', count=True)
 @click.option("--slurm", is_flag=True, help="Run experiments on slurm.")
 @click.option(
@@ -81,16 +78,8 @@ def __validate_project_parameters(
 @click.option(
     "-E", "--experiment", required=True, help="The experiment to run."
 )
-@click.option(
-    "-P",
-    "--project",
-    "projects",
-    multiple=True,
-    callback=__validate_project_parameters,
-    help="Only run experiments for the given project. "
-    "Can be passed multiple times."
-)
 @click.option("-p", "--pretend", is_flag=True, help="Do not run experiments.")
+@click.argument("projects", nargs=-1, callback=__validate_project_parameters)
 def main(
     verbose: int,
     slurm: bool,
@@ -99,7 +88,13 @@ def main(
     projects: tp.List[str],
     pretend: bool,
 ) -> None:
-    """Manage base container images."""
+    """
+    Run benchbuild experiments.
+
+    Runs on all projects in the current paper config by default. You can
+    restrict this to only certain projects or even revisions using BenchBuild-
+    style project selectors: <project>[@<revision>]
+    """
     # pylint: disable=too-many-branches
     initialize_cli_tool()
     initialize_projects()

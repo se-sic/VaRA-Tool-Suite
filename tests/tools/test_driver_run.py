@@ -27,7 +27,7 @@ class TestDriverRun(unittest.TestCase):
         save_config()
 
         result = runner.invoke(
-            driver_run.main, ["-vvv", "-p", "-E", "JustCompile", "-P", "xz"]
+            driver_run.main, ["-vvv", "-p", "-E", "JustCompile", "xz"]
         )
         self.assertEqual(0, result.exit_code, result.exception)
         match = self.__NUM_ACTIONS_PATTERN.search(result.stdout)
@@ -45,7 +45,7 @@ class TestDriverRun(unittest.TestCase):
         save_config()
 
         result = runner.invoke(
-            driver_run.main, ["-p", "-E", "JustCompile", "-P", "xz@2f0bc9cd40"]
+            driver_run.main, ["-p", "-E", "JustCompile", "xz@2f0bc9cd40"]
         )
         self.assertEqual(0, result.exit_code, result.exception)
         match = self.__NUM_ACTIONS_PATTERN.search(result.stdout)
