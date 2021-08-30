@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from varats.data.reports.blame_verifier_report import (
-    BlameVerifierReportNoOpt,
+    BlameVerifierReportNoOptTBAA,
     BlameVerifierReportOpt,
 )
 from varats.report.report import FileStatusExtension
@@ -32,7 +32,7 @@ class TestBlameVerifierReport(unittest.TestCase):
 
         cls.test_result_file_path_no_opt = Path(
             __file__
-        ).parent / "../TEST_INPUTS/results/gravity/BVR_NoOpt-gravity-gravity-" \
+        ).parent / "../TEST_INPUTS/results/gravity/BVR_NoOpt_TBAA-gravity-gravity-" \
                    "b51227de55_8bc2ac4c-b6e3-43d1-aff9-c6b32126b155_success.txt"
 
         cls.test_result_file_path_opt = Path(
@@ -40,7 +40,7 @@ class TestBlameVerifierReport(unittest.TestCase):
         ).parent / "../TEST_INPUTS/results/gravity/BVR_Opt-gravity-gravity-" \
                    "b51227de55_5f696090-edcc-433e-9dda-a55718f0c02d_success.txt"
 
-        cls.test_bvr_no_opt = BlameVerifierReportNoOpt(
+        cls.test_bvr_no_opt = BlameVerifierReportNoOptTBAA(
             Path(cls.test_result_file_path_no_opt)
         )
 
@@ -80,10 +80,10 @@ class TestBlameVerifierReport(unittest.TestCase):
         """Test if the file name is correctly built without the opt
         extension."""
         # Given
-        self.mock_file_name = f"BVR_NoOpt{self.mock_file_name}"
+        self.mock_file_name = f"BVR_NoOpt_TBAA{self.mock_file_name}"
 
         # When
-        actual = BlameVerifierReportNoOpt.get_file_name(
+        actual = BlameVerifierReportNoOptTBAA.get_file_name(
             project_name=self.test_project_name,
             binary_name=self.test_binary_name,
             project_version=self.test_project_version,
