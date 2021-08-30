@@ -7,7 +7,7 @@ from varats.data.data_manager import VDM
 from varats.data.reports.blame_report import BlameReport
 from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportOpt,
-    BlameVerifierReportNoOpt,
+    BlameVerifierReportNoOptTBAA,
 )
 from varats.data.reports.commit_report import CommitReport
 from varats.data.reports.globals_report import (
@@ -73,15 +73,15 @@ def load_commit_map(file_path: str) -> CommitMap:
         return CommitMap(c_map_file.readlines())
 
 
-def load_blame_verifier_report_no_opt(file_path: Path) -> \
-        BlameVerifierReportNoOpt:
+def load_blame_verifier_report_no_opt_tbaa(file_path: Path) -> \
+        BlameVerifierReportNoOptTBAA:
     """
     Load a BlameVerifierReportNoOpt from a file.
 
     Attributes:
         file_path (Path): Full path to the file
     """
-    return VDM.load_data_class_sync(file_path, BlameVerifierReportNoOpt)
+    return VDM.load_data_class_sync(file_path, BlameVerifierReportNoOptTBAA)
 
 
 def load_blame_verifier_report_opt(file_path: Path) -> \

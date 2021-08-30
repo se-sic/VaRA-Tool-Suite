@@ -64,9 +64,11 @@ class OpenVPN(VProject):
         """Compile the project."""
         openvpn_source = local.path(self.source_of(self.primary_source))
 
-        compiler = bb.compiler.cc(self)
+        self.cflags += ["-fPIC"]
+
+        c_compiler = bb.compiler.cc(self)
         with local.cwd(openvpn_source):
-            with local.env(CC=str(compiler)):
+            with local.env(CC=str(c_compiler)):
                 bb.watch(autoreconf)("-vi")
                 bb.watch(local["./configure"])()
 
