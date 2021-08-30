@@ -8,6 +8,7 @@ from pygtrie import CharTrie
 from varats.data.cache_helper import get_data_file_path
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
+from varats.utils.git_util import ShortCommitHash
 
 AvailableColumns = tp.TypeVar("AvailableColumns")
 
@@ -90,8 +91,9 @@ class EvaluationDatabase(abc.ABC):
             revisions = CharTrie()
             for revision in case_study.revisions:
                 revisions[revision.hash] = True
-            return data_frame[data_frame["revision"].
-                              apply(lambda x: revisions.has_node(x.hash) != 0)]
+            return data_frame[data_frame["revision"].apply(
+                lambda x: revisions.has_node(ShortCommitHash(str(x)).hash) != 0
+            )]
 
         data = cs_filter(data)
         return data[columns]
