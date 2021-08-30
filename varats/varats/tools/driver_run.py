@@ -86,7 +86,7 @@ def __validate_project_parameters(
     "projects",
     multiple=True,
     callback=__validate_project_parameters,
-    help="Only run experiments for the given project."
+    help="Only run experiments for the given project. "
     "Can be passed multiple times."
 )
 @click.option("-p", "--pretend", is_flag=True, help="Do not run experiments.")

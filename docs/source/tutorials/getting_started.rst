@@ -42,7 +42,7 @@ Post Install Steps
 After a successful install, we need to create a proper environment to run experiments in.
 First, we need to select a directory where we create our setup.
 From now on, we refer to this directory as the `VaRA-TS root`.
-**Unless noted otherwise, ``vara-*`` commands should always be run from this directory.**
+**Unless noted otherwise,** ``vara-*`` **commands should always be run from this directory.**
 
 .. code-block:: console
 
