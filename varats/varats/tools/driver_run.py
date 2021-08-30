@@ -73,6 +73,9 @@ def __validate_project_parameters(
 @click.option('-v', '--verbose', count=True)
 @click.option("--slurm", is_flag=True, help="Run experiments on slurm.")
 @click.option(
+    "--submit", is_flag=True, help="Submit generated slurm script via sbatch."
+)
+@click.option(
     "--container", is_flag=True, help="Run experiments in a container."
 )
 @click.option(
@@ -83,6 +86,7 @@ def __validate_project_parameters(
 def main(
     verbose: int,
     slurm: bool,
+    submit: bool,
     container: bool,
     experiment: str,
     projects: tp.List[str],
@@ -153,8 +157,16 @@ def main(
         match = __SLURM_SCRIPT_PATTERN.search(stdout)
         if match:
             slurm_script = match.group(1)
-            click.echo(f"Submitting slurm script via sbatch: {slurm_script}")
-            sbatch(slurm_script)
+            if submit:
+                click.echo(
+                    f"Submitting slurm script via sbatch: {slurm_script}"
+                )
+                sbatch(slurm_script)
+            else:
+                click.echo(
+                    f"Run the following command to submit the slurm:\n"
+                    f"sbatch {slurm_script}"
+                )
         else:
             click.echo("Could not find slurm script.")
             sys.exit(1)
