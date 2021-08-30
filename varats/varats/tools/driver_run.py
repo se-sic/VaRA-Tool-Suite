@@ -13,7 +13,7 @@ from pathlib import Path
 
 import click
 from benchbuild.utils.cmd import benchbuild, sbatch
-from plumbum import local
+from plumbum import local, TEE
 
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.paper_config import get_paper_config
@@ -147,11 +147,10 @@ def main(
     )
 
     with local.cwd(vara_cfg()["benchbuild_root"].value):
-        bb_out = benchbuild(*bb_args)
-        click.echo(bb_out)
+        retcode, stdout, stderr = benchbuild[bb_args] & TEE
 
     if slurm:
-        match = __SLURM_SCRIPT_PATTERN.search(bb_out)
+        match = __SLURM_SCRIPT_PATTERN.search(stdout)
         if match:
             slurm_script = match.group(1)
             click.echo(f"Submitting slurm script via sbatch: {slurm_script}")
