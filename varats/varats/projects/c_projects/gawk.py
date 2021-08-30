@@ -65,6 +65,6 @@ class Gawk(VProject):
                 bb.watch(local["autoreconf"])("-if")
                 bb.watch(local["./configure"])()
 
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            bb.watch(make)("MAKEINFO=true", "-j", get_number_of_jobs(bb_cfg()))
 
             verify_binaries(self)
