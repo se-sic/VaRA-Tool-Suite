@@ -73,6 +73,7 @@ def __validate_project_parameters(
     help="Run benchbuild experiments.",
     context_settings={"help_option_names": ['-h', '--help']}
 )
+@click.option('-v', '--verbose', count=True)
 @click.option("--slurm", is_flag=True, help="Run experiments on slurm.")
 @click.option(
     "--container", is_flag=True, help="Run experiments in a container."
@@ -91,6 +92,7 @@ def __validate_project_parameters(
 )
 @click.option("-p", "--pretend", is_flag=True, help="Do not run experiments.")
 def main(
+    verbose: int,
     slurm: bool,
     container: bool,
     experiment: str,
@@ -104,6 +106,9 @@ def main(
 
     bb_command_args: tp.List[str] = []
     bb_extra_args: tp.List[str] = []
+
+    if verbose:
+        bb_command_args.append("-" + ("v" * verbose))
 
     if pretend:
         click.echo("Running in pretend mode. No experiments will be executed.")
