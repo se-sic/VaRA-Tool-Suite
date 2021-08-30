@@ -2,11 +2,10 @@
 interactions."""
 import typing as tp
 
-import matplotlib.axes as axes
 import matplotlib.pyplot as plt
-import matplotlib.style as style
 import numpy as np
 import pandas as pd
+from matplotlib import axes, style
 
 from varats.data.databases.blame_interaction_database import (
     BlameInteractionDatabase,
@@ -20,7 +19,12 @@ from varats.plots.repository_churn import (
     draw_code_churn,
 )
 from varats.project.project_util import get_local_project_git
-from varats.utils.git_util import ChurnConfig, calc_repo_code_churn
+from varats.utils.git_util import (
+    ChurnConfig,
+    calc_repo_code_churn,
+    FullCommitHash,
+    ShortCommitHash,
+)
 
 
 def draw_interaction_lorenz_curve(
@@ -89,9 +93,9 @@ def draw_interaction_code_churn(
 
     unique_revs = data['revision'].unique()
 
-    def remove_revisions_without_data(revision: str) -> bool:
+    def remove_revisions_without_data(revision: ShortCommitHash) -> bool:
         """Removes all churn data where this plot has no data."""
-        return revision[:10] in unique_revs
+        return revision.hash in unique_revs
 
     def apply_sorting(churn_data: pd.DataFrame) -> pd.DataFrame:
         churn_data.set_index('time_id', inplace=True)
@@ -119,12 +123,12 @@ def filter_non_code_changes(
     """
     repo = get_local_project_git(project_name)
     code_related_changes = [
-        x[:10] for x in calc_repo_code_churn(
+        x.hash for x in calc_repo_code_churn(
             repo, ChurnConfig.create_c_style_languages_config()
         )
     ]
     return blame_data[blame_data.apply(
-        lambda x: x['revision'][:10] in code_related_changes, axis=1
+        lambda x: x['revision'] in code_related_changes, axis=1
     )]
 
 
@@ -198,7 +202,9 @@ class BlameLorenzCurve(Plot):
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
 
 
@@ -396,5 +402,7 @@ class BlameGiniOverTime(Plot):
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError

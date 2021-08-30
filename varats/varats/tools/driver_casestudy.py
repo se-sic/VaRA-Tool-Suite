@@ -27,13 +27,14 @@ from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
-from varats.report.report import FileStatusExtension, MetaReport
+from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.utils.cli_util import (
     cli_list_choice,
     initialize_cli_tool,
     cli_yn_choice,
 )
+from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
@@ -88,7 +89,7 @@ def __create_status_parser(sub_parsers: _SubParsersAction) -> None:
             "Provide a report name to "
             "select which files are considered for the status"
         ),
-        choices=MetaReport.REPORT_TYPES.keys(),
+        choices=BaseReport.REPORT_TYPES.keys(),
         type=str,
         default=".*"
     )
@@ -216,7 +217,7 @@ def __create_ext_parser(sub_parsers: _SubParsersAction) -> None:
     ext_parser.add_argument("case_study_path", help="Path to case_study")
     ext_parser.add_argument(
         "strategy",
-        action=enum_action(ExtenderStrategy),
+        action=enum_action(ExtenderStrategy, str.upper),
         help="Extender strategy"
     )
     ext_parser.add_argument(
@@ -226,7 +227,9 @@ def __create_ext_parser(sub_parsers: _SubParsersAction) -> None:
             for x in NormalSamplingMethod.normal_sampling_method_types()
         ]
     )
-    ext_parser.add_argument("--release-type", action=enum_action(ReleaseType))
+    ext_parser.add_argument(
+        "--release-type", action=enum_action(ReleaseType, str.upper)
+    )
     ext_parser.add_argument(
         "--merge-stage",
         default=-1,
@@ -278,7 +281,7 @@ def __create_package_parser(sub_parsers: _SubParsersAction) -> None:
             "Provide a report name to "
             "select which files are considered for the status"
         ),
-        choices=MetaReport.REPORT_TYPES.keys(),
+        choices=BaseReport.REPORT_TYPES.keys(),
         type=str,
         nargs="*",
         default=[]
@@ -290,7 +293,7 @@ def __create_view_parser(sub_parsers: _SubParsersAction) -> None:
     view_parser.add_argument(
         "report_type",
         help="Report type of the result files.",
-        choices=MetaReport.REPORT_TYPES.keys(),
+        choices=BaseReport.REPORT_TYPES.keys(),
         type=str
     )
     view_parser.add_argument(
@@ -314,7 +317,7 @@ def __create_cleanup_parser(sub_parsers: _SubParsersAction) -> None:
     cleanup_parser.add_argument(
         "cleanup_type",
         help="The type of the performed cleanup action.",
-        action=enum_action(CleanupType)
+        action=enum_action(CleanupType, str.upper)
     )
     cleanup_parser.add_argument(
         "-f",
@@ -387,7 +390,7 @@ def __casestudy_create_or_extend(
 
         # Setup default result folder
         if 'result_folder' not in args and args[
-            'strategy'] is ExtenderStrategy.smooth_plot:
+            'strategy'] is ExtenderStrategy.SMOOTH_PLOT:
             args['project'] = case_study.project_name
             args['result_folder'] = str(vara_cfg()['result_dir']
                                        ) + "/" + args['project']
@@ -436,13 +439,13 @@ def __casestudy_package(
         )
 
 
-def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
-    result_file_type = MetaReport.REPORT_TYPES[args["report_type"]]
+def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> ShortCommitHash:
+    result_file_type = BaseReport.REPORT_TYPES[args["report_type"]]
     project_name = args["project"]
     if "commit_hash" not in args:
         # Ask the user to provide a commit hash
         print("No commit hash was provided.")
-        commit_hash = ""
+        commit_hash: tp.Optional[ShortCommitHash] = None
         paper_config = get_paper_config()
         available_commit_hashes = []
         # Compute available commit hashes
@@ -459,10 +462,10 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
 
         # Create call backs for cli choice
         def set_commit_hash(
-            choice_pair: tp.Tuple[str, FileStatusExtension]
+            choice_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
         ) -> None:
             nonlocal commit_hash
-            commit_hash = choice_pair[0][:10]
+            commit_hash = choice_pair[0]
 
         statuses = FileStatusExtension.get_physical_file_statuses().union(
             FileStatusExtension.get_virtual_file_statuses()
@@ -473,14 +476,14 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
         ])
 
         def result_file_to_list_entry(
-            commit_status_pair: tp.Tuple[str, FileStatusExtension]
+            commit_status_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
         ) -> str:
             status = commit_status_pair[1].get_colored_status().rjust(
                 longest_file_status_extension +
                 commit_status_pair[1].num_color_characters(), " "
             )
 
-            return f"[{status}] {commit_status_pair[0][:10]}"
+            return f"[{status}] {commit_status_pair[0]}"
 
         # Ask user which commit we should use
         try:
@@ -492,17 +495,17 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> str:
                 start_label=1,
                 default=1,
             )
-        except EOFError:
-            raise LookupError
-        if commit_hash == "":
+        except EOFError as exc:
+            raise LookupError from exc
+        if not commit_hash:
             print("Could not find processed commit hash.")
             raise LookupError
         return commit_hash
-    return tp.cast(str, args["commit_hash"])
+    return ShortCommitHash(args["commit_hash"])
 
 
 def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
-    result_file_type = MetaReport.REPORT_TYPES[args["report_type"]]
+    result_file_type = BaseReport.REPORT_TYPES[args["report_type"]]
     project_name = args["project"]
 
     try:
@@ -535,9 +538,7 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
     ])
 
     def result_file_to_list_entry(result_file: Path) -> str:
-        file_status = result_file_type.get_status_from_result_file(
-            result_file.name
-        )
+        file_status = ReportFilename(result_file.name).file_status
         status = (
             file_status.get_colored_status().rjust(
                 longest_file_status_extension +
@@ -571,11 +572,11 @@ def __casestudy_cleanup(
     args: tp.Dict[str, tp.Any], parser: ArgumentParser
 ) -> None:
     cleanup_type = args['cleanup_type']
-    if cleanup_type == CleanupType.error:
+    if cleanup_type == CleanupType.ERROR:
         _remove_error_result_files()
-    if cleanup_type == CleanupType.old:
+    if cleanup_type == CleanupType.OLD:
         _remove_old_result_files()
-    if cleanup_type == CleanupType.regex:
+    if cleanup_type == CleanupType.REGEX:
         if not args['filter_regex']:
             parser.error("Specify a regex filter with --filter-regex or -f")
         _remove_result_files_by_regex(args['filter_regex'], args['silent'])
@@ -586,14 +587,13 @@ def _remove_old_result_files() -> None:
     result_dir = Path(str(vara_cfg()['result_dir']))
     for case_study in paper_config.get_all_case_studies():
         old_files: tp.List[Path] = []
-        newer_files: tp.Dict[str, Path] = dict()
+        newer_files: tp.Dict[ShortCommitHash, Path] = dict()
         result_dir_cs = result_dir / case_study.project_name
         if not result_dir_cs.exists():
             continue
         for opt_res_file in result_dir_cs.iterdir():
-            commit_hash = MetaReport.get_commit_hash_from_result_file(
-                opt_res_file.name
-            )
+            report_file = ReportFilename(opt_res_file.name)
+            commit_hash = report_file.commit_hash
             if case_study.has_revision(commit_hash):
                 current_file = newer_files.get(commit_hash)
                 if current_file is None:
@@ -634,10 +634,10 @@ def _remove_error_result_files() -> None:
         result_file_names = os.listdir(result_dir_path)
 
         for result_file_name in result_file_names:
-            if MetaReport.is_result_file(result_file_name) and (
-                MetaReport.
-                result_file_has_status_compileerror(result_file_name) or
-                MetaReport.result_file_has_status_failed(result_file_name)
+            report_file_name = ReportFilename(result_file_name)
+            if report_file_name.is_result_file() and (
+                report_file_name.has_status_compileerror() or
+                report_file_name.has_status_failed()
             ):
                 os.remove(result_dir_path / result_file_name)
 
@@ -673,9 +673,9 @@ def _remove_result_files_by_regex(regex_filter: str, hide: bool) -> None:
 
 
 class CleanupType(Enum):
-    old = 0
-    error = 1
-    regex = 2
+    OLD = 0
+    ERROR = 1
+    REGEX = 2
 
 
 if __name__ == '__main__':

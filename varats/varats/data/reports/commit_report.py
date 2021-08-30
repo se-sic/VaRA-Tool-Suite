@@ -8,7 +8,8 @@ import yaml
 
 from varats.base.version_header import VersionHeader
 from varats.mapping.commit_map import CommitMap
-from varats.report.report import BaseReport, FileStatusExtension, MetaReport
+from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
+from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 LOG = logging.getLogger(__name__)
 
@@ -45,10 +46,10 @@ class RegionMapping():
 
     def __init__(self, raw_yaml: tp.Dict[str, tp.Any]) -> None:
         self.id = str(raw_yaml['id'])
-        self.hash = str(raw_yaml['hash'])
+        self.hash = FullCommitHash(str(raw_yaml['hash']))
 
     def __str__(self) -> str:
-        return "{} = {}".format(self.id, self.hash)
+        return "{} = {}".format(self.id, self.hash.hash)
 
 
 class RegionToFunctionEdge():
@@ -170,11 +171,14 @@ class CommitReport(BaseReport):
                 self.graph_info[f_edge.fid] = f_edge
 
     @property
-    def head_commit(self) -> str:
+    def head_commit(self) -> ShortCommitHash:
         """The current HEAD commit under which this CommitReport was created."""
-        return CommitReport.get_commit_hash_from_result_file(
-            Path(self.path).name
-        )
+        return self.filename.commit_hash
+
+    @classmethod
+    def shorthand(cls) -> str:
+        """Shorthand for this report."""
+        return cls.SHORTHAND
 
     @staticmethod
     def get_file_name(
@@ -199,34 +203,9 @@ class CommitReport(BaseReport):
         Returns:
             name for the report file that can later be uniquly identified
         """
-        return MetaReport.get_file_name(
+        return ReportFilename.get_file_name(
             CommitReport.SHORTHAND, project_name, binary_name, project_version,
             project_uuid, extension_type, file_ext
-        )
-
-    @staticmethod
-    def get_supplementary_file_name(
-        project_name: str, binary_name: str, project_version: str,
-        project_uuid: str, info_type: str, file_ext: str
-    ) -> str:
-        """
-        Generates a filename for a commit report supplementary file.
-
-        Args:
-            project_name: name of the project for which the report was generated
-            binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
-            project_uuid: benchbuild uuid for the experiment run
-            info_type: specifies the kind of supplementary file
-            file_ext: file extension of the report file
-
-        Returns:
-            name for the supplementary report file that can later be uniquly
-            identified
-        """
-        return BaseReport.get_supplementary_file_name(
-            CommitReport.SHORTHAND, project_name, binary_name, project_version,
-            project_uuid, info_type, file_ext
         )
 
     def calc_max_cf_edges(self) -> int:
@@ -302,9 +281,9 @@ class CommitReport(BaseReport):
         """
         cf_map: tp.Dict[str, tp.List[int]] = dict()
         self.init_cf_map_with_edges(cf_map)
-        for key in cf_map:
-            if key.startswith(self.head_commit):
-                interaction_tuple = cf_map[key]
+        for key, value in cf_map.items():
+            if key.startswith(self.head_commit.hash):
+                interaction_tuple = value
                 return (interaction_tuple[0], interaction_tuple[1])
 
         return (0, 0)
@@ -343,9 +322,9 @@ class CommitReport(BaseReport):
         other commits."""
         df_map: tp.Dict[str, tp.List[int]] = dict()
         self.init_df_map_with_edges(df_map)
-        for key in df_map:
-            if key.startswith(self.head_commit):
-                interaction_tuple = df_map[key]
+        for key, value in df_map.items():
+            if key.startswith(self.head_commit.hash):
+                interaction_tuple = value
                 return (interaction_tuple[0], interaction_tuple[1])
 
         return (0, 0)
@@ -435,7 +414,7 @@ def generate_inout_cfg_cf(
 
 def generate_interactions(
     commit_report: CommitReport, c_map: CommitMap
-) -> pd.DataFrame:
+) -> tp.Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Converts the commit analysis interaction data from a ``CommitReport`` into a
     pandas data frame for plotting.
@@ -456,7 +435,7 @@ def generate_interactions(
         for cf_edge in func_g_edge.cf_edges:
             link_rows.append([
                 cf_edge.edge_from, cf_edge.edge_to, 1,
-                c_map.time_id(cf_edge.edge_from)
+                c_map.time_id(FullCommitHash(cf_edge.edge_from))
             ])
 
     links = pd.DataFrame(

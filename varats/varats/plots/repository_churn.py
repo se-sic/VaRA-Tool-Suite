@@ -6,10 +6,9 @@ For code churn, we only consider changes in source files.
 import typing as tp
 from itertools import islice
 
-import matplotlib.axes as axes
 import matplotlib.pyplot as plt
-import matplotlib.style as style
 import pandas as pd
+from matplotlib import axes, style
 
 #import varats.data.discover_reports
 #from varats.data.discover_reports import foo
@@ -21,6 +20,8 @@ from varats.utils.git_util import (
     ChurnConfig,
     calc_repo_code_churn,
     calc_code_churn,
+    ShortCommitHash,
+    FullCommitHash,
 )
 
 
@@ -69,7 +70,7 @@ def build_repo_churn_table(
 
 
 def build_revisions_churn_table(
-    project_name: str, commit_map: CommitMap, revisions: tp.List[str]
+    project_name: str, commit_map: CommitMap, revisions: tp.List[FullCommitHash]
 ) -> pd.DataFrame:
     """
     Build a pandas data frame that contains all churn related data for the given
@@ -115,7 +116,7 @@ def build_revisions_churn_table(
     ])
     churn_data = pd.DataFrame({
         "revision": revisions,
-        "time_id": [commit_map.short_time_id(x) for x in revisions],
+        "time_id": [commit_map.time_id(x) for x in revisions],
         "insertions": [x[1] for x in code_churn],
         "deletions": [x[2] for x in code_churn],
         "changed_files": [x[0] for x in code_churn]
@@ -132,7 +133,7 @@ def draw_code_churn(
     axis: axes.Axes,
     project_name: str,
     commit_map: CommitMap,
-    revision_selector: tp.Callable[[str], bool] = lambda x: True,
+    revision_selector: tp.Callable[[ShortCommitHash], bool] = lambda x: True,
     sort_df: tp.Callable[
         [pd.DataFrame],
         pd.DataFrame] = lambda data: data.sort_values(by=['time_id'])
@@ -181,7 +182,7 @@ def draw_code_churn(
 
 def draw_code_churn_for_revisions(
     axis: axes.Axes, project_name: str, commit_map: CommitMap,
-    revisions: tp.List[str]
+    revisions: tp.List[FullCommitHash]
 ) -> None:
     """
     Draws a churn plot onto an axis, showing insertions with green and deletions
@@ -251,5 +252,7 @@ class RepoChurnPlot(Plot):
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError

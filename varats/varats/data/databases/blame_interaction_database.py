@@ -15,7 +15,7 @@ from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.report import MetaReport
+from varats.report.report import ReportFilename
 from varats.revision.revisions import (
     get_failed_revisions_files,
     get_processed_revisions_files,
@@ -66,7 +66,7 @@ class BlameInteractionDatabase(
                 'HEAD_Interactions':
                     in_head_interactions + out_head_interactions
             },
-                                index=[0]), report.head_commit, str(
+                                index=[0]), report.head_commit.hash, str(
                                     report_path.stat().st_mtime_ns
                                 )
 
@@ -85,7 +85,7 @@ class BlameInteractionDatabase(
         data_frame = build_cached_report_table(
             cls.CACHE_ID, project_name, report_files, failed_report_files,
             create_dataframe_layout, create_data_frame_for_report,
-            lambda path: MetaReport.get_commit_hash_from_result_file(path.name),
+            lambda path: ReportFilename(path).commit_hash.hash,
             lambda path: str(path.stat().st_mtime_ns),
             lambda a, b: int(a) > int(b)
         )

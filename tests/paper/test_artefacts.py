@@ -42,7 +42,7 @@ class TestArtefacts(unittest.TestCase):
     def test_artefact_type(self):
         """Check if artefact type is loaded correctly."""
         self.assertTrue(isinstance(self.artefact, PlotArtefact))
-        self.assertEqual(self.artefact.artefact_type, ArtefactType.plot)
+        self.assertEqual(self.artefact.artefact_type, ArtefactType.PLOT)
 
     def test_artefact_name(self):
         """Check if artefact name is loaded correctly."""
@@ -60,7 +60,7 @@ class TestArtefacts(unittest.TestCase):
     def test_artefact_to_dict(self):
         """Check if artefact is serialized correctly."""
         artefact_dict = self.artefact.get_dict()
-        self.assertEqual(artefact_dict['artefact_type'], 'plot')
+        self.assertEqual(artefact_dict['artefact_type'], 'PLOT')
         self.assertEqual(artefact_dict['artefact_type_version'], 1)
         self.assertEqual(artefact_dict['file_format'], 'png')
         self.assertEqual(artefact_dict['name'], 'overview')

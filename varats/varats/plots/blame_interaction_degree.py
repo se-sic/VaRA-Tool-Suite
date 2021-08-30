@@ -9,15 +9,14 @@ from os.path import isdir
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import matplotlib.style as style
 import numpy as np
 import pandas as pd
 import plumbum as pb
 from benchbuild.utils.cmd import mkdir
 from graphviz import Digraph  # type: ignore
-from matplotlib import cm
-from plotly import graph_objs as go  # type: ignore
-from plotly import io as pio  # type: ignore
+from matplotlib import style, cm
+from plotly import graph_objs as go
+from plotly import io as pio
 
 from varats.data.databases.blame_diff_library_interaction_database import (
     BlameDiffLibraryInteractionDatabase,
@@ -35,6 +34,7 @@ from varats.plots.bug_annotation import draw_bugs
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.repository_churn import draw_code_churn_for_revisions
 from varats.project.project_util import get_project_cls_by_name
+from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 LOG = logging.getLogger(__name__)
 
@@ -94,14 +94,14 @@ LibraryColormapMapping = tp.Dict[str, tp.Any]
 LibraryToIndexShadesMapping = tp.Dict[str, IndexShadesMapping]
 
 
-def _get_unique_revisions(dataframe: pd.DataFrame) -> tp.List[str]:
-    return list(dataframe.revision.unique())
+def _get_unique_revisions(dataframe: pd.DataFrame) -> tp.List[FullCommitHash]:
+    return [FullCommitHash(rev) for rev in dataframe.revision.unique()]
 
 
 def _filter_data_frame(
     degree_type: DegreeType, interaction_plot_df: pd.DataFrame,
     commit_map: CommitMap
-) -> tp.Tuple[tp.List[str], tp.List[pd.Series]]:
+) -> tp.Tuple[tp.List[FullCommitHash], tp.List[pd.Series]]:
     """Reduce data frame to rows that match the degree type."""
     interaction_plot_df = interaction_plot_df[interaction_plot_df.degree_type ==
                                               degree_type.value]
@@ -116,7 +116,7 @@ def _filter_data_frame(
         })
         return aggregated_df
 
-    if degree_type == DegreeType.interaction:
+    if degree_type == DegreeType.INTERACTION:
         interaction_plot_df = aggregate_data(interaction_plot_df)
 
     interaction_plot_df = interaction_plot_df.reindex(
@@ -151,7 +151,7 @@ def _get_distinct_inter_lib_names(df: pd.DataFrame) -> tp.List[str]:
 
 
 def _generate_stackplot(
-    df: pd.DataFrame, unique_revisions: tp.List[str],
+    df: pd.DataFrame, unique_revisions: tp.List[FullCommitHash],
     sub_df_list: tp.List[pd.Series], with_churn: bool,
     plot_cfg: tp.Dict[str, tp.Any], plot_kwargs: tp.Any
 ) -> None:
@@ -226,12 +226,12 @@ def _generate_stackplot(
 
 
 def _calc_fractions(
-    unique_revisions: tp.List[str], all_base_lib_names: tp.List[str],
+    unique_revisions: tp.List[FullCommitHash], all_base_lib_names: tp.List[str],
     all_inter_lib_names: tp.List[str],
-    revision_to_base_names_mapping: tp.Dict[str, tp.List[str]],
-    revision_to_inter_names_mapping: tp.Dict[str, tp.List[str]],
-    revision_to_dataframes_mapping: tp.Dict[str, pd.DataFrame],
-    revision_to_total_amount_mapping: tp.Dict[str, int]
+    revision_to_base_names_mapping: tp.Dict[FullCommitHash, tp.List[str]],
+    revision_to_inter_names_mapping: tp.Dict[FullCommitHash, tp.List[str]],
+    revision_to_dataframes_mapping: tp.Dict[FullCommitHash, pd.DataFrame],
+    revision_to_total_amount_mapping: tp.Dict[FullCommitHash, int]
 ) -> BaseInterFractionMapTuple:
     """Calculate the fractions of the base and interacting libraries for the
     fraction overview plot."""
@@ -304,7 +304,7 @@ def _gen_fraction_overview_legend(
 
 def _plot_fraction_overview(
     base_lib_fraction_map: FractionMap, inter_lib_fraction_map: FractionMap,
-    with_churn: bool, unique_revisions: tp.List[str],
+    with_churn: bool, unique_revisions: tp.List[FullCommitHash],
     plot_cfg: tp.Dict[str, tp.Any], plot_kwargs: tp.Dict[str, tp.Any]
 ) -> None:
     fig = plt.figure()
@@ -468,51 +468,9 @@ def _build_sankey_color_mappings(
     return lib_to_colormap, lib_to_idx_shades
 
 
-def _get_completed_revision(
-    revision: str, unique_revisions: tp.List[str]
-) -> str:
-    """
-    Returns the passed revision prefix as completed revision string.
-
-    Args:
-        revision: the revision prefix to be completed
-        unique_revisions: the list of unique revisions in which the prefix is
-                          searched for
-    """
-
-    revision = revision.strip()
-    matching_prefix_revs = []
-
-    # Autocomplete the selected revision string if it's unique in all revisions.
-    for rev in unique_revisions:
-        if rev.startswith(revision):
-            matching_prefix_revs.append(rev)
-    if not matching_prefix_revs:
-        LOG.warning(
-            "The selected revision does not exist in the "
-            "database nor is it a prefix of an existing "
-            "one."
-        )
-        raise PlotDataEmpty
-    if len(matching_prefix_revs) > 1:
-        matching_revs_as_str: str = ""
-        for prefix_rev in matching_prefix_revs:
-            matching_revs_as_str += f"{prefix_rev}\n"
-        LOG.warning(
-            f"The selected revision does not exist in the "
-            f"database. The selected revision was: {revision}. Did you "
-            f"mean any of the following revisions?"
-            f"\n{matching_revs_as_str} "
-        )
-        raise PlotDataEmpty
-
-    revision = matching_prefix_revs[0]
-    return revision
-
-
 def _save_figure(
     figure: tp.Any,
-    revision: str,
+    revision: FullCommitHash,
     c_map: CommitMap,
     plot_kwargs: tp.Dict[str, tp.Any],
     plot_file_name: str,
@@ -525,7 +483,7 @@ def _save_figure(
     for c_hash, idx in c_map.mapping_items():
         if idx > max_idx:
             max_idx = idx
-        if c_hash.startswith(revision):
+        if c_hash == revision.hash:
             revision_idx = idx
 
     if revision_idx == -1:
@@ -630,7 +588,8 @@ def _gen_sankey_lib_name_to_idx_mapping(
 
 
 def _build_sankey_figure(
-    revision: str, view_mode: bool, data_dict: tp.Dict[str, tp.List[tp.Any]],
+    revision: FullCommitHash, view_mode: bool,
+    data_dict: tp.Dict[str, tp.List[tp.Any]],
     library_names_dict: tp.Dict[str, tp.List[str]], plot_cfg: tp.Dict[str,
                                                                       tp.Any]
 ) -> go.Figure:
@@ -702,32 +661,6 @@ def _add_diff_amount_col_to_df(
     return merged_df
 
 
-def _get_completed_c_hash(
-    df: pd.DataFrame, show_only_interactions_of_commit: str
-) -> str:
-    """
-    Returns the passed commit hash prefix as completed commit hash.
-
-    Args:
-        df: the dataframe in which the prefix is searched for
-        show_only_interactions_of_commit: the commit hash prefix to be completed
-    """
-
-    unique_base_hashes = list(
-        np.unique([str(base_hash) for base_hash in df.base_hash])
-    )
-    unique_inter_hashes = list(
-        np.unique([str(inter_hash) for inter_hash in df.inter_hash])
-    )
-    all_unique_hashes = list(
-        np.unique(unique_base_hashes + unique_inter_hashes)
-    )
-
-    return _get_completed_revision(
-        show_only_interactions_of_commit, all_unique_hashes
-    )
-
-
 LibraryToHashesMapping = tp.Dict[str, tp.List[str]]
 
 
@@ -735,14 +668,15 @@ def _build_graphviz_edges(
     df: pd.DataFrame,
     graph: Digraph,
     show_edge_weight: bool,
+    commit_map: CommitMap,
     edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
     show_only_interactions_of_commit: tp.Optional[str] = None
 ) -> LibraryToHashesMapping:
 
     if show_only_interactions_of_commit is not None:
-        show_only_interactions_of_commit = _get_completed_c_hash(
-            df, show_only_interactions_of_commit
-        )
+        show_only_interactions_of_commit = commit_map.convert_to_full_or_warn(
+            ShortCommitHash(show_only_interactions_of_commit)
+        ).hash
 
     base_lib_names = _get_distinct_base_lib_names(df)
     inter_lib_names = _get_distinct_inter_lib_names(df)
@@ -800,9 +734,10 @@ def _build_graphviz_edges(
 
 def _build_graphviz_fig(
     df: pd.DataFrame,
-    revision: str,
+    revision: FullCommitHash,
     show_edge_weight: bool,
     shown_revision_length: int,
+    commit_map: CommitMap,
     edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
     layout_engine: str = 'fdp',
     show_only_interactions_of_commit: tp.Optional[str] = None
@@ -817,7 +752,7 @@ def _build_graphviz_fig(
         graph.attr(nodesep="1")
 
     lib_to_hashes_mapping = _build_graphviz_edges(
-        df, graph, show_edge_weight, edge_weight_threshold,
+        df, graph, show_edge_weight, commit_map, edge_weight_threshold,
         show_only_interactions_of_commit
     )
 
@@ -931,14 +866,14 @@ class BlameLibraryInteraction(Plot):
 
         for rev in unique_revisions:
             if view_mode and 'revision' in self.plot_kwargs:
-                rev = _get_completed_revision(
-                    self.plot_kwargs['revision'], unique_revisions
+                rev = commit_map.convert_to_full_or_warn(
+                    ShortCommitHash(self.plot_kwargs['revision'])
                 )
 
-            dataframe = df.loc[df['revision'] == rev]
+            dataframe = df.loc[df['revision'] == rev.hash]
             fig = _build_graphviz_fig(
                 dataframe, rev, show_edge_weight, shown_revision_length,
-                edge_weight_threshold, layout_engine,
+                commit_map, edge_weight_threshold, layout_engine,
                 show_only_interactions_of_commit
             )
 
@@ -1125,16 +1060,19 @@ class BlameDegree(Plot):
         revision_df = pd.DataFrame(df["revision"])
         unique_revisions = _get_unique_revisions(revision_df)
         grouped_df: pd.DataFrame = df.groupby(['revision'])
-        revision_to_dataframes_mapping: tp.Dict[str, pd.DataFrame] = {}
+        revision_to_dataframes_mapping: tp.Dict[FullCommitHash,
+                                                pd.DataFrame] = {}
 
         for revision in unique_revisions:
             revision_to_dataframes_mapping[revision] = grouped_df.get_group(
-                revision
+                revision.hash
             )
 
-        revision_to_total_amount_mapping: tp.Dict[str, int] = {}
-        revision_to_base_names_mapping: tp.Dict[str, tp.List[str]] = {}
-        revision_to_inter_names_mapping: tp.Dict[str, tp.List[str]] = {}
+        revision_to_total_amount_mapping: tp.Dict[FullCommitHash, int] = {}
+        revision_to_base_names_mapping: tp.Dict[FullCommitHash,
+                                                tp.List[str]] = {}
+        revision_to_inter_names_mapping: tp.Dict[FullCommitHash,
+                                                 tp.List[str]] = {}
 
         # Collect mapping data
         for revision in unique_revisions:
@@ -1205,8 +1143,8 @@ class BlameDegree(Plot):
         # browser.
         for rev in unique_revisions:
             if view_mode and 'revision' in self.plot_kwargs:
-                rev = _get_completed_revision(
-                    self.plot_kwargs['revision'], unique_revisions
+                rev = commit_map.convert_to_full_or_warn(
+                    ShortCommitHash(self.plot_kwargs['revision'])
                 )
 
             df = interaction_plot_df.loc[interaction_plot_df['revision'] == rev]
@@ -1242,7 +1180,7 @@ class BlameDegree(Plot):
 
     def _calc_missing_revisions(
         self, degree_type: DegreeType, boundary_gradient: float
-    ) -> tp.Set[str]:
+    ) -> tp.Set[FullCommitHash]:
         """
         Select a set of revisions based on the gradients of the degree levels
         between revisions.
@@ -1262,12 +1200,14 @@ class BlameDegree(Plot):
             degree_type, interaction_plot_df, commit_map
         )
 
-        def head_cm_neighbours(lhs_cm: str, rhs_cm: str) -> bool:
+        def head_cm_neighbours(
+            lhs_cm: ShortCommitHash, rhs_cm: ShortCommitHash
+        ) -> bool:
             return commit_map.short_time_id(
                 lhs_cm
             ) + 1 == commit_map.short_time_id(rhs_cm)
 
-        new_revs: tp.Set[str] = set()
+        new_revs: tp.Set[FullCommitHash] = set()
 
         # build a dataframe with revision as index and degree values as columns
         # the cells contain the degree frequencies per revision
@@ -1335,11 +1275,13 @@ class BlameInteractionDegree(BlameDegree):
         }
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
-        self._degree_plot(view_mode, DegreeType.interaction, extra_plot_cfg)
+        self._degree_plot(view_mode, DegreeType.INTERACTION, extra_plot_cfg)
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         return self._calc_missing_revisions(
-            DegreeType.interaction, boundary_gradient
+            DegreeType.INTERACTION, boundary_gradient
         )
 
 
@@ -1358,7 +1300,8 @@ class BlameInteractionDegreeMultiLib(BlameDegree):
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        if 'base_lib' and 'inter_lib' not in self.plot_kwargs:
+        if 'base_lib' not in self.plot_kwargs or \
+                'inter_lib' not in self.plot_kwargs:
             LOG.warning("No library names were provided.")
             raise PlotDataEmpty
 
@@ -1374,12 +1317,14 @@ class BlameInteractionDegreeMultiLib(BlameDegree):
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
         self._multi_lib_degree_plot(
-            view_mode, DegreeType.interaction, extra_plot_cfg
+            view_mode, DegreeType.INTERACTION, extra_plot_cfg
         )
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         return self._calc_missing_revisions(
-            DegreeType.interaction, boundary_gradient
+            DegreeType.INTERACTION, boundary_gradient
         )
 
 
@@ -1400,12 +1345,14 @@ class BlameInteractionFractionOverview(BlameDegree):
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
         self._fraction_overview_plot(
-            view_mode, DegreeType.interaction, extra_plot_cfg
+            view_mode, DegreeType.INTERACTION, extra_plot_cfg
         )
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         return self._calc_missing_revisions(
-            DegreeType.interaction, boundary_gradient
+            DegreeType.INTERACTION, boundary_gradient
         )
 
 
@@ -1447,7 +1394,7 @@ class BlameLibraryInteractions(BlameDegree):
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
         self.__figure = self._multi_lib_interaction_sankey_plot(
-            view_mode, DegreeType.interaction, extra_plot_cfg, filetype='png'
+            view_mode, DegreeType.INTERACTION, extra_plot_cfg, filetype='png'
         )
 
     def show(self) -> None:
@@ -1468,9 +1415,11 @@ class BlameLibraryInteractions(BlameDegree):
             LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
             return
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         return self._calc_missing_revisions(
-            DegreeType.interaction, boundary_gradient
+            DegreeType.INTERACTION, boundary_gradient
         )
 
 
@@ -1523,7 +1472,9 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
             LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
             return
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
 
 
@@ -1542,11 +1493,13 @@ class BlameAuthorDegree(BlameDegree):
         }
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
-        self._degree_plot(view_mode, DegreeType.author, extra_plot_cfg)
+        self._degree_plot(view_mode, DegreeType.AUTHOR, extra_plot_cfg)
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         return self._calc_missing_revisions(
-            DegreeType.author, boundary_gradient
+            DegreeType.AUTHOR, boundary_gradient
         )
 
 
@@ -1567,11 +1520,13 @@ class BlameMaxTimeDistribution(BlameDegree):
         }
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
-        self._degree_plot(view_mode, DegreeType.max_time, extra_plot_cfg)
+        self._degree_plot(view_mode, DegreeType.MAX_TIME, extra_plot_cfg)
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         return self._calc_missing_revisions(
-            DegreeType.max_time, boundary_gradient
+            DegreeType.MAX_TIME, boundary_gradient
         )
 
 
@@ -1592,9 +1547,11 @@ class BlameAvgTimeDistribution(BlameDegree):
         }
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
-        self._degree_plot(view_mode, DegreeType.avg_time, extra_plot_cfg)
+        self._degree_plot(view_mode, DegreeType.AVG_TIME, extra_plot_cfg)
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         return self._calc_missing_revisions(
-            DegreeType.avg_time, boundary_gradient
+            DegreeType.AVG_TIME, boundary_gradient
         )

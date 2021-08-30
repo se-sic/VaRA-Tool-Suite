@@ -14,11 +14,12 @@ from varats.jupyterhelper.file import load_blame_report
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.report import MetaReport
+from varats.report.report import ReportFilename
 from varats.revision.revisions import (
     get_failed_revisions_files,
     get_processed_revisions_files,
 )
+from varats.utils.git_util import FullCommitHash
 
 
 class BlameLibraryInteractionsDatabase(
@@ -52,22 +53,22 @@ class BlameLibraryInteractionsDatabase(
                 gen_base_to_inter_commit_repo_pair_mapping(report)
 
             def build_dataframe_row(
-                base_hash: str, base_library: str, inter_hash: str,
-                inter_library: str, amount: int
+                base_hash: FullCommitHash, base_library: str,
+                inter_hash: FullCommitHash, inter_library: str, amount: int
             ) -> tp.Dict[str, tp.Any]:
 
                 data_dict: tp.Dict[str, tp.Any] = {
                     'revision': report.head_commit,
                     'time_id': commit_map.short_time_id(report.head_commit),
-                    'base_hash': base_hash,
+                    'base_hash': base_hash.hash,
                     'base_lib': base_library,
-                    'inter_hash': inter_hash,
+                    'inter_hash': inter_hash.hash,
                     'inter_lib': inter_library,
                     'amount': amount
                 }
                 return data_dict
 
-            result_data_dicts: tp.List[tp.Dict] = []
+            result_data_dicts: tp.List[tp.Dict[str, tp.Any]] = []
 
             for base_pair in base_inter_c_repo_pair_mapping:
                 inter_pair_amount_dict = base_inter_c_repo_pair_mapping[
@@ -84,9 +85,10 @@ class BlameLibraryInteractionsDatabase(
                         )
                     )
 
-            return pd.DataFrame(result_data_dicts), report.head_commit, str(
-                report_path.stat().st_mtime_ns
-            )
+            return pd.DataFrame(result_data_dicts
+                               ), report.head_commit.hash, str(
+                                   report_path.stat().st_mtime_ns
+                               )
 
         report_files = get_processed_revisions_files(
             project_name, BlameReport,
@@ -103,7 +105,7 @@ class BlameLibraryInteractionsDatabase(
         data_frame = build_cached_report_table(
             cls.CACHE_ID, project_name, report_files, failed_report_files,
             create_dataframe_layout, create_data_frame_for_report,
-            lambda path: MetaReport.get_commit_hash_from_result_file(path.name),
+            lambda path: ReportFilename(path).commit_hash.hash,
             lambda path: str(path.stat().st_mtime_ns),
             lambda a, b: int(a) > int(b)
         )

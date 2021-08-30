@@ -7,11 +7,11 @@ import abc
 import logging
 import typing as tp
 
-import matplotlib.axes as axes
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib import axes
 from scipy.stats import pearsonr, spearmanr
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
@@ -23,6 +23,7 @@ from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import align_yaxis, pad_axes
+from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
 
@@ -99,7 +100,7 @@ def logit_scatterplot(
     align_yaxis(ax, 0, ax2, 0)
 
 
-def _cluster_data_by_quantile(data: pd.Series, quantile: float) -> np.array:
+def _cluster_data_by_quantile(data: pd.Series, quantile: float) -> np.ndarray:
     n_rows = len(data)
     quantile_border = quantile * n_rows
 
@@ -109,7 +110,7 @@ def _cluster_data_by_quantile(data: pd.Series, quantile: float) -> np.array:
     return np.array([to_quantile_index(i) for i, _ in enumerate(data)])
 
 
-def _cluster_data_by_kmeans(data: pd.Series) -> np.array:
+def _cluster_data_by_kmeans(data: pd.Series) -> np.ndarray:
     data2 = data.to_numpy(copy=True).reshape(-1, 1)
     stscaler = StandardScaler().fit(data2)
     data2 = stscaler.transform(data2)
@@ -228,7 +229,9 @@ class BlameDiffCorrelationMatrix(Plot):
             f' - Project {self.plot_kwargs["project"]}'
         )
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
 
 
@@ -357,5 +360,7 @@ class BlameDiffDistribution(Plot):
         var_y = self.plot_kwargs['var_y']
         return f"{pc_name}_{self.name}_{var_x}_vs_{var_y}.{filetype}"
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError

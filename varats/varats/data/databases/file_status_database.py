@@ -8,7 +8,8 @@ from varats.data.reports.empty_report import EmptyReport
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
-from varats.report.report import FileStatusExtension, MetaReport
+from varats.report.report import FileStatusExtension
+from varats.utils.git_util import ShortCommitHash
 
 
 class FileStatusDatabase(
@@ -26,9 +27,7 @@ class FileStatusDatabase(
         cls, project_name: str, commit_map: CommitMap,
         case_study: tp.Optional[CaseStudy], **kwargs: tp.Any
     ) -> pd.DataFrame:
-        result_file_type = tp.cast(
-            MetaReport, kwargs.get("result_file_type", EmptyReport)
-        )
+        result_file_type = kwargs.get("result_file_type", EmptyReport)
         tag_blocked = tp.cast(bool, kwargs.get("tag_blocked", True))
 
         def create_dataframe_layout() -> pd.DataFrame:
@@ -36,7 +35,7 @@ class FileStatusDatabase(
             return df_layout
 
         def create_data_frame_for_revision(
-            revision: str, status: FileStatusExtension
+            revision: ShortCommitHash, status: FileStatusExtension
         ) -> pd.DataFrame:
             return pd.DataFrame({
                 'revision': revision,
