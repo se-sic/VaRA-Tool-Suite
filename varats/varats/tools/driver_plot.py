@@ -25,7 +25,10 @@ from varats.ts_utils.cli_util import initialize_cli_tool, add_cli_options
 LOG = logging.getLogger(__name__)
 
 
-@click.group()
+@click.group(
+    help="Generate plots.",
+    context_settings={"help_option_names": ['-h', '--help']}
+)
 @PlotConfig.cli_options
 @CommonPlotOptions.cli_options
 @click.pass_context
