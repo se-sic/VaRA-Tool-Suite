@@ -43,6 +43,9 @@ class CommitHash(abc.ABC):
     def from_pygit_commit(commit: pygit2.Commit) -> 'FullCommitHash':
         return FullCommitHash(str(commit.id))
 
+    def __len__(self) -> int:
+        return self.hash_length()
+
     def __str__(self) -> str:
         return self.hash
 
@@ -330,7 +333,7 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
             commit = primary_project_repo.get(c_hash.hash)
             if commit is None:
                 raise LookupError(
-                    f"Could not find commit {c_hash} in {project_name}"
+                    f"Could not find commit {c_hash.hash} in {project_name}"
                 )
             cache_dict[primary_source_name][c_hash] = commit
             return commit
@@ -343,7 +346,7 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
         if c_hash in cache_dict[git_name]:
             return cache_dict[git_name][c_hash]
 
-        commit = repos[git_name].get(c_hash)
+        commit = repos[git_name].get(c_hash.hash)
         if commit is None:
             raise LookupError(
                 f"Could not find commit {c_hash} in "

@@ -91,10 +91,11 @@ class EvaluationDatabase(abc.ABC):
             revisions = CharTrie()
             for revision in case_study.revisions:
                 revisions[revision.hash] = True
-            return data_frame[data_frame["revision"].apply(
-                lambda x: revisions.has_node(ShortCommitHash(str(x)).hash) != 0
-            )]
+            return data_frame[data_frame["revision"].
+                              apply(lambda x: revisions.has_node(x.hash) != 0)]
 
+        # Cast all revisions to ShortCommitHash(es)
+        data['revision'] = data['revision'].apply(ShortCommitHash)
         data = cs_filter(data)
         return data[columns]
 

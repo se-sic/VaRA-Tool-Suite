@@ -110,7 +110,7 @@ def build_revisions_churn_table(
     code_churn = [(0, 0, 0)]
     code_churn.extend([
         calc_code_churn(
-            repo, repo.get(a), repo.get(b),
+            repo, repo.get(a.hash), repo.get(b.hash),
             ChurnConfig.create_c_style_languages_config()
         ) for a, b in revision_pairs
     ])
@@ -201,7 +201,7 @@ def draw_code_churn_for_revisions(
         project_name, commit_map, revisions
     )
     revisions = churn_data.time_id.astype(str) + '-' + churn_data.revision.map(
-        lambda x: x[:10]
+        lambda x: x.hash[:10]
     )
     clipped_insertions = [
         x if x < CODE_CHURN_INSERTION_LIMIT else 1.3 *
