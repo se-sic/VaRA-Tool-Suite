@@ -200,6 +200,13 @@ def draw_code_churn_for_revisions(
     churn_data = build_revisions_churn_table(
         project_name, commit_map, revisions
     )
+
+    # TODO: Fix duplicated revisions on x-axis caused by the prepended
+    #  time_id when the code_churn is activated. Relates to
+    #  https://github.com/se-sic/VaRA-Tool-Suite/pull/453
+
+    # TODO: Move shown revision length to PlotConfig with length=10 as
+    #  default. Relates to https://github.com/se-sic/VaRA-Tool-Suite/pull/453
     revisions = churn_data.time_id.astype(str) + '-' + churn_data.revision.map(
         lambda x: x.hash[:10]
     )
