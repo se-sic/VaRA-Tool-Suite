@@ -23,6 +23,7 @@ from varats.experiment.wllvm import (
     get_bc_cache_actions,
 )
 from varats.report.report import FileStatusExtension as FSE
+from varats.report.report import ReportSpecification
 from varats.utils.settings import bb_cfg
 
 
@@ -69,7 +70,7 @@ class Otfb(actions.Step):  # type: ignore
                 binary_name=binary.name,
                 project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.Success
+                extension_type=FSE.SUCCESS
             )
 
             phasar_params = [bc_file]
@@ -91,7 +92,7 @@ class OtfbExperiment(VersionExperiment):
 
     NAME = "PhasarOtfb"
 
-    REPORT_TYPE = EmptyReport
+    REPORT_SPEC = ReportSpecification(EmptyReport)
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         """
@@ -122,7 +123,7 @@ class OtfbExperiment(VersionExperiment):
         analysis_actions += get_bc_cache_actions(
             project,
             extraction_error_handler=create_default_compiler_error_handler(
-                project, self.REPORT_TYPE
+                project, self.REPORT_SPEC.main_report
             )
         )
 
