@@ -8,6 +8,7 @@ from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
 from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
@@ -28,7 +29,7 @@ class Bison(VProject):
 
     NAME = 'bison'
     GROUP = 'c_projects'
-    DOMAIN = 'parser'
+    DOMAIN = ProjectDomains.PARSER
 
     SOURCE = [
         bb.source.Git(
