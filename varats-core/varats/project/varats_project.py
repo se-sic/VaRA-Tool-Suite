@@ -9,6 +9,7 @@ from abc import abstractmethod
 
 import benchbuild as bb
 
+from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.utils.git_util import ShortCommitHash
 
@@ -16,6 +17,8 @@ from varats.utils.git_util import ShortCommitHash
 class VProject(bb.Project):  # type: ignore
     """VaRA-TS project abstraction, extending the interface which is required
     from benchbuild."""
+
+    DOMAIN: ProjectDomains
 
     @property
     def binaries(self) -> tp.List[ProjectBinaryWrapper]:
