@@ -7,6 +7,7 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     get_all_revisions_between,
     wrap_paths_to_binaries,
@@ -25,7 +26,7 @@ class X264(VProject):
 
     NAME = 'x264'
     GROUP = 'c_projects'
-    DOMAIN = 'encoder'
+    DOMAIN = ProjectDomains.ENCODER
 
     SOURCE = [
         bb.source.Git(
