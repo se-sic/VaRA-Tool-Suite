@@ -158,7 +158,7 @@ def draw_code_churn(
     code_churn = sort_df(code_churn)
 
     revisions = code_churn.time_id.astype(str) + '-' + code_churn.revision.map(
-        lambda x: x[:10]
+        lambda x: x
     )
     clipped_insertions = [
         x if x < CODE_CHURN_INSERTION_LIMIT else 1.3 *
@@ -200,13 +200,6 @@ def draw_code_churn_for_revisions(
     churn_data = build_revisions_churn_table(
         project_name, commit_map, revisions
     )
-
-    # TODO: Fix duplicated revisions on x-axis caused by the prepended
-    #  time_id when the code_churn is activated. Relates to
-    #  https://github.com/se-sic/VaRA-Tool-Suite/pull/453
-
-    # TODO: Move shown revision length to PlotConfig with length=10 as
-    #  default. Relates to https://github.com/se-sic/VaRA-Tool-Suite/pull/453
     revisions = churn_data.time_id.astype(str) + '-' + churn_data.revision.map(
         lambda x: x.short_hash
     )

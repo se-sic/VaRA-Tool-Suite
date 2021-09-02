@@ -175,7 +175,9 @@ def _generate_stackplot(
     fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
     fig.suptitle(plot_cfg["fig_suptitle"], fontsize=8)
 
-    unique_rev_strings: tp.List[str] = [rev.hash for rev in unique_revisions]
+    unique_rev_strings: tp.List[str] = [
+        rev.short_hash for rev in unique_revisions
+    ]
     main_axis.stackplot(
         unique_rev_strings,
         sub_df_list,
