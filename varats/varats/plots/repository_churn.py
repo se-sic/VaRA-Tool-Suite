@@ -208,7 +208,7 @@ def draw_code_churn_for_revisions(
     # TODO: Move shown revision length to PlotConfig with length=10 as
     #  default. Relates to https://github.com/se-sic/VaRA-Tool-Suite/pull/453
     revisions = churn_data.time_id.astype(str) + '-' + churn_data.revision.map(
-        lambda x: x.hash[:10]
+        lambda x: x.short_hash
     )
     clipped_insertions = [
         x if x < CODE_CHURN_INSERTION_LIMIT else 1.3 *
