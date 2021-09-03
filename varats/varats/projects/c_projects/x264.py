@@ -26,7 +26,7 @@ class X264(VProject):
 
     NAME = 'x264'
     GROUP = 'c_projects'
-    DOMAIN = ProjectDomains.ENCODER
+    DOMAIN = ProjectDomains.CODEC
 
     SOURCE = [
         bb.source.Git(
