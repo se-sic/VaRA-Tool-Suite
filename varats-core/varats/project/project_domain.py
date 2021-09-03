@@ -24,10 +24,9 @@ class ProjectDomains(Enum):
     SIGNAL_PROCESSING = "Signal processing"
     SECURITY = "Security"
     EDITOR = "Editor"
-    ENCODER = "Encoder"
     TEST = "Test project"
     RENDERING = "Rendering"
     DOCUMENTATION = "Documentation"
 
     def __str__(self) -> str:
-        return self.value
+        return str(self.value)
