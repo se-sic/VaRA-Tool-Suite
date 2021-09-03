@@ -7,7 +7,7 @@ from enum import Enum
 from pathlib import Path
 
 import pygit2
-from benchbuild.utils.cmd import git, wc
+from benchbuild.utils.cmd import git
 from plumbum import local
 
 from varats.project.project_util import (
