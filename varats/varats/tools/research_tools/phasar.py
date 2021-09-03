@@ -230,4 +230,21 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         Args:
             image_context: the base image creation context
         """
-        raise NotImplementedError("Implement phasar container install.")
+        if not self.verify_install(self.install_location()):
+            raise AssertionError(
+                "Phasar is not correctly installed on your system."
+            )
+
+        container_phasar_dir = image_context.varats_root / "tools/phasar"
+        if self.get_dependencies().has_dependencies_for_distro(
+            image_context.distro
+        ):
+            image_context.layers.run(
+                *(
+                    self.get_dependencies().
+                    get_install_command(image_context.distro).split(" ")
+                )
+            )
+        image_context.layers.copy_([str(self.install_location())],
+                                   str(container_phasar_dir))
+        image_context.append_to_env("PATH", [str(container_phasar_dir / 'bin')])
