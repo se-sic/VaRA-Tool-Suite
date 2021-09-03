@@ -353,8 +353,12 @@ LibraryColormapMapping = tp.Dict[str, tp.Any]
 LibraryToIndexShadesMapping = tp.Dict[str, IndexShadesMapping]
 
 
-def _get_unique_revisions(dataframe: pd.DataFrame) -> tp.List[FullCommitHash]:
-    return [FullCommitHash(rev) for rev in dataframe.revision.unique()]
+def _get_unique_revisions(dataframe: pd.DataFrame,
+                          c_map: CommitMap) -> tp.List[FullCommitHash]:
+    return [
+        c_map.convert_to_full_or_warn(rev)
+        for rev in dataframe.revision.unique()
+    ]
 
 
 def _filter_data_frame(
@@ -396,7 +400,8 @@ def _filter_data_frame(
         interaction_plot_df.loc[interaction_plot_df.degree == x].fraction
         for x in degree_levels
     ]
-    unique_revisions = _get_unique_revisions(interaction_plot_df)
+
+    unique_revisions = _get_unique_revisions(interaction_plot_df, commit_map)
 
     return unique_revisions, sub_df_list
 
@@ -428,8 +433,11 @@ def _generate_stackplot(
     fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
     fig.suptitle(plot_kwargs["fig_suptitle"], fontsize=8)
 
+    unique_rev_strings: tp.List[str] = [
+        rev.short_hash for rev in unique_revisions
+    ]
     main_axis.stackplot(
-        unique_revisions,
+        unique_rev_strings,
         sub_df_list,
         edgecolor=plot_kwargs['edge_color'],
         colors=reversed(
@@ -1098,6 +1106,7 @@ class BlameLibraryInteraction(Plot, plot_name=None):
 
         df.sort_values(by=['time_id'], inplace=True)
         df.reset_index(inplace=True)
+        unique_revisions = _get_unique_revisions(df, commit_map)
 
         rev = commit_map.convert_to_full_or_warn(
             ShortCommitHash(self.plot_kwargs['revision'])
@@ -1133,7 +1142,7 @@ class BlameDegree(Plot, plot_name=None):
                     "inter_lib", "degree", "amount", "fraction"
                 ], commit_map, case_study)
 
-        length = len(np.unique(interaction_plot_df['revision']))
+        length = len(_get_unique_revisions(interaction_plot_df, commit_map))
         is_empty = interaction_plot_df.empty
 
         if is_empty or length == 1:
@@ -1259,7 +1268,8 @@ class BlameDegree(Plot, plot_name=None):
         all_base_lib_names = _get_distinct_base_lib_names(df)
         all_inter_lib_names = _get_distinct_inter_lib_names(df)
         revision_df = pd.DataFrame(df["revision"])
-        unique_revisions = _get_unique_revisions(revision_df)
+        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
+        unique_revisions = _get_unique_revisions(revision_df, commit_map)
         grouped_df: pd.DataFrame = df.groupby(['revision'])
         revision_to_dataframes_mapping: tp.Dict[FullCommitHash,
                                                 pd.DataFrame] = {}
@@ -1307,11 +1317,10 @@ class BlameDegree(Plot, plot_name=None):
 
         interaction_plot_df.sort_values(by=['time_id'], inplace=True)
         interaction_plot_df.reset_index(inplace=True)
-        highest_degree = interaction_plot_df["degree"].max()
-
         commit_map: CommitMap = get_commit_map(
             self.plot_kwargs["case_study"].project_name
         )
+        highest_degree = interaction_plot_df["degree"].max()
         rev = commit_map.convert_to_full_or_warn(
             ShortCommitHash(self.plot_kwargs['revision'])
         )
@@ -1428,7 +1437,7 @@ class BlameInteractionDegree(BlameDegree, plot_name="b_interaction_degree"):
         if not self.plot_kwargs["fig_title"]:
             self.plot_kwargs["fig_title"] = "Blame interactions"
 
-        self._degree_plot(DegreeType.interaction)
+        self._degree_plot(DegreeType.INTERACTION)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -1445,6 +1454,7 @@ class BlameInteractionDegreeGenerator(
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE,
         PlotGenerator.REQUIRE_MULTI_CASE_STUDY,
+        OPTIONAL_FIG_TITLE,
         OPTIONAL_SHOW_CHURN,
         OPTIONAL_LEGEND_TITLE,
         OPTIONAL_LEGEND_SIZE,
@@ -1468,7 +1478,7 @@ class BlameInteractionDegreeGenerator(
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
         self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-        self.__fig_title: str = plot_config.fig_title
+        self.__fig_title: str = plot_kwargs["fig_title"]
         self.__show_churn: bool = plot_kwargs["show_churn"]
         self.__legend_title: str = plot_kwargs["legend_title"]
         self.__legend_size: int = plot_kwargs["legend_size"]

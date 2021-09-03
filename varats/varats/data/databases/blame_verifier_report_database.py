@@ -106,7 +106,7 @@ class BlameVerifierReportDatabase(
 
             return pd.DataFrame(
                 {
-                    'revision': report.head_commit,
+                    'revision': report.head_commit.hash,
                     'time_id': commit_map.short_time_id(report.head_commit),
                     'opt_level': opt_level,
                     'total': number_of_total_annotations,

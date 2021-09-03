@@ -4,6 +4,7 @@ Generate plots to visualize code churn of a software repository.
 For code churn, we only consider changes in source files.
 """
 import typing as tp
+import warnings
 from itertools import islice
 
 import matplotlib.pyplot as plt
@@ -110,7 +111,7 @@ def build_revisions_churn_table(
     code_churn = [(0, 0, 0)]
     code_churn.extend([
         calc_code_churn(
-            repo, repo.get(a), repo.get(b),
+            repo, repo.get(a.hash), repo.get(b.hash),
             ChurnConfig.create_c_style_languages_config()
         ) for a, b in revision_pairs
     ])
@@ -158,7 +159,7 @@ def draw_code_churn(
     code_churn = sort_df(code_churn)
 
     revisions = code_churn.time_id.astype(str) + '-' + code_churn.revision.map(
-        lambda x: x[:10]
+        lambda x: x
     )
     clipped_insertions = [
         x if x < CODE_CHURN_INSERTION_LIMIT else 1.3 *
@@ -197,11 +198,9 @@ def draw_code_churn_for_revisions(
         commit_map: CommitMap for the given project(by project_name)
         revisions: list of revisions used to calculate the churn data
     """
+
     churn_data = build_revisions_churn_table(
         project_name, commit_map, revisions
-    )
-    revisions = churn_data.time_id.astype(str) + '-' + churn_data.revision.map(
-        lambda x: x[:10]
     )
     clipped_insertions = [
         x if x < CODE_CHURN_INSERTION_LIMIT else 1.3 *
@@ -211,6 +210,7 @@ def draw_code_churn_for_revisions(
         -x if x < CODE_CHURN_DELETION_LIMIT else -1.3 *
         CODE_CHURN_DELETION_LIMIT for x in churn_data.deletions
     ]
+    revisions: tp.List[str] = [rev.short_hash for rev in revisions]
 
     axis.set_ylim(-CODE_CHURN_DELETION_LIMIT, CODE_CHURN_INSERTION_LIMIT)
     axis.fill_between(revisions, clipped_insertions, 0, facecolor='green')
@@ -221,6 +221,12 @@ def draw_code_churn_for_revisions(
         0,
         facecolor='red'
     )
+    revisions = churn_data.time_id.astype(str) + '-' + churn_data.revision.map(
+        lambda x: x.short_hash
+    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        axis.set_xticklabels(revisions)
 
 
 class RepoChurnPlot(Plot, plot_name="repo_churn"):
