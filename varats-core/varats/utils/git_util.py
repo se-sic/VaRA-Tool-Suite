@@ -133,9 +133,7 @@ def get_current_branch(repo_folder: tp.Optional[Path] = None) -> str:
 
 
 def get_all_revisions_between(
-    c_start: str,
-    c_end: str,
-    hash_type: tp.Type[CommitHashTy]
+    c_start: str, c_end: str, hash_type: tp.Type[CommitHashTy]
 ) -> tp.List[CommitHashTy]:
     """
     Returns a list of all revisions between two commits c_start and c_end
