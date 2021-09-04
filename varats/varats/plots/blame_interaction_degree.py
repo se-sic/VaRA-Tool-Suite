@@ -436,7 +436,7 @@ def _build_sankey_color_mappings(
 
     lib_to_colormap: LibraryColormapMapping = {}
     lib_to_idx_shades: LibraryToIndexShadesMapping = dict(
-        (name, dict()) for name in lib_name_dict["all_distinct_lib_names"]
+        (name, {}) for name in lib_name_dict["all_distinct_lib_names"]
     )
     num_colormaps: int = len(tp.cast(tp.List[str], plot_cfg['colormaps']))
 
@@ -716,7 +716,7 @@ def _build_graphviz_edges(
 
             if diff_weight > 0:
                 color = "orange"
-                plus_minus = u'\u00b1'
+                plus_minus = '\u00b1'
                 label = f"{label} ({plus_minus}{str(diff_weight)})"
 
             graph.edge(

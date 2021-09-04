@@ -191,8 +191,10 @@ class CSStage():
         self
     ) -> tp.Dict[str, tp.Union[str, tp.List[tp.Dict[str, CSEntryMapTypes]]]]:
         """Get a dict representation of this stage."""
-        stage_dict: tp.Dict[str, tp.Union[str, tp.List[tp.Dict[
-            str, CSEntryMapTypes]]]] = dict()
+        stage_dict: tp.Dict[str,
+                            tp.Union[str,
+                                     tp.List[tp.Dict[str,
+                                                     CSEntryMapTypes]]]] = {}
         if self.name is not None:
             stage_dict['name'] = self.name
         if self.sampling_method is not None:
