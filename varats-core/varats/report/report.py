@@ -344,7 +344,7 @@ class BaseReport():
     """Report base class to add general report properties and helper
     functions."""
 
-    REPORT_TYPES: tp.Dict[str, tp.Type['BaseReport']] = dict()
+    REPORT_TYPES: tp.Dict[str, tp.Type['BaseReport']] = {}
 
     def __init__(self, path: Path) -> None:
         self.__path = path
