@@ -50,6 +50,7 @@ setup(
         "statsmodels~=0.11.1",
         "tabulate>=0.8.6",
         "varats-core>=11.0.0",
+        "wheel",
         "wllvm>=1.1.4",
     ],
     author="Florian Sattler",
