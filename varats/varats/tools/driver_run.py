@@ -10,15 +10,16 @@ import re
 import sys
 import typing as tp
 from pathlib import Path
+from subprocess import PIPE
 
 import click
 from benchbuild.utils.cmd import benchbuild, sbatch
-from plumbum import local, TEE
+from plumbum import local
 
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
-from varats.utils.cli_util import initialize_cli_tool
+from varats.utils.cli_util import initialize_cli_tool, tee
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg, vara_cfg
@@ -151,7 +152,13 @@ def main(
     )
 
     with local.cwd(vara_cfg()["benchbuild_root"].value):
-        _, stdout, _ = benchbuild[bb_args] & TEE
+        with benchbuild[bb_args].bgrun(stdout=PIPE, stderr=PIPE) as bb_proc:
+            try:
+                _, stdout, stderr = tee(bb_proc)
+            except KeyboardInterrupt:
+                # wait for BB to complete when Ctrl-C is pressed
+                retcode, _, _ = tee(bb_proc)
+                sys.exit(retcode)
 
     if slurm:
         match = __SLURM_SCRIPT_PATTERN.search(stdout)
