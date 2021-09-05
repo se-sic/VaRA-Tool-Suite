@@ -1,14 +1,67 @@
 """Test VaRA git utilities."""
 import unittest
 
+from plumbum import local
+
 from varats.project.project_util import get_local_project_git
 from varats.utils.git_util import (
     ChurnConfig,
     CommitRepoPair,
     FullCommitHash,
+    ShortCommitHash,
     calc_code_churn,
     calc_commit_code_churn,
+    get_all_revisions_between,
+    get_current_branch,
 )
+
+
+class TestGitInteractionHelpers(unittest.TestCase):
+    """Test if the different git helper classes work."""
+
+    def test_get_current_branch(self):
+        """Check if we can correctly retrieve the current branch of a repo."""
+        repo = get_local_project_git("brotli")
+
+        repo.checkout(repo.lookup_branch('master'))
+
+        self.assertEqual(get_current_branch(repo.workdir), 'master')
+
+    def test_get_all_revisions_between_full(self):
+        """Check if the correct all revisions are correctly found."""
+        repo = get_local_project_git("brotli")
+        with local.cwd(repo.workdir):
+            revs = get_all_revisions_between(
+                '5692e422da6af1e991f9182345d58df87866bc5e',
+                '2f9277ff2f2d0b4113b1ffd9753cc0f6973d354a', FullCommitHash
+            )
+
+            self.assertSetEqual(
+                set(revs), {
+                    FullCommitHash("5692e422da6af1e991f9182345d58df87866bc5e"),
+                    FullCommitHash("2f9277ff2f2d0b4113b1ffd9753cc0f6973d354a"),
+                    FullCommitHash("63be8a99401992075c23e99f7c84de1c653e39e2"),
+                    FullCommitHash("2a51a85aa86abb4c294c65fab57f3d9c69f10080")
+                }
+            )
+
+    def test_get_all_revisions_between_short(self):
+        """Check if the correct all revisions are correctly found."""
+        repo = get_local_project_git("brotli")
+        with local.cwd(repo.workdir):
+            revs = get_all_revisions_between(
+                '5692e422da6af1e991f9182345d58df87866bc5e',
+                '2f9277ff2f2d0b4113b1ffd9753cc0f6973d354a', ShortCommitHash
+            )
+
+            self.assertSetEqual(
+                set(revs), {
+                    ShortCommitHash("5692e422da"),
+                    ShortCommitHash("2f9277ff2f"),
+                    ShortCommitHash("63be8a9940"),
+                    ShortCommitHash("2a51a85aa8")
+                }
+            )
 
 
 class TestChurnConfig(unittest.TestCase):

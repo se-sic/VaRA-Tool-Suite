@@ -13,6 +13,7 @@ from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
 from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
@@ -30,7 +31,7 @@ class Libtiff(VProject):
 
     NAME = 'libtiff'
     GROUP = 'c_projects'
-    DOMAIN = 'Image File Format'
+    DOMAIN = ProjectDomains.FILE_FORMAT
 
     SOURCE = [
         block_revisions([

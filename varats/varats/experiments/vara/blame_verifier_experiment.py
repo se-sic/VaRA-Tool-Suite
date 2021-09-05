@@ -17,9 +17,6 @@ from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportOpt as BVR_Opt,
 )
 from varats.data.reports.blame_verifier_report import (
-    BlameVerifierReportNoOpt as BVR_NoOpt,
-)
-from varats.data.reports.blame_verifier_report import (
     BlameVerifierReportNoOptTBAA as BVR_NoOptTBAA,
 )
 from varats.experiment.experiment_util import (
@@ -172,21 +169,6 @@ class BlameVerifierReportExperiment(VersionExperiment):
         return analysis_actions
 
 
-class BlameVerifierReportExperimentNoOpt(BlameVerifierReportExperiment):
-    """Generates a Blame Verifier Report of the project(s) specified in the call
-    without any optimization (BVR_NoOpt)."""
-
-    NAME = "GenerateBlameVerifierReportNoOpt"
-
-    REPORT_SPEC = ReportSpecification(BVR_NoOpt)
-
-    def __init__(self, projects: Project) -> None:
-        super().__init__(
-            projects, '-O0', self.REPORT_SPEC.main_report,
-            [BCFileExtensions.DEBUG, BCFileExtensions.NO_OPT]
-        )
-
-
 class BlameVerifierReportExperimentOpt(BlameVerifierReportExperiment):
     """Generates a Blame Verifier Report of the project(s) specified in the call
     with optimization (BVR_Opt)."""
@@ -197,8 +179,10 @@ class BlameVerifierReportExperimentOpt(BlameVerifierReportExperiment):
 
     def __init__(self, projects: Project) -> None:
         super().__init__(
-            projects, '-O2', self.REPORT_SPEC.main_report,
-            [BCFileExtensions.DEBUG, BCFileExtensions.OPT]
+            projects, '-O2', self.REPORT_SPEC.main_report, [
+                BCFileExtensions.DEBUG, BCFileExtensions.OPT,
+                BCFileExtensions.BLAME
+            ]
         )
 
 
@@ -215,6 +199,6 @@ class BlameVerifierReportExperimentNoOptTBAA(BlameVerifierReportExperiment):
             projects, ["-O1", "-Xclang", "-disable-llvm-optzns"],
             self.REPORT_SPEC.main_report, [
                 BCFileExtensions.DEBUG, BCFileExtensions.NO_OPT,
-                BCFileExtensions.TBAA
+                BCFileExtensions.TBAA, BCFileExtensions.BLAME
             ]
         )
