@@ -109,7 +109,8 @@ class EnumChoice(click.Choice, tp.Generic[EnumTy]):
         return self.__enum[super().convert(value, param, ctx)]
 
 
-def tee(process: PlumbumLocalPopen, buffered: bool = True) -> tp.Tuple:
+def tee(process: PlumbumLocalPopen,
+        buffered: bool = True) -> tp.Tuple[int, str, str]:
     """
     Adapted from from plumbum's TEE implementation.
 
@@ -118,8 +119,8 @@ def tee(process: PlumbumLocalPopen, buffered: bool = True) -> tp.Tuple:
     relevant portion of plumbum's implementation and create the popen object by
     ourself.
     """
-    outbuf = []
-    errbuf = []
+    outbuf: tp.List[bytes] = []
+    errbuf: tp.List[bytes] = []
     out = process.stdout
     err = process.stderr
     buffers = {out: outbuf, err: errbuf}
@@ -144,9 +145,9 @@ def tee(process: PlumbumLocalPopen, buffered: bool = True) -> tp.Tuple:
             progress = False
             ready, _, _ = select((out, err), (), ())
             # logging.info(f"Streams ready: {[r.fileno() for r in ready]}")
-            for fd in ready:
-                buf = buffers[fd]
-                data, text = read_fd_decode_safely(fd, 4096)
+            for file_descriptor in ready:
+                buf = buffers[file_descriptor]
+                data, text = read_fd_decode_safely(file_descriptor, 4096)
                 if not data:  # eof
                     continue
                 progress = True
@@ -156,11 +157,11 @@ def tee(process: PlumbumLocalPopen, buffered: bool = True) -> tp.Tuple:
 
                 # This will automatically add up to three bytes if it cannot be
                 # decoded
-                tee_to[fd].write(text)
+                tee_to[file_descriptor].write(text)
 
                 # And then "unbuffered" is just flushing after each write
                 if not buffered:
-                    tee_to[fd].flush()
+                    tee_to[file_descriptor].flush()
 
                 buf.append(data)
 

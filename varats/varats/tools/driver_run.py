@@ -154,7 +154,7 @@ def main(
     with local.cwd(vara_cfg()["benchbuild_root"].value):
         with benchbuild[bb_args].bgrun(stdout=PIPE, stderr=PIPE) as bb_proc:
             try:
-                _, stdout, stderr = tee(bb_proc)
+                _, stdout, _ = tee(bb_proc)
             except KeyboardInterrupt:
                 # wait for BB to complete when Ctrl-C is pressed
                 retcode, _, _ = tee(bb_proc)
