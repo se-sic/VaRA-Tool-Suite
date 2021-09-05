@@ -5,6 +5,7 @@ from pathlib import Path
 import benchbuild as bb
 from plumbum import local
 
+from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
@@ -24,7 +25,7 @@ class SVFPointsToAnalysisBenchmark(VProject):
 
     NAME = 'SVFPointsToBench'
     GROUP = 'test_projects'
-    DOMAIN = 'testing'
+    DOMAIN = ProjectDomains.TEST
 
     SOURCE = [
         bb.source.Git(
