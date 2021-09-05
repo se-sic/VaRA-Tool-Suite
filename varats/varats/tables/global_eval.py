@@ -16,10 +16,8 @@ from varats.jupyterhelper.file import (
     load_globals_with_report,
     load_globals_without_report,
 )
-from varats.paper_mgmt.case_study import (
-    CaseStudy,
-    get_case_study_file_name_filter,
-)
+from varats.paper.case_study import CaseStudy
+from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.report.report import ReportFilename
@@ -29,7 +27,9 @@ from varats.table.table import Table, wrap_table_in_document, TableFormat
 LOG = logging.Logger(__name__)
 
 
-def create_df_for_report(report: tp.Optional[tp.Any], name_id) -> pd.DataFrame:
+def create_df_for_report(
+    report: tp.Optional[tp.Any], name_id: str
+) -> pd.DataFrame:
     """Creates a dataframe that inclues all relevant information of the
     report."""
 
@@ -124,7 +124,10 @@ class PhasarGlobalsDataComparision(Table):
                 LOG.debug(f"report_files_without={report_files_with}")
                 raise AssertionError("To many report files given!")
 
-            def insert_data_if_present(report, name_id, cs_data):
+            def insert_data_if_present(
+                report: tp.Optional[GlobalsReport], name_id: str,
+                cs_data: tp.List[pd.DataFrame]
+            ) -> None:
                 res = create_df_for_report(report, name_id)
                 if res is not None:
                     cs_data.append(res)

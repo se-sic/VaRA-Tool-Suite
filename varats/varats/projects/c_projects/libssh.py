@@ -12,14 +12,13 @@ from varats.paper_mgmt.paper_config import project_filter_generator
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    get_all_revisions_between,
     wrap_paths_to_binaries,
     get_local_project_git_path,
     BinaryType,
     verify_binaries,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
 
 
@@ -63,8 +62,7 @@ class Libssh(VProject):
         with local.cwd(libssh_git_path):
             versions_with_src_library_folder = get_all_revisions_between(
                 "c65f56aefa50a2e2a78a0e45564526ecc921d74f",
-                "9c4baa7fd58b9e4d9cdab4a03d18dd03e0e587ab",
-                short=True
+                "9c4baa7fd58b9e4d9cdab4a03d18dd03e0e587ab", ShortCommitHash
             )
             if revision in versions_with_src_library_folder:
                 return wrap_paths_to_binaries([
@@ -84,11 +82,9 @@ class Libssh(VProject):
         libssh_version = self.version_of_primary
 
         with local.cwd(libssh_git_path):
-
             cmake_revisions = get_all_revisions_between(
-                "0151b6e17041c56813c882a3de6330c82acc8d93",
-                "master",
-                short=True
+                "0151b6e17041c56813c882a3de6330c82acc8d93", "master",
+                ShortCommitHash
             )
 
         if libssh_version in cmake_revisions:
@@ -115,11 +111,11 @@ class Libssh(VProject):
         libssh_version = self.version_of_primary
         autoconf_revisions = get_all_revisions_between(
             "5e02c25291d594e01a910fce097a3fc5084fd68f",
-            "21e639cc3fd54eb3d59568744c9627beb26e07ed"
+            "21e639cc3fd54eb3d59568744c9627beb26e07ed", ShortCommitHash
         )
         autogen_revisions = get_all_revisions_between(
             "ca32b0aa146b31d7772f27d16098845e615432aa",
-            "ee54acb417c5589a8dc9dab0676f34b3d40a182b"
+            "ee54acb417c5589a8dc9dab0676f34b3d40a182b", ShortCommitHash
         )
         compiler = bb.compiler.cc(self)
         with local.cwd(libssh_source):

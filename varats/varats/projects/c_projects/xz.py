@@ -16,14 +16,13 @@ from varats.paper_mgmt.paper_config import project_filter_generator
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    get_all_revisions_between,
     wrap_paths_to_binaries,
     get_local_project_git_path,
     BinaryType,
     verify_binaries,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
 
 
@@ -72,8 +71,7 @@ class Xz(VProject):
         with local.cwd(xz_git_path):
             old_xz_location = get_all_revisions_between(
                 "5d018dc03549c1ee4958364712fb0c94e1bf2741",
-                "3f86532407e4ace3debb62be16035e009b56ca36",
-                short=True
+                "3f86532407e4ace3debb62be16035e009b56ca36", ShortCommitHash
             )
             if revision in old_xz_location:
                 return wrap_paths_to_binaries([
@@ -99,8 +97,7 @@ class Xz(VProject):
         with local.cwd(xz_git_path):
             revisions_wo_dynamic_linking = get_all_revisions_between(
                 "5d018dc03549c1ee4958364712fb0c94e1bf2741",
-                "fda4724d8114fccfa31c1839c15479f350c2fb4c",
-                short=True
+                "fda4724d8114fccfa31c1839c15479f350c2fb4c", ShortCommitHash
             )
 
         self.cflags += ["-fPIC"]
