@@ -1,5 +1,4 @@
 """Test artefacts config tool."""
-import typing as tp
 import unittest
 import unittest.mock as mock
 from pathlib import Path
@@ -10,10 +9,8 @@ from tests.test_utils import run_in_test_environment, UnitTestInputs
 from varats.data.discover_reports import initialize_reports
 from varats.paper_mgmt.artefacts import Artefact
 from varats.paper_mgmt.paper_config import get_paper_config
-from varats.plot.plots import PlotArtefact
 from varats.plots.discover_plots import initialize_plots
 from varats.table.table import Table
-from varats.table.tables import prepare_tables, TableArtefact
 from varats.tables.discover_tables import initialize_tables
 from varats.tools import driver_artefacts
 from varats.utils.settings import vara_cfg

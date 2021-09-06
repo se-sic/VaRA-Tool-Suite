@@ -4,15 +4,18 @@ import unittest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
+from tests.test_utils import run_in_test_environment, UnitTestInputs
 from varats.paper_mgmt.artefacts import (
     load_artefacts_from_file,
     initialize_artefacts,
     Artefacts,
     Artefact,
 )
+from varats.paper_mgmt.paper_config import load_paper_config
 from varats.plot.plots import PlotArtefact
 from varats.plots.paper_config_overview import PaperConfigOverviewGenerator
-from varats.utils.settings import vara_cfg
+from varats.projects.discover_projects import initialize_projects
+from varats.utils.settings import vara_cfg, save_config
 
 YAML_ARTEFACTS = """DocType: Artefacts
 Version: 2
@@ -34,7 +37,7 @@ class TestArtefacts(unittest.TestCase):
     """Test basic Artefact functionality."""
 
     artefacts: Artefacts
-    artefact: PlotArtefact
+    plot_artefact: PlotArtefact
 
     @classmethod
     def setUp(cls):
@@ -44,30 +47,32 @@ class TestArtefacts(unittest.TestCase):
             yaml_file.write(YAML_ARTEFACTS)
             yaml_file.seek(0)
             cls.artefacts = load_artefacts_from_file(Path(yaml_file.name))
-        cls.artefact = tp.cast(PlotArtefact, next(cls.artefacts.__iter__()))
-        if not isinstance(cls.artefact, PlotArtefact):
+        cls.plot_artefact = tp.cast(
+            PlotArtefact, next(cls.artefacts.__iter__())
+        )
+        if not isinstance(cls.plot_artefact, PlotArtefact):
             raise AssertionError("Test artefact is not a PlotArtefact!")
 
     # Artefact tests
 
     def test_artefact_type(self):
         """Check if artefact type is loaded correctly."""
-        self.assertTrue(isinstance(self.artefact, PlotArtefact))
+        self.assertTrue(isinstance(self.plot_artefact, PlotArtefact))
 
     def test_artefact_name(self):
         """Check if artefact name is loaded correctly."""
-        self.assertEqual(self.artefact.name, 'overview')
+        self.assertEqual(self.plot_artefact.name, 'overview')
 
     def test_artefact_output_path(self):
         """Check if artefact output_path is loaded correctly."""
         self.assertEqual(
-            self.artefact.output_dir,
+            self.plot_artefact.output_dir,
             Artefact.base_output_dir() / 'some/path'
         )
 
     def test_artefact_to_dict(self):
         """Check if artefact is serialized correctly."""
-        artefact_dict = self.artefact.get_dict()
+        artefact_dict = self.plot_artefact.get_dict()
         self.assertEqual(artefact_dict['artefact_type'], 'plot')
         self.assertEqual(artefact_dict['artefact_type_version'], 2)
         self.assertEqual(artefact_dict['file_type'], 'png')
@@ -80,22 +85,34 @@ class TestArtefacts(unittest.TestCase):
 
     def test_artefact_plot_type(self):
         """Check if plot type is loaded correctly."""
-        self.assertEqual(self.artefact.plot_generator_type, "pc-overview-plot")
+        self.assertEqual(
+            self.plot_artefact.plot_generator_type, "pc-overview-plot"
+        )
 
     def test_artefact_plot_type_class(self):
         """Check if plot class is resolved correctly."""
         self.assertEqual(
-            self.artefact.plot_generator_class, PaperConfigOverviewGenerator
+            self.plot_artefact.plot_generator_class,
+            PaperConfigOverviewGenerator
         )
 
     def test_artefact_file_format(self):
         """Check if plot file format is loaded correctly."""
-        self.assertEqual(self.artefact.common_options.file_type, 'png')
+        self.assertEqual(self.plot_artefact.common_options.file_type, 'png')
 
     def test_artefact_plot_kwargs(self):
         """Check if plot kwargs are loaded correctly."""
         self.assertEqual(
-            self.artefact.plot_kwargs['report_type'], 'EmptyReport'
+            self.plot_artefact.plot_kwargs['report_type'], 'EmptyReport'
+        )
+
+    def test_artefact_file_info(self):
+        """Check if file info is generated correctly."""
+        file_infos = self.plot_artefact.get_artefact_file_infos()
+        self.assertEqual(1, len(file_infos))
+        self.assertIsNone(file_infos[0].case_study)
+        self.assertEqual(
+            "paper_config_overview_plot.png", file_infos[0].file_name
         )
 
     # Artefacts tests
