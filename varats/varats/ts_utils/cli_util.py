@@ -193,7 +193,9 @@ class EnumChoice(click.Choice, tp.Generic[EnumTy]):
         super().__init__(list(dict(enum.__members__).keys()), case_sensitive)
 
     def convert(
-        self, value: str, param: tp.Optional[click.Parameter],
+        self, value: tp.Union[str, EnumTy], param: tp.Optional[click.Parameter],
         ctx: tp.Optional[click.Context]
     ) -> EnumTy:
+        if isinstance(value, Enum):
+            return value
         return self.__enum[super().convert(value, param, ctx)]
