@@ -42,7 +42,7 @@ def _get_named_df_for_case_study(
                                             opt_level.value]
     if verifier_plot_df.empty or len(
         np.unique(verifier_plot_df['revision'])
-    ) == 1:
+    ) == 0:
         if _is_multi_cs_plot():
             return None
 
