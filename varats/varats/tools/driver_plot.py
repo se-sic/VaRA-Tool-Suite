@@ -63,6 +63,7 @@ class PlotCLI(click.MultiCommand):
                         artefact_name, generator_instance, common_options
                     )
                     paper_config.add_artefact(artefact)
+                    print(paper_config.path)
                     store_artefacts(paper_config.artefacts, paper_config.path)
                 else:
                     generator_instance(common_options)
