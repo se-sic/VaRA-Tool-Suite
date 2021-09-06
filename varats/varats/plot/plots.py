@@ -102,7 +102,7 @@ class CommonPlotOptions():
         make_cli_option(
             "--file-type",
             type=click.Choice(["png", "svg", "pdf"]),
-            default="png",
+            default="svg",
             help="File type for the plot."
         ),
         make_cli_option(

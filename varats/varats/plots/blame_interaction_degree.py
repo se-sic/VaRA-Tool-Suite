@@ -246,8 +246,7 @@ OPTIONAL_EDGE_COLOR: CLIOptionTy = make_cli_option(
 
 OPTIONAL_COLORMAP: CLIOptionTy = make_cli_option(
     "--colormap",
-    # TODO: Add EnumChoice(Colormap)
-    type=Colormap,
+    type=EnumChoice(Colormap),
     default=Colormap.GST_STRN,
     required=False,
     metavar="colormap",
@@ -1303,7 +1302,7 @@ class BlameDegree(Plot, plot_name=None):
     def _multi_lib_interaction_sankey_plot(self, view_mode: bool) -> go.Figure:
         interaction_plot_df = self._get_degree_data()
         interaction_plot_df = interaction_plot_df[
-            interaction_plot_df.degree_type == DegreeType.interaction.value]
+            interaction_plot_df.degree_type == DegreeType.INTERACTION.value]
 
         interaction_plot_df.sort_values(by=['time_id'], inplace=True)
         interaction_plot_df.reset_index(inplace=True)
@@ -1428,7 +1427,7 @@ class BlameInteractionDegree(BlameDegree, plot_name="b_interaction_degree"):
         if not self.plot_kwargs["fig_title"]:
             self.plot_kwargs["fig_title"] = "Blame interactions"
 
-        self._degree_plot(DegreeType.interaction)
+        self._degree_plot(DegreeType.INTERACTION)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -1445,6 +1444,7 @@ class BlameInteractionDegreeGenerator(
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE,
         PlotGenerator.REQUIRE_MULTI_CASE_STUDY,
+        OPTIONAL_FIG_TITLE,
         OPTIONAL_SHOW_CHURN,
         OPTIONAL_LEGEND_TITLE,
         OPTIONAL_LEGEND_SIZE,
@@ -1468,7 +1468,7 @@ class BlameInteractionDegreeGenerator(
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
         self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-        self.__fig_title: str = plot_config.fig_title
+        self.__fig_title: str = plot_kwargs["fig_title"]
         self.__show_churn: bool = plot_kwargs["show_churn"]
         self.__legend_title: str = plot_kwargs["legend_title"]
         self.__legend_size: int = plot_kwargs["legend_size"]
