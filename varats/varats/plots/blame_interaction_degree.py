@@ -246,8 +246,7 @@ OPTIONAL_EDGE_COLOR: CLIOptionTy = make_cli_option(
 
 OPTIONAL_COLORMAP: CLIOptionTy = make_cli_option(
     "--colormap",
-    # TODO: Add EnumChoice(Colormap)
-    type=Colormap,
+    type=EnumChoice(Colormap),
     default=Colormap.GST_STRN,
     required=False,
     metavar="colormap",
@@ -1313,7 +1312,7 @@ class BlameDegree(Plot, plot_name=None):
     def _multi_lib_interaction_sankey_plot(self, view_mode: bool) -> go.Figure:
         interaction_plot_df = self._get_degree_data()
         interaction_plot_df = interaction_plot_df[
-            interaction_plot_df.degree_type == DegreeType.interaction.value]
+            interaction_plot_df.degree_type == DegreeType.INTERACTION.value]
 
         interaction_plot_df.sort_values(by=['time_id'], inplace=True)
         interaction_plot_df.reset_index(inplace=True)
