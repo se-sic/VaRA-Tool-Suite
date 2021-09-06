@@ -4,7 +4,6 @@ Generate plots to visualize code churn of a software repository.
 For code churn, we only consider changes in source files.
 """
 import typing as tp
-import warnings
 from itertools import islice
 
 import matplotlib.pyplot as plt
@@ -224,9 +223,8 @@ def draw_code_churn_for_revisions(
     revisions = churn_data.time_id.astype(str) + '-' + churn_data.revision.map(
         lambda x: x.short_hash
     )
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        axis.set_xticklabels(revisions)
+    axis.set_xticks(axis.get_xticks())
+    axis.set_xticklabels(revisions)
 
 
 class RepoChurnPlot(Plot, plot_name="repo_churn"):
