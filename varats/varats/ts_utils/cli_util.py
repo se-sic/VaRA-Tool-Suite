@@ -170,7 +170,7 @@ class TypedMultiChoice(click.Choice, tp.Generic[ChoiceTy]):
     ) -> tp.List[ChoiceTy]:
         values = [value]
         if isinstance(value, str):
-            values = value.split(",")
+            values = list(map(str.strip, value.split(",")))
 
         return [
             item for v in values for item in self.__choices[
