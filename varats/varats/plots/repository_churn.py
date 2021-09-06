@@ -157,9 +157,8 @@ def draw_code_churn(
 
     code_churn = sort_df(code_churn)
 
-    revisions = code_churn.time_id.astype(str) + '-' + code_churn.revision.map(
-        lambda x: x
-    )
+    revisions = code_churn.time_id.astype(str) + '-' + code_churn.revision
+
     clipped_insertions = [
         x if x < CODE_CHURN_INSERTION_LIMIT else 1.3 *
         CODE_CHURN_INSERTION_LIMIT for x in code_churn.insertions
