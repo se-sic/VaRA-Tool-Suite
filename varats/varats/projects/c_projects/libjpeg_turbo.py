@@ -8,6 +8,7 @@ from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
 from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
@@ -24,7 +25,7 @@ class LibjpegTurbo(VProject):
 
     NAME = 'libjpeg_turbo'
     GROUP = 'c_projects'
-    DOMAIN = 'JPEG image codec'
+    DOMAIN = ProjectDomains.FILE_FORMAT
 
     SOURCE = [
         bb.source.Git(

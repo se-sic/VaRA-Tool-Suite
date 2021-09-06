@@ -107,7 +107,7 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
     year_range = list(range(min(min_years), max(max_years) + 1))
     project_names = list(projects.keys())
 
-    result: tp.Dict[str, tp.Any] = dict()
+    result: tp.Dict[str, tp.Any] = {}
     result['year_range'] = year_range
     result['project_names'] = project_names
 

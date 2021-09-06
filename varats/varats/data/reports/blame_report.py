@@ -286,8 +286,7 @@ class BlameReport(BaseReport):
             self.__meta_data = BlameReportMetaData \
                 .create_blame_report_meta_data(next(documents))
 
-            self.__function_entries: tp.Dict[str,
-                                             BlameResultFunctionEntry] = dict()
+            self.__function_entries: tp.Dict[str, BlameResultFunctionEntry] = {}
             raw_blame_report = next(documents)
             for raw_func_entry in raw_blame_report['result-map']:
                 new_function_entry = (
@@ -372,7 +371,7 @@ class BlameReportDiff():
     def __init__(
         self, base_report: BlameReport, prev_report: BlameReport
     ) -> None:
-        self.__function_entries: tp.Dict[str, BlameResultFunctionEntry] = dict()
+        self.__function_entries: tp.Dict[str, BlameResultFunctionEntry] = {}
         self.__base_head = base_report.head_commit
         self.__prev_head = prev_report.head_commit
         self.__calc_diff_br(base_report, prev_report)

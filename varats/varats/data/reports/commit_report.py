@@ -151,12 +151,12 @@ class CommitReport(BaseReport):
             version_header.raise_if_version_is_less_than(3)
 
             raw_infos = next(documents)
-            self.finfos: tp.Dict[str, FunctionInfo] = dict()
+            self.finfos: tp.Dict[str, FunctionInfo] = {}
             for raw_finfo in raw_infos['function-info']:
                 finfo = FunctionInfo(raw_finfo)
                 self.finfos[finfo.name] = finfo
 
-            self.region_mappings: tp.Dict[str, RegionMapping] = dict()
+            self.region_mappings: tp.Dict[str, RegionMapping] = {}
             raw_region_mapping = raw_infos['region-mapping']
             if raw_region_mapping is not None:
                 for raw_r_mapping in raw_region_mapping:
@@ -164,7 +164,7 @@ class CommitReport(BaseReport):
                     self.region_mappings[r_mapping.id] = r_mapping
 
             gedges = next(documents)
-            self.graph_info: tp.Dict[str, FunctionGraphEdges] = dict()
+            self.graph_info: tp.Dict[str, FunctionGraphEdges] = {}
 
             for raw_fg_edge in gedges:
                 f_edge = FunctionGraphEdges(raw_fg_edge)
@@ -211,7 +211,7 @@ class CommitReport(BaseReport):
     def calc_max_cf_edges(self) -> int:
         """Calculate the highest amount of control-flow interactions of a single
         commit region."""
-        cf_map: tp.Dict[str, tp.List[int]] = dict()
+        cf_map: tp.Dict[str, tp.List[int]] = {}
         self.init_cf_map_with_edges(cf_map)
 
         total = 0
@@ -223,7 +223,7 @@ class CommitReport(BaseReport):
     def calc_max_df_edges(self) -> int:
         """Calculate the highest amount of data-flow interactions of a single
         commit region."""
-        df_map: tp.Dict[str, tp.List[int]] = dict()
+        df_map: tp.Dict[str, tp.List[int]] = {}
         self.init_df_map_with_edges(df_map)
 
         total = 0
@@ -263,7 +263,7 @@ class CommitReport(BaseReport):
 
     def number_of_cf_interactions(self) -> int:
         """Total number of found control-flow interactions."""
-        cf_map: tp.Dict[str, tp.List[int]] = dict()
+        cf_map: tp.Dict[str, tp.List[int]] = {}
         self.init_cf_map_with_edges(cf_map)
 
         total_interactions = 0
@@ -279,7 +279,7 @@ class CommitReport(BaseReport):
         Returns:
             tuple (incoming_head_interactions, outgoing_head_interactions)
         """
-        cf_map: tp.Dict[str, tp.List[int]] = dict()
+        cf_map: tp.Dict[str, tp.List[int]] = {}
         self.init_cf_map_with_edges(cf_map)
         for key, value in cf_map.items():
             if key.startswith(self.head_commit.hash):
@@ -309,7 +309,7 @@ class CommitReport(BaseReport):
 
     def number_of_df_interactions(self) -> int:
         """Total number of found data-flow interactions."""
-        df_map: tp.Dict[str, tp.List[int]] = dict()
+        df_map: tp.Dict[str, tp.List[int]] = {}
         self.init_df_map_with_edges(df_map)
 
         total_interactions = 0
@@ -320,7 +320,7 @@ class CommitReport(BaseReport):
     def number_of_head_df_interactions(self) -> tp.Tuple[int, int]:
         """The number of control-flow interactions the HEAD commit has with
         other commits."""
-        df_map: tp.Dict[str, tp.List[int]] = dict()
+        df_map: tp.Dict[str, tp.List[int]] = {}
         self.init_df_map_with_edges(df_map)
         for key, value in df_map.items():
             if key.startswith(self.head_commit.hash):
@@ -335,8 +335,8 @@ class CommitReportMeta():
     from different revisions, into one."""
 
     def __init__(self) -> None:
-        self.finfos: tp.Dict[str, FunctionInfo] = dict()
-        self.region_mappings: tp.Dict[str, RegionMapping] = dict()
+        self.finfos: tp.Dict[str, FunctionInfo] = {}
+        self.region_mappings: tp.Dict[str, RegionMapping] = {}
         self.__cf_ylimit = 0
         self.__df_ylimit = 0
 
@@ -386,7 +386,7 @@ def generate_inout_cfg_cf(
         commit_report: report containing the commit data
         cr_meta: the meta commit report, if available
     """
-    cf_map = dict()  # RM -> [from, to]
+    cf_map = {}  # RM -> [from, to]
 
     # Add all from meta commit report and ...
     if cr_meta is not None:
@@ -456,7 +456,7 @@ def generate_inout_cfg_df(
         commit_report: report containing the commit data
         cr_meta: the meta commit report, if available
     """
-    df_map = dict()  # RM -> [from, to]
+    df_map = {}  # RM -> [from, to]
 
     # Add all from meta commit report and ...
     if cr_meta is not None:

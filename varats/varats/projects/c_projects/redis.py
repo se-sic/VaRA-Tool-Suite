@@ -7,6 +7,7 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     wrap_paths_to_binaries_with_name,
     ProjectBinaryWrapper,
@@ -27,7 +28,7 @@ class Redis(VProject):
 
     NAME = 'redis'
     GROUP = 'c_projects'
-    DOMAIN = 'database'
+    DOMAIN = ProjectDomains.DATABASE
 
     SOURCE = [
         bb.source.Git(
