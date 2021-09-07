@@ -136,18 +136,133 @@ class CommonPlotOptions():
 class PlotConfig():
     """Class with parameters that influence a plot's appearance."""
 
-    __options: tp.List[tp.Any] = []
+    def __init__(
+        self, fig_title: str, font_size: int, width: int, height: int,
+        legend_title: str, legend_size: int, show_legend: bool,
+        line_width: bool, x_tick_size: int, label_size: int
+    ) -> None:
+        self.fig_title = fig_title
+        self.font_size = font_size
+        self.width = width
+        self.height = height
+        self.legend_title = legend_title
+        self.legend_size = legend_size
+        self.show_legend = show_legend
+        self.line_width = line_width
+        self.x_tick_size = x_tick_size
+        self.label_size = label_size
+
+    __options: tp.List[tp.Any] = [
+        make_cli_option(
+            "--figure-title",
+            "--fig-title",
+            type=str,
+            default="",
+            required=False,
+            metavar="fig_title",
+            help="The title of the plot figure."
+        ),
+        make_cli_option(
+            "--font-size",
+            type=int,
+            default=10,
+            required=False,
+            metavar="font_size",
+            help="The font size of the plot figure."
+        ),
+        make_cli_option(
+            "--width",
+            type=int,
+            default=1500,
+            required=False,
+            metavar="width",
+            help="The width of the resulting plot file."
+        ),
+        make_cli_option(
+            "--height",
+            type=int,
+            default=1000,
+            required=False,
+            metavar="height",
+            help="The height of the resulting plot file."
+        ),
+        make_cli_option(
+            "--legend-title",
+            type=str,
+            default="",
+            required=False,
+            metavar="legend_title",
+            help="The title of the legend."
+        ),
+        make_cli_option(
+            "--legend-size",
+            type=int,
+            default=2,
+            required=False,
+            metavar="legend_size",
+            help="The size of the legend."
+        ),
+        make_cli_option(
+            "--show-legend/--hide-legend",
+            type=bool,
+            default=True,
+            required=False,
+            metavar="show_legend",
+            help="Shows/hides the legend."
+        ),
+        make_cli_option(
+            "--line-width",
+            type=float,
+            default=0.25,
+            required=False,
+            metavar="line_width",
+            help="The width of the plot line(s)."
+        ),
+        make_cli_option(
+            "--x-tick-size",
+            type=int,
+            default=2,
+            required=False,
+            metavar="x_tick_size",
+            help="The size of the x-ticks."
+        ),
+        make_cli_option(
+            "--label-size",
+            type=int,
+            default=2,
+            required=False,
+            metavar="label_size",
+            help="The label size of CVE/bug annotations."
+        )
+    ]
+
+    @staticmethod
+    def from_kwargs(**kwargs: tp.Any) -> 'PlotConfig':
+        return PlotConfig(
+            kwargs.get("fig_title", ""), kwargs.get("font_size", 10),
+            kwargs.get("width", 1500), kwargs.get("height", 1000),
+            kwargs.get("legend_title", ""), kwargs.get("legend_size", 2),
+            kwargs.get("show_legend", True), kwargs.get("line_width", 0.25),
+            kwargs.get("x_tick_size", 2), kwargs.get("label_size", 2)
+        )
 
     @classmethod
     def cli_options(cls, command: tp.Any) -> tp.Any:
         return add_cli_options(command, *cls.__options)
 
     def get_dict(self) -> tp.Dict[str, tp.Any]:
-        return {}
-
-    @staticmethod
-    def from_kwargs(**kwargs: tp.Any) -> 'PlotConfig':
-        return PlotConfig()
+        return {
+            "fig_title": self.fig_title,
+            "font_size": self.font_size,
+            "width": self.width,
+            "height": self.height,
+            "legend_title": self.legend_title,
+            "legend_size": self.legend_size,
+            "show_legend": self.show_legend,
+            "line_width": self.line_width,
+            "x_tick_size": self.x_tick_size,
+            "label_size": self.label_size
+        }
 
 
 class PlotGeneratorInitFailed(Exception):
