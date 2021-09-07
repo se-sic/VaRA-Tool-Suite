@@ -27,7 +27,6 @@ from varats.ts_utils.html_utils import (
     html_page,
     CSS_TABLE,
 )
-from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
 
@@ -50,8 +49,11 @@ def main() -> None:
     initialize_artefacts()
 
 
-@main.command(help="List all artefacts of the current paper config.")
-def list() -> None:
+# function name `list` would shadow built-in `list`
+@main.command(
+    name="list", help="List all artefacts of the current paper config."
+)
+def list_() -> None:
     paper_config = get_paper_config()
 
     for artefact in paper_config.artefacts:
@@ -100,9 +102,7 @@ def generate(only: tp.Optional[str]) -> None:
     # generate index.html
     _generate_index_html(artefacts, Artefact.base_output_dir() / "index.html")
     # generate plot_matrix.html
-    plot_artefacts = [
-        artefact for artefact in _filter_plot_artefacts(artefacts)
-    ]
+    plot_artefacts = list(_filter_plot_artefacts(artefacts))
     _generate_html_plot_matrix(
         plot_artefacts,
         Artefact.base_output_dir() / "plot_matrix.html"

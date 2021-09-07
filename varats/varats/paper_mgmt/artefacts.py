@@ -19,7 +19,7 @@ from varats.utils.settings import vara_cfg
 from varats.utils.yaml_util import load_yaml, store_as_yaml
 
 if tp.TYPE_CHECKING:
-    import varats.paper.case_study as cs
+    import varats.paper.case_study as cs  # pylint: disable=unused-import
 
 LOG = logging.getLogger(__name__)
 
@@ -307,5 +307,5 @@ def __store_artefacts_to_file(artefacts: Artefacts, file_path: Path) -> None:
 
 def initialize_artefacts() -> None:
     """Import plots and tables module to register artefact types."""
-    import varats.plot.plots  # pylint: disable=C0415
-    import varats.table.tables  # pylint: disable=C0415
+    import varats.plot.plots  # pylint: disable=C0415,unused-import
+    import varats.table.tables  # pylint: disable=C0415,unused-import

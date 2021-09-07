@@ -57,9 +57,9 @@ class Plot():
         Returns:
             a help string that contains all available plot names.
         """
-        return "The following plots are available:\n  " + "\n  ".join([
-            key for key in Plot.PLOTS
-        ])
+        return "The following plots are available:\n  " + "\n  ".join(
+            list(Plot.PLOTS)
+        )
 
     @staticmethod
     def get_class_for_plot_type(plot_type: str) -> tp.Type['Plot']:

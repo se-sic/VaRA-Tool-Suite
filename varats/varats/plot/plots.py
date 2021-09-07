@@ -154,6 +154,7 @@ class PlotGeneratorInitFailed(Exception):
     """Base class for plot generator related exceptions."""
 
     def __init__(self, message: str):
+        super().__init__()
         self.message = message
 
 
@@ -234,7 +235,7 @@ class PlotGenerator(abc.ABC):
             a help string that contains all available plot names.
         """
         return "The following plot generators are available:\n  " + "\n  ".join(
-            [key for key in PlotGenerator.GENERATORS]
+            list(PlotGenerator.GENERATORS)
         )
 
     @staticmethod
@@ -324,7 +325,8 @@ class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
     ) -> None:
         super().__init__(name, output_dir)
         self.__plot_generator_type = plot_generator_type
-        self.__plot_type_class = PlotGenerator.get_class_for_plot_generator_type(
+        self.__plot_type_class = \
+            PlotGenerator.get_class_for_plot_generator_type(
             self.__plot_generator_type
         )
         self.__common_options = common_options
