@@ -1016,7 +1016,7 @@ class BlameLibraryInteraction(Plot, plot_name=None):
 
         df.sort_values(by=['time_id'], inplace=True)
         df.reset_index(inplace=True)
-        rev = self.plot_kwargs['revision']
+        rev = commit_map.convert_to_full_or_warn(self.plot_kwargs['revision'])
 
         dataframe = df.loc[df["revision"].apply(
             lambda x: commit_map.convert_to_full_or_warn(x)
