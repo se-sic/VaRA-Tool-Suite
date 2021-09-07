@@ -9,10 +9,10 @@ in the module `varats.plot.plots`.
 import logging
 import typing as tp
 
-import click as click
+import click
 
 from varats.data.discover_reports import initialize_reports
-from varats.paper_mgmt.artefacts import create_artefact, store_artefacts
+from varats.paper_mgmt.artefacts import store_artefacts
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plot.plots import (
     PlotGenerator,
@@ -29,6 +29,7 @@ LOG = logging.getLogger(__name__)
 
 
 class PlotCLI(click.MultiCommand):
+    """Command factory for plots."""
 
     def __init__(self, **attrs: tp.Any):
         initialize_plots()
@@ -63,6 +64,7 @@ class PlotCLI(click.MultiCommand):
                         artefact_name, generator_instance, common_options
                     )
                     paper_config.add_artefact(artefact)
+                    print(paper_config.path)
                     store_artefacts(paper_config.artefacts, paper_config.path)
                 else:
                     generator_instance(common_options)

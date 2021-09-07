@@ -8,7 +8,6 @@ from enum import Enum
 from select import select
 
 import click
-from click import Context, Parameter
 from plumbum.lib import read_fd_decode_safely
 from plumbum.machines.local import PlumbumLocalPopen
 from rich.traceback import install
@@ -140,11 +139,12 @@ class TypedChoice(click.Choice, tp.Generic[ChoiceTy]):
         super().__init__(list(choices.keys()), case_sensitive)
 
     def convert(
-        self, value: tp.Any, param: tp.Optional[Parameter],
-        ctx: tp.Optional[Context]
+        self, value: tp.Any, param: tp.Optional[click.Parameter],
+        ctx: tp.Optional[click.Context]
     ) -> ChoiceTy:
-        return self.__choices[super(TypedChoice,
-                                    self).convert(value, param, ctx)]
+        return self.__choices[
+            #  pylint: disable=super-with-arguments
+            super(TypedChoice, self).convert(value, param, ctx)]
 
 
 class TypedMultiChoice(click.Choice, tp.Generic[ChoiceTy]):
@@ -166,15 +166,16 @@ class TypedMultiChoice(click.Choice, tp.Generic[ChoiceTy]):
         super().__init__(list(choices.keys()), case_sensitive)
 
     def convert(
-        self, value: tp.Any, param: tp.Optional[Parameter],
-        ctx: tp.Optional[Context]
+        self, value: tp.Any, param: tp.Optional[click.Parameter],
+        ctx: tp.Optional[click.Context]
     ) -> tp.List[ChoiceTy]:
         values = [value]
         if isinstance(value, str):
-            values = value.split(",")
+            values = list(map(str.strip, value.split(",")))
 
         return [
             item for v in values for item in self.__choices[
+                #  pylint: disable=super-with-arguments
                 super(TypedMultiChoice, self).convert(v, param, ctx)]
         ]
 
@@ -197,9 +198,9 @@ class EnumChoice(click.Choice, tp.Generic[EnumTy]):
         self, value: tp.Union[str, EnumTy], param: tp.Optional[click.Parameter],
         ctx: tp.Optional[click.Context]
     ) -> EnumTy:
-        if isinstance(value, Enum):
-            return value
-        return self.__enum[super().convert(value, param, ctx)]
+        if isinstance(value, str):
+            return self.__enum[super().convert(value, param, ctx)]
+        return value
 
 
 def tee(process: PlumbumLocalPopen,

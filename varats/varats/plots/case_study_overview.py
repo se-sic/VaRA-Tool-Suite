@@ -195,6 +195,7 @@ class CaseStudyOverviewGenerator(
         return [
             self.PLOT(
                 case_study=self.__case_study,
+                report_type=self.__report_type,
                 show_blocked=self.__show_blocked,
                 show_all_blocked=self.__show_all_blocked
             )
