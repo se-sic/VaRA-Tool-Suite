@@ -8,6 +8,7 @@ from argparse import ArgumentParser, ArgumentTypeError, _SubParsersAction
 from enum import Enum
 from pathlib import Path
 
+import click
 from argparse_utils import enum_action
 from plumbum import FG, colors, local
 
@@ -40,7 +41,16 @@ from varats.utils.settings import vara_cfg
 LOG = logging.getLogger(__name__)
 
 
+@click.group()
 def main() -> None:
+    """Allow easier management of case studies."""
+    initialize_cli_tool()
+    initialize_projects()
+    initialize_reports()
+    initialize_plots()  # needed for vara-cs ext smooth_plot
+
+
+def mai_nold() -> None:
     """Allow easier management of case studies."""
     initialize_cli_tool()
     initialize_projects()
@@ -49,7 +59,6 @@ def main() -> None:
     parser = ArgumentParser("vara-cs")
     sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
 
-    __create_status_parser(sub_parsers)  # vara-cs status
     __create_gen_parser(sub_parsers)  # vara-cs gen
     __create_ext_parser(sub_parsers)  # vara-cs ext
     __create_package_parser(sub_parsers)  # vara-cs package
@@ -65,7 +74,7 @@ def main() -> None:
 
 @configuration_lookup_error_handler
 def __casestudy_exec_command(
-    args: tp.Dict[str, tp.Any], parser: ArgumentParser
+        args: tp.Dict[str, tp.Any], parser: ArgumentParser
 ) -> None:
     if args['subcommand'] == 'status':
         __casestudy_status(args, parser)
@@ -77,71 +86,6 @@ def __casestudy_exec_command(
         __casestudy_view(args)
     elif args['subcommand'] == 'cleanup':
         __casestudy_cleanup(args, parser)
-
-
-def __create_status_parser(sub_parsers: _SubParsersAction) -> None:
-    status_parser = sub_parsers.add_parser(
-        'status', help="Show status of current case study"
-    )
-    status_parser.add_argument(
-        "report_name",
-        help=(
-            "Provide a report name to "
-            "select which files are considered for the status"
-        ),
-        choices=BaseReport.REPORT_TYPES.keys(),
-        type=str,
-        default=".*"
-    )
-    status_parser.add_argument(
-        "--filter-regex",
-        help="Provide a regex to filter the shown case studies",
-        type=str,
-        default=".*"
-    )
-    status_parser.add_argument(
-        "--paper_config",
-        help="Use this paper config instead of the configured one",
-        default=None
-    )
-    status_parser.add_argument(
-        "-s",
-        "--short",
-        help="Only print a short summary",
-        action="store_true",
-        default=False
-    )
-    status_parser.add_argument(
-        "--list-revs",
-        help="Print a list of revisions for every stage and every case study",
-        action="store_true",
-        default=False
-    )
-    status_parser.add_argument(
-        "--ws",
-        help="Print status with stage separation",
-        action="store_true",
-        default=False
-    )
-    status_parser.add_argument(
-        "--sorted",
-        help="Sort the revisions in the order they are printed by git log.",
-        action="store_true",
-        default=False
-    )
-    status_parser.add_argument(
-        "--legend",
-        help="Print status with legend",
-        action="store_true",
-        default=False
-    )
-    status_parser.add_argument(
-        "--force-color",
-        help="Force colored output also when not connected to a terminal "
-        "(e.g. when piping to less -r).",
-        action="store_true",
-        default=False
-    )
 
 
 def __add_common_args(sub_parser: ArgumentParser) -> None:
@@ -175,7 +119,7 @@ def __add_common_args(sub_parser: ArgumentParser) -> None:
         action="store_true",
         default=False,
         help="Separate the revisions in different stages per year "
-        "(when using \'--revs-per-year\')."
+             "(when using \'--revs-per-year\')."
     )
     sub_parser.add_argument(
         "--num-rev",
@@ -247,7 +191,7 @@ def __create_ext_parser(sub_parsers: _SubParsersAction) -> None:
         type=int,
         default=5,
         help="Maximal expected gradient in percent between " +
-        "two revisions, e.g., 5 for 5%%"
+             "two revisions, e.g., 5 for 5%%"
     )
     ext_parser.add_argument(
         "--plot-type", help="Plot to calculate new revisions from."
@@ -271,7 +215,7 @@ def __create_package_parser(sub_parsers: _SubParsersAction) -> None:
     package_parser.add_argument(
         "--filter-regex",
         help="Provide a regex to only include case "
-        "studies that match the filter.",
+             "studies that match the filter.",
         type=str,
         default=".*"
     )
@@ -334,27 +278,55 @@ def __create_cleanup_parser(sub_parsers: _SubParsersAction) -> None:
     )
 
 
+@main.command("status")
+@click.argument("report_type",
+                type=click.Choice(list(BaseReport.REPORT_TYPES.keys())))
+@click.option("--filter-regex",
+              help="Provide a regex to filter the shown case studies",
+              default=".*")
+@click.option("--paper-config",
+              help="Use this paper config instead of the configured one",
+              default=None)
+@click.option("-s", "--short", is_flag=True, help="Only print a short summary")
+@click.option("--list-revs", is_flag=True,
+              help="Print a list of revisions for every stage and every case study"
+              )
+@click.option("--ws", is_flag=True, help="Print status with stage separation")
+@click.option("--sorted", "sort_revs", is_flag=True, help="Sort the revisions in the order they are printed by git log.")
+@click.option("--legend", is_flag=True, help="Print status with legend")
+@click.option("--force-color", is_flag=True,
+              help="Force colored output also when not connected to a terminal "
+                   "(e.g. when piping to less -r).")
 def __casestudy_status(
-    args: tp.Dict[str, tp.Any], parser: ArgumentParser
+        report_type: str,
+        filter_regex: str,
+        paper_config: str,
+        short: bool,
+        list_revs: bool,
+        ws: bool,
+        sort_revs: bool,
+        legend: bool,
+        force_color: bool
 ) -> None:
-    if args.get("force_color", False):
+    """Show status of case-studies for a specified REPORT TYPE"""
+    if force_color:
         colors.use_color = True
-    if 'paper_config' in args:
-        vara_cfg()['paper_config']['current_config'] = args['paper_config']
-    if args['short'] and args['list_revs']:
-        parser.error(
+    if paper_config:
+        vara_cfg()['paper_config']['current_config'] = paper_config
+    if short and list_revs:
+        click.UsageError(
             "At most one argument of: --short, --list-revs can be used."
         )
-    if args['short'] and args['ws']:
-        parser.error("At most one argument of: --short, --ws can be used.")
+    if short and ws:
+        click.UsageError("At most one argument of: --short, --ws can be used.")
     PCM.show_status_of_case_studies(
-        args['report_name'], args['filter_regex'], args['short'],
-        args['sorted'], args['list_revs'], args['ws'], args['legend']
+        report_type, filter_regex, short,
+        sort_revs, list_revs, ws, legend
     )
 
 
 def __casestudy_create_or_extend(
-    args: tp.Dict[str, tp.Any], parser: ArgumentParser
+        args: tp.Dict[str, tp.Any], parser: ArgumentParser
 ) -> None:
     if "project" not in args and "git_path" not in args:
         parser.error("need --project or --git-path")
@@ -393,7 +365,7 @@ def __casestudy_create_or_extend(
             'strategy'] is ExtenderStrategy.SMOOTH_PLOT:
             args['project'] = case_study.project_name
             args['result_folder'] = str(vara_cfg()['result_dir']
-                                       ) + "/" + args['project']
+                                        ) + "/" + args['project']
             LOG.info(f"Result folder defaults to: {args['result_folder']}")
 
         extend_case_study(case_study, cmap, args['strategy'], **args)
@@ -415,7 +387,7 @@ def __casestudy_create_or_extend(
 
 
 def __casestudy_package(
-    args: tp.Dict[str, tp.Any], parser: ArgumentParser
+        args: tp.Dict[str, tp.Any], parser: ArgumentParser
 ) -> None:
     output_path = Path(args["output"])
     if output_path.suffix == '':
@@ -462,7 +434,7 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> ShortCommitHash:
 
         # Create call backs for cli choice
         def set_commit_hash(
-            choice_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
+                choice_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
         ) -> None:
             nonlocal commit_hash
             commit_hash = choice_pair[0]
@@ -476,7 +448,7 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> ShortCommitHash:
         ])
 
         def result_file_to_list_entry(
-            commit_status_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
+                commit_status_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
         ) -> str:
             status = commit_status_pair[1].get_colored_status().rjust(
                 longest_file_status_extension +
@@ -569,7 +541,7 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
 
 
 def __casestudy_cleanup(
-    args: tp.Dict[str, tp.Any], parser: ArgumentParser
+        args: tp.Dict[str, tp.Any], parser: ArgumentParser
 ) -> None:
     cleanup_type = args['cleanup_type']
     if cleanup_type == CleanupType.ERROR:
@@ -600,8 +572,8 @@ def _remove_old_result_files() -> None:
                     newer_files[commit_hash] = opt_res_file
                 else:
                     if (
-                        current_file.stat().st_mtime_ns <
-                        opt_res_file.stat().st_mtime_ns
+                            current_file.stat().st_mtime_ns <
+                            opt_res_file.stat().st_mtime_ns
                     ):
                         newer_files[commit_hash] = opt_res_file
                         old_files.append(current_file)
@@ -636,8 +608,8 @@ def _remove_error_result_files() -> None:
         for result_file_name in result_file_names:
             report_file_name = ReportFilename(result_file_name)
             if report_file_name.is_result_file() and (
-                report_file_name.has_status_compileerror() or
-                report_file_name.has_status_failed()
+                    report_file_name.has_status_compileerror() or
+                    report_file_name.has_status_failed()
             ):
                 os.remove(result_dir_path / result_file_name)
 
