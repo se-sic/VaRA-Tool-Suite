@@ -9,6 +9,7 @@ from plumbum import local
 from plumbum.path.utils import delete
 
 from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
@@ -25,7 +26,7 @@ class Doxygen(VProject):
 
     NAME = 'doxygen'
     GROUP = 'cpp_projects'
-    DOMAIN = 'documentation'
+    DOMAIN = ProjectDomains.DOCUMENTATION
 
     SOURCE = [
         block_revisions([

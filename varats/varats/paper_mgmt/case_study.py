@@ -203,7 +203,7 @@ def get_newest_result_files_for_case_study(
     Returns:
         list of result file paths
     """
-    files_to_store: tp.Dict[ShortCommitHash, Path] = dict()
+    files_to_store: tp.Dict[ShortCommitHash, Path] = {}
 
     result_dir /= case_study.project_name
     if not result_dir.exists():

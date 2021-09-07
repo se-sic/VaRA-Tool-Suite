@@ -386,7 +386,7 @@ def _compute_node_placement(commit_count: int) -> tp.List[np.ndarray]:
     that HEAD is on top."""
     # use commit_count + 1 since first and last coordinates are equal
     theta_vals = np.linspace(-3 * np.pi / 2, np.pi / 2, commit_count + 1)
-    commit_coordinates: tp.List[np.ndarray] = list()
+    commit_coordinates: tp.List[np.ndarray] = []
     for theta in theta_vals:
         commit_coordinates.append(np.array([np.cos(theta), np.sin(theta)]))
     return commit_coordinates

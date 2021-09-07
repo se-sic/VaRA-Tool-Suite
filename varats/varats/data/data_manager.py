@@ -108,7 +108,7 @@ class DataManager():
     """
 
     def __init__(self) -> None:
-        self.file_map: tp.Dict[str, FileBlob] = dict()
+        self.file_map: tp.Dict[str, FileBlob] = {}
         self.thread_pool = QThreadPool()
         self.loader_lock = Lock()
 
