@@ -1266,7 +1266,9 @@ class BlameDegree(Plot, plot_name=None):
             a set of revisions sampled between revisions with unusually large
             changes in degree distribution
         """
-        commit_map: CommitMap = get_commit_map(self.plot_kwargs['case_study'].project_name)
+        commit_map: CommitMap = get_commit_map(
+            self.plot_kwargs['case_study'].project_name
+        )
         interaction_plot_df = self._get_degree_data()
         unique_revisions, sub_df_list = _filter_data_frame(
             degree_type, interaction_plot_df, commit_map
