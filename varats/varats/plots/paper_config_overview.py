@@ -313,6 +313,7 @@ class PaperConfigOverviewGenerator(
     plot=PaperConfigOverviewPlot,
     options=[PlotGenerator.REQUIRE_REPORT_TYPE]
 ):
+    """Generates a single pc-overview plot for the current paper config."""
 
     @check_required_args("report_type")
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):

@@ -154,12 +154,11 @@ class PlotConfig():
 
     __options: tp.List[tp.Any] = [
         make_cli_option(
-            "--figure-title",
             "--fig-title",
             type=str,
             default="",
             required=False,
-            metavar="fig_title",
+            metavar="NAME",
             help="The title of the plot figure."
         ),
         make_cli_option(
@@ -167,7 +166,7 @@ class PlotConfig():
             type=int,
             default=10,
             required=False,
-            metavar="font_size",
+            metavar="SIZE",
             help="The font size of the plot figure."
         ),
         make_cli_option(
@@ -175,7 +174,7 @@ class PlotConfig():
             type=int,
             default=1500,
             required=False,
-            metavar="width",
+            metavar="WIDTH",
             help="The width of the resulting plot file."
         ),
         make_cli_option(
@@ -183,7 +182,7 @@ class PlotConfig():
             type=int,
             default=1000,
             required=False,
-            metavar="height",
+            metavar="HEIGHT",
             help="The height of the resulting plot file."
         ),
         make_cli_option(
@@ -191,7 +190,7 @@ class PlotConfig():
             type=str,
             default="",
             required=False,
-            metavar="legend_title",
+            metavar="NAME",
             help="The title of the legend."
         ),
         make_cli_option(
@@ -199,7 +198,7 @@ class PlotConfig():
             type=int,
             default=2,
             required=False,
-            metavar="legend_size",
+            metavar="SIZE",
             help="The size of the legend."
         ),
         make_cli_option(
@@ -207,7 +206,6 @@ class PlotConfig():
             type=bool,
             default=True,
             required=False,
-            metavar="show_legend",
             help="Shows/hides the legend."
         ),
         make_cli_option(
@@ -215,7 +213,7 @@ class PlotConfig():
             type=float,
             default=0.25,
             required=False,
-            metavar="line_width",
+            metavar="WIDTH",
             help="The width of the plot line(s)."
         ),
         make_cli_option(
@@ -223,7 +221,7 @@ class PlotConfig():
             type=int,
             default=2,
             required=False,
-            metavar="x_tick_size",
+            metavar="SIZE",
             help="The size of the x-ticks."
         ),
         make_cli_option(
@@ -231,7 +229,7 @@ class PlotConfig():
             type=int,
             default=2,
             required=False,
-            metavar="label_size",
+            metavar="SIZE",
             help="The label size of CVE/bug annotations."
         )
     ]

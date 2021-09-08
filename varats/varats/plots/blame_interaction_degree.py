@@ -56,6 +56,7 @@ class EdgeWeightThreshold(Enum):
 
 
 class Colormap(Enum):
+    """Matplotlib colormaps."""
 
     # https://matplotlib.org/stable/tutorials/colors/colormaps.html
     # Sequential
@@ -87,7 +88,6 @@ OPTIONAL_SHOW_INTERACTIONS: CLIOptionTy = make_cli_option(
     type=bool,
     default=True,
     required=False,
-    metavar="show_interactions",
     help="Enables/Disables the blame interactions."
 )
 
@@ -96,7 +96,6 @@ OPTIONAL_SHOW_DIFF: CLIOptionTy = make_cli_option(
     type=bool,
     default=False,
     required=False,
-    metavar="show_diff",
     help="Enables/Disables the blame diff interactions."
 )
 
@@ -105,7 +104,7 @@ OPTIONAL_REVISION_LENGTH: CLIOptionTy = make_cli_option(
     type=int,
     default=10,
     required=False,
-    metavar="revision_length",
+    metavar="LENGTH",
     help="Sets the number of shown revision chars."
 )
 
@@ -114,7 +113,6 @@ OPTIONAL_SHOW_EDGE_WEIGHT: CLIOptionTy = make_cli_option(
     type=bool,
     default=True,
     required=False,
-    metavar="edge_weight",
     help="Enables/Disables the edge weights of interactions."
 )
 
@@ -123,9 +121,7 @@ OPTIONAL_EDGE_WEIGHT_THRESHOLD: CLIOptionTy = make_cli_option(
     type=EnumChoice(EdgeWeightThreshold, case_sensitive=False),
     default=None,
     required=False,
-    metavar="edge_weight_threshold",
-    help="Sets the threshold to show edge weights. Options are: LOW, MEDIUM, "
-    "and HIGH."
+    help="Sets the threshold when to show edge weights."
 )
 
 OPTIONAL_LAYOUT_ENGINE: CLIOptionTy = make_cli_option(
@@ -133,7 +129,6 @@ OPTIONAL_LAYOUT_ENGINE: CLIOptionTy = make_cli_option(
     type=click.Choice(["dot", "fdp", "sfdp", "neato", "twopi", "circo"]),
     default="fdp",
     required=False,
-    metavar="layout_engine",
     help="The layout engine."
 )
 
@@ -142,7 +137,7 @@ OPTIONAL_SHOW_ONLY_COMMIT: CLIOptionTy = make_cli_option(
     type=str,
     default=None,
     required=False,
-    metavar="show_only_commit",
+    metavar="SHORT_COMMIT_HASH",
     help="The commit whose interactions are to be shown."
 )
 
@@ -151,7 +146,6 @@ OPTIONAL_SHOW_CHURN: CLIOptionTy = make_cli_option(
     type=bool,
     default=True,
     required=False,
-    metavar="show_churn",
     help="Shows/hides the code churn."
 )
 
@@ -160,7 +154,7 @@ OPTIONAL_EDGE_COLOR: CLIOptionTy = make_cli_option(
     type=str,
     default="black",
     required=False,
-    metavar="edge_color",
+    metavar="COLOR",
     help="The color of an edge."
 )
 
@@ -169,7 +163,6 @@ OPTIONAL_COLORMAP: CLIOptionTy = make_cli_option(
     type=EnumChoice(Colormap),
     default=Colormap.GST_STRN,
     required=False,
-    metavar="colormap",
     help="The colormap used in the plot."
 )
 
@@ -178,7 +171,6 @@ OPTIONAL_SHOW_CVE: CLIOptionTy = make_cli_option(
     type=bool,
     default=False,
     required=False,
-    metavar="show_cve",
     help="Shows/hides CVE annotations."
 )
 
@@ -187,7 +179,6 @@ OPTIONAL_SHOW_BUGS: CLIOptionTy = make_cli_option(
     type=bool,
     default=False,
     required=False,
-    metavar="show_bugs",
     help="Shows/hides bug annotations."
 )
 
@@ -196,7 +187,7 @@ OPTIONAL_CVE_BUG_LINE_WIDTH: CLIOptionTy = make_cli_option(
     type=int,
     default=1,
     required=False,
-    metavar="cve_bug_line_width",
+    metavar="WIDTH",
     help="The line width of CVE/bug annotations."
 )
 
@@ -205,7 +196,7 @@ OPTIONAL_CVE_BUG_COLOR: CLIOptionTy = make_cli_option(
     type=str,
     default="green",
     required=False,
-    metavar="cve_bug_color",
+    metavar="COLOR",
     help="The color of CVE/bug annotations."
 )
 
@@ -214,7 +205,6 @@ OPTIONAL_VERTICAL_ALIGNMENT: CLIOptionTy = make_cli_option(
     type=click.Choice(['center', 'top', 'bottom', 'baseline']),
     default="bottom",
     required=False,
-    metavar="vertical_alignment",
     help="The vertical alignment of CVE/bug annotations."
 )
 
@@ -378,8 +368,8 @@ def _generate_stackplot(
     # annotate CVEs
     with_cve = plot_kwargs["show_cve"]
     with_bugs = plot_kwargs["show_bugs"]
-    cs = plot_kwargs["case_study"]
-    project_name = cs.project_name
+    case_study = plot_kwargs["case_study"]
+    project_name = case_study.project_name
     commit_map = get_commit_map(project_name)
     if with_cve or with_bugs:
         project = get_project_cls_by_name(project_name)
@@ -612,7 +602,7 @@ def _build_sankey_color_mappings(
         (name, {}) for name in lib_name_dict["all_distinct_lib_names"]
     )
 
-    colormaps: tp.List[Colormap] = [c for c in Colormap]
+    colormaps: tp.List[Colormap] = list(Colormap)
     num_colormaps: int = len(tp.cast(tp.List[str], colormaps))
 
     if len(lib_name_dict["all_distinct_lib_names"]) > num_colormaps:
@@ -836,12 +826,12 @@ def _build_graphviz_edges(
     show_edge_weight: bool,
     commit_map: CommitMap,
     edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
-    show_only_interactions_of_commit: tp.Optional[str] = None
+    show_only_interactions_of_commit: tp.Optional[ShortCommitHash] = None
 ) -> LibraryToHashesMapping:
 
     if show_only_interactions_of_commit is not None:
         show_only_interactions_of_commit = commit_map.convert_to_full_or_warn(
-            ShortCommitHash(show_only_interactions_of_commit)
+            show_only_interactions_of_commit
         ).hash
 
     base_lib_names = _get_distinct_base_lib_names(df)
@@ -902,7 +892,7 @@ def _build_graphviz_fig(
     df: pd.DataFrame, revision: FullCommitHash, show_edge_weight: bool,
     shown_revision_length: int, commit_map: CommitMap,
     edge_weight_threshold: tp.Optional[EdgeWeightThreshold], layout_engine: str,
-    show_only_interactions_of_commit: tp.Optional[str]
+    show_only_interactions_of_commit: tp.Optional[ShortCommitHash]
 ) -> Digraph:
     graph = Digraph(name="Digraph", strict=True, engine=layout_engine)
     graph.attr(label=f"Revision: {revision}")
@@ -996,18 +986,24 @@ class BlameLibraryInteraction(Plot, plot_name=None):
                 raise PlotDataEmpty
 
             if blame_interactions:
-                inter_df = self._get_interaction_data(cs, commit_map, False)
+                inter_df = self._get_interaction_data(
+                    case_study, commit_map, False
+                )
             else:
-                inter_df = self._get_interaction_data(cs, commit_map, True)
+                inter_df = self._get_interaction_data(
+                    case_study, commit_map, True
+                )
 
             if blame_diff:
-                diff_df = self._get_interaction_data(cs, commit_map, True)
+                diff_df = self._get_interaction_data(
+                    case_study, commit_map, True
+                )
                 return _add_diff_amount_col_to_df(inter_df, diff_df)
 
             return inter_df
 
-        cs: CaseStudy = self.plot_kwargs["case_study"]
-        commit_map: CommitMap = get_commit_map(cs.project_name)
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        commit_map: CommitMap = get_commit_map(case_study.project_name)
 
         df = _get_graphviz_project_data(
             self.plot_kwargs["show_interactions"],
@@ -1018,9 +1014,8 @@ class BlameLibraryInteraction(Plot, plot_name=None):
         df.reset_index(inplace=True)
         rev = commit_map.convert_to_full_or_warn(self.plot_kwargs['revision'])
 
-        dataframe = df.loc[df["revision"].apply(
-            lambda x: commit_map.convert_to_full_or_warn(x)
-        ) == rev]
+        dataframe = df.loc[
+            df["revision"].apply(commit_map.convert_to_full_or_warn) == rev]
 
         fig = _build_graphviz_fig(
             dataframe, rev, self.plot_kwargs["show_edge_weight"],
@@ -1233,7 +1228,7 @@ class BlameDegree(Plot, plot_name=None):
         rev = commit_map.convert_to_full_or_warn(self.plot_kwargs['revision'])
 
         df = interaction_plot_df.loc[interaction_plot_df["revision"].apply(
-            lambda x: commit_map.convert_to_full_or_warn(x)
+            commit_map.convert_to_full_or_warn
         ) == rev]
 
         lib_names_dict = _get_separated_lib_names_dict(df)
@@ -1343,11 +1338,6 @@ class BlameInteractionDegree(BlameDegree, plot_name="b_interaction_degree"):
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        if not self.plot_kwargs["legend_title"]:
-            self.plot_kwargs["legend_title"] = "Interaction degrees"
-        if not self.plot_kwargs["fig_title"]:
-            self.plot_kwargs["fig_title"] = "Blame interactions"
-
         self._degree_plot(DegreeType.INTERACTION)
 
     def calc_missing_revisions(
@@ -1382,8 +1372,10 @@ class BlameInteractionDegreeGenerator(
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
         self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-        self.__fig_title: str = plot_config.fig_title
-        self.__legend_title: str = plot_config.legend_title
+        self.__fig_title: str = plot_config.fig_title \
+            if plot_config.fig_title else "Blame interactions"
+        self.__legend_title: str = plot_config.legend_title \
+            if plot_config.legend_title else "Interaction degrees"
         self.__legend_size: int = plot_config.legend_size
         self.__show_legend: bool = plot_config.show_legend
         self.__line_width: int = plot_config.line_width
@@ -1439,6 +1431,7 @@ class BlameInteractionDegreeMultiLib(
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
+        # TODO: Move check to generator using all()
         if 'base_lib' not in self.plot_kwargs or \
                 'inter_lib' not in self.plot_kwargs:
             LOG.warning("No library names were provided.")
@@ -1522,7 +1515,8 @@ class BlameLibraryInteractions(
             self.plot(True)
         except PlotDataEmpty:
             LOG.warning(
-                f"No data for project {self.plot_kwargs['case_study'].project_name}."
+                f"No data for project "
+                f"{self.plot_kwargs['case_study'].project_name}. "
             )
             return
         self.__figure.show()
@@ -1652,7 +1646,8 @@ class BlameCommitInteractionsGraphviz(
             self.plot(True)
         except PlotDataEmpty:
             LOG.warning(
-                f"No data for project {self.plot_kwargs['case_study'].project_name}."
+                f"No data for project "
+                f"{self.plot_kwargs['case_study'].project_name}."
             )
             return
         self.__figure.view(tempfile.mktemp())
@@ -1711,7 +1706,9 @@ class GraphvizLibraryInteractionsGeneratorRev(
             EdgeWeightThreshold] = plot_kwargs["edge_weight_threshold"]
         self.__revision_length: int = plot_kwargs["revision_length"]
         self.__layout_engine: str = plot_kwargs["layout_engine"]
-        self.__show_only_commit: tp.Optional[str] = plot_kwargs[
+        self.__show_only_commit: tp.Optional[ShortCommitHash] = ShortCommitHash(
+            plot_kwargs["show_only_commit"]
+        ) if plot_kwargs["show_only_commit"] is not None else plot_kwargs[
             "show_only_commit"]
 
     def generate(self) -> tp.List[Plot]:
@@ -1757,8 +1754,9 @@ class GraphvizLibraryInteractionsGeneratorCS(
             EdgeWeightThreshold] = plot_kwargs["edge_weight_threshold"]
         self.__revision_length: int = plot_kwargs["revision_length"]
         self.__layout_engine: str = plot_kwargs["layout_engine"]
-        self.__show_only_commit: tp.Optional[str] = plot_kwargs[
-            "show_only_commit"]
+        self.__show_only_commit: tp.Optional[ShortCommitHash] = ShortCommitHash(
+            plot_kwargs["show_only_commit"]
+        )
 
     def generate(self) -> tp.List[Plot]:
         return [
