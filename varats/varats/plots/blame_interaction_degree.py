@@ -86,58 +86,21 @@ class Colormap(Enum):
 # Required
 REQUIRE_BASE_LIB: CLIOptionTy = make_cli_option(
     "--base-lib",
-    "--base-library",
     type=str,
     required=True,
-    metavar="base_lib",
+    metavar="NAME",
     help="The base library name."
 )
 
 REQUIRE_INTER_LIB: CLIOptionTy = make_cli_option(
     "--inter-lib",
-    "--interacting-library",
     type=str,
     required=True,
-    metavar="inter_lib",
+    metavar="NAME",
     help="The interacting library name."
 )
 
 # Optional
-OPTIONAL_FIG_TITLE: CLIOptionTy = make_cli_option(
-    "--fig-title",
-    type=str,
-    default="",
-    required=False,
-    metavar="fig_title",
-    help="The title of the plot figure."
-)
-
-OPTIONAL_FONT_SIZE: CLIOptionTy = make_cli_option(
-    "--font-size",
-    type=int,
-    default=10,
-    required=False,
-    metavar="font_size",
-    help="The font size of the plot figure."
-)
-
-OPTIONAL_WIDTH: CLIOptionTy = make_cli_option(
-    "--width",
-    type=int,
-    default=1500,
-    required=False,
-    metavar="width",
-    help="The width of the resulting plot file."
-)
-OPTIONAL_HEIGHT: CLIOptionTy = make_cli_option(
-    "--height",
-    type=int,
-    default=1000,
-    required=False,
-    metavar="height",
-    help="The height of the resulting plot file."
-)
-
 OPTIONAL_SHOW_INTERACTIONS: CLIOptionTy = make_cli_option(
     "--show-interactions/--hide-interactions",
     type=bool,
@@ -1163,11 +1126,13 @@ class BlameDegree(Plot, plot_name=None):
             )
             raise PlotDataEmpty
 
-        summed_df = interaction_plot_df.groupby(['revision']).sum()
+        summed_df = interaction_plot_df[["revision", "amount"]].copy()
+        summed_df["revision"] = summed_df.revision.astype('str')
+        summed_df = summed_df.groupby(['revision']).sum()
 
         # Recalculate fractions based on the selected libraries
         for idx, row in interaction_plot_df.iterrows():
-            total_amount = summed_df['amount'].loc[row['revision']]
+            total_amount = summed_df['amount'].loc[row['revision'].hash]
             interaction_plot_df.at[idx,
                                    'fraction'] = row['amount'] / total_amount
 
@@ -1468,20 +1433,11 @@ class BlameInteractionDegreeMultiLib(
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        if not self.plot_kwargs["legend_title"]:
-            self.plot_kwargs["legend_title"] = "Interaction degrees"
-        if not self.plot_kwargs["fig_title"]:
-            self.plot_kwargs["fig_title"] = "Blame interactions"
+        self._multi_lib_degree_plot(DegreeType.INTERACTION)
 
-        self._multi_lib_degree_plot(DegreeType.interaction)
-
-        # TODO: Move check to generator using all()
-        if 'base_lib' not in self.plot_kwargs or \
-                'inter_lib' not in self.plot_kwargs:
-            LOG.warning("No library names were provided.")
-            raise PlotDataEmpty
-
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         return self._calc_missing_revisions(
             DegreeType.INTERACTION, boundary_gradient
         )
@@ -1493,24 +1449,11 @@ class BlameInteractionDegreeMultiLibGenerator(
     plot=BlameInteractionDegreeMultiLib,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE,
-        PlotGenerator.REQUIRE_MULTI_CASE_STUDY,
-        REQUIRE_BASE_LIB,
-        REQUIRE_INTER_LIB,
-        OPTIONAL_FIG_TITLE,
-        OPTIONAL_SHOW_CHURN,
-        OPTIONAL_LEGEND_TITLE,
-        OPTIONAL_LEGEND_SIZE,
-        OPTIONAL_SHOW_LEGEND,
-        OPTIONAL_LINE_WIDTH,
-        OPTIONAL_X_TICK_SIZE,
-        OPTIONAL_EDGE_COLOR,
-        OPTIONAL_COLORMAP,
-        OPTIONAL_SHOW_CVE,
-        OPTIONAL_SHOW_BUGS,
-        OPTIONAL_CVE_BUG_LINE_WIDTH,
-        OPTIONAL_CVE_BUG_COLOR,
-        OPTIONAL_VERTICAL_ALIGNMENT,
-        OPTIONAL_LABEL_SIZE,
+        PlotGenerator.REQUIRE_MULTI_CASE_STUDY, REQUIRE_BASE_LIB,
+        REQUIRE_INTER_LIB, OPTIONAL_SHOW_CHURN, OPTIONAL_EDGE_COLOR,
+        OPTIONAL_COLORMAP, OPTIONAL_SHOW_CVE, OPTIONAL_SHOW_BUGS,
+        OPTIONAL_CVE_BUG_LINE_WIDTH, OPTIONAL_CVE_BUG_COLOR,
+        OPTIONAL_VERTICAL_ALIGNMENT
     ]
 ):
     """Generates multi-lib degree plot(s) for the selected case study(ies)."""
@@ -1522,13 +1465,16 @@ class BlameInteractionDegreeMultiLibGenerator(
         self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
         self.__base_lib: str = plot_kwargs["base_lib"]
         self.__inter_lib: str = plot_kwargs["inter_lib"]
-        self.__fig_title: str = plot_kwargs["fig_title"]
+        self.__fig_title: str = plot_config.fig_title \
+            if plot_config.fig_title else "Blame interactions"
+        self.__legend_title: str = plot_config.legend_title \
+            if plot_config.legend_title else "Interaction degrees"
         self.__show_churn: bool = plot_kwargs["show_churn"]
-        self.__legend_title: str = plot_kwargs["legend_title"]
-        self.__legend_size: int = plot_kwargs["legend_size"]
-        self.__show_legend: bool = plot_kwargs["show_legend"]
-        self.__line_width: int = plot_kwargs["line_width"]
-        self.__x_tick_size: int = plot_kwargs["x_tick_size"]
+        self.__legend_size: int = plot_config.legend_size
+        self.__show_legend: bool = plot_config.show_legend
+        self.__line_width: int = plot_config.line_width
+        self.__x_tick_size: int = plot_config.x_tick_size
+        self.__label_size: int = plot_config.label_size
         self.__edge_color: str = plot_kwargs["edge_color"]
         self.__colormap: Colormap = plot_kwargs["colormap"]
         self.__show_cve: bool = plot_kwargs["show_cve"]
@@ -1536,7 +1482,6 @@ class BlameInteractionDegreeMultiLibGenerator(
         self.__cve_bug_line_width: int = plot_kwargs["cve_bug_line_width"]
         self.__cve_bug_color: str = plot_kwargs["cve_bug_color"]
         self.__vertical_alignment: str = plot_kwargs["vertical_alignment"]
-        self.__label_size: int = plot_kwargs["label_size"]
 
     def generate(self) -> tp.List[Plot]:
         return [
@@ -1546,20 +1491,20 @@ class BlameInteractionDegreeMultiLibGenerator(
                 base_lib=self.__base_lib,
                 inter_lib=self.__inter_lib,
                 fig_title=self.__fig_title,
-                show_churn=self.__show_churn,
                 legend_title=self.__legend_title,
                 legend_size=self.__legend_size,
                 show_legend=self.__show_legend,
                 line_width=self.__line_width,
                 x_tick_size=self.__x_tick_size,
+                label_size=self.__label_size,
+                show_churn=self.__show_churn,
                 edge_color=self.__edge_color,
                 colormap=self.__colormap,
                 show_cve=self.__show_cve,
                 show_bugs=self.__show_bugs,
                 cve_bug_line_width=self.__cve_bug_line_width,
                 cve_bug_color=self.__cve_bug_color,
-                vertical_alignment=self.__vertical_alignment,
-                label_size=self.__label_size
+                vertical_alignment=self.__vertical_alignment
             ) for cs in self.__case_studies
         ]
 
