@@ -133,13 +133,13 @@ class CommonPlotOptions():
         }
 
 
-class PlotConfig():
+class PlotConfig:
     """Class with parameters that influence a plot's appearance."""
 
     def __init__(
         self, fig_title: str, font_size: int, width: int, height: int,
         legend_title: str, legend_size: int, show_legend: bool,
-        line_width: bool, x_tick_size: int, label_size: int
+        line_width: bool, x_tick_size: int, label_size: int, dpi: int
     ) -> None:
         self.fig_title = fig_title
         self.font_size = font_size
@@ -151,6 +151,7 @@ class PlotConfig():
         self.line_width = line_width
         self.x_tick_size = x_tick_size
         self.label_size = label_size
+        self.dpi = dpi
 
     __options: tp.List[tp.Any] = [
         make_cli_option(
@@ -231,6 +232,14 @@ class PlotConfig():
             required=False,
             metavar="SIZE",
             help="The label size of CVE/bug annotations."
+        ),
+        make_cli_option(
+            "--dpi",
+            type=int,
+            default=1200,
+            required=False,
+            metavar="DPI",
+            help="The dpi of the plot."
         )
     ]
 
@@ -241,7 +250,8 @@ class PlotConfig():
             kwargs.get("width", 1500), kwargs.get("height", 1000),
             kwargs.get("legend_title", ""), kwargs.get("legend_size", 2),
             kwargs.get("show_legend", True), kwargs.get("line_width", 0.25),
-            kwargs.get("x_tick_size", 2), kwargs.get("label_size", 2)
+            kwargs.get("x_tick_size", 2), kwargs.get("label_size", 2),
+            kwargs.get("dpi", 1200)
         )
 
     @classmethod
@@ -259,7 +269,8 @@ class PlotConfig():
             "show_legend": self.show_legend,
             "line_width": self.line_width,
             "x_tick_size": self.x_tick_size,
-            "label_size": self.label_size
+            "label_size": self.label_size,
+            "dpi": self.dpi
         }
 
 

@@ -187,10 +187,9 @@ class Plot:
             LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
             return
 
-        # TODO (se-passau/VaRA#545): refactor dpi into plot_config.
         plt.savefig(
             plot_dir / self.plot_file_name(filetype),
-            dpi=1200,
+            dpi=self.plot_kwargs.get("dpi", 1200),
             bbox_inches="tight",
             format=filetype
         )

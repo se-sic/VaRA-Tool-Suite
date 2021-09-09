@@ -187,14 +187,16 @@ class CaseStudyOverviewGenerator(
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
         self.__case_study: CaseStudy = plot_kwargs["case_study"]
+        self.__dpi: int = plot_config.dpi
         self.__show_blocked: bool = plot_kwargs["show_blocked"]
         self.__show_all_blocked: bool = plot_kwargs["show_all_blocked"]
 
     def generate(self) -> tp.List[Plot]:
         return [
             CaseStudyOverviewPlot(
-                case_study=self.__case_study,
                 report_type=self.__report_type,
+                case_study=self.__case_study,
+                dpi=self.__dpi,
                 show_blocked=self.__show_blocked,
                 show_all_blocked=self.__show_all_blocked
             )

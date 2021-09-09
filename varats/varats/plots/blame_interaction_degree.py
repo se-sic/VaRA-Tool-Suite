@@ -1380,6 +1380,7 @@ class BlameInteractionDegreeGenerator(
         self.__line_width: int = plot_config.line_width
         self.__x_tick_size: int = plot_config.x_tick_size
         self.__label_size: int = plot_config.label_size
+        self.__dpi: int = plot_config.dpi
         self.__show_churn: bool = plot_kwargs["show_churn"]
         self.__edge_color: str = plot_kwargs["edge_color"]
         self.__colormap: Colormap = plot_kwargs["colormap"]
@@ -1401,6 +1402,7 @@ class BlameInteractionDegreeGenerator(
                 line_width=self.__line_width,
                 x_tick_size=self.__x_tick_size,
                 label_size=self.__label_size,
+                dpi=self.__dpi,
                 show_churn=self.__show_churn,
                 edge_color=self.__edge_color,
                 colormap=self.__colormap,
@@ -1430,7 +1432,6 @@ class BlameInteractionDegreeMultiLib(
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        # TODO: Move check to generator using all()
         if 'base_lib' not in self.plot_kwargs or \
                 'inter_lib' not in self.plot_kwargs:
             LOG.warning("No library names were provided.")

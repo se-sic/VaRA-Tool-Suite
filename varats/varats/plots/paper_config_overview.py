@@ -148,7 +148,9 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
     return result
 
 
-def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
+def _plot_overview_graph(
+    results: tp.Dict[str, tp.Any], **plot_kwargs: tp.Any
+) -> None:
     """
     Create a plot that shows an overview of all case-studies of a paper-config
     about how many revisions are successful per project/year.
@@ -209,13 +211,11 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
     # Note: See the following URL for this size calculation:
     # https://stackoverflow.com/questions/51144934/how-to-increase-the-cell-size-for-annotation-in-seaborn-heatmap
 
-    # TODO (se-passau/VaRA#545): refactor dpi into plot_config. see.
     fontsize_pt = 12
-    dpi = 1200
 
     # compute the matrix height in points and inches
     matrix_height_pt = fontsize_pt * num_projects * 40
-    matrix_height_in = matrix_height_pt / dpi
+    matrix_height_in = matrix_height_pt / plot_kwargs["dpi"]
 
     # compute the required figure height
     top_margin = 0.05
@@ -277,7 +277,9 @@ class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
 
     def plot(self, view_mode: bool) -> None:
         style.use(self.style)
-        _plot_overview_graph(_gen_overview_plot(**self.plot_kwargs))
+        _plot_overview_graph(
+            _gen_overview_plot(**self.plot_kwargs), **self.plot_kwargs
+        )
 
     def plot_file_name(self, filetype: str) -> str:
         return f"{self.name}.{filetype}"
@@ -318,6 +320,11 @@ class PaperConfigOverviewGenerator(
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
+        self.__dpi: int = plot_config.dpi
 
     def generate(self) -> tp.List[Plot]:
-        return [PaperConfigOverviewPlot(report_type=self.__report_type)]
+        return [
+            PaperConfigOverviewPlot(
+                report_type=self.__report_type, dpi=self.__dpi
+            )
+        ]
