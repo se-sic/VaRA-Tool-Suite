@@ -113,7 +113,7 @@ class CommonPlotOptions():
             "(relative to config value 'plots/plot_dir')."
         ),
         make_cli_option(
-            "--dry_run",
+            "--dry-run",
             is_flag=True,
             help="Only log plots that would be generated but do not generate."
             "Useful for debugging plot generators."
