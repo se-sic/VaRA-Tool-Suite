@@ -208,22 +208,22 @@ def draw_code_churn_for_revisions(
         -x if x < CODE_CHURN_DELETION_LIMIT else -1.3 *
         CODE_CHURN_DELETION_LIMIT for x in churn_data.deletions
     ]
-    revisions: tp.List[str] = [rev.short_hash for rev in revisions]
+    revision_strs: tp.List[str] = [rev.short_hash for rev in revisions]
 
     axis.set_ylim(-CODE_CHURN_DELETION_LIMIT, CODE_CHURN_INSERTION_LIMIT)
-    axis.fill_between(revisions, clipped_insertions, 0, facecolor='green')
+    axis.fill_between(revision_strs, clipped_insertions, 0, facecolor='green')
     axis.fill_between(
-        revisions,
+        revision_strs,
         # we need a - here to visualize deletions as negative additions
         clipped_deletions,
         0,
         facecolor='red'
     )
-    revisions = churn_data.time_id.astype(str) + '-' + churn_data.revision.map(
-        lambda x: x.short_hash
-    )
+    revision_strs = churn_data.time_id.astype(
+        str
+    ) + '-' + churn_data.revision.map(lambda x: x.short_hash)
     axis.set_xticks(axis.get_xticks())
-    axis.set_xticklabels(revisions)
+    axis.set_xticklabels(revision_strs)
 
 
 class RepoChurnPlot(Plot, plot_name="repo_churn"):
@@ -240,7 +240,7 @@ class RepoChurnPlot(Plot, plot_name="repo_churn"):
             'legend_size': 8 if view_mode else 2,
             'xtick_size': 10 if view_mode else 2,
         }
-        style.use(self.style)
+        style.use(self.plot_config.style)
 
         case_study: CaseStudy = self.plot_kwargs['plot_case_study']
 

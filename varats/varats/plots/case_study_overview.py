@@ -119,7 +119,7 @@ class CaseStudyOverviewPlot(Plot, plot_name="case_study_overview_plot"):
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.style)
+        style.use(self.plot_config.style)
         data = _gen_overview_data(
             self.plot_kwargs["show_blocked"], **self.plot_kwargs
         )
@@ -187,7 +187,6 @@ class CaseStudyOverviewGenerator(
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
         self.__case_study: CaseStudy = plot_kwargs["case_study"]
-        self.__dpi: int = plot_config.dpi
         self.__show_blocked: bool = plot_kwargs["show_blocked"]
         self.__show_all_blocked: bool = plot_kwargs["show_all_blocked"]
 
@@ -196,7 +195,6 @@ class CaseStudyOverviewGenerator(
             CaseStudyOverviewPlot(
                 report_type=self.__report_type,
                 case_study=self.__case_study,
-                dpi=self.__dpi,
                 show_blocked=self.__show_blocked,
                 show_all_blocked=self.__show_all_blocked
             )

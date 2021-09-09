@@ -1061,7 +1061,7 @@ class BlameDegree(Plot, plot_name=None):
                        f'Project {project_name}'
         self.plot_kwargs["fig_suptitle"] = fig_suptitle
 
-        style.use(self.style)
+        style.use(self.plot_config.style)
         commit_map: CommitMap = get_commit_map(project_name)
         interaction_plot_df = self._get_degree_data()
 
@@ -1099,7 +1099,7 @@ class BlameDegree(Plot, plot_name=None):
                        f'{plot_cfg["base_lib"]} --> {plot_cfg["inter_lib"]} '
         plot_cfg["fig_suptitle"] = fig_suptitle
 
-        style.use(self.style)
+        style.use(self.plot_config.style)
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
         interaction_plot_df = self._get_degree_data()
 
@@ -1163,7 +1163,7 @@ class BlameDegree(Plot, plot_name=None):
         if extra_plot_cfg is not None:
             plot_cfg.update(extra_plot_cfg)
 
-        style.use(self.style)
+        style.use(self.plot_config.style)
 
         df = self._get_degree_data()
         df = df[df.degree_type == degree_type.value]
@@ -1380,7 +1380,6 @@ class BlameInteractionDegreeGenerator(
         self.__line_width: int = plot_config.line_width
         self.__x_tick_size: int = plot_config.x_tick_size
         self.__label_size: int = plot_config.label_size
-        self.__dpi: int = plot_config.dpi
         self.__show_churn: bool = plot_kwargs["show_churn"]
         self.__edge_color: str = plot_kwargs["edge_color"]
         self.__colormap: Colormap = plot_kwargs["colormap"]
@@ -1402,7 +1401,6 @@ class BlameInteractionDegreeGenerator(
                 line_width=self.__line_width,
                 x_tick_size=self.__x_tick_size,
                 label_size=self.__label_size,
-                dpi=self.__dpi,
                 show_churn=self.__show_churn,
                 edge_color=self.__edge_color,
                 colormap=self.__colormap,

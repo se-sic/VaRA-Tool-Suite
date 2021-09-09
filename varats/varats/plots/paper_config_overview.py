@@ -149,7 +149,7 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
 
 
 def _plot_overview_graph(
-    results: tp.Dict[str, tp.Any], **plot_kwargs: tp.Any
+    results: tp.Dict[str, tp.Any], plot_config: PlotConfig
 ) -> None:
     """
     Create a plot that shows an overview of all case-studies of a paper-config
@@ -215,7 +215,7 @@ def _plot_overview_graph(
 
     # compute the matrix height in points and inches
     matrix_height_pt = fontsize_pt * num_projects * 40
-    matrix_height_in = matrix_height_pt / plot_kwargs["dpi"]
+    matrix_height_in = matrix_height_pt / plot_config["dpi"]
 
     # compute the required figure height
     top_margin = 0.05
@@ -276,9 +276,9 @@ class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.style)
+        style.use(self.plot_config.style)
         _plot_overview_graph(
-            _gen_overview_plot(**self.plot_kwargs), **self.plot_kwargs
+            _gen_overview_plot(**self.plot_kwargs), self.plot_config
         )
 
     def plot_file_name(self, filetype: str) -> str:
@@ -320,11 +320,6 @@ class PaperConfigOverviewGenerator(
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
-        self.__dpi: int = plot_config.dpi
 
     def generate(self) -> tp.List[Plot]:
-        return [
-            PaperConfigOverviewPlot(
-                report_type=self.__report_type, dpi=self.__dpi
-            )
-        ]
+        return [PaperConfigOverviewPlot(report_type=self.__report_type)]
