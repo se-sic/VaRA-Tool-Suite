@@ -310,7 +310,6 @@ class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
 class PaperConfigOverviewGenerator(
     PlotGenerator,
     generator_name="pc-overview-plot",
-    plot=PaperConfigOverviewPlot,
     options=[PlotGenerator.REQUIRE_REPORT_TYPE]
 ):
     """Generates a single pc-overview plot for the current paper config."""
@@ -321,4 +320,4 @@ class PaperConfigOverviewGenerator(
         self.__report_type: str = plot_kwargs["report_type"]
 
     def generate(self) -> tp.List[Plot]:
-        return [self.PLOT(report_type=self.__report_type)]
+        return [PaperConfigOverviewPlot(report_type=self.__report_type)]

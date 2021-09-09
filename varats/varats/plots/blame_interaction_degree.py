@@ -1351,7 +1351,6 @@ class BlameInteractionDegree(BlameDegree, plot_name="b_interaction_degree"):
 class BlameInteractionDegreeGenerator(
     PlotGenerator,
     generator_name="interaction-degree-plot",
-    plot=BlameInteractionDegree,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE,
         PlotGenerator.REQUIRE_MULTI_CASE_STUDY,
@@ -1392,7 +1391,7 @@ class BlameInteractionDegreeGenerator(
 
     def generate(self) -> tp.List[Plot]:
         return [
-            self.PLOT(
+            BlameInteractionDegree(
                 report_type=self.__report_type,
                 case_study=cs,
                 fig_title=self.__fig_title,
@@ -1549,7 +1548,6 @@ class BlameLibraryInteractions(
 class SankeyLibraryInteractionsGeneratorRev(
     PlotGenerator,
     generator_name="sankey-plot-rev",
-    plot=BlameLibraryInteractions,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_CASE_STUDY,
         PlotGenerator.REQUIRE_REVISION
@@ -1573,7 +1571,7 @@ class SankeyLibraryInteractionsGeneratorRev(
 
     def generate(self) -> tp.List[Plot]:
         return [
-            self.PLOT(
+            BlameLibraryInteractions(
                 report_type=self.__report_type,
                 case_study=self.__case_study,
                 revision=self.__revision,
@@ -1588,7 +1586,6 @@ class SankeyLibraryInteractionsGeneratorRev(
 class SankeyLibraryInteractionsGeneratorCS(
     PlotGenerator,
     generator_name="sankey-plot-cs",
-    plot=BlameLibraryInteractions,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE,
         PlotGenerator.REQUIRE_MULTI_CASE_STUDY
@@ -1608,7 +1605,7 @@ class SankeyLibraryInteractionsGeneratorCS(
 
     def generate(self) -> tp.List[Plot]:
         return [
-            self.PLOT(
+            BlameLibraryInteractions(
                 report_type=self.__report_type,
                 case_study=cs,
                 revision=rev,
@@ -1679,7 +1676,6 @@ class BlameCommitInteractionsGraphviz(
 class GraphvizLibraryInteractionsGeneratorRev(
     PlotGenerator,
     generator_name="graphviz-plot-rev",
-    plot=BlameCommitInteractionsGraphviz,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_CASE_STUDY,
         PlotGenerator.REQUIRE_REVISION, OPTIONAL_SHOW_INTERACTIONS,
@@ -1713,7 +1709,7 @@ class GraphvizLibraryInteractionsGeneratorRev(
 
     def generate(self) -> tp.List[Plot]:
         return [
-            self.PLOT(
+            BlameCommitInteractionsGraphviz(
                 report_type=self.__report_type,
                 case_study=self.__case_study,
                 revision=self.__revision,
@@ -1731,7 +1727,6 @@ class GraphvizLibraryInteractionsGeneratorRev(
 class GraphvizLibraryInteractionsGeneratorCS(
     PlotGenerator,
     generator_name="graphviz-plot-cs",
-    plot=BlameCommitInteractionsGraphviz,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE,
         PlotGenerator.REQUIRE_MULTI_CASE_STUDY, OPTIONAL_SHOW_INTERACTIONS,
@@ -1760,7 +1755,7 @@ class GraphvizLibraryInteractionsGeneratorCS(
 
     def generate(self) -> tp.List[Plot]:
         return [
-            self.PLOT(
+            BlameCommitInteractionsGraphviz(
                 report_type=self.__report_type,
                 case_study=cs,
                 revision=rev,

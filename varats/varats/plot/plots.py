@@ -310,7 +310,6 @@ class PlotGenerator(abc.ABC):
 
     GENERATORS: tp.Dict[str, tp.Type['PlotGenerator']] = {}
     NAME: str
-    PLOT: tp.Type['varats.plot.plot.Plot']
     OPTIONS: tp.List[CLIOptionTy]
 
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
@@ -319,8 +318,8 @@ class PlotGenerator(abc.ABC):
 
     @classmethod
     def __init_subclass__(
-        cls, generator_name: str, plot: tp.Type['varats.plot.plot.Plot'],
-        options: tp.List[CLIOptionTy], **kwargs: tp.Any
+        cls, generator_name: str, options: tp.List[CLIOptionTy],
+        **kwargs: tp.Any
     ) -> None:
         """
         Register concrete plot generators.
@@ -335,7 +334,6 @@ class PlotGenerator(abc.ABC):
         # https://github.com/python/mypy/issues/4660
         super().__init_subclass__(**kwargs)  # type: ignore
         cls.NAME = generator_name
-        cls.PLOT = plot
         cls.OPTIONS = options
         cls.GENERATORS[generator_name] = cls
 

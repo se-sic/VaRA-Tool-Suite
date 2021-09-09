@@ -175,7 +175,6 @@ class CaseStudyOverviewPlot(Plot, plot_name="case_study_overview_plot"):
 class CaseStudyOverviewGenerator(
     PlotGenerator,
     generator_name="cs-overview-plot",
-    plot=CaseStudyOverviewPlot,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_CASE_STUDY,
         OPTIONAL_SHOW_BLOCKED, OPTIONAL_SHOW_ALL_BLOCKED
@@ -193,7 +192,7 @@ class CaseStudyOverviewGenerator(
 
     def generate(self) -> tp.List[Plot]:
         return [
-            self.PLOT(
+            CaseStudyOverviewPlot(
                 case_study=self.__case_study,
                 report_type=self.__report_type,
                 show_blocked=self.__show_blocked,
