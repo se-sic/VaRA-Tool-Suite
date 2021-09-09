@@ -591,8 +591,7 @@ def _get_separated_lib_names_dict(
 
 
 def _build_sankey_color_mappings(
-    highest_degree: int, plot_cfg: tp.Dict[str, tp.Any],
-    lib_name_dict: tp.Dict[str, tp.List[str]]
+    highest_degree: int, lib_name_dict: tp.Dict[str, tp.List[str]]
 ) -> tp.Tuple[LibraryColormapMapping, LibraryToIndexShadesMapping]:
     """Returns a tuple of a LibraryColormapMapping and a
     LibraryToIndexShadesMapping."""
@@ -1233,7 +1232,7 @@ class BlameDegree(Plot, plot_name=None):
 
         lib_names_dict = _get_separated_lib_names_dict(df)
         lib_cm_mapping, lib_shades_mapping = _build_sankey_color_mappings(
-            highest_degree, self.plot_kwargs, lib_names_dict
+            highest_degree, lib_names_dict
         )
 
         plotting_data_dict = _collect_sankey_plotting_data(
