@@ -215,7 +215,7 @@ def _plot_overview_graph(
 
     # compute the matrix height in points and inches
     matrix_height_pt = fontsize_pt * num_projects * 40
-    matrix_height_in = matrix_height_pt / plot_config["dpi"]
+    matrix_height_in = matrix_height_pt / plot_config.dpi
 
     # compute the required figure height
     top_margin = 0.05
@@ -289,6 +289,8 @@ class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
     ) -> tp.Set[FullCommitHash]:
         revisions = _gen_overview_plot_for_project(**self.plot_kwargs)
         revisions.sort_values(by=['revision'], inplace=True)
+
+        # TODO: Adapt to click cli.
         cmap: CommitMap = self.plot_kwargs['cmap']
 
         def head_cm_neighbours(
@@ -322,4 +324,8 @@ class PaperConfigOverviewGenerator(
         self.__report_type: str = plot_kwargs["report_type"]
 
     def generate(self) -> tp.List[Plot]:
-        return [PaperConfigOverviewPlot(report_type=self.__report_type)]
+        return [
+            PaperConfigOverviewPlot(
+                self.plot_config, report_type=self.__report_type
+            )
+        ]

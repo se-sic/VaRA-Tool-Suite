@@ -344,11 +344,7 @@ def _generate_stackplot(
             cm.get_cmap(plot_kwargs['colormap'].value
                        )(np.linspace(0, 1, len(sub_df_list)))
         ),
-        # TODO (se-passau/VaRA#545): remove cast with plot config rework
-        labels=map(
-            tp.cast(tp.Callable[[str], str], lambda x: x),
-            sorted(np.unique(df['degree']))
-        ),
+        labels=sorted(np.unique(df['degree'])),
         linewidth=plot_kwargs['line_width']
     )
     legend = main_axis.legend(
@@ -447,9 +443,7 @@ def _gen_fraction_overview_legend(
     legend = legends_axis.legend(
         handles=handles,
         title=f'{plot_cfg["legend_title"]} | {legend_title_suffix}',
-        # TODO (se-passau/VaRA#545): remove cast with plot config
-        #  rework
-        labels=map(tp.cast(tp.Callable[[str], str], lambda x: x), legend_items),
+        labels=legend_items,
         loc='upper left',
         prop={
             'size': plot_cfg['legend_size'],

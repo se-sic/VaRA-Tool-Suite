@@ -31,7 +31,6 @@ class Plot:
     ) -> None:
         self.__name = name
         self.__plot_config = plot_config
-        self.__style = "classic"
         self.__saved_extra_args = kwargs
 
     @classmethod
@@ -128,7 +127,7 @@ class Plot:
         try:
             self.plot(True)
         except PlotDataEmpty:
-            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            LOG.warning(f"No data for the current project.")
             return
         plt.show()
         plt.close()
@@ -156,8 +155,6 @@ class Plot:
         if self.plot_kwargs.get('case_study', None):
             case_study: 'CaseStudy' = self.plot_kwargs['case_study']
             plot_ident = f"{case_study.project_name}_{case_study.version}_"
-        elif 'project' in self.plot_kwargs:
-            plot_ident = f"{self.plot_kwargs['project']}_"
 
         sep_stages = ''
         if self.supports_stage_separation(
@@ -177,7 +174,7 @@ class Plot:
         try:
             self.plot(False)
         except PlotDataEmpty:
-            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            LOG.warning(f"No data for the current project.")
             return
 
         plt.savefig(
