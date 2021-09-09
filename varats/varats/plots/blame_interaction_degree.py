@@ -1061,7 +1061,7 @@ class BlameDegree(Plot, plot_name=None):
                        f'Project {project_name}'
         self.plot_kwargs["fig_suptitle"] = fig_suptitle
 
-        style.use(self.style)
+        style.use(self.plot_config.style)
         commit_map: CommitMap = get_commit_map(project_name)
         interaction_plot_df = self._get_degree_data()
 
@@ -1099,7 +1099,7 @@ class BlameDegree(Plot, plot_name=None):
                        f'{plot_cfg["base_lib"]} --> {plot_cfg["inter_lib"]} '
         plot_cfg["fig_suptitle"] = fig_suptitle
 
-        style.use(self.style)
+        style.use(self.plot_config.style)
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
         interaction_plot_df = self._get_degree_data()
 
@@ -1163,7 +1163,7 @@ class BlameDegree(Plot, plot_name=None):
         if extra_plot_cfg is not None:
             plot_cfg.update(extra_plot_cfg)
 
-        style.use(self.style)
+        style.use(self.plot_config.style)
 
         df = self._get_degree_data()
         df = df[df.degree_type == degree_type.value]

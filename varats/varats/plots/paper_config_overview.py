@@ -276,7 +276,7 @@ class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
         super().__init__(self.NAME, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.style)
+        style.use(self.plot_config.style)
         _plot_overview_graph(_gen_overview_plot(**self.plot_kwargs))
 
     def plot_file_name(self, filetype: str) -> str:

@@ -137,10 +137,11 @@ class PlotConfig():
     """Class with parameters that influence a plot's appearance."""
 
     def __init__(
-        self, fig_title: str, font_size: int, width: int, height: int,
-        legend_title: str, legend_size: int, show_legend: bool,
+        self, style: str, fig_title: str, font_size: int, width: int,
+        height: int, legend_title: str, legend_size: int, show_legend: bool,
         line_width: bool, x_tick_size: int, label_size: int
     ) -> None:
+        self.style = style
         self.fig_title = fig_title
         self.font_size = font_size
         self.width = width
@@ -153,6 +154,14 @@ class PlotConfig():
         self.label_size = label_size
 
     __options: tp.List[tp.Any] = [
+        make_cli_option(
+            "--style",
+            type=str,
+            default="classic",
+            required=False,
+            metavar="STYLE",
+            help="Matplotlib style to use."
+        ),
         make_cli_option(
             "--fig-title",
             type=str,
@@ -237,11 +246,12 @@ class PlotConfig():
     @staticmethod
     def from_kwargs(**kwargs: tp.Any) -> 'PlotConfig':
         return PlotConfig(
-            kwargs.get("fig_title", ""), kwargs.get("font_size", 10),
-            kwargs.get("width", 1500), kwargs.get("height", 1000),
-            kwargs.get("legend_title", ""), kwargs.get("legend_size", 2),
-            kwargs.get("show_legend", True), kwargs.get("line_width", 0.25),
-            kwargs.get("x_tick_size", 2), kwargs.get("label_size", 2)
+            kwargs.get("style", "classic"), kwargs.get("fig_title", ""),
+            kwargs.get("font_size", 10), kwargs.get("width", 1500),
+            kwargs.get("height", 1000), kwargs.get("legend_title", ""),
+            kwargs.get("legend_size", 2), kwargs.get("show_legend", True),
+            kwargs.get("line_width", 0.25), kwargs.get("x_tick_size", 2),
+            kwargs.get("label_size", 2)
         )
 
     @classmethod
@@ -250,6 +260,7 @@ class PlotConfig():
 
     def get_dict(self) -> tp.Dict[str, tp.Any]:
         return {
+            "style": self.style,
             "fig_title": self.fig_title,
             "font_size": self.font_size,
             "width": self.width,

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
+from varats.plot.plots import PlotConfig
 from varats.utils.git_util import FullCommitHash
 
 if tp.TYPE_CHECKING:
@@ -25,8 +26,11 @@ class Plot:
     NAME = "Plot"
     PLOTS: tp.Dict[str, tp.Type['Plot']] = {}
 
-    def __init__(self, name: str, **kwargs: tp.Any) -> None:
+    def __init__(
+        self, name: str, plot_config: PlotConfig, **kwargs: tp.Any
+    ) -> None:
         self.__name = name
+        self.__plot_config = plot_config
         self.__style = "classic"
         self.__saved_extra_args = kwargs
 
@@ -91,20 +95,9 @@ class Plot:
         return self.__name
 
     @property
-    def style(self) -> str:
-        """
-        Current plot style.
-
-        Test:
-        >>> Plot('test').style
-        'classic'
-        """
-        return self.__style
-
-    @style.setter
-    def style(self, new_style: str) -> None:
-        """Access current style of the plot."""
-        self.__style = new_style
+    def plot_config(self) -> PlotConfig:
+        """Plot config for this plot."""
+        return self.__plot_config
 
     @property
     def plot_kwargs(self) -> tp.Any:

@@ -146,7 +146,7 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
             'legend_size': 8 if view_mode else 2,
             'xtick_size': 10 if view_mode else 2,
         }
-        style.use(self.style)
+        style.use(self.plot_config.style)
 
         case_study: CaseStudy = self.plot_kwargs['plot_case_study']
         commit_map = self.plot_kwargs['get_cmap']()
@@ -348,7 +348,7 @@ class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
             'legend_size': 8 if view_mode else 2,
             'xtick_size': 10 if view_mode else 2,
         }
-        style.use(self.style)
+        style.use(self.plot_config.style)
 
         case_study: CaseStudy = self.plot_kwargs['plot_case_study']
         commit_map = self.plot_kwargs['get_cmap']()
