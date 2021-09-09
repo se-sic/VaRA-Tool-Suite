@@ -115,8 +115,8 @@ class CaseStudyOverviewPlot(Plot, plot_name="case_study_overview_plot"):
 
     NAME = 'case_study_overview_plot'
 
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         style.use(self.plot_config.style)

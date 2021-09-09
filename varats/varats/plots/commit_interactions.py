@@ -14,6 +14,7 @@ from varats.data.databases.commit_interaction_database import (
 from varats.paper.case_study import CaseStudy, CSStage
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import check_required_args
+from varats.plot.plots import PlotConfig
 from varats.utils.git_util import FullCommitHash
 
 
@@ -176,8 +177,8 @@ class InteractionPlot(Plot, plot_name="interaction_graph"):
 
     NAME = 'interaction_graph'
 
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     @staticmethod
     def supports_stage_separation() -> bool:

@@ -1334,8 +1334,8 @@ class BlameInteractionDegree(BlameDegree, plot_name="b_interaction_degree"):
 
     NAME = 'b_interaction_degree'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         self._degree_plot(DegreeType.INTERACTION)
@@ -1392,6 +1392,7 @@ class BlameInteractionDegreeGenerator(
     def generate(self) -> tp.List[Plot]:
         return [
             BlameInteractionDegree(
+                self.plot_config,
                 report_type=self.__report_type,
                 case_study=cs,
                 fig_title=self.__fig_title,
@@ -1426,8 +1427,8 @@ class BlameInteractionDegreeMultiLib(
 
     NAME = 'b_interaction_degree_multi_lib'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         if 'base_lib' not in self.plot_kwargs or \
@@ -1466,8 +1467,8 @@ class BlameInteractionFractionOverview(
 
     NAME = 'b_interaction_fraction_overview'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
@@ -1501,8 +1502,8 @@ class BlameLibraryInteractions(
 
     NAME = 'b_multi_lib_interaction_sankey_plot'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
         self.__figure = go.Figure()
 
     def plot(self, view_mode: bool) -> None:
@@ -1571,6 +1572,7 @@ class SankeyLibraryInteractionsGeneratorRev(
     def generate(self) -> tp.List[Plot]:
         return [
             BlameLibraryInteractions(
+                self.plot_config,
                 report_type=self.__report_type,
                 case_study=self.__case_study,
                 revision=self.__revision,
@@ -1605,6 +1607,7 @@ class SankeyLibraryInteractionsGeneratorCS(
     def generate(self) -> tp.List[Plot]:
         return [
             BlameLibraryInteractions(
+                self.plot_config,
                 report_type=self.__report_type,
                 case_study=cs,
                 revision=rev,
@@ -1630,8 +1633,8 @@ class BlameCommitInteractionsGraphviz(
 
     NAME = 'b_multi_lib_interaction_graphviz'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
         self.__figure = Digraph()
 
     def plot(self, view_mode: bool) -> None:
@@ -1709,6 +1712,7 @@ class GraphvizLibraryInteractionsGeneratorRev(
     def generate(self) -> tp.List[Plot]:
         return [
             BlameCommitInteractionsGraphviz(
+                self.plot_config,
                 report_type=self.__report_type,
                 case_study=self.__case_study,
                 revision=self.__revision,
@@ -1755,6 +1759,7 @@ class GraphvizLibraryInteractionsGeneratorCS(
     def generate(self) -> tp.List[Plot]:
         return [
             BlameCommitInteractionsGraphviz(
+                self.plot_config,
                 report_type=self.__report_type,
                 case_study=cs,
                 revision=rev,
@@ -1774,8 +1779,8 @@ class BlameAuthorDegree(BlameDegree, plot_name="b_author_degree"):
 
     NAME = 'b_author_degree'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
@@ -1800,8 +1805,8 @@ class BlameMaxTimeDistribution(BlameDegree, plot_name="b_maxtime_distribution"):
 
     NAME = 'b_maxtime_distribution'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
@@ -1827,8 +1832,8 @@ class BlameAvgTimeDistribution(BlameDegree, plot_name="b_avgtime_distribution"):
 
     NAME = 'b_avgtime_distribution'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {

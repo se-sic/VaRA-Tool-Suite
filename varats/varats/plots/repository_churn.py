@@ -15,6 +15,7 @@ from matplotlib import axes, style
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
+from varats.plot.plots import PlotConfig
 from varats.project.project_util import get_local_project_git
 from varats.utils.git_util import (
     ChurnConfig,
@@ -231,8 +232,8 @@ class RepoChurnPlot(Plot, plot_name="repo_churn"):
 
     NAME = 'repo_churn'
 
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         plot_cfg = {

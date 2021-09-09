@@ -20,6 +20,7 @@ from varats.data.databases.blame_diff_metrics_database import (
 )
 from varats.mapping.commit_map import CommitMap
 from varats.plot.plot import Plot, PlotDataEmpty
+from varats.plot.plots import PlotConfig
 from varats.utils.git_util import FullCommitHash
 
 
@@ -185,8 +186,8 @@ class BlameDiffClusterAnalysis(Plot, plot_name="b_cluster_analysis"):
 
     NAME = "b_cluster_analysis"
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
