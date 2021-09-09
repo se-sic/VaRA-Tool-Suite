@@ -13,7 +13,7 @@ Plots and tables can be generated with the tools :ref:`vara-plot` and :ref:`vara
 The command line interface for these tools consists of four parts:
 
 1. *Common options:* handle functionality common to all plots or tables, like file format
-2. *Configuration options:* for tuning visual appearance; specific plots/tables may or may not respect them
+2. *Plot or table config:* for tuning visual appearance; specific plots/tables may or may not respect them
 3. *Plot or table name:* name of the concrete plot or table
 4. *Plot- or table-specific options*: options specific to a certain plot or table
 

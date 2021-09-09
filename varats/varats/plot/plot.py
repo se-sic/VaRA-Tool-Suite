@@ -38,7 +38,7 @@ class Plot:
         Register concrete plots.
 
         Args:
-            plot_name: name for the plot; in ``None``, do not register the plot
+            plot_name: name for the plot; if ``None``, do not register the plot
         """
         # mypy does not yet fully understand __init_subclass__()
         # https://github.com/python/mypy/issues/4660
