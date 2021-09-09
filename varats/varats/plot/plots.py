@@ -322,10 +322,12 @@ class PlotGenerator(abc.ABC):
     )
     REQUIRE_REPORT_TYPE: CLIOptionTy = make_cli_option(
         "--report-type",
-        # TODO: Add report types as choices
-        type=str,
+        type=click.Choice([
+            "BR", "TR", "BVR_Opt", "BVR_NoOpt_TBAA", "CR", "EMPTY", "ENV-TRACE",
+            "GRWith", "SZZ", "SZZU", "PySZZ", "TPR"
+        ],
+                          case_sensitive=False),
         required=True,
-        metavar="report_type",
         help="The report type to use for the plot."
     )
 
