@@ -23,7 +23,7 @@ The command line interface for ``vara-plot`` consists of four parts:
 4. *Plot- or table-specific options*: options specific to a certain plot
 
 Plot generation is handeled by the :class:`~varats.plot.plots.PlotGenerator` classes.
-The CLI selects a concrete plot generater via the passed **plot generator name** and immeadiately calls its ``__call__()`` function (which is implemented by the :class:`~varats.plot.plots.PlotGenerator` itself and must not be overridden by subclasses).
+The CLI selects a concrete plot generator via the passed **plot generator name** and immediately calls its ``__call__()`` function (which is implemented by the :class:`~varats.plot.plots.PlotGenerator` itself and must not be overridden by subclasses).
 This function also handles the **common options** (represented by a :class:`~varats.plot.plots.CommonPlotOptions` object) that decide, for example, where to store a plot.
 It also calls :func:`~varats.plot.plots.PlotGenerator.generate()`.
 This function must be implemented by each concrete plot generator and is responsible for creating and returning one or more :class:`~varats.plot.plot.Plot` instances.

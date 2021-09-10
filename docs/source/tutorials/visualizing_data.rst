@@ -28,7 +28,7 @@ The available plot names are listed under the section ``Commands`` in the help o
 .. program-output:: vara-plot -h
     :nostderr:
 
-To see what plot-specific a plot has, you need to look at the help output for that specific plot, e.g.:
+To see what plot-specific options a plot has, you need to look at the help output for that specific plot, e.g.:
 
 .. program-output:: vara-plot pc-overview-plot -h
     :nostderr:
