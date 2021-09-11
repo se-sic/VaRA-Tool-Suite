@@ -146,7 +146,7 @@ class BlameInteractionDegreeDatabase(
             ) -> tp.Dict[str, tp.Any]:
 
                 data_dict: tp.Dict[str, tp.Any] = {
-                    'revision': report.head_commit,
+                    'revision': report.head_commit.hash,
                     'time_id': commit_map.short_time_id(report.head_commit),
                     'degree_type': degree_type.value,
                     'base_lib': base_library,
