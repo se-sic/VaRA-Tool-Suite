@@ -6,9 +6,11 @@ from pathlib import Path
 
 import click
 
+from varats.data.discover_reports import initialize_reports
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.artefacts import Artefact, ArtefactFileInfo
 from varats.paper_mgmt.paper_config import get_paper_config
+from varats.report.report import BaseReport
 from varats.ts_utils.cli_util import (
     make_cli_option,
     CLIOptionTy,
@@ -60,6 +62,12 @@ def _create_single_case_study_choice() -> TypedChoice[CaseStudy]:
         for cs in paper_config.get_all_case_studies()
     }
     return TypedChoice(value_dict)
+
+
+def _create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
+    """Create a choice parameter type that allows selecting a report type."""
+    initialize_reports()
+    return TypedChoice(BaseReport.REPORT_TYPES)
 
 
 class CommonPlotOptions():
@@ -322,11 +330,7 @@ class PlotGenerator(abc.ABC):
     )
     REQUIRE_REPORT_TYPE: CLIOptionTy = make_cli_option(
         "--report-type",
-        type=click.Choice([
-            "BR", "TR", "BVR_Opt", "BVR_NoOpt_TBAA", "CR", "EMPTY", "ENV-TRACE",
-            "GRWith", "SZZ", "SZZU", "PySZZ", "TPR"
-        ],
-                          case_sensitive=False),
+        type=_create_report_type_choice(),
         required=True,
         help="The report type to use for the plot."
     )

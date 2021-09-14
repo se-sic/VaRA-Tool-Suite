@@ -106,7 +106,6 @@ def main(context: click.Context, **kwargs: tp.Any) -> None:
 
     initialize_cli_tool()
     initialize_projects()
-    initialize_reports()
 
 
 if __name__ == '__main__':

@@ -39,8 +39,7 @@ def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
     current_config = PC.get_paper_config()
 
     if 'report_type' in kwargs:
-        result_file_type: tp.Type[BaseReport] = BaseReport.REPORT_TYPES[
-            kwargs['report_type']]
+        result_file_type: tp.Type[BaseReport] = kwargs['report_type']
     else:
         result_file_type = EmptyReport
     project = kwargs['project']
@@ -91,8 +90,7 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
     current_config = PC.get_paper_config()
 
     if 'report_type' in kwargs:
-        result_file_type: tp.Type[BaseReport] = BaseReport.REPORT_TYPES[
-            kwargs['report_type']]
+        result_file_type: tp.Type[BaseReport] = kwargs['report_type']
     else:
         result_file_type = EmptyReport
 

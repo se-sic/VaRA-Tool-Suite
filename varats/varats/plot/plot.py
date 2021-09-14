@@ -88,7 +88,7 @@ class Plot:
         Name of the current plot.
 
         Test:
-        >>> Plot('test').name
+        >>> Plot('test', PlotConfig.from_kwargs()).name
         'test'
         """
         return self.__name
@@ -104,7 +104,7 @@ class Plot:
         Access the kwargs passed to the initial plot.
 
         Test:
-        >>> p = Plot('test', foo='bar', baz='bazzer')
+        >>> p = Plot('test', PlotConfig.from_kwargs(), foo='bar', baz='bazzer')
         >>> p.plot_kwargs['foo']
         'bar'
         >>> p.plot_kwargs['baz']
@@ -143,18 +143,21 @@ class Plot:
             the file name the plot will be stored to
 
         Test:
-        >>> p = Plot('test', project='bar')
+        >>> p = Plot('test', PlotConfig.from_kwargs(), project='bar')
         >>> p.plot_file_name('svg')
         'bar_test.svg'
         >>> from varats.paper.case_study import CaseStudy
-        >>> p = Plot('foo', project='bar', case_study=CaseStudy('baz', 42))
+        >>> p = Plot('foo', PlotConfig.from_kwargs(), project='bar', \
+                     case_study=CaseStudy('baz', 42))
         >>> p.plot_file_name('png')
         'baz_42_foo.png'
         """
         plot_ident = ''
-        if self.plot_kwargs.get('case_study', None):
+        if 'case_study' in self.plot_kwargs:
             case_study: 'CaseStudy' = self.plot_kwargs['case_study']
             plot_ident = f"{case_study.project_name}_{case_study.version}_"
+        elif 'project' in self.plot_kwargs:
+            plot_ident = f"{self.plot_kwargs['project']}_"
 
         sep_stages = ''
         if self.supports_stage_separation(

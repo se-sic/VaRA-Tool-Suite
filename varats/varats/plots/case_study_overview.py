@@ -53,8 +53,7 @@ def _gen_overview_data(tag_blocked: bool,
     project = get_project_cls_by_name(project_name)
 
     if 'report_type' in kwargs:
-        result_file_type: tp.Type[BaseReport] = BaseReport.REPORT_TYPES[
-            kwargs['report_type']]
+        result_file_type: tp.Type[BaseReport] = kwargs['report_type']
     else:
         result_file_type = EmptyReport
 
@@ -193,6 +192,7 @@ class CaseStudyOverviewGenerator(
     def generate(self) -> tp.List[Plot]:
         return [
             CaseStudyOverviewPlot(
+                plot_config=self.plot_config,
                 report_type=self.__report_type,
                 case_study=self.__case_study,
                 show_blocked=self.__show_blocked,
