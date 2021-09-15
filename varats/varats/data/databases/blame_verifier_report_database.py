@@ -9,11 +9,11 @@ import pandas as pd
 from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.data.reports.blame_verifier_report import (
-    BlameVerifierReportNoOpt,
+    BlameVerifierReportNoOptTBAA,
     BlameVerifierReportOpt,
 )
 from varats.jupyterhelper.file import (
-    load_blame_verifier_report_no_opt,
+    load_blame_verifier_report_no_opt_tbaa,
     load_blame_verifier_report_opt,
 )
 from varats.mapping.commit_map import CommitMap
@@ -76,17 +76,21 @@ class BlameVerifierReportDatabase(
                     "report file name could not be read from report path"
                 )
 
-            report: tp.Union[BlameVerifierReportOpt, BlameVerifierReportNoOpt]
+            report: tp.Union[BlameVerifierReportOpt,
+                             BlameVerifierReportNoOptTBAA]
 
             if BlameVerifierReportOpt.is_correct_report_type(report_file_name):
                 report_opt = load_blame_verifier_report_opt(report_path)
                 report = report_opt
                 opt_level = OptLevel.OPT.value
 
-            elif BlameVerifierReportNoOpt.is_correct_report_type(
+            elif BlameVerifierReportNoOptTBAA.is_correct_report_type(
                 report_file_name
             ):
-                report_no_opt = load_blame_verifier_report_no_opt(report_path)
+                report_no_opt = load_blame_verifier_report_no_opt_tbaa(
+                    report_path
+                )
+
                 report = report_no_opt
                 opt_level = OptLevel.NO_OPT.value
 
@@ -102,7 +106,7 @@ class BlameVerifierReportDatabase(
 
             return pd.DataFrame(
                 {
-                    'revision': report.head_commit,
+                    'revision': report.head_commit.hash,
                     'time_id': commit_map.short_time_id(report.head_commit),
                     'opt_level': opt_level,
                     'total': number_of_total_annotations,
@@ -123,7 +127,7 @@ class BlameVerifierReportDatabase(
         )
 
         report_files_no_opt = get_processed_revisions_files(
-            project_name, BlameVerifierReportNoOpt,
+            project_name, BlameVerifierReportNoOptTBAA,
             get_case_study_file_name_filter(case_study)
         )
 
@@ -135,7 +139,7 @@ class BlameVerifierReportDatabase(
         )
 
         failed_report_files_no_opt = get_failed_revisions_files(
-            project_name, BlameVerifierReportNoOpt,
+            project_name, BlameVerifierReportNoOptTBAA,
             get_case_study_file_name_filter(case_study)
         )
 

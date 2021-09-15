@@ -9,6 +9,7 @@ Welcome to VaRA's documentation!
 Quick overview
 --------------
 * :ref:`Research Tools`
+* :ref:`How-Tos`
 * :ref:`VaRA-TS Docs`
 * :ref:`vara-ts api reference`
 * `VaRA-feature API Reference`_
@@ -31,6 +32,17 @@ Tool-Suite Overview
 
 .. note::
    As the frist starting point, take a look at the :ref:`Tool-Suite Pipeline Overview`. The overview briefly introduces and descibes all different components and how they interact with each other.
+
+
+How-Tos
+=======
+
+.. toctree::
+   :maxdepth: 1
+
+   tutorials/getting_started
+   tutorials/running_experiments
+
 
 VaRA-TS Docs
 ============

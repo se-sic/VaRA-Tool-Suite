@@ -587,7 +587,7 @@ def _remove_old_result_files() -> None:
     result_dir = Path(str(vara_cfg()['result_dir']))
     for case_study in paper_config.get_all_case_studies():
         old_files: tp.List[Path] = []
-        newer_files: tp.Dict[ShortCommitHash, Path] = dict()
+        newer_files: tp.Dict[ShortCommitHash, Path] = {}
         result_dir_cs = result_dir / case_study.project_name
         if not result_dir_cs.exists():
             continue

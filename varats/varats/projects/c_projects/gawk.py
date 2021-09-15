@@ -8,6 +8,7 @@ from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
 from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
@@ -28,7 +29,7 @@ class Gawk(VProject):
 
     NAME = 'gawk'
     GROUP = 'c_projects'
-    DOMAIN = 'interpreter'
+    DOMAIN = ProjectDomains.UNIX_TOOLS
 
     SOURCE = [
         bb.source.Git(
@@ -65,6 +66,6 @@ class Gawk(VProject):
                 bb.watch(local["autoreconf"])("-if")
                 bb.watch(local["./configure"])()
 
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
+            bb.watch(make)("MAKEINFO=true", "-j", get_number_of_jobs(bb_cfg()))
 
             verify_binaries(self)

@@ -23,7 +23,7 @@ class SamplingMethodBase(tp.Generic[SamplingMethodSubType], abc.ABC):
 
     CONFIG_TYPE_NAME = 'sampling_method'
 
-    _methods: tp.Dict[str, tp.Type[SamplingMethodSubType]] = dict()
+    _methods: tp.Dict[str, tp.Type[SamplingMethodSubType]] = {}
 
     @classmethod
     def __init_subclass__(cls, *args: tp.Any, **kwargs: tp.Any) -> None:
@@ -118,7 +118,7 @@ class SamplingMethodBase(tp.Generic[SamplingMethodSubType], abc.ABC):
         Implementations in subclasses should always call
         `super()._extend_config()` first.
         """
-        return dict()
+        return {}
 
     def _configure_sampling_method(self, config: tp.Dict[str, str]) -> None:
         """

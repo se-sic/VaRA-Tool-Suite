@@ -22,7 +22,7 @@ setup(
     tests_require=["pytest", "pytest-cov"],
     install_requires=[
         "argparse-utils>=1.2.0",
-        "benchbuild>=6.2.2",
+        "benchbuild>=6.2.4",
         "click>=8.0.1",
         "distro>=1.5.0",
         "graphviz>=0.14.2",
@@ -74,6 +74,7 @@ setup(
             'vara-gen-commitmap = varats.tools.driver_gen_commitmap:main',
             'vara-pc = varats.tools.driver_paper_config:main',
             'vara-plot = varats.tools.driver_plot:main',
+            'vara-run = varats.tools.driver_run:main',
             'vara-table = varats.tools.driver_table:main',
             'vara-cve = varats.tools.driver_cve:main',
         ]
