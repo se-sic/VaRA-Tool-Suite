@@ -77,14 +77,16 @@ class Otfb(actions.Step):  # type: ignore
 
             run_cmd = wrap_unlimit_stack_size(phasar[phasar_params])
 
-            run_cmd = (run_cmd > f'{varats_result_folder}/{result_file}')
-
             exec_func_with_pe_error_handler(
-                timeout[timeout_duration, run_cmd],
+                timeout[timeout_duration, run_cmd] > f'{varats_result_folder}/{result_file}',
                 create_default_analysis_failure_handler(
-                    project, EmptyReport, Path(varats_result_folder), timeout_duration=timeout_duration
+                    project, EmptyReport, 
+                    Path(varats_result_folder), 
+                    timeout_duration=timeout_duration
                 )
             )
+
+        return actions.StepResult.OK
 
 
 class OtfbExperiment(VersionExperiment):
