@@ -99,7 +99,7 @@ class JustCompileReport(VersionExperiment):
             << run.WithTimeout()
 
         project.compile = get_default_compile_error_wrapped(
-            project, self.REPORT_SPEC.main_report,
+            self, project, self.REPORT_SPEC.main_report,
             EmptyAnalysis.RESULT_FOLDER_TEMPLATE
         )
 

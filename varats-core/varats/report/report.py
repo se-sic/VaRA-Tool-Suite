@@ -119,15 +119,16 @@ class ReportFilename():
     strings and paths."""
 
     __RESULT_FILE_REGEX = re.compile(
-        r"(?P<project_shorthand>.*)-" +
+        r"(?P<experiment_shorthand>.*)-" + r"(?P<project_shorthand>.*)-" +
         r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
         r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)_" +
         FileStatusExtension.get_regex_grp() + r"?(?P<file_ext>\..*)?" + "$"
     )
 
     __RESULT_FILE_TEMPLATE = (
-        "{shorthand}-" + "{project_name}-" + "{binary_name}-" +
-        "{project_version}_" + "{project_uuid}_" + "{status_ext}" + "{file_ext}"
+        "{experiment_shorthand}-" + "{project_shorthand}-" + "{project_name}-" +
+        "{binary_name}-" + "{project_revision}_" + "{project_uuid}_" +
+        "{status_ext}" + "{file_ext}"
     )
 
     def __init__(self, file_name: tp.Union[str, Path]) -> None:
@@ -251,6 +252,8 @@ class ReportFilename():
 
         raise ValueError(f'File {self.filename} name was wrongly formated.')
 
+    # TODO add experiment shorthand
+
     @property
     def shorthand(self) -> str:
         """
@@ -294,18 +297,21 @@ class ReportFilename():
 
     @staticmethod
     def get_file_name(
+        experiment_shorthand: str,
         report_shorthand: str,
         project_name: str,
         binary_name: str,
-        project_version: str,
+        #project_version: str,
+        project_revision: ShortCommitHash,
         project_uuid: str,
         extension_type: FileStatusExtension,
         file_ext: str = ".txt"
-    ) -> str:
+    ) -> 'ReportFilename':
         """
         Generates a filename for a report file out the different parts.
 
         Args:
+            experiment_shorthand: unique shorthand of the experiment
             report_shorthand: unique shorthand of the report
             project_name: name of the project for which the report was generated
             binary_name: name of the binary for which the report was generated
@@ -319,15 +325,16 @@ class ReportFilename():
         """
         status_ext = FileStatusExtension.get_status_extension(extension_type)
 
-        # Add the missing '.' if none was given by the report
+        #  Add the missing '.' if none was given by the report
         if file_ext and not file_ext.startswith("."):
             file_ext = "." + file_ext
 
         return ReportFilename.__RESULT_FILE_TEMPLATE.format(
-            shorthand=report_shorthand,
+            experiment_shorthand=experiment_shorthand,
+            project_shorthand=report_shorthand,
             project_name=project_name,
             binary_name=binary_name,
-            project_version=project_version,
+            project_revision=project_revision,
             project_uuid=project_uuid,
             status_ext=status_ext,
             file_ext=file_ext
@@ -418,6 +425,7 @@ class BaseReport():
     @staticmethod
     @abstractmethod
     def get_file_name(
+        experiment_shorthand: str,
         project_name: str,
         binary_name: str,
         project_version: str,

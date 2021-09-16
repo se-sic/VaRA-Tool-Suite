@@ -243,12 +243,12 @@ class TestCommitReport(unittest.TestCase):
         file_content = YAML_DOC_1 + YAML_DOC_2 + YAML_DOC_3
 
         cls.success_filename = (
-            "CR-foo-foo-7bb9ef5f8c_"
+            "CRE-CR-foo-foo-7bb9ef5f8c_"
             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
             "success.yaml"
         )
         cls.fail_filename = (
-            "CR-foo-foo-7bb9ef5f8c_"
+            "CRE-CR-foo-foo-7bb9ef5f8c_"
             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be"
             "_failed.txt"
         )
@@ -318,7 +318,7 @@ class TestCommitReport(unittest.TestCase):
         """Check if file names are created correctly."""
         self.assertEqual(
             CommitReport.get_file_name(
-                "foo", "foo", "7bb9ef5f8c",
+                "CRE", "foo", "foo", "7bb9ef5f8c",
                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
                 FileStatusExtension.SUCCESS
             ), self.success_filename
@@ -326,7 +326,7 @@ class TestCommitReport(unittest.TestCase):
 
         self.assertEqual(
             CommitReport.get_file_name(
-                "foo", "foo", "7bb9ef5f8c",
+                "CRE", "foo", "foo", "7bb9ef5f8c",
                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
                 FileStatusExtension.FAILED, ".txt"
             ), self.fail_filename

@@ -106,8 +106,8 @@ def exec_func_with_pe_error_handler(
 
 
 def get_default_compile_error_wrapped(
-    project: Project, report_type: tp.Type[BaseReport],
-    result_folder_template: str
+    experiment: 'VersionExperiment', project: Project,
+    report_type: tp.Type[BaseReport], result_folder_template: str
 ) -> FunctionPEErrorWrapper:
     """
     Setup the default project compile function with an error handler.
@@ -129,12 +129,13 @@ def get_default_compile_error_wrapped(
     return FunctionPEErrorWrapper(
         project.compile,
         create_default_compiler_error_handler(
-            project, report_type, result_folder
+            experiment, project, report_type, result_folder
         )
     )
 
 
 def create_default_compiler_error_handler(
+    experiment: 'VersionExperiment',
     project: Project,
     report_type: tp.Type[BaseReport],
     output_folder: tp.Optional[Path] = None,
@@ -145,6 +146,7 @@ def create_default_compiler_error_handler(
     `report_type`.
 
     Args:
+        experiment: current experiment
         project: currently under analysis
         report_type: that should be generated
         output_folder: where the errors will be placed
@@ -153,12 +155,13 @@ def create_default_compiler_error_handler(
     Retruns: a initialized PEErrorHandler
     """
     return create_default_error_handler(
-        project, report_type, FileStatusExtension.COMPILE_ERROR, output_folder,
-        binary
+        experiment, project, report_type, FileStatusExtension.COMPILE_ERROR,
+        output_folder, binary
     )
 
 
 def create_default_analysis_failure_handler(
+    experiment: 'VersionExperiment',
     project: Project,
     report_type: tp.Type[BaseReport],
     output_folder: tp.Optional[Path] = None,
@@ -170,6 +173,7 @@ def create_default_analysis_failure_handler(
     `project`, `report_type`.
 
     Args:
+        experiment: current experiment
         project: currently under analysis
         report_type: that should be generated
         output_folder: where the errors will be placed
@@ -179,12 +183,13 @@ def create_default_analysis_failure_handler(
     Retruns: a initialized PEErrorHandler
     """
     return create_default_error_handler(
-        project, report_type, FileStatusExtension.FAILED, output_folder, binary,
-        timeout_duration
+        experiment, project, report_type, FileStatusExtension.FAILED,
+        output_folder, binary, timeout_duration
     )
 
 
 def create_default_error_handler(
+    experiment: 'VersionExperiment',
     project: Project,
     report_type: tp.Type[BaseReport],
     error_type: FileStatusExtension,
@@ -212,9 +217,10 @@ def create_default_error_handler(
     return PEErrorHandler(
         str(error_output_folder),
         report_type.get_file_name(
+            experiment_shorthand=experiment.shorthand(),
             project_name=str(project.name),
             binary_name=binary.name if binary else "all",
-            project_version=project.version_of_primary,
+            project_revision=project.version_of_primary,
             project_uuid=str(project.run_uuid),
             extension_type=error_type,
             file_ext=".txt"
@@ -243,6 +249,15 @@ VersionType = tp.TypeVar('VersionType')
 class VersionExperiment(Experiment):  # type: ignore
     """Base class for experiments that want to analyze different project
     revisions."""
+
+    # TODO: fix me
+    #def __init__(self) -> None:
+    #    pass
+
+    @staticmethod
+    @abstractmethod
+    def shorthand() -> str:
+        """Experiment shorthand."""
 
     @abstractmethod
     def actions_for_project(self, project: Project) -> tp.MutableSequence[Step]:

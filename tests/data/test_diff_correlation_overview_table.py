@@ -28,4 +28,7 @@ class TestDiffCorrelationOverviewTable(unittest.TestCase):
         ).tabulate()
 
         with open("tables/b_diff_correlation_overview.tex") as expected:
+            #print(table)
+            #print('--')
+            #print(expected.read())
             self.assertEqual(table, expected.read())

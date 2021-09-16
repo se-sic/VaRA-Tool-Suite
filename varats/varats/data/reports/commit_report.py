@@ -182,6 +182,7 @@ class CommitReport(BaseReport):
 
     @staticmethod
     def get_file_name(
+        experiment_shorthand: str,
         project_name: str,
         binary_name: str,
         project_version: str,
@@ -193,6 +194,7 @@ class CommitReport(BaseReport):
         Generates a filename for a commit report with 'yaml' as file extension.
 
         Args:
+            experiment_shorthand: unique shorthand of the experiment
             project_name: name of the project for which the report was generated
             binary_name: name of the binary for which the report was generated
             project_version: version of the analyzed project, i.e., commit hash
@@ -204,8 +206,8 @@ class CommitReport(BaseReport):
             name for the report file that can later be uniquly identified
         """
         return ReportFilename.get_file_name(
-            CommitReport.SHORTHAND, project_name, binary_name, project_version,
-            project_uuid, extension_type, file_ext
+            experiment_shorthand, CommitReport.SHORTHAND, project_name,
+            binary_name, project_version, project_uuid, extension_type, file_ext
         )
 
     def calc_max_cf_edges(self) -> int:

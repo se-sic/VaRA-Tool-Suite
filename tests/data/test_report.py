@@ -67,7 +67,7 @@ class TestReportFilename(unittest.TestCase):
         """Setup file and CommitReport."""
         cls.correct_UUID = "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be"
         cls.raw_filename = (
-            "CR-foo-bar-7bb9ef5f8c_"
+            "CRE-CR-foo-bar-7bb9ef5f8c_"
             f"{cls.correct_UUID}_"
             "success.txt"
         )
@@ -127,17 +127,17 @@ class TestBaseReport(unittest.TestCase):
     def setUpClass(cls):
         """Setup report file paths."""
         cls.success_filename_cr = (
-            "CR-foo-foo-7bb9ef5f8c_"
+            "CRE-CR-foo-foo-7bb9ef5f8c_"
             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
             "success.txt"
         )
         cls.success_filename = (
-            "EMPTY-foo-foo-7bb9ef5f8c_"
+            "JC-EMPTY-foo-foo-7bb9ef5f8c_"
             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
             "success.txt"
         )
         cls.fail_filename = (
-            "EMPTY-foo-foo-7bb9ef5f8c_"
+            "JC-EMPTY-foo-foo-7bb9ef5f8c_"
             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
             "failed.txt"
         )
@@ -213,7 +213,7 @@ class TestBaseReport(unittest.TestCase):
         """Check if file names are created correctly."""
         self.assertEqual(
             EmptyReport.get_file_name(
-                "foo", "foo", "7bb9ef5f8c",
+                "JC", "foo", "foo", "7bb9ef5f8c",
                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
                 FileStatusExtension.SUCCESS
             ), self.success_filename
@@ -221,7 +221,7 @@ class TestBaseReport(unittest.TestCase):
 
         self.assertEqual(
             EmptyReport.get_file_name(
-                "foo", "foo", "7bb9ef5f8c",
+                "JC", "foo", "foo", "7bb9ef5f8c",
                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
                 FileStatusExtension.FAILED
             ), self.fail_filename
