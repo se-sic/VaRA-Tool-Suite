@@ -58,7 +58,7 @@ class BlameLibraryInteractionsDatabase(
             ) -> tp.Dict[str, tp.Any]:
 
                 data_dict: tp.Dict[str, tp.Any] = {
-                    'revision': report.head_commit,
+                    'revision': report.head_commit.hash,
                     'time_id': commit_map.short_time_id(report.head_commit),
                     'base_hash': base_hash.hash,
                     'base_lib': base_library,
