@@ -74,7 +74,7 @@ def mai_nold() -> None:
 
 @configuration_lookup_error_handler
 def __casestudy_exec_command(
-        args: tp.Dict[str, tp.Any], parser: ArgumentParser
+    args: tp.Dict[str, tp.Any], parser: ArgumentParser
 ) -> None:
     if args['subcommand'] == 'status':
         __casestudy_status(args, parser)
@@ -119,7 +119,7 @@ def __add_common_args(sub_parser: ArgumentParser) -> None:
         action="store_true",
         default=False,
         help="Separate the revisions in different stages per year "
-             "(when using \'--revs-per-year\')."
+        "(when using \'--revs-per-year\')."
     )
     sub_parser.add_argument(
         "--num-rev",
@@ -191,7 +191,7 @@ def __create_ext_parser(sub_parsers: _SubParsersAction) -> None:
         type=int,
         default=5,
         help="Maximal expected gradient in percent between " +
-             "two revisions, e.g., 5 for 5%%"
+        "two revisions, e.g., 5 for 5%%"
     )
     ext_parser.add_argument(
         "--plot-type", help="Plot to calculate new revisions from."
@@ -215,7 +215,7 @@ def __create_package_parser(sub_parsers: _SubParsersAction) -> None:
     package_parser.add_argument(
         "--filter-regex",
         help="Provide a regex to only include case "
-             "studies that match the filter.",
+        "studies that match the filter.",
         type=str,
         default=".*"
     )
@@ -279,36 +279,44 @@ def __create_cleanup_parser(sub_parsers: _SubParsersAction) -> None:
 
 
 @main.command("status")
-@click.argument("report_type",
-                type=click.Choice(list(BaseReport.REPORT_TYPES.keys())))
-@click.option("--filter-regex",
-              help="Provide a regex to filter the shown case studies",
-              default=".*")
-@click.option("--paper-config",
-              help="Use this paper config instead of the configured one",
-              default=None)
+@click.argument(
+    "report_type", type=click.Choice(list(BaseReport.REPORT_TYPES.keys()))
+)
+@click.option(
+    "--filter-regex",
+    help="Provide a regex to filter the shown case studies",
+    default=".*"
+)
+@click.option(
+    "--paper-config",
+    help="Use this paper config instead of the configured one",
+    default=None
+)
 @click.option("-s", "--short", is_flag=True, help="Only print a short summary")
-@click.option("--list-revs", is_flag=True,
-              help="Print a list of revisions for every stage and every case study"
-              )
+@click.option(
+    "--list-revs",
+    is_flag=True,
+    help="Print a list of revisions for every stage and every case study"
+)
 @click.option("--ws", is_flag=True, help="Print status with stage separation")
-@click.option("--sorted", "sort_revs", is_flag=True, help="Sort the revisions in the order they are printed by git log.")
+@click.option(
+    "--sorted",
+    "sort_revs",
+    is_flag=True,
+    help="Sort the revisions in the order they are printed by git log."
+)
 @click.option("--legend", is_flag=True, help="Print status with legend")
-@click.option("--force-color", is_flag=True,
-              help="Force colored output also when not connected to a terminal "
-                   "(e.g. when piping to less -r).")
+@click.option(
+    "--force-color",
+    is_flag=True,
+    help="Force colored output also when not connected to a terminal "
+    "(e.g. when piping to less -r)."
+)
 def __casestudy_status(
-        report_type: str,
-        filter_regex: str,
-        paper_config: str,
-        short: bool,
-        list_revs: bool,
-        ws: bool,
-        sort_revs: bool,
-        legend: bool,
-        force_color: bool
+    report_type: str, filter_regex: str, paper_config: str, short: bool,
+    list_revs: bool, ws: bool, sort_revs: bool, legend: bool, force_color: bool
 ) -> None:
-    """Show status of case-studies for a specified REPORT TYPE"""
+    """Show status of case-studies for a specified REPORT TYPE."""
     if force_color:
         colors.use_color = True
     if paper_config:
@@ -320,13 +328,12 @@ def __casestudy_status(
     if short and ws:
         click.UsageError("At most one argument of: --short, --ws can be used.")
     PCM.show_status_of_case_studies(
-        report_type, filter_regex, short,
-        sort_revs, list_revs, ws, legend
+        report_type, filter_regex, short, sort_revs, list_revs, ws, legend
     )
 
 
 def __casestudy_create_or_extend(
-        args: tp.Dict[str, tp.Any], parser: ArgumentParser
+    args: tp.Dict[str, tp.Any], parser: ArgumentParser
 ) -> None:
     if "project" not in args and "git_path" not in args:
         parser.error("need --project or --git-path")
@@ -365,7 +372,7 @@ def __casestudy_create_or_extend(
             'strategy'] is ExtenderStrategy.SMOOTH_PLOT:
             args['project'] = case_study.project_name
             args['result_folder'] = str(vara_cfg()['result_dir']
-                                        ) + "/" + args['project']
+                                       ) + "/" + args['project']
             LOG.info(f"Result folder defaults to: {args['result_folder']}")
 
         extend_case_study(case_study, cmap, args['strategy'], **args)
@@ -387,7 +394,7 @@ def __casestudy_create_or_extend(
 
 
 def __casestudy_package(
-        args: tp.Dict[str, tp.Any], parser: ArgumentParser
+    args: tp.Dict[str, tp.Any], parser: ArgumentParser
 ) -> None:
     output_path = Path(args["output"])
     if output_path.suffix == '':
@@ -411,20 +418,20 @@ def __casestudy_package(
         )
 
 
-def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> ShortCommitHash:
-    result_file_type = BaseReport.REPORT_TYPES[args["report_type"]]
-    project_name = args["project"]
-    if "commit_hash" not in args:
+def __init_commit_hash(
+    report_type: tp.Type[BaseReport], project: str, commit_hash: str
+) -> ShortCommitHash:
+    if not commit_hash:
         # Ask the user to provide a commit hash
         print("No commit hash was provided.")
         commit_hash: tp.Optional[ShortCommitHash] = None
         paper_config = get_paper_config()
         available_commit_hashes = []
         # Compute available commit hashes
-        for case_study in paper_config.get_case_studies(project_name):
+        for case_study in paper_config.get_case_studies(project):
             available_commit_hashes.extend(
                 get_revisions_status_for_case_study(
-                    case_study, result_file_type, tag_blocked=False
+                    case_study, report_type, tag_blocked=False
                 )
             )
 
@@ -434,7 +441,7 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> ShortCommitHash:
 
         # Create call backs for cli choice
         def set_commit_hash(
-                choice_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
+            choice_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
         ) -> None:
             nonlocal commit_hash
             commit_hash = choice_pair[0]
@@ -448,7 +455,7 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> ShortCommitHash:
         ])
 
         def result_file_to_list_entry(
-                commit_status_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
+            commit_status_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
         ) -> str:
             status = commit_status_pair[1].get_colored_status().rjust(
                 longest_file_status_extension +
@@ -473,21 +480,27 @@ def __init_commit_hash(args: tp.Dict[str, tp.Any]) -> ShortCommitHash:
             print("Could not find processed commit hash.")
             raise LookupError
         return commit_hash
-    return ShortCommitHash(args["commit_hash"])
+    return ShortCommitHash(commit_hash)
 
 
-def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
-    result_file_type = BaseReport.REPORT_TYPES[args["report_type"]]
-    project_name = args["project"]
-
+@main.command("view")
+@click.argument(
+    "report-type", type=click.Choice(list(BaseReport.REPORT_TYPES.keys()))
+)
+@click.argument("project")
+@click.argument("commit-hash", required=False)
+@click.option("--newest-only", is_flag=True)
+def __casestudy_view(
+    report_type: str, project: str, commit_hash: str, newest_only: bool
+) -> None:
+    result_file_type = BaseReport.REPORT_TYPES[report_type]
     try:
-        commit_hash = __init_commit_hash(args)
+        commit_hash = __init_commit_hash(result_file_type, project, commit_hash)
     except LookupError:
         return
 
     result_files = PCM.get_result_files(
-        result_file_type, project_name, commit_hash,
-        args.get("newest_only", False)
+        result_file_type, project, commit_hash, newest_only
     )
     result_files.sort(
         key=lambda report_file: report_file.stat().st_mtime_ns, reverse=True
@@ -540,20 +553,12 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
         return
 
 
-def __casestudy_cleanup(
-        args: tp.Dict[str, tp.Any], parser: ArgumentParser
-) -> None:
-    cleanup_type = args['cleanup_type']
-    if cleanup_type == CleanupType.ERROR:
-        _remove_error_result_files()
-    if cleanup_type == CleanupType.OLD:
-        _remove_old_result_files()
-    if cleanup_type == CleanupType.REGEX:
-        if not args['filter_regex']:
-            parser.error("Specify a regex filter with --filter-regex or -f")
-        _remove_result_files_by_regex(args['filter_regex'], args['silent'])
+@main.group()
+def cleanup() -> None:
+    return
 
 
+@cleanup.command("old")
 def _remove_old_result_files() -> None:
     paper_config = get_paper_config()
     result_dir = Path(str(vara_cfg()['result_dir']))
@@ -572,8 +577,8 @@ def _remove_old_result_files() -> None:
                     newer_files[commit_hash] = opt_res_file
                 else:
                     if (
-                            current_file.stat().st_mtime_ns <
-                            opt_res_file.stat().st_mtime_ns
+                        current_file.stat().st_mtime_ns <
+                        opt_res_file.stat().st_mtime_ns
                     ):
                         newer_files[commit_hash] = opt_res_file
                         old_files.append(current_file)
@@ -599,6 +604,7 @@ def _find_result_dir_paths_of_projects() -> tp.List[Path]:
     return existing_paper_config_result_dir_paths
 
 
+@cleanup.command("error")
 def _remove_error_result_files() -> None:
     result_dir_paths = _find_result_dir_paths_of_projects()
 
@@ -608,12 +614,22 @@ def _remove_error_result_files() -> None:
         for result_file_name in result_file_names:
             report_file_name = ReportFilename(result_file_name)
             if report_file_name.is_result_file() and (
-                    report_file_name.has_status_compileerror() or
-                    report_file_name.has_status_failed()
+                report_file_name.has_status_compileerror() or
+                report_file_name.has_status_failed()
             ):
                 os.remove(result_dir_path / result_file_name)
 
 
+@cleanup.command("regex")
+@click.option(
+    "--filter-regex",
+    "-f",
+    "regex_filter",
+    prompt="Specify a regex for the filenames to delete"
+)
+@click.option(
+    "--silent", help="Hide the output of the matching filenames", is_flag=True
+)
 def _remove_result_files_by_regex(regex_filter: str, hide: bool) -> None:
     result_dir_paths = _find_result_dir_paths_of_projects()
 
