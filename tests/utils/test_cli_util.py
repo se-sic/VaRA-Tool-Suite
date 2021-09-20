@@ -2,6 +2,7 @@
 
 import unittest
 import unittest.mock as mock
+from enum import Enum
 from pathlib import Path
 
 from tests.test_utils import run_in_test_environment, test_environment
