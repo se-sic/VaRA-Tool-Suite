@@ -83,6 +83,10 @@ class JustCompileReport(VersionExperiment):
 
     REPORT_SPEC = ReportSpecification(EmptyReport)
 
+    @staticmethod
+    def shorthand() -> str:
+        return "JC"
+
     def actions_for_project(
         self, project: Project
     ) -> tp.MutableSequence[actions.Step]:

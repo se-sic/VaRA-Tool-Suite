@@ -6,6 +6,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
+from varats.utils.git_util import ShortCommitHash
 from varats.utils.util import static_vars
 
 
@@ -95,7 +96,7 @@ class TimeReport(BaseReport):
     def get_file_name(
         project_name: str,
         binary_name: str,
-        project_version: str,
+        project_revision: ShortCommitHash,
         project_uuid: str,
         extension_type: FileStatusExtension,
         file_ext: str = ""
@@ -106,7 +107,7 @@ class TimeReport(BaseReport):
         Args:
             project_name: name of the project for which the report was generated
             binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
+            project_revision: revision of the project, i.e., commit hash
             project_uuid: benchbuild uuid for the experiment run
             extension_type: to specify the status of the generated report
             file_ext: file extension of the report file

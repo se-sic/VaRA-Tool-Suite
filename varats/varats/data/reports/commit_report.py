@@ -185,7 +185,7 @@ class CommitReport(BaseReport):
         experiment_shorthand: str,
         project_name: str,
         binary_name: str,
-        project_version: str,
+        project_revision: ShortCommitHash,
         project_uuid: str,
         extension_type: FileStatusExtension,
         file_ext: str = "yaml"

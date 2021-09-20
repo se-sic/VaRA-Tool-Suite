@@ -1,6 +1,7 @@
 """Empty report implementation for testing."""
 
 from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
+from varats.utils.git_util import ShortCommitHash
 
 
 class EmptyReport(BaseReport):
@@ -22,7 +23,7 @@ class EmptyReport(BaseReport):
         experiment_shorthand: str,
         project_name: str,
         binary_name: str,
-        project_revision: str,
+        project_revision: ShortCommitHash,
         project_uuid: str,
         extension_type: FileStatusExtension,
         file_ext: str = ".txt"

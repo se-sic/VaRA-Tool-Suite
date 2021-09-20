@@ -250,10 +250,6 @@ class VersionExperiment(Experiment):  # type: ignore
     """Base class for experiments that want to analyze different project
     revisions."""
 
-    # TODO: fix me
-    #def __init__(self) -> None:
-    #    pass
-
     @staticmethod
     @abstractmethod
     def shorthand() -> str:

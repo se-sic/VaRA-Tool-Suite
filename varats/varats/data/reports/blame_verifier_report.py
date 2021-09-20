@@ -137,7 +137,7 @@ class BlameVerifierReportOpt(BlameVerifierReportParserMixin, BaseReport):
         experiment_shorthand: str,
         project_name: str,
         binary_name: str,
-        project_revision: str,
+        project_revision: ShortCommitHash,
         project_uuid: str,
         extension_type: FileStatusExtension,
         file_ext: str = ".txt"
@@ -150,7 +150,7 @@ class BlameVerifierReportOpt(BlameVerifierReportParserMixin, BaseReport):
             experiment_shorthand: unique shorthand of the experiment
             project_name: name of the project for which the report was generated
             binary_name: name of the binary for which the report was generated
-            project_revision: revision of the analyzed project, i.e., commit hash
+            project_revision: revision of the project, i.e., commit hash
             project_uuid: benchbuild uuid for the experiment run
             extension_type: to specify the status of the generated report
             file_ext: file extension of the report file
@@ -208,7 +208,7 @@ class BlameVerifierReportNoOptTBAA(BlameVerifierReportParserMixin, BaseReport):
             experiment_shorthand: unique shorthand of the experiment
             project_name: name of the project for which the report was generated
             binary_name: name of the binary for which the report was generated
-            project_revision: revision of the analyzed project, i.e., commit hash
+            project_revision: revision of the project, i.e., commit hash
             project_uuid: benchbuild uuid for the experiment run
             extension_type: to specify the status of the generated report
             file_ext: file extension of the report file
