@@ -88,6 +88,62 @@ def initialize_logger_config() -> None:
     logging.basicConfig(level=log_level)
 
 
+ChoiceTy = tp.TypeVar("ChoiceTy")
+
+
+class TypedChoice(click.Choice, tp.Generic[ChoiceTy]):
+    """Typed version of click's choice parameter type."""
+
+    name = "typed choice"
+
+    def __init__(
+        self, choices: tp.Dict[str, ChoiceTy], case_sensitive: bool = True
+    ):
+        self.__choices = choices
+        super().__init__(list(choices.keys()), case_sensitive)
+
+    def convert(
+        self, value: tp.Any, param: tp.Optional[click.Parameter],
+        ctx: tp.Optional[click.Context]
+    ) -> ChoiceTy:
+        return self.__choices[
+            #  pylint: disable=super-with-arguments
+            super(TypedChoice, self).convert(value, param, ctx)]
+
+
+class TypedMultiChoice(click.Choice, tp.Generic[ChoiceTy]):
+    """
+    Typed choice parameter type allows giving multiple values.
+
+    Multiple values can be given as a comma separated list; no whitespace
+    allowed.
+    """
+
+    name = "typed multi choice"
+
+    def __init__(
+        self,
+        choices: tp.Dict[str, tp.List[ChoiceTy]],
+        case_sensitive: bool = True
+    ):
+        self.__choices = choices
+        super().__init__(list(choices.keys()), case_sensitive)
+
+    def convert(
+        self, value: tp.Any, param: tp.Optional[click.Parameter],
+        ctx: tp.Optional[click.Context]
+    ) -> tp.List[ChoiceTy]:
+        values = [value]
+        if isinstance(value, str):
+            values = list(map(str.strip, value.split(",")))
+
+        return [
+            item for v in values for item in self.__choices[
+                #  pylint: disable=super-with-arguments
+                super(TypedMultiChoice, self).convert(v, param, ctx)]
+        ]
+
+
 EnumTy = tp.TypeVar("EnumTy", bound=Enum)
 
 
@@ -103,10 +159,12 @@ class EnumChoice(click.Choice, tp.Generic[EnumTy]):
         super().__init__(list(dict(enum.__members__).keys()), case_sensitive)
 
     def convert(
-        self, value: str, param: tp.Optional[click.Parameter],
+        self, value: tp.Union[str, EnumTy], param: tp.Optional[click.Parameter],
         ctx: tp.Optional[click.Context]
     ) -> EnumTy:
-        return self.__enum[super().convert(value, param, ctx)]
+        if isinstance(value, str):
+            return self.__enum[super().convert(value, param, ctx)]
+        return value
 
 
 def tee(process: PlumbumLocalPopen,
