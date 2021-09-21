@@ -10,7 +10,9 @@ Generating Plots and Tables
 ---------------------------
 
 Plots and tables can be generated with the tools :ref:`vara-plot` and :ref:`vara-table`.
-The command line interface for these tools consists of four parts:
+The command line interface for these tools consists of four parts which are illustrated in the figure below:
+
+.. figure:: ../vara-ts-api/plot_architecture.svg
 
 1. *Common options:* handle functionality common to all plots or tables, like file format
 2. *Plot or table config:* for tuning visual appearance; specific plots/tables may or may not respect them
