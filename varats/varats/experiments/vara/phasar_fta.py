@@ -105,7 +105,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
             )
 
 
-class PhASARTaintAnalysis(VersionExperiment):
+class PhASARTaintAnalysis(VersionExperiment, shorthand="PTA"):
     """Generates a feature taint analysis (FTA) of the project(s) specified in
     the call."""
 

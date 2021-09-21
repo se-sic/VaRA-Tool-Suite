@@ -222,8 +222,7 @@ def create_default_error_handler(
             binary_name=binary.name if binary else "all",
             project_revision=project.version_of_primary,
             project_uuid=str(project.run_uuid),
-            extension_type=error_type,
-            file_ext=".txt"
+            extension_type=error_type
         ),
         timeout_duration=timeout_duration
     )
@@ -249,6 +248,16 @@ VersionType = tp.TypeVar('VersionType')
 class VersionExperiment(Experiment):  # type: ignore
     """Base class for experiments that want to analyze different project
     revisions."""
+
+    @classmethod
+    def __init_subclass__(
+        cls, shorthand: str, *args: tp.Any, **kwargs: tp.Any
+    ) -> None:
+        # mypy does not yet fully understand __init_subclass__()
+        # https://github.com/python/mypy/issues/4660
+        super().__init_subclass__(*args, **kwargs)  # type: ignore
+
+        cls.SHORTHAND = shorthand
 
     @staticmethod
     @abstractmethod

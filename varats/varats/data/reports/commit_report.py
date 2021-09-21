@@ -136,11 +136,8 @@ class FunctionGraphEdges():
         return repr_str
 
 
-class CommitReport(BaseReport):
+class CommitReport(BaseReport, shorthand="CR", file_type="yaml"):
     """Data class that gives access to a loaded commit report."""
-
-    SHORTHAND = "CR"
-    FILE_TYPE = "yaml"
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
@@ -174,41 +171,6 @@ class CommitReport(BaseReport):
     def head_commit(self) -> ShortCommitHash:
         """The current HEAD commit under which this CommitReport was created."""
         return self.filename.commit_hash
-
-    @classmethod
-    def shorthand(cls) -> str:
-        """Shorthand for this report."""
-        return cls.SHORTHAND
-
-    @staticmethod
-    def get_file_name(
-        experiment_shorthand: str,
-        project_name: str,
-        binary_name: str,
-        project_revision: ShortCommitHash,
-        project_uuid: str,
-        extension_type: FileStatusExtension,
-        file_ext: str = "yaml"
-    ) -> str:
-        """
-        Generates a filename for a commit report with 'yaml' as file extension.
-
-        Args:
-            experiment_shorthand: unique shorthand of the experiment
-            project_name: name of the project for which the report was generated
-            binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
-            project_uuid: benchbuild uuid for the experiment run
-            extension_type: to specify the status of the generated report
-            file_ext: file extension of the report file
-
-        Returns:
-            name for the report file that can later be uniquly identified
-        """
-        return ReportFilename.get_file_name(
-            experiment_shorthand, CommitReport.SHORTHAND, project_name,
-            binary_name, project_version, project_uuid, extension_type, file_ext
-        )
 
     def calc_max_cf_edges(self) -> int:
         """Calculate the highest amount of control-flow interactions of a single

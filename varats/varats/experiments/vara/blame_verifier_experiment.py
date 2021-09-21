@@ -120,7 +120,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
         return actions.StepResult.OK
 
 
-class BlameVerifierReportExperiment(VersionExperiment):
+class BlameVerifierReportExperiment(VersionExperiment, shorthand="BVRE"):
     """BlameVerifierReportExperiment generalizes the implementation and usage
     over different optimization levels."""
 
@@ -169,7 +169,9 @@ class BlameVerifierReportExperiment(VersionExperiment):
         return analysis_actions
 
 
-class BlameVerifierReportExperimentOpt(BlameVerifierReportExperiment):
+class BlameVerifierReportExperimentOpt(
+    BlameVerifierReportExperiment, shorthand="BVRE_Opt"
+):
     """Generates a Blame Verifier Report of the project(s) specified in the call
     with optimization (BVR_Opt)."""
 
@@ -186,7 +188,9 @@ class BlameVerifierReportExperimentOpt(BlameVerifierReportExperiment):
         )
 
 
-class BlameVerifierReportExperimentNoOptTBAA(BlameVerifierReportExperiment):
+class BlameVerifierReportExperimentNoOptTBAA(
+    BlameVerifierReportExperiment, shorthand="BVRE_Opt"
+):
     """Generates a Blame Verifier Report of the project(s) specified in the call
     without any optimization and TBAA metadata (BVR_NoOptTBAA)."""
 

@@ -76,7 +76,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
 
 
 # Please take care when changing this file, see docs experiments/just_compile
-class JustCompileReport(VersionExperiment):
+class JustCompileReport(VersionExperiment, shorthand="JC"):
     """Generates empty report file."""
 
     NAME = "JustCompile"

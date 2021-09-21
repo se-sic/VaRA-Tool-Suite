@@ -104,7 +104,7 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         return actions.StepResult.OK
 
 
-class BlameReportExperiment(VersionExperiment):
+class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
     """Generates a commit flow report (CFR) of the project(s) specified in the
     call."""
 

@@ -103,7 +103,7 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
         return actions.StepResult.OK
 
 
-class GlobalsComparision(VersionExperiment):
+class GlobalsComparision(VersionExperiment, shorthand="GAC"):
     """Compare the effect size of a phasar analysis with globals or without."""
 
     NAME = "GlobalsComparision"

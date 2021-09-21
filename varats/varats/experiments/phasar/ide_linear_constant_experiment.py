@@ -89,7 +89,9 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
         return actions.StepResult.OK
 
 
-class IDELinearConstantAnalysisExperiment(VersionExperiment):
+class IDELinearConstantAnalysisExperiment(
+    VersionExperiment, shorthand="IDELCA"
+):
     """Experiment class to build and analyse a project with an
     IDELinearConstantAnalysis."""
 

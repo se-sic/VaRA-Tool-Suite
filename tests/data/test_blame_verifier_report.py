@@ -70,8 +70,7 @@ class TestBlameVerifierReport(unittest.TestCase):
             binary_name=self.test_binary_name,
             project_revision=self.test_project_revision,
             project_uuid=self.test_project_uuid,
-            extension_type=FileStatusExtension.SUCCESS,
-            file_ext=self.test_file_ext
+            extension_type=FileStatusExtension.SUCCESS
         )
 
         # Then
@@ -90,8 +89,7 @@ class TestBlameVerifierReport(unittest.TestCase):
             binary_name=self.test_binary_name,
             project_revision=self.test_project_revision,
             project_uuid=self.test_project_uuid,
-            extension_type=FileStatusExtension.SUCCESS,
-            file_ext=self.test_file_ext
+            extension_type=FileStatusExtension.SUCCESS
         )
 
         # Then

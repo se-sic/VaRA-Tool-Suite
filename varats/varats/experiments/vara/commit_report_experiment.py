@@ -135,7 +135,7 @@ class CRAnalysis(actions.Step):  # type: ignore
         return actions.StepResult.OK
 
 
-class CommitReportExperiment(VersionExperiment):
+class CommitReportExperiment(VersionExperiment, shorthand="CRE"):
     """Generates a commit report (CR) of the project(s) specified in the
     call."""
 

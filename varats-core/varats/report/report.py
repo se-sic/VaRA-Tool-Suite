@@ -252,10 +252,13 @@ class ReportFilename():
 
         raise ValueError(f'File {self.filename} name was wrongly formated.')
 
-    # TODO add experiment shorthand
+    @property
+    def experiment_shorthand(self) -> str:
+        pass
+        # TODO add experiment shorthand
 
     @property
-    def shorthand(self) -> str:
+    def shorthand(self) -> str:  # TODO: cleanup report_
         """
         Report shorthand of the result file.
 
@@ -357,13 +360,17 @@ class BaseReport():
         self.__filename = ReportFilename(path)
 
     @classmethod
-    def __init_subclass__(cls, *args: tp.Any, **kwargs: tp.Any) -> None:
+    def __init_subclass__(
+        cls, shorthand: str, file_type: str, *args: tp.Any, **kwargs: tp.Any
+    ) -> None:
         # mypy does not yet fully understand __init_subclass__()
         # https://github.com/python/mypy/issues/4660
         super().__init_subclass__(*args, **kwargs)  # type: ignore
 
+        cls.SHORTHAND = shorthand
+        cls.FILE_TYPE = file_type
+
         name = cls.__name__
-        BaseReport.__check_required_vars(cls, name, ["SHORTHAND"])
         if name not in cls.REPORT_TYPES:
             cls.REPORT_TYPES[name] = cls
 
@@ -421,16 +428,15 @@ class BaseReport():
 
         return None
 
-    @staticmethod
-    @abstractmethod
+    @classmethod
     def get_file_name(
+        cls,
         experiment_shorthand: str,
         project_name: str,
         binary_name: str,
-        project_version: str,
+        project_revision: ShortCommitHash,
         project_uuid: str,
         extension_type: FileStatusExtension,
-        file_ext: str = ".txt"
     ) -> str:
         """
         Generates a filename for a report file.
@@ -441,11 +447,14 @@ class BaseReport():
             project_version: version of the analyzed project, i.e., commit hash
             project_uuid: benchbuild uuid for the experiment run
             extension_type: to specify the status of the generated report
-            file_ext: file extension of the report file
 
         Returns:
             name for the report file that can later be uniquly identified
         """
+        return ReportFilename.get_file_name(
+            experiment_shorthand, cls.SHORTHAND, project_name, binary_name,
+            project_revision, project_uuid, extension_type, cls.FILE_TYPE
+        )
 
     @property
     def path(self) -> Path:
@@ -458,9 +467,13 @@ class BaseReport():
         return self.__filename
 
     @classmethod
-    @abstractmethod
     def shorthand(cls) -> str:
         """Shorthand for this report."""
+        return cls.SHORTHAND
+
+    @classmethod
+    def file_type(cls) -> str:
+        return cls.FILE_TYPE
 
     @classmethod
     def is_correct_report_type(cls, file_name: str) -> bool:

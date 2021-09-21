@@ -250,7 +250,7 @@ class TestCommitReport(unittest.TestCase):
         cls.fail_filename = (
             "CRE-CR-foo-foo-7bb9ef5f8c_"
             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be"
-            "_failed.txt"
+            "_failed.yaml"
         )
 
         with mock.patch(
@@ -328,7 +328,7 @@ class TestCommitReport(unittest.TestCase):
             CommitReport.get_file_name(
                 "CRE", "foo", "foo", "7bb9ef5f8c",
                 "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                FileStatusExtension.FAILED, ".txt"
+                FileStatusExtension.FAILED
             ), self.fail_filename
         )
 
