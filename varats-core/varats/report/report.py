@@ -258,7 +258,7 @@ class ReportFilename():
         Experiment shorthand of the result file.
 
         Returns:
-            the experiment  shorthand from a result file
+            the experiment shorthand from a result file
         """
         match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
         if match:

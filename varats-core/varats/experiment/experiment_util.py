@@ -259,10 +259,17 @@ class VersionExperiment(Experiment):  # type: ignore
 
         cls.SHORTHAND = shorthand
 
-    @staticmethod
-    @abstractmethod
-    def shorthand() -> str:
+    @classmethod
+    def shorthand(cls) -> str:
         """Experiment shorthand."""
+        return self.SHORTHAND
+
+    @classmethod
+    def report_spec(cls) -> ReportSpecification:
+        return self.REPORT_SPEC  # TODO: enforce
+
+    def get_partial_experiment_filename() -> ExperimentHandle:
+        return ExperimentHandle(self)
 
     @abstractmethod
     def actions_for_project(self, project: Project) -> tp.MutableSequence[Step]:
