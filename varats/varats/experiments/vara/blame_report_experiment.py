@@ -18,6 +18,7 @@ from varats.data.reports.blame_report import BlameReport as BR
 from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
+    ExperimentHandle,
     wrap_unlimit_stack_size,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
@@ -36,13 +37,9 @@ class BlameReportGeneration(actions.Step):  # type: ignore
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
-    def __init__(
-        self,
-        project: Project,
-        report_spec: ReportSpecification,
-    ):
+    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(obj=project, action_fn=self.analyze)
-        self.__report_spec = report_spec
+        self.__experiment_handle = experiment_handle
 
     def analyze(self) -> actions.StepResult:
         """
@@ -68,9 +65,8 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         mkdir("-p", vara_result_folder)
 
         for binary in project.binaries:
-            result_file = self.__report_spec.get_report_type(
-                "BR"
-            ).get_file_name(
+            result_file = self.__experiment_handle.get_file_name(
+                BR.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name,
                 project_version=project.version_of_primary,
@@ -97,7 +93,8 @@ class BlameReportGeneration(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    project, BR, Path(vara_result_folder)
+                    self.__experiment_handle, project, BR,
+                    Path(vara_result_folder)
                 )
             )
 
@@ -142,12 +139,12 @@ class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
             project,
             bc_file_extensions,
             extraction_error_handler=create_default_compiler_error_handler(
-                project, self.REPORT_SPEC.main_report
+                self.get_handle(), project, self.REPORT_SPEC.main_report
             )
         )
 
         analysis_actions.append(
-            BlameReportGeneration(project, self.REPORT_SPEC)
+            BlameReportGeneration(project, self.get_handle())
         )
         analysis_actions.append(actions.Clean(project))
 

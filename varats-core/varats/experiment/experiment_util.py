@@ -15,8 +15,14 @@ from benchbuild.utils.cmd import prlimit
 from plumbum.commands import ProcessExecutionError
 
 from varats.project.project_util import ProjectBinaryWrapper
-from varats.report.report import BaseReport, FileStatusExtension
+from varats.report.report import (
+    BaseReport,
+    FileStatusExtension,
+    ReportSpecification,
+    ReportFilename,
+)
 from varats.revision.revisions import get_tagged_revisions
+from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
 
 
@@ -106,13 +112,14 @@ def exec_func_with_pe_error_handler(
 
 
 def get_default_compile_error_wrapped(
-    experiment: 'VersionExperiment', project: Project,
+    experiment_handle: 'ExperimentHandle', project: Project,
     report_type: tp.Type[BaseReport], result_folder_template: str
 ) -> FunctionPEErrorWrapper:
     """
     Setup the default project compile function with an error handler.
 
     Args:
+        experiment_handle: handle to the current experiment
         project: that will be compiled
         report_type: that should be generated
         result_folder_template: where the results will be placed
@@ -129,13 +136,13 @@ def get_default_compile_error_wrapped(
     return FunctionPEErrorWrapper(
         project.compile,
         create_default_compiler_error_handler(
-            experiment, project, report_type, result_folder
+            experiment_handle, project, report_type, result_folder
         )
     )
 
 
 def create_default_compiler_error_handler(
-    experiment: 'VersionExperiment',
+    experiment_handle: 'ExperimentHandle',
     project: Project,
     report_type: tp.Type[BaseReport],
     output_folder: tp.Optional[Path] = None,
@@ -146,7 +153,7 @@ def create_default_compiler_error_handler(
     `report_type`.
 
     Args:
-        experiment: current experiment
+        experiment_handle: handle to the current experiment
         project: currently under analysis
         report_type: that should be generated
         output_folder: where the errors will be placed
@@ -155,13 +162,13 @@ def create_default_compiler_error_handler(
     Retruns: a initialized PEErrorHandler
     """
     return create_default_error_handler(
-        experiment, project, report_type, FileStatusExtension.COMPILE_ERROR,
-        output_folder, binary
+        experiment_handle, project, report_type,
+        FileStatusExtension.COMPILE_ERROR, output_folder, binary
     )
 
 
 def create_default_analysis_failure_handler(
-    experiment: 'VersionExperiment',
+    experiment_handle: 'ExperimentHandle',
     project: Project,
     report_type: tp.Type[BaseReport],
     output_folder: tp.Optional[Path] = None,
@@ -173,7 +180,7 @@ def create_default_analysis_failure_handler(
     `project`, `report_type`.
 
     Args:
-        experiment: current experiment
+        experiment_handle: handle to the current experiment
         project: currently under analysis
         report_type: that should be generated
         output_folder: where the errors will be placed
@@ -183,13 +190,13 @@ def create_default_analysis_failure_handler(
     Retruns: a initialized PEErrorHandler
     """
     return create_default_error_handler(
-        experiment, project, report_type, FileStatusExtension.FAILED,
+        experiment_handle, project, report_type, FileStatusExtension.FAILED,
         output_folder, binary, timeout_duration
     )
 
 
 def create_default_error_handler(
-    experiment: 'VersionExperiment',
+    experiment_handle: 'ExperimentHandle',
     project: Project,
     report_type: tp.Type[BaseReport],
     error_type: FileStatusExtension,
@@ -201,6 +208,7 @@ def create_default_error_handler(
     Create a default PEErrorHandler based on the `project`, `report_type`.
 
     Args:
+        experiment_handle: handle to the current experiment
         project: currently under analysis
         report_type: that should be generated
         error_type: a FSE describing the problem type
@@ -216,8 +224,8 @@ def create_default_error_handler(
 
     return PEErrorHandler(
         str(error_output_folder),
-        report_type.get_file_name(
-            experiment_shorthand=experiment.shorthand(),
+        experiment_handle.get_file_name(
+            report_type.shorthand(),
             project_name=str(project.name),
             binary_name=binary.name if binary else "all",
             project_revision=project.version_of_primary,
@@ -245,6 +253,31 @@ def wrap_unlimit_stack_size(cmd: tp.Callable[..., tp.Any]) -> tp.Any:
 VersionType = tp.TypeVar('VersionType')
 
 
+class ExperimentHandle():
+
+    def __init__(self, experiment: 'VersionExperiment') -> None:
+        self.__experiment = experiment
+
+    def get_file_name(
+        self,
+        report_shorthand: str,
+        project_name: str,
+        binary_name: str,
+        project_revision: ShortCommitHash,
+        project_uuid: str,
+        extension_type: FileStatusExtension,
+    ) -> ReportFilename:
+        return self.__experiment.report_spec(
+        ).get_report_type(report_shorthand).get_file_name(
+            self.__experiment.shorthand(), project_name, binary_name,
+            project_revision, project_uuid, extension_type
+        )
+
+    def report_spec(self) -> ReportSpecification:
+        """Experiment report specification."""
+        return self.__experiment.report_spec()
+
+
 class VersionExperiment(Experiment):  # type: ignore
     """Base class for experiments that want to analyze different project
     revisions."""
@@ -262,13 +295,14 @@ class VersionExperiment(Experiment):  # type: ignore
     @classmethod
     def shorthand(cls) -> str:
         """Experiment shorthand."""
-        return self.SHORTHAND
+        return cls.SHORTHAND
 
     @classmethod
     def report_spec(cls) -> ReportSpecification:
-        return self.REPORT_SPEC  # TODO: enforce
+        """Experiment report specification."""
+        return cls.REPORT_SPEC
 
-    def get_partial_experiment_filename() -> ExperimentHandle:
+    def get_handle(self) -> ExperimentHandle:
         return ExperimentHandle(self)
 
     @abstractmethod
