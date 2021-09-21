@@ -9,10 +9,12 @@ from tempfile import NamedTemporaryFile
 
 from benchbuild.source import nosource
 from benchbuild.utils.revision_ranges import block_revisions, SingleRevision
-from test_case_study import YAML_CASE_STUDY
 
 import varats.paper_mgmt.paper_config_manager as PCM
-from tests.paper.test_case_study import mocked_create_lazy_commit_map_loader
+from tests.paper.test_case_study import (
+    YAML_CASE_STUDY,
+    mocked_create_lazy_commit_map_loader,
+)
 from tests.test_utils import DummyGit
 from varats.data.reports.commit_report import CommitReport
 from varats.paper.case_study import load_case_study_from_file, CaseStudy
