@@ -110,7 +110,8 @@ class TestReportFilename(unittest.TestCase):
         self.assertEqual(
             self.report_filename.commit_hash, ShortCommitHash("7bb9ef5f8c")
         )
-        self.assertEqual(self.report_filename.shorthand, "CR")
+        self.assertEqual(self.report_filename.report_shorthand, "CR")
+        self.assertEqual(self.report_filename.experiment_shorthand, "CRE")
         self.assertEqual(
             self.report_filename.file_status, FileStatusExtension.SUCCESS
         )

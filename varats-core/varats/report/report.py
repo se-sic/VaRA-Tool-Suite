@@ -119,14 +119,14 @@ class ReportFilename():
     strings and paths."""
 
     __RESULT_FILE_REGEX = re.compile(
-        r"(?P<experiment_shorthand>.*)-" + r"(?P<project_shorthand>.*)-" +
+        r"(?P<experiment_shorthand>.*)-" + r"(?P<report_shorthand>.*)-" +
         r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
         r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)_" +
         FileStatusExtension.get_regex_grp() + r"?(?P<file_ext>\..*)?" + "$"
     )
 
     __RESULT_FILE_TEMPLATE = (
-        "{experiment_shorthand}-" + "{project_shorthand}-" + "{project_name}-" +
+        "{experiment_shorthand}-" + "{report_shorthand}-" + "{project_name}-" +
         "{binary_name}-" + "{project_revision}_" + "{project_uuid}_" +
         "{status_ext}" + "{file_ext}"
     )
@@ -254,21 +254,29 @@ class ReportFilename():
 
     @property
     def experiment_shorthand(self) -> str:
-        pass
-        # TODO add experiment shorthand
+        """
+        Experiment shorthand of the result file.
+
+        Returns:
+            the experiment  shorthand from a result file
+        """
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
+        if match:
+            return match.group("experiment_shorthand")
+
+        raise ValueError(f'File {self.filename} name was wrongly formated.')
 
     @property
-    def shorthand(self) -> str:  # TODO: cleanup report_
+    def report_shorthand(self) -> str:
         """
         Report shorthand of the result file.
 
         Returns:
             the report shorthand from a result file
         """
-
         match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
         if match:
-            return match.group("project_shorthand")
+            return match.group("report_shorthand")
 
         raise ValueError(f'File {self.filename} name was wrongly formated.')
 
@@ -333,7 +341,7 @@ class ReportFilename():
 
         return ReportFilename.__RESULT_FILE_TEMPLATE.format(
             experiment_shorthand=experiment_shorthand,
-            project_shorthand=report_shorthand,
+            report_shorthand=report_shorthand,
             project_name=project_name,
             binary_name=binary_name,
             project_revision=project_revision,
@@ -399,7 +407,7 @@ class BaseReport():
             corresponding report class
         """
         try:
-            shorthand = ReportFilename(file_name).shorthand
+            shorthand = ReportFilename(file_name).report_shorthand
         except ValueError:
             # Return nothing if we cannot correctly identify a shothand for the
             # specified file name
@@ -487,7 +495,7 @@ class BaseReport():
             True, if the file belongs to this report type
         """
         try:
-            short_hand = ReportFilename(file_name).shorthand
+            short_hand = ReportFilename(file_name).report_shorthand
             return short_hand == str(getattr(cls, "SHORTHAND"))
         except ValueError:
             return False
