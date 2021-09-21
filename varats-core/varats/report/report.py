@@ -149,7 +149,7 @@ class ReportFilename():
         if match:
             return str(match.group("binary_name"))
 
-        raise ValueError(f'File {self.filename} name was wrongly formated.')
+        raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
     def has_status_success(self) -> bool:
         """
@@ -230,10 +230,10 @@ class ReportFilename():
 
     def is_result_file(self) -> bool:
         """
-        Check if the file name is formated like a result file.
+        Check if the file name is formatted like a result file.
 
         Returns:
-            True, if the file name is correctly formated
+            True, if the file name is correctly formatted
         """
         match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
         return match is not None
@@ -250,7 +250,7 @@ class ReportFilename():
         if match:
             return ShortCommitHash(match.group("file_commit_hash"))
 
-        raise ValueError(f'File {self.filename} name was wrongly formated.')
+        raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
     @property
     def experiment_shorthand(self) -> str:
@@ -264,7 +264,7 @@ class ReportFilename():
         if match:
             return match.group("experiment_shorthand")
 
-        raise ValueError(f'File {self.filename} name was wrongly formated.')
+        raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
     @property
     def report_shorthand(self) -> str:
@@ -278,7 +278,7 @@ class ReportFilename():
         if match:
             return match.group("report_shorthand")
 
-        raise ValueError(f'File {self.filename} name was wrongly formated.')
+        raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
     @property
     def file_status(self) -> FileStatusExtension:
@@ -294,7 +294,7 @@ class ReportFilename():
                 match.group("status_ext")
             )
 
-        raise ValueError('File {file_name} name was wrongly formated.')
+        raise ValueError('File {file_name} name was wrongly formatted.')
 
     @property
     def uuid(self) -> str:
@@ -304,7 +304,7 @@ class ReportFilename():
         if match:
             return match.group("UUID")
 
-        raise ValueError(f'File {self.filename} name was wrongly formated.')
+        raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
     @staticmethod
     def get_file_name(
@@ -335,19 +335,21 @@ class ReportFilename():
         """
         status_ext = FileStatusExtension.get_status_extension(extension_type)
 
-        #  Add the missing '.' if none was given by the report
+        # Add the missing '.' if none was given by the report
         if file_ext and not file_ext.startswith("."):
             file_ext = "." + file_ext
 
-        return ReportFilename.__RESULT_FILE_TEMPLATE.format(
-            experiment_shorthand=experiment_shorthand,
-            report_shorthand=report_shorthand,
-            project_name=project_name,
-            binary_name=binary_name,
-            project_revision=project_revision,
-            project_uuid=project_uuid,
-            status_ext=status_ext,
-            file_ext=file_ext
+        return ReportFilename(
+            ReportFilename.__RESULT_FILE_TEMPLATE.format(
+                experiment_shorthand=experiment_shorthand,
+                report_shorthand=report_shorthand,
+                project_name=project_name,
+                binary_name=binary_name,
+                project_revision=project_revision,
+                project_uuid=project_uuid,
+                status_ext=status_ext,
+                file_ext=file_ext
+            )
         )
 
     def __str__(self) -> str:

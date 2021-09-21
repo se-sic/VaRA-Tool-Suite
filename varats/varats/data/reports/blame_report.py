@@ -321,11 +321,6 @@ class BlameReport(BaseReport, shorthand="BR", file_type="yaml"):
         """Access the meta data that was gathered with the ``BlameReport``."""
         return self.__meta_data
 
-    @classmethod
-    def shorthand(cls) -> str:
-        """Shorthand for this report."""
-        return cls.SHORTHAND
-
     def __str__(self) -> str:
         str_representation = ""
         for function in self.__function_entries.values():
