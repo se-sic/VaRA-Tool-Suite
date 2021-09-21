@@ -34,27 +34,6 @@ BLOCKED_COLOR = np.asarray(
 FAILED_COLOR = np.asarray((0.8862745098039215, 0.2901960784313726, 0.2))
 
 
-@check_required_args("cmap", "project")
-def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
-    current_config = PC.get_paper_config()
-
-    if 'report_type' in kwargs:
-        result_file_type: tp.Type[BaseReport] = kwargs['report_type']
-    else:
-        result_file_type = EmptyReport
-    project = kwargs['project']
-    cmap: CommitMap = kwargs['cmap']
-    # load data
-    frame = FileStatusDatabase.get_data_for_project(
-        project, ["revision", "time_id", "file_status"],
-        cmap,
-        *current_config.get_case_studies(project),
-        result_file_type=result_file_type,
-        tag_blocked=True
-    )
-    return frame
-
-
 def _load_projects_ordered_by_year(
     current_config: PC.PaperConfig, result_file_type: tp.Type[BaseReport]
 ) -> tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[ShortCommitHash,
@@ -285,28 +264,7 @@ class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
-        revisions = _gen_overview_plot_for_project(**self.plot_kwargs)
-        revisions.sort_values(by=['revision'], inplace=True)
-
-        # TODO: Adapt to click cli.
-        cmap: CommitMap = self.plot_kwargs['cmap']
-
-        def head_cm_neighbours(
-            lhs_cm: ShortCommitHash, rhs_cm: ShortCommitHash
-        ) -> bool:
-            return cmap.short_time_id(lhs_cm) + 1 == cmap.short_time_id(rhs_cm)
-
-        def should_insert_revision(last_row: tp.Any,
-                                   row: tp.Any) -> tp.Tuple[bool, float]:
-            return last_row["file_status"] != row["file_status"], 1.0
-
-        def get_commit_hash(row: tp.Any) -> ShortCommitHash:
-            return ShortCommitHash(str(row["revision"]))
-
-        return find_missing_revisions(
-            revisions.iterrows(), Path(self.plot_kwargs['git_path']), cmap,
-            should_insert_revision, get_commit_hash, head_cm_neighbours
-        )
+        raise NotImplementedError
 
 
 class PaperConfigOverviewGenerator(
