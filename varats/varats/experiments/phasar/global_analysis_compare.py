@@ -20,6 +20,7 @@ from varats.experiment.experiment_util import (
     VersionExperiment,
     ExperimentHandle,
     wrap_unlimit_stack_size,
+    get_vara_result_folder,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
     get_default_compile_error_wrapped,
@@ -41,8 +42,6 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
     NAME = "GlobalsReportGeneration"
     DESCRIPTION = "Run phasar LCA with and without globals support"
 
-    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
-
     def __init__(
         self, project: Project, experiment_handle: ExperimentHandle,
         globals_active: bool
@@ -61,12 +60,7 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
-        vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(bb_cfg()["varats"]["outfile"]),
-            project_dir=str(project.name)
-        )
-
-        mkdir("-p", vara_result_folder)
+        vara_result_folder = get_vara_result_folder(project)
 
         for binary in project.binaries:
             report_name = "GRWith" if self.__globals_active else "GRWithout"
@@ -144,8 +138,7 @@ class GlobalsComparision(VersionExperiment, shorthand="GAC"):
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, self.REPORT_SPEC.main_report,
-            RunGlobalsTestAnalysis.RESULT_FOLDER_TEMPLATE
+            self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
         analysis_actions = get_bc_cache_actions(

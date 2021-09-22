@@ -11,7 +11,7 @@ from benchbuild import source
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
 from benchbuild.utils.actions import Step
-from benchbuild.utils.cmd import prlimit
+from benchbuild.utils.cmd import prlimit, mkdir
 from plumbum.commands import ProcessExecutionError
 
 from varats.project.project_util import ProjectBinaryWrapper
@@ -24,6 +24,20 @@ from varats.report.report import (
 from varats.revision.revisions import get_tagged_revisions
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
+
+
+def get_vara_result_folder(project: Project) -> Path:
+    """Get the path to the varats result folder."""
+    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
+
+    vara_result_folder = RESULT_FOLDER_TEMPLATE.format(
+        result_dir=str(bb_cfg()["varats"]["outfile"]),
+        project_dir=str(project.name)
+    )
+
+    mkdir("-p", vara_result_folder)
+
+    return Path(vara_result_folder)
 
 
 class PEErrorHandler():
@@ -113,7 +127,7 @@ def exec_func_with_pe_error_handler(
 
 def get_default_compile_error_wrapped(
     experiment_handle: 'ExperimentHandle', project: Project,
-    report_type: tp.Type[BaseReport], result_folder_template: str
+    report_type: tp.Type[BaseReport]
 ) -> FunctionPEErrorWrapper:
     """
     Setup the default project compile function with an error handler.
@@ -122,21 +136,15 @@ def get_default_compile_error_wrapped(
         experiment_handle: handle to the current experiment
         project: that will be compiled
         report_type: that should be generated
-        result_folder_template: where the results will be placed
 
     Returns:
         project compilation function, wrapped with automatic error handling
     """
-    result_dir = str(bb_cfg()["varats"]["outfile"])
-    result_folder = Path(
-        result_folder_template.format(
-            result_dir=result_dir, project_dir=str(project.name)
-        )
-    )
     return FunctionPEErrorWrapper(
         project.compile,
         create_default_compiler_error_handler(
-            experiment_handle, project, report_type, result_folder
+            experiment_handle, project, report_type,
+            get_vara_result_folder(project)
         )
     )
 

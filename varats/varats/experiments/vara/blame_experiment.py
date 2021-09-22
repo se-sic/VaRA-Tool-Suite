@@ -22,7 +22,7 @@ from varats.report.report import BaseReport
 
 def setup_basic_blame_experiment(
     experiment: VersionExperiment, project: Project,
-    report_type: tp.Type[BaseReport], result_folder_template: str
+    report_type: tp.Type[BaseReport]
 ) -> None:
     """
     Setup the project for a blame experiment.
@@ -43,7 +43,7 @@ def setup_basic_blame_experiment(
 
     # Add own error handler to compile step.
     project.compile = get_default_compile_error_wrapped(
-        experiment.get_handle(), project, report_type, result_folder_template
+        experiment.get_handle(), project, report_type
     )
 
     # This c-flag is provided by VaRA and it suggests to use the git-blame

@@ -17,6 +17,7 @@ from varats.data.reports.commit_report import CommitReport as CR
 from varats.experiment.experiment_util import (
     ExperimentHandle,
     VersionExperiment,
+    get_vara_result_folder,
     exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
     create_default_compiler_error_handler,
@@ -37,8 +38,6 @@ class CRAnalysis(actions.Step):  # type: ignore
 
     NAME = "CRAnalysis"
     DESCRIPTION = "Analyses the bitcode with CR of VaRA."
-
-    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
     INTERACTION_FILTER_TEMPLATE = \
         "InteractionFilter-{experiment}-{project}.yaml"
@@ -88,12 +87,7 @@ class CRAnalysis(actions.Step):  # type: ignore
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
-        vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(bb_cfg()["varats"]["outfile"]),
-            project_dir=str(project.name)
-        )
-
-        mkdir("-p", vara_result_folder)
+        vara_result_folder = get_vara_result_folder(project)
 
         for binary in project.binaries:
 
@@ -165,7 +159,7 @@ class CommitReportExperiment(VersionExperiment, shorthand="CRE"):
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, CR, CRAnalysis.RESULT_FOLDER_TEMPLATE
+            self.get_handle(), project, CR
         )
 
         # This c-flag is provided by VaRA and it suggests to use the git-blame

@@ -21,6 +21,7 @@ from varats.data.reports.blame_verifier_report import (
 )
 from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
+    get_vara_result_folder,
     ExperimentHandle,
     VersionExperiment,
     PEErrorHandler,
@@ -38,8 +39,6 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
     NAME = "BlameVerifierReportGeneration"
     DESCRIPTION = "Compares and analyses VaRA-commit-hashes with " \
                   "debug-commit-hashes."
-
-    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
     def __init__(
         self, project: Project, bc_file_extensions: tp.List[BCFileExtensions],
@@ -69,12 +68,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
-        vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(bb_cfg()["varats"]["outfile"]),
-            project_dir=str(project.name)
-        )
-
-        mkdir("-p", vara_result_folder)
+        vara_result_folder = get_vara_result_folder(project)
 
         timeout_duration = '8h'
 
@@ -150,8 +144,7 @@ class BlameVerifierReportExperiment(VersionExperiment, shorthand="BVRE"):
 
         BE.setup_basic_blame_experiment(
             self, project,
-            self.get_handle().report_spec().main_report,
-            BlameVerifierReportGeneration.RESULT_FOLDER_TEMPLATE
+            self.get_handle().report_spec().main_report
         )
 
         project.cflags.append('-g')

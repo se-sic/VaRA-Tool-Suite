@@ -15,6 +15,7 @@ from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
     create_default_analysis_failure_handler,
+    get_vara_result_folder,
 )
 from varats.experiment.wllvm import RunWLLVM
 from varats.report.report import FileStatusExtension as FSE
@@ -29,8 +30,6 @@ class EmptyAnalysis(actions.Step):  # type: ignore
     NAME = "EmptyAnslysis"
     DESCRIPTION = "Analyses nothing."
 
-    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
-
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(obj=project, action_fn=self.analyze)
         self.__experiment_handle = experiment_handle
@@ -41,15 +40,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
             return actions.StepResult.ERROR
         project = self.obj
 
-        # Add to the user-defined path for saving the results of the
-        # analysis also the name and the unique id of the project of every
-        # run.
-        vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(bb_cfg()["varats"]["outfile"]),
-            project_dir=str(project.name)
-        )
-
-        mkdir("-p", vara_result_folder)
+        vara_result_folder = get_vara_result_folder(project)
 
         for binary in project.binaries:
             result_file = self.__experiment_handle.get_file_name(
@@ -100,8 +91,7 @@ class JustCompileReport(VersionExperiment, shorthand="JC"):
             << run.WithTimeout()
 
         project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, self.REPORT_SPEC.main_report,
-            EmptyAnalysis.RESULT_FOLDER_TEMPLATE
+            self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
         analysis_actions = []
