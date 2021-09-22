@@ -28,7 +28,7 @@ from varats.utils.settings import vara_cfg, bb_cfg
 
 def get_vara_result_folder(project: Project) -> Path:
     """Get the path to the varats result folder."""
-    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
+    result_folder_template = "{result_dir}/{project_dir}"
 
     vara_result_folder = RESULT_FOLDER_TEMPLATE.format(
         result_dir=str(bb_cfg()["varats"]["outfile"]),
@@ -45,7 +45,7 @@ class PEErrorHandler():
 
     def __init__(
         self,
-        result_folder: str,
+        result_folder: Path,
         error_file_name: str,
         timeout_duration: tp.Optional[str] = None,
         delete_files: tp.Optional[tp.List[Path]] = None
@@ -63,12 +63,8 @@ class PEErrorHandler():
                 except FileNotFoundError:
                     pass
 
-        error_file = Path(
-            "{res_folder}/{res_file}".format(
-                res_folder=self.__result_folder,
-                res_file=self.__error_file_name
-            )
-        )
+        error_file = self.__result_folder / self.__error_file_name
+
         if not os.path.exists(self.__result_folder):
             os.makedirs(self.__result_folder, exist_ok=True)
         with open(error_file, 'w') as outfile:
