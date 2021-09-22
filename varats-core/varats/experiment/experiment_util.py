@@ -30,7 +30,7 @@ def get_vara_result_folder(project: Project) -> Path:
     """Get the path to the varats result folder."""
     result_folder_template = "{result_dir}/{project_dir}"
 
-    vara_result_folder = RESULT_FOLDER_TEMPLATE.format(
+    vara_result_folder = result_folder_template.format(
         result_dir=str(bb_cfg()["varats"]["outfile"]),
         project_dir=str(project.name)
     )
