@@ -227,6 +227,17 @@ class TestFunctionGraphEdges(unittest.TestCase):
             "95ace546d3f6c5909a636017f141784105f9dab2"
         )
 
+    def test_string_conversion(self):
+        """Check if we correctly convert the edge to a string."""
+        bi_init = self.edge_dict["bi_init"]
+        print(str(bi_init))
+        self.assertEqual(
+            """FName: bi_init:
+    CG-Edges [3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5 -> llvm.dbg.value, b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a -> flush_outbuf]
+    CF-Edges [3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5 -> b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a, 95ace546d3f6c5909a636017f141784105f9dab2 -> 3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5]""",
+            str(bi_init)
+        )
+
 
 class TestCommitReport(unittest.TestCase):
     """Test basic CommitReport functionality."""
