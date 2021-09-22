@@ -21,6 +21,7 @@ from varats.data.reports.blame_verifier_report import (
 )
 from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
+    ExperimentHandle,
     VersionExperiment,
     PEErrorHandler,
 )
@@ -42,11 +43,11 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
 
     def __init__(
         self, project: Project, bc_file_extensions: tp.List[BCFileExtensions],
-        report_type: tp.Type[BaseReport]
+        experiment_handle: ExperimentHandle
     ):
         super().__init__(obj=project, action_fn=self.analyze)
         self.bc_file_extensions = bc_file_extensions
-        self.report_type = report_type
+        self.__experiment_handle = experiment_handle
 
     def analyze(self) -> actions.StepResult:
         """
@@ -83,7 +84,8 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
             )
 
             # Define empty success file.
-            result_file = self.report_type.get_file_name(
+            result_file = self.__experiment_handle.get_file_name(
+                self.__experiment_handle.report_spec().main_report,
                 project_name=str(project.name),
                 binary_name=binary.name,
                 project_version=project.version_of_primary,
@@ -93,7 +95,8 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
             )
 
             # Define output file name of failed runs
-            error_file = self.report_type.get_file_name(
+            error_file = self.__experiment_handle.get_file_name(
+                self.__experiment_handle.report_spec().main_report,
                 project_name=str(project.name),
                 binary_name=binary.name,
                 project_version=project.version_of_primary,
@@ -130,7 +133,6 @@ class BlameVerifierReportExperiment(VersionExperiment, shorthand="BVRE"):
         self,
         project: Project,
         opt_flags: tp.Union[str, tp.List[str]],
-        report_type: tp.Type[BaseReport],
         bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None
     ) -> None:
         super().__init__()
@@ -141,7 +143,6 @@ class BlameVerifierReportExperiment(VersionExperiment, shorthand="BVRE"):
         self.projects = project
         self.__opt_flag = opt_flags
         self.__bc_file_extensions = bc_file_extensions
-        self.__report_type = report_type
 
     def actions_for_project(
         self, project: Project
@@ -150,7 +151,8 @@ class BlameVerifierReportExperiment(VersionExperiment, shorthand="BVRE"):
         call in a fixed order."""
 
         BE.setup_basic_blame_experiment(
-            self, project, self.__report_type,
+            self, project,
+            self.get_handle().report_spec().main_report,
             BlameVerifierReportGeneration.RESULT_FOLDER_TEMPLATE
         )
 
@@ -163,7 +165,7 @@ class BlameVerifierReportExperiment(VersionExperiment, shorthand="BVRE"):
 
         analysis_actions.append(
             BlameVerifierReportGeneration(
-                project, self.__bc_file_extensions, self.__report_type
+                project, self.__bc_file_extensions, self.get_handle()
             )
         )
         analysis_actions.append(actions.Clean(project))
@@ -183,7 +185,7 @@ class BlameVerifierReportExperimentOpt(
 
     def __init__(self, projects: Project) -> None:
         super().__init__(
-            projects, '-O2', self.REPORT_SPEC.main_report, [
+            projects, '-O2', [
                 BCFileExtensions.DEBUG, BCFileExtensions.OPT,
                 BCFileExtensions.BLAME
             ]
@@ -202,8 +204,7 @@ class BlameVerifierReportExperimentNoOptTBAA(
 
     def __init__(self, projects: Project) -> None:
         super().__init__(
-            projects, ["-O1", "-Xclang", "-disable-llvm-optzns"],
-            self.REPORT_SPEC.main_report, [
+            projects, ["-O1", "-Xclang", "-disable-llvm-optzns"], [
                 BCFileExtensions.DEBUG, BCFileExtensions.NO_OPT,
                 BCFileExtensions.TBAA, BCFileExtensions.BLAME
             ]
