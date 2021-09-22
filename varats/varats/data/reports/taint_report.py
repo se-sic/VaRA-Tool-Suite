@@ -8,7 +8,7 @@ class TaintPropagationReport(BaseReport, shorthand="TPR", file_type="txt"):
     Phasar in a readable manner."""
 
     def __repr__(self) -> str:
-        return self.SHORTHAND + ": " + self.path.name
+        return self.shorthand() + ": " + self.path.name
 
     def __lt__(self, other: 'TaintPropagationReport') -> bool:
         return self.path < other.path

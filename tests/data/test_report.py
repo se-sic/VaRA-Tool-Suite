@@ -126,7 +126,7 @@ class TestReportFilename(unittest.TestCase):
             self.report_filename.file_status, FileStatusExtension.SUCCESS
         )
 
-    def test_accessors_brocken(self):
+    def test_accessors_broken(self):
         """Tests if the different accessor functions work."""
         self.assertRaises(
             ValueError, lambda: self.broken_report_filename.commit_hash
