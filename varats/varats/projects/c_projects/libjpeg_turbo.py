@@ -31,7 +31,7 @@ class LibjpegTurbo(VProject):
         bb.source.Git(
             remote="https://github.com/libjpeg-turbo/libjpeg-turbo",
             local="libjpeg-turbo",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("libjpeg_turbo")
