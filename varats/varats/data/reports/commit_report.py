@@ -119,7 +119,7 @@ class FunctionGraphEdges():
                 self.df_relations.append(RegionToRegionEdge(edge))
 
     def __str__(self) -> str:
-        repr_str = "FName: {}:\n    CG-Edges [".format(self.fid)
+        repr_str = f"FName: {self.fid}:\n    CG-Edges ["
         sep = ""
         for cg_edge in self.cg_edges:
             repr_str += sep + str(cg_edge)
