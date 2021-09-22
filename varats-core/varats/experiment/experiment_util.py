@@ -280,7 +280,7 @@ class ExperimentHandle():
             project_name: name of the project for which the
                           report was generated
             binary_name: name of the binary for which the report was generated
-            project_revision: revision of the analyzed project, i.e., commit hash
+            project_revision: revision (commit hash)of the analyzed project
             project_uuid: benchbuild uuid for the experiment run
             extension_type: to specify the status of the generated report
 
