@@ -85,10 +85,10 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
 
             # Define empty success file.
             result_file = self.__experiment_handle.get_file_name(
-                self.__experiment_handle.report_spec().main_report,
+                self.__experiment_handle.report_spec().main_report.shorthand,
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=project.version_of_primary,
+                project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.SUCCESS,
                 file_ext=".txt"
@@ -96,10 +96,10 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
 
             # Define output file name of failed runs
             error_file = self.__experiment_handle.get_file_name(
-                self.__experiment_handle.report_spec().main_report,
+                self.__experiment_handle.report_spec().main_report.shorthand,
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=project.version_of_primary,
+                project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.FAILED,
                 file_ext=".txt"

@@ -101,7 +101,7 @@ class CRAnalysis(actions.Step):  # type: ignore
                 CR.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=project.version_of_primary,
+                project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.SUCCESS
             )
@@ -130,7 +130,7 @@ class CRAnalysis(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration, run_cmd],
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle(),
+                    self.__experiment_handle,
                     project,
                     CR,
                     Path(vara_result_folder),
