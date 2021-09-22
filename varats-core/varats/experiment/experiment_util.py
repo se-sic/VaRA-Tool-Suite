@@ -224,13 +224,15 @@ def create_default_error_handler(
 
     return PEErrorHandler(
         str(error_output_folder),
-        experiment_handle.get_file_name(
-            report_type.shorthand(),
-            project_name=str(project.name),
-            binary_name=binary.name if binary else "all",
-            project_revision=project.version_of_primary,
-            project_uuid=str(project.run_uuid),
-            extension_type=error_type
+        str(
+            experiment_handle.get_file_name(
+                report_type.shorthand(),
+                project_name=str(project.name),
+                binary_name=binary.name if binary else "all",
+                project_revision=project.version_of_primary,
+                project_uuid=str(project.run_uuid),
+                extension_type=error_type
+            )
         ),
         timeout_duration=timeout_duration
     )
@@ -275,7 +277,8 @@ class ExperimentHandle():
 
         Args:
             report_shorthand: unique shorthand for the report
-            project_name: name of the project for which the report was generated
+            project_name: name of the project for which the
+                          report was generated
             binary_name: name of the binary for which the report was generated
             project_revision: revision of the analyzed project, i.e., commit hash
             project_uuid: benchbuild uuid for the experiment run
@@ -300,6 +303,7 @@ class VersionExperiment(Experiment):  # type: ignore
     revisions."""
 
     REPORT_SPEC: ReportSpecification
+    SHORTHAND: str
 
     @classmethod
     def __init_subclass__(
@@ -309,10 +313,11 @@ class VersionExperiment(Experiment):  # type: ignore
         # https://github.com/python/mypy/issues/4660
         super().__init_subclass__(*args, **kwargs)  # type: ignore
 
-        cls.SHORTHAND: str = shorthand
+        cls.SHORTHAND = shorthand
         if not hasattr(cls, 'REPORT_SPEC'):
             raise AssertionError(
-                f"{cls.__name__}@{cls.__module__} does not specify a REPORT_SPEC."
+                f"{cls.__name__}@{cls.__module__} does not specify"
+                " a REPORT_SPEC."
             )
 
     @classmethod
