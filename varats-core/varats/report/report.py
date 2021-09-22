@@ -388,17 +388,6 @@ class BaseReport():
             cls.REPORT_TYPES[name] = cls
 
     @staticmethod
-    def __check_required_vars(
-        class_type: tp.Any, class_name: str, req_vars: tp.List[str]
-    ) -> None:
-        for var in req_vars:
-            if not hasattr(class_type, var):
-                raise NameError((
-                    f"{class_name} does not define "
-                    f"a static variable {var}."
-                ))
-
-    @staticmethod
     def lookup_report_type_from_file_name(
         file_name: str
     ) -> tp.Optional[tp.Type['BaseReport']]:
@@ -487,6 +476,7 @@ class BaseReport():
 
     @classmethod
     def file_type(cls) -> str:
+        """File type of this report."""
         return cls.FILE_TYPE
 
     @classmethod
@@ -502,7 +492,7 @@ class BaseReport():
         """
         try:
             short_hand = ReportFilename(file_name).report_shorthand
-            return short_hand == str(getattr(cls, "SHORTHAND"))
+            return short_hand == cls.shorthand()
         except ValueError:
             return False
 
