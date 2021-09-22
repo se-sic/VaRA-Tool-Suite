@@ -124,6 +124,8 @@ class BlameVerifierReportExperiment(VersionExperiment, shorthand="BVRE"):
     """BlameVerifierReportExperiment generalizes the implementation and usage
     over different optimization levels."""
 
+    REPORT_SPEC = ReportSpecification()
+
     def __init__(
         self,
         project: Project,
@@ -189,7 +191,7 @@ class BlameVerifierReportExperimentOpt(
 
 
 class BlameVerifierReportExperimentNoOptTBAA(
-    BlameVerifierReportExperiment, shorthand="BVRE_Opt"
+    BlameVerifierReportExperiment, shorthand="BVRE_NoOptTBAA"
 ):
     """Generates a Blame Verifier Report of the project(s) specified in the call
     without any optimization and TBAA metadata (BVR_NoOptTBAA)."""

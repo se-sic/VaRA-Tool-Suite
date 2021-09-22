@@ -317,18 +317,22 @@ class TestCommitReport(unittest.TestCase):
     def test_file_name_creation(self) -> None:
         """Check if file names are created correctly."""
         self.assertEqual(
-            CommitReport.get_file_name(
-                "CRE", "foo", "foo", "7bb9ef5f8c",
-                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                FileStatusExtension.SUCCESS
+            str(
+                CommitReport.get_file_name(
+                    "CRE", "foo", "foo", "7bb9ef5f8c",
+                    "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
+                    FileStatusExtension.SUCCESS
+                )
             ), self.success_filename
         )
 
         self.assertEqual(
-            CommitReport.get_file_name(
-                "CRE", "foo", "foo", "7bb9ef5f8c",
-                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                FileStatusExtension.FAILED
+            str(
+                CommitReport.get_file_name(
+                    "CRE", "foo", "foo", "7bb9ef5f8c",
+                    "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
+                    FileStatusExtension.FAILED
+                )
             ), self.fail_filename
         )
 

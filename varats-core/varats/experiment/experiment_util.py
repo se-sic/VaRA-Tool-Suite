@@ -282,6 +282,8 @@ class VersionExperiment(Experiment):  # type: ignore
     """Base class for experiments that want to analyze different project
     revisions."""
 
+    REPORT_SPEC: ReportSpecification
+
     @classmethod
     def __init_subclass__(
         cls, shorthand: str, *args: tp.Any, **kwargs: tp.Any
@@ -290,7 +292,11 @@ class VersionExperiment(Experiment):  # type: ignore
         # https://github.com/python/mypy/issues/4660
         super().__init_subclass__(*args, **kwargs)  # type: ignore
 
-        cls.SHORTHAND = shorthand
+        cls.SHORTHAND: str = shorthand
+        if not hasattr(cls, 'REPORT_SPEC'):
+            raise AssertionError(
+                f"{cls.__name__}@{cls.__module__} does not specify a REPORT_SPEC."
+            )
 
     @classmethod
     def shorthand(cls) -> str:

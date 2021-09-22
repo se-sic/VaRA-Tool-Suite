@@ -213,28 +213,28 @@ class TestBaseReport(unittest.TestCase):
     def test_file_name_creation(self):
         """Check if file names are created correctly."""
         self.assertEqual(
-            EmptyReport.get_file_name(
-                "JC", "foo", "foo", "7bb9ef5f8c",
-                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                FileStatusExtension.SUCCESS
+            str(
+                EmptyReport.get_file_name(
+                    "JC", "foo", "foo", "7bb9ef5f8c",
+                    "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
+                    FileStatusExtension.SUCCESS
+                )
             ), self.success_filename
         )
 
         self.assertEqual(
-            EmptyReport.get_file_name(
-                "JC", "foo", "foo", "7bb9ef5f8c",
-                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                FileStatusExtension.FAILED
+            str(
+                EmptyReport.get_file_name(
+                    "JC", "foo", "foo", "7bb9ef5f8c",
+                    "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
+                    FileStatusExtension.FAILED
+                )
             ), self.fail_filename
         )
 
 
 class TestRepoprtSpecification(unittest.TestCase):
     """Test basic ReportSpecification functionality."""
-
-    def test_wrong_spec_setup(self):
-        """Check if we correctly reject empty specs."""
-        self.assertRaises(AssertionError, ReportSpecification)
 
     def test_spec_properties(self):
         """Check if the basic properties work."""

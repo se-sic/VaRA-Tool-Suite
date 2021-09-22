@@ -508,10 +508,6 @@ class ReportSpecification():
     used, e.g., by experiments, to request multiple reports."""
 
     def __init__(self, *report_types: tp.Type[BaseReport]) -> None:
-        if len(report_types) == 0:
-            raise AssertionError(
-                "ReportSpecification needs at least one report type."
-            )
         self.__reports_types = list(report_types)
 
     @property
