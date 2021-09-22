@@ -1,7 +1,6 @@
 """Empty report implementation for testing."""
 
-from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
-from varats.utils.git_util import ShortCommitHash
+from varats.report.report import BaseReport
 
 
 class EmptyReport(BaseReport, shorthand="EMPTY", file_type="txt"):

@@ -365,6 +365,9 @@ class BaseReport():
 
     REPORT_TYPES: tp.Dict[str, tp.Type['BaseReport']] = {}
 
+    SHORTHAND: str
+    FILE_TYPE: str
+
     def __init__(self, path: Path) -> None:
         self.__path = path
         self.__filename = ReportFilename(path)
@@ -447,14 +450,15 @@ class BaseReport():
         project_revision: ShortCommitHash,
         project_uuid: str,
         extension_type: FileStatusExtension,
-    ) -> str:
+    ) -> ReportFilename:
         """
         Generates a filename for a report file.
 
         Args:
+            experiment_shorthand: unique shorthand of the experiment
             project_name: name of the project for which the report was generated
             binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
+            project_revision: version of the analyzed project, i.e., commit hash
             project_uuid: benchbuild uuid for the experiment run
             extension_type: to specify the status of the generated report
 

@@ -6,7 +6,6 @@ from datetime import timedelta
 from pathlib import Path
 
 from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
-from varats.utils.git_util import ShortCommitHash
 from varats.utils.util import static_vars
 
 
