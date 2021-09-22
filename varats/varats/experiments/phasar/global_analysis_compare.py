@@ -75,7 +75,7 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
                 report_name,
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=project.version_of_primary,
+                project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.SUCCESS
             )
