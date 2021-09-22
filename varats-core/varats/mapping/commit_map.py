@@ -5,7 +5,7 @@ import typing as tp
 from collections.abc import ItemsView
 from pathlib import Path
 
-from benchbuild.utils.cmd import git, mkdir
+from benchbuild.utils.cmd import git, mkdir, pwd
 from plumbum import local
 from pygtrie import CharTrie
 
