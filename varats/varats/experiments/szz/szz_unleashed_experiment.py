@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import yaml
-from benchbuild import Experiment, Project, source
+from benchbuild import Project, source
 from benchbuild.experiment import ProjectT
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import java, mkdir
@@ -15,6 +15,8 @@ from plumbum import local
 from varats.base.version_header import VersionHeader
 from varats.data.reports.szz_report import SZZReport, SZZUnleashedReport
 from varats.experiment.experiment_util import (
+    VersionExperiment,
+    ExperimentHandle,
     create_default_analysis_failure_handler,
     exec_func_with_pe_error_handler,
 )
@@ -82,8 +84,9 @@ class RunSZZUnleashed(actions.Step):  # type: ignore
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
-    def __init__(self, project: Project):
+    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(obj=project, action_fn=self.run_szz)
+        self.__experiment_handle = experiment_handle
 
     def run_szz(self) -> actions.StepResult:
         """Prepare data needed for running SZZUnleashed."""
@@ -106,10 +109,8 @@ class RunSZZUnleashed(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    None,
-                    project,
-                    SZZUnleashedReport,
-                    Path(varats_result_folder)  # TODO:
+                    self.__experiment_handle, project, SZZUnleashedReport,
+                    Path(varats_result_folder)
                 )
             )
 
@@ -174,7 +175,7 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
         return actions.StepResult.OK
 
 
-class SZZUnleashedExperiment(Experiment):  # type: ignore
+class SZZUnleashedExperiment(VersionExperiment):  # type: ignore
     """
     Generates a SZZUnleashed report.
 
@@ -197,7 +198,7 @@ class SZZUnleashedExperiment(Experiment):  # type: ignore
 
         analysis_actions = [
             PrepareSZZUnleashedData(project),
-            RunSZZUnleashed(project),
+            RunSZZUnleashed(project, self.get_handle()),
             CreateSZZUnleashedReport(project),
             actions.Clean(project)
         ]
