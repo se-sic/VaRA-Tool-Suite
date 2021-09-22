@@ -106,7 +106,10 @@ class RunSZZUnleashed(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    project, SZZUnleashedReport, Path(varats_result_folder)
+                    None,
+                    project,
+                    SZZUnleashedReport,
+                    Path(varats_result_folder)  # TODO:
                 )
             )
 
@@ -152,7 +155,7 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
             "SZZUnleashed",
             project_name=str(project.name),
             binary_name="none",  # we don't rely on binaries in this experiment
-            project_version=project.version_of_primary,
+            project_revision=project.version_of_primary,
             project_uuid=str(project.run_uuid),
             extension_type=FSE.SUCCESS
         )

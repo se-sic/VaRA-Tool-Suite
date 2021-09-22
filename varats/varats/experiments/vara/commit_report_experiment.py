@@ -181,7 +181,7 @@ class CommitReportExperiment(VersionExperiment, shorthand="CRE"):
             )
         )
 
-        analysis_actions.append(CRAnalysis(project))
+        analysis_actions.append(CRAnalysis(project, self.get_handle()))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions

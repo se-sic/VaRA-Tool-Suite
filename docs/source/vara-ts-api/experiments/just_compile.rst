@@ -2,7 +2,7 @@ Experiment: JustCompile
 =======================
 
 .. literalinclude:: ../../../../varats/varats/experiments/base/just_compile.py
-    :lines: 24-69,73-104
+    :lines: 25-76,79-112
 
 Module: JustCompile
 -------------------

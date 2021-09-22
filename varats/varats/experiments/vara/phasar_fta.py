@@ -50,7 +50,6 @@ class PhASARFTACheck(actions.Step):  # type: ignore
         bc_file_extensions: tp.List[BCFileExtensions],
     ):
         super().__init__(obj=project, action_fn=self.analyze)
-        self.__report_type = report_type
         self.__bc_file_extensions = bc_file_extensions
         self.__experiment_handle = experiment_handle
 
@@ -105,7 +104,8 @@ class PhASARFTACheck(actions.Step):  # type: ignore
 
             # Run the command with custom error handler and timeout
             exec_func_with_pe_error_handler(
-                run_cmd, PEErrorHandler(vara_result_folder, error_file)
+                run_cmd,
+                PEErrorHandler(vara_result_folder, error_file.filename)
             )
 
 

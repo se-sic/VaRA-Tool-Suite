@@ -114,7 +114,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
                         vara_run_cmd] > "{res_folder}/{res_file}".
                 format(res_folder=vara_result_folder, res_file=result_file),
                 PEErrorHandler(
-                    vara_result_folder, error_file, timeout_duration
+                    vara_result_folder, error_file.filename, timeout_duration
                 )
             )
 
