@@ -43,7 +43,6 @@ setup(
         "PyYAML>=5.1",
         "pyzmq>=19.0.0",
         "requests>=2.24.0",
-        "requests_cache>=0.5.2",
         "rich>=1.3.1",
         "scikit-learn~=0.23.1",
         "seaborn>=0.8.0",
