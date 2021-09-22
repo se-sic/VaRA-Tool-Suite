@@ -127,7 +127,8 @@ class TestReportFilename(unittest.TestCase):
         )
 
     def test_accessors_broken(self):
-        """Tests if the different accessor functions work."""
+        """Tests if the different accessor functions work correctly even for
+        broken and wrongly formatted filenames."""
         self.assertRaises(
             ValueError, lambda: self.broken_report_filename.commit_hash
         )
