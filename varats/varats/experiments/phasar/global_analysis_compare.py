@@ -18,6 +18,7 @@ from varats.data.reports.globals_report import (
 from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
+    ExperimentHandle,
     wrap_unlimit_stack_size,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
@@ -43,11 +44,11 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
     def __init__(
-        self, project: Project, report_spec: ReportSpecification,
+        self, project: Project, experiment_handle: ExperimentHandle,
         globals_active: bool
     ):
         super().__init__(obj=project, action_fn=self.analyze)
-        self.__report_spec = report_spec
+        self.__experiment_handle = experiment_handle
         self.__globals_active = globals_active
 
     def analyze(self) -> actions.StepResult:
@@ -70,12 +71,11 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
         for binary in project.binaries:
             report_name = "GRWith" if self.__globals_active else "GRWithout"
 
-            result_file = self.__report_spec.get_report_type(
-                report_name
-            ).get_file_name(
+            result_file = self.__experiment_handle.get_file_name(
+                report_name,
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=project.version_of_primary,
+                project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.SUCCESS
             )
@@ -96,14 +96,16 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    project, BR, Path(vara_result_folder)
+                    self.__experiment_handle, project,
+                    self.__experiment_handle.report_spec().
+                    get_report_type(report_name), Path(vara_result_folder)
                 )
             )
 
         return actions.StepResult.OK
 
 
-class GlobalsComparision(VersionExperiment):
+class GlobalsComparision(VersionExperiment, shorthand="GAC"):
     """Compare the effect size of a phasar analysis with globals or without."""
 
     NAME = "GlobalsComparision"
@@ -142,23 +144,23 @@ class GlobalsComparision(VersionExperiment):
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            project, self.REPORT_SPEC.main_report,
+            self.get_handle(), project, self.REPORT_SPEC.main_report,
             RunGlobalsTestAnalysis.RESULT_FOLDER_TEMPLATE
         )
 
         analysis_actions = get_bc_cache_actions(
             project, bc_file_extensions,
             create_default_compiler_error_handler(
-                project, self.REPORT_SPEC.main_report
+                self.get_handle(), project, self.REPORT_SPEC.main_report
             )
         )
 
         for _ in range(0, 10):
             analysis_actions.append(
-                RunGlobalsTestAnalysis(project, self.REPORT_SPEC, True)
+                RunGlobalsTestAnalysis(project, self.get_handle(), True)
             )
             analysis_actions.append(
-                RunGlobalsTestAnalysis(project, self.REPORT_SPEC, False)
+                RunGlobalsTestAnalysis(project, self.get_handle(), False)
             )
 
         # Clean up the generated files afterwards

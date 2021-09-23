@@ -56,9 +56,10 @@ class CreatePyDrillerSZZReport(actions.Step):  # type: ignore
         raw_szz_report = {"szz_tool": "PyDrillerSZZ", "bugs": bugs}
 
         result_file = PyDrillerSZZReport.get_file_name(
+            "PyDrSZZ",
             project_name=str(project.name),
             binary_name="none",  # we don't rely on binaries in this experiment
-            project_version=project.version_of_primary,
+            project_revision=project.version_of_primary,
             project_uuid=str(project.run_uuid),
             extension_type=FSE.SUCCESS
         )
