@@ -27,7 +27,15 @@ from varats.utils.settings import vara_cfg, bb_cfg
 
 
 def get_vara_result_folder(project: Project) -> Path:
-    """Get the path to the varats result folder."""
+    """
+    Get the project specific path to the varats result folder.
+
+    Args:
+        project: to lookup the result folder for
+
+    Returns:
+        path to the project specific result folder
+    """
     result_folder_template = "{result_dir}/{project_dir}"
 
     vara_result_folder = result_folder_template.format(
