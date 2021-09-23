@@ -1439,7 +1439,6 @@ class BlameInteractionDegreeMultiLib(
 class BlameInteractionDegreeMultiLibGenerator(
     PlotGenerator,
     generator_name="interaction-degree-multi-lib-plot",
-    plot=BlameInteractionDegreeMultiLib,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE,
         PlotGenerator.REQUIRE_MULTI_CASE_STUDY, REQUIRE_BASE_LIB,
@@ -1478,7 +1477,8 @@ class BlameInteractionDegreeMultiLibGenerator(
 
     def generate(self) -> tp.List[Plot]:
         return [
-            self.PLOT(
+            BlameInteractionDegreeMultiLib(
+                self.plot_config,
                 report_type=self.__report_type,
                 case_study=cs,
                 base_lib=self.__base_lib,
