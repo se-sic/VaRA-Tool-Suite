@@ -3,7 +3,7 @@ Developing with VaRA-TS
 
 First, take a look at our :ref:`install guide<Build VaRA with vara-buildsetup>` to learn how to set up the tool suite.
 
-The :ref:`VaRA-TS API Reference` contains information about how to :ref:`work with the tool-suite<Tools>`, as well as how to add your own :ref:`research tools<Research Tool API>`, :ref:`experiments`, :ref:`reports`, :ref:`plots`, and more.
+The :ref:`VaRA-TS API Reference` contains information about how to :ref:`work with the tool-suite<Tools Overview>`, as well as how to add your own :ref:`research tools<Research Tool API>`, :ref:`experiments`, :ref:`reports`, :ref:`plots`, and more.
 
 :ref:`Debugging with Visual Studio Code` shows an example on how to debug benchbuild projects and experiments using the VSCode debugger.
 

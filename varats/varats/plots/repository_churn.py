@@ -15,6 +15,7 @@ from matplotlib import axes, style
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
+from varats.plot.plots import PlotConfig
 from varats.project.project_util import get_local_project_git
 from varats.utils.git_util import (
     ChurnConfig,
@@ -208,22 +209,22 @@ def draw_code_churn_for_revisions(
         -x if x < CODE_CHURN_DELETION_LIMIT else -1.3 *
         CODE_CHURN_DELETION_LIMIT for x in churn_data.deletions
     ]
-    revisions: tp.List[str] = [rev.short_hash for rev in revisions]
+    revision_strs: tp.List[str] = [rev.short_hash for rev in revisions]
 
     axis.set_ylim(-CODE_CHURN_DELETION_LIMIT, CODE_CHURN_INSERTION_LIMIT)
-    axis.fill_between(revisions, clipped_insertions, 0, facecolor='green')
+    axis.fill_between(revision_strs, clipped_insertions, 0, facecolor='green')
     axis.fill_between(
-        revisions,
+        revision_strs,
         # we need a - here to visualize deletions as negative additions
         clipped_deletions,
         0,
         facecolor='red'
     )
-    revisions = churn_data.time_id.astype(str) + '-' + churn_data.revision.map(
-        lambda x: x.short_hash
-    )
+    revision_strs = churn_data.time_id.astype(
+        str
+    ) + '-' + churn_data.revision.map(lambda x: x.short_hash)
     axis.set_xticks(axis.get_xticks())
-    axis.set_xticklabels(revisions)
+    axis.set_xticklabels(revision_strs)
 
 
 class RepoChurnPlot(Plot, plot_name="repo_churn"):
@@ -231,8 +232,8 @@ class RepoChurnPlot(Plot, plot_name="repo_churn"):
 
     NAME = 'repo_churn'
 
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         plot_cfg = {
@@ -240,7 +241,7 @@ class RepoChurnPlot(Plot, plot_name="repo_churn"):
             'legend_size': 8 if view_mode else 2,
             'xtick_size': 10 if view_mode else 2,
         }
-        style.use(self.style)
+        style.use(self.plot_config.style)
 
         case_study: CaseStudy = self.plot_kwargs['plot_case_study']
 

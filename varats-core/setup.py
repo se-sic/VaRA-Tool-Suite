@@ -21,7 +21,6 @@ setup(
         "tabulate>=0.8.6",
         "requests>=2.23.0",
         "packaging>=20.1",
-        "requests_cache>=0.5.2",
         "pygit2>=0.28.2",
     ],
     author="Florian Sattler",

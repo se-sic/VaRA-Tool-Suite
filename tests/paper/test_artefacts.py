@@ -4,18 +4,15 @@ import unittest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from tests.test_utils import run_in_test_environment, UnitTestInputs
 from varats.paper_mgmt.artefacts import (
     load_artefacts_from_file,
     initialize_artefacts,
     Artefacts,
     Artefact,
 )
-from varats.paper_mgmt.paper_config import load_paper_config
 from varats.plot.plots import PlotArtefact
+from varats.plots.discover_plots import initialize_plots
 from varats.plots.paper_config_overview import PaperConfigOverviewGenerator
-from varats.projects.discover_projects import initialize_projects
-from varats.utils.settings import vara_cfg, save_config
 
 YAML_ARTEFACTS = """DocType: Artefacts
 Version: 2
@@ -42,6 +39,7 @@ class TestArtefacts(unittest.TestCase):
     @classmethod
     def setUp(cls):
         """Setup artefacts file from yaml doc."""
+        initialize_plots()
         initialize_artefacts()
         with NamedTemporaryFile('w') as yaml_file:
             yaml_file.write(YAML_ARTEFACTS)

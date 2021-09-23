@@ -14,6 +14,7 @@ from varats.data.metrics import gini_coefficient, lorenz_curve
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
+from varats.plot.plots import PlotConfig
 from varats.plots.repository_churn import (
     build_repo_churn_table,
     draw_code_churn,
@@ -137,8 +138,8 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
 
     NAME = 'b_lorenz_curve'
 
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         plot_cfg = {
@@ -146,7 +147,7 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
             'legend_size': 8 if view_mode else 2,
             'xtick_size': 10 if view_mode else 2,
         }
-        style.use(self.style)
+        style.use(self.plot_config.style)
 
         case_study: CaseStudy = self.plot_kwargs['plot_case_study']
         commit_map = self.plot_kwargs['get_cmap']()
@@ -339,8 +340,8 @@ class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
 
     NAME = 'b_gini_overtime'
 
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         plot_cfg = {
@@ -348,7 +349,7 @@ class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
             'legend_size': 8 if view_mode else 2,
             'xtick_size': 10 if view_mode else 2,
         }
-        style.use(self.style)
+        style.use(self.plot_config.style)
 
         case_study: CaseStudy = self.plot_kwargs['plot_case_study']
         commit_map = self.plot_kwargs['get_cmap']()

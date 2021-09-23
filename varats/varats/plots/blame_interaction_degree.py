@@ -362,11 +362,7 @@ def _generate_stackplot(
             cm.get_cmap(plot_kwargs['colormap'].value
                        )(np.linspace(0, 1, len(sub_df_list)))
         ),
-        # TODO (se-passau/VaRA#545): remove cast with plot config rework
-        labels=map(
-            tp.cast(tp.Callable[[str], str], lambda x: x),
-            sorted(np.unique(df['degree']))
-        ),
+        labels=sorted(np.unique(df['degree'])),  # type: ignore
         linewidth=plot_kwargs['line_width']
     )
     legend = main_axis.legend(
@@ -465,9 +461,7 @@ def _gen_fraction_overview_legend(
     legend = legends_axis.legend(
         handles=handles,
         title=f'{plot_cfg["legend_title"]} | {legend_title_suffix}',
-        # TODO (se-passau/VaRA#545): remove cast with plot config
-        #  rework
-        labels=map(tp.cast(tp.Callable[[str], str], lambda x: x), legend_items),
+        labels=legend_items,
         loc='upper left',
         prop={
             'size': plot_cfg['legend_size'],
@@ -609,8 +603,7 @@ def _get_separated_lib_names_dict(
 
 
 def _build_sankey_color_mappings(
-    highest_degree: int, plot_cfg: tp.Dict[str, tp.Any],
-    lib_name_dict: tp.Dict[str, tp.List[str]]
+    highest_degree: int, lib_name_dict: tp.Dict[str, tp.List[str]]
 ) -> tp.Tuple[LibraryColormapMapping, LibraryToIndexShadesMapping]:
     """Returns a tuple of a LibraryColormapMapping and a
     LibraryToIndexShadesMapping."""
@@ -1079,7 +1072,7 @@ class BlameDegree(Plot, plot_name=None):
                        f'Project {project_name}'
         self.plot_kwargs["fig_suptitle"] = fig_suptitle
 
-        style.use(self.style)
+        style.use(self.plot_config.style)
         commit_map: CommitMap = get_commit_map(project_name)
         interaction_plot_df = self._get_degree_data()
 
@@ -1100,8 +1093,8 @@ class BlameDegree(Plot, plot_name=None):
                        f'{self.plot_kwargs["inter_lib"]} '
         self.plot_kwargs["fig_suptitle"] = fig_suptitle
 
-        style.use(self.style)
         commit_map: CommitMap = get_commit_map(project_name)
+        style.use(self.plot_config.style)
         interaction_plot_df = self._get_degree_data()
 
         interaction_plot_df = interaction_plot_df[(
@@ -1165,7 +1158,7 @@ class BlameDegree(Plot, plot_name=None):
         if extra_plot_cfg is not None:
             plot_cfg.update(extra_plot_cfg)
 
-        style.use(self.style)
+        style.use(self.plot_config.style)
 
         df = self._get_degree_data()
         df = df[df.degree_type == degree_type.value]
@@ -1235,7 +1228,7 @@ class BlameDegree(Plot, plot_name=None):
 
         lib_names_dict = _get_separated_lib_names_dict(df)
         lib_cm_mapping, lib_shades_mapping = _build_sankey_color_mappings(
-            highest_degree, self.plot_kwargs, lib_names_dict
+            highest_degree, lib_names_dict
         )
 
         plotting_data_dict = _collect_sankey_plotting_data(
@@ -1336,8 +1329,8 @@ class BlameInteractionDegree(BlameDegree, plot_name="b_interaction_degree"):
 
     NAME = 'b_interaction_degree'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         self._degree_plot(DegreeType.INTERACTION)
@@ -1353,7 +1346,6 @@ class BlameInteractionDegree(BlameDegree, plot_name="b_interaction_degree"):
 class BlameInteractionDegreeGenerator(
     PlotGenerator,
     generator_name="interaction-degree-plot",
-    plot=BlameInteractionDegree,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE,
         PlotGenerator.REQUIRE_MULTI_CASE_STUDY,
@@ -1394,7 +1386,8 @@ class BlameInteractionDegreeGenerator(
 
     def generate(self) -> tp.List[Plot]:
         return [
-            self.PLOT(
+            BlameInteractionDegree(
+                self.plot_config,
                 report_type=self.__report_type,
                 case_study=cs,
                 fig_title=self.__fig_title,
@@ -1429,8 +1422,8 @@ class BlameInteractionDegreeMultiLib(
 
     NAME = 'b_interaction_degree_multi_lib'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         self._multi_lib_degree_plot(DegreeType.INTERACTION)
@@ -1517,8 +1510,8 @@ class BlameInteractionFractionOverview(
 
     NAME = 'b_interaction_fraction_overview'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
@@ -1552,8 +1545,8 @@ class BlameLibraryInteractions(
 
     NAME = 'b_multi_lib_interaction_sankey_plot'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
         self.__figure = go.Figure()
 
     def plot(self, view_mode: bool) -> None:
@@ -1598,7 +1591,6 @@ class BlameLibraryInteractions(
 class SankeyLibraryInteractionsGeneratorRev(
     PlotGenerator,
     generator_name="sankey-plot-rev",
-    plot=BlameLibraryInteractions,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_CASE_STUDY,
         PlotGenerator.REQUIRE_REVISION
@@ -1622,7 +1614,8 @@ class SankeyLibraryInteractionsGeneratorRev(
 
     def generate(self) -> tp.List[Plot]:
         return [
-            self.PLOT(
+            BlameLibraryInteractions(
+                self.plot_config,
                 report_type=self.__report_type,
                 case_study=self.__case_study,
                 revision=self.__revision,
@@ -1637,7 +1630,6 @@ class SankeyLibraryInteractionsGeneratorRev(
 class SankeyLibraryInteractionsGeneratorCS(
     PlotGenerator,
     generator_name="sankey-plot-cs",
-    plot=BlameLibraryInteractions,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE,
         PlotGenerator.REQUIRE_MULTI_CASE_STUDY
@@ -1657,7 +1649,8 @@ class SankeyLibraryInteractionsGeneratorCS(
 
     def generate(self) -> tp.List[Plot]:
         return [
-            self.PLOT(
+            BlameLibraryInteractions(
+                self.plot_config,
                 report_type=self.__report_type,
                 case_study=cs,
                 revision=rev,
@@ -1683,8 +1676,8 @@ class BlameCommitInteractionsGraphviz(
 
     NAME = 'b_multi_lib_interaction_graphviz'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
         self.__figure = Digraph()
 
     def plot(self, view_mode: bool) -> None:
@@ -1728,7 +1721,6 @@ class BlameCommitInteractionsGraphviz(
 class GraphvizLibraryInteractionsGeneratorRev(
     PlotGenerator,
     generator_name="graphviz-plot-rev",
-    plot=BlameCommitInteractionsGraphviz,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_CASE_STUDY,
         PlotGenerator.REQUIRE_REVISION, OPTIONAL_SHOW_INTERACTIONS,
@@ -1762,7 +1754,8 @@ class GraphvizLibraryInteractionsGeneratorRev(
 
     def generate(self) -> tp.List[Plot]:
         return [
-            self.PLOT(
+            BlameCommitInteractionsGraphviz(
+                self.plot_config,
                 report_type=self.__report_type,
                 case_study=self.__case_study,
                 revision=self.__revision,
@@ -1780,7 +1773,6 @@ class GraphvizLibraryInteractionsGeneratorRev(
 class GraphvizLibraryInteractionsGeneratorCS(
     PlotGenerator,
     generator_name="graphviz-plot-cs",
-    plot=BlameCommitInteractionsGraphviz,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE,
         PlotGenerator.REQUIRE_MULTI_CASE_STUDY, OPTIONAL_SHOW_INTERACTIONS,
@@ -1809,7 +1801,8 @@ class GraphvizLibraryInteractionsGeneratorCS(
 
     def generate(self) -> tp.List[Plot]:
         return [
-            self.PLOT(
+            BlameCommitInteractionsGraphviz(
+                self.plot_config,
                 report_type=self.__report_type,
                 case_study=cs,
                 revision=rev,
@@ -1829,8 +1822,8 @@ class BlameAuthorDegree(BlameDegree, plot_name="b_author_degree"):
 
     NAME = 'b_author_degree'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
@@ -1855,8 +1848,8 @@ class BlameMaxTimeDistribution(BlameDegree, plot_name="b_maxtime_distribution"):
 
     NAME = 'b_maxtime_distribution'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
@@ -1882,8 +1875,8 @@ class BlameAvgTimeDistribution(BlameDegree, plot_name="b_avgtime_distribution"):
 
     NAME = 'b_avgtime_distribution'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {

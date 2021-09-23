@@ -23,6 +23,7 @@ from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import align_yaxis, pad_axes
+from varats.plot.plots import PlotConfig
 from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
@@ -184,8 +185,8 @@ class BlameDiffCorrelationMatrix(Plot, plot_name="b_correlation_matrix"):
 
     NAME = "b_correlation_matrix"
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
@@ -293,8 +294,8 @@ class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
 
     NAME = "b_distribution_comparison"
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:

@@ -86,13 +86,13 @@ class PlotCLI(click.MultiCommand):
     help="Generate plots.",
     context_settings={"help_option_names": ['-h', '--help']}
 )
-@PlotConfig.cli_options
 @CommonPlotOptions.cli_options
 @click.option(
     "--save-artefact",
     metavar="NAME",
     help="Save the plot specification in the artefact file with the given name."
 )
+@PlotConfig.cli_options
 @click.pass_context
 def main(context: click.Context, **kwargs: tp.Any) -> None:
     """Entry point for the plot generation tool."""
@@ -106,7 +106,6 @@ def main(context: click.Context, **kwargs: tp.Any) -> None:
 
     initialize_cli_tool()
     initialize_projects()
-    initialize_reports()
 
 
 if __name__ == '__main__':
