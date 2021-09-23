@@ -33,7 +33,7 @@ class Libzmq(VProject):
         bb.source.Git(
             remote="https://github.com/zeromq/libzmq.git",
             local="libzmq_git",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("libzmq")
