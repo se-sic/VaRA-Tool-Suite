@@ -38,7 +38,7 @@ class OpenVPN(VProject):
         bb.source.Git(
             remote="https://github.com/openvpn/openvpn.git",
             local="openvpn",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("openvpn")

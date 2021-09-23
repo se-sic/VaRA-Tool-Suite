@@ -36,7 +36,7 @@ class Libsigrok(VProject):
         bb.source.Git(
             remote="https://github.com/sigrokproject/libsigrok.git",
             local="libsigrok",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("libsigrok")
