@@ -127,7 +127,7 @@ class Plot:
         try:
             self.plot(True)
         except PlotDataEmpty:
-            LOG.warning(f"No data for the current project.")
+            LOG.warning("No data for the current project.")
             return
         plt.show()
         plt.close()
@@ -177,7 +177,7 @@ class Plot:
         try:
             self.plot(False)
         except PlotDataEmpty:
-            LOG.warning(f"No data for the current project.")
+            LOG.warning("No data for the current project.")
             return
 
         plt.savefig(
