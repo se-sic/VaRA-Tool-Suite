@@ -526,7 +526,7 @@ class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
     @staticmethod
     def from_generator(
         name: str, generator: PlotGenerator, common_options: CommonPlotOptions
-    ):
+    ) -> 'PlotArtefact':
         """
         Create a plot artefact from a generator.
 
