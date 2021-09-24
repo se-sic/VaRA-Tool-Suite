@@ -1803,16 +1803,7 @@ class BlameMaxTimeDistribution(BlameDegree, plot_name="b_maxtime_distribution"):
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        if not self.plot_kwargs["fig_title"]:
-            self.plot_kwargs["fig_title"] = "Max time distribution"
-
-        # TODO: Use this when make_cli_option() creates typed click.Options
-        # if self.plot_kwargs["show_legend"] == OPTIONAL_SHOW_LEGEND.default:
-        #     self.plot_kwargs["show_legend"] = False
-        # if self.plot_kwargs["edge_color"] == OPTIONAL_EDGE_COLOR.default:
-        #     self.plot_kwargs["edge_color"] = None
-
-        self._degree_plot(DegreeType.max_time)
+        self._degree_plot(DegreeType.MAX_TIME)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -1825,25 +1816,12 @@ class BlameMaxTimeDistribution(BlameDegree, plot_name="b_maxtime_distribution"):
 class BlameMaxTimeDistributionGenerator(
     PlotGenerator,
     generator_name="max-time-distribution-plot",
-    plot=BlameMaxTimeDistribution,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE,
-        PlotGenerator.REQUIRE_MULTI_CASE_STUDY,
-        OPTIONAL_FIG_TITLE,
-        OPTIONAL_SHOW_CHURN,
-        OPTIONAL_LEGEND_TITLE,
-        OPTIONAL_LEGEND_SIZE,
-        OPTIONAL_SHOW_LEGEND,
-        OPTIONAL_LINE_WIDTH,
-        OPTIONAL_X_TICK_SIZE,
-        OPTIONAL_EDGE_COLOR,
-        OPTIONAL_COLORMAP,
-        OPTIONAL_SHOW_CVE,
-        OPTIONAL_SHOW_BUGS,
-        OPTIONAL_CVE_BUG_LINE_WIDTH,
-        OPTIONAL_CVE_BUG_COLOR,
-        OPTIONAL_VERTICAL_ALIGNMENT,
-        OPTIONAL_LABEL_SIZE,
+        PlotGenerator.REQUIRE_MULTI_CASE_STUDY, OPTIONAL_SHOW_CHURN,
+        OPTIONAL_EDGE_COLOR, OPTIONAL_COLORMAP, OPTIONAL_SHOW_CVE,
+        OPTIONAL_SHOW_BUGS, OPTIONAL_CVE_BUG_LINE_WIDTH, OPTIONAL_CVE_BUG_COLOR,
+        OPTIONAL_VERTICAL_ALIGNMENT
     ]
 ):
     """Generates max-time-distribution plot(s) for the selected case
@@ -1854,13 +1832,16 @@ class BlameMaxTimeDistributionGenerator(
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
         self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-        self.__fig_title: str = plot_kwargs["fig_title"]
+        # TODO: Use helper function for default values
+        self.__fig_title: str = plot_config.fig_title \
+            if plot_config.fig_title else "Max time distribution"
+        self.__legend_title: str = plot_config.legend_title
+        self.__legend_size: int = plot_config.legend_size
+        self.__show_legend: bool = plot_config.show_legend
+        self.__line_width: int = plot_config.line_width
+        self.__x_tick_size: int = plot_config.x_tick_size
+        self.__label_size: int = plot_config.label_size
         self.__show_churn: bool = plot_kwargs["show_churn"]
-        self.__legend_title: str = plot_kwargs["legend_title"]
-        self.__legend_size: int = plot_kwargs["legend_size"]
-        self.__show_legend: bool = plot_kwargs["show_legend"]
-        self.__line_width: int = plot_kwargs["line_width"]
-        self.__x_tick_size: int = plot_kwargs["x_tick_size"]
         self.__edge_color: str = plot_kwargs["edge_color"]
         self.__colormap: Colormap = plot_kwargs["colormap"]
         self.__show_cve: bool = plot_kwargs["show_cve"]
@@ -1868,11 +1849,11 @@ class BlameMaxTimeDistributionGenerator(
         self.__cve_bug_line_width: int = plot_kwargs["cve_bug_line_width"]
         self.__cve_bug_color: str = plot_kwargs["cve_bug_color"]
         self.__vertical_alignment: str = plot_kwargs["vertical_alignment"]
-        self.__label_size: int = plot_kwargs["label_size"]
 
     def generate(self) -> tp.List[Plot]:
         return [
-            self.PLOT(
+            BlameMaxTimeDistribution(
+                self.plot_config,
                 report_type=self.__report_type,
                 case_study=cs,
                 fig_title=self.__fig_title,
