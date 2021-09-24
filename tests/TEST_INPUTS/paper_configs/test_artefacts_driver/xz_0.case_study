@@ -15,5 +15,4 @@ stages:
     commit_id: 140
   - commit_hash: 10437b5b567f6a025ff16c45a572e417a0a9cc26
     commit_id: 68
-  sampling_method: uniform
 version: 0
