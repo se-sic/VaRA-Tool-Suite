@@ -93,7 +93,7 @@ def _get_paper_configs(pc_folder_path: Path) -> tp.List[str]:
     paper_configs: tp.List[str] = []
     for folder in pc_folder_path.iterdir():
         paper_configs.append(folder.name)
-    return paper_configs
+    return sorted(paper_configs)
 
 
 def _pc_create(args: tp.Dict[str, tp.Any]) -> None:

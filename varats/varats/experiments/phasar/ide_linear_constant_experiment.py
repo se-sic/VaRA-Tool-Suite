@@ -2,9 +2,9 @@
 import typing as tp
 from pathlib import Path
 
-import benchbuild.utils.actions as actions
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import mkdir
 from plumbum import local
 
@@ -23,6 +23,7 @@ from varats.experiment.wllvm import (
     get_bc_cache_actions,
 )
 from varats.report.report import FileStatusExtension as FSE
+from varats.report.report import ReportSpecification
 from varats.utils.settings import bb_cfg
 
 
@@ -69,7 +70,7 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
                 binary_name=binary.name,
                 project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.Success
+                extension_type=FSE.SUCCESS
             )
 
             phasar_params = ["-m", bc_file, "-C", "CHA", "-D", "ide-lca"]
@@ -85,6 +86,8 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
                 )
             )
 
+        return actions.StepResult.OK
+
 
 class IDELinearConstantAnalysisExperiment(VersionExperiment):
     """Experiment class to build and analyse a project with an
@@ -92,7 +95,7 @@ class IDELinearConstantAnalysisExperiment(VersionExperiment):
 
     NAME = "PhasarIDELinearConstantAnalysis"
 
-    REPORT_TYPE = EmptyReport
+    REPORT_SPEC = ReportSpecification(EmptyReport)
 
     def actions_for_project(
         self, project: Project
@@ -125,7 +128,7 @@ class IDELinearConstantAnalysisExperiment(VersionExperiment):
         analysis_actions += get_bc_cache_actions(
             project,
             extraction_error_handler=create_default_compiler_error_handler(
-                project, self.REPORT_TYPE
+                project, self.REPORT_SPEC.main_report
             )
         )
 

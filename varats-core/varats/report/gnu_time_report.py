@@ -5,7 +5,7 @@ import re
 from datetime import timedelta
 from pathlib import Path
 
-from varats.report.report import BaseReport, FileStatusExtension, MetaReport
+from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
 from varats.utils.util import static_vars
 
 
@@ -86,6 +86,11 @@ class TimeReport(BaseReport):
         str_repr += f"Max Resident Size (kbytes): {self.max_res_size}"
         return str_repr
 
+    @classmethod
+    def shorthand(cls) -> str:
+        """Shorthand for this report."""
+        return cls.SHORTHAND
+
     @staticmethod
     def get_file_name(
         project_name: str,
@@ -109,7 +114,7 @@ class TimeReport(BaseReport):
         Returns:
             name for the report file that can later be uniquly identified
         """
-        return MetaReport.get_file_name(
+        return ReportFilename.get_file_name(
             TimeReport.SHORTHAND, project_name, binary_name, project_version,
             project_uuid, extension_type, file_ext
         )

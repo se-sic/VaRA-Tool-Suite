@@ -52,7 +52,8 @@ check_err
 $COVERAGE $(which vara-cs) status EmptyReport
 check_err
 
-$COVERAGE $(which vara-art) add --output-path overview_plots plot overview report_type=EmptyReport plot_generator=overview-plot
+# already a unit test but needed for succeeding tests to make sense
+$COVERAGE $(which vara-plot) --save-artefact overview --plot-dir overview_plots pc-overview-plot --report-type EmptyReport
 check_err
 
 $COVERAGE $(which vara-art) generate --only overview
