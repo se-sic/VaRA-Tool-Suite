@@ -3,9 +3,9 @@
 import typing as tp
 from pathlib import Path
 
-import benchbuild.utils.actions as actions
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import mkdir, touch
 
 from varats.data.reports.empty_report import EmptyReport
@@ -17,6 +17,7 @@ from varats.experiment.experiment_util import (
 )
 from varats.experiment.wllvm import RunWLLVM
 from varats.report.report import FileStatusExtension as FSE
+from varats.report.report import ReportSpecification
 from varats.utils.settings import bb_cfg
 
 
@@ -29,8 +30,9 @@ class EmptyAnalysis(actions.Step):  # type: ignore
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
-    def __init__(self, project: Project):
+    def __init__(self, project: Project, report_spec: ReportSpecification):
         super().__init__(obj=project, action_fn=self.analyze)
+        self.__report_spec = report_spec
 
     def analyze(self) -> actions.StepResult:
         """Only create a report file."""
@@ -49,12 +51,14 @@ class EmptyAnalysis(actions.Step):  # type: ignore
         mkdir("-p", vara_result_folder)
 
         for binary in project.binaries:
-            result_file = EmptyReport.get_file_name(
+            report_type = self.__report_spec.get_report_type("EMPTY")
+
+            result_file = report_type.get_file_name(
                 project_name=str(project.name),
                 binary_name=binary.name,
                 project_version=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.Success
+                extension_type=FSE.SUCCESS
             )
 
             run_cmd = touch["{res_folder}/{res_file}".format(
@@ -64,9 +68,11 @@ class EmptyAnalysis(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    project, EmptyReport, Path(vara_result_folder)
+                    project, report_type, Path(vara_result_folder)
                 )
             )
+
+        return actions.StepResult.OK
 
 
 # Please take care when changing this file, see docs experiments/just_compile
@@ -75,7 +81,7 @@ class JustCompileReport(VersionExperiment):
 
     NAME = "JustCompile"
 
-    REPORT_TYPE = EmptyReport
+    REPORT_SPEC = ReportSpecification(EmptyReport)
 
     def actions_for_project(
         self, project: Project
@@ -93,12 +99,13 @@ class JustCompileReport(VersionExperiment):
             << run.WithTimeout()
 
         project.compile = get_default_compile_error_wrapped(
-            project, EmptyReport, EmptyAnalysis.RESULT_FOLDER_TEMPLATE
+            project, self.REPORT_SPEC.main_report,
+            EmptyAnalysis.RESULT_FOLDER_TEMPLATE
         )
 
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(EmptyAnalysis(project))
+        analysis_actions.append(EmptyAnalysis(project, self.REPORT_SPEC))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions

@@ -1,7 +1,67 @@
 """Test VaRA git utilities."""
 import unittest
 
-from varats.utils.git_util import ChurnConfig, CommitRepoPair
+from plumbum import local
+
+from varats.project.project_util import get_local_project_git
+from varats.utils.git_util import (
+    ChurnConfig,
+    CommitRepoPair,
+    FullCommitHash,
+    ShortCommitHash,
+    calc_code_churn,
+    calc_commit_code_churn,
+    get_all_revisions_between,
+    get_current_branch,
+)
+
+
+class TestGitInteractionHelpers(unittest.TestCase):
+    """Test if the different git helper classes work."""
+
+    def test_get_current_branch(self):
+        """Check if we can correctly retrieve the current branch of a repo."""
+        repo = get_local_project_git("brotli")
+
+        repo.checkout(repo.lookup_branch('master'))
+
+        self.assertEqual(get_current_branch(repo.workdir), 'master')
+
+    def test_get_all_revisions_between_full(self):
+        """Check if the correct all revisions are correctly found."""
+        repo = get_local_project_git("brotli")
+        with local.cwd(repo.workdir):
+            revs = get_all_revisions_between(
+                '5692e422da6af1e991f9182345d58df87866bc5e',
+                '2f9277ff2f2d0b4113b1ffd9753cc0f6973d354a', FullCommitHash
+            )
+
+            self.assertSetEqual(
+                set(revs), {
+                    FullCommitHash("5692e422da6af1e991f9182345d58df87866bc5e"),
+                    FullCommitHash("2f9277ff2f2d0b4113b1ffd9753cc0f6973d354a"),
+                    FullCommitHash("63be8a99401992075c23e99f7c84de1c653e39e2"),
+                    FullCommitHash("2a51a85aa86abb4c294c65fab57f3d9c69f10080")
+                }
+            )
+
+    def test_get_all_revisions_between_short(self):
+        """Check if the correct all revisions are correctly found."""
+        repo = get_local_project_git("brotli")
+        with local.cwd(repo.workdir):
+            revs = get_all_revisions_between(
+                '5692e422da6af1e991f9182345d58df87866bc5e',
+                '2f9277ff2f2d0b4113b1ffd9753cc0f6973d354a', ShortCommitHash
+            )
+
+            self.assertSetEqual(
+                set(revs), {
+                    ShortCommitHash("5692e422da"),
+                    ShortCommitHash("2f9277ff2f"),
+                    ShortCommitHash("63be8a9940"),
+                    ShortCommitHash("2a51a85aa8")
+                }
+            )
 
 
 class TestChurnConfig(unittest.TestCase):
@@ -67,32 +127,56 @@ class TestCommitRepoPair(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.cr_pair = CommitRepoPair("42", "foo_repo")
+        cls.cr_pair = CommitRepoPair(
+            FullCommitHash("4200000000000000000000000000000000000000"),
+            "foo_repo"
+        )
 
     def test_commit_hash(self):
-        self.assertEqual(self.cr_pair.commit_hash, "42")
+        self.assertEqual(
+            self.cr_pair.commit_hash,
+            FullCommitHash("4200000000000000000000000000000000000000")
+        )
 
     def test_repo_name(self):
         self.assertEqual(self.cr_pair.repository_name, "foo_repo")
 
     def test_less_equal(self):
         """Tests that two equal pairs are not less."""
-        cr_pair_1 = CommitRepoPair("42", "foo_repo")
-        cr_pair_2 = CommitRepoPair("42", "foo_repo")
+        cr_pair_1 = CommitRepoPair(
+            FullCommitHash("4200000000000000000000000000000000000000"),
+            "foo_repo"
+        )
+        cr_pair_2 = CommitRepoPair(
+            FullCommitHash("4200000000000000000000000000000000000000"),
+            "foo_repo"
+        )
 
         self.assertFalse(cr_pair_1 < cr_pair_2)
 
     def test_less_commit(self):
         """Tests that a smaller commit is less."""
-        cr_pair_1 = CommitRepoPair("aar", "foo_repo")
-        cr_pair_2 = CommitRepoPair("bar", "foo_repo")
+        cr_pair_1 = CommitRepoPair(
+            FullCommitHash("4100000000000000000000000000000000000000"),
+            "foo_repo"
+        )
+        cr_pair_2 = CommitRepoPair(
+            FullCommitHash("4200000000000000000000000000000000000000"),
+            "foo_repo"
+        )
 
         self.assertTrue(cr_pair_1 < cr_pair_2)
 
     def test_less_repo(self):
         """Tests that a smaller repo is less, if the commits are equal."""
-        cr_pair_1 = CommitRepoPair("bar", "foo_repo")
-        cr_pair_2 = CommitRepoPair("bar", "boo_repo")
+        cr_pair_1 = CommitRepoPair(
+            FullCommitHash("4200000000000000000000000000000000000000"),
+            "foo_repo"
+        )
+        cr_pair_2 = CommitRepoPair(
+            FullCommitHash("4200000000000000000000000000000000000000"),
+            "boo_repo"
+        )
 
         self.assertFalse(cr_pair_1 < cr_pair_2)
 
@@ -101,22 +185,40 @@ class TestCommitRepoPair(unittest.TestCase):
 
     def test_equal_equal(self):
         """Tests that two equal pairs are equal."""
-        cr_pair_1 = CommitRepoPair("42", "foo_repo")
-        cr_pair_2 = CommitRepoPair("42", "foo_repo")
+        cr_pair_1 = CommitRepoPair(
+            FullCommitHash("4200000000000000000000000000000000000000"),
+            "foo_repo"
+        )
+        cr_pair_2 = CommitRepoPair(
+            FullCommitHash("4200000000000000000000000000000000000000"),
+            "foo_repo"
+        )
 
         self.assertTrue(cr_pair_1 == cr_pair_2)
 
     def test_equal_commit(self):
         """Tests that two different commits are not equal."""
-        cr_pair_1 = CommitRepoPair("aar", "foo_repo")
-        cr_pair_2 = CommitRepoPair("bar", "foo_repo")
+        cr_pair_1 = CommitRepoPair(
+            FullCommitHash("4100000000000000000000000000000000000000"),
+            "foo_repo"
+        )
+        cr_pair_2 = CommitRepoPair(
+            FullCommitHash("4200000000000000000000000000000000000000"),
+            "foo_repo"
+        )
 
         self.assertFalse(cr_pair_1 == cr_pair_2)
 
     def test_equal_repo(self):
         """Tests that two different commits are not equal."""
-        cr_pair_1 = CommitRepoPair("bar", "bar_repo")
-        cr_pair_2 = CommitRepoPair("bar", "foo_repo")
+        cr_pair_1 = CommitRepoPair(
+            FullCommitHash("4200000000000000000000000000000000000000"),
+            "bar_repo"
+        )
+        cr_pair_2 = CommitRepoPair(
+            FullCommitHash("4200000000000000000000000000000000000000"),
+            "foo_repo"
+        )
 
         self.assertFalse(cr_pair_1 == cr_pair_2)
 
@@ -124,4 +226,83 @@ class TestCommitRepoPair(unittest.TestCase):
         self.assertFalse(self.cr_pair == 42)
 
     def test_to_string(self):
-        self.assertEqual(str(self.cr_pair), "foo_repo[42]")
+        self.assertEqual(
+            str(self.cr_pair),
+            "foo_repo[4200000000000000000000000000000000000000]"
+        )
+
+
+class TestCodeChurnCalculation(unittest.TestCase):
+    """Test if we correctly compute code churn."""
+
+    def test_one_commit_diff(self):
+        """Check if we get the correct code churn for a single commit."""
+
+        repo = get_local_project_git("brotli")
+
+        files_changed, insertions, deletions = calc_commit_code_churn(
+            repo, repo.get("0c5603e07bed1d5fbb45e38f9bdf0e4560fde3f0"),
+            ChurnConfig.create_c_style_languages_config()
+        )
+
+        self.assertEqual(files_changed, 1)
+        self.assertEqual(insertions, 2)
+        self.assertEqual(deletions, 2)
+
+    def test_one_commit_diff_2(self):
+        """Check if we get the correct code churn for a single commit."""
+
+        repo = get_local_project_git("brotli")
+
+        files_changed, insertions, deletions = calc_commit_code_churn(
+            repo, repo.get("fc823290a76a260b7ba6f47ab5f52064a0ce19ff"),
+            ChurnConfig.create_c_style_languages_config()
+        )
+
+        self.assertEqual(files_changed, 1)
+        self.assertEqual(insertions, 5)
+        self.assertEqual(deletions, 0)
+
+    def test_one_commit_diff_3(self):
+        """Check if we get the correct code churn for a single commit."""
+
+        repo = get_local_project_git("brotli")
+
+        files_changed, insertions, deletions = calc_commit_code_churn(
+            repo, repo.get("924b2b2b9dc54005edbcd85a1b872330948cdd9e"),
+            ChurnConfig.create_c_style_languages_config()
+        )
+
+        self.assertEqual(files_changed, 3)
+        self.assertEqual(insertions, 38)
+        self.assertEqual(deletions, 7)
+
+    def test_one_commit_diff_ignore_non_c_cpp_files(self):
+        """Check if we get the correct code churn for a single commit but only
+        consider code changes."""
+
+        repo = get_local_project_git("brotli")
+
+        files_changed, insertions, deletions = calc_commit_code_churn(
+            repo, repo.get("f503cb709ca181dbf5c73986ebac1b18ac5c9f63"),
+            ChurnConfig.create_c_style_languages_config()
+        )
+
+        self.assertEqual(files_changed, 1)
+        self.assertEqual(insertions, 11)
+        self.assertEqual(deletions, 4)
+
+    def test_commit_range(self):
+        """Check if we get the correct code churn for commit range."""
+
+        repo = get_local_project_git("brotli")
+
+        files_changed, insertions, deletions = calc_code_churn(
+            repo, repo.get("36ac0feaf9654855ee090b1f042363ecfb256f31"),
+            repo.get("924b2b2b9dc54005edbcd85a1b872330948cdd9e"),
+            ChurnConfig.create_c_style_languages_config()
+        )
+
+        self.assertEqual(files_changed, 3)
+        self.assertEqual(insertions, 49)
+        self.assertEqual(deletions, 11)

@@ -1,6 +1,6 @@
 """Empty report implementation for testing."""
 
-from varats.report.report import BaseReport, FileStatusExtension, MetaReport
+from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
 
 
 class EmptyReport(BaseReport):
@@ -11,6 +11,11 @@ class EmptyReport(BaseReport):
     """
 
     SHORTHAND = "EMPTY"
+
+    @classmethod
+    def shorthand(cls) -> str:
+        """Shorthand for this report."""
+        return cls.SHORTHAND
 
     @staticmethod
     def get_file_name(
@@ -35,7 +40,7 @@ class EmptyReport(BaseReport):
         Returns:
             name for the report file that can later be uniquly identified
         """
-        return MetaReport.get_file_name(
+        return ReportFilename.get_file_name(
             EmptyReport.SHORTHAND, project_name, binary_name, project_version,
             project_uuid, extension_type, file_ext
         )

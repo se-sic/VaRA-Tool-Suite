@@ -10,6 +10,7 @@ from pathlib import Path
 
 import click
 import jinja2
+from benchbuild.utils.settings import ConfigPath
 
 from varats.containers.containers import (
     create_base_images,
@@ -162,12 +163,12 @@ def prepare_slurm(
         str(vara_cfg()["benchbuild_root"])
     ) / "slurm_container.sh.inc"
     bb_cfg()["slurm"]["template"] = str(template_path)
-    bb_cfg()["slurm"]["node_dir"] = str(node_dir)
+    bb_cfg()["slurm"]["node_dir"] = ConfigPath(str(node_dir))
 
-    bb_cfg()["container"]["root"] = f"{node_dir}/containers/lib"
-    bb_cfg()["container"]["runroot"] = f"{node_dir}/containers/run"
-    bb_cfg()["container"]["export"] = str(export_dir)
-    bb_cfg()["container"]["import"] = str(export_dir)
+    bb_cfg()["container"]["root"] = ConfigPath(f"{node_dir}/containers/lib")
+    bb_cfg()["container"]["runroot"] = ConfigPath(f"{node_dir}/containers/run")
+    bb_cfg()["container"]["export"] = ConfigPath(str(export_dir))
+    bb_cfg()["container"]["import"] = ConfigPath(str(export_dir))
 
     if not export_dir.exists():
         LOG.info(f"Creating container export directory at {export_dir}")
