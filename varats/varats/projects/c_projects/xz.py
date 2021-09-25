@@ -50,7 +50,7 @@ class Xz(VProject):
             bb.source.Git(
                 remote="https://github.com/xz-mirror/xz.git",
                 local="xz",
-                refspec="HEAD",
+                refspec="origin/HEAD",
                 limit=None,
                 shallow=False,
                 version_filter=project_filter_generator("xz")

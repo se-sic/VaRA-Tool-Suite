@@ -31,7 +31,7 @@ class Brotli(VProject):
         bb.source.Git(
             remote="https://github.com/google/brotli.git",
             local="brotli_git",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("brotli")

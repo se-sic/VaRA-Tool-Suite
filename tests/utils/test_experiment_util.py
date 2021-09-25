@@ -17,7 +17,7 @@ from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
 
 
-class MockExperiment(EU.VersionExperiment):
+class MockExperiment(EU.VersionExperiment, shorthand="mock"):
     """Small MockExperiment to be used as a replacement for actual
     experiments."""
 

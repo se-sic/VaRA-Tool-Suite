@@ -105,7 +105,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         load_paper_config()
 
         good_file = ReportFilename(
-            'CR-brotli-brotli-21ac39f7c8_'
+            'CRE-CR-brotli-brotli-21ac39f7c8_'
             '34d4d1b5-7212-4244-9adc-b19bff599142_success.yaml'
         )
 
@@ -141,7 +141,7 @@ class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
         load_paper_config()
 
         bad_file = ReportFilename(
-            'CR-brotli-brotli-21ac39f7c8_'
+            'CRE-CR-brotli-brotli-21ac39f7c8_'
             '34d4d1b5-7212-4244-9adc-b19bff599cf1_success.yaml'
         )
 

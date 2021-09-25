@@ -11,6 +11,7 @@ from benchbuild.utils.cmd import mkdir, touch
 from varats.data.reports.empty_report import EmptyReport
 from varats.experiment.experiment_util import (
     VersionExperiment,
+    ExperimentHandle,
     exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
     create_default_analysis_failure_handler,
@@ -30,9 +31,9 @@ class EmptyAnalysis(actions.Step):  # type: ignore
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
-    def __init__(self, project: Project, report_spec: ReportSpecification):
+    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(obj=project, action_fn=self.analyze)
-        self.__report_spec = report_spec
+        self.__experiment_handle = experiment_handle
 
     def analyze(self) -> actions.StepResult:
         """Only create a report file."""
@@ -51,12 +52,11 @@ class EmptyAnalysis(actions.Step):  # type: ignore
         mkdir("-p", vara_result_folder)
 
         for binary in project.binaries:
-            report_type = self.__report_spec.get_report_type("EMPTY")
-
-            result_file = report_type.get_file_name(
+            result_file = self.__experiment_handle.get_file_name(
+                EmptyReport.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=project.version_of_primary,
+                project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.SUCCESS
             )
@@ -68,7 +68,8 @@ class EmptyAnalysis(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    project, report_type, Path(vara_result_folder)
+                    self.__experiment_handle, project, EmptyReport,
+                    Path(vara_result_folder)
                 )
             )
 
@@ -76,7 +77,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
 
 
 # Please take care when changing this file, see docs experiments/just_compile
-class JustCompileReport(VersionExperiment):
+class JustCompileReport(VersionExperiment, shorthand="JC"):
     """Generates empty report file."""
 
     NAME = "JustCompile"
@@ -99,13 +100,13 @@ class JustCompileReport(VersionExperiment):
             << run.WithTimeout()
 
         project.compile = get_default_compile_error_wrapped(
-            project, self.REPORT_SPEC.main_report,
+            self.get_handle(), project, self.REPORT_SPEC.main_report,
             EmptyAnalysis.RESULT_FOLDER_TEMPLATE
         )
 
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(EmptyAnalysis(project, self.REPORT_SPEC))
+        analysis_actions.append(EmptyAnalysis(project, self.get_handle()))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions

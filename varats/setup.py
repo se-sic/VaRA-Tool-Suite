@@ -22,7 +22,7 @@ setup(
     tests_require=["pytest", "pytest-cov"],
     install_requires=[
         "argparse-utils>=1.2.0",
-        "benchbuild>=6.2.4",
+        "benchbuild>=6.2.7",
         "click>=8.0.1",
         "distro>=1.5.0",
         "graphviz>=0.14.2",
@@ -43,7 +43,6 @@ setup(
         "PyYAML>=5.1",
         "pyzmq>=19.0.0",
         "requests>=2.24.0",
-        "requests_cache>=0.5.2",
         "rich>=1.3.1",
         "scikit-learn~=0.23.1",
         "seaborn>=0.8.0",

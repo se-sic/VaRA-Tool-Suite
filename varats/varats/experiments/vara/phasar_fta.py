@@ -18,6 +18,7 @@ from varats.experiment.experiment_util import (
     VersionExperiment,
     wrap_unlimit_stack_size,
     PEErrorHandler,
+    ExperimentHandle,
     get_default_compile_error_wrapped,
     create_default_compiler_error_handler,
 )
@@ -45,12 +46,12 @@ class PhASARFTACheck(actions.Step):  # type: ignore
     def __init__(
         self,
         project: Project,
-        report_type: tp.Type[BaseReport],
+        experiment_handle: ExperimentHandle,
         bc_file_extensions: tp.List[BCFileExtensions],
     ):
         super().__init__(obj=project, action_fn=self.analyze)
-        self.__report_type = report_type
         self.__bc_file_extensions = bc_file_extensions
+        self.__experiment_handle = experiment_handle
 
     def analyze(self) -> actions.StepResult:
         """This step performs the actual analysis with the correct flags."""
@@ -66,19 +67,21 @@ class PhASARFTACheck(actions.Step):  # type: ignore
 
         for binary in project.binaries:
             # Define empty success file
-            result_file = self.__report_type.get_file_name(
+            result_file = self.__experiment_handle.get_file_name(
+                EMPTY.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=project.version_of_primary,
+                project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.SUCCESS
             )
 
             # Define output file name of failed runs
-            error_file = self.__report_type.get_file_name(
+            error_file = self.__experiment_handle.get_file_name(
+                EMPTY.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=project.version_of_primary,
+                project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.FAILED
             )
@@ -101,11 +104,12 @@ class PhASARFTACheck(actions.Step):  # type: ignore
 
             # Run the command with custom error handler and timeout
             exec_func_with_pe_error_handler(
-                run_cmd, PEErrorHandler(vara_result_folder, error_file)
+                run_cmd,
+                PEErrorHandler(vara_result_folder, error_file.filename)
             )
 
 
-class PhASARTaintAnalysis(VersionExperiment):
+class PhASARTaintAnalysis(VersionExperiment, shorthand="PTA"):
     """Generates a feature taint analysis (FTA) of the project(s) specified in
     the call."""
 
@@ -132,7 +136,7 @@ class PhASARTaintAnalysis(VersionExperiment):
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            project, self.REPORT_SPEC.main_report,
+            self.get_handle(), project, self.REPORT_SPEC.main_report,
             PhASARFTACheck.RESULT_FOLDER_TEMPLATE
         )
 
@@ -151,14 +155,12 @@ class PhASARTaintAnalysis(VersionExperiment):
             project,
             bc_file_extensions,
             extraction_error_handler=create_default_compiler_error_handler(
-                project, self.REPORT_SPEC.main_report
+                self.get_handle(), project, self.REPORT_SPEC.main_report
             )
         )
 
         analysis_actions.append(
-            PhASARFTACheck(
-                project, self.REPORT_SPEC.main_report, bc_file_extensions
-            )
+            PhASARFTACheck(project, self.get_handle(), bc_file_extensions)
         )
         analysis_actions.append(actions.Clean(project))
 
