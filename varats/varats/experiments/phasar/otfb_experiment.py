@@ -84,7 +84,7 @@ class Otfb(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 timeout[timeout_duration, run_cmd] > f'{varats_result_folder}/{result_file}',
                 create_default_analysis_failure_handler(
-                    project, EmptyReport, 
+                    self.__experiment_handle, project, EmptyReport,
                     Path(varats_result_folder), 
                     timeout_duration=timeout_duration
                 )
