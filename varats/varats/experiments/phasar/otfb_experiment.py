@@ -120,7 +120,7 @@ class OtfbExperiment(VersionExperiment, shorthand="OTFB"):
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            project, EmptyReport,
+            self.get_handle(), project, EmptyReport,
             Otfb.RESULT_FOLDER_TEMPLATE
         )
 
@@ -133,7 +133,7 @@ class OtfbExperiment(VersionExperiment, shorthand="OTFB"):
             )
         )
 
-        analysis_actions.append(Otfb(project))
+        analysis_actions.append(Otfb(project, self.get_handle()))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
