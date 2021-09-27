@@ -11,11 +11,13 @@ from varats.data.reports.blame_report import (
 )
 from varats.jupyterhelper.file import load_blame_report
 from varats.plot.plot import PlotDataEmpty
+from varats.report.report import ReportFilename
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import (
     CommitRepoPair,
     create_commit_lookup_helper,
-    DUMMY_COMMIT,
+    UNCOMMITTED_COMMIT_HASH,
+    FullCommitHash,
 )
 
 if sys.version_info <= (3, 8):
@@ -164,7 +166,7 @@ class BlameInteractionGraph():
         commit_lookup = create_commit_lookup_helper(self.__project_name)
 
         def partition(u: CommitRepoPair, v: CommitRepoPair) -> bool:
-            if u.commit_hash == DUMMY_COMMIT or v.commit_hash == DUMMY_COMMIT:
+            if u.commit_hash == UNCOMMITTED_COMMIT_HASH or v.commit_hash == UNCOMMITTED_COMMIT_HASH:
                 return u.commit_hash == v.commit_hash
             return str(commit_lookup(u).author.name
                       ) == str(commit_lookup(v).author.name)
@@ -185,7 +187,7 @@ class BlameInteractionGraph():
         def node_data(b: tp.Set[CommitRepoPair]) -> AIGNodeAttrs:
             authors = {
                 str(commit_lookup(commit).author.name)
-                if commit.commit_hash != DUMMY_COMMIT else "Unknown"
+                if commit.commit_hash != UNCOMMITTED_COMMIT_HASH else "Unknown"
                 for commit in b
             }
             assert len(authors) == 1, "Some node has more then one author."
@@ -232,7 +234,7 @@ class BlameInteractionGraph():
 
         commit_author_mapping = {
             commit: commit_lookup(commit).author.name
-            if commit.commit_hash != DUMMY_COMMIT else "Unknown"
+            if commit.commit_hash != UNCOMMITTED_COMMIT_HASH else "Unknown"
             for commit in (list(ig.nodes))
         }
         caig = nx.DiGraph()
@@ -274,7 +276,7 @@ class BlameInteractionGraph():
 
 
 def create_blame_interaction_graph(
-    project_name: str, revision: str
+    project_name: str, revision: FullCommitHash
 ) -> BlameInteractionGraph:
     """
     Create a blame interaction graph for a certain project revision.
@@ -290,8 +292,9 @@ def create_blame_interaction_graph(
 
     if revision:
 
-        def match_revision(rev: str) -> bool:
-            return True if rev == revision else False
+        def match_revision(filename: str) -> bool:
+            report_filename = ReportFilename(filename)
+            return not revision.startswith(report_filename.commit_hash)
 
         file_name_filter = match_revision
 

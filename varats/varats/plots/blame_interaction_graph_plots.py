@@ -37,7 +37,8 @@ from varats.plots.scatter_plot_utils import multivariate_grid
 from varats.utils.git_util import (
     CommitRepoPair,
     create_commit_lookup_helper,
-    DUMMY_COMMIT,
+    UNCOMMITTED_COMMIT_HASH,
+    FullCommitHash,
 )
 
 
@@ -75,7 +76,9 @@ class CommitInteractionGraphPlot(Plot):
         from networkx.drawing.nx_agraph import write_dot
         write_dot(cig, self.plot_file_name("dot"))
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
 
 
@@ -99,7 +102,7 @@ class CommitInteractionGraphChordPlot(Plot):
                                             ).commit_interaction_graph()
 
         def filter_nodes(node: CommitRepoPair) -> bool:
-            if node.commit_hash == DUMMY_COMMIT:
+            if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
                 return False
             commit = commit_lookup(node)
             if not commit:
@@ -119,10 +122,12 @@ class CommitInteractionGraphChordPlot(Plot):
             commit = node_attrs["commit"]
             if not filter_nodes(commit):
                 continue
-            nodes.append((node, {
-                "info": commit.commit_hash[:10],
-                "color": 1,
-            }))
+            nodes.append(
+                (node, {
+                    "info": commit.commit_hash.short_hash,
+                    "color": 1,
+                })
+            )
 
         edges: tp.List[tp.Tuple[NodeTy, NodeTy, ChordPlotEdgeInfo]] = []
         for source, sink in cig.edges:
@@ -136,9 +141,9 @@ class CommitInteractionGraphChordPlot(Plot):
                     "size": edge_attrs["amount"],
                     "color": 1,
                     "info":
-                        f"{source_commit.commit_hash[:10]} "
+                        f"{source_commit.commit_hash.short_hash} "
                         f"--{{{edge_attrs['amount']}}}--> "
-                        f"{sink_commit.commit_hash[:10]}"
+                        f"{sink_commit.commit_hash.short_hash}"
                 }
             ))
 
@@ -150,7 +155,9 @@ class CommitInteractionGraphChordPlot(Plot):
             # figure.write_image(self.plot_file_name("svg"))
             offply.plot(figure, filename=self.plot_file_name("html"))
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
 
 
@@ -174,7 +181,7 @@ class CommitInteractionGraphArcPlot(Plot):
                                             ).commit_interaction_graph()
 
         def filter_nodes(node: CommitRepoPair) -> bool:
-            if node.commit_hash == DUMMY_COMMIT:
+            if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
                 return False
             commit = commit_lookup(node)
             if not commit:
@@ -196,7 +203,7 @@ class CommitInteractionGraphArcPlot(Plot):
                 continue
             nodes.append((
                 node, {
-                    "info": commit.commit_hash[:10],
+                    "info": commit.commit_hash.short_hash,
                     "size": cig.degree(node),
                     "fill_color": cig.out_degree(node),
                     "line_color": cig.in_degree(node)
@@ -215,9 +222,9 @@ class CommitInteractionGraphArcPlot(Plot):
                     "size": edge_attrs["amount"],
                     "color": edge_attrs["amount"],
                     "info":
-                        f"{source_commit.commit_hash[:10]} "
+                        f"{source_commit.commit_hash.short_hash} "
                         f"--{{{edge_attrs['amount']}}}--> "
-                        f"{sink_commit.commit_hash[:10]}"
+                        f"{sink_commit.commit_hash.short_hash}"
                 }
             ))
 
@@ -229,7 +236,9 @@ class CommitInteractionGraphArcPlot(Plot):
             # figure.write_image(self.plot_file_name("svg"))
             offply.plot(figure, filename=self.plot_file_name("html"))
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
 
 
@@ -277,7 +286,7 @@ class CommitInteractionGraphNodeDegreePlot(Plot):
         commit_lookup = create_commit_lookup_helper(project_name)
 
         def filter_nodes(node: CommitRepoPair) -> bool:
-            if node.commit_hash == DUMMY_COMMIT:
+            if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
                 return False
             return bool(commit_lookup(node))
 
@@ -321,7 +330,9 @@ class CommitInteractionGraphNodeDegreePlot(Plot):
 
         axes.legend()
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
 
 
@@ -367,11 +378,9 @@ class CommitInteractionGraphNodeDegreeOverviewPlot(Plot):
             min_value: tp.Optional[float] = None,
             max_value: tp.Optional[float] = None
         ) -> pd.Series:
-            if not min_value:
-                min_value = values.min()
-            if not max_value:
-                max_value = values.max()
-            return (values - min_value) / (max_value - min_value)
+            min_v = min_value or values.min()
+            max_v = max_value or values.max()
+            return (values - min_v) / (max_v - min_v)
 
         for case_study in case_studies:
             project_name = case_study.project_name
@@ -386,7 +395,7 @@ class CommitInteractionGraphNodeDegreeOverviewPlot(Plot):
             commit_lookup = create_commit_lookup_helper(project_name)
 
             def filter_nodes(node: CommitRepoPair) -> bool:
-                if node.commit_hash == DUMMY_COMMIT:
+                if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
                     return False
                 return bool(commit_lookup(node))
 
@@ -443,7 +452,9 @@ class CommitInteractionGraphNodeDegreeOverviewPlot(Plot):
 
         degree_axis.legend()
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
 
 
@@ -506,7 +517,9 @@ class AuthorInteractionGraphNodeDegreePlot(Plot):
 
         axes.legend()
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
 
 
@@ -556,5 +569,7 @@ class CommitAuthorInteractionGraphNodeDegreePlot(Plot):
         num_authors.sort_values(by="num_authors", inplace=True)
         axes.plot(num_authors["num_authors"].values)
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError

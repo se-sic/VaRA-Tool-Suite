@@ -19,9 +19,10 @@ from varats.project.project_util import get_local_project_gits
 from varats.utils.git_util import (
     create_commit_lookup_helper,
     CommitRepoPair,
-    DUMMY_COMMIT,
+    UNCOMMITTED_COMMIT_HASH,
     ChurnConfig,
     calc_repo_code_churn,
+    FullCommitHash,
 )
 
 
@@ -84,15 +85,15 @@ class CentralCodeScatterPlot(Plot):
         commit_lookup = create_commit_lookup_helper(project_name)
         repo_lookup = get_local_project_gits(project_name)
         churn_config = ChurnConfig.create_c_style_languages_config()
-        code_churn_lookup: tp.Dict[str, tp.Dict[str, tp.Tuple[int, int,
-                                                              int]]] = {}
+        code_churn_lookup: tp.Dict[str, tp.Dict[FullCommitHash,
+                                                tp.Tuple[int, int, int]]] = {}
         for repo_name, repo in repo_lookup.items():
             code_churn_lookup[repo_name] = calc_repo_code_churn(
                 repo, churn_config
             )
 
         def filter_nodes(node: CommitRepoPair) -> bool:
-            if node.commit_hash == DUMMY_COMMIT:
+            if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
                 return False
             return bool(commit_lookup(node))
 
@@ -116,7 +117,9 @@ class CentralCodeScatterPlot(Plot):
             "Commit Size", "Node Degree", "Case Study", data, global_kde=False
         )
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
 
 
@@ -164,5 +167,7 @@ class AuthorInteractionScatterPlot(Plot):
             global_kde=False
         )
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError

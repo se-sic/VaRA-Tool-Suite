@@ -14,6 +14,7 @@ from varats.gui.buildsetup_window import BuildSetup
 from varats.tools.research_tools.research_tool import (
     ResearchTool,
     SpecificCodeBase,
+    Distro,
 )
 from varats.tools.research_tools.vara import VaRACodeBase
 from varats.tools.research_tools.vara_manager import BuildType
@@ -249,6 +250,17 @@ def __build_setup_init(
 
     if source_location and not source_location.exists():
         source_location.mkdir(parents=True)
+
+    distro = Distro.get_current_distro()
+    if distro:
+        if not tool.get_dependencies().has_dependencies_for_distro(distro):
+            missing_deps = tool.get_dependencies(
+            ).get_missing_dependencies_for_distro(distro)
+            print(
+                f"The following dependencies "
+                f"have to be installed: {missing_deps}"
+            )
+            return
 
     tool.setup(
         source_location,

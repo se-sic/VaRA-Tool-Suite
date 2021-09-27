@@ -7,11 +7,11 @@ import abc
 import logging
 import typing as tp
 
-import matplotlib.axes as axes
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib import axes
 from scipy.stats import pearsonr, spearmanr
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
@@ -24,6 +24,7 @@ from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import align_yaxis, pad_axes
 from varats.plots.scatter_plot_utils import multivariate_grid
+from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
 
@@ -229,7 +230,9 @@ class BlameDiffCorrelationMatrix(Plot):
             f' - Project {self.plot_kwargs["project"]}'
         )
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
 
 
@@ -306,5 +309,7 @@ class BlameDiffDistribution(Plot):
         var_y = self.plot_kwargs['var_y']
         return f"{pc_name}_{self.name}_{var_x}_vs_{var_y}.{filetype}"
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError

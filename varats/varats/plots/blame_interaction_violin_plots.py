@@ -17,6 +17,7 @@ from varats.paper_mgmt.case_study import (
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot
 from varats.project.project_util import get_local_project_git
+from varats.utils.git_util import FullCommitHash
 
 
 class CommitAuthorInteractionGraphViolinPlot(Plot):
@@ -75,5 +76,7 @@ class CommitAuthorInteractionGraphViolinPlot(Plot):
             order=sorted(project_names)
         )
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError

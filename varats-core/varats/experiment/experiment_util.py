@@ -7,7 +7,7 @@ import typing as tp
 from abc import abstractmethod
 from pathlib import Path
 
-import benchbuild.source as source
+from benchbuild import source
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
 from benchbuild.utils.actions import Step
@@ -15,8 +15,14 @@ from benchbuild.utils.cmd import prlimit
 from plumbum.commands import ProcessExecutionError
 
 from varats.project.project_util import ProjectBinaryWrapper
-from varats.report.report import BaseReport, FileStatusExtension
+from varats.report.report import (
+    BaseReport,
+    FileStatusExtension,
+    ReportSpecification,
+    ReportFilename,
+)
 from varats.revision.revisions import get_tagged_revisions
+from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
 
 
@@ -89,6 +95,7 @@ class FunctionPEErrorWrapper():
             return self.__func(*args, **kwargs)
         except Exception as ex:  # pylint: disable=broad-except
             self.__handler(ex, self.__func)
+            return None
 
 
 def exec_func_with_pe_error_handler(
@@ -105,13 +112,14 @@ def exec_func_with_pe_error_handler(
 
 
 def get_default_compile_error_wrapped(
-    project: Project, report_type: tp.Type[BaseReport],
-    result_folder_template: str
+    experiment_handle: 'ExperimentHandle', project: Project,
+    report_type: tp.Type[BaseReport], result_folder_template: str
 ) -> FunctionPEErrorWrapper:
     """
     Setup the default project compile function with an error handler.
 
     Args:
+        experiment_handle: handle to the current experiment
         project: that will be compiled
         report_type: that should be generated
         result_folder_template: where the results will be placed
@@ -128,12 +136,13 @@ def get_default_compile_error_wrapped(
     return FunctionPEErrorWrapper(
         project.compile,
         create_default_compiler_error_handler(
-            project, report_type, result_folder
+            experiment_handle, project, report_type, result_folder
         )
     )
 
 
 def create_default_compiler_error_handler(
+    experiment_handle: 'ExperimentHandle',
     project: Project,
     report_type: tp.Type[BaseReport],
     output_folder: tp.Optional[Path] = None,
@@ -144,6 +153,7 @@ def create_default_compiler_error_handler(
     `report_type`.
 
     Args:
+        experiment_handle: handle to the current experiment
         project: currently under analysis
         report_type: that should be generated
         output_folder: where the errors will be placed
@@ -152,12 +162,13 @@ def create_default_compiler_error_handler(
     Retruns: a initialized PEErrorHandler
     """
     return create_default_error_handler(
-        project, report_type, FileStatusExtension.CompileError, output_folder,
-        binary
+        experiment_handle, project, report_type,
+        FileStatusExtension.COMPILE_ERROR, output_folder, binary
     )
 
 
 def create_default_analysis_failure_handler(
+    experiment_handle: 'ExperimentHandle',
     project: Project,
     report_type: tp.Type[BaseReport],
     output_folder: tp.Optional[Path] = None,
@@ -169,6 +180,7 @@ def create_default_analysis_failure_handler(
     `project`, `report_type`.
 
     Args:
+        experiment_handle: handle to the current experiment
         project: currently under analysis
         report_type: that should be generated
         output_folder: where the errors will be placed
@@ -178,12 +190,13 @@ def create_default_analysis_failure_handler(
     Retruns: a initialized PEErrorHandler
     """
     return create_default_error_handler(
-        project, report_type, FileStatusExtension.Failed, output_folder, binary,
-        timeout_duration
+        experiment_handle, project, report_type, FileStatusExtension.FAILED,
+        output_folder, binary, timeout_duration
     )
 
 
 def create_default_error_handler(
+    experiment_handle: 'ExperimentHandle',
     project: Project,
     report_type: tp.Type[BaseReport],
     error_type: FileStatusExtension,
@@ -195,6 +208,7 @@ def create_default_error_handler(
     Create a default PEErrorHandler based on the `project`, `report_type`.
 
     Args:
+        experiment_handle: handle to the current experiment
         project: currently under analysis
         report_type: that should be generated
         error_type: a FSE describing the problem type
@@ -210,13 +224,15 @@ def create_default_error_handler(
 
     return PEErrorHandler(
         str(error_output_folder),
-        report_type.get_file_name(
-            project_name=str(project.name),
-            binary_name=binary.name if binary else "all",
-            project_version=project.version_of_primary,
-            project_uuid=str(project.run_uuid),
-            extension_type=error_type,
-            file_ext=".txt"
+        str(
+            experiment_handle.get_file_name(
+                report_type.shorthand(),
+                project_name=str(project.name),
+                binary_name=binary.name if binary else "all",
+                project_revision=project.version_of_primary,
+                project_uuid=str(project.run_uuid),
+                extension_type=error_type
+            )
         ),
         timeout_duration=timeout_duration
     )
@@ -239,9 +255,81 @@ def wrap_unlimit_stack_size(cmd: tp.Callable[..., tp.Any]) -> tp.Any:
 VersionType = tp.TypeVar('VersionType')
 
 
+class ExperimentHandle():
+    """Handle to an experiment that provides helper interfaces for analysis
+    steps to utilize experiment specific data."""
+
+    def __init__(self, experiment: 'VersionExperiment') -> None:
+        self.__experiment = experiment
+
+    def get_file_name(
+        self,
+        report_shorthand: str,
+        project_name: str,
+        binary_name: str,
+        project_revision: ShortCommitHash,
+        project_uuid: str,
+        extension_type: FileStatusExtension,
+    ) -> ReportFilename:
+        """
+        Generates a filename for a report file that is generated by the
+        experiment.
+
+        Args:
+            report_shorthand: unique shorthand for the report
+            project_name: name of the project for which the
+                          report was generated
+            binary_name: name of the binary for which the report was generated
+            project_revision: revision (commit hash)of the analyzed project
+            project_uuid: benchbuild uuid for the experiment run
+            extension_type: to specify the status of the generated report
+
+        Returns:
+            name for the report file that can later be uniquly identified
+        """
+        return self.__experiment.report_spec(
+        ).get_report_type(report_shorthand).get_file_name(
+            self.__experiment.shorthand(), project_name, binary_name,
+            project_revision, project_uuid, extension_type
+        )
+
+    def report_spec(self) -> ReportSpecification:
+        """Experiment report specification."""
+        return self.__experiment.report_spec()
+
+
 class VersionExperiment(Experiment):  # type: ignore
     """Base class for experiments that want to analyze different project
     revisions."""
+
+    REPORT_SPEC: ReportSpecification
+    SHORTHAND: str
+
+    @classmethod
+    def __init_subclass__(
+        cls, shorthand: str, *args: tp.Any, **kwargs: tp.Any
+    ) -> None:
+        super().__init_subclass__(*args, **kwargs)
+
+        cls.SHORTHAND = shorthand
+        if not hasattr(cls, 'REPORT_SPEC'):
+            raise AssertionError(
+                f"{cls.__name__}@{cls.__module__} does not specify"
+                " a REPORT_SPEC."
+            )
+
+    @classmethod
+    def shorthand(cls) -> str:
+        """Experiment shorthand."""
+        return cls.SHORTHAND
+
+    @classmethod
+    def report_spec(cls) -> ReportSpecification:
+        """Experiment report specification."""
+        return cls.REPORT_SPEC
+
+    def get_handle(self) -> ExperimentHandle:
+        return ExperimentHandle(self)
 
     @abstractmethod
     def actions_for_project(self, project: Project) -> tp.MutableSequence[Step]:
@@ -296,15 +384,17 @@ class VersionExperiment(Experiment):  # type: ignore
                 for x in fs_whitelist
             }
 
-            if not hasattr(cls, 'REPORT_TYPE'):
+            if not hasattr(cls, 'REPORT_SPEC'):
                 raise TypeError(
-                    "Experiment sub class does not implement REPORT_TYPE."
+                    "Experiment sub class does not implement REPORT_SPEC."
                 )
 
             bad_revisions = [
-                revision for revision, file_status in
-                get_tagged_revisions(prj_cls, getattr(cls, 'REPORT_TYPE'))
-                if file_status not in fs_good
+                # TODO (se-sic/VaRA#791): clean up usage of report spec
+                revision.hash for revision, file_status in get_tagged_revisions(
+                    prj_cls,
+                    getattr(cls, 'REPORT_SPEC').main_report
+                ) if file_status not in fs_good
             ]
 
             variants = list(

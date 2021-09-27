@@ -10,7 +10,7 @@ def multivariate_grid(
     y_col: str,
     hue: str,
     data: pd.DataFrame,
-    global_kde=True,
+    global_kde: bool = True,
     scatter_alpha: float = .5
 ) -> sns.JointGrid:
     """
@@ -23,6 +23,7 @@ def multivariate_grid(
         y_col: y variable name
         hue: hue variable name
         data: dataframe with the plot data
+        global_kde: whether to include a kde plot for the union of all data
         scatter_alpha: alpha value for the scatter plot
     """
 

@@ -25,12 +25,13 @@ from varats.table.table import (
     TableFormat,
     TableDataEmpty,
 )
+from varats.utils.git_util import FullCommitHash
 
 
 def _generate_graph_table(
-    case_studies: tp.List[CaseStudy], graph_generator: tp.Callable[[str, str],
-                                                                   nx.DiGraph],
-    table_format: TableFormat
+    case_studies: tp.List[CaseStudy],
+    graph_generator: tp.Callable[[str, FullCommitHash],
+                                 nx.DiGraph], table_format: TableFormat
 ) -> str:
     degree_data: tp.List[pd.DataFrame] = []
     for case_study in case_studies:
@@ -93,7 +94,7 @@ def _generate_graph_table(
 
     df = pd.concat(degree_data).round(2)
     if table_format in [
-        TableFormat.latex, TableFormat.latex_booktabs, TableFormat.latex_raw
+        TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
     ]:
         table = df.to_latex(
             bold_rows=True, multicolumn_format="c", multirow=True
@@ -121,7 +122,9 @@ class CommitInteractionGraphMetricsTable(Table):
                     self.table_kwargs["project"]
                 )
 
-        def create_graph(project_name: str, revision: str) -> nx.DiGraph:
+        def create_graph(
+            project_name: str, revision: FullCommitHash
+        ) -> nx.DiGraph:
             return create_blame_interaction_graph(project_name, revision
                                                  ).commit_interaction_graph()
 
@@ -150,7 +153,9 @@ class AuthorInteractionGraphMetricsTable(Table):
                     self.table_kwargs["project"]
                 )
 
-        def create_graph(project_name: str, revision: str) -> nx.DiGraph:
+        def create_graph(
+            project_name: str, revision: FullCommitHash
+        ) -> nx.DiGraph:
             return create_blame_interaction_graph(project_name, revision
                                                  ).author_interaction_graph()
 
@@ -179,7 +184,9 @@ class CommitAuthorInteractionGraphMetricsTable(Table):
                     self.table_kwargs["project"]
                 )
 
-        def create_graph(project_name: str, revision: str) -> nx.DiGraph:
+        def create_graph(
+            project_name: str, revision: FullCommitHash
+        ) -> nx.DiGraph:
             return create_blame_interaction_graph(
                 project_name, revision
             ).commit_author_interaction_graph()
@@ -218,7 +225,7 @@ class CommitInteractionGraphTopDegreeTable(Table):
             node_attrs = tp.cast(CIGNodeAttrs, graph.nodes[node])
             commit = node_attrs["commit"]
             nodes.append(({
-                "commit": commit.commit_hash[:10],
+                "commit": commit.commit_hash.short_hash,
                 "node_degree": graph.degree(node),
                 "node_out_degree": graph.out_degree(node),
                 "node_in_degree": graph.in_degree(node),
@@ -247,7 +254,7 @@ class CommitInteractionGraphTopDegreeTable(Table):
         })
 
         if self.format in [
-            TableFormat.latex, TableFormat.latex_booktabs, TableFormat.latex_raw
+            TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
         ]:
             table = degree_data.to_latex(
                 index=False, multicolumn_format="c", multirow=True
@@ -314,7 +321,7 @@ class AuthorInteractionGraphTopDegreeTable(Table):
         })
 
         if self.format in [
-            TableFormat.latex, TableFormat.latex_booktabs, TableFormat.latex_raw
+            TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
         ]:
             table = degree_data.to_latex(
                 index=False, multicolumn_format="c", multirow=True
@@ -358,7 +365,7 @@ class CommitAuthorInteractionGraphTopDegreeTable(Table):
 
             if commit:
                 nodes.append(({
-                    "commit": commit.commit_hash[:10],
+                    "commit": commit.commit_hash.short_hash,
                     "node_degree": graph.degree(node),
                 }))
 
@@ -380,7 +387,7 @@ class CommitAuthorInteractionGraphTopDegreeTable(Table):
         })
 
         if self.format in [
-            TableFormat.latex, TableFormat.latex_booktabs, TableFormat.latex_raw
+            TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
         ]:
             table = degree_data.to_latex(
                 index=False, multicolumn_format="c", multirow=True

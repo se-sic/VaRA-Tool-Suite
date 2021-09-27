@@ -9,8 +9,10 @@ Welcome to VaRA's documentation!
 Quick overview
 --------------
 * :ref:`Research Tools`
+* :ref:`How-Tos`
 * :ref:`VaRA-TS Docs`
 * :ref:`vara-ts api reference`
+* `VaRA-feature API Reference`_
 
 Research Tools
 ==============
@@ -31,6 +33,17 @@ Tool-Suite Overview
 .. note::
    As the frist starting point, take a look at the :ref:`Tool-Suite Pipeline Overview`. The overview briefly introduces and descibes all different components and how they interact with each other.
 
+
+How-Tos
+=======
+
+.. toctree::
+   :maxdepth: 1
+
+   tutorials/getting_started
+   tutorials/running_experiments
+
+
 VaRA-TS Docs
 ============
 
@@ -40,6 +53,7 @@ VaRA-TS Docs
 
    vara-ts/pipeline-overview
    vara-ts/vara-buildsetup
+   vara-ts-api/tools.rst
    vara-ts/benchbuild
    vara-ts/slurm
    vara-ts/development
@@ -73,3 +87,4 @@ The logo was created using the following brushes from Axeraider70, `Galactic Bru
 .. _Galactic Brushes: https://axeraider70.deviantart.com/art/Galactic-Brushes-60845636
 .. _Green Lotus Brushes: https://axeraider70.deviantart.com/art/Green-Lotus-Brushes-52844921
 .. _Sebastian Böhm: https://www.se.cs.uni-saarland.de/people/boehm.php
+.. _VaRA-feature API Reference: https://se-sic.github.io/vara-feature/index.html

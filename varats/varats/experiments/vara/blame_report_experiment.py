@@ -8,8 +8,8 @@ BlameReport.
 import typing as tp
 from pathlib import Path
 
-import benchbuild.utils.actions as actions
 from benchbuild import Project
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import mkdir, opt
 from benchbuild.utils.requirements import Requirement, SlurmMem
 
@@ -18,12 +18,14 @@ from varats.data.reports.blame_report import BlameReport as BR
 from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
+    ExperimentHandle,
     wrap_unlimit_stack_size,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
 )
 from varats.experiment.wllvm import get_cached_bc_file_path, BCFileExtensions
 from varats.report.report import FileStatusExtension as FSE
+from varats.report.report import ReportSpecification
 from varats.utils.settings import bb_cfg
 
 
@@ -35,11 +37,9 @@ class BlameReportGeneration(actions.Step):  # type: ignore
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
-    def __init__(
-        self,
-        project: Project,
-    ):
+    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(obj=project, action_fn=self.analyze)
+        self.__experiment_handle = experiment_handle
 
     def analyze(self) -> actions.StepResult:
         """
@@ -65,12 +65,13 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         mkdir("-p", vara_result_folder)
 
         for binary in project.binaries:
-            result_file = BR.get_file_name(
+            result_file = self.__experiment_handle.get_file_name(
+                BR.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=project.version_of_primary,
+                project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.Success
+                extension_type=FSE.SUCCESS
             )
 
             opt_params = [
@@ -78,8 +79,10 @@ class BlameReportGeneration(actions.Step):  # type: ignore
                 "-vara-use-phasar",
                 f"-vara-report-outfile={vara_result_folder}/{result_file}",
                 get_cached_bc_file_path(
-                    project, binary,
-                    [BCFileExtensions.NO_OPT, BCFileExtensions.TBAA]
+                    project, binary, [
+                        BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
+                        BCFileExtensions.BLAME
+                    ]
                 )
             ]
 
@@ -90,18 +93,21 @@ class BlameReportGeneration(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    project, BR, Path(vara_result_folder)
+                    self.__experiment_handle, project, BR,
+                    Path(vara_result_folder)
                 )
             )
 
+        return actions.StepResult.OK
 
-class BlameReportExperiment(VersionExperiment):
+
+class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
     """Generates a commit flow report (CFR) of the project(s) specified in the
     call."""
 
     NAME = "GenerateBlameReport"
 
-    REPORT_TYPE = BR
+    REPORT_SPEC = ReportSpecification(BR)
     REQUIREMENTS: tp.List[Requirement] = [SlurmMem("250G")]
 
     def actions_for_project(
@@ -133,11 +139,13 @@ class BlameReportExperiment(VersionExperiment):
             project,
             bc_file_extensions,
             extraction_error_handler=create_default_compiler_error_handler(
-                project, self.REPORT_TYPE
+                self.get_handle(), project, self.REPORT_SPEC.main_report
             )
         )
 
-        analysis_actions.append(BlameReportGeneration(project))
+        analysis_actions.append(
+            BlameReportGeneration(project, self.get_handle())
+        )
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions

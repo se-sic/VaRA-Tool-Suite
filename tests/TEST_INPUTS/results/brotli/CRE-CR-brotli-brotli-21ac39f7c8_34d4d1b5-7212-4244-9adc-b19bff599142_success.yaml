@@ -1,0 +1,13 @@
+---
+DocType:         BlameReport
+Version:         4
+...
+---
+funcs-in-module: 865
+insts-in-module: 79980
+phasar-empty-tracked-vars: 187
+phasar-total-tracked-vars: 6138
+...
+---
+result-map:
+...

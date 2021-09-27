@@ -6,12 +6,13 @@ from matplotlib import axes
 
 from varats.mapping.commit_map import create_lazy_commit_map_loader
 from varats.provider.bug.bug_provider import BugProvider
+from varats.utils.git_util import FullCommitHash
 
 
 def draw_bugs(
     axis: axes.Axes,
     project: tp.Type[Project],
-    revisions: tp.List[str],
+    revisions: tp.List[FullCommitHash],
     extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None
 ) -> None:
     """
@@ -38,13 +39,13 @@ def draw_bugs(
         plot_cfg.update(extra_plot_cfg)
 
     cmap = create_lazy_commit_map_loader(project.NAME)()
-    revision_time_ids = [cmap.short_time_id(rev) for rev in revisions]
+    revision_time_ids = [cmap.time_id(rev) for rev in revisions]
 
     bug_provider = BugProvider.get_provider_for_project(project)
-    for rawbug in bug_provider.find_all_raw_bugs():
+    for rawbug in bug_provider.find_raw_bugs():
         bug_time_id = cmap.time_id(rawbug.fixing_commit)
         if bug_time_id in revision_time_ids:
-            index = float(revisions.index(rawbug.fixing_commit[:10]))
+            index = float(revisions.index(rawbug.fixing_commit))
         else:
             # revision not in sample; draw line between closest samples
             index = len([x for x in revision_time_ids if x < bug_time_id]) - 0.5

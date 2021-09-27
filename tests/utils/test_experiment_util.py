@@ -12,16 +12,17 @@ import varats.experiment.experiment_util as EU
 from tests.test_helper import BBTestSource
 from tests.test_utils import run_in_test_environment
 from varats.data.reports.commit_report import CommitReport as CR
-from varats.report.report import FileStatusExtension
+from varats.report.report import FileStatusExtension, ReportSpecification
+from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
 
 
-class MockExperiment(EU.VersionExperiment):
+class MockExperiment(EU.VersionExperiment, shorthand="mock"):
     """Small MockExperiment to be used as a replacement for actual
     experiments."""
 
     NAME = "CommitReportExperiment"
-    REPORT_TYPE = CR
+    REPORT_SPEC = ReportSpecification(CR)
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         return []
@@ -35,7 +36,10 @@ class BBTestProject(Project):
     GROUP = "debug"
     SOURCE = [
         BBTestSource(
-            test_versions=['rev1', 'rev2', 'rev3', 'rev4', 'rev5'],
+            test_versions=[
+                'rev1000000', 'rev2000000', 'rev3000000', 'rev4000000',
+                'rev5000000'
+            ],
             local="/dev/null",
             remote="/dev/null"
         )
@@ -66,11 +70,22 @@ class TestVersionExperiment(unittest.TestCase):
     def setUpClass(cls):
         """Load and parse function infos from yaml file."""
         cls.vers_expr = MockExperiment()
-        cls.rev_list = ['rev1', 'rev2', 'rev3', 'rev4', 'rev5']
+        cls.rev_list = [
+            'rev1000000', 'rev2000000', 'rev3000000', 'rev4000000', 'rev5000000'
+        ]
 
     def setUp(self):
         """Set config to initial values."""
-        self.rev_list = ['rev1', 'rev2', 'rev3', 'rev4', 'rev5']
+        self.rev_list = [
+            'rev1000000', 'rev2000000', 'rev3000000', 'rev4000000', 'rev5000000'
+        ]
+
+    @staticmethod
+    def prepare_vara_config(vara_cfg: s.Configuration) -> None:
+        vara_cfg["experiment"]["sample_limit"] = None
+        vara_cfg["experiment"]["random_order"] = False
+        vara_cfg["experiment"]["file_status_whitelist"] = []
+        vara_cfg["experiment"]["file_status_blacklist"] = []
 
     @staticmethod
     def prepare_vara_config(vara_cfg: s.Configuration) -> None:
@@ -81,13 +96,15 @@ class TestVersionExperiment(unittest.TestCase):
 
     @staticmethod
     def generate_get_tagged_revisions_output(
-    ) -> tp.List[tp.Tuple[str, FileStatusExtension]]:
+    ) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
         """Generate get_tagged_revisions output for mocking."""
-        return [('rev1', FileStatusExtension.Success),
-                ('rev2', FileStatusExtension.Blocked),
-                ('rev3', FileStatusExtension.CompileError),
-                ('rev4', FileStatusExtension.Failed),
-                ('rev5', FileStatusExtension.Missing)]
+        return [
+            (ShortCommitHash('rev1000000'), FileStatusExtension.SUCCESS),
+            (ShortCommitHash('rev2000000'), FileStatusExtension.BLOCKED),
+            (ShortCommitHash('rev3000000'), FileStatusExtension.COMPILE_ERROR),
+            (ShortCommitHash('rev4000000'), FileStatusExtension.FAILED),
+            (ShortCommitHash('rev5000000'), FileStatusExtension.MISSING)
+        ]
 
     @run_in_test_environment()
     def test_sample_limit(self):
@@ -111,7 +128,7 @@ class TestVersionExperiment(unittest.TestCase):
         enabled."""
         bb_cfg()["versions"]["full"] = False
         sample_gen = self.vers_expr.sample(BBTestProject)
-        self.assertEqual(sample_gen[0]["test_source"].version, "rev1")
+        self.assertEqual(sample_gen[0]["test_source"].version, "rev1000000")
         self.assertEqual(len(sample_gen), 1)
 
     @run_in_test_environment()
@@ -128,7 +145,7 @@ class TestVersionExperiment(unittest.TestCase):
 
         sample_gen = self.vers_expr.sample(BBTestProject)
 
-        self.assertEqual(sample_gen[0]["test_source"].version, "rev1")
+        self.assertEqual(sample_gen[0]["test_source"].version, "rev1000000")
         self.assertEqual(len(sample_gen), 1)
         mock_get_tagged_revisions.assert_called()
 
@@ -148,9 +165,9 @@ class TestVersionExperiment(unittest.TestCase):
 
         sample_gen = self.vers_expr.sample(BBTestProject)
 
-        self.assertEqual(sample_gen[0]["test_source"].version, "rev1")
-        self.assertEqual(sample_gen[1]["test_source"].version, "rev4")
-        self.assertEqual(sample_gen[2]["test_source"].version, "rev5")
+        self.assertEqual(sample_gen[0]["test_source"].version, "rev1000000")
+        self.assertEqual(sample_gen[1]["test_source"].version, "rev4000000")
+        self.assertEqual(sample_gen[2]["test_source"].version, "rev5000000")
         self.assertEqual(len(sample_gen), 3)
         mock_get_tagged_revisions.assert_called()
 
@@ -168,10 +185,10 @@ class TestVersionExperiment(unittest.TestCase):
 
         sample_gen = self.vers_expr.sample(BBTestProject)
 
-        self.assertEqual(sample_gen[0]["test_source"].version, "rev2")
-        self.assertEqual(sample_gen[1]["test_source"].version, "rev3")
-        self.assertEqual(sample_gen[2]["test_source"].version, "rev4")
-        self.assertEqual(sample_gen[3]["test_source"].version, "rev5")
+        self.assertEqual(sample_gen[0]["test_source"].version, "rev2000000")
+        self.assertEqual(sample_gen[1]["test_source"].version, "rev3000000")
+        self.assertEqual(sample_gen[2]["test_source"].version, "rev4000000")
+        self.assertEqual(sample_gen[3]["test_source"].version, "rev5000000")
         self.assertEqual(len(sample_gen), 4)
         mock_get_tagged_revisions.assert_called()
 
@@ -191,8 +208,8 @@ class TestVersionExperiment(unittest.TestCase):
 
         sample_gen = self.vers_expr.sample(BBTestProject)
 
-        self.assertEqual(sample_gen[0]["test_source"].version, "rev3")
-        self.assertEqual(sample_gen[1]["test_source"].version, "rev5")
+        self.assertEqual(sample_gen[0]["test_source"].version, "rev3000000")
+        self.assertEqual(sample_gen[1]["test_source"].version, "rev5000000")
         self.assertEqual(len(sample_gen), 2)
         mock_get_tagged_revisions.assert_called()
 
@@ -211,6 +228,6 @@ class TestVersionExperiment(unittest.TestCase):
 
         sample_gen = self.vers_expr.sample(BBTestProject)
 
-        self.assertEqual(sample_gen[0]["test_source"].version, "rev4")
+        self.assertEqual(sample_gen[0]["test_source"].version, "rev4000000")
         self.assertEqual(len(sample_gen), 1)
         mock_get_tagged_revisions.assert_called()

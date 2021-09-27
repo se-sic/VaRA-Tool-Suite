@@ -4,10 +4,9 @@ import typing as tp
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import matplotlib.style as style
 import numpy as np
 import pandas as pd
-from matplotlib import cm
+from matplotlib import style, cm
 
 from varats.data.databases.commit_interaction_database import (
     CommitInteractionDatabase,
@@ -15,6 +14,7 @@ from varats.data.databases.commit_interaction_database import (
 from varats.paper.case_study import CaseStudy, CSStage
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import check_required_args
+from varats.utils.git_util import FullCommitHash
 
 
 @check_required_args(["project", "get_cmap"])
@@ -214,7 +214,9 @@ class InteractionPlot(Plot):
             case_study.stages if case_study is not None else None, view_mode
         )
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         data_frame = _gen_interaction_graph(**self.plot_kwargs)
         data_frame.sort_values(by=['head_cm'], inplace=True)
         data_frame.reset_index(drop=True, inplace=True)
@@ -225,8 +227,8 @@ class InteractionPlot(Plot):
         def head_cm_neighbours(lhs_cm: str, rhs_cm: str) -> bool:
             return cm_num(lhs_cm) + 1 == cm_num(rhs_cm)
 
-        def rev_calc_helper(data_frame: pd.DataFrame) -> tp.Set[str]:
-            new_revs: tp.Set[str] = set()
+        def rev_calc_helper(data_frame: pd.DataFrame) -> tp.Set[FullCommitHash]:
+            new_revs: tp.Set[FullCommitHash] = set()
 
             df_iter = data_frame.iterrows()
             _, last_row = next(df_iter)
