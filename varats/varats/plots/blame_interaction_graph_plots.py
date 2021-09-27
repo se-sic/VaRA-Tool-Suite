@@ -19,6 +19,7 @@ from varats.data.reports.blame_interaction_graph import (
     CAIGNodeAttrs,
 )
 from varats.data.reports.blame_report import BlameReport
+from varats.mapping.commit_map import get_commit_map
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
@@ -33,12 +34,12 @@ from varats.plots.chord_plot_utils import (
     ArcPlotEdgeInfo,
     ArcPlotNodeInfo,
 )
-from varats.plots.scatter_plot_utils import multivariate_grid
 from varats.utils.git_util import (
     CommitRepoPair,
     create_commit_lookup_helper,
     UNCOMMITTED_COMMIT_HASH,
     FullCommitHash,
+    ShortCommitHash,
 )
 
 
@@ -92,9 +93,14 @@ class CommitInteractionGraphChordPlot(Plot):
 
     def plot(self, view_mode: bool) -> None:
         project_name = self.plot_kwargs["project"]
-        revision = self.plot_kwargs.get("revision", None)
-        if not revision:
+        commit_map = get_commit_map(project_name)
+
+        revision_str = self.plot_kwargs.get("revision", None)
+        if not revision_str:
             raise PlotArgMissing(f"'revision' was not specified.")
+        revision = commit_map.convert_to_full_or_warn(
+            ShortCommitHash(revision_str)
+        )
 
         commit_lookup = create_commit_lookup_helper(project_name)
 
