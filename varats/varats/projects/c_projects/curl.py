@@ -65,7 +65,7 @@ class Curl(VProject):
         with local.cwd(curl_source):
             with local.env(CC=str(clang)):
                 bb.watch(local["./buildconf"])()
-                bb.watch(local["./configure"])()
+                bb.watch(local["./configure"])("--with-openssl")
 
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
