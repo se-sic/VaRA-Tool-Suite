@@ -61,6 +61,24 @@ class BBTestProject(Project):
         pass
 
 
+class TestResultFolderAccess(unittest.TestCase):
+    """Test result folder access."""
+
+    @run_in_test_environment()
+    def test_result_folder_creation(self):
+        """Checks if we get the correct result folder back."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            bb_cfg()["varats"]["outfile"] = str(tmp_dir) + "/results"
+
+            result_folder = EU.get_vara_result_folder(BBTestProject())
+            self.assertEqual(
+                str(tmp_dir) + "/results/" + BBTestProject.NAME,
+                str(result_folder)
+            )
+
+            self.assertTrue(result_folder.exists())
+
+
 class TestVersionExperiment(unittest.TestCase):
     """Test VersionExperiments sampling behaviour."""
 
