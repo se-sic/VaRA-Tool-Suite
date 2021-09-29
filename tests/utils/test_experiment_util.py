@@ -1,4 +1,5 @@
 """Test VaRA Experiment utilities."""
+import os
 import tempfile
 import typing as tp
 import unittest
@@ -67,16 +68,17 @@ class TestResultFolderAccess(unittest.TestCase):
     @run_in_test_environment()
     def test_result_folder_creation(self):
         """Checks if we get the correct result folder back."""
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            bb_cfg()["varats"]["outfile"] = str(tmp_dir) + "/results"
+        test_tmp_folder = str(os.getcwd())
 
-            result_folder = EU.get_varats_result_folder(BBTestProject())
-            self.assertEqual(
-                str(tmp_dir) + "/results/" + BBTestProject.NAME,
-                str(result_folder)
-            )
+        bb_cfg()["varats"]["outfile"] = test_tmp_folder + "/results"
 
-            self.assertTrue(result_folder.exists())
+        result_folder = EU.get_varats_result_folder(BBTestProject())
+        self.assertEqual(
+            test_tmp_folder + "/results/" + BBTestProject.NAME,
+            str(result_folder)
+        )
+
+        self.assertTrue(result_folder.exists())
 
 
 class TestVersionExperiment(unittest.TestCase):
