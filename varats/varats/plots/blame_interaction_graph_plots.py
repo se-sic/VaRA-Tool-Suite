@@ -123,23 +123,24 @@ class CommitInteractionGraphChordPlot(Plot, plot_name='cig_chord_plot'):
                                             ) >= datetime(2015, 1, 1)
 
         nodes: tp.List[tp.Tuple[NodeTy, ChordPlotNodeInfo]] = []
-        for node in sorted(
-            cig.nodes,
-            key=lambda x: int(
-                commit_lookup(tp.cast(CIGNodeAttrs, cig.nodes[x])["commit"]).
-                commit_time
-            )
-        ):
+        node_meta: tp.Dict[NodeTy, CommitRepoPair] = {}
+        for node in cig.nodes:
             node_attrs = tp.cast(CIGNodeAttrs, cig.nodes[node])
             commit = node_attrs["commit"]
             if not filter_nodes(commit):
                 continue
+            node_meta[node] = commit
             nodes.append(
                 (node, {
                     "info": commit.commit_hash.short_hash,
                     "color": 1,
                 })
             )
+
+        def node_sort_key(node: tp.Tuple[NodeTy, ChordPlotNodeInfo]) -> int:
+            return int(commit_lookup(node_meta[node[0]]).commit_time)
+
+        nodes = sorted(nodes, key=node_sort_key)
 
         edges: tp.List[tp.Tuple[NodeTy, NodeTy, ChordPlotEdgeInfo]] = []
         for source, sink in cig.edges:
@@ -195,7 +196,12 @@ class CommitInteractionGraphArcPlot(Plot, plot_name='cig_arc_plot'):
 
     def plot(self, view_mode: bool) -> None:
         project_name = self.plot_kwargs["project"]
-        revision = self.plot_kwargs["revision"]
+        commit_map = get_commit_map(project_name)
+
+        revision_str = self.plot_kwargs["revision"]
+        revision = commit_map.convert_to_full_or_warn(
+            ShortCommitHash(revision_str)
+        )
 
         commit_lookup = create_commit_lookup_helper(project_name)
 
@@ -212,17 +218,13 @@ class CommitInteractionGraphArcPlot(Plot, plot_name='cig_arc_plot'):
                                             ) >= datetime(2015, 1, 1)
 
         nodes: tp.List[tp.Tuple[NodeTy, ArcPlotNodeInfo]] = []
-        for node in sorted(
-            cig.nodes,
-            key=lambda x: int(
-                commit_lookup(tp.cast(CIGNodeAttrs, cig.nodes[x])["commit"]).
-                commit_time
-            )
-        ):
+        node_meta: tp.Dict[NodeTy, CommitRepoPair] = {}
+        for node in cig.nodes:
             node_attrs = tp.cast(CIGNodeAttrs, cig.nodes[node])
             commit = node_attrs["commit"]
             if not filter_nodes(commit):
                 continue
+            node_meta[node] = commit
             nodes.append((
                 node, {
                     "info": commit.commit_hash.short_hash,
@@ -231,6 +233,11 @@ class CommitInteractionGraphArcPlot(Plot, plot_name='cig_arc_plot'):
                     "line_color": cig.in_degree(node)
                 }
             ))
+
+        def node_sort_key(node: tp.Tuple[NodeTy, ArcPlotNodeInfo]) -> int:
+            return int(commit_lookup(node_meta[node[0]]).commit_time)
+
+        nodes = sorted(nodes, key=node_sort_key)
 
         edges: tp.List[tp.Tuple[NodeTy, NodeTy, ArcPlotEdgeInfo]] = []
         for source, sink in cig.edges:
