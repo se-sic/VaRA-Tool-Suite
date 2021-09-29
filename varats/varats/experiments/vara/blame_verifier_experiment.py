@@ -21,7 +21,7 @@ from varats.data.reports.blame_verifier_report import (
 )
 from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
-    get_vara_result_folder,
+    get_varats_result_folder,
     ExperimentHandle,
     VersionExperiment,
     PEErrorHandler,
@@ -68,7 +68,7 @@ class BlameVerifierReportGeneration(actions.Step):  # type: ignore
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
-        vara_result_folder = get_vara_result_folder(project)
+        vara_result_folder = get_varats_result_folder(project)
 
         timeout_duration = '8h'
 

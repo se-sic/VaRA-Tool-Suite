@@ -20,7 +20,7 @@ from varats.experiment.experiment_util import (
     VersionExperiment,
     ExperimentHandle,
     wrap_unlimit_stack_size,
-    get_vara_result_folder,
+    get_varats_result_folder,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
     get_default_compile_error_wrapped,
@@ -60,7 +60,7 @@ class RunGlobalsTestAnalysis(actions.Step):  # type: ignore
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
-        vara_result_folder = get_vara_result_folder(project)
+        vara_result_folder = get_varats_result_folder(project)
 
         for binary in project.binaries:
             report_name = "GRWith" if self.__globals_active else "GRWithout"

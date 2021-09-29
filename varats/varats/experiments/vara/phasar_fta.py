@@ -17,7 +17,7 @@ from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     wrap_unlimit_stack_size,
-    get_vara_result_folder,
+    get_varats_result_folder,
     PEErrorHandler,
     ExperimentHandle,
     get_default_compile_error_wrapped,
@@ -58,7 +58,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
         project = self.obj
 
         # Define the output directory.
-        vara_result_folder = get_vara_result_folder(project)
+        vara_result_folder = get_varats_result_folder(project)
 
         for binary in project.binaries:
             # Define empty success file

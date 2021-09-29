@@ -14,7 +14,7 @@ from varats.experiment.experiment_util import (
     wrap_unlimit_stack_size,
     ExperimentHandle,
     get_default_compile_error_wrapped,
-    get_vara_result_folder,
+    get_varats_result_folder,
     exec_func_with_pe_error_handler,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
@@ -52,7 +52,7 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
-        varats_result_folder = get_vara_result_folder(project)
+        varats_result_folder = get_varats_result_folder(project)
 
         phasar = local["phasar-llvm"]
         for binary in project.binaries:

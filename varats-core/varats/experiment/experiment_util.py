@@ -26,7 +26,7 @@ from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
 
 
-def get_vara_result_folder(project: Project) -> Path:
+def get_varats_result_folder(project: Project) -> Path:
     """
     Get the project specific path to the varats result folder.
 
@@ -148,7 +148,7 @@ def get_default_compile_error_wrapped(
         project.compile,
         create_default_compiler_error_handler(
             experiment_handle, project, report_type,
-            get_vara_result_folder(project)
+            get_varats_result_folder(project)
         )
     )
 

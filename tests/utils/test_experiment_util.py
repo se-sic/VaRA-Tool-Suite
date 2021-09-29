@@ -70,7 +70,7 @@ class TestResultFolderAccess(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             bb_cfg()["varats"]["outfile"] = str(tmp_dir) + "/results"
 
-            result_folder = EU.get_vara_result_folder(BBTestProject())
+            result_folder = EU.get_varats_result_folder(BBTestProject())
             self.assertEqual(
                 str(tmp_dir) + "/results/" + BBTestProject.NAME,
                 str(result_folder)

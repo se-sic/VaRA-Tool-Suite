@@ -18,7 +18,7 @@ from varats.experiment.experiment_util import (
     VersionExperiment,
     ExperimentHandle,
     create_default_analysis_failure_handler,
-    get_vara_result_folder,
+    get_varats_result_folder,
     exec_func_with_pe_error_handler,
 )
 from varats.provider.bug.bug_provider import BugProvider
@@ -94,7 +94,7 @@ class RunSZZUnleashed(actions.Step):  # type: ignore
         szzunleashed_jar = SZZUnleashed.install_location(
         ) / SZZUnleashed.get_jar_name()
 
-        varats_result_folder = get_vara_result_folder(project)
+        varats_result_folder = get_varats_result_folder(project)
 
         with local.cwd(run_dir):
             run_cmd = java["-jar",
@@ -124,7 +124,7 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
         """Create a report from SZZUnleashed data."""
         project = self.obj
 
-        varats_result_folder = get_vara_result_folder(project)
+        varats_result_folder = get_varats_result_folder(project)
 
         run_dir = Path(project.source_of_primary).parent
         with (run_dir / "results" /

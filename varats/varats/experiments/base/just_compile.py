@@ -15,7 +15,7 @@ from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
     create_default_analysis_failure_handler,
-    get_vara_result_folder,
+    get_varats_result_folder,
 )
 from varats.experiment.wllvm import RunWLLVM
 from varats.report.report import FileStatusExtension as FSE
@@ -40,7 +40,7 @@ class EmptyAnalysis(actions.Step):  # type: ignore
             return actions.StepResult.ERROR
         project = self.obj
 
-        vara_result_folder = get_vara_result_folder(project)
+        vara_result_folder = get_varats_result_folder(project)
 
         for binary in project.binaries:
             result_file = self.__experiment_handle.get_file_name(
