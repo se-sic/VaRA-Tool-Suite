@@ -313,7 +313,7 @@ class VaraTestRepoSubmodule(GitSubmodule):  # type: ignore  # pylint: disable=R0
     __vara_test_repos_git = Git(
         remote="https://github.com/se-passau/vara-test-repos",
         local="vara_test_repos",
-        refspec="HEAD",
+        refspec="origin/HEAD",
         limit=1
     )
 
@@ -349,7 +349,7 @@ class VaraTestRepoSource(Git):  # type: ignore
     __vara_test_repos_git = Git(
         remote="https://github.com/se-passau/vara-test-repos",
         local="vara_test_repos",
-        refspec="HEAD",
+        refspec="origin/HEAD",
         limit=1
     )
 

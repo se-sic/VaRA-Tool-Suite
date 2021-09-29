@@ -31,7 +31,7 @@ class File(VProject):
         bb.source.Git(
             remote="https://github.com/file/file",
             local="file_git",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("file")

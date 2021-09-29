@@ -38,22 +38,22 @@ class TestBlameDiffMetricsUtils(unittest.TestCase):
 
         cls.br_paths_list = [
             TEST_INPUTS_DIR / Path(
-                "results/xz/BR-xz-xz-2f0bc9cd40"
+                "results/xz/BRE-BR-xz-xz-2f0bc9cd40"
                 "_9e238675-ee7c-4325-8e9f-8ccf6fd3f05c_success.yaml"
             ), TEST_INPUTS_DIR / Path(
-                "results/xz/BR-xz-xz-c5c7ceb08a"
+                "results/xz/BRE-BR-xz-xz-c5c7ceb08a"
                 "_77a6c5bc-e5c7-4532-8814-70dbcc6b5dda_success.yaml"
             ), TEST_INPUTS_DIR / Path(
-                "results/xz/BR-xz-xz-ef364d3abc"
+                "results/xz/BRE-BR-xz-xz-ef364d3abc"
                 "_feeeecb2-1826-49e5-a188-d4d883f06d00_success.yaml"
             ), TEST_INPUTS_DIR / Path(
                 "results/TwoLibsOneProjectInteractionDiscreteLibsSingleProject/"
-                "BR-TwoLibsOneProjectInteractionDiscreteLibsSingleProject-"
+                "BRE-BR-TwoLibsOneProjectInteractionDiscreteLibsSingleProject-"
                 "elementalist-5e8fe1616d_11ca651c-2d41-42bd-aa4e-8c37ba67b75f"
                 "_success.yaml"
             ), TEST_INPUTS_DIR / Path(
                 "results/TwoLibsOneProjectInteractionDiscreteLibsSingleProject/"
-                "BR-TwoLibsOneProjectInteractionDiscreteLibsSingleProject-"
+                "BRE-BR-TwoLibsOneProjectInteractionDiscreteLibsSingleProject-"
                 "elementalist-e64923e69e_0b22c10c-4adb-4885-b3d2-416749b53aa8"
                 "_success.yaml"
             )

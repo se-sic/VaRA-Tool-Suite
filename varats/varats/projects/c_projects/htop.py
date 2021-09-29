@@ -31,7 +31,7 @@ class Htop(VProject):
         bb.source.Git(
             remote="https://github.com/htop-dev/htop.git",
             local="htop",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("htop")
