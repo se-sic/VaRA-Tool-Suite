@@ -11,6 +11,7 @@ from pygit2 import Commit
 
 from varats.base.version_header import VersionHeader
 from varats.data.reports.szz_report import SZZReport, PyDrillerSZZReport
+from varats.experiment.experiment_util import get_varats_result_folder
 from varats.provider.bug.bug_provider import BugProvider
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
@@ -26,8 +27,6 @@ class CreatePyDrillerSZZReport(actions.Step):  # type: ignore
     NAME = "CreatePyDrillerSZZReport"
     DESCRIPTION = "Create a report from SZZ data"
 
-    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
-
     def __init__(self, project: Project):
         super().__init__(obj=project, action_fn=self.create_report)
 
@@ -38,11 +37,7 @@ class CreatePyDrillerSZZReport(actions.Step):  # type: ignore
         bug_provider = BugProvider.get_provider_for_project(project)
         pygit_bugs = bug_provider.find_pygit_bugs()
 
-        varats_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(bb_cfg()["varats"]["outfile"]),
-            project_dir=str(project.name)
-        )
-        mkdir("-p", varats_result_folder)
+        varats_result_folder = get_varats_result_folder(project)
 
         def commit_to_hash(commit: Commit) -> str:
             return str(commit.id)

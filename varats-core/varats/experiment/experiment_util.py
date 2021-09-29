@@ -11,7 +11,7 @@ from benchbuild import source
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
 from benchbuild.utils.actions import Step
-from benchbuild.utils.cmd import prlimit
+from benchbuild.utils.cmd import prlimit, mkdir
 from plumbum.commands import ProcessExecutionError
 
 from varats.project.project_util import ProjectBinaryWrapper
@@ -26,12 +26,34 @@ from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
 
 
+def get_varats_result_folder(project: Project) -> Path:
+    """
+    Get the project specific path to the varats result folder.
+
+    Args:
+        project: to lookup the result folder for
+
+    Returns:
+        path to the project specific result folder
+    """
+    result_folder_template = "{result_dir}/{project_dir}"
+
+    vara_result_folder = result_folder_template.format(
+        result_dir=str(bb_cfg()["varats"]["outfile"]),
+        project_dir=str(project.name)
+    )
+
+    mkdir("-p", vara_result_folder)
+
+    return Path(vara_result_folder)
+
+
 class PEErrorHandler():
     """Error handler for process execution errors."""
 
     def __init__(
         self,
-        result_folder: str,
+        result_folder: Path,
         error_file_name: str,
         timeout_duration: tp.Optional[str] = None,
         delete_files: tp.Optional[tp.List[Path]] = None
@@ -49,12 +71,8 @@ class PEErrorHandler():
                 except FileNotFoundError:
                     pass
 
-        error_file = Path(
-            "{res_folder}/{res_file}".format(
-                res_folder=self.__result_folder,
-                res_file=self.__error_file_name
-            )
-        )
+        error_file = self.__result_folder / self.__error_file_name
+
         if not os.path.exists(self.__result_folder):
             os.makedirs(self.__result_folder, exist_ok=True)
         with open(error_file, 'w') as outfile:
@@ -113,7 +131,7 @@ def exec_func_with_pe_error_handler(
 
 def get_default_compile_error_wrapped(
     experiment_handle: 'ExperimentHandle', project: Project,
-    report_type: tp.Type[BaseReport], result_folder_template: str
+    report_type: tp.Type[BaseReport]
 ) -> FunctionPEErrorWrapper:
     """
     Setup the default project compile function with an error handler.
@@ -122,21 +140,15 @@ def get_default_compile_error_wrapped(
         experiment_handle: handle to the current experiment
         project: that will be compiled
         report_type: that should be generated
-        result_folder_template: where the results will be placed
 
     Returns:
         project compilation function, wrapped with automatic error handling
     """
-    result_dir = str(bb_cfg()["varats"]["outfile"])
-    result_folder = Path(
-        result_folder_template.format(
-            result_dir=result_dir, project_dir=str(project.name)
-        )
-    )
     return FunctionPEErrorWrapper(
         project.compile,
         create_default_compiler_error_handler(
-            experiment_handle, project, report_type, result_folder
+            experiment_handle, project, report_type,
+            get_varats_result_folder(project)
         )
     )
 

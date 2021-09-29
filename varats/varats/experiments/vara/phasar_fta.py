@@ -17,6 +17,7 @@ from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     wrap_unlimit_stack_size,
+    get_varats_result_folder,
     PEErrorHandler,
     ExperimentHandle,
     get_default_compile_error_wrapped,
@@ -41,8 +42,6 @@ class PhASARFTACheck(actions.Step):  # type: ignore
     NAME = "PhASARFTACheck"
     DESCRIPTION = "Generate a full FTA."
 
-    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
-
     def __init__(
         self,
         project: Project,
@@ -59,11 +58,7 @@ class PhASARFTACheck(actions.Step):  # type: ignore
         project = self.obj
 
         # Define the output directory.
-        vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(bb_cfg()["varats"]["outfile"]),
-            project_dir=str(project.name)
-        )
-        mkdir("-p", vara_result_folder)
+        vara_result_folder = get_varats_result_folder(project)
 
         for binary in project.binaries:
             # Define empty success file
@@ -136,8 +131,7 @@ class PhASARTaintAnalysis(VersionExperiment, shorthand="PTA"):
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, self.REPORT_SPEC.main_report,
-            PhASARFTACheck.RESULT_FOLDER_TEMPLATE
+            self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
         project.cflags += [
