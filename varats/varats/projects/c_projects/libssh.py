@@ -78,23 +78,7 @@ class Libssh(VProject):
 
     def compile(self) -> None:
         """Compile the project."""
-        libssh_git_path = get_local_project_git_path(self.NAME)
-        libssh_version = self.version_of_primary
-
-        with local.cwd(libssh_git_path):
-            cmake_revisions = get_all_revisions_between(
-                "0151b6e17041c56813c882a3de6330c82acc8d93", "master",
-                ShortCommitHash
-            )
-
-        if libssh_version in cmake_revisions:
-            self.__compile_cmake()
-        else:
-            self.__compile_make()
-
-    def __compile_cmake(self) -> None:
         libssh_source = local.path(self.source_of(self.primary_source))
-
         compiler = bb.compiler.cc(self)
         mkdir("-p", libssh_source / "build")
         with local.cwd(libssh_source / "build"):
@@ -104,30 +88,6 @@ class Libssh(VProject):
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
 
         with local.cwd(libssh_source):
-            verify_binaries(self)
-
-    def __compile_make(self) -> None:
-        libssh_source = local.path(self.source_of(self.primary_source))
-        libssh_version = self.version_of_primary
-        autoconf_revisions = get_all_revisions_between(
-            "5e02c25291d594e01a910fce097a3fc5084fd68f",
-            "21e639cc3fd54eb3d59568744c9627beb26e07ed", ShortCommitHash
-        )
-        autogen_revisions = get_all_revisions_between(
-            "ca32b0aa146b31d7772f27d16098845e615432aa",
-            "ee54acb417c5589a8dc9dab0676f34b3d40a182b", ShortCommitHash
-        )
-        compiler = bb.compiler.cc(self)
-        with local.cwd(libssh_source):
-            with local.env(CC=str(compiler)):
-                if libssh_version in autogen_revisions:
-                    bb.watch("./autogen.sh")()
-                if libssh_version in autoconf_revisions:
-                    bb.watch("autoreconf")()
-                configure = bb.watch(local["./configure"])
-                configure()
-            bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
-
             verify_binaries(self)
 
     @classmethod
