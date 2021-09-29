@@ -77,7 +77,6 @@ class TestResultFolderAccess(unittest.TestCase):
             test_tmp_folder + "/results/" + BBTestProject.NAME,
             str(result_folder)
         )
-
         self.assertTrue(result_folder.exists())
 
 
