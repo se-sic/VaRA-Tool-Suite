@@ -6,10 +6,9 @@ For code churn, we only consider changes in source files.
 import typing as tp
 from itertools import islice
 
-import matplotlib.axes as axes
 import matplotlib.pyplot as plt
-import matplotlib.style as style
 import pandas as pd
+from matplotlib import axes, style
 
 #import varats.data.discover_reports
 #from varats.data.discover_reports import foo
@@ -18,12 +17,13 @@ from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.plot.plot_utils import check_required_args
 from varats.plot.plots import PlotGenerator, PlotConfig
-from varats.plots.blame_interaction_degree import OPTIONAL_X_TICK_SIZE
 from varats.project.project_util import get_local_project_git
 from varats.utils.git_util import (
     ChurnConfig,
     calc_repo_code_churn,
     calc_code_churn,
+    ShortCommitHash,
+    FullCommitHash,
 )
 
 
@@ -72,7 +72,7 @@ def build_repo_churn_table(
 
 
 def build_revisions_churn_table(
-    project_name: str, commit_map: CommitMap, revisions: tp.List[str]
+    project_name: str, commit_map: CommitMap, revisions: tp.List[FullCommitHash]
 ) -> pd.DataFrame:
     """
     Build a pandas data frame that contains all churn related data for the given
@@ -112,13 +112,13 @@ def build_revisions_churn_table(
     code_churn = [(0, 0, 0)]
     code_churn.extend([
         calc_code_churn(
-            repo, repo.get(a), repo.get(b),
+            repo, repo.get(a.hash), repo.get(b.hash),
             ChurnConfig.create_c_style_languages_config()
         ) for a, b in revision_pairs
     ])
     churn_data = pd.DataFrame({
         "revision": revisions,
-        "time_id": [commit_map.short_time_id(x) for x in revisions],
+        "time_id": [commit_map.time_id(x) for x in revisions],
         "insertions": [x[1] for x in code_churn],
         "deletions": [x[2] for x in code_churn],
         "changed_files": [x[0] for x in code_churn]
@@ -135,7 +135,7 @@ def draw_code_churn(
     axis: axes.Axes,
     project_name: str,
     commit_map: CommitMap,
-    revision_selector: tp.Callable[[str], bool] = lambda x: True,
+    revision_selector: tp.Callable[[ShortCommitHash], bool] = lambda x: True,
     sort_df: tp.Callable[
         [pd.DataFrame],
         pd.DataFrame] = lambda data: data.sort_values(by=['time_id'])
@@ -159,9 +159,8 @@ def draw_code_churn(
 
     code_churn = sort_df(code_churn)
 
-    revisions = code_churn.time_id.astype(str) + '-' + code_churn.revision.map(
-        lambda x: x[:10]
-    )
+    revisions = code_churn.time_id.astype(str) + '-' + code_churn.revision
+
     clipped_insertions = [
         x if x < CODE_CHURN_INSERTION_LIMIT else 1.3 *
         CODE_CHURN_INSERTION_LIMIT for x in code_churn.insertions
@@ -184,7 +183,7 @@ def draw_code_churn(
 
 def draw_code_churn_for_revisions(
     axis: axes.Axes, project_name: str, commit_map: CommitMap,
-    revisions: tp.List[str]
+    revisions: tp.List[FullCommitHash]
 ) -> None:
     """
     Draws a churn plot onto an axis, showing insertions with green and deletions
@@ -199,11 +198,9 @@ def draw_code_churn_for_revisions(
         commit_map: CommitMap for the given project(by project_name)
         revisions: list of revisions used to calculate the churn data
     """
+
     churn_data = build_revisions_churn_table(
         project_name, commit_map, revisions
-    )
-    revisions = churn_data.time_id.astype(str) + '-' + churn_data.revision.map(
-        lambda x: x[:10]
     )
     clipped_insertions = [
         x if x < CODE_CHURN_INSERTION_LIMIT else 1.3 *
@@ -213,16 +210,22 @@ def draw_code_churn_for_revisions(
         -x if x < CODE_CHURN_DELETION_LIMIT else -1.3 *
         CODE_CHURN_DELETION_LIMIT for x in churn_data.deletions
     ]
+    revision_strs: tp.List[str] = [rev.short_hash for rev in revisions]
 
     axis.set_ylim(-CODE_CHURN_DELETION_LIMIT, CODE_CHURN_INSERTION_LIMIT)
-    axis.fill_between(revisions, clipped_insertions, 0, facecolor='green')
+    axis.fill_between(revision_strs, clipped_insertions, 0, facecolor='green')
     axis.fill_between(
-        revisions,
+        revision_strs,
         # we need a - here to visualize deletions as negative additions
         clipped_deletions,
         0,
         facecolor='red'
     )
+    revision_strs = churn_data.time_id.astype(
+        str
+    ) + '-' + churn_data.revision.map(lambda x: x.short_hash)
+    axis.set_xticks(axis.get_xticks())
+    axis.set_xticklabels(revision_strs)
 
 
 class RepoChurnPlot(Plot, plot_name="repo_churn"):
@@ -230,12 +233,11 @@ class RepoChurnPlot(Plot, plot_name="repo_churn"):
 
     NAME = 'repo_churn'
 
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-
-        style.use(self.style)
+        style.use(self.plot_config.style)
         case_study: CaseStudy = self.plot_kwargs['case_study']
         project_name: str = case_study.project_name
         commit_map: CommitMap = get_commit_map(project_name)
@@ -251,7 +253,9 @@ class RepoChurnPlot(Plot, plot_name="repo_churn"):
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
 
 
@@ -261,7 +265,7 @@ class RepoChurnPlotGenerator(
     plot=RepoChurnPlot,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE,
-        PlotGenerator.REQUIRE_MULTI_CASE_STUDY, OPTIONAL_X_TICK_SIZE
+        PlotGenerator.REQUIRE_MULTI_CASE_STUDY
     ]
 ):
     """Generates repo-churn plot(s) for the selected case study(ies)."""

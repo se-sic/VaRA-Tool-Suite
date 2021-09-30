@@ -4,7 +4,7 @@ Settings module for VaRA.
 All settings are stored in a simple dictionary. Each setting should be
 modifiable via environment variable.
 """
-
+import os
 import typing as tp
 from os import makedirs, path
 from pathlib import Path
@@ -32,15 +32,15 @@ def create_new_varats_config() -> s.Configuration:
             },
             "benchbuild_root": {
                 "desc": "Root folder to run BenchBuild in",
-                "default": None,
+                "default": os.getcwd() + "/benchbuild",
             },
             "data_cache": {
-                "default": "data_cache",
-                "desc": "Local data cache to store preprocessed files."
+                "desc": "Local data cache to store preprocessed files.",
+                "default": os.getcwd() + "/data_cache",
             },
             "result_dir": {
                 "desc": "Result folder for collected results",
-                "default": None,
+                "default": os.getcwd() + "/results",
             },
         }
     )
@@ -129,7 +129,7 @@ def create_new_varats_config() -> s.Configuration:
     cfg["paper_config"] = {
         "folder": {
             "desc": "Folder with paper configs.",
-            "default": "paper_configs",
+            "default": os.getcwd() + "/paper_configs",
         },
         "current_config": {
             "desc": "Paper config file to load.",
@@ -189,21 +189,21 @@ def create_new_varats_config() -> s.Configuration:
     cfg['plots'] = {
         "plot_dir": {
             "desc": "Folder for generated plots",
-            "default": None,
+            "default": os.getcwd() + "/plots",
         },
     }
 
     cfg['tables'] = {
         "table_dir": {
             "desc": "Folder for generated tables",
-            "default": None,
+            "default": os.getcwd() + "/tables",
         },
     }
 
     cfg['artefacts'] = {
         "artefacts_dir": {
             "desc": "Folder for generated artefacts",
-            "default": None,
+            "default": os.getcwd() + "/artefacts",
         },
     }
 
@@ -236,16 +236,27 @@ def vara_cfg() -> s.Configuration:
     return _CFG
 
 
-def add_vara_experiment_options(benchbuild_config: s.Configuration) -> None:
+def add_vara_experiment_options(
+    benchbuild_config: s.Configuration, varats_config: s.Configuration
+) -> None:
     """Add varats specific options to a benchbuild config."""
     benchbuild_config["varats"] = {
         "outfile": {
             "default": "",
-            "desc": "Path to store results of VaRA CFR analysis."
+            "desc": "Path to store results of VaRA CFR analysis.",
+            "value": s.ConfigPath(str(varats_config["result_dir"]))
         },
         "result": {
-            "default": "missingPath/annotatedResults",
-            "desc": "Path to store already annotated projects."
+            "default":
+                "missingPath/annotatedResults",
+            "desc":
+                "Path to store already annotated projects.",
+            "value":
+                s.ConfigPath(
+                    os.path.join(
+                        str(vara_cfg()["benchbuild_root"]), "BC_files"
+                    )
+                )
         }
     }
 
@@ -255,12 +266,12 @@ def bb_cfg() -> s.Configuration:
     global _BB_CFG  # pylint: disable=global-statement
     if not _BB_CFG:
         from benchbuild.settings import CFG as BB_CFG  # pylint: disable=C0415
-        add_vara_experiment_options(BB_CFG)
-        bb_root = vara_cfg()["benchbuild_root"].value
+        add_vara_experiment_options(BB_CFG, vara_cfg())
+        bb_root = str(vara_cfg()["benchbuild_root"])
         if bb_root:
             bb_cfg_path = Path(bb_root) / ".benchbuild.yml"
             if bb_cfg_path.exists():
-                BB_CFG.load(local.path(str(bb_cfg_path)))
+                BB_CFG.load(local.path(bb_cfg_path))
         _BB_CFG = BB_CFG
     return _BB_CFG
 
@@ -296,7 +307,8 @@ def create_missing_folders() -> None:
 
     create_missing_folder_for_cfg("benchbuild_root")
     create_missing_folder_for_cfg("result_dir")
-    create_missing_folder_for_cfg("data_cache", vara_cfg())
+    create_missing_folder_for_cfg("data_cache")
+    create_missing_folder_for_cfg("folder", vara_cfg()["paper_config"])
     create_missing_folder_for_cfg("plot_dir", vara_cfg()["plots"])
     create_missing_folder_for_cfg("table_dir", vara_cfg()["tables"])
     create_missing_folder_for_cfg("artefacts_dir", vara_cfg()["artefacts"])
@@ -308,28 +320,8 @@ def save_config() -> None:
         config_file = ".varats.yaml"
     else:
         config_file = str(vara_cfg()["config_file"])
-    vara_cfg()["config_file"] = path.abspath(config_file)
-    if vara_cfg()["benchbuild_root"].value is None:
-        vara_cfg()["benchbuild_root"] = path.dirname(
-            str(vara_cfg()["config_file"])
-        ) + "/benchbuild"
-    if vara_cfg()["result_dir"].value is None:
-        vara_cfg()["result_dir"] = path.dirname(
-            str(vara_cfg()["config_file"])
-        ) + "/results"
-    if vara_cfg()["plots"]["plot_dir"].value is None:
-        vara_cfg()["plots"]["plot_dir"] = path.dirname(
-            str(vara_cfg()["config_file"])
-        ) + "/plots"
-    if vara_cfg()["tables"]["table_dir"].value is None:
-        vara_cfg()["tables"]["table_dir"] = path.dirname(
-            str(vara_cfg()["config_file"])
-        ) + "/tables"
-    if vara_cfg()["artefacts"]["artefacts_dir"].value is None:
-        vara_cfg()["artefacts"]["artefacts_dir"] = path.dirname(
-            str(vara_cfg()["config_file"])
-        ) + "/artefacts"
 
+    vara_cfg()["config_file"] = path.abspath(config_file)
     create_missing_folders()
     vara_cfg().store(LocalPath(config_file))
 
@@ -339,13 +331,11 @@ def save_bb_config(benchbuild_cfg: tp.Optional[s.Configuration] = None) -> None:
     if not benchbuild_cfg:
         benchbuild_cfg = bb_cfg()
 
-    bc_cache_path = Path(vara_cfg()["benchbuild_root"].value
-                        ) / benchbuild_cfg["varats"]["result"].value
-    if not bc_cache_path.exists():
-        bc_cache_path.mkdir(parents=True)
-    benchbuild_cfg.store(
-        local.path(str(vara_cfg()["benchbuild_root"])) / ".benchbuild.yml"
-    )
+    config_file = local.path(
+        str(vara_cfg()["benchbuild_root"])
+    ) / ".benchbuild.yml"
+    benchbuild_cfg["config_file"] = str(config_file)
+    benchbuild_cfg.store(config_file)
 
 
 def get_varats_base_folder() -> Path:

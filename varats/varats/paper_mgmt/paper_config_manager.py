@@ -17,8 +17,9 @@ from varats.paper_mgmt.case_study import (
     get_revisions_status_for_case_study,
     get_newest_result_files_for_case_study,
 )
-from varats.report.report import FileStatusExtension, MetaReport
+from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
 from varats.revision.revisions import get_all_revisions_files
+from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
 
 
@@ -62,9 +63,9 @@ def show_status_of_case_studies(
     if print_legend:
         print(get_legend(True))
 
-    report_type = MetaReport.REPORT_TYPES[report_name]
-    total_status_occurrences: tp.DefaultDict[FileStatusExtension,
-                                             tp.Set[str]] = defaultdict(set)
+    report_type = BaseReport.REPORT_TYPES[report_name]
+    total_status_occurrences: tp.DefaultDict[
+        FileStatusExtension, tp.Set[ShortCommitHash]] = defaultdict(set)
 
     for case_study in output_case_studies:
         if print_rev_list:
@@ -110,8 +111,8 @@ def get_revision_list(case_study: CaseStudy) -> str:
 
 
 def get_result_files(
-    result_file_type: MetaReport, project_name: str, commit_hash: str,
-    only_newest: bool
+    result_file_type: tp.Type[BaseReport], project_name: str,
+    commit_hash: ShortCommitHash, only_newest: bool
 ) -> tp.List[Path]:
     """
     Returns a list of result files that (partially) match the given commit hash.
@@ -130,10 +131,8 @@ def get_result_files(
     """
 
     def file_name_filter(file_name: str) -> bool:
-        file_commit_hash = MetaReport.get_commit_hash_from_result_file(
-            file_name
-        )
-        return not file_commit_hash.startswith(commit_hash)
+        file_commit_hash = ReportFilename(file_name).commit_hash
+        return not file_commit_hash == commit_hash
 
     return get_all_revisions_files(
         project_name, result_file_type, file_name_filter, only_newest
@@ -141,14 +140,15 @@ def get_result_files(
 
 
 def get_occurrences(
-    status_occurrences: tp.DefaultDict[FileStatusExtension, tp.Set[str]],
+    status_occurrences: tp.DefaultDict[FileStatusExtension,
+                                       tp.Set[ShortCommitHash]],
     use_color: bool = False
 ) -> str:
     """
     Returns a string with all status occurrences of a case study.
 
     Args:
-        status_occurrences: mapping from all occured status to a set of
+        status_occurrences: mapping from all occurred status to a set of
                             revisions
         use_color: add color escape sequences for highlighting
 
@@ -157,7 +157,7 @@ def get_occurrences(
     """
     status = ""
 
-    num_succ_rev = len(status_occurrences[FileStatusExtension.Success])
+    num_succ_rev = len(status_occurrences[FileStatusExtension.SUCCESS])
     num_rev = sum(map(len, status_occurrences.values()))
 
     color = None
@@ -193,7 +193,8 @@ def get_occurrences(
 
 
 def get_total_status(
-    total_status_occurrences: tp.DefaultDict[FileStatusExtension, tp.Set[str]],
+    total_status_occurrences: tp.DefaultDict[FileStatusExtension,
+                                             tp.Set[ShortCommitHash]],
     longest_cs_name: int,
     use_color: bool = False
 ) -> str:
@@ -218,11 +219,11 @@ def get_total_status(
 
 def get_short_status(
     case_study: CaseStudy,
-    result_file_type: MetaReport,
+    result_file_type: tp.Type[BaseReport],
     longest_cs_name: int,
     use_color: bool = False,
-    total_status_occurrences: tp.Optional[tp.DefaultDict[FileStatusExtension,
-                                                         tp.Set[str]]] = None
+    total_status_occurrences: tp.Optional[tp.DefaultDict[
+        FileStatusExtension, tp.Set[ShortCommitHash]]] = None
 ) -> str:
     """
     Return a short string representation that describes the current status of
@@ -247,8 +248,8 @@ def get_short_status(
         (len(case_study.project_name) + len(str(case_study.version))), ' '
     )
 
-    status_occurrences: tp.DefaultDict[FileStatusExtension,
-                                       tp.Set[str]] = defaultdict(set)
+    status_occurrences: tp.DefaultDict[
+        FileStatusExtension, tp.Set[ShortCommitHash]] = defaultdict(set)
     for tagged_rev in get_revisions_status_for_case_study(
         case_study, result_file_type
     ):
@@ -264,13 +265,13 @@ def get_short_status(
 
 def get_status(
     case_study: CaseStudy,
-    result_file_type: MetaReport,
+    result_file_type: tp.Type[BaseReport],
     longest_cs_name: int,
     sep_stages: bool,
     sort: bool,
     use_color: bool = False,
-    total_status_occurrences: tp.Optional[tp.DefaultDict[FileStatusExtension,
-                                                         tp.Set[str]]] = None
+    total_status_occurrences: tp.Optional[tp.DefaultDict[
+        FileStatusExtension, tp.Set[ShortCommitHash]]] = None
 ) -> str:
     """
     Return a string representation that describes the current status of the case
@@ -297,7 +298,7 @@ def get_status(
     if sort:
         cmap = create_lazy_commit_map_loader(case_study.project_name)()
 
-    def rev_time(rev: tp.Tuple[str, FileStatusExtension]) -> int:
+    def rev_time(rev: tp.Tuple[ShortCommitHash, FileStatusExtension]) -> int:
         return cmap.short_time_id(rev[0])
 
     if sep_stages:
@@ -315,7 +316,7 @@ def get_status(
                 tagged_revs = sorted(tagged_revs, key=rev_time, reverse=True)
             for tagged_rev_state in tagged_revs:
                 status += "    {rev} [{status}]\n".format(
-                    rev=tagged_rev_state[0],
+                    rev=tagged_rev_state[0].hash,
                     status=tagged_rev_state[1].get_colored_status()
                 )
     else:
@@ -330,7 +331,7 @@ def get_status(
             tagged_revs = sorted(tagged_revs, key=rev_time, reverse=True)
         for tagged_rev_state in tagged_revs:
             status += "    {rev} [{status}]\n".format(
-                rev=tagged_rev_state[0],
+                rev=tagged_rev_state[0].hash,
                 status=tagged_rev_state[1].get_colored_status()
             )
 
@@ -352,9 +353,9 @@ def get_legend(use_color: bool = False) -> str:
 
     for file_status in FileStatusExtension:
         if use_color:
-            legend_str += file_status.status_color[file_status.name] + "/"
+            legend_str += file_status.get_colored_status() + "/"
         else:
-            legend_str += file_status.name + "/"
+            legend_str += file_status.nice_name() + "/"
 
     legend_str = legend_str[:-1]
     legend_str += "]\n"
@@ -377,8 +378,8 @@ def package_paper_config(
     current_config = PC.get_paper_config()
     result_dir = Path(str(vara_cfg()['result_dir']))
     report_types = [
-        MetaReport.REPORT_TYPES[report_name] for report_name in report_names
-    ] if report_names else list(MetaReport.REPORT_TYPES.values())
+        BaseReport.REPORT_TYPES[report_name] for report_name in report_names
+    ] if report_names else list(BaseReport.REPORT_TYPES.values())
 
     files_to_store: tp.Set[Path] = set()
     for case_study in current_config.get_all_case_studies():
@@ -402,8 +403,9 @@ def package_paper_config(
             case_study_files_to_include.append(cs_file)
 
     vara_root = Path(str(vara_cfg()['config_file'])).parent
-    # TODO(python3.7): add ZipFile(compresslevel=9)
-    with ZipFile(output_file, "w", compression=ZIP_DEFLATED) as pc_zip:
+    with ZipFile(
+        output_file, "w", compression=ZIP_DEFLATED, compresslevel=9
+    ) as pc_zip:
         for file_path in files_to_store:
             pc_zip.write(file_path.relative_to(vara_root))
 

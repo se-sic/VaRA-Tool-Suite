@@ -12,10 +12,15 @@ from plumbum import local
 from varats.tools.research_tools.research_tool import (
     CodeBase,
     ResearchTool,
+    Dependencies,
+    Distro,
     SubProject,
 )
 from varats.tools.research_tools.vara_manager import BuildType
 from varats.utils.settings import vara_cfg, save_config
+
+if tp.TYPE_CHECKING:
+    from varats.containers import containers  # pylint: disable=W0611
 
 LOG = logging.getLogger(__name__)
 
@@ -42,12 +47,22 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
     Find the main repo on github: https://github.com/wogscpar/SZZUnleashed
     """
 
+    __DEPENDENCIES = Dependencies({
+        Distro.DEBIAN: ["python", "default-jdk", "gradle"],
+        Distro.ARCH: ["python", "jre-openjdk", "jdk-openjdk", "gradle"]
+    })
+
     def __init__(self, base_dir: Path) -> None:
         super().__init__(
             "SZZUnleashed", [BuildType.DEV], SZZUnleashedCodeBase(base_dir)
         )
         vara_cfg()["szzunleashed"]["source_dir"] = str(base_dir)
         save_config()
+
+    @classmethod
+    def get_dependencies(cls) -> Dependencies:
+        """Returns the dependencies for this research tool."""
+        raise NotImplementedError
 
     @staticmethod
     def source_location() -> Path:
@@ -118,6 +133,15 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
         """
         return f"szz_find_bug_introducers-{SZZUnleashed.get_version()}.jar"
 
+    def find_highest_sub_prj_version(self, sub_prj_name: str) -> int:
+        """Returns the highest release version number for the specified
+        ``SubProject`` name."""
+        raise NotImplementedError
+
+    def is_up_to_date(self) -> bool:
+        """Returns true if VaRA's major release version is up to date."""
+        raise NotImplementedError
+
     def build(self, build_type: BuildType, install_location: Path) -> None:
         """
         Build SZZUnleashed.
@@ -142,3 +166,14 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
             True, if the tool was correctly installed
         """
         return (install_location / self.get_jar_name()).exists()
+
+    def add_container_layers(
+        self, image_context: 'containers.BaseImageCreationContext'
+    ) -> None:
+        """
+        Add the layers required for this research tool to the given container.
+
+        Args:
+            image_context: the base image creation context
+        """
+        raise NotImplementedError
