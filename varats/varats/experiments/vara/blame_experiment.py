@@ -3,9 +3,9 @@ blame experiments that have a similar experiment setup."""
 
 import typing as tp
 
-import benchbuild.utils.actions as actions
 from benchbuild import Experiment, Project
 from benchbuild.extensions import compiler, run, time
+from benchbuild.utils import actions
 
 from varats.experiment.experiment_util import (
     get_default_compile_error_wrapped,

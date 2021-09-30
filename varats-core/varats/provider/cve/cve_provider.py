@@ -1,15 +1,25 @@
 """Module for the :class:`CVEProvider`."""
+import sys
 import typing as tp
 
 from benchbuild.project import Project
 
 from varats.project.project_util import get_local_project_git_path
-from varats.provider.cve.cve import CVE, find_all_cve, find_cve, find_cwe
-from varats.provider.cve.cve_map import generate_cve_map
+from varats.provider.cve.cve import CVE
+from varats.provider.cve.cve_map import generate_cve_map, CVEDict
 from varats.provider.provider import Provider
+from varats.utils.git_util import FullCommitHash
+
+if sys.version_info <= (3, 8):
+    from typing_extensions import Protocol
+    from typing_extensions import runtime_checkable
+else:
+    from typing import Protocol
+    from typing import runtime_checkable
 
 
-class CVEProviderHook():
+@runtime_checkable
+class CVEProviderHook(Protocol):
     """
     Gives the :class:`CVEProvider` the necessary information how to find CVEs
     and CWEs for a project.
@@ -25,7 +35,6 @@ class CVEProviderHook():
         Returns:
             a tuple ``(vendor, product)``
         """
-        raise NotImplementedError("Must be overridden by the project.")
 
 
 class CVEProvider(Provider):
@@ -33,8 +42,8 @@ class CVEProvider(Provider):
 
     def __init__(self, project: tp.Type[Project]) -> None:
         super().__init__(project)
-        if hasattr(project, "get_cve_product_info"):
-            self.__cve_map = generate_cve_map(
+        if isinstance(project, CVEProviderHook):
+            self.__cve_map: CVEDict = generate_cve_map(
                 get_local_project_git_path(project.NAME),
                 project.get_cve_product_info()
             )
@@ -48,7 +57,7 @@ class CVEProvider(Provider):
     def create_provider_for_project(
         cls, project: tp.Type[Project]
     ) -> tp.Optional['CVEProvider']:
-        if hasattr(project, "get_cve_product_info"):
+        if isinstance(project, CVEProviderHook):
             return CVEProvider(project)
         return None
 
@@ -60,7 +69,7 @@ class CVEProvider(Provider):
 
     def get_revision_cve_tuples(
         self
-    ) -> tp.Set[tp.Tuple[str, tp.FrozenSet[CVE]]]:
+    ) -> tp.Set[tp.Tuple[FullCommitHash, tp.FrozenSet[CVE]]]:
         """
         Get all CVEs associated with this provider's project along with the
         fixing commits/versions.
@@ -68,8 +77,7 @@ class CVEProvider(Provider):
         Return:
             a set of tuples of commit hash and cves
         """
-        return {(k, frozenset(tp.cast(tp.Set[CVE], v["cve"])))
-                for k, v in self.__cve_map.items()}
+        return {(k, frozenset(v["cve"])) for k, v in self.__cve_map.items()}
 
 
 class CVEDefaultProvider(CVEProvider):
@@ -82,47 +90,5 @@ class CVEDefaultProvider(CVEProvider):
 
     def get_revision_cve_tuples(
         self
-    ) -> tp.Set[tp.Tuple[str, tp.FrozenSet[CVE]]]:
+    ) -> tp.Set[tp.Tuple[FullCommitHash, tp.FrozenSet[CVE]]]:
         return set()
-
-
-# TODO: remove below functions once we remove the cve driver
-def list_cve_for_projects(
-    vendor: str, product: str, verbose: bool = False
-) -> None:
-    """
-    List all CVE's for the given vendor/product combination.
-
-    Call via vara-sec list-cve <vendor> <product>.
-    """
-    print(f"Listing CVE's for {vendor}/{product}:")
-    try:
-        for cve in find_all_cve(vendor=vendor, product=product):
-            if verbose:
-                print(cve, end='\n\n')
-            else:
-                print(f'{cve.cve_id:20} [{cve.url}]')
-    except ValueError:
-        print('No entries found.')
-
-
-def info(search: str, verbose: bool = False) -> None:
-    """Search for matching CVE/CWE and print its data."""
-    print(f"Fetching information for {search}:")
-
-    if search.lower().startswith('cve-'):
-        cve = find_cve(cve_id=search)
-        if verbose:
-            print(cve)
-        else:
-            print(f'{cve.cve_id:20} [{cve.url}]')
-    elif search.lower().startswith('cwe-'):
-        cwe = find_cwe(cwe_id=search)
-        if verbose:
-            print(cwe)
-        else:
-            print(f'{cwe.cwe_id:20} [{cwe.url}]')
-    else:
-        print(
-            f'Could not parse input. Did you mean CVE-{search} or CWE-{search}?'
-        )
