@@ -401,37 +401,32 @@ def _calc_fractions(
     base_fraction_map = FractionMap()
     inter_fraction_map = FractionMap()
 
-    for rev in unique_short_revisions:
-        for base_name in revision_to_base_names_mapping[rev]:
-            current_fraction = np.divide(
-                revision_to_dataframes_mapping[rev].loc[
-                    revision_to_dataframes_mapping[rev].base_lib == base_name
-                ].amount.sum(), revision_to_total_amount_mapping[rev]
-            )
-            base_fraction_map.add_fraction_to_lib(base_name, current_fraction)
+    def calc_fractions(
+        base_lib: bool, rev_lib_mapping: tp.Dict[ShortCommitHash, tp.List[str]],
+        fraction_map: FractionMap
+    ) -> None:
+        lib: tp.Union[str, str] = "base_lib" if base_lib else "inter_lib"
 
-        # Add fraction value 0 to all libraries that are not yet present in a
-        # revision
-        absent_base_lib_names = set(all_base_lib_names) - set(
-            revision_to_base_names_mapping[rev]
-        )
+        for rev in unique_short_revisions:
+            for lib_name in rev_lib_mapping[rev]:
+                current_fraction = np.divide(
+                    revision_to_dataframes_mapping[rev].loc[
+                        revision_to_dataframes_mapping[rev][lib] == lib_name
+                    ].amount.sum(), revision_to_total_amount_mapping[rev]
+                )
+                fraction_map.add_fraction_to_lib(lib_name, current_fraction)
 
-        for base_name in absent_base_lib_names:
-            base_fraction_map.add_fraction_to_lib(base_name, 0)
+            # Add fraction value 0 to all libraries that are not yet present
+            # in a revision
+            all_lib_names: tp.List[
+                str] = all_base_lib_names if base_lib else all_inter_lib_names
+            absent_lib_names = set(all_lib_names) - set(rev_lib_mapping[rev])
 
-        for inter_name in revision_to_inter_names_mapping[rev]:
-            current_fraction = np.divide(
-                revision_to_dataframes_mapping[rev].loc[
-                    revision_to_dataframes_mapping[rev].inter_lib == inter_name
-                ].amount.sum(), revision_to_total_amount_mapping[rev]
-            )
-            inter_fraction_map.add_fraction_to_lib(inter_name, current_fraction)
+            for lib_name in absent_lib_names:
+                fraction_map.add_fraction_to_lib(lib_name, 0)
 
-        absent_inter_lib_names = set(all_inter_lib_names) - set(
-            revision_to_inter_names_mapping[rev]
-        )
-        for inter_name in absent_inter_lib_names:
-            inter_fraction_map.add_fraction_to_lib(inter_name, 0)
+    calc_fractions(True, revision_to_base_names_mapping, base_fraction_map)
+    calc_fractions(False, revision_to_inter_names_mapping, inter_fraction_map)
 
     return base_fraction_map, inter_fraction_map
 
