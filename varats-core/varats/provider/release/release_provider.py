@@ -8,6 +8,7 @@ from packaging.version import parse as parse_version
 
 from varats.project.project_util import get_tagged_commits
 from varats.provider.provider import Provider
+from varats.utils.git_util import FullCommitHash
 
 
 class ReleaseType(Enum):
@@ -18,22 +19,22 @@ class ReleaseType(Enum):
     It is assumed that a major release is also a minor release and that a minor
     release is also a patch release.
     """
-    value: int
+    value: int  # pylint: disable=invalid-name
 
-    major = 1
-    minor = 2
-    patch = 3
+    MAJOR = 1
+    MINOR = 2
+    PATCH = 3
 
     def merge(self, other: tp.Optional["ReleaseType"]) -> "ReleaseType":
         """
         Merges two release type. It is assumed that minor releases include major
         releases and patch releases include minor releases.
 
-        >>> ReleaseType.minor.merge(ReleaseType.major)
-        <ReleaseType.minor: 2>
+        >>> ReleaseType.MINOR.merge(ReleaseType.MAJOR)
+        <ReleaseType.MINOR: 2>
 
-        >>> ReleaseType.major.merge(ReleaseType.patch)
-        <ReleaseType.patch: 3>
+        >>> ReleaseType.MAJOR.merge(ReleaseType.PATCH)
+        <ReleaseType.PATCH: 3>
         """
         if other is None:
             return self
@@ -53,7 +54,7 @@ class ReleaseProviderHook():
     @classmethod
     def get_release_revisions(
         cls, release_type: ReleaseType
-    ) -> tp.List[tp.Tuple[str, str]]:
+    ) -> tp.List[tp.Tuple[FullCommitHash, str]]:
         """
         Get a set of all release revisions for a project.
 
@@ -92,7 +93,7 @@ class ReleaseProvider(Provider):
 
     def get_release_revisions(
         self, release_type: ReleaseType
-    ) -> tp.List[tp.Tuple[str, str]]:
+    ) -> tp.List[tp.Tuple[FullCommitHash, str]]:
         """
         Get all release revisions of this provider's project along with their
         version strings.
@@ -119,34 +120,33 @@ class ReleaseDefaultProvider(ReleaseProvider):
         # pylint: disable=E1003
         super(ReleaseProvider, self).__init__(project)
         tagged_commits = get_tagged_commits(self.project.NAME)
-        releases = [
-            (commit, tag, parse_version(tag)) for commit, tag in tagged_commits
-        ]
+        releases = [(FullCommitHash(commit), tag, parse_version(tag))
+                    for commit, tag in tagged_commits]
         self.releases = [(commit, tag, version)
                          for commit, tag, version in releases
                          if isinstance(version, Version)]
 
     def get_release_revisions(
         self, release_type: ReleaseType
-    ) -> tp.List[tp.Tuple[str, str]]:
+    ) -> tp.List[tp.Tuple[FullCommitHash, str]]:
 
-        def get_patch_releases() -> tp.List[tp.Tuple[str, str]]:
+        def get_patch_releases() -> tp.List[tp.Tuple[FullCommitHash, str]]:
             return [(commit, tag)
                     for commit, tag, version in self.releases
                     if not version.is_prerelease]
 
-        def get_minor_releases() -> tp.List[tp.Tuple[str, str]]:
+        def get_minor_releases() -> tp.List[tp.Tuple[FullCommitHash, str]]:
             return [(commit, tag)
                     for commit, tag, version in self.releases
                     if version.micro == 0]
 
-        def get_major_releases() -> tp.List[tp.Tuple[str, str]]:
+        def get_major_releases() -> tp.List[tp.Tuple[FullCommitHash, str]]:
             return [(commit, tag)
                     for commit, tag, version in self.releases
                     if version.minor == 0]
 
         return {
-            ReleaseType.patch: get_patch_releases,
-            ReleaseType.minor: get_minor_releases,
-            ReleaseType.major: get_major_releases
+            ReleaseType.PATCH: get_patch_releases,
+            ReleaseType.MINOR: get_minor_releases,
+            ReleaseType.MAJOR: get_major_releases
         }[release_type]()

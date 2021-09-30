@@ -4,10 +4,10 @@ import logging
 import typing as tp
 
 import matplotlib.pyplot as plt
-import matplotlib.style as style
 import matplotlib.ticker as mtick
 import numpy as np
 import pandas as pd
+from matplotlib import style
 from sklearn import preprocessing
 
 import varats.paper_mgmt.paper_config as PC
@@ -18,7 +18,9 @@ from varats.data.databases.blame_verifier_report_database import (
 from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
+from varats.plot.plots import PlotConfig
 from varats.plots.case_study_overview import SUCCESS_COLOR, FAILED_COLOR
+from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
 
@@ -41,7 +43,7 @@ def _get_named_df_for_case_study(
                                             opt_level.value]
     if verifier_plot_df.empty or len(
         np.unique(verifier_plot_df['revision'])
-    ) == 1:
+    ) == 0:
         if _is_multi_cs_plot():
             return None
 
@@ -269,9 +271,11 @@ class BlameVerifierReportPlot(Plot, plot_name=None):
     @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
-        style.use(self.style)
+        style.use(self.plot_config.style)
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         pass
 
     def plot_file_name(self, filetype: str) -> str:
@@ -285,8 +289,8 @@ class BlameVerifierReportNoOptPlot(
     optimization."""
     NAME = 'b_verifier_report_no_opt_plot'
 
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         legend_title: str
@@ -313,8 +317,8 @@ class BlameVerifierReportOptPlot(
     optimization."""
     NAME = 'b_verifier_report_opt_plot'
 
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         legend_title: str
