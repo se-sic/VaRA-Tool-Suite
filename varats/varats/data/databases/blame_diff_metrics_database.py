@@ -1,6 +1,7 @@
 """Module for diff based commit-data metrics."""
 import typing as tp
 from datetime import datetime
+from enum import Enum
 from itertools import chain
 from pathlib import Path
 
@@ -252,6 +253,20 @@ def get_successor_report_file(
 
     succ_report_commit_hash = min(succ_commits, key=lambda x: x[0])[1]
     return report_files.get(succ_report_commit_hash, None)
+
+
+class BlameDiffMetrics(Enum):
+    CHURN = "churn"
+    NUM_INTERACTIONS = "num_interactions"
+    NUM_INTERACTING_COMMITS = "num_interacting_commits"
+    NUM_INTERACTING_AUTHORS = "num_interacting_authors"
+    CI_DEGREE_MEAN = "ci_degree_mean"
+    AUTHOR_MEAN = "author_mean"
+    AVG_TIME_MEAN = "avg_time_mean"
+    CI_DEGREE_MAX = "ci_degree_max"
+    AUTHOR_MAX = "author_max"
+    AVG_TIME_MAX = "avg_time_max"
+    YEAR = "year"
 
 
 class BlameDiffMetricsDatabase(

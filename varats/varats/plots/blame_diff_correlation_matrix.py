@@ -18,6 +18,7 @@ from sklearn.preprocessing import StandardScaler
 
 from varats.data.databases.blame_diff_metrics_database import (
     BlameDiffMetricsDatabase,
+    BlameDiffMetrics,
 )
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
@@ -25,27 +26,23 @@ from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import align_yaxis, pad_axes, check_required_args
 from varats.plot.plots import PlotGenerator, PlotConfig
-from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
+from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option, EnumChoice
 from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
 
-# TODO: Use better fitting name instead of var_x
-REQUIRE_VAR_X: CLIOptionTy = make_cli_option(
+REQUIRE_X_METRIC: CLIOptionTy = make_cli_option(
     "--var-x",
-    type=str,
+    type=EnumChoice(BlameDiffMetrics, case_sensitive=False),
     required=True,
-    metavar="var_x",
-    help="The x variable of the distribution-comparison plot."
+    help="The metric shown on the x-axis of the distribution-comparison plot."
 )
 
-# TODO: Use better fitting name instead of var_y
-REQUIRE_VAR_Y: CLIOptionTy = make_cli_option(
+REQUIRE_Y_METRIC: CLIOptionTy = make_cli_option(
     "--var-y",
-    type=str,
+    type=EnumChoice(BlameDiffMetrics, case_sensitive=False),
     required=True,
-    metavar="var_y",
-    help="The y variable of the distribution-comparison plot."
+    help="The metric shown on the y-axis of the distribution-comparison plot."
 )
 
 
@@ -317,13 +314,12 @@ class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__(self.NAME, plot_config, **kwargs)
 
-    @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
 
         case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_study"]
-        var_x = self.plot_kwargs["var_x"]
-        var_y = self.plot_kwargs["var_y"]
+        var_x = self.plot_kwargs["var_x"].value
+        var_y = self.plot_kwargs["var_y"].value
 
         data = [(
             case_study,
@@ -349,7 +345,9 @@ class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
 
         df = pd.concat(dataframes)
         df.set_index('revision', inplace=True)
-        df.drop(df[df.churn == 0].index, inplace=True)
+
+        if "churn" in df:
+            df.drop(df[df.churn == 0].index, inplace=True)
 
         _multivariate_grid(
             x_col=var_x,
@@ -369,8 +367,8 @@ class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
             the file name the plot will be stored to
         """
         pc_name = get_loaded_paper_config().path.name
-        var_x = self.plot_kwargs['var_x']
-        var_y = self.plot_kwargs['var_y']
+        var_x = self.plot_kwargs['var_x'].value
+        var_y = self.plot_kwargs['var_y'].value
         return f"{pc_name}_{self.name}_{var_x}_vs_{var_y}.{filetype}"
 
     def calc_missing_revisions(
@@ -382,10 +380,10 @@ class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
 class BlameDiffDistributionGenerator(
     PlotGenerator,
     generator_name="distribution-comparison-plot",
-    plot=BlameDiffDistribution,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE,
-        PlotGenerator.REQUIRE_MULTI_CASE_STUDY, REQUIRE_VAR_X, REQUIRE_VAR_Y
+        PlotGenerator.REQUIRE_MULTI_CASE_STUDY, REQUIRE_X_METRIC,
+        REQUIRE_Y_METRIC
     ]
 ):
     """Generates a distribution-comparison plot for the selected case
@@ -401,7 +399,8 @@ class BlameDiffDistributionGenerator(
 
     def generate(self) -> tp.List[Plot]:
         return [
-            self.PLOT(
+            BlameDiffDistribution(
+                self.plot_config,
                 report_type=self.__report_type,
                 case_study=self.__case_studies,
                 var_x=self.__var_x,
