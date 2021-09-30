@@ -189,7 +189,6 @@ class BlameDiffCorrelationMatrix(Plot, plot_name="b_correlation_matrix"):
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__(self.NAME, plot_config, **kwargs)
 
-    @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
 
@@ -240,7 +239,6 @@ class BlameDiffCorrelationMatrix(Plot, plot_name="b_correlation_matrix"):
 class BlameDiffCorrelationMatrixGenerator(
     PlotGenerator,
     generator_name="correlation-matrix-plot",
-    plot=BlameDiffCorrelationMatrix,
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE,
         PlotGenerator.REQUIRE_MULTI_CASE_STUDY
@@ -256,8 +254,9 @@ class BlameDiffCorrelationMatrixGenerator(
 
     def generate(self) -> tp.List[Plot]:
         return [
-            self.PLOT(report_type=self.__report_type, case_study=cs)
-            for cs in self.__case_studies
+            BlameDiffCorrelationMatrix(
+                self.plot_config, report_type=self.__report_type, case_study=cs
+            ) for cs in self.__case_studies
         ]
 
 
