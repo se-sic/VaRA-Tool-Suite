@@ -1,14 +1,17 @@
 DocType: Artefacts
-Version: 1
+Version: 2
 ---
 artefacts:
 - artefact_type: plot
-  artefact_type_version: 1
-  file_format: png
-  name: "Correlation Matrix"
-  output_path: .
-  paper_config: true
-  plot_type: b_correlation_matrix
+  artefact_type_version: 2
+  dry_run: false
+  file_type: png
+  name: "Paper Config Overview"
+  output_dir: .
+  plot_config: {}
+  plot_generator: pc-overview-plot
+  report_type: EmptyReport
+  view: false
 - artefact_type: table
   artefact_type_version: 1
   name: "Correlation Table"

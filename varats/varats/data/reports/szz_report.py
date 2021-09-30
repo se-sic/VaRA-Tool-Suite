@@ -6,7 +6,7 @@ import yaml
 
 from varats.base.version_header import VersionHeader
 from varats.provider.bug.bug import RawBug
-from varats.report.report import BaseReport, FileStatusExtension, MetaReport
+from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
 
 
 class SZZReport(BaseReport):
@@ -34,6 +34,11 @@ class SZZReport(BaseReport):
             self.__bugs: tp.Dict[str, RawBug] = {}
             for fix, introducers in raw_report["bugs"].items():
                 self.__bugs[fix] = RawBug(fix, set(introducers), None)
+
+    @classmethod
+    def shorthand(cls) -> str:
+        """Shorthand for this report."""
+        return cls.SHORTHAND
 
     @staticmethod
     def get_file_name(
@@ -114,7 +119,7 @@ class SZZUnleashedReport(SZZReport):
         Returns:
             name for the report file that can later be uniquely identified
         """
-        return MetaReport.get_file_name(
+        return ReportFilename.get_file_name(
             SZZUnleashedReport.SHORTHAND, project_name, binary_name,
             project_version, project_uuid, extension_type, file_ext
         )
@@ -155,7 +160,7 @@ class PyDrillerSZZReport(SZZReport):
         Returns:
             name for the report file that can later be uniquely identified
         """
-        return MetaReport.get_file_name(
+        return ReportFilename.get_file_name(
             PyDrillerSZZReport.SHORTHAND, project_name, binary_name,
             project_version, project_uuid, extension_type, file_ext
         )

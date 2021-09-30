@@ -114,7 +114,7 @@ class VersionHeader():
 
     def get_dict(self) -> tp.Dict[str, tp.Union[str, int]]:
         """Returns the version header as a dict."""
-        doc: tp.Dict[str, tp.Union[str, int]] = dict()
+        doc: tp.Dict[str, tp.Union[str, int]] = {}
         doc['DocType'] = self.__doc_type
         doc['Version'] = self.__version
         return doc
