@@ -192,7 +192,7 @@ def _plot_overview_graph(
 
     # compute the matrix height in points and inches
     matrix_height_pt = fontsize_pt * num_projects * 40
-    matrix_height_in = matrix_height_pt / plot_config.dpi
+    matrix_height_in = matrix_height_pt / plot_config.dpi()
 
     # compute the required figure height
     top_margin = 0.05
@@ -253,7 +253,7 @@ class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.plot_config.style)
+        style.use(self.plot_config.style())
         _plot_overview_graph(
             _gen_overview_plot(**self.plot_kwargs), self.plot_config
         )

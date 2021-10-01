@@ -2,7 +2,7 @@
 import abc
 import logging
 import typing as tp
-from copy import copy
+from copy import copy, deepcopy
 from pathlib import Path
 
 import click
@@ -149,6 +149,8 @@ class PlotConfigOption(tp.Generic[OptionType]):
     """
     Class representing a plot config option.
 
+    Values can be retrieved via the call operator.
+
     Args:
         name: name of the option
         default: global default value for the option
@@ -156,12 +158,24 @@ class PlotConfigOption(tp.Generic[OptionType]):
     """
 
     def __init__(self, name: str, default: OptionType, help: str) -> None:
-        self.name = name
-        self.metavar = name.upper()
-        self.type = type(default)
-        self.default = default
-        self.value: tp.Optional[OptionType] = None
-        self.help = f"{help} (global default = {default})"
+        self.__name = name
+        self.__metavar = name.upper()
+        self.__type = type(default)
+        self.__default = default
+        self.__value: tp.Optional[OptionType] = None
+        self.__help = f"{help} (global default = {default})"
+
+    @property
+    def name(self) -> str:
+        return self.__name
+
+    @property
+    def default(self) -> OptionType:
+        return self.__default
+
+    @property
+    def value(self) -> tp.Optional[OptionType]:
+        return self.__value
 
     def with_value(self, value: OptionType) -> 'PlotConfigOption[OptionType]':
         """
@@ -174,7 +188,7 @@ class PlotConfigOption(tp.Generic[OptionType]):
             a copy of the option with the given value
         """
         option_with_value = copy(self)
-        option_with_value.value = value
+        option_with_value.__value = value
         return option_with_value
 
     def to_cli_option(self) -> CLIOptionTy:
@@ -184,119 +198,171 @@ class PlotConfigOption(tp.Generic[OptionType]):
         Returns:
             a CLI option for this option
         """
-        if self.type is bool:
+        if self.__type is bool:
             return make_cli_option(
-                f"--{self.name}", is_flag=True, required=False, help=self.help
+                f"--{self.__name}",
+                is_flag=True,
+                required=False,
+                help=self.__help
             )
         else:
             return make_cli_option(
-                f"--{self.name}",
-                type=self.type,
+                f"--{self.__name}",
+                type=self.__type,
                 required=False,
-                help=self.help
+                help=self.__help
             )
 
+    def value_or_default(self, default: tp.Optional[OptionType]) -> OptionType:
+        """
+        Retrieve the value for this option.
+
+        The precedence for values is
+        `user provided value > plot-specific default > global default`.
+
+        This function can also be called via the call operator.
+
+        Args:
+            default: plot-specific default value
+
+        Returns:
+            the value for this option
+        """
+        if self.value:
+            return tp.cast(OptionType, self.value)
+        if default:
+            return default
+        return self.default
+
+    def __call__(self, default: tp.Optional[OptionType] = None):
+        self.value_or_default(default)
+
     def __str__(self) -> str:
-        return f"{self.name}[type={self.type}, default={self.default}]"
+        return f"{self.__name}[default={self.__default}, value={self.value}]"
 
 
-class PlotConfigMeta(type):
-
-    option_decls: tp.List[PlotConfigOption[tp.Any]]
-
-    def __new__(mcs, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
-        cls = super(PlotConfigMeta, mcs).__new__(mcs, *args, **kwargs)
-
-        def create_accessor(
-            option_decl: PlotConfigOption[OptionType]
-        ) -> tp.Tuple[str, tp.Callable[['PlotConfig', tp.Optional[OptionType]],
-                                       OptionType]]:
-            """Helper function to create plot config accessors."""
-
-            def get_option(
-                self: 'PlotConfig',
-                default: tp.Optional[OptionType] = None
-            ) -> OptionType:
-                if option_decl.name in self._options:
-                    return tp.cast(
-                        OptionType, self._options[option_decl.name].value
-                    )
-                if default:
-                    return default
-                return option_decl.default
-
-            func_name = option_decl.name.lower().replace("-", "_")
-            func_name = f"get_{func_name}"
-            func = get_option
-            func.__name__ = func_name
-            func.__qualname__ = f"{cls.__name__}.{func_name}"
-            func.__doc__ = f"{option_decl.help}\n\nArgs:\n" \
-                           f"    default: if present, overrides the global " \
-                           f"             default value"
-            return func_name, func
-
-        for decl in cls.option_decls:
-            func_name, func = create_accessor(decl)
-            setattr(cls, func_name, func)
-
-        return cls
-
-
-class PlotConfig(metaclass=PlotConfigMeta):
+class PlotConfig():
     """
     Class with parameters that influence a plot's appearance.
 
     Instances should typically be created with the :func:`from_kwargs` function.
-
-    Option values can be retrieved with the ``get_*`` functions.
-    You can pass your own defaults to the getter to override the "global"
-    defaults. The precedence is
-    `user provided value > plot-specific default > global default`.
     """
 
     def __init__(self, *options: PlotConfigOption[tp.Any]) -> None:
-        self._options = {option.name: option for option in options}
+        self.__options = deepcopy(self.__option_decls)
+        for option in options:
+            self.__options[option.name] = option
 
-    option_decls: tp.List[PlotConfigOption[tp.Any]] = [
-        PlotConfigOption(
-            "style", default="classic", help="Matplotlib style to use."
-        ),
-        PlotConfigOption(
-            "fig-title", default="", help="The title of the plot figure."
-        ),
-        PlotConfigOption(
-            "font-size", default=10, help="The font size of the plot figure."
-        ),
-        PlotConfigOption(
-            "width", default=1500, help="The width of the resulting plot file."
-        ),
-        PlotConfigOption(
-            "height",
-            default=1000,
-            help="The height of the resulting plot file."
-        ),
-        PlotConfigOption(
-            "legend-title", default="", help="The title of the legend."
-        ),
-        PlotConfigOption(
-            "legend-size", default=2, help="The size of the legend."
-        ),
-        PlotConfigOption(
-            "show-legend", default=False, help="If present, show the legend."
-        ),
-        PlotConfigOption(
-            "line-width", default=0.25, help="The width of the plot line(s)."
-        ),
-        PlotConfigOption(
-            "x-tick-size", default=2, help="The size of the x-ticks."
-        ),
-        PlotConfigOption(
-            "label-size",
-            default=2,
-            help="The label size of CVE/bug annotations."
-        ),
-        PlotConfigOption("dpi", default=1200, help="The dpi of the plot.")
-    ]
+    __option_decls: tp.Dict[str, PlotConfigOption[tp.Any]] = {
+        decl.name: decl for decl in [
+            PlotConfigOption(
+                "style", default="classic", help="Matplotlib style to use."
+            ),
+            PlotConfigOption(
+                "fig-title", default="", help="The title of the plot figure."
+            ),
+            PlotConfigOption(
+                "font-size",
+                default=10,
+                help="The font size of the plot figure."
+            ),
+            PlotConfigOption(
+                "width",
+                default=1500,
+                help="The width of the resulting plot file."
+            ),
+            PlotConfigOption(
+                "height",
+                default=1000,
+                help="The height of the resulting plot file."
+            ),
+            PlotConfigOption(
+                "legend-title", default="", help="The title of the legend."
+            ),
+            PlotConfigOption(
+                "legend-size", default=2, help="The size of the legend."
+            ),
+            PlotConfigOption(
+                "show-legend",
+                default=False,
+                help="If present, show the legend."
+            ),
+            PlotConfigOption(
+                "line-width",
+                default=0.25,
+                help="The width of the plot line(s)."
+            ),
+            PlotConfigOption(
+                "x-tick-size", default=2, help="The size of the x-ticks."
+            ),
+            PlotConfigOption(
+                "label-size",
+                default=2,
+                help="The label size of CVE/bug annotations."
+            ),
+            PlotConfigOption("dpi", default=1200, help="The dpi of the plot.")
+        ]
+    }
+
+    def __get_value(
+        self,
+        option_name: str,
+        default: tp.Optional[OptionType] = None
+    ) -> OptionType:
+        option = self.__options[option_name]
+        if option.value:
+            return tp.cast(OptionType, option.value)
+        if default:
+            return default
+        return option.default
+
+    @property
+    def style(self) -> PlotConfigOption[str]:
+        return self.__options["style"]
+
+    @property
+    def fig_title(self) -> PlotConfigOption[str]:
+        return self.__options["fig-title"]
+
+    @property
+    def font_size(self) -> PlotConfigOption[int]:
+        return self.__options["font-size"]
+
+    @property
+    def width(self) -> PlotConfigOption[int]:
+        return self.__options["width"]
+
+    @property
+    def height(self) -> PlotConfigOption[int]:
+        return self.__options["height"]
+
+    @property
+    def legend_title(self) -> PlotConfigOption[str]:
+        return self.__options["legend-title"]
+
+    @property
+    def legend_size(self) -> PlotConfigOption[int]:
+        return self.__options["legend-size"]
+
+    @property
+    def show_legend(self) -> PlotConfigOption[bool]:
+        return self.__options["show-legend"]
+
+    @property
+    def line_width(self) -> PlotConfigOption[float]:
+        return self.__options["line-width"]
+
+    @property
+    def x_tick_size(self) -> PlotConfigOption[int]:
+        return self.__options["x-tick-size"]
+
+    @property
+    def label_size(self) -> PlotConfigOption[int]:
+        return self.__options["label-size"]
+
+    @property
+    def dpi(self) -> PlotConfigOption[int]:
+        return self.__options["dpi"]
 
     @classmethod
     def from_kwargs(cls, **kwargs: tp.Any) -> 'PlotConfig':
@@ -312,7 +378,7 @@ class PlotConfig(metaclass=PlotConfigMeta):
         return PlotConfig(
             *[
                 option_decl.with_value(kwargs[option_decl.name])
-                for option_decl in cls.option_decls
+                for option_decl in cls.__option_decls.values()
                 if option_decl.name in kwargs
             ]
         )
@@ -329,7 +395,8 @@ class PlotConfig(metaclass=PlotConfigMeta):
             the decorated command
         """
         return add_cli_options(
-            command, *[option.to_cli_option() for option in cls.option_decls]
+            command,
+            *[option.to_cli_option() for option in cls.__option_decls.values()]
         )
 
     def get_dict(self) -> tp.Dict[str, tp.Any]:
@@ -343,7 +410,7 @@ class PlotConfig(metaclass=PlotConfigMeta):
         """
         return {
             option.name: option.value
-            for option in self._options.values()
+            for option in self.__options.values()
             if option.value
         }
 

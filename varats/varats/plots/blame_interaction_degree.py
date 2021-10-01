@@ -1054,7 +1054,7 @@ class BlameDegree(Plot, plot_name=None):
                        f'Project {project_name}'
         self.plot_kwargs["fig_suptitle"] = fig_suptitle
 
-        style.use(self.plot_config.style)
+        style.use(self.plot_config.style())
         commit_map: CommitMap = get_commit_map(project_name)
         interaction_plot_df = self._get_degree_data()
 
@@ -1092,7 +1092,7 @@ class BlameDegree(Plot, plot_name=None):
                        f'{plot_cfg["base_lib"]} --> {plot_cfg["inter_lib"]} '
         plot_cfg["fig_suptitle"] = fig_suptitle
 
-        style.use(self.plot_config.style)
+        style.use(self.plot_config.style())
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
         interaction_plot_df = self._get_degree_data()
 
@@ -1156,7 +1156,7 @@ class BlameDegree(Plot, plot_name=None):
         if extra_plot_cfg is not None:
             plot_cfg.update(extra_plot_cfg)
 
-        style.use(self.plot_config.style)
+        style.use(self.plot_config.style())
 
         df = self._get_degree_data()
         df = df[df.degree_type == degree_type.value]
@@ -1365,15 +1365,15 @@ class BlameInteractionDegreeGenerator(
         self.__report_type: str = plot_kwargs["report_type"]
         self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
         # TODO: Use helper function for default values
-        self.__fig_title: str = plot_config.fig_title \
-            if plot_config.fig_title else "Blame interactions"
-        self.__legend_title: str = plot_config.legend_title \
-            if plot_config.legend_title else "Interaction degrees"
-        self.__legend_size: int = plot_config.legend_size
-        self.__show_legend: bool = plot_config.show_legend
-        self.__line_width: int = plot_config.line_width
-        self.__x_tick_size: int = plot_config.x_tick_size
-        self.__label_size: int = plot_config.label_size
+        self.__fig_title: str = plot_config.fig_title("Blame interactions")
+        self.__legend_title: str = plot_config.legend_title(
+            "Interaction degrees"
+        )
+        self.__legend_size: int = plot_config.legend_size()
+        self.__show_legend: bool = plot_config.show_legend()
+        self.__line_width: int = plot_config.line_width()
+        self.__x_tick_size: int = plot_config.x_tick_size()
+        self.__label_size: int = plot_config.label_size()
         self.__show_churn: bool = plot_kwargs["show_churn"]
         self.__edge_color: str = plot_kwargs["edge_color"]
         self.__colormap: Colormap = plot_kwargs["colormap"]
@@ -1558,10 +1558,10 @@ class SankeyLibraryInteractionsGeneratorRev(
         self.__revision: ShortCommitHash = ShortCommitHash(
             plot_kwargs["revision"]
         )
-        self.__fig_title: str = plot_config.fig_title
-        self.__width: int = plot_config.width
-        self.__height: int = plot_config.height
-        self.__font_size: int = plot_config.font_size
+        self.__fig_title: str = plot_config.fig_title()
+        self.__width: int = plot_config.width()
+        self.__height: int = plot_config.height()
+        self.__font_size: int = plot_config.font_size()
 
     def generate(self) -> tp.List[Plot]:
         return [
@@ -1593,10 +1593,10 @@ class SankeyLibraryInteractionsGeneratorCS(
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
         self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-        self.__fig_title: str = plot_config.fig_title
-        self.__width: int = plot_config.width
-        self.__height: int = plot_config.height
-        self.__font_size: int = plot_config.font_size
+        self.__fig_title: str = plot_config.fig_title()
+        self.__width: int = plot_config.width()
+        self.__height: int = plot_config.height()
+        self.__font_size: int = plot_config.font_size()
 
     def generate(self) -> tp.List[Plot]:
         return [
