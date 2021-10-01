@@ -2,6 +2,7 @@
 import abc
 import logging
 import typing as tp
+from copy import copy
 from pathlib import Path
 
 import click
@@ -141,154 +142,209 @@ class CommonPlotOptions():
         }
 
 
-class PlotConfig:
-    """Class with parameters that influence a plot's appearance."""
+OptionType = tp.TypeVar("OptionType")
 
-    def __init__(
-        self, style: str, fig_title: str, font_size: int, width: int,
-        height: int, legend_title: str, legend_size: int, show_legend: bool,
-        line_width: bool, x_tick_size: int, label_size: int, dpi: int
-    ) -> None:
-        self.style = style
-        self.fig_title = fig_title
-        self.font_size = font_size
-        self.width = width
-        self.height = height
-        self.legend_title = legend_title
-        self.legend_size = legend_size
-        self.show_legend = show_legend
-        self.line_width = line_width
-        self.x_tick_size = x_tick_size
-        self.label_size = label_size
-        self.dpi = dpi
 
-    __options: tp.List[tp.Any] = [
-        make_cli_option(
-            "--style",
-            type=str,
-            default="classic",
-            required=False,
-            metavar="STYLE",
-            help="Matplotlib style to use."
+class PlotConfigOption(tp.Generic[OptionType]):
+    """
+    Class representing a plot config option.
+
+    Args:
+        name: name of the option
+        default: global default value for the option
+        help: help string for this option
+    """
+
+    def __init__(self, name: str, default: OptionType, help: str) -> None:
+        self.name = name
+        self.metavar = name.upper()
+        self.type = type(default)
+        self.default = default
+        self.value: tp.Optional[OptionType] = None
+        self.help = f"{help} (global default = {default})"
+
+    def with_value(self, value: OptionType) -> 'PlotConfigOption[OptionType]':
+        """
+        Create a copy of this option with the given value.
+
+        Args:
+            value: the value for the copied option
+
+        Returns:
+            a copy of the option with the given value
+        """
+        option_with_value = copy(self)
+        option_with_value.value = value
+        return option_with_value
+
+    def to_cli_option(self) -> CLIOptionTy:
+        """
+        Create a CLI option from this option.
+
+        Returns:
+            a CLI option for this option
+        """
+        if self.type is bool:
+            return make_cli_option(
+                f"--{self.name}", is_flag=True, required=False, help=self.help
+            )
+        else:
+            return make_cli_option(
+                f"--{self.name}",
+                type=self.type,
+                required=False,
+                help=self.help
+            )
+
+    def __str__(self) -> str:
+        return f"{self.name}[type={self.type}, default={self.default}]"
+
+
+class PlotConfigMeta(type):
+
+    option_decls: tp.List[PlotConfigOption[tp.Any]]
+
+    def __new__(mcs, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
+        cls = super(PlotConfigMeta, mcs).__new__(mcs, *args, **kwargs)
+
+        def create_accessor(
+            option_decl: PlotConfigOption[OptionType]
+        ) -> tp.Tuple[str, tp.Callable[['PlotConfig', tp.Optional[OptionType]],
+                                       OptionType]]:
+            """Helper function to create plot config accessors."""
+
+            def get_option(
+                self: 'PlotConfig',
+                default: tp.Optional[OptionType] = None
+            ) -> OptionType:
+                if option_decl.name in self._options:
+                    return tp.cast(
+                        OptionType, self._options[option_decl.name].value
+                    )
+                if default:
+                    return default
+                return option_decl.default
+
+            func_name = option_decl.name.lower().replace("-", "_")
+            func_name = f"get_{func_name}"
+            func = get_option
+            func.__name__ = func_name
+            func.__qualname__ = f"{cls.__name__}.{func_name}"
+            func.__doc__ = f"{option_decl.help}\n\nArgs:\n" \
+                           f"    default: if present, overrides the global " \
+                           f"             default value"
+            return func_name, func
+
+        for decl in cls.option_decls:
+            func_name, func = create_accessor(decl)
+            setattr(cls, func_name, func)
+
+        return cls
+
+
+class PlotConfig(metaclass=PlotConfigMeta):
+    """
+    Class with parameters that influence a plot's appearance.
+
+    Instances should typically be created with the :func:`from_kwargs` function.
+
+    Option values can be retrieved with the ``get_*`` functions.
+    You can pass your own defaults to the getter to override the "global"
+    defaults. The precedence is
+    `user provided value > plot-specific default > global default`.
+    """
+
+    def __init__(self, *options: PlotConfigOption[tp.Any]) -> None:
+        self._options = {option.name: option for option in options}
+
+    option_decls: tp.List[PlotConfigOption[tp.Any]] = [
+        PlotConfigOption(
+            "style", default="classic", help="Matplotlib style to use."
         ),
-        make_cli_option(
-            "--fig-title",
-            type=str,
-            default="",
-            required=False,
-            metavar="NAME",
-            help="The title of the plot figure."
+        PlotConfigOption(
+            "fig-title", default="", help="The title of the plot figure."
         ),
-        make_cli_option(
-            "--font-size",
-            type=int,
-            default=10,
-            required=False,
-            metavar="SIZE",
-            help="The font size of the plot figure."
+        PlotConfigOption(
+            "font-size", default=10, help="The font size of the plot figure."
         ),
-        make_cli_option(
-            "--width",
-            type=int,
-            default=1500,
-            required=False,
-            metavar="WIDTH",
-            help="The width of the resulting plot file."
+        PlotConfigOption(
+            "width", default=1500, help="The width of the resulting plot file."
         ),
-        make_cli_option(
-            "--height",
-            type=int,
+        PlotConfigOption(
+            "height",
             default=1000,
-            required=False,
-            metavar="HEIGHT",
             help="The height of the resulting plot file."
         ),
-        make_cli_option(
-            "--legend-title",
-            type=str,
-            default="",
-            required=False,
-            metavar="NAME",
-            help="The title of the legend."
+        PlotConfigOption(
+            "legend-title", default="", help="The title of the legend."
         ),
-        make_cli_option(
-            "--legend-size",
-            type=int,
+        PlotConfigOption(
+            "legend-size", default=2, help="The size of the legend."
+        ),
+        PlotConfigOption(
+            "show-legend", default=False, help="If present, show the legend."
+        ),
+        PlotConfigOption(
+            "line-width", default=0.25, help="The width of the plot line(s)."
+        ),
+        PlotConfigOption(
+            "x-tick-size", default=2, help="The size of the x-ticks."
+        ),
+        PlotConfigOption(
+            "label-size",
             default=2,
-            required=False,
-            metavar="SIZE",
-            help="The size of the legend."
-        ),
-        make_cli_option(
-            "--show-legend/--hide-legend",
-            type=bool,
-            default=True,
-            required=False,
-            help="Shows/hides the legend."
-        ),
-        make_cli_option(
-            "--line-width",
-            type=float,
-            default=0.25,
-            required=False,
-            metavar="WIDTH",
-            help="The width of the plot line(s)."
-        ),
-        make_cli_option(
-            "--x-tick-size",
-            type=int,
-            default=2,
-            required=False,
-            metavar="SIZE",
-            help="The size of the x-ticks."
-        ),
-        make_cli_option(
-            "--label-size",
-            type=int,
-            default=2,
-            required=False,
-            metavar="SIZE",
             help="The label size of CVE/bug annotations."
         ),
-        make_cli_option(
-            "--dpi",
-            type=int,
-            default=1200,
-            required=False,
-            metavar="DPI",
-            help="The dpi of the plot."
-        )
+        PlotConfigOption("dpi", default=1200, help="The dpi of the plot.")
     ]
 
-    @staticmethod
-    def from_kwargs(**kwargs: tp.Any) -> 'PlotConfig':
+    @classmethod
+    def from_kwargs(cls, **kwargs: tp.Any) -> 'PlotConfig':
+        """
+        Instantiate a ``PlotConfig`` object with values from the given kwargs.
+
+        Args:
+            **kwargs: a dict containing values to be used by this config
+
+        Returns:
+            a plot config object with values from the kwargs
+        """
         return PlotConfig(
-            kwargs.get("style", "classic"), kwargs.get("fig_title", ""),
-            kwargs.get("font_size", 10), kwargs.get("width", 1500),
-            kwargs.get("height", 1000), kwargs.get("legend_title", ""),
-            kwargs.get("legend_size", 2), kwargs.get("show_legend", True),
-            kwargs.get("line_width", 0.25), kwargs.get("x_tick_size", 2),
-            kwargs.get("label_size", 2), kwargs.get("dpi", 1200)
+            *[
+                option_decl.with_value(kwargs[option_decl.name])
+                for option_decl in cls.option_decls
+                if option_decl.name in kwargs
+            ]
         )
 
     @classmethod
     def cli_options(cls, command: tp.Any) -> tp.Any:
-        return add_cli_options(command, *cls.__options)
+        """
+        Decorate a command with plot config CLI options.
+
+        Args:
+            command: the command to decorate
+
+        Returns:
+            the decorated command
+        """
+        return add_cli_options(
+            command, *[option.to_cli_option() for option in cls.option_decls]
+        )
 
     def get_dict(self) -> tp.Dict[str, tp.Any]:
+        """
+        Create a dict representation from this plot config.
+
+        The dict only contains options for which values were explicitly set.
+
+        Returns:
+            a dict representation of this plot config
+        """
         return {
-            "style": self.style,
-            "fig_title": self.fig_title,
-            "font_size": self.font_size,
-            "width": self.width,
-            "height": self.height,
-            "legend_title": self.legend_title,
-            "legend_size": self.legend_size,
-            "show_legend": self.show_legend,
-            "line_width": self.line_width,
-            "x_tick_size": self.x_tick_size,
-            "label_size": self.label_size,
-            "dpi": self.dpi
+            option.name: option.value
+            for option in self._options.values()
+            if option.value
         }
 
 
