@@ -39,7 +39,7 @@ class PaperConfig():
 
     def __init__(self, folder_path: Path) -> None:
         self.__path = Path(folder_path)
-        self.__case_studies: tp.Dict[str, tp.List[CaseStudy]] = dict()
+        self.__case_studies: tp.Dict[str, tp.List[CaseStudy]] = {}
         for case_study_path in \
                 [x for x in self.__path.iterdir()
                  if x.suffix == ".case_study"]:

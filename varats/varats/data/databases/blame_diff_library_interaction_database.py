@@ -66,7 +66,7 @@ class BlameDiffLibraryInteractionDatabase(
 
                 data_dict: tp.Dict[str, tp.Any] = {
                     'revision':
-                        head_report.head_commit,
+                        head_report.head_commit.hash,
                     'time_id':
                         commit_map.short_time_id(head_report.head_commit),
                     'base_hash':

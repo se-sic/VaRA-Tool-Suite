@@ -7,6 +7,7 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
@@ -28,13 +29,13 @@ class Irssi(VProject):
 
     NAME = 'irssi'
     GROUP = 'c_projects'
-    DOMAIN = 'chat'
+    DOMAIN = ProjectDomains.CHAT_CLIENT
 
     SOURCE = [
         bb.source.Git(
             remote="https://github.com/irssi/irssi.git",
             local="irssi",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("irssi")

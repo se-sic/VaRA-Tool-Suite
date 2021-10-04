@@ -7,6 +7,7 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
@@ -28,13 +29,13 @@ class MongoDB(VProject):
 
     NAME = 'mongodb'
     GROUP = 'cpp_projects'
-    DOMAIN = 'database'
+    DOMAIN = ProjectDomains.DATABASE
 
     SOURCE = [
         bb.source.Git(
             remote="https://github.com/mongodb/mongo.git",
             local="mongodb",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("mongodb")

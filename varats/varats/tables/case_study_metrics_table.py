@@ -48,7 +48,8 @@ class CaseStudyMetricsTable(Table):
             cs_dict = {
                 project_name: {
                     "Domain":
-                        project_cls.DOMAIN[0].upper() + project_cls.DOMAIN[1:],
+                        str(project_cls.DOMAIN)[0].upper() +
+                        str(project_cls.DOMAIN)[1:],
                     "LOC":
                         calc_repo_loc(project_repo, rev_range),
                     "Commits":

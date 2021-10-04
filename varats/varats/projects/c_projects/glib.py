@@ -8,6 +8,7 @@ from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
 from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
@@ -31,13 +32,13 @@ class Glib(VProject):
 
     NAME = 'glib'
     GROUP = 'c_projects'
-    DOMAIN = 'visualization'
+    DOMAIN = ProjectDomains.DATA_STRUCTURES
 
     SOURCE = [
         bb.source.Git(
             remote="https://github.com/GNOME/glib.git",
             local="glib",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("glib")

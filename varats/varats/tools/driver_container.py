@@ -10,6 +10,7 @@ from pathlib import Path
 
 import click
 import jinja2
+from benchbuild.utils.settings import ConfigPath
 
 from varats.containers.containers import (
     create_base_images,
@@ -18,7 +19,7 @@ from varats.containers.containers import (
     export_base_images,
 )
 from varats.tools.tool_util import get_supported_research_tool_names
-from varats.utils.cli_util import initialize_cli_tool, EnumType
+from varats.ts_utils.cli_util import initialize_cli_tool, EnumChoice
 from varats.utils.settings import vara_cfg, save_config, bb_cfg, save_bb_config
 
 LOG = logging.Logger(__name__)
@@ -45,7 +46,7 @@ def main() -> None:
     "-i",
     "--image",
     "images",
-    type=EnumType(ImageBase),
+    type=EnumChoice(ImageBase),
     multiple=True,
     help="Only build the given image."
 )
@@ -66,7 +67,7 @@ def build(images: tp.List[ImageBase], export: bool, debug: bool) -> None:
     "-i",
     "--image",
     "images",
-    type=EnumType(ImageBase),
+    type=EnumChoice(ImageBase),
     multiple=True,
     help="Only delete the given image. Can be given multiple times."
 )
@@ -138,7 +139,7 @@ def select(tool: str) -> None:
     "-i",
     "--image",
     "images",
-    type=EnumType(ImageBase),
+    type=EnumChoice(ImageBase),
     multiple=True,
     help="Only build the given image. \nCan be given multiple times."
 )
@@ -162,12 +163,12 @@ def prepare_slurm(
         str(vara_cfg()["benchbuild_root"])
     ) / "slurm_container.sh.inc"
     bb_cfg()["slurm"]["template"] = str(template_path)
-    bb_cfg()["slurm"]["node_dir"] = str(node_dir)
+    bb_cfg()["slurm"]["node_dir"] = ConfigPath(str(node_dir))
 
-    bb_cfg()["container"]["root"] = f"{node_dir}/containers/lib"
-    bb_cfg()["container"]["runroot"] = f"{node_dir}/containers/run"
-    bb_cfg()["container"]["export"] = str(export_dir)
-    bb_cfg()["container"]["import"] = str(export_dir)
+    bb_cfg()["container"]["root"] = ConfigPath(f"{node_dir}/containers/lib")
+    bb_cfg()["container"]["runroot"] = ConfigPath(f"{node_dir}/containers/run")
+    bb_cfg()["container"]["export"] = ConfigPath(str(export_dir))
+    bb_cfg()["container"]["import"] = ConfigPath(str(export_dir))
 
     if not export_dir.exists():
         LOG.info(f"Creating container export directory at {export_dir}")

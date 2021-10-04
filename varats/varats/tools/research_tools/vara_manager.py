@@ -7,9 +7,7 @@ information.
 """
 
 import logging
-import os
 import re
-import shutil
 import typing as tp
 from contextlib import contextmanager
 from enum import Enum
@@ -18,18 +16,11 @@ from threading import RLock
 
 from benchbuild.utils.cmd import git, grep
 from plumbum import RETCODE, TF, local
-from PyQt5.QtCore import (
-    QObject,
-    QProcess,
-    QRunnable,
-    QThreadPool,
-    pyqtSignal,
-    pyqtSlot,
-)
+from PyQt5.QtCore import QProcess
 
 from varats.utils.exceptions import ProcessTerminatedError
 from varats.utils.git_util import get_current_branch
-from varats.utils.settings import vara_cfg, save_config
+from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
 

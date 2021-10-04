@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import yaml
-from benchbuild import Experiment, Project, source
+from benchbuild import Project, source
 from benchbuild.experiment import ProjectT
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import java, mkdir
@@ -15,7 +15,10 @@ from plumbum import local
 from varats.base.version_header import VersionHeader
 from varats.data.reports.szz_report import SZZReport, SZZUnleashedReport
 from varats.experiment.experiment_util import (
+    VersionExperiment,
+    ExperimentHandle,
     create_default_analysis_failure_handler,
+    get_varats_result_folder,
     exec_func_with_pe_error_handler,
 )
 from varats.provider.bug.bug_provider import BugProvider
@@ -80,10 +83,9 @@ class RunSZZUnleashed(actions.Step):  # type: ignore
     NAME = "RunSZZUnleashed"
     DESCRIPTION = "Run SZZUnleashed on a project"
 
-    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
-
-    def __init__(self, project: Project):
+    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(obj=project, action_fn=self.run_szz)
+        self.__experiment_handle = experiment_handle
 
     def run_szz(self) -> actions.StepResult:
         """Prepare data needed for running SZZUnleashed."""
@@ -92,11 +94,7 @@ class RunSZZUnleashed(actions.Step):  # type: ignore
         szzunleashed_jar = SZZUnleashed.install_location(
         ) / SZZUnleashed.get_jar_name()
 
-        varats_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(bb_cfg()["varats"]["outfile"]),
-            project_dir=str(project.name)
-        )
-        mkdir("-p", varats_result_folder)
+        varats_result_folder = get_varats_result_folder(project)
 
         with local.cwd(run_dir):
             run_cmd = java["-jar",
@@ -106,7 +104,8 @@ class RunSZZUnleashed(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    project, SZZUnleashedReport, Path(varats_result_folder)
+                    self.__experiment_handle, project, SZZUnleashedReport,
+                    Path(varats_result_folder)
                 )
             )
 
@@ -118,8 +117,6 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
     NAME = "CreateSZZUnleashedReport"
     DESCRIPTION = "Create a report from SZZUnleashed data"
 
-    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
-
     def __init__(self, project: Project):
         super().__init__(obj=project, action_fn=self.create_report)
 
@@ -127,11 +124,7 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
         """Create a report from SZZUnleashed data."""
         project = self.obj
 
-        varats_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(bb_cfg()["varats"]["outfile"]),
-            project_dir=str(project.name)
-        )
-        mkdir("-p", varats_result_folder)
+        varats_result_folder = get_varats_result_folder(project)
 
         run_dir = Path(project.source_of_primary).parent
         with (run_dir / "results" /
@@ -149,9 +142,10 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
         }
 
         result_file = SZZUnleashedReport.get_file_name(
+            "SZZUnleashed",
             project_name=str(project.name),
             binary_name="none",  # we don't rely on binaries in this experiment
-            project_version=project.version_of_primary,
+            project_revision=project.version_of_primary,
             project_uuid=str(project.run_uuid),
             extension_type=FSE.SUCCESS
         )
@@ -170,7 +164,9 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
         return actions.StepResult.OK
 
 
-class SZZUnleashedExperiment(Experiment):  # type: ignore
+class SZZUnleashedExperiment(
+    VersionExperiment, shorthand="SZZUnleashed"
+):  # type: ignore
     """
     Generates a SZZUnleashed report.
 
@@ -193,7 +189,7 @@ class SZZUnleashedExperiment(Experiment):  # type: ignore
 
         analysis_actions = [
             PrepareSZZUnleashedData(project),
-            RunSZZUnleashed(project),
+            RunSZZUnleashed(project, self.get_handle()),
             CreateSZZUnleashedReport(project),
             actions.Clean(project)
         ]

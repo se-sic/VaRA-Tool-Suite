@@ -44,7 +44,7 @@ class TestVaraTestRepoSource(unittest.TestCase):
             "/Elementalist",
             local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/Elementalist",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
         )
@@ -55,7 +55,7 @@ class TestVaraTestRepoSource(unittest.TestCase):
             "/fire_lib",
             local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/fire_lib",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
         )
@@ -66,7 +66,7 @@ class TestVaraTestRepoSource(unittest.TestCase):
             "/water_lib",
             local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/water_lib",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
         )

@@ -48,7 +48,7 @@ class CommitMap():
             a full-length commit hash that starts with the short-form hash
         """
         full_commits = self.complete_c_hash(short_commit)
-        if len(full_commits):
+        if len(full_commits) > 1:
             LOG.warning(f"Short commit hash is ambiguous: {short_commit.hash}.")
         return next(iter(full_commits))
 

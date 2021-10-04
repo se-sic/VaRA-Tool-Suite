@@ -10,7 +10,7 @@ import typing as tp
 from pathlib import Path
 
 from varats.paper_mgmt.paper_config import get_paper_config
-from varats.utils.cli_util import cli_list_choice, initialize_cli_tool
+from varats.ts_utils.cli_util import cli_list_choice, initialize_cli_tool
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.settings import (
     get_value_or_default,
@@ -93,7 +93,7 @@ def _get_paper_configs(pc_folder_path: Path) -> tp.List[str]:
     paper_configs: tp.List[str] = []
     for folder in pc_folder_path.iterdir():
         paper_configs.append(folder.name)
-    return paper_configs
+    return sorted(paper_configs)
 
 
 def _pc_create(args: tp.Dict[str, tp.Any]) -> None:

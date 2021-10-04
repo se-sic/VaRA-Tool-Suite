@@ -7,8 +7,8 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    get_all_revisions_between,
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     get_local_project_git_path,
@@ -16,7 +16,7 @@ from varats.project.project_util import (
     verify_binaries,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
 from varats.utils.settings import bb_cfg
 
 
@@ -25,13 +25,13 @@ class X264(VProject):
 
     NAME = 'x264'
     GROUP = 'c_projects'
-    DOMAIN = 'encoder'
+    DOMAIN = ProjectDomains.CODEC
 
     SOURCE = [
         bb.source.Git(
             remote="https://code.videolan.org/videolan/x264.git",
             local="x264",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("x264")
@@ -56,7 +56,7 @@ class X264(VProject):
         with local.cwd(x264_git_path):
             old_revisions = get_all_revisions_between(
                 "5dc0aae2f900064d1f58579929a2285ab289a436",
-                "290de9638e5364c37316010ac648a6c959f6dd26"
+                "290de9638e5364c37316010ac648a6c959f6dd26", ShortCommitHash
             )
 
         if x264_version in old_revisions:

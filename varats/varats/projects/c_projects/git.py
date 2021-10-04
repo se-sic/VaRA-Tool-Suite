@@ -8,6 +8,7 @@ from plumbum import local
 from plumbum.path.utils import delete
 
 from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
@@ -24,13 +25,13 @@ class Git(VProject):
 
     NAME = 'git'
     GROUP = 'c_projects'
-    DOMAIN = 'version control'
+    DOMAIN = ProjectDomains.VERSION_CONTROL
 
     SOURCE = [
         bb.source.Git(
             remote="https://github.com/git/git.git",
             local="git",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("git")

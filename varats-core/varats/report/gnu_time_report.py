@@ -13,11 +13,8 @@ class WrongTimeReportFormat(Exception):
     """Thrown if the a time report could not be parsed."""
 
 
-class TimeReport(BaseReport):
+class TimeReport(BaseReport, shorthand="TR", file_type=""):
     """Report class to access GNU time output."""
-
-    SHORTHAND = "TR"
-    FILE_TYPE = ""
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
@@ -85,39 +82,6 @@ class TimeReport(BaseReport):
         str_repr += f"Elapsed wall clock time: {self.wall_clock_time}\n"
         str_repr += f"Max Resident Size (kbytes): {self.max_res_size}"
         return str_repr
-
-    @classmethod
-    def shorthand(cls) -> str:
-        """Shorthand for this report."""
-        return cls.SHORTHAND
-
-    @staticmethod
-    def get_file_name(
-        project_name: str,
-        binary_name: str,
-        project_version: str,
-        project_uuid: str,
-        extension_type: FileStatusExtension,
-        file_ext: str = ""
-    ) -> str:
-        """
-        Generates a filename for a commit report with 'yaml' as file extension.
-
-        Args:
-            project_name: name of the project for which the report was generated
-            binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
-            project_uuid: benchbuild uuid for the experiment run
-            extension_type: to specify the status of the generated report
-            file_ext: file extension of the report file
-
-        Returns:
-            name for the report file that can later be uniquly identified
-        """
-        return ReportFilename.get_file_name(
-            TimeReport.SHORTHAND, project_name, binary_name, project_version,
-            project_uuid, extension_type, file_ext
-        )
 
     @staticmethod
     @static_vars(
