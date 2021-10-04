@@ -367,7 +367,7 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
         if c_hash in cache_dict[git_name]:
             return cache_dict[git_name][c_hash]
 
-        commit = repos[git_name].get(c_hash)
+        commit = repos[git_name].get(c_hash.hash)
         if commit is None:
             raise LookupError(
                 f"Could not find commit {c_hash} in "

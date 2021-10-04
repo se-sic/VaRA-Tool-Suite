@@ -9,7 +9,7 @@ from varats.tools.tool_util import (
     get_research_tool,
     get_supported_research_tool_names,
 )
-from varats.utils.cli_util import initialize_cli_tool
+from varats.ts_utils.cli_util import initialize_cli_tool
 
 
 def __sub_project_choices() -> tp.List[str]:

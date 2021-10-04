@@ -18,26 +18,26 @@ class TestBlameVerifierReport(unittest.TestCase):
         """Setup example file name."""
         cls.test_project_name = "testProject"
         cls.test_binary_name = "testBinary"
-        cls.test_project_version = "testyamlProjectVersion1"
+        cls.test_project_revision = "testyamlProjectVersion1"
         cls.test_project_uuid = "00000000-0000-0000-0000-000000000001"
         cls.test_extension_type = 'success'
         cls.test_file_ext = ".txt"
 
         cls.mock_file_name = f"-{cls.test_project_name}" \
                              f"-{cls.test_binary_name}-" \
-                             f"{cls.test_project_version}_" \
+                             f"{cls.test_project_revision}_" \
                              f"{cls.test_project_uuid}_" \
                              f"{cls.test_extension_type}" \
                              f"{cls.test_file_ext}"
 
         cls.test_result_file_path_no_opt = Path(
             __file__
-        ).parent / "../TEST_INPUTS/results/gravity/BVR_NoOpt_TBAA-gravity-gravity-" \
+        ).parent / "../TEST_INPUTS/results/gravity/BVRE_NoOptTBAA-BVR_NoOpt_TBAA-gravity-gravity-" \
                    "b51227de55_8bc2ac4c-b6e3-43d1-aff9-c6b32126b155_success.txt"
 
         cls.test_result_file_path_opt = Path(
             __file__
-        ).parent / "../TEST_INPUTS/results/gravity/BVR_Opt-gravity-gravity-" \
+        ).parent / "../TEST_INPUTS/results/gravity/BVRE_Opt-BVR_Opt-gravity-gravity-" \
                    "b51227de55_5f696090-edcc-433e-9dda-a55718f0c02d_success.txt"
 
         cls.test_bvr_no_opt = BlameVerifierReportNoOptTBAA(
@@ -61,39 +61,39 @@ class TestBlameVerifierReport(unittest.TestCase):
     def test_get_file_name_opt(self):
         """Test if the file name is correctly built with the opt extension."""
         # Given
-        self.mock_file_name = f"BVR_Opt{self.mock_file_name}"
+        self.mock_file_name = f"BVRE_Opt-BVR_Opt{self.mock_file_name}"
 
         # When
         actual = BlameVerifierReportOpt.get_file_name(
+            experiment_shorthand="BVRE_Opt",
             project_name=self.test_project_name,
             binary_name=self.test_binary_name,
-            project_version=self.test_project_version,
+            project_revision=self.test_project_revision,
             project_uuid=self.test_project_uuid,
-            extension_type=FileStatusExtension.SUCCESS,
-            file_ext=self.test_file_ext
+            extension_type=FileStatusExtension.SUCCESS
         )
 
         # Then
-        self.assertEqual(self.mock_file_name, actual)
+        self.assertEqual(self.mock_file_name, str(actual))
 
     def test_get_file_name_no_opt(self):
         """Test if the file name is correctly built without the opt
         extension."""
         # Given
-        self.mock_file_name = f"BVR_NoOpt_TBAA{self.mock_file_name}"
+        self.mock_file_name = f"BVRE_NoOptTBAA-BVR_NoOpt_TBAA{self.mock_file_name}"
 
         # When
         actual = BlameVerifierReportNoOptTBAA.get_file_name(
+            experiment_shorthand="BVRE_NoOptTBAA",
             project_name=self.test_project_name,
             binary_name=self.test_binary_name,
-            project_version=self.test_project_version,
+            project_revision=self.test_project_revision,
             project_uuid=self.test_project_uuid,
-            extension_type=FileStatusExtension.SUCCESS,
-            file_ext=self.test_file_ext
+            extension_type=FileStatusExtension.SUCCESS
         )
 
         # Then
-        self.assertEqual(self.mock_file_name, actual)
+        self.assertEqual(self.mock_file_name, str(actual))
 
     def test_parse_verifier_results_no_opt(self):
         """Test if the number of successful, failed, undetermined and total

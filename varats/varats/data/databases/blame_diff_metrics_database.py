@@ -321,7 +321,7 @@ class BlameDiffMetricsDatabase(
             return (
                 pd.DataFrame({
                     'revision':
-                        head_report.head_commit,
+                        head_report.head_commit.hash,
                     'time_id':
                         commit_map.short_time_id(head_report.head_commit),
                     'churn':

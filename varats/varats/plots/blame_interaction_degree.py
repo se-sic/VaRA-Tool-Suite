@@ -94,8 +94,12 @@ LibraryColormapMapping = tp.Dict[str, tp.Any]
 LibraryToIndexShadesMapping = tp.Dict[str, IndexShadesMapping]
 
 
-def _get_unique_revisions(dataframe: pd.DataFrame) -> tp.List[FullCommitHash]:
-    return [FullCommitHash(rev) for rev in dataframe.revision.unique()]
+def _get_unique_revisions(dataframe: pd.DataFrame,
+                          c_map: CommitMap) -> tp.List[FullCommitHash]:
+    return [
+        c_map.convert_to_full_or_warn(rev)
+        for rev in dataframe.revision.unique()
+    ]
 
 
 def _filter_data_frame(
@@ -137,7 +141,8 @@ def _filter_data_frame(
         interaction_plot_df.loc[interaction_plot_df.degree == x].fraction
         for x in degree_levels
     ]
-    unique_revisions = _get_unique_revisions(interaction_plot_df)
+
+    unique_revisions = _get_unique_revisions(interaction_plot_df, commit_map)
 
     return unique_revisions, sub_df_list
 
@@ -170,8 +175,11 @@ def _generate_stackplot(
     fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
     fig.suptitle(plot_cfg["fig_suptitle"], fontsize=8)
 
+    unique_rev_strings: tp.List[str] = [
+        rev.short_hash for rev in unique_revisions
+    ]
     main_axis.stackplot(
-        unique_revisions,
+        unique_rev_strings,
         sub_df_list,
         edgecolor=plot_cfg['edgecolor'],
         colors=reversed(
@@ -862,7 +870,7 @@ class BlameLibraryInteraction(Plot):
         df.sort_values(by=['time_id'], inplace=True)
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
         df.reset_index(inplace=True)
-        unique_revisions = _get_unique_revisions(df)
+        unique_revisions = _get_unique_revisions(df, commit_map)
 
         for rev in unique_revisions:
             if view_mode and 'revision' in self.plot_kwargs:
@@ -913,7 +921,7 @@ class BlameDegree(Plot):
                     "inter_lib", "degree", "amount", "fraction"
                 ], commit_map, case_study)
 
-        length = len(np.unique(interaction_plot_df['revision']))
+        length = len(_get_unique_revisions(interaction_plot_df, commit_map))
         is_empty = interaction_plot_df.empty
 
         if is_empty or length == 1:
@@ -1058,7 +1066,8 @@ class BlameDegree(Plot):
         all_base_lib_names = _get_distinct_base_lib_names(df)
         all_inter_lib_names = _get_distinct_inter_lib_names(df)
         revision_df = pd.DataFrame(df["revision"])
-        unique_revisions = _get_unique_revisions(revision_df)
+        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
+        unique_revisions = _get_unique_revisions(revision_df, commit_map)
         grouped_df: pd.DataFrame = df.groupby(['revision'])
         revision_to_dataframes_mapping: tp.Dict[FullCommitHash,
                                                 pd.DataFrame] = {}
@@ -1133,9 +1142,10 @@ class BlameDegree(Plot):
             interaction_plot_df.degree_type == degree_type.value]
         interaction_plot_df.sort_values(by=['time_id'], inplace=True)
         interaction_plot_df.reset_index(inplace=True)
-        unique_revisions = _get_unique_revisions(interaction_plot_df)
-
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
+        unique_revisions = _get_unique_revisions(
+            interaction_plot_df, commit_map
+        )
         highest_degree = interaction_plot_df["degree"].max()
 
         # Generate and save sankey plots for all revs if no revision was

@@ -46,7 +46,7 @@ class Gzip(VProject, ReleaseProviderHook):
             bb.source.Git(
                 remote="https://github.com/vulder/gzip.git",
                 local="gzip",
-                refspec="HEAD",
+                refspec="origin/HEAD",
                 limit=None,
                 shallow=False,
                 version_filter=project_filter_generator("gzip")
@@ -55,7 +55,7 @@ class Gzip(VProject, ReleaseProviderHook):
         bb.source.GitSubmodule(
             remote="https://github.com/coreutils/gnulib.git",
             local="gzip/gnulib",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("gzip")
