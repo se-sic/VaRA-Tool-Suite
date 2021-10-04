@@ -94,7 +94,7 @@ class Libtiff(VProject):
             bb.source.Git(
                 remote="https://gitlab.com/libtiff/libtiff.git",
                 local="libtiff",
-                refspec="HEAD",
+                refspec="origin/HEAD",
                 limit=None,
                 shallow=False,
                 version_filter=project_filter_generator("libtiff")

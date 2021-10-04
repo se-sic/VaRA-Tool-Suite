@@ -1,4 +1,5 @@
 """Test VaRA Experiment utilities."""
+import os
 import tempfile
 import typing as tp
 import unittest
@@ -17,7 +18,7 @@ from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
 
 
-class MockExperiment(EU.VersionExperiment):
+class MockExperiment(EU.VersionExperiment, shorthand="mock"):
     """Small MockExperiment to be used as a replacement for actual
     experiments."""
 
@@ -59,6 +60,24 @@ class BBTestProject(Project):
 
     def run_tests(self) -> None:
         pass
+
+
+class TestResultFolderAccess(unittest.TestCase):
+    """Test result folder access."""
+
+    @run_in_test_environment()
+    def test_result_folder_creation(self):
+        """Checks if we get the correct result folder back."""
+        test_tmp_folder = str(os.getcwd())
+
+        bb_cfg()["varats"]["outfile"] = test_tmp_folder + "/results"
+
+        result_folder = EU.get_varats_result_folder(BBTestProject())
+        self.assertEqual(
+            test_tmp_folder + "/results/" + BBTestProject.NAME,
+            str(result_folder)
+        )
+        self.assertTrue(result_folder.exists())
 
 
 class TestVersionExperiment(unittest.TestCase):

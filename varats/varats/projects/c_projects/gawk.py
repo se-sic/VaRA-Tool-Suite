@@ -35,7 +35,7 @@ class Gawk(VProject):
         bb.source.Git(
             remote="https://github.com/vulder/gawk.git",
             local="gawk",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("gawk")

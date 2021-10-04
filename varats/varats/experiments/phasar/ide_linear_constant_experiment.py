@@ -12,7 +12,9 @@ from varats.data.reports.empty_report import EmptyReport
 from varats.experiment.experiment_util import (
     VersionExperiment,
     wrap_unlimit_stack_size,
+    ExperimentHandle,
     get_default_compile_error_wrapped,
+    get_varats_result_folder,
     exec_func_with_pe_error_handler,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
@@ -37,13 +39,9 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
         "values through the program."
     )
 
-    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
-
-    def __init__(
-        self,
-        project: Project,
-    ):
+    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(obj=project, action_fn=self.analyze)
+        self.__experiment_handle = experiment_handle
 
     def analyze(self) -> actions.StepResult:
         """Run phasar's IDELinearConstantAnalysis analysis."""
@@ -54,21 +52,17 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
-        varats_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(bb_cfg()["varats"]["outfile"]),
-            project_dir=str(project.name)
-        )
-
-        mkdir("-p", varats_result_folder)
+        varats_result_folder = get_varats_result_folder(project)
 
         phasar = local["phasar-llvm"]
         for binary in project.binaries:
             bc_file = get_cached_bc_file_path(project, binary)
 
-            result_file = EmptyReport.get_file_name(
+            result_file = self.__experiment_handle.get_file_name(
+                EmptyReport.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=project.version_of_primary,
+                project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.SUCCESS
             )
@@ -82,14 +76,17 @@ class IDELinearConstantAnalysis(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    project, EmptyReport, Path(varats_result_folder)
+                    self.__experiment_handle, project, EmptyReport,
+                    Path(varats_result_folder)
                 )
             )
 
         return actions.StepResult.OK
 
 
-class IDELinearConstantAnalysisExperiment(VersionExperiment):
+class IDELinearConstantAnalysisExperiment(
+    VersionExperiment, shorthand="IDELCA"
+):
     """Experiment class to build and analyse a project with an
     IDELinearConstantAnalysis."""
 
@@ -119,8 +116,7 @@ class IDELinearConstantAnalysisExperiment(VersionExperiment):
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            project, EmptyReport,
-            IDELinearConstantAnalysis.RESULT_FOLDER_TEMPLATE
+            self.get_handle(), project, EmptyReport
         )
 
         analysis_actions = []
@@ -128,11 +124,13 @@ class IDELinearConstantAnalysisExperiment(VersionExperiment):
         analysis_actions += get_bc_cache_actions(
             project,
             extraction_error_handler=create_default_compiler_error_handler(
-                project, self.REPORT_SPEC.main_report
+                self.get_handle(), project, self.REPORT_SPEC.main_report
             )
         )
 
-        analysis_actions.append(IDELinearConstantAnalysis(project))
+        analysis_actions.append(
+            IDELinearConstantAnalysis(project, self.get_handle())
+        )
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions
