@@ -29,28 +29,28 @@ class TestPlotConfig(unittest.TestCase):
 
     def test_get_option_value_set(self):
         """Test if a set value overrides the default value."""
-        config = PlotConfig.from_kwargs(**{"fig-title": "Test"})
+        config = PlotConfig.from_kwargs(fig_title="Test")
         self.assertEqual("Test", config.fig_title())
         self.assertEqual(1500, config.width())
 
     def test_get_option_value_not_set_override(self):
         """Test if passed default overrides global default."""
-        config = PlotConfig.from_kwargs(**{"show_legend": True})
+        config = PlotConfig.from_kwargs(show_legend=True)
         self.assertEqual(42, config.legend_size(42))
 
     def test_get_option_value_set_no_override(self):
         """Test if passed default does not override set value."""
-        config = PlotConfig.from_kwargs(**{"height": 42})
+        config = PlotConfig.from_kwargs(height=42)
         self.assertEqual(42, config.height(5))
 
     def test_get_dict(self):
         """Check that dict only contains options with set values."""
-        config = PlotConfig.from_kwargs(**{"label-size": 1})
+        config = PlotConfig.from_kwargs(label_size=1)
         config_dict = config.get_dict()
-        self.assertIn("label-size", config_dict)
-        self.assertEqual(1, config_dict["label-size"])
+        self.assertIn("label_size", config_dict)
+        self.assertEqual(1, config_dict["label_size"])
 
-        self.assertNotIn("x-tick-size", config_dict)
+        self.assertNotIn("x_tick_size", config_dict)
 
     def test_all_options_have_accessors(self):
         """Check that all plot config options have accessors."""
