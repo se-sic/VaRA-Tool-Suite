@@ -213,7 +213,9 @@ class PlotConfigOption(tp.Generic[OptionType]):
                 help=self.__help
             )
 
-    def value_or_default(self, default: tp.Optional[OptionType]) -> OptionType:
+    def value_or_default(
+        self, default: tp.Optional[OptionType] = None
+    ) -> OptionType:
         """
         Retrieve the value for this option.
 
