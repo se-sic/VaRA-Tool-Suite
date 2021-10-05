@@ -304,18 +304,6 @@ class PlotConfig():
         ]
     }
 
-    def __get_value(
-        self,
-        option_name: str,
-        default: tp.Optional[OptionType] = None
-    ) -> OptionType:
-        option = self.__options[option_name]
-        if option.value:
-            return tp.cast(OptionType, option.value)
-        if default:
-            return default
-        return option.default
-
     @property
     def style(self) -> PlotConfigOption[str]:
         return self.__options["style"]
