@@ -1364,7 +1364,6 @@ class BlameInteractionDegreeGenerator(
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
         self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-        # TODO: Use helper function for default values
         self.__fig_title: str = plot_config.fig_title("Blame interactions")
         self.__legend_title: str = plot_config.legend_title(
             "Interaction degrees"
