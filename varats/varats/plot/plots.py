@@ -436,7 +436,7 @@ class PlotGenerator(abc.ABC):
         "--case-study",
         type=_create_single_case_study_choice(),
         required=True,
-        metavar="case_study",
+        metavar="NAME",
         help="The case study to use for the plot."
     )
     REQUIRE_MULTI_CASE_STUDY: CLIOptionTy = make_cli_option(
@@ -444,7 +444,7 @@ class PlotGenerator(abc.ABC):
         "--case-study",
         type=_create_multi_case_study_choice(),
         required=True,
-        metavar="case_study",
+        metavar="NAMES",
         help="The case study to use for the plot."
     )
     REQUIRE_REVISION: CLIOptionTy = make_cli_option(
@@ -452,7 +452,7 @@ class PlotGenerator(abc.ABC):
         "--revision",
         type=str,
         required=True,
-        metavar="revision",
+        metavar="SHORT_COMMIT_HASH",
         help="The revision to use for the plot."
     )
     REQUIRE_REPORT_TYPE: CLIOptionTy = make_cli_option(
