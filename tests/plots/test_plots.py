@@ -55,6 +55,6 @@ class TestPlotConfig(unittest.TestCase):
     def test_all_options_have_accessors(self):
         for name in PlotConfig._option_decls:
             self.assertTrue(
-                hasattr(PlotConfig, name.replace("-", "_")),
+                hasattr(PlotConfig, name),
                 f"Plot config is missing an accessor for the option '{name}'"
             )

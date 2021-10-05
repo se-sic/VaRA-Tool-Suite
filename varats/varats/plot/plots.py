@@ -200,13 +200,13 @@ class PlotConfigOption(tp.Generic[OptionType]):
         """
         if self.__type is bool:
             return make_cli_option(
-                f"--{self.__name}",
+                f"--{self.__name.replace('_', '-')}",
                 is_flag=True,
                 required=False,
                 help=self.__help
             )
         return make_cli_option(
-            f"--{self.__name}",
+            f"--{self.__name.replace('_', '-')}",
             metavar=self.__metavar,
             type=self.__type,
             required=False,
@@ -264,12 +264,12 @@ class PlotConfig():
                     help_str="Matplotlib style to use."
                 ),
                 PlotConfigOption(
-                    "fig-title",
+                    "fig_title",
                     default="",
                     help_str="The title of the plot figure."
                 ),
                 PlotConfigOption(
-                    "font-size",
+                    "font_size",
                     default=10,
                     help_str="The font size of the plot figure."
                 ),
@@ -284,32 +284,32 @@ class PlotConfig():
                     help_str="The height of the resulting plot file."
                 ),
                 PlotConfigOption(
-                    "legend-title",
+                    "legend_title",
                     default="",
                     help_str="The title of the legend."
                 ),
                 PlotConfigOption(
-                    "legend-size",
+                    "legend_size",
                     default=2,
                     help_str="The size of the legend."
                 ),
                 PlotConfigOption(
-                    "show-legend",
+                    "show_legend",
                     default=False,
                     help_str="If present, show the legend."
                 ),
                 PlotConfigOption(
-                    "line-width",
+                    "line_width",
                     default=0.25,
                     help_str="The width of the plot line(s)."
                 ),
                 PlotConfigOption(
-                    "x-tick-size",
+                    "x_tick_size",
                     default=2,
                     help_str="The size of the x-ticks."
                 ),
                 PlotConfigOption(
-                    "label-size",
+                    "label_size",
                     default=2,
                     help_str="The label size of CVE/bug annotations."
                 ),
@@ -326,11 +326,11 @@ class PlotConfig():
 
     @property
     def fig_title(self) -> PlotConfigOption[str]:
-        return self.__options["fig-title"]
+        return self.__options["fig_title"]
 
     @property
     def font_size(self) -> PlotConfigOption[int]:
-        return self.__options["font-size"]
+        return self.__options["font_size"]
 
     @property
     def width(self) -> PlotConfigOption[int]:
@@ -342,27 +342,27 @@ class PlotConfig():
 
     @property
     def legend_title(self) -> PlotConfigOption[str]:
-        return self.__options["legend-title"]
+        return self.__options["legend_title"]
 
     @property
     def legend_size(self) -> PlotConfigOption[int]:
-        return self.__options["legend-size"]
+        return self.__options["legend_size"]
 
     @property
     def show_legend(self) -> PlotConfigOption[bool]:
-        return self.__options["show-legend"]
+        return self.__options["show_legend"]
 
     @property
     def line_width(self) -> PlotConfigOption[float]:
-        return self.__options["line-width"]
+        return self.__options["line_width"]
 
     @property
     def x_tick_size(self) -> PlotConfigOption[int]:
-        return self.__options["x-tick-size"]
+        return self.__options["x_tick_size"]
 
     @property
     def label_size(self) -> PlotConfigOption[int]:
-        return self.__options["label-size"]
+        return self.__options["label_size"]
 
     @property
     def dpi(self) -> PlotConfigOption[int]:
