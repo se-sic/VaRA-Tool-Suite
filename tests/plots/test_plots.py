@@ -53,6 +53,7 @@ class TestPlotConfig(unittest.TestCase):
         self.assertNotIn("x-tick-size", config_dict)
 
     def test_all_options_have_accessors(self):
+        """Check that all plot config options have accessors."""
         for name in PlotConfig._option_decls:
             self.assertTrue(
                 hasattr(PlotConfig, name),
