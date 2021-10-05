@@ -251,11 +251,11 @@ class PlotConfig():
     """
 
     def __init__(self, *options: PlotConfigOption[tp.Any]) -> None:
-        self.__options = deepcopy(self.__option_decls)
+        self.__options = deepcopy(self._option_decls)
         for option in options:
             self.__options[option.name] = option
 
-    __option_decls: tp.Dict[str, PlotConfigOption[tp.Any]] = {
+    _option_decls: tp.Dict[str, PlotConfigOption[tp.Any]] = {
         decl.name: decl for decl in tp.cast(
             tp.List[PlotConfigOption[tp.Any]], [
                 PlotConfigOption(
@@ -382,7 +382,7 @@ class PlotConfig():
         return PlotConfig(
             *[
                 option_decl.with_value(kwargs[option_decl.name])
-                for option_decl in cls.__option_decls.values()
+                for option_decl in cls._option_decls.values()
                 if option_decl.name in kwargs
             ]
         )
@@ -400,7 +400,7 @@ class PlotConfig():
         """
         return add_cli_options(
             command,
-            *[option.to_cli_option() for option in cls.__option_decls.values()]
+            *[option.to_cli_option() for option in cls._option_decls.values()]
         )
 
     def get_dict(self) -> tp.Dict[str, tp.Any]:
