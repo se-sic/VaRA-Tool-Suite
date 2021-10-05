@@ -54,15 +54,22 @@ def main() -> None:
     name="list", help="List all artefacts of the current paper config."
 )
 def list_() -> None:
+    """List the available artefacts."""
     paper_config = get_paper_config()
 
     for artefact in paper_config.artefacts:
         print(f"{artefact.name} [{artefact.ARTEFACT_TYPE}]")
 
 
-@main.command(help="Show detailed insformation about artefacts.")
+@main.command(help="Show detailed information about artefacts.")
 @click.argument("name")
 def show(name: str) -> None:
+    """
+    Show detailed information about artefacts.
+
+    Args:
+        name: the name of the artefact
+    """
     paper_config = get_paper_config()
     artefact = paper_config.artefacts.get_artefact(name)
     if artefact:
@@ -81,6 +88,14 @@ def show(name: str) -> None:
     help="Only generate artefacts with the given names."
 )
 def generate(only: tp.Optional[str]) -> None:
+    """
+    Generate artefacts.
+
+    By default, all artefacts are generated.
+
+    Args:
+        only: generate only this artefact
+    """
     Artefact.base_output_dir().mkdir(parents=True)
     artefacts: tp.Iterable[Artefact]
 

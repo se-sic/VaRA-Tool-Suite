@@ -157,13 +157,13 @@ class PlotConfigOption(tp.Generic[OptionType]):
         help: help string for this option
     """
 
-    def __init__(self, name: str, default: OptionType, help: str) -> None:
+    def __init__(self, name: str, default: OptionType, help_str: str) -> None:
         self.__name = name
         self.__metavar = name.upper()
         self.__type = type(default)
         self.__default = default
         self.__value: tp.Optional[OptionType] = None
-        self.__help = f"{help} (global default = {default})"
+        self.__help = f"{help_str} (global default = {default})"
 
     @property
     def name(self) -> str:
@@ -205,13 +205,13 @@ class PlotConfigOption(tp.Generic[OptionType]):
                 required=False,
                 help=self.__help
             )
-        else:
-            return make_cli_option(
-                f"--{self.__name}",
-                type=self.__type,
-                required=False,
-                help=self.__help
-            )
+        return make_cli_option(
+            f"--{self.__name}",
+            metavar=self.__metavar,
+            type=self.__type,
+            required=False,
+            help=self.__help
+        )
 
     def value_or_default(
         self, default: tp.Optional[OptionType] = None
@@ -259,54 +259,62 @@ class PlotConfig():
         decl.name: decl for decl in tp.cast(
             tp.List[PlotConfigOption[tp.Any]], [
                 PlotConfigOption(
-                    "style", default="classic", help="Matplotlib style to use."
+                    "style",
+                    default="classic",
+                    help_str="Matplotlib style to use."
                 ),
                 PlotConfigOption(
                     "fig-title",
                     default="",
-                    help="The title of the plot figure."
+                    help_str="The title of the plot figure."
                 ),
                 PlotConfigOption(
                     "font-size",
                     default=10,
-                    help="The font size of the plot figure."
+                    help_str="The font size of the plot figure."
                 ),
                 PlotConfigOption(
                     "width",
                     default=1500,
-                    help="The width of the resulting plot file."
+                    help_str="The width of the resulting plot file."
                 ),
                 PlotConfigOption(
                     "height",
                     default=1000,
-                    help="The height of the resulting plot file."
+                    help_str="The height of the resulting plot file."
                 ),
                 PlotConfigOption(
-                    "legend-title", default="", help="The title of the legend."
+                    "legend-title",
+                    default="",
+                    help_str="The title of the legend."
                 ),
                 PlotConfigOption(
-                    "legend-size", default=2, help="The size of the legend."
+                    "legend-size",
+                    default=2,
+                    help_str="The size of the legend."
                 ),
                 PlotConfigOption(
                     "show-legend",
                     default=False,
-                    help="If present, show the legend."
+                    help_str="If present, show the legend."
                 ),
                 PlotConfigOption(
                     "line-width",
                     default=0.25,
-                    help="The width of the plot line(s)."
+                    help_str="The width of the plot line(s)."
                 ),
                 PlotConfigOption(
-                    "x-tick-size", default=2, help="The size of the x-ticks."
+                    "x-tick-size",
+                    default=2,
+                    help_str="The size of the x-ticks."
                 ),
                 PlotConfigOption(
                     "label-size",
                     default=2,
-                    help="The label size of CVE/bug annotations."
+                    help_str="The label size of CVE/bug annotations."
                 ),
                 PlotConfigOption(
-                    "dpi", default=1200, help="The dpi of the plot."
+                    "dpi", default=1200, help_str="The dpi of the plot."
                 )
             ]
         )
