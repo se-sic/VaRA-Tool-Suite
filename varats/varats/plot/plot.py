@@ -182,7 +182,7 @@ class Plot:
 
         plt.savefig(
             plot_dir / self.plot_file_name(filetype),
-            dpi=self.plot_config.dpi,
+            dpi=self.plot_config.dpi(),
             bbox_inches="tight",
             format=filetype
         )
