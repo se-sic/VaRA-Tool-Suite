@@ -256,54 +256,60 @@ class PlotConfig():
             self.__options[option.name] = option
 
     __option_decls: tp.Dict[str, PlotConfigOption[tp.Any]] = {
-        decl.name: decl for decl in [
-            PlotConfigOption(
-                "style", default="classic", help="Matplotlib style to use."
-            ),
-            PlotConfigOption(
-                "fig-title", default="", help="The title of the plot figure."
-            ),
-            PlotConfigOption(
-                "font-size",
-                default=10,
-                help="The font size of the plot figure."
-            ),
-            PlotConfigOption(
-                "width",
-                default=1500,
-                help="The width of the resulting plot file."
-            ),
-            PlotConfigOption(
-                "height",
-                default=1000,
-                help="The height of the resulting plot file."
-            ),
-            PlotConfigOption(
-                "legend-title", default="", help="The title of the legend."
-            ),
-            PlotConfigOption(
-                "legend-size", default=2, help="The size of the legend."
-            ),
-            PlotConfigOption(
-                "show-legend",
-                default=False,
-                help="If present, show the legend."
-            ),
-            PlotConfigOption(
-                "line-width",
-                default=0.25,
-                help="The width of the plot line(s)."
-            ),
-            PlotConfigOption(
-                "x-tick-size", default=2, help="The size of the x-ticks."
-            ),
-            PlotConfigOption(
-                "label-size",
-                default=2,
-                help="The label size of CVE/bug annotations."
-            ),
-            PlotConfigOption("dpi", default=1200, help="The dpi of the plot.")
-        ]
+        decl.name: decl for decl in tp.cast(
+            tp.List[PlotConfigOption[tp.Any]], [
+                PlotConfigOption(
+                    "style", default="classic", help="Matplotlib style to use."
+                ),
+                PlotConfigOption(
+                    "fig-title",
+                    default="",
+                    help="The title of the plot figure."
+                ),
+                PlotConfigOption(
+                    "font-size",
+                    default=10,
+                    help="The font size of the plot figure."
+                ),
+                PlotConfigOption(
+                    "width",
+                    default=1500,
+                    help="The width of the resulting plot file."
+                ),
+                PlotConfigOption(
+                    "height",
+                    default=1000,
+                    help="The height of the resulting plot file."
+                ),
+                PlotConfigOption(
+                    "legend-title", default="", help="The title of the legend."
+                ),
+                PlotConfigOption(
+                    "legend-size", default=2, help="The size of the legend."
+                ),
+                PlotConfigOption(
+                    "show-legend",
+                    default=False,
+                    help="If present, show the legend."
+                ),
+                PlotConfigOption(
+                    "line-width",
+                    default=0.25,
+                    help="The width of the plot line(s)."
+                ),
+                PlotConfigOption(
+                    "x-tick-size", default=2, help="The size of the x-ticks."
+                ),
+                PlotConfigOption(
+                    "label-size",
+                    default=2,
+                    help="The label size of CVE/bug annotations."
+                ),
+                PlotConfigOption(
+                    "dpi", default=1200, help="The dpi of the plot."
+                )
+            ]
+        )
     }
 
     @property

@@ -344,7 +344,7 @@ def _generate_stackplot(
             cm.get_cmap(plot_kwargs['colormap'].value
                        )(np.linspace(0, 1, len(sub_df_list)))
         ),
-        labels=sorted(np.unique(df['degree'])),  # type: ignore
+        labels=sorted(np.unique(df['degree'])),
         linewidth=plot_kwargs['line_width']
     )
     legend = main_axis.legend(
@@ -822,10 +822,11 @@ def _build_graphviz_edges(
     show_only_interactions_of_commit: tp.Optional[ShortCommitHash] = None
 ) -> LibraryToHashesMapping:
 
-    if show_only_interactions_of_commit is not None:
-        show_only_interactions_of_commit = commit_map.convert_to_full_or_warn(
+    completed_hash: tp.Optional[FullCommitHash] = None
+    if show_only_interactions_of_commit:
+        completed_hash = commit_map.convert_to_full_or_warn(
             show_only_interactions_of_commit
-        ).hash
+        )
 
     base_lib_names = _get_distinct_base_lib_names(df)
     inter_lib_names = _get_distinct_inter_lib_names(df)
@@ -845,8 +846,8 @@ def _build_graphviz_edges(
 
         # Skip edges that do not connect with the specified
         # ``show_only_interactions_of_commit`` node.
-        if show_only_interactions_of_commit is not None and (
-            show_only_interactions_of_commit not in base_inter_hash_tuple
+        if completed_hash and (
+            completed_hash.hash not in base_inter_hash_tuple
         ):
             continue
 
@@ -1131,8 +1132,7 @@ class BlameDegree(Plot, plot_name=None):
         )
 
         _generate_stackplot(
-            interaction_plot_df, unique_revisions, sub_df_list, with_churn,
-            plot_cfg, self.plot_kwargs
+            interaction_plot_df, unique_revisions, sub_df_list, self.plot_kwargs
         )
 
     def _fraction_overview_plot(
@@ -1369,11 +1369,11 @@ class BlameInteractionDegreeGenerator(
         self.__legend_title: str = plot_config.legend_title(
             "Interaction degrees"
         )
-        self.__legend_size: int = plot_config.legend_size()
-        self.__show_legend: bool = plot_config.show_legend()
-        self.__line_width: int = plot_config.line_width()
-        self.__x_tick_size: int = plot_config.x_tick_size()
-        self.__label_size: int = plot_config.label_size()
+        self.__legend_size = plot_config.legend_size()
+        self.__show_legend = plot_config.show_legend()
+        self.__line_width = plot_config.line_width()
+        self.__x_tick_size = plot_config.x_tick_size()
+        self.__label_size = plot_config.label_size()
         self.__show_churn: bool = plot_kwargs["show_churn"]
         self.__edge_color: str = plot_kwargs["edge_color"]
         self.__colormap: Colormap = plot_kwargs["colormap"]
@@ -1783,7 +1783,7 @@ class BlameAuthorDegree(BlameDegree, plot_name="b_author_degree"):
         }
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
-        self._degree_plot(view_mode, DegreeType.AUTHOR, extra_plot_cfg)
+        self._degree_plot(DegreeType.AUTHOR)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -1810,7 +1810,7 @@ class BlameMaxTimeDistribution(BlameDegree, plot_name="b_maxtime_distribution"):
         }
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
-        self._degree_plot(view_mode, DegreeType.MAX_TIME, extra_plot_cfg)
+        self._degree_plot(DegreeType.MAX_TIME)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -1837,7 +1837,7 @@ class BlameAvgTimeDistribution(BlameDegree, plot_name="b_avgtime_distribution"):
         }
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
-        self._degree_plot(view_mode, DegreeType.AVG_TIME, extra_plot_cfg)
+        self._degree_plot(DegreeType.AVG_TIME)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
