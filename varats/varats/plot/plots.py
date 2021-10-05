@@ -231,13 +231,13 @@ class PlotConfigOption(tp.Generic[OptionType]):
             the value for this option
         """
         if self.value:
-            return tp.cast(OptionType, self.value)
+            return self.value
         if default:
             return default
         return self.default
 
-    def __call__(self, default: tp.Optional[OptionType] = None):
-        self.value_or_default(default)
+    def __call__(self, default: tp.Optional[OptionType] = None) -> OptionType:
+        return self.value_or_default(default)
 
     def __str__(self) -> str:
         return f"{self.__name}[default={self.__default}, value={self.value}]"
