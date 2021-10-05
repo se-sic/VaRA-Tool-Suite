@@ -121,7 +121,7 @@ class CaseStudyOverviewPlot(Plot, plot_name="case_study_overview_plot"):
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.plot_config.style)
+        style.use(self.plot_config.style())
         data = _gen_overview_data(
             self.plot_kwargs["show_blocked"], **self.plot_kwargs
         )
