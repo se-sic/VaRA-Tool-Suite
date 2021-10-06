@@ -535,8 +535,10 @@ def _plot_fraction_overview(
         else:
             project = get_project_cls_by_name(plot_kwargs["project"])
             if with_cve:
+                # TODO: pass plot_kwargs explicitly
                 draw_cves(in_axis, project, unique_revisions, plot_kwargs)
             if with_bugs:
+                # TODO: pass plot_kwargs explicitly
                 draw_bugs(in_axis, project, unique_revisions, plot_kwargs)
 
     # draw churn subplot
