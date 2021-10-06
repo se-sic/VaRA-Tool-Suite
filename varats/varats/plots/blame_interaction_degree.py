@@ -182,22 +182,40 @@ OPTIONAL_SHOW_BUGS: CLIOptionTy = make_cli_option(
     help="Shows/hides bug annotations."
 )
 
-OPTIONAL_CVE_BUG_LINE_WIDTH: CLIOptionTy = make_cli_option(
-    "--cve-bug-line-width",
+OPTIONAL_CVE_LINE_WIDTH: CLIOptionTy = make_cli_option(
+    "--cve-line-width",
     type=int,
     default=1,
     required=False,
     metavar="WIDTH",
-    help="The line width of CVE/bug annotations."
+    help="The line width of CVE annotations."
 )
 
-OPTIONAL_CVE_BUG_COLOR: CLIOptionTy = make_cli_option(
-    "--cve-bug-color",
+OPTIONAL_BUG_LINE_WIDTH: CLIOptionTy = make_cli_option(
+    "--bug-line-width",
+    type=int,
+    default=1,
+    required=False,
+    metavar="WIDTH",
+    help="The line width of bug annotations."
+)
+
+OPTIONAL_CVE_COLOR: CLIOptionTy = make_cli_option(
+    "--cve-color",
     type=str,
     default="green",
     required=False,
     metavar="COLOR",
-    help="The color of CVE/bug annotations."
+    help="The color of CVE annotations."
+)
+
+OPTIONAL_BUG_COLOR: CLIOptionTy = make_cli_option(
+    "--bug-color",
+    type=str,
+    default="green",
+    required=False,
+    metavar="COLOR",
+    help="The color of bug annotations."
 )
 
 OPTIONAL_VERTICAL_ALIGNMENT: CLIOptionTy = make_cli_option(
@@ -370,9 +388,17 @@ def _generate_stackplot(
     if with_cve or with_bugs:
         project = get_project_cls_by_name(project_name)
         if with_cve:
-            draw_cves(main_axis, project, unique_revisions, plot_kwargs)
+            draw_cves(
+                main_axis, project, unique_revisions,
+                plot_kwargs["cve_line_width"], plot_kwargs["cve_color"],
+                plot_kwargs["label_size"], plot_kwargs["vertical_alignment"]
+            )
         if with_bugs:
-            draw_bugs(main_axis, project, unique_revisions, plot_kwargs)
+            draw_bugs(
+                main_axis, project, unique_revisions,
+                plot_kwargs["bug_line_width"], plot_kwargs["bug_color"],
+                plot_kwargs["label_size"], plot_kwargs["vertical_alignment"]
+            )
     # draw churn subplot
     if plot_kwargs["show_churn"]:
         draw_code_churn_for_revisions(
@@ -1346,15 +1372,10 @@ class BlameInteractionDegreeGenerator(
     generator_name="interaction-degree-plot",
     options=[
         PlotGenerator.REQUIRE_REPORT_TYPE,
-        PlotGenerator.REQUIRE_MULTI_CASE_STUDY,
-        OPTIONAL_SHOW_CHURN,
-        OPTIONAL_EDGE_COLOR,
-        OPTIONAL_COLORMAP,
-        OPTIONAL_SHOW_CVE,
-        OPTIONAL_SHOW_BUGS,
-        OPTIONAL_CVE_BUG_LINE_WIDTH,
-        OPTIONAL_CVE_BUG_COLOR,
-        OPTIONAL_VERTICAL_ALIGNMENT,
+        PlotGenerator.REQUIRE_MULTI_CASE_STUDY, OPTIONAL_SHOW_CHURN,
+        OPTIONAL_EDGE_COLOR, OPTIONAL_COLORMAP, OPTIONAL_SHOW_CVE,
+        OPTIONAL_SHOW_BUGS, OPTIONAL_CVE_LINE_WIDTH, OPTIONAL_BUG_LINE_WIDTH,
+        OPTIONAL_CVE_COLOR, OPTIONAL_BUG_COLOR, OPTIONAL_VERTICAL_ALIGNMENT
     ]
 ):
     """Generates interaction-degree plot(s) for the selected case study(ies)."""
@@ -1378,8 +1399,10 @@ class BlameInteractionDegreeGenerator(
         self.__colormap: Colormap = plot_kwargs["colormap"]
         self.__show_cve: bool = plot_kwargs["show_cve"]
         self.__show_bugs: bool = plot_kwargs["show_bugs"]
-        self.__cve_bug_line_width: int = plot_kwargs["cve_bug_line_width"]
-        self.__cve_bug_color: str = plot_kwargs["cve_bug_color"]
+        self.__cve_line_width: int = plot_kwargs["cve_line_width"]
+        self.__bug_line_width: int = plot_kwargs["bug_line_width"]
+        self.__cve_color: str = plot_kwargs["cve_color"]
+        self.__bug_color: str = plot_kwargs["bug_color"]
         self.__vertical_alignment: str = plot_kwargs["vertical_alignment"]
 
     def generate(self) -> tp.List[Plot]:
@@ -1400,8 +1423,10 @@ class BlameInteractionDegreeGenerator(
                 colormap=self.__colormap,
                 show_cve=self.__show_cve,
                 show_bugs=self.__show_bugs,
-                cve_bug_line_width=self.__cve_bug_line_width,
-                cve_bug_color=self.__cve_bug_color,
+                cve_line_width=self.__cve_line_width,
+                bug_line_width=self.__bug_line_width,
+                cve_color=self.__cve_color,
+                bug_color=self.__bug_color,
                 vertical_alignment=self.__vertical_alignment
             ) for cs in self.__case_studies
         ]
