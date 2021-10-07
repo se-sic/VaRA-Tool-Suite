@@ -13,7 +13,12 @@ from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.plot.plot_utils import check_required_args, find_missing_revisions
-from varats.plot.plots import PlotGenerator, PlotConfig
+from varats.plot.plots import (
+    PlotGenerator,
+    PlotConfig,
+    REQUIRE_CASE_STUDY,
+    REQUIRE_REPORT_TYPE,
+)
 from varats.project.project_util import (
     get_project_cls_by_name,
     get_local_project_git_path,
@@ -219,8 +224,8 @@ class CaseStudyOverviewGenerator(
     PlotGenerator,
     generator_name="cs-overview-plot",
     options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_CASE_STUDY,
-        OPTIONAL_SHOW_BLOCKED, OPTIONAL_SHOW_ALL_BLOCKED
+        REQUIRE_REPORT_TYPE, REQUIRE_CASE_STUDY, OPTIONAL_SHOW_BLOCKED,
+        OPTIONAL_SHOW_ALL_BLOCKED
     ]
 ):
     """Generates a case study overview plot."""

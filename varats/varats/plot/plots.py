@@ -405,6 +405,38 @@ class PlotConfig():
         }
 
 
+REQUIRE_CASE_STUDY: CLIOptionTy = make_cli_option(
+    "-cs",
+    "--case-study",
+    type=create_single_case_study_choice(),
+    required=True,
+    metavar="NAME",
+    help="The case study to use for the plot."
+)
+REQUIRE_MULTI_CASE_STUDY: CLIOptionTy = make_cli_option(
+    "-cs",
+    "--case-study",
+    type=create_multi_case_study_choice(),
+    required=True,
+    metavar="NAMES",
+    help="The case study to use for the plot."
+)
+REQUIRE_REVISION: CLIOptionTy = make_cli_option(
+    "-rev",
+    "--revision",
+    type=str,
+    required=True,
+    metavar="SHORT_COMMIT_HASH",
+    help="The revision to use for the plot."
+)
+REQUIRE_REPORT_TYPE: CLIOptionTy = make_cli_option(
+    "--report-type",
+    type=create_report_type_choice(),
+    required=True,
+    help="The report type to use for the plot."
+)
+
+
 class PlotGeneratorFailed(Exception):
     """Exception for plot generator related errors."""
 
@@ -435,38 +467,6 @@ class PlotGenerator(abc.ABC):
         ):
             ...
     """
-
-    # Required
-    REQUIRE_CASE_STUDY: CLIOptionTy = make_cli_option(
-        "-cs",
-        "--case-study",
-        type=create_single_case_study_choice(),
-        required=True,
-        metavar="NAME",
-        help="The case study to use for the plot."
-    )
-    REQUIRE_MULTI_CASE_STUDY: CLIOptionTy = make_cli_option(
-        "-cs",
-        "--case-study",
-        type=create_multi_case_study_choice(),
-        required=True,
-        metavar="NAMES",
-        help="The case study to use for the plot."
-    )
-    REQUIRE_REVISION: CLIOptionTy = make_cli_option(
-        "-rev",
-        "--revision",
-        type=str,
-        required=True,
-        metavar="SHORT_COMMIT_HASH",
-        help="The revision to use for the plot."
-    )
-    REQUIRE_REPORT_TYPE: CLIOptionTy = make_cli_option(
-        "--report-type",
-        type=create_report_type_choice(),
-        required=True,
-        help="The report type to use for the plot."
-    )
 
     GENERATORS: tp.Dict[str, tp.Type['PlotGenerator']] = {}
     """Registry for concrete plot generators."""

@@ -33,7 +33,14 @@ from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import check_required_args
-from varats.plot.plots import PlotGenerator, PlotConfig
+from varats.plot.plots import (
+    PlotGenerator,
+    PlotConfig,
+    REQUIRE_REPORT_TYPE,
+    REQUIRE_CASE_STUDY,
+    REQUIRE_REVISION,
+    REQUIRE_MULTI_CASE_STUDY,
+)
 from varats.plots.bug_annotation import draw_bugs
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.repository_churn import draw_code_churn_for_revisions
@@ -1372,8 +1379,7 @@ class BlameInteractionDegreeGenerator(
     PlotGenerator,
     generator_name="interaction-degree-plot",
     options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE,
-        PlotGenerator.REQUIRE_MULTI_CASE_STUDY, OPTIONAL_SHOW_CHURN,
+        REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY, OPTIONAL_SHOW_CHURN,
         OPTIONAL_EDGE_COLOR, OPTIONAL_COLORMAP, OPTIONAL_SHOW_CVE,
         OPTIONAL_SHOW_BUGS, OPTIONAL_CVE_LINE_WIDTH, OPTIONAL_BUG_LINE_WIDTH,
         OPTIONAL_CVE_COLOR, OPTIONAL_BUG_COLOR, OPTIONAL_VERTICAL_ALIGNMENT
@@ -1567,10 +1573,7 @@ class BlameLibraryInteractions(
 class SankeyLibraryInteractionsGeneratorRev(
     PlotGenerator,
     generator_name="sankey-plot-rev",
-    options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_CASE_STUDY,
-        PlotGenerator.REQUIRE_REVISION
-    ]
+    options=[REQUIRE_REPORT_TYPE, REQUIRE_CASE_STUDY, REQUIRE_REVISION]
 ):
     """Generates a single sankey plot for the selected revision in the case
     study."""
@@ -1606,10 +1609,7 @@ class SankeyLibraryInteractionsGeneratorRev(
 class SankeyLibraryInteractionsGeneratorCS(
     PlotGenerator,
     generator_name="sankey-plot-cs",
-    options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE,
-        PlotGenerator.REQUIRE_MULTI_CASE_STUDY
-    ]
+    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates a sankey plot for every revision in every given case study."""
 
@@ -1698,11 +1698,11 @@ class GraphvizLibraryInteractionsGeneratorRev(
     PlotGenerator,
     generator_name="graphviz-plot-rev",
     options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_CASE_STUDY,
-        PlotGenerator.REQUIRE_REVISION, OPTIONAL_SHOW_INTERACTIONS,
-        OPTIONAL_SHOW_DIFF, OPTIONAL_SHOW_EDGE_WEIGHT,
-        OPTIONAL_EDGE_WEIGHT_THRESHOLD, OPTIONAL_REVISION_LENGTH,
-        OPTIONAL_LAYOUT_ENGINE, OPTIONAL_SHOW_ONLY_COMMIT
+        REQUIRE_REPORT_TYPE, REQUIRE_CASE_STUDY, REQUIRE_REVISION,
+        OPTIONAL_SHOW_INTERACTIONS, OPTIONAL_SHOW_DIFF,
+        OPTIONAL_SHOW_EDGE_WEIGHT, OPTIONAL_EDGE_WEIGHT_THRESHOLD,
+        OPTIONAL_REVISION_LENGTH, OPTIONAL_LAYOUT_ENGINE,
+        OPTIONAL_SHOW_ONLY_COMMIT
     ]
 ):
     """Generates a single graphviz plot for the selected revision in the case
@@ -1750,11 +1750,11 @@ class GraphvizLibraryInteractionsGeneratorCS(
     PlotGenerator,
     generator_name="graphviz-plot-cs",
     options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE,
-        PlotGenerator.REQUIRE_MULTI_CASE_STUDY, OPTIONAL_SHOW_INTERACTIONS,
-        OPTIONAL_SHOW_DIFF, OPTIONAL_SHOW_EDGE_WEIGHT,
-        OPTIONAL_EDGE_WEIGHT_THRESHOLD, OPTIONAL_REVISION_LENGTH,
-        OPTIONAL_LAYOUT_ENGINE, OPTIONAL_SHOW_ONLY_COMMIT
+        REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY,
+        OPTIONAL_SHOW_INTERACTIONS, OPTIONAL_SHOW_DIFF,
+        OPTIONAL_SHOW_EDGE_WEIGHT, OPTIONAL_EDGE_WEIGHT_THRESHOLD,
+        OPTIONAL_REVISION_LENGTH, OPTIONAL_LAYOUT_ENGINE,
+        OPTIONAL_SHOW_ONLY_COMMIT
     ]
 ):
     """Generates a graphviz plot for every revision in the case study."""

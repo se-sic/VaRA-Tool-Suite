@@ -19,7 +19,7 @@ from varats.mapping.commit_map import CommitMap
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plot.plot import Plot
 from varats.plot.plot_utils import check_required_args, find_missing_revisions
-from varats.plot.plots import PlotGenerator, PlotConfig
+from varats.plot.plots import PlotGenerator, PlotConfig, REQUIRE_REPORT_TYPE
 from varats.project.project_util import get_local_project_git
 from varats.report.report import FileStatusExtension, BaseReport
 # colors taken from seaborn's default palette
@@ -268,7 +268,7 @@ class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
 class PaperConfigOverviewGenerator(
     PlotGenerator,
     generator_name="pc-overview-plot",
-    options=[PlotGenerator.REQUIRE_REPORT_TYPE]
+    options=[REQUIRE_REPORT_TYPE]
 ):
     """Generates a single pc-overview plot for the current paper config."""
 
