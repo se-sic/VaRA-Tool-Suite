@@ -5,10 +5,10 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 from varats.paper_mgmt.artefacts import (
-    load_artefacts_from_file,
     initialize_artefact_types,
     Artefacts,
     Artefact,
+    load_artefacts_from_file,
 )
 from varats.plot.plots import PlotArtefact
 from varats.plots.discover_plots import initialize_plots

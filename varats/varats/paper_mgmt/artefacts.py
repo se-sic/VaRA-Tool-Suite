@@ -16,7 +16,7 @@ from pathlib import Path
 
 from varats.base.version_header import VersionHeader
 from varats.utils.settings import vara_cfg
-from varats.utils.yaml_util import load_yaml
+from varats.utils.yaml_util import load_yaml, store_as_yaml
 
 if tp.TYPE_CHECKING:
     import varats.paper.case_study as cs  # pylint: disable=unused-import
@@ -196,49 +196,7 @@ class Artefacts:
         )
 
 
-class ArtefactException(Exception):
-    """Base class for artefact related exceptions."""
-
-
-class UnknownArtefactType(ArtefactException):
-    """Thrown if an unknown artefact type is encountered."""
-
-
-class OutdatedArtefactVersion(ArtefactException):
-    """Thrown if an artefact uses an outdated format."""
-
-
-ARTEFACTS_FILE_VERSION = 2
-
-
-def create_artefact(
-    artefact_type_name: str, artefact_type_version: int, name: str,
-    output_dir: Path, **kwargs: tp.Any
-) -> Artefact:
-    """
-    Create a new :class:`Artefact` from the provided parameters.
-
-    Args:
-        artefact_type_name: the name of the artefact type for the artefact
-        artefact_type_name: the artefact type's version
-        name: name of the artefact
-        output_dir: output dir relative to config value
-                    'artefacts/artefacts_dir'
-        **kwargs: artefact-specific arguments
-
-    Returns:
-        the created artefact
-    """
-    artefact_type = Artefact.ARTEFACT_TYPES.get(artefact_type_name, None)
-    if not artefact_type:
-        raise UnknownArtefactType(
-            f"Unknown artefact type '{artefact_type_name}'"
-        )
-
-    if artefact_type_version < artefact_type.ARTEFACT_TYPE_VERSION:
-        raise OutdatedArtefactVersion()
-
-    return artefact_type.create_artefact(name, output_dir, **kwargs)
+__ARTEFACTS_FILE_VERSION = 2
 
 
 def load_artefacts_from_file(file_path: Path) -> Artefacts:
@@ -254,30 +212,52 @@ def load_artefacts_from_file(file_path: Path) -> Artefacts:
     documents = load_yaml(file_path)
     version_header = VersionHeader(next(documents))
     version_header.raise_if_not_type("Artefacts")
-    version_header.raise_if_version_is_less_than(ARTEFACTS_FILE_VERSION)
+    version_header.raise_if_version_is_less_than(__ARTEFACTS_FILE_VERSION)
 
     raw_artefacts = next(documents)
     artefacts: tp.List[Artefact] = []
     for raw_artefact in raw_artefacts.pop('artefacts'):
         artefact_type_name = raw_artefact.pop('artefact_type')
+        artefact_type = Artefact.ARTEFACT_TYPES.get(artefact_type_name, None)
         artefact_type_version = raw_artefact.pop('artefact_type_version')
         name = raw_artefact.pop('name')
         output_dir = raw_artefact.pop('output_dir')
 
-        try:
-            artefact = create_artefact(
-                artefact_type_name, artefact_type_version, name, output_dir,
-                **raw_artefact
-            )
-        except OutdatedArtefactVersion:
+        if not artefact_type:
             LOG.warning(
-                f"Skipping artefact {name} because it uses an outdated version "
-                f"of {artefact_type_name}."
+                f"Skipping artefact of unknown type '{artefact_type_name}'"
             )
             continue
-        artefacts.append(artefact)
+
+        if artefact_type_version < artefact_type.ARTEFACT_TYPE_VERSION:
+            LOG.warning(
+                f"Skipping artefact {name} because it uses an outdated "
+                f"version of {artefact_type_name}."
+            )
+            continue
+
+        artefacts.append(
+            artefact_type.create_artefact(name, output_dir, **raw_artefact)
+        )
 
     return Artefacts(artefacts)
+
+
+def store_artefacts_to_file(artefacts: Artefacts, file_path: Path) -> None:
+    """
+    Store artefacts in a file.
+
+    Args:
+        artefacts: the artefacts to store
+        file_path: the file to store in
+    """
+    store_as_yaml(
+        file_path, [
+            VersionHeader.from_version_number(
+                'Artefacts', __ARTEFACTS_FILE_VERSION
+            ), artefacts
+        ]
+    )
 
 
 def initialize_artefact_types() -> None:

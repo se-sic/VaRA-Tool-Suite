@@ -7,10 +7,10 @@ analyzed. Furthermore, it allows other users to reproduce the exact same set of
 projects and revisions, either with the old experiment automatically or with a
 new experiment to compare the results.
 """
+import logging
 import typing as tp
 from pathlib import Path
 
-from varats.base.version_header import VersionHeader
 from varats.paper.case_study import (
     CaseStudy,
     load_case_study_from_file,
@@ -20,12 +20,13 @@ from varats.paper_mgmt.artefacts import (
     Artefact,
     Artefacts,
     load_artefacts_from_file,
-    ARTEFACTS_FILE_VERSION,
+    store_artefacts_to_file,
 )
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
-from varats.utils.yaml_util import store_as_yaml
+
+LOG = logging.getLogger(__name__)
 
 
 class PaperConfig():
@@ -37,6 +38,8 @@ class PaperConfig():
     Args:
         folder_path: path to the paper config folder
     """
+
+    __ARTEFACTS_FILE_NAME = 'artefacts.yaml'
 
     def __init__(self, folder_path: Path) -> None:
         self.__path = Path(folder_path)
@@ -60,9 +63,9 @@ class PaperConfig():
     def artefacts(self) -> Artefacts:
         """The artefacts of this paper config."""
         if not self.__artefacts:
-            if (self.__path / 'artefacts.yaml').exists():
+            if (self.path / self.__ARTEFACTS_FILE_NAME).exists():
                 self.__artefacts = load_artefacts_from_file(
-                    self.__path / 'artefacts.yaml'
+                    self.path / self.__ARTEFACTS_FILE_NAME
                 )
             else:
                 self.__artefacts = Artefacts([])
@@ -161,12 +164,8 @@ class PaperConfig():
     def store_artefacts(self) -> None:
         """Store artefacts to file."""
         if self.artefacts:
-            store_as_yaml(
-                self.path / 'artefacts.yaml', [
-                    VersionHeader.from_version_number(
-                        'Artefacts', ARTEFACTS_FILE_VERSION
-                    ), self.artefacts
-                ]
+            store_artefacts_to_file(
+                self.artefacts, self.path / self.__ARTEFACTS_FILE_NAME
             )
 
     def store(self) -> None:
