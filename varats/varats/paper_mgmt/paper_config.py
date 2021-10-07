@@ -10,6 +10,7 @@ new experiment to compare the results.
 import typing as tp
 from pathlib import Path
 
+from varats.base.version_header import VersionHeader
 from varats.paper.case_study import (
     CaseStudy,
     load_case_study_from_file,
@@ -19,11 +20,12 @@ from varats.paper_mgmt.artefacts import (
     Artefact,
     Artefacts,
     load_artefacts_from_file,
-    store_artefacts,
+    ARTEFACTS_FILE_VERSION,
 )
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
+from varats.utils.yaml_util import store_as_yaml
 
 
 class PaperConfig():
@@ -156,14 +158,24 @@ class PaperConfig():
         """
         self.artefacts.add_artefact(artefact)
 
+    def store_artefacts(self) -> None:
+        """Store artefacts to file."""
+        if self.artefacts:
+            store_as_yaml(
+                self.path / 'artefacts.yaml', [
+                    VersionHeader.from_version_number(
+                        'Artefacts', ARTEFACTS_FILE_VERSION
+                    ), self.artefacts
+                ]
+            )
+
     def store(self) -> None:
         """Persist the current state of the paper config saving all case studies
         to their corresponding files in the paper config path."""
         for case_study_list in self.__case_studies.values():
             for case_study in case_study_list:
                 store_case_study(case_study, self.__path)
-        if self.artefacts:
-            store_artefacts(self.artefacts, self.__path)
+        self.store_artefacts()
 
     def __str__(self) -> str:
         string = "Loaded case studies:\n"

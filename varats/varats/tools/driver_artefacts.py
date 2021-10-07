@@ -14,7 +14,7 @@ import click
 import yaml
 
 from varats.data.discover_reports import initialize_reports
-from varats.paper_mgmt.artefacts import Artefact, initialize_artefacts
+from varats.paper_mgmt.artefacts import Artefact, initialize_artefact_types
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plot.plots import PlotArtefact
 from varats.plots.discover_plots import initialize_plots
@@ -46,7 +46,7 @@ def main() -> None:
     initialize_reports()
     initialize_tables()
     initialize_plots()
-    initialize_artefacts()
+    initialize_artefact_types()
 
 
 # function name `list` would shadow built-in `list`
