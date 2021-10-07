@@ -16,7 +16,7 @@ from varats.plot.plots import (
     PlotGenerator,
     CommonPlotOptions,
     PlotConfig,
-    PlotGeneratorInitFailed,
+    PlotGeneratorFailed,
     PlotArtefact,
 )
 from varats.plots.discover_plots import initialize_plots
@@ -65,7 +65,7 @@ class PlotCLI(click.MultiCommand):
                     paper_config.store_artefacts()
                 else:
                     generator_instance(common_options)
-            except PlotGeneratorInitFailed as ex:
+            except PlotGeneratorFailed as ex:
                 print(
                     f"Failed to create plot generator {generator_cls.NAME}: "
                     f"{ex.message}"

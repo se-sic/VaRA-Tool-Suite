@@ -38,7 +38,8 @@ from varats.plots.bug_annotation import draw_bugs
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.repository_churn import draw_code_churn_for_revisions
 from varats.project.project_util import get_project_cls_by_name
-from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option, EnumChoice
+from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
+from varats.ts_utils.click_param_types import EnumChoice
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 LOG = logging.getLogger(__name__)

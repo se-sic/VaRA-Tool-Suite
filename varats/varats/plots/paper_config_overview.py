@@ -247,8 +247,6 @@ class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
     (blocked).
     """
 
-    NAME = 'paper_config_overview_plot'
-
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
         super().__init__(self.NAME, plot_config, **kwargs)
 

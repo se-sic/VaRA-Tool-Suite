@@ -7,20 +7,18 @@ from pathlib import Path
 
 import click
 
-from varats.data.discover_reports import initialize_reports
-from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.artefacts import Artefact, ArtefactFileInfo
-from varats.paper_mgmt.paper_config import get_paper_config
-from varats.report.report import BaseReport
 from varats.ts_utils.cli_util import (
     make_cli_option,
     CLIOptionTy,
     add_cli_options,
     cli_yn_choice,
-    TypedMultiChoice,
-    TypedChoice,
 )
-from varats.utils.exceptions import ConfigurationLookupError
+from varats.ts_utils.click_param_types import (
+    create_multi_case_study_choice,
+    create_single_case_study_choice,
+    create_report_type_choice,
+)
 from varats.utils.settings import vara_cfg
 
 if tp.TYPE_CHECKING:
@@ -29,63 +27,24 @@ if tp.TYPE_CHECKING:
 LOG = logging.getLogger(__name__)
 
 
-def _create_multi_case_study_choice() -> TypedMultiChoice[CaseStudy]:
-    """
-    Create a choice parameter type that allows selecting multiple case studies
-    from the current paper config.
-
-    Multiple case studies can be given as a comma separated list. The special
-    value "all" selects all case studies in the current paper config.
-    """
-    try:
-        paper_config = get_paper_config()
-    except ConfigurationLookupError:
-        empty_cs_dict: tp.Dict[str, tp.List[CaseStudy]] = {}
-        return TypedMultiChoice(empty_cs_dict)
-    value_dict = {
-        f"{cs.project_name}_{cs.version}": [cs]
-        for cs in paper_config.get_all_case_studies()
-    }
-    value_dict["all"] = paper_config.get_all_case_studies()
-    return TypedMultiChoice(value_dict)
-
-
-def _create_single_case_study_choice() -> TypedChoice[CaseStudy]:
-    """Create a choice parameter type that allows selecting exactly one case
-    study from the current paper config."""
-    try:
-        paper_config = get_paper_config()
-    except ConfigurationLookupError:
-        empty_cs_dict: tp.Dict[str, CaseStudy] = {}
-        return TypedChoice(empty_cs_dict)
-    value_dict = {
-        f"{cs.project_name}_{cs.version}": cs
-        for cs in paper_config.get_all_case_studies()
-    }
-    return TypedChoice(value_dict)
-
-
-def _create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
-    """Create a choice parameter type that allows selecting a report type."""
-    initialize_reports()
-    return TypedChoice(BaseReport.REPORT_TYPES)
-
-
 class CommonPlotOptions():
-    """This class stores options common to all plots."""
+    """
+    Options common to all plots.
+
+    These options are handled by the :class:`PlotGenerator` base class and are
+    not passed down to specific plot generators.
+
+    Args:
+        view: if `True`, view the plot instead of writing it to a file
+        plot_dir: directory to write plots to
+                  (relative to config value 'plots/plot_dir')
+        file_type: the file type for the written plot file
+        dry_run: if ``True``, do not generate any files
+    """
 
     def __init__(
         self, view: bool, plot_dir: Path, file_type: str, dry_run: bool
     ):
-        """
-        Construct a `CommonPlotOptions` object.
-
-        Args:
-            view: if `True`, view the plot instead of writing it to a file
-            plot_dir: directory to write plots to
-                      (relative to config value 'plots/plot_dir')
-            file_type: the file type for the written plot file
-        """
         self.view = view
         # Will be overridden when generating artefacts
         self.plot_base_dir = Path(str(vara_cfg()['plots']['plot_dir']))
@@ -131,9 +90,29 @@ class CommonPlotOptions():
 
     @classmethod
     def cli_options(cls, command: tp.Any) -> tp.Any:
+        """
+        Decorate a command with common plot CLI options.
+
+        This function can be used as a decorator.
+
+        Args:
+            command: the command to decorate
+
+        Returns:
+            the decorated command
+        """
         return add_cli_options(command, *cls.__options)
 
     def get_dict(self) -> tp.Dict[str, tp.Any]:
+        """
+        Create a dict representation for this object.
+
+        It holds that
+        ``options == CommonPlotOptions.from_kwargs(**options.get_dict())``.
+
+        Returns:
+            a dict representation of this object
+        """
         return {
             "view": self.view,
             "file_type": self.file_type,
@@ -154,10 +133,16 @@ class PlotConfigOption(tp.Generic[OptionType]):
     Args:
         name: name of the option
         default: global default value for the option
-        help: help string for this option
+        help_str: help string for this option
     """
 
-    def __init__(self, name: str, default: OptionType, help_str: str) -> None:
+    def __init__(
+        self,
+        name: str,
+        default: OptionType,
+        help_str: str,
+        value: tp.Optional[OptionType] = None
+    ) -> None:
         self.__name = name
         self.__metavar = name.upper()
         self.__type = type(default)
@@ -187,9 +172,7 @@ class PlotConfigOption(tp.Generic[OptionType]):
         Returns:
             a copy of the option with the given value
         """
-        option_with_value = copy(self)
-        option_with_value.__value = value
-        return option_with_value
+        return PlotConfigOption(self.name, self.default, self.__help, value)
 
     def to_cli_option(self) -> CLIOptionTy:
         """
@@ -392,6 +375,8 @@ class PlotConfig():
         """
         Decorate a command with plot config CLI options.
 
+        This function can be used as a decorator.
+
         Args:
             command: the command to decorate
 
@@ -408,6 +393,7 @@ class PlotConfig():
         Create a dict representation from this plot config.
 
         The dict only contains options for which values were explicitly set.
+        It holds that ``config == PlotConfig.from_kwargs(**config.get_dict())``.
 
         Returns:
             a dict representation of this plot config
@@ -419,8 +405,8 @@ class PlotConfig():
         }
 
 
-class PlotGeneratorInitFailed(Exception):
-    """Base class for plot generator related exceptions."""
+class PlotGeneratorFailed(Exception):
+    """Exception for plot generator related errors."""
 
     def __init__(self, message: str):
         super().__init__()
@@ -428,13 +414,33 @@ class PlotGeneratorInitFailed(Exception):
 
 
 class PlotGenerator(abc.ABC):
-    """A plot generator is responsible for generating one or more plots."""
+    """
+    Superclass for all plot generators.
+
+    A plot generator is responsible for generating one or more plots.
+    Subclasses are automatically registered if they reside in the
+    ``varats.plots`` package and must override the function
+    :meth:`generate` so that it returns one or more plot instances that should
+    be generated.
+    The generation itself (i.e., saving or displaying plots) is handeled by the
+    `call` operator (which should not be overridden!).
+
+    Creating a plot generator class requires to provide additional parameters in
+    the class definition, e.g.::
+
+        class MyPlotGenerator(
+            PlotGenerator,
+            plot_name="my_generator",  # plot generator name as shown by CLI
+            options=[]  # put CLI option declarations here
+        ):
+            ...
+    """
 
     # Required
     REQUIRE_CASE_STUDY: CLIOptionTy = make_cli_option(
         "-cs",
         "--case-study",
-        type=_create_single_case_study_choice(),
+        type=create_single_case_study_choice(),
         required=True,
         metavar="NAME",
         help="The case study to use for the plot."
@@ -442,7 +448,7 @@ class PlotGenerator(abc.ABC):
     REQUIRE_MULTI_CASE_STUDY: CLIOptionTy = make_cli_option(
         "-cs",
         "--case-study",
-        type=_create_multi_case_study_choice(),
+        type=create_multi_case_study_choice(),
         required=True,
         metavar="NAMES",
         help="The case study to use for the plot."
@@ -457,14 +463,19 @@ class PlotGenerator(abc.ABC):
     )
     REQUIRE_REPORT_TYPE: CLIOptionTy = make_cli_option(
         "--report-type",
-        type=_create_report_type_choice(),
+        type=create_report_type_choice(),
         required=True,
         help="The report type to use for the plot."
     )
 
     GENERATORS: tp.Dict[str, tp.Type['PlotGenerator']] = {}
+    """Registry for concrete plot generators."""
+
     NAME: str
+    """Name of the concrete generator class (set automatically)."""
+
     OPTIONS: tp.List[CLIOptionTy]
+    """Plot generator CLI Options (set automatically)."""
 
     def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
         self.__plot_config = plot_config
@@ -479,8 +490,7 @@ class PlotGenerator(abc.ABC):
         Register concrete plot generators.
 
         Args:
-            generator_name: name for the plot generator as will be used in the
-                            CLI interface
+            generator_name: plot generator name as shown by the CLI
             plot:           plot class used by the generator
             options:        command line options needed by the generator
         """
@@ -505,28 +515,29 @@ class PlotGenerator(abc.ABC):
 
     @staticmethod
     def get_class_for_plot_generator_type(
-        plot_type: str
+        plot_generator_type_name: str
     ) -> tp.Type['PlotGenerator']:
         """
         Get the class for plot from the plot registry.
 
         Args:
-            plot_type: The name of the plot.
+            plot_generator_type_name: name of the plot generator
 
-        Returns: The class implementing the plot.
+        Returns:
+            the class for the plot generator
         """
-        if plot_type not in PlotGenerator.GENERATORS:
+        if plot_generator_type_name not in PlotGenerator.GENERATORS:
             raise LookupError(
-                f"Unknown plot generator '{plot_type}'.\n" +
+                f"Unknown plot generator '{plot_generator_type_name}'.\n" +
                 PlotGenerator.get_plot_generator_types_help_string()
             )
 
-        plot_cls = PlotGenerator.GENERATORS[plot_type]
+        plot_cls = PlotGenerator.GENERATORS[plot_generator_type_name]
         return plot_cls
 
     @property
     def plot_config(self) -> PlotConfig:
-        """Option with options that influence a plot's appearance."""
+        """Options that influence a plot's appearance."""
         return self.__plot_config
 
     @property
@@ -536,7 +547,7 @@ class PlotGenerator(abc.ABC):
 
     @abc.abstractmethod
     def generate(self) -> tp.List['varats.plot.plot.Plot']:
-        """This function is called to generate the plot instance(s)."""
+        """Create the plot instance(s) that should be generated."""
 
     def __call__(self, common_options: CommonPlotOptions) -> None:
         """
@@ -570,7 +581,7 @@ class PlotGenerator(abc.ABC):
 
 class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
     """
-    An artefact defining a :class:`plot<varats.plot.plot.Plot>`.
+    An artefact defining a :class:`~varats.plot.plot.Plot`.
 
     Args:
         name: name of this artefact
@@ -617,16 +628,21 @@ class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
 
     @property
     def plot_config(self) -> PlotConfig:
-        """A config object that influences the visual representation of a
-        plot."""
+        """Options that influence the visual representation of a plot."""
         return self.__plot_config
 
     @property
     def plot_kwargs(self) -> tp.Any:
-        """Additional arguments that will be passed to the plot_type_class."""
+        """Additional arguments that will be passed to the plot."""
         return self.__plot_kwargs
 
     def get_dict(self) -> tp.Dict[str, tp.Any]:
+        """
+        Create a dict representation for this object.
+
+        Returns:
+            a dict representation of this object
+        """
         artefact_dict = super().get_dict()
         artefact_dict['plot_generator'] = self.__plot_generator_type
         artefact_dict['plot_config'] = self.__plot_config.get_dict()
@@ -642,6 +658,17 @@ class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
     def create_artefact(
         name: str, output_dir: Path, **kwargs: tp.Any
     ) -> 'Artefact':
+        """
+        Create an artefact instance from the given information.
+
+        Args:
+            name: the name of the artefact
+            output_dir: the output directory for the artefact
+            **kwargs: artefact-specific arguments
+
+        Returns:
+            an artefact instance
+        """
         plot_generator_type = kwargs.pop('plot_generator')
         common_options = CommonPlotOptions.from_kwargs(**kwargs)
         plot_config = PlotConfig.from_kwargs(**kwargs.pop("plot_config", {}))
@@ -678,7 +705,12 @@ class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
         generator_instance(self.common_options)
 
     def get_artefact_file_infos(self) -> tp.List[ArtefactFileInfo]:
-        """Returns a list of file meta-date generated by this artefact."""
+        """
+        Retrieve information about files generated by this artefact.
+
+        Returns:
+            a list of file info objects
+        """
         generator_instance = self.plot_generator_class(
             self.plot_config, **self.__plot_kwargs
         )
