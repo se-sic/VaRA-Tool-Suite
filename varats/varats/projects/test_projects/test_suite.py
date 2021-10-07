@@ -31,7 +31,7 @@ class SVFPointsToAnalysisBenchmark(VProject):
         bb.source.Git(
             remote="https://github.com/SVF-tools/Test-Suite.git",
             local="svf-test-suite",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=1,  # None,
             shallow=False,
         )

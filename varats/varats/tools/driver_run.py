@@ -19,7 +19,7 @@ from plumbum import local
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.projects.discover_projects import initialize_projects
-from varats.utils.cli_util import initialize_cli_tool, tee
+from varats.ts_utils.cli_util import initialize_cli_tool, tee
 from varats.utils.exceptions import ConfigurationLookupError
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg, vara_cfg
@@ -104,8 +104,11 @@ def main(
     initialize_cli_tool()
     initialize_projects()
 
-    bb_command_args: tp.List[str] = []
+    bb_command_args: tp.List[str] = ["--force-watch-unbuffered"]
     bb_extra_args: tp.List[str] = []
+
+    if sys.stdout.isatty():
+        bb_command_args.append("--force-tty")
 
     if verbose:
         bb_command_args.append("-" + ("v" * verbose))

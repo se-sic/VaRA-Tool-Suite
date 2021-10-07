@@ -9,7 +9,7 @@ from varats.data.discover_reports import initialize_reports
 from varats.plot.plots import PlotRegistry, build_plots
 from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
-from varats.utils.cli_util import initialize_cli_tool
+from varats.ts_utils.cli_util import initialize_cli_tool
 
 LOG = logging.getLogger(__name__)
 
