@@ -2,7 +2,7 @@
 import abc
 import logging
 import typing as tp
-from copy import copy, deepcopy
+from copy import deepcopy
 from pathlib import Path
 
 import click
@@ -147,7 +147,7 @@ class PlotConfigOption(tp.Generic[OptionType]):
         self.__metavar = name.upper()
         self.__type = type(default)
         self.__default = default
-        self.__value: tp.Optional[OptionType] = None
+        self.__value: tp.Optional[OptionType] = value
         self.__help = f"{help_str} (global default = {default})"
 
     @property
