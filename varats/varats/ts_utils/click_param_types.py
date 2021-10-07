@@ -1,3 +1,5 @@
+"""Module for custom click parameter types."""
+
 import typing as tp
 from enum import Enum
 
