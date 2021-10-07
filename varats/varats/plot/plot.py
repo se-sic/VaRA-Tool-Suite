@@ -171,13 +171,13 @@ class Plot:
         Save the current plot to a file.
 
         Args:
-            plot_dir: the path where the file is stored(excluding the file name)
+            plot_dir: the path where the file is stored (excluding file name)
             filetype: the file type of the plot
         """
         try:
             self.plot(False)
         except PlotDataEmpty:
-            LOG.warning("No data for the current project.")
+            LOG.warning("No data for this plot.")
             return
 
         plt.savefig(
