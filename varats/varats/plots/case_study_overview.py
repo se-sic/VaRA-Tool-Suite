@@ -12,7 +12,7 @@ from varats.data.reports.empty_report import EmptyReport
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
-from varats.plot.plot_utils import check_required_args, find_missing_revisions
+from varats.plot.plot_utils import find_missing_revisions
 from varats.plot.plots import (
     PlotGenerator,
     PlotConfig,

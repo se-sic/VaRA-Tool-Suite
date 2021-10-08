@@ -32,7 +32,6 @@ from varats.data.databases.blame_library_interactions_database import (
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plot_utils import check_required_args
 from varats.plot.plots import (
     PlotGenerator,
     PlotConfig,
