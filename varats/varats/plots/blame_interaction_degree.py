@@ -771,11 +771,10 @@ def _gen_sankey_lib_name_to_idx_mapping(
 def _build_sankey_figure(
     revision: FullCommitHash, view_mode: bool,
     data_dict: tp.Dict[str, tp.List[tp.Any]],
-    library_names_dict: tp.Dict[str, tp.List[str]], plot_cfg: tp.Dict[str,
-                                                                      tp.Any]
+    library_names_dict: tp.Dict[str, tp.List[str]], plot_config: PlotConfig
 ) -> go.Figure:
     layout = go.Layout(
-        autosize=False, width=plot_cfg['width'], height=plot_cfg['height']
+        autosize=False, width=plot_config.width(), height=plot_config.height()
     )
     fig = go.Figure(
         data=[
@@ -810,10 +809,9 @@ def _build_sankey_figure(
         title_text=
         f"<b>Revision: {revision}</b><br />Library interactions from base(left)"
         f" to interacting(right) libraries. Color saturation increases with the"
-        f" degree level.</b><br />{plot_cfg['fig_title']}",
-        font_size=plot_cfg['font_size']
+        f" degree level.</b><br />{plot_config.fig_title()}",
+        font_size=plot_config.font_size()
     )
-
     return fig
 
 
@@ -1269,7 +1267,7 @@ class BlameDegree(Plot, plot_name=None):
             df, lib_names_dict, lib_cm_mapping, lib_shades_mapping
         )
         sankey_figure = _build_sankey_figure(
-            rev, view_mode, plotting_data_dict, lib_names_dict, self.plot_kwargs
+            rev, view_mode, plotting_data_dict, lib_names_dict, self.plot_config
         )
 
         return sankey_figure
@@ -1572,10 +1570,6 @@ class SankeyLibraryInteractionsGeneratorRev(
         self.__revision: ShortCommitHash = ShortCommitHash(
             plot_kwargs["revision"]
         )
-        self.__fig_title: str = plot_config.fig_title()
-        self.__width: int = plot_config.width()
-        self.__height: int = plot_config.height()
-        self.__font_size: int = plot_config.font_size()
 
     def generate(self) -> tp.List[Plot]:
         return [
@@ -1583,11 +1577,7 @@ class SankeyLibraryInteractionsGeneratorRev(
                 self.plot_config,
                 report_type=self.__report_type,
                 case_study=self.__case_study,
-                revision=self.__revision,
-                fig_title=self.__fig_title,
-                width=self.__width,
-                height=self.__height,
-                font_size=self.__font_size,
+                revision=self.__revision
             )
         ]
 
@@ -1604,10 +1594,6 @@ class SankeyLibraryInteractionsGeneratorCS(
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
         self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-        self.__fig_title: str = plot_config.fig_title()
-        self.__width: int = plot_config.width()
-        self.__height: int = plot_config.height()
-        self.__font_size: int = plot_config.font_size()
 
     def generate(self) -> tp.List[Plot]:
         return [
@@ -1615,11 +1601,7 @@ class SankeyLibraryInteractionsGeneratorCS(
                 self.plot_config,
                 report_type=self.__report_type,
                 case_study=cs,
-                revision=rev,
-                fig_title=self.__fig_title,
-                width=self.__width,
-                height=self.__height,
-                font_size=self.__font_size,
+                revision=rev
             ) for cs in self.__case_studies for rev in cs.revisions
         ]
 
