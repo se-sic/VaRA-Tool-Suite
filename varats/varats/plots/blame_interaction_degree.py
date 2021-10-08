@@ -371,7 +371,7 @@ def _generate_degree_stackplot(
             cm.get_cmap(plot_kwargs['colormap'].value
                        )(np.linspace(0, 1, len(sub_df_list)))
         ),
-        labels=sorted(np.unique(df['degree'])),
+        labels=sorted(np.unique(df['degree'])),  # type: ignore
         linewidth=plot_config.line_width()
     )
     legend = main_axis.legend(
