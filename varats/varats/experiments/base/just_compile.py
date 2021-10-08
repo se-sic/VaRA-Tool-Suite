@@ -20,7 +20,6 @@ from varats.experiment.experiment_util import (
 from varats.experiment.wllvm import RunWLLVM
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
-from varats.utils.settings import bb_cfg
 
 
 # Please take care when changing this file, see docs experiments/just_compile
