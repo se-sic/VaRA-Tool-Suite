@@ -272,14 +272,9 @@ class PaperConfigOverviewGenerator(
 ):
     """Generates a single pc-overview plot for the current paper config."""
 
-    @check_required_args("report_type")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
-
     def generate(self) -> tp.List[Plot]:
         return [
             PaperConfigOverviewPlot(
-                self.plot_config, report_type=self.__report_type
+                self.plot_config, report_type=self.plot_kwargs["report_type"]
             )
         ]

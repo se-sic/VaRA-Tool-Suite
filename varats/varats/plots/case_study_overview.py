@@ -230,21 +230,13 @@ class CaseStudyOverviewGenerator(
 ):
     """Generates a case study overview plot."""
 
-    @check_required_args("report_type", "case_study")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_study: CaseStudy = plot_kwargs["case_study"]
-        self.__show_blocked: bool = plot_kwargs["show_blocked"]
-        self.__show_all_blocked: bool = plot_kwargs["show_all_blocked"]
-
     def generate(self) -> tp.List[Plot]:
         return [
             CaseStudyOverviewPlot(
                 plot_config=self.plot_config,
-                report_type=self.__report_type,
-                case_study=self.__case_study,
-                show_blocked=self.__show_blocked,
-                show_all_blocked=self.__show_all_blocked
+                report_type=self.plot_kwargs["report_type"],
+                case_study=self.plot_kwargs["case_study"],
+                show_blocked=self.plot_kwargs["show_blocked"],
+                show_all_blocked=self.plot_kwargs["show_all_blocked"]
             )
         ]

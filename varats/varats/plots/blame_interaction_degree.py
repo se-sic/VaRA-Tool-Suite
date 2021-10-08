@@ -1387,39 +1387,23 @@ class BlameInteractionDegreeGenerator(
 ):
     """Generates interaction-degree plot(s) for the selected case study(ies)."""
 
-    @check_required_args("report_type", "case_study")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-        self.__show_churn: bool = plot_kwargs["show_churn"]
-        self.__edge_color: str = plot_kwargs["edge_color"]
-        self.__colormap: Colormap = plot_kwargs["colormap"]
-        self.__show_cve: bool = plot_kwargs["show_cve"]
-        self.__show_bugs: bool = plot_kwargs["show_bugs"]
-        self.__cve_line_width: int = plot_kwargs["cve_line_width"]
-        self.__bug_line_width: int = plot_kwargs["bug_line_width"]
-        self.__cve_color: str = plot_kwargs["cve_color"]
-        self.__bug_color: str = plot_kwargs["bug_color"]
-        self.__vertical_alignment: str = plot_kwargs["vertical_alignment"]
-
     def generate(self) -> tp.List[Plot]:
         return [
             BlameInteractionDegree(
                 self.plot_config,
-                report_type=self.__report_type,
+                report_type=self.plot_kwargs["report_type"],
                 case_study=cs,
-                show_churn=self.__show_churn,
-                edge_color=self.__edge_color,
-                colormap=self.__colormap,
-                show_cve=self.__show_cve,
-                show_bugs=self.__show_bugs,
-                cve_line_width=self.__cve_line_width,
-                bug_line_width=self.__bug_line_width,
-                cve_color=self.__cve_color,
-                bug_color=self.__bug_color,
-                vertical_alignment=self.__vertical_alignment
-            ) for cs in self.__case_studies
+                show_churn=self.plot_kwargs["show_churn"],
+                edge_color=self.plot_kwargs["edge_color"],
+                colormap=self.plot_kwargs["colormap"],
+                show_cve=self.plot_kwargs["show_cve"],
+                show_bugs=self.plot_kwargs["show_bugs"],
+                cve_line_width=self.plot_kwargs["cve_line_width"],
+                bug_line_width=self.plot_kwargs["bug_line_width"],
+                cve_color=self.plot_kwargs["cve_color"],
+                bug_color=self.plot_kwargs["bug_color"],
+                vertical_alignment=self.plot_kwargs["vertical_alignment"]
+            ) for cs in self.plot_kwargs["case_study"]
         ]
 
 
@@ -1562,22 +1546,13 @@ class SankeyLibraryInteractionsGeneratorRev(
     """Generates a single sankey plot for the selected revision in the case
     study."""
 
-    @check_required_args("report_type", "case_study", "revision")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_study: CaseStudy = plot_kwargs["case_study"]
-        self.__revision: ShortCommitHash = ShortCommitHash(
-            plot_kwargs["revision"]
-        )
-
     def generate(self) -> tp.List[Plot]:
         return [
             BlameLibraryInteractions(
                 self.plot_config,
-                report_type=self.__report_type,
-                case_study=self.__case_study,
-                revision=self.__revision
+                report_type=self.plot_kwargs["report_type"],
+                case_study=self.plot_kwargs["case_study"],
+                revision=ShortCommitHash(self.plot_kwargs["revision"])
             )
         ]
 
@@ -1589,20 +1564,14 @@ class SankeyLibraryInteractionsGeneratorCS(
 ):
     """Generates a sankey plot for every revision in every given case study."""
 
-    @check_required_args("report_type", "case_study")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-
     def generate(self) -> tp.List[Plot]:
         return [
             BlameLibraryInteractions(
                 self.plot_config,
-                report_type=self.__report_type,
+                report_type=self.plot_kwargs["report_type"],
                 case_study=cs,
                 revision=rev
-            ) for cs in self.__case_studies for rev in cs.revisions
+            ) for cs in self.plot_kwargs["case_study"] for rev in cs.revisions
         ]
 
 
@@ -1676,40 +1645,23 @@ class GraphvizLibraryInteractionsGeneratorRev(
     """Generates a single graphviz plot for the selected revision in the case
     study."""
 
-    @check_required_args("report_type", "case_study", "revision")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_study: CaseStudy = plot_kwargs["case_study"]
-        self.__revision: ShortCommitHash = ShortCommitHash(
-            plot_kwargs["revision"]
-        )
-        self.__show_interactions: bool = plot_kwargs["show_interactions"]
-        self.__show_diff: bool = plot_kwargs["show_diff"]
-        self.__show_edge_weight: bool = plot_kwargs["show_edge_weight"]
-        self.__edge_weight_threshold: tp.Optional[
-            EdgeWeightThreshold] = plot_kwargs["edge_weight_threshold"]
-        self.__revision_length: int = plot_kwargs["revision_length"]
-        self.__layout_engine: str = plot_kwargs["layout_engine"]
-        self.__show_only_commit: tp.Optional[ShortCommitHash] = ShortCommitHash(
-            plot_kwargs["show_only_commit"]
-        ) if plot_kwargs["show_only_commit"] is not None else plot_kwargs[
-            "show_only_commit"]
-
     def generate(self) -> tp.List[Plot]:
         return [
             BlameCommitInteractionsGraphviz(
                 self.plot_config,
-                report_type=self.__report_type,
-                case_study=self.__case_study,
-                revision=self.__revision,
-                show_interactions=self.__show_interactions,
-                show_diff=self.__show_diff,
-                show_edge_weight=self.__show_edge_weight,
-                edge_weight_threshold=self.__edge_weight_threshold,
-                revision_length=self.__revision_length,
-                layout_engine=self.__layout_engine,
-                show_only_commit=self.__show_only_commit,
+                report_type=self.plot_kwargs["report_type"],
+                case_study=self.plot_kwargs["case_study"],
+                revision=ShortCommitHash(self.plot_kwargs["revision"]),
+                show_interactions=self.plot_kwargs["show_interactions"],
+                show_diff=self.plot_kwargs["show_diff"],
+                show_edge_weight=self.plot_kwargs["show_edge_weight"],
+                edge_weight_threshold=self.plot_kwargs["edge_weight_threshold"],
+                revision_length=self.plot_kwargs["revision_length"],
+                layout_engine=self.plot_kwargs["layout_engine"],
+                show_only_commit=ShortCommitHash(
+                    self.plot_kwargs["show_only_commit"]
+                ) if self.plot_kwargs["show_only_commit"] is not None else
+                self.plot_kwargs["show_only_commit"]
             )
         ]
 
@@ -1727,37 +1679,24 @@ class GraphvizLibraryInteractionsGeneratorCS(
 ):
     """Generates a graphviz plot for every revision in the case study."""
 
-    @check_required_args("report_type", "case_study")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-        self.__show_interactions: bool = plot_kwargs["show_interactions"]
-        self.__show_diff: bool = plot_kwargs["show_diff"]
-        self.__show_edge_weight: bool = plot_kwargs["show_edge_weight"]
-        self.__edge_weight_threshold: tp.Optional[
-            EdgeWeightThreshold] = plot_kwargs["edge_weight_threshold"]
-        self.__revision_length: int = plot_kwargs["revision_length"]
-        self.__layout_engine: str = plot_kwargs["layout_engine"]
-        self.__show_only_commit: tp.Optional[ShortCommitHash] = ShortCommitHash(
-            plot_kwargs["show_only_commit"]
-        )
-
     def generate(self) -> tp.List[Plot]:
         return [
             BlameCommitInteractionsGraphviz(
                 self.plot_config,
-                report_type=self.__report_type,
+                report_type=self.plot_kwargs["report_type"],
                 case_study=cs,
                 revision=rev,
-                show_interactions=self.__show_interactions,
-                show_diff=self.__show_diff,
-                show_edge_weight=self.__show_edge_weight,
-                edge_weight_threshold=self.__edge_weight_threshold,
-                revision_length=self.__revision_length,
-                layout_engine=self.__layout_engine,
-                show_only_commit=self.__show_only_commit,
-            ) for cs in self.__case_studies for rev in cs.revisions
+                show_interactions=self.plot_kwargs["show_interactions"],
+                show_diff=self.plot_kwargs["show_diff"],
+                show_edge_weight=self.plot_kwargs["show_edge_weight"],
+                edge_weight_threshold=self.plot_kwargs["edge_weight_threshold"],
+                revision_length=self.plot_kwargs["revision_length"],
+                layout_engine=self.plot_kwargs["layout_engine"],
+                show_only_commit=ShortCommitHash(
+                    self.plot_kwargs["show_only_commit"]
+                ) if self.plot_kwargs["show_only_commit"] is not None else
+                self.plot_kwargs["show_only_commit"]
+            ) for cs in self.plot_kwargs["case_study"] for rev in cs.revisions
         ]
 
 
