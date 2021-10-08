@@ -1083,8 +1083,8 @@ class BlameDegree(Plot, plot_name=None):
 
     def _degree_plot(self, degree_type: DegreeType) -> None:
         project_name = self.plot_kwargs['case_study'].project_name
-        fig_suptitle = f'{self.plot_config.fig_title("Blame interactions")} - ' \
-                       f'Project {project_name}'
+        fig_suptitle = f'{self.plot_config.fig_title("Blame interactions")} ' \
+                       f'- Project {project_name}'
         self.plot_kwargs["fig_suptitle"] = fig_suptitle
 
         style.use(self.plot_config.style())
