@@ -340,9 +340,10 @@ def _get_distinct_inter_lib_names(df: pd.DataFrame) -> tp.List[str]:
     return list(np.unique([str(inter_lib) for inter_lib in df.inter_lib]))
 
 
-def _generate_stackplot(
+def _generate_degree_stackplot(
     df: pd.DataFrame, unique_revisions: tp.List[FullCommitHash],
-    sub_df_list: tp.List[pd.Series], plot_kwargs: tp.Any
+    sub_df_list: tp.List[pd.Series], plot_kwargs: tp.Any,
+    plot_config: PlotConfig
 ) -> None:
     fig = plt.figure()
     grid_spec = fig.add_gridspec(3, 1)
@@ -371,22 +372,22 @@ def _generate_stackplot(
                        )(np.linspace(0, 1, len(sub_df_list)))
         ),
         labels=sorted(np.unique(df['degree'])),
-        linewidth=plot_kwargs['line_width']
+        linewidth=plot_config.line_width()
     )
     legend = main_axis.legend(
-        title=plot_kwargs['legend_title'],
+        title=plot_config.legend_title("Interaction degrees"),
         loc='upper left',
         prop={
-            'size': plot_kwargs['legend_size'],
+            'size': plot_config.legend_size(),
             'family': 'monospace'
         }
     )
     plt.setp(
         legend.get_title(),
-        fontsize=plot_kwargs['legend_size'],
+        fontsize=plot_config.legend_size(),
         family='monospace'
     )
-    legend.set_visible(plot_kwargs['show_legend'])
+    legend.set_visible(plot_config.show_legend())
     # annotate CVEs
     with_cve = plot_kwargs["show_cve"]
     with_bugs = plot_kwargs["show_bugs"]
@@ -399,13 +400,13 @@ def _generate_stackplot(
             draw_cves(
                 main_axis, project, unique_revisions,
                 plot_kwargs["cve_line_width"], plot_kwargs["cve_color"],
-                plot_kwargs["label_size"], plot_kwargs["vertical_alignment"]
+                plot_config.label_size(), plot_kwargs["vertical_alignment"]
             )
         if with_bugs:
             draw_bugs(
                 main_axis, project, unique_revisions,
                 plot_kwargs["bug_line_width"], plot_kwargs["bug_color"],
-                plot_kwargs["label_size"], plot_kwargs["vertical_alignment"]
+                plot_config.label_size(), plot_kwargs["vertical_alignment"]
             )
     # draw churn subplot
     if plot_kwargs["show_churn"]:
@@ -415,7 +416,7 @@ def _generate_stackplot(
     plt.setp(x_axis.get_yticklabels(), fontsize=8, fontfamily='monospace')
     plt.setp(
         x_axis.get_xticklabels(),
-        fontsize=plot_kwargs['x_tick_size'],
+        fontsize=plot_config.x_tick_size(),
         fontfamily='monospace',
         rotation=270
     )
@@ -1083,9 +1084,8 @@ class BlameDegree(Plot, plot_name=None):
         return interaction_plot_df
 
     def _degree_plot(self, degree_type: DegreeType) -> None:
-
         project_name = self.plot_kwargs['case_study'].project_name
-        fig_suptitle = f'{str(self.plot_kwargs["fig_title"])} - ' \
+        fig_suptitle = f'{self.plot_config.fig_title("Blame interactions")} - ' \
                        f'Project {project_name}'
         self.plot_kwargs["fig_suptitle"] = fig_suptitle
 
@@ -1097,8 +1097,9 @@ class BlameDegree(Plot, plot_name=None):
             degree_type, interaction_plot_df, commit_map
         )
 
-        _generate_stackplot(
-            interaction_plot_df, unique_revisions, sub_df_list, self.plot_kwargs
+        _generate_degree_stackplot(
+            interaction_plot_df, unique_revisions, sub_df_list,
+            self.plot_kwargs, self.plot_config
         )
 
     def _multi_lib_degree_plot(
@@ -1165,8 +1166,9 @@ class BlameDegree(Plot, plot_name=None):
             degree_type, interaction_plot_df, commit_map
         )
 
-        _generate_stackplot(
-            interaction_plot_df, unique_revisions, sub_df_list, self.plot_kwargs
+        _generate_degree_stackplot(
+            interaction_plot_df, unique_revisions, sub_df_list,
+            self.plot_kwargs, self.plot_config
         )
 
     def _fraction_overview_plot(
@@ -1392,15 +1394,6 @@ class BlameInteractionDegreeGenerator(
         super().__init__(plot_config, **plot_kwargs)
         self.__report_type: str = plot_kwargs["report_type"]
         self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-        self.__fig_title: str = plot_config.fig_title("Blame interactions")
-        self.__legend_title: str = plot_config.legend_title(
-            "Interaction degrees"
-        )
-        self.__legend_size = plot_config.legend_size()
-        self.__show_legend = plot_config.show_legend()
-        self.__line_width = plot_config.line_width()
-        self.__x_tick_size = plot_config.x_tick_size()
-        self.__label_size = plot_config.label_size()
         self.__show_churn: bool = plot_kwargs["show_churn"]
         self.__edge_color: str = plot_kwargs["edge_color"]
         self.__colormap: Colormap = plot_kwargs["colormap"]
@@ -1418,13 +1411,6 @@ class BlameInteractionDegreeGenerator(
                 self.plot_config,
                 report_type=self.__report_type,
                 case_study=cs,
-                fig_title=self.__fig_title,
-                legend_title=self.__legend_title,
-                legend_size=self.__legend_size,
-                show_legend=self.__show_legend,
-                line_width=self.__line_width,
-                x_tick_size=self.__x_tick_size,
-                label_size=self.__label_size,
                 show_churn=self.__show_churn,
                 edge_color=self.__edge_color,
                 colormap=self.__colormap,
