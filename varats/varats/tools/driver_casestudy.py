@@ -34,6 +34,7 @@ from varats.ts_utils.cli_util import (
     cli_list_choice,
     initialize_cli_tool,
     cli_yn_choice,
+    TypedChoice
 )
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
@@ -50,6 +51,12 @@ def main() -> None:
     initialize_plots()  # needed for vara-cs ext smooth_plot
 
 
+def _create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
+    """Create a choice parameter type that allows selecting a report type."""
+    initialize_reports()
+    return TypedChoice(BaseReport.REPORT_TYPES)
+
+
 def mai_nold() -> None:
     """Allow easier management of case studies."""
     initialize_cli_tool()
@@ -62,8 +69,6 @@ def mai_nold() -> None:
     __create_gen_parser(sub_parsers)  # vara-cs gen
     __create_ext_parser(sub_parsers)  # vara-cs ext
     __create_package_parser(sub_parsers)  # vara-cs package
-    __create_view_parser(sub_parsers)  # vara-cs view
-    __create_cleanup_parser(sub_parsers)  # vara-cs cleanup
 
     args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
     if 'subcommand' not in args:
@@ -74,7 +79,7 @@ def mai_nold() -> None:
 
 @configuration_lookup_error_handler
 def __casestudy_exec_command(
-    args: tp.Dict[str, tp.Any], parser: ArgumentParser
+        args: tp.Dict[str, tp.Any], parser: ArgumentParser
 ) -> None:
     if args['subcommand'] == 'status':
         __casestudy_status(args, parser)
@@ -82,10 +87,6 @@ def __casestudy_exec_command(
         __casestudy_create_or_extend(args, parser)
     elif args['subcommand'] == 'package':
         __casestudy_package(args, parser)
-    elif args['subcommand'] == 'view':
-        __casestudy_view(args)
-    elif args['subcommand'] == 'cleanup':
-        __casestudy_cleanup(args, parser)
 
 
 def __add_common_args(sub_parser: ArgumentParser) -> None:
@@ -119,7 +120,7 @@ def __add_common_args(sub_parser: ArgumentParser) -> None:
         action="store_true",
         default=False,
         help="Separate the revisions in different stages per year "
-        "(when using \'--revs-per-year\')."
+             "(when using \'--revs-per-year\')."
     )
     sub_parser.add_argument(
         "--num-rev",
@@ -191,7 +192,7 @@ def __create_ext_parser(sub_parsers: _SubParsersAction) -> None:
         type=int,
         default=5,
         help="Maximal expected gradient in percent between " +
-        "two revisions, e.g., 5 for 5%%"
+             "two revisions, e.g., 5 for 5%%"
     )
     ext_parser.add_argument(
         "--plot-type", help="Plot to calculate new revisions from."
@@ -207,80 +208,9 @@ def __create_ext_parser(sub_parsers: _SubParsersAction) -> None:
     __add_common_args(ext_parser)
 
 
-def __create_package_parser(sub_parsers: _SubParsersAction) -> None:
-    package_parser = sub_parsers.add_parser(
-        'package', help="Case study packaging util"
-    )
-    package_parser.add_argument("-o", "--output", help="Output file")
-    package_parser.add_argument(
-        "--filter-regex",
-        help="Provide a regex to only include case "
-        "studies that match the filter.",
-        type=str,
-        default=".*"
-    )
-    package_parser.add_argument(
-        "--report-names",
-        help=(
-            "Provide a report name to "
-            "select which files are considered for the status"
-        ),
-        choices=BaseReport.REPORT_TYPES.keys(),
-        type=str,
-        nargs="*",
-        default=[]
-    )
-
-
-def __create_view_parser(sub_parsers: _SubParsersAction) -> None:
-    view_parser = sub_parsers.add_parser('view', help="View report files.")
-    view_parser.add_argument(
-        "report_type",
-        help="Report type of the result files.",
-        choices=BaseReport.REPORT_TYPES.keys(),
-        type=str
-    )
-    view_parser.add_argument(
-        "project", help="Project to view result files for."
-    )
-    view_parser.add_argument(
-        "commit_hash", help="Commit hash to view result files for.", nargs='?'
-    )
-    view_parser.add_argument(
-        "--newest-only",
-        action="store_true",
-        default=False,
-        help="Only report the newest file for each matched commit hash"
-    )
-
-
-def __create_cleanup_parser(sub_parsers: _SubParsersAction) -> None:
-    cleanup_parser = sub_parsers.add_parser(
-        'cleanup', help="Cleanup report files."
-    )
-    cleanup_parser.add_argument(
-        "cleanup_type",
-        help="The type of the performed cleanup action.",
-        action=enum_action(CleanupType, str.upper)
-    )
-    cleanup_parser.add_argument(
-        "-f",
-        "--filter-regex",
-        help="Regex to determine which report files should be deleted.",
-        default="",
-        type=str
-    )
-    cleanup_parser.add_argument(
-        "--silent",
-        action="store_true",
-        default=False,
-        help="Hide the output of the matching filenames."
-    )
-
-
 @main.command("status")
 @click.argument(
-    "report_type", type=click.Choice(list(BaseReport.REPORT_TYPES.keys()))
+    "report_type", type=_create_report_type_choice()
 )
 @click.option(
     "--filter-regex",
@@ -310,11 +240,11 @@ def __create_cleanup_parser(sub_parsers: _SubParsersAction) -> None:
     "--force-color",
     is_flag=True,
     help="Force colored output also when not connected to a terminal "
-    "(e.g. when piping to less -r)."
+         "(e.g. when piping to less -r)."
 )
 def __casestudy_status(
-    report_type: str, filter_regex: str, paper_config: str, short: bool,
-    list_revs: bool, ws: bool, sort_revs: bool, legend: bool, force_color: bool
+        report_type: str, filter_regex: str, paper_config: str, short: bool,
+        list_revs: bool, ws: bool, sort_revs: bool, legend: bool, force_color: bool
 ) -> None:
     """Show status of case-studies for a specified REPORT TYPE."""
     if force_color:
@@ -333,7 +263,7 @@ def __casestudy_status(
 
 
 def __casestudy_create_or_extend(
-    args: tp.Dict[str, tp.Any], parser: ArgumentParser
+        args: tp.Dict[str, tp.Any], parser: ArgumentParser
 ) -> None:
     if "project" not in args and "git_path" not in args:
         parser.error("need --project or --git-path")
@@ -372,7 +302,7 @@ def __casestudy_create_or_extend(
             'strategy'] is ExtenderStrategy.SMOOTH_PLOT:
             args['project'] = case_study.project_name
             args['result_folder'] = str(vara_cfg()['result_dir']
-                                       ) + "/" + args['project']
+                                        ) + "/" + args['project']
             LOG.info(f"Result folder defaults to: {args['result_folder']}")
 
         extend_case_study(case_study, cmap, args['strategy'], **args)
@@ -393,10 +323,20 @@ def __casestudy_create_or_extend(
         store_case_study(case_study, args['paper_config_path'])
 
 
+@main.command("package")
+@click.option("-o", "--output", help="Output file")
+@click.option("--filter-regex",
+              help="Provide a regex to only include case "
+                   "studies that match the filter.",
+              type=str,
+              default=".*")
+@click.argument("report_names",
+                type=_create_report_type_choice(),
+                nargs=-1)
 def __casestudy_package(
-    args: tp.Dict[str, tp.Any], parser: ArgumentParser
+        output: str, filter_regex: str, report_names: tp.List[tp.Type[BaseReport]]
 ) -> None:
-    output_path = Path(args["output"])
+    output_path = Path(output)
     if output_path.suffix == '':
         output_path = Path(str(output_path) + ".zip")
     if output_path.suffix == '.zip':
@@ -409,17 +349,17 @@ def __casestudy_package(
             os.chdir(vara_root)
 
         PCM.package_paper_config(
-            output_path, re.compile(args['filter_regex']), args['report_names']
+            output_path, re.compile(filter_regex), report_names
         )
     else:
-        parser.error(
+        click.error(
             "--output has the wrong file type extension. "
             "Please do not provide any other file type extension than .zip"
         )
 
 
 def __init_commit_hash(
-    report_type: tp.Type[BaseReport], project: str, commit_hash: str
+        report_type: tp.Type[BaseReport], project: str, commit_hash: str
 ) -> ShortCommitHash:
     if not commit_hash:
         # Ask the user to provide a commit hash
@@ -441,7 +381,7 @@ def __init_commit_hash(
 
         # Create call backs for cli choice
         def set_commit_hash(
-            choice_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
+                choice_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
         ) -> None:
             nonlocal commit_hash
             commit_hash = choice_pair[0]
@@ -455,7 +395,7 @@ def __init_commit_hash(
         ])
 
         def result_file_to_list_entry(
-            commit_status_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
+                commit_status_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
         ) -> str:
             status = commit_status_pair[1].get_colored_status().rjust(
                 longest_file_status_extension +
@@ -485,13 +425,13 @@ def __init_commit_hash(
 
 @main.command("view")
 @click.argument(
-    "report-type", type=click.Choice(list(BaseReport.REPORT_TYPES.keys()))
+    "report-type", type=_create_report_type_choice()
 )
 @click.argument("project")
 @click.argument("commit-hash", required=False)
 @click.option("--newest-only", is_flag=True)
 def __casestudy_view(
-    report_type: str, project: str, commit_hash: str, newest_only: bool
+        report_type: str, project: str, commit_hash: str, newest_only: bool
 ) -> None:
     result_file_type = BaseReport.REPORT_TYPES[report_type]
     try:
@@ -577,8 +517,8 @@ def _remove_old_result_files() -> None:
                     newer_files[commit_hash] = opt_res_file
                 else:
                     if (
-                        current_file.stat().st_mtime_ns <
-                        opt_res_file.stat().st_mtime_ns
+                            current_file.stat().st_mtime_ns <
+                            opt_res_file.stat().st_mtime_ns
                     ):
                         newer_files[commit_hash] = opt_res_file
                         old_files.append(current_file)
@@ -614,8 +554,8 @@ def _remove_error_result_files() -> None:
         for result_file_name in result_file_names:
             report_file_name = ReportFilename(result_file_name)
             if report_file_name.is_result_file() and (
-                report_file_name.has_status_compileerror() or
-                report_file_name.has_status_failed()
+                    report_file_name.has_status_compileerror() or
+                    report_file_name.has_status_failed()
             ):
                 os.remove(result_dir_path / result_file_name)
 
@@ -658,6 +598,12 @@ def _remove_result_files_by_regex(regex_filter: str, hide: bool) -> None:
                         os.remove(result_dir_path / file_name)
         except EOFError:
             continue
+
+
+def _create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
+    """Create a choice parameter type that allows selecting a report type."""
+    initialize_reports()
+    return TypedChoice(BaseReport.REPORT_TYPES)
 
 
 class CleanupType(Enum):
