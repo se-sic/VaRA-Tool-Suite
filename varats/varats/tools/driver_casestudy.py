@@ -114,7 +114,7 @@ def __casestudy_status(
 @click.option("--distribution", type=click.Choice([
     x.name()
     for x in NormalSamplingMethod.normal_sampling_method_types()
-]), required=True)
+]), default=None)
 @click.option("-v", "--version", type=int, default=0,
               help="Case study version.")
 @click.option("--git-path", help="Path to git repository", default=None)
@@ -123,8 +123,8 @@ def __casestudy_status(
               default="HEAD")
 @click.option("--start", help="Start of the commit range (exclusive)",
               default=None)
-@click.option("--extra-revs",
-              nargs=-1,
+@click.option("--extra-revs", "-er",
+              multiple=True,
               help="Add a list of additional revisions to the case-study")
 @click.option("--revs-per-year",
               type=int,
@@ -143,16 +143,15 @@ def __casestudy_status(
               help="Ignore revisions that are marked as blocked.")
 def __casestudy_create_or_extend(
         paper_config_path: Path, distribution: str, version: int,
-        git_path: tp.Type[os.PathLike],
         end: str, start: str, project: str, **args: tp.Any
 ) -> None:
-    if not project and not git_path:
+    if not project and not args['git_path']:
         click.echo("need --project or --git-path", err=True)
 
-    if project and not git_path:
-        git_path = str(get_local_project_git_path(project))
-    if git_path and not project:
-        project = Path(git_path).stem.replace("-HEAD", "")
+    if project and not args['git_path']:
+        args['git_path'] = str(get_local_project_git_path(project))
+    if args['git_path'] and not project:
+        project = Path(args['git_path']).stem.replace("-HEAD", "")
 
     get_cmap = create_lazy_commit_map_loader(
         project, None, end,
@@ -160,20 +159,23 @@ def __casestudy_create_or_extend(
     )
     cmap = get_cmap()
 
+    args['extra_revs'] = list(args['extra_revs'])
     # Rewrite requested distribution with initialized object
-    sampling_method = NormalSamplingMethod.get_sampling_method_type(
-        distribution
-    )()
-    distribution = sampling_method
+    if distribution:
+        sampling_method = NormalSamplingMethod.get_sampling_method_type(
+            distribution
+        )()
+    else:
+        sampling_method = None
 
     # Specify merge_stage as 0 for creating new case studies
     args['merge_stage'] = 0
 
     case_study = generate_case_study(
-        sampling_method, cmap, version, project, args
+        sampling_method, cmap, version, project, **args
     )
 
-    store_case_study(case_study, paper_config_path)
+    store_case_study(case_study, Path(paper_config_path))
 
 
 @main.command("package")
