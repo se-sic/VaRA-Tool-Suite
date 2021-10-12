@@ -29,7 +29,7 @@ from varats.ts_utils.cli_util import (
     cli_list_choice,
     initialize_cli_tool,
     cli_yn_choice,
-    TypedChoice
+    TypedChoice,
 )
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
@@ -54,9 +54,7 @@ def _create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
 
 
 @main.command("status")
-@click.argument(
-    "report_type", type=_create_report_type_choice()
-)
+@click.argument("report_type", type=_create_report_type_choice())
 @click.option(
     "--filter-regex",
     help="Provide a regex to filter the shown case studies",
@@ -73,8 +71,12 @@ def _create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
     is_flag=True,
     help="Print a list of revisions for every stage and every case study"
 )
-@click.option("--ws", "with_stage", is_flag=True,
-              help="Print status with stage separation")
+@click.option(
+    "--ws",
+    "with_stage",
+    is_flag=True,
+    help="Print status with stage separation"
+)
 @click.option(
     "--sorted",
     "sort_revs",
@@ -86,12 +88,12 @@ def _create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
     "--force-color",
     is_flag=True,
     help="Force colored output also when not connected to a terminal "
-         "(e.g. when piping to less -r)."
+    "(e.g. when piping to less -r)."
 )
 def __casestudy_status(
-        report_type: str, filter_regex: str, paper_config: str, short: bool,
-        list_revs: bool, with_stage: bool, sort_revs: bool, legend: bool,
-        force_color: bool
+    report_type: str, filter_regex: str, paper_config: str, short: bool,
+    list_revs: bool, with_stage: bool, sort_revs: bool, legend: bool,
+    force_color: bool
 ) -> None:
     if force_color:
         colors.use_color = True
@@ -111,39 +113,53 @@ def __casestudy_status(
 
 @main.command("gen")
 @click.argument("paper_config_path", type=click.Path(exists=True))
-@click.option("--distribution", type=click.Choice([
-    x.name()
-    for x in NormalSamplingMethod.normal_sampling_method_types()
-]), default=None)
-@click.option("-v", "--version", type=int, default=0,
-              help="Case study version.")
+@click.option(
+    "--distribution",
+    type=click.Choice([
+        x.name() for x in NormalSamplingMethod.normal_sampling_method_types()
+    ]),
+    default=None
+)
+@click.option(
+    "-v", "--version", type=int, default=0, help="Case study version."
+)
 @click.option("--git-path", help="Path to git repository", default=None)
 @click.option("-p", "--project", help="Project name", default=None)
-@click.option("--end", help="End of the commit range (inclusive)",
-              default="HEAD")
-@click.option("--start", help="Start of the commit range (exclusive)",
-              default=None)
-@click.option("--extra-revs", "-er",
-              multiple=True,
-              help="Add a list of additional revisions to the case-study")
-@click.option("--revs-per-year",
-              type=int,
-              default=0,
-              help="Add this many revisions per year to the case-study.")
-@click.option("--revs-year-sep",
-              is_flag=True,
-              help="Separate the revisions in different stages per year "
-                   "(when using \'--revs-per-year\').")
-@click.option("--num-rev",
-              type=int,
-              default=10,
-              help="Number of revisions to select.")
-@click.option("--ignore-blocked",
-              is_flag=True,
-              help="Ignore revisions that are marked as blocked.")
+@click.option(
+    "--end", help="End of the commit range (inclusive)", default="HEAD"
+)
+@click.option(
+    "--start", help="Start of the commit range (exclusive)", default=None
+)
+@click.option(
+    "--extra-revs",
+    "-er",
+    multiple=True,
+    help="Add a list of additional revisions to the case-study"
+)
+@click.option(
+    "--revs-per-year",
+    type=int,
+    default=0,
+    help="Add this many revisions per year to the case-study."
+)
+@click.option(
+    "--revs-year-sep",
+    is_flag=True,
+    help="Separate the revisions in different stages per year "
+    "(when using \'--revs-per-year\')."
+)
+@click.option(
+    "--num-rev", type=int, default=10, help="Number of revisions to select."
+)
+@click.option(
+    "--ignore-blocked",
+    is_flag=True,
+    help="Ignore revisions that are marked as blocked."
+)
 def __casestudy_create_or_extend(
-        paper_config_path: Path, distribution: str, version: int,
-        end: str, start: str, project: str, **args: tp.Any
+    paper_config_path: Path, distribution: str, version: int, end: str,
+    start: str, project: str, **args: tp.Any
 ) -> None:
     if not project and not args['git_path']:
         click.echo("need --project or --git-path", err=True)
@@ -153,18 +169,15 @@ def __casestudy_create_or_extend(
     if args['git_path'] and not project:
         project = Path(args['git_path']).stem.replace("-HEAD", "")
 
-    get_cmap = create_lazy_commit_map_loader(
-        project, None, end,
-        start
-    )
+    get_cmap = create_lazy_commit_map_loader(project, None, end, start)
     cmap = get_cmap()
 
     args['extra_revs'] = list(args['extra_revs'])
     # Rewrite requested distribution with initialized object
     if distribution:
-        sampling_method = NormalSamplingMethod.get_sampling_method_type(
-            distribution
-        )()
+        sampling_method: tp.Optional[
+            NormalSamplingMethod
+        ] = NormalSamplingMethod.get_sampling_method_type(distribution)()
     else:
         sampling_method = None
 
@@ -180,17 +193,16 @@ def __casestudy_create_or_extend(
 
 @main.command("package")
 @click.option("-o", "--output", help="Output file")
-@click.option("--filter-regex",
-              help="Provide a regex to only include case "
-                   "studies that match the filter.",
-              type=str,
-              default=".*")
-@click.argument("report_names",
-                type=_create_report_type_choice(),
-                nargs=-1)
+@click.option(
+    "--filter-regex",
+    help="Provide a regex to only include case "
+    "studies that match the filter.",
+    type=str,
+    default=".*"
+)
+@click.argument("report_names", type=_create_report_type_choice(), nargs=-1)
 def __casestudy_package(
-        output: str, filter_regex: str,
-        report_names: tp.List[tp.Type[BaseReport]]
+    output: str, filter_regex: str, report_names: tp.List[str]
 ) -> None:
     output_path = Path(output)
     if output_path.suffix == '':
@@ -216,12 +228,11 @@ def __casestudy_package(
 
 
 def __init_commit_hash(
-        report_type: tp.Type[BaseReport], project: str, commit_hash: str
+    report_type: tp.Type[BaseReport], project: str, commit_hash: ShortCommitHash
 ) -> ShortCommitHash:
     if not commit_hash:
         # Ask the user to provide a commit hash
         print("No commit hash was provided.")
-        commit_hash: tp.Optional[ShortCommitHash] = None
         paper_config = get_paper_config()
         available_commit_hashes = []
         # Compute available commit hashes
@@ -238,7 +249,7 @@ def __init_commit_hash(
 
         # Create call backs for cli choice
         def set_commit_hash(
-                choice_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
+            choice_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
         ) -> None:
             nonlocal commit_hash
             commit_hash = choice_pair[0]
@@ -252,8 +263,7 @@ def __init_commit_hash(
         ])
 
         def result_file_to_list_entry(
-                commit_status_pair: tp.Tuple[
-                    ShortCommitHash, FileStatusExtension]
+            commit_status_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
         ) -> str:
             status = commit_status_pair[1].get_colored_status().rjust(
                 longest_file_status_extension +
@@ -278,18 +288,17 @@ def __init_commit_hash(
             print("Could not find processed commit hash.")
             raise LookupError
         return commit_hash
-    return ShortCommitHash(commit_hash)
+    return commit_hash
 
 
 @main.command("view")
-@click.argument(
-    "report-type", type=_create_report_type_choice()
-)
+@click.argument("report-type", type=_create_report_type_choice())
 @click.argument("project")
 @click.argument("commit-hash", required=False)
 @click.option("--newest-only", is_flag=True)
 def __casestudy_view(
-        report_type: str, project: str, commit_hash: str, newest_only: bool
+    report_type: str, project: str, commit_hash: ShortCommitHash,
+    newest_only: bool
 ) -> None:
     result_file_type = BaseReport.REPORT_TYPES[report_type]
     try:
@@ -375,8 +384,8 @@ def _remove_old_result_files() -> None:
                     newer_files[commit_hash] = opt_res_file
                 else:
                     if (
-                            current_file.stat().st_mtime_ns <
-                            opt_res_file.stat().st_mtime_ns
+                        current_file.stat().st_mtime_ns <
+                        opt_res_file.stat().st_mtime_ns
                     ):
                         newer_files[commit_hash] = opt_res_file
                         old_files.append(current_file)
@@ -412,8 +421,8 @@ def _remove_error_result_files() -> None:
         for result_file_name in result_file_names:
             report_file_name = ReportFilename(result_file_name)
             if report_file_name.is_result_file() and (
-                    report_file_name.has_status_compileerror() or
-                    report_file_name.has_status_failed()
+                report_file_name.has_status_compileerror() or
+                report_file_name.has_status_failed()
             ):
                 os.remove(result_dir_path / result_file_name)
 
@@ -456,12 +465,6 @@ def _remove_result_files_by_regex(regex_filter: str, hide: bool) -> None:
                         os.remove(result_dir_path / file_name)
         except EOFError:
             continue
-
-
-def _create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
-    """Create a choice parameter type that allows selecting a report type."""
-    initialize_reports()
-    return TypedChoice(BaseReport.REPORT_TYPES)
 
 
 class CleanupType(Enum):
