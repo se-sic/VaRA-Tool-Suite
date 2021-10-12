@@ -4,30 +4,25 @@ import logging
 import os
 import re
 import typing as tp
-from argparse import ArgumentParser, ArgumentTypeError, _SubParsersAction
 from enum import Enum
 from pathlib import Path
 
 import click
-from argparse_utils import enum_action
 from plumbum import FG, colors, local
 
 from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.discover_reports import initialize_reports
 from varats.mapping.commit_map import create_lazy_commit_map_loader
-from varats.paper.case_study import load_case_study_from_file, store_case_study
+from varats.paper.case_study import store_case_study
 from varats.paper_mgmt import paper_config_manager as PCM
 from varats.paper_mgmt.case_study import (
     get_revisions_status_for_case_study,
-    ExtenderStrategy,
-    extend_case_study,
     generate_case_study,
 )
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
-from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.ts_utils.cli_util import (
@@ -43,6 +38,7 @@ LOG = logging.getLogger(__name__)
 
 
 @click.group()
+@configuration_lookup_error_handler
 def main() -> None:
     """Allow easier management of case studies."""
     initialize_cli_tool()
@@ -55,157 +51,6 @@ def _create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
     """Create a choice parameter type that allows selecting a report type."""
     initialize_reports()
     return TypedChoice(BaseReport.REPORT_TYPES)
-
-
-def mai_nold() -> None:
-    """Allow easier management of case studies."""
-    initialize_cli_tool()
-    initialize_projects()
-    initialize_reports()
-    initialize_plots()  # needed for vara-cs ext smooth_plot
-    parser = ArgumentParser("vara-cs")
-    sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
-
-    __create_gen_parser(sub_parsers)  # vara-cs gen
-    __create_ext_parser(sub_parsers)  # vara-cs ext
-    __create_package_parser(sub_parsers)  # vara-cs package
-
-    args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
-    if 'subcommand' not in args:
-        parser.print_help()
-        return
-    __casestudy_exec_command(args, parser)
-
-
-@configuration_lookup_error_handler
-def __casestudy_exec_command(
-        args: tp.Dict[str, tp.Any], parser: ArgumentParser
-) -> None:
-    if args['subcommand'] == 'status':
-        __casestudy_status(args, parser)
-    elif args['subcommand'] == 'gen' or args['subcommand'] == 'ext':
-        __casestudy_create_or_extend(args, parser)
-    elif args['subcommand'] == 'package':
-        __casestudy_package(args, parser)
-
-
-def __add_common_args(sub_parser: ArgumentParser) -> None:
-    """Group common args to provide all args on different sub parsers."""
-    sub_parser.add_argument(
-        "--git-path", help="Path to git repository", default=None
-    )
-    sub_parser.add_argument(
-        "-p", "--project", help="Project name", default=None
-    )
-    sub_parser.add_argument(
-        "--end", help="End of the commit range (inclusive)", default="HEAD"
-    )
-    sub_parser.add_argument(
-        "--start", help="Start of the commit range (exclusive)", default=None
-    )
-    sub_parser.add_argument(
-        "--extra-revs",
-        nargs="+",
-        default=[],
-        help="Add a list of additional revisions to the case-study"
-    )
-    sub_parser.add_argument(
-        "--revs-per-year",
-        type=int,
-        default=0,
-        help="Add this many revisions per year to the case-study."
-    )
-    sub_parser.add_argument(
-        "--revs-year-sep",
-        action="store_true",
-        default=False,
-        help="Separate the revisions in different stages per year "
-             "(when using \'--revs-per-year\')."
-    )
-    sub_parser.add_argument(
-        "--num-rev",
-        type=int,
-        default=10,
-        help="Number of revisions to select."
-    )
-    sub_parser.add_argument(
-        "--ignore-blocked",
-        action="store_true",
-        default=False,
-        help="Ignore revisions that are marked as blocked."
-    )
-
-
-def __create_gen_parser(sub_parsers: _SubParsersAction) -> None:
-    gen_parser = sub_parsers.add_parser('gen', help="Generate a case study.")
-    gen_parser.add_argument(
-        "paper_config_path",
-        help="Path to paper_config folder (e.g., paper_configs/ase-17)"
-    )
-    gen_parser.add_argument(
-        "distribution",
-        choices=[
-            x.name()
-            for x in NormalSamplingMethod.normal_sampling_method_types()
-        ]
-    )
-    gen_parser.add_argument(
-        "-v", "--version", type=int, default=0, help="Case study version."
-    )
-    __add_common_args(gen_parser)
-
-
-def __create_ext_parser(sub_parsers: _SubParsersAction) -> None:
-    ext_parser = sub_parsers.add_parser(
-        'ext', help="Extend an existing case study."
-    )
-    ext_parser.add_argument("case_study_path", help="Path to case_study")
-    ext_parser.add_argument(
-        "strategy",
-        action=enum_action(ExtenderStrategy, str.upper),
-        help="Extender strategy"
-    )
-    ext_parser.add_argument(
-        "--distribution",
-        choices=[
-            x.name()
-            for x in NormalSamplingMethod.normal_sampling_method_types()
-        ]
-    )
-    ext_parser.add_argument(
-        "--release-type", action=enum_action(ReleaseType, str.upper)
-    )
-    ext_parser.add_argument(
-        "--merge-stage",
-        default=-1,
-        type=int,
-        help="Merge the new revision(s) into stage `n`; defaults to last stage."
-    )
-    ext_parser.add_argument(
-        "--new-stage",
-        help="Add the new revision(s) to a new stage.",
-        default=False,
-        action='store_true'
-    )
-    ext_parser.add_argument(
-        "--boundary-gradient",
-        type=int,
-        default=5,
-        help="Maximal expected gradient in percent between " +
-             "two revisions, e.g., 5 for 5%%"
-    )
-    ext_parser.add_argument(
-        "--plot-type", help="Plot to calculate new revisions from."
-    )
-    ext_parser.add_argument(
-        "--report-type",
-        help="Passed to the plot given via --plot-type.",
-        default="EmptyReport"
-    )
-    ext_parser.add_argument(
-        "--result-folder", help="Folder in which to search for result files."
-    )
-    __add_common_args(ext_parser)
 
 
 @main.command("status")
@@ -228,7 +73,8 @@ def __create_ext_parser(sub_parsers: _SubParsersAction) -> None:
     is_flag=True,
     help="Print a list of revisions for every stage and every case study"
 )
-@click.option("--ws", is_flag=True, help="Print status with stage separation")
+@click.option("--ws", "with_stage", is_flag=True,
+              help="Print status with stage separation")
 @click.option(
     "--sorted",
     "sort_revs",
@@ -244,9 +90,9 @@ def __create_ext_parser(sub_parsers: _SubParsersAction) -> None:
 )
 def __casestudy_status(
         report_type: str, filter_regex: str, paper_config: str, short: bool,
-        list_revs: bool, ws: bool, sort_revs: bool, legend: bool, force_color: bool
+        list_revs: bool, with_stage: bool, sort_revs: bool, legend: bool,
+        force_color: bool
 ) -> None:
-    """Show status of case-studies for a specified REPORT TYPE."""
     if force_color:
         colors.use_color = True
     if paper_config:
@@ -255,72 +101,79 @@ def __casestudy_status(
         click.UsageError(
             "At most one argument of: --short, --list-revs can be used."
         )
-    if short and ws:
+    if short and with_stage:
         click.UsageError("At most one argument of: --short, --ws can be used.")
     PCM.show_status_of_case_studies(
-        report_type, filter_regex, short, sort_revs, list_revs, ws, legend
+        report_type, filter_regex, short, sort_revs, list_revs, with_stage,
+        legend
     )
 
 
+@main.command("gen")
+@click.argument("paper_config_path", type=click.Path(exists=True))
+@click.option("--distribution", type=click.Choice([
+    x.name()
+    for x in NormalSamplingMethod.normal_sampling_method_types()
+]), required=True)
+@click.option("-v", "--version", type=int, default=0,
+              help="Case study version.")
+@click.option("--git-path", help="Path to git repository", default=None)
+@click.option("-p", "--project", help="Project name", default=None)
+@click.option("--end", help="End of the commit range (inclusive)",
+              default="HEAD")
+@click.option("--start", help="Start of the commit range (exclusive)",
+              default=None)
+@click.option("--extra-revs",
+              nargs=-1,
+              help="Add a list of additional revisions to the case-study")
+@click.option("--revs-per-year",
+              type=int,
+              default=0,
+              help="Add this many revisions per year to the case-study.")
+@click.option("--revs-year-sep",
+              is_flag=True,
+              help="Separate the revisions in different stages per year "
+                   "(when using \'--revs-per-year\').")
+@click.option("--num-rev",
+              type=int,
+              default=10,
+              help="Number of revisions to select.")
+@click.option("--ignore-blocked",
+              is_flag=True,
+              help="Ignore revisions that are marked as blocked.")
 def __casestudy_create_or_extend(
-        args: tp.Dict[str, tp.Any], parser: ArgumentParser
+        paper_config_path: Path, distribution: str, version: int,
+        git_path: tp.Type[os.PathLike],
+        end: str, start: str, project: str, **args: tp.Any
 ) -> None:
-    if "project" not in args and "git_path" not in args:
-        parser.error("need --project or --git-path")
+    if not project and not git_path:
+        click.echo("need --project or --git-path", err=True)
 
-    if "project" in args and "git_path" not in args:
-        args['git_path'] = str(get_local_project_git_path(args['project']))
+    if project and not git_path:
+        git_path = str(get_local_project_git_path(project))
+    if git_path and not project:
+        project = Path(git_path).stem.replace("-HEAD", "")
 
-    if "git_path" in args and "project" not in args:
-        args['project'] = Path(args['git_path']).stem.replace("-HEAD", "")
-
-    args['get_cmap'] = create_lazy_commit_map_loader(
-        args['project'], args.get('cmap', None), args['end'],
-        args['start'] if 'start' in args else None
+    get_cmap = create_lazy_commit_map_loader(
+        project, None, end,
+        start
     )
-    cmap = args['get_cmap']()
+    cmap = get_cmap()
 
     # Rewrite requested distribution with initialized object
-    if 'distribution' in args:
-        sampling_method = NormalSamplingMethod.get_sampling_method_type(
-            args['distribution']
-        )()
-        args['distribution'] = sampling_method
+    sampling_method = NormalSamplingMethod.get_sampling_method_type(
+        distribution
+    )()
+    distribution = sampling_method
 
-    if args['subcommand'] == 'ext':
-        case_study = load_case_study_from_file(Path(args['case_study_path']))
+    # Specify merge_stage as 0 for creating new case studies
+    args['merge_stage'] = 0
 
-        # If no merge_stage was specified add it to the last
-        if args['merge_stage'] == -1:
-            args['merge_stage'] = max(case_study.num_stages - 1, 0)
-        # If + was specified we add a new stage
-        if args['new_stage']:
-            args['merge_stage'] = case_study.num_stages
+    case_study = generate_case_study(
+        sampling_method, cmap, version, project, args
+    )
 
-        # Setup default result folder
-        if 'result_folder' not in args and args[
-            'strategy'] is ExtenderStrategy.SMOOTH_PLOT:
-            args['project'] = case_study.project_name
-            args['result_folder'] = str(vara_cfg()['result_dir']
-                                        ) + "/" + args['project']
-            LOG.info(f"Result folder defaults to: {args['result_folder']}")
-
-        extend_case_study(case_study, cmap, args['strategy'], **args)
-
-        store_case_study(case_study, Path(args['case_study_path']))
-    else:
-        args['paper_config_path'] = Path(args['paper_config_path'])
-        if not args['paper_config_path'].exists():
-            raise ArgumentTypeError("Paper path does not exist")
-
-        # Specify merge_stage as 0 for creating new case studies
-        args['merge_stage'] = 0
-
-        case_study = generate_case_study(
-            sampling_method, cmap, args['version'], args['project'], **args
-        )
-
-        store_case_study(case_study, args['paper_config_path'])
+    store_case_study(case_study, paper_config_path)
 
 
 @main.command("package")
@@ -334,7 +187,8 @@ def __casestudy_create_or_extend(
                 type=_create_report_type_choice(),
                 nargs=-1)
 def __casestudy_package(
-        output: str, filter_regex: str, report_names: tp.List[tp.Type[BaseReport]]
+        output: str, filter_regex: str,
+        report_names: tp.List[tp.Type[BaseReport]]
 ) -> None:
     output_path = Path(output)
     if output_path.suffix == '':
@@ -352,9 +206,10 @@ def __casestudy_package(
             output_path, re.compile(filter_regex), report_names
         )
     else:
-        click.error(
+        click.echo(
             "--output has the wrong file type extension. "
-            "Please do not provide any other file type extension than .zip"
+            "Please do not provide any other file type extension than .zip",
+            err=True
         )
 
 
@@ -395,7 +250,8 @@ def __init_commit_hash(
         ])
 
         def result_file_to_list_entry(
-                commit_status_pair: tp.Tuple[ShortCommitHash, FileStatusExtension]
+                commit_status_pair: tp.Tuple[
+                    ShortCommitHash, FileStatusExtension]
         ) -> str:
             status = commit_status_pair[1].get_colored_status().rjust(
                 longest_file_status_extension +
