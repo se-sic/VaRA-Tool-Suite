@@ -3,7 +3,7 @@
 from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
 
 
-class RegionVerificationReport(BaseReport):
+class RegionVerificationReport(BaseReport, shorthand="FRR", file_type="txt"):
     """
     Feature Region verification Report.
 

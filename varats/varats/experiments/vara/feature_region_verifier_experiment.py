@@ -18,6 +18,7 @@ from varats.data.reports.region_verification_report import (
     RegionVerificationReport as FRR,
 )
 from varats.experiment.experiment_util import (
+    ExperimentHandle,
     exec_func_with_pe_error_handler,
     VersionExperiment,
     get_default_compile_error_wrapped,
@@ -46,9 +47,9 @@ class FeatureRegionGeneration(actions.Step):  # type: ignore
 
     RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
 
-    def __init__(self, project: Project, report_spec: ReportSpecification):
+    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(obj=project, action_fn=self.analyze)
-        self.__report_spec = report_spec
+        self.__experiment_handle = experiment_handle
 
     def analyze(self) -> actions.StepResult:
         """
@@ -75,18 +76,17 @@ class FeatureRegionGeneration(actions.Step):  # type: ignore
         timeout_duration = '1h'
 
         for binary in project.binaries:
-            report_type = self.__report_spec.get_report_type("FRR")
-
-            result_file = report_type.get_file_name(
+            result_file = self.__experiment_handle.get_file_name(
+                FRR.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=project.version_of_primary,
+                project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.SUCCESS,
             )
 
             opt_params = [
-                "-vara-PTFD", "-vara-FR-verifier", "-o", "/dev/null",
+                "-vara-PTFD", "-vara-PTFDD", "-vara-FR-verifier", "-o", "/dev/null",
                 get_cached_bc_file_path(
                     project, binary, [
                         BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
@@ -104,12 +104,12 @@ class FeatureRegionGeneration(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    project, report_type, Path(vara_result_folder)
+                    self.__experiment_handle, project, FRR, Path(vara_result_folder)
                 )
             )
+        return actions.StepResult.OK
 
-
-class FeatureRegionVerificationExperiment(VersionExperiment):
+class FeatureRegionVerificationExperiment(VersionExperiment, shorthand="FRR"):
     """Generates a commit flow report (CFR) of the project(s) specified in the
     call."""
 
@@ -144,19 +144,18 @@ class FeatureRegionVerificationExperiment(VersionExperiment):
             << run.WithTimeout()
 
         project.compile = get_default_compile_error_wrapped(
-            project, self.REPORT_SPEC.main_report,
-            FeatureRegionGeneration.RESULT_FOLDER_TEMPLATE
+            self.get_handle(), project, FRR
         )
 
         analysis_actions = get_bc_cache_actions(
             project, self.REQUIRED_EXTENSIONS,
             create_default_compiler_error_handler(
-                project, self.REPORT_SPEC.main_report
+                self.get_handle(), project, self.REPORT_SPEC.main_report
             )
         )
 
         analysis_actions.append(
-            FeatureRegionGeneration(project, self.REPORT_SPEC)
+            FeatureRegionGeneration(project, self.get_handle())
         )
         analysis_actions.append(actions.Clean(project))
 
