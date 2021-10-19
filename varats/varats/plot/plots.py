@@ -624,6 +624,7 @@ class PlotGenerator(abc.ABC):
     def generate(self) -> tp.List['varats.plot.plot.Plot']:
         """Create the plot instance(s) that should be generated."""
 
+    @tp.final
     def __call__(self, common_options: CommonPlotOptions) -> None:
         """
         Generate the plots as specified by this generator.
