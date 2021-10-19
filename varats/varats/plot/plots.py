@@ -1,6 +1,7 @@
 """General plots module."""
 import abc
 import logging
+import sys
 import typing as tp
 from copy import deepcopy
 from pathlib import Path
@@ -20,6 +21,13 @@ from varats.ts_utils.click_param_types import (
     create_report_type_choice,
 )
 from varats.utils.settings import vara_cfg
+
+if sys.version_info <= (3, 8):
+    from typing_extensions import Protocol
+    from typing_extensions import runtime_checkable
+else:
+    from typing import Protocol
+    from typing import runtime_checkable
 
 if tp.TYPE_CHECKING:
     import varats.plot.plot  # pylint: disable=W0611
@@ -132,21 +140,26 @@ class PlotConfigOption(tp.Generic[OptionType]):
 
     Args:
         name: name of the option
-        default: global default value for the option
         help_str: help string for this option
+        default: global default value for the option
+        view_default: global default value when in view mode; do not pass if
+                      same value is required in both modes
+        value: user-provided value of the option; do not pass if not set by user
     """
 
     def __init__(
         self,
         name: str,
-        default: OptionType,
         help_str: str,
+        default: OptionType,
+        view_default: tp.Optional[OptionType] = None,
         value: tp.Optional[OptionType] = None
     ) -> None:
         self.__name = name
         self.__metavar = name.upper()
         self.__type = type(default)
         self.__default = default
+        self.__view_default = view_default
         self.__value: tp.Optional[OptionType] = value
         self.__help = f"{help_str} (global default = {default})"
 
@@ -157,6 +170,10 @@ class PlotConfigOption(tp.Generic[OptionType]):
     @property
     def default(self) -> OptionType:
         return self.__default
+
+    @property
+    def view_default(self) -> tp.Optional[OptionType]:
+        return self.__view_default
 
     @property
     def value(self) -> tp.Optional[OptionType]:
@@ -172,7 +189,9 @@ class PlotConfigOption(tp.Generic[OptionType]):
         Returns:
             a copy of the option with the given value
         """
-        return PlotConfigOption(self.name, self.default, self.__help, value)
+        return PlotConfigOption(
+            self.name, self.__help, self.__default, self.__view_default, value
+        )
 
     def to_cli_option(self) -> CLIOptionTy:
         """
@@ -197,7 +216,10 @@ class PlotConfigOption(tp.Generic[OptionType]):
         )
 
     def value_or_default(
-        self, default: tp.Optional[OptionType] = None
+        self,
+        view: bool,
+        default: tp.Optional[OptionType] = None,
+        view_default: tp.Optional[OptionType] = None
     ) -> OptionType:
         """
         Retrieve the value for this option.
@@ -208,22 +230,44 @@ class PlotConfigOption(tp.Generic[OptionType]):
         This function can also be called via the call operator.
 
         Args:
+            view: whether view-mode is enabled
             default: plot-specific default value
+            view_default: plot-specific default value when in view-mode
 
         Returns:
             the value for this option
         """
+        # cannot pass view_default if option has no default for view mode
+        assert not (view_default and not self.__view_default)
+
         if self.value:
             return self.value
-        if default:
-            return default
-        return self.default
-
-    def __call__(self, default: tp.Optional[OptionType] = None) -> OptionType:
-        return self.value_or_default(default)
+        if view:
+            if self.__view_default:
+                return view_default or self.__view_default
+            return default or self.__default
+        return default or self.__default
 
     def __str__(self) -> str:
         return f"{self.__name}[default={self.__default}, value={self.value}]"
+
+
+@runtime_checkable
+class PCOGetter(Protocol[OptionType]):
+
+    def __call__(self, default: tp.Optional[OptionType] = None) -> OptionType:
+        ...
+
+
+@runtime_checkable
+class PCOGetterV(Protocol[OptionType]):
+
+    def __call__(
+        self,
+        default: tp.Optional[OptionType] = None,
+        view_default: tp.Optional[OptionType] = None
+    ) -> OptionType:
+        ...
 
 
 class PlotConfig():
@@ -233,7 +277,8 @@ class PlotConfig():
     Instances should typically be created with the :func:`from_kwargs` function.
     """
 
-    def __init__(self, *options: PlotConfigOption[tp.Any]) -> None:
+    def __init__(self, view: bool, *options: PlotConfigOption[tp.Any]) -> None:
+        self.__view = view
         self.__options = deepcopy(self._option_decls)
         for option in options:
             self.__options[option.name] = option
@@ -254,16 +299,19 @@ class PlotConfig():
                 PlotConfigOption(
                     "font_size",
                     default=10,
+                    view_default=10,
                     help_str="The font size of the plot figure."
                 ),
                 PlotConfigOption(
                     "width",
                     default=1500,
+                    view_default=1500,
                     help_str="The width of the resulting plot file."
                 ),
                 PlotConfigOption(
                     "height",
                     default=1000,
+                    view_default=1000,
                     help_str="The height of the resulting plot file."
                 ),
                 PlotConfigOption(
@@ -274,6 +322,7 @@ class PlotConfig():
                 PlotConfigOption(
                     "legend_size",
                     default=2,
+                    view_default=2,
                     help_str="The size of the legend."
                 ),
                 PlotConfigOption(
@@ -284,16 +333,19 @@ class PlotConfig():
                 PlotConfigOption(
                     "line_width",
                     default=0.25,
+                    view_default=0.25,
                     help_str="The width of the plot line(s)."
                 ),
                 PlotConfigOption(
                     "x_tick_size",
                     default=2,
+                    view_default=2,
                     help_str="The size of the x-ticks."
                 ),
                 PlotConfigOption(
                     "label_size",
                     default=2,
+                    view_default=2,
                     help_str="The label size of CVE/bug annotations."
                 ),
                 PlotConfigOption(
@@ -303,56 +355,79 @@ class PlotConfig():
         )
     }
 
-    @property
-    def style(self) -> PlotConfigOption[str]:
-        return self.__options["style"]
+    def __option_getter(
+        self, option: PlotConfigOption[OptionType]
+    ) -> PCOGetter[OptionType]:
+        """Creates a getter for options with no view default."""
+
+        def get_value(default: tp.Optional[OptionType] = None) -> OptionType:
+            return option.value_or_default(self.__view, default)
+
+        return get_value
+
+    def __option_getter_v(
+        self, option: PlotConfigOption[OptionType]
+    ) -> PCOGetterV[OptionType]:
+        """Creates a getter for options with view default."""
+
+        def get_value(
+            default: tp.Optional[OptionType] = None,
+            view_default: tp.Optional[OptionType] = None
+        ) -> OptionType:
+            return option.value_or_default(self.__view, default, view_default)
+
+        return get_value
 
     @property
-    def fig_title(self) -> PlotConfigOption[str]:
-        return self.__options["fig_title"]
+    def style(self) -> PCOGetter[str]:
+        return self.__option_getter(self.__options["style"])
 
     @property
-    def font_size(self) -> PlotConfigOption[int]:
-        return self.__options["font_size"]
+    def fig_title(self) -> PCOGetter[str]:
+        return self.__option_getter(self.__options["fig_title"])
 
     @property
-    def width(self) -> PlotConfigOption[int]:
-        return self.__options["width"]
+    def font_size(self) -> PCOGetterV[int]:
+        return self.__option_getter_v(self.__options["font_size"])
 
     @property
-    def height(self) -> PlotConfigOption[int]:
-        return self.__options["height"]
+    def width(self) -> PCOGetterV[int]:
+        return self.__option_getter_v(self.__options["width"])
 
     @property
-    def legend_title(self) -> PlotConfigOption[str]:
-        return self.__options["legend_title"]
+    def height(self) -> PCOGetterV[int]:
+        return self.__option_getter_v(self.__options["height"])
 
     @property
-    def legend_size(self) -> PlotConfigOption[int]:
-        return self.__options["legend_size"]
+    def legend_title(self) -> PCOGetter[str]:
+        return self.__option_getter(self.__options["legend_title"])
 
     @property
-    def show_legend(self) -> PlotConfigOption[bool]:
-        return self.__options["show_legend"]
+    def legend_size(self) -> PCOGetterV[int]:
+        return self.__option_getter_v(self.__options["legend_size"])
 
     @property
-    def line_width(self) -> PlotConfigOption[float]:
-        return self.__options["line_width"]
+    def show_legend(self) -> PCOGetter[bool]:
+        return self.__option_getter(self.__options["show_legend"])
 
     @property
-    def x_tick_size(self) -> PlotConfigOption[int]:
-        return self.__options["x_tick_size"]
+    def line_width(self) -> PCOGetterV[float]:
+        return self.__option_getter_v(self.__options["line_width"])
 
     @property
-    def label_size(self) -> PlotConfigOption[int]:
-        return self.__options["label_size"]
+    def x_tick_size(self) -> PCOGetterV[int]:
+        return self.__option_getter_v(self.__options["x_tick_size"])
 
     @property
-    def dpi(self) -> PlotConfigOption[int]:
-        return self.__options["dpi"]
+    def label_size(self) -> PCOGetterV[int]:
+        return self.__option_getter_v(self.__options["label_size"])
+
+    @property
+    def dpi(self) -> PCOGetter[int]:
+        return self.__option_getter(self.__options["dpi"])
 
     @classmethod
-    def from_kwargs(cls, **kwargs: tp.Any) -> 'PlotConfig':
+    def from_kwargs(cls, view: bool, **kwargs: tp.Any) -> 'PlotConfig':
         """
         Instantiate a ``PlotConfig`` object with values from the given kwargs.
 
@@ -363,7 +438,7 @@ class PlotConfig():
             a plot config object with values from the kwargs
         """
         return PlotConfig(
-            *[
+            view, *[
                 option_decl.with_value(kwargs[option_decl.name])
                 for option_decl in cls._option_decls.values()
                 if option_decl.name in kwargs
@@ -671,7 +746,9 @@ class PlotArtefact(Artefact, artefact_type="plot", artefact_type_version=2):
         """
         plot_generator_type = kwargs.pop('plot_generator')
         common_options = CommonPlotOptions.from_kwargs(**kwargs)
-        plot_config = PlotConfig.from_kwargs(**kwargs.pop("plot_config", {}))
+        plot_config = PlotConfig.from_kwargs(
+            common_options.view, **kwargs.pop("plot_config", {})
+        )
         return PlotArtefact(
             name, output_dir, plot_generator_type, common_options, plot_config,
             **kwargs
