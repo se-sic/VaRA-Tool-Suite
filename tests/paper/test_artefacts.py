@@ -1,108 +1,116 @@
 """Test case study."""
+import typing as tp
 import unittest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 from varats.paper_mgmt.artefacts import (
-    ArtefactType,
-    PlotArtefact,
+    initialize_artefact_types,
+    Artefacts,
+    Artefact,
     load_artefacts_from_file,
 )
-from varats.plots.paper_config_overview import PaperConfigOverviewPlot
-from varats.utils.settings import vara_cfg
+from varats.plot.plots import PlotArtefact
+from varats.plots.discover_plots import initialize_plots
+from varats.plots.paper_config_overview import PaperConfigOverviewGenerator
 
 YAML_ARTEFACTS = """DocType: Artefacts
-Version: 1
+Version: 2
 ---
 artefacts:
 - artefact_type: plot
-  artefact_type_version: 1
-  file_format: png
+  artefact_type_version: 2
+  file_type: png
   name: overview
-  output_path: 'some/path'
-  plot_type: paper_config_overview_plot
+  output_dir: 'some/path'
+  plot_config: {}
+  plot_generator: pc-overview-plot
   report_type: EmptyReport
+  view: false
 """
 
 
 class TestArtefacts(unittest.TestCase):
     """Test basic Artefact functionality."""
 
+    artefacts: Artefacts
+    plot_artefact: PlotArtefact
+
     @classmethod
     def setUp(cls):
         """Setup artefacts file from yaml doc."""
+        initialize_plots()
+        initialize_artefact_types()
         with NamedTemporaryFile('w') as yaml_file:
             yaml_file.write(YAML_ARTEFACTS)
             yaml_file.seek(0)
             cls.artefacts = load_artefacts_from_file(Path(yaml_file.name))
-        cls.artefact = next(cls.artefacts.__iter__())
+        cls.plot_artefact = tp.cast(
+            PlotArtefact, next(cls.artefacts.__iter__())
+        )
+        if not isinstance(cls.plot_artefact, PlotArtefact):
+            raise AssertionError("Test artefact is not a PlotArtefact!")
 
     # Artefact tests
 
     def test_artefact_type(self):
         """Check if artefact type is loaded correctly."""
-        self.assertTrue(isinstance(self.artefact, PlotArtefact))
-        self.assertEqual(self.artefact.artefact_type, ArtefactType.PLOT)
+        self.assertTrue(isinstance(self.plot_artefact, PlotArtefact))
 
     def test_artefact_name(self):
         """Check if artefact name is loaded correctly."""
-        self.assertEqual(self.artefact.name, 'overview')
+        self.assertEqual(self.plot_artefact.name, 'overview')
 
     def test_artefact_output_path(self):
         """Check if artefact output_path is loaded correctly."""
         self.assertEqual(
-            self.artefact.output_path,
-            Path(str(vara_cfg()['artefacts']['artefacts_dir'])) /
-            Path(str(vara_cfg()['paper_config']['current_config'])) /
-            'some/path'
+            self.plot_artefact.output_dir,
+            Artefact.base_output_dir() / 'some/path'
         )
 
     def test_artefact_to_dict(self):
         """Check if artefact is serialized correctly."""
-        artefact_dict = self.artefact.get_dict()
-        self.assertEqual(artefact_dict['artefact_type'], 'PLOT')
-        self.assertEqual(artefact_dict['artefact_type_version'], 1)
-        self.assertEqual(artefact_dict['file_format'], 'png')
+        artefact_dict = self.plot_artefact.get_dict()
+        self.assertEqual(artefact_dict['artefact_type'], 'plot')
+        self.assertEqual(artefact_dict['artefact_type_version'], 2)
+        self.assertEqual(artefact_dict['file_type'], 'png')
         self.assertEqual(artefact_dict['name'], 'overview')
-        self.assertEqual(artefact_dict['output_path'], 'some/path')
-        self.assertEqual(
-            artefact_dict['plot_type'], 'paper_config_overview_plot'
-        )
+        self.assertEqual(artefact_dict['output_dir'], 'some/path')
+        self.assertEqual(artefact_dict['plot_generator'], 'pc-overview-plot')
         self.assertEqual(artefact_dict['report_type'], 'EmptyReport')
 
     # PlotArtefact tests
 
-    def __test_plot_artefact(self, test_function):
-        if isinstance(self.artefact, PlotArtefact):
-            test_function(self.artefact)
-        else:
-            self.fail('self.artefact is not a PlotArtefact')
-
     def test_artefact_plot_type(self):
         """Check if plot type is loaded correctly."""
-        self.__test_plot_artefact(
-            lambda artefact: self.
-            assertEqual(artefact.plot_type, 'paper_config_overview_plot')
+        self.assertEqual(
+            self.plot_artefact.plot_generator_type, "pc-overview-plot"
         )
 
     def test_artefact_plot_type_class(self):
         """Check if plot class is resolved correctly."""
-        self.__test_plot_artefact(
-            lambda artefact: self.
-            assertEqual(artefact.plot_type_class, PaperConfigOverviewPlot)
+        self.assertEqual(
+            self.plot_artefact.plot_generator_class,
+            PaperConfigOverviewGenerator
         )
 
     def test_artefact_file_format(self):
         """Check if plot file format is loaded correctly."""
-        self.__test_plot_artefact(
-            lambda artefact: self.assertEqual(artefact.file_format, 'png')
-        )
+        self.assertEqual(self.plot_artefact.common_options.file_type, 'png')
 
     def test_artefact_plot_kwargs(self):
         """Check if plot kwargs are loaded correctly."""
-        self.__test_plot_artefact(
-            lambda artefact: self.
-            assertEqual(artefact.plot_kwargs['report_type'], 'EmptyReport')
+        self.assertEqual(
+            self.plot_artefact.plot_kwargs['report_type'], 'EmptyReport'
+        )
+
+    def test_artefact_file_info(self):
+        """Check if file info is generated correctly."""
+        file_infos = self.plot_artefact.get_artefact_file_infos()
+        self.assertEqual(1, len(file_infos))
+        self.assertIsNone(file_infos[0].case_study)
+        self.assertEqual(
+            "paper_config_overview_plot.png", file_infos[0].file_name
         )
 
     # Artefacts tests
@@ -114,11 +122,11 @@ class TestArtefacts(unittest.TestCase):
     def test_artefacts_add(self):
         """Check if artefact is added."""
         self.artefacts.add_artefact(
-            PlotArtefact(
+            PlotArtefact.create_artefact(
                 'foo',
                 Path('some/path'),
-                'paper_config_overview_plot',
-                'svg',
+                plot_generator='pc-overview-plot',
+                file_type='svg',
                 some='argument'
             )
         )
