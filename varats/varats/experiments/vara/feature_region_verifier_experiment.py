@@ -11,6 +11,7 @@ from pathlib import Path
 import benchbuild.utils.actions as actions
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
+from varats.provider.feature.feature_model_provider import FeatureModelProvider
 from benchbuild.utils.cmd import mkdir, opt, timeout
 
 from varats.data.reports.empty_report import EmptyReport
@@ -117,7 +118,7 @@ class FeatureRegionVerificationExperiment(VersionExperiment, shorthand="FRR"):
 
     REPORT_SPEC = ReportSpecification(FRR)
     REQUIRED_EXTENSIONS = [
-        BCFileExtensions.NO_OPT, BCFileExtensions.TBAA, BCFileExtensions.FEATURE
+        BCFileExtensions.NO_OPT, BCFileExtensions.TBAA, BCFileExtensions.FEATURE,
     ]
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
@@ -128,11 +129,21 @@ class FeatureRegionVerificationExperiment(VersionExperiment, shorthand="FRR"):
         Args:
             project: to analyze
         """
+
+        # FeatureModelProvider
+        fm_provider = FeatureModelProvider.create_provider_for_project(project)
+        fm_path = fm_provider.get_feature_model_path(project)
+
         # Try, to build the project without optimizations to get more precise
         # blame annotations. Note: this does not guarantee that a project is
         # build without optimizations because the used build tool/script can
         # still add optimizations flags after the experiment specified cflags.
-        project.cflags += ["-O1", "-Xclang", "-disable-llvm-optzns", "-g0"]
+        project.cflags += [
+            "-fvara-feature", "-fvara-IFA",
+            "-mllvm", "-feature-model=/home/zatho/ba/vara/ConfigurableSystems/lrzip/FeatureModel.xml",
+            "-O1", "-Xclang", "-disable-llvm-optzns", "-g0"
+        ]
+
         # TODO: missing arg for feature model
 
         project.runtime_extension = run.RuntimeExtension(project, self) \
