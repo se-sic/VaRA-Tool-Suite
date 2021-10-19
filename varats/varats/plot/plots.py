@@ -256,6 +256,7 @@ class PlotConfigOption(tp.Generic[OptionType]):
 
 @runtime_checkable
 class PCOGetter(Protocol[OptionType]):
+    """Getter type for options with no view default."""
 
     def __call__(self, default: tp.Optional[OptionType] = None) -> OptionType:
         ...
@@ -263,6 +264,7 @@ class PCOGetter(Protocol[OptionType]):
 
 @runtime_checkable
 class PCOGetterV(Protocol[OptionType]):
+    """Getter type for options with view default."""
 
     def __call__(
         self,
