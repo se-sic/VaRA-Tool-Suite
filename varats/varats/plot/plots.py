@@ -25,9 +25,11 @@ from varats.utils.settings import vara_cfg
 if sys.version_info <= (3, 8):
     from typing_extensions import Protocol
     from typing_extensions import runtime_checkable
+    from typing_extensions import final
 else:
     from typing import Protocol
     from typing import runtime_checkable
+    from typing import final
 
 if tp.TYPE_CHECKING:
     import varats.plot.plot  # pylint: disable=W0611
@@ -624,7 +626,7 @@ class PlotGenerator(abc.ABC):
     def generate(self) -> tp.List['varats.plot.plot.Plot']:
         """Create the plot instance(s) that should be generated."""
 
-    @tp.final
+    @final
     def __call__(self, common_options: CommonPlotOptions) -> None:
         """
         Generate the plots as specified by this generator.
