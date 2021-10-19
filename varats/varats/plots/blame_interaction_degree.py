@@ -8,6 +8,7 @@ from enum import Enum
 from os.path import isdir
 from pathlib import Path
 
+import click
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -28,12 +29,23 @@ from varats.data.databases.blame_interaction_degree_database import (
 from varats.data.databases.blame_library_interactions_database import (
     BlameLibraryInteractionsDatabase,
 )
-from varats.mapping.commit_map import CommitMap
+from varats.mapping.commit_map import CommitMap, get_commit_map
+from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
+from varats.plot.plots import (
+    PlotGenerator,
+    PlotConfig,
+    REQUIRE_REPORT_TYPE,
+    REQUIRE_CASE_STUDY,
+    REQUIRE_REVISION,
+    REQUIRE_MULTI_CASE_STUDY,
+)
 from varats.plots.bug_annotation import draw_bugs
 from varats.plots.cve_annotation import draw_cves
 from varats.plots.repository_churn import draw_code_churn_for_revisions
 from varats.project.project_util import get_project_cls_by_name
+from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
+from varats.ts_utils.click_param_types import EnumChoice
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 LOG = logging.getLogger(__name__)
@@ -48,6 +60,178 @@ class EdgeWeightThreshold(Enum):
     LOW = 10
     MEDIUM = 30
     HIGH = 70
+
+
+class Colormap(Enum):
+    """Matplotlib colormaps."""
+
+    # https://matplotlib.org/stable/tutorials/colors/colormaps.html
+    # Sequential
+    GREENS = 'Greens'
+    REDS = 'Reds'
+    BLUES = 'Blues'
+    GREYS = 'Greys'
+    ORANGES = 'Oranges'
+    PURPLES = 'Purples'
+    YLORBR = 'YlOrBr'
+    YLORRD = 'YlOrRd'
+    ORRD = 'OrRd'
+    PURD = 'PuRd'
+    RDPU = 'RdPu'
+    BUPU = 'BuPu'
+    GNBU = 'GnBu'
+    PUBU = 'PuBu'
+    YLGNBU = 'YlGnBu'
+    PUBUGN = 'PuBuGn'
+    BUGN = 'BuGn'
+    YLGN = 'YlGn'
+
+    # Miscellaneous
+    GST_STRN = 'gist_stern'
+
+
+OPTIONAL_SHOW_INTERACTIONS: CLIOptionTy = make_cli_option(
+    "--show-interactions/--hide-interactions",
+    type=bool,
+    default=True,
+    required=False,
+    help="Enables/Disables the blame interactions."
+)
+
+OPTIONAL_SHOW_DIFF: CLIOptionTy = make_cli_option(
+    "--show-diff/--hide-diff",
+    type=bool,
+    default=False,
+    required=False,
+    help="Enables/Disables the blame diff interactions."
+)
+
+OPTIONAL_REVISION_LENGTH: CLIOptionTy = make_cli_option(
+    "--revision-length",
+    type=int,
+    default=10,
+    required=False,
+    metavar="LENGTH",
+    help="Sets the number of shown revision chars."
+)
+
+OPTIONAL_SHOW_EDGE_WEIGHT: CLIOptionTy = make_cli_option(
+    "--show-edge-weight/--hide-edge-weight",
+    type=bool,
+    default=True,
+    required=False,
+    help="Enables/Disables the edge weights of interactions."
+)
+
+OPTIONAL_EDGE_WEIGHT_THRESHOLD: CLIOptionTy = make_cli_option(
+    "--edge-weight-threshold",
+    type=EnumChoice(EdgeWeightThreshold, case_sensitive=False),
+    default=None,
+    required=False,
+    help="Sets the threshold when to show edge weights."
+)
+
+OPTIONAL_LAYOUT_ENGINE: CLIOptionTy = make_cli_option(
+    "--layout-engine",
+    type=click.Choice(["dot", "fdp", "sfdp", "neato", "twopi", "circo"]),
+    default="fdp",
+    required=False,
+    help="The layout engine."
+)
+
+OPTIONAL_SHOW_ONLY_COMMIT: CLIOptionTy = make_cli_option(
+    "--show-only-commit",
+    type=str,
+    default=None,
+    required=False,
+    metavar="SHORT_COMMIT_HASH",
+    help="The commit whose interactions are to be shown."
+)
+
+OPTIONAL_SHOW_CHURN: CLIOptionTy = make_cli_option(
+    "--show-churn/--hide-churn",
+    type=bool,
+    default=True,
+    required=False,
+    help="Shows/hides the code churn."
+)
+
+OPTIONAL_EDGE_COLOR: CLIOptionTy = make_cli_option(
+    "--edge-color",
+    type=str,
+    default="black",
+    required=False,
+    metavar="COLOR",
+    help="The color of an edge."
+)
+
+OPTIONAL_COLORMAP: CLIOptionTy = make_cli_option(
+    "--colormap",
+    type=EnumChoice(Colormap),
+    default=Colormap.GST_STRN,
+    required=False,
+    help="The colormap used in the plot."
+)
+
+OPTIONAL_SHOW_CVE: CLIOptionTy = make_cli_option(
+    "--show-cve/--hide-cve",
+    type=bool,
+    default=False,
+    required=False,
+    help="Shows/hides CVE annotations."
+)
+
+OPTIONAL_SHOW_BUGS: CLIOptionTy = make_cli_option(
+    "--show-bugs/--hide-bugs",
+    type=bool,
+    default=False,
+    required=False,
+    help="Shows/hides bug annotations."
+)
+
+OPTIONAL_CVE_LINE_WIDTH: CLIOptionTy = make_cli_option(
+    "--cve-line-width",
+    type=int,
+    default=1,
+    required=False,
+    metavar="WIDTH",
+    help="The line width of CVE annotations."
+)
+
+OPTIONAL_BUG_LINE_WIDTH: CLIOptionTy = make_cli_option(
+    "--bug-line-width",
+    type=int,
+    default=1,
+    required=False,
+    metavar="WIDTH",
+    help="The line width of bug annotations."
+)
+
+OPTIONAL_CVE_COLOR: CLIOptionTy = make_cli_option(
+    "--cve-color",
+    type=str,
+    default="green",
+    required=False,
+    metavar="COLOR",
+    help="The color of CVE annotations."
+)
+
+OPTIONAL_BUG_COLOR: CLIOptionTy = make_cli_option(
+    "--bug-color",
+    type=str,
+    default="green",
+    required=False,
+    metavar="COLOR",
+    help="The color of bug annotations."
+)
+
+OPTIONAL_VERTICAL_ALIGNMENT: CLIOptionTy = make_cli_option(
+    "--vertical-alignment",
+    type=click.Choice(['center', 'top', 'bottom', 'baseline']),
+    default="bottom",
+    required=False,
+    help="The vertical alignment of CVE/bug annotations."
+)
 
 
 class FractionMap:
@@ -155,15 +339,15 @@ def _get_distinct_inter_lib_names(df: pd.DataFrame) -> tp.List[str]:
     return list(np.unique([str(inter_lib) for inter_lib in df.inter_lib]))
 
 
-def _generate_stackplot(
+def _generate_degree_stackplot(
     df: pd.DataFrame, unique_revisions: tp.List[FullCommitHash],
-    sub_df_list: tp.List[pd.Series], with_churn: bool,
-    plot_cfg: tp.Dict[str, tp.Any], plot_kwargs: tp.Any
+    sub_df_list: tp.List[pd.Series], plot_kwargs: tp.Any,
+    plot_config: PlotConfig
 ) -> None:
     fig = plt.figure()
     grid_spec = fig.add_gridspec(3, 1)
 
-    if with_churn:
+    if plot_kwargs["show_churn"]:
         main_axis = fig.add_subplot(grid_spec[:-1, :])
         main_axis.get_xaxis().set_visible(False)
         churn_axis = fig.add_subplot(grid_spec[2, :], sharex=main_axis)
@@ -173,7 +357,7 @@ def _generate_stackplot(
         x_axis = main_axis
 
     fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
-    fig.suptitle(plot_cfg["fig_suptitle"], fontsize=8)
+    fig.suptitle(plot_kwargs["fig_suptitle"], fontsize=8)
 
     unique_rev_strings: tp.List[str] = [
         rev.short_hash for rev in unique_revisions
@@ -181,53 +365,57 @@ def _generate_stackplot(
     main_axis.stackplot(
         unique_rev_strings,
         sub_df_list,
-        edgecolor=plot_cfg['edgecolor'],
+        edgecolor=plot_kwargs['edge_color'],
         colors=reversed(
-            plot_cfg['color_map'](np.linspace(0, 1, len(sub_df_list)))
+            cm.get_cmap(plot_kwargs['colormap'].value
+                       )(np.linspace(0, 1, len(sub_df_list)))
         ),
-        # TODO (se-passau/VaRA#545): remove cast with plot config rework
-        labels=map(
-            tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
-            sorted(np.unique(df['degree']))
-        ),
-        linewidth=plot_cfg['linewidth']
+        labels=sorted(np.unique(df['degree'])),  # type: ignore
+        linewidth=plot_config.line_width()
     )
     legend = main_axis.legend(
-        title=plot_cfg['legend_title'],
+        title=plot_config.legend_title("Interaction degrees"),
         loc='upper left',
         prop={
-            'size': plot_cfg['legend_size'],
+            'size': plot_config.legend_size(),
             'family': 'monospace'
         }
     )
     plt.setp(
         legend.get_title(),
-        fontsize=plot_cfg['legend_size'],
+        fontsize=plot_config.legend_size(),
         family='monospace'
     )
-    legend.set_visible(plot_cfg['legend_visible'])
+    legend.set_visible(plot_config.show_legend())
     # annotate CVEs
-    with_cve = plot_kwargs.get("with_cve", False)
-    with_bugs = plot_kwargs.get("with_bugs", False)
+    with_cve = plot_kwargs["show_cve"]
+    with_bugs = plot_kwargs["show_bugs"]
+    case_study = plot_kwargs["case_study"]
+    project_name = case_study.project_name
+    commit_map = get_commit_map(project_name)
     if with_cve or with_bugs:
-        if "project" not in plot_kwargs:
-            LOG.error("Need a project to annotate bug or CVE data.")
-        else:
-            project = get_project_cls_by_name(plot_kwargs["project"])
-            if with_cve:
-                draw_cves(main_axis, project, unique_revisions, plot_cfg)
-            if with_bugs:
-                draw_bugs(main_axis, project, unique_revisions, plot_cfg)
+        project = get_project_cls_by_name(project_name)
+        if with_cve:
+            draw_cves(
+                main_axis, project, unique_revisions,
+                plot_kwargs["cve_line_width"], plot_kwargs["cve_color"],
+                plot_config.label_size(), plot_kwargs["vertical_alignment"]
+            )
+        if with_bugs:
+            draw_bugs(
+                main_axis, project, unique_revisions,
+                plot_kwargs["bug_line_width"], plot_kwargs["bug_color"],
+                plot_config.label_size(), plot_kwargs["vertical_alignment"]
+            )
     # draw churn subplot
-    if with_churn:
+    if plot_kwargs["show_churn"]:
         draw_code_churn_for_revisions(
-            churn_axis, plot_kwargs['project'], plot_kwargs['get_cmap'](),
-            unique_revisions
+            churn_axis, project_name, commit_map, unique_revisions
         )
     plt.setp(x_axis.get_yticklabels(), fontsize=8, fontfamily='monospace')
     plt.setp(
         x_axis.get_xticklabels(),
-        fontsize=plot_cfg['xtick_size'],
+        fontsize=plot_config.x_tick_size(),
         fontfamily='monospace',
         rotation=270
     )
@@ -289,12 +477,7 @@ def _gen_fraction_overview_legend(
     legend = legends_axis.legend(
         handles=handles,
         title=f'{plot_cfg["legend_title"]} | {legend_title_suffix}',
-        # TODO (se-passau/VaRA#545): remove cast with plot config
-        #  rework
-        labels=map(
-            tp.cast(tp.Callable[[str], str], plot_cfg['lable_modif']),
-            legend_items
-        ),
+        labels=legend_items,
         loc='upper left',
         prop={
             'size': plot_cfg['legend_size'],
@@ -436,8 +619,7 @@ def _get_separated_lib_names_dict(
 
 
 def _build_sankey_color_mappings(
-    highest_degree: int, plot_cfg: tp.Dict[str, tp.Any],
-    lib_name_dict: tp.Dict[str, tp.List[str]]
+    highest_degree: int, lib_name_dict: tp.Dict[str, tp.List[str]]
 ) -> tp.Tuple[LibraryColormapMapping, LibraryToIndexShadesMapping]:
     """Returns a tuple of a LibraryColormapMapping and a
     LibraryToIndexShadesMapping."""
@@ -446,7 +628,9 @@ def _build_sankey_color_mappings(
     lib_to_idx_shades: LibraryToIndexShadesMapping = dict(
         (name, {}) for name in lib_name_dict["all_distinct_lib_names"]
     )
-    num_colormaps: int = len(tp.cast(tp.List[str], plot_cfg['colormaps']))
+
+    colormaps: tp.List[Colormap] = list(Colormap)
+    num_colormaps: int = len(tp.cast(tp.List[str], colormaps))
 
     if len(lib_name_dict["all_distinct_lib_names"]) > num_colormaps:
         LOG.warning(
@@ -459,13 +643,10 @@ def _build_sankey_color_mappings(
         if num_colormaps <= lib_idx:
             lib_idx = 0
 
-        shade_lists = cm.get_cmap(
-            tp.cast(tp.List[str], plot_cfg['colormaps'])[lib_idx]
-        )(np.linspace(0.25, 1, highest_degree + 1))
+        shade_lists = cm.get_cmap(colormaps[lib_idx].value
+                                 )(np.linspace(0.25, 1, highest_degree + 1))
 
-        lib_to_colormap[lib_name] = cm.get_cmap(
-            tp.cast(tp.List[str], plot_cfg['colormaps'])[lib_idx]
-        )
+        lib_to_colormap[lib_name] = cm.get_cmap(colormaps[lib_idx].value)
         tmp_idx_to_shades_mapping: tp.Dict[int, str] = {}
 
         for shade_idx, shades in enumerate(shade_lists):
@@ -477,17 +658,14 @@ def _build_sankey_color_mappings(
 
 
 def _save_figure(
-    figure: tp.Any,
-    revision: FullCommitHash,
-    c_map: CommitMap,
-    plot_kwargs: tp.Dict[str, tp.Any],
-    plot_file_name: str,
-    plot_type: PlotTypes,
-    path: tp.Optional[Path] = None,
-    filetype: str = 'png'
+    figure: tp.Any, revision: FullCommitHash, project_name: str,
+    plot_type: PlotTypes, plot_file_name: str, plot_dir: Path, file_type: str
 ) -> None:
+
     revision_idx = -1
     max_idx = -1
+    c_map: CommitMap = get_commit_map(project_name)
+
     for c_hash, idx in c_map.mapping_items():
         if idx > max_idx:
             max_idx = idx
@@ -503,26 +681,20 @@ def _save_figure(
 
     max_idx_digit_num = len(str(max_idx))
     padded_idx_str = str(revision_idx).rjust(max_idx_digit_num, str(0))
-
-    if path is None:
-        plot_dir = Path(plot_kwargs["plot_dir"])
-    else:
-        plot_dir = path
-
     file_name = plot_file_name.rsplit('.', 1)[0]
-    plot_subdir = Path(plot_kwargs["plot_type"])
+    plot_subdir = Path(file_name)
 
     with pb.local.cwd(plot_dir):
         if not isdir(plot_subdir):
             mkdir(plot_subdir)
 
     if plot_type == PlotTypes.SANKEY:
-        file_name = f"{file_name}_{padded_idx_str}.{filetype}"
+        file_name = f"{file_name}_{padded_idx_str}.{file_type}"
 
         pio.write_image(
             fig=figure,
             file=str(plot_dir / plot_subdir / file_name),
-            format=filetype
+            format=file_type
         )
 
     if plot_type == PlotTypes.GRAPHVIZ:
@@ -531,7 +703,7 @@ def _save_figure(
         figure.render(
             filename=file_name,
             directory=str(plot_dir / plot_subdir),
-            format=filetype,
+            format=file_type,
             cleanup=True
         )
 
@@ -598,11 +770,10 @@ def _gen_sankey_lib_name_to_idx_mapping(
 def _build_sankey_figure(
     revision: FullCommitHash, view_mode: bool,
     data_dict: tp.Dict[str, tp.List[tp.Any]],
-    library_names_dict: tp.Dict[str, tp.List[str]], plot_cfg: tp.Dict[str,
-                                                                      tp.Any]
+    library_names_dict: tp.Dict[str, tp.List[str]], plot_config: PlotConfig
 ) -> go.Figure:
     layout = go.Layout(
-        autosize=False, width=plot_cfg['width'], height=plot_cfg['height']
+        autosize=False, width=plot_config.width(), height=plot_config.height()
     )
     fig = go.Figure(
         data=[
@@ -634,10 +805,12 @@ def _build_sankey_figure(
         fig.layout = layout
 
     fig.update_layout(
-        title_text=f"<b>Revision: {revision}</b><br />{plot_cfg['fig_title']}",
-        font_size=plot_cfg['font_size']
+        title_text=
+        f"<b>Revision: {revision}</b><br />Library interactions from base(left)"
+        f" to interacting(right) libraries. Color saturation increases with the"
+        f" degree level.</b><br />{plot_config.fig_title()}",
+        font_size=plot_config.font_size()
     )
-
     return fig
 
 
@@ -678,13 +851,14 @@ def _build_graphviz_edges(
     show_edge_weight: bool,
     commit_map: CommitMap,
     edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
-    show_only_interactions_of_commit: tp.Optional[str] = None
+    show_only_interactions_of_commit: tp.Optional[ShortCommitHash] = None
 ) -> LibraryToHashesMapping:
 
-    if show_only_interactions_of_commit is not None:
-        show_only_interactions_of_commit = commit_map.convert_to_full_or_warn(
-            ShortCommitHash(show_only_interactions_of_commit)
-        ).hash
+    completed_hash: tp.Optional[FullCommitHash] = None
+    if show_only_interactions_of_commit:
+        completed_hash = commit_map.convert_to_full_or_warn(
+            show_only_interactions_of_commit
+        )
 
     base_lib_names = _get_distinct_base_lib_names(df)
     inter_lib_names = _get_distinct_inter_lib_names(df)
@@ -704,12 +878,12 @@ def _build_graphviz_edges(
 
         # Skip edges that do not connect with the specified
         # ``show_only_interactions_of_commit`` node.
-        if show_only_interactions_of_commit is not None and (
-            show_only_interactions_of_commit not in base_inter_hash_tuple
+        if completed_hash and (
+            completed_hash.hash not in base_inter_hash_tuple
         ):
             continue
 
-        label = None
+        label = ""
         color = "black"
         weight = row['amount']
 
@@ -741,14 +915,10 @@ def _build_graphviz_edges(
 
 
 def _build_graphviz_fig(
-    df: pd.DataFrame,
-    revision: FullCommitHash,
-    show_edge_weight: bool,
-    shown_revision_length: int,
-    commit_map: CommitMap,
-    edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
-    layout_engine: str = 'fdp',
-    show_only_interactions_of_commit: tp.Optional[str] = None
+    df: pd.DataFrame, revision: FullCommitHash, show_edge_weight: bool,
+    shown_revision_length: int, commit_map: CommitMap,
+    edge_weight_threshold: tp.Optional[EdgeWeightThreshold], layout_engine: str,
+    show_only_interactions_of_commit: tp.Optional[ShortCommitHash]
 ) -> Digraph:
     graph = Digraph(name="Digraph", strict=True, engine=layout_engine)
     graph.attr(label=f"Revision: {revision}")
@@ -787,22 +957,24 @@ def _build_graphviz_fig(
                     name=f'{c_hash}_{lib_name}',
                     label=c_hash[0:shown_revision_length]
                 )
-
     return graph
 
 
-class BlameLibraryInteraction(Plot):
+class BlameLibraryInteraction(Plot, plot_name=None):
     """Base plot for blame library interaction plots."""
 
     @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
 
-    def _get_interaction_data(self, blame_diff: bool = False) -> pd.DataFrame:
-        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
-        case_study = self.plot_kwargs.get('plot_case_study', None)
-        project_name = self.plot_kwargs["project"]
+    @staticmethod
+    def _get_interaction_data(
+        case_study: CaseStudy,
+        commit_map: CommitMap,
+        blame_diff: bool = False
+    ) -> pd.DataFrame:
 
+        project_name = case_study.project_name
         variables = [
             "time_id", "base_hash", "base_lib", "inter_hash", "inter_lib",
             "amount"
@@ -812,16 +984,14 @@ class BlameLibraryInteraction(Plot):
             lib_interaction_df = \
                 BlameDiffLibraryInteractionDatabase.get_data_for_project(
                     project_name, ["revision", *variables], commit_map,
-                    case_study
-                )
+                    case_study)
         else:
             lib_interaction_df = \
                 BlameLibraryInteractionsDatabase.get_data_for_project(
                     project_name, ["revision", *variables], commit_map,
-                    case_study
-                )
+                    case_study)
 
-        length = len(np.unique(lib_interaction_df['revision']))
+        length = len(_get_unique_revisions(lib_interaction_df, commit_map))
         is_empty = lib_interaction_df.empty
 
         if not blame_diff and (is_empty or length == 1):
@@ -829,19 +999,7 @@ class BlameLibraryInteraction(Plot):
             raise PlotDataEmpty
         return lib_interaction_df
 
-    def _graphviz_plot(
-        self,
-        view_mode: bool,
-        show_blame_interactions: bool = True,
-        show_blame_diff: bool = False,
-        show_edge_weight: bool = False,
-        shown_revision_length: int = 10,
-        edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
-        layout_engine: str = 'fdp',
-        show_only_interactions_of_commit: tp.Optional[str] = None,
-        save_path: tp.Optional[Path] = None,
-        filetype: str = 'png'
-    ) -> tp.Optional[Digraph]:
+    def _graphviz_plot(self) -> tp.Optional[Digraph]:
 
         def _get_graphviz_project_data(
             blame_interactions: bool, blame_diff: bool
@@ -854,56 +1012,48 @@ class BlameLibraryInteraction(Plot):
                 raise PlotDataEmpty
 
             if blame_interactions:
-                inter_df = self._get_interaction_data(False)
+                inter_df = self._get_interaction_data(
+                    case_study, commit_map, False
+                )
             else:
-                inter_df = self._get_interaction_data(True)
+                inter_df = self._get_interaction_data(
+                    case_study, commit_map, True
+                )
 
             if blame_diff:
-                diff_df = self._get_interaction_data(True)
+                diff_df = self._get_interaction_data(
+                    case_study, commit_map, True
+                )
                 return _add_diff_amount_col_to_df(inter_df, diff_df)
 
             return inter_df
 
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        commit_map: CommitMap = get_commit_map(case_study.project_name)
+
         df = _get_graphviz_project_data(
-            show_blame_interactions, show_blame_diff
+            self.plot_kwargs["show_interactions"],
+            self.plot_kwargs["show_diff"],
         )
+
         df.sort_values(by=['time_id'], inplace=True)
-        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
         df.reset_index(inplace=True)
-        unique_revisions = _get_unique_revisions(df, commit_map)
+        rev = commit_map.convert_to_full_or_warn(self.plot_kwargs['revision'])
 
-        for rev in unique_revisions:
-            if view_mode and 'revision' in self.plot_kwargs:
-                rev = commit_map.convert_to_full_or_warn(
-                    ShortCommitHash(self.plot_kwargs['revision'])
-                )
+        dataframe = df.loc[
+            df["revision"].apply(commit_map.convert_to_full_or_warn) == rev]
 
-            dataframe = df.loc[df['revision'] == rev.hash]
-            fig = _build_graphviz_fig(
-                dataframe, rev, show_edge_weight, shown_revision_length,
-                commit_map, edge_weight_threshold, layout_engine,
-                show_only_interactions_of_commit
-            )
-
-            if view_mode and 'revision' in self.plot_kwargs:
-                return fig
-
-            # TODO (se-passau/VaRA#545): move plot file saving to top level,
-            #  which currently breaks the plot abstraction.
-            _save_figure(
-                figure=fig,
-                revision=rev,
-                c_map=commit_map,
-                plot_kwargs=self.plot_kwargs,
-                plot_file_name=self.plot_file_name(filetype),
-                plot_type=PlotTypes.GRAPHVIZ,
-                path=save_path,
-                filetype=filetype
-            )
-        return None
+        fig = _build_graphviz_fig(
+            dataframe, rev, self.plot_kwargs["show_edge_weight"],
+            self.plot_kwargs["revision_length"], commit_map,
+            self.plot_kwargs["edge_weight_threshold"],
+            self.plot_kwargs["layout_engine"],
+            self.plot_kwargs["show_only_commit"]
+        )
+        return fig
 
 
-class BlameDegree(Plot):
+class BlameDegree(Plot, plot_name=None):
     """Base plot for blame degree plots."""
 
     @abc.abstractmethod
@@ -911,9 +1061,10 @@ class BlameDegree(Plot):
         """Plot the current plot to a file."""
 
     def _get_degree_data(self) -> pd.DataFrame:
-        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
-        case_study = self.plot_kwargs.get('plot_case_study', None)
-        project_name = self.plot_kwargs["project"]
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        project_name = case_study.project_name
+        commit_map = get_commit_map(project_name)
+
         interaction_plot_df = \
             BlameInteractionDegreeDatabase.get_data_for_project(
                 project_name, [
@@ -929,42 +1080,23 @@ class BlameDegree(Plot):
             raise PlotDataEmpty
         return interaction_plot_df
 
-    def _degree_plot(
-        self,
-        view_mode: bool,
-        degree_type: DegreeType,
-        extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
-        with_churn: bool = True
-    ) -> None:
-        plot_cfg = {
-            'linewidth': 1 if view_mode else 0.25,
-            'legend_size': 8 if view_mode else 2,
-            'xtick_size': 10 if view_mode else 2,
-            'lable_modif': lambda x: x,
-            'legend_title': 'MISSING legend_title',
-            'legend_visible': True,
-            'fig_title': 'MISSING figure title',
-            'edgecolor': 'black',
-            'color_map': cm.get_cmap('gist_stern'),
-        }
-        if extra_plot_cfg is not None:
-            plot_cfg.update(extra_plot_cfg)
+    def _degree_plot(self, degree_type: DegreeType) -> None:
+        project_name = self.plot_kwargs['case_study'].project_name
+        fig_suptitle = f'{self.plot_config.fig_title("Blame interactions")} ' \
+                       f'- Project {project_name}'
+        self.plot_kwargs["fig_suptitle"] = fig_suptitle
 
-        fig_suptitle = f'{str(plot_cfg["fig_title"])} - ' \
-                       f'Project {self.plot_kwargs["project"]}'
-        plot_cfg["fig_suptitle"] = fig_suptitle
-
-        style.use(self.style)
-        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
+        style.use(self.plot_config.style())
+        commit_map: CommitMap = get_commit_map(project_name)
         interaction_plot_df = self._get_degree_data()
 
         unique_revisions, sub_df_list = _filter_data_frame(
             degree_type, interaction_plot_df, commit_map
         )
 
-        _generate_stackplot(
-            interaction_plot_df, unique_revisions, sub_df_list, with_churn,
-            plot_cfg, self.plot_kwargs
+        _generate_degree_stackplot(
+            interaction_plot_df, unique_revisions, sub_df_list,
+            self.plot_kwargs, self.plot_config
         )
 
     def _multi_lib_degree_plot(
@@ -993,7 +1125,7 @@ class BlameDegree(Plot):
                        f'{plot_cfg["base_lib"]} --> {plot_cfg["inter_lib"]} '
         plot_cfg["fig_suptitle"] = fig_suptitle
 
-        style.use(self.style)
+        style.use(self.plot_config.style())
         commit_map: CommitMap = self.plot_kwargs['get_cmap']()
         interaction_plot_df = self._get_degree_data()
 
@@ -1004,7 +1136,7 @@ class BlameDegree(Plot):
         ).all(1)]
 
         def is_lib_combination_existent() -> bool:
-            length = len(np.unique(interaction_plot_df['revision']))
+            length = len(_get_unique_revisions(interaction_plot_df, commit_map))
             is_empty = interaction_plot_df.empty
 
             if is_empty or length == 1:
@@ -1031,9 +1163,9 @@ class BlameDegree(Plot):
             degree_type, interaction_plot_df, commit_map
         )
 
-        _generate_stackplot(
-            interaction_plot_df, unique_revisions, sub_df_list, with_churn,
-            plot_cfg, self.plot_kwargs
+        _generate_degree_stackplot(
+            interaction_plot_df, unique_revisions, sub_df_list,
+            self.plot_kwargs, self.plot_config
         )
 
     def _fraction_overview_plot(
@@ -1057,7 +1189,7 @@ class BlameDegree(Plot):
         if extra_plot_cfg is not None:
             plot_cfg.update(extra_plot_cfg)
 
-        style.use(self.style)
+        style.use(self.plot_config.style())
 
         df = self._get_degree_data()
         df = df[df.degree_type == degree_type.value]
@@ -1108,85 +1240,36 @@ class BlameDegree(Plot):
             unique_revisions, plot_cfg, self.plot_kwargs
         )
 
-    def _multi_lib_interaction_sankey_plot(
-        self,
-        view_mode: bool,
-        degree_type: DegreeType,
-        extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
-        save_path: tp.Optional[Path] = None,
-        filetype: str = 'png'
-    ) -> tp.Optional[go.Figure]:
-
-        # Choose sequential colormaps for correct shading
-        plot_cfg = {
-            'fig_title':
-                'MISSING figure title',
-            'font_size':
-                10,
-            'width':
-                1500,
-            'height':
-                1000,
-            'colormaps': [
-                'Greens', 'Reds', 'Blues', 'Greys', 'Oranges', 'Purples',
-                'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu', 'GnBu',
-                'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn'
-            ]
-        }
-        if extra_plot_cfg is not None:
-            plot_cfg.update(extra_plot_cfg)
-
-        style.use(self.style)
+    def _multi_lib_interaction_sankey_plot(self, view_mode: bool) -> go.Figure:
         interaction_plot_df = self._get_degree_data()
         interaction_plot_df = interaction_plot_df[
-            interaction_plot_df.degree_type == degree_type.value]
+            interaction_plot_df.degree_type == DegreeType.INTERACTION.value]
+
         interaction_plot_df.sort_values(by=['time_id'], inplace=True)
         interaction_plot_df.reset_index(inplace=True)
-        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
-        unique_revisions = _get_unique_revisions(
-            interaction_plot_df, commit_map
-        )
         highest_degree = interaction_plot_df["degree"].max()
+        commit_map: CommitMap = get_commit_map(
+            self.plot_kwargs["case_study"].project_name
+        )
+        rev = commit_map.convert_to_full_or_warn(self.plot_kwargs['revision'])
 
-        # Generate and save sankey plots for all revs if no revision was
-        # specified. If specified, show an interactive sankey plot in the
-        # browser.
-        for rev in unique_revisions:
-            if view_mode and 'revision' in self.plot_kwargs:
-                rev = commit_map.convert_to_full_or_warn(
-                    ShortCommitHash(self.plot_kwargs['revision'])
-                )
+        df = interaction_plot_df.loc[interaction_plot_df["revision"].apply(
+            commit_map.convert_to_full_or_warn
+        ) == rev]
 
-            df = interaction_plot_df.loc[interaction_plot_df['revision'] == rev]
+        lib_names_dict = _get_separated_lib_names_dict(df)
+        lib_cm_mapping, lib_shades_mapping = _build_sankey_color_mappings(
+            highest_degree, lib_names_dict
+        )
 
-            lib_names_dict = _get_separated_lib_names_dict(df)
-            lib_cm_mapping, lib_shades_mapping = _build_sankey_color_mappings(
-                highest_degree, plot_cfg, lib_names_dict
-            )
+        plotting_data_dict = _collect_sankey_plotting_data(
+            df, lib_names_dict, lib_cm_mapping, lib_shades_mapping
+        )
+        sankey_figure = _build_sankey_figure(
+            rev, view_mode, plotting_data_dict, lib_names_dict, self.plot_config
+        )
 
-            plotting_data_dict = _collect_sankey_plotting_data(
-                df, lib_names_dict, lib_cm_mapping, lib_shades_mapping
-            )
-            sankey_figure = _build_sankey_figure(
-                rev, view_mode, plotting_data_dict, lib_names_dict, plot_cfg
-            )
-
-            if view_mode and 'revision' in self.plot_kwargs:
-                return sankey_figure
-
-            # TODO (se-passau/VaRA#545): move plot file saving to top level,
-            #  which currently breaks the plot abstraction.
-            _save_figure(
-                figure=sankey_figure,
-                revision=rev,
-                c_map=commit_map,
-                plot_kwargs=self.plot_kwargs,
-                plot_file_name=self.plot_file_name(filetype),
-                plot_type=PlotTypes.SANKEY,
-                path=save_path,
-                filetype='png'
-            )
-        return None
+        return sankey_figure
 
     def _calc_missing_revisions(
         self, degree_type: DegreeType, boundary_gradient: float
@@ -1204,7 +1287,9 @@ class BlameDegree(Plot):
             a set of revisions sampled between revisions with unusually large
             changes in degree distribution
         """
-        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
+        commit_map: CommitMap = get_commit_map(
+            self.plot_kwargs['case_study'].project_name
+        )
         interaction_plot_df = self._get_degree_data()
         unique_revisions, sub_df_list = _filter_data_frame(
             degree_type, interaction_plot_df, commit_map
@@ -1258,7 +1343,7 @@ class BlameDegree(Plot):
                         commit_map.short_time_id(lhs_cm) +
                         commit_map.short_time_id(rhs_cm)
                     ) / 2.0)
-                    new_rev = self.plot_kwargs['cmap'].c_hash(new_rev_id)
+                    new_rev = commit_map.c_hash(new_rev_id)
                     print(
                         "-> Adding {rev} as new revision to the sample set".
                         format(rev=new_rev)
@@ -1270,22 +1355,16 @@ class BlameDegree(Plot):
         return new_revs
 
 
-class BlameInteractionDegree(BlameDegree):
+class BlameInteractionDegree(BlameDegree, plot_name="b_interaction_degree"):
     """Plotting the degree of blame interactions."""
 
     NAME = 'b_interaction_degree'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        extra_plot_cfg = {
-            'legend_title': 'Interaction degrees',
-            'fig_title': 'Blame interactions'
-        }
-        # TODO (se-passau/VaRA#545): make params configurable in user call
-        #  with plot config rework
-        self._degree_plot(view_mode, DegreeType.INTERACTION, extra_plot_cfg)
+        self._degree_plot(DegreeType.INTERACTION)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -1295,7 +1374,41 @@ class BlameInteractionDegree(BlameDegree):
         )
 
 
-class BlameInteractionDegreeMultiLib(BlameDegree):
+class BlameInteractionDegreeGenerator(
+    PlotGenerator,
+    generator_name="interaction-degree-plot",
+    options=[
+        REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY, OPTIONAL_SHOW_CHURN,
+        OPTIONAL_EDGE_COLOR, OPTIONAL_COLORMAP, OPTIONAL_SHOW_CVE,
+        OPTIONAL_SHOW_BUGS, OPTIONAL_CVE_LINE_WIDTH, OPTIONAL_BUG_LINE_WIDTH,
+        OPTIONAL_CVE_COLOR, OPTIONAL_BUG_COLOR, OPTIONAL_VERTICAL_ALIGNMENT
+    ]
+):
+    """Generates interaction-degree plot(s) for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            BlameInteractionDegree(
+                self.plot_config,
+                report_type=self.plot_kwargs["report_type"],
+                case_study=cs,
+                show_churn=self.plot_kwargs["show_churn"],
+                edge_color=self.plot_kwargs["edge_color"],
+                colormap=self.plot_kwargs["colormap"],
+                show_cve=self.plot_kwargs["show_cve"],
+                show_bugs=self.plot_kwargs["show_bugs"],
+                cve_line_width=self.plot_kwargs["cve_line_width"],
+                bug_line_width=self.plot_kwargs["bug_line_width"],
+                cve_color=self.plot_kwargs["cve_color"],
+                bug_color=self.plot_kwargs["bug_color"],
+                vertical_alignment=self.plot_kwargs["vertical_alignment"]
+            ) for cs in self.plot_kwargs["case_study"]
+        ]
+
+
+class BlameInteractionDegreeMultiLib(
+    BlameDegree, plot_name="b_interaction_degree_multi_lib"
+):
     """
     Plotting the degree of blame interactions between two libraries.
 
@@ -1306,8 +1419,8 @@ class BlameInteractionDegreeMultiLib(BlameDegree):
 
     NAME = 'b_interaction_degree_multi_lib'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         if 'base_lib' not in self.plot_kwargs or \
@@ -1338,14 +1451,16 @@ class BlameInteractionDegreeMultiLib(BlameDegree):
         )
 
 
-class BlameInteractionFractionOverview(BlameDegree):
+class BlameInteractionFractionOverview(
+    BlameDegree, plot_name="b_interaction_fraction_overview"
+):
     """Plotting the fraction distribution of in-/outgoing blame interactions
     from all project libraries."""
 
     NAME = 'b_interaction_fraction_overview'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
@@ -1366,7 +1481,9 @@ class BlameInteractionFractionOverview(BlameDegree):
         )
 
 
-class BlameLibraryInteractions(BlameDegree):
+class BlameLibraryInteractions(
+    BlameDegree, plot_name="b_multi_lib_interaction_sankey_plot"
+):
     """
     Plotting the dependencies of blame interactions from all project libraries
     either as interactive plot in the browser or as static image.
@@ -1377,52 +1494,39 @@ class BlameLibraryInteractions(BlameDegree):
 
     NAME = 'b_multi_lib_interaction_sankey_plot'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
         self.__figure = go.Figure()
 
     def plot(self, view_mode: bool) -> None:
-        if view_mode and 'revision' not in self.plot_kwargs:
-            LOG.warning(
-                "The interactive view mode requires a selected revision."
-            )
-            raise PlotDataEmpty
-
-        if not view_mode and 'revision' in self.plot_kwargs:
-            LOG.warning(
-                "View mode is turned off. The specified revision will be "
-                "ignored."
-            )
-
-        extra_plot_cfg = {
-            'fig_title':
-                'Library interactions from base(left) to interacting(right) '
-                'libraries. Color saturation increases with the degree level.',
-            'width': 1500,
-            'height': 1000
-        }
-        # TODO (se-passau/VaRA#545): make params configurable in user call
-        #  with plot config rework
-        self.__figure = self._multi_lib_interaction_sankey_plot(
-            view_mode, DegreeType.INTERACTION, extra_plot_cfg, filetype='png'
-        )
+        self.__figure = self._multi_lib_interaction_sankey_plot(view_mode)
 
     def show(self) -> None:
         try:
             self.plot(True)
         except PlotDataEmpty:
-            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            LOG.warning(
+                f"No data for project "
+                f"{self.plot_kwargs['case_study'].project_name}. "
+            )
             return
         self.__figure.show()
 
-    # Skip save method to save one figure for each revision
-    def save(
-        self, path: tp.Optional[Path] = None, filetype: str = 'png'
-    ) -> None:
+    def save(self, plot_dir: Path, filetype: str = 'png') -> None:
+        project_name: str = self.plot_kwargs["case_study"].project_name
+        commit_map: CommitMap = get_commit_map(project_name)
+
         try:
             self.plot(False)
+            _save_figure(
+                self.__figure,
+                commit_map.convert_to_full_or_warn(
+                    self.plot_kwargs["revision"]
+                ), project_name, PlotTypes.SANKEY,
+                self.plot_file_name(filetype), plot_dir, filetype
+            )
         except PlotDataEmpty:
-            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            LOG.warning(f"No data for project {project_name}.")
             return
 
     def calc_missing_revisions(
@@ -1433,7 +1537,46 @@ class BlameLibraryInteractions(BlameDegree):
         )
 
 
-class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
+class SankeyLibraryInteractionsGeneratorRev(
+    PlotGenerator,
+    generator_name="sankey-plot-rev",
+    options=[REQUIRE_REPORT_TYPE, REQUIRE_CASE_STUDY, REQUIRE_REVISION]
+):
+    """Generates a single sankey plot for the selected revision in the case
+    study."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            BlameLibraryInteractions(
+                self.plot_config,
+                report_type=self.plot_kwargs["report_type"],
+                case_study=self.plot_kwargs["case_study"],
+                revision=ShortCommitHash(self.plot_kwargs["revision"])
+            )
+        ]
+
+
+class SankeyLibraryInteractionsGeneratorCS(
+    PlotGenerator,
+    generator_name="sankey-plot-cs",
+    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+):
+    """Generates a sankey plot for every revision in every given case study."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            BlameLibraryInteractions(
+                self.plot_config,
+                report_type=self.plot_kwargs["report_type"],
+                case_study=cs,
+                revision=rev
+            ) for cs in self.plot_kwargs["case_study"] for rev in cs.revisions
+        ]
+
+
+class BlameCommitInteractionsGraphviz(
+    BlameLibraryInteraction, plot_name="b_multi_lib_interaction_graphviz"
+):
     """
     Plotting the interactions between all commits of multiple libraries.
 
@@ -1445,41 +1588,40 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
 
     NAME = 'b_multi_lib_interaction_graphviz'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
-        self.__graph = Digraph()
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
+        self.__figure = Digraph()
 
     def plot(self, view_mode: bool) -> None:
-        if view_mode and 'revision' not in self.plot_kwargs:
-            LOG.warning("No revision for view mode was chosen.")
-            raise PlotDataEmpty
-
-        if not view_mode and 'revision' in self.plot_kwargs:
-            LOG.warning(
-                "View mode is turned off. The specified revision will be "
-                "ignored."
-            )
-        # TODO (se-passau/VaRA#545): make params configurable in user call
-        #  with plot config rework
-        self.__graph = self._graphviz_plot(
-            view_mode=view_mode, show_edge_weight=True
-        )
+        self.__figure = self._graphviz_plot()
 
     def show(self) -> None:
         try:
             self.plot(True)
         except PlotDataEmpty:
-            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            LOG.warning(
+                f"No data for project "
+                f"{self.plot_kwargs['case_study'].project_name}."
+            )
             return
-        self.__graph.view(tempfile.mktemp())
+        self.__figure.view(tempfile.mktemp())
 
-    def save(
-        self, path: tp.Optional[Path] = None, filetype: str = 'png'
-    ) -> None:
+    def save(self, plot_dir: Path, filetype: str = 'png') -> None:
+        project_name: str = self.plot_kwargs["case_study"].project_name
+        commit_map: CommitMap = get_commit_map(project_name)
+
         try:
             self.plot(False)
+            _save_figure(
+                self.__figure,
+                commit_map.convert_to_full_or_warn(
+                    self.plot_kwargs["revision"]
+                ),
+                self.plot_kwargs['case_study'].project_name, PlotTypes.GRAPHVIZ,
+                self.plot_file_name(filetype), plot_dir, filetype
+            )
         except PlotDataEmpty:
-            LOG.warning(f"No data for project {self.plot_kwargs['project']}.")
+            LOG.warning(f"No data for project {project_name}.")
             return
 
     def calc_missing_revisions(
@@ -1488,13 +1630,82 @@ class BlameCommitInteractionsGraphviz(BlameLibraryInteraction):
         raise NotImplementedError
 
 
-class BlameAuthorDegree(BlameDegree):
+class GraphvizLibraryInteractionsGeneratorRev(
+    PlotGenerator,
+    generator_name="graphviz-plot-rev",
+    options=[
+        REQUIRE_REPORT_TYPE, REQUIRE_CASE_STUDY, REQUIRE_REVISION,
+        OPTIONAL_SHOW_INTERACTIONS, OPTIONAL_SHOW_DIFF,
+        OPTIONAL_SHOW_EDGE_WEIGHT, OPTIONAL_EDGE_WEIGHT_THRESHOLD,
+        OPTIONAL_REVISION_LENGTH, OPTIONAL_LAYOUT_ENGINE,
+        OPTIONAL_SHOW_ONLY_COMMIT
+    ]
+):
+    """Generates a single graphviz plot for the selected revision in the case
+    study."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            BlameCommitInteractionsGraphviz(
+                self.plot_config,
+                report_type=self.plot_kwargs["report_type"],
+                case_study=self.plot_kwargs["case_study"],
+                revision=ShortCommitHash(self.plot_kwargs["revision"]),
+                show_interactions=self.plot_kwargs["show_interactions"],
+                show_diff=self.plot_kwargs["show_diff"],
+                show_edge_weight=self.plot_kwargs["show_edge_weight"],
+                edge_weight_threshold=self.plot_kwargs["edge_weight_threshold"],
+                revision_length=self.plot_kwargs["revision_length"],
+                layout_engine=self.plot_kwargs["layout_engine"],
+                show_only_commit=ShortCommitHash(
+                    self.plot_kwargs["show_only_commit"]
+                ) if self.plot_kwargs["show_only_commit"] is not None else
+                self.plot_kwargs["show_only_commit"]
+            )
+        ]
+
+
+class GraphvizLibraryInteractionsGeneratorCS(
+    PlotGenerator,
+    generator_name="graphviz-plot-cs",
+    options=[
+        REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY,
+        OPTIONAL_SHOW_INTERACTIONS, OPTIONAL_SHOW_DIFF,
+        OPTIONAL_SHOW_EDGE_WEIGHT, OPTIONAL_EDGE_WEIGHT_THRESHOLD,
+        OPTIONAL_REVISION_LENGTH, OPTIONAL_LAYOUT_ENGINE,
+        OPTIONAL_SHOW_ONLY_COMMIT
+    ]
+):
+    """Generates a graphviz plot for every revision in the case study."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            BlameCommitInteractionsGraphviz(
+                self.plot_config,
+                report_type=self.plot_kwargs["report_type"],
+                case_study=cs,
+                revision=rev,
+                show_interactions=self.plot_kwargs["show_interactions"],
+                show_diff=self.plot_kwargs["show_diff"],
+                show_edge_weight=self.plot_kwargs["show_edge_weight"],
+                edge_weight_threshold=self.plot_kwargs["edge_weight_threshold"],
+                revision_length=self.plot_kwargs["revision_length"],
+                layout_engine=self.plot_kwargs["layout_engine"],
+                show_only_commit=ShortCommitHash(
+                    self.plot_kwargs["show_only_commit"]
+                ) if self.plot_kwargs["show_only_commit"] is not None else
+                self.plot_kwargs["show_only_commit"]
+            ) for cs in self.plot_kwargs["case_study"] for rev in cs.revisions
+        ]
+
+
+class BlameAuthorDegree(BlameDegree, plot_name="b_author_degree"):
     """Plotting the degree of authors for all blame interactions."""
 
     NAME = 'b_author_degree'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
@@ -1503,7 +1714,7 @@ class BlameAuthorDegree(BlameDegree):
         }
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
-        self._degree_plot(view_mode, DegreeType.AUTHOR, extra_plot_cfg)
+        self._degree_plot(DegreeType.AUTHOR)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -1513,14 +1724,14 @@ class BlameAuthorDegree(BlameDegree):
         )
 
 
-class BlameMaxTimeDistribution(BlameDegree):
+class BlameMaxTimeDistribution(BlameDegree, plot_name="b_maxtime_distribution"):
     """Plotting the degree of max times differences for all blame
     interactions."""
 
     NAME = 'b_maxtime_distribution'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
@@ -1530,7 +1741,7 @@ class BlameMaxTimeDistribution(BlameDegree):
         }
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
-        self._degree_plot(view_mode, DegreeType.MAX_TIME, extra_plot_cfg)
+        self._degree_plot(DegreeType.MAX_TIME)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -1540,14 +1751,14 @@ class BlameMaxTimeDistribution(BlameDegree):
         )
 
 
-class BlameAvgTimeDistribution(BlameDegree):
+class BlameAvgTimeDistribution(BlameDegree, plot_name="b_avgtime_distribution"):
     """Plotting the degree of avg times differences for all blame
     interactions."""
 
     NAME = 'b_avgtime_distribution'
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         extra_plot_cfg = {
@@ -1557,7 +1768,7 @@ class BlameAvgTimeDistribution(BlameDegree):
         }
         # TODO (se-passau/VaRA#545): make params configurable in user call
         #  with plot config rework
-        self._degree_plot(view_mode, DegreeType.AVG_TIME, extra_plot_cfg)
+        self._degree_plot(DegreeType.AVG_TIME)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
