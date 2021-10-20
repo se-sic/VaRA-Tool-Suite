@@ -15,5 +15,5 @@ artefacts:
 - artefact_type: table
   artefact_type_version: 1
   name: "Correlation Table"
-  output_path: .
+  output_dir: .
   table_type: b_diff_correlation_overview

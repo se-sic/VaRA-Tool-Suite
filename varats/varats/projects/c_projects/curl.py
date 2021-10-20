@@ -35,7 +35,7 @@ class Curl(VProject):
         bb.source.Git(
             remote="https://github.com/curl/curl.git",
             local="curl",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("curl")

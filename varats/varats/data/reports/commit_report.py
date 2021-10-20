@@ -119,14 +119,14 @@ class FunctionGraphEdges():
                 self.df_relations.append(RegionToRegionEdge(edge))
 
     def __str__(self) -> str:
-        repr_str = "FName: {}:\n\t CG-Edges [".format(self.fid)
+        repr_str = f"FName: {self.fid}:\n    CG-Edges ["
         sep = ""
         for cg_edge in self.cg_edges:
             repr_str += sep + str(cg_edge)
             sep = ", "
         repr_str += "]"
 
-        repr_str += "\n\t CF-Edges ["
+        repr_str += "\n    CF-Edges ["
         sep = ""
         for cf_edge in self.cf_edges:
             repr_str += sep + str(cf_edge)
@@ -136,11 +136,8 @@ class FunctionGraphEdges():
         return repr_str
 
 
-class CommitReport(BaseReport):
+class CommitReport(BaseReport, shorthand="CR", file_type="yaml"):
     """Data class that gives access to a loaded commit report."""
-
-    SHORTHAND = "CR"
-    FILE_TYPE = "yaml"
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
@@ -174,39 +171,6 @@ class CommitReport(BaseReport):
     def head_commit(self) -> ShortCommitHash:
         """The current HEAD commit under which this CommitReport was created."""
         return self.filename.commit_hash
-
-    @classmethod
-    def shorthand(cls) -> str:
-        """Shorthand for this report."""
-        return cls.SHORTHAND
-
-    @staticmethod
-    def get_file_name(
-        project_name: str,
-        binary_name: str,
-        project_version: str,
-        project_uuid: str,
-        extension_type: FileStatusExtension,
-        file_ext: str = "yaml"
-    ) -> str:
-        """
-        Generates a filename for a commit report with 'yaml' as file extension.
-
-        Args:
-            project_name: name of the project for which the report was generated
-            binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
-            project_uuid: benchbuild uuid for the experiment run
-            extension_type: to specify the status of the generated report
-            file_ext: file extension of the report file
-
-        Returns:
-            name for the report file that can later be uniquly identified
-        """
-        return ReportFilename.get_file_name(
-            CommitReport.SHORTHAND, project_name, binary_name, project_version,
-            project_uuid, extension_type, file_ext
-        )
 
     def calc_max_cf_edges(self) -> int:
         """Calculate the highest amount of control-flow interactions of a single

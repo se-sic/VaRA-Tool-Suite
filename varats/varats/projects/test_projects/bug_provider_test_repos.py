@@ -28,7 +28,7 @@ class BasicBugDetectionTestRepo(VProject):
         VaraTestRepoSource(
             remote="BugDetectionRepos/BasicTestRepo",
             local="basic_test_repo",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             version_filter=project_filter_generator("basic_test_repo")
         )

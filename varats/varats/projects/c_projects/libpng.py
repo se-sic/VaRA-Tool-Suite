@@ -131,7 +131,7 @@ class Libpng(VProject):
             bb.source.Git(
                 remote="https://github.com/glennrp/libpng.git",
                 local="libpng",
-                refspec="HEAD",
+                refspec="origin/HEAD",
                 limit=None,
                 shallow=False,
                 version_filter=project_filter_generator("libpng")

@@ -19,7 +19,8 @@ from varats.containers.containers import (
     export_base_images,
 )
 from varats.tools.tool_util import get_supported_research_tool_names
-from varats.ts_utils.cli_util import initialize_cli_tool, EnumChoice
+from varats.ts_utils.cli_util import initialize_cli_tool
+from varats.ts_utils.click_param_types import EnumChoice
 from varats.utils.settings import vara_cfg, save_config, bb_cfg, save_bb_config
 
 LOG = logging.Logger(__name__)

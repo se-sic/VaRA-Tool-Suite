@@ -52,6 +52,7 @@ check_err
 $COVERAGE $(which vara-cs) status EmptyReport
 check_err
 
+<<<<<<< HEAD
 # already a unit test but needed for succeeding tests to make sense
 $COVERAGE $(which vara-plot) --save-artefact overview --plot-dir overview_plots pc-overview-plot --report-type EmptyReport
 check_err
@@ -65,6 +66,8 @@ check_err
 $COVERAGE $(which vara-art) show overview
 check_err
 
+=======
+>>>>>>> vara-dev
 # Tests that we can add extra refs from other branches if a refspec is specified
 $COVERAGE $(which vara-pc) create test_extra_refs
 check_err
