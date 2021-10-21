@@ -1451,21 +1451,9 @@ class BlameInteractionDegreeMultiLibGenerator(
     def generate(self) -> tp.List[Plot]:
         return [
             BlameInteractionDegreeMultiLib(
-                self.plot_config,
-                report_type=self.plot_kwargs["report_type"],
-                case_study=cs,
-                base_lib=self.plot_kwargs["base_lib"],
-                inter_lib=self.plot_kwargs["inter_lib"],
-                show_churn=self.plot_kwargs["show_churn"],
-                edge_color=self.plot_kwargs["edge_color"],
-                colormap=self.plot_kwargs["colormap"],
-                show_cve=self.plot_kwargs["show_cve"],
-                show_bugs=self.plot_kwargs["show_bugs"],
-                cve_line_width=self.plot_kwargs["cve_line_width"],
-                bug_line_width=self.plot_kwargs["bug_line_width"],
-                cve_color=self.plot_kwargs["cve_color"],
-                bug_color=self.plot_kwargs["bug_color"],
-                vertical_alignment=self.plot_kwargs["vertical_alignment"]
+                self.plot_config, **{
+                    **self.plot_kwargs, "case_study": cs
+                }
             ) for cs in self.plot_kwargs["case_study"]
         ]
 
