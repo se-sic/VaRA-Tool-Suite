@@ -85,6 +85,7 @@ import pandas  # isort:skip
 # The autodocs typehints plugin does not resolve circular imports caused by type
 # annotations, so we have to manually break the circles.
 import rich.console  # isort:skip
+import cryptography.hazmat.backends  # isort:skip
 import click  # isort:skip
 import git  # isort:skip
 
