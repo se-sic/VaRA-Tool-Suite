@@ -1,83 +1,122 @@
 CLion Setup
 ===========
 
-How-To Setup VaRA/LLVM in CLion
--------------------------------
-- Start CLion
-- "Import Project from Sources"
-- Select main llvm source directory
-- Select "Open existing project" (Important!)
-- File -> Settings -> Build,Execution,Deployment -> CMake
+How to set up VaRA/LLVM in CLion
+--------------------------------
+1. Use ``vara-buildsetup vara -i`` to correctly clone and checkout the VaRa/LLVM repos (cf. :ref:`How to setup VaRA`)
 
-   - Create Debug Build
-      - Name: ``Debug``
-      - Build Type: ``Debug``
-      - CMake options:
-         .. code-block::
+2. Start CLion and from the menu select **File | Open** and point to ``<varats_root>/vara-llvm-project/llvm/CMakeLists.txt``.
+   In the dialog that opens, click **Open as Project**.
 
-            -DCMAKE_C_FLAGS_DEBUG=
-            -DCMAKE_CXX_FLAGS_DEBUG=
-            -DLLVM_ENABLE_ASSERTIONS=ON
-            -DBUILD_SHARED_LIBS=ON
-            -DLLVM_TARGETS_TO_BUILD=X86
-            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-            -DVARA_BUILD_LIBGIT=ON
-            -DLLVM_ENABLE_LLD=ON
-            -DLLVM_ENABLE_PROJECTS="clang;lld;compiler-rt;clang-tools-extra;vara;phasar"
-            -DCMAKE_INSTALL_PREFIX=~/work/VaRA
-      - Environment:
-         - ``CFLAGS`` = ``-O2 -g -fno-omit-frame-pointer``
-         - ``CXXFLAGS`` = ``-O2 -g -fno-omit-frame-pointer``
-      - Generation path: ``build/dev-clion``
-      - Build options: ``-j 4`` (or whatever you want)
+3. Go to **Settings/Preferences | Build, Execution, Deployment | CMake** to configure the CMake project.
+   Use the **+** symbol to create a new profile and adjust the settings as follows and confirm with **Ok** once you are done:
 
-   - Create Release Build
-      - Name: ``Release``
-      - Build Type: ``Release``
-      - CMake options:
-         .. code-block::
+   - Debug build:
+      - **Name:** Debug
+      - **Build type:** Debug
+      - **Toolchain:** Default  (make sure that your toolchain is configured to use clang)
+      - **CMake options:**
+        .. code-block::
 
-            -DCMAKE_C_FLAGS_RELEASE=
-            -DCMAKE_CXX_FLAGS_RELEASE=
-            -DLLVM_ENABLE_ASSERTIONS=OFF
-            -DBUILD_SHARED_LIBS=ON
-            -DCMAKE_BUILD_TYPE=Release
-            -DLLVM_TARGETS_TO_BUILD=X86
-            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-            -DVARA_BUILD_LIBGIT=ON
-            -DLLVM_ENABLE_LLD=ON
-            -DLLVM_ENABLE_PROJECTS="clang;lld;compiler-rt;clang-tools-extra;vara;phasar"
-            -DCMAKE_INSTALL_PREFIX=~/work/VaRA
-      - Environment:
-         - ``CFLAGS`` = ``-O3 -DNDEBUG -march=native -gmlt -fno-omit-frame-pointer``
-         - ``CXXFLAGS`` = ``-O3 -DNDEBUG -march=native -gmlt -fno-omit-frame-pointer``
-      - Generation path: ``build/opt-clion``
-      - Build options: ``-j 4`` (or whatever you want)
+           -DBUILD_SHARED_LIBS=ON
+           -DLLVM_TARGETS_TO_BUILD=X86
+           -DLLVM_USE_NEWPM=ON
+           -DLLVM_ENABLE_LDD=ON
+           -DLLVM_PARALLEL_LINK_JOBS=4
+           -DCMAKE_C_FLAGS_DEBUG=
+           -DCMAKE_CXX_FLAGS_DEBUG=
+           -DLLVM_ENABLE_ASSERTIONS=ON
+           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+           -DLLVM_OPTIMIZED_TABLEGEN=ON
+           -DLLVM_PHASAR_BUILD=ON
+           -DLLVM_TOOL_PHASAR_BUILD=ON
+           -DLLVM_ENABLE_RTTI=ON
+           -DLLVM_ENABLE_EH=ON
+           -DVARA_BUILD_LIBGIT=ON
+           -DUSE_HTTPS=OFF
+           -DUSE_SSH=OFF
+           -DBUILD_CLAR=OFF
+           -DLLVM_ENABLE_PROJECTS="clang;lld;compiler-rt;clang-tools-extra;vara;phasar"
+           -DCMAKE_CXX_STANDARD=17
+           -DLLVM_ENABLE_BINDINGS=OFF
+           -DCMAKE_INSTALL_PREFIX=<varats_root>/tools/VaRA
 
-- Delete the old build directory cmake-build-debug that was created by clion after the first launch (in the main llvm source directory)
-- Add Configuration
-   - Add new "Application" configuration
-   - Name: ``Build All Targets``
-   - Targets: ``All targets``
-- If necessary restart CLion or reload CMake (CMake tab -> Reload button)
-- Wait until "Building symbols", "Indexing", etc. is done
-- Add another application configuration
-   - Name: ``Run clang``
-   - Targets: ``clang``
-   - Executable: ``clang``
-   - Program arguments: ``what you want``
-   - Working directory: ``what you want``
-- Also add configurations with ``clang++/opt`` as target/executable
-- You can also create configurations for the targets ``check-vara`` and ``tidy-vara`` for VaRA regression tests and clang-tidy
-- Choose configuration ``Build All Targets`` -> ``Build`` button
-- You can switch between ``Debug`` and ``Release`` builds in CLion's build configuration drop-down menu
-- Done
+      - **Build directory:** ``<varats_root>/tools_src/vara-llvm-project/build/dev-clion``
+      - **Build options:** ``-j 4`` (leave as-is to use all available cores)
+      - **Environment:**
+         - ``CFLAGS=-O2 -g -fno-omit-frame-pointer``
+         - ``CXXFLAGS=-O2 -g -fno-omit-frame-pointer``
+
+   - Release Build
+      - **Name:** Release
+      - **Build type:** Release
+      - **Toolchain:** Default  (make sure that your toolchain is configured to use clang)
+      - **CMake options:**
+        .. code-block::
+
+           -DBUILD_SHARED_LIBS=ON
+           -DLLVM_TARGETS_TO_BUILD=X86
+           -DLLVM_USE_NEWPM=ON
+           -DLLVM_ENABLE_LDD=ON
+           -DLLVM_PARALLEL_LINK_JOBS=4
+           -DCMAKE_C_FLAGS_RELEASE=
+           -DCMAKE_CXX_FLAGS_RELEASE=
+           -DLLVM_ENABLE_ASSERTIONS=OFF
+           -DLLVM_PHASAR_BUILD=ON
+           -DLLVM_TOOL_PHASAR_BUILD=ON
+           -DLLVM_ENABLE_RTTI=ON
+           -DLLVM_ENABLE_EH=ON
+           -DVARA_BUILD_LIBGIT=ON
+           -DUSE_HTTPS=OFF
+           -DUSE_SSH=OFF
+           -DBUILD_CLAR=OFF
+           -DLLVM_ENABLE_PROJECTS="clang;lld;compiler-rt;clang-tools-extra;vara;phasar"
+           -DCMAKE_CXX_STANDARD=17
+           -DLLVM_ENABLE_BINDINGS=OFF
+           -DCMAKE_INSTALL_PREFIX=<varats_root>/tools/VaRA
+
+      - **Build directory:** ``<varats_root>/tools_src/vara-llvm-project/build/dev-clion``
+      - **Build options:** ``-j 4`` (leave as-is to use all available cores)
+      - **Environment:**
+         - ``CFLAGS=-O3 -DNDEBUG -march=native -fno-omit-frame-pointer -gmlt``
+         - ``CXXFLAGS=-O3 -DNDEBUG -march=native -fno-omit-frame-pointer -gmlt``
+
+4. Call **Tools | CMake | Change Project Root** from the main menu and select the top-level repository folder, ``vara-llvm-project`` to see the entire repository in the Project tree.
+
+5. Delete the old build directory ``llvm/cmake-build-debug`` that was created by clion after the first launch
+
+6. Build the project using **Build | Build Project**
+
+   You can also create a run configuration that builds the project:
+       - Add a new "CMake Application" configuration
+       - Name: ``Build All Targets``
+       - Targets: ``All targets``
+
+(This guide follows the section `Work with a monorepo <https://www.jetbrains.com/help/clion/creating-new-project-from-scratch.html#monorepos>`_ in the official CLion documentation)
+
+
+Running applications within CLion
+---------------------------------
+
+To run VaRA from within clion, you need to create `run configurations <https://www.jetbrains.com/help/clion/run-debug-configuration.html#createExplicitly>`_.
+Choose **CMake Application** as a template and select the **Targets** and **Executable** depending on the application you want to run (e.g., `clang`, `clang++`, or `opt`).
+The targets ``check-vara`` and ``tidy-vara`` execute the VaRA regression tests and clang-tidy checks.
 
 
 Tips & Tricks
 -------------
 
+Changes to the CMake project do not apply automatically
+#######################################################
+
+You can manually reload the CMake project via the reload button in the CMake tab.
+
+Code completion or highlighting does not work
+#############################################
+
+Wait until `Building symbols`, `Indexing`, etc. is done or reload the CMake project.
+
 The debugger does stop at breakpoints and doesn't show the source code.
 #######################################################################
 
-This is most likely because the build does not include debugging symbols. Check if you have selected the ``Debug`` configuration for the build. If it doesn't work even if you used the debug configuration, the problem might disappear if you delete the build directory (e.g. ``build/dev-clion``), restart CLion and rebuild.
+This is most likely because the build does not include debugging symbols. Check if you have selected the ``Debug`` configuration for the build. If it doesn't work even if you used the debug configuration, the problem might disappear if you clean the build directory (e.g., **Build | Clean**) and reload the CMake project.
