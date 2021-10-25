@@ -1451,7 +1451,9 @@ class BlameInteractionDegreeMultiLibGenerator(
     def generate(self) -> tp.List[Plot]:
         return [
             BlameInteractionDegreeMultiLib(
-                self.plot_config, case_study=cs, **plot_kwargs
+                self.plot_config, **{
+                    **self.plot_kwargs, "case_study": cs
+                }
             ) for cs in self.plot_kwargs["case_study"]
         ]
 
