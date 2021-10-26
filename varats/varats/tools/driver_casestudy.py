@@ -20,7 +20,6 @@ from varats.paper_mgmt.case_study import (
     generate_case_study,
 )
 from varats.paper_mgmt.paper_config import get_paper_config
-from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
 from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
@@ -37,6 +36,12 @@ from varats.utils.settings import vara_cfg
 LOG = logging.getLogger(__name__)
 
 
+def _create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
+    """Create a choice parameter type that allows selecting a report type."""
+    initialize_reports()
+    return TypedChoice(BaseReport.REPORT_TYPES)
+
+
 @click.group()
 @configuration_lookup_error_handler
 def main() -> None:
@@ -44,17 +49,10 @@ def main() -> None:
     initialize_cli_tool()
     initialize_projects()
     initialize_reports()
-    initialize_plots()  # needed for vara-cs ext smooth_plot
-
-
-def _create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
-    """Create a choice parameter type that allows selecting a report type."""
-    initialize_reports()
-    return TypedChoice(BaseReport.REPORT_TYPES)
 
 
 @main.command("status")
-@click.argument("report_type", type=_create_report_type_choice())
+@click.argument("report_name", type=_create_report_type_choice())
 @click.option(
     "--filter-regex",
     help="Provide a regex to filter the shown case studies",
@@ -91,10 +89,16 @@ def _create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
     "(e.g. when piping to less -r)."
 )
 def __casestudy_status(
-    report_type: str, filter_regex: str, paper_config: str, short: bool,
+    report_name: str, filter_regex: str, paper_config: str, short: bool,
     list_revs: bool, with_stage: bool, sort_revs: bool, legend: bool,
     force_color: bool
 ) -> None:
+    """
+    Show status of current case study.
+
+    REPORT-NAME: Provide a report name to select which files are considered
+    for the status
+    """
     if force_color:
         colors.use_color = True
     if paper_config:
@@ -106,7 +110,7 @@ def __casestudy_status(
     if short and with_stage:
         click.UsageError("At most one argument of: --short, --ws can be used.")
     PCM.show_status_of_case_studies(
-        report_type, filter_regex, short, sort_revs, list_revs, with_stage,
+        report_name, filter_regex, short, sort_revs, list_revs, with_stage,
         legend
     )
 
@@ -161,6 +165,11 @@ def __casestudy_create_or_extend(
     paper_config_path: Path, distribution: str, version: int, end: str,
     start: str, project: str, **args: tp.Any
 ) -> None:
+    """
+    Generate a case study.
+
+    PAPER_CONFIG_PATH: Path to paper_config folder (e.g., paper_configs/ase-17)
+    """
     if not project and not args['git_path']:
         click.echo("need --project or --git-path", err=True)
 
@@ -183,7 +192,7 @@ def __casestudy_create_or_extend(
 
     # Specify merge_stage as 0 for creating new case studies
     args['merge_stage'] = 0
-
+    args['distribution'] = sampling_method
     case_study = generate_case_study(
         sampling_method, cmap, version, project, **args
     )
@@ -192,6 +201,7 @@ def __casestudy_create_or_extend(
 
 
 @main.command("package")
+@click.argument("report_names", type=_create_report_type_choice(), nargs=-1)
 @click.option("-o", "--output", help="Output file")
 @click.option(
     "--filter-regex",
@@ -200,10 +210,15 @@ def __casestudy_create_or_extend(
     type=str,
     default=".*"
 )
-@click.argument("report_names", type=_create_report_type_choice(), nargs=-1)
 def __casestudy_package(
     output: str, filter_regex: str, report_names: tp.List[str]
 ) -> None:
+    """
+    Case study packaging util.
+
+    REPORT_NAMES: Provide report names to select which files are considered
+    for packaging
+    """
     output_path = Path(output)
     if output_path.suffix == '':
         output_path = Path(str(output_path) + ".zip")
@@ -225,6 +240,86 @@ def __casestudy_package(
             "Please do not provide any other file type extension than .zip",
             err=True
         )
+
+
+@main.command("view")
+@click.argument("report-type", type=_create_report_type_choice())
+@click.argument("project")
+@click.argument("commit-hash", required=False)
+@click.option(
+    "--newest-only",
+    is_flag=True,
+    help="Only report the newest file for each matched commit hash"
+)
+def __casestudy_view(
+    report_type: str, project: str, commit_hash: ShortCommitHash,
+    newest_only: bool
+) -> None:
+    """
+    View report files.
+
+    REPORT_TYPE: Report type of the result files.
+    PROJECT: Project to view result files for.
+    COMMIT_HASH: Commit hash to view result files for.
+    """
+    result_file_type = BaseReport.REPORT_TYPES[report_type]
+    try:
+        commit_hash = __init_commit_hash(result_file_type, project, commit_hash)
+    except LookupError:
+        return
+
+    result_files = PCM.get_result_files(
+        result_file_type, project, commit_hash, newest_only
+    )
+    result_files.sort(
+        key=lambda report_file: report_file.stat().st_mtime_ns, reverse=True
+    )
+
+    if not result_files:
+        print("No matching result files found.")
+        return
+
+    print(
+        f"Found {len(result_files)} matching result files (newest to oldest):"
+    )
+
+    statuses = FileStatusExtension.get_physical_file_statuses().union(
+        FileStatusExtension.get_virtual_file_statuses()
+    )
+
+    longest_file_status_extension = max([
+        len(status.name) for status in statuses
+    ])
+
+    def result_file_to_list_entry(result_file: Path) -> str:
+        file_status = ReportFilename(result_file.name).file_status
+        status = (
+            file_status.get_colored_status().rjust(
+                longest_file_status_extension +
+                file_status.num_color_characters(), " "
+            )
+        )
+        return f"[{status}] {result_file.name}"
+
+    def open_in_editor(result_file: Path) -> None:
+        _ = editor[str(result_file)] & FG
+
+    editor_name = local.env["EDITOR"]
+    if not editor_name:
+        editor_name = "vim"
+    editor = local[editor_name]
+    try:
+        cli_list_choice(
+            "Select a number to open a file",
+            result_files,
+            result_file_to_list_entry,
+            open_in_editor,
+            start_label=1,
+            default=1,
+            repeat=True
+        )
+    except EOFError:
+        return
 
 
 def __init_commit_hash(
@@ -291,82 +386,15 @@ def __init_commit_hash(
     return commit_hash
 
 
-@main.command("view")
-@click.argument("report-type", type=_create_report_type_choice())
-@click.argument("project")
-@click.argument("commit-hash", required=False)
-@click.option("--newest-only", is_flag=True)
-def __casestudy_view(
-    report_type: str, project: str, commit_hash: ShortCommitHash,
-    newest_only: bool
-) -> None:
-    result_file_type = BaseReport.REPORT_TYPES[report_type]
-    try:
-        commit_hash = __init_commit_hash(result_file_type, project, commit_hash)
-    except LookupError:
-        return
-
-    result_files = PCM.get_result_files(
-        result_file_type, project, commit_hash, newest_only
-    )
-    result_files.sort(
-        key=lambda report_file: report_file.stat().st_mtime_ns, reverse=True
-    )
-
-    if not result_files:
-        print("No matching result files found.")
-        return
-
-    print(
-        f"Found {len(result_files)} matching result files (newest to oldest):"
-    )
-
-    statuses = FileStatusExtension.get_physical_file_statuses().union(
-        FileStatusExtension.get_virtual_file_statuses()
-    )
-
-    longest_file_status_extension = max([
-        len(status.name) for status in statuses
-    ])
-
-    def result_file_to_list_entry(result_file: Path) -> str:
-        file_status = ReportFilename(result_file.name).file_status
-        status = (
-            file_status.get_colored_status().rjust(
-                longest_file_status_extension +
-                file_status.num_color_characters(), " "
-            )
-        )
-        return f"[{status}] {result_file.name}"
-
-    def open_in_editor(result_file: Path) -> None:
-        _ = editor[str(result_file)] & FG
-
-    editor_name = local.env["EDITOR"]
-    if not editor_name:
-        editor_name = "vim"
-    editor = local[editor_name]
-    try:
-        cli_list_choice(
-            "Select a number to open a file",
-            result_files,
-            result_file_to_list_entry,
-            open_in_editor,
-            start_label=1,
-            default=1,
-            repeat=True
-        )
-    except EOFError:
-        return
-
-
 @main.group()
 def cleanup() -> None:
+    """Cleanup report files."""
     return
 
 
 @cleanup.command("old")
 def _remove_old_result_files() -> None:
+    """Remove result files of wich a newer version exists."""
     paper_config = get_paper_config()
     result_dir = Path(str(vara_cfg()['result_dir']))
     for case_study in paper_config.get_all_case_studies():
@@ -396,23 +424,9 @@ def _remove_old_result_files() -> None:
                 os.remove(file)
 
 
-def _find_result_dir_paths_of_projects() -> tp.List[Path]:
-    result_dir_path = Path(vara_cfg()["result_dir"].value)
-    existing_paper_config_result_dir_paths = []
-    paper_config = get_paper_config()
-    project_names = [
-        cs.project_name for cs in paper_config.get_all_case_studies()
-    ]
-    for project_name in project_names:
-        path = Path(result_dir_path / project_name)
-        if Path.exists(path):
-            existing_paper_config_result_dir_paths.append(path)
-
-    return existing_paper_config_result_dir_paths
-
-
 @cleanup.command("error")
 def _remove_error_result_files() -> None:
+    """Remove error result files."""
     result_dir_paths = _find_result_dir_paths_of_projects()
 
     for result_dir_path in result_dir_paths:
@@ -438,6 +452,7 @@ def _remove_error_result_files() -> None:
     "--silent", help="Hide the output of the matching filenames", is_flag=True
 )
 def _remove_result_files_by_regex(regex_filter: str, hide: bool) -> None:
+    """Remove result files based on a given regex filter."""
     result_dir_paths = _find_result_dir_paths_of_projects()
 
     for result_dir_path in result_dir_paths:
@@ -465,6 +480,21 @@ def _remove_result_files_by_regex(regex_filter: str, hide: bool) -> None:
                         os.remove(result_dir_path / file_name)
         except EOFError:
             continue
+
+
+def _find_result_dir_paths_of_projects() -> tp.List[Path]:
+    result_dir_path = Path(vara_cfg()["result_dir"].value)
+    existing_paper_config_result_dir_paths = []
+    paper_config = get_paper_config()
+    project_names = [
+        cs.project_name for cs in paper_config.get_all_case_studies()
+    ]
+    for project_name in project_names:
+        path = Path(result_dir_path / project_name)
+        if Path.exists(path):
+            existing_paper_config_result_dir_paths.append(path)
+
+    return existing_paper_config_result_dir_paths
 
 
 class CleanupType(Enum):
