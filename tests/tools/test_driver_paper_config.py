@@ -33,13 +33,16 @@ class TestDriverPaperConfig(unittest.TestCase):
 
     @run_in_test_environment()
     def test_vara_pc_create(self):
-        """Test the vara-pc create subcommand"""
+        """Test the vara-pc create subcommand."""
         runner = CliRunner()
         runner.invoke(driver_paper_config.main, ["create", "foo"])
-        paper_config = Path(vara_cfg()["paper_config"]["folder"].value + "/" + "foo")
+        paper_config = Path(
+            vara_cfg()["paper_config"]["folder"].value + "/" + "foo"
+        )
         self.assertTrue(paper_config.exists())
         self.assertEqual("foo",
-                         vara_cfg()["paper_config"]["current_config"].value)
+                         vara_cfg()["paper_config"]["current_config"].value
+        )
 
     @run_in_test_environment()
     @mock.patch('sys.stdout', new_callable=StringIO)
@@ -53,7 +56,8 @@ class TestDriverPaperConfig(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "foo"
         result = runner.invoke(driver_paper_config.main, ["list"])
         self.assertEqual(
-            "Found the following paper_configs:\nbar\nbaz\nfoo *\n", result.output
+            "Found the following paper_configs:\nbar\nbaz\nfoo *\n",
+            result.output
         )
 
     @run_in_test_environment()
