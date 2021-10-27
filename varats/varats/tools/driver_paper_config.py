@@ -9,6 +9,7 @@ import logging
 import typing as tp
 from pathlib import Path
 
+import click
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.ts_utils.cli_util import cli_list_choice, initialize_cli_tool
 from varats.utils.exceptions import ConfigurationLookupError
@@ -23,18 +24,19 @@ LOG = logging.getLogger(__name__)
 
 
 def _set_paper_config_parser_arg(
-    parser: argparse.ArgumentParser, opt: bool = False
+        parser: argparse.ArgumentParser, opt: bool = False
 ) -> None:
     config_opt_name = "paper_config" if not opt else "--paper-config"
     parser.add_argument(
         config_opt_name,
         help="Path to the new paper config. Relative "
-        "paths are interpreted relative to the current "
-        "`paper_config/folder`.",
+             "paths are interpreted relative to the current "
+             "`paper_config/folder`.",
         type=str
     )
 
 
+@click.group("vara-pc")
 def main() -> None:
     """
     Main function for working with paper configs.
@@ -42,37 +44,6 @@ def main() -> None:
     `vara-pc`
     """
     initialize_cli_tool()
-    parser = argparse.ArgumentParser("vara-pc")
-
-    sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
-
-    # vara-pc create
-    create_parser = sub_parsers.add_parser(
-        'create', help="Create a new paper config."
-    )
-    _set_paper_config_parser_arg(create_parser)
-
-    # vara-pc set
-    set_parser = sub_parsers.add_parser(
-        'select', help="Select the current paper config."
-    )
-    _set_paper_config_parser_arg(set_parser, True)
-
-    # vara-pc list
-    list_parser = sub_parsers.add_parser(
-        'list', help="List all available paper configs"
-    )
-    list_parser.add_argument(
-        "--paper-config-path",
-        help="Path to the paper config folder.",
-        type=Path
-    )
-
-    args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
-
-    if 'subcommand' not in args:
-        parser.print_help()
-        return
 
     if vara_cfg()["paper_config"]["folder"].value is None:
         # Setup default paper config path when none exists
@@ -80,13 +51,6 @@ def main() -> None:
             Path('paper_configs').absolute()
         )
         save_config()
-
-    if args['subcommand'] == 'create':
-        _pc_create(args)
-    elif args['subcommand'] == 'select':
-        _pc_set(args)
-    elif args['subcommand'] == 'list':
-        _pc_list(args)
 
 
 def _get_paper_configs(pc_folder_path: Path) -> tp.List[str]:
@@ -96,41 +60,47 @@ def _get_paper_configs(pc_folder_path: Path) -> tp.List[str]:
     return sorted(paper_configs)
 
 
-def _pc_create(args: tp.Dict[str, tp.Any]) -> None:
-    pc_path = Path(args['paper_config'])
-    if not pc_path.is_absolute():
+@main.command("create")
+@click.argument("paper_config", type=click.Path())
+def _pc_create(paper_config: str) -> None:
+    """paper_config:
+            Path to the new paper config.
+             Relative paths are interpreted relative to the current
+             `paper_config/folder`."""
+    paper_config = Path(paper_config)
+    if not paper_config.is_absolute():
         current_folder = vara_cfg()["paper_config"]["folder"].value
         if current_folder is None:
-            pc_path = Path(
+            paper_config = Path(
                 vara_cfg()["config_file"].value
-            ).parent / "paper_configs" / pc_path
+            ).parent / "paper_configs" / paper_config
         else:
-            pc_path = Path(current_folder) / pc_path
+            paper_config = Path(current_folder) / paper_config
 
-    if pc_path.exists():
+    if paper_config.exists():
         LOG.error(
-            f"Cannot create paper config at: {pc_path} "
+            f"Cannot create paper config at: {paper_config} "
             "(Path already exists)."
         )
         return
 
-    folder = pc_path.parent
-    current_config = pc_path.name
+    folder = paper_config.parent
+    current_config = paper_config.name
 
     LOG.info(
         f"Creating new paper config {current_config} at location {folder}."
     )
-    pc_path.mkdir(parents=True)
+    paper_config.mkdir(parents=True)
 
     vara_cfg()["paper_config"]["folder"] = str(folder)
     vara_cfg()["paper_config"]["current_config"] = str(current_config)
     save_config()
 
 
-def _pc_set(args: tp.Dict[str, tp.Any]) -> None:
-    if 'paper_config' in args:
-        pc_path = Path(args['paper_config'])
-    else:
+@main.command("select")
+@click.option("--paper_config", type=click.Path())
+def _pc_set(paper_config: tp.Optional[Path]) -> None:
+    if not paper_config:
         pc_folder_path = Path(
             get_value_or_default(
                 vara_cfg()["paper_config"], "folder",
@@ -172,20 +142,20 @@ def _pc_set(args: tp.Dict[str, tp.Any]) -> None:
             return
         if raw_pc_path is None:
             raise AssertionError("Choice should always return a value")
-        pc_path = Path(raw_pc_path)
+        paper_config = Path(raw_pc_path)
 
-    if not pc_path.is_absolute():
-        pc_path = Path(vara_cfg()["paper_config"]["folder"].value) / pc_path
+    if not paper_config.is_absolute():
+        paper_config = Path(vara_cfg()["paper_config"]["folder"].value) / paper_config
 
-    if not (pc_path.exists() and pc_path.is_dir()):
+    if not (paper_config.exists() and paper_config.is_dir()):
         LOG.error(
-            f"Not a paper config: {pc_path} "
+            f"Not a paper config: {paper_config} "
             "(Path does not exist or is no directory)."
         )
         return
 
-    folder = pc_path.parent
-    current_config = pc_path.name
+    folder = paper_config.parent
+    current_config = paper_config.name
 
     LOG.info(
         f"Current paper config is now {current_config} at location {folder}."
@@ -195,15 +165,16 @@ def _pc_set(args: tp.Dict[str, tp.Any]) -> None:
     save_config()
 
 
-def _pc_list(args: tp.Dict[str, tp.Any]) -> None:
-    if "paper_config_path" in args:
-        pc_folder_path = Path(args['paper_config_path'])
-    else:
-        pc_folder_path = Path(vara_cfg()["paper_config"]["folder"].value)
+@main.command("list")
+@click.option("--paper-config-path", help="Path to the paper config folder.",
+              type=click.Path())
+def _pc_list(paper_config_path: tp.Optional[Path]) -> None:
+    if not paper_config_path:
+        paper_config_path = Path(vara_cfg()["paper_config"]["folder"].value)
 
-    if not (pc_folder_path.exists() and pc_folder_path.is_dir()):
+    if not (paper_config_path.exists() and paper_config_path.is_dir()):
         LOG.error(
-            f"Paper config folder not found: {pc_folder_path} "
+            f"Paper config folder not found: {paper_config_path} "
             "(Path does not exist or is no directory)."
         )
         return
@@ -216,7 +187,7 @@ def _pc_list(args: tp.Dict[str, tp.Any]) -> None:
         # No paper config specified in the varats config file
         pass
 
-    for paper_config in _get_paper_configs(pc_folder_path):
+    for paper_config in _get_paper_configs(paper_config_path):
         if current_config and paper_config == current_config:
             print(f"{paper_config} *")
         else:
