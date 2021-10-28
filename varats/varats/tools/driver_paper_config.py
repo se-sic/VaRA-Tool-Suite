@@ -10,6 +10,7 @@ import typing as tp
 from pathlib import Path
 
 import click
+
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.ts_utils.cli_util import cli_list_choice, initialize_cli_tool
 from varats.utils.exceptions import ConfigurationLookupError

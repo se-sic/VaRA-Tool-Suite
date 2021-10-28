@@ -40,8 +40,9 @@ class TestDriverPaperConfig(unittest.TestCase):
             vara_cfg()["paper_config"]["folder"].value + "/" + "foo"
         )
         self.assertTrue(paper_config.exists())
-        self.assertEqual("foo",
-                         vara_cfg()["paper_config"]["current_config"].value
+        self.assertEqual(
+            "foo",
+            vara_cfg()["paper_config"]["current_config"].value
         )
 
     @run_in_test_environment()
