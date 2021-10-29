@@ -42,7 +42,7 @@ How to set up VaRA/LLVM in CLion
            -DCMAKE_INSTALL_PREFIX=<varats_root>/tools/VaRA
 
       - **Build directory:** ``<varats_root>/tools_src/vara-llvm-project/build/dev-clion``
-      - **Build options:** ``-j 4`` (leave as-is to use all available cores)
+      - **Build options:** leave empty
       - **Environment:**
          - ``CFLAGS=-O2 -g -fno-omit-frame-pointer``
          - ``CXXFLAGS=-O2 -g -fno-omit-frame-pointer``
@@ -76,7 +76,7 @@ How to set up VaRA/LLVM in CLion
            -DCMAKE_INSTALL_PREFIX=<varats_root>/tools/VaRA
 
       - **Build directory:** ``<varats_root>/tools_src/vara-llvm-project/build/dev-clion``
-      - **Build options:** ``-j 4`` (leave as-is to use all available cores)
+      - **Build options:** leave empty
       - **Environment:**
          - ``CFLAGS=-O3 -DNDEBUG -march=native -fno-omit-frame-pointer -gmlt``
          - ``CXXFLAGS=-O3 -DNDEBUG -march=native -fno-omit-frame-pointer -gmlt``
@@ -86,11 +86,6 @@ How to set up VaRA/LLVM in CLion
 5. Delete the old build directory ``llvm/cmake-build-debug`` that was created by clion after the first launch
 
 6. Build the project using **Build | Build Project**
-
-   You can also create a run configuration that builds the project:
-       - Add a new "CMake Application" configuration
-       - Name: ``Build All Targets``
-       - Targets: ``All targets``
 
 (This guide follows the section `Work with a monorepo <https://www.jetbrains.com/help/clion/creating-new-project-from-scratch.html#monorepos>`_ in the official CLion documentation)
 
