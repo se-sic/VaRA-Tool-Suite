@@ -90,6 +90,24 @@ class Colormap(Enum):
     GST_STRN = 'gist_stern'
 
 
+# Required
+REQUIRE_BASE_LIB: CLIOptionTy = make_cli_option(
+    "--base-lib",
+    type=str,
+    required=True,
+    metavar="NAME",
+    help="The base library name."
+)
+
+REQUIRE_INTER_LIB: CLIOptionTy = make_cli_option(
+    "--inter-lib",
+    type=str,
+    required=True,
+    metavar="NAME",
+    help="The interacting library name."
+)
+
+# Optional
 OPTIONAL_SHOW_INTERACTIONS: CLIOptionTy = make_cli_option(
     "--show-interactions/--hide-interactions",
     type=bool,
@@ -1099,39 +1117,21 @@ class BlameDegree(Plot, plot_name=None):
             self.plot_kwargs, self.plot_config
         )
 
-    def _multi_lib_degree_plot(
-        self,
-        view_mode: bool,
-        degree_type: DegreeType,
-        extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
-        with_churn: bool = True
-    ) -> None:
-        plot_cfg = {
-            'linewidth': 1 if view_mode else 0.25,
-            'legend_size': 8 if view_mode else 2,
-            'xtick_size': 10 if view_mode else 2,
-            'lable_modif': lambda x: x,
-            'legend_title': 'MISSING legend_title',
-            'legend_visible': True,
-            'fig_title': 'MISSING figure title',
-            'edgecolor': 'black',
-            'color_map': cm.get_cmap('gist_stern'),
-        }
-        if extra_plot_cfg is not None:
-            plot_cfg.update(extra_plot_cfg)
-
-        fig_suptitle = f'{str(plot_cfg["fig_title"])} - ' \
-                       f'Project {self.plot_kwargs["project"]} | ' \
-                       f'{plot_cfg["base_lib"]} --> {plot_cfg["inter_lib"]} '
-        plot_cfg["fig_suptitle"] = fig_suptitle
+    def _multi_lib_degree_plot(self, degree_type: DegreeType) -> None:
+        project_name = self.plot_kwargs['case_study'].project_name
+        fig_suptitle = f'{self.plot_config.fig_title("Blame interactions")} ' \
+                       f'- Project {project_name} | ' \
+                       f'{self.plot_kwargs["base_lib"]} --> ' \
+                       f'{self.plot_kwargs["inter_lib"]} '
+        self.plot_kwargs["fig_suptitle"] = fig_suptitle
 
         style.use(self.plot_config.style())
-        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
+        commit_map: CommitMap = get_commit_map(project_name)
         interaction_plot_df = self._get_degree_data()
 
         interaction_plot_df = interaction_plot_df[(
             interaction_plot_df[['base_lib', 'inter_lib']] == [
-                plot_cfg['base_lib'], plot_cfg['inter_lib']
+                self.plot_kwargs['base_lib'], self.plot_kwargs['inter_lib']
             ]
         ).all(1)]
 
@@ -1146,16 +1146,18 @@ class BlameDegree(Plot, plot_name=None):
 
         if not is_lib_combination_existent():
             LOG.warning(
-                f"There is no interaction from {plot_cfg['base_lib']} to "
-                f"{plot_cfg['inter_lib']} or not enough data points."
+                f"There is no interaction from {self.plot_kwargs['base_lib']} "
+                f"to {self.plot_kwargs['inter_lib']} or not enough data points."
             )
             raise PlotDataEmpty
 
-        summed_df = interaction_plot_df.groupby(['revision']).sum()
+        summed_df = interaction_plot_df[["revision", "amount"]].copy()
+        summed_df["revision"] = summed_df.revision.astype('str')
+        summed_df = summed_df.groupby(['revision']).sum()
 
         # Recalculate fractions based on the selected libraries
         for idx, row in interaction_plot_df.iterrows():
-            total_amount = summed_df['amount'].loc[row['revision']]
+            total_amount = summed_df['amount'].loc[row['revision'].hash]
             interaction_plot_df.at[idx,
                                    'fraction'] = row['amount'] / total_amount
 
@@ -1423,25 +1425,7 @@ class BlameInteractionDegreeMultiLib(
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        if 'base_lib' not in self.plot_kwargs or \
-                'inter_lib' not in self.plot_kwargs:
-            LOG.warning("No library names were provided.")
-            raise PlotDataEmpty
-
-        base_lib = self.plot_kwargs['base_lib']
-        inter_lib = self.plot_kwargs['inter_lib']
-
-        extra_plot_cfg = {
-            'legend_title': 'Interaction degrees',
-            'fig_title': 'Blame interactions',
-            'base_lib': base_lib,
-            'inter_lib': inter_lib
-        }
-        # TODO (se-passau/VaRA#545): make params configurable in user call
-        #  with plot config rework
-        self._multi_lib_degree_plot(
-            view_mode, DegreeType.INTERACTION, extra_plot_cfg
-        )
+        self._multi_lib_degree_plot(DegreeType.INTERACTION)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -1449,6 +1433,29 @@ class BlameInteractionDegreeMultiLib(
         return self._calc_missing_revisions(
             DegreeType.INTERACTION, boundary_gradient
         )
+
+
+class BlameInteractionDegreeMultiLibGenerator(
+    PlotGenerator,
+    generator_name="interaction-degree-multi-lib-plot",
+    options=[
+        REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY, REQUIRE_BASE_LIB,
+        REQUIRE_INTER_LIB, OPTIONAL_SHOW_CHURN, OPTIONAL_EDGE_COLOR,
+        OPTIONAL_COLORMAP, OPTIONAL_SHOW_CVE, OPTIONAL_SHOW_BUGS,
+        OPTIONAL_CVE_LINE_WIDTH, OPTIONAL_BUG_LINE_WIDTH, OPTIONAL_CVE_COLOR,
+        OPTIONAL_BUG_COLOR, OPTIONAL_VERTICAL_ALIGNMENT
+    ]
+):
+    """Generates multi-lib degree plot(s) for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
+        return [
+            BlameInteractionDegreeMultiLib(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
+        ]
 
 
 class BlameInteractionFractionOverview(
