@@ -2,40 +2,12 @@
 
 import abc
 import typing as tp
-from enum import Enum
 from pathlib import Path
 
 from pylatex import Document, Package, NoEscape, UnsafeCommand
 
 from varats.paper.case_study import CaseStudy
-from varats.table.tables import TableRegistry
-
-
-class TableFormat(Enum):
-    """List of supported TableFormats."""
-    value: str  # pylint: disable=invalid-name
-
-    PLAIN = "plain"
-    SIMPLE = "simple"
-    GITHUB = "github"
-    GRID = "grid"
-    FANCY_GRID = "fancy_grid"
-    PIPE = "pipe"
-    ORGTBL = "orgtbl"
-    JIRA = "jira"
-    PRESTO = "presto"
-    PRETTY = "pretty"
-    PSQL = "psql"
-    RST = "rst"
-    MEDIAWIKI = "mediawiki"
-    MOINMOIN = "moinmoin"
-    YOUTRACK = "youtrack"
-    HTML = "html"
-    UNSAFEHTML = "unsafehtml"
-    LATEX = "latex"
-    LATEX_RAW = "latex_raw"
-    LATEX_BOOKTABS = "latex_booktabs"
-    TEXTILE = "textile"
+from varats.table.tables import TableRegistry, TableFormat
 
 
 class Table(metaclass=TableRegistry):

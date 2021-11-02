@@ -38,7 +38,7 @@ class FileStatusDatabase(
             revision: ShortCommitHash, status: FileStatusExtension
         ) -> pd.DataFrame:
             return pd.DataFrame({
-                'revision': revision,
+                'revision': revision.hash,
                 'time_id': commit_map.short_time_id(revision),
                 'file_status': status.get_status_extension()
             },

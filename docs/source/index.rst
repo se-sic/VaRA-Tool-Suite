@@ -42,6 +42,7 @@ How-Tos
 
    tutorials/getting_started
    tutorials/running_experiments
+   tutorials/visualizing_data
 
 
 VaRA-TS Docs

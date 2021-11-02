@@ -4,7 +4,6 @@ import logging
 import os
 import sys
 import typing as tp
-from enum import Enum
 from select import select
 
 import click
@@ -88,83 +87,39 @@ def initialize_logger_config() -> None:
     logging.basicConfig(level=log_level)
 
 
-ChoiceTy = tp.TypeVar("ChoiceTy")
+CLIOptionTy = tp.Callable[..., tp.Any]
 
 
-class TypedChoice(click.Choice, tp.Generic[ChoiceTy]):
-    """Typed version of click's choice parameter type."""
-
-    name = "typed choice"
-
-    def __init__(
-        self, choices: tp.Dict[str, ChoiceTy], case_sensitive: bool = True
-    ):
-        self.__choices = choices
-        super().__init__(list(choices.keys()), case_sensitive)
-
-    def convert(
-        self, value: tp.Any, param: tp.Optional[click.Parameter],
-        ctx: tp.Optional[click.Context]
-    ) -> ChoiceTy:
-        return self.__choices[
-            #  pylint: disable=super-with-arguments
-            super(TypedChoice, self).convert(value, param, ctx)]
-
-
-class TypedMultiChoice(click.Choice, tp.Generic[ChoiceTy]):
+def make_cli_option(*param_decls: str, **attrs: tp.Any) -> CLIOptionTy:
     """
-    Typed choice parameter type allows giving multiple values.
+    Create an object that represents a click command line option, i.e., the
+    decorator object that is created by ``click.option()``.
 
-    Multiple values can be given as a comma separated list; no whitespace
-    allowed.
+    Args:
+        *param_decls: parameter declarations, i.e., how this option can be used
+        **attrs: attributes used to construct the option
+
+    Returns:
+        a click CLI option that can be wrapped around a function
     """
-
-    name = "typed multi choice"
-
-    def __init__(
-        self,
-        choices: tp.Dict[str, tp.List[ChoiceTy]],
-        case_sensitive: bool = True
-    ):
-        self.__choices = choices
-        super().__init__(list(choices.keys()), case_sensitive)
-
-    def convert(
-        self, value: tp.Any, param: tp.Optional[click.Parameter],
-        ctx: tp.Optional[click.Context]
-    ) -> tp.List[ChoiceTy]:
-        values = [value]
-        if isinstance(value, str):
-            values = list(map(str.strip, value.split(",")))
-
-        return [
-            item for v in values for item in self.__choices[
-                #  pylint: disable=super-with-arguments
-                super(TypedMultiChoice, self).convert(v, param, ctx)]
-        ]
+    return click.option(*param_decls, **attrs)
 
 
-EnumTy = tp.TypeVar("EnumTy", bound=Enum)
-
-
-class EnumChoice(click.Choice, tp.Generic[EnumTy]):
+def add_cli_options(command: tp.Callable[..., None],
+                    *options: CLIOptionTy) -> tp.Callable[..., None]:
     """
-    Enum choice type for click.
+    Adds click CLI options to a click command.
 
-    This type can be used with click to specify a choice from the given enum.
+    Args:
+        command: the command
+        *options: the options to add
+
+    Returns:
+        the command with the added options
     """
-
-    def __init__(self, enum: tp.Type[EnumTy], case_sensitive: bool = True):
-        self.__enum = enum
-        super().__init__(list(dict(enum.__members__).keys()), case_sensitive)
-
-    def convert(
-        self, value: tp.Union[str, EnumTy], param: tp.Optional[click.Parameter],
-        ctx: tp.Optional[click.Context]
-    ) -> EnumTy:
-        if isinstance(value, str):
-            return self.__enum[super().convert(value, param, ctx)]
-        return value
+    for option in options:
+        command = option(command)
+    return command
 
 
 def tee(process: PlumbumLocalPopen,

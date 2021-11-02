@@ -23,6 +23,7 @@ from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import align_yaxis, pad_axes
+from varats.plot.plots import PlotConfig
 from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
@@ -119,7 +120,7 @@ def _cluster_data_by_kmeans(data: pd.Series) -> np.ndarray:
         init=np.array([[np.min(data2)], [np.max(data2)]]),
         n_init=1
     ).fit(data2)
-    return cluster.labels_
+    return np.asarray(cluster.labels_)
 
 
 def _hist(
@@ -178,14 +179,14 @@ def log_interesting_revisions(
         LOG.info(f"  {rev} ({x_var}={item[x_var]}, {y_var}={item[y_var]})")
 
 
-class BlameDiffCorrelationMatrix(Plot):
+class BlameDiffCorrelationMatrix(Plot, plot_name="b_correlation_matrix"):
     """Draws a scatter-plot matrix for blame-data metrics, comparing the
     different independent and dependent variables."""
 
     NAME = "b_correlation_matrix"
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
@@ -287,14 +288,14 @@ def _multivariate_grid(
     grid.fig.suptitle(f"{x_col} vs. {y_col}")
 
 
-class BlameDiffDistribution(Plot):
+class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
     """Draws a scatter-plot matrix for blame-data metrics, comparing the
     different independent and dependent variables."""
 
     NAME = "b_distribution_comparison"
 
-    def __init__(self, **kwargs: tp.Any):
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
