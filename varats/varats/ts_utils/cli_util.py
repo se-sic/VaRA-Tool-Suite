@@ -90,7 +90,6 @@ def initialize_logger_config() -> None:
 CLIOptionTy = tp.Callable[..., tp.Any]
 
 
-# TODO: make this have a typed version of the click.core.Option constructor?
 def make_cli_option(*param_decls: str, **attrs: tp.Any) -> CLIOptionTy:
     """
     Create an object that represents a click command line option, i.e., the
