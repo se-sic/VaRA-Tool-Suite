@@ -1729,66 +1729,29 @@ class BlameAuthorDegreeGenerator(
     PlotGenerator,
     generator_name="author-degree-plot",
     options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE,
-        PlotGenerator.REQUIRE_MULTI_CASE_STUDY,
+        REQUIRE_REPORT_TYPE,
+        REQUIRE_MULTI_CASE_STUDY,
         OPTIONAL_SHOW_CHURN,
         OPTIONAL_EDGE_COLOR,
         OPTIONAL_COLORMAP,
         OPTIONAL_SHOW_CVE,
         OPTIONAL_SHOW_BUGS,
-        OPTIONAL_CVE_BUG_LINE_WIDTH,
-        OPTIONAL_CVE_BUG_COLOR,
+        OPTIONAL_CVE_LINE_WIDTH,
+        OPTIONAL_BUG_LINE_WIDTH,
+        OPTIONAL_CVE_COLOR,
+        OPTIONAL_BUG_COLOR,
         OPTIONAL_VERTICAL_ALIGNMENT,
     ]
 ):
     """Generates author-degree plot(s) for the selected case study(ies)."""
 
-    @check_required_args("report_type", "case_study")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-        # TODO: Use helper function for default values
-        self.__fig_title: str = plot_config.fig_title \
-            if plot_config.fig_title else "Author blame interactions"
-        self.__legend_title: str = plot_config.legend_title \
-            if plot_config.legend_title else "Author interaction degrees"
-        self.__legend_size: int = plot_config.legend_size
-        self.__show_legend: bool = plot_config.show_legend
-        self.__line_width: int = plot_config.line_width
-        self.__x_tick_size: int = plot_config.x_tick_size
-        self.__label_size: int = plot_config.label_size
-        self.__show_churn: bool = plot_kwargs["show_churn"]
-        self.__edge_color: str = plot_kwargs["edge_color"]
-        self.__colormap: Colormap = plot_kwargs["colormap"]
-        self.__show_cve: bool = plot_kwargs["show_cve"]
-        self.__show_bugs: bool = plot_kwargs["show_bugs"]
-        self.__cve_bug_line_width: int = plot_kwargs["cve_bug_line_width"]
-        self.__cve_bug_color: str = plot_kwargs["cve_bug_color"]
-        self.__vertical_alignment: str = plot_kwargs["vertical_alignment"]
-
     def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
         return [
             BlameAuthorDegree(
-                self.plot_config,
-                report_type=self.__report_type,
-                case_study=cs,
-                fig_title=self.__fig_title,
-                show_churn=self.__show_churn,
-                legend_title=self.__legend_title,
-                legend_size=self.__legend_size,
-                show_legend=self.__show_legend,
-                line_width=self.__line_width,
-                x_tick_size=self.__x_tick_size,
-                edge_color=self.__edge_color,
-                colormap=self.__colormap,
-                show_cve=self.__show_cve,
-                show_bugs=self.__show_bugs,
-                cve_bug_line_width=self.__cve_bug_line_width,
-                cve_bug_color=self.__cve_bug_color,
-                vertical_alignment=self.__vertical_alignment,
-                label_size=self.__label_size
-            ) for cs in self.__case_studies
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
         ]
 
 
