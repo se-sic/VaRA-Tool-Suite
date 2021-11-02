@@ -1,94 +1,108 @@
-"""Driver module for `vara-plot`."""
+"""
+Driver module for `vara-plot`.
 
-import argparse
+This module automatically detects plot generators and creates a separate
+subcommand for each generator. For this to work, plot generators must be placed
+in the module `varats.plot.plots`.
+"""
+
 import logging
 import typing as tp
-from pathlib import Path
 
-from varats.data.discover_reports import initialize_reports
-from varats.plot.plots import PlotRegistry, build_plots
+import click
+
+from varats.paper_mgmt.paper_config import get_paper_config
+from varats.plot.plots import (
+    PlotGenerator,
+    CommonPlotOptions,
+    PlotConfig,
+    PlotGeneratorFailed,
+    PlotArtefact,
+)
 from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
-from varats.ts_utils.cli_util import initialize_cli_tool
+from varats.ts_utils.cli_util import initialize_cli_tool, add_cli_options
 
 LOG = logging.getLogger(__name__)
 
 
-def main() -> None:
-    """
-    Main function for the graph generator.
+class PlotCLI(click.MultiCommand):
+    """Command factory for plots."""
 
-    `vara-plot`
-    """
+    def __init__(self, **attrs: tp.Any):
+        initialize_plots()
+        super().__init__(**attrs)
+
+    def list_commands(self, ctx: click.Context) -> tp.List[str]:
+        return list(PlotGenerator.GENERATORS.keys())
+
+    def get_command(self, ctx: click.Context,
+                    cmd_name: str) -> tp.Optional[click.Command]:
+
+        generator_cls = PlotGenerator.GENERATORS[cmd_name]
+
+        @click.pass_context
+        def command_template(context: click.Context, **kwargs: tp.Any) -> None:
+            # extract common arguments and plot config from context
+            common_options: CommonPlotOptions = context.obj["common_options"]
+            plot_config: PlotConfig = context.obj["plot_config"]
+            artefact_name: str = context.obj["save_artefact"]
+
+            try:
+                generator_instance = generator_cls(plot_config, **kwargs)
+                if artefact_name:
+                    paper_config = get_paper_config()
+                    if paper_config.artefacts.get_artefact(artefact_name):
+                        LOG.info(
+                            f"Updating existing artefact '{artefact_name}'."
+                        )
+                    else:
+                        LOG.info(f"Creating new artefact '{artefact_name}'.")
+                    artefact = PlotArtefact.from_generator(
+                        artefact_name, generator_instance, common_options
+                    )
+                    paper_config.add_artefact(artefact)
+                    paper_config.store_artefacts()
+                else:
+                    generator_instance(common_options)
+            except PlotGeneratorFailed as ex:
+                print(
+                    f"Failed to create plot generator {generator_cls.NAME}: "
+                    f"{ex.message}"
+                )
+
+        # return command wrapped with options specified in the generator class
+        command_definition = add_cli_options(
+            command_template, *generator_cls.OPTIONS
+        )
+        return click.command(cmd_name)(command_definition)
+
+
+@click.command(
+    cls=PlotCLI,
+    help="Generate plots.",
+    context_settings={"help_option_names": ['-h', '--help']}
+)
+@CommonPlotOptions.cli_options
+@click.option(
+    "--save-artefact",
+    metavar="NAME",
+    help="Save the plot specification in the artefact file with the given name."
+)
+@PlotConfig.cli_options
+@click.pass_context
+def main(context: click.Context, **kwargs: tp.Any) -> None:
+    """Entry point for the plot generation tool."""
+    # store common options in context so they can be passed to subcommands
+    common_options = CommonPlotOptions.from_kwargs(**kwargs)
+    plot_config = PlotConfig.from_kwargs(**kwargs)
+    context.ensure_object(dict)
+    context.obj["common_options"] = common_options
+    context.obj["plot_config"] = plot_config
+    context.obj["save_artefact"] = kwargs["save_artefact"]
+
     initialize_cli_tool()
     initialize_projects()
-    initialize_reports()
-    initialize_plots()
-    parser = argparse.ArgumentParser("vara-plot")
-    parser.add_argument(
-        "plot_type",
-        help="Plot to generate." + PlotRegistry.get_plot_types_help_string()
-    )
-    parser.add_argument(
-        "-r", "--result-output", help="Set the output folder for plot files"
-    )
-    parser.add_argument("-p", "--project", help="Project name")
-    parser.add_argument(
-        "-c", "--cmap", help="Path to commit map", default=None, type=Path
-    )
-    parser.add_argument(
-        "-v",
-        "--view",
-        help="Show the plot instead of saving it",
-        action='store_true',
-        default=False
-    )
-    parser.add_argument("--cs-path", help="Path to case_study", default=None)
-    parser.add_argument(
-        "--paper-config",
-        help="Generate plots for all case studies in the current paper config",
-        action='store_true',
-        default=False
-    )
-    parser.add_argument(
-        "--sep-stages",
-        help="Separate different stages of case study in the plot.",
-        action='store_true',
-        default=False
-    )
-    parser.add_argument(
-        "--report-type",
-        help="The report type to generate the plot for."
-        "Plots may ignore this option.",
-        default="EmptyReport"
-    )
-    parser.add_argument(
-        "extra_args",
-        metavar="KEY=VALUE",
-        nargs=argparse.REMAINDER,
-        help=(
-            "Provide additional arguments that will be passed to the plot "
-            "class. (do not put spaces before or after the '=' sign). "
-            "If a value contains spaces, you should define it "
-            'with double quotes: foo="bar baz".'
-        )
-    )
-
-    args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
-
-    __plot(args)
-
-
-def __plot(args: tp.Dict[str, tp.Any]) -> None:
-    if 'extra_args' in args.keys():
-        extra_args = {
-            e[0].replace('-', '_'): e[1]
-            for e in [arg.split("=") for arg in args['extra_args']]
-        }
-    else:
-        extra_args = {}
-
-    build_plots(**args, **extra_args)
 
 
 if __name__ == '__main__':

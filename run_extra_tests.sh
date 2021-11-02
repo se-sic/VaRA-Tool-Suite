@@ -52,18 +52,6 @@ check_err
 $COVERAGE $(which vara-cs) status EmptyReport
 check_err
 
-$COVERAGE $(which vara-art) add --output-path overview_plots plot overview report_type=EmptyReport plot_type=paper_config_overview_plot
-check_err
-
-$COVERAGE $(which vara-art) generate --only overview
-check_err
-
-$COVERAGE $(which vara-art) list
-check_err
-
-$COVERAGE $(which vara-art) show overview
-check_err
-
 # Tests that we can add extra refs from other branches if a refspec is specified
 $COVERAGE $(which vara-pc) create test_extra_refs
 check_err

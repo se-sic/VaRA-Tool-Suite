@@ -16,7 +16,7 @@ Utilities overview
 Module: cli_util
 ................
 
-.. automodule:: varats.utils.cli_util
+.. automodule:: varats.ts_utils.cli_util
     :members:
     :undoc-members:
     :show-inheritance:
