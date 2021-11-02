@@ -38,7 +38,7 @@ class Glib(VProject):
         bb.source.Git(
             remote="https://github.com/GNOME/glib.git",
             local="glib",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("glib")

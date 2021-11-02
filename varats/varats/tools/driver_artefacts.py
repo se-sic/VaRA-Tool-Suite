@@ -14,7 +14,7 @@ import click
 import yaml
 
 from varats.data.discover_reports import initialize_reports
-from varats.paper_mgmt.artefacts import Artefact, initialize_artefacts
+from varats.paper_mgmt.artefacts import Artefact, initialize_artefact_types
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plot.plots import PlotArtefact
 from varats.plots.discover_plots import initialize_plots
@@ -46,7 +46,7 @@ def main() -> None:
     initialize_reports()
     initialize_tables()
     initialize_plots()
-    initialize_artefacts()
+    initialize_artefact_types()
 
 
 # function name `list` would shadow built-in `list`
@@ -54,15 +54,22 @@ def main() -> None:
     name="list", help="List all artefacts of the current paper config."
 )
 def list_() -> None:
+    """List the available artefacts."""
     paper_config = get_paper_config()
 
     for artefact in paper_config.artefacts:
         print(f"{artefact.name} [{artefact.ARTEFACT_TYPE}]")
 
 
-@main.command(help="Show detailed insformation about artefacts.")
+@main.command(help="Show detailed information about artefacts.")
 @click.argument("name")
 def show(name: str) -> None:
+    """
+    Show detailed information about artefacts.
+
+    Args:
+        name: the name of the artefact
+    """
     paper_config = get_paper_config()
     artefact = paper_config.artefacts.get_artefact(name)
     if artefact:
@@ -81,6 +88,14 @@ def show(name: str) -> None:
     help="Only generate artefacts with the given names."
 )
 def generate(only: tp.Optional[str]) -> None:
+    """
+    Generate artefacts.
+
+    By default, all artefacts are generated.
+
+    Args:
+        only: generate only this artefact
+    """
     Artefact.base_output_dir().mkdir(parents=True)
     artefacts: tp.Iterable[Artefact]
 

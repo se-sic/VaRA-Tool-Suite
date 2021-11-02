@@ -35,7 +35,7 @@ class Lz4(VProject):
         bb.source.Git(
             remote="https://github.com/lz4/lz4.git",
             local="lz4",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("lz4")

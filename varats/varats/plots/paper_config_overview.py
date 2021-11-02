@@ -19,7 +19,7 @@ from varats.mapping.commit_map import CommitMap
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plot.plot import Plot
 from varats.plot.plot_utils import check_required_args, find_missing_revisions
-from varats.plot.plots import PlotGenerator, PlotConfig
+from varats.plot.plots import PlotGenerator, PlotConfig, REQUIRE_REPORT_TYPE
 from varats.project.project_util import get_local_project_git
 from varats.report.report import FileStatusExtension, BaseReport
 # colors taken from seaborn's default palette
@@ -162,7 +162,7 @@ def _plot_overview_graph(
         f_success = n_success / float(n_total)
         f_blocked = n_blocked / float(n_total)
         f_failed = 1.0 - f_success - f_blocked
-        return (
+        return np.asarray(
             f_success * SUCCESS_COLOR + f_blocked * BLOCKED_COLOR +
             f_failed * FAILED_COLOR
         )
@@ -192,7 +192,7 @@ def _plot_overview_graph(
 
     # compute the matrix height in points and inches
     matrix_height_pt = fontsize_pt * num_projects * 40
-    matrix_height_in = matrix_height_pt / plot_config.dpi
+    matrix_height_in = matrix_height_pt / plot_config.dpi()
 
     # compute the required figure height
     top_margin = 0.05
@@ -247,13 +247,11 @@ class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
     (blocked).
     """
 
-    NAME = 'paper_config_overview_plot'
-
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.plot_config.style)
+        style.use(self.plot_config.style())
         _plot_overview_graph(
             _gen_overview_plot(**self.plot_kwargs), self.plot_config
         )
@@ -270,18 +268,13 @@ class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
 class PaperConfigOverviewGenerator(
     PlotGenerator,
     generator_name="pc-overview-plot",
-    options=[PlotGenerator.REQUIRE_REPORT_TYPE]
+    options=[REQUIRE_REPORT_TYPE]
 ):
     """Generates a single pc-overview plot for the current paper config."""
-
-    @check_required_args("report_type")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
 
     def generate(self) -> tp.List[Plot]:
         return [
             PaperConfigOverviewPlot(
-                self.plot_config, report_type=self.__report_type
+                self.plot_config, report_type=self.plot_kwargs["report_type"]
             )
         ]

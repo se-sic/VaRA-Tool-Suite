@@ -31,7 +31,7 @@ class Grep(VProject):
         bb.source.Git(
             remote="https://github.com/vulder/grep.git",
             local="grep",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("grep")
@@ -39,7 +39,7 @@ class Grep(VProject):
         bb.source.GitSubmodule(
             remote="https://github.com/coreutils/gnulib.git",
             local="grep/gnulib",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("grep")
