@@ -12,22 +12,6 @@ from varats.tools import driver_paper_config
 from varats.utils.settings import vara_cfg
 
 
-class PaperConfigMock():
-    """PaperConfig mock class."""
-
-    def __init__(self, folder_path: Path) -> None:
-        self.__path = folder_path
-
-    @property
-    def path(self) -> Path:
-        """Path to the paper config folder."""
-        return self.__path
-
-
-def _create_paper_config_mock(path: Path):
-    return PaperConfigMock(path)
-
-
 class TestDriverPaperConfig(unittest.TestCase):
     """Tests for the driver_paper_config module."""
 
@@ -46,8 +30,7 @@ class TestDriverPaperConfig(unittest.TestCase):
         )
 
     @run_in_test_environment()
-    @mock.patch('sys.stdout', new_callable=StringIO)
-    def test_vara_pc_list(self, stdout):
+    def test_vara_pc_list(self):
         """Test the vara-pc list subcommand."""
         runner = CliRunner()
         paper_configs = ["foo", "bar", "baz"]
