@@ -1542,10 +1542,8 @@ class SankeyLibraryInteractionsGeneratorRev(
         c_map: CommitMap = get_commit_map(
             self.plot_kwargs["case_study"].project_name
         )
-        self.plot_kwargs.update(
-            revision=c_map.convert_to_full_or_warn(
-                ShortCommitHash(self.plot_kwargs["revision"])
-            )
+        self.plot_kwargs["revision"] = c_map.convert_to_full_or_warn(
+            ShortCommitHash(self.plot_kwargs["revision"])
         )
         return [BlameLibraryInteractions(self.plot_config, **self.plot_kwargs)]
 
@@ -1640,10 +1638,8 @@ class GraphvizLibraryInteractionsGeneratorRev(
         c_map: CommitMap = get_commit_map(
             self.plot_kwargs["case_study"].project_name
         )
-        self.plot_kwargs.update(
-            revision=c_map.convert_to_full_or_warn(
-                ShortCommitHash(self.plot_kwargs["revision"])
-            )
+        self.plot_kwargs["revision"] = c_map.convert_to_full_or_warn(
+            ShortCommitHash(self.plot_kwargs["revision"])
         )
         return [
             BlameCommitInteractionsGraphviz(
