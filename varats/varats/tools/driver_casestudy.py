@@ -28,18 +28,15 @@ from varats.ts_utils.cli_util import (
     cli_list_choice,
     initialize_cli_tool,
     cli_yn_choice,
+)
+from varats.ts_utils.click_param_types import (
     TypedChoice,
+    create_report_type_choice,
 )
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
-
-
-def _create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
-    """Create a choice parameter type that allows selecting a report type."""
-    initialize_reports()
-    return TypedChoice(BaseReport.REPORT_TYPES)
 
 
 @click.group()
@@ -52,7 +49,7 @@ def main() -> None:
 
 
 @main.command("status")
-@click.argument("report_name", type=_create_report_type_choice())
+@click.argument("report_name", type=create_report_type_choice())
 @click.option(
     "--filter-regex",
     help="Provide a regex to filter the shown case studies",
@@ -201,7 +198,7 @@ def __casestudy_create_or_extend(
 
 
 @main.command("package")
-@click.argument("report_names", type=_create_report_type_choice(), nargs=-1)
+@click.argument("report_names", type=create_report_type_choice(), nargs=-1)
 @click.option("-o", "--output", help="Output file")
 @click.option(
     "--filter-regex",
@@ -243,7 +240,7 @@ def __casestudy_package(
 
 
 @main.command("view")
-@click.argument("report-type", type=_create_report_type_choice())
+@click.argument("report-type", type=create_report_type_choice())
 @click.argument("project")
 @click.argument("commit-hash", required=False)
 @click.option(
