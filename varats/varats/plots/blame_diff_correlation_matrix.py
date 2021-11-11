@@ -232,7 +232,8 @@ class BlameDiffCorrelationMatrix(Plot, plot_name="b_correlation_matrix"):
 
         plt.subplots_adjust(top=0.9)
         grid.fig.suptitle(
-            str("Correlation Matrix") + f' - Project {project_name}'
+            f'{self.plot_config.fig_title("Correlation matrix")} - '
+            f'Project {project_name}'
         )
 
     def calc_missing_revisions(
