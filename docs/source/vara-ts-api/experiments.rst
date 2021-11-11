@@ -12,7 +12,8 @@ Designing a new ``Experiment`` is also quite simple.
 
 * First, create a new python module in the ``experiments`` directory and add an experiment class which inherits from ``benchbuild.experiment.Experiment``.
   If VaRA-TS should provide automatic support for analyzing different versions, i.e., different revisions of a git based project, use :class:`~varats.experiment.experiment_util.VersionExperiment` as base class.
-* Second, define two static variables for your experiment: ``NAME`` and ``REPORT_TYPE``
+* Second, define two static variables for your experiment: ``NAME`` and ``REPORT_SPEC``
+* Third, your experiment needs to pass an additional ``shorthand`` parameter.
 * Next, override the ``actions_for_project`` method.
   This method should assign run-time/compile-time extensions and specify the list of actions that should be performed.
   Each action the experiment does is called a ``Step`` and will be executed by BenchBuild in order.

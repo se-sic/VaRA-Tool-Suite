@@ -21,7 +21,7 @@ The command line interface for these tools consists of four parts which are illu
 
 .. note::
 
-    In the following, we will only write about plots since plots and tables work essentially in the same way.
+    In the following, we only write about plots since plots and tables work essentially in the same way.
     For tables, just replace *plot* with *table*.
 
 You can check what plots are available by running ``vara-plot -h``.

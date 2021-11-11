@@ -34,7 +34,7 @@ class Bitlbee(VProject):
         bb.source.Git(
             remote="https://github.com/bitlbee/bitlbee.git",
             local="bitlbee",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("bitlbee")
