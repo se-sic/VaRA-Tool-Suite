@@ -120,7 +120,7 @@ def _cluster_data_by_kmeans(data: pd.Series) -> np.ndarray:
         init=np.array([[np.min(data2)], [np.max(data2)]]),
         n_init=1
     ).fit(data2)
-    return cluster.labels_
+    return np.asarray(cluster.labels_)
 
 
 def _hist(

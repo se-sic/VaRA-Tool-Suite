@@ -22,7 +22,8 @@ from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.project.project_util import ProjectBinaryWrapper
 from varats.report.report import ReportFilename
 from varats.revision.revisions import get_processed_revisions_files
-from varats.table.table import Table, wrap_table_in_document, TableFormat
+from varats.table.table import Table, wrap_table_in_document
+from varats.table.tables import TableFormat
 
 LOG = logging.Logger(__name__)
 

@@ -261,7 +261,7 @@ class TableArtefact(Artefact, artefact_type="table", artefact_type_version=1):
         name: str, output_dir: Path, **kwargs: tp.Any
     ) -> 'Artefact':
         table_type = kwargs.pop('table_type')
-        table_format = TableFormat[kwargs.pop('file_format', 'latex_booktabs')]
+        table_format = TableFormat[kwargs.pop('file_format', 'LATEX_BOOKTABS')]
         return TableArtefact(
             name, output_dir, table_type, table_format, **kwargs
         )
