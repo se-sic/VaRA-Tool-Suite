@@ -31,7 +31,7 @@ class OpenSSL(VProject):
         bb.source.Git(
             remote="https://github.com/openssl/openssl.git",
             local="openssl",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("openssl")

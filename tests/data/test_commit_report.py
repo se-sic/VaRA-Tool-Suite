@@ -227,6 +227,17 @@ class TestFunctionGraphEdges(unittest.TestCase):
             "95ace546d3f6c5909a636017f141784105f9dab2"
         )
 
+    def test_string_conversion(self):
+        """Check if we correctly convert the edge to a string."""
+        bi_init = self.edge_dict["bi_init"]
+        print(str(bi_init))
+        self.assertEqual(
+            """FName: bi_init:
+    CG-Edges [3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5 -> llvm.dbg.value, b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a -> flush_outbuf]
+    CF-Edges [3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5 -> b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a, 95ace546d3f6c5909a636017f141784105f9dab2 -> 3ea7fe86ac3c1a887038e0e3e1c07ba4634ad1a5]""",
+            str(bi_init)
+        )
+
 
 class TestCommitReport(unittest.TestCase):
     """Test basic CommitReport functionality."""
@@ -243,14 +254,14 @@ class TestCommitReport(unittest.TestCase):
         file_content = YAML_DOC_1 + YAML_DOC_2 + YAML_DOC_3
 
         cls.success_filename = (
-            "CR-foo-foo-7bb9ef5f8c_"
+            "CRE-CR-foo-foo-7bb9ef5f8c_"
             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be_"
             "success.yaml"
         )
         cls.fail_filename = (
-            "CR-foo-foo-7bb9ef5f8c_"
+            "CRE-CR-foo-foo-7bb9ef5f8c_"
             "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be"
-            "_failed.txt"
+            "_failed.yaml"
         )
 
         with mock.patch(
@@ -317,18 +328,22 @@ class TestCommitReport(unittest.TestCase):
     def test_file_name_creation(self) -> None:
         """Check if file names are created correctly."""
         self.assertEqual(
-            CommitReport.get_file_name(
-                "foo", "foo", "7bb9ef5f8c",
-                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                FileStatusExtension.SUCCESS
+            str(
+                CommitReport.get_file_name(
+                    "CRE", "foo", "foo", "7bb9ef5f8c",
+                    "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
+                    FileStatusExtension.SUCCESS
+                )
             ), self.success_filename
         )
 
         self.assertEqual(
-            CommitReport.get_file_name(
-                "foo", "foo", "7bb9ef5f8c",
-                "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
-                FileStatusExtension.FAILED, ".txt"
+            str(
+                CommitReport.get_file_name(
+                    "CRE", "foo", "foo", "7bb9ef5f8c",
+                    "fdb09c5a-4cee-42d8-bbdc-4afe7a7864be",
+                    FileStatusExtension.FAILED
+                )
             ), self.fail_filename
         )
 

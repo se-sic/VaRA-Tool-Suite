@@ -88,7 +88,7 @@ class Plot:
         Name of the current plot.
 
         Test:
-        >>> Plot('test', PlotConfig.from_kwargs()).name
+        >>> Plot('test', PlotConfig.from_kwargs(view=False)).name
         'test'
         """
         return self.__name
@@ -104,7 +104,8 @@ class Plot:
         Access the kwargs passed to the initial plot.
 
         Test:
-        >>> p = Plot('test', PlotConfig.from_kwargs(), foo='bar', baz='bazzer')
+        >>> p = Plot('test', PlotConfig.from_kwargs(view=False), foo='bar', \
+                     baz='bazzer')
         >>> p.plot_kwargs['foo']
         'bar'
         >>> p.plot_kwargs['baz']
@@ -143,11 +144,11 @@ class Plot:
             the file name the plot will be stored to
 
         Test:
-        >>> p = Plot('test', PlotConfig.from_kwargs(), project='bar')
+        >>> p = Plot('test', PlotConfig.from_kwargs(view=False), project='bar')
         >>> p.plot_file_name('svg')
         'bar_test.svg'
         >>> from varats.paper.case_study import CaseStudy
-        >>> p = Plot('foo', PlotConfig.from_kwargs(), project='bar', \
+        >>> p = Plot('foo', PlotConfig.from_kwargs(view=False), project='bar', \
                      case_study=CaseStudy('baz', 42))
         >>> p.plot_file_name('png')
         'baz_42_foo.png'
@@ -171,18 +172,18 @@ class Plot:
         Save the current plot to a file.
 
         Args:
-            plot_dir: the path where the file is stored(excluding the file name)
+            plot_dir: the path where the file is stored (excluding file name)
             filetype: the file type of the plot
         """
         try:
             self.plot(False)
         except PlotDataEmpty:
-            LOG.warning("No data for the current project.")
+            LOG.warning("No data for this plot.")
             return
 
         plt.savefig(
             plot_dir / self.plot_file_name(filetype),
-            dpi=self.plot_config.dpi,
+            dpi=self.plot_config.dpi(),
             bbox_inches="tight",
             format=filetype
         )

@@ -12,8 +12,13 @@ from varats.data.reports.empty_report import EmptyReport
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
-from varats.plot.plot_utils import check_required_args, find_missing_revisions
-from varats.plot.plots import PlotGenerator, PlotConfig
+from varats.plot.plot_utils import find_missing_revisions
+from varats.plot.plots import (
+    PlotGenerator,
+    PlotConfig,
+    REQUIRE_CASE_STUDY,
+    REQUIRE_REPORT_TYPE,
+)
 from varats.project.project_util import (
     get_project_cls_by_name,
     get_local_project_git_path,
@@ -121,7 +126,7 @@ class CaseStudyOverviewPlot(Plot, plot_name="case_study_overview_plot"):
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.plot_config.style)
+        style.use(self.plot_config.style())
         data = _gen_overview_data(
             self.plot_kwargs["show_blocked"], **self.plot_kwargs
         )
@@ -219,27 +224,19 @@ class CaseStudyOverviewGenerator(
     PlotGenerator,
     generator_name="cs-overview-plot",
     options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_CASE_STUDY,
-        OPTIONAL_SHOW_BLOCKED, OPTIONAL_SHOW_ALL_BLOCKED
+        REQUIRE_REPORT_TYPE, REQUIRE_CASE_STUDY, OPTIONAL_SHOW_BLOCKED,
+        OPTIONAL_SHOW_ALL_BLOCKED
     ]
 ):
     """Generates a case study overview plot."""
-
-    @check_required_args("report_type", "case_study")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_study: CaseStudy = plot_kwargs["case_study"]
-        self.__show_blocked: bool = plot_kwargs["show_blocked"]
-        self.__show_all_blocked: bool = plot_kwargs["show_all_blocked"]
 
     def generate(self) -> tp.List[Plot]:
         return [
             CaseStudyOverviewPlot(
                 plot_config=self.plot_config,
-                report_type=self.__report_type,
-                case_study=self.__case_study,
-                show_blocked=self.__show_blocked,
-                show_all_blocked=self.__show_all_blocked
+                report_type=self.plot_kwargs["report_type"],
+                case_study=self.plot_kwargs["case_study"],
+                show_blocked=self.plot_kwargs["show_blocked"],
+                show_all_blocked=self.plot_kwargs["show_all_blocked"]
             )
         ]

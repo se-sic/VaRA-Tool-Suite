@@ -17,7 +17,7 @@ class ConfigurationOption():
 
     @property
     @abc.abstractmethod
-    def value(self) -> tp.Any:
+    def value(self) -> str:
         """Currently set value of the option."""
         raise NotImplementedError  # pragma: no cover
 
@@ -64,7 +64,7 @@ class Configuration():
         raise NotImplementedError  # pragma: no cover
 
     @abc.abstractmethod
-    def set_config_option(self, option_name: str, value: tp.Any) -> None:
+    def set_config_option(self, option_name: str, value: str) -> None:
         """
         Sets the value of a `ConfigurationOption` with the corresponding key.
 
@@ -140,11 +140,11 @@ part which accesses Configurations something is wrong with your setup."""
         """The dummy configuration does not add config options."""
         raise AssertionError(DummyConfiguration.USAGE_ERROR_TEXT)
 
-    def set_config_option(self, option_name: str, value: tp.Any) -> None:
+    def set_config_option(self, option_name: str, value: str) -> None:
         """The dummy configuration does not set config options."""
         raise AssertionError(DummyConfiguration.USAGE_ERROR_TEXT)
 
-    def get_config_value(self, option_name: str) -> tp.Optional[tp.Any]:
+    def get_config_value(self, option_name: str) -> tp.Optional[str]:
         """The dummy configuration does provide direct access to the
         configuration options."""
         raise AssertionError(DummyConfiguration.USAGE_ERROR_TEXT)
@@ -181,7 +181,7 @@ class ConfigurationOptionImpl(ConfigurationOption):
         return self.__name
 
     @property
-    def value(self) -> tp.Any:
+    def value(self) -> str:
         return self.__value
 
 
@@ -237,7 +237,7 @@ class ConfigurationImpl(Configuration):
         """
         self.__config_values[option.name] = option
 
-    def set_config_option(self, option_name: str, value: tp.Any) -> None:
+    def set_config_option(self, option_name: str, value: str) -> None:
         """
         Sets the value of a `ConfigurationOption` with the corresponding key.
 
@@ -247,7 +247,7 @@ class ConfigurationImpl(Configuration):
         """
         self.add_config_option(ConfigurationOptionImpl(option_name, value))
 
-    def get_config_value(self, option_name: str) -> tp.Optional[tp.Any]:
+    def get_config_value(self, option_name: str) -> tp.Optional[str]:
         """
         Returns the set value for the given feature.
 

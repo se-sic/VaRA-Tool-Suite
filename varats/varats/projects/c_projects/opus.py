@@ -32,7 +32,7 @@ class Opus(VProject):
         bb.source.Git(
             remote="https://github.com/xiph/opus.git",
             local="opus",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("opus")

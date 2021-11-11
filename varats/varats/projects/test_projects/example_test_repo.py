@@ -28,7 +28,7 @@ class ExampleTestRepo(VProject):
         VaraTestRepoSource(
             remote="BasicTestRepos/ExampleRepo",
             local="example_repo",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             version_filter=project_filter_generator("example_test_repo")
         )

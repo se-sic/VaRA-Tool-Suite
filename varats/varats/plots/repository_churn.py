@@ -241,7 +241,7 @@ class RepoChurnPlot(Plot, plot_name="repo_churn"):
             'legend_size': 8 if view_mode else 2,
             'xtick_size': 10 if view_mode else 2,
         }
-        style.use(self.plot_config.style)
+        style.use(self.plot_config.style())
 
         case_study: CaseStudy = self.plot_kwargs['plot_case_study']
 
