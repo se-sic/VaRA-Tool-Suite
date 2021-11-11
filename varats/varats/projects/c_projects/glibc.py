@@ -29,7 +29,7 @@ class Glibc(VProject):
         bb.source.Git(
             remote="git://sourceware.org/git/glibc.git",
             local="glibc",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("glibc")

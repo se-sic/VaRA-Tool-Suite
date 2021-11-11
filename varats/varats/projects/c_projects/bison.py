@@ -35,7 +35,7 @@ class Bison(VProject):
         bb.source.Git(
             remote="https://github.com/bincrafters/bison.git",
             local="bison",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("bison")
@@ -43,7 +43,7 @@ class Bison(VProject):
         bb.source.GitSubmodule(
             remote="https://github.com/coreutils/gnulib.git",
             local="bison/gnulib",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("bison")

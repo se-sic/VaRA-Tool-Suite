@@ -5,10 +5,10 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 from varats.paper_mgmt.artefacts import (
-    load_artefacts_from_file,
-    initialize_artefacts,
+    initialize_artefact_types,
     Artefacts,
     Artefact,
+    load_artefacts_from_file,
 )
 from varats.plot.plots import PlotArtefact
 from varats.plots.discover_plots import initialize_plots
@@ -40,7 +40,7 @@ class TestArtefacts(unittest.TestCase):
     def setUp(cls):
         """Setup artefacts file from yaml doc."""
         initialize_plots()
-        initialize_artefacts()
+        initialize_artefact_types()
         with NamedTemporaryFile('w') as yaml_file:
             yaml_file.write(YAML_ARTEFACTS)
             yaml_file.seek(0)

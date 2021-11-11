@@ -31,7 +31,7 @@ class Libvpx(VProject):
         bb.source.Git(
             remote="https://github.com/webmproject/libvpx.git",
             local="libvpx",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("libvpx")
