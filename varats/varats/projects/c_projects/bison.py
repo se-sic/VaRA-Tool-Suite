@@ -47,14 +47,6 @@ class Bison(VProject):
             limit=None,
             shallow=False,
             version_filter=project_filter_generator("bison")
-        ),
-        bb.source.GitSubmodule(
-            remote="https://github.com/coreutils/gnulib.git",
-            local="bison/gnulib",
-            refspec="HEAD",
-            limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("bison")
         )
     ]
 
