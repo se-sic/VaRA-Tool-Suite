@@ -526,9 +526,8 @@ def _plot_fraction_overview(
 
     project_name: str = plot_kwargs["case_study"].project_name
     fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
-    fig.suptitle(
-        f'{plot_config.fig_title("Fraction overview")} - Project {project_name}'
-    )
+    fig_title_default = f"Fraction overview - Project {project_name}"
+    fig.suptitle(plot_config.fig_title(fig_title_default))
 
     colormap = cm.get_cmap(plot_kwargs['colormap'].value)(
         np.linspace(
