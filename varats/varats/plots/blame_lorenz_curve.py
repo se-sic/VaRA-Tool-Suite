@@ -2,11 +2,10 @@
 interactions."""
 import typing as tp
 
-import matplotlib.axes as axes
 import matplotlib.pyplot as plt
-import matplotlib.style as style
 import numpy as np
 import pandas as pd
+from matplotlib import axes, style
 
 from varats.data.databases.blame_interaction_database import (
     BlameInteractionDatabase,
@@ -16,17 +15,23 @@ from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import check_required_args
-from varats.plot.plots import PlotGenerator, PlotConfig
-from varats.plots.blame_interaction_degree import (
-    OPTIONAL_X_TICK_SIZE,
-    OPTIONAL_LINE_WIDTH,
+from varats.plot.plots import (
+    PlotGenerator,
+    PlotConfig,
+    REQUIRE_REPORT_TYPE,
+    REQUIRE_MULTI_CASE_STUDY,
 )
 from varats.plots.repository_churn import (
     build_repo_churn_table,
     draw_code_churn,
 )
 from varats.project.project_util import get_local_project_git
-from varats.utils.git_util import ChurnConfig, calc_repo_code_churn
+from varats.utils.git_util import (
+    ChurnConfig,
+    calc_repo_code_churn,
+    ShortCommitHash,
+    FullCommitHash,
+)
 
 
 def draw_interaction_lorenz_curve(
@@ -93,9 +98,9 @@ def draw_interaction_code_churn(
 
     unique_revs = data['revision'].unique()
 
-    def remove_revisions_without_data(revision: str) -> bool:
+    def remove_revisions_without_data(revision: ShortCommitHash) -> bool:
         """Removes all churn data where this plot has no data."""
-        return revision[:10] in unique_revs
+        return revision.hash in unique_revs
 
     def apply_sorting(churn_data: pd.DataFrame) -> pd.DataFrame:
         churn_data.set_index('time_id', inplace=True)
@@ -123,12 +128,12 @@ def filter_non_code_changes(
     """
     repo = get_local_project_git(project_name)
     code_related_changes = [
-        x[:10] for x in calc_repo_code_churn(
+        x.hash for x in calc_repo_code_churn(
             repo, ChurnConfig.create_c_style_languages_config()
         )
     ]
     return blame_data[blame_data.apply(
-        lambda x: x['revision'][:10] in code_related_changes, axis=1
+        lambda x: x['revision'] in code_related_changes, axis=1
     )]
 
 
@@ -137,11 +142,11 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
 
     NAME = 'b_lorenz_curve'
 
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.style)
+        style.use(self.plot_config.style())
 
         case_study: CaseStudy = self.plot_kwargs['case_study']
         project_name: str = case_study.project_name
@@ -205,7 +210,9 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
 
 
@@ -213,11 +220,7 @@ class BlameLorenzCurveGenerator(
     PlotGenerator,
     generator_name="lorenz-curve-plot",
     plot=BlameLorenzCurve,
-    options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE,
-        PlotGenerator.REQUIRE_MULTI_CASE_STUDY, OPTIONAL_LINE_WIDTH,
-        OPTIONAL_X_TICK_SIZE
-    ]
+    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates lorenz-curve plot(s) for the selected case study(ies)."""
 
@@ -371,8 +374,8 @@ class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
 
     NAME = 'b_gini_overtime'
 
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         plot_cfg = {
@@ -380,7 +383,7 @@ class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
             'legend_size': 8 if view_mode else 2,
             'xtick_size': 10 if view_mode else 2,
         }
-        style.use(self.style)
+        style.use(self.plot_config.style())
 
         case_study: CaseStudy = self.plot_kwargs['plot_case_study']
         commit_map = self.plot_kwargs['get_cmap']()
@@ -434,5 +437,7 @@ class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError

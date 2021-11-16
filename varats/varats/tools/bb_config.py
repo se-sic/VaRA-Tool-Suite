@@ -3,9 +3,8 @@ This module handles the configuration of Benchbuild.
 
 It can automatically create different preconfigured configs for BB.
 """
-
+import os.path
 from copy import deepcopy
-from os import getcwd
 
 from benchbuild.utils import settings as s
 
@@ -42,11 +41,14 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         'varats.projects.c_projects.bison',
         'varats.projects.c_projects.bitlbee',
         'varats.projects.c_projects.busybox',
+        'varats.projects.c_projects.brotli',
         'varats.projects.c_projects.coreutils',
         'varats.projects.c_projects.curl',
+        'varats.projects.c_projects.file',
         'varats.projects.c_projects.gawk',
-        'varats.projects.c_projects.glibc',
         'varats.projects.c_projects.git',
+        'varats.projects.c_projects.glib',
+        'varats.projects.c_projects.glibc',
         'varats.projects.c_projects.gravity',
         'varats.projects.c_projects.grep',
         'varats.projects.c_projects.gzip',
@@ -54,6 +56,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         'varats.projects.c_projects.irssi',
         'varats.projects.c_projects.libjpeg_turbo',
         'varats.projects.c_projects.libpng',
+        'varats.projects.c_projects.libsigrok',
         'varats.projects.c_projects.libssh',
         'varats.projects.c_projects.libtiff',
         'varats.projects.c_projects.libvpx',
@@ -69,6 +72,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         'varats.projects.c_projects.vim',
         'varats.projects.c_projects.x264',
         'varats.projects.c_projects.xz',
+        'varats.projects.cpp_projects.libzmq',
         'varats.projects.cpp_projects.mongodb',
         'varats.projects.cpp_projects.poppler',
         'varats.projects.test_projects.test_suite',
@@ -86,14 +90,13 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
     projects_conf.value[:] = []
     projects_conf.value[:] += [
         'varats.experiments.base.just_compile',
-        'varats.experiments.vara.phasar_env_analysis',
         'varats.experiments.vara.blame_report_experiment',
         'varats.experiments.vara.commit_report_experiment',
         'varats.experiments.vara.marker_tester',
-        'varats.experiments.vara.vara_fc_taint_analysis',
-        'varats.experiments.vara.vara_full_mtfa',
         'varats.experiments.vara.blame_verifier_experiment',
+        'varats.experiments.vara.phasar_fta',
         'varats.experiments.phasar.ide_linear_constant_experiment',
+        'varats.experiments.phasar.global_analysis_compare',
         'varats.experiments.szz.szz_unleashed_experiment',
         'varats.experiments.szz.pydriller_szz_experiment',
     ]
@@ -125,19 +128,33 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
     }
 
     # Add VaRA experiment config variables
-    add_vara_experiment_options(new_bb_cfg)
-    new_bb_cfg["varats"]["outfile"] = str(varats_cfg["result_dir"])
-    new_bb_cfg["varats"]["result"] = "BC_files"
+    add_vara_experiment_options(new_bb_cfg, varats_cfg)
 
-    def replace_bb_cwd_path(
-        cfg_varname: str, cfg_node: s.Configuration = new_bb_cfg
-    ) -> None:
-        cfg_node[cfg_varname] = str(varats_cfg["benchbuild_root"]) + \
-                                str(cfg_node[cfg_varname])[len(getcwd()):]
+    # Set paths to defaults
+    bb_root = str(varats_cfg["benchbuild_root"])
+    new_bb_cfg["build_dir"] = s.ConfigPath(os.path.join(bb_root, "results"))
+    new_bb_cfg["tmp_dir"] = s.ConfigPath(os.path.join(bb_root, "tmp"))
+    new_bb_cfg["slurm"]["node_dir"] = s.ConfigPath(
+        os.path.join(bb_root, "results")
+    )
+    new_bb_cfg["slurm"]["logs"] = s.ConfigPath(
+        os.path.join(bb_root, "slurm_logs")
+    )
+    new_bb_cfg["container"]["root"] = s.ConfigPath(
+        os.path.join(bb_root, "containers", "lib")
+    )
+    new_bb_cfg["container"]["runroot"] = s.ConfigPath(
+        os.path.join(bb_root, "containers", "run")
+    )
+    new_bb_cfg["container"]["export"] = s.ConfigPath(
+        os.path.join(bb_root, "containers", "export")
+    )
+    new_bb_cfg["container"]["import"] = s.ConfigPath(
+        os.path.join(bb_root, "containers", "export")
+    )
+    new_bb_cfg["container"]["source"] = None
 
-    replace_bb_cwd_path("config_file")
-    replace_bb_cwd_path("build_dir")
-    replace_bb_cwd_path("tmp_dir")
-    replace_bb_cwd_path("node_dir", new_bb_cfg["slurm"])
+    # will be set correctly when saved
+    new_bb_cfg["config_file"] = None
 
     return new_bb_cfg

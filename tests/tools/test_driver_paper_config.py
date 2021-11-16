@@ -5,7 +5,7 @@ from io import StringIO
 from pathlib import Path
 
 from tests.test_utils import run_in_test_environment
-from varats.paper_mgmt import paper_config
+from varats.paper_mgmt.paper_config import load_paper_config
 from varats.tools.driver_paper_config import _pc_list, _pc_set
 from varats.utils.settings import vara_cfg
 
@@ -31,55 +31,38 @@ class TestDriverPaperConfig(unittest.TestCase):
 
     @run_in_test_environment()
     @mock.patch('sys.stdout', new_callable=StringIO)
-    @mock.patch('varats.paper_mgmt.paper_config.PaperConfig')
-    @mock.patch('varats.tools.driver_paper_config._get_paper_configs')
-    def test_vara_pc_list(
-        self, mock_get_paper_configs, mock_paper_config, stdout
-    ):
+    def test_vara_pc_list(self, stdout):
         """Test the vara-pc list subcommand."""
 
-        mock_get_paper_configs.return_value = ["foo", "bar", "baz"]
-        mock_paper_config.return_value.path = Path("foo")
+        paper_configs = ["foo", "bar", "baz"]
         pc_path = Path(vara_cfg()["paper_config"]["folder"].value)
-        pc_path.mkdir()
-        for pc in mock_get_paper_configs.return_value:
+        for pc in paper_configs:
             (pc_path / pc).mkdir()
         vara_cfg()["paper_config"]["current_config"] = "foo"
-        # pylint: disable=protected-access
-        paper_config._G_PAPER_CONFIG = paper_config.PaperConfig(Path("foo"))
+        load_paper_config()
         _pc_list({})
         output = stdout.getvalue()
         self.assertEqual(
-            "Found the following paper_configs:\nfoo *\nbar\nbaz\n", output
+            "Found the following paper_configs:\nbar\nbaz\nfoo *\n", output
         )
 
     @run_in_test_environment()
     @mock.patch('builtins.input')
     @mock.patch('sys.stdout', new_callable=StringIO)
-    @mock.patch(
-        'varats.paper_mgmt.paper_config.PaperConfig',
-        side_effect=_create_paper_config_mock
-    )
-    @mock.patch('varats.tools.driver_paper_config._get_paper_configs')
-    # pylint: disable=unused-argument
-    def test_vara_pc_select(
-        self, mock_get_paper_configs, mock_paper_config, stdout, stdin
-    ):
+    def test_vara_pc_select(self, stdout, stdin):
         """Test the vara-pc select subcommand."""
 
         stdin.return_value = "1"
-        mock_get_paper_configs.return_value = ["foo", "bar", "baz"]
+        paper_configs = ["foo", "bar", "baz"]
         pc_path = Path(vara_cfg()["paper_config"]["folder"].value)
-        pc_path.mkdir()
-        for pc in mock_get_paper_configs.return_value:
+        for pc in paper_configs:
             (pc_path / pc).mkdir()
         vara_cfg()["paper_config"]["current_config"] = "foo"
-        # pylint: disable=protected-access
-        paper_config._G_PAPER_CONFIG = paper_config.PaperConfig(Path("foo"))
+        load_paper_config()
         _pc_set({})
         output = stdout.getvalue()
-        self.assertEqual("0. foo *\n1. bar\n2. baz\n", output)
+        self.assertEqual("0. bar\n1. baz\n2. foo *\n", output)
         self.assertEqual(
-            "bar",
+            "baz",
             vara_cfg()["paper_config"]["current_config"].value
         )
