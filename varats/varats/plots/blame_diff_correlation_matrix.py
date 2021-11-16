@@ -231,10 +231,8 @@ class BlameDiffCorrelationMatrix(Plot, plot_name="b_correlation_matrix"):
         grid.map_offdiag(annotate_correlation)
 
         plt.subplots_adjust(top=0.9)
-        grid.fig.suptitle(
-            f'{self.plot_config.fig_title("Correlation matrix")} - '
-            f'Project {project_name}'
-        )
+        fig_title_default = f"Correlation matrix - Project {project_name}"
+        grid.fig.suptitle(self.plot_config.fig_title(fig_title_default))
 
     def calc_missing_revisions(
         self, boundary_gradient: float
