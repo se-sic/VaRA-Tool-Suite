@@ -10,13 +10,15 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib import axes, style
 
-#import varats.data.discover_reports
-#from varats.data.discover_reports import foo
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
-from varats.plot.plot_utils import check_required_args
-from varats.plot.plots import PlotGenerator, PlotConfig
+from varats.plot.plots import (
+    PlotGenerator,
+    PlotConfig,
+    REQUIRE_REPORT_TYPE,
+    REQUIRE_MULTI_CASE_STUDY,
+)
 from varats.project.project_util import get_local_project_git
 from varats.utils.git_util import (
     ChurnConfig,
@@ -255,7 +257,7 @@ class RepoChurnPlot(Plot, plot_name="repo_churn"):
         )
 
         for x_label in axis.get_xticklabels():
-            x_label.set_fontsize(self.plot_kwargs["x_tick_size"])
+            x_label.set_fontsize(self.plot_config.x_tick_size())
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
@@ -268,26 +270,14 @@ class RepoChurnPlot(Plot, plot_name="repo_churn"):
 class RepoChurnPlotGenerator(
     PlotGenerator,
     generator_name="repo-churn-plot",
-    options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE,
-        PlotGenerator.REQUIRE_MULTI_CASE_STUDY
-    ]
+    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates repo-churn plot(s) for the selected case study(ies)."""
 
-    @check_required_args("report_type", "case_study")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-        self.__x_tick_size: int = plot_config.x_tick_size
-
     def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
         return [
-            RepoChurnPlot(
-                self.plot_config,
-                report_type=self.__report_type,
-                case_study=cs,
-                x_tick_size=self.__x_tick_size
-            ) for cs in self.__case_studies
+            RepoChurnPlot(self.plot_config, case_study=cs, **self.plot_kwargs)
+            for cs in case_studies
         ]
