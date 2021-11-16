@@ -14,7 +14,6 @@ from varats.data.metrics import gini_coefficient, lorenz_curve
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plot_utils import check_required_args
 from varats.plot.plots import (
     PlotGenerator,
     PlotConfig,
@@ -179,20 +178,20 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
 
         # Draw left side of the plot
         draw_interaction_lorenz_curve(
-            main_axis, data, True, False, self.plot_kwargs["line_width"]
+            main_axis, data, True, False, self.plot_config.line_width()
         )
         draw_perfect_lorenz_curve(
-            main_axis, data, self.plot_kwargs["line_width"]
+            main_axis, data, self.plot_config.line_width()
         )
 
         draw_interaction_code_churn(churn_axis, data, project_name, commit_map)
 
         # Draw right side of the plot
         draw_interaction_lorenz_curve(
-            main_axis_r, data, False, True, self.plot_kwargs["line_width"]
+            main_axis_r, data, False, True, self.plot_config.line_width()
         )
         draw_perfect_lorenz_curve(
-            main_axis_r, data, self.plot_kwargs["line_width"]
+            main_axis_r, data, self.plot_config.line_width()
         )
 
         draw_interaction_code_churn(
@@ -201,12 +200,12 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
 
         # Adapt axis to draw nicer plots
         for x_label in churn_axis.get_xticklabels():
-            x_label.set_fontsize(self.plot_kwargs["x_tick_size"])
+            x_label.set_fontsize(self.plot_config.x_tick_size())
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
         for x_label in churn_axis_r.get_xticklabels():
-            x_label.set_fontsize(self.plot_kwargs["x_tick_size"])
+            x_label.set_fontsize(self.plot_config.x_tick_size())
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
@@ -219,27 +218,17 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
 class BlameLorenzCurveGenerator(
     PlotGenerator,
     generator_name="lorenz-curve-plot",
-    plot=BlameLorenzCurve,
     options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates lorenz-curve plot(s) for the selected case study(ies)."""
 
-    @check_required_args("report_type", "case_study")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-        self.__line_width: int = plot_kwargs["line_width"]
-        self.__x_tick_size: int = plot_kwargs["x_tick_size"]
-
     def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
         return [
-            self.PLOT(
-                report_type=self.__report_type,
-                case_study=cs,
-                line_width=self.__line_width,
-                x_tick_size=self.__x_tick_size,
-            ) for cs in self.__case_studies
+            BlameLorenzCurve(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
         ]
 
 
