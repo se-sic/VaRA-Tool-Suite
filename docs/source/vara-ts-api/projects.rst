@@ -48,7 +48,7 @@ template for your own project::
             bb.source.Git(
                 remote="https://github.com/marcobambini/gravity.git",
                 local="gravity",
-                refspec="HEAD",
+                refspec="origin/HEAD",
                 limit=None,
                 shallow=False,
                 version_filter=project_filter_generator("gravity")
@@ -165,7 +165,7 @@ To block revisions, just add the ``block_revisions`` decorator around a git sour
             bb.source.Git(
                 remote="https://github.com/marcobambini/gravity.git",
                 local="gravity",
-                refspec="HEAD",
+                refspec="origin/HEAD",
                 limit=None,
                 shallow=False,
                 version_filter=project_filter_generator("gravity")

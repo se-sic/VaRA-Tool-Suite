@@ -104,8 +104,11 @@ def main(
     initialize_cli_tool()
     initialize_projects()
 
-    bb_command_args: tp.List[str] = []
+    bb_command_args: tp.List[str] = ["--force-watch-unbuffered"]
     bb_extra_args: tp.List[str] = []
+
+    if sys.stdout.isatty():
+        bb_command_args.append("--force-tty")
 
     if verbose:
         bb_command_args.append("-" + ("v" * verbose))

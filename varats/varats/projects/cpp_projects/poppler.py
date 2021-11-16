@@ -40,7 +40,7 @@ class Poppler(VProject):
             bb.source.Git(
                 remote="https://gitlab.freedesktop.org/poppler/poppler.git",
                 local="poppler",
-                refspec="HEAD",
+                refspec="origin/HEAD",
                 limit=None,
                 shallow=False,
                 version_filter=project_filter_generator("poppler")

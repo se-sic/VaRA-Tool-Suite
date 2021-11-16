@@ -19,7 +19,7 @@ from varats.data.reports.blame_report import (
 from varats.utils.git_util import CommitRepoPair, FullCommitHash
 
 FAKE_REPORT_PATH = (
-    "BR-xz-xz-fdbc0cfa71_63959faf-66d9-41e0-8dbb-abeee2c255eb_success.yaml"
+    "BRE-BR-xz-xz-fdbc0cfa71_63959faf-66d9-41e0-8dbb-abeee2c255eb_success.yaml"
 )
 
 YAML_DOC_HEADER = """---
