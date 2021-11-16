@@ -243,7 +243,7 @@ class RepoChurnPlot(Plot, plot_name="repo_churn"):
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.plot_config.style)
+        style.use(self.plot_config.style())
         case_study: CaseStudy = self.plot_kwargs['case_study']
         project_name: str = case_study.project_name
         commit_map: CommitMap = get_commit_map(project_name)

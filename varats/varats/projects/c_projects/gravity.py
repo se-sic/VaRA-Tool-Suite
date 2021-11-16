@@ -65,7 +65,7 @@ class Gravity(VProject):
             bb.source.Git(
                 remote="https://github.com/marcobambini/gravity.git",
                 local="gravity",
-                refspec="HEAD",
+                refspec="origin/HEAD",
                 limit=None,
                 shallow=False,
                 version_filter=project_filter_generator("gravity")
