@@ -25,8 +25,14 @@ from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import align_yaxis, pad_axes, check_required_args
-from varats.plot.plots import PlotGenerator, PlotConfig
-from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option, EnumChoice
+from varats.plot.plots import (
+    PlotGenerator,
+    PlotConfig,
+    REQUIRE_REPORT_TYPE,
+    REQUIRE_MULTI_CASE_STUDY,
+)
+from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
+from varats.ts_utils.click_param_types import EnumChoice
 from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
@@ -259,6 +265,7 @@ def _multivariate_grid(
     y_col: str,
     hue: str,
     data: pd.DataFrame,
+    plot_config: PlotConfig,
     scatter_alpha: float = .5
 ) -> None:
 
@@ -302,7 +309,8 @@ def _multivariate_grid(
     plt.legend(legends)
 
     plt.subplots_adjust(top=0.9)
-    grid.fig.suptitle(f"{x_col} vs. {y_col}")
+    fig_title_default = f"{x_col} vs. {y_col}"
+    grid.fig.suptitle(plot_config.fig_title(fig_title_default))
 
 
 class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
@@ -354,6 +362,7 @@ class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
             y_col=var_y,
             hue='project',
             data=df,
+            plot_config=self.plot_config
         )
 
     def plot_file_name(self, filetype: str) -> str:
@@ -381,29 +390,12 @@ class BlameDiffDistributionGenerator(
     PlotGenerator,
     generator_name="distribution-comparison-plot",
     options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE,
-        PlotGenerator.REQUIRE_MULTI_CASE_STUDY, REQUIRE_X_METRIC,
+        REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY, REQUIRE_X_METRIC,
         REQUIRE_Y_METRIC
     ]
 ):
     """Generates a distribution-comparison plot for the selected case
     study(ies)."""
 
-    @check_required_args("report_type", "case_study", "var_x", "var_y")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-        self.__var_x: str = plot_kwargs["var_x"]
-        self.__var_y: str = plot_kwargs["var_y"]
-
     def generate(self) -> tp.List[Plot]:
-        return [
-            BlameDiffDistribution(
-                self.plot_config,
-                report_type=self.__report_type,
-                case_study=self.__case_studies,
-                var_x=self.__var_x,
-                var_y=self.__var_y
-            )
-        ]
+        return [BlameDiffDistribution(self.plot_config, **self.plot_kwargs)]
