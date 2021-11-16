@@ -256,6 +256,8 @@ def get_successor_report_file(
 
 
 class BlameDiffMetrics(Enum):
+    """Blame interaction metrics."""
+
     CHURN = "churn"
     NUM_INTERACTIONS = "num_interactions"
     NUM_INTERACTING_COMMITS = "num_interacting_commits"

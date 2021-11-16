@@ -24,7 +24,7 @@ from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plot_utils import align_yaxis, pad_axes, check_required_args
+from varats.plot.plot_utils import align_yaxis, pad_axes
 from varats.plot.plots import (
     PlotGenerator,
     PlotConfig,
