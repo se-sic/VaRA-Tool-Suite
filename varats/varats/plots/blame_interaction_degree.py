@@ -1709,13 +1709,6 @@ class BlameMaxTimeDistribution(BlameDegree, plot_name="b_maxtime_distribution"):
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        extra_plot_cfg = {
-            'legend_visible': False,
-            'fig_title': 'Max time distribution',
-            'edgecolor': None,
-        }
-        # TODO (se-passau/VaRA#545): make params configurable in user call
-        #  with plot config rework
         self._degree_plot(DegreeType.MAX_TIME)
 
     def calc_missing_revisions(
@@ -1724,6 +1717,29 @@ class BlameMaxTimeDistribution(BlameDegree, plot_name="b_maxtime_distribution"):
         return self._calc_missing_revisions(
             DegreeType.MAX_TIME, boundary_gradient
         )
+
+
+class BlameMaxTimeDistributionGenerator(
+    PlotGenerator,
+    generator_name="max-time-distribution-plot",
+    options=[
+        REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY, OPTIONAL_SHOW_CHURN,
+        OPTIONAL_EDGE_COLOR, OPTIONAL_COLORMAP, OPTIONAL_SHOW_CVE,
+        OPTIONAL_SHOW_BUGS, OPTIONAL_CVE_LINE_WIDTH, OPTIONAL_BUG_LINE_WIDTH,
+        OPTIONAL_CVE_COLOR, OPTIONAL_BUG_COLOR, OPTIONAL_VERTICAL_ALIGNMENT
+    ]
+):
+    """Generates max-time-distribution plot(s) for the selected case
+    study(ies)."""
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
+        return [
+            BlameMaxTimeDistribution(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
+        ]
 
 
 class BlameAvgTimeDistribution(BlameDegree, plot_name="b_avgtime_distribution"):
@@ -1736,13 +1752,6 @@ class BlameAvgTimeDistribution(BlameDegree, plot_name="b_avgtime_distribution"):
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        extra_plot_cfg = {
-            'legend_visible': False,
-            'fig_title': 'Average time distribution',
-            'edgecolor': None,
-        }
-        # TODO (se-passau/VaRA#545): make params configurable in user call
-        #  with plot config rework
         self._degree_plot(DegreeType.AVG_TIME)
 
     def calc_missing_revisions(
@@ -1751,3 +1760,26 @@ class BlameAvgTimeDistribution(BlameDegree, plot_name="b_avgtime_distribution"):
         return self._calc_missing_revisions(
             DegreeType.AVG_TIME, boundary_gradient
         )
+
+
+class BlameAvgTimeDistributionGenerator(
+    PlotGenerator,
+    generator_name="avg-time-distribution-plot",
+    options=[
+        REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY, OPTIONAL_SHOW_CHURN,
+        OPTIONAL_EDGE_COLOR, OPTIONAL_COLORMAP, OPTIONAL_SHOW_CVE,
+        OPTIONAL_SHOW_BUGS, OPTIONAL_CVE_LINE_WIDTH, OPTIONAL_BUG_LINE_WIDTH,
+        OPTIONAL_CVE_COLOR, OPTIONAL_BUG_COLOR, OPTIONAL_VERTICAL_ALIGNMENT
+    ]
+):
+    """Generates avg-time-distribution plot(s) for the selected case
+    study(ies)."""
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
+        return [
+            BlameAvgTimeDistribution(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
+        ]
