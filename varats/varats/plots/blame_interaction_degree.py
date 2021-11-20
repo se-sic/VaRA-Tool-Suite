@@ -1715,12 +1715,6 @@ class BlameAuthorDegree(BlameDegree, plot_name="b_author_degree"):
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        extra_plot_cfg = {
-            'legend_title': 'Author interaction degrees',
-            'fig_title': 'Author blame interactions'
-        }
-        # TODO (se-passau/VaRA#545): make params configurable in user call
-        #  with plot config rework
         self._degree_plot(DegreeType.AUTHOR)
 
     def calc_missing_revisions(
@@ -1729,6 +1723,36 @@ class BlameAuthorDegree(BlameDegree, plot_name="b_author_degree"):
         return self._calc_missing_revisions(
             DegreeType.AUTHOR, boundary_gradient
         )
+
+
+class BlameAuthorDegreeGenerator(
+    PlotGenerator,
+    generator_name="author-degree-plot",
+    options=[
+        REQUIRE_REPORT_TYPE,
+        REQUIRE_MULTI_CASE_STUDY,
+        OPTIONAL_SHOW_CHURN,
+        OPTIONAL_EDGE_COLOR,
+        OPTIONAL_COLORMAP,
+        OPTIONAL_SHOW_CVE,
+        OPTIONAL_SHOW_BUGS,
+        OPTIONAL_CVE_LINE_WIDTH,
+        OPTIONAL_BUG_LINE_WIDTH,
+        OPTIONAL_CVE_COLOR,
+        OPTIONAL_BUG_COLOR,
+        OPTIONAL_VERTICAL_ALIGNMENT,
+    ]
+):
+    """Generates author-degree plot(s) for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
+        return [
+            BlameAuthorDegree(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
+        ]
 
 
 class BlameMaxTimeDistribution(BlameDegree, plot_name="b_maxtime_distribution"):
