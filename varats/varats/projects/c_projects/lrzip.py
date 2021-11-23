@@ -58,9 +58,11 @@ class Lrzip(VProject):
 
         self.cflags += ["-fPIC"]
 
-        clang = bb.compiler.cc(self)
+        cc_compiler = bb.compiler.cc(self)
+        cxx_compiler = bb.compiler.cxx(self)
+
         with local.cwd(lrzip_source):
-            with local.env(CC=str(clang)):
+            with local.env(CC=str(cc_compiler), CXX=str(cxx_compiler)):
                 bb.watch(local["./autogen.sh"])()
                 bb.watch(local["./configure"])()
             bb.watch(make)("-j", get_number_of_jobs(bb_cfg()))
