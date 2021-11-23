@@ -9,6 +9,19 @@ from benchbuild.source.base import target_prefix
 from varats.provider.provider import Provider
 
 
+class FeatureModelNotFound(FileNotFoundError):
+    """Exception raised when the specified feature model could not be found."""
+
+    def __init__(self, project: Project, fm_path: tp.Optional[Path]) -> None:
+        err_msg = f"Could not find feature model for project {project.name}!\n"
+        if fm_path:
+            err_msg += f"No file at: {fm_path}."
+        else:
+            err_msg += "Got no feature-model path."
+
+        super().__init__(err_msg)
+
+
 class FeatureModelProvider(Provider):
     """Provider for accessing project related FeatureModels."""
 

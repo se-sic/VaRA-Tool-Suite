@@ -25,7 +25,10 @@ from varats.experiment.wllvm import (
     get_bc_cache_actions,
 )
 from varats.project.project_util import ProjectBinaryWrapper, BinaryType
-from varats.provider.feature.feature_model_provider import FeatureModelProvider
+from varats.provider.feature.feature_model_provider import (
+    FeatureModelProvider,
+    FeatureModelNotFound,
+)
 from varats.report.report import ReportSpecification
 from varats.report.report import FileStatusExtension as FSE
 
@@ -99,15 +102,11 @@ class FeaturePerfRunner(VersionExperiment, shorthand="FPR"):
 
         fm_provider = FeatureModelProvider.create_provider_for_project(project)
         if fm_provider is None:
-            # TODO: add log
-            # TODO: add exception FM not found
-            raise AssertionError("foo")
+            raise Exception("Could not get FeatureModelProvider!")
 
         fm_path = fm_provider.get_feature_model_path(project.version_of_primary)
         if fm_path is None or not fm_path.exists():
-            # TODO: add log
-            # TODO: add exception FM not found
-            raise AssertionError("fadf")
+            raise FeatureModelNotFound(project, fm_path)
 
         # Sets FM model flags
         project.cflags += [
