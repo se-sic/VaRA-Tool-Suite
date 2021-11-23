@@ -41,7 +41,7 @@ REQUIRE_X_METRIC: CLIOptionTy = make_cli_option(
     "--var-x",
     type=EnumChoice(BlameDiffMetrics, case_sensitive=False),
     required=True,
-    help="The metric shown on the x-axis of the distribution-comparison plot."
+    help="The metric shown on the x-axis of the distribution comparison plot."
 )
 
 REQUIRE_Y_METRIC: CLIOptionTy = make_cli_option(
