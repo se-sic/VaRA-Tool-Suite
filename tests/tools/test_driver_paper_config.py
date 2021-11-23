@@ -1,7 +1,5 @@
 """Test paper config tool."""
 import unittest
-import unittest.mock as mock
-from io import StringIO
 from pathlib import Path
 
 from click.testing import CliRunner
@@ -38,6 +36,7 @@ class TestDriverPaperConfig(unittest.TestCase):
         for pc in paper_configs:
             (pc_path / pc).mkdir()
         vara_cfg()["paper_config"]["current_config"] = "foo"
+        load_paper_config()
         result = runner.invoke(driver_paper_config.main, ["list"])
         self.assertEqual(
             "Found the following paper_configs:\nbar\nbaz\nfoo *\n",
