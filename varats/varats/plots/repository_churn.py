@@ -161,8 +161,9 @@ def draw_code_churn(
 
     code_churn = sort_df(code_churn)
 
-    revisions: tp.List[FullCommitHash] = code_churn.revision
-    revision_strs: tp.List[str] = [rev.short_hash for rev in revisions]
+    revision_strs = code_churn.time_id.astype(
+        str
+    ) + '-' + code_churn.revision.map(lambda x: x.short_hash)
 
     clipped_insertions = [
         x if x < CODE_CHURN_INSERTION_LIMIT else 1.3 *
@@ -182,11 +183,6 @@ def draw_code_churn(
         0,
         facecolor='red'
     )
-    revision_strs = code_churn.time_id.astype(
-        str
-    ) + '-' + code_churn.revision.map(lambda x: x.short_hash)
-    axis.set_xticks(axis.get_xticks())
-    axis.set_xticklabels(revision_strs)
 
 
 def draw_code_churn_for_revisions(
