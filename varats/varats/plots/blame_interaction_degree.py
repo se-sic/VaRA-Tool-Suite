@@ -440,12 +440,12 @@ def _generate_degree_stackplot(
 
 
 def _calc_fractions(
-    unique_short_revisions: tp.List[ShortCommitHash],
-    all_base_lib_names: tp.List[str], all_inter_lib_names: tp.List[str],
-    revision_to_base_names_mapping: tp.Dict[ShortCommitHash, tp.List[str]],
-    revision_to_inter_names_mapping: tp.Dict[ShortCommitHash, tp.List[str]],
-    revision_to_dataframes_mapping: tp.Dict[ShortCommitHash, pd.DataFrame],
-    revision_to_total_amount_mapping: tp.Dict[ShortCommitHash, int]
+    unique_revisions: tp.List[FullCommitHash], all_base_lib_names: tp.List[str],
+    all_inter_lib_names: tp.List[str],
+    revision_to_base_names_mapping: tp.Dict[FullCommitHash, tp.List[str]],
+    revision_to_inter_names_mapping: tp.Dict[FullCommitHash, tp.List[str]],
+    revision_to_dataframes_mapping: tp.Dict[FullCommitHash, pd.DataFrame],
+    revision_to_total_amount_mapping: tp.Dict[FullCommitHash, int]
 ) -> BaseInterFractionMapTuple:
     """Calculate the fractions of the base and interacting libraries for the
     fraction overview plot."""
@@ -454,12 +454,12 @@ def _calc_fractions(
     inter_fraction_map = FractionMap()
 
     def calc_fractions(
-        base_lib: bool, rev_lib_mapping: tp.Dict[ShortCommitHash, tp.List[str]],
+        base_lib: bool, rev_lib_mapping: tp.Dict[FullCommitHash, tp.List[str]],
         fraction_map: FractionMap
     ) -> None:
         lib: tp.Union[str, str] = "base_lib" if base_lib else "inter_lib"
 
-        for rev in unique_short_revisions:
+        for rev in unique_revisions:
             for lib_name in rev_lib_mapping[rev]:
                 current_fraction = np.divide(
                     revision_to_dataframes_mapping[rev].loc[
@@ -1190,30 +1190,27 @@ class BlameDegree(Plot, plot_name=None):
         project_name: str = case_study.project_name
         commit_map: CommitMap = get_commit_map(project_name)
         unique_revisions = _get_unique_revisions(revision_df, commit_map)
-        unique_short_revisions: tp.List[ShortCommitHash] = [
-            rev.to_short_commit_hash() for rev in unique_revisions
-        ]
 
         grouped_df = df.copy()
         grouped_df['revision'] = grouped_df.revision.astype('str')
         grouped_df = grouped_df.groupby(['revision'])
 
-        revision_to_dataframes_mapping: tp.Dict[ShortCommitHash,
+        revision_to_dataframes_mapping: tp.Dict[FullCommitHash,
                                                 pd.DataFrame] = {}
 
-        for revision in unique_short_revisions:
+        for revision in unique_revisions:
             revision_to_dataframes_mapping[revision] = grouped_df.get_group(
-                revision.hash
+                revision.short_hash
             )
 
-        revision_to_total_amount_mapping: tp.Dict[ShortCommitHash, int] = {}
-        revision_to_base_names_mapping: tp.Dict[ShortCommitHash,
+        revision_to_total_amount_mapping: tp.Dict[FullCommitHash, int] = {}
+        revision_to_base_names_mapping: tp.Dict[FullCommitHash,
                                                 tp.List[str]] = {}
-        revision_to_inter_names_mapping: tp.Dict[ShortCommitHash,
+        revision_to_inter_names_mapping: tp.Dict[FullCommitHash,
                                                  tp.List[str]] = {}
 
         # Collect mapping data
-        for revision in unique_short_revisions:
+        for revision in unique_revisions:
             revision_to_total_amount_mapping[
                 revision] = revision_to_dataframes_mapping[revision].sum(
                 ).amount
@@ -1227,7 +1224,7 @@ class BlameDegree(Plot, plot_name=None):
                 )
 
         base_lib_fraction_map, inter_lib_fraction_map = _calc_fractions(
-            unique_short_revisions, all_base_lib_names, all_inter_lib_names,
+            unique_revisions, all_base_lib_names, all_inter_lib_names,
             revision_to_base_names_mapping, revision_to_inter_names_mapping,
             revision_to_dataframes_mapping, revision_to_total_amount_mapping
         )
