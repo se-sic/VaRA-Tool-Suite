@@ -29,10 +29,7 @@ from varats.ts_utils.cli_util import (
     initialize_cli_tool,
     cli_yn_choice,
 )
-from varats.ts_utils.click_param_types import (
-    TypedChoice,
-    create_report_type_choice,
-)
+from varats.ts_utils.click_param_types import create_report_type_choice
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
 
@@ -49,7 +46,7 @@ def main() -> None:
 
 
 @main.command("status")
-@click.argument("report_name", type=create_report_type_choice())
+@click.argument("report_type", type=create_report_type_choice())
 @click.option(
     "--filter-regex",
     help="Provide a regex to filter the shown case studies",
@@ -86,9 +83,9 @@ def main() -> None:
     "(e.g. when piping to less -r)."
 )
 def __casestudy_status(
-    report_name: str, filter_regex: str, paper_config: str, short: bool,
-    list_revs: bool, with_stage: bool, sort_revs: bool, legend: bool,
-    force_color: bool
+    report_type: tp.Type['BaseReport'], filter_regex: str, paper_config: str,
+    short: bool, list_revs: bool, with_stage: bool, sort_revs: bool,
+    legend: bool, force_color: bool
 ) -> None:
     """
     Show status of current case study.
@@ -107,7 +104,7 @@ def __casestudy_status(
     if short and with_stage:
         click.UsageError("At most one argument of: --short, --ws can be used.")
     PCM.show_status_of_case_studies(
-        report_name, filter_regex, short, sort_revs, list_revs, with_stage,
+        report_type, filter_regex, short, sort_revs, list_revs, with_stage,
         legend
     )
 
@@ -193,7 +190,6 @@ def __casestudy_create_or_extend(
     case_study = generate_case_study(
         sampling_method, cmap, version, project, **args
     )
-
     store_case_study(case_study, Path(paper_config_path))
 
 
