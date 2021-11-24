@@ -6,7 +6,6 @@ from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
 from plumbum import local
 
-from varats.data.reports.empty_report import EmptyReport as EMPTY
 from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     ExperimentHandle,
@@ -31,6 +30,7 @@ from varats.provider.feature.feature_model_provider import (
 )
 from varats.report.report import ReportSpecification
 from varats.report.report import FileStatusExtension as FSE
+from varats.report.tef_report import TEFReport
 
 
 class ExecAndTraceBinary(actions.Step):  # type: ignore
@@ -57,7 +57,7 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
                 continue
 
             result_file = self.__experiment_handle.get_file_name(
-                EMPTY.shorthand(),
+                TEFReport.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name,
                 project_revision=project.version_of_primary,
@@ -77,7 +77,7 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
 
                     # TODO: figure out how to handle different configs
                     executable("--slow")
-                    #executable()
+                    # executable()
 
         return actions.StepResult.OK
 
@@ -87,7 +87,7 @@ class FeaturePerfRunner(VersionExperiment, shorthand="FPR"):
 
     NAME = "RunFeaturePerf"
 
-    REPORT_SPEC = ReportSpecification(EMPTY)
+    REPORT_SPEC = ReportSpecification(TEFReport)
 
     def actions_for_project(
         self, project: Project
@@ -125,7 +125,7 @@ class FeaturePerfRunner(VersionExperiment, shorthand="FPR"):
 
         # Add own error handler to compile step.
         project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, EMPTY
+            self.get_handle(), project, TEFReport
         )
 
         analysis_actions = []
