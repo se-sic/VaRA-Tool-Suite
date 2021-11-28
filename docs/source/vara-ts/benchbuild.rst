@@ -1,6 +1,10 @@
 Running experiments with BenchBuild
 ===================================
 
+.. note::
+    This section describes how to directly work with benchbuild and is intended for advanced users.
+    For the standard use-case see our :ref:`tutorial on running experiments <Running Experiments>`.
+
 VaRA-TS provides different preconfigured experiments and projects.
 In order to execute an experiment on a project we use `BenchBuild <https://github.com/PolyJIT/benchbuild>`_, an empirical-research toolkit.
 

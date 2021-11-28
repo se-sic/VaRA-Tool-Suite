@@ -3,8 +3,8 @@
 import unittest
 
 import varats.base.commandline_option as CO
-from tests.test_helper_config import ConfigurationTestImpl
-from varats.base.configuration import Configuration
+from tests.test_utils import ConfigurationHelper
+from varats.base.configuration import Configuration, ConfigurationImpl
 
 
 class TestCommandlineOptionSwitch(unittest.TestCase):
@@ -13,7 +13,7 @@ class TestCommandlineOptionSwitch(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Setup test Configuration."""
-        cls.test_config = ConfigurationTestImpl.create_test_config()
+        cls.test_config = ConfigurationHelper.create_test_config()
 
     def test_alias(self):
         self.assertEqual(CO.CommandlineOptionSwitch, CO.CLOSwitch)
@@ -64,7 +64,7 @@ class TestCommandlineOptionFormat(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Setup test Configuration."""
-        cls.test_config = ConfigurationTestImpl.create_test_config()
+        cls.test_config = ConfigurationHelper.create_test_config()
 
     def test_alias(self):
         self.assertEqual(CO.CommandlineOptionFormat, CO.CLOFormat)
@@ -107,7 +107,7 @@ class TestCommandlineOptionGroup(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Setup test Configuration."""
-        cls.test_config = ConfigurationTestImpl.create_test_config()
+        cls.test_config = ConfigurationHelper.create_test_config()
 
     def test_alias(self):
         self.assertEqual(CO.CommandlineOptionGroup, CO.CLOGroup)

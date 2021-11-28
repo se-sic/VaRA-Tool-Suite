@@ -6,11 +6,13 @@ from matplotlib import axes
 
 from varats.mapping.commit_map import create_lazy_commit_map_loader
 from varats.provider.cve.cve_provider import CVEProvider
+from varats.utils.git_util import FullCommitHash
 
 
 def draw_cves(
-    axis: axes.Axes, project: tp.Type[Project], revisions: tp.List[str],
-    plot_kwargs: tp.Any
+    axis: axes.Axes, project: tp.Type[Project],
+    revisions: tp.List[FullCommitHash], cve_line_width: int, cve_color: str,
+    label_size: int, vertical_alignment: str
 ) -> None:
     """
     Annotates CVEs for a project in an existing plot.
@@ -20,10 +22,13 @@ def draw_cves(
         project: the project to add CVEs for
         revisions: a list of revisions included in the plot in the order they
                    appear on the x-axis
-        plot_kwargs: the arguments that specify a plots style
+        cve_line_width: the line width of CVE annotations
+        cve_color: the color of CVE annotations
+        label_size: the label size of CVE annotations
+        vertical_alignment: the vertical alignment of CVE annotations
     """
     cmap = create_lazy_commit_map_loader(project.NAME)()
-    revision_time_ids = [cmap.short_time_id(rev) for rev in revisions]
+    revision_time_ids = [cmap.time_id(rev) for rev in revisions]
 
     cve_provider = CVEProvider.get_provider_for_project(project)
     for revision, cves in cve_provider.get_revision_cve_tuples():
@@ -39,8 +44,8 @@ def draw_cves(
             axis.axvline(
                 index,
                 label=cve.cve_id,
-                linewidth=plot_kwargs["cve_bug_line_width"],
-                color=plot_kwargs["cve_bug_color"]
+                linewidth=cve_line_width,
+                color=cve_color
             )
             axis.text(
                 index + 0.1,
@@ -48,7 +53,7 @@ def draw_cves(
                 cve.cve_id,
                 transform=transform,
                 rotation=90,
-                size=plot_kwargs["label_size"],
-                color=plot_kwargs["cve_bug_color"],
-                va=plot_kwargs["vertical_alignment"]
+                size=label_size,
+                color=cve_color,
+                va=vertical_alignment
             )

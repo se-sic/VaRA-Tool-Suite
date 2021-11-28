@@ -3,21 +3,23 @@
 import typing as tp
 from pathlib import Path
 
-import benchbuild.utils.actions as actions
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import mkdir, touch
 
 from varats.data.reports.empty_report import EmptyReport
 from varats.experiment.experiment_util import (
     VersionExperiment,
+    ExperimentHandle,
     exec_func_with_pe_error_handler,
     get_default_compile_error_wrapped,
     create_default_analysis_failure_handler,
+    get_varats_result_folder,
 )
 from varats.experiment.wllvm import RunWLLVM
 from varats.report.report import FileStatusExtension as FSE
-from varats.utils.settings import bb_cfg
+from varats.report.report import ReportSpecification
 
 
 # Please take care when changing this file, see docs experiments/just_compile
@@ -27,10 +29,9 @@ class EmptyAnalysis(actions.Step):  # type: ignore
     NAME = "EmptyAnslysis"
     DESCRIPTION = "Analyses nothing."
 
-    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
-
-    def __init__(self, project: Project):
+    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(obj=project, action_fn=self.analyze)
+        self.__experiment_handle = experiment_handle
 
     def analyze(self) -> actions.StepResult:
         """Only create a report file."""
@@ -38,23 +39,16 @@ class EmptyAnalysis(actions.Step):  # type: ignore
             return actions.StepResult.ERROR
         project = self.obj
 
-        # Add to the user-defined path for saving the results of the
-        # analysis also the name and the unique id of the project of every
-        # run.
-        vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(bb_cfg()["varats"]["outfile"]),
-            project_dir=str(project.name)
-        )
-
-        mkdir("-p", vara_result_folder)
+        vara_result_folder = get_varats_result_folder(project)
 
         for binary in project.binaries:
-            result_file = EmptyReport.get_file_name(
+            result_file = self.__experiment_handle.get_file_name(
+                EmptyReport.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=project.version_of_primary,
+                project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
-                extension_type=FSE.Success
+                extension_type=FSE.SUCCESS
             )
 
             run_cmd = touch["{res_folder}/{res_file}".format(
@@ -64,18 +58,21 @@ class EmptyAnalysis(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    project, EmptyReport, Path(vara_result_folder)
+                    self.__experiment_handle, project, EmptyReport,
+                    Path(vara_result_folder)
                 )
             )
 
+        return actions.StepResult.OK
+
 
 # Please take care when changing this file, see docs experiments/just_compile
-class JustCompileReport(VersionExperiment):
+class JustCompileReport(VersionExperiment, shorthand="JC"):
     """Generates empty report file."""
 
     NAME = "JustCompile"
 
-    REPORT_TYPE = EmptyReport
+    REPORT_SPEC = ReportSpecification(EmptyReport)
 
     def actions_for_project(
         self, project: Project
@@ -93,12 +90,12 @@ class JustCompileReport(VersionExperiment):
             << run.WithTimeout()
 
         project.compile = get_default_compile_error_wrapped(
-            project, EmptyReport, EmptyAnalysis.RESULT_FOLDER_TEMPLATE
+            self.get_handle(), project, self.REPORT_SPEC.main_report
         )
 
         analysis_actions = []
         analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(EmptyAnalysis(project))
+        analysis_actions.append(EmptyAnalysis(project, self.get_handle()))
         analysis_actions.append(actions.Clean(project))
 
         return analysis_actions

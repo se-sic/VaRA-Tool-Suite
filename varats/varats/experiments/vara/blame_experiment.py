@@ -3,11 +3,12 @@ blame experiments that have a similar experiment setup."""
 
 import typing as tp
 
-import benchbuild.utils.actions as actions
 from benchbuild import Experiment, Project
 from benchbuild.extensions import compiler, run, time
+from benchbuild.utils import actions
 
 from varats.experiment.experiment_util import (
+    VersionExperiment,
     get_default_compile_error_wrapped,
     PEErrorHandler,
 )
@@ -20,8 +21,8 @@ from varats.report.report import BaseReport
 
 
 def setup_basic_blame_experiment(
-    experiment: Experiment, project: Project, report_type: tp.Type[BaseReport],
-    result_folder_template: str
+    experiment: VersionExperiment, project: Project,
+    report_type: tp.Type[BaseReport]
 ) -> None:
     """
     Setup the project for a blame experiment.
@@ -42,7 +43,7 @@ def setup_basic_blame_experiment(
 
     # Add own error handler to compile step.
     project.compile = get_default_compile_error_wrapped(
-        project, report_type, result_folder_template
+        experiment.get_handle(), project, report_type
     )
 
     # This c-flag is provided by VaRA and it suggests to use the git-blame
