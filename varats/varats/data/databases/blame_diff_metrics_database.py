@@ -258,6 +258,10 @@ def get_successor_report_file(
 class BlameDiffMetrics(Enum):
     """Blame interaction metrics."""
 
+    @staticmethod
+    def to_str_list() -> tp.List[str]:
+        return [metric.value for metric in BlameDiffMetrics]
+
     CHURN = "churn"
     NUM_INTERACTIONS = "num_interactions"
     NUM_INTERACTING_COMMITS = "num_interacting_commits"
@@ -274,14 +278,11 @@ class BlameDiffMetrics(Enum):
 class BlameDiffMetricsDatabase(
     EvaluationDatabase,
     cache_id="blame_diff_metrics_data",
-    columns=[
-        "churn", "num_interactions", "num_interacting_commits",
-        "num_interacting_authors", "ci_degree_mean", "author_mean",
-        "avg_time_mean", "ci_degree_max", "author_max", "avg_time_max", "year"
-    ]
+    columns=BlameDiffMetrics.to_str_list()
 ):
-    """Metrics database that contains all different blame-interaction metrics
-    that are based on a diff between two `BlameReports`."""
+    """Metrics database that con-v distribution-comparison-plot --report-type
+    BlameReport -cs all --tains all different blame-interaction metrics that are
+    based on a diff between two `BlameReports`."""
 
     @classmethod
     def _load_dataframe(
