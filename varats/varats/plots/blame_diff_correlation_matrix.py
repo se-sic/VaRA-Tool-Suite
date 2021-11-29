@@ -3,7 +3,6 @@ Module for drawing commit-data metrics plots.
 
 - scatter-plot matrix
 """
-import abc
 import logging
 import typing as tp
 
@@ -26,8 +25,8 @@ from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot, PlotDataEmpty
 from varats.plot.plot_utils import align_yaxis, pad_axes
 from varats.plot.plots import (
-    PlotGenerator,
     PlotConfig,
+    PlotGenerator,
     REQUIRE_REPORT_TYPE,
     REQUIRE_MULTI_CASE_STUDY,
 )
@@ -211,12 +210,12 @@ class BlameDiffCorrelationMatrix(Plot, plot_name="b_correlation_matrix"):
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__(self.NAME, plot_config, **kwargs)
 
-    @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
-        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
-        case_study = self.plot_kwargs.get('plot_case_study', None)
-        project_name = self.plot_kwargs["project"]
+
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        project_name: str = case_study.project_name
+        commit_map: CommitMap = get_commit_map(project_name)
 
         sns.set(style="ticks", color_codes=True)
 
@@ -248,15 +247,30 @@ class BlameDiffCorrelationMatrix(Plot, plot_name="b_correlation_matrix"):
         grid.map_offdiag(annotate_correlation)
 
         plt.subplots_adjust(top=0.9)
-        grid.fig.suptitle(
-            str("Correlation Matrix") +
-            f' - Project {self.plot_kwargs["project"]}'
-        )
+        fig_title_default = f"Correlation matrix - Project {project_name}"
+        grid.fig.suptitle(self.plot_config.fig_title(fig_title_default))
 
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
+
+
+class BlameDiffCorrelationMatrixGenerator(
+    PlotGenerator,
+    generator_name="correlation-matrix-plot",
+    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+):
+    """Generates correlation-matrix plot(s) for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
+        return [
+            BlameDiffCorrelationMatrix(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
+        ]
 
 
 # adapted from https://stackoverflow.com/a/55165689
