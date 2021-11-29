@@ -281,9 +281,8 @@ class BlameDiffMetricsDatabase(
     cache_id="blame_diff_metrics_data",
     columns=BlameDiffMetrics.to_str_list()
 ):
-    """Metrics database that con-v distribution-comparison-plot --report-type
-    BlameReport -cs all --tains all different blame-interaction metrics that are
-    based on a diff between two `BlameReports`."""
+    """Metrics database that contains all different blame-interaction metrics
+    that are based on a diff between two `BlameReports`."""
 
     @classmethod
     def _load_dataframe(
