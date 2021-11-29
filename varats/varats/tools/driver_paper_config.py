@@ -4,7 +4,6 @@ Driver module for `vara-pc`.
 This module provides a command line interface for creating and managing paper
 configs.
 """
-import argparse
 import logging
 import typing as tp
 from pathlib import Path
@@ -86,7 +85,7 @@ def _pc_create(paper_config: str) -> None:
 
 
 @main.command("select")
-@click.option("--paper_config", type=click.Path())
+@click.option("--paper-config", type=click.Path())
 def _pc_set(paper_config: tp.Optional[Path]) -> None:
     if not paper_config:
         pc_folder_path = Path(
