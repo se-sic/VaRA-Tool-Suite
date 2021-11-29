@@ -1,6 +1,7 @@
 """Module for diff based commit-data metrics."""
 import typing as tp
 from datetime import datetime
+from enum import Enum
 from itertools import chain
 from pathlib import Path
 
@@ -254,14 +255,31 @@ def get_successor_report_file(
     return report_files.get(succ_report_commit_hash, None)
 
 
+class BlameDiffMetrics(Enum):
+    """Blame interaction metrics."""
+    value: str  # pylint: disable=invalid-name
+
+    CHURN = "churn"
+    NUM_INTERACTIONS = "num_interactions"
+    NUM_INTERACTING_COMMITS = "num_interacting_commits"
+    NUM_INTERACTING_AUTHORS = "num_interacting_authors"
+    CI_DEGREE_MEAN = "ci_degree_mean"
+    AUTHOR_MEAN = "author_mean"
+    AVG_TIME_MEAN = "avg_time_mean"
+    CI_DEGREE_MAX = "ci_degree_max"
+    AUTHOR_MAX = "author_max"
+    AVG_TIME_MAX = "avg_time_max"
+    YEAR = "year"
+
+    @staticmethod
+    def to_str_list() -> tp.List[str]:
+        return [metric.value for metric in BlameDiffMetrics]
+
+
 class BlameDiffMetricsDatabase(
     EvaluationDatabase,
     cache_id="blame_diff_metrics_data",
-    columns=[
-        "churn", "num_interactions", "num_interacting_commits",
-        "num_interacting_authors", "ci_degree_mean", "author_mean",
-        "avg_time_mean", "ci_degree_max", "author_max", "avg_time_max", "year"
-    ]
+    columns=BlameDiffMetrics.to_str_list()
 ):
     """Metrics database that contains all different blame-interaction metrics
     that are based on a diff between two `BlameReports`."""

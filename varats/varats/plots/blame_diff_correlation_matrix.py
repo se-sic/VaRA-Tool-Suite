@@ -3,7 +3,6 @@ Module for drawing commit-data metrics plots.
 
 - scatter-plot matrix
 """
-import abc
 import logging
 import typing as tp
 
@@ -18,6 +17,7 @@ from sklearn.preprocessing import StandardScaler
 
 from varats.data.databases.blame_diff_metrics_database import (
     BlameDiffMetricsDatabase,
+    BlameDiffMetrics,
 )
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
@@ -30,9 +30,25 @@ from varats.plot.plots import (
     REQUIRE_REPORT_TYPE,
     REQUIRE_MULTI_CASE_STUDY,
 )
+from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
+from varats.ts_utils.click_param_types import EnumChoice
 from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
+
+REQUIRE_X_METRIC: CLIOptionTy = make_cli_option(
+    "--var-x",
+    type=EnumChoice(BlameDiffMetrics, case_sensitive=False),
+    required=True,
+    help="The metric shown on the x-axis of the distribution comparison plot."
+)
+
+REQUIRE_Y_METRIC: CLIOptionTy = make_cli_option(
+    "--var-y",
+    type=EnumChoice(BlameDiffMetrics, case_sensitive=False),
+    required=True,
+    help="The metric shown on the y-axis of the distribution comparison plot."
+)
 
 
 def annotate_correlation(
@@ -263,6 +279,7 @@ def _multivariate_grid(
     y_col: str,
     hue: str,
     data: pd.DataFrame,
+    plot_config: PlotConfig,
     scatter_alpha: float = .5
 ) -> None:
 
@@ -306,7 +323,8 @@ def _multivariate_grid(
     plt.legend(legends)
 
     plt.subplots_adjust(top=0.9)
-    grid.fig.suptitle(f"{x_col} vs. {y_col}")
+    fig_title_default = f"{x_col} vs. {y_col}"
+    grid.fig.suptitle(plot_config.fig_title(fig_title_default))
 
 
 class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
@@ -318,21 +336,12 @@ class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__(self.NAME, plot_config, **kwargs)
 
-    @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
-        if "project" not in self.plot_kwargs:
-            case_studies = get_loaded_paper_config().get_all_case_studies()
-        else:
-            if "plot_case_study" in self.plot_kwargs:
-                case_studies = [self.plot_kwargs["plot_case_study"]]
-            else:
-                case_studies = get_loaded_paper_config().get_case_studies(
-                    self.plot_kwargs["project"]
-                )
 
-        var_x = self.plot_kwargs["var_x"]
-        var_y = self.plot_kwargs["var_y"]
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs["case_study"]
+        var_x = self.plot_kwargs["var_x"].value
+        var_y = self.plot_kwargs["var_y"].value
 
         data = [(
             case_study,
@@ -358,13 +367,16 @@ class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
 
         df = pd.concat(dataframes)
         df.set_index('revision', inplace=True)
-        df.drop(df[df.churn == 0].index, inplace=True)
+
+        if "churn" in df:
+            df.drop(df[df.churn == 0].index, inplace=True)
 
         _multivariate_grid(
             x_col=var_x,
             y_col=var_y,
             hue='project',
             data=df,
+            plot_config=self.plot_config
         )
 
     def plot_file_name(self, filetype: str) -> str:
@@ -378,11 +390,26 @@ class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
             the file name the plot will be stored to
         """
         pc_name = get_loaded_paper_config().path.name
-        var_x = self.plot_kwargs['var_x']
-        var_y = self.plot_kwargs['var_y']
+        var_x = self.plot_kwargs['var_x'].value
+        var_y = self.plot_kwargs['var_y'].value
         return f"{pc_name}_{self.name}_{var_x}_vs_{var_y}.{filetype}"
 
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
+
+
+class BlameDiffDistributionGenerator(
+    PlotGenerator,
+    generator_name="distribution-comparison-plot",
+    options=[
+        REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY, REQUIRE_X_METRIC,
+        REQUIRE_Y_METRIC
+    ]
+):
+    """Generates a distribution-comparison plot for the selected case
+    study(ies)."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [BlameDiffDistribution(self.plot_config, **self.plot_kwargs)]
