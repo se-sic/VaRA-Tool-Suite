@@ -25,6 +25,7 @@ check_err
 $COVERAGE $(which vara-gen-bbconfig)
 check_err
 
+#has been moved to a unit tests, has to remain until all test have been moved
 $COVERAGE $(which vara-config) set artefacts/artefacts_dir=artefacts
 check_err
 
