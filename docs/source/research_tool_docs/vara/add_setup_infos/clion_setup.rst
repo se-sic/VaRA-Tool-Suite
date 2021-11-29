@@ -11,41 +11,40 @@ How to set up VaRA/LLVM in CLion
 3. Go to **Settings/Preferences | Build, Execution, Deployment | CMake** to configure the CMake project.
    Use the **+** symbol to create a new profile and adjust the settings as follows and confirm with **Ok** once you are done:
 
-   - Debug build:
-      - **Name:** Debug
+   - Debug/Dev build:
+      - **Name:** Debug (or Dev)
       - **Build type:** Debug
       - **Toolchain:** Default  (make sure that your toolchain is configured to use clang)
       - **CMake options:**
         .. code-block::
 
+           -DBUILD_CLAR=OFF
            -DBUILD_SHARED_LIBS=ON
-           -DLLVM_TARGETS_TO_BUILD=X86
-           -DLLVM_USE_NEWPM=ON
-           -DLLVM_ENABLE_LDD=ON
-           -DLLVM_PARALLEL_LINK_JOBS=4
-           -DCMAKE_C_FLAGS_DEBUG=
-           -DCMAKE_CXX_FLAGS_DEBUG=
-           -DLLVM_ENABLE_ASSERTIONS=ON
+           -DCMAKE_C_FLAGS_DEBUG=-O2 -g -fno-omit-frame-pointer
+           -DCMAKE_CXX_FLAGS_DEBUG=-O2 -g -fno-omit-frame-pointer
+           -DCMAKE_CXX_STANDARD=17
            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-           -DLLVM_OPTIMIZED_TABLEGEN=ON
-           -DLLVM_PHASAR_BUILD=ON
-           -DLLVM_TOOL_PHASAR_BUILD=ON
-           -DLLVM_ENABLE_RTTI=ON
+           -DCMAKE_INSTALL_PREFIX=<varats_root>/tools/VaRA
+           -DLLVM_ENABLE_ASSERTIONS=ON
+           -DLLVM_ENABLE_BINDINGS=OFF
            -DLLVM_ENABLE_EH=ON
-           -DVARA_BUILD_LIBGIT=ON
+           -DLLVM_ENABLE_LDD=ON
+           -DLLVM_ENABLE_PROJECTS="clang;lld;compiler-rt;clang-tools-extra;vara;phasar"
+           -DLLVM_ENABLE_RTTI=ON
+           -DLLVM_OPTIMIZED_TABLEGEN=ON
+           -DLLVM_PARALLEL_LINK_JOBS=4
+           -DLLVM_PHASAR_BUILD=ON
+           -DLLVM_TARGETS_TO_BUILD=X86
+           -DLLVM_TOOL_PHASAR_BUILD=ON
+           -DLLVM_USE_NEWPM=ON
            -DUSE_HTTPS=OFF
            -DUSE_SSH=OFF
-           -DBUILD_CLAR=OFF
-           -DLLVM_ENABLE_PROJECTS="clang;lld;compiler-rt;clang-tools-extra;vara;phasar"
-           -DCMAKE_CXX_STANDARD=17
-           -DLLVM_ENABLE_BINDINGS=OFF
-           -DCMAKE_INSTALL_PREFIX=<varats_root>/tools/VaRA
+           -DVARA_BUILD_LIBGIT=ON
+
+        Use ``-O0`` for debug builds and ``-O2`` for development builds.
 
       - **Build directory:** ``<varats_root>/tools_src/vara-llvm-project/build/dev-clion``
       - **Build options:** leave empty
-      - **Environment:**
-         - ``CFLAGS=-O2 -g -fno-omit-frame-pointer``
-         - ``CXXFLAGS=-O2 -g -fno-omit-frame-pointer``
 
    - Release Build
       - **Name:** Release
@@ -54,32 +53,29 @@ How to set up VaRA/LLVM in CLion
       - **CMake options:**
         .. code-block::
 
+           -DBUILD_CLAR=OFF
            -DBUILD_SHARED_LIBS=ON
-           -DLLVM_TARGETS_TO_BUILD=X86
-           -DLLVM_USE_NEWPM=ON
-           -DLLVM_ENABLE_LDD=ON
-           -DLLVM_PARALLEL_LINK_JOBS=4
-           -DCMAKE_C_FLAGS_RELEASE=
-           -DCMAKE_CXX_FLAGS_RELEASE=
+           -DCMAKE_C_FLAGS_RELEASE=-O3 -DNDEBUG -march=native -fno-omit-frame-pointer -gmlt
+           -DCMAKE_CXX_FLAGS_RELEASE=-O3 -DNDEBUG -march=native -fno-omit-frame-pointer -gmlt
+           -DCMAKE_CXX_STANDARD=17
+           -DCMAKE_INSTALL_PREFIX=<varats_root>/tools/VaRA
            -DLLVM_ENABLE_ASSERTIONS=OFF
-           -DLLVM_PHASAR_BUILD=ON
-           -DLLVM_TOOL_PHASAR_BUILD=ON
-           -DLLVM_ENABLE_RTTI=ON
+           -DLLVM_ENABLE_BINDINGS=OFF
            -DLLVM_ENABLE_EH=ON
-           -DVARA_BUILD_LIBGIT=ON
+           -DLLVM_ENABLE_LDD=ON
+           -DLLVM_ENABLE_PROJECTS="clang;lld;compiler-rt;clang-tools-extra;vara;phasar"
+           -DLLVM_ENABLE_RTTI=ON
+           -DLLVM_PARALLEL_LINK_JOBS=4
+           -DLLVM_PHASAR_BUILD=ON
+           -DLLVM_TARGETS_TO_BUILD=X86
+           -DLLVM_TOOL_PHASAR_BUILD=ON
+           -DLLVM_USE_NEWPM=ON
            -DUSE_HTTPS=OFF
            -DUSE_SSH=OFF
-           -DBUILD_CLAR=OFF
-           -DLLVM_ENABLE_PROJECTS="clang;lld;compiler-rt;clang-tools-extra;vara;phasar"
-           -DCMAKE_CXX_STANDARD=17
-           -DLLVM_ENABLE_BINDINGS=OFF
-           -DCMAKE_INSTALL_PREFIX=<varats_root>/tools/VaRA
+           -DVARA_BUILD_LIBGIT=ON
 
       - **Build directory:** ``<varats_root>/tools_src/vara-llvm-project/build/dev-clion``
       - **Build options:** leave empty
-      - **Environment:**
-         - ``CFLAGS=-O3 -DNDEBUG -march=native -fno-omit-frame-pointer -gmlt``
-         - ``CXXFLAGS=-O3 -DNDEBUG -march=native -fno-omit-frame-pointer -gmlt``
 
 4. Call **Tools | CMake | Change Project Root** from the main menu and select the top-level repository folder, ``vara-llvm-project`` to see the entire repository in the Project tree.
 
