@@ -55,3 +55,5 @@ From now on, we refer to this directory as the `VaRA-TS root`.
 This should generate the VaRA-TS config file as ``.varats.yaml`` as well as a BenchBuild config file ``benchbuild/.benchbuild.yml``.
 
 You are now ready to :ref:`run your first experiment <Running Experiments>`.
+
+Hint: You should also take a look at the other :ref:`tools <Tools Overview>`, which are offered by varats. 
