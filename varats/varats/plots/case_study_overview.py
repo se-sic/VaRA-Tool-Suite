@@ -231,12 +231,4 @@ class CaseStudyOverviewGenerator(
     """Generates a case study overview plot."""
 
     def generate(self) -> tp.List[Plot]:
-        return [
-            CaseStudyOverviewPlot(
-                plot_config=self.plot_config,
-                report_type=self.plot_kwargs["report_type"],
-                case_study=self.plot_kwargs["case_study"],
-                show_blocked=self.plot_kwargs["show_blocked"],
-                show_all_blocked=self.plot_kwargs["show_all_blocked"]
-            )
-        ]
+        return [CaseStudyOverviewPlot(self.plot_config, **self.plot_kwargs)]

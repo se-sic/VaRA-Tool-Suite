@@ -326,7 +326,7 @@ class PlotConfig():
                 PlotConfigOption(
                     "legend_size",
                     default=2,
-                    view_default=2,
+                    view_default=8,
                     help_str="The size of the legend."
                 ),
                 PlotConfigOption(
@@ -337,13 +337,13 @@ class PlotConfig():
                 PlotConfigOption(
                     "line_width",
                     default=0.25,
-                    view_default=0.25,
+                    view_default=1,
                     help_str="The width of the plot line(s)."
                 ),
                 PlotConfigOption(
                     "x_tick_size",
                     default=2,
-                    view_default=2,
+                    view_default=10,
                     help_str="The size of the x-ticks."
                 ),
                 PlotConfigOption(
