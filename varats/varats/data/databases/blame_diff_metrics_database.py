@@ -257,10 +257,7 @@ def get_successor_report_file(
 
 class BlameDiffMetrics(Enum):
     """Blame interaction metrics."""
-
-    @staticmethod
-    def to_str_list() -> tp.List[str]:
-        return [metric.value for metric in BlameDiffMetrics]
+    value: str  # pylint: disable=invalid-name
 
     CHURN = "churn"
     NUM_INTERACTIONS = "num_interactions"
@@ -273,6 +270,10 @@ class BlameDiffMetrics(Enum):
     AUTHOR_MAX = "author_max"
     AVG_TIME_MAX = "avg_time_max"
     YEAR = "year"
+
+    @staticmethod
+    def to_str_list() -> tp.List[str]:
+        return [metric.value for metric in BlameDiffMetrics]
 
 
 class BlameDiffMetricsDatabase(
