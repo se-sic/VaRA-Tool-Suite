@@ -22,6 +22,7 @@ COVERAGE='coverage run -p --rcfile=.coveragerc'
 $COVERAGE "$(which vara-buildsetup)" vara -c
 check_err
 
+#has been moved to a unit tests, has to remain until all test have been moved
 $COVERAGE $(which vara-gen-bbconfig)
 check_err
 
