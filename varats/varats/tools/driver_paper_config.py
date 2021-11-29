@@ -131,6 +131,7 @@ def _pc_set(paper_config: tp.Optional[Path]) -> None:
             raise AssertionError("Choice should always return a value")
         paper_config = Path(raw_pc_path)
 
+    paper_config = Path(paper_config)
     if not paper_config.is_absolute():
         paper_config = Path(
             vara_cfg()["paper_config"]["folder"].value
