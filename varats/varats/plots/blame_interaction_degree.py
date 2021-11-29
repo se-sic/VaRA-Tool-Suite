@@ -453,68 +453,63 @@ def _calc_fractions(
     base_fraction_map = FractionMap()
     inter_fraction_map = FractionMap()
 
-    for rev in unique_revisions:
-        for base_name in revision_to_base_names_mapping[rev]:
-            current_fraction = np.divide(
-                revision_to_dataframes_mapping[rev].loc[
-                    revision_to_dataframes_mapping[rev].base_lib == base_name
-                ].amount.sum(), revision_to_total_amount_mapping[rev]
-            )
-            base_fraction_map.add_fraction_to_lib(base_name, current_fraction)
+    def calc_fractions(
+        base_lib: bool, rev_lib_mapping: tp.Dict[FullCommitHash, tp.List[str]],
+        fraction_map: FractionMap
+    ) -> None:
+        lib: tp.Union[str, str] = "base_lib" if base_lib else "inter_lib"
 
-        # Add fraction value 0 to all libraries that are not yet present in a
-        # revision
-        absent_base_lib_names = set(all_base_lib_names) - set(
-            revision_to_base_names_mapping[rev]
-        )
+        for rev in unique_revisions:
+            for lib_name in rev_lib_mapping[rev]:
+                current_fraction = np.divide(
+                    revision_to_dataframes_mapping[rev].loc[
+                        revision_to_dataframes_mapping[rev][lib] == lib_name
+                    ].amount.sum(), revision_to_total_amount_mapping[rev]
+                )
+                fraction_map.add_fraction_to_lib(lib_name, current_fraction)
 
-        for base_name in absent_base_lib_names:
-            base_fraction_map.add_fraction_to_lib(base_name, 0)
+            # Add fraction value 0 to all libraries that are not yet present
+            # in a revision
+            all_lib_names: tp.List[
+                str] = all_base_lib_names if base_lib else all_inter_lib_names
+            absent_lib_names = set(all_lib_names) - set(rev_lib_mapping[rev])
 
-        for inter_name in revision_to_inter_names_mapping[rev]:
-            current_fraction = np.divide(
-                revision_to_dataframes_mapping[rev].loc[
-                    revision_to_dataframes_mapping[rev].inter_lib == inter_name
-                ].amount.sum(), revision_to_total_amount_mapping[rev]
-            )
-            inter_fraction_map.add_fraction_to_lib(inter_name, current_fraction)
+            for lib_name in absent_lib_names:
+                fraction_map.add_fraction_to_lib(lib_name, 0)
 
-        absent_inter_lib_names = set(all_inter_lib_names) - set(
-            revision_to_inter_names_mapping[rev]
-        )
-        for inter_name in absent_inter_lib_names:
-            inter_fraction_map.add_fraction_to_lib(inter_name, 0)
+    calc_fractions(True, revision_to_base_names_mapping, base_fraction_map)
+    calc_fractions(False, revision_to_inter_names_mapping, inter_fraction_map)
 
     return base_fraction_map, inter_fraction_map
 
 
 def _gen_fraction_overview_legend(
     legends_axis: tp.Any, handles: tp.Any, legend_title_suffix: str,
-    legend_items: tp.List[str], plot_cfg: tp.Dict[str, tp.Any]
+    legend_items: tp.List[str], plot_config: PlotConfig
 ) -> None:
     legend = legends_axis.legend(
         handles=handles,
-        title=f'{plot_cfg["legend_title"]} | {legend_title_suffix}',
+        title=f'{plot_config.legend_title()} | {legend_title_suffix}',
         labels=legend_items,
         loc='upper left',
         prop={
-            'size': plot_cfg['legend_size'],
+            'size': plot_config.legend_size(),
             'family': 'monospace'
         }
     )
     plt.setp(
         legend.get_title(),
-        fontsize=plot_cfg['legend_size'],
+        fontsize=plot_config.font_size(2),
         family='monospace',
     )
     legends_axis.add_artist(legend)
-    legend.set_visible(plot_cfg['legend_visible'])
+    legend.set_visible(plot_config.show_legend(True))
 
 
 def _plot_fraction_overview(
     base_lib_fraction_map: FractionMap, inter_lib_fraction_map: FractionMap,
-    with_churn: bool, unique_revisions: tp.List[FullCommitHash],
-    plot_cfg: tp.Dict[str, tp.Any], plot_kwargs: tp.Dict[str, tp.Any]
+    unique_revisions: tp.List[FullCommitHash], plot_kwargs: tp.Any,
+    plot_config: PlotConfig
 ) -> None:
     fig = plt.figure()
     grid_spec = fig.add_gridspec(3, 1)
@@ -522,20 +517,19 @@ def _plot_fraction_overview(
     out_axis.get_xaxis().set_visible(False)
     in_axis = fig.add_subplot(grid_spec[1, :])
 
-    if with_churn:
+    if plot_kwargs["show_churn"]:
         in_axis.get_xaxis().set_visible(False)
         churn_axis = fig.add_subplot(grid_spec[-1, :], sharex=out_axis)
         x_axis = churn_axis
     else:
         x_axis = in_axis
 
+    project_name: str = plot_kwargs["case_study"].project_name
     fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
-    fig.suptitle(
-        str(plot_cfg['fig_title']) + f' - Project {plot_kwargs["project"]}',
-        fontsize=8
-    )
+    fig_title_default = f"Fraction overview - Project {project_name}"
+    fig.suptitle(plot_config.fig_title(fig_title_default))
 
-    colormap = plot_cfg['color_map'](
+    colormap = cm.get_cmap(plot_kwargs['colormap'].value)(
         np.linspace(
             0, 1,
             max(
@@ -548,66 +542,78 @@ def _plot_fraction_overview(
     outgoing_plot_lines = []
     ingoing_plot_lines = []
 
+    unique_rev_strings: tp.List[str] = [
+        rev.short_hash for rev in unique_revisions
+    ]
+
     outgoing_plot_lines += out_axis.stackplot(
-        unique_revisions,
+        unique_rev_strings,
         base_lib_fraction_map.get_all_fraction_lists(),
-        linewidth=plot_cfg['linewidth'],
+        edgecolor=plot_kwargs['edge_color'],
         colors=colormap,
-        edgecolor=plot_cfg['edgecolor'],
+        linewidth=plot_config.line_width(),
         alpha=0.7
     )
 
     # Setup outgoing interactions legend
     _gen_fraction_overview_legend(
         out_axis, outgoing_plot_lines, "Outgoing interactions",
-        base_lib_fraction_map.get_lib_names(), plot_cfg
+        base_lib_fraction_map.get_lib_names(), plot_config
     )
 
     ingoing_plot_lines += in_axis.stackplot(
-        unique_revisions,
+        unique_rev_strings,
         inter_lib_fraction_map.get_all_fraction_lists(),
-        linewidth=plot_cfg['linewidth'],
+        edgecolor=plot_kwargs['edge_color'],
         colors=colormap,
-        edgecolor=plot_cfg['edgecolor'],
+        linewidth=plot_config.line_width(),
         alpha=0.7
     )
 
     # Setup ingoing interactions legend
     _gen_fraction_overview_legend(
         in_axis, ingoing_plot_lines, "Ingoing interactions",
-        inter_lib_fraction_map.get_lib_names(), plot_cfg
+        inter_lib_fraction_map.get_lib_names(), plot_config
     )
 
     # annotate CVEs
     with_cve = plot_kwargs.get("with_cve", False)
     with_bugs = plot_kwargs.get("with_bugs", False)
+    commit_map = get_commit_map(project_name)
     if with_cve or with_bugs:
         if "project" not in plot_kwargs:
             LOG.error("Need a project to annotate bug or CVE data.")
         else:
             project = get_project_cls_by_name(plot_kwargs["project"])
             if with_cve:
-                draw_cves(in_axis, project, unique_revisions, plot_cfg)
+                draw_cves(
+                    in_axis, project, unique_revisions,
+                    plot_kwargs["cve_line_width"], plot_kwargs["cve_color"],
+                    plot_config.label_size(), plot_kwargs["vertical_alignment"]
+                )
             if with_bugs:
-                draw_bugs(in_axis, project, unique_revisions, plot_cfg)
+                draw_bugs(
+                    in_axis, project, unique_revisions,
+                    plot_kwargs["bug_line_width"], plot_kwargs["bug_color"],
+                    plot_config.label_size(), plot_kwargs["vertical_alignment"]
+                )
 
     # draw churn subplot
-    if with_churn:
+    if plot_kwargs["show_churn"]:
         draw_code_churn_for_revisions(
-            churn_axis, plot_kwargs['project'], plot_kwargs['get_cmap'](),
-            unique_revisions
+            churn_axis, project_name, commit_map, unique_revisions
         )
 
     # Format labels of axes
     plt.setp(
         x_axis.get_xticklabels(),
-        fontsize=plot_cfg['xtick_size'],
+        fontsize=plot_config.x_tick_size(),
         fontfamily='monospace',
         rotation=270
     )
 
     axes = [out_axis, in_axis]
-    if with_churn:
+    if plot_kwargs["show_churn"]:
         axes.append(churn_axis)
 
     for axis in axes:
@@ -867,16 +873,9 @@ def _build_graphviz_edges(
     df: pd.DataFrame,
     graph: Digraph,
     show_edge_weight: bool,
-    commit_map: CommitMap,
     edge_weight_threshold: tp.Optional[EdgeWeightThreshold] = None,
-    show_only_interactions_of_commit: tp.Optional[ShortCommitHash] = None
+    only_commit: tp.Optional[FullCommitHash] = None
 ) -> LibraryToHashesMapping:
-
-    completed_hash: tp.Optional[FullCommitHash] = None
-    if show_only_interactions_of_commit:
-        completed_hash = commit_map.convert_to_full_or_warn(
-            show_only_interactions_of_commit
-        )
 
     base_lib_names = _get_distinct_base_lib_names(df)
     inter_lib_names = _get_distinct_inter_lib_names(df)
@@ -896,8 +895,8 @@ def _build_graphviz_edges(
 
         # Skip edges that do not connect with the specified
         # ``show_only_interactions_of_commit`` node.
-        if completed_hash and (
-            completed_hash.hash not in base_inter_hash_tuple
+        if only_commit is not None and (
+            only_commit.hash not in base_inter_hash_tuple
         ):
             continue
 
@@ -934,9 +933,9 @@ def _build_graphviz_edges(
 
 def _build_graphviz_fig(
     df: pd.DataFrame, revision: FullCommitHash, show_edge_weight: bool,
-    shown_revision_length: int, commit_map: CommitMap,
+    shown_revision_length: int,
     edge_weight_threshold: tp.Optional[EdgeWeightThreshold], layout_engine: str,
-    show_only_interactions_of_commit: tp.Optional[ShortCommitHash]
+    only_commit: tp.Optional[FullCommitHash]
 ) -> Digraph:
     graph = Digraph(name="Digraph", strict=True, engine=layout_engine)
     graph.attr(label=f"Revision: {revision}")
@@ -948,8 +947,7 @@ def _build_graphviz_fig(
         graph.attr(nodesep="1")
 
     lib_to_hashes_mapping = _build_graphviz_edges(
-        df, graph, show_edge_weight, commit_map, edge_weight_threshold,
-        show_only_interactions_of_commit
+        df, graph, show_edge_weight, edge_weight_threshold, only_commit
     )
 
     for lib_name, c_hash_list in lib_to_hashes_mapping.items():
@@ -1056,17 +1054,24 @@ class BlameLibraryInteraction(Plot, plot_name=None):
 
         df.sort_values(by=['time_id'], inplace=True)
         df.reset_index(inplace=True)
-        rev = commit_map.convert_to_full_or_warn(self.plot_kwargs['revision'])
 
-        dataframe = df.loc[
-            df["revision"].apply(commit_map.convert_to_full_or_warn) == rev]
+        dataframe = df.loc[df["revision"].apply(
+            commit_map.convert_to_full_or_warn
+        ) == self.plot_kwargs['revision']]
+
+        only_commit = self.plot_kwargs["show_only_commit"]
+
+        if only_commit is not None:
+            only_commit = commit_map.convert_to_full_or_warn(
+                ShortCommitHash(only_commit)
+            )
 
         fig = _build_graphviz_fig(
-            dataframe, rev, self.plot_kwargs["show_edge_weight"],
-            self.plot_kwargs["revision_length"], commit_map,
+            dataframe, self.plot_kwargs['revision'],
+            self.plot_kwargs["show_edge_weight"],
+            self.plot_kwargs["revision_length"],
             self.plot_kwargs["edge_weight_threshold"],
-            self.plot_kwargs["layout_engine"],
-            self.plot_kwargs["show_only_commit"]
+            self.plot_kwargs["layout_engine"], only_commit
         )
         return fig
 
@@ -1170,27 +1175,7 @@ class BlameDegree(Plot, plot_name=None):
             self.plot_kwargs, self.plot_config
         )
 
-    def _fraction_overview_plot(
-        self,
-        view_mode: bool,
-        degree_type: DegreeType,
-        extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None,
-        with_churn: bool = True
-    ) -> None:
-        plot_cfg = {
-            'linewidth': 1 if view_mode else 0.25,
-            'legend_size': 8 if view_mode else 2,
-            'xtick_size': 10 if view_mode else 2,
-            'lable_modif': lambda x: x,
-            'legend_title': 'MISSING legend_title',
-            'legend_visible': True,
-            'fig_title': 'MISSING figure title',
-            'edgecolor': 'black',
-            'color_map': cm.get_cmap('tab10')
-        }
-        if extra_plot_cfg is not None:
-            plot_cfg.update(extra_plot_cfg)
-
+    def _fraction_overview_plot(self, degree_type: DegreeType) -> None:
         style.use(self.plot_config.style())
 
         df = self._get_degree_data()
@@ -1200,15 +1185,22 @@ class BlameDegree(Plot, plot_name=None):
         all_base_lib_names = _get_distinct_base_lib_names(df)
         all_inter_lib_names = _get_distinct_inter_lib_names(df)
         revision_df = pd.DataFrame(df["revision"])
-        commit_map: CommitMap = self.plot_kwargs['get_cmap']()
+
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        project_name: str = case_study.project_name
+        commit_map: CommitMap = get_commit_map(project_name)
         unique_revisions = _get_unique_revisions(revision_df, commit_map)
-        grouped_df: pd.DataFrame = df.groupby(['revision'])
+
+        grouped_df = df.copy()
+        grouped_df['revision'] = grouped_df.revision.astype('str')
+        grouped_df = grouped_df.groupby(['revision'])
+
         revision_to_dataframes_mapping: tp.Dict[FullCommitHash,
                                                 pd.DataFrame] = {}
 
         for revision in unique_revisions:
             revision_to_dataframes_mapping[revision] = grouped_df.get_group(
-                revision.hash
+                revision.short_hash
             )
 
         revision_to_total_amount_mapping: tp.Dict[FullCommitHash, int] = {}
@@ -1238,8 +1230,8 @@ class BlameDegree(Plot, plot_name=None):
         )
 
         _plot_fraction_overview(
-            base_lib_fraction_map, inter_lib_fraction_map, with_churn,
-            unique_revisions, plot_cfg, self.plot_kwargs
+            base_lib_fraction_map, inter_lib_fraction_map, unique_revisions,
+            self.plot_kwargs, self.plot_config
         )
 
     def _multi_lib_interaction_sankey_plot(self, view_mode: bool) -> go.Figure:
@@ -1253,11 +1245,10 @@ class BlameDegree(Plot, plot_name=None):
         commit_map: CommitMap = get_commit_map(
             self.plot_kwargs["case_study"].project_name
         )
-        rev = commit_map.convert_to_full_or_warn(self.plot_kwargs['revision'])
 
         df = interaction_plot_df.loc[interaction_plot_df["revision"].apply(
             commit_map.convert_to_full_or_warn
-        ) == rev]
+        ) == self.plot_kwargs['revision']]
 
         lib_names_dict = _get_separated_lib_names_dict(df)
         lib_cm_mapping, lib_shades_mapping = _build_sankey_color_mappings(
@@ -1268,7 +1259,8 @@ class BlameDegree(Plot, plot_name=None):
             df, lib_names_dict, lib_cm_mapping, lib_shades_mapping
         )
         sankey_figure = _build_sankey_figure(
-            rev, view_mode, plotting_data_dict, lib_names_dict, self.plot_config
+            self.plot_kwargs['revision'], view_mode, plotting_data_dict,
+            lib_names_dict, self.plot_config
         )
 
         return sankey_figure
@@ -1389,22 +1381,12 @@ class BlameInteractionDegreeGenerator(
     """Generates interaction-degree plot(s) for the selected case study(ies)."""
 
     def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
         return [
             BlameInteractionDegree(
-                self.plot_config,
-                report_type=self.plot_kwargs["report_type"],
-                case_study=cs,
-                show_churn=self.plot_kwargs["show_churn"],
-                edge_color=self.plot_kwargs["edge_color"],
-                colormap=self.plot_kwargs["colormap"],
-                show_cve=self.plot_kwargs["show_cve"],
-                show_bugs=self.plot_kwargs["show_bugs"],
-                cve_line_width=self.plot_kwargs["cve_line_width"],
-                bug_line_width=self.plot_kwargs["bug_line_width"],
-                cve_color=self.plot_kwargs["cve_color"],
-                bug_color=self.plot_kwargs["bug_color"],
-                vertical_alignment=self.plot_kwargs["vertical_alignment"]
-            ) for cs in self.plot_kwargs["case_study"]
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
         ]
 
 
@@ -1470,15 +1452,7 @@ class BlameInteractionFractionOverview(
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        extra_plot_cfg = {
-            'legend_title': 'Fraction ratio',
-            'fig_title': 'Distribution of fractions'
-        }
-        # TODO (se-passau/VaRA#545): make params configurable in user call
-        #  with plot config rework
-        self._fraction_overview_plot(
-            view_mode, DegreeType.INTERACTION, extra_plot_cfg
-        )
+        self._fraction_overview_plot(DegreeType.INTERACTION)
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -1486,6 +1460,28 @@ class BlameInteractionFractionOverview(
         return self._calc_missing_revisions(
             DegreeType.INTERACTION, boundary_gradient
         )
+
+
+class BlameInteractionFractionOverviewGenerator(
+    PlotGenerator,
+    generator_name="fraction-overview-plot",
+    options=[
+        REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY, OPTIONAL_SHOW_CHURN,
+        OPTIONAL_EDGE_COLOR, OPTIONAL_COLORMAP, OPTIONAL_SHOW_CVE,
+        OPTIONAL_SHOW_BUGS, OPTIONAL_CVE_LINE_WIDTH, OPTIONAL_BUG_LINE_WIDTH,
+        OPTIONAL_CVE_COLOR, OPTIONAL_BUG_COLOR, OPTIONAL_VERTICAL_ALIGNMENT
+    ]
+):
+    """Generates fraction-overview plot(s) for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
+        return [
+            BlameInteractionFractionOverview(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
+        ]
 
 
 class BlameLibraryInteractions(
@@ -1521,15 +1517,12 @@ class BlameLibraryInteractions(
 
     def save(self, plot_dir: Path, filetype: str = 'png') -> None:
         project_name: str = self.plot_kwargs["case_study"].project_name
-        commit_map: CommitMap = get_commit_map(project_name)
 
         try:
             self.plot(False)
             _save_figure(
                 self.__figure,
-                commit_map.convert_to_full_or_warn(
-                    self.plot_kwargs["revision"]
-                ), project_name, PlotTypes.SANKEY,
+                self.plot_kwargs["revision"], project_name, PlotTypes.SANKEY,
                 self.plot_file_name(filetype), plot_dir, filetype
             )
         except PlotDataEmpty:
@@ -1553,14 +1546,13 @@ class SankeyLibraryInteractionsGeneratorRev(
     study."""
 
     def generate(self) -> tp.List[Plot]:
-        return [
-            BlameLibraryInteractions(
-                self.plot_config,
-                report_type=self.plot_kwargs["report_type"],
-                case_study=self.plot_kwargs["case_study"],
-                revision=ShortCommitHash(self.plot_kwargs["revision"])
-            )
-        ]
+        c_map: CommitMap = get_commit_map(
+            self.plot_kwargs["case_study"].project_name
+        )
+        self.plot_kwargs["revision"] = c_map.convert_to_full_or_warn(
+            ShortCommitHash(self.plot_kwargs["revision"])
+        )
+        return [BlameLibraryInteractions(self.plot_config, **self.plot_kwargs)]
 
 
 class SankeyLibraryInteractionsGeneratorCS(
@@ -1571,13 +1563,15 @@ class SankeyLibraryInteractionsGeneratorCS(
     """Generates a sankey plot for every revision in every given case study."""
 
     def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
         return [
             BlameLibraryInteractions(
                 self.plot_config,
-                report_type=self.plot_kwargs["report_type"],
                 case_study=cs,
-                revision=rev
-            ) for cs in self.plot_kwargs["case_study"] for rev in cs.revisions
+                revision=rev,
+                **self.plot_kwargs
+            ) for cs in case_studies for rev in cs.revisions
         ]
 
 
@@ -1615,15 +1609,11 @@ class BlameCommitInteractionsGraphviz(
 
     def save(self, plot_dir: Path, filetype: str = 'png') -> None:
         project_name: str = self.plot_kwargs["case_study"].project_name
-        commit_map: CommitMap = get_commit_map(project_name)
 
         try:
             self.plot(False)
             _save_figure(
-                self.__figure,
-                commit_map.convert_to_full_or_warn(
-                    self.plot_kwargs["revision"]
-                ),
+                self.__figure, self.plot_kwargs["revision"],
                 self.plot_kwargs['case_study'].project_name, PlotTypes.GRAPHVIZ,
                 self.plot_file_name(filetype), plot_dir, filetype
             )
@@ -1652,22 +1642,15 @@ class GraphvizLibraryInteractionsGeneratorRev(
     study."""
 
     def generate(self) -> tp.List[Plot]:
+        c_map: CommitMap = get_commit_map(
+            self.plot_kwargs["case_study"].project_name
+        )
+        self.plot_kwargs["revision"] = c_map.convert_to_full_or_warn(
+            ShortCommitHash(self.plot_kwargs["revision"])
+        )
         return [
             BlameCommitInteractionsGraphviz(
-                self.plot_config,
-                report_type=self.plot_kwargs["report_type"],
-                case_study=self.plot_kwargs["case_study"],
-                revision=ShortCommitHash(self.plot_kwargs["revision"]),
-                show_interactions=self.plot_kwargs["show_interactions"],
-                show_diff=self.plot_kwargs["show_diff"],
-                show_edge_weight=self.plot_kwargs["show_edge_weight"],
-                edge_weight_threshold=self.plot_kwargs["edge_weight_threshold"],
-                revision_length=self.plot_kwargs["revision_length"],
-                layout_engine=self.plot_kwargs["layout_engine"],
-                show_only_commit=ShortCommitHash(
-                    self.plot_kwargs["show_only_commit"]
-                ) if self.plot_kwargs["show_only_commit"] is not None else
-                self.plot_kwargs["show_only_commit"]
+                self.plot_config, **self.plot_kwargs
             )
         ]
 
@@ -1686,23 +1669,15 @@ class GraphvizLibraryInteractionsGeneratorCS(
     """Generates a graphviz plot for every revision in the case study."""
 
     def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
         return [
             BlameCommitInteractionsGraphviz(
                 self.plot_config,
-                report_type=self.plot_kwargs["report_type"],
                 case_study=cs,
                 revision=rev,
-                show_interactions=self.plot_kwargs["show_interactions"],
-                show_diff=self.plot_kwargs["show_diff"],
-                show_edge_weight=self.plot_kwargs["show_edge_weight"],
-                edge_weight_threshold=self.plot_kwargs["edge_weight_threshold"],
-                revision_length=self.plot_kwargs["revision_length"],
-                layout_engine=self.plot_kwargs["layout_engine"],
-                show_only_commit=ShortCommitHash(
-                    self.plot_kwargs["show_only_commit"]
-                ) if self.plot_kwargs["show_only_commit"] is not None else
-                self.plot_kwargs["show_only_commit"]
-            ) for cs in self.plot_kwargs["case_study"] for rev in cs.revisions
+                **self.plot_kwargs
+            ) for cs in case_studies for rev in cs.revisions
         ]
 
 
@@ -1715,12 +1690,6 @@ class BlameAuthorDegree(BlameDegree, plot_name="b_author_degree"):
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        extra_plot_cfg = {
-            'legend_title': 'Author interaction degrees',
-            'fig_title': 'Author blame interactions'
-        }
-        # TODO (se-passau/VaRA#545): make params configurable in user call
-        #  with plot config rework
         self._degree_plot(DegreeType.AUTHOR)
 
     def calc_missing_revisions(
@@ -1729,6 +1698,36 @@ class BlameAuthorDegree(BlameDegree, plot_name="b_author_degree"):
         return self._calc_missing_revisions(
             DegreeType.AUTHOR, boundary_gradient
         )
+
+
+class BlameAuthorDegreeGenerator(
+    PlotGenerator,
+    generator_name="author-degree-plot",
+    options=[
+        REQUIRE_REPORT_TYPE,
+        REQUIRE_MULTI_CASE_STUDY,
+        OPTIONAL_SHOW_CHURN,
+        OPTIONAL_EDGE_COLOR,
+        OPTIONAL_COLORMAP,
+        OPTIONAL_SHOW_CVE,
+        OPTIONAL_SHOW_BUGS,
+        OPTIONAL_CVE_LINE_WIDTH,
+        OPTIONAL_BUG_LINE_WIDTH,
+        OPTIONAL_CVE_COLOR,
+        OPTIONAL_BUG_COLOR,
+        OPTIONAL_VERTICAL_ALIGNMENT,
+    ]
+):
+    """Generates author-degree plot(s) for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
+        return [
+            BlameAuthorDegree(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
+        ]
 
 
 class BlameMaxTimeDistribution(BlameDegree, plot_name="b_maxtime_distribution"):
@@ -1741,13 +1740,6 @@ class BlameMaxTimeDistribution(BlameDegree, plot_name="b_maxtime_distribution"):
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        extra_plot_cfg = {
-            'legend_visible': False,
-            'fig_title': 'Max time distribution',
-            'edgecolor': None,
-        }
-        # TODO (se-passau/VaRA#545): make params configurable in user call
-        #  with plot config rework
         self._degree_plot(DegreeType.MAX_TIME)
 
     def calc_missing_revisions(
@@ -1756,6 +1748,29 @@ class BlameMaxTimeDistribution(BlameDegree, plot_name="b_maxtime_distribution"):
         return self._calc_missing_revisions(
             DegreeType.MAX_TIME, boundary_gradient
         )
+
+
+class BlameMaxTimeDistributionGenerator(
+    PlotGenerator,
+    generator_name="max-time-distribution-plot",
+    options=[
+        REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY, OPTIONAL_SHOW_CHURN,
+        OPTIONAL_EDGE_COLOR, OPTIONAL_COLORMAP, OPTIONAL_SHOW_CVE,
+        OPTIONAL_SHOW_BUGS, OPTIONAL_CVE_LINE_WIDTH, OPTIONAL_BUG_LINE_WIDTH,
+        OPTIONAL_CVE_COLOR, OPTIONAL_BUG_COLOR, OPTIONAL_VERTICAL_ALIGNMENT
+    ]
+):
+    """Generates max-time-distribution plot(s) for the selected case
+    study(ies)."""
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
+        return [
+            BlameMaxTimeDistribution(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
+        ]
 
 
 class BlameAvgTimeDistribution(BlameDegree, plot_name="b_avgtime_distribution"):
@@ -1768,13 +1783,6 @@ class BlameAvgTimeDistribution(BlameDegree, plot_name="b_avgtime_distribution"):
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        extra_plot_cfg = {
-            'legend_visible': False,
-            'fig_title': 'Average time distribution',
-            'edgecolor': None,
-        }
-        # TODO (se-passau/VaRA#545): make params configurable in user call
-        #  with plot config rework
         self._degree_plot(DegreeType.AVG_TIME)
 
     def calc_missing_revisions(
@@ -1783,3 +1791,26 @@ class BlameAvgTimeDistribution(BlameDegree, plot_name="b_avgtime_distribution"):
         return self._calc_missing_revisions(
             DegreeType.AVG_TIME, boundary_gradient
         )
+
+
+class BlameAvgTimeDistributionGenerator(
+    PlotGenerator,
+    generator_name="avg-time-distribution-plot",
+    options=[
+        REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY, OPTIONAL_SHOW_CHURN,
+        OPTIONAL_EDGE_COLOR, OPTIONAL_COLORMAP, OPTIONAL_SHOW_CVE,
+        OPTIONAL_SHOW_BUGS, OPTIONAL_CVE_LINE_WIDTH, OPTIONAL_BUG_LINE_WIDTH,
+        OPTIONAL_CVE_COLOR, OPTIONAL_BUG_COLOR, OPTIONAL_VERTICAL_ALIGNMENT
+    ]
+):
+    """Generates avg-time-distribution plot(s) for the selected case
+    study(ies)."""
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
+        return [
+            BlameAvgTimeDistribution(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
+        ]

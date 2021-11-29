@@ -273,8 +273,4 @@ class PaperConfigOverviewGenerator(
     """Generates a single pc-overview plot for the current paper config."""
 
     def generate(self) -> tp.List[Plot]:
-        return [
-            PaperConfigOverviewPlot(
-                self.plot_config, report_type=self.plot_kwargs["report_type"]
-            )
-        ]
+        return [PaperConfigOverviewPlot(self.plot_config, **self.plot_kwargs)]
