@@ -4,66 +4,24 @@ Driver module for `vara-config`.
 This module handles command-line parsing and maps the commands to tool suite
 internal functionality.
 """
-import argparse
 import copy
 import textwrap
 import typing as tp
 
+import click
 import yaml
 from benchbuild.utils.settings import ConfigDumper, Configuration
 
 from varats.utils.settings import vara_cfg, save_config
 
 
+@click.group("vara-config")
 def main() -> None:
     """
     Main function for managing the VaRA-TS config.
 
     `vara-config`
     """
-    parser = argparse.ArgumentParser("vara-config")
-
-    sub_parsers = parser.add_subparsers(help="Subcommand", dest="subcommand")
-
-    # vara-conf set
-    set_parser = sub_parsers.add_parser(
-        'set', help="Set one or more config options."
-    )
-    set_parser.add_argument(
-        "config_values",
-        metavar="KEY=VALUE",
-        nargs=argparse.REMAINDER,
-        help=(
-            "Key-Value pairs of configuration options and values."
-            "Specify the config options like paths, e.g., paper_config/folder."
-            "Do not put spaces before or after the '=' sign; if a value "
-            "contains spaces, you should define it with double quotes: "
-            'foo="bar baz".'
-        )
-    )
-
-    # vara-art show
-    show_parser = sub_parsers.add_parser(
-        'show', help="Show values of config options."
-    )
-    show_parser.add_argument(
-        "config_options",
-        nargs="*",
-        help="The config options to show. You can also show whole sub-configs."
-        "Show the complete config if no options are given.",
-        type=str
-    )
-
-    args = {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
-
-    if 'subcommand' not in args:
-        parser.print_help()
-        return
-
-    if args['subcommand'] == 'set':
-        __config_set(args)
-    elif args['subcommand'] == 'show':
-        __config_show(args)
 
 
 def __get_config_for_path(option_path: tp.List[str]) -> Configuration:
@@ -94,11 +52,20 @@ def __dump_config_to_string(config: Configuration) -> str:
     )
 
 
-def __config_set(args: tp.Dict[str, tp.Any]) -> None:
-    if "config_values" in args.keys():
+@main.command("set")
+@click.argument("config_values", nargs=-1, metavar="KEY=VALUE")
+def __config_set(config_values: tp.List[str]) -> None:
+    """
+    KEY=VALUE Key-Value pairs of configuration options and values.
+
+    Specify the config options like paths, e.g., paper_config/folder. Do not put
+    spaces before or after the '=' sign; if a value contains spaces, you should
+    define it with double quotes: foo="bar baz".
+    """
+    if config_values:
         config_values = {
             e[0].replace('-', '_'): e[1]
-            for e in [arg.split("=") for arg in args["config_values"]]
+            for e in [arg.split("=") for arg in config_values]
         }
     else:
         config_values = {}
@@ -111,11 +78,19 @@ def __config_set(args: tp.Dict[str, tp.Any]) -> None:
     save_config()
 
 
-def __config_show(args: tp.Dict[str, tp.Any]) -> None:
-    if not "config_options" in args or len(args["config_options"]) == 0:
+@main.command("show")
+@click.argument("config_options", nargs=-1)
+def __config_show(config_options: tp.Optional[tp.List[str]]) -> None:
+    """
+    \b CONFIG_OPTIONS The config options to show.
+
+    You can also show whole sub-configs. Show the complete config if no options
+    are given.
+    """
+    if not config_options:
         print(__dump_config_to_string(vara_cfg()))
     else:
-        options = args["config_options"]
+        options = config_options
         for option in options:
             value = __dump_config_to_string(
                 __get_config_for_path(option.split("/"))
