@@ -56,4 +56,4 @@ This should generate the VaRA-TS config file as ``.varats.yaml`` as well as a Be
 
 You are now ready to :ref:`run your first experiment <Running Experiments>`.
 
-.. hint:: You should also take a look at the other :ref:`tools <Tools Overview>`, which are offered by varats. 
+.. hint:: You should also take a look at the other :ref:`tools <Tools Overview>`, which are offered by varats.
