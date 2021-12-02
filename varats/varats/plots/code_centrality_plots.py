@@ -16,6 +16,7 @@ from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
 from varats.plot.plot import Plot, PlotDataEmpty
+from varats.plot.plots import PlotGenerator, REQUIRE_CASE_STUDY, PlotConfig
 from varats.project.project_util import get_local_project_gits
 from varats.utils.git_util import (
     CommitRepoPair,
@@ -29,18 +30,16 @@ from varats.utils.git_util import (
 LOG = logging.Logger(__name__)
 
 
-class CodeCentralityPlot(Plot):
+class CodeCentralityPlot(Plot, plot_name='code_centrality'):
     """Plot code centrality."""
 
-    NAME = 'code_centrality'
-
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        case_study = self.plot_kwargs["plot_case_study"]
+        case_study = self.plot_kwargs["case_study"]
 
-        style.use(self.style)
+        style.use(self.plot_config.style())
         fig, axes = plt.subplots(1, 1, sharey="all")
         fig.subplots_adjust(hspace=0.5)
 
@@ -98,3 +97,14 @@ class CodeCentralityPlot(Plot):
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
+
+
+class CodeCentralityPlotGenerator(
+    PlotGenerator,
+    generator_name="code-centrality",
+    options=[REQUIRE_CASE_STUDY]
+):
+    """Generates quantile plot for a code centrality measure for commits."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [CodeCentralityPlot(self.plot_config, **self.plot_kwargs)]

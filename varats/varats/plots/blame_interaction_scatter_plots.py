@@ -14,6 +14,7 @@ from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
 from varats.plot.plot import Plot, PlotDataEmpty
+from varats.plot.plots import PlotConfig, PlotGenerator, REQUIRE_CASE_STUDY
 from varats.plots.scatter_plot_utils import multivariate_grid
 from varats.project.project_util import get_local_project_gits
 from varats.utils.git_util import (
@@ -58,20 +59,18 @@ def apply_tukeys_fence(
                     (data[column] <= quartile_3 + k * iqr)]
 
 
-class CentralCodeScatterPlot(Plot):
+class CentralCodeScatterPlot(Plot, plot_name='central_code_scatter'):
     """
     Plot commit node degrees vs.
 
     commit size.
     """
 
-    NAME = 'central_code_scatter'
-
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        case_study = self.plot_kwargs["plot_case_study"]
+        case_study = self.plot_kwargs["case_study"]
         project_name = case_study.project_name
         revision = newest_processed_revision_for_case_study(
             case_study, BlameReport
@@ -125,46 +124,34 @@ class CentralCodeScatterPlot(Plot):
             data["Node Degree"].quantile(0.80), color="#777777", linewidth=3
         )
 
-        # highlight_data = data[data["commit_hash"] == FullCommitHash(
-        #     "348e6946c187eb68839e71a03101d75b5865a389"
-        # )]
-        #
-        # ax.scatter(
-        #     x=highlight_data["Commit Size"],
-        #     y=highlight_data["Node Degree"],
-        #     color="red",
-        #     marker="x",
-        #     s=200,
-        #     linewidth=5,
-        #     zorder=2.01  # draw above lines
-        # )
-        # ax.annotate(
-        #     "348e694",
-        #     xy=(highlight_data["Commit Size"], highlight_data["Node Degree"]),
-        #     xycoords="data",
-        #     xytext=(0.2, 0.9),
-        #     textcoords='axes fraction',
-        #     size=20,
-        #     arrowprops=dict(arrowstyle="simple", shrinkB=10, facecolor="black")
-        # )
-
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
 
 
-class AuthorInteractionScatterPlot(Plot):
+class CentralCodeScatterPlotGenerator(
+    PlotGenerator,
+    generator_name="central-code-scatter",
+    options=[REQUIRE_CASE_STUDY]
+):
+    """Generates scatter plot comparing node degree with commit size."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [CentralCodeScatterPlot(self.plot_config, **self.plot_kwargs)]
+
+
+class AuthorInteractionScatterPlot(
+    Plot, plot_name='author_interaction_scatter'
+):
     """
     Plot author node degrees vs.
 
     number of (surviving) commits.
     """
 
-    NAME = 'author_interaction_scatter'
-
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         case_study = self.plot_kwargs["plot_case_study"]
@@ -201,3 +188,17 @@ class AuthorInteractionScatterPlot(Plot):
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
+
+
+class AuthorInteractionScatterPlotGenerator(
+    PlotGenerator,
+    generator_name="author-interaction-scatter",
+    options=[REQUIRE_CASE_STUDY]
+):
+    """Generates scatter plot comparing author node degree with number of
+    commits by that author."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            AuthorInteractionScatterPlot(self.plot_config, **self.plot_kwargs)
+        ]

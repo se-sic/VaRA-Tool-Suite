@@ -18,12 +18,8 @@ from varats.paper_mgmt.case_study import (
 )
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.project.project_util import get_local_project_git
-from varats.table.table import (
-    Table,
-    wrap_table_in_document,
-    TableFormat,
-    TableDataEmpty,
-)
+from varats.table.table import Table, wrap_table_in_document, TableDataEmpty
+from varats.table.tables import TableFormat
 from varats.utils.git_util import FullCommitHash
 
 

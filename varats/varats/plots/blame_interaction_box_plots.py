@@ -18,6 +18,7 @@ from varats.paper_mgmt.case_study import (
 )
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot
+from varats.plot.plots import PlotGenerator, PlotConfig
 from varats.project.project_util import get_local_project_gits
 from varats.utils.git_util import (
     ChurnConfig,
@@ -29,13 +30,11 @@ from varats.utils.git_util import (
 )
 
 
-class CommitAuthorInteractionGraphViolinPlot(Plot):
+class CommitAuthorInteractionGraphViolinPlot(Plot, plot_name='caig_box'):
     """Box plot of commit-author interaction commit node degrees."""
 
-    NAME = 'caig_box'
-
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         case_studies = get_loaded_paper_config().get_all_case_studies()
@@ -104,13 +103,27 @@ class CommitAuthorInteractionGraphViolinPlot(Plot):
         raise NotImplementedError
 
 
-class AuthorBlameVsFileDegreesViolinPlot(Plot):
+class CAIGViolinPlotGenerator(
+    PlotGenerator, generator_name="caig-box", options=[]
+):
+    """Generates a violin plot showing the distribution of interacting authors
+    for each case study."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            CommitAuthorInteractionGraphViolinPlot(
+                self.plot_config, **self.plot_kwargs
+            )
+        ]
+
+
+class AuthorBlameVsFileDegreesViolinPlot(
+    Plot, plot_name='aig_file_vs_blame_authors_box'
+):
     """Box plot of commit-author interaction commit node degrees."""
 
-    NAME = 'aig_file_vs_blame_authors_box'
-
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         case_studies = get_loaded_paper_config().get_all_case_studies()
@@ -188,13 +201,29 @@ class AuthorBlameVsFileDegreesViolinPlot(Plot):
         raise NotImplementedError
 
 
-class CommitAuthorInteractionGraphGrid(Plot):
+class AuthorBlameVsFileDegreesViolinViolinPlotGenerator(
+    PlotGenerator, generator_name="aig-file-vs-blame-authors-box", options=[]
+):
+    """
+    Generates a violin plot showing how many additional author interactions can
+    be found using commit interactions vs.
+
+    file-based interactions.
+    """
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            AuthorBlameVsFileDegreesViolinPlot(
+                self.plot_config, **self.plot_kwargs
+            )
+        ]
+
+
+class CommitAuthorInteractionGraphGrid(Plot, plot_name='caig_grid'):
     """Box plot of commit-author interaction commit node degrees."""
 
-    NAME = 'caig_grid'
-
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         case_studies = get_loaded_paper_config().get_all_case_studies()
@@ -293,3 +322,17 @@ class CommitAuthorInteractionGraphGrid(Plot):
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
+
+
+class CAIGGridPlotGenerator(
+    PlotGenerator, generator_name="caig-grid", options=[]
+):
+    """Generates a grid plot comparing the number of authors interacting with a
+    commit with other metrics associated with that commit."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            CommitAuthorInteractionGraphGrid(
+                self.plot_config, **self.plot_kwargs
+            )
+        ]

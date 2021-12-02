@@ -16,7 +16,6 @@ from varats.data.reports.blame_report import (
     BlameReportDiff,
 )
 from varats.jupyterhelper.file import load_blame_report
-from varats.plot.plot import PlotDataEmpty
 from varats.project.project_util import (
     get_local_project_git_path,
     get_local_project_gits,
@@ -436,7 +435,7 @@ def create_blame_interaction_graph(
         project_name, BlameReport, file_name_filter
     )
     if len(report_files) == 0:
-        raise PlotDataEmpty(f"Found no BlameReport for project {project_name}")
+        raise LookupError(f"Found no BlameReport for project {project_name}")
     report = load_blame_report(report_files[0])
     return BlameInteractionGraph(project_name, report)
 

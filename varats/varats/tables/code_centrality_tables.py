@@ -15,12 +15,8 @@ from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
 from varats.project.project_util import get_local_project_gits
-from varats.table.table import (
-    Table,
-    wrap_table_in_document,
-    TableFormat,
-    TableDataEmpty,
-)
+from varats.table.table import Table, wrap_table_in_document, TableDataEmpty
+from varats.table.tables import TableFormat
 from varats.utils.git_util import (
     ChurnConfig,
     calc_commit_code_churn,

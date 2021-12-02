@@ -318,13 +318,7 @@ class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
         if "churn" in df:
             df.drop(df[df.churn == 0].index, inplace=True)
 
-        multivariate_grid(
-            x_col=var_x,
-            y_col=var_y,
-            hue='project',
-            data=df,
-            plot_config=self.plot_config
-        )
+        multivariate_grid(x_col=var_x, y_col=var_y, hue='project', data=df)
 
     def plot_file_name(self, filetype: str) -> str:
         """

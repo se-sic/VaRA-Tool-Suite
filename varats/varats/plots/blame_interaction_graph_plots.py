@@ -4,6 +4,7 @@ import typing as tp
 from datetime import datetime
 from pathlib import Path
 
+import click
 import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
@@ -22,7 +23,13 @@ from varats.mapping.commit_map import get_commit_map
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
-from varats.plot.plot import Plot, PlotArgMissing, PlotDataEmpty
+from varats.plot.plot import Plot, PlotDataEmpty
+from varats.plot.plots import (
+    PlotGenerator,
+    REQUIRE_CASE_STUDY,
+    REQUIRE_REVISION,
+    PlotConfig,
+)
 from varats.plots.chord_plot_utils import (
     make_chord_plot,
     make_arc_plot,
@@ -32,21 +39,21 @@ from varats.plots.chord_plot_utils import (
     ArcPlotEdgeInfo,
     ArcPlotNodeInfo,
 )
+from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
 from varats.utils.git_util import (
     CommitRepoPair,
     create_commit_lookup_helper,
     UNCOMMITTED_COMMIT_HASH,
     FullCommitHash,
+    ShortCommitHash,
 )
 
 
-class CommitInteractionGraphPlot(Plot):
+class CommitInteractionGraphPlot(Plot, plot_name='cig_plot'):
     """Creates a dot file for a commit interaction graph."""
 
-    NAME = 'cig_plot'
-
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         # Nothing to do here.
@@ -56,7 +63,7 @@ class CommitInteractionGraphPlot(Plot):
         self, path: tp.Optional[Path] = None, filetype: str = 'svg'
     ) -> None:
         project_name = self.plot_kwargs["project"]
-        revision = self.plot_kwargs.get("revision", None)
+        revision = self.plot_kwargs["revision"]
         cig = create_blame_interaction_graph(project_name, revision
                                             ).commit_interaction_graph()
         nx.set_node_attributes(
@@ -73,21 +80,30 @@ class CommitInteractionGraphPlot(Plot):
         raise NotImplementedError
 
 
-class CommitInteractionGraphChordPlot(Plot):
+class CommitInteractionGraphPlotGenerator(
+    PlotGenerator,
+    generator_name="cig-plot",
+    options=[REQUIRE_CASE_STUDY, REQUIRE_REVISION]
+):
+    """Plot a commit interaction graph."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            CommitInteractionGraphPlot(self.plot_config, **self.plot_kwargs)
+        ]
+
+
+class CommitInteractionGraphChordPlot(Plot, plot_name='cig_chord_plot'):
     """Chord plot for a commit interaction graph."""
 
-    NAME = 'cig_chord_plot'
-
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         project_name = self.plot_kwargs["project"]
         commit_map = get_commit_map(project_name)
 
-        revision_str = self.plot_kwargs.get("revision", None)
-        if not revision_str:
-            raise PlotArgMissing("'revision' was not specified.")
+        revision_str = self.plot_kwargs["revision"]
         revision = commit_map.convert_to_full_or_warn(
             ShortCommitHash(revision_str)
         )
@@ -103,6 +119,7 @@ class CommitInteractionGraphChordPlot(Plot):
             commit = commit_lookup(node)
             if not commit:
                 return False
+            # TODO: make filter configurable
             return datetime.utcfromtimestamp(commit.commit_time
                                             ) >= datetime(2015, 1, 1)
 
@@ -156,19 +173,30 @@ class CommitInteractionGraphChordPlot(Plot):
         raise NotImplementedError
 
 
-class CommitInteractionGraphArcPlot(Plot):
+class CIGChordPlotGenerator(
+    PlotGenerator,
+    generator_name="cig-chord-plot",
+    options=[REQUIRE_CASE_STUDY, REQUIRE_REVISION]
+):
+    """Generates a chord plot for a commit interaction graph."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            CommitInteractionGraphChordPlot(
+                self.plot_config, **self.plot_kwargs
+            )
+        ]
+
+
+class CommitInteractionGraphArcPlot(Plot, plot_name='cig_arc_plot'):
     """Arc plot for a commit interaction graph."""
 
-    NAME = 'cig_arc_plot'
-
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         project_name = self.plot_kwargs["project"]
-        revision = self.plot_kwargs.get("revision", None)
-        if not revision:
-            raise PlotArgMissing("'revision' was not specified.")
+        revision = self.plot_kwargs["revision"]
 
         commit_lookup = create_commit_lookup_helper(project_name)
 
@@ -236,7 +264,29 @@ class CommitInteractionGraphArcPlot(Plot):
         raise NotImplementedError
 
 
-class CommitInteractionGraphNodeDegreePlot(Plot):
+class CIGArcPlotGenerator(
+    PlotGenerator,
+    generator_name="cig-arc-plot",
+    options=[REQUIRE_CASE_STUDY, REQUIRE_REVISION]
+):
+    """Generates an arc plot for a commit interaction graph."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            CommitInteractionGraphArcPlot(self.plot_config, **self.plot_kwargs)
+        ]
+
+
+OPTIONAL_SORT_METHOD: CLIOptionTy = make_cli_option(
+    "--sort-by",
+    type=click.Choice(["degree", "time"]),
+    default="degree",
+    required=False,
+    help="Sort method for commit interaction graph nodes."
+)
+
+
+class CommitInteractionGraphNodeDegreePlot(Plot, plot_name='cig_node_degrees'):
     """
     Plot node degrees of a commit interaction graph.
 
@@ -244,17 +294,14 @@ class CommitInteractionGraphNodeDegreePlot(Plot):
       - sort: criteria to sort the revisions [degree, time]
     """
 
-    NAME = 'cig_node_degrees'
-
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        sort = self.plot_kwargs.get("sort", "degree")
-
+        sort = self.plot_kwargs["sort"]
         case_study = self.plot_kwargs["plot_case_study"]
 
-        style.use(self.style)
+        style.use(self.plot_config.style())
         fig, axes = plt.subplots(1, 1, sharey="all")
         fig.subplots_adjust(hspace=0.5)
 
@@ -329,18 +376,31 @@ class CommitInteractionGraphNodeDegreePlot(Plot):
         raise NotImplementedError
 
 
-class AuthorInteractionGraphNodeDegreePlot(Plot):
+class CIGNodeDegreePlotGenerator(
+    PlotGenerator,
+    generator_name="cig-node-degrees",
+    options=[REQUIRE_CASE_STUDY, OPTIONAL_SORT_METHOD]
+):
+    """Generates a plot of node degrees of a commit interaction graph."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            CommitInteractionGraphNodeDegreePlot(
+                self.plot_config, **self.plot_kwargs
+            )
+        ]
+
+
+class AuthorInteractionGraphNodeDegreePlot(Plot, plot_name='aig_node_degrees'):
     """Plot node degrees of a author interaction graph."""
 
-    NAME = 'aig_node_degrees'
-
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         case_study = self.plot_kwargs["plot_case_study"]
 
-        style.use(self.style)
+        style.use(self.plot_config.style())
         fig, axes = plt.subplots(1, 1, sharey="all")
         fig.subplots_adjust(hspace=0.5)
 
@@ -393,18 +453,33 @@ class AuthorInteractionGraphNodeDegreePlot(Plot):
         raise NotImplementedError
 
 
-class CommitAuthorInteractionGraphNodeDegreePlot(Plot):
+class AIGNodeDegreePlotGenerator(
+    PlotGenerator,
+    generator_name="aig-node-degrees",
+    options=[REQUIRE_CASE_STUDY]
+):
+    """Generates a plot of node degrees of a author interaction graph."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            AuthorInteractionGraphNodeDegreePlot(
+                self.plot_config, **self.plot_kwargs
+            )
+        ]
+
+
+class CommitAuthorInteractionGraphNodeDegreePlot(
+    Plot, plot_name='caig_node_degrees'
+):
     """Plot node degrees of commits in a commit-author interaction graph."""
 
-    NAME = 'caig_node_degrees'
-
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         case_study = self.plot_kwargs["plot_case_study"]
 
-        style.use(self.style)
+        style.use(self.plot_config.style())
         fig, axes = plt.subplots(1, 1, sharey="all")
         fig.subplots_adjust(hspace=0.5)
 
@@ -443,3 +518,20 @@ class CommitAuthorInteractionGraphNodeDegreePlot(Plot):
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
+
+
+class CAIGNodeDegreePlotGenerator(
+    PlotGenerator,
+    generator_name="caig-node-degrees",
+    options=[
+        REQUIRE_CASE_STUDY,
+    ]
+):
+    """Generates a plot of node degrees of a commit-author interaction graph."""
+
+    def generate(self) -> tp.List[Plot]:
+        return [
+            CommitAuthorInteractionGraphNodeDegreePlot(
+                self.plot_config, **self.plot_kwargs
+            )
+        ]
