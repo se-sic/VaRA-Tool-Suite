@@ -18,6 +18,7 @@ from varats.experiment.experiment_util import (
     VersionExperiment,
     ExperimentHandle,
     create_default_analysis_failure_handler,
+    get_varats_result_folder,
     exec_func_with_pe_error_handler,
 )
 from varats.provider.bug.bug_provider import BugProvider
@@ -82,8 +83,6 @@ class RunSZZUnleashed(actions.Step):  # type: ignore
     NAME = "RunSZZUnleashed"
     DESCRIPTION = "Run SZZUnleashed on a project"
 
-    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
-
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(obj=project, action_fn=self.run_szz)
         self.__experiment_handle = experiment_handle
@@ -95,11 +94,7 @@ class RunSZZUnleashed(actions.Step):  # type: ignore
         szzunleashed_jar = SZZUnleashed.install_location(
         ) / SZZUnleashed.get_jar_name()
 
-        varats_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(bb_cfg()["varats"]["outfile"]),
-            project_dir=str(project.name)
-        )
-        mkdir("-p", varats_result_folder)
+        varats_result_folder = get_varats_result_folder(project)
 
         with local.cwd(run_dir):
             run_cmd = java["-jar",
@@ -122,8 +117,6 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
     NAME = "CreateSZZUnleashedReport"
     DESCRIPTION = "Create a report from SZZUnleashed data"
 
-    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
-
     def __init__(self, project: Project):
         super().__init__(obj=project, action_fn=self.create_report)
 
@@ -131,11 +124,7 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
         """Create a report from SZZUnleashed data."""
         project = self.obj
 
-        varats_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(bb_cfg()["varats"]["outfile"]),
-            project_dir=str(project.name)
-        )
-        mkdir("-p", varats_result_folder)
+        varats_result_folder = get_varats_result_folder(project)
 
         run_dir = Path(project.source_of_primary).parent
         with (run_dir / "results" /

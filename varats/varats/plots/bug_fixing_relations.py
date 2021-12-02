@@ -446,7 +446,7 @@ def _zip_dicts(
         yield i, left.get(i, None), right.get(i, None)
 
 
-class BugFixingRelationPlot(Plot):
+class BugFixingRelationPlot(Plot, plot_name="bug_relation_graph"):
     """Plot showing which commit fixed a bug introduced by which commit."""
 
     NAME = 'bug_relation_graph'

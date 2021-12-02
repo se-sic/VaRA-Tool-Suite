@@ -186,7 +186,7 @@ class VaRA(ResearchTool[VaRACodeBase]):
         """Checks if a install location of the research tool is configured."""
         return vara_cfg()["vara"]["llvm_install_dir"].value is not None
 
-    @check_required_args(["install_prefix", "version"])
+    @check_required_args("install_prefix", "version")
     def setup(self, source_folder: tp.Optional[Path], **kwargs: tp.Any) -> None:
         """
         Setup the research tool VaRA with it's code base. This method sets up

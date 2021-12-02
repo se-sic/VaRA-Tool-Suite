@@ -4,7 +4,6 @@ import logging
 import os
 import sys
 import typing as tp
-from enum import Enum
 from select import select
 
 import click
@@ -88,25 +87,39 @@ def initialize_logger_config() -> None:
     logging.basicConfig(level=log_level)
 
 
-EnumTy = tp.TypeVar("EnumTy", bound=Enum)
+CLIOptionTy = tp.Callable[..., tp.Any]
 
 
-class EnumChoice(click.Choice, tp.Generic[EnumTy]):
+def make_cli_option(*param_decls: str, **attrs: tp.Any) -> CLIOptionTy:
     """
-    Enum choice type for click.
+    Create an object that represents a click command line option, i.e., the
+    decorator object that is created by ``click.option()``.
 
-    This type can be used with click to specify a choice from the given enum.
+    Args:
+        *param_decls: parameter declarations, i.e., how this option can be used
+        **attrs: attributes used to construct the option
+
+    Returns:
+        a click CLI option that can be wrapped around a function
     """
+    return click.option(*param_decls, **attrs)
 
-    def __init__(self, enum: tp.Type[EnumTy], case_sensitive: bool = True):
-        self.__enum = enum
-        super().__init__(list(dict(enum.__members__).keys()), case_sensitive)
 
-    def convert(
-        self, value: str, param: tp.Optional[click.Parameter],
-        ctx: tp.Optional[click.Context]
-    ) -> EnumTy:
-        return self.__enum[super().convert(value, param, ctx)]
+def add_cli_options(command: tp.Callable[..., None],
+                    *options: CLIOptionTy) -> tp.Callable[..., None]:
+    """
+    Adds click CLI options to a click command.
+
+    Args:
+        command: the command
+        *options: the options to add
+
+    Returns:
+        the command with the added options
+    """
+    for option in options:
+        command = option(command)
+    return command
 
 
 def tee(process: PlumbumLocalPopen,

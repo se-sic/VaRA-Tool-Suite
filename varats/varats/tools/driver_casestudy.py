@@ -29,7 +29,7 @@ from varats.projects.discover_projects import initialize_projects
 from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
 from varats.tools.tool_util import configuration_lookup_error_handler
-from varats.utils.cli_util import (
+from varats.ts_utils.cli_util import (
     cli_list_choice,
     initialize_cli_tool,
     cli_yn_choice,
@@ -550,9 +550,11 @@ def __casestudy_view(args: tp.Dict[str, tp.Any]) -> None:
     def open_in_editor(result_file: Path) -> None:
         _ = editor[str(result_file)] & FG
 
-    editor_name = local.env["EDITOR"]
-    if not editor_name:
-        editor_name = "vim"
+    editor_name = "vim"  # set's default editor
+
+    if "EDITOR" in local.env:
+        editor_name = local.env["EDITOR"]
+
     editor = local[editor_name]
     try:
         cli_list_choice(
