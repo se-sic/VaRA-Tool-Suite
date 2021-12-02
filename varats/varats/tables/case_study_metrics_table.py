@@ -11,7 +11,8 @@ from varats.project.project_util import (
     get_local_project_git,
     get_project_cls_by_name,
 )
-from varats.table.table import Table, wrap_table_in_document, TableFormat
+from varats.table.table import Table, wrap_table_in_document
+from varats.table.tables import TableFormat
 from varats.utils.git_util import calc_repo_loc
 
 LOG = logging.Logger(__name__)
@@ -48,7 +49,8 @@ class CaseStudyMetricsTable(Table):
             cs_dict = {
                 project_name: {
                     "Domain":
-                        project_cls.DOMAIN[0].upper() + project_cls.DOMAIN[1:],
+                        str(project_cls.DOMAIN)[0].upper() +
+                        str(project_cls.DOMAIN)[1:],
                     "LOC":
                         calc_repo_loc(project_repo, rev_range),
                     "Commits":

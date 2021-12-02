@@ -3,9 +3,8 @@ This module handles the configuration of Benchbuild.
 
 It can automatically create different preconfigured configs for BB.
 """
-
+import os.path
 from copy import deepcopy
-from os import getcwd
 
 from benchbuild.utils import settings as s
 
@@ -97,6 +96,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.phasar_fta',
         'varats.experiments.phasar.ide_linear_constant_experiment',
+        'varats.experiments.phasar.global_analysis_compare',
         'varats.experiments.szz.szz_unleashed_experiment',
         'varats.experiments.szz.pydriller_szz_experiment',
     ]
@@ -130,15 +130,31 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
     # Add VaRA experiment config variables
     add_vara_experiment_options(new_bb_cfg, varats_cfg)
 
-    def replace_bb_cwd_path(
-        cfg_varname: str, cfg_node: s.Configuration = new_bb_cfg
-    ) -> None:
-        cfg_node[cfg_varname] = str(varats_cfg["benchbuild_root"]) + \
-                                str(cfg_node[cfg_varname])[len(getcwd()):]
+    # Set paths to defaults
+    bb_root = str(varats_cfg["benchbuild_root"])
+    new_bb_cfg["build_dir"] = s.ConfigPath(os.path.join(bb_root, "results"))
+    new_bb_cfg["tmp_dir"] = s.ConfigPath(os.path.join(bb_root, "tmp"))
+    new_bb_cfg["slurm"]["node_dir"] = s.ConfigPath(
+        os.path.join(bb_root, "results")
+    )
+    new_bb_cfg["slurm"]["logs"] = s.ConfigPath(
+        os.path.join(bb_root, "slurm_logs")
+    )
+    new_bb_cfg["container"]["root"] = s.ConfigPath(
+        os.path.join(bb_root, "containers", "lib")
+    )
+    new_bb_cfg["container"]["runroot"] = s.ConfigPath(
+        os.path.join(bb_root, "containers", "run")
+    )
+    new_bb_cfg["container"]["export"] = s.ConfigPath(
+        os.path.join(bb_root, "containers", "export")
+    )
+    new_bb_cfg["container"]["import"] = s.ConfigPath(
+        os.path.join(bb_root, "containers", "export")
+    )
+    new_bb_cfg["container"]["source"] = None
 
-    replace_bb_cwd_path("config_file")
-    replace_bb_cwd_path("build_dir")
-    replace_bb_cwd_path("tmp_dir")
-    replace_bb_cwd_path("node_dir", new_bb_cfg["slurm"])
+    # will be set correctly when saved
+    new_bb_cfg["config_file"] = None
 
     return new_bb_cfg

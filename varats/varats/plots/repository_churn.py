@@ -10,11 +10,15 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib import axes, style
 
-#import varats.data.discover_reports
-#from varats.data.discover_reports import foo
-from varats.mapping.commit_map import CommitMap
+from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
+from varats.plot.plots import (
+    PlotGenerator,
+    PlotConfig,
+    REQUIRE_REPORT_TYPE,
+    REQUIRE_MULTI_CASE_STUDY,
+)
 from varats.project.project_util import get_local_project_git
 from varats.utils.git_util import (
     ChurnConfig,
@@ -110,7 +114,7 @@ def build_revisions_churn_table(
     code_churn = [(0, 0, 0)]
     code_churn.extend([
         calc_code_churn(
-            repo, repo.get(a), repo.get(b),
+            repo, repo.get(a.hash), repo.get(b.hash),
             ChurnConfig.create_c_style_languages_config()
         ) for a, b in revision_pairs
     ])
@@ -157,9 +161,10 @@ def draw_code_churn(
 
     code_churn = sort_df(code_churn)
 
-    revisions = code_churn.time_id.astype(str) + '-' + code_churn.revision.map(
-        lambda x: x[:10]
-    )
+    revision_strs = code_churn.time_id.astype(
+        str
+    ) + '-' + code_churn.revision.map(lambda x: x.short_hash)
+
     clipped_insertions = [
         x if x < CODE_CHURN_INSERTION_LIMIT else 1.3 *
         CODE_CHURN_INSERTION_LIMIT for x in code_churn.insertions
@@ -170,9 +175,9 @@ def draw_code_churn(
     ]
 
     axis.set_ylim(-CODE_CHURN_DELETION_LIMIT, CODE_CHURN_INSERTION_LIMIT)
-    axis.fill_between(revisions, clipped_insertions, 0, facecolor='green')
+    axis.fill_between(revision_strs, clipped_insertions, 0, facecolor='green')
     axis.fill_between(
-        revisions,
+        revision_strs,
         # we need a - here to visualize deletions as negative additions
         clipped_deletions,
         0,
@@ -197,11 +202,9 @@ def draw_code_churn_for_revisions(
         commit_map: CommitMap for the given project(by project_name)
         revisions: list of revisions used to calculate the churn data
     """
+
     churn_data = build_revisions_churn_table(
         project_name, commit_map, revisions
-    )
-    revisions = churn_data.time_id.astype(str) + '-' + churn_data.revision.map(
-        lambda x: x[:10]
     )
     clipped_insertions = [
         x if x < CODE_CHURN_INSERTION_LIMIT else 1.3 *
@@ -211,44 +214,46 @@ def draw_code_churn_for_revisions(
         -x if x < CODE_CHURN_DELETION_LIMIT else -1.3 *
         CODE_CHURN_DELETION_LIMIT for x in churn_data.deletions
     ]
+    revision_strs: tp.List[str] = [rev.short_hash for rev in revisions]
 
     axis.set_ylim(-CODE_CHURN_DELETION_LIMIT, CODE_CHURN_INSERTION_LIMIT)
-    axis.fill_between(revisions, clipped_insertions, 0, facecolor='green')
+    axis.fill_between(revision_strs, clipped_insertions, 0, facecolor='green')
     axis.fill_between(
-        revisions,
+        revision_strs,
         # we need a - here to visualize deletions as negative additions
         clipped_deletions,
         0,
         facecolor='red'
     )
+    revision_strs = churn_data.time_id.astype(
+        str
+    ) + '-' + churn_data.revision.map(lambda x: x.short_hash)
+    axis.set_xticks(axis.get_xticks())
+    axis.set_xticklabels(revision_strs)
 
 
-class RepoChurnPlot(Plot):
+class RepoChurnPlot(Plot, plot_name="repo_churn"):
     """Plot to visualize code churn for a git repository."""
 
     NAME = 'repo_churn'
 
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        plot_cfg = {
-            'linewidth': 1 if view_mode else 0.25,
-            'legend_size': 8 if view_mode else 2,
-            'xtick_size': 10 if view_mode else 2,
-        }
-        style.use(self.style)
-
-        case_study: CaseStudy = self.plot_kwargs['plot_case_study']
+        style.use(self.plot_config.style())
+        case_study: CaseStudy = self.plot_kwargs['case_study']
+        project_name: str = case_study.project_name
+        commit_map: CommitMap = get_commit_map(project_name)
 
         _, axis = plt.subplots()
         draw_code_churn(
-            axis, self.plot_kwargs['project'], self.plot_kwargs['get_cmap'](),
+            axis, project_name, commit_map,
             case_study.has_revision if case_study else lambda x: True
         )
 
         for x_label in axis.get_xticklabels():
-            x_label.set_fontsize(plot_cfg['xtick_size'])
+            x_label.set_fontsize(self.plot_config.x_tick_size())
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
@@ -256,3 +261,19 @@ class RepoChurnPlot(Plot):
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
+
+
+class RepoChurnPlotGenerator(
+    PlotGenerator,
+    generator_name="repo-churn-plot",
+    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+):
+    """Generates repo-churn plot(s) for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
+        return [
+            RepoChurnPlot(self.plot_config, case_study=cs, **self.plot_kwargs)
+            for cs in case_studies
+        ]

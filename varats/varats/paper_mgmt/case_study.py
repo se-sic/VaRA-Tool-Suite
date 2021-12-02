@@ -28,8 +28,8 @@ from varats.jupyterhelper.file import (
 )
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
+from varats.plot.plot import Plot
 from varats.plot.plot_utils import check_required_args
-from varats.plot.plots import PlotRegistry
 from varats.project.project_util import get_project_cls_by_name
 from varats.provider.bug.bug import RawBug
 from varats.provider.bug.bug_provider import BugProvider
@@ -227,7 +227,7 @@ def get_newest_result_files_for_case_study(
     Returns:
         list of result file paths
     """
-    files_to_store: tp.Dict[ShortCommitHash, Path] = dict()
+    files_to_store: tp.Dict[ShortCommitHash, Path] = {}
 
     result_dir /= case_study.project_name
     if not result_dir.exists():
@@ -323,7 +323,7 @@ def get_unique_cs_name(case_studies: tp.List[CaseStudy]) -> tp.List[str]:
 ###############################################################################
 
 
-@check_required_args(['extra_revs', 'git_path'])
+@check_required_args('extra_revs', 'git_path')
 def generate_case_study(
     sampling_method: NormalSamplingMethod, cmap: CommitMap,
     case_study_version: int, project_name: str, **kwargs: tp.Any
@@ -396,7 +396,7 @@ def extend_case_study(
         extend_with_bug_commits(case_study, cmap, **kwargs)
 
 
-@check_required_args(['extra_revs', 'merge_stage'])
+@check_required_args('extra_revs', 'merge_stage')
 def extend_with_extra_revs(
     case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
 ) -> None:
@@ -418,9 +418,9 @@ def extend_with_extra_revs(
     case_study.include_revisions(new_rev_items, merge_stage, True)
 
 
-@check_required_args([
+@check_required_args(
     'git_path', 'revs_per_year', 'merge_stage', 'revs_year_sep'
-])
+)
 def extend_with_revs_per_year(
     case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
 ) -> None:
@@ -503,7 +503,7 @@ def extend_with_revs_per_year(
         new_rev_items.clear()
 
 
-@check_required_args(['distribution', 'merge_stage', 'num_rev'])
+@check_required_args('distribution', 'merge_stage', 'num_rev')
 def extend_with_distrib_sampling(
     case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
 ) -> None:
@@ -539,7 +539,7 @@ def extend_with_distrib_sampling(
     )
 
 
-@check_required_args(['plot_type', 'boundary_gradient'])
+@check_required_args('plot_type', 'boundary_gradient')
 def extend_with_smooth_revs(
     case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
 ) -> None:
@@ -552,7 +552,7 @@ def extend_with_smooth_revs(
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
     """
-    plot_type = PlotRegistry.get_class_for_plot_type(kwargs['plot_type'])
+    plot_type = Plot.get_class_for_plot_type(kwargs['plot_type'])
 
     kwargs['plot_case_study'] = case_study
     kwargs['cmap'] = cmap
@@ -586,7 +586,7 @@ def extend_with_smooth_revs(
         )
 
 
-@check_required_args(['project', 'release_type', 'merge_stage'])
+@check_required_args('project', 'release_type', 'merge_stage')
 def extend_with_release_revs(
     case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
 ) -> None:
@@ -615,7 +615,7 @@ def extend_with_release_revs(
     ], kwargs['merge_stage'])
 
 
-@check_required_args(['report_type', 'merge_stage'])
+@check_required_args('report_type', 'merge_stage')
 def extend_with_bug_commits(
     case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
 ) -> None:

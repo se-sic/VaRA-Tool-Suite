@@ -150,30 +150,6 @@ def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
         return refs
 
 
-def get_all_revisions_between(c_start: str,
-                              c_end: str,
-                              short: bool = False) -> tp.List[str]:
-    """
-    Returns a list of all revisions between two commits c_start and c_end
-    (inclusive), where c_start comes before c_end.
-
-    It is assumed that the current working directory is the git repository.
-
-    Args:
-        c_start: first commit of the range
-        c_end: last commit of the range
-        short: shorten revision hashes
-    """
-    result = [c_start]
-    result.extend(
-        git(
-            "log", "--pretty=%H", "--ancestry-path",
-            "{}..{}".format(c_start, c_end)
-        ).strip().split()
-    )
-    return list(map(lambda rev: rev[:10], result)) if short else result
-
-
 def is_git_source(source: bb.source.FetchableSource) -> bool:
     """
     Checks if given base source is a git source.
@@ -359,7 +335,7 @@ class VaraTestRepoSubmodule(GitSubmodule):  # type: ignore  # pylint: disable=R0
     __vara_test_repos_git = Git(
         remote="https://github.com/se-passau/vara-test-repos",
         local="vara_test_repos",
-        refspec="HEAD",
+        refspec="origin/HEAD",
         limit=1
     )
 
@@ -396,7 +372,7 @@ class VaraTestRepoSource(Git):  # type: ignore  # pylint: disable=R0901;
     __vara_test_repos_git = Git(
         remote="https://github.com/se-passau/vara-test-repos",
         local="vara_test_repos",
-        refspec="HEAD",
+        refspec="origin/HEAD",
         limit=1
     )
 

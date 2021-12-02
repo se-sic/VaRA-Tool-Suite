@@ -18,6 +18,8 @@ from varats.data.reports.blame_report import BlameReport as BR
 from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
+    ExperimentHandle,
+    get_varats_result_folder,
     wrap_unlimit_stack_size,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
@@ -34,15 +36,9 @@ class BlameReportGeneration(actions.Step):  # type: ignore
     NAME = "BlameReportGeneration"
     DESCRIPTION = "Analyses the bitcode with -vara-BR of VaRA."
 
-    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
-
-    def __init__(
-        self,
-        project: Project,
-        report_spec: ReportSpecification,
-    ):
+    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(obj=project, action_fn=self.analyze)
-        self.__report_spec = report_spec
+        self.__experiment_handle = experiment_handle
 
     def analyze(self) -> actions.StepResult:
         """
@@ -60,20 +56,14 @@ class BlameReportGeneration(actions.Step):  # type: ignore
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
-        vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(bb_cfg()["varats"]["outfile"]),
-            project_dir=str(project.name)
-        )
-
-        mkdir("-p", vara_result_folder)
+        vara_result_folder = get_varats_result_folder(project)
 
         for binary in project.binaries:
-            result_file = self.__report_spec.get_report_type(
-                "BR"
-            ).get_file_name(
+            result_file = self.__experiment_handle.get_file_name(
+                BR.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_version=project.version_of_primary,
+                project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.SUCCESS
             )
@@ -97,14 +87,15 @@ class BlameReportGeneration(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 run_cmd,
                 create_default_analysis_failure_handler(
-                    project, BR, Path(vara_result_folder)
+                    self.__experiment_handle, project, BR,
+                    Path(vara_result_folder)
                 )
             )
 
         return actions.StepResult.OK
 
 
-class BlameReportExperiment(VersionExperiment):
+class BlameReportExperiment(VersionExperiment, shorthand="BRE"):
     """Generates a commit flow report (CFR) of the project(s) specified in the
     call."""
 
@@ -134,20 +125,18 @@ class BlameReportExperiment(VersionExperiment):
             BCFileExtensions.BLAME,
         ]
 
-        BE.setup_basic_blame_experiment(
-            self, project, BR, BlameReportGeneration.RESULT_FOLDER_TEMPLATE
-        )
+        BE.setup_basic_blame_experiment(self, project, BR)
 
         analysis_actions = BE.generate_basic_blame_experiment_actions(
             project,
             bc_file_extensions,
             extraction_error_handler=create_default_compiler_error_handler(
-                project, self.REPORT_SPEC.main_report
+                self.get_handle(), project, self.REPORT_SPEC.main_report
             )
         )
 
         analysis_actions.append(
-            BlameReportGeneration(project, self.REPORT_SPEC)
+            BlameReportGeneration(project, self.get_handle())
         )
         analysis_actions.append(actions.Clean(project))
 

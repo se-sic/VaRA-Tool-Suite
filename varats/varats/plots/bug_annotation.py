@@ -10,10 +10,9 @@ from varats.utils.git_util import FullCommitHash
 
 
 def draw_bugs(
-    axis: axes.Axes,
-    project: tp.Type[Project],
-    revisions: tp.List[FullCommitHash],
-    extra_plot_cfg: tp.Optional[tp.Dict[str, tp.Any]] = None
+    axis: axes.Axes, project: tp.Type[Project],
+    revisions: tp.List[FullCommitHash], bug_line_width: int, bug_color: str,
+    label_size: int, vertical_alignment: str
 ) -> None:
     """
     Annotates bugs for a project in an existing plot.
@@ -23,21 +22,11 @@ def draw_bugs(
         project: the project to add bugs for
         revisions: a list of revisions included in the plot in the order they
                    appear on the x-axis
-        extra_plot_cfg:
-            * linewidth
-            * color
-            * vertical_alignment
-            * label_size
+        bug_line_width: the line width of bug annotations
+        bug_color: the color of bug annotations
+        label_size: the label size of bug annotations
+        vertical_alignment: the vertical alignment of bug annotations
     """
-    plot_cfg = {
-        "linewidth": 1,
-        "color": "green",
-        "vertical_alignment": "bottom",
-        "label_size": 2,
-    }
-    if extra_plot_cfg is not None:
-        plot_cfg.update(extra_plot_cfg)
-
     cmap = create_lazy_commit_map_loader(project.NAME)()
     revision_time_ids = [cmap.time_id(rev) for rev in revisions]
 
@@ -54,10 +43,7 @@ def draw_bugs(
 
         transform = axis.get_xaxis_transform()
         axis.axvline(
-            index,
-            label=label,
-            linewidth=plot_cfg["linewidth"],
-            color=plot_cfg["color"]
+            index, label=label, linewidth=bug_line_width, color=bug_color
         )
         axis.text(
             index + 0.1,
@@ -65,7 +51,7 @@ def draw_bugs(
             label,
             transform=transform,
             rotation=90,
-            size=plot_cfg["label_size"],
-            color=plot_cfg["color"],
-            va=plot_cfg["vertical_alignment"]
+            size=label_size,
+            color=bug_color,
+            va=vertical_alignment
         )

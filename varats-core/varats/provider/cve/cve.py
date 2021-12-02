@@ -15,12 +15,9 @@ import zipfile
 from datetime import datetime
 
 import requests
-# import requests_cache  # type: ignore
 from packaging.version import LegacyVersion, Version
 from packaging.version import parse as version_parse
 from tabulate import tabulate
-
-from varats.utils.settings import vara_cfg
 
 
 class CVE:
@@ -334,9 +331,3 @@ def find_cwe(
     raise ValueError(
         f'Could not find CWE ({cwe_id}, {cwe_name}, {cwe_description})!'
     )
-
-
-# Cache all requests to limit external requests for a week
-# requests_cache.install_cache(
-#     f"{str(vara_cfg()['data_cache'])}/requests_cache", expire_after=604800
-# )

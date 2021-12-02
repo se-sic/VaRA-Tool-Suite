@@ -133,6 +133,30 @@ def get_current_branch(repo_folder: tp.Optional[Path] = None) -> str:
         return tp.cast(str, git("rev-parse", "--abbrev-ref", "HEAD").strip())
 
 
+def get_all_revisions_between(
+    c_start: str, c_end: str, hash_type: tp.Type[CommitHashTy]
+) -> tp.List[CommitHashTy]:
+    """
+    Returns a list of all revisions between two commits c_start and c_end
+    (inclusive), where c_start comes before c_end.
+
+    It is assumed that the current working directory is the git repository.
+
+    Args:
+        c_start: first commit of the range
+        c_end: last commit of the range
+        short: shorten revision hashes
+    """
+    result = [c_start]
+    result.extend(
+        git(
+            "log", "--pretty=%H", "--ancestry-path",
+            "{}..{}".format(c_start, c_end)
+        ).strip().split()
+    )
+    return list(map(hash_type, result))
+
+
 ################################################################################
 # Git interaction classes
 

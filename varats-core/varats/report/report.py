@@ -119,15 +119,16 @@ class ReportFilename():
     strings and paths."""
 
     __RESULT_FILE_REGEX = re.compile(
-        r"(?P<project_shorthand>.*)-" +
+        r"(?P<experiment_shorthand>.*)-" + r"(?P<report_shorthand>.*)-" +
         r"(?P<project_name>.*)-(?P<binary_name>.*)-" +
         r"(?P<file_commit_hash>.*)_(?P<UUID>[0-9a-fA-F\-]*)_" +
         FileStatusExtension.get_regex_grp() + r"?(?P<file_ext>\..*)?" + "$"
     )
 
     __RESULT_FILE_TEMPLATE = (
-        "{shorthand}-" + "{project_name}-" + "{binary_name}-" +
-        "{project_version}_" + "{project_uuid}_" + "{status_ext}" + "{file_ext}"
+        "{experiment_shorthand}-" + "{report_shorthand}-" + "{project_name}-" +
+        "{binary_name}-" + "{project_revision}_" + "{project_uuid}_" +
+        "{status_ext}" + "{file_ext}"
     )
 
     def __init__(self, file_name: tp.Union[str, Path]) -> None:
@@ -148,7 +149,7 @@ class ReportFilename():
         if match:
             return str(match.group("binary_name"))
 
-        raise ValueError(f'File {self.filename} name was wrongly formated.')
+        raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
     def has_status_success(self) -> bool:
         """
@@ -229,10 +230,10 @@ class ReportFilename():
 
     def is_result_file(self) -> bool:
         """
-        Check if the file name is formated like a result file.
+        Check if the file name is formatted like a result file.
 
         Returns:
-            True, if the file name is correctly formated
+            True, if the file name is correctly formatted
         """
         match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
         return match is not None
@@ -249,22 +250,35 @@ class ReportFilename():
         if match:
             return ShortCommitHash(match.group("file_commit_hash"))
 
-        raise ValueError(f'File {self.filename} name was wrongly formated.')
+        raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
     @property
-    def shorthand(self) -> str:
+    def experiment_shorthand(self) -> str:
+        """
+        Experiment shorthand of the result file.
+
+        Returns:
+            the experiment shorthand from a result file
+        """
+        match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
+        if match:
+            return match.group("experiment_shorthand")
+
+        raise ValueError(f'File {self.filename} name was wrongly formatted.')
+
+    @property
+    def report_shorthand(self) -> str:
         """
         Report shorthand of the result file.
 
         Returns:
             the report shorthand from a result file
         """
-
         match = ReportFilename.__RESULT_FILE_REGEX.search(self.filename)
         if match:
-            return match.group("project_shorthand")
+            return match.group("report_shorthand")
 
-        raise ValueError(f'File {self.filename} name was wrongly formated.')
+        raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
     @property
     def file_status(self) -> FileStatusExtension:
@@ -280,7 +294,7 @@ class ReportFilename():
                 match.group("status_ext")
             )
 
-        raise ValueError('File {file_name} name was wrongly formated.')
+        raise ValueError('File {file_name} name was wrongly formatted.')
 
     @property
     def uuid(self) -> str:
@@ -290,26 +304,28 @@ class ReportFilename():
         if match:
             return match.group("UUID")
 
-        raise ValueError(f'File {self.filename} name was wrongly formated.')
+        raise ValueError(f'File {self.filename} name was wrongly formatted.')
 
     @staticmethod
     def get_file_name(
+        experiment_shorthand: str,
         report_shorthand: str,
         project_name: str,
         binary_name: str,
-        project_version: str,
+        project_revision: ShortCommitHash,
         project_uuid: str,
         extension_type: FileStatusExtension,
         file_ext: str = ".txt"
-    ) -> str:
+    ) -> 'ReportFilename':
         """
         Generates a filename for a report file out the different parts.
 
         Args:
+            experiment_shorthand: unique shorthand of the experiment
             report_shorthand: unique shorthand of the report
             project_name: name of the project for which the report was generated
             binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
+            project_revision: revision of the project, i.e., commit hash
             project_uuid: benchbuild uuid for the experiment run
             extension_type: to specify the status of the generated report
             file_ext: file extension of the report file
@@ -323,14 +339,17 @@ class ReportFilename():
         if file_ext and not file_ext.startswith("."):
             file_ext = "." + file_ext
 
-        return ReportFilename.__RESULT_FILE_TEMPLATE.format(
-            shorthand=report_shorthand,
-            project_name=project_name,
-            binary_name=binary_name,
-            project_version=project_version,
-            project_uuid=project_uuid,
-            status_ext=status_ext,
-            file_ext=file_ext
+        return ReportFilename(
+            ReportFilename.__RESULT_FILE_TEMPLATE.format(
+                experiment_shorthand=experiment_shorthand,
+                report_shorthand=report_shorthand,
+                project_name=project_name,
+                binary_name=binary_name,
+                project_revision=project_revision,
+                project_uuid=project_uuid,
+                status_ext=status_ext,
+                file_ext=file_ext
+            )
         )
 
     def __str__(self) -> str:
@@ -344,33 +363,29 @@ class BaseReport():
     """Report base class to add general report properties and helper
     functions."""
 
-    REPORT_TYPES: tp.Dict[str, tp.Type['BaseReport']] = dict()
+    REPORT_TYPES: tp.Dict[str, tp.Type['BaseReport']] = {}
+
+    SHORTHAND: str
+    FILE_TYPE: str
 
     def __init__(self, path: Path) -> None:
         self.__path = path
         self.__filename = ReportFilename(path)
 
     @classmethod
-    def __init_subclass__(cls, *args: tp.Any, **kwargs: tp.Any) -> None:
+    def __init_subclass__(
+        cls, shorthand: str, file_type: str, *args: tp.Any, **kwargs: tp.Any
+    ) -> None:
         # mypy does not yet fully understand __init_subclass__()
         # https://github.com/python/mypy/issues/4660
         super().__init_subclass__(*args, **kwargs)  # type: ignore
 
+        cls.SHORTHAND = shorthand
+        cls.FILE_TYPE = file_type
+
         name = cls.__name__
-        BaseReport.__check_required_vars(cls, name, ["SHORTHAND"])
         if name not in cls.REPORT_TYPES:
             cls.REPORT_TYPES[name] = cls
-
-    @staticmethod
-    def __check_required_vars(
-        class_type: tp.Any, class_name: str, req_vars: tp.List[str]
-    ) -> None:
-        for var in req_vars:
-            if not hasattr(class_type, var):
-                raise NameError((
-                    f"{class_name} does not define "
-                    f"a static variable {var}."
-                ))
 
     @staticmethod
     def lookup_report_type_from_file_name(
@@ -386,7 +401,7 @@ class BaseReport():
             corresponding report class
         """
         try:
-            shorthand = ReportFilename(file_name).shorthand
+            shorthand = ReportFilename(file_name).report_shorthand
         except ValueError:
             # Return nothing if we cannot correctly identify a shothand for the
             # specified file name
@@ -415,30 +430,34 @@ class BaseReport():
 
         return None
 
-    @staticmethod
-    @abstractmethod
+    @classmethod
     def get_file_name(
+        cls,
+        experiment_shorthand: str,
         project_name: str,
         binary_name: str,
-        project_version: str,
+        project_revision: ShortCommitHash,
         project_uuid: str,
         extension_type: FileStatusExtension,
-        file_ext: str = ".txt"
-    ) -> str:
+    ) -> ReportFilename:
         """
         Generates a filename for a report file.
 
         Args:
+            experiment_shorthand: unique shorthand of the experiment
             project_name: name of the project for which the report was generated
             binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
+            project_revision: version of the analyzed project, i.e., commit hash
             project_uuid: benchbuild uuid for the experiment run
             extension_type: to specify the status of the generated report
-            file_ext: file extension of the report file
 
         Returns:
             name for the report file that can later be uniquly identified
         """
+        return ReportFilename.get_file_name(
+            experiment_shorthand, cls.SHORTHAND, project_name, binary_name,
+            project_revision, project_uuid, extension_type, cls.FILE_TYPE
+        )
 
     @property
     def path(self) -> Path:
@@ -451,9 +470,14 @@ class BaseReport():
         return self.__filename
 
     @classmethod
-    @abstractmethod
     def shorthand(cls) -> str:
         """Shorthand for this report."""
+        return cls.SHORTHAND
+
+    @classmethod
+    def file_type(cls) -> str:
+        """File type of this report."""
+        return cls.FILE_TYPE
 
     @classmethod
     def is_correct_report_type(cls, file_name: str) -> bool:
@@ -467,8 +491,8 @@ class BaseReport():
             True, if the file belongs to this report type
         """
         try:
-            short_hand = ReportFilename(file_name).shorthand
-            return short_hand == str(getattr(cls, "SHORTHAND"))
+            short_hand = ReportFilename(file_name).report_shorthand
+            return short_hand == cls.shorthand()
         except ValueError:
             return False
 
@@ -478,10 +502,6 @@ class ReportSpecification():
     used, e.g., by experiments, to request multiple reports."""
 
     def __init__(self, *report_types: tp.Type[BaseReport]) -> None:
-        if len(report_types) == 0:
-            raise AssertionError(
-                "ReportSpecification needs at least one report type."
-            )
         self.__reports_types = list(report_types)
 
     @property

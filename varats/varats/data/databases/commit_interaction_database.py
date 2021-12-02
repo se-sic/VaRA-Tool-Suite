@@ -53,7 +53,7 @@ class CommitInteractionDatabase(
 
             return pd.DataFrame({
                 'revision':
-                    report.head_commit,
+                    report.head_commit.hash,
                 'time_id':
                     commit_map.short_time_id(report.head_commit),
                 'CFInteractions':
