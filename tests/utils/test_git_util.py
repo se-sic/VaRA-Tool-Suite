@@ -3,7 +3,10 @@ import unittest
 
 from plumbum import local
 
-from varats.project.project_util import get_local_project_git
+from varats.project.project_util import (
+    get_local_project_git,
+    get_local_project_git_path,
+)
 from varats.utils.git_util import (
     ChurnConfig,
     CommitRepoPair,
@@ -238,10 +241,10 @@ class TestCodeChurnCalculation(unittest.TestCase):
     def test_one_commit_diff(self):
         """Check if we get the correct code churn for a single commit."""
 
-        repo = get_local_project_git("brotli")
+        repo = get_local_project_git_path("brotli")
 
         files_changed, insertions, deletions = calc_commit_code_churn(
-            repo, repo.get("0c5603e07bed1d5fbb45e38f9bdf0e4560fde3f0"),
+            repo, FullCommitHash("0c5603e07bed1d5fbb45e38f9bdf0e4560fde3f0"),
             ChurnConfig.create_c_style_languages_config()
         )
 
@@ -252,10 +255,10 @@ class TestCodeChurnCalculation(unittest.TestCase):
     def test_one_commit_diff_2(self):
         """Check if we get the correct code churn for a single commit."""
 
-        repo = get_local_project_git("brotli")
+        repo = get_local_project_git_path("brotli")
 
         files_changed, insertions, deletions = calc_commit_code_churn(
-            repo, repo.get("fc823290a76a260b7ba6f47ab5f52064a0ce19ff"),
+            repo, FullCommitHash("fc823290a76a260b7ba6f47ab5f52064a0ce19ff"),
             ChurnConfig.create_c_style_languages_config()
         )
 
@@ -266,10 +269,10 @@ class TestCodeChurnCalculation(unittest.TestCase):
     def test_one_commit_diff_3(self):
         """Check if we get the correct code churn for a single commit."""
 
-        repo = get_local_project_git("brotli")
+        repo = get_local_project_git_path("brotli")
 
         files_changed, insertions, deletions = calc_commit_code_churn(
-            repo, repo.get("924b2b2b9dc54005edbcd85a1b872330948cdd9e"),
+            repo, FullCommitHash("924b2b2b9dc54005edbcd85a1b872330948cdd9e"),
             ChurnConfig.create_c_style_languages_config()
         )
 
@@ -281,10 +284,10 @@ class TestCodeChurnCalculation(unittest.TestCase):
         """Check if we get the correct code churn for a single commit but only
         consider code changes."""
 
-        repo = get_local_project_git("brotli")
+        repo = get_local_project_git_path("brotli")
 
         files_changed, insertions, deletions = calc_commit_code_churn(
-            repo, repo.get("f503cb709ca181dbf5c73986ebac1b18ac5c9f63"),
+            repo, FullCommitHash("f503cb709ca181dbf5c73986ebac1b18ac5c9f63"),
             ChurnConfig.create_c_style_languages_config()
         )
 

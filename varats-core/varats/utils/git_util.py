@@ -10,7 +10,11 @@ import pygit2
 from benchbuild.utils.cmd import git
 from plumbum import local
 
-from varats.project.project_util import get_local_project_gits
+from varats.project.project_util import (
+    get_local_project_gits,
+    get_primary_project_source,
+    get_local_project_git_path,
+)
 
 if tp.TYPE_CHECKING:
     import varats.mapping.commit_map as cm  # pylint: disable=W0611
@@ -328,6 +332,9 @@ class CommitRepoPair():
     def __str__(self) -> str:
         return f"{self.repository_name}[{self.commit_hash}]"
 
+    def __repr__(self) -> str:
+        return self.__str__()
+
 
 CommitLookupTy = tp.Callable[[CommitRepoPair], pygit2.Commit]
 
@@ -366,6 +373,35 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
         return commit
 
     return get_commit
+
+
+def get_submodule_head(
+    project_name: str, submodule_name: str, commit: FullCommitHash
+) -> FullCommitHash:
+    """
+    Retrieve the checked out commit for a submodule of a project.
+
+    Args:
+        project_name: name of the project
+        submodule_name: name of the submodule
+        commit: commit of the project's main repo
+
+    Returns:
+        checked out commit of the submodule
+    """
+    if submodule_name == get_primary_project_source(project_name).local:
+        return commit
+
+    main_repo = get_local_project_git_path(project_name)
+    submodule_status = git("-C", str(main_repo), "ls-tree", commit)
+    commit_pattern = re.compile(
+        r"[0-9]* commit ([0-9abcdef]*)\t" + submodule_name
+    )
+    match = commit_pattern.search(submodule_status)
+    if match:
+        return FullCommitHash(match.group(1))
+
+    raise AssertionError(f"Unknown submodule {submodule_name}")
 
 
 MappedCommitResultType = tp.TypeVar("MappedCommitResultType")
@@ -496,8 +532,8 @@ def calc_code_churn_range(
 
 
 def calc_commit_code_churn(
-    repo: pygit2.Repository,
-    commit: pygit2.Commit,
+    repo_path: Path,
+    commit_hash: CommitHash,
     churn_config: tp.Optional[ChurnConfig] = None
 ) -> tp.Tuple[int, int, int]:
     """
@@ -513,10 +549,10 @@ def calc_commit_code_churn(
         (files changed, insertions, deletions)
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
-    repo_git = git["-C", repo.path]
+    repo_git = git["-C", str(repo_path)]
     show_base_params = [
         "show", "--pretty=format:'%H'", "--shortstat", "--first-parent",
-        commit.id
+        commit_hash.hash
     ]
 
     if not churn_config.include_everything:

@@ -1,6 +1,7 @@
 """Module for code centrality plots."""
 import logging
 import typing as tp
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -19,9 +20,9 @@ from varats.project.project_util import get_local_project_gits
 from varats.utils.git_util import (
     CommitRepoPair,
     create_commit_lookup_helper,
-    UNCOMMITTED_COMMIT_HASH,
     ChurnConfig,
     calc_commit_code_churn,
+    UNCOMMITTED_COMMIT_HASH,
     FullCommitHash,
 )
 
@@ -43,7 +44,7 @@ class CodeCentralityPlot(Plot):
         fig, axes = plt.subplots(1, 1, sharey="all")
         fig.subplots_adjust(hspace=0.5)
 
-        fig.suptitle(f"Central Code")
+        fig.suptitle("Central Code")
         axes.set_title(case_study.project_name)
         axes.set_ylabel("Code Centrality")
         axes.set_xlabel("Commits")
@@ -73,8 +74,8 @@ class CodeCentralityPlot(Plot):
             if not filter_nodes(commit):
                 continue
             _, insertions, _ = calc_commit_code_churn(
-                repo_lookup[commit.repository_name], commit_lookup(commit),
-                churn_config
+                Path(repo_lookup[commit.repository_name].path),
+                commit.commit_hash, churn_config
             )
             if insertions == 0:
                 LOG.warning(f"Churn for commit {commit} is 0.")

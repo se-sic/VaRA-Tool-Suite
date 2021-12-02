@@ -31,7 +31,7 @@ from varats.utils.logger_util import log_without_linesep
 from varats.utils.settings import save_config, vara_cfg
 
 if tp.TYPE_CHECKING:
-    import varats.containers.containers as containers  # pylint: disable=W0611
+    from varats.containers import containers  # pylint: disable=W0611
 
 LOG = logging.getLogger(__name__)
 

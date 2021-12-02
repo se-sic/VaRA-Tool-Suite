@@ -107,13 +107,6 @@ class TestVersionExperiment(unittest.TestCase):
         vara_cfg["experiment"]["file_status_blacklist"] = []
 
     @staticmethod
-    def prepare_vara_config(vara_cfg: s.Configuration) -> None:
-        vara_cfg["experiment"]["sample_limit"] = None
-        vara_cfg["experiment"]["random_order"] = False
-        vara_cfg["experiment"]["file_status_whitelist"] = []
-        vara_cfg["experiment"]["file_status_blacklist"] = []
-
-    @staticmethod
     def generate_get_tagged_revisions_output(
     ) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
         """Generate get_tagged_revisions output for mocking."""

@@ -19,9 +19,9 @@ from varats.project.project_util import get_local_project_gits
 from varats.utils.git_util import (
     create_commit_lookup_helper,
     CommitRepoPair,
-    UNCOMMITTED_COMMIT_HASH,
     ChurnConfig,
     calc_repo_code_churn,
+    UNCOMMITTED_COMMIT_HASH,
     FullCommitHash,
 )
 
@@ -51,11 +51,11 @@ def apply_tukeys_fence(
     Returns:
         the data without outliers
     """
-    q1 = data[column].quantile(0.25)
-    q3 = data[column].quantile(0.75)
-    iqr = q3 - q1
-    return data.loc[(data[column] >= q1 - k * iqr) &
-                    (data[column] <= q3 + k * iqr)]
+    quartile_1 = data[column].quantile(0.25)
+    quartile_3 = data[column].quantile(0.75)
+    iqr = quartile_3 - quartile_1
+    return data.loc[(data[column] >= quartile_1 - k * iqr) &
+                    (data[column] <= quartile_3 + k * iqr)]
 
 
 class CentralCodeScatterPlot(Plot):
@@ -113,9 +113,40 @@ class CentralCodeScatterPlot(Plot):
             }))
         data = pd.DataFrame(nodes)
         data = apply_tukeys_fence(data, "Commit Size", 3.0)
-        multivariate_grid(
+        grid = multivariate_grid(
             "Commit Size", "Node Degree", "Case Study", data, global_kde=False
         )
+
+        ax = grid.ax_joint
+        ax.axvline(
+            data["Commit Size"].quantile(0.20), color="#777777", linewidth=3
+        )
+        ax.axhline(
+            data["Node Degree"].quantile(0.80), color="#777777", linewidth=3
+        )
+
+        # highlight_data = data[data["commit_hash"] == FullCommitHash(
+        #     "348e6946c187eb68839e71a03101d75b5865a389"
+        # )]
+        #
+        # ax.scatter(
+        #     x=highlight_data["Commit Size"],
+        #     y=highlight_data["Node Degree"],
+        #     color="red",
+        #     marker="x",
+        #     s=200,
+        #     linewidth=5,
+        #     zorder=2.01  # draw above lines
+        # )
+        # ax.annotate(
+        #     "348e694",
+        #     xy=(highlight_data["Commit Size"], highlight_data["Node Degree"]),
+        #     xycoords="data",
+        #     xytext=(0.2, 0.9),
+        #     textcoords='axes fraction',
+        #     size=20,
+        #     arrowprops=dict(arrowstyle="simple", shrinkB=10, facecolor="black")
+        # )
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -158,7 +189,6 @@ class AuthorInteractionScatterPlot(Plot):
                 "# Commits": node_attrs["num_commits"],
             }))
         data = pd.DataFrame(nodes)
-        data = apply_tukeys_fence(data, "# Commits", 3.0)
         multivariate_grid(
             "# Commits",
             "# Interacting authors",

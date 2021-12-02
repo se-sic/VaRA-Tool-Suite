@@ -63,10 +63,10 @@ def get_local_project_git_path(
     else:
         source = get_primary_project_source(project_name)
 
-    if is_git_source(source):
-        source.fetch()
+    if not is_git_source(source):
+        raise AssertionError(f"Project {project_name} does not use git.")
 
-    return Path(target_prefix()) / Path(source.local)
+    return Path(source.fetch())
 
 
 def get_extended_commit_lookup_source(
@@ -364,7 +364,8 @@ class VaraTestRepoSubmodule(GitSubmodule):  # type: ignore  # pylint: disable=R0
         return submodule_target
 
 
-class VaraTestRepoSource(Git):  # type: ignore
+# TODO (se-passau/VaRA#717): Remove pylint's disable when issue is fixed
+class VaraTestRepoSource(Git):  # type: ignore  # pylint: disable=R0901;
     """A project source for repositories stored in the vara-test-repos
     repository."""
 

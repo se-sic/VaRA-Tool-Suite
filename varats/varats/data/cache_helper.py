@@ -4,6 +4,7 @@ import logging
 import typing as tp
 from pathlib import Path
 
+import networkx as nx
 import pandas as pd
 
 from varats.utils.settings import vara_cfg
@@ -182,3 +183,29 @@ def build_cached_report_table(
         col for col in new_df.columns
         if col not in [CACHE_ID_COL, CACHE_TIMESTAMP_COL]
     ]]
+
+
+GraphTy = tp.TypeVar("GraphTy", bound=nx.Graph)
+
+
+def build_cached_graph(
+    graph_id: str, create_graph: tp.Callable[[], GraphTy]
+) -> GraphTy:
+    """
+    Create an automatically cached networkx graph.
+
+    Args:
+        graph_id: graph cache identifier
+        create_graph: function that creates the graph
+
+    Returns:
+        the cached or created graph
+    """
+    path = Path(str(vara_cfg()["data_cache"])) / f"graph-{graph_id}.gz"
+
+    if path.exists():
+        return tp.cast(GraphTy, nx.read_gpickle(path))
+
+    graph = create_graph()
+    nx.write_gpickle(graph, path)
+    return graph
