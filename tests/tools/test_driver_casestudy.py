@@ -1,11 +1,15 @@
 """Test varats casestudy tool."""
-import re
+
 import unittest
 from pathlib import Path
 
 from click.testing import CliRunner
 
-from tests.test_utils import run_in_test_environment
+from tests.test_utils import (
+    run_in_test_environment,
+    TEST_INPUTS_DIR,
+    UnitTestInputs,
+)
 from varats.paper_mgmt.paper_config import load_paper_config
 from varats.tools import driver_casestudy
 from varats.utils.settings import vara_cfg, save_config
@@ -32,34 +36,28 @@ class TestDriverContainer(unittest.TestCase):
         )
         self.assertTrue(case_study.exists())
 
-    @run_in_test_environment()
+    @run_in_test_environment(
+        UnitTestInputs.create_test_input(
+            TEST_INPUTS_DIR / "paper_configs/test_casestudy_status",
+            Path("paper_configs/test_status")
+        )
+    )
     def test_vara_cs_status(self):
         """Test for vara-cs status."""
         runner = CliRunner()
-        (Path(vara_cfg()["paper_config"]["folder"].value) /
-         "test_status").mkdir()
         vara_cfg()["paper_config"]["current_config"] = "test_status"
         save_config()
-
-        runner.invoke(
-            driver_casestudy.main, [
-                'gen', '-p', 'gravity', '--distribution',
-                'HalfNormalSamplingMethod', 'paper_configs/test_status'
-            ]
-        )
         load_paper_config()
-        case_study = Path(
-            vara_cfg()["paper_config"]["folder"].value + "/" + "test_status"
-            "/" + "gravity_0.case_study"
-        )
-        self.assertTrue(case_study.exists())
-
         result = runner.invoke(driver_casestudy.main, ['status', 'EmptyReport'])
 
-        self.assertTrue(case_study.exists())
-        self.assertTrue(
-            re.match(
-                r'CS:\sgravity_0:\s\(\s\s\d\/\d\d\)\sprocessed\s\[\d\/\d\/\d\/\d\/\d\].*',
-                result.stdout
-            )
+        self.assertEqual(
+            "CS: xz_0: (  0/5) processed [0/0/0/3/2]\n"
+            "    c5c7ceb08a [Missing]\n"
+            "    ef364d3abc [Missing]\n"
+            "    2f0bc9cd40 [Missing]\n"
+            "    7521bbdc83 [Blocked]\n"
+            "    10437b5b56 [Blocked]\n\n"
+            "---------------------------------------------"
+            "-----------------------------------\n"
+            "Total: (  0/5) processed [0/0/0/3/2]\n", result.stdout
         )
