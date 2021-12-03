@@ -305,7 +305,7 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
                 os.rename(os.path.join(root, name), os.path.join(root, ".git"))
 
 
-class VaraTestRepoSubmodule(GitSubmodule):
+class VaraTestRepoSubmodule(GitSubmodule):  # type: ignore
     """A project source for submodule repositories stored in the vara-test-repos
     repository."""
 
