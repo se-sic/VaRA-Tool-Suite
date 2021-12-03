@@ -312,7 +312,7 @@ def _filter_data_frame(
     interaction_plot_df = interaction_plot_df[interaction_plot_df.degree_type ==
                                               degree_type.value]
 
-    degree_levels = sorted(np.unique(interaction_plot_df.degree))
+    degree_levels = sorted(interaction_plot_df.degree.unique())
     interaction_plot_df = interaction_plot_df.set_index(['revision', 'degree'])
 
     def aggregate_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -350,11 +350,11 @@ def _filter_data_frame(
 
 
 def _get_distinct_base_lib_names(df: pd.DataFrame) -> tp.List[str]:
-    return list(np.unique([str(base_lib) for base_lib in df.base_lib]))
+    return [str(base_lib) for base_lib in df.base_lib.unique()]
 
 
 def _get_distinct_inter_lib_names(df: pd.DataFrame) -> tp.List[str]:
-    return list(np.unique([str(inter_lib) for inter_lib in df.inter_lib]))
+    return [str(inter_lib) for inter_lib in df.inter_lib.unique()]
 
 
 def _generate_degree_stackplot(
@@ -388,7 +388,7 @@ def _generate_degree_stackplot(
             cm.get_cmap(plot_kwargs['colormap'].value
                        )(np.linspace(0, 1, len(sub_df_list)))
         ),
-        labels=sorted(np.unique(df['degree'])),  # type: ignore
+        labels=sorted(df['degree'].unique()),
         linewidth=plot_config.line_width()
     )
     legend = main_axis.legend(

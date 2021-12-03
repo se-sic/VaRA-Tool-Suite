@@ -5,6 +5,7 @@ import typing as tp
 from enum import Enum
 
 import numpy as np
+import numpy.typing as nptp
 from scipy.stats import halfnorm
 
 from varats.base.configuration import Configuration
@@ -183,7 +184,9 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
         )
 
     @abc.abstractmethod
-    def gen_distribution_function(self) -> tp.Callable[[int], np.ndarray]:
+    def gen_distribution_function(
+        self
+    ) -> tp.Callable[[int], nptp.NDArray[np.float64]]:
         """
         Generate a distribution function for the specified sampling method.
 
@@ -220,7 +223,9 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
 class UniformSamplingMethod(NormalSamplingMethod):
     """SampleMethod based on the uniform distribution."""
 
-    def gen_distribution_function(self) -> tp.Callable[[int], np.ndarray]:
+    def gen_distribution_function(
+        self
+    ) -> tp.Callable[[int], nptp.NDArray[np.float64]]:
         """
         Generate a distribution function for the specified sampling method.
 
@@ -229,10 +234,8 @@ class UniformSamplingMethod(NormalSamplingMethod):
             according to the selected distribution
         """
 
-        def uniform(num_samples: int) -> np.ndarray:
-            return tp.cast(
-                tp.List[float], np.random.uniform(0, 1.0, num_samples)
-            )
+        def uniform(num_samples: int) -> nptp.NDArray[np.float64]:
+            return np.random.uniform(0, 1.0, num_samples)
 
         return uniform
 
@@ -240,7 +243,9 @@ class UniformSamplingMethod(NormalSamplingMethod):
 class HalfNormalSamplingMethod(NormalSamplingMethod):
     """SampleMethod based on a half-normal distribution."""
 
-    def gen_distribution_function(self) -> tp.Callable[[int], np.ndarray]:
+    def gen_distribution_function(
+        self
+    ) -> tp.Callable[[int], nptp.NDArray[np.float64]]:
         """
         Generate a distribution function for the specified sampling method.
 
@@ -249,9 +254,10 @@ class HalfNormalSamplingMethod(NormalSamplingMethod):
             according to the selected distribution
         """
 
-        def halfnormal(num_samples: int) -> np.ndarray:
+        def halfnormal(num_samples: int) -> nptp.NDArray[np.float64]:
             return tp.cast(
-                tp.List[float], halfnorm.rvs(scale=1, size=num_samples)
+                nptp.NDArray[np.float64],
+                halfnorm.rvs(scale=1, size=num_samples)
             )
 
         return halfnormal

@@ -7,18 +7,15 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
+import numpy.typing as nptp
 import seaborn as sb
 from matplotlib import style
 from matplotlib.patches import Patch
 
 import varats.paper_mgmt.paper_config as PC
-from varats.data.databases.file_status_database import FileStatusDatabase
 from varats.data.reports.empty_report import EmptyReport
-from varats.mapping.commit_map import CommitMap
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plot.plot import Plot
-from varats.plot.plot_utils import check_required_args, find_missing_revisions
 from varats.plot.plots import PlotGenerator, PlotConfig, REQUIRE_REPORT_TYPE
 from varats.project.project_util import get_local_project_git
 from varats.report.report import FileStatusExtension, BaseReport
@@ -154,18 +151,19 @@ def _plot_overview_graph(
         for i, t in enumerate(revs_total.flatten())
     ])
     revs_success_ratio = revs_success_ratio / len(revs_success_ratio)
-    revs_success_ratio = revs_success_ratio.reshape(num_projects, num_years)
+    revs_success_ratio = np.reshape(
+        revs_success_ratio, (num_projects, num_years)
+    )
 
-    def to_color(
-        n_success: float, n_blocked: float, n_total: float
-    ) -> np.ndarray:
-        f_success = n_success / float(n_total)
-        f_blocked = n_blocked / float(n_total)
-        f_failed = 1.0 - f_success - f_blocked
-        return np.asarray(
-            f_success * SUCCESS_COLOR + f_blocked * BLOCKED_COLOR +
-            f_failed * FAILED_COLOR
-        )
+    def to_color(n_success: float, n_blocked: float,
+                 n_total: float) -> nptp.NDArray[np.float64]:
+        f_success: nptp.NDArray[np.float64
+                               ] = SUCCESS_COLOR * (n_success / n_total)
+        f_blocked: nptp.NDArray[np.float64
+                               ] = BLOCKED_COLOR * (n_blocked / n_total)
+        f_failed: nptp.NDArray[np.float64
+                              ] = FAILED_COLOR * (1.0 - f_success - f_blocked)
+        return f_success + f_blocked + f_failed
 
     colors = [
         to_color(revs_successful, revs_blocked, revs_total)

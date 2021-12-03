@@ -18,13 +18,14 @@ if sys.version_info <= (3, 8):
 else:
     from typing import TypedDict
 
-PointTy = nptp.ArrayLike
+FloatArray = nptp.NDArray[np.float64]
+PointTy = FloatArray
 
 
 def _ribbon_control_points(
     left_arc: tp.Tuple[float, float], right_arc: tp.Tuple[float, float],
     radius: float
-) -> tp.Tuple[tp.List[np.typing.ArrayLike], tp.List[np.typing.ArrayLike]]:
+) -> tp.Tuple[tp.List[FloatArray], tp.List[FloatArray]]:
     return ([
         _angular_to_cartesian((1, left_arc[0])),
         _angular_to_cartesian((radius, (left_arc[0] + right_arc[0]) / 2)),
@@ -36,27 +37,25 @@ def _ribbon_control_points(
     ])
 
 
-def _angular_to_cartesian(angular: np.typing.ArrayLike) -> np.ndarray:
+def _angular_to_cartesian(angular: nptp.ArrayLike) -> FloatArray:
     angular = np.asarray(angular)
     return np.array([
         angular[0] * np.cos(angular[1]), angular[0] * np.sin(angular[1])
     ])
 
 
-def _get_b1(point0: np.ndarray, point2: np.ndarray) -> np.ndarray:
+def _get_b1(point0: FloatArray, point2: FloatArray) -> FloatArray:
     """Given two points p0 and p2, finds a point p1 such that p0p1p2 forms an
     equilateral triangle."""
     if len(point0) != 2 and len(point2) != 2:
         raise ValueError('p0 and p2 must have exactly 2 elements.')
     point1 = 0.5 * (point0 + point2) + 0.5 * np.asarray([
         0, 1.0 * np.sign(point2[0] - point0[0])
-    ]) * np.sqrt(3) * np.linalg.norm(point2 - point0)
+    ]) * np.sqrt(3) * np.linalg.norm(point2 - point0)  # type: ignore
     return np.asarray(point1)
 
 
-def _dim_plus_1(
-    points: tp.List[np.typing.ArrayLike], weights: tp.List[float]
-) -> np.ndarray:
+def _dim_plus_1(points: tp.List[FloatArray], weights: FloatArray) -> FloatArray:
     """Add weights by lifting the points in b to 3D points."""
     if len(points) != len(weights):
         raise ValueError(
@@ -64,14 +63,15 @@ def _dim_plus_1(
         )
 
     lifted_points = np.array([
-        np.append(point, weights[i]) for (i, point) in enumerate(points)
+        np.append(point, weights[i])  # type: ignore
+        for (i, point) in enumerate(points)
     ])
     lifted_points[1, :2] *= weights[1]
     return lifted_points
 
 
-def _make_bezier_curve(control_points: np.ndarray,
-                       num_points: int) -> tp.List[np.ndarray]:
+def _make_bezier_curve(control_points: FloatArray,
+                       num_points: int) -> tp.List[FloatArray]:
     """Evaluate nr equally spaced points on a bezier curve defined by the given
     control points."""
     control_points = np.asarray(control_points)
@@ -82,7 +82,7 @@ def _make_bezier_curve(control_points: np.ndarray,
     # For each parameter t[i] evaluate a point on the Bezier curve with the
     # de Casteljau algorithm.
     for i in range(num_points):
-        control_points_copy = np.copy(control_points)
+        control_points_copy = np.copy(control_points)  # type: ignore
         for ctrl_idx in range(1, num_control_points):
             control_points_copy[:num_control_points - ctrl_idx, :] = (
                 (1 - distances[i]) *
@@ -94,8 +94,8 @@ def _make_bezier_curve(control_points: np.ndarray,
     return points
 
 
-def _make_arc(point0: np.ndarray, point2: np.ndarray,
-              num_points: int) -> tp.List[np.ndarray]:
+def _make_arc(point0: FloatArray, point2: FloatArray,
+              num_points: int) -> tp.List[FloatArray]:
     """
     Make an arc (half-circle) with the given end points.
 
@@ -108,7 +108,8 @@ def _make_arc(point0: np.ndarray, point2: np.ndarray,
         a list of points on the arc
     """
     point1 = _get_b1(point0, point2)
-    control_points = _dim_plus_1([point0, point1, point2], [1, 0.5, 1])
+    control_points = _dim_plus_1([point0, point1, point2],
+                                 np.asarray([1, 0.5, 1]))
     discrete_curve = _make_bezier_curve(control_points, num_points)
     return [p[:2] / p[2] for p in discrete_curve]
 
@@ -130,8 +131,8 @@ def _is_between_zero_and_2pi(x: float) -> bool:
 
 
 def _calculate_ideogram_lengths(
-    sizes: np.ndarray, gap: float = 0.005 * 2 * np.pi
-) -> np.ndarray:
+    sizes: FloatArray, gap: float = 0.005 * 2 * np.pi
+) -> FloatArray:
     """
     Calculate the lengths for the ideograms.
 
@@ -148,8 +149,8 @@ def _calculate_ideogram_lengths(
 
 
 def _calculate_ideogram_ends(
-    lengths: np.ndarray, gap: float = 0.005 * 2 * np.pi
-) -> np.ndarray:
+    lengths: FloatArray, gap: float = 0.005 * 2 * np.pi
+) -> FloatArray:
     """
     Calculate the ends of the ideograms as azimuths.
 
@@ -173,7 +174,7 @@ def _make_ideogram_arc(
     radius: float,
     ends: tp.Tuple[float, float],
     num_points: int = 50
-) -> tp.List[np.ndarray]:
+) -> tp.List[FloatArray]:
     """
     Create a set of points defining an ideogram arc.
 
@@ -208,7 +209,7 @@ def _make_ideogram_arc(
 
 def _calculate_ribbon_ends(
     node_size: float, ideogram_ends: tp.Tuple[float, float],
-    ribbon_sizes: tp.List[float]
+    ribbon_sizes: FloatArray
 ) -> tp.List[tp.Tuple[float, float]]:
     ideogram_length = ideogram_ends[1] - ideogram_ends[0]
     lengths = [
@@ -337,7 +338,7 @@ class ChordPlotEdgeInfo(TypedDict):
 
 def _calculate_ideogram_data(
     node_sizes: tp.List[float]
-) -> tp.Tuple[np.ndarray, tp.List[str]]:
+) -> tp.Tuple[FloatArray, tp.List[str]]:
     gap = 2 * np.pi * 0.000
     ideogram_lengths = _calculate_ideogram_lengths(np.asarray(node_sizes), gap)
     ideogram_ends = _calculate_ideogram_ends(ideogram_lengths, gap)
@@ -350,14 +351,14 @@ def _calculate_ideogram_data(
 
 def _create_ideograms(
     nodes: tp.List[tp.Tuple[NodeTy, ChordPlotNodeInfo]],
-    ideogram_ends: np.ndarray, ideogram_colors: tp.List[str]
+    ideogram_ends: FloatArray, ideogram_colors: tp.List[str]
 ) -> tp.List[go.Scatter]:
     ideogram_info: tp.List[go.Scatter] = []
     for idx, ends in enumerate(ideogram_ends):
         outer_arc_points = _make_ideogram_arc(1.1, ends)
         inner_arc_points = _make_ideogram_arc(1.0, ends)
 
-        points: tp.List[np.ndarray] = []
+        points: tp.List[FloatArray] = []
         points.extend(outer_arc_points)
         points.extend(inner_arc_points[::-1])
         points.append(outer_arc_points[0])
@@ -382,7 +383,7 @@ def _calculate_ribbon_data(
     nodes: tp.List[tp.Tuple[NodeTy, ChordPlotNodeInfo]],
     edges: tp.List[tp.Tuple[NodeTy, NodeTy,
                             ChordPlotEdgeInfo]], node_sizes: tp.List[float],
-    ideogram_ends: np.ndarray, ideogram_colors: tp.List[str]
+    ideogram_ends: FloatArray, ideogram_colors: tp.List[str]
 ) -> tp.Tuple[tp.Dict[int, tp.List[tp.Tuple[float, float]]], tp.Dict[int, str]]:
     incoming_edges: tp.Dict[NodeTy, tp.List[int]] = defaultdict(list)
     outgoing_edges: tp.Dict[NodeTy, tp.List[int]] = defaultdict(list)
@@ -416,7 +417,8 @@ def _calculate_ribbon_data(
             node_edges.append(edge_idx)
             node_edge_sizes.append(edges[edge_idx][2].get("size", 1))
         ribbon_ends = _calculate_ribbon_ends(
-            node_sizes[node_idx], ideogram_ends[node_idx], node_edge_sizes
+            node_sizes[node_idx], ideogram_ends[node_idx],
+            np.asarray(node_edge_sizes)
         )
         for edge_idx, ribbon_end in zip(node_edges, ribbon_ends):
             ribbon_bounds[edge_idx].append(ribbon_end)
