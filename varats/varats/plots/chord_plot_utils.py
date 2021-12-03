@@ -10,8 +10,8 @@ from collections import defaultdict
 
 import numpy as np
 import numpy.typing as nptp
-import plotly.colors as colors
 import plotly.graph_objs as go
+from plotly import colors
 
 if sys.version_info <= (3, 8):
     from typing_extensions import TypedDict

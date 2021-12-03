@@ -59,9 +59,7 @@ class CommitInteractionGraphPlot(Plot, plot_name='cig_plot'):
         # Nothing to do here.
         pass
 
-    def save(
-        self, path: tp.Optional[Path] = None, filetype: str = 'svg'
-    ) -> None:
+    def save(self, plot_dir: Path, filetype: str = 'svg') -> None:
         project_name = self.plot_kwargs["project"]
         revision = self.plot_kwargs["revision"]
         cig = create_blame_interaction_graph(project_name, revision
@@ -71,8 +69,9 @@ class CommitInteractionGraphPlot(Plot, plot_name='cig_plot'):
             "label"
         )
 
+        # pylint: disable=import-outside-toplevel
         from networkx.drawing.nx_agraph import write_dot
-        write_dot(cig, self.plot_file_name("dot"))
+        write_dot(cig, plot_dir / self.plot_file_name("dot"))
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -315,16 +314,15 @@ class CommitInteractionGraphNodeDegreePlot(Plot, plot_name='cig_node_degrees'):
             xlabel = "Commits"
         axes.set_xlabel(xlabel)
 
-        project_name = case_study.project_name
         revision = newest_processed_revision_for_case_study(
             case_study, BlameReport
         )
         if not revision:
             raise PlotDataEmpty()
 
-        cig = create_blame_interaction_graph(project_name, revision
+        cig = create_blame_interaction_graph(case_study.project_name, revision
                                             ).commit_interaction_graph()
-        commit_lookup = create_commit_lookup_helper(project_name)
+        commit_lookup = create_commit_lookup_helper(case_study.project_name)
 
         def filter_nodes(node: CommitRepoPair) -> bool:
             if node.commit_hash == UNCOMMITTED_COMMIT_HASH:

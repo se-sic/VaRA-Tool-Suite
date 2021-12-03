@@ -83,12 +83,11 @@ class CentralCodeScatterPlot(Plot, plot_name='central_code_scatter'):
 
         commit_lookup = create_commit_lookup_helper(project_name)
         repo_lookup = get_local_project_gits(project_name)
-        churn_config = ChurnConfig.create_c_style_languages_config()
         code_churn_lookup: tp.Dict[str, tp.Dict[FullCommitHash,
                                                 tp.Tuple[int, int, int]]] = {}
         for repo_name, repo in repo_lookup.items():
             code_churn_lookup[repo_name] = calc_repo_code_churn(
-                repo, churn_config
+                repo, ChurnConfig.create_c_style_languages_config()
             )
 
         def filter_nodes(node: CommitRepoPair) -> bool:
