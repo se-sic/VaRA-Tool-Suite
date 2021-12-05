@@ -168,10 +168,12 @@ def get_all_revisions_between(
     """
     result = [c_start]
     result.extend(
-        git(
-            "log", "--pretty=%H", "--ancestry-path",
-            "{}..{}".format(c_start, c_end)
-        ).strip().split()
+        reversed(
+            git(
+                "log", "--pretty=%H", "--ancestry-path",
+                "{}..{}".format(c_start, c_end)
+            ).strip().split()
+        )
     )
     return list(map(hash_type, result))
 

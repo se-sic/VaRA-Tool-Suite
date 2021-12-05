@@ -56,9 +56,9 @@ class TestGitInteractionHelpers(unittest.TestCase):
             self.assertSetEqual(
                 set(revs), {
                     FullCommitHash("5692e422da6af1e991f9182345d58df87866bc5e"),
-                    FullCommitHash("2f9277ff2f2d0b4113b1ffd9753cc0f6973d354a"),
+                    FullCommitHash("2a51a85aa86abb4c294c65fab57f3d9c69f10080"),
                     FullCommitHash("63be8a99401992075c23e99f7c84de1c653e39e2"),
-                    FullCommitHash("2a51a85aa86abb4c294c65fab57f3d9c69f10080")
+                    FullCommitHash("2f9277ff2f2d0b4113b1ffd9753cc0f6973d354a")
                 }
             )
 
@@ -74,9 +74,9 @@ class TestGitInteractionHelpers(unittest.TestCase):
             self.assertSetEqual(
                 set(revs), {
                     ShortCommitHash("5692e422da"),
-                    ShortCommitHash("2f9277ff2f"),
+                    ShortCommitHash("2a51a85aa8"),
                     ShortCommitHash("63be8a9940"),
-                    ShortCommitHash("2a51a85aa8")
+                    ShortCommitHash("2f9277ff2f")
                 }
             )
 
