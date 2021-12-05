@@ -33,7 +33,12 @@ from varats.experiment.wllvm import (
 )
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_util import (
+    FullCommitHash,
+    ShortCommitHash,
+    get_initial_commit,
+    get_all_revisions_between,
+)
 from varats.utils.settings import bb_cfg
 
 
@@ -161,6 +166,8 @@ class PrecisionComparisionBase(VersionExperiment, shorthand=""):
 
     REPORT_SPEC = ReportSpecification(GlobalsReportWith, GlobalsReportWithout)
 
+    MAX_REVISIONS_TO_EXPLORE = 1
+
     def __init__(self, revision_step_with: int) -> None:
         self.__revision_step_with = revision_step_with
 
@@ -227,17 +234,10 @@ class PrecisionComparisionBase(VersionExperiment, shorthand=""):
     ) -> tp.List[ShortCommitHash]:
         """Computes the list of revisions that should be explored by this
         analysis."""
-        base_hash = ShortCommitHash(project.version_of_primary)
-        revisions = [base_hash]
-
-        project.version_of_primary
-        for _ in range(0, 1):
-            revisions.append(
-                git_get_next_rev(project, base_hash,
-                                 self.__revision_step_with)  # TODO: impl
-            )
-
-        return revisions
+        return get_all_revisions_between(
+            get_initial_commit().hash, project.version_of_primary,
+            ShortCommitHash
+        )[::-self.__revision_step_with][:self.MAX_REVISIONS_TO_EXPLORE]
 
 
 class IncrementalAnalysisPrecisionComparisionS1(
