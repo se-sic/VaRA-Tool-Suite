@@ -26,6 +26,7 @@ from varats.experiment.experiment_util import (
     PEErrorHandler,
 )
 from varats.project.project_util import ProjectBinaryWrapper
+from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import bb_cfg
 
 
@@ -269,6 +270,7 @@ def get_cached_bc_file_path(
     project: Project,
     binary: ProjectBinaryWrapper,
     required_bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
+    project_revision: tp.Optional[ShortCommitHash] = None
 ) -> Path:
     """
     Look up the path to a BC file from the BC cache.
@@ -287,10 +289,13 @@ def get_cached_bc_file_path(
         )
     )
 
+    if not project_revision:
+        project_revision = project.version_of_primary
+
     bc_file_path = bc_cache_folder / Extract.get_bc_file_name(
         project_name=project.name,
         binary_name=binary.name,
-        project_version=project.version_of_primary,
+        project_version=project_revision,
         bc_file_extensions=required_bc_file_extensions
     )
     if not bc_file_path.exists():
