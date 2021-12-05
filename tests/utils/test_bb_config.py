@@ -72,7 +72,8 @@ class BenchBuildConfig(unittest.TestCase):
         excluded_experiments = [
             "varats.experiments.vara.region_instrumentation",
             "varats.experiments.vara.commit_annotation_report",
-            "varats.experiments.vara.blame_experiment"
+            "varats.experiments.vara.blame_experiment",
+            "varats.experiments.phasar.incremental_analysis"
         ]
 
         loaded_plugins = bb_cfg()["plugins"]["experiments"].value

@@ -42,6 +42,8 @@ class RunAnalysisBase(actions.Step):
     tool to compare the results of a whole-program analysis with the incremental
     one."""
 
+    NAME = "RunAnalysisBase"
+    DESCRIPTION = "Generic comparision analysis implementation"
     BC_FILE_EXTENSIONS = [
         BCFileExtensions.NO_OPT,
         BCFileExtensions.TBAA,
