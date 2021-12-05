@@ -132,6 +132,26 @@ def get_current_branch(repo_folder: tp.Optional[Path] = None) -> str:
         return tp.cast(str, git("rev-parse", "--abbrev-ref", "HEAD").strip())
 
 
+def get_initial_commit(repo_folder: tp.Optional[Path] = None) -> FullCommitHash:
+    """
+    Get the initial commit of a repository, i.e., the first commit made.
+
+    Args:
+        repo_folder: where the git repository is located
+
+    Returns: initial commit hash
+    """
+    if repo_folder is None or repo_folder == Path(''):
+        return FullCommitHash(
+            git("rev-list", "--max-parents=0", "HEAD").strip()
+        )
+
+    with local.cwd(repo_folder):
+        return FullCommitHash(
+            git("rev-list", "--max-parents=0", "HEAD").strip()
+        )
+
+
 def get_all_revisions_between(
     c_start: str, c_end: str, hash_type: tp.Type[CommitHashTy]
 ) -> tp.List[CommitHashTy]:

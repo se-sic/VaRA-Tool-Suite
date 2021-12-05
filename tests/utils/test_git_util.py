@@ -13,6 +13,7 @@ from varats.utils.git_util import (
     calc_commit_code_churn,
     get_all_revisions_between,
     get_current_branch,
+    get_initial_commit,
 )
 
 
@@ -26,6 +27,22 @@ class TestGitInteractionHelpers(unittest.TestCase):
         repo.checkout(repo.lookup_branch('master'))
 
         self.assertEqual(get_current_branch(repo.workdir), 'master')
+
+    def test_get_first_commit(self):
+        """Check if we can correctly retrieve the first commit hash in a
+        repository."""
+        repo = get_local_project_git("brotli")
+
+        self.assertEqual(
+            get_initial_commit(repo.workdir),
+            FullCommitHash("8f30907d0f2ef354c2b31bdee340c2b11dda0fb0")
+        )
+
+        with local.cwd(repo.workdir):
+            self.assertEqual(
+                get_initial_commit(),
+                FullCommitHash("8f30907d0f2ef354c2b31bdee340c2b11dda0fb0")
+            )
 
     def test_get_all_revisions_between_full(self):
         """Check if the correct all revisions are correctly found."""
