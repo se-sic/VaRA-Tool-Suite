@@ -23,6 +23,7 @@ from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
     get_default_compile_error_wrapped,
+    get_varats_result_folder,
     wrap_unlimit_stack_size,
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
@@ -46,8 +47,6 @@ class FeatureRegionGeneration(actions.Step):  # type: ignore
     NAME = "FeatureRegionGeneration"
     DESCRIPTION = "Analyse the bitcode with -vara-PFTD and -vara-PFTDD -vara-FR-verifier"
 
-    RESULT_FOLDER_TEMPLATE = "{result_dir}/{project_dir}"
-
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(obj=project, action_fn=self.analyze)
         self.__experiment_handle = experiment_handle
@@ -67,14 +66,7 @@ class FeatureRegionGeneration(actions.Step):  # type: ignore
         # Add to the user-defined path for saving the results of the
         # analysis also the name and the unique id of the project of every
         # run.
-        vara_result_folder = self.RESULT_FOLDER_TEMPLATE.format(
-            result_dir=str(bb_cfg()["varats"]["outfile"]),
-            project_dir=str(project.name)
-        )
-
-        mkdir("-p", vara_result_folder)
-
-        timeout_duration = '1h'
+        vara_result_folder = get_varats_result_folder(project)
 
         for binary in project.binaries:
             result_file = self.__experiment_handle.get_file_name(
@@ -140,7 +132,7 @@ class FeatureRegionVerificationExperiment(VersionExperiment, shorthand="FRR"):
         # still add optimizations flags after the experiment specified cflags.
         project.cflags += [
             "-fvara-feature", "-fvara-IFA",
-            "-mllvm", "-feature-model=/home/zatho/ba/vara/ConfigurableSystems/lrzip/FeatureModel.xml",
+            "-mllvm", "-feature-model=/home/zatho/ba/vara/ConfigurableSystems/Opus/FeatureModel.xml",
             "-O1", "-Xclang", "-disable-llvm-optzns", "-g0"
         ]
 
