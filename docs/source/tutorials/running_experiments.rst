@@ -33,9 +33,9 @@ Case studies are managed with the :ref:`vara-cs` tool.
 
 .. code-block:: bash
 
-    vara-cs gen paper_configs/tutorial/ HalfNormalSamplingMethod -p gzip --num-rev 10
+    vara-cs gen paper_configs/tutorial/ HalfNormalSamplingMethod -p xz --num-rev 10
 
-This creates a new case study for the project gzip and includes 10 revisions sampled with a half normal distribution.
+This creates a new case study for the project xz and includes 10 revisions sampled with a half normal distribution.
 
 Run an Experiment
 -----------------
