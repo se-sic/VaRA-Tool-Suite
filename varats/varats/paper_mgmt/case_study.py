@@ -126,7 +126,12 @@ def get_revisions_status_for_case_study(
     Returns:
         a list of (revision, status) tuples
     """
-    project_cls = get_project_cls_by_name(case_study.project_name)
+    try:
+        project_cls = get_project_cls_by_name(case_study.project_name)
+    except LookupError:
+        # Return an empty list should a project name not exist.
+        return []
+
     tagged_revisions = get_tagged_revisions(
         project_cls, result_file_type, tag_blocked
     )
