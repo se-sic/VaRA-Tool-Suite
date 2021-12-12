@@ -12,6 +12,7 @@ from plumbum import FG, colors, local
 
 from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.discover_reports import initialize_reports
+from varats.experiment.experiment_util import VersionExperiment
 from varats.mapping.commit_map import create_lazy_commit_map_loader
 from varats.paper.case_study import store_case_study
 from varats.paper_mgmt import paper_config_manager as PCM
@@ -29,7 +30,10 @@ from varats.ts_utils.cli_util import (
     initialize_cli_tool,
     cli_yn_choice,
 )
-from varats.ts_utils.click_param_types import create_report_type_choice
+from varats.ts_utils.click_param_types import (
+    create_experiment_type_choice,
+    create_report_type_choice,
+)
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg
 
@@ -46,7 +50,7 @@ def main() -> None:
 
 
 @main.command("status")
-@click.argument("report_type", type=create_report_type_choice())
+@click.argument("experiment_type", type=create_experiment_type_choice())
 @click.option(
     "--filter-regex",
     help="Provide a regex to filter the shown case studies",
@@ -83,9 +87,9 @@ def main() -> None:
     "(e.g. when piping to less -r)."
 )
 def __casestudy_status(
-    report_type: tp.Type['BaseReport'], filter_regex: str, paper_config: str,
-    short: bool, list_revs: bool, with_stage: bool, sort_revs: bool,
-    legend: bool, force_color: bool
+    experiment_type: tp.Type[VersionExperiment], filter_regex: str,
+    paper_config: str, short: bool, list_revs: bool, with_stage: bool,
+    sort_revs: bool, legend: bool, force_color: bool
 ) -> None:
     """
     Show status of current case study.
@@ -104,7 +108,7 @@ def __casestudy_status(
     if short and with_stage:
         click.UsageError("At most one argument of: --short, --ws can be used.")
     PCM.show_status_of_case_studies(
-        report_type, filter_regex, short, sort_revs, list_revs, with_stage,
+        experiment_type, filter_regex, short, sort_revs, list_revs, with_stage,
         legend
     )
 

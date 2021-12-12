@@ -48,10 +48,10 @@ class TestDriverContainer(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "test_status"
         save_config()
         load_paper_config()
-        result = runner.invoke(driver_casestudy.main, ['status', 'EmptyReport'])
+        result = runner.invoke(driver_casestudy.main, ['status', 'JustCompile'])
 
         self.assertEqual(
-            "CS: xz_0: (  0/5) processed [0/0/0/3/2]\n"
+            "CS: xz_0: (  0/5) processed [0/0/0/0/3/2]\n"
             "    c5c7ceb08a [Missing]\n"
             "    ef364d3abc [Missing]\n"
             "    2f0bc9cd40 [Missing]\n"
@@ -59,5 +59,5 @@ class TestDriverContainer(unittest.TestCase):
             "    10437b5b56 [Blocked]\n\n"
             "---------------------------------------------"
             "-----------------------------------\n"
-            "Total: (  0/5) processed [0/0/0/3/2]\n", result.stdout
+            "Total: (  0/5) processed [0/0/0/0/3/2]\n", result.stdout
         )

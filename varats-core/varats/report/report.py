@@ -22,9 +22,10 @@ class FileStatusExtension(Enum):
     value: tp.Tuple[str, Color]  # pylint: disable=invalid-name
 
     SUCCESS = ("success", colors.green)
+    PARTIAL = ("partial", colors.orangered1)
     FAILED = ("failed", colors.lightred)
     COMPILE_ERROR = ("cerror", colors.red)
-    MISSING = ("###", colors.orange3)
+    MISSING = ("###", colors.yellow3a)
     BLOCKED = ("blocked", colors.blue)
 
     def get_status_extension(self) -> str:
@@ -100,7 +101,7 @@ class FileStatusExtension(Enum):
         <FileStatusExtension.SUCCESS: ('success', <ANSIStyle: Green>)>
 
         >>> FileStatusExtension.get_file_status_from_str('###')
-        <FileStatusExtension.MISSING: ('###', <ANSIStyle: Full: Orange3>)>
+        <FileStatusExtension.MISSING: ('###', <ANSIStyle: Full: Yellow3A>)>
 
         >>> FileStatusExtension.get_file_status_from_str('CompileError')
         <FileStatusExtension.COMPILE_ERROR: ('cerror', <ANSIStyle: Red>)>
@@ -112,6 +113,25 @@ class FileStatusExtension(Enum):
                 return fs_enum
 
         raise ValueError(f"Unknown file status extension name: {status_name}")
+
+    @staticmethod
+    def combine(
+        lhs: 'FileStatusExtension', rhs: 'FileStatusExtension'
+    ) -> 'FileStatusExtension':
+        """
+        Combines two FileStatusExtension into one.
+
+        Should no specific combination rule apply, the lhs is used as a default.
+        """
+        if (
+            lhs == FileStatusExtension.SUCCESS and
+            rhs != FileStatusExtension.SUCCESS
+        ) or (
+            rhs == FileStatusExtension.SUCCESS and
+            lhs != FileStatusExtension.SUCCESS
+        ):
+            return FileStatusExtension.PARTIAL
+        return lhs
 
 
 class ReportFilename():
@@ -539,3 +559,6 @@ class ReportSpecification():
 
     def __contains__(self, report_type: tp.Type[BaseReport]) -> bool:
         return self.in_spec(report_type)
+
+    def __iter__(self) -> tp.Iterator[tp.Type[BaseReport]]:
+        return iter(self.report_types)

@@ -3,9 +3,12 @@
 import typing as tp
 from enum import Enum
 
+import benchbuild as bb
 import click
 
 from varats.data.discover_reports import initialize_reports
+from varats.experiment.experiment_util import VersionExperiment
+from varats.experiments.discover_experiments import initialize_experiments
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.report.report import BaseReport
@@ -130,3 +133,22 @@ def create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
     """Create a choice parameter type that allows selecting a report type."""
     initialize_reports()
     return TypedChoice(BaseReport.REPORT_TYPES)
+
+
+def create_experiment_type_choice() -> TypedChoice[tp.Type[VersionExperiment]]:
+    """Create a choice parameter type that allows selecting a report type."""
+
+    def is_experiment_excluded(experiment_name) -> bool:
+        """Checks if an experiment should be excluded, as we don't want to
+        show/use standard BB experiments."""
+        if experiment_name in ('raw', 'empty', 'no-measurement'):
+            return True
+
+        return False
+
+    initialize_experiments()
+    return TypedChoice({
+        k: v
+        for k, v in bb.experiment.ExperimentRegistry.experiments.items()
+        if not is_experiment_excluded(k)
+    })
