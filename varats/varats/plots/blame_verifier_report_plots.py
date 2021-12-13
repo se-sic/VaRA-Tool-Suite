@@ -18,6 +18,7 @@ from varats.data.databases.blame_verifier_report_database import (
 from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
+from varats.plot.plots import PlotConfig
 from varats.plots.case_study_overview import SUCCESS_COLOR, FAILED_COLOR
 from varats.utils.git_util import FullCommitHash
 
@@ -264,13 +265,13 @@ def _verifier_plot_multiple(
     )
 
 
-class BlameVerifierReportPlot(Plot):
+class BlameVerifierReportPlot(Plot, plot_name=None):
     """Base plot for blame verifier plots."""
 
     @abc.abstractmethod
     def plot(self, view_mode: bool) -> None:
         """Plot the current plot to a file."""
-        style.use(self.style)
+        style.use(self.plot_config.style())
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -281,13 +282,15 @@ class BlameVerifierReportPlot(Plot):
         return f"{self.name}.{filetype}"
 
 
-class BlameVerifierReportNoOptPlot(BlameVerifierReportPlot):
+class BlameVerifierReportNoOptPlot(
+    BlameVerifierReportPlot, plot_name="b_verifier_report_no_opt_plot"
+):
     """Plotting the successful and failed annotations of reports without
     optimization."""
     NAME = 'b_verifier_report_no_opt_plot'
 
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         legend_title: str
@@ -307,13 +310,15 @@ class BlameVerifierReportNoOptPlot(BlameVerifierReportPlot):
         )
 
 
-class BlameVerifierReportOptPlot(BlameVerifierReportPlot):
+class BlameVerifierReportOptPlot(
+    BlameVerifierReportPlot, plot_name="b_verifier_report_opt_plot"
+):
     """Plotting the successful and failed annotations of reports with
     optimization."""
     NAME = 'b_verifier_report_opt_plot'
 
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
         legend_title: str

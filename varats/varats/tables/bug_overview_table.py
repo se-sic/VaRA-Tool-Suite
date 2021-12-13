@@ -7,7 +7,8 @@ from tabulate import tabulate
 
 from varats.project.project_util import get_project_cls_by_name
 from varats.provider.bug.bug_provider import BugProvider
-from varats.table.table import Table, TableFormat, wrap_table_in_document
+from varats.table.table import Table, wrap_table_in_document
+from varats.table.tables import TableFormat
 
 
 class BugOverviewTable(Table):

@@ -89,7 +89,7 @@ class CommitMap():
         the commits, based on the c_map, e.g., created from the analyzed git
         history.
 
-        The first time id is returend where the hash belonging to it starts
+        The first time id is returned where the hash belonging to it starts
         with the short hash.
 
         Args:
