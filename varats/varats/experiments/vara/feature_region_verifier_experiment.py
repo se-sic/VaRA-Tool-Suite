@@ -133,7 +133,7 @@ class FeatureRegionVerificationExperiment(VersionExperiment, shorthand="FRR"):
         project.cflags += [
             "-fvara-feature", "-fvara-IFA",
             "-mllvm", "-feature-model=/home/zatho/ba/vara/ConfigurableSystems/Opus/FeatureModel.xml",
-            "-O1", "-Xclang", "-disable-llvm-optzns", "-g-"
+            "-O1", "-Xclang", "-disable-llvm-optzns", "-g0"
         ]
 
         # TODO: missing arg for feature model
