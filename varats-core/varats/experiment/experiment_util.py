@@ -71,7 +71,7 @@ class PEErrorHandler():
                 except FileNotFoundError:
                     pass
 
-        error_file = self.__result_folder / self.__error_file_name
+        error_file = f"{self.__result_folder}/{self.__error_file_name}"
 
         if not os.path.exists(self.__result_folder):
             os.makedirs(self.__result_folder, exist_ok=True)
