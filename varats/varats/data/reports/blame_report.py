@@ -1,5 +1,5 @@
 """Module for BlameReport, a collection of blame interactions."""
-
+import logging
 import typing as tp
 from collections import defaultdict
 from copy import deepcopy
@@ -22,6 +22,8 @@ from varats.utils.git_util import (
     UNCOMMITTED_COMMIT_HASH,
 )
 
+LOG = logging.getLogger(__name__)
+
 
 class BlameTaintData():
     """Data that is carried by a blame taint."""
@@ -39,7 +41,7 @@ class BlameTaintData():
         self.__commit: CommitRepoPair = commit
 
     @staticmethod
-    def createTaintData(
+    def create_taint_data(
         raw_taint_data: tp.Dict[str, tp.Any]
     ) -> 'BlameTaintData':
         commit = CommitRepoPair(
@@ -109,6 +111,11 @@ class BlameTaintData():
                 return self.__function_name < other.__function_name
         return self.__commit < other.__commit
 
+    def __hash__(self) -> int:
+        return hash(
+            (self.is_global, self.commit, self.region_id, self.function_name)
+        )
+
 
 class BlameInstInteractions():
     """
@@ -133,12 +140,23 @@ class BlameInstInteractions():
     ) -> 'BlameInstInteractions':
         """Creates a `BlameInstInteractions` entry from the corresponding yaml
         document section."""
-        base_taint = BlameTaintData.createTaintData(raw_inst_entry['base-hash'])
+
+        def create_taint_data(
+            raw_data: tp.Union[str, tp.Dict[str, any]]
+        ) -> BlameTaintData:
+            # be backwards compatible with blame report version 4
+            if isinstance(raw_data, str):
+                commit_hash, *repo = raw_data.split('-', maxsplit=1)
+                crp = CommitRepoPair(
+                    FullCommitHash(commit_hash), repo[0] if repo else "Unknown"
+                )
+                return BlameTaintData(False, crp)
+            return BlameTaintData.create_taint_data(raw_data)
+
+        base_taint = create_taint_data(raw_inst_entry['base-hash'])
         interacting_taints: tp.List[BlameTaintData] = []
         for raw_inst_taint in raw_inst_entry['interacting-hashes']:
-            interacting_taints.append(
-                BlameTaintData.createTaintData(raw_inst_taint)
-            )
+            interacting_taints.append(create_taint_data(raw_inst_taint))
         amount = int(raw_inst_entry['amount'])
         return BlameInstInteractions(base_taint, interacting_taints, amount)
 
@@ -372,7 +390,12 @@ class BlameReport(BaseReport, shorthand="BR", file_type="yaml"):
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
             version_header = VersionHeader(next(documents))
             version_header.raise_if_not_type("BlameReport")
-            version_header.raise_if_version_is_less_than(5)
+            version_header.raise_if_version_is_less_than(4)
+            if version_header.version < 5:
+                LOG.warning(
+                    "You are using an outdated blame report format "
+                    "that might not be supported in the future."
+                )
 
             self.__meta_data = BlameReportMetaData \
                 .create_blame_report_meta_data(next(documents))
@@ -380,7 +403,8 @@ class BlameReport(BaseReport, shorthand="BR", file_type="yaml"):
             self.__function_entries: tp.Dict[str, BlameResultFunctionEntry] = {}
             raw_blame_report = next(documents)
             self.__blame_taint_scope = BlameTaintScope.from_string(
-                raw_blame_report['scope']
+                # be backwards compatible with blame report version 4
+                raw_blame_report.get('scope', "COMMIT")
             )
             for raw_func_entry in raw_blame_report['result-map']:
                 new_function_entry = (
