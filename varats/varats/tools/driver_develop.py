@@ -36,7 +36,7 @@ def main(
     context.ensure_object(dict)
     context.obj["research_tool"] = tool
 
-    project_list = []
+    project_list: tp.List[SubProject] = []
     if projects:
         if "all" in projects:
             tool.code_base.map_sub_projects(project_list.append)
