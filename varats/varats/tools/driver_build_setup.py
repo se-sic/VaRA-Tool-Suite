@@ -1,6 +1,5 @@
 """Driver module for `vara-buildsetup`."""
 
-import argparse
 import os
 import sys
 import typing as tp
