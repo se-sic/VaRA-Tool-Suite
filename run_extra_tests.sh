@@ -19,7 +19,7 @@ function check_err {
 COVERAGE='coverage run -p --rcfile=.coveragerc'
 
 # Smoke tests
-$COVERAGE "$(which vara-buildsetup)" vara -c
+$COVERAGE "$(which vara-buildsetup)" config
 check_err
 
 #has been moved to a unit tests, has to remain until all test have been moved
