@@ -8,6 +8,6 @@ runner:
 
   pylint:
     name: pylint
-    cmd: pylint varats* -j 0 | sort -u
+    cmd: pylint varats* -j 0
     errorformat:
       - "%f:%l:%c: %t%n: %m"
