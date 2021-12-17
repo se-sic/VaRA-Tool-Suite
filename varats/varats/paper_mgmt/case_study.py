@@ -394,19 +394,22 @@ def extend_with_extra_revs(
     case_study.include_revisions(new_rev_items, merge_stage, True)
 
 
-@check_required_args(
-    'git_path', 'revs_per_year', 'merge_stage', 'revs_year_sep'
-)
 def extend_with_revs_per_year(
-    case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
+    case_study: CaseStudy, cmap: CommitMap, merge_stage: int,
+    ignore_blocked: bool, git_path: str, revs_per_year: int,
+    revs_per_year_sep: bool
 ) -> None:
     """
-    Extend a case_study with ``n`` revisions per year, specifed by the caller
-    with kwargs['revs_per_year'].
+    Extend a case_study with ``revs_per_year`` revisions per year.
 
     Args:
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
+        merge_stage: stage to add the new revisions to
+        ignore_blocked: ignore blocked revisions
+        git_path: git path to the project
+        revs_per_year:  revisions to add per year
+        revs_per_year_sep: put revisions in separate stages for each year
     """
 
     def parse_int_string(string: tp.Optional[str]) -> tp.Optional[int]:
@@ -440,9 +443,9 @@ def extend_with_revs_per_year(
         case_study.name_stage(num_stages, str(year))
         return num_stages
 
-    repo = pygit2.Repository(pygit2.discover_repository(kwargs['git_path']))
+    repo = pygit2.Repository(pygit2.discover_repository(git_path))
     last_commit = repo[repo.head.target]
-    revs_year_sep = kwargs['revs_year_sep']
+    revs_year_sep = revs_per_year_sep
 
     commits: tp.DefaultDict[int, tp.List[FullCommitHash]] = defaultdict(
         list
@@ -455,14 +458,14 @@ def extend_with_revs_per_year(
 
     new_rev_items = []  # new revisions that get added to to case_study
     for year, commits_in_year in commits.items():
-        samples = min(len(commits_in_year), kwargs['revs_per_year'])
+        samples = min(len(commits_in_year), revs_per_year)
         sample_commit_indices = sorted(
             random.sample(range(len(commits_in_year)), samples)
         )
 
         for commit_index in sample_commit_indices:
             commit_hash = commits_in_year[commit_index]
-            if kwargs["ignore_blocked"] and is_revision_blocked(
+            if ignore_blocked and is_revision_blocked(
                 commit_hash.to_short_commit_hash(),
                 get_project_cls_by_name(case_study.project_name)
             ):
@@ -473,15 +476,16 @@ def extend_with_revs_per_year(
         if revs_year_sep:
             stage_index = get_or_create_stage_for_year(year)
         else:
-            stage_index = kwargs['merge_stage']
+            stage_index = merge_stage
 
         case_study.include_revisions(new_rev_items, stage_index, True)
         new_rev_items.clear()
 
 
-@check_required_args('distribution', 'merge_stage', 'num_rev')
 def extend_with_distrib_sampling(
-    case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
+    case_study: CaseStudy, cmap: CommitMap,
+    sampling_method: NormalSamplingMethod, merge_stage: int, num_rev: int,
+    ignore_blocked: bool
 ) -> None:
     """
     Extend a case study by sampling 'num_rev' new revisions, according to
@@ -490,10 +494,14 @@ def extend_with_distrib_sampling(
     Args:
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
+        ignore_blocked: ignore_blocked revisions
+        num_rev: number of revisions to add
+        merge_stage: stage the revisions will be added to
+        sampling_method: distribution to use for sampling
     """
     is_blocked: tp.Callable[[ShortCommitHash, tp.Type[Project]],
                             bool] = lambda rev, _: False
-    if kwargs["ignore_blocked"]:
+    if ignore_blocked:
         is_blocked = is_revision_blocked
 
     # Needs to be sorted so the propability distribution over the length
@@ -502,16 +510,13 @@ def extend_with_distrib_sampling(
     revision_list = [
         (FullCommitHash(rev), idx)
         for rev, idx in sorted(list(cmap.mapping_items()), key=lambda x: x[1])
-        if not case_study.
-        has_revision_in_stage(ShortCommitHash(rev), kwargs['merge_stage']) and
-        not is_blocked(ShortCommitHash(rev), project_cls)
+        if
+        not case_study.has_revision_in_stage(ShortCommitHash(rev), merge_stage)
+        and not is_blocked(ShortCommitHash(rev), project_cls)
     ]
 
-    sampling_method: NormalSamplingMethod = kwargs['distribution']
-
     case_study.include_revisions(
-        sampling_method.sample_n(revision_list, kwargs['num_rev']),
-        kwargs['merge_stage']
+        sampling_method.sample_n(revision_list, num_rev), merge_stage
     )
 
 

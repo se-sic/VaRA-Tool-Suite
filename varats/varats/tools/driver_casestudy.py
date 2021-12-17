@@ -8,16 +8,22 @@ from enum import Enum
 from pathlib import Path
 
 import click
+import pygit2
 from plumbum import FG, colors, local
 
 from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.discover_reports import initialize_reports
 from varats.mapping.commit_map import create_lazy_commit_map_loader
-from varats.paper.case_study import store_case_study
+from varats.paper.case_study import (
+    load_case_study_from_file,
+    store_case_study,
+    CaseStudy,
+)
 from varats.paper_mgmt import paper_config_manager as PCM
 from varats.paper_mgmt.case_study import (
     get_revisions_status_for_case_study,
-    generate_case_study,
+    extend_with_distrib_sampling,
+    extend_with_revs_per_year,
 )
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.project.project_util import get_local_project_git_path
@@ -30,7 +36,7 @@ from varats.ts_utils.cli_util import (
     cli_yn_choice,
 )
 from varats.ts_utils.click_param_types import create_report_type_choice
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_util import ShortCommitHash, FullCommitHash
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
@@ -109,20 +115,89 @@ def __casestudy_status(
     )
 
 
-@main.command("gen")
+@main.group("gen")
 @click.argument("paper_config_path", type=click.Path(exists=True))
+@click.option("--project", "-p", required=False)
+@click.option("--git_path", "-git", required=False)
+@click.option("--extend", "-ext", type=click.Path(exists=True))
 @click.option(
-    "--distribution",
-    type=click.Choice([
-        x.name() for x in NormalSamplingMethod.normal_sampling_method_types()
-    ]),
-    default=None
+    "--merge-stage",
+    help="Merge the new revision(s) into stage "
+    "`n`; defaults to last stage.(only with "
+    "-ext)",
+    type=int,
+    default=-1
+)
+@click.option(
+    "--new-stage",
+    is_flag=True,
+    help="Add the new revision(s) to a new stage.("
+    "only with -ext)"
 )
 @click.option(
     "-v", "--version", type=int, default=0, help="Case study version."
 )
-@click.option("--git-path", help="Path to git repository", default=None)
-@click.option("-p", "--project", help="Project name", default=None)
+@click.option(
+    "--ignore-blocked",
+    is_flag=True,
+    help="Ignore revisions that are marked as blocked."
+)
+@click.pass_context
+def __casestudy_gen(
+    ctx: click.Context, paper_config_path: str, project: tp.Optional[str],
+    git_path: tp.Optional[str], extend: tp.Optional[str], version: int,
+    ignore_blocked: bool, merge_stage: int, new_stage: bool
+):
+    ctx.ensure_object(dict)
+    ctx.obj['path'] = Path(paper_config_path)
+    if not project and not git_path:
+        click.echo("need --project or --git-path", err=True)
+    ctx.obj['project'] = project
+    ctx.obj['git_path'] = git_path
+    ctx.obj['ignore_blocked'] = ignore_blocked
+    if project and not git_path:
+        ctx.obj['git_path'] = str(get_local_project_git_path(project))
+    if git_path and not project:
+        ctx.obj['project'] = Path(git_path).stem.replace("-HEAD", "")
+    if extend:
+        ctx.obj['case_study'] = load_case_study_from_file(Path(extend))
+        ctx.obj['path'] = Path(extend)
+        if merge_stage == -1:
+            ctx.obj['merge_stage'] = max(
+                ctx.obj['case_study'].num_stages - 1, 0
+            )
+            # If + was specified we add a new stage
+        if new_stage:
+            ctx.obj['merge_stage'] = ctx.obj['case_study'].num_stages
+
+    else:
+        ctx.obj['case_study'] = CaseStudy(ctx.obj['project'], version)
+        ctx.obj['merge_stage'] = 0
+
+
+@__casestudy_gen.command("latest")
+@click.pass_context
+def __gen_latest(ctx: click.Context):
+    get_cmap = create_lazy_commit_map_loader(
+        ctx.obj['project'], None, "HEAD", None
+    )
+    cmap = get_cmap()
+    case_study: CaseStudy = ctx.obj['case_study']
+
+    repo = pygit2.Repository(pygit2.discover_repository(ctx.obj["git_path"]))
+    last_commit = FullCommitHash.from_pygit_commit(repo[repo.head.target])
+
+    case_study.include_revisions([(last_commit, cmap.time_id(last_commit))])
+    store_case_study(case_study, ctx.obj['path'])
+
+
+@__casestudy_gen.command("select_sample")
+@click.argument(
+    "distribution",
+    type=click.Choice([
+        x.name() for x in NormalSamplingMethod.normal_sampling_method_types()
+    ])
+)
 @click.option(
     "--end", help="End of the commit range (inclusive)", default="HEAD"
 )
@@ -130,67 +205,36 @@ def __casestudy_status(
     "--start", help="Start of the commit range (exclusive)", default=None
 )
 @click.option(
-    "--extra-revs",
-    "-er",
-    multiple=True,
-    help="Add a list of additional revisions to the case-study"
-)
-@click.option(
-    "--revs-per-year",
-    type=int,
-    default=0,
-    help="Add this many revisions per year to the case-study."
-)
-@click.option(
-    "--revs-year-sep",
-    is_flag=True,
-    help="Separate the revisions in different stages per year "
-    "(when using \'--revs-per-year\')."
-)
-@click.option(
     "--num-rev", type=int, default=10, help="Number of revisions to select."
 )
-@click.option(
-    "--ignore-blocked",
-    is_flag=True,
-    help="Ignore revisions that are marked as blocked."
-)
-def __casestudy_create_or_extend(
-    paper_config_path: Path, distribution: str, version: int, end: str,
-    start: str, project: str, **args: tp.Any
-) -> None:
-    """
-    Generate a case study.
-
-    PAPER_CONFIG_PATH: Path to paper_config folder (e.g., paper_configs/ase-17)
-    """
-    if not project and not args['git_path']:
-        click.echo("need --project or --git-path", err=True)
-
-    if project and not args['git_path']:
-        args['git_path'] = str(get_local_project_git_path(project))
-    if args['git_path'] and not project:
-        project = Path(args['git_path']).stem.replace("-HEAD", "")
-
-    get_cmap = create_lazy_commit_map_loader(project, None, end, start)
-    cmap = get_cmap()
-
-    args['extra_revs'] = list(args['extra_revs'])
-    # Rewrite requested distribution with initialized object
-    if distribution:
-        sampling_method: tp.Optional[
-            NormalSamplingMethod
-        ] = NormalSamplingMethod.get_sampling_method_type(distribution)()
-    else:
-        sampling_method = None
-
-    # Specify merge_stage as 0 for creating new case studies
-    args['merge_stage'] = 0
-    args['distribution'] = sampling_method
-    case_study = generate_case_study(
-        sampling_method, cmap, version, project, **args
+@click.pass_context
+def __gen_sample(
+    ctx: click.Context, distribution: str, end: str, start: str, num_rev
+):
+    sampling_method: NormalSamplingMethod = NormalSamplingMethod.get_sampling_method_type(
+        distribution
+    )()
+    cmap = create_lazy_commit_map_loader(ctx.obj['project'], None, end, start)()
+    extend_with_distrib_sampling(
+        ctx.obj['case_study'], cmap, sampling_method, ctx.obj['merge_stage'],
+        num_rev, ctx.obj['ignore_blocked']
     )
-    store_case_study(case_study, Path(paper_config_path))
+    store_case_study(ctx.obj['case_study'], ctx.obj['path'])
+
+
+@__casestudy_gen.command("select_revs-per-year")
+@click.argument("revs-per-year", type=int)
+@click.option("--separate", is_flag=True)
+@click.pass_context
+def __gen_per_year(ctx: click.Context, revs_per_year: int, separate: bool):
+    cmap = create_lazy_commit_map_loader(
+        ctx.obj['project'], None, 'HEAD', None
+    )()
+    extend_with_revs_per_year(
+        ctx.obj['case_study'], cmap, ctx.obj['merge_stage'],
+        ctx.obj['ignore_blocked'], ctx.obj['git_path'], revs_per_year, separate
+    )
+    store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 
 
 @main.command("package")
