@@ -46,7 +46,8 @@ def _get_named_df_for_case_study(
     verifier_plot_df = verifier_plot_df.loc[verifier_plot_df['opt_level'] ==
                                             opt_level.value]
     if verifier_plot_df.empty or len(
-        np.unique([rev.hash for rev in verifier_plot_df['revision']])
+        np.unique([rev.hash for rev in verifier_plot_df['revision']]
+                 )  # type: ignore
     ) == 0:
         if len(plot_kwargs["case_study"]) > 1:
             return None
