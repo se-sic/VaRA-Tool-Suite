@@ -6,10 +6,10 @@ from datetime import datetime
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import matplotlib.style as style
 import numpy as np
 import pandas as pd
 import seaborn as sb
+from matplotlib import style
 from matplotlib.patches import Patch
 
 import varats.paper_mgmt.paper_config as PC
@@ -19,11 +19,12 @@ from varats.mapping.commit_map import CommitMap
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plot.plot import Plot
 from varats.plot.plot_utils import check_required_args, find_missing_revisions
-from varats.plot.plots import PlotGenerator, PlotConfig
+from varats.plot.plots import PlotGenerator, PlotConfig, REQUIRE_REPORT_TYPE
 from varats.project.project_util import get_local_project_git
-from varats.report.report import FileStatusExtension, MetaReport
-
+from varats.report.report import FileStatusExtension, BaseReport
 # colors taken from seaborn's default palette
+from varats.utils.git_util import ShortCommitHash, FullCommitHash
+
 SUCCESS_COLOR = np.asarray(
     (0.5568627450980392, 0.7294117647058823, 0.25882352941176473)
 )
@@ -33,33 +34,12 @@ BLOCKED_COLOR = np.asarray(
 FAILED_COLOR = np.asarray((0.8862745098039215, 0.2901960784313726, 0.2))
 
 
-@check_required_args("cmap", "project")
-def _gen_overview_plot_for_project(**kwargs: tp.Any) -> pd.DataFrame:
-    current_config = PC.get_paper_config()
-
-    if 'report_type' in kwargs:
-        result_file_type: MetaReport = MetaReport.REPORT_TYPES[
-            kwargs['report_type']]
-    else:
-        result_file_type = EmptyReport
-    project = kwargs['project']
-    cmap: CommitMap = kwargs['cmap']
-    # load data
-    frame = FileStatusDatabase.get_data_for_project(
-        project, ["revision", "time_id", "file_status"],
-        cmap,
-        *current_config.get_case_studies(project),
-        result_file_type=result_file_type,
-        tag_blocked=True
-    )
-    return frame
-
-
 def _load_projects_ordered_by_year(
-    current_config: PC.PaperConfig, result_file_type: MetaReport
-) -> tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[str, FileStatusExtension]]]]:
+    current_config: PC.PaperConfig, result_file_type: tp.Type[BaseReport]
+) -> tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[ShortCommitHash,
+                                                FileStatusExtension]]]]:
     projects: tp.Dict[str, tp.Dict[int, tp.List[tp.Tuple[
-        str, FileStatusExtension]]]] = OrderedDict()
+        ShortCommitHash, FileStatusExtension]]]] = OrderedDict()
 
     for case_study in sorted(
         current_config.get_all_case_studies(),
@@ -71,11 +51,11 @@ def _load_projects_ordered_by_year(
 
         repo = get_local_project_git(case_study.project_name)
         revisions: tp.Dict[int, tp.List[tp.Tuple[
-            str, FileStatusExtension]]] = defaultdict(list)
+            ShortCommitHash, FileStatusExtension]]] = defaultdict(list)
 
         # dict: year -> [ (revision: str, status: FileStatusExtension) ]
         for rev, status in processed_revisions:
-            commit = repo.get(rev)
+            commit = repo.get(rev.hash)
             commit_date = datetime.utcfromtimestamp(commit.commit_time)
             revisions[commit_date.year].append((rev, status))
 
@@ -89,8 +69,7 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
     current_config = PC.get_paper_config()
 
     if 'report_type' in kwargs:
-        result_file_type: MetaReport = MetaReport.REPORT_TYPES[
-            kwargs['report_type']]
+        result_file_type: tp.Type[BaseReport] = kwargs['report_type']
     else:
         result_file_type = EmptyReport
 
@@ -106,7 +85,7 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
     year_range = list(range(min(min_years), max(max_years) + 1))
     project_names = list(projects.keys())
 
-    result: tp.Dict[str, tp.Any] = dict()
+    result: tp.Dict[str, tp.Any] = {}
     result['year_range'] = year_range
     result['project_names'] = project_names
 
@@ -128,11 +107,11 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
                 num_revs = len(revs_in_year)
                 num_successful_revs = len([
                     rev for (rev, status) in revs_in_year
-                    if status == FileStatusExtension.Success
+                    if status == FileStatusExtension.SUCCESS
                 ])
                 num_blocked_revs = len([
                     rev for (rev, status) in revs_in_year
-                    if status == FileStatusExtension.Blocked
+                    if status == FileStatusExtension.BLOCKED
                 ])
 
             revs_successful_per_year.append(num_successful_revs)
@@ -146,7 +125,9 @@ def _gen_overview_plot(**kwargs: tp.Any) -> tp.Dict[str, tp.Any]:
     return result
 
 
-def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
+def _plot_overview_graph(
+    results: tp.Dict[str, tp.Any], plot_config: PlotConfig
+) -> None:
     """
     Create a plot that shows an overview of all case-studies of a paper-config
     about how many revisions are successful per project/year.
@@ -181,7 +162,7 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
         f_success = n_success / float(n_total)
         f_blocked = n_blocked / float(n_total)
         f_failed = 1.0 - f_success - f_blocked
-        return (
+        return np.asarray(
             f_success * SUCCESS_COLOR + f_blocked * BLOCKED_COLOR +
             f_failed * FAILED_COLOR
         )
@@ -207,13 +188,11 @@ def _plot_overview_graph(results: tp.Dict[str, tp.Any]) -> None:
     # Note: See the following URL for this size calculation:
     # https://stackoverflow.com/questions/51144934/how-to-increase-the-cell-size-for-annotation-in-seaborn-heatmap
 
-    # TODO (se-passau/VaRA#545): refactor dpi into plot_config. see.
     fontsize_pt = 12
-    dpi = 1200
 
     # compute the matrix height in points and inches
     matrix_height_pt = fontsize_pt * num_projects * 40
-    matrix_height_in = matrix_height_pt / dpi
+    matrix_height_in = matrix_height_pt / plot_config.dpi()
 
     # compute the required figure height
     top_margin = 0.05
@@ -268,50 +247,30 @@ class PaperConfigOverviewPlot(Plot, plot_name="paper_config_overview_plot"):
     (blocked).
     """
 
-    NAME = 'paper_config_overview_plot'
-
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.style)
-        _plot_overview_graph(_gen_overview_plot(**self.plot_kwargs))
+        style.use(self.plot_config.style())
+        _plot_overview_graph(
+            _gen_overview_plot(**self.plot_kwargs), self.plot_config
+        )
 
     def plot_file_name(self, filetype: str) -> str:
         return f"{self.name}.{filetype}"
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
-        revisions = _gen_overview_plot_for_project(**self.plot_kwargs)
-        revisions.sort_values(by=['revision'], inplace=True)
-        cmap: CommitMap = self.plot_kwargs['cmap']
-
-        def head_cm_neighbours(lhs_cm: str, rhs_cm: str) -> bool:
-            return cmap.short_time_id(lhs_cm) + 1 == cmap.short_time_id(rhs_cm)
-
-        def should_insert_revision(last_row: tp.Any,
-                                   row: tp.Any) -> tp.Tuple[bool, float]:
-            return last_row["file_status"] != row["file_status"], 1.0
-
-        def get_commit_hash(row: tp.Any) -> str:
-            return str(row["revision"])
-
-        return find_missing_revisions(
-            revisions.iterrows(), Path(self.plot_kwargs['git_path']), cmap,
-            should_insert_revision, get_commit_hash, head_cm_neighbours
-        )
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
+        raise NotImplementedError
 
 
 class PaperConfigOverviewGenerator(
     PlotGenerator,
     generator_name="pc-overview-plot",
-    plot=PaperConfigOverviewPlot,
-    options=[PlotGenerator.REQUIRE_REPORT_TYPE]
+    options=[REQUIRE_REPORT_TYPE]
 ):
-
-    @check_required_args("report_type")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
+    """Generates a single pc-overview plot for the current paper config."""
 
     def generate(self) -> tp.List[Plot]:
-        return [self.PLOT(report_type=self.__report_type)]
+        return [PaperConfigOverviewPlot(self.plot_config, **self.plot_kwargs)]

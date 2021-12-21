@@ -1,22 +1,31 @@
 """Generate plots that show a detailed overview of the state of one case-
-studiy."""
+study."""
 
 import typing as tp
-from distutils.util import strtobool
 
 import matplotlib.pyplot as plt
-import matplotlib.style as style
+from matplotlib import style
+from pandas import DataFrame
 
 from varats.data.databases.file_status_database import FileStatusDatabase
 from varats.data.reports.empty_report import EmptyReport
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
-from varats.plot.plot_utils import check_required_args
-from varats.plot.plots import PlotGenerator, PlotConfig
-from varats.project.project_util import get_project_cls_by_name
-from varats.report.report import FileStatusExtension, MetaReport
+from varats.plot.plot_utils import find_missing_revisions
+from varats.plot.plots import (
+    PlotGenerator,
+    PlotConfig,
+    REQUIRE_CASE_STUDY,
+    REQUIRE_REPORT_TYPE,
+)
+from varats.project.project_util import (
+    get_project_cls_by_name,
+    get_local_project_git_path,
+)
+from varats.report.report import FileStatusExtension, BaseReport
 from varats.ts_utils.cli_util import CLIOptionTy, make_cli_option
+from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 SUCCESS_COLOR = (0.5568627450980392, 0.7294117647058823, 0.25882352941176473)
 BLOCKED_COLOR = (0.20392156862745098, 0.5411764705882353, 0.7411764705882353)
@@ -52,8 +61,7 @@ def _gen_overview_data(tag_blocked: bool,
     project = get_project_cls_by_name(project_name)
 
     if 'report_type' in kwargs:
-        result_file_type: MetaReport = MetaReport.REPORT_TYPES[
-            kwargs['report_type']]
+        result_file_type: tp.Type[BaseReport] = kwargs['report_type']
     else:
         result_file_type = EmptyReport
 
@@ -68,7 +76,7 @@ def _gen_overview_data(tag_blocked: bool,
     }
 
     for c_hash, index in commit_map.mapping_items():
-        if not case_study.has_revision(c_hash):
+        if not case_study.has_revision(ShortCommitHash(c_hash)):
             positions["background"].append(index)
             if hasattr(project, "is_blocked_revision"
                       ) and project.is_blocked_revision(c_hash)[0]:
@@ -83,27 +91,27 @@ def _gen_overview_data(tag_blocked: bool,
     )
     positions["success"] = (
         revisions[revisions["file_status"] ==
-                  FileStatusExtension.Success.get_status_extension()]
+                  FileStatusExtension.SUCCESS.get_status_extension()]
     )["time_id"].tolist()
     positions["failed"] = (
         revisions[revisions["file_status"] ==
-                  FileStatusExtension.Failed.get_status_extension()]
+                  FileStatusExtension.FAILED.get_status_extension()]
     )["time_id"].tolist()
     positions["blocked"] = (
         revisions[revisions["file_status"] ==
-                  FileStatusExtension.Blocked.get_status_extension()]
+                  FileStatusExtension.BLOCKED.get_status_extension()]
     )["time_id"].tolist()
     positions["blocked_all"].extend((
         revisions[revisions["file_status"] ==
-                  FileStatusExtension.Blocked.get_status_extension()]
+                  FileStatusExtension.BLOCKED.get_status_extension()]
     )["time_id"].tolist())
     positions["missing"] = (
         revisions[revisions["file_status"] ==
-                  FileStatusExtension.Missing.get_status_extension()]
+                  FileStatusExtension.MISSING.get_status_extension()]
     )["time_id"].tolist()
     positions["compile_error"] = (
         revisions[revisions["file_status"] ==
-                  FileStatusExtension.CompileError.get_status_extension()]
+                  FileStatusExtension.COMPILE_ERROR.get_status_extension()]
     )["time_id"].tolist()
 
     return positions
@@ -114,11 +122,11 @@ class CaseStudyOverviewPlot(Plot, plot_name="case_study_overview_plot"):
 
     NAME = 'case_study_overview_plot'
 
-    def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, **kwargs)
+    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
+        super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        style.use(self.style)
+        style.use(self.plot_config.style())
         data = _gen_overview_data(
             self.plot_kwargs["show_blocked"], **self.plot_kwargs
         )
@@ -165,34 +173,62 @@ class CaseStudyOverviewPlot(Plot, plot_name="case_study_overview_plot"):
 
         axis.set_axis_off()
 
-    def calc_missing_revisions(self, boundary_gradient: float) -> tp.Set[str]:
-        raise NotImplementedError
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
+
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        project_name: str = case_study.project_name
+        commit_map: CommitMap = get_commit_map(project_name)
+
+        def gen_revision_df(**plot_kwargs: tp.Any) -> DataFrame:
+            result_file_type: tp.Type[BaseReport] = plot_kwargs.get(
+                "report_type", EmptyReport
+            )
+
+            # load data
+            frame = FileStatusDatabase.get_data_for_project(
+                project_name, ["revision", "time_id", "file_status"],
+                commit_map,
+                case_study,
+                result_file_type=result_file_type,
+                tag_blocked=True
+            )
+            return frame
+
+        revision_df = gen_revision_df(**self.plot_kwargs)
+        revision_df.sort_values(by=['revision'], inplace=True)
+
+        def head_cm_neighbours(
+            lhs_cm: ShortCommitHash, rhs_cm: ShortCommitHash
+        ) -> bool:
+            return commit_map.short_time_id(
+                lhs_cm
+            ) + 1 == commit_map.short_time_id(rhs_cm)
+
+        def should_insert_revision(last_row: tp.Any,
+                                   row: tp.Any) -> tp.Tuple[bool, float]:
+            return last_row["file_status"] != row["file_status"], 1.0
+
+        def get_commit_hash(row: tp.Any) -> ShortCommitHash:
+            return ShortCommitHash(str(row["revision"]))
+
+        return find_missing_revisions(
+            revision_df.iterrows(), get_local_project_git_path(project_name),
+            commit_map, should_insert_revision, get_commit_hash,
+            head_cm_neighbours
+        )
 
 
 class CaseStudyOverviewGenerator(
     PlotGenerator,
     generator_name="cs-overview-plot",
-    plot=CaseStudyOverviewPlot,
     options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE, PlotGenerator.REQUIRE_CASE_STUDY,
-        OPTIONAL_SHOW_BLOCKED, OPTIONAL_SHOW_ALL_BLOCKED
+        REQUIRE_REPORT_TYPE, REQUIRE_CASE_STUDY, OPTIONAL_SHOW_BLOCKED,
+        OPTIONAL_SHOW_ALL_BLOCKED
     ]
 ):
     """Generates a case study overview plot."""
 
-    @check_required_args("report_type", "case_study")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_study: CaseStudy = plot_kwargs["case_study"]
-        self.__show_blocked: bool = plot_kwargs["show_blocked"]
-        self.__show_all_blocked: bool = plot_kwargs["show_all_blocked"]
-
     def generate(self) -> tp.List[Plot]:
-        return [
-            self.PLOT(
-                case_study=self.__case_study,
-                show_blocked=self.__show_blocked,
-                show_all_blocked=self.__show_all_blocked
-            )
-        ]
+        return [CaseStudyOverviewPlot(self.plot_config, **self.plot_kwargs)]

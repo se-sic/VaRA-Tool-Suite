@@ -2,12 +2,13 @@
 
 import logging
 import os
-import typing as t
+import sys
 import typing as tp
-from enum import Enum
+from select import select
 
 import click
-from click import Context, Parameter
+from plumbum.lib import read_fd_decode_safely
+from plumbum.machines.local import PlumbumLocalPopen
 from rich.traceback import install
 
 
@@ -89,7 +90,6 @@ def initialize_logger_config() -> None:
 CLIOptionTy = tp.Callable[..., tp.Any]
 
 
-# TODO: make this have a typed version of the click.core.Option constructor?
 def make_cli_option(*param_decls: str, **attrs: tp.Any) -> CLIOptionTy:
     """
     Create an object that represents a click command line option, i.e., the
@@ -122,78 +122,62 @@ def add_cli_options(command: tp.Callable[..., None],
     return command
 
 
-ChoiceTy = tp.TypeVar("ChoiceTy")
-
-
-class TypedChoice(click.Choice, tp.Generic[ChoiceTy]):
-    """Typed version of click's choice parameter type."""
-
-    name = "typed choice"
-
-    def __init__(
-        self, choices: tp.Dict[str, ChoiceTy], case_sensitive: bool = True
-    ):
-        self.__choices = choices
-        super().__init__(list(choices.keys()), case_sensitive)
-
-    def convert(
-        self, value: t.Any, param: t.Optional[Parameter],
-        ctx: t.Optional[Context]
-    ) -> ChoiceTy:
-        return self.__choices[super().convert(value, param, ctx)]
-
-
-class TypedMultiChoice(click.Choice, tp.Generic[ChoiceTy]):
+def tee(process: PlumbumLocalPopen,
+        buffered: bool = True) -> tp.Tuple[int, str, str]:
     """
-    Typed choice parameter type allows giving multiple values.
+    Adapted from from plumbum's TEE implementation.
 
-    Multiple values can be given as a comma separated list; no whitespace
-    allowed.
+    Plumbum's TEE does not allow access to the underlying popen object, which we
+    need to properly handle keyboard interrupts. Therefore, we just copy the
+    relevant portion of plumbum's implementation and create the popen object by
+    ourself.
     """
+    outbuf: tp.List[bytes] = []
+    errbuf: tp.List[bytes] = []
+    out = process.stdout
+    err = process.stderr
+    buffers = {out: outbuf, err: errbuf}
+    tee_to = {out: sys.stdout, err: sys.stderr}
+    done = False
+    while not done:
+        # After the process exits, we have to do one more
+        # round of reading in order to drain any data in the
+        # pipe buffer. Thus, we check poll() here,
+        # unconditionally enter the read loop, and only then
+        # break out of the outer loop if the process has
+        # exited.
+        done = process.poll() is not None
 
-    name = "typed multi choice"
+        # We continue this loop until we've done a full
+        # `select()` call without collecting any input. This
+        # ensures that our final pass -- after process exit --
+        # actually drains the pipe buffers, even if it takes
+        # multiple calls to read().
+        progress = True
+        while progress:
+            progress = False
+            ready, _, _ = select((out, err), (), ())
+            # logging.info(f"Streams ready: {[r.fileno() for r in ready]}")
+            for file_descriptor in ready:
+                buf = buffers[file_descriptor]
+                data, text = read_fd_decode_safely(file_descriptor, 4096)
+                if not data:  # eof
+                    continue
+                progress = True
 
-    def __init__(
-        self,
-        choices: tp.Dict[str, tp.List[ChoiceTy]],
-        case_sensitive: bool = True
-    ):
-        # Relates to: https://thingspython.wordpress.com/2010/09/27/another
-        # -super-wrinkle-raising-typeerror/
-        self.as_super = super(TypedMultiChoice, self)
-        self.__choices = choices
-        super().__init__(list(choices.keys()), case_sensitive)
+                # Python conveniently line-buffers stdout and stderr for
+                # us, so all we need to do is write to them
 
-    def convert(
-        self, value: t.Any, param: t.Optional[Parameter],
-        ctx: t.Optional[Context]
-    ) -> tp.List[ChoiceTy]:
-        values = [value]
-        if isinstance(value, str):
-            values = value.split(",")
+                # This will automatically add up to three bytes if it cannot be
+                # decoded
+                tee_to[file_descriptor].write(text)
 
-        return [
-            item for v in values
-            for item in self.__choices[self.as_super.convert(v, param, ctx)]
-        ]
+                # And then "unbuffered" is just flushing after each write
+                if not buffered:
+                    tee_to[file_descriptor].flush()
 
+                buf.append(data)
 
-EnumTy = tp.TypeVar("EnumTy", bound=Enum)
-
-
-class EnumChoice(click.Choice, tp.Generic[EnumTy]):
-    """
-    Enum choice type for click.
-
-    This type can be used with click to specify a choice from the given enum.
-    """
-
-    def __init__(self, enum: tp.Type[EnumTy], case_sensitive: bool = True):
-        self.__enum = enum
-        super().__init__(list(dict(enum.__members__).keys()), case_sensitive)
-
-    def convert(
-        self, value: str, param: tp.Optional[click.Parameter],
-        ctx: tp.Optional[click.Context]
-    ) -> EnumTy:
-        return self.__enum[super().convert(value, param, ctx)]
+    stdout = "".join([x.decode("utf-8") for x in outbuf])
+    stderr = "".join([x.decode("utf-8") for x in errbuf])
+    return process.returncode, stdout, stderr

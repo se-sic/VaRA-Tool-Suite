@@ -128,30 +128,6 @@ def get_tagged_commits(project_name: str) -> tp.List[tp.Tuple[str, str]]:
         return refs
 
 
-def get_all_revisions_between(c_start: str,
-                              c_end: str,
-                              short: bool = False) -> tp.List[str]:
-    """
-    Returns a list of all revisions between two commits c_start and c_end
-    (inclusive), where c_start comes before c_end.
-
-    It is assumed that the current working directory is the git repository.
-
-    Args:
-        c_start: first commit of the range
-        c_end: last commit of the range
-        short: shorten revision hashes
-    """
-    result = [c_start]
-    result.extend(
-        git(
-            "log", "--pretty=%H", "--ancestry-path",
-            "{}..{}".format(c_start, c_end)
-        ).strip().split()
-    )
-    return list(map(lambda rev: rev[:10], result)) if short else result
-
-
 def is_git_source(source: bb.source.FetchableSource) -> bool:
     """
     Checks if given base source is a git source.
@@ -167,14 +143,14 @@ def is_git_source(source: bb.source.FetchableSource) -> bool:
 
 class BinaryType(Enum):
     """Enum for different binary types."""
-    value: int
+    value: int  # pylint: disable=invalid-name
 
-    executable = 1
-    shared_library = 2
-    static_library = 3
+    EXECUTABLE = 1
+    SHARED_LIBRARY = 2
+    STATIC_LIBRARY = 3
 
     def __str__(self) -> str:
-        return str(self.name)
+        return str(self.name.lower())
 
 
 class ProjectBinaryWrapper():
@@ -182,7 +158,7 @@ class ProjectBinaryWrapper():
     Wraps project binaries which get generated during compilation.
 
     >>> ProjectBinaryWrapper("binary_name", "path/to/binary", \
-                             BinaryType.executable)
+                             BinaryType.EXECUTABLE)
     (binary_name: path/to/binary | executable)
     """
 
@@ -223,13 +199,13 @@ def wrap_paths_to_binaries_with_name(
     Generates a wrapper for project binaries.
 
     >>> wrap_paths_to_binaries_with_name([("fooer", "src/foo", \
-                                           BinaryType.executable)])
+                                           BinaryType.EXECUTABLE)])
     [(fooer: src/foo | executable)]
 
     >>> wrap_paths_to_binaries_with_name([("fooer", "src/foo", \
-                                           BinaryType.executable), \
+                                           BinaryType.EXECUTABLE), \
                                           ("barer", "src/bar", \
-                                           BinaryType.shared_library)])
+                                           BinaryType.SHARED_LIBRARY)])
     [(fooer: src/foo | executable), (barer: src/bar | shared_library)]
     """
     return [ProjectBinaryWrapper(x[0], Path(x[1]), x[2]) for x in binaries]
@@ -242,14 +218,14 @@ def wrap_paths_to_binaries(
     Generates a wrapper for project binaries, automatically infering the binary
     name.
 
-    >>> wrap_paths_to_binaries([("src/foo", BinaryType.executable)])
+    >>> wrap_paths_to_binaries([("src/foo", BinaryType.EXECUTABLE)])
     [(foo: src/foo | executable)]
 
-    >>> wrap_paths_to_binaries([("src/foo.so", BinaryType.shared_library)])
+    >>> wrap_paths_to_binaries([("src/foo.so", BinaryType.SHARED_LIBRARY)])
     [(foo: src/foo.so | shared_library)]
 
-    >>> wrap_paths_to_binaries([("src/foo", BinaryType.static_library), \
-                                ("src/bar",BinaryType.executable)])
+    >>> wrap_paths_to_binaries([("src/foo", BinaryType.STATIC_LIBRARY), \
+                                ("src/bar",BinaryType.EXECUTABLE)])
     [(foo: src/foo | static_library), (bar: src/bar | executable)]
     """
     return wrap_paths_to_binaries_with_name([
@@ -329,15 +305,14 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
                 os.rename(os.path.join(root, name), os.path.join(root, ".git"))
 
 
-# TODO (se-passau/VaRA#717): Remove pylint's disable when issue is fixed
-class VaraTestRepoSubmodule(GitSubmodule):  # type: ignore  # pylint: disable=R0901;
+class VaraTestRepoSubmodule(GitSubmodule):  # type: ignore
     """A project source for submodule repositories stored in the vara-test-repos
     repository."""
 
     __vara_test_repos_git = Git(
         remote="https://github.com/se-passau/vara-test-repos",
         local="vara_test_repos",
-        refspec="HEAD",
+        refspec="origin/HEAD",
         limit=1
     )
 
@@ -373,7 +348,7 @@ class VaraTestRepoSource(Git):  # type: ignore
     __vara_test_repos_git = Git(
         remote="https://github.com/se-passau/vara-test-repos",
         local="vara_test_repos",
-        refspec="HEAD",
+        refspec="origin/HEAD",
         limit=1
     )
 

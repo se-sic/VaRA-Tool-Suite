@@ -22,18 +22,23 @@ COVERAGE='coverage run -p --rcfile=.coveragerc'
 $COVERAGE "$(which vara-buildsetup)" vara -c
 check_err
 
+#has been moved to a unit tests, has to remain until all test have been moved
 $COVERAGE $(which vara-gen-bbconfig)
 check_err
 
+#has been moved to a unit tests, has to remain until all test have been moved
 $COVERAGE $(which vara-config) set artefacts/artefacts_dir=artefacts
 check_err
 
+#has been moved to a unit tests, has to remain until all test have been moved
 $COVERAGE $(which vara-pc) create test_extra
 check_err
 
+#has been moved to a unit tests, has to remain until all test have been moved
 $COVERAGE $(which vara-pc) select --paper-config test_extra
 check_err
 
+#has been moved to a unit tests, has to remain until all test have been moved
 $COVERAGE $(which vara-pc) list
 check_err
 
@@ -52,19 +57,10 @@ check_err
 $COVERAGE $(which vara-cs) status EmptyReport
 check_err
 
-$COVERAGE $(which vara-art) add --output-path overview_plots plot overview report_type=EmptyReport plot_generator=overview-plot
-check_err
-
-$COVERAGE $(which vara-art) generate --only overview
-check_err
-
-$COVERAGE $(which vara-art) list
-check_err
-
-$COVERAGE $(which vara-art) show overview
-check_err
 
 # Tests that we can add extra refs from other branches if a refspec is specified
+
+#has been moved to a unit tests, has to remain until all test have been moved
 $COVERAGE $(which vara-pc) create test_extra_refs
 check_err
 
