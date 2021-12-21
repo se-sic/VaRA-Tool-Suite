@@ -46,7 +46,7 @@ def _get_named_df_for_case_study(
     verifier_plot_df = verifier_plot_df.loc[verifier_plot_df['opt_level'] ==
                                             opt_level.value]
     if verifier_plot_df.empty or len(
-        np.unique(verifier_plot_df['revision'])
+        np.unique([rev.hash for rev in verifier_plot_df['revision']])
     ) == 0:
         if len(plot_kwargs["case_study"]) > 1:
             return None
@@ -74,7 +74,7 @@ def _extract_data_from_named_dataframe(
     )
     current_verifier_plot_df.sort_values(by=['time_id'], inplace=True)
 
-    revisions = current_verifier_plot_df['revision'].to_numpy()
+    revision_strs = [rev.hash for rev in current_verifier_plot_df['revision']]
     successes = current_verifier_plot_df['successful'].to_numpy()
     failures = current_verifier_plot_df['failed'].to_numpy()
     total = current_verifier_plot_df['total'].to_numpy()
@@ -87,7 +87,7 @@ def _extract_data_from_named_dataframe(
                                   100, 2)
 
     result_data = named_verifier_plot_df['project_name'], {
-        "revisions": revisions,
+        "revisions": revision_strs,
         "success_ratio": success_ratio,
         "failure_ratio": failure_ratio,
         "average_success_ratio": average_success_ratio,
@@ -103,9 +103,9 @@ def _load_all_named_dataframes(
     all_named_dataframes: tp.List[tp.Dict[str, tp.Union[str,
                                                         pd.DataFrame]]] = []
 
-    for case_study in sorted(
-        plot_kwargs["case_study"], key=lambda cs: cs.project_name
-    ):
+    # https://github.com/python/mypy/issues/9590
+    k = lambda cs: cs.project_name
+    for case_study in sorted(plot_kwargs["case_study"], key=k):
         named_df = _get_named_df_for_case_study(
             case_study, opt_level, plot_kwargs
         )
@@ -147,11 +147,13 @@ def _verifier_plot_single(
     plot_config: PlotConfig, plot_kwargs: tp.Any,
     plot_data: tp.Tuple[str, tp.Dict[str, tp.Any]]
 ) -> None:
-    project_name = plot_kwargs['case_study'].project_name
-    fig_suptitle = f"{plot_config.fig_title(f'Annotated project revisions without optimization - Project {project_name}')}"
+    project_name = plot_kwargs['case_study'][0].project_name
+    default_fig_suptitle = f'Annotated project revisions without optimization' \
+                           f' - Project {project_name}'
+    fig_suptitle = f"{plot_config.fig_title(default_fig_suptitle)}"
 
     fig, main_axis = plt.subplots()
-    fig.suptitle(fig_suptitle, plot_config.font_size(8))
+    fig.suptitle(fig_suptitle, fontsize=plot_config.font_size(8))
     main_axis.grid(linestyle='--')
     main_axis.set_xlabel('Revisions')
     main_axis.set_ylabel('Success/Failure rate in %')
@@ -227,9 +229,9 @@ def _verifier_plot_multiple(
             f"{plot_data[0]}(\u2205 {plot_data[1]['average_success_ratio']}%)"
         )
 
-    main_axis.title.set_text(
-        f"{plot_config.fig_title(f'Annotated project revisions without optimization - Project(s): {project_names}')}"
-    )
+    default_fig_suptitle = f'Annotated project revisions without optimization' \
+                           f' - Project(s): {project_names}'
+    main_axis.title.set_text(f"{plot_config.fig_title(default_fig_suptitle)}")
 
     plt.setp(
         main_axis.get_xticklabels(), rotation=30, horizontalalignment='right'
