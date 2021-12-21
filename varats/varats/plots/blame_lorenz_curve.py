@@ -63,8 +63,7 @@ def draw_interaction_lorenz_curve(
 
 
 def draw_perfect_lorenz_curve(
-    axis: axes.SubplotBase, data: pd.DataFrame, unique_rev_strs: tp.List[str],
-    line_width: float
+    axis: axes.SubplotBase, unique_rev_strs: tp.List[str], line_width: float
 ) -> None:
     """
     Draws a perfect lorenz curve onto the given axis, i.e., a straight line from
@@ -187,7 +186,7 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
             self.plot_config.line_width()
         )
         draw_perfect_lorenz_curve(
-            main_axis, data, unique_rev_strs, self.plot_config.line_width()
+            main_axis, unique_rev_strs, self.plot_config.line_width()
         )
 
         draw_interaction_code_churn(churn_axis, data, project_name, commit_map)
@@ -198,7 +197,7 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
             self.plot_config.line_width()
         )
         draw_perfect_lorenz_curve(
-            main_axis_r, data, unique_rev_strs, self.plot_config.line_width()
+            main_axis_r, unique_rev_strs, self.plot_config.line_width()
         )
 
         draw_interaction_code_churn(
