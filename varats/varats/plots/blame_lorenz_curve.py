@@ -14,6 +14,12 @@ from varats.data.metrics import gini_coefficient, lorenz_curve
 from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
+from varats.plot.plots import (
+    PlotGenerator,
+    PlotConfig,
+    REQUIRE_REPORT_TYPE,
+    REQUIRE_MULTI_CASE_STUDY,
+)
 from varats.plots.repository_churn import (
     build_repo_churn_table,
     draw_code_churn,
@@ -209,9 +215,9 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
 
 
 def draw_gini_churn_over_time(
-    axis: axes.SubplotBase, blame_data: pd.DataFrame, project_name: str,
-    commit_map: CommitMap, consider_insertions: bool, consider_deletions: bool,
-    line_width: float
+    axis: axes.SubplotBase, blame_data: pd.DataFrame,
+    unique_rev_strs: tp.List[str], project_name: str, commit_map: CommitMap,
+    consider_insertions: bool, consider_deletions: bool, line_width: float
 ) -> None:
     """
     Draws the gini of the churn distribution over time.
@@ -230,9 +236,9 @@ def draw_gini_churn_over_time(
     # clean data
     unique_revs = blame_data['revision'].unique()
 
-    def remove_revisions_without_data(revision: str) -> bool:
+    def remove_revisions_without_data(revision: ShortCommitHash) -> bool:
         """Removes all churn data where this plot has no data."""
-        return revision[:10] in unique_revs
+        return revision.hash[:10] in unique_revs
 
     churn_data = churn_data[churn_data.apply(
         lambda x: remove_revisions_without_data(x['revision']), axis=1
@@ -273,7 +279,7 @@ def draw_gini_churn_over_time(
         label = 'Deletions'
 
     axis.plot(
-        blame_data['revision'],
+        unique_rev_strs,
         gini_churn,
         linestyle=linestyle,
         linewidth=line_width,
@@ -284,8 +290,8 @@ def draw_gini_churn_over_time(
 
 def draw_gini_blame_over_time(
     axis: axes.SubplotBase, blame_data: pd.DataFrame,
-    consider_in_interactions: bool, consider_out_interactions: bool,
-    line_width: float
+    unique_rev_strs: tp.List[str], consider_in_interactions: bool,
+    consider_out_interactions: bool, line_width: float
 ) -> None:
     """
     Draws the gini coefficients of the blame interactions over time.
@@ -323,7 +329,7 @@ def draw_gini_blame_over_time(
         gini_coefficients.append(gini_coefficient(distribution))
 
     axis.plot(
-        blame_data.revision,
+        unique_rev_strs,
         gini_coefficients,
         linestyle=linestyle,
         linewidth=line_width,
@@ -372,26 +378,31 @@ class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
 
         churn_axis = fig.add_subplot(grid_spec[2, :], sharex=main_axis)
 
+        unique_rev_strs: tp.List[str] = [rev.hash for rev in data['revision']]
+
         draw_gini_blame_over_time(
-            main_axis, data, True, True, self.plot_kwargs["line_width"]
+            main_axis, data, unique_rev_strs, True, True,
+            self.plot_config.line_width()
         )
         draw_gini_blame_over_time(
-            main_axis, data, True, False, self.plot_kwargs["line_width"]
+            main_axis, data, unique_rev_strs, True, False,
+            self.plot_config.line_width()
         )
         draw_gini_blame_over_time(
-            main_axis, data, False, True, self.plot_kwargs["line_width"]
+            main_axis, data, unique_rev_strs, False, True,
+            self.plot_config.line_width()
         )
         draw_gini_churn_over_time(
-            main_axis, data, project_name, commit_map, True, True,
-            self.plot_kwargs["line_width"]
+            main_axis, data, unique_rev_strs, project_name, commit_map, True,
+            True, self.plot_config.line_width()
         )
         draw_gini_churn_over_time(
-            main_axis, data, project_name, commit_map, True, False,
-            self.plot_kwargs["line_width"]
+            main_axis, data, unique_rev_strs, project_name, commit_map, True,
+            False, self.plot_config.line_width()
         )
         draw_gini_churn_over_time(
-            main_axis, data, project_name, commit_map, False, True,
-            self.plot_kwargs["line_width"]
+            main_axis, data, unique_rev_strs, project_name, commit_map, False,
+            True, self.plot_config.line_width()
         )
         main_axis.legend()
 
@@ -401,7 +412,7 @@ class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
 
         # Adapt axis to draw nicer plots
         for x_label in churn_axis.get_xticklabels():
-            x_label.set_fontsize(self.plot_kwargs["x_tick_size"])
+            x_label.set_fontsize(self.plot_config.x_tick_size())
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
@@ -414,31 +425,15 @@ class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
 class BlameGiniOverTimeGenerator(
     PlotGenerator,
     generator_name="gini-overtime-plot",
-    plot=BlameGiniOverTime,
-    options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE,
-        PlotGenerator.REQUIRE_MULTI_CASE_STUDY, OPTIONAL_LINE_WIDTH,
-        OPTIONAL_LEGEND_SIZE, OPTIONAL_X_TICK_SIZE
-    ]
+    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates gini-overtime plot(s) for the selected case study(ies)."""
 
-    @check_required_args("report_type", "case_study")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-        self.__line_width: int = plot_kwargs["line_width"]
-        self.__legend_size: int = plot_kwargs["legend_size"]
-        self.__x_tick_size: int = plot_kwargs["x_tick_size"]
-
     def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
         return [
-            self.PLOT(
-                report_type=self.__report_type,
-                case_study=cs,
-                line_width=self.__line_width,
-                legend_size=self.__legend_size,
-                x_tick_size=self.__x_tick_size,
-            ) for cs in self.__case_studies
+            BlameGiniOverTime(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
         ]
