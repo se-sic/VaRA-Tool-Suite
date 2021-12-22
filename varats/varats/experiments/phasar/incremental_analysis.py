@@ -178,7 +178,9 @@ class PrecisionComparisionBase(VersionExperiment, shorthand=""):
 
     MAX_REVISIONS_TO_EXPLORE = 3
 
-    def __init__(self, revision_step_with: int, *args, **kwargs) -> None:
+    def __init__(
+        self, revision_step_with: int, *args: tp.Any, **kwargs: tp.Any
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.__revision_step_with = revision_step_with
 
@@ -276,7 +278,7 @@ class IncrementalAnalysisPrecisionComparisionS1(
 
     NAME = "IncAPCs1"
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
         super().__init__(1, *args, **kwargs)
 
 
@@ -287,5 +289,5 @@ class IncrementalAnalysisPrecisionComparisionS5(
 
     NAME = "IncAPCs5"
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
         super().__init__(5, *args, **kwargs)

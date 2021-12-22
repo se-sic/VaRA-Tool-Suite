@@ -792,7 +792,7 @@ class RevisionBinaryMap(tp.Container[str]):
         self.__always_valid_mappings: tp.List[ProjectBinaryWrapper] = []
 
     def specify_binary(
-        self, location: str, binary_type: BinaryType, **kwargs
+        self, location: str, binary_type: BinaryType, **kwargs: tp.Any
     ) -> None:
         """
 
@@ -836,12 +836,13 @@ class RevisionBinaryMap(tp.Container[str]):
 
         return revision_specific_binaries
 
-    def __contains__(self, binary_name: str) -> bool:
-        for binary in chain(
-            self.__always_valid_mappings,
-            self.__revision_specific_mappings.values()
-        ):
-            if binary.name == binary_name:
-                return True
+    def __contains__(self, binary_name: object) -> bool:
+        if isinstance(binary_name, str):
+            for binary in chain(
+                self.__always_valid_mappings,
+                self.__revision_specific_mappings.values()
+            ):
+                if binary.name == binary_name:
+                    return True
 
         return False

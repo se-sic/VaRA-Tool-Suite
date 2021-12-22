@@ -297,7 +297,7 @@ def get_cached_bc_file_path(
     bc_file_path = bc_cache_folder / Extract.get_bc_file_name(
         project_name=project.name,
         binary_name=binary.name,
-        project_version=project_revision,
+        project_version=str(project_revision),
         bc_file_extensions=required_bc_file_extensions
     )
     if not bc_file_path.exists():
