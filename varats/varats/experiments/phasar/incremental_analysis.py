@@ -4,13 +4,21 @@ approaches."""
 import typing as tp
 from pathlib import Path
 
+import benchbuild as bb
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
+from benchbuild.source.base import (
+    target_prefix,
+    sources_as_dict,
+    Variant,
+    context,
+)
 from benchbuild.utils import actions
 from benchbuild.utils.cmd import mkdir, phasar_llvm_inc
 from benchbuild.utils.requirements import Requirement, SlurmMem
 
 from varats.data.reports.blame_report import BlameReport as BR
+from varats.data.reports.empty_report import EmptyReport
 from varats.data.reports.globals_report import (
     GlobalsReportWith,
     GlobalsReportWithout,
@@ -40,6 +48,7 @@ from varats.utils.git_util import (
     get_all_revisions_between,
 )
 from varats.utils.settings import bb_cfg
+from varats.utils.util import pairwise
 
 
 class RunAnalysisBase(actions.Step):
@@ -57,15 +66,15 @@ class RunAnalysisBase(actions.Step):
 
     def __init__(
         self, project: Project, experiment_handle: ExperimentHandle,
-        base_hash: ShortCommitHash, increment_hash: ShortCommitHash,
+        base_revision: ShortCommitHash, next_revision: ShortCommitHash,
         analysis_flag: str
     ) -> None:
         super().__init__(obj=project, action_fn=self.run_analysis)
 
         self.__experiment_handle = experiment_handle
         self.__analysis_flag = analysis_flag
-        self.__base_hash = base_hash
-        self.__increment_hash = increment_hash
+        self.__base_revision = base_revision
+        self.__next_revision = next_revision
 
     def run_analysis(self) -> actions.StepResult:
         """Defines and runs the analysis comparision."""
@@ -79,10 +88,10 @@ class RunAnalysisBase(actions.Step):
         params = [
             "--module",
             get_cached_bc_file_path(
-                project, binary, self.BC_FILE_EXTENSIONS, self.__base_hash
+                project, binary, self.BC_FILE_EXTENSIONS, self.__base_revision
             ), "--increment",
             get_cached_bc_file_path(
-                project, binary, self.BC_FILE_EXTENSIONS, self.__increment_hash
+                project, binary, self.BC_FILE_EXTENSIONS, self.__next_revision
             ), "--compare-mode", self.__analysis_flag
         ]
 
@@ -112,10 +121,10 @@ class RunTypeStateAnalysis(RunAnalysisBase):
 
     def __init__(
         self, project: Project, experiment_handle: ExperimentHandle,
-        base_hash: ShortCommitHash, increment_hash: ShortCommitHash
+        base_revision: ShortCommitHash, next_revision: ShortCommitHash
     ) -> None:
         super().__init__(
-            project, experiment_handle, base_hash, increment_hash,
+            project, experiment_handle, base_revision, next_revision,
             "--analysis typestate"
         )
 
@@ -132,10 +141,10 @@ class RunTaintAnalysis(RunAnalysisBase):
 
     def __init__(
         self, project: Project, experiment_handle: ExperimentHandle,
-        base_hash: ShortCommitHash, increment_hash: ShortCommitHash
+        base_revision: ShortCommitHash, next_revision: ShortCommitHash
     ) -> None:
         super().__init__(
-            project, experiment_handle, base_hash, increment_hash,
+            project, experiment_handle, base_revision, next_revision,
             "--analysis taint"
         )
 
@@ -152,23 +161,25 @@ class RunLineraConstantPropagationAnalysis(RunAnalysisBase):
 
     def __init__(
         self, project: Project, experiment_handle: ExperimentHandle,
-        base_hash: ShortCommitHash, increment_hash: ShortCommitHash
+        base_revision: ShortCommitHash, next_revision: ShortCommitHash
     ) -> None:
         super().__init__(
-            project, experiment_handle, base_hash, increment_hash,
+            project, experiment_handle, base_revision, next_revision,
             "--analysis lca"
         )
 
 
 class PrecisionComparisionBase(VersionExperiment, shorthand=""):
+    """Implementation base for the incremental analysis evaluation."""
 
     NAME = "PrecisionComparisionBase"
 
-    REPORT_SPEC = ReportSpecification(GlobalsReportWith, GlobalsReportWithout)
+    REPORT_SPEC = ReportSpecification(EmptyReport)
 
-    MAX_REVISIONS_TO_EXPLORE = 1
+    MAX_REVISIONS_TO_EXPLORE = 3
 
-    def __init__(self, revision_step_with: int) -> None:
+    def __init__(self, revision_step_with: int, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self.__revision_step_with = revision_step_with
 
     def actions_for_project(
@@ -178,13 +189,23 @@ class PrecisionComparisionBase(VersionExperiment, shorthand=""):
         # Computes list of revisions that should be analyzed
         revision_list = self.compute_revisions_to_explore(project)
 
+        project.runtime_extension = run.RuntimeExtension(project, self) \
+            << time.RunWithTime()
+
+        # Add the required compiler extensions to the project(s).
+        project.compiler_extension = compiler.RunCompiler(project, self) \
+            << RunWLLVM() \
+            << run.WithTimeout()
+
+        # Add own error handler to compile step.
+        project.compile = get_default_compile_error_wrapped(
+            self.get_handle(), project, EmptyReport
+        )
+
         analysis_actions = []
 
-        # Generate all required bc files for analysis
-        # TODO: implement loop over revisions
         analysis_actions.extend(
-            get_bc_cache_actions(  # TODO: depending on the SetPRojectEnv impl,
-                                   # we need to pass the revision here
+            get_bc_cache_actions(
                 project, RunAnalysisBase.BC_FILE_EXTENSIONS,
                 create_default_compiler_error_handler(
                     self.get_handle(), project, self.REPORT_SPEC.main_report
@@ -192,37 +213,44 @@ class PrecisionComparisionBase(VersionExperiment, shorthand=""):
             )
         )
 
-        # TODO: set commit to next state
-        # analysis_actions.append(actions.SetProjectEnv(
-        #                         project, get_next_commit(project.current_commit,
-        #                                                  self.revision_step_with
-        #                                                 )))
+        # Generate all required bc files for analysis
+        for next_revision in revision_list[1:]:
+            project_variant = Variant(
+                owner=sources_as_dict(*project.source)[project.primary_source],
+                version=next_revision
+            )
+            analysis_actions.append(
+                actions.SetProjectVersion(project, context(project_variant))
+            )
 
-        analysis_actions.append(actions.Compile(project))
+            analysis_actions.extend(
+                get_bc_cache_actions(
+                    project, RunAnalysisBase.BC_FILE_EXTENSIONS,
+                    create_default_compiler_error_handler(
+                        self.get_handle(), project, self.REPORT_SPEC.main_report
+                    )
+                )
+            )
 
-        current_base_hash: ShortCommitHash = revision_list[0]
-        for increment_hash in revision_list[1:]:
+        # TODO (python3.10): replace with itertools.pairwise
+        for base_revision, next_revision in pairwise(reversed(revision_list)):
+            print(f"Compare From: {base_revision} -> {next_revision}")
             # Run all analysis steps
             analysis_actions.append(
                 RunTypeStateAnalysis(
-                    project, self.get_handle(), current_base_hash,
-                    increment_hash
+                    project, self.get_handle(), base_revision, next_revision
                 )
             )
             analysis_actions.append(
                 RunTaintAnalysis(
-                    project, self.get_handle(), current_base_hash,
-                    increment_hash
+                    project, self.get_handle(), base_revision, next_revision
                 )
             )
             analysis_actions.append(
                 RunLineraConstantPropagationAnalysis(
-                    project, self.get_handle(), current_base_hash,
-                    increment_hash
+                    project, self.get_handle(), base_revision, next_revision
                 )
             )
-
-            current_base_hash = increment_hash
 
         # Clean up the generated files afterwards
         analysis_actions.append(actions.Clean(project))
@@ -234,23 +262,30 @@ class PrecisionComparisionBase(VersionExperiment, shorthand=""):
     ) -> tp.List[ShortCommitHash]:
         """Computes the list of revisions that should be explored by this
         analysis."""
+        project_repo_git = Path(target_prefix()) / Path(project.primary_source)
         return get_all_revisions_between(
-            get_initial_commit().hash, project.version_of_primary,
-            ShortCommitHash
+            get_initial_commit(project_repo_git).hash,
+            project.version_of_primary, ShortCommitHash, project_repo_git
         )[::-self.__revision_step_with][:self.MAX_REVISIONS_TO_EXPLORE]
 
 
 class IncrementalAnalysisPrecisionComparisionS1(
     PrecisionComparisionBase, shorthand="IncAPCs1"
 ):
+    """Evaluation of the incremental analysis, using a 1 rev step width."""
 
-    def __init__(self) -> None:
-        super().__init__(1)
+    NAME = "IncAPCs1"
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(1, *args, **kwargs)
 
 
 class IncrementalAnalysisPrecisionComparisionS5(
     PrecisionComparisionBase, shorthand="IncAPCs5"
 ):
+    """Evaluation of the incremental analysis, using a 5 rev step width."""
 
-    def __init__(self) -> None:
-        super().__init__(5)
+    NAME = "IncAPCs5"
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(5, *args, **kwargs)
