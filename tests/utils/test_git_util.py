@@ -1,9 +1,14 @@
 """Test VaRA git utilities."""
 import unittest
 
+from benchbuild.utils.revision_ranges import RevisionRange
 from plumbum import local
 
-from varats.project.project_util import get_local_project_git
+from varats.project.project_util import (
+    get_local_project_git,
+    get_local_project_git_path,
+    BinaryType,
+)
 from varats.utils.git_util import (
     ChurnConfig,
     CommitRepoPair,
@@ -14,6 +19,7 @@ from varats.utils.git_util import (
     get_all_revisions_between,
     get_current_branch,
     get_initial_commit,
+    RevisionBinaryMap,
 )
 
 
@@ -323,3 +329,62 @@ class TestCodeChurnCalculation(unittest.TestCase):
         self.assertEqual(files_changed, 3)
         self.assertEqual(insertions, 49)
         self.assertEqual(deletions, 11)
+
+
+class TestRevisionBinaryMap(unittest.TestCase):
+    """Test if we can correctly setup and use the RevisionBinaryMap."""
+
+    rv_map: RevisionBinaryMap
+
+    def setUp(self) -> None:
+        self.rv_map = RevisionBinaryMap(
+            get_local_project_git_path("FeaturePerfCSCollection")
+        )
+
+    def test_specification_of_always_valid_binaries(self) -> None:
+        """Check if we can add binaries to the map."""
+        self.rv_map.specify_binary(
+            "build/bin/SingleLocalSimple", BinaryType.EXECUTABLE
+        )
+
+        self.assertIn("SingleLocalSimple", self.rv_map)
+
+    def test_specification_validity_range_binaries(self) -> None:
+        """Check if we can add binaries to the map that are only valid in a
+        specific range."""
+        self.rv_map.specify_binary(
+            "build/bin/SingleLocalMultipleRegions",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("162db88346", "master")
+        )
+
+        self.assertIn("SingleLocalMultipleRegions", self.rv_map)
+
+    def test_specification_binaries_with_special_name(self) -> None:
+        """Check if we can add binaries that have a special name."""
+        self.rv_map.specify_binary(
+            "build/bin/SingleLocalSimple",
+            BinaryType.EXECUTABLE,
+            override_binary_name="Overridden"
+        )
+
+        self.assertIn("Overridden", self.rv_map)
+
+    def test_valid_binary_lookup(self) -> None:
+        """Check if we can correctly determine the list of valid binaries for a
+        specified revision."""
+        self.rv_map.specify_binary(
+            "build/bin/SingleLocalSimple", BinaryType.EXECUTABLE
+        )
+        self.rv_map.specify_binary(
+            "build/bin/SingleLocalMultipleRegions",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("162db88346", "master")
+        )
+
+        test_query = self.rv_map[ShortCommitHash("162db88346")]
+        self.assertSetEqual({x.name for x in test_query},
+                            {"SingleLocalSimple", "SingleLocalMultipleRegions"})
+
+        test_query = self.rv_map[ShortCommitHash("745424e3ae")]
+        self.assertSetEqual({x.name for x in test_query}, {"SingleLocalSimple"})
