@@ -3,6 +3,7 @@ import typing as tp
 
 import benchbuild as bb
 from benchbuild.utils.cmd import make, cmake, mkdir
+from benchbuild.utils.revision_ranges import RevisionRange
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
@@ -12,10 +13,15 @@ from varats.project.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     BinaryType,
+    get_local_project_git_path,
     verify_binaries,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_util import (
+    RevisionBinaryMap,
+    ShortCommitHash,
+    get_all_revisions_between,
+)
 from varats.utils.settings import bb_cfg
 
 
@@ -41,10 +47,20 @@ class FeaturePerfCSCollection(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash  # pylint: disable=W0613
     ) -> tp.List[ProjectBinaryWrapper]:
-        return wrap_paths_to_binaries([
-            ("build/bin/SingleLocalSimple", BinaryType.EXECUTABLE),
-            ("build/bin/SingleLocalMultipleRegions", BinaryType.EXECUTABLE)
-        ])
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(FeaturePerfCSCollection.NAME)
+        )
+
+        binary_map.specify_binary(
+            "build/bin/SingleLocalSimple", BinaryType.EXECUTABLE
+        )
+        binary_map.specify_binary(
+            "build/bin/SingleLocalMultipleRegions",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("162db88346", "master")
+        )
+
+        return binary_map[revision]
 
     def run_tests(self) -> None:
         pass

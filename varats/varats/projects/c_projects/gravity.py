@@ -92,11 +92,10 @@ class Gravity(VProject):
 
         # commit 46133fb47d6da1f0dec27ae23db1d633bc72e9e3 introduced
         # cmake as build system
-        with local.cwd(gravity_git_path):
-            cmake_revisions = get_all_revisions_between(
-                "dbb4d61fc2ebb9aca44e8e6bb978efac4a6def87", "master",
-                ShortCommitHash
-            )
+        cmake_revisions = get_all_revisions_between(
+            "dbb4d61fc2ebb9aca44e8e6bb978efac4a6def87", "master",
+            ShortCommitHash, gravity_git_path
+        )
 
         if gravity_version in cmake_revisions:
             self.__compile_cmake()
