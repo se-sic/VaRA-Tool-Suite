@@ -560,7 +560,7 @@ def __calc_code_churn_range_impl(
     # initialize with 0 as otherwise commits without changes would be
     # missing from the churn data
     for rev in revs:
-        churn_values[rev] = (0, 0, 0)
+        churn_values[FullCommitHash(rev)] = (0, 0, 0)
     for match in GIT_LOG_MATCHER.finditer(stdout):
         commit_hash = FullCommitHash(match.group('hash'))
 

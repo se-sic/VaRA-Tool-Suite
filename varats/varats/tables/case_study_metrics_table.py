@@ -57,7 +57,7 @@ class CaseStudyMetricsTable(Table):
                         int(project_git("rev-list", "--count", rev_range)),
                     "Authors":
                         len(
-                            project_git("shortlog", "-s", "--all",
+                            project_git("shortlog", "-s",
                                         rev_range).splitlines()
                         )
                 }
