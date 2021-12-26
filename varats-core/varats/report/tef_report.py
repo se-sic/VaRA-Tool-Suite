@@ -47,8 +47,8 @@ class TraceEvent():
     target program."""
 
     def __init__(self, json_trace_event: tp.Dict[str, tp.Any]) -> None:
-        self.__name = json_trace_event["name"]
-        self.__category = json_trace_event["cat"]
+        self.__name = str(json_trace_event["name"])
+        self.__category = str(json_trace_event["cat"])
         self.__event_type = TraceEventType.parse_event_type(
             json_trace_event["ph"]
         )
@@ -104,7 +104,7 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
         with open(self.path, "r", encoding="utf-8") as json_tef_report:
             data = json.load(json_tef_report)
 
-            self.__display_time_unit = data["displayTimeUnit"]
+            self.__display_time_unit = str(data["displayTimeUnit"])
             self.__trace_events = self._parse_trace_events(data["traceEvents"])
             # Parsing stackFrames is currently not implemented
             # x = data["stackFrames"]
