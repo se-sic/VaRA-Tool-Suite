@@ -46,7 +46,7 @@ setup(
         "rich>=1.3.1",
         "scikit-learn~=1.0.2",
         "seaborn>=0.8.0",
-        "statsmodels~=0.11.1",
+        "statsmodels~=0.13.1",
         "tabulate>=0.8.6",
         "varats-core>=11.0.0",
         "wllvm>=1.1.4",
