@@ -44,7 +44,7 @@ setup(
         "pyzmq>=19.0.0",
         "requests>=2.24.0",
         "rich>=1.3.1",
-        "scikit-learn~=0.23.1",
+        "scikit-learn~=1.0.2",
         "seaborn>=0.8.0",
         "statsmodels~=0.11.1",
         "tabulate>=0.8.6",
