@@ -40,7 +40,8 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
     configurations, against one or multiple workloads."""
 
     NAME = "ExecBinary"
-    DESCRIPTION = "Executes each binary and caputres white-box performance traces"
+    DESCRIPTION = "Executes each binary and caputres white-box " +\
+        "performance traces."
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(obj=project, action_fn=self.run_perf_tracing)

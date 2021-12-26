@@ -125,6 +125,6 @@ class TEFReport(BaseReport, shorthand="TEF", file_type="json"):
 
     @staticmethod
     def _parse_trace_events(
-        raw_event_list: tp.List[str]
+        raw_event_list: tp.List[tp.Dict[str, tp.Any]]
     ) -> tp.List[TraceEvent]:
         return [TraceEvent(data_item) for data_item in raw_event_list]
