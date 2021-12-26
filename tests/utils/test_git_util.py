@@ -34,6 +34,29 @@ class TestGitInteractionHelpers(unittest.TestCase):
 
         self.assertEqual(get_current_branch(repo.workdir), 'master')
 
+    def test_get_initial_commit(self) -> None:
+        """Check if we can correctly retrieve the inital commit of a repo."""
+        repo = get_local_project_git("FeaturePerfCSCollection")
+
+        with local.cwd(repo.workdir):
+            inital_commit = get_initial_commit()
+
+            self.assertEqual(
+                FullCommitHash("4d84c8f80ec2db3aaa880d323f7666752c4be51d"),
+                inital_commit
+            )
+
+    def test_get_initial_commit_with_specified_path(self) -> None:
+        """Check if we can correctly retrieve the inital commit of a repo."""
+        inital_commit = get_initial_commit(
+            get_local_project_git_path("FeaturePerfCSCollection")
+        )
+
+        self.assertEqual(
+            FullCommitHash("4d84c8f80ec2db3aaa880d323f7666752c4be51d"),
+            inital_commit
+        )
+
     def test_get_all_revisions_between_full(self):
         """Check if the correct all revisions are correctly found."""
         repo = get_local_project_git("brotli")
@@ -353,6 +376,17 @@ class TestRevisionBinaryMap(unittest.TestCase):
         )
 
         self.assertIn("Overridden", self.rv_map)
+
+    def test_wrong_contains_check(self) -> None:
+        """Check if we wrong values are correctly shows as not in the map."""
+        self.rv_map.specify_binary(
+            "build/bin/SingleLocalSimple", BinaryType.EXECUTABLE
+        )
+
+        self.assertNotIn("WrongFilename", self.rv_map)
+
+        obj_with_wrong_type = object()
+        self.assertNotIn(obj_with_wrong_type, self.rv_map)
 
     def test_valid_binary_lookup(self) -> None:
         """Check if we can correctly determine the list of valid binaries for a
