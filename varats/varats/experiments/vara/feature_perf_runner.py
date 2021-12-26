@@ -1,3 +1,5 @@
+"""Module for feature performance experiments that instrument and measure the
+execution performance of each binary that is produced by a project."""
 import os
 import typing as tp
 
@@ -38,7 +40,7 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
     configurations, against one or multiple workloads."""
 
     NAME = "ExecBinary"
-    DESCRIPTION = "fobar"  # TODO: fix
+    DESCRIPTION = "Executes each binary and caputres white-box performance traces"
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
         super().__init__(obj=project, action_fn=self.run_perf_tracing)
