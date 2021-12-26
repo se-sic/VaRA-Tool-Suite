@@ -10,18 +10,13 @@ from plumbum import local
 from varats.paper_mgmt.paper_config import project_filter_generator
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     BinaryType,
     get_local_project_git_path,
     verify_binaries,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import (
-    RevisionBinaryMap,
-    ShortCommitHash,
-    get_all_revisions_between,
-)
+from varats.utils.git_util import RevisionBinaryMap, ShortCommitHash
 from varats.utils.settings import bb_cfg
 
 
