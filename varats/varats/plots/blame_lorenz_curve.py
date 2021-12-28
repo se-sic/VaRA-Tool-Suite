@@ -34,8 +34,9 @@ from varats.utils.git_util import (
 
 
 def draw_interaction_lorenz_curve(
-    axis: axes.SubplotBase, data: pd.DataFrame, consider_in_interactions: bool,
-    consider_out_interactions: bool, line_width: float
+    axis: axes.SubplotBase, data: pd.DataFrame, unique_rev_strs: tp.List[str],
+    consider_in_interactions: bool, consider_out_interactions: bool,
+    line_width: float
 ) -> None:
     """
     Draws a lorenz_curve onto the given axis.
@@ -57,11 +58,12 @@ def draw_interaction_lorenz_curve(
 
     data.sort_values(by=[data_selector, 'time_id'], inplace=True)
     lor = lorenz_curve(data[data_selector])
-    axis.plot(data['revision'], lor, color='#cc0099', linewidth=line_width)
+
+    axis.plot(unique_rev_strs, lor, color='#cc0099', linewidth=line_width)
 
 
 def draw_perfect_lorenz_curve(
-    axis: axes.SubplotBase, data: pd.DataFrame, line_width: float
+    axis: axes.SubplotBase, unique_rev_strs: tp.List[str], line_width: float
 ) -> None:
     """
     Draws a perfect lorenz curve onto the given axis, i.e., a straight line from
@@ -72,8 +74,8 @@ def draw_perfect_lorenz_curve(
         data: plotting data
     """
     axis.plot(
-        data['revision'],
-        np.linspace(0.0, 1.0, len(data['revision'])),
+        unique_rev_strs,
+        np.linspace(0.0, 1.0, len(unique_rev_strs)),
         color='black',
         linestyle='--',
         linewidth=line_width
@@ -176,22 +178,26 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
         if data.empty:
             raise PlotDataEmpty
 
+        unique_rev_strs: tp.List[str] = [rev.hash for rev in data['revision']]
+
         # Draw left side of the plot
         draw_interaction_lorenz_curve(
-            main_axis, data, True, False, self.plot_config.line_width()
+            main_axis, data, unique_rev_strs, True, False,
+            self.plot_config.line_width()
         )
         draw_perfect_lorenz_curve(
-            main_axis, data, self.plot_config.line_width()
+            main_axis, unique_rev_strs, self.plot_config.line_width()
         )
 
         draw_interaction_code_churn(churn_axis, data, project_name, commit_map)
 
         # Draw right side of the plot
         draw_interaction_lorenz_curve(
-            main_axis_r, data, False, True, self.plot_config.line_width()
+            main_axis_r, data, unique_rev_strs, False, True,
+            self.plot_config.line_width()
         )
         draw_perfect_lorenz_curve(
-            main_axis_r, data, self.plot_config.line_width()
+            main_axis_r, unique_rev_strs, self.plot_config.line_width()
         )
 
         draw_interaction_code_churn(
