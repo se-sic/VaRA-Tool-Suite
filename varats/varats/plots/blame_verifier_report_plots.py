@@ -17,7 +17,12 @@ from varats.data.databases.blame_verifier_report_database import (
 from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plots import PlotGenerator, PlotConfig
+from varats.plot.plots import (
+    PlotGenerator,
+    PlotConfig,
+    REQUIRE_REPORT_TYPE,
+    REQUIRE_MULTI_CASE_STUDY,
+)
 from varats.plots.case_study_overview import SUCCESS_COLOR, FAILED_COLOR
 from varats.utils.git_util import FullCommitHash
 
@@ -41,7 +46,8 @@ def _get_named_df_for_case_study(
     verifier_plot_df = verifier_plot_df.loc[verifier_plot_df['opt_level'] ==
                                             opt_level.value]
     if verifier_plot_df.empty or len(
-        np.unique(verifier_plot_df['revision'])
+        np.unique([rev.hash for rev in verifier_plot_df['revision']]
+                 )  # type: ignore
     ) == 0:
         if len(plot_kwargs["case_study"]) > 1:
             return None
@@ -64,13 +70,12 @@ def _get_named_df_for_case_study(
 def _extract_data_from_named_dataframe(
     named_verifier_plot_df: tp.Dict[str, tp.Union[str, pd.DataFrame]]
 ) -> tp.Tuple[str, tp.Dict[str, tp.Any]]:
-
     current_verifier_plot_df = tp.cast(
         pd.DataFrame, named_verifier_plot_df['dataframe']
     )
     current_verifier_plot_df.sort_values(by=['time_id'], inplace=True)
 
-    revisions = current_verifier_plot_df['revision'].to_numpy()
+    revision_strs = [rev.hash for rev in current_verifier_plot_df['revision']]
     successes = current_verifier_plot_df['successful'].to_numpy()
     failures = current_verifier_plot_df['failed'].to_numpy()
     total = current_verifier_plot_df['total'].to_numpy()
@@ -83,7 +88,7 @@ def _extract_data_from_named_dataframe(
                                   100, 2)
 
     result_data = named_verifier_plot_df['project_name'], {
-        "revisions": revisions,
+        "revisions": revision_strs,
         "success_ratio": success_ratio,
         "failure_ratio": failure_ratio,
         "average_success_ratio": average_success_ratio,
@@ -99,9 +104,9 @@ def _load_all_named_dataframes(
     all_named_dataframes: tp.List[tp.Dict[str, tp.Union[str,
                                                         pd.DataFrame]]] = []
 
-    for case_study in sorted(
-        plot_kwargs["case_study"], key=lambda cs: cs.project_name
-    ):
+    # https://github.com/python/mypy/issues/9590
+    k = lambda cs: cs.project_name
+    for case_study in sorted(plot_kwargs["case_study"], key=k):
         named_df = _get_named_df_for_case_study(
             case_study, opt_level, plot_kwargs
         )
@@ -112,7 +117,9 @@ def _load_all_named_dataframes(
     return all_named_dataframes
 
 
-def _verifier_plot(opt_level: OptLevel, plot_kwargs: tp.Any) -> None:
+def _verifier_plot(
+    opt_level: OptLevel, plot_config: PlotConfig, plot_kwargs: tp.Any
+) -> None:
 
     # The project name of the dataframes is stored to remember the
     # correct title of the subplots
@@ -131,21 +138,23 @@ def _verifier_plot(opt_level: OptLevel, plot_kwargs: tp.Any) -> None:
         raise PlotDataEmpty
 
     if len(plot_kwargs["case_study"]) > 1 and len(final_plot_data) > 1:
-        _verifier_plot_multiple(plot_kwargs, final_plot_data)
+        _verifier_plot_multiple(plot_config, final_plot_data)
     else:
         # Pass the only list item of the plot data
-        _verifier_plot_single(plot_kwargs, final_plot_data[0])
+        _verifier_plot_single(plot_config, plot_kwargs, final_plot_data[0])
 
 
 def _verifier_plot_single(
-    plot_kwargs: tp.Any, plot_data: tp.Tuple[str, tp.Dict[str, tp.Any]]
+    plot_config: PlotConfig, plot_kwargs: tp.Any,
+    plot_data: tp.Tuple[str, tp.Dict[str, tp.Any]]
 ) -> None:
-    fig, main_axis = plt.subplots()
+    project_name = plot_kwargs['case_study'][0].project_name
+    default_fig_suptitle = f'Annotated project revisions without optimization' \
+                           f' - Project {project_name}'
+    fig_suptitle = f"{plot_config.fig_title(default_fig_suptitle)}"
 
-    fig.suptitle(
-        str(plot_kwargs['fig_title']) + f' - Project {plot_data[0]}',
-        fontsize=8
-    )
+    fig, main_axis = plt.subplots()
+    fig.suptitle(fig_suptitle, fontsize=plot_config.font_size(8))
     main_axis.grid(linestyle='--')
     main_axis.set_xlabel('Revisions')
     main_axis.set_ylabel('Success/Failure rate in %')
@@ -169,24 +178,24 @@ def _verifier_plot_single(
     )
 
     legend = main_axis.legend(
-        title=plot_kwargs['legend_title'],
+        title=plot_config.legend_title("Annotation types:"),
         loc='upper left',
         prop={
-            'size': plot_kwargs['legend_size'],
+            'size': plot_config.legend_size(),
             'family': 'monospace'
         }
     )
-    legend.set_visible(plot_kwargs['show_legend'])
+    legend.set_visible(plot_config.show_legend)
 
     plt.setp(
         legend.get_title(),
-        fontsize=plot_kwargs['legend_size'],
+        fontsize=plot_config.legend_size(),
         family='monospace'
     )
 
 
 def _verifier_plot_multiple(
-    plot_kwargs: tp.Any,
+    plot_config: PlotConfig,
     final_plot_data: tp.List[tp.Tuple[str, tp.Dict[str, tp.Any]]]
 ) -> None:
     fig = plt.figure()
@@ -221,28 +230,28 @@ def _verifier_plot_multiple(
             f"{plot_data[0]}(\u2205 {plot_data[1]['average_success_ratio']}%)"
         )
 
-    main_axis.title.set_text(
-        str(plot_kwargs['fig_title']) + f' - Project(s): \n{project_names}'
-    )
+    default_fig_suptitle = f'Annotated project revisions without optimization' \
+                           f' - Project(s): {project_names}'
+    main_axis.title.set_text(f"{plot_config.fig_title(default_fig_suptitle)}")
 
     plt.setp(
         main_axis.get_xticklabels(), rotation=30, horizontalalignment='right'
     )
 
     legend = main_axis.legend(
-        title=f"{plot_kwargs['legend_title']}"
+        title=f"{plot_config.legend_title('Success rate of projects')}"
         f"(\u2205 {round(mean_over_all_project_successes, 2)}%):",
         loc='upper left',
         prop={
-            'size': plot_kwargs['legend_size'],
+            'size': plot_config.legend_size(),
             'family': 'monospace'
         }
     )
-    legend.set_visible(plot_kwargs['show_legend'])
+    legend.set_visible(plot_config.show_legend())
 
     plt.setp(
         legend.get_title(),
-        fontsize=plot_kwargs['legend_size'],
+        fontsize=plot_config.legend_size(),
         family='monospace'
     )
 
@@ -275,55 +284,19 @@ class BlameVerifierReportNoOptPlot(
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-
-        if len(self.plot_kwargs["case_study"]) > 1:
-            self.plot_kwargs["legend_title"] = "Success rate of projects"
-        else:
-            self.plot_kwargs["legend_title"] = "Annotation types:"
-
-        if not self.plot_kwargs["fig_title"]:
-            self.plot_kwargs[
-                "fig_title"
-            ] = "Annotated project revisions without optimization"
-
-        _verifier_plot(OptLevel.NO_OPT, self.plot_kwargs)
+        _verifier_plot(OptLevel.NO_OPT, self.plot_config, self.plot_kwargs)
 
 
 class BlameVerifierReportNoOptPlotGenerator(
     PlotGenerator,
     generator_name="verifier-no-opt-plot",
-    plot=BlameVerifierReportNoOptPlot,
-    options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE,
-        PlotGenerator.REQUIRE_MULTI_CASE_STUDY,
-        OPTIONAL_FIG_TITLE,
-        OPTIONAL_LEGEND_TITLE,
-        OPTIONAL_LEGEND_SIZE,
-        OPTIONAL_SHOW_LEGEND,
-    ]
+    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates a verifier-no-opt plot for the selected case study(ies)."""
 
-    @check_required_args("report_type", "case_study")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-        self.__fig_title: str = plot_kwargs["fig_title"]
-        self.__legend_title: str = plot_kwargs["legend_title"]
-        self.__legend_size: int = plot_kwargs["legend_size"]
-        self.__show_legend: bool = plot_kwargs["show_legend"]
-
     def generate(self) -> tp.List[Plot]:
         return [
-            self.PLOT(
-                report_type=self.__report_type,
-                case_study=self.__case_studies,
-                fig_title=self.__fig_title,
-                legend_title=self.__legend_title,
-                legend_size=self.__legend_size,
-                show_legend=self.__show_legend,
-            )
+            BlameVerifierReportNoOptPlot(self.plot_config, **self.plot_kwargs)
         ]
 
 
