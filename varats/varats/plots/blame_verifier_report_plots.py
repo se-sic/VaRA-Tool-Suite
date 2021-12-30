@@ -137,24 +137,32 @@ def _verifier_plot(
     if not final_plot_data:
         raise PlotDataEmpty
 
+    project_name = plot_kwargs['case_study'][0].project_name
+    suptitle_opt_str = "with" if opt_level == OptLevel.OPT else "without"
+    default_fig_suptitle = f'Annotated project revisions {suptitle_opt_str} ' \
+                           f'optimization - Project {project_name}'
+
     if len(plot_kwargs["case_study"]) > 1 and len(final_plot_data) > 1:
-        _verifier_plot_multiple(plot_config, final_plot_data)
+        _verifier_plot_multiple(
+            default_fig_suptitle, plot_config, final_plot_data
+        )
     else:
         # Pass the only list item of the plot data
-        _verifier_plot_single(plot_config, plot_kwargs, final_plot_data[0])
+        _verifier_plot_single(
+            default_fig_suptitle, plot_config, final_plot_data[0]
+        )
 
 
 def _verifier_plot_single(
-    plot_config: PlotConfig, plot_kwargs: tp.Any,
+    default_fig_suptitle: str, plot_config: PlotConfig,
     plot_data: tp.Tuple[str, tp.Dict[str, tp.Any]]
 ) -> None:
-    project_name = plot_kwargs['case_study'][0].project_name
-    default_fig_suptitle = f'Annotated project revisions without optimization' \
-                           f' - Project {project_name}'
-    fig_suptitle = f"{plot_config.fig_title(default_fig_suptitle)}"
 
     fig, main_axis = plt.subplots()
-    fig.suptitle(fig_suptitle, fontsize=plot_config.font_size(8))
+    fig.suptitle(
+        plot_config.fig_title(default_fig_suptitle),
+        fontsize=plot_config.font_size(8)
+    )
     main_axis.grid(linestyle='--')
     main_axis.set_xlabel('Revisions')
     main_axis.set_ylabel('Success/Failure rate in %')
@@ -195,7 +203,7 @@ def _verifier_plot_single(
 
 
 def _verifier_plot_multiple(
-    plot_config: PlotConfig,
+    default_fig_suptitle: str, plot_config: PlotConfig,
     final_plot_data: tp.List[tp.Tuple[str, tp.Dict[str, tp.Any]]]
 ) -> None:
     fig = plt.figure()
@@ -230,9 +238,7 @@ def _verifier_plot_multiple(
             f"{plot_data[0]}(\u2205 {plot_data[1]['average_success_ratio']}%)"
         )
 
-    default_fig_suptitle = f'Annotated project revisions without optimization' \
-                           f' - Project(s): {project_names}'
-    main_axis.title.set_text(f"{plot_config.fig_title(default_fig_suptitle)}")
+    main_axis.title.set_text(plot_config.fig_title(default_fig_suptitle))
 
     plt.setp(
         main_axis.get_xticklabels(), rotation=30, horizontalalignment='right'
@@ -311,52 +317,17 @@ class BlameVerifierReportOptPlot(
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-
-        if len(self.plot_kwargs["case_study"]) > 1:
-            self.plot_kwargs["legend_title"] = "Success rate of projects"
-        else:
-            self.plot_kwargs["legend_title"] = "Annotation types:"
-
-        if not self.plot_kwargs["fig_title"]:
-            self.plot_kwargs["fig_title"
-                            ] = "Annotated project revisions with optimization"
-
-        _verifier_plot(OptLevel.OPT, self.plot_kwargs)
+        _verifier_plot(OptLevel.OPT, self.plot_config, self.plot_kwargs)
 
 
 class BlameVerifierReportOptPlotGenerator(
     PlotGenerator,
     generator_name="verifier-opt-plot",
-    plot=BlameVerifierReportOptPlot,
-    options=[
-        PlotGenerator.REQUIRE_REPORT_TYPE,
-        PlotGenerator.REQUIRE_MULTI_CASE_STUDY,
-        OPTIONAL_FIG_TITLE,
-        OPTIONAL_LEGEND_TITLE,
-        OPTIONAL_LEGEND_SIZE,
-        OPTIONAL_SHOW_LEGEND,
-    ]
+    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
 ):
     """Generates a verifier-opt plot for the selected case study(ies)."""
 
-    @check_required_args("report_type", "case_study")
-    def __init__(self, plot_config: PlotConfig, **plot_kwargs: tp.Any):
-        super().__init__(plot_config, **plot_kwargs)
-        self.__report_type: str = plot_kwargs["report_type"]
-        self.__case_studies: tp.List[CaseStudy] = plot_kwargs["case_study"]
-        self.__fig_title: str = plot_kwargs["fig_title"]
-        self.__legend_title: str = plot_kwargs["legend_title"]
-        self.__legend_size: int = plot_kwargs["legend_size"]
-        self.__show_legend: bool = plot_kwargs["show_legend"]
-
     def generate(self) -> tp.List[Plot]:
         return [
-            self.PLOT(
-                report_type=self.__report_type,
-                case_study=self.__case_studies,
-                fig_title=self.__fig_title,
-                legend_title=self.__legend_title,
-                legend_size=self.__legend_size,
-                show_legend=self.__show_legend,
-            )
+            BlameVerifierReportOptPlot(self.plot_config, **self.plot_kwargs)
         ]
