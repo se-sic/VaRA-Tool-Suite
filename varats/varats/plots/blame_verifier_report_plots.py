@@ -10,7 +10,6 @@ import pandas as pd
 from matplotlib import style
 from sklearn import preprocessing
 
-import varats.paper_mgmt.paper_config as PC
 from varats.data.databases.blame_verifier_report_database import (
     BlameVerifierReportDatabase,
     OptLevel,
@@ -18,7 +17,7 @@ from varats.data.databases.blame_verifier_report_database import (
 from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plots import PlotConfig
+from varats.plot.plots import PlotGenerator, PlotConfig
 from varats.plots.case_study_overview import SUCCESS_COLOR, FAILED_COLOR
 from varats.utils.git_util import FullCommitHash
 
