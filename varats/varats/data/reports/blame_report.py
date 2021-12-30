@@ -11,8 +11,15 @@ import pygit2
 import yaml
 
 from varats.base.version_header import VersionHeader
-from varats.report.report import BaseReport, FileStatusExtension, MetaReport
-from varats.utils.git_util import map_commits, CommitRepoPair, CommitLookupTy
+from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
+from varats.utils.git_util import (
+    map_commits,
+    CommitRepoPair,
+    CommitLookupTy,
+    FullCommitHash,
+    ShortCommitHash,
+    UNCOMMITTED_COMMIT_HASH,
+)
 
 
 class BlameInstInteractions():
@@ -41,7 +48,8 @@ class BlameInstInteractions():
         base_commit, *base_repo = str(raw_inst_entry['base-hash']
                                      ).split('-', maxsplit=1)
         base_hash = CommitRepoPair(
-            base_commit, base_repo[0] if base_repo else "Unknown"
+            FullCommitHash(base_commit),
+            base_repo[0] if base_repo else "Unknown"
         )
         interacting_hashes: tp.List[CommitRepoPair] = []
         for raw_inst_hash in raw_inst_entry['interacting-hashes']:
@@ -49,7 +57,8 @@ class BlameInstInteractions():
                                            ).split('-', maxsplit=1)
             interacting_hashes.append(
                 CommitRepoPair(
-                    inter_commit, inter_repo[0] if inter_repo else "Unknown"
+                    FullCommitHash(inter_commit),
+                    inter_repo[0] if inter_repo else "Unknown"
                 )
             )
         amount = int(raw_inst_entry['amount'])
@@ -259,15 +268,12 @@ class BlameReportMetaData():
         )
 
 
-class BlameReport(BaseReport):
+class BlameReport(BaseReport, shorthand="BR", file_type="yaml"):
     """Full blame report containing all blame interactions."""
-
-    SHORTHAND = "BR"
-    FILE_TYPE = "yaml"
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
-        self.__path = path
+
         with open(path, 'r') as stream:
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
             version_header = VersionHeader(next(documents))
@@ -277,8 +283,7 @@ class BlameReport(BaseReport):
             self.__meta_data = BlameReportMetaData \
                 .create_blame_report_meta_data(next(documents))
 
-            self.__function_entries: tp.Dict[str,
-                                             BlameResultFunctionEntry] = dict()
+            self.__function_entries: tp.Dict[str, BlameResultFunctionEntry] = {}
             raw_blame_report = next(documents)
             for raw_func_entry in raw_blame_report['result-map']:
                 new_function_entry = (
@@ -307,42 +312,14 @@ class BlameReport(BaseReport):
         return self.__function_entries.values()
 
     @property
-    def head_commit(self) -> str:
+    def head_commit(self) -> ShortCommitHash:
         """The current HEAD commit under which this CommitReport was created."""
-        return BlameReport.get_commit_hash_from_result_file(self.path.name)
+        return self.filename.commit_hash
 
     @property
     def meta_data(self) -> BlameReportMetaData:
         """Access the meta data that was gathered with the ``BlameReport``."""
         return self.__meta_data
-
-    @staticmethod
-    def get_file_name(
-        project_name: str,
-        binary_name: str,
-        project_version: str,
-        project_uuid: str,
-        extension_type: FileStatusExtension,
-        file_ext: str = "yaml"
-    ) -> str:
-        """
-        Generates a filename for a commit report with 'yaml' as file extension.
-
-        Args:
-            project_name: name of the project for which the report was generated
-            binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
-            project_uuid: benchbuild uuid for the experiment run
-            extension_type: to specify the status of the generated report
-            file_ext: file extension of the report file
-
-        Returns:
-            name for the report file that can later be uniquly identified
-        """
-        return MetaReport.get_file_name(
-            BlameReport.SHORTHAND, project_name, binary_name, project_version,
-            project_uuid, extension_type, file_ext
-        )
 
     def __str__(self) -> str:
         str_representation = ""
@@ -358,17 +335,17 @@ class BlameReportDiff():
     def __init__(
         self, base_report: BlameReport, prev_report: BlameReport
     ) -> None:
-        self.__function_entries: tp.Dict[str, BlameResultFunctionEntry] = dict()
+        self.__function_entries: tp.Dict[str, BlameResultFunctionEntry] = {}
         self.__base_head = base_report.head_commit
         self.__prev_head = prev_report.head_commit
         self.__calc_diff_br(base_report, prev_report)
 
     @property
-    def base_head_commit(self) -> str:
+    def base_head_commit(self) -> ShortCommitHash:
         return self.__base_head
 
     @property
-    def prev_head_commit(self) -> str:
+    def prev_head_commit(self) -> ShortCommitHash:
         return self.__prev_head
 
     @property
@@ -726,10 +703,7 @@ def generate_time_delta_distribution_tuples(
 
     for func_entry in report.function_entries:
         for interaction in func_entry.interactions:
-            if (
-                interaction.base_commit.commit_hash ==
-                "0000000000000000000000000000000000000000"
-            ):
+            if interaction.base_commit.commit_hash == UNCOMMITTED_COMMIT_HASH:
                 continue
 
             base_commit = commit_lookup(
