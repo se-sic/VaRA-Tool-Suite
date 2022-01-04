@@ -435,11 +435,11 @@ def _combine_tagged_revs_for_experiment(
     for report in experiment_type.report_spec():
         if stage_num:
             tagged_revs = get_revisions_status_for_case_study(
-                case_study, report, stage_num
+                case_study, report, stage_num, experiment_type=experiment_type
             )
         else:
             tagged_revs = get_revisions_status_for_case_study(
-                case_study, report
+                case_study, report, experiment_type=experiment_type
             )
 
         for tagged_rev in tagged_revs:
@@ -451,4 +451,4 @@ def _combine_tagged_revs_for_experiment(
             else:
                 combined_tagged_revisions[tagged_rev[0]] = tagged_rev[1]
 
-    return [(k, v) for k, v in combined_tagged_revisions.items()]
+    return list(combined_tagged_revisions.items())

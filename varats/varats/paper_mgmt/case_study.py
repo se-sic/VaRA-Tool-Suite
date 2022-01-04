@@ -22,6 +22,10 @@ from varats.data.reports.szz_report import (
     SZZUnleashedReport,
     PyDrillerSZZReport,
 )
+from varats.experiment.experiment_util import (
+    VersionExperiment,
+    get_tagged_experiment_specific_revisions,
+)
 from varats.jupyterhelper.file import (
     load_szzunleashed_report,
     load_pydriller_szz_report,
@@ -112,7 +116,8 @@ def get_revisions_status_for_case_study(
     case_study: CaseStudy,
     result_file_type: tp.Type[BaseReport],
     stage_num: int = -1,
-    tag_blocked: bool = True
+    tag_blocked: bool = True,
+    experiment_type: tp.Optional[tp.Type[VersionExperiment]] = None
 ) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
     """
     Computes the file status for all revisions in this case study.
@@ -132,9 +137,14 @@ def get_revisions_status_for_case_study(
         # Return an empty list should a project name not exist.
         return []
 
-    tagged_revisions = get_tagged_revisions(
-        project_cls, result_file_type, tag_blocked
-    )
+    if experiment_type:
+        tagged_revisions = get_tagged_experiment_specific_revisions(
+            project_cls, result_file_type, tag_blocked, experiment_type
+        )
+    else:
+        tagged_revisions = get_tagged_revisions(
+            project_cls, result_file_type, tag_blocked
+        )
 
     def filtered_tagged_revs(
         rev_provider: tp.Iterable[FullCommitHash]
