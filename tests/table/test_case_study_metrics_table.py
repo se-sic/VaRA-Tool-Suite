@@ -58,8 +58,8 @@ class TestCSMetricsTable(unittest.TestCase):
 \toprule
 {} &                Domain &    LOC &  Commits &  Authors &    Revision \\
 \midrule
-\textbf{gravity} &  Programming language &  22923 &      663 &       50 &  2c71dec8ad \\
-\textbf{xz     } &           Compression &  37021 &     1143 &       22 &  c5c7ceb08a \\
+\textbf{gravity} &  Programming language &  22923 &      663 &       39 &  2c71dec8ad \\
+\textbf{xz     } &           Compression &  37021 &     1143 &       16 &  c5c7ceb08a \\
 \bottomrule
 \end{tabular}
 """, table_str
