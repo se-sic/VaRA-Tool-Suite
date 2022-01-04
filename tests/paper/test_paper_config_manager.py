@@ -66,8 +66,12 @@ class TestPaperConfigManager(unittest.TestCase):
         self.project_source_mock = project_source_patcher.start()
         self.project_source_mock.return_value = self.DUMMY_GIT
 
-    @mock.patch('varats.paper_mgmt.case_study.get_tagged_revisions')
-    def test_short_status(self, mock_get_tagged_revisions) -> None:
+    @mock.patch(
+        'varats.paper_mgmt.case_study.get_tagged_experiment_specific_revisions'
+    )
+    def test_short_status(
+        self, mock_get_tagged_experiment_specific_revisions
+    ) -> None:
         """Check if the case study can show a short status."""
 
         # block a revision
@@ -77,25 +81,29 @@ class TestPaperConfigManager(unittest.TestCase):
         self.project_source_mock.return_value = mocked_gzip_source
 
         # Revision not in set
-        mock_get_tagged_revisions.return_value = [
+        mock_get_tagged_experiment_specific_revisions.return_value = [
             (ShortCommitHash('42b25e7f15'), FileStatusExtension.SUCCESS)
         ]
 
         status = PCM.get_short_status(self.case_study, MockExperiment, 5)
         self.assertEqual(status, 'CS: gzip_1: (  0/10) processed [0/0/0/0/9/1]')
-        mock_get_tagged_revisions.assert_called()
+        mock_get_tagged_experiment_specific_revisions.assert_called()
 
-        mock_get_tagged_revisions.reset_mock()
-        mock_get_tagged_revisions.return_value = [
+        mock_get_tagged_experiment_specific_revisions.reset_mock()
+        mock_get_tagged_experiment_specific_revisions.return_value = [
             (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS)
         ]
 
         status = PCM.get_short_status(self.case_study, MockExperiment, 5)
         self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [1/0/0/0/8/1]')
-        mock_get_tagged_revisions.assert_called()
+        mock_get_tagged_experiment_specific_revisions.assert_called()
 
-    @mock.patch('varats.paper_mgmt.case_study.get_tagged_revisions')
-    def test_short_status_color(self, mock_get_tagged_revisions) -> None:
+    @mock.patch(
+        'varats.paper_mgmt.case_study.get_tagged_experiment_specific_revisions'
+    )
+    def test_short_status_color(
+        self, mock_get_tagged_experiment_specific_revisions
+    ) -> None:
         """
         Check if the case study can show a short status.
 
@@ -103,7 +111,7 @@ class TestPaperConfigManager(unittest.TestCase):
         if the colors are present.
         """
         # Revision not in set
-        mock_get_tagged_revisions.return_value = [
+        mock_get_tagged_experiment_specific_revisions.return_value = [
             (ShortCommitHash('42b25e7f15'), FileStatusExtension.SUCCESS)
         ]
 
@@ -111,27 +119,31 @@ class TestPaperConfigManager(unittest.TestCase):
         self.assertEqual(
             status, 'CS: gzip_1: (  0/10) processed [0/0/0/0/10/0]'
         )
-        mock_get_tagged_revisions.assert_called()
+        mock_get_tagged_experiment_specific_revisions.assert_called()
 
-        mock_get_tagged_revisions.reset_mock()
-        mock_get_tagged_revisions.return_value = [
+        mock_get_tagged_experiment_specific_revisions.reset_mock()
+        mock_get_tagged_experiment_specific_revisions.return_value = [
             (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS)
         ]
 
         status = PCM.get_short_status(self.case_study, MockExperiment, 5, True)
         self.assertEqual(status, 'CS: gzip_1: (  1/10) processed [1/0/0/0/9/0]')
-        mock_get_tagged_revisions.assert_called()
+        mock_get_tagged_experiment_specific_revisions.assert_called()
 
     @mock.patch(
         'varats.paper_mgmt.paper_config_manager.create_lazy_commit_map_loader',
         side_effect=mocked_create_lazy_commit_map_loader
     )
-    @mock.patch('varats.paper_mgmt.case_study.get_tagged_revisions')
-    def test_status(self, mock_get_tagged_revisions, mock_cmap_loader) -> None:
+    @mock.patch(
+        'varats.paper_mgmt.case_study.get_tagged_experiment_specific_revisions'
+    )
+    def test_status(
+        self, mock_get_tagged_experiment_specific_revisions, mock_cmap_loader
+    ) -> None:
         # pylint: disable=unused-argument
         """Check if the case study can show a short status."""
         # Revision not in set
-        mock_get_tagged_revisions.return_value = [
+        mock_get_tagged_experiment_specific_revisions.return_value = [
             (ShortCommitHash('42b25e7f15'), FileStatusExtension.SUCCESS)
         ]
 
@@ -152,10 +164,10 @@ class TestPaperConfigManager(unittest.TestCase):
     9872ba420c [Missing]
 """
         )
-        mock_get_tagged_revisions.assert_called()
+        mock_get_tagged_experiment_specific_revisions.assert_called()
 
-        mock_get_tagged_revisions.reset_mock()
-        mock_get_tagged_revisions.side_effect = cycle([[
+        mock_get_tagged_experiment_specific_revisions.reset_mock()
+        mock_get_tagged_experiment_specific_revisions.side_effect = cycle([[
             (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS),
             (ShortCommitHash('a3db5806d0'), FileStatusExtension.SUCCESS),
             (ShortCommitHash('622e9b1d02'), FileStatusExtension.FAILED),
@@ -180,9 +192,9 @@ class TestPaperConfigManager(unittest.TestCase):
     9872ba420c [Missing]
 """
         )
-        mock_get_tagged_revisions.assert_called()
+        mock_get_tagged_experiment_specific_revisions.assert_called()
 
-        mock_get_tagged_revisions.reset_mock()
+        mock_get_tagged_experiment_specific_revisions.reset_mock()
 
         status = PCM.get_status(
             self.case_study, MockExperimentMultiReport, 5, False, True
@@ -201,20 +213,22 @@ class TestPaperConfigManager(unittest.TestCase):
     b8b25e7f15 [Success]
 """
         )
-        mock_get_tagged_revisions.assert_called()
+        mock_get_tagged_experiment_specific_revisions.assert_called()
 
     @mock.patch(
         'varats.paper_mgmt.paper_config_manager.create_lazy_commit_map_loader',
         side_effect=mocked_create_lazy_commit_map_loader
     )
-    @mock.patch('varats.paper_mgmt.case_study.get_tagged_revisions')
+    @mock.patch(
+        'varats.paper_mgmt.case_study.get_tagged_experiment_specific_revisions'
+    )
     def test_status_with_stages(
-        self, mock_get_tagged_revisions, mock_cmap_loader
+        self, mock_get_tagged_experiment_specific_revisions, mock_cmap_loader
     ) -> None:
         # pylint: disable=unused-argument
         """Check if the case study can show a short status."""
         # Revision not in set
-        mock_get_tagged_revisions.return_value = [
+        mock_get_tagged_experiment_specific_revisions.return_value = [
             (ShortCommitHash('42b25e7f15'), FileStatusExtension.SUCCESS)
         ]
 
@@ -236,10 +250,10 @@ class TestPaperConfigManager(unittest.TestCase):
     7620b81735 [Missing]
 """
         )
-        mock_get_tagged_revisions.assert_called()
+        mock_get_tagged_experiment_specific_revisions.assert_called()
 
-        mock_get_tagged_revisions.reset_mock()
-        mock_get_tagged_revisions.side_effect = cycle([[
+        mock_get_tagged_experiment_specific_revisions.reset_mock()
+        mock_get_tagged_experiment_specific_revisions.side_effect = cycle([[
             (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS),
             (ShortCommitHash('a3db5806d0'), FileStatusExtension.SUCCESS),
             (ShortCommitHash('622e9b1d02'), FileStatusExtension.FAILED),
@@ -267,9 +281,9 @@ class TestPaperConfigManager(unittest.TestCase):
     7620b81735 [Missing]
 """
         )
-        mock_get_tagged_revisions.assert_called()
+        mock_get_tagged_experiment_specific_revisions.assert_called()
 
-        mock_get_tagged_revisions.reset_mock()
+        mock_get_tagged_experiment_specific_revisions.reset_mock()
 
         status = PCM.get_status(
             self.case_study, MockExperimentMultiReport, 5, True, True
@@ -291,10 +305,14 @@ class TestPaperConfigManager(unittest.TestCase):
     7620b81735 [Missing]
 """
         )
-        mock_get_tagged_revisions.assert_called()
+        mock_get_tagged_experiment_specific_revisions.assert_called()
 
-    @mock.patch('varats.paper_mgmt.case_study.get_tagged_revisions')
-    def test_status_color(self, mock_get_tagged_revisions) -> None:
+    @mock.patch(
+        'varats.paper_mgmt.case_study.get_tagged_experiment_specific_revisions'
+    )
+    def test_status_color(
+        self, mock_get_tagged_experiment_specific_revisions
+    ) -> None:
         """
         Check if the case study can show a short status.
 
@@ -302,7 +320,7 @@ class TestPaperConfigManager(unittest.TestCase):
         if the colors are present.
         """
         # Revision not in set
-        mock_get_tagged_revisions.return_value = [
+        mock_get_tagged_experiment_specific_revisions.return_value = [
             (ShortCommitHash('42b25e7f15'), FileStatusExtension.SUCCESS)
         ]
 
@@ -323,10 +341,10 @@ class TestPaperConfigManager(unittest.TestCase):
     9872ba420c [Missing]
 """
         )
-        mock_get_tagged_revisions.assert_called()
+        mock_get_tagged_experiment_specific_revisions.assert_called()
 
-        mock_get_tagged_revisions.reset_mock()
-        mock_get_tagged_revisions.side_effect = cycle([[
+        mock_get_tagged_experiment_specific_revisions.reset_mock()
+        mock_get_tagged_experiment_specific_revisions.side_effect = cycle([[
             (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS),
             (ShortCommitHash('a3db5806d0'), FileStatusExtension.SUCCESS),
             (ShortCommitHash('622e9b1d02'), FileStatusExtension.FAILED),
@@ -351,7 +369,7 @@ class TestPaperConfigManager(unittest.TestCase):
     9872ba420c [Missing]
 """
         )
-        mock_get_tagged_revisions.assert_called()
+        mock_get_tagged_experiment_specific_revisions.assert_called()
 
     def test_legend(self) -> None:
         """
@@ -373,13 +391,17 @@ class TestPaperConfigManager(unittest.TestCase):
 """
         )
 
-    @mock.patch('varats.paper_mgmt.case_study.get_tagged_revisions')
-    def test_total_status_color(self, mock_get_tagged_revisions) -> None:
+    @mock.patch(
+        'varats.paper_mgmt.case_study.get_tagged_experiment_specific_revisions'
+    )
+    def test_total_status_color(
+        self, mock_get_tagged_experiment_specific_revisions
+    ) -> None:
         """Check if the total status is correctly generated."""
         total_status_occurrences: tp.DefaultDict[
             FileStatusExtension, tp.Set[ShortCommitHash]] = defaultdict(set)
         # Revision not in set
-        mock_get_tagged_revisions.return_value = [
+        mock_get_tagged_experiment_specific_revisions.return_value = [
             (ShortCommitHash('42b25e7f15'), FileStatusExtension.SUCCESS)
         ]
 
@@ -394,10 +416,10 @@ class TestPaperConfigManager(unittest.TestCase):
 Total:         (  0/10) processed [0/0/0/0/10/0]"""
         )
 
-        mock_get_tagged_revisions.assert_called()
+        mock_get_tagged_experiment_specific_revisions.assert_called()
 
-        mock_get_tagged_revisions.reset_mock()
-        mock_get_tagged_revisions.side_effect = cycle([[
+        mock_get_tagged_experiment_specific_revisions.reset_mock()
+        mock_get_tagged_experiment_specific_revisions.side_effect = cycle([[
             (ShortCommitHash('b8b25e7f15'), FileStatusExtension.SUCCESS),
             (ShortCommitHash('a3db5806d0'), FileStatusExtension.SUCCESS),
             (ShortCommitHash('622e9b1d02'), FileStatusExtension.FAILED),
@@ -416,12 +438,12 @@ Total:         (  0/10) processed [0/0/0/0/10/0]"""
 Total:         (  1/15) processed [1/1/1/1/10/1]"""
         )
 
-        mock_get_tagged_revisions.assert_called()
+        mock_get_tagged_experiment_specific_revisions.assert_called()
 
         # Care: The second block is duplicated to check if we prevent
         # adding the same revisions twice
 
-        mock_get_tagged_revisions.reset_mock()
+        mock_get_tagged_experiment_specific_revisions.reset_mock()
 
         PCM.get_status(
             self.case_study, MockExperimentMultiReport, 5, False, False, True,
@@ -434,4 +456,4 @@ Total:         (  1/15) processed [1/1/1/1/10/1]"""
 Total:         (  1/15) processed [1/1/1/1/10/1]"""
         )
 
-        mock_get_tagged_revisions.assert_called()
+        mock_get_tagged_experiment_specific_revisions.assert_called()
