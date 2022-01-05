@@ -11,13 +11,12 @@ repos:
     -   id: requirements-txt-fixer
     -   id: name-tests-test
         args: ['--django']
--   repo: https://github.com/pycqa/isort
-    rev: 5.10.1
+-   repo: https://github.com/asottile/seed-isort-config
+    rev: v2.0.0
     hooks:
-      - id: isort
-        name: isort (python)
+    -   id: seed-isort-config
 -   repo: https://github.com/timothycrosley/isort.git
-    rev: 4.3.21
+    rev: 5.10.1
     hooks:
     - id: isort
       args: ['-nis']
