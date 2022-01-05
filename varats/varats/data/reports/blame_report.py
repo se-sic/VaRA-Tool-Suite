@@ -141,7 +141,7 @@ class BlameResultFunctionEntry():
         """
         Name of the function.
 
-        The name is manged for C++ code, either with the itanium or windows
+        The name is mangled for C++ code, either with the itanium or windows
         mangling schema.
         """
         return self.__name
