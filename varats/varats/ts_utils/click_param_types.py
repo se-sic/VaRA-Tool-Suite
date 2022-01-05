@@ -138,7 +138,7 @@ def create_report_type_choice() -> TypedChoice[tp.Type[BaseReport]]:
 def create_experiment_type_choice() -> TypedChoice[tp.Type[VersionExperiment]]:
     """Create a choice parameter type that allows selecting a report type."""
 
-    def is_experiment_excluded(experiment_name) -> bool:
+    def is_experiment_excluded(experiment_name: str) -> bool:
         """Checks if an experiment should be excluded, as we don't want to
         show/use standard BB experiments."""
         if experiment_name in ('raw', 'empty', 'no-measurement'):

@@ -431,7 +431,8 @@ def _combine_tagged_revs_for_experiment(
     Returns:
         combined tagged revision list
     """
-    combined_tagged_revisions = {}
+    combined_tagged_revisions: tp.Dict[ShortCommitHash,
+                                       FileStatusExtension] = {}
     for report in experiment_type.report_spec():
         if stage_num:
             tagged_revs = get_revisions_status_for_case_study(
