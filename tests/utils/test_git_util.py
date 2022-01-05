@@ -378,7 +378,7 @@ class TestRevisionBinaryMap(unittest.TestCase):
         self.assertIn("Overridden", self.rv_map)
 
     def test_wrong_contains_check(self) -> None:
-        """Check if we wrong values are correctly shows as not in the map."""
+        """Check if wrong values are correctly shows as not in the map."""
         self.rv_map.specify_binary(
             "build/bin/SingleLocalSimple", BinaryType.EXECUTABLE
         )
