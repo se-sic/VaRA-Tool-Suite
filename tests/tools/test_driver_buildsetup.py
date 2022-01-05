@@ -15,7 +15,8 @@ class TestDriverBuildsetup(unittest.TestCase):
     @run_in_test_environment()
     def test_init_config(self) -> None:
         config_path = Path(vara_cfg()["config_file"].value)
-        config_path.unlink(missing_ok=True)
+        if config_path.exists():
+            config_path.unlink()
         self.assertFalse(config_path.exists())
         runner = CliRunner()
         result = runner.invoke(driver_build_setup.main, ["config"])
