@@ -120,6 +120,13 @@ def full_commit_hashes_sorted_by_time_id(
 # Git interaction helpers
 
 
+def __get_git_path_arg(repo_folder: tp.Optional[Path] = None) -> tp.List[str]:
+    if repo_folder is None or repo_folder == Path(''):
+        return []
+
+    return ["-C", f"{repo_folder}"]
+
+
 def get_current_branch(repo_folder: tp.Optional[Path] = None) -> str:
     """
     Get the current branch of a repository, e.g., HEAD.
@@ -129,11 +136,12 @@ def get_current_branch(repo_folder: tp.Optional[Path] = None) -> str:
 
     Returns: branch name
     """
-    if repo_folder is None or repo_folder == Path(''):
-        return tp.cast(str, git("rev-parse", "--abbrev-ref", "HEAD").strip())
-
-    with local.cwd(repo_folder):
-        return tp.cast(str, git("rev-parse", "--abbrev-ref", "HEAD").strip())
+    return tp.cast(
+        str,
+        git(
+            __get_git_path_arg(repo_folder), "rev-parse", "--abbrev-ref", "HEAD"
+        ).strip()
+    )
 
 
 def get_initial_commit(repo_folder: tp.Optional[Path] = None) -> FullCommitHash:
@@ -145,23 +153,12 @@ def get_initial_commit(repo_folder: tp.Optional[Path] = None) -> FullCommitHash:
 
     Returns: initial commit hash
     """
-    if repo_folder is None or repo_folder == Path(''):
-        return __get_initial_commit_impl()
-
-    with local.cwd(repo_folder):
-        return __get_initial_commit_impl()
-
-
-def __get_initial_commit_impl() -> FullCommitHash:
-    """
-    Get the initial commit of a repository, i.e., the first commit made.
-
-    Args:
-        repo_folder: where the git repository is located
-
-    Returns: initial commit hash
-    """
-    return FullCommitHash(git("rev-list", "--max-parents=0", "HEAD").strip())
+    return FullCommitHash(
+        git(
+            __get_git_path_arg(repo_folder), "rev-list", "--max-parents=0",
+            "HEAD"
+        ).strip()
+    )
 
 
 def get_all_revisions_between(
@@ -182,32 +179,13 @@ def get_all_revisions_between(
         short: shorten revision hashes
         repo_folder: where the git repository is located
     """
-    if repo_folder is None or repo_folder == Path(''):
-        return __get_all_revisions_between_impl(c_start, c_end, hash_type)
-
-    with local.cwd(repo_folder):
-        return __get_all_revisions_between_impl(c_start, c_end, hash_type)
-
-
-def __get_all_revisions_between_impl(
-    c_start: str, c_end: str, hash_type: tp.Type[CommitHashTy]
-) -> tp.List[CommitHashTy]:
-    """
-    Returns a list of all revisions between two commits c_start and c_end
-    (inclusive), where c_start comes before c_end.
-
-    It is assumed that the current working directory is the git repository.
-
-    Args:
-        c_start: first commit of the range
-        c_end: last commit of the range
-        short: shorten revision hashes
-    """
     result = [c_start]
     result.extend(
         reversed(
-            git("log", "--pretty=%H", "--ancestry-path",
-                f"{c_start}..{c_end}").strip().split()
+            git(
+                __get_git_path_arg(repo_folder), "log", "--pretty=%H",
+                "--ancestry-path", f"{c_start}..{c_end}"
+            ).strip().split()
         )
     )
     return list(map(hash_type, result))
