@@ -17,6 +17,7 @@ from varats.ts_utils.cli_util import initialize_cli_tool
 @click.option(
     "-p",
     "--project",
+    "projects",
     metavar="PROJECT",
     type=str,
     multiple=True,
@@ -27,12 +28,12 @@ from varats.ts_utils.cli_util import initialize_cli_tool
 )
 @click.pass_context
 def main(
-    context: click.Context, research_tool: str, projects: tp.List[str]
+    context: click.Context, researchtool: str, projects: tp.List[str]
 ) -> None:
     """Handle and simplify common developer interactions with the project."""
     initialize_cli_tool()
 
-    tool = get_research_tool(research_tool)
+    tool = get_research_tool(researchtool)
     context.ensure_object(dict)
     context.obj["research_tool"] = tool
 
