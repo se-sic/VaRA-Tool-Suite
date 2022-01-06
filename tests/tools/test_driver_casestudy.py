@@ -24,10 +24,11 @@ class TestDriverContainer(unittest.TestCase):
         runner = CliRunner()
         Path(vara_cfg()["paper_config"]["folder"].value + "/" +
              "test_gen").mkdir()
+        vara_cfg()["paper_config"]["current_config"] = "test_gen"
         runner.invoke(
             driver_casestudy.main, [
-                'gen', '-p', 'gravity', '--distribution',
-                'HalfNormalSamplingMethod', 'paper_configs/test_gen'
+                'gen', '-p', 'gravity', 'select_sample',
+                'HalfNormalSamplingMethod'
             ]
         )
         case_study = Path(
