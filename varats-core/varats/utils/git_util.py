@@ -823,3 +823,37 @@ class RevisionBinaryMap(tp.Container[str]):
                     return True
 
         return False
+
+
+def calc_surviving_lines(repo: pygit2.Repository, revision) -> dict[str, int]:
+    """
+
+    :param repo: repository to analyze
+    :param revision: revision to analyze at
+    :return: number of lines per prior commit
+    """
+    project_path = repo.path[:-5]
+    churn_config = ChurnConfig.create_c_style_languages_config()
+    file_pattern = re.compile(
+        "|".join(churn_config.get_extensions_repr(r"^.*\.", r"$"))
+    )
+
+    lines_per_revision: dict = {}
+    with local.cwd(project_path):
+        git("checkout", revision)
+        files = git("ls-tree", "-r", "--name-only", revision).splitlines()
+
+        for file in files:
+            if file_pattern.match(file):
+                lines = git("blame", "--root", "-l", f"{file}").splitlines()
+                for line in lines:
+                    if line:
+                        last_change = line[:FullCommitHash.hash_length()]
+                        last_change = FullCommitHash(last_change)
+                        if lines_per_revision.keys().__contains__(last_change):
+                            lines_per_revision[
+                                last_change
+                            ] = lines_per_revision[last_change] + 1
+                        else:
+                            lines_per_revision[last_change] = 1
+    return lines_per_revision

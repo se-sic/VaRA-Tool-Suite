@@ -25,7 +25,7 @@ class Table(metaclass=TableRegistry):
 
     def __init__(self, name: str, **kwargs: tp.Any) -> None:
         self.__name = name
-        self.__format = TableFormat.LATEX_BOOKTABS
+        self.__format = kwargs['output_format']
         self.__saved_extra_args = kwargs
 
     @property
