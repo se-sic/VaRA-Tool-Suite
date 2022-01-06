@@ -15,7 +15,7 @@ from varats.tools import driver_casestudy
 from varats.utils.settings import vara_cfg, save_config
 
 
-class TestDriverContainer(unittest.TestCase):
+class TestDriverCaseStudy(unittest.TestCase):
     """Tests for the driver_casestudy module."""
 
     @run_in_test_environment()
