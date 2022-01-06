@@ -26,6 +26,8 @@ from varats.paper_mgmt.case_study import (
     extend_with_revs_per_year,
     extend_with_smooth_revs,
     extend_with_release_revs,
+    extend_with_bug_commits,
+    extend_with_extra_revs,
 )
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plot.plot import Plot
@@ -129,7 +131,7 @@ def __casestudy_status(
     )
 
 
-@main.group("gen")
+@main.group("gen", chain=True)
 @click.option("--project", "-p", required=False)
 @click.option("--git_path", "-git", required=False)
 @click.option("--extend", "-ext", type=click.Path(exists=True))
@@ -168,6 +170,8 @@ def __casestudy_gen(
     git_path: tp.Optional[str], extend: tp.Optional[str], version: int,
     ignore_blocked: bool, merge_stage: int, new_stage: bool
 ):
+    """Generate or extend a CaseStudy Sub commands can be chained to for example
+    sample revisions but also add the latest."""
     ctx.ensure_object(dict)
     ctx.obj['path'] = Path(paper_config_path)
     if not project and not git_path:
@@ -197,9 +201,10 @@ def __casestudy_gen(
         ctx.obj['merge_stage'] = 0
 
 
-@__casestudy_gen.command("latest")
+@__casestudy_gen.command("select_latest")
 @click.pass_context
 def __gen_latest(ctx: click.Context):
+    """Add the latest revision of the project to the CS."""
     get_cmap = create_lazy_commit_map_loader(
         ctx.obj['project'], None, "HEAD", None
     )
@@ -211,6 +216,24 @@ def __gen_latest(ctx: click.Context):
 
     case_study.include_revisions([(last_commit, cmap.time_id(last_commit))])
     store_case_study(case_study, ctx.obj['path'])
+
+
+@__casestudy_gen.command("select_simple")
+@click.argument("revisions", nargs=-1)
+@click.pass_context
+def __gen_simple(ctx: click.Context, revisions: tp.List[str]):
+    """
+    Adds a list of specified revisions to the CS.
+
+    Revisions: Revisions to add
+    """
+    cmap = create_lazy_commit_map_loader(
+        ctx.obj['project'], None, 'HEAD', None
+    )()
+    extend_with_extra_revs(
+        ctx.obj['case_study'], cmap, revisions, ctx.obj['merge_stage']
+    )
+    store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 
 
 @__casestudy_gen.command("select_sample")
@@ -233,6 +256,11 @@ def __gen_latest(ctx: click.Context):
 def __gen_sample(
     ctx: click.Context, distribution: str, end: str, start: str, num_rev
 ):
+    """
+    Add revisions based on a sampling Distribution.
+
+    Distribution: The sampling method to use
+    """
     sampling_method: NormalSamplingMethod = NormalSamplingMethod.get_sampling_method_type(
         distribution
     )()
@@ -246,9 +274,16 @@ def __gen_sample(
 
 @__casestudy_gen.command("select_revs-per-year")
 @click.argument("revs-per-year", type=int)
-@click.option("--separate", is_flag=True)
+@click.option(
+    "--separate", is_flag=True, help="Separate years into different Stages"
+)
 @click.pass_context
 def __gen_per_year(ctx: click.Context, revs_per_year: int, separate: bool):
+    """
+    Add a number of revisions per year.
+
+    revs-per-year: number of revisions to generate per year
+    """
     cmap = create_lazy_commit_map_loader(
         ctx.obj['project'], None, 'HEAD', None
     )()
@@ -260,7 +295,7 @@ def __gen_per_year(ctx: click.Context, revs_per_year: int, separate: bool):
 
 
 @__casestudy_gen.command("select_plot")
-@click.argument("plot-type", type=create_plot_type_choice())
+@click.argument("plot_type", type=create_plot_type_choice())
 @click.option(
     "--boundary-gradient",
     type=int,
@@ -268,12 +303,21 @@ def __gen_per_year(ctx: click.Context, revs_per_year: int, separate: bool):
     help="Maximal expected gradient in percent between " +
     "two revisions, e.g., 5 for 5%%"
 )
-@click.option("--result-folder", type=click.Path(exists=True))
+@click.option(
+    "--result-folder",
+    type=click.Path(exists=True),
+    help="Folder in which to search for result files."
+)
 @click.pass_context
 def __gen_smooth_plot(
     ctx: click.Context, plot_type: tp.Type['Plot'], boundary_gradient: int,
     result_folder: tp.Optional[str]
 ):
+    """
+    Generate revisions based on a plot.
+
+    plot_type: Plot to calculate new revisions from.
+    """
     if not result_folder:
         result_folder = str(vara_cfg()['result_dir']) + "/" + ctx.obj['project']
     if not ctx.obj['extend']:
@@ -302,12 +346,38 @@ def __gen_smooth_plot(
 @click.argument("release_type", type=EnumChoice(ReleaseType, False))
 @click.pass_context
 def __gen_release(ctx: click.Context, release_type: ReleaseType):
+    """
+    Extend a case study with revisions marked as a release. This relies on the
+    project to determine appropriate revisions.
+
+    release_type: Release type to consider
+    """
     cmap = create_lazy_commit_map_loader(
         ctx.obj['project'], None, 'HEAD', None
     )()
     extend_with_release_revs(
-        ctx.obj['case_study'], cmap, ctx.obj['project'], release_type,
-        ctx.obj['ignore_blocked'], ctx.obj['merge_stage']
+        ctx.obj['case_study'], cmap, release_type, ctx.obj['ignore_blocked'],
+        ctx.obj['merge_stage']
+    )
+    store_case_study(ctx.obj['case_study'], ctx.obj['path'])
+
+
+@__casestudy_gen.command("select_bug")
+@click.argument("report_type", type=create_report_type_choice())
+@click.pass_context
+def __gen_bug_commits(ctx: click.Context, report_type: tp.Type['BaseReport']):
+    """
+    Extend a case study with revisions that either introduced or fixed a bug as
+    determined by the given SZZ tool.
+
+    REPORT_TYPE: report to use for determining bug regions
+    """
+    cmap = create_lazy_commit_map_loader(
+        ctx.obj['project'], None, 'HEAD', None
+    )()
+    extend_with_bug_commits(
+        ctx.obj['case_study'], cmap, report_type, ctx.obj['merge_stage'],
+        ctx.obj['ignore_blocked']
     )
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 
