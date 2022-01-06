@@ -520,9 +520,10 @@ def extend_with_distrib_sampling(
     )
 
 
-@check_required_args('plot_type', 'boundary_gradient')
 def extend_with_smooth_revs(
-    case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
+    case_study: CaseStudy, cmap: CommitMap, boundary_gradient: int,
+    ignore_blocked: bool, plot_type: tp.Type['Plot'], merge_stage: int,
+    **kwargs: tp.Any
 ) -> None:
     """
     Extend a case study with extra revisions that could smooth plot curves. This
@@ -532,18 +533,21 @@ def extend_with_smooth_revs(
     Args:
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
+        ignore_blocked: ignore_blocked revisions
+        merge_stage: stage the revisions will be added to
+        plot_type: Plot to calculate new revisions from.
+        boundary_gradient: Maximal expected gradient in percent between two revisions
     """
-    plot_type = Plot.get_class_for_plot_type(kwargs['plot_type'])
-
     kwargs['plot_case_study'] = case_study
     kwargs['cmap'] = cmap
+    print(kwargs)
     plot = plot_type(**kwargs)
     # convert input to float %
-    boundary_gradient = kwargs['boundary_gradient'] / float(100)
+    boundary_gradient = boundary_gradient / float(100)
     print("Using boundary gradient: ", boundary_gradient)
     new_revisions = plot.calc_missing_revisions(boundary_gradient)
 
-    if kwargs["ignore_blocked"]:
+    if ignore_blocked:
         new_revisions = set(
             filter_blocked_revisions(
                 list(new_revisions),
@@ -559,7 +563,7 @@ def extend_with_smooth_revs(
         print("Found new revisions: ", new_revisions)
         case_study.include_revisions([
             (rev, cmap.time_id(rev)) for rev in new_revisions
-        ], kwargs['merge_stage'])
+        ], merge_stage)
     else:
         print(
             "No new revisions found that where not already "

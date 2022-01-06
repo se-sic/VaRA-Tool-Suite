@@ -24,8 +24,11 @@ from varats.paper_mgmt.case_study import (
     get_revisions_status_for_case_study,
     extend_with_distrib_sampling,
     extend_with_revs_per_year,
+    extend_with_smooth_revs,
 )
 from varats.paper_mgmt.paper_config import get_paper_config
+from varats.plot.plot import Plot
+from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
 from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
@@ -35,11 +38,19 @@ from varats.ts_utils.cli_util import (
     initialize_cli_tool,
     cli_yn_choice,
 )
-from varats.ts_utils.click_param_types import create_report_type_choice
+from varats.ts_utils.click_param_types import (
+    create_report_type_choice,
+    TypedChoice,
+)
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
+
+
+def create_plot_type_choice() -> TypedChoice[tp.Type[Plot]]:
+    initialize_plots()
+    return TypedChoice(Plot.PLOTS)
 
 
 @click.group()
@@ -116,7 +127,6 @@ def __casestudy_status(
 
 
 @main.group("gen")
-@click.argument("paper_config_path", type=click.Path(exists=True))
 @click.option("--project", "-p", required=False)
 @click.option("--git_path", "-git", required=False)
 @click.option("--extend", "-ext", type=click.Path(exists=True))
@@ -142,6 +152,13 @@ def __casestudy_status(
     is_flag=True,
     help="Ignore revisions that are marked as blocked."
 )
+@click.option(
+    "--paper_config_path",
+    "-pc",
+    type=click.Path(exists=True),
+    default=Path(vara_cfg()["paper_config"]["folder"].value) /
+    vara_cfg()["paper_config"]["current_config"].value
+)
 @click.pass_context
 def __casestudy_gen(
     ctx: click.Context, paper_config_path: str, project: tp.Optional[str],
@@ -152,9 +169,11 @@ def __casestudy_gen(
     ctx.obj['path'] = Path(paper_config_path)
     if not project and not git_path:
         click.echo("need --project or --git-path", err=True)
+        return
     ctx.obj['project'] = project
     ctx.obj['git_path'] = git_path
     ctx.obj['ignore_blocked'] = ignore_blocked
+    ctx.obj['extend'] = extend
     if project and not git_path:
         ctx.obj['git_path'] = str(get_local_project_git_path(project))
     if git_path and not project:
@@ -233,6 +252,45 @@ def __gen_per_year(ctx: click.Context, revs_per_year: int, separate: bool):
     extend_with_revs_per_year(
         ctx.obj['case_study'], cmap, ctx.obj['merge_stage'],
         ctx.obj['ignore_blocked'], ctx.obj['git_path'], revs_per_year, separate
+    )
+    store_case_study(ctx.obj['case_study'], ctx.obj['path'])
+
+
+@__casestudy_gen.command("select_plot")
+@click.argument("plot-type", type=create_plot_type_choice())
+@click.option(
+    "--boundary-gradient",
+    type=int,
+    default=5,
+    help="Maximal expected gradient in percent between " +
+    "two revisions, e.g., 5 for 5%%"
+)
+@click.option("--result-folder", type=click.Path(exists=True))
+@click.pass_context
+def __gen_smooth_plot(
+    ctx: click.Context, plot_type: tp.Type['Plot'], boundary_gradient: int,
+    result_folder: tp.Optional[str]
+):
+    if not result_folder:
+        result_folder = str(vara_cfg()['result_dir']) + "/" + ctx.obj['project']
+    if not ctx.obj['extend']:
+        case_study_path = click.prompt(
+            "Pleas specify a CaseStudy to extend", type=click.Path(exists=True)
+        )
+        ctx.obj['case_study'] = load_case_study_from_file(Path(case_study_path))
+        ctx.obj['path'] = Path(case_study_path)
+    cmap = create_lazy_commit_map_loader(
+        ctx.obj['project'], None, 'HEAD', None
+    )()
+    print(plot_type)
+    extend_with_smooth_revs(
+        ctx.obj['case_study'],
+        cmap,
+        boundary_gradient,
+        ctx.obj['ignore_blocked'],
+        plot_type,
+        ctx.obj['merge_stage'],
+        result_folder=result_folder
     )
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 
