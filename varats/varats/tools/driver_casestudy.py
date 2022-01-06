@@ -169,7 +169,7 @@ def __casestudy_gen(
     ctx: click.Context, paper_config_path: str, project: tp.Optional[str],
     git_path: tp.Optional[str], extend: tp.Optional[str], version: int,
     ignore_blocked: bool, merge_stage: int, new_stage: bool
-):
+) -> None:
     """Generate or extend a CaseStudy Sub commands can be chained to for example
     sample revisions but also add the latest."""
     ctx.ensure_object(dict)
@@ -203,7 +203,7 @@ def __casestudy_gen(
 
 @__casestudy_gen.command("select_latest")
 @click.pass_context
-def __gen_latest(ctx: click.Context):
+def __gen_latest(ctx: click.Context) -> None:
     """Add the latest revision of the project to the CS."""
     get_cmap = create_lazy_commit_map_loader(
         ctx.obj['project'], None, "HEAD", None
@@ -221,7 +221,7 @@ def __gen_latest(ctx: click.Context):
 @__casestudy_gen.command("select_simple")
 @click.argument("revisions", nargs=-1)
 @click.pass_context
-def __gen_simple(ctx: click.Context, revisions: tp.List[str]):
+def __gen_simple(ctx: click.Context, revisions: tp.List[str]) -> None:
     """
     Adds a list of specified revisions to the CS.
 
@@ -254,8 +254,8 @@ def __gen_simple(ctx: click.Context, revisions: tp.List[str]):
 )
 @click.pass_context
 def __gen_sample(
-    ctx: click.Context, distribution: str, end: str, start: str, num_rev
-):
+    ctx: click.Context, distribution: str, end: str, start: str, num_rev: int
+) -> None:
     """
     Add revisions based on a sampling Distribution.
 
@@ -278,7 +278,9 @@ def __gen_sample(
     "--separate", is_flag=True, help="Separate years into different Stages"
 )
 @click.pass_context
-def __gen_per_year(ctx: click.Context, revs_per_year: int, separate: bool):
+def __gen_per_year(
+    ctx: click.Context, revs_per_year: int, separate: bool
+) -> None:
     """
     Add a number of revisions per year.
 
@@ -312,7 +314,7 @@ def __gen_per_year(ctx: click.Context, revs_per_year: int, separate: bool):
 def __gen_smooth_plot(
     ctx: click.Context, plot_type: tp.Type['Plot'], boundary_gradient: int,
     result_folder: tp.Optional[str]
-):
+) -> None:
     """
     Generate revisions based on a plot.
 
@@ -345,7 +347,7 @@ def __gen_smooth_plot(
 @__casestudy_gen.command("select_release")
 @click.argument("release_type", type=EnumChoice(ReleaseType, False))
 @click.pass_context
-def __gen_release(ctx: click.Context, release_type: ReleaseType):
+def __gen_release(ctx: click.Context, release_type: ReleaseType) -> None:
     """
     Extend a case study with revisions marked as a release. This relies on the
     project to determine appropriate revisions.
@@ -365,7 +367,9 @@ def __gen_release(ctx: click.Context, release_type: ReleaseType):
 @__casestudy_gen.command("select_bug")
 @click.argument("report_type", type=create_report_type_choice())
 @click.pass_context
-def __gen_bug_commits(ctx: click.Context, report_type: tp.Type['BaseReport']):
+def __gen_bug_commits(
+    ctx: click.Context, report_type: tp.Type['BaseReport']
+) -> None:
     """
     Extend a case study with revisions that either introduced or fixed a bug as
     determined by the given SZZ tool.

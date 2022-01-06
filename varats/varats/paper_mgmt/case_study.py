@@ -24,6 +24,7 @@ from varats.jupyterhelper.file import (
 )
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
+from varats.plot.plot import Plot
 from varats.plot.plot_utils import check_required_args
 from varats.project.project_util import get_project_cls_by_name
 from varats.provider.bug.bug import RawBug
@@ -439,7 +440,7 @@ def extend_with_distrib_sampling(
 
 
 def extend_with_smooth_revs(
-    case_study: CaseStudy, cmap: CommitMap, boundary_gradient: int,
+    case_study: CaseStudy, cmap: CommitMap, boundary_gradient_int: int,
     ignore_blocked: bool, plot_type: tp.Type['Plot'], merge_stage: int,
     **kwargs: tp.Any
 ) -> None:
@@ -461,7 +462,7 @@ def extend_with_smooth_revs(
     print(kwargs)
     plot = plot_type(None, **kwargs)
     # convert input to float %
-    boundary_gradient = boundary_gradient / float(100)
+    boundary_gradient = boundary_gradient_int / float(100)
     print("Using boundary gradient: ", boundary_gradient)
     new_revisions = plot.calc_missing_revisions(boundary_gradient)
 
