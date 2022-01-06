@@ -32,7 +32,10 @@ from varats.plot.plot_utils import check_required_args
 from varats.project.project_util import get_project_cls_by_name
 from varats.provider.bug.bug import RawBug
 from varats.provider.bug.bug_provider import BugProvider
-from varats.provider.release.release_provider import ReleaseProvider
+from varats.provider.release.release_provider import (
+    ReleaseProvider,
+    ReleaseType,
+)
 from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
 from varats.revision.revisions import (
     get_failed_revisions,
@@ -570,9 +573,9 @@ def extend_with_smooth_revs(
         )
 
 
-@check_required_args('project', 'release_type', 'merge_stage')
 def extend_with_release_revs(
-    case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
+    case_study: CaseStudy, cmap: CommitMap, project: str,
+    release_type: ReleaseType, ignore_blocked: bool, merge_stage: int
 ) -> None:
     """
     Extend a case study with revisions marked as a release. This extender relies
@@ -582,21 +585,21 @@ def extend_with_release_revs(
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
     """
-    project_cls: tp.Type[Project] = get_project_cls_by_name(kwargs['project'])
+    project_cls: tp.Type[Project] = get_project_cls_by_name(project)
     release_provider = ReleaseProvider.get_provider_for_project(project_cls)
     release_revisions: tp.List[FullCommitHash] = [
         revision for revision, release in
-        release_provider.get_release_revisions(kwargs['release_type'])
+        release_provider.get_release_revisions(release_type)
     ]
 
-    if kwargs["ignore_blocked"]:
+    if ignore_blocked:
         release_revisions = filter_blocked_revisions(
             release_revisions, project_cls
         )
 
     case_study.include_revisions([
         (rev, cmap.time_id(rev)) for rev in release_revisions
-    ], kwargs['merge_stage'])
+    ], merge_stage)
 
 
 @check_required_args('report_type', 'merge_stage')

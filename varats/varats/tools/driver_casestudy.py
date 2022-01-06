@@ -25,12 +25,14 @@ from varats.paper_mgmt.case_study import (
     extend_with_distrib_sampling,
     extend_with_revs_per_year,
     extend_with_smooth_revs,
+    extend_with_release_revs,
 )
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plot.plot import Plot
 from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
+from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.ts_utils.cli_util import (
@@ -41,6 +43,7 @@ from varats.ts_utils.cli_util import (
 from varats.ts_utils.click_param_types import (
     create_report_type_choice,
     TypedChoice,
+    EnumChoice,
 )
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 from varats.utils.settings import vara_cfg
@@ -291,6 +294,20 @@ def __gen_smooth_plot(
         plot_type,
         ctx.obj['merge_stage'],
         result_folder=result_folder
+    )
+    store_case_study(ctx.obj['case_study'], ctx.obj['path'])
+
+
+@__casestudy_gen.command("select_release")
+@click.argument("release_type", type=EnumChoice(ReleaseType, False))
+@click.pass_context
+def __gen_release(ctx: click.Context, release_type: ReleaseType):
+    cmap = create_lazy_commit_map_loader(
+        ctx.obj['project'], None, 'HEAD', None
+    )()
+    extend_with_release_revs(
+        ctx.obj['case_study'], cmap, ctx.obj['project'], release_type,
+        ctx.obj['ignore_blocked'], ctx.obj['merge_stage']
     )
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 
