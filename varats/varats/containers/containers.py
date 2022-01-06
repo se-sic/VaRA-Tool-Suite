@@ -22,7 +22,7 @@ from benchbuild.environments.domain.declarative import (
 from benchbuild.utils.settings import to_yaml
 from plumbum import local
 
-from varats.tools.research_tools.research_tool import Distro
+from varats.tools.research_tools.research_tool import Distro, ResearchTool
 from varats.tools.tool_util import get_research_tool
 from varats.utils.settings import bb_cfg, vara_cfg, save_bb_config
 
@@ -280,7 +280,8 @@ def _create_base_image_layers(image_context: BaseImageCreationContext) -> None:
     configured_research_tool = vara_cfg()["container"]["research_tool"]
     if configured_research_tool:
         research_tool = get_research_tool(str(configured_research_tool))
-        research_tool.add_container_layers(image_context)
+        research_tool.container_install_dependencies(image_context)
+        research_tool.container_install_tool(image_context)
     _add_vara_config(image_context)
     _add_benchbuild_config(image_context)
     image_context.layers.workingdir(str(image_context.bb_root))
@@ -297,6 +298,26 @@ def create_base_image(base: ImageBase) -> None:
         publish = bootstrap.bus()
         image_context = BaseImageCreationContext(base, Path(tmpdir))
         _create_base_image_layers(image_context)
+        publish(CreateImage(base.image_name, image_context.layers))
+
+
+def create_dev_image(
+    base: ImageBase, research_tool: ResearchTool[tp.Any]
+) -> None:
+    """
+    Build a dev image for the given image base and research tool.
+
+    A dev image is used to build the research tool in the container environment.
+
+    Args:
+        base: the image base
+        research_tool: the research tool
+    """
+    with TemporaryDirectory() as tmpdir:
+        publish = bootstrap.bus()
+        image_context = BaseImageCreationContext(base, Path(tmpdir))
+        research_tool.container_install_dependencies(image_context)
+        research_tool.container_add_build_layer(image_context)
         publish(CreateImage(base.image_name, image_context.layers))
 
 

@@ -221,11 +221,22 @@ class Phasar(ResearchTool[PhasarCodeBase]):
 
         return status_ok
 
-    def add_container_layers(
+    def container_add_build_layer(
         self, image_context: 'containers.BaseImageCreationContext'
     ) -> None:
         """
-        Add the layers required for this research tool to the given container.
+        Add layers for building this research tool to the given container.
+
+        Args:
+            image_context: the base image creation context
+        """
+        raise NotImplementedError
+
+    def container_install_tool(
+        self, image_context: 'containers.BaseImageCreationContext'
+    ) -> None:
+        """
+        Add layers for installing this research tool to the given container.
 
         Args:
             image_context: the base image creation context
@@ -236,15 +247,6 @@ class Phasar(ResearchTool[PhasarCodeBase]):
             )
 
         container_phasar_dir = image_context.varats_root / "tools/phasar"
-        if self.get_dependencies().has_dependencies_for_distro(
-            image_context.distro
-        ):
-            image_context.layers.run(
-                *(
-                    self.get_dependencies().
-                    get_install_command(image_context.distro).split(" ")
-                )
-            )
         image_context.layers.copy_([str(self.install_location())],
                                    str(container_phasar_dir))
         image_context.append_to_env("PATH", [str(container_phasar_dir / 'bin')])
