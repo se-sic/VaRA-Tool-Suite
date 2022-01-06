@@ -28,7 +28,6 @@ from varats.jupyterhelper.file import (
 )
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
-from varats.plot.plot import Plot
 from varats.plot.plot_utils import check_required_args
 from varats.project.project_util import get_project_cls_by_name
 from varats.provider.bug.bug import RawBug
@@ -538,10 +537,10 @@ def extend_with_smooth_revs(
         plot_type: Plot to calculate new revisions from.
         boundary_gradient: Maximal expected gradient in percent between two revisions
     """
-    kwargs['plot_case_study'] = case_study
+    kwargs['case_study'] = case_study
     kwargs['cmap'] = cmap
     print(kwargs)
-    plot = plot_type(**kwargs)
+    plot = plot_type(None, **kwargs)
     # convert input to float %
     boundary_gradient = boundary_gradient / float(100)
     print("Using boundary gradient: ", boundary_gradient)
