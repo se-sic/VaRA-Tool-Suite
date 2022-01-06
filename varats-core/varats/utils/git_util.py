@@ -945,40 +945,7 @@ def branch_has_upstream(
     return tp.cast(bool, exit_code == 0)
 
 
-def has_branch(repo_folder: Path, branch_name: str) -> bool:
-    """Checks if a branch exists in the local repository."""
-
-    exit_code = git["-C",
-                    repo_folder.absolute(), "rev-parse", "--verify",
-                    branch_name] & TF
-    return tp.cast(bool, exit_code)
-
-
-def has_remote_branch(repo_folder: Path, branch_name: str, remote: str) -> bool:
-    """Checks if a remote branch of a repository exists."""
-    exit_code = (
-        git["-C",
-            repo_folder.absolute(), "ls-remote", "--heads", remote, branch_name]
-        | grep[branch_name]
-    ) & RETCODE
-    return tp.cast(bool, exit_code == 0)
-
-
-def branch_has_upstream(
-    repo_folder: Path, branch_name: str, upstream: str = 'origin'
-) -> bool:
-    """Check if a branch has an upstream remote."""
-    exit_code = (
-        git["-C",
-            repo_folder.absolute(), "rev-parse", "--abbrev-ref",
-            branch_name + "@{upstream}"] | grep[upstream]
-    ) & RETCODE
-    return tp.cast(bool, exit_code == 0)
-
-
-def calc_surviving_lines(
-    repo: pygit2.Repository, revision: [str, FullCommitHash]
-) -> dict[FullCommitHash, int]:
+def calc_surviving_lines(repo: pygit2.Repository, revision) -> dict[str, int]:
     """
 
     :param repo: repository to analyze
@@ -992,7 +959,6 @@ def calc_surviving_lines(
     )
 
     lines_per_revision: dict = {}
-    old_state = repo.head
     with local.cwd(project_path):
         git("checkout", revision)
         files = git("ls-tree", "-r", "--name-only", revision).splitlines()
@@ -1002,16 +968,12 @@ def calc_surviving_lines(
                 lines = git("blame", "--root", "-l", f"{file}").splitlines()
                 for line in lines:
                     if line:
-
-                        content = line[FullCommitHash.hash_length():]
-                        if content and not content.startswith('//'):
-                            last_change = line[:FullCommitHash.hash_length()]
-                            last_change = FullCommitHash(last_change)
-                            if last_change in lines_per_revision:
-                                lines_per_revision[
-                                    last_change
-                                ] = lines_per_revision[last_change] + 1
-                            else:
-                                lines_per_revision[last_change] = 1
-        git("checkout", old_state.name)
+                        last_change = line[:FullCommitHash.hash_length()]
+                        last_change = FullCommitHash(last_change)
+                        if lines_per_revision.keys().__contains__(last_change):
+                            lines_per_revision[
+                                last_change
+                            ] = lines_per_revision[last_change] + 1
+                        else:
+                            lines_per_revision[last_change] = 1
     return lines_per_revision
