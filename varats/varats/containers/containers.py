@@ -14,6 +14,7 @@ from benchbuild.environments.domain.commands import (
     fs_compliant_name,
     ExportImage,
     DeleteImage,
+    RunProjectContainer,
 )
 from benchbuild.environments.domain.declarative import (
     add_benchbuild_layers,
@@ -316,8 +317,19 @@ def create_dev_image(
     with TemporaryDirectory() as tmpdir:
         publish = bootstrap.bus()
         image_context = BaseImageCreationContext(base, Path(tmpdir))
+
+        image_context.layers.run('pip3', 'install', '--upgrade', 'pip')
+        _add_varats_layers(image_context)
+        # override bb with custom version if bb install from source is active
+        if bb_cfg()['container']['from_source']:
+            add_benchbuild_layers(image_context.layers)
+
+        # add research tool dependencies
         research_tool.container_install_dependencies(image_context)
-        research_tool.container_add_build_layer(image_context)
+
+        _add_vara_config(image_context)
+        _add_benchbuild_config(image_context)
+        image_context.layers.workingdir(str(image_context.varats_root))
         publish(CreateImage(base.image_name, image_context.layers))
 
 
@@ -377,3 +389,12 @@ def export_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
     for base in images:
         LOG.info(f"Exporting base image {base.image_name}.")
         export_base_image(base)
+
+
+def run_container(
+    image_tag: str,
+    container_name: str,
+    build_dir: tp.Optional[str] = None
+) -> None:
+    publish = bootstrap.bus()
+    publish(RunProjectContainer(image_tag, container_name, build_dir))

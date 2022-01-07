@@ -4,12 +4,18 @@ import os
 import sys
 import typing as tp
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import click
 from plumbum import colors
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 
+from varats.containers.containers import (
+    ImageBase,
+    run_container,
+    BaseImageCreationContext,
+)
 from varats.gui.buildsetup_window import BuildSetup
 from varats.tools.research_tools.research_tool import (
     ResearchTool,
@@ -24,7 +30,7 @@ from varats.tools.tool_util import (
 )
 from varats.ts_utils.cli_util import initialize_cli_tool, cli_yn_choice
 from varats.ts_utils.click_param_types import EnumChoice
-from varats.utils.settings import save_config
+from varats.utils.settings import save_config, vara_cfg, bb_cfg
 
 
 class VaRATSSetup:
@@ -141,10 +147,10 @@ def config() -> None:
 @main.command()
 def init(
     version: tp.Optional[int], installprefix: tp.Optional[Path],
-    sourcelocation: tp.Optional[Path], research_tool: str
+    sourcelocation: tp.Optional[Path], researchtool: str
 ) -> None:
     """Initialize a research tool and all its components."""
-    tool = get_research_tool(research_tool)
+    tool = get_research_tool(researchtool)
     __build_setup_init(tool, sourcelocation, installprefix, version)
 
 
@@ -152,15 +158,17 @@ def init(
     "researchtool", type=click.Choice(get_supported_research_tool_names())
 )
 @main.command()
-def update(research_tool: str) -> None:
+def update(researchtool: str) -> None:
     """Update a research tool and all its components."""
-    tool = get_research_tool(research_tool)
+    tool = get_research_tool(researchtool)
     print_up_to_date_message(tool)
     tool.upgrade()
 
 
-@click.argument(
-    "researchtool", type=click.Choice(get_supported_research_tool_names())
+@click.option(
+    "--container",
+    type=EnumChoice(ImageBase, case_sensitive=False),
+    help="Build type to use for the tool build configuration."
 )
 @click.option(
     "--installprefix",
@@ -174,18 +182,26 @@ def update(research_tool: str) -> None:
     default=BuildType.DEV,
     help="Build type to use for the tool build configuration."
 )
+@click.argument(
+    "researchtool", type=click.Choice(get_supported_research_tool_names())
+)
 @main.command()
 def build(
-    build_type: BuildType, installprefix: tp.Optional[Path], research_tool: str
+    researchtool: str, buildtype: BuildType, installprefix: tp.Optional[Path],
+    container: tp.Optional[ImageBase]
 ) -> None:
     """Build a research tool and all its components."""
-    tool = get_research_tool(research_tool)
+    tool = get_research_tool(researchtool)
     show_major_release_prompt(tool)
-    tool.build(build_type, __get_install_prefix(tool, installprefix))
-    if tool.verify_install(__get_install_prefix(tool, installprefix)):
-        print(f"{tool.name} was correctly installed.")
+
+    if container:
+        __build_in_container(tool, container, buildtype, installprefix)
     else:
-        print(f"Could not install {tool.name} correctly.")
+        tool.build(buildtype, __get_install_prefix(tool, installprefix))
+        if tool.verify_install(__get_install_prefix(tool, installprefix)):
+            print(f"{tool.name} was correctly installed.")
+        else:
+            print(f"Could not install {tool.name} correctly.")
 
 
 def __build_setup_init(
@@ -228,6 +244,41 @@ def __get_install_prefix(
         install_prefix.mkdir(parents=True)
 
     return install_prefix
+
+
+def __build_in_container(
+    tool: ResearchTool[SpecificCodeBase], image_base: ImageBase,
+    build_type: BuildType, installprefix: tp.Optional[Path]
+) -> None:
+    image_name = f"{tool.name}_{image_base.name}"
+
+    # TODO: query image registry and build image if necessary
+
+    if not installprefix:
+        installprefix = Path(
+            str(tool.install_location()) + "_ " + image_base.name
+        )
+
+    varats_root = Path(vara_cfg()["config_file"].value).parent
+    source_mount = str(tool.source_location().relative_to(varats_root))
+    install_mount = str(tool.install_location().relative_to(varats_root))
+
+    with TemporaryDirectory() as tmpdir:
+        image_context = BaseImageCreationContext(image_base, Path(tmpdir))
+        bb_cfg()["container"]["mounts"].value[:] += [
+            # mount tool src dir
+            [
+                str(tool.source_location()),
+                str(image_context.varats_root / source_mount)
+            ],
+            # mount install dir
+            [
+                str(installprefix),
+                str(image_context.varats_root / install_mount)
+            ]
+        ]
+
+    run_container(image_name, f"build_{tool.name}")
 
 
 if __name__ == '__main__':

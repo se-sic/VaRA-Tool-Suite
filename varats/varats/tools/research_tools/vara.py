@@ -372,17 +372,6 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
         return status_ok
 
-    def container_add_build_layer(
-        self, image_context: 'containers.BaseImageCreationContext'
-    ) -> None:
-        """
-        Add layers for building this research tool to the given container.
-
-        Args:
-            image_context: the base image creation context
-        """
-        raise NotImplementedError
-
     def container_install_tool(
         self, image_context: 'containers.BaseImageCreationContext'
     ) -> None:
