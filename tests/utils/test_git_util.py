@@ -1,9 +1,14 @@
 """Test VaRA git utilities."""
 import unittest
 
+from benchbuild.utils.revision_ranges import RevisionRange
 from plumbum import local
 
-from varats.project.project_util import get_local_project_git
+from varats.project.project_util import (
+    get_local_project_git,
+    get_local_project_git_path,
+    BinaryType,
+)
 from varats.utils.git_util import (
     ChurnConfig,
     CommitRepoPair,
@@ -13,6 +18,8 @@ from varats.utils.git_util import (
     calc_commit_code_churn,
     get_all_revisions_between,
     get_current_branch,
+    get_initial_commit,
+    RevisionBinaryMap,
 )
 
 
@@ -26,6 +33,29 @@ class TestGitInteractionHelpers(unittest.TestCase):
         repo.checkout(repo.lookup_branch('master'))
 
         self.assertEqual(get_current_branch(repo.workdir), 'master')
+
+    def test_get_initial_commit(self) -> None:
+        """Check if we can correctly retrieve the inital commit of a repo."""
+        repo = get_local_project_git("FeaturePerfCSCollection")
+
+        with local.cwd(repo.workdir):
+            inital_commit = get_initial_commit()
+
+            self.assertEqual(
+                FullCommitHash("4d84c8f80ec2db3aaa880d323f7666752c4be51d"),
+                inital_commit
+            )
+
+    def test_get_initial_commit_with_specified_path(self) -> None:
+        """Check if we can correctly retrieve the inital commit of a repo."""
+        inital_commit = get_initial_commit(
+            get_local_project_git_path("FeaturePerfCSCollection")
+        )
+
+        self.assertEqual(
+            FullCommitHash("4d84c8f80ec2db3aaa880d323f7666752c4be51d"),
+            inital_commit
+        )
 
     def test_get_all_revisions_between_full(self):
         """Check if the correct all revisions are correctly found."""
@@ -306,3 +336,73 @@ class TestCodeChurnCalculation(unittest.TestCase):
         self.assertEqual(files_changed, 3)
         self.assertEqual(insertions, 49)
         self.assertEqual(deletions, 11)
+
+
+class TestRevisionBinaryMap(unittest.TestCase):
+    """Test if we can correctly setup and use the RevisionBinaryMap."""
+
+    rv_map: RevisionBinaryMap
+
+    def setUp(self) -> None:
+        self.rv_map = RevisionBinaryMap(
+            get_local_project_git_path("FeaturePerfCSCollection")
+        )
+
+    def test_specification_of_always_valid_binaries(self) -> None:
+        """Check if we can add binaries to the map."""
+        self.rv_map.specify_binary(
+            "build/bin/SingleLocalSimple", BinaryType.EXECUTABLE
+        )
+
+        self.assertIn("SingleLocalSimple", self.rv_map)
+
+    def test_specification_validity_range_binaries(self) -> None:
+        """Check if we can add binaries to the map that are only valid in a
+        specific range."""
+        self.rv_map.specify_binary(
+            "build/bin/SingleLocalMultipleRegions",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("162db88346", "master")
+        )
+
+        self.assertIn("SingleLocalMultipleRegions", self.rv_map)
+
+    def test_specification_binaries_with_special_name(self) -> None:
+        """Check if we can add binaries that have a special name."""
+        self.rv_map.specify_binary(
+            "build/bin/SingleLocalSimple",
+            BinaryType.EXECUTABLE,
+            override_binary_name="Overridden"
+        )
+
+        self.assertIn("Overridden", self.rv_map)
+
+    def test_wrong_contains_check(self) -> None:
+        """Check if wrong values are correctly shows as not in the map."""
+        self.rv_map.specify_binary(
+            "build/bin/SingleLocalSimple", BinaryType.EXECUTABLE
+        )
+
+        self.assertNotIn("WrongFilename", self.rv_map)
+
+        obj_with_wrong_type = object()
+        self.assertNotIn(obj_with_wrong_type, self.rv_map)
+
+    def test_valid_binary_lookup(self) -> None:
+        """Check if we can correctly determine the list of valid binaries for a
+        specified revision."""
+        self.rv_map.specify_binary(
+            "build/bin/SingleLocalSimple", BinaryType.EXECUTABLE
+        )
+        self.rv_map.specify_binary(
+            "build/bin/SingleLocalMultipleRegions",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("162db88346", "master")
+        )
+
+        test_query = self.rv_map[ShortCommitHash("162db88346")]
+        self.assertSetEqual({x.name for x in test_query},
+                            {"SingleLocalSimple", "SingleLocalMultipleRegions"})
+
+        test_query = self.rv_map[ShortCommitHash("745424e3ae")]
+        self.assertSetEqual({x.name for x in test_query}, {"SingleLocalSimple"})
