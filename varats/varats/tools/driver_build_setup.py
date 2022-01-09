@@ -8,15 +8,14 @@ from tempfile import TemporaryDirectory
 
 import click
 from plumbum import colors
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication
 
 from varats.containers.containers import (
     ImageBase,
     run_container,
     BaseImageCreationContext,
+    create_dev_image,
 )
-from varats.gui.buildsetup_window import BuildSetup
+# from varats.gui.buildsetup_window import BuildSetup
 from varats.tools.research_tools.research_tool import (
     ResearchTool,
     SpecificCodeBase,
@@ -32,22 +31,25 @@ from varats.ts_utils.cli_util import initialize_cli_tool, cli_yn_choice
 from varats.ts_utils.click_param_types import EnumChoice
 from varats.utils.settings import save_config, vara_cfg, bb_cfg
 
+# from PyQt5.QtCore import Qt
+# from PyQt5.QtWidgets import QApplication
 
-class VaRATSSetup:
-    """Start VaRA-TS grafical user interface for setting up VaRA."""
-
-    def __init__(self) -> None:
-        if hasattr(Qt, 'AA_EnableHighDpiScaling'):
-            QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-        if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
-            QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
-
-        self.app = QApplication(sys.argv)
-        self.main_window = BuildSetup()
-
-    def main(self) -> None:
-        """Start VaRA setup GUI."""
-        sys.exit(self.app.exec_())
+# TODO: remove or move to other module
+# class VaRATSSetup:
+#     """Start VaRA-TS grafical user interface for setting up VaRA."""
+#
+#     def __init__(self) -> None:
+#         if hasattr(Qt, 'AA_EnableHighDpiScaling'):
+#             QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+#         if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
+#             QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+#
+#         self.app = QApplication(sys.argv)
+#         self.main_window = BuildSetup()
+#
+#     def main(self) -> None:
+#         """Start VaRA setup GUI."""
+#         sys.exit(self.app.exec_())
 
 
 def update_term(text: str, enable_inline: bool = False) -> None:
@@ -177,6 +179,12 @@ def update(researchtool: str) -> None:
     help="Tool install folder."
 )
 @click.option(
+    "--sourcelocation",
+    type=click.Path(path_type=Path),
+    required=False,
+    help="Folder to store tool sources."
+)
+@click.option(
     "--buildtype",
     type=EnumChoice(BuildType, case_sensitive=False),
     default=BuildType.DEV,
@@ -187,11 +195,11 @@ def update(researchtool: str) -> None:
 )
 @main.command()
 def build(
-    researchtool: str, buildtype: BuildType, installprefix: tp.Optional[Path],
-    container: tp.Optional[ImageBase]
+    researchtool: str, buildtype: BuildType, sourcelocation: tp.Optional[Path],
+    installprefix: tp.Optional[Path], container: tp.Optional[ImageBase]
 ) -> None:
     """Build a research tool and all its components."""
-    tool = get_research_tool(researchtool)
+    tool = get_research_tool(researchtool, sourcelocation)
     show_major_release_prompt(tool)
 
     if container:
@@ -250,14 +258,19 @@ def __build_in_container(
     tool: ResearchTool[SpecificCodeBase], image_base: ImageBase,
     build_type: BuildType, installprefix: tp.Optional[Path]
 ) -> None:
-    image_name = f"{tool.name}_{image_base.name}"
+    vara_cfg()["container"]["research_tool"] = tool.name
+    image_name = f"{image_base.image_name}_{build_type.name}"
 
-    # TODO: query image registry and build image if necessary
+    click.echo("Preparing container image.")
+    create_dev_image(image_base, tool, build_type)
 
     if not installprefix:
         installprefix = Path(
             str(tool.install_location()) + "_ " + image_base.name
         )
+
+    if not installprefix.exists():
+        installprefix.mkdir(parents=True)
 
     varats_root = Path(vara_cfg()["config_file"].value).parent
     source_mount = str(tool.source_location().relative_to(varats_root))
@@ -278,6 +291,9 @@ def __build_in_container(
             ]
         ]
 
+    click.echo(
+        f"Building {tool.name} ({build_type.name}) in a container ({image_base.name})."
+    )
     run_container(image_name, f"build_{tool.name}")
 
 

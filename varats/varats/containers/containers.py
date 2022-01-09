@@ -24,6 +24,7 @@ from benchbuild.utils.settings import to_yaml
 from plumbum import local
 
 from varats.tools.research_tools.research_tool import Distro, ResearchTool
+from varats.tools.research_tools.vara_manager import BuildType
 from varats.tools.tool_util import get_research_tool
 from varats.utils.settings import bb_cfg, vara_cfg, save_bb_config
 
@@ -208,7 +209,7 @@ def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
         image.run('mkdir', f'{tgt_dir}', runtime=crun)
         image.run('pip3', 'install', 'setuptools', runtime=crun)
 
-        pip_args = ['pip3', 'install', '--ignore-installed']
+        pip_args = ['pip3', 'install']
         if editable_install:
             pip_args.append("-e")
             _set_varats_source_mount(image_context, str(src_dir))
@@ -273,10 +274,9 @@ def _create_base_image_layers(image_context: BaseImageCreationContext) -> None:
     # we need an up-to-date pip version to get the prebuilt pygit2 package
     # with an up-to-date libgit2
     image_context.layers.run('pip3', 'install', '--upgrade', 'pip')
-    _add_varats_layers(image_context)
-    # override bb with custom version if bb install from source is active
     if bb_cfg()['container']['from_source']:
         add_benchbuild_layers(image_context.layers)
+    _add_varats_layers(image_context)
     # add research tool if configured
     configured_research_tool = vara_cfg()["container"]["research_tool"]
     if configured_research_tool:
@@ -303,7 +303,7 @@ def create_base_image(base: ImageBase) -> None:
 
 
 def create_dev_image(
-    base: ImageBase, research_tool: ResearchTool[tp.Any]
+    base: ImageBase, research_tool: ResearchTool[tp.Any], build_type: BuildType
 ) -> None:
     """
     Build a dev image for the given image base and research tool.
@@ -319,10 +319,9 @@ def create_dev_image(
         image_context = BaseImageCreationContext(base, Path(tmpdir))
 
         image_context.layers.run('pip3', 'install', '--upgrade', 'pip')
-        _add_varats_layers(image_context)
-        # override bb with custom version if bb install from source is active
         if bb_cfg()['container']['from_source']:
             add_benchbuild_layers(image_context.layers)
+        _add_varats_layers(image_context)
 
         # add research tool dependencies
         research_tool.container_install_dependencies(image_context)
@@ -330,7 +329,15 @@ def create_dev_image(
         _add_vara_config(image_context)
         _add_benchbuild_config(image_context)
         image_context.layers.workingdir(str(image_context.varats_root))
-        publish(CreateImage(base.image_name, image_context.layers))
+        image_context.layers.entrypoint(
+            "vara-buildsetup", "build", research_tool.name.lower(),
+            f"--buildtype={build_type.name}"
+        )
+        publish(
+            CreateImage(
+                f"{base.image_name}_{build_type.name}", image_context.layers
+            )
+        )
 
 
 def create_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
