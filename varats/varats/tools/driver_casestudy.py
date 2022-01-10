@@ -138,8 +138,8 @@ def __casestudy_status(
     "--override",
     "-or",
     is_flag=True,
-    help=
-    "If a case study for the given project and version exists override it instead of extending it"
+    help="If a case study for the given project and version"
+    " exists override it instead of extending it"
 )
 @click.option(
     "--merge-stage",
@@ -199,7 +199,8 @@ def __casestudy_gen(
                     stage_choices = [CSStage(merge_stage)]
                     stage_choices.extend(case_study.stages)
                     cli_list_choice(
-                        f"The given stage({merge_stage}) does not exist, do you want to create it or select an existing one",
+                        f"The given stage({merge_stage}) does not exist,"
+                        f" do you want to create it or select an existing one",
                         stage_choices, lambda x: x.name, set_merge_stage
                     )
                     if selected_stage == merge_stage:
