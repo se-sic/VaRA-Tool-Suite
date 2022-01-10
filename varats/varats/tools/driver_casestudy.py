@@ -18,6 +18,7 @@ from varats.paper.case_study import (
     load_case_study_from_file,
     store_case_study,
     CaseStudy,
+    CSStage,
 )
 from varats.paper_mgmt import paper_config_manager as PCM
 from varats.paper_mgmt.case_study import (
@@ -132,22 +133,23 @@ def __casestudy_status(
 
 
 @main.group("gen", chain=True)
-@click.option("--project", "-p", required=False)
-@click.option("--git_path", "-git", required=False)
-@click.option("--extend", "-ext", type=click.Path(exists=True))
+@click.option("--project", "-p", required=True)
+@click.option(
+    "--override",
+    "-or",
+    is_flag=True,
+    help=
+    "If a case study for the given project and version exists override it instead of extending it"
+)
 @click.option(
     "--merge-stage",
     help="Merge the new revision(s) into stage "
-    "`n`; defaults to last stage.(only with "
-    "-ext)",
-    type=int,
-    default=-1
+    "`n`; defaults to last stage.",
+    type=str,
+    default=None
 )
 @click.option(
-    "--new-stage",
-    is_flag=True,
-    help="Add the new revision(s) to a new stage.("
-    "only with -ext)"
+    "--new-stage", is_flag=True, help="Add the new revision(s) to a new stage"
 )
 @click.option(
     "-v", "--version", type=int, default=0, help="Case study version."
@@ -157,48 +159,62 @@ def __casestudy_status(
     is_flag=True,
     help="Ignore revisions that are marked as blocked."
 )
-@click.option(
-    "--paper_config_path",
-    "-pc",
-    type=click.Path(exists=True),
-    default=Path(vara_cfg()["paper_config"]["folder"].value) /
-    vara_cfg()["paper_config"]["current_config"].value
-)
 @click.pass_context
 def __casestudy_gen(
-    ctx: click.Context, paper_config_path: str, project: tp.Optional[str],
-    git_path: tp.Optional[str], extend: tp.Optional[str], version: int,
-    ignore_blocked: bool, merge_stage: int, new_stage: bool
+    ctx: click.Context, project: tp.Optional[str], override: bool, version: int,
+    ignore_blocked: bool, merge_stage: tp.Optional[str], new_stage: bool
 ) -> None:
     """Generate or extend a CaseStudy Sub commands can be chained to for example
     sample revisions but also add the latest."""
     ctx.ensure_object(dict)
-    ctx.obj['path'] = Path(paper_config_path)
-    if not project and not git_path:
-        click.echo("need --project or --git-path", err=True)
-        return
     ctx.obj['project'] = project
-    ctx.obj['git_path'] = git_path
     ctx.obj['ignore_blocked'] = ignore_blocked
-    ctx.obj['extend'] = extend
-    if project and not git_path:
-        ctx.obj['git_path'] = str(get_local_project_git_path(project))
-    if git_path and not project:
-        ctx.obj['project'] = Path(git_path).stem.replace("-HEAD", "")
-    if extend:
-        ctx.obj['case_study'] = load_case_study_from_file(Path(extend))
-        ctx.obj['path'] = Path(extend)
-        if merge_stage == -1:
-            ctx.obj['merge_stage'] = max(
-                ctx.obj['case_study'].num_stages - 1, 0
-            )
-            # If + was specified we add a new stage
-        if new_stage:
-            ctx.obj['merge_stage'] = ctx.obj['case_study'].num_stages
-
+    ctx.obj['version'] = version
+    ctx.obj['path'] = Path(vara_cfg()["paper_config"]["folder"].value) / (
+                vara_cfg()["paper_config"]["current_config"].value \
+                + f"/{project}_{version}.case_study")
+    ctx.obj['git_path'] = str(get_local_project_git_path(project))
+    if override or not ctx.obj['path'].exists():
+        case_study = CaseStudy(ctx.obj['project'], version)
+        if merge_stage:
+            case_study.insert_empty_stage(0)
+            case_study.name_stage(0, merge_stage)
     else:
-        ctx.obj['case_study'] = CaseStudy(ctx.obj['project'], version)
-        ctx.obj['merge_stage'] = 0
+        case_study = load_case_study_from_file(ctx.obj['path'])
+        ctx.obj['custom_stage'] = bool(merge_stage)
+        if merge_stage:
+            if new_stage:
+                stage_index = case_study.num_stages
+                case_study.insert_empty_stage(stage_index)
+                case_study.name_stage(stage_index, merge_stage)
+            else:
+                stage_index = case_study.get_stage_index_by_name(merge_stage)
+                if not stage_index:
+                    selected_stage: str = merge_stage
+
+                    def set_merge_stage(stage: CSStage):
+                        nonlocal selected_stage
+                        selected_stage = stage.name
+
+                    stage_choices = [CSStage(merge_stage)]
+                    stage_choices.extend(case_study.stages)
+                    cli_list_choice(
+                        f"The given stage({merge_stage}) does not exist, do you want to create it or select an existing one",
+                        stage_choices, lambda x: x.name, set_merge_stage
+                    )
+                    if selected_stage == merge_stage:
+                        stage_index = case_study.num_stages
+                        case_study.insert_empty_stage(stage_index)
+                        case_study.name_stage(stage_index, selected_stage)
+                    else:
+                        stage_index = case_study.get_stage_index_by_name(
+                            selected_stage
+                        )
+            ctx.obj['merge_stage'] = stage_index
+
+        else:
+            ctx.obj['merge_stage'] = max(case_study.num_stages, 0)
+    ctx.obj['case_study'] = case_study
 
 
 @__casestudy_gen.command("select_latest")
@@ -304,11 +320,6 @@ def __gen_per_year(
     default=5,
     help="Maximal expected gradient in percent between " +
     "two revisions, e.g., 5 for 5%%"
-)
-@click.option(
-    "--result-folder",
-    type=click.Path(exists=True),
-    help="Folder in which to search for result files."
 )
 @click.pass_context
 def __gen_smooth_plot(
