@@ -13,6 +13,7 @@ from plumbum import FG, colors, local
 
 from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.discover_reports import initialize_reports
+from varats.data.reports.szz_report import SZZReport
 from varats.mapping.commit_map import create_lazy_commit_map_loader
 from varats.paper.case_study import (
     load_case_study_from_file,
@@ -171,8 +172,8 @@ def __casestudy_gen(
     ctx.obj['ignore_blocked'] = ignore_blocked
     ctx.obj['version'] = version
     ctx.obj['path'] = Path(vara_cfg()["paper_config"]["folder"].value) / (
-                vara_cfg()["paper_config"]["current_config"].value \
-                + f"/{project}_{version}.case_study")
+            vara_cfg()["paper_config"]["current_config"].value \
+            + f"/{project}_{version}.case_study")
     ctx.obj['git_path'] = str(get_local_project_git_path(project))
     if override or not ctx.obj['path'].exists():
         case_study = CaseStudy(ctx.obj['project'], version)
@@ -377,7 +378,12 @@ def __gen_release(ctx: click.Context, release_type: ReleaseType) -> None:
 
 
 @__casestudy_gen.command("select_bug")
-@click.argument("report_type", type=create_report_type_choice())
+@click.argument(
+    "report_type",
+    type=TypedChoice({
+        k: v for (k, v) in BaseReport.REPORT_TYPES if isinstance(v, SZZReport)
+    })
+)
 @click.pass_context
 def __gen_bug_commits(
     ctx: click.Context, report_type: tp.Type['BaseReport']
