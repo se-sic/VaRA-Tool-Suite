@@ -442,7 +442,7 @@ def extend_with_distrib_sampling(
 def extend_with_smooth_revs(
     case_study: CaseStudy, cmap: CommitMap, boundary_gradient_int: int,
     ignore_blocked: bool, plot_type: tp.Type['Plot'], merge_stage: int,
-    **kwargs: tp.Any
+    **plot_kwargs: tp.Any
 ) -> None:
     """
     Extend a case study with extra revisions that could smooth plot curves. This
@@ -455,12 +455,12 @@ def extend_with_smooth_revs(
         ignore_blocked: ignore_blocked revisions
         merge_stage: stage the revisions will be added to
         plot_type: Plot to calculate new revisions from.
-        boundary_gradient: Maximal expected gradient in percent between two revisions
+        boundary_gradient_int: Maximal expected gradient in percent between two revisions
     """
-    kwargs['case_study'] = case_study
-    kwargs['cmap'] = cmap
-    print(kwargs)
-    plot = plot_type(None, **kwargs)
+    plot_kwargs['case_study'] = case_study
+    plot_kwargs['cmap'] = cmap
+    print(plot_kwargs)
+    plot = plot_type(None, **plot_kwargs)
     # convert input to float %
     boundary_gradient = boundary_gradient_int / float(100)
     print("Using boundary gradient: ", boundary_gradient)
