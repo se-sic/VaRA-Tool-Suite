@@ -1,4 +1,4 @@
-"""Test config tool."""
+"""Test development tool."""
 import unittest
 
 from click.testing import CliRunner
@@ -7,8 +7,8 @@ from tests.test_utils import run_in_test_environment
 from varats.tools import driver_develop
 
 
-class TestDriverConfig(unittest.TestCase):
-    """Tests for the driver_config module."""
+class TestDriverDevelop(unittest.TestCase):
+    """Tests for the driver_develop module."""
 
     @run_in_test_environment()
     def test_vara_develop_status(self):
