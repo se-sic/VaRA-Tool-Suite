@@ -52,11 +52,6 @@ def main() -> None:
     help="Provide a regex to filter the shown case studies",
     default=".*"
 )
-@click.option(
-    "--paper-config",
-    help="Use this paper config instead of the configured one",
-    default=None
-)
 @click.option("-s", "--short", is_flag=True, help="Only print a short summary")
 @click.option(
     "--list-revs",
@@ -83,9 +78,9 @@ def main() -> None:
     "(e.g. when piping to less -r)."
 )
 def __casestudy_status(
-    report_type: tp.Type['BaseReport'], filter_regex: str, paper_config: str,
-    short: bool, list_revs: bool, with_stage: bool, sort_revs: bool,
-    legend: bool, force_color: bool
+    report_type: tp.Type['BaseReport'], filter_regex: str, short: bool,
+    list_revs: bool, with_stage: bool, sort_revs: bool, legend: bool,
+    force_color: bool
 ) -> None:
     """
     Show status of current case study.
@@ -95,8 +90,6 @@ def __casestudy_status(
     """
     if force_color:
         colors.use_color = True
-    if paper_config:
-        vara_cfg()['paper_config']['current_config'] = paper_config
     if short and list_revs:
         click.UsageError(
             "At most one argument of: --short, --list-revs can be used."
@@ -236,9 +229,16 @@ def __casestudy_package(
 
 
 @main.command("view")
-@click.argument("report-type", type=create_report_type_choice())
-@click.argument("project")
-@click.argument("commit-hash", required=False)
+@click.option(
+    "--report-type",
+    type=create_report_type_choice(),
+    required=True,
+    help="Report type of the result files."
+)
+@click.option(
+    "--project", required=True, help="Project to view result files for."
+)
+@click.option("--commit-hash", help="Commit hash to view result files for.")
 @click.option(
     "--newest-only",
     is_flag=True,
@@ -248,13 +248,7 @@ def __casestudy_view(
     report_type: str, project: str, commit_hash: ShortCommitHash,
     newest_only: bool
 ) -> None:
-    """
-    View report files.
-
-    REPORT_TYPE: Report type of the result files.
-    PROJECT: Project to view result files for.
-    COMMIT_HASH: Commit hash to view result files for.
-    """
+    """View report files."""
     result_file_type = BaseReport.REPORT_TYPES[report_type]
     try:
         commit_hash = __init_commit_hash(result_file_type, project, commit_hash)
@@ -333,7 +327,7 @@ def __init_commit_hash(
                 )
             )
 
-        max_num_hashes = 42
+        max_num_hashes = 15
         if len(available_commit_hashes) > max_num_hashes:
             print("Found to many commit hashes, truncating selection...")
 
