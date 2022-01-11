@@ -33,6 +33,7 @@ from varats.paper_mgmt.case_study import (
 )
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.plot.plot import Plot
+from varats.plot.plots import PlotGenerator, PlotConfig, PlotGeneratorFailed
 from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
@@ -43,6 +44,7 @@ from varats.ts_utils.cli_util import (
     cli_list_choice,
     initialize_cli_tool,
     cli_yn_choice,
+    add_cli_options,
 )
 from varats.ts_utils.click_param_types import (
     create_report_type_choice,
@@ -133,7 +135,7 @@ def __casestudy_status(
     )
 
 
-@main.group("gen", chain=True)
+@main.group("gen")
 @click.option("--project", "-p", required=True)
 @click.option(
     "--override",
@@ -279,7 +281,8 @@ def __gen_sample(
 
     Distribution: The sampling method to use
     """
-    sampling_method: NormalSamplingMethod = NormalSamplingMethod.get_sampling_method_type(
+    sampling_method: NormalSamplingMethod = NormalSamplingMethod \
+        .get_sampling_method_type(
         distribution
     )()
     cmap = create_lazy_commit_map_loader(ctx.obj['project'], None, end, start)()
@@ -314,8 +317,65 @@ def __gen_per_year(
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 
 
-@__casestudy_gen.command("select_plot")
-@click.argument("plot_type", type=create_plot_type_choice())
+class SmoothPlotCLI(click.MultiCommand):
+    """Command factory for plots."""
+
+    def __init__(self, **attrs: tp.Any):
+        initialize_plots()
+        super().__init__(**attrs)
+
+    def list_commands(self, ctx: click.Context) -> tp.List[str]:
+        return list(PlotGenerator.GENERATORS.keys())
+
+    def get_command(self, ctx: click.Context,
+                    cmd_name: str) -> tp.Optional[click.Command]:
+
+        generator_cls = PlotGenerator.GENERATORS[cmd_name]
+
+        @click.pass_context
+        def command_template(context: click.Context, **kwargs: tp.Any) -> None:
+            # extract common arguments and plot config from context
+            plot_config: PlotConfig = PlotConfig(False)
+            try:
+                generator_instance = generator_cls(plot_config, **kwargs)
+                plots = generator_instance.generate()
+                plot = None
+                if len(plots) > 1:
+
+                    def set_plot(selected_plot: Plot):
+                        nonlocal plot
+                        plot = selected_plot
+
+                    cli_list_choice(
+                        "The given plot generator creates multiple plots"
+                        " please select one:", plots, lambda p: p.name, set_plot
+                    )
+                else:
+                    plot = plots[0]
+                cmap = create_lazy_commit_map_loader(
+                    context.obj['project'], None, 'HEAD', None
+                )()
+                extend_with_smooth_revs(
+                    context.obj['case_study'], cmap,
+                    context.obj['boundary_gradient'],
+                    context.obj['ignore_blocked'], plot,
+                    context.obj['merge_stage']
+                )
+                store_case_study(context.obj['case_study'], context.obj['path'])
+            except PlotGeneratorFailed as ex:
+                print(
+                    f"Failed to create plot generator {generator_cls.NAME}: "
+                    f"{ex.message}"
+                )
+
+        # return command wrapped with options specified in the generator class
+        command_definition = add_cli_options(
+            command_template, *generator_cls.OPTIONS
+        )
+        return click.command(cmd_name)(command_definition)
+
+
+@__casestudy_gen.command("select_plot", cls=SmoothPlotCLI)
 @click.option(
     "--boundary-gradient",
     type=int,
@@ -324,37 +384,13 @@ def __gen_per_year(
     "two revisions, e.g., 5 for 5%%"
 )
 @click.pass_context
-def __gen_smooth_plot(
-    ctx: click.Context, plot_type: tp.Type['Plot'], boundary_gradient: int,
-    result_folder: tp.Optional[str]
-) -> None:
+def __gen_smooth_plot(ctx: click.Context, boundary_gradient: int) -> None:
     """
     Generate revisions based on a plot.
 
     plot_type: Plot to calculate new revisions from.
     """
-    if not result_folder:
-        result_folder = str(vara_cfg()['result_dir']) + "/" + ctx.obj['project']
-    if not ctx.obj['extend']:
-        case_study_path = click.prompt(
-            "Pleas specify a CaseStudy to extend", type=click.Path(exists=True)
-        )
-        ctx.obj['case_study'] = load_case_study_from_file(Path(case_study_path))
-        ctx.obj['path'] = Path(case_study_path)
-    cmap = create_lazy_commit_map_loader(
-        ctx.obj['project'], None, 'HEAD', None
-    )()
-    print(plot_type)
-    extend_with_smooth_revs(
-        ctx.obj['case_study'],
-        cmap,
-        boundary_gradient,
-        ctx.obj['ignore_blocked'],
-        plot_type,
-        ctx.obj['merge_stage'],
-        result_folder=result_folder
-    )
-    store_case_study(ctx.obj['case_study'], ctx.obj['path'])
+    ctx.obj['boundary_gradient'] = boundary_gradient
 
 
 @__casestudy_gen.command("select_release")
@@ -381,7 +417,9 @@ def __gen_release(ctx: click.Context, release_type: ReleaseType) -> None:
 @click.argument(
     "report_type",
     type=TypedChoice({
-        k: v for (k, v) in BaseReport.REPORT_TYPES if isinstance(v, SZZReport)
+        k: v
+        for (k, v) in BaseReport.REPORT_TYPES.items()
+        if isinstance(v, SZZReport)
     })
 )
 @click.pass_context
