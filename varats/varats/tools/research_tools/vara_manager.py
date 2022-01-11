@@ -88,8 +88,10 @@ class BuildType(Enum):
 
         raise AssertionError("Unknown build type")
 
-    def build_folder(self) -> Path:
+    def build_folder(self, suffix: tp.Optional[str]) -> Path:
         """Get build type specific buildfolder."""
+        if suffix:
+            return Path(f"{str(self)}_{suffix}")
         return Path(str(self))
 
 

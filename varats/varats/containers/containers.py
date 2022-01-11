@@ -303,7 +303,8 @@ def create_base_image(base: ImageBase) -> None:
 
 
 def create_dev_image(
-    base: ImageBase, research_tool: ResearchTool[tp.Any], build_type: BuildType
+    base: ImageBase, research_tool: ResearchTool[tp.Any], build_type: BuildType,
+    source_location: str, install_prefix: str
 ) -> None:
     """
     Build a dev image for the given image base and research tool.
@@ -331,7 +332,10 @@ def create_dev_image(
         image_context.layers.workingdir(str(image_context.varats_root))
         image_context.layers.entrypoint(
             "vara-buildsetup", "build", research_tool.name.lower(),
-            f"--buildtype={build_type.name}"
+            f"--build-type={build_type.name}",
+            f"--source-location={source_location}",
+            f"--install-prefix={install_prefix}",
+            f"--build-folder-suffix={base.name}"
         )
         publish(
             CreateImage(

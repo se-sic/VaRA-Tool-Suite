@@ -468,7 +468,10 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """Upgrade the research tool to a newer version."""
 
     @abc.abstractmethod
-    def build(self, build_type: BuildType, install_location: Path) -> None:
+    def build(
+        self, build_type: BuildType, install_location: Path,
+        build_folder_suffix: tp.Optional[str]
+    ) -> None:
         """
         Build/Compile the research tool in the specified ``build_type`` and
         install it to the specified ``install_location``.
@@ -477,6 +480,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
             build_type: which type of build should be used, e.g., debug,
                         development or release
             install_location: location to install the research tool into
+            build_folder_suffix: a suffix that is appended to the build folder
         """
 
     @abc.abstractmethod

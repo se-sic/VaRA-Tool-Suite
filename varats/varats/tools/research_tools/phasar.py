@@ -155,7 +155,10 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         """Upgrade the research tool to a newer version."""
         self.code_base.pull()
 
-    def build(self, build_type: BuildType, install_location: Path) -> None:
+    def build(
+        self, build_type: BuildType, install_location: Path,
+        build_folder_suffix: tp.Optional[str]
+    ) -> None:
         """
         Build/Compile phasar in the specified ``build_type``. This method leaves
         phasar in a finished state, i.e., being ready to be installed.

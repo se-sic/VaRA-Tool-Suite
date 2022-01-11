@@ -188,6 +188,9 @@ def update(research_tool: str) -> None:
     help="Folder to store tool sources."
 )
 @click.option(
+    "--build-folder-suffix", required=False, help="Folder to use for building."
+)
+@click.option(
     "--build-type",
     type=EnumChoice(BuildType, case_sensitive=False),
     default=BuildType.DEV,
@@ -196,8 +199,8 @@ def update(research_tool: str) -> None:
 @main.command()
 def build(
     research_tool: str, build_type: BuildType,
-    source_location: tp.Optional[Path], install_prefix: tp.Optional[Path],
-    container: tp.Optional[ImageBase]
+    build_folder_suffix: tp.Optional[str], source_location: tp.Optional[Path],
+    install_prefix: tp.Optional[Path], container: tp.Optional[ImageBase]
 ) -> None:
     """Build a research tool and all its components."""
     tool = get_research_tool(research_tool, source_location)
@@ -206,7 +209,10 @@ def build(
     if container:
         __build_in_container(tool, container, build_type, install_prefix)
     else:
-        tool.build(build_type, __get_install_prefix(tool, install_prefix))
+        tool.build(
+            build_type, __get_install_prefix(tool, install_prefix),
+            build_folder_suffix
+        )
         if tool.verify_install(__get_install_prefix(tool, install_prefix)):
             print(f"{tool.name} was correctly installed.")
         else:
@@ -257,25 +263,25 @@ def __get_install_prefix(
 
 def __build_in_container(
     tool: ResearchTool[SpecificCodeBase], image_base: ImageBase,
-    build_type: BuildType, installprefix: tp.Optional[Path]
+    build_type: BuildType, install_prefix: tp.Optional[Path]
 ) -> None:
     vara_cfg()["container"]["research_tool"] = tool.name
     image_name = f"{image_base.image_name}_{build_type.name}"
 
-    click.echo("Preparing container image.")
-    create_dev_image(image_base, tool, build_type)
-
-    if not installprefix:
-        installprefix = Path(
+    if not install_prefix:
+        install_prefix = Path(
             str(tool.install_location()) + "_ " + image_base.name
         )
 
-    if not installprefix.exists():
-        installprefix.mkdir(parents=True)
+    if not install_prefix.exists():
+        install_prefix.mkdir(parents=True)
 
     varats_root = Path(vara_cfg()["config_file"].value).parent
     source_mount = str(tool.source_location().relative_to(varats_root))
     install_mount = str(tool.install_location().relative_to(varats_root))
+
+    click.echo("Preparing container image.")
+    create_dev_image(image_base, tool, build_type, source_mount, install_mount)
 
     with TemporaryDirectory() as tmpdir:
         image_context = BaseImageCreationContext(image_base, Path(tmpdir))
@@ -287,7 +293,7 @@ def __build_in_container(
             ],
             # mount install dir
             [
-                str(installprefix),
+                str(install_prefix),
                 str(image_context.varats_root / install_mount)
             ]
         ]

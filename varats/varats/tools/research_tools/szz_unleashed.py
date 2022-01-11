@@ -142,7 +142,10 @@ class SZZUnleashed(ResearchTool[SZZUnleashedCodeBase]):
         """Returns true if VaRA's major release version is up to date."""
         raise NotImplementedError
 
-    def build(self, build_type: BuildType, install_location: Path) -> None:
+    def build(
+        self, build_type: BuildType, install_location: Path,
+        build_folder_suffix: tp.Optional[str]
+    ) -> None:
         """
         Build SZZUnleashed.
 

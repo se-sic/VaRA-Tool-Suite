@@ -150,10 +150,11 @@ class VaRA(ResearchTool[VaRACodeBase]):
     __DEPENDENCIES = Dependencies({
         Distro.DEBIAN: [
             "libboost-all-dev", "libpapi-dev", "googletest", "libsqlite3-dev",
-            "libxml2-dev", "libcurl4-openssl-dev"
+            "libxml2-dev", "libcurl4-openssl-dev", "cmake", "ninja-build"
         ],
         Distro.ARCH: [
-            "boost-libs", "boost", "sqlite3", "libxml2", "cmake", "curl"
+            "boost-libs", "boost", "sqlite3", "libxml2", "cmake", "curl",
+            "ninja"
         ]
     })
 
@@ -297,7 +298,10 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
         self.code_base.pull()
 
-    def build(self, build_type: BuildType, install_location: Path) -> None:
+    def build(
+        self, build_type: BuildType, install_location: Path,
+        build_folder_suffix: tp.Optional[str]
+    ) -> None:
         """
         Build/Compile VaRA in the specified ``build_type``. This method leaves
         VaRA in a finished state, i.e., being ready to be installed.
@@ -313,19 +317,19 @@ class VaRA(ResearchTool[VaRACodeBase]):
             )
             return
 
-        full_path /= build_type.build_folder()
+        build_folder_path = build_type.build_folder(build_folder_suffix)
+        full_path /= build_folder_path
+        build_args = [str(build_folder_path)] if build_folder_suffix else None
 
         # Setup configured build folder
         print(" - Setting up build folder.")
         if not os.path.exists(full_path):
             try:
                 os.makedirs(full_path.parent, exist_ok=True)
-                build_script = "./build_cfg/build-{build_type}.sh".format(
-                    build_type=str(build_type)
-                )
+                build_script = f"./build_cfg/build-{str(build_type)}.sh"
 
                 with ProcessManager.create_process(
-                    build_script, workdir=full_path.parent
+                    build_script, args=build_args, workdir=full_path.parent
                 ) as proc:
                     proc.setProcessChannelMode(QProcess.MergedChannels)
                     proc.readyReadStandardOutput.connect(
@@ -348,6 +352,8 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
         print(" - Now building...")
         # Compile llvm + VaRA
+        print("TEST_MARKER")
+        print(full_path)
         with ProcessManager.create_process(
             "ninja", ["install"], workdir=full_path
         ) as proc:
