@@ -24,16 +24,16 @@ from varats.ts_utils.cli_util import initialize_cli_tool
     help="Subprojects to work on or 'all' for all subprojects."
 )
 @click.argument(
-    "researchtool", type=click.Choice(get_supported_research_tool_names())
+    "research_tool", type=click.Choice(get_supported_research_tool_names())
 )
 @click.pass_context
 def main(
-    context: click.Context, researchtool: str, projects: tp.List[str]
+    context: click.Context, research_tool: str, projects: tp.List[str]
 ) -> None:
     """Handle and simplify common developer interactions with the project."""
     initialize_cli_tool()
 
-    tool = get_research_tool(researchtool)
+    tool = get_research_tool(research_tool)
     context.ensure_object(dict)
     context.obj["research_tool"] = tool
 

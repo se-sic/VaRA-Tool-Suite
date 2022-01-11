@@ -125,7 +125,7 @@ def config() -> None:
 
 
 @click.argument(
-    "researchtool", type=click.Choice(get_supported_research_tool_names())
+    "research_tool", type=click.Choice(get_supported_research_tool_names())
 )
 @click.option(
     "--version",
@@ -135,78 +135,79 @@ def config() -> None:
     help="Version to download."
 )
 @click.option(
-    "--sourcelocation",
+    "--source-location",
     type=click.Path(path_type=Path),
     required=False,
     help="Folder to store tool sources."
 )
 @click.option(
-    "--installprefix",
+    "--install-prefix",
     type=click.Path(path_type=Path),
     required=False,
     help="Tool install folder."
 )
 @main.command()
 def init(
-    version: tp.Optional[int], installprefix: tp.Optional[Path],
-    sourcelocation: tp.Optional[Path], researchtool: str
+    version: tp.Optional[int], install_prefix: tp.Optional[Path],
+    source_location: tp.Optional[Path], research_tool: str
 ) -> None:
     """Initialize a research tool and all its components."""
-    tool = get_research_tool(researchtool)
-    __build_setup_init(tool, sourcelocation, installprefix, version)
+    tool = get_research_tool(research_tool)
+    __build_setup_init(tool, source_location, install_prefix, version)
 
 
 @click.argument(
-    "researchtool", type=click.Choice(get_supported_research_tool_names())
+    "research_tool", type=click.Choice(get_supported_research_tool_names())
 )
 @main.command()
-def update(researchtool: str) -> None:
+def update(research_tool: str) -> None:
     """Update a research tool and all its components."""
-    tool = get_research_tool(researchtool)
+    tool = get_research_tool(research_tool)
     print_up_to_date_message(tool)
     tool.upgrade()
 
 
+@click.argument(
+    "research_tool", type=click.Choice(get_supported_research_tool_names())
+)
 @click.option(
     "--container",
     type=EnumChoice(ImageBase, case_sensitive=False),
     help="Build type to use for the tool build configuration."
 )
 @click.option(
-    "--installprefix",
+    "--install-prefix",
     type=click.Path(path_type=Path),
     required=False,
     help="Tool install folder."
 )
 @click.option(
-    "--sourcelocation",
+    "--source-location",
     type=click.Path(path_type=Path),
     required=False,
     help="Folder to store tool sources."
 )
 @click.option(
-    "--buildtype",
+    "--build-type",
     type=EnumChoice(BuildType, case_sensitive=False),
     default=BuildType.DEV,
     help="Build type to use for the tool build configuration."
 )
-@click.argument(
-    "researchtool", type=click.Choice(get_supported_research_tool_names())
-)
 @main.command()
 def build(
-    researchtool: str, buildtype: BuildType, sourcelocation: tp.Optional[Path],
-    installprefix: tp.Optional[Path], container: tp.Optional[ImageBase]
+    research_tool: str, build_type: BuildType,
+    source_location: tp.Optional[Path], install_prefix: tp.Optional[Path],
+    container: tp.Optional[ImageBase]
 ) -> None:
     """Build a research tool and all its components."""
-    tool = get_research_tool(researchtool, sourcelocation)
+    tool = get_research_tool(research_tool, source_location)
     show_major_release_prompt(tool)
 
     if container:
-        __build_in_container(tool, container, buildtype, installprefix)
+        __build_in_container(tool, container, build_type, install_prefix)
     else:
-        tool.build(buildtype, __get_install_prefix(tool, installprefix))
-        if tool.verify_install(__get_install_prefix(tool, installprefix)):
+        tool.build(build_type, __get_install_prefix(tool, install_prefix))
+        if tool.verify_install(__get_install_prefix(tool, install_prefix)):
             print(f"{tool.name} was correctly installed.")
         else:
             print(f"Could not install {tool.name} correctly.")
