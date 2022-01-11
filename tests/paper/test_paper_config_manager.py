@@ -186,7 +186,7 @@ class TestPaperConfigManager(unittest.TestCase):
     8798d5c4fd [Missing]
     2e654f9963 [Blocked]
     edfad78619 [Missing]
-    a3db5806d0 [Partial]
+    a3db5806d0 [Incomplete]
     e75f428c0d [Missing]
     1e7e3769dc [CompileError]
     9872ba420c [Missing]
@@ -206,7 +206,7 @@ class TestPaperConfigManager(unittest.TestCase):
     8798d5c4fd [Missing]
     2e654f9963 [Blocked]
     edfad78619 [Missing]
-    a3db5806d0 [Partial]
+    a3db5806d0 [Incomplete]
     e75f428c0d [Missing]
     1e7e3769dc [CompileError]
     9872ba420c [Missing]
@@ -273,7 +273,7 @@ class TestPaperConfigManager(unittest.TestCase):
     8798d5c4fd [Missing]
     2e654f9963 [Blocked]
     edfad78619 [Missing]
-    a3db5806d0 [Partial]
+    a3db5806d0 [Incomplete]
     e75f428c0d [Missing]
     1e7e3769dc [CompileError]
     9872ba420c [Missing]
@@ -296,7 +296,7 @@ class TestPaperConfigManager(unittest.TestCase):
     8798d5c4fd [Missing]
     2e654f9963 [Blocked]
     edfad78619 [Missing]
-    a3db5806d0 [Partial]
+    a3db5806d0 [Incomplete]
     e75f428c0d [Missing]
     1e7e3769dc [CompileError]
     9872ba420c [Missing]
@@ -363,7 +363,7 @@ class TestPaperConfigManager(unittest.TestCase):
     8798d5c4fd [Missing]
     2e654f9963 [Blocked]
     edfad78619 [Missing]
-    a3db5806d0 [Partial]
+    a3db5806d0 [Incomplete]
     e75f428c0d [Missing]
     1e7e3769dc [CompileError]
     9872ba420c [Missing]
@@ -381,13 +381,13 @@ class TestPaperConfigManager(unittest.TestCase):
         # pylint: disable=line-too-long
         self.assertEqual(
             PCM.get_legend(True),
-            """CS: project_42: (Success / Total) processed [Success/Partial/Failed/CompileError/Missing/Blocked]
+            """CS: project_42: (Success / Total) processed [Success/Incomplete/Failed/CompileError/Missing/Blocked]
 """
         )
 
         self.assertEqual(
             PCM.get_legend(False),
-            """CS: project_42: (Success / Total) processed [Success/Partial/Failed/CompileError/Missing/Blocked]
+            """CS: project_42: (Success / Total) processed [Success/Incomplete/Failed/CompileError/Missing/Blocked]
 """
         )
 

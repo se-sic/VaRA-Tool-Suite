@@ -22,7 +22,7 @@ class FileStatusExtension(Enum):
     value: tp.Tuple[str, Color]  # pylint: disable=invalid-name
 
     SUCCESS = ("success", colors.green)
-    PARTIAL = ("partial", colors.orangered1)
+    INCOMPLETE = ("incomplete", colors.orangered1)
     FAILED = ("failed", colors.lightred)
     COMPILE_ERROR = ("cerror", colors.red)
     MISSING = ("###", colors.yellow3a)
@@ -130,7 +130,7 @@ class FileStatusExtension(Enum):
             rhs == FileStatusExtension.SUCCESS and
             lhs != FileStatusExtension.SUCCESS
         ):
-            return FileStatusExtension.PARTIAL
+            return FileStatusExtension.INCOMPLETE
         return lhs
 
 
