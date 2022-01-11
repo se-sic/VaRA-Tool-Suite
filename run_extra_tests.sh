@@ -5,7 +5,7 @@
 # mkdir -p extra_tests/
 # cd extra_tests
 
-rm -r paper_configs/
+rm -rf paper_configs/
 mkdir -p paper_configs/
 
 function check_err {
