@@ -163,11 +163,22 @@ class ProjectBinaryWrapper():
     """
 
     def __init__(
-        self, binary_name: str, path_to_binary: Path, binary_type: BinaryType
+        self,
+        binary_name: str,
+        path_to_binary: Path,
+        binary_type: BinaryType,
+        entry_point: tp.Optional[Path] = None
     ) -> None:
         self.__binary_name = binary_name
         self.__binary_path = path_to_binary
         self.__type = binary_type
+
+        if binary_type is BinaryType.EXECUTABLE:
+            self.__entry_point = entry_point
+            if not self.entry_point:
+                self.__entry_point = self.path
+        else:
+            self.__entry_point = None
 
     @property
     def name(self) -> str:
@@ -184,6 +195,20 @@ class ProjectBinaryWrapper():
         """Specifies the type, e.g., executable, shared, or static library, of
         the binary."""
         return self.__type
+
+    @property
+    def entry_point(self) -> tp.Optional[Path]:
+        """Entry point to an executable "thing" that executes the wrapped
+        binary, if possible."""
+        return self.__entry_point
+
+    def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
+        if self.type is not BinaryType.EXECUTABLE:
+            LOG.warning(f"Executing {self.type} is not possible.")
+            return None
+
+        executable_entry_point = local[f"{self.entry_point}"]
+        return executable_entry_point(*args, **kwargs)
 
     def __str__(self) -> str:
         return f"{self.name}: {self.path} | {str(self.type)}"
