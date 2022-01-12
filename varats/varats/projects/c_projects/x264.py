@@ -16,7 +16,11 @@ from varats.project.project_util import (
     verify_binaries,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash, get_all_revisions_between
+from varats.utils.git_util import (
+    ShortCommitHash,
+    get_all_revisions_between,
+    RevisionBinaryMap,
+)
 from varats.utils.settings import bb_cfg
 
 
@@ -40,9 +44,13 @@ class X264(VProject):
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash  # pylint: disable=W0613
+        revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        return wrap_paths_to_binaries([("x264", BinaryType.EXECUTABLE)])
+        binary_map = RevisionBinaryMap(get_local_project_git_path(X264.NAME))
+
+        binary_map.specify_binary("x264", BinaryType.EXECUTABLE)
+
+        return binary_map[revision]
 
     def run_tests(self) -> None:
         pass
