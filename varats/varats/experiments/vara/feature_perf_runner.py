@@ -76,10 +76,12 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
                     VARA_TRACE_FILE=f"{vara_result_folder}/{result_file}"
                 ):
                     # TODO: figure out how to handle workloads
-                    # executable("/home/vulder/vara-root/Selection_050.png")
+                    binary(
+                        "-k", "/scratch/sattlerf/countries-land-1km.geo.json"
+                    )
 
                     # TODO: figure out how to handle different configs
-                    executable("--slow")
+                    #executable("--slow")
                     # executable()
 
         return actions.StepResult.OK
@@ -116,7 +118,10 @@ class FeaturePerfRunner(VersionExperiment, shorthand="FPR"):
             "-fvara-feature", f"-fvara-fm-path={fm_path.absolute()}"
         ]
         # Sets vara tracing flags
-        project.cflags += ["-fsanitize=vara", "-fvara-instr=trace_event"]
+        project.cflags += [
+            "-fsanitize=vara", "-fvara-instr=trace_event", "-flto"
+        ]
+        project.ldflags += ["-flto"]
 
         # Add the required runtime extensions to the project(s).
         project.runtime_extension = run.RuntimeExtension(project, self) \
