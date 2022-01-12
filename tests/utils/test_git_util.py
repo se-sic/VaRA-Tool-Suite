@@ -1,5 +1,6 @@
 """Test VaRA git utilities."""
 import unittest
+from pathlib import Path
 
 from benchbuild.utils.revision_ranges import RevisionRange
 from plumbum import local
