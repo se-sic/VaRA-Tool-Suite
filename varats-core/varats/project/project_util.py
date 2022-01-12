@@ -175,7 +175,7 @@ class ProjectBinaryWrapper():
 
         if binary_type is BinaryType.EXECUTABLE:
             self.__entry_point = entry_point
-            if not self.entry_point:
+            if not self.__entry_point:
                 self.__entry_point = self.path
         else:
             self.__entry_point = None
