@@ -1,5 +1,6 @@
 """Test VaRA git utilities."""
 import unittest
+from pathlib import Path
 
 from benchbuild.utils.revision_ranges import RevisionRange
 from plumbum import local
@@ -376,6 +377,21 @@ class TestRevisionBinaryMap(unittest.TestCase):
         )
 
         self.assertIn("Overridden", self.rv_map)
+
+    def test_specification_binaries_with_special_entry_point(self) -> None:
+        """Check if we can add binaries that have a special entry point."""
+        self.rv_map.specify_binary(
+            "build/bin/SingleLocalSimple",
+            BinaryType.EXECUTABLE,
+            override_entry_point="build/bin/OtherSLSEntry"
+        )
+
+        test_query = self.rv_map[ShortCommitHash("745424e3ae")]
+
+        self.assertEqual(
+            "build/bin/OtherSLSEntry", str(test_query[0].entry_point)
+        )
+        self.assertIsInstance(test_query[0].entry_point, Path)
 
     def test_wrong_contains_check(self) -> None:
         """Check if wrong values are correctly shows as not in the map."""
