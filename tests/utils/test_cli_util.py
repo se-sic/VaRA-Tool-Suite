@@ -61,7 +61,7 @@ class ResearchToolUtils(unittest.TestCase):
         self.assertEqual(vara.source_location(), configured_location)
 
 
-class TestEnum(Enum):
+class ExampleTestEnum(Enum):
     A = 0
     B = 1
     C = 2
@@ -83,9 +83,11 @@ class TestChoiceTypes(unittest.TestCase):
         self.assertEqual([1, 0], choice.convert("b, a", None, None))
 
     def test_enum_choice_convert_str(self):
-        choice = EnumChoice(TestEnum)
-        self.assertEqual(TestEnum.B, choice.convert("B", None, None))
+        choice = EnumChoice(ExampleTestEnum)
+        self.assertEqual(ExampleTestEnum.B, choice.convert("B", None, None))
 
     def test_enum_choice_convert_enum(self):
-        choice = EnumChoice(TestEnum)
-        self.assertEqual(TestEnum.B, choice.convert(TestEnum.B, None, None))
+        choice = EnumChoice(ExampleTestEnum)
+        self.assertEqual(
+            ExampleTestEnum.B, choice.convert(ExampleTestEnum.B, None, None)
+        )
