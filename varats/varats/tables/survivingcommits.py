@@ -6,10 +6,7 @@ from pathlib import Path
 import pandas as pd
 from tabulate import tabulate
 
-from varats.data.databases.blame_interaction_database import (
-    BlameInteractionDatabase,
-)
-from varats.mapping.commit_map import get_commit_map
+import varats.plots.surviving_commits
 from varats.paper.case_study import load_case_study_from_file
 from varats.project.project_util import get_local_project_git
 from varats.table.table import Table, wrap_table_in_document
@@ -30,12 +27,8 @@ class SurvivingInteractionsTable(Table):
         case_study = load_case_study_from_file(
             Path(self.table_kwargs['cs_path'])
         )
-        project_name = case_study.project_name
-        data = BlameInteractionDatabase().get_data_for_project(
-            project_name, [
-                "IN_HEAD_Interactions", "time_id", "revision",
-                'OUT_HEAD_Interactions', 'HEAD_Interactions'
-            ], get_commit_map(project_name), case_study
+        data = varats.plots.surviving_commits.get_normalized_interactions_per_commit(
+            case_study
         )
         if self.format in [
             TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
@@ -68,16 +61,21 @@ class SurvivingLinesTable(Table):
 
         project_name = case_study.project_name
         project_repo = get_local_project_git(project_name)
-        for revision in case_study.revisions:
-            lines_per_revision = calc_surviving_lines(project_repo, revision)
+        starting_lines = {}
+        for revision in case_study.revisions.__reversed__():
+            lines_per_revision = calc_surviving_lines(
+                project_repo, revision, case_study.revisions
+            )
+            starting_lines[revision] = lines_per_revision[revision] \
+                if lines_per_revision.__contains__(revision) else 1
             rev_dict = {
-                revision: {
-                    k: v
+                revision.__str__(): {
+                    k.__str__(): ((v / starting_lines[k]) * 100)
                     for (k, v) in lines_per_revision.items()
                     if case_study.revisions.__contains__(k)
                 }
             }
-            cs_data.append(pd.DataFrame.from_dict(rev_dict, orient="index"))
+            cs_data.append(pd.DataFrame(rev_dict))
         df = pd.concat(cs_data)
         if self.format in [
             TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
