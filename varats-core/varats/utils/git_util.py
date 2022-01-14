@@ -1,6 +1,7 @@
 """Utility module for handling git repos."""
 import abc
 import math
+import os
 import re
 import typing as tp
 from enum import Enum
@@ -993,7 +994,8 @@ def branch_has_upstream(
 
 
 def calc_surviving_lines(
-    repo: pygit2.Repository, revision: [str, FullCommitHash]
+    repo: pygit2.Repository, revision: [str, FullCommitHash],
+    revisions: tp.List[FullCommitHash]
 ) -> dict[FullCommitHash, int]:
     """
 
@@ -1007,7 +1009,7 @@ def calc_surviving_lines(
         "|".join(churn_config.get_extensions_repr(r"^.*\.", r"$"))
     )
 
-    lines_per_revision: dict = {}
+    lines_per_revision: dict = {k: numpy.NaN for k in revisions}
     with local.cwd(project_path):
         git("checkout", revision)
         files = git("ls-tree", "-r", "--name-only", revision).splitlines()
@@ -1019,7 +1021,9 @@ def calc_surviving_lines(
                     if line:
                         last_change = line[:FullCommitHash.hash_length()]
                         last_change = FullCommitHash(last_change)
-                        if lines_per_revision.keys().__contains__(last_change):
+                        if lines_per_revision.keys().__contains__(
+                            last_change
+                        ) and not math.isnan(lines_per_revision[last_change]):
                             lines_per_revision[
                                 last_change
                             ] = lines_per_revision[last_change] + 1
