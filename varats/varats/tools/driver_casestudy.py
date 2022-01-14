@@ -327,7 +327,7 @@ def __init_commit_hash(
                 )
             )
 
-        max_num_hashes = 15
+        max_num_hashes = 20
         if len(available_commit_hashes) > max_num_hashes:
             print("Found to many commit hashes, truncating selection...")
 
