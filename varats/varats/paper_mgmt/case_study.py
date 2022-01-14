@@ -454,7 +454,8 @@ def extend_with_smooth_revs(
         ignore_blocked: ignore_blocked revisions
         merge_stage: stage the revisions will be added to
         plot: Plot to calculate new revisions from.
-        boundary_gradient_int: Maximal expected gradient in percent between two revisions
+        boundary_gradient_int: Maximal expected gradient in percent between
+            two revisions
     """
     # convert input to float %
     boundary_gradient = boundary_gradient_int / float(100)

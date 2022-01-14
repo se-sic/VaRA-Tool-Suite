@@ -164,7 +164,7 @@ def __casestudy_status(
 )
 @click.pass_context
 def __casestudy_gen(
-    ctx: click.Context, project: tp.Optional[str], override: bool, version: int,
+    ctx: click.Context, project: str, override: bool, version: int,
     ignore_blocked: bool, merge_stage: tp.Optional[str], new_stage: bool
 ) -> None:
     """Generate or extend a CaseStudy Sub commands can be chained to for example
@@ -176,7 +176,7 @@ def __casestudy_gen(
     ctx.obj['path'] = Path(vara_cfg()["paper_config"]["folder"].value) / (
             vara_cfg()["paper_config"]["current_config"].value \
             + f"/{project}_{version}.case_study")
-    ctx.obj['git_path'] = str(get_local_project_git_path(project))
+    ctx.obj['git_path'] = get_local_project_git_path(project)
     if override or not ctx.obj['path'].exists():
         case_study = CaseStudy(ctx.obj['project'], version)
         if merge_stage:
@@ -191,29 +191,33 @@ def __casestudy_gen(
                 case_study.insert_empty_stage(stage_index)
                 case_study.name_stage(stage_index, merge_stage)
             else:
-                stage_index = case_study.get_stage_index_by_name(merge_stage)
-                if not stage_index:
-                    selected_stage: str = merge_stage
+                stage_index_opt = case_study\
+                    .get_stage_index_by_name(merge_stage)
+                if not stage_index_opt:
+                    selected_stage = CSStage(merge_stage)
 
-                    def set_merge_stage(stage: CSStage):
+                    def set_merge_stage(stage: CSStage) -> None:
                         nonlocal selected_stage
-                        selected_stage = stage.name
+                        selected_stage = stage
 
-                    stage_choices = [CSStage(merge_stage)]
-                    stage_choices.extend(case_study.stages)
+                    stage_choices = [selected_stage]
+                    stage_choices.extend([
+                        stage for stage in case_study.stages if stage.name
+                    ])
                     cli_list_choice(
                         f"The given stage({merge_stage}) does not exist,"
                         f" do you want to create it or select an existing one",
-                        stage_choices, lambda x: x.name, set_merge_stage
+                        stage_choices, lambda x: x.name
+                        if x.name else "", set_merge_stage
                     )
-                    if selected_stage == merge_stage:
+                    if selected_stage.name == merge_stage:
                         stage_index = case_study.num_stages
                         case_study.insert_empty_stage(stage_index)
-                        case_study.name_stage(stage_index, selected_stage)
+                        case_study.name_stage(stage_index, selected_stage.name)
                     else:
-                        stage_index = case_study.get_stage_index_by_name(
-                            selected_stage
-                        )
+                        stage_index = case_study.stages.index(selected_stage)
+                else:
+                    stage_index = stage_index_opt
             ctx.obj['merge_stage'] = stage_index
 
         else:
@@ -339,10 +343,10 @@ class SmoothPlotCLI(click.MultiCommand):
             try:
                 generator_instance = generator_cls(plot_config, **kwargs)
                 plots = generator_instance.generate()
-                plot = None
+                plot = plots[0]
                 if len(plots) > 1:
 
-                    def set_plot(selected_plot: Plot):
+                    def set_plot(selected_plot: Plot) -> None:
                         nonlocal plot
                         plot = selected_plot
 
@@ -350,8 +354,6 @@ class SmoothPlotCLI(click.MultiCommand):
                         "The given plot generator creates multiple plots"
                         " please select one:", plots, lambda p: p.name, set_plot
                     )
-                else:
-                    plot = plots[0]
                 cmap = create_lazy_commit_map_loader(
                     context.obj['project'], None, 'HEAD', None
                 )()
