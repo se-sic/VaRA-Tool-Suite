@@ -235,13 +235,13 @@ def create_default_error_handler(
     )
 
     return PEErrorHandler(
-        str(error_output_folder),
+        error_output_folder,
         str(
             experiment_handle.get_file_name(
                 report_type.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name if binary else "all",
-                project_revision=project.version_of_primary,
+                project_revision=ShortCommitHash(project.version_of_primary),
                 project_uuid=str(project.run_uuid),
                 extension_type=error_type
             )

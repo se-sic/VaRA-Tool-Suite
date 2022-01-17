@@ -557,9 +557,11 @@ def __casestudy_view(
     def open_in_editor(result_file: Path) -> None:
         _ = editor[str(result_file)] & FG
 
-    editor_name = local.env["EDITOR"]
-    if not editor_name:
-        editor_name = "vim"
+    editor_name = "vim"  # set's default editor
+
+    if "EDITOR" in local.env:
+        editor_name = local.env["EDITOR"]
+
     editor = local[editor_name]
     try:
         cli_list_choice(

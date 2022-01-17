@@ -155,8 +155,8 @@ def prepare_tables(**args: tp.Any) -> tp.Iterable['table.Table']:
     # pylint: disable=C0415
     from varats.paper.case_study import load_case_study_from_file
     from varats.paper_mgmt.paper_config import get_paper_config
-    # pylint: enable=C0415
 
+    # pylint: enable=C0415
     # Setup default result folder
     if 'result_output' not in args:
         args['table_dir'] = str(vara_cfg()['tables']['table_dir'])
