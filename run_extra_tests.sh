@@ -42,16 +42,16 @@ check_err
 $COVERAGE $(which vara-pc) list
 check_err
 
-$COVERAGE $(which vara-cs) gen -p gravity select_smaple HalfNormalSamplingMethod # benchbuild/tmp/gzip-HEAD #gzip/
+$COVERAGE $(which vara-cs) gen -p gravity select_sample HalfNormalSamplingMethod # benchbuild/tmp/gzip-HEAD #gzip/
 check_err
 
-$COVERAGE $(which vara-cs) gen -p gravity --merge-stage 3 select_specific  0dd8313ea7bce  #gravity/
+$COVERAGE $(which vara-cs) gen -p gravity --merge-stage 3 --new-stage select_specific  0dd8313ea7bce  #gravity/
 check_err
 
-$COVERAGE $(which vara-cs) gen -p gravity select_smaple UniformSamplingMethod --num-rev 5 #gravity/
+$COVERAGE $(which vara-cs) gen -p gravity select_sample UniformSamplingMethod --num-rev 5 #gravity/
 check_err
 
-$COVERAGE $(which vara-cs) gen -p gravity --merge-stage 4 select_release major  #gravity/
+$COVERAGE $(which vara-cs) gen -p gravity --merge-stage 4 --new-stage select_release major  #gravity/
 check_err
 
 $COVERAGE $(which vara-cs) status EmptyReport
