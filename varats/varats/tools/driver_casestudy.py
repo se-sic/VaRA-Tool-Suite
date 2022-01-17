@@ -4,7 +4,6 @@ import logging
 import os
 import re
 import typing as tp
-from enum import Enum
 from pathlib import Path
 
 import click
@@ -409,8 +408,7 @@ def _remove_old_result_files() -> None:
                     else:
                         old_files.append(opt_res_file)
         for file in old_files:
-            if file.exists():
-                os.remove(file)
+            file.unlink(missing_ok=True)
 
 
 @cleanup.command("error")
@@ -427,7 +425,8 @@ def _remove_error_result_files() -> None:
                 report_file_name.has_status_compileerror() or
                 report_file_name.has_status_failed()
             ):
-                os.remove(result_dir_path / result_file_name)
+                Path(result_dir_path / report_file_name.filename)\
+                    .unlink(missing_ok=True)
 
 
 @cleanup.command("regex")
@@ -440,7 +439,7 @@ def _remove_error_result_files() -> None:
 @click.option(
     "--silent", help="Hide the output of the matching filenames", is_flag=True
 )
-def _remove_result_files_by_regex(regex_filter: str, hide: bool) -> None:
+def _remove_result_files_by_regex(regex_filter: str, silent: bool) -> None:
     """Remove result files based on a given regex filter."""
     result_dir_paths = _find_result_dir_paths_of_projects()
 
@@ -454,7 +453,7 @@ def _remove_result_files_by_regex(regex_filter: str, hide: bool) -> None:
         if not files_to_delete:
             print(f"No matching result files in {result_dir_path} found.")
             continue
-        if not hide:
+        if not silent:
             for file_name in files_to_delete:
                 print(f"{file_name}")
         print(
@@ -465,8 +464,8 @@ def _remove_result_files_by_regex(regex_filter: str, hide: bool) -> None:
         try:
             if cli_yn_choice("Do you want to delete these files", "n"):
                 for file_name in files_to_delete:
-                    if Path.exists(result_dir_path / file_name):
-                        os.remove(result_dir_path / file_name)
+
+                    Path(result_dir_path / file_name).unlink(missing_ok=True)
         except EOFError:
             continue
 
@@ -484,12 +483,6 @@ def _find_result_dir_paths_of_projects() -> tp.List[Path]:
             existing_paper_config_result_dir_paths.append(path)
 
     return existing_paper_config_result_dir_paths
-
-
-class CleanupType(Enum):
-    OLD = 0
-    ERROR = 1
-    REGEX = 2
 
 
 if __name__ == '__main__':
