@@ -440,7 +440,7 @@ def extend_with_distrib_sampling(
 
 
 def extend_with_smooth_revs(
-    case_study: CaseStudy, cmap: CommitMap, boundary_gradient_int: int,
+    case_study: CaseStudy, cmap: CommitMap, boundary_gradient: int,
     ignore_blocked: bool, plot: Plot, merge_stage: int
 ) -> None:
     """
@@ -454,13 +454,13 @@ def extend_with_smooth_revs(
         ignore_blocked: ignore_blocked revisions
         merge_stage: stage the revisions will be added to
         plot: Plot to calculate new revisions from.
-        boundary_gradient_int: Maximal expected gradient in percent between
+        boundary_gradient: Maximal expected gradient in percent between
             two revisions
     """
     # convert input to float %
-    boundary_gradient = boundary_gradient_int / float(100)
-    print("Using boundary gradient: ", boundary_gradient)
-    new_revisions = plot.calc_missing_revisions(boundary_gradient)
+    gradient = boundary_gradient / float(100)
+    print("Using boundary gradient: ", gradient)
+    new_revisions = plot.calc_missing_revisions(gradient)
 
     if ignore_blocked:
         new_revisions = set(

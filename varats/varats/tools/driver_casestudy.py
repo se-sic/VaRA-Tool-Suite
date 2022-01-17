@@ -173,15 +173,24 @@ def __casestudy_gen(
     ctx.obj['project'] = project
     ctx.obj['ignore_blocked'] = ignore_blocked
     ctx.obj['version'] = version
-    ctx.obj['path'] = Path(vara_cfg()["paper_config"]["folder"].value) / (
-            vara_cfg()["paper_config"]["current_config"].value \
-            + f"/{project}_{version}.case_study")
+    paper_config = vara_cfg()["paper_config"]["current_config"].value
+    if not paper_config:
+        click.echo(
+            "You need to create a paper config first"
+            " using vara-pc create"
+        )
+        return
+    ctx.obj['path'] = Path(
+        vara_cfg()["paper_config"]["folder"].value
+    ) / (paper_config + f"/{project}_{version}.case_study")
+    click.echo(ctx.obj['path'])
     ctx.obj['git_path'] = get_local_project_git_path(project)
     if override or not ctx.obj['path'].exists():
         case_study = CaseStudy(ctx.obj['project'], version)
         if merge_stage:
             case_study.insert_empty_stage(0)
             case_study.name_stage(0, merge_stage)
+        ctx.obj["merge_stage"] = 0
     else:
         case_study = load_case_study_from_file(ctx.obj['path'])
         ctx.obj['custom_stage'] = bool(merge_stage)
@@ -242,10 +251,10 @@ def __gen_latest(ctx: click.Context) -> None:
     store_case_study(case_study, ctx.obj['path'])
 
 
-@__casestudy_gen.command("select_simple")
+@__casestudy_gen.command("select_specific")
 @click.argument("revisions", nargs=-1)
 @click.pass_context
-def __gen_simple(ctx: click.Context, revisions: tp.List[str]) -> None:
+def __gen_specific(ctx: click.Context, revisions: tp.List[str]) -> None:
     """
     Adds a list of specified revisions to the CS.
 
