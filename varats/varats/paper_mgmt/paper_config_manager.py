@@ -24,14 +24,14 @@ from varats.utils.settings import vara_cfg
 
 
 def show_status_of_case_studies(
-    report_name: str, filter_regex: str, short_status: bool, sort: bool,
-    print_rev_list: bool, sep_stages: bool, print_legend: bool
+    report_type: tp.Type['BaseReport'], filter_regex: str, short_status: bool,
+    sort: bool, print_rev_list: bool, sep_stages: bool, print_legend: bool
 ) -> None:
     """
     Prints the status of all matching case studies to the console.
 
     Args:
-        report_name: name of the report whose files will be considered
+        report_type: report type whose files will be considered
         filter_regex: applied to a ``name_version`` string for filtering the
                       amount of case studies to be shown
         short_status: print only a short version of the status information
@@ -63,7 +63,6 @@ def show_status_of_case_studies(
     if print_legend:
         print(get_legend(True))
 
-    report_type = BaseReport.REPORT_TYPES[report_name]
     total_status_occurrences: tp.DefaultDict[
         FileStatusExtension, tp.Set[ShortCommitHash]] = defaultdict(set)
 

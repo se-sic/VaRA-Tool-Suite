@@ -301,7 +301,7 @@ def get_unique_cs_name(case_studies: tp.List[CaseStudy]) -> tp.List[str]:
 
 @check_required_args('extra_revs', 'git_path')
 def generate_case_study(
-    sampling_method: NormalSamplingMethod, cmap: CommitMap,
+    sampling_method: tp.Optional[NormalSamplingMethod], cmap: CommitMap,
     case_study_version: int, project_name: str, **kwargs: tp.Any
 ) -> CaseStudy:
     """
@@ -326,7 +326,7 @@ def generate_case_study(
     if kwargs['revs_per_year'] > 0:
         extend_with_revs_per_year(case_study, cmap, **kwargs)
 
-    if (
+    if sampling_method and (
         isinstance(
             sampling_method, (HalfNormalSamplingMethod, UniformSamplingMethod)
         )
