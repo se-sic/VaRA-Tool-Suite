@@ -4,7 +4,6 @@ import logging
 import os
 import re
 import typing as tp
-from enum import Enum
 from pathlib import Path
 
 import click
@@ -78,11 +77,6 @@ def main() -> None:
     help="Provide a regex to filter the shown case studies",
     default=".*"
 )
-@click.option(
-    "--paper-config",
-    help="Use this paper config instead of the configured one",
-    default=None
-)
 @click.option("-s", "--short", is_flag=True, help="Only print a short summary")
 @click.option(
     "--list-revs",
@@ -109,9 +103,9 @@ def main() -> None:
     "(e.g. when piping to less -r)."
 )
 def __casestudy_status(
-    report_type: tp.Type['BaseReport'], filter_regex: str, paper_config: str,
-    short: bool, list_revs: bool, with_stage: bool, sort_revs: bool,
-    legend: bool, force_color: bool
+    report_type: tp.Type['BaseReport'], filter_regex: str, short: bool,
+    list_revs: bool, with_stage: bool, sort_revs: bool, legend: bool,
+    force_color: bool
 ) -> None:
     """
     Show status of current case study.
@@ -121,8 +115,6 @@ def __casestudy_status(
     """
     if force_color:
         colors.use_color = True
-    if paper_config:
-        vara_cfg()['paper_config']['current_config'] = paper_config
     if short and list_revs:
         click.UsageError(
             "At most one argument of: --short, --list-revs can be used."
@@ -496,9 +488,16 @@ def __casestudy_package(
 
 
 @main.command("view")
-@click.argument("report-type", type=create_report_type_choice())
-@click.argument("project")
-@click.argument("commit-hash", required=False)
+@click.option(
+    "--report-type",
+    type=create_report_type_choice(),
+    required=True,
+    help="Report type of the result files."
+)
+@click.option(
+    "--project", required=True, help="Project to view result files for."
+)
+@click.option("--commit-hash", help="Commit hash to view result files for.")
 @click.option(
     "--newest-only",
     is_flag=True,
@@ -508,13 +507,7 @@ def __casestudy_view(
     report_type: str, project: str, commit_hash: ShortCommitHash,
     newest_only: bool
 ) -> None:
-    """
-    View report files.
-
-    REPORT_TYPE: Report type of the result files.
-    PROJECT: Project to view result files for.
-    COMMIT_HASH: Commit hash to view result files for.
-    """
+    """View report files."""
     result_file_type = BaseReport.REPORT_TYPES[report_type]
     try:
         commit_hash = __init_commit_hash(result_file_type, project, commit_hash)
@@ -593,7 +586,7 @@ def __init_commit_hash(
                 )
             )
 
-        max_num_hashes = 42
+        max_num_hashes = 20
         if len(available_commit_hashes) > max_num_hashes:
             print("Found to many commit hashes, truncating selection...")
 
@@ -675,8 +668,7 @@ def _remove_old_result_files() -> None:
                     else:
                         old_files.append(opt_res_file)
         for file in old_files:
-            if file.exists():
-                os.remove(file)
+            file.unlink(missing_ok=True)
 
 
 @cleanup.command("error")
@@ -693,7 +685,8 @@ def _remove_error_result_files() -> None:
                 report_file_name.has_status_compileerror() or
                 report_file_name.has_status_failed()
             ):
-                os.remove(result_dir_path / result_file_name)
+                Path(result_dir_path / report_file_name.filename)\
+                    .unlink(missing_ok=True)
 
 
 @cleanup.command("regex")
@@ -701,12 +694,13 @@ def _remove_error_result_files() -> None:
     "--filter-regex",
     "-f",
     "regex_filter",
-    prompt="Specify a regex for the filenames to delete"
+    prompt="Specify a regex for the filenames to delete",
+    type=str
 )
 @click.option(
     "--silent", help="Hide the output of the matching filenames", is_flag=True
 )
-def _remove_result_files_by_regex(regex_filter: str, hide: bool) -> None:
+def _remove_result_files_by_regex(regex_filter: str, silent: bool) -> None:
     """Remove result files based on a given regex filter."""
     result_dir_paths = _find_result_dir_paths_of_projects()
 
@@ -720,7 +714,7 @@ def _remove_result_files_by_regex(regex_filter: str, hide: bool) -> None:
         if not files_to_delete:
             print(f"No matching result files in {result_dir_path} found.")
             continue
-        if not hide:
+        if not silent:
             for file_name in files_to_delete:
                 print(f"{file_name}")
         print(
@@ -731,8 +725,7 @@ def _remove_result_files_by_regex(regex_filter: str, hide: bool) -> None:
         try:
             if cli_yn_choice("Do you want to delete these files", "n"):
                 for file_name in files_to_delete:
-                    if Path.exists(result_dir_path / file_name):
-                        os.remove(result_dir_path / file_name)
+                    Path(result_dir_path / file_name).unlink(missing_ok=True)
         except EOFError:
             continue
 
@@ -750,12 +743,6 @@ def _find_result_dir_paths_of_projects() -> tp.List[Path]:
             existing_paper_config_result_dir_paths.append(path)
 
     return existing_paper_config_result_dir_paths
-
-
-class CleanupType(Enum):
-    OLD = 0
-    ERROR = 1
-    REGEX = 2
 
 
 if __name__ == '__main__':
