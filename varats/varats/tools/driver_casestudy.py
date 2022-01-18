@@ -112,8 +112,8 @@ def __casestudy_status(
     """
     Show status of current case study.
 
-    EXPERIMENT-NAME: Provide a experiment name to select which files are considered
-    for the status
+    EXPERIMENT-NAME: Provide a experiment name to select which files are
+    considered for the status
     """
     if force_color:
         colors.use_color = True

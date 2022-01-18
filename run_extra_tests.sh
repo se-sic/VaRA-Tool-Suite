@@ -65,7 +65,7 @@ check_err
 $COVERAGE $(which vara-cs) gen -p test-taint-tests select_specific f3729ae7f861dab7975f5c
 check_err
 
-$COVERAGE $(which vara-cs) status EmptyReport | grep -q f3729ae7f8
+$COVERAGE $(which vara-cs) status JustCompile | grep -q f3729ae7f8
 check_err
 
 #rm -rf extra_tests/
