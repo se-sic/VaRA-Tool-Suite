@@ -54,9 +54,6 @@ check_err
 
 $COVERAGE $(which vara-cs) gen -p gravity --merge-stage 4 --new-stage select_release major  #gravity/
 check_err
-$COVERAGE $(which vara-cs) status EmptyReport
-check_err
-
 
 # Tests that we can add extra refs from other branches if a refspec is specified
 
