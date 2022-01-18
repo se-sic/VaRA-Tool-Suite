@@ -54,7 +54,6 @@ check_err
 
 $COVERAGE $(which vara-cs) gen -p gravity --merge-stage 4 --new-stage select_release major  #gravity/
 check_err
-
 $COVERAGE $(which vara-cs) status EmptyReport
 check_err
 
@@ -64,6 +63,7 @@ check_err
 #has been moved to a unit tests, has to remain until all test have been moved
 $COVERAGE $(which vara-pc) create test_extra_refs
 check_err
+
 
 $COVERAGE $(which vara-cs) gen -p test-taint-tests select_specific f3729ae7f861dab7975f5c
 check_err

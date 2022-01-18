@@ -36,7 +36,6 @@ from varats.plot.plots import PlotGenerator, PlotConfig, PlotGeneratorFailed
 from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
-from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.ts_utils.cli_util import (
@@ -56,11 +55,12 @@ from varats.utils.settings import vara_cfg
 LOG = logging.getLogger(__name__)
 
 
+
 def create_plot_type_choice() -> TypedChoice[tp.Type[Plot]]:
     initialize_plots()
     return TypedChoice(Plot.PLOTS)
 
-
+  
 @click.group()
 @configuration_lookup_error_handler
 def main() -> None:
