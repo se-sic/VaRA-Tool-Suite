@@ -11,11 +11,9 @@ from varats.provider.provider import Provider
 from varats.utils.git_util import FullCommitHash
 
 if sys.version_info <= (3, 8):
-    from typing_extensions import Protocol
-    from typing_extensions import runtime_checkable
+    from typing_extensions import Protocol, runtime_checkable
 else:
-    from typing import Protocol
-    from typing import runtime_checkable
+    from typing import Protocol, runtime_checkable
 
 
 @runtime_checkable

@@ -13,11 +13,12 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
+    get_local_project_git_path,
     BinaryType,
     verify_binaries,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 from varats.utils.settings import bb_cfg
 
 
@@ -55,11 +56,13 @@ class Poppler(VProject):
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash  # pylint: disable=W0613
+        revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        return wrap_paths_to_binaries([
-            ("libpoppler.so", BinaryType.SHARED_LIBRARY)
-        ])
+        binary_map = RevisionBinaryMap(get_local_project_git_path(Poppler.NAME))
+
+        binary_map.specify_binary("libpoppler.so", BinaryType.SHARED_LIBRARY)
+
+        return binary_map[revision]
 
     def run_tests(self) -> None:
         pass
