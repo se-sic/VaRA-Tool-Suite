@@ -12,11 +12,7 @@ from pathlib import Path
 import pygit2
 from benchbuild import Project
 
-from varats.base.sampling_method import (
-    NormalSamplingMethod,
-    UniformSamplingMethod,
-    HalfNormalSamplingMethod,
-)
+from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.reports.szz_report import (
     SZZReport,
     SZZUnleashedReport,
@@ -33,7 +29,10 @@ from varats.plot.plot_utils import check_required_args
 from varats.project.project_util import get_project_cls_by_name
 from varats.provider.bug.bug import RawBug
 from varats.provider.bug.bug_provider import BugProvider
-from varats.provider.release.release_provider import ReleaseProvider
+from varats.provider.release.release_provider import (
+    ReleaseProvider,
+    ReleaseType,
+)
 from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
 from varats.revision.revisions import (
     get_failed_revisions,
@@ -295,86 +294,11 @@ def get_unique_cs_name(case_studies: tp.List[CaseStudy]) -> tp.List[str]:
 
 
 ###############################################################################
-# Case-study generation
-###############################################################################
-
-
-@check_required_args('extra_revs', 'git_path')
-def generate_case_study(
-    sampling_method: tp.Optional[NormalSamplingMethod], cmap: CommitMap,
-    case_study_version: int, project_name: str, **kwargs: tp.Any
-) -> CaseStudy:
-    """
-    Generate a case study for a given project.
-
-    This function will draw `num_samples` revisions from the history of the
-    given project and persists the selected set into a case study for
-    evaluation.
-
-    Args:
-        sampling_method: to use for revision sampling
-        cmap: commit map to map revisions to unique IDs
-        case_study_version: version to set for the case study
-        project_name: name of the project so sample from
-        kwargs: additional args that should be passed on to the strategy
-
-    Returns:
-        a new case study
-    """
-    case_study = CaseStudy(project_name, case_study_version)
-
-    if kwargs['revs_per_year'] > 0:
-        extend_with_revs_per_year(case_study, cmap, **kwargs)
-
-    if sampling_method and (
-        isinstance(
-            sampling_method, (HalfNormalSamplingMethod, UniformSamplingMethod)
-        )
-    ):
-        extend_with_distrib_sampling(case_study, cmap, **kwargs)
-
-    if kwargs['extra_revs']:
-        extend_with_extra_revs(case_study, cmap, **kwargs)
-
-    return case_study
-
-
-###############################################################################
 # Case-study extender
 ###############################################################################
-
-
-def extend_case_study(
-    case_study: CaseStudy, cmap: CommitMap, ext_strategy: ExtenderStrategy,
-    **kwargs: tp.Any
-) -> None:
-    """
-    Extend a case study inplace with new revisions according to the specified
-    extender strategy.
-
-    Args:
-        case_study: to extend
-        cmap: commit map to map revisions to unique IDs
-        ext_strategy: determines how the case study should be extended
-    """
-
-    if ext_strategy is ExtenderStrategy.SIMPLE_ADD:
-        extend_with_extra_revs(case_study, cmap, **kwargs)
-    elif ext_strategy is ExtenderStrategy.DISTRIB_ADD:
-        extend_with_distrib_sampling(case_study, cmap, **kwargs)
-    elif ext_strategy is ExtenderStrategy.SMOOTH_PLOT:
-        extend_with_smooth_revs(case_study, cmap, **kwargs)
-    elif ext_strategy is ExtenderStrategy.PER_YEAR_ADD:
-        extend_with_revs_per_year(case_study, cmap, **kwargs)
-    elif ext_strategy is ExtenderStrategy.RELEASE_ADD:
-        extend_with_release_revs(case_study, cmap, **kwargs)
-    elif ext_strategy is ExtenderStrategy.ADD_BUGS:
-        extend_with_bug_commits(case_study, cmap, **kwargs)
-
-
-@check_required_args('extra_revs', 'merge_stage')
 def extend_with_extra_revs(
-    case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
+    case_study: CaseStudy, cmap: CommitMap, extra_revs: tp.List[str],
+    merge_stage: int
 ) -> None:
     """
     Extend a case_study with extra revisions, specified by the caller with
@@ -383,10 +307,9 @@ def extend_with_extra_revs(
     Args:
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
+        extra_revs: revisions to add to the case_study
+        merge_stage: stage to add the new revisions to
     """
-    extra_revs = kwargs['extra_revs']
-    merge_stage = kwargs['merge_stage']
-
     new_rev_items = [(FullCommitHash(rev), idx)
                      for rev, idx in cmap.mapping_items()
                      if any(map(rev.startswith, extra_revs))]
@@ -394,19 +317,21 @@ def extend_with_extra_revs(
     case_study.include_revisions(new_rev_items, merge_stage, True)
 
 
-@check_required_args(
-    'git_path', 'revs_per_year', 'merge_stage', 'revs_year_sep'
-)
 def extend_with_revs_per_year(
-    case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
+    case_study: CaseStudy, cmap: CommitMap, merge_stage: int,
+    ignore_blocked: bool, git_path: str, revs_per_year: int, revs_year_sep: bool
 ) -> None:
     """
-    Extend a case_study with ``n`` revisions per year, specifed by the caller
-    with kwargs['revs_per_year'].
+    Extend a case_study with ``revs_per_year`` revisions per year.
 
     Args:
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
+        merge_stage: stage to add the new revisions to
+        ignore_blocked: ignore blocked revisions'
+        git_path: git path to the project
+        revs_per_year:  revisions to add per year
+        revs_year_sep: put revisions in separate stages for each year
     """
 
     def parse_int_string(string: tp.Optional[str]) -> tp.Optional[int]:
@@ -440,9 +365,8 @@ def extend_with_revs_per_year(
         case_study.name_stage(num_stages, str(year))
         return num_stages
 
-    repo = pygit2.Repository(pygit2.discover_repository(kwargs['git_path']))
+    repo = pygit2.Repository(pygit2.discover_repository(git_path))
     last_commit = repo[repo.head.target]
-    revs_year_sep = kwargs['revs_year_sep']
 
     commits: tp.DefaultDict[int, tp.List[FullCommitHash]] = defaultdict(
         list
@@ -455,14 +379,14 @@ def extend_with_revs_per_year(
 
     new_rev_items = []  # new revisions that get added to to case_study
     for year, commits_in_year in commits.items():
-        samples = min(len(commits_in_year), kwargs['revs_per_year'])
+        samples = min(len(commits_in_year), revs_per_year)
         sample_commit_indices = sorted(
             random.sample(range(len(commits_in_year)), samples)
         )
 
         for commit_index in sample_commit_indices:
             commit_hash = commits_in_year[commit_index]
-            if kwargs["ignore_blocked"] and is_revision_blocked(
+            if ignore_blocked and is_revision_blocked(
                 commit_hash.to_short_commit_hash(),
                 get_project_cls_by_name(case_study.project_name)
             ):
@@ -471,17 +395,16 @@ def extend_with_revs_per_year(
             new_rev_items.append((commit_hash, time_id))
 
         if revs_year_sep:
-            stage_index = get_or_create_stage_for_year(year)
-        else:
-            stage_index = kwargs['merge_stage']
+            merge_stage = get_or_create_stage_for_year(year)
 
-        case_study.include_revisions(new_rev_items, stage_index, True)
+        case_study.include_revisions(new_rev_items, merge_stage, True)
         new_rev_items.clear()
 
 
-@check_required_args('distribution', 'merge_stage', 'num_rev')
 def extend_with_distrib_sampling(
-    case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
+    case_study: CaseStudy, cmap: CommitMap,
+    sampling_method: NormalSamplingMethod, merge_stage: int, num_rev: int,
+    ignore_blocked: bool
 ) -> None:
     """
     Extend a case study by sampling 'num_rev' new revisions, according to
@@ -490,10 +413,14 @@ def extend_with_distrib_sampling(
     Args:
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
+        ignore_blocked: ignore_blocked revisions
+        num_rev: number of revisions to add
+        merge_stage: stage the revisions will be added to
+        sampling_method: distribution to use for sampling
     """
     is_blocked: tp.Callable[[ShortCommitHash, tp.Type[Project]],
                             bool] = lambda rev, _: False
-    if kwargs["ignore_blocked"]:
+    if ignore_blocked:
         is_blocked = is_revision_blocked
 
     # Needs to be sorted so the propability distribution over the length
@@ -502,22 +429,19 @@ def extend_with_distrib_sampling(
     revision_list = [
         (FullCommitHash(rev), idx)
         for rev, idx in sorted(list(cmap.mapping_items()), key=lambda x: x[1])
-        if not case_study.
-        has_revision_in_stage(ShortCommitHash(rev), kwargs['merge_stage']) and
-        not is_blocked(ShortCommitHash(rev), project_cls)
+        if
+        not case_study.has_revision_in_stage(ShortCommitHash(rev), merge_stage)
+        and not is_blocked(ShortCommitHash(rev), project_cls)
     ]
 
-    sampling_method: NormalSamplingMethod = kwargs['distribution']
-
     case_study.include_revisions(
-        sampling_method.sample_n(revision_list, kwargs['num_rev']),
-        kwargs['merge_stage']
+        sampling_method.sample_n(revision_list, num_rev), merge_stage
     )
 
 
-@check_required_args('plot_type', 'boundary_gradient')
 def extend_with_smooth_revs(
-    case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
+    case_study: CaseStudy, cmap: CommitMap, boundary_gradient: int,
+    ignore_blocked: bool, plot: Plot, merge_stage: int
 ) -> None:
     """
     Extend a case study with extra revisions that could smooth plot curves. This
@@ -527,18 +451,18 @@ def extend_with_smooth_revs(
     Args:
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
+        ignore_blocked: ignore_blocked revisions
+        merge_stage: stage the revisions will be added to
+        plot: Plot to calculate new revisions from.
+        boundary_gradient: Maximal expected gradient in percent between
+            two revisions
     """
-    plot_type = Plot.get_class_for_plot_type(kwargs['plot_type'])
-
-    kwargs['plot_case_study'] = case_study
-    kwargs['cmap'] = cmap
-    plot = plot_type(**kwargs)
     # convert input to float %
-    boundary_gradient = kwargs['boundary_gradient'] / float(100)
-    print("Using boundary gradient: ", boundary_gradient)
-    new_revisions = plot.calc_missing_revisions(boundary_gradient)
+    gradient = boundary_gradient / float(100)
+    print("Using boundary gradient: ", gradient)
+    new_revisions = plot.calc_missing_revisions(gradient)
 
-    if kwargs["ignore_blocked"]:
+    if ignore_blocked:
         new_revisions = set(
             filter_blocked_revisions(
                 list(new_revisions),
@@ -554,7 +478,7 @@ def extend_with_smooth_revs(
         print("Found new revisions: ", new_revisions)
         case_study.include_revisions([
             (rev, cmap.time_id(rev)) for rev in new_revisions
-        ], kwargs['merge_stage'])
+        ], merge_stage)
     else:
         print(
             "No new revisions found that where not already "
@@ -562,9 +486,9 @@ def extend_with_smooth_revs(
         )
 
 
-@check_required_args('project', 'release_type', 'merge_stage')
 def extend_with_release_revs(
-    case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
+    case_study: CaseStudy, cmap: CommitMap, release_type: ReleaseType,
+    ignore_blocked: bool, merge_stage: int
 ) -> None:
     """
     Extend a case study with revisions marked as a release. This extender relies
@@ -573,27 +497,33 @@ def extend_with_release_revs(
     Args:
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
+        ignore_blocked: ignore_blocked revisions
+        merge_stage: stage the revisions will be added to
+        release_type: release type to add
     """
-    project_cls: tp.Type[Project] = get_project_cls_by_name(kwargs['project'])
+    project_cls: tp.Type[Project] = get_project_cls_by_name(
+        case_study.project_name
+    )
     release_provider = ReleaseProvider.get_provider_for_project(project_cls)
     release_revisions: tp.List[FullCommitHash] = [
         revision for revision, release in
-        release_provider.get_release_revisions(kwargs['release_type'])
+        release_provider.get_release_revisions(release_type)
     ]
 
-    if kwargs["ignore_blocked"]:
+    if ignore_blocked:
         release_revisions = filter_blocked_revisions(
             release_revisions, project_cls
         )
 
     case_study.include_revisions([
         (rev, cmap.time_id(rev)) for rev in release_revisions
-    ], kwargs['merge_stage'])
+    ], merge_stage)
 
 
 @check_required_args('report_type', 'merge_stage')
 def extend_with_bug_commits(
-    case_study: CaseStudy, cmap: CommitMap, **kwargs: tp.Any
+    case_study: CaseStudy, cmap: CommitMap, report_type: tp.Type['BaseReport'],
+    merge_stage: int, ignore_blocked: bool
 ) -> None:
     """
     Extend a case study with revisions that either introduced or fixed a bug as
@@ -602,9 +532,10 @@ def extend_with_bug_commits(
     Args:
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
+        ignore_blocked: ignore_blocked revisions
+        merge_stage: stage the revisions will be added to
+        report_type: report to use for bug detection
     """
-    report_type: tp.Type[BaseReport] = BaseReport.REPORT_TYPES[
-        kwargs['report_type']]
     project_cls: tp.Type[Project] = get_project_cls_by_name(
         case_study.project_name
     )
@@ -647,8 +578,8 @@ def extend_with_bug_commits(
         revisions.update(bug.introducing_commits)
 
     rev_list = list(revisions)
-    if kwargs["ignore_blocked"]:
+    if ignore_blocked:
         rev_list = filter_blocked_revisions(rev_list, project_cls)
 
     case_study.include_revisions([(rev, cmap.time_id(rev)) for rev in rev_list],
-                                 kwargs['merge_stage'])
+                                 merge_stage)
