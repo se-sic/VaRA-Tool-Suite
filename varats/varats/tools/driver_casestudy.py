@@ -13,6 +13,7 @@ from plumbum import FG, colors, local
 from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.discover_reports import initialize_reports
 from varats.data.reports.szz_report import SZZReport
+from varats.experiment.experiment_util import VersionExperiment
 from varats.mapping.commit_map import create_lazy_commit_map_loader
 from varats.paper.case_study import (
     load_case_study_from_file,
@@ -36,6 +37,7 @@ from varats.plot.plots import PlotGenerator, PlotConfig, PlotGeneratorFailed
 from varats.plots.discover_plots import initialize_plots
 from varats.project.project_util import get_local_project_git_path
 from varats.projects.discover_projects import initialize_projects
+from varats.provider.release.release_provider import ReleaseType
 from varats.report.report import FileStatusExtension, BaseReport, ReportFilename
 from varats.tools.tool_util import configuration_lookup_error_handler
 from varats.ts_utils.cli_util import (
@@ -45,6 +47,7 @@ from varats.ts_utils.cli_util import (
     add_cli_options,
 )
 from varats.ts_utils.click_param_types import (
+    create_experiment_type_choice,
     create_report_type_choice,
     TypedChoice,
     EnumChoice,
@@ -70,7 +73,7 @@ def main() -> None:
 
 
 @main.command("status")
-@click.argument("report_type", type=create_report_type_choice())
+@click.argument("experiment_type", type=create_experiment_type_choice())
 @click.option(
     "--filter-regex",
     help="Provide a regex to filter the shown case studies",
@@ -102,14 +105,14 @@ def main() -> None:
     "(e.g. when piping to less -r)."
 )
 def __casestudy_status(
-    report_type: tp.Type['BaseReport'], filter_regex: str, short: bool,
+    experiment_type: tp.Type[VersionExperiment], filter_regex: str, short: bool,
     list_revs: bool, with_stage: bool, sort_revs: bool, legend: bool,
     force_color: bool
 ) -> None:
     """
     Show status of current case study.
 
-    REPORT-NAME: Provide a report name to select which files are considered
+    EXPERIMENT-NAME: Provide a experiment name to select which files are considered
     for the status
     """
     if force_color:
@@ -121,7 +124,7 @@ def __casestudy_status(
     if short and with_stage:
         click.UsageError("At most one argument of: --short, --ws can be used.")
     PCM.show_status_of_case_studies(
-        report_type, filter_regex, short, sort_revs, list_revs, with_stage,
+        experiment_type, filter_regex, short, sort_revs, list_revs, with_stage,
         legend
     )
 
