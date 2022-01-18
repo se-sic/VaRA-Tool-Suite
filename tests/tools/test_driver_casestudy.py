@@ -3,9 +3,7 @@
 import unittest
 from pathlib import Path
 
-from benchbuild.utils.cmd import ls
 from click.testing import CliRunner
-from plumbum import local
 
 from tests.test_utils import (
     run_in_test_environment,
@@ -80,8 +78,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         save_config()
         load_paper_config()
 
-        result = runner.invoke(driver_casestudy.main, ['cleanup', 'error'])
-        print(result.stdout)
+        runner.invoke(driver_casestudy.main, ['cleanup', 'error'])
         self.assertFalse(
             Path(
                 vara_cfg()["result_dir"].value +
@@ -103,11 +100,6 @@ class TestDriverCaseStudy(unittest.TestCase):
                 "9adc-b19bff599cf1_success.yaml"
             ).exists()
         )
-
-        with local.cwd(vara_cfg()["result_dir"].value + "/brotli/"):
-            print(ls())
-
-        self.assertTrue(False)
 
     @run_in_test_environment(
         UnitTestInputs.create_test_input(
