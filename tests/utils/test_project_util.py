@@ -12,6 +12,8 @@ from tests.test_utils import test_environment
 from varats.project.project_util import (
     VaraTestRepoSource,
     VaraTestRepoSubmodule,
+    ProjectBinaryWrapper,
+    BinaryType,
 )
 from varats.tools.bb_config import create_new_bb_config
 from varats.utils.settings import create_new_varats_config
@@ -226,3 +228,27 @@ class TestVaraTestRepoSource(unittest.TestCase):
                     f"The project name {project_name} must not contain the "
                     f"dash character."
                 )
+
+
+class TestProjectBinaryWrapper(unittest.TestCase):
+    """Test if we can correctly setup and use the RevisionBinaryMap."""
+
+    def test_execution_of_executable(self) -> None:
+        """Check if we can execute a executable bianries."""
+        binary = ProjectBinaryWrapper("ls", "/bin/ls", BinaryType.EXECUTABLE)
+
+        ret = binary()
+        self.assertIsNotNone(ret)
+        self.assertIsInstance(ret, str)
+
+    def test_execution_of_libraries(self) -> None:
+        """Check if we don't fail when executing a shared/static library."""
+        static_lib_binary = ProjectBinaryWrapper(
+            "ls", "/bin/ls", BinaryType.STATIC_LIBRARY
+        )
+        self.assertIsNone(static_lib_binary())
+
+        shared_lib_binary = ProjectBinaryWrapper(
+            "ls", "/bin/ls", BinaryType.SHARED_LIBRARY
+        )
+        self.assertIsNone(shared_lib_binary())
