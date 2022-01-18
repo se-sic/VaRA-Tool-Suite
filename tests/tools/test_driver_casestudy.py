@@ -10,8 +10,10 @@ from tests.test_utils import (
     TEST_INPUTS_DIR,
     UnitTestInputs,
 )
+from varats.paper.case_study import load_case_study_from_file
 from varats.paper_mgmt.paper_config import load_paper_config
 from varats.tools import driver_casestudy
+from varats.utils.git_util import FullCommitHash
 from varats.utils.settings import vara_cfg, save_config
 
 
@@ -19,23 +21,78 @@ class TestDriverCaseStudy(unittest.TestCase):
     """Tests for the driver_casestudy module."""
 
     @run_in_test_environment()
-    def test_vara_cs_gen(self):
-        """Test for vara-cs gen."""
+    def test_vara_cs_gen_sample(self):
+        """Test for vara-cs gen select_sample."""
         runner = CliRunner()
         Path(vara_cfg()["paper_config"]["folder"].value + "/" +
              "test_gen").mkdir()
+        vara_cfg()["paper_config"]["current_config"] = "test_gen"
         result = runner.invoke(
             driver_casestudy.main, [
-                'gen', '-p', 'gravity', '--distribution',
-                'HalfNormalSamplingMethod', 'paper_configs/test_gen'
+                'gen', '-p', 'gravity', 'select_sample',
+                'HalfNormalSamplingMethod'
             ]
         )
         self.assertEqual(0, result.exit_code, result.exception)
-        case_study = Path(
+        case_study_path = Path(
             vara_cfg()["paper_config"]["folder"].value +
             "/test_gen/gravity_0.case_study"
         )
-        self.assertTrue(case_study.exists())
+        self.assertTrue(case_study_path.exists())
+        case_study = load_case_study_from_file(case_study_path)
+        self.assertEqual(len(case_study.revisions), 10)
+
+    @run_in_test_environment()
+    def test_vara_cs_gen_latest(self):
+        """Test for vara-cs gen select_latest."""
+        runner = CliRunner()
+        Path(vara_cfg()["paper_config"]["folder"].value + "/" +
+             "test_gen").mkdir()
+        vara_cfg()["paper_config"]["current_config"] = "test_gen"
+        result = runner.invoke(
+            driver_casestudy.main, ['gen', '-p', 'gravity', 'select_latest']
+        )
+        self.assertEqual(0, result.exit_code, result.exception)
+        case_study_path = Path(
+            vara_cfg()["paper_config"]["folder"].value +
+            "/test_gen/gravity_0.case_study"
+        )
+        self.assertTrue(case_study_path.exists())
+        case_study = load_case_study_from_file(case_study_path)
+        self.assertEqual(len(case_study.revisions), 1)
+
+    @run_in_test_environment()
+    def test_vara_cs_gen_specific(self):
+        """Test for vara-cs gen select_specific."""
+        runner = CliRunner()
+        Path(vara_cfg()["paper_config"]["folder"].value + "/" +
+             "test_gen").mkdir()
+        vara_cfg()["paper_config"]["current_config"] = "test_gen"
+        result = runner.invoke(
+            driver_casestudy.main, [
+                'gen', '-p', 'gravity', 'select_specific',
+                '8820d0e08d1b389fc1e4ac2a17ad9f5418b21dfc',
+                'f9e95a41c18ed995f2c7cee7498c1a2313427c08'
+            ]
+        )
+        self.assertEqual(0, result.exit_code, result.exception)
+        case_study_path = Path(
+            vara_cfg()["paper_config"]["folder"].value +
+            "/test_gen/gravity_0.case_study"
+        )
+        self.assertTrue(case_study_path.exists())
+        case_study = load_case_study_from_file(case_study_path)
+        self.assertTrue(
+            case_study.revisions.__contains__(
+                FullCommitHash('8820d0e08d1b389fc1e4ac2a17ad9f5418b21dfc')
+            )
+        )
+        self.assertTrue(
+            case_study.revisions.__contains__(
+                FullCommitHash('f9e95a41c18ed995f2c7cee7498c1a2313427c08')
+            )
+        )
+        self.assertEqual(len(case_study.revisions), 2)
 
     @run_in_test_environment(
         UnitTestInputs.create_test_input(
