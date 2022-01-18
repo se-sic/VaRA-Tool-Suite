@@ -40,6 +40,25 @@ class TestDriverCaseStudy(unittest.TestCase):
         )
         self.assertTrue(case_study_path.exists())
         case_study = load_case_study_from_file(case_study_path)
+        self.assertEqual(len(case_study.revisions), 10)
+
+    @run_in_test_environment()
+    def test_vara_cs_gen_latest(self):
+        """Test for vara-cs gen select_latest."""
+        runner = CliRunner()
+        Path(vara_cfg()["paper_config"]["folder"].value + "/" +
+             "test_gen").mkdir()
+        vara_cfg()["paper_config"]["current_config"] = "test_gen"
+        result = runner.invoke(
+            driver_casestudy.main, ['gen', '-p', 'gravity', 'select_latest']
+        )
+        self.assertEqual(0, result.exit_code, result.exception)
+        case_study_path = Path(
+            vara_cfg()["paper_config"]["folder"].value +
+            "/test_gen/gravity_0.case_study"
+        )
+        self.assertTrue(case_study_path.exists())
+        case_study = load_case_study_from_file(case_study_path)
         self.assertEqual(len(case_study.revisions), 1)
 
     @run_in_test_environment()
@@ -49,13 +68,14 @@ class TestDriverCaseStudy(unittest.TestCase):
         Path(vara_cfg()["paper_config"]["folder"].value + "/" +
              "test_gen").mkdir()
         vara_cfg()["paper_config"]["current_config"] = "test_gen"
-        runner.invoke(
+        result = runner.invoke(
             driver_casestudy.main, [
                 'gen', '-p', 'gravity', 'select_specific',
                 '8820d0e08d1b389fc1e4ac2a17ad9f5418b21dfc',
                 'f9e95a41c18ed995f2c7cee7498c1a2313427c08'
             ]
         )
+        self.assertEqual(0, result.exit_code, result.exception)
         case_study_path = Path(
             vara_cfg()["paper_config"]["folder"].value +
             "/test_gen/gravity_0.case_study"
@@ -72,7 +92,7 @@ class TestDriverCaseStudy(unittest.TestCase):
                 FullCommitHash('f9e95a41c18ed995f2c7cee7498c1a2313427c08')
             )
         )
-        self.assertEqual(len(case_study.revisions), 10)
+        self.assertEqual(len(case_study.revisions), 2)
 
     @run_in_test_environment(
         UnitTestInputs.create_test_input(
