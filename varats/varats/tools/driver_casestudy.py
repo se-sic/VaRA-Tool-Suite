@@ -425,6 +425,9 @@ def _remove_error_result_files() -> None:
                 report_file_name.has_status_compileerror() or
                 report_file_name.has_status_failed()
             ):
+                print(
+                    f"Removing {Path(result_dir_path / report_file_name.filename)}"
+                )
                 Path(result_dir_path / report_file_name.filename)\
                     .unlink(missing_ok=True)
 
