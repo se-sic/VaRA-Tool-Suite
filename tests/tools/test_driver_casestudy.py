@@ -49,7 +49,6 @@ class TestDriverCaseStudy(unittest.TestCase):
         save_config()
         load_paper_config()
         result = runner.invoke(driver_casestudy.main, ['status', 'EmptyReport'])
-
         self.assertEqual(
             "CS: xz_0: (  0/5) processed [0/0/0/3/2]\n"
             "    c5c7ceb08a [Missing]\n"
@@ -78,7 +77,9 @@ class TestDriverCaseStudy(unittest.TestCase):
         save_config()
         load_paper_config()
 
-        runner.invoke(driver_casestudy.main, ['cleanup', 'error'])
+        result = runner.invoke(driver_casestudy.main, ['cleanup', 'error'])
+        if result.exception:
+            print(result.exception.with_traceback())
         self.assertFalse(
             Path(
                 vara_cfg()["result_dir"].value +
