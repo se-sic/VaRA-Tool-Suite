@@ -408,7 +408,8 @@ def _remove_old_result_files() -> None:
                     else:
                         old_files.append(opt_res_file)
         for file in old_files:
-            file.unlink(missing_ok=True)
+            if file.exists():
+                file.unlink()
 
 
 @cleanup.command("error")
@@ -425,8 +426,9 @@ def _remove_error_result_files() -> None:
                 report_file_name.has_status_compileerror() or
                 report_file_name.has_status_failed()
             ):
-                Path(result_dir_path / report_file_name.filename)\
-                    .unlink(missing_ok=True)
+                file = Path(result_dir_path / report_file_name.filename)
+                if file.exists():
+                    file.unlink()
 
 
 @cleanup.command("regex")
@@ -465,7 +467,9 @@ def _remove_result_files_by_regex(regex_filter: str, silent: bool) -> None:
         try:
             if cli_yn_choice("Do you want to delete these files", "n"):
                 for file_name in files_to_delete:
-                    Path(result_dir_path / file_name).unlink(missing_ok=True)
+                    file = Path(result_dir_path / file_name)
+                    if file.exists():
+                        file.unlink()
         except EOFError:
             continue
 

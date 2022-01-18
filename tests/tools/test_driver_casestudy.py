@@ -24,12 +24,13 @@ class TestDriverCaseStudy(unittest.TestCase):
         runner = CliRunner()
         Path(vara_cfg()["paper_config"]["folder"].value + "/" +
              "test_gen").mkdir()
-        runner.invoke(
+        result = runner.invoke(
             driver_casestudy.main, [
                 'gen', '-p', 'gravity', '--distribution',
                 'HalfNormalSamplingMethod', 'paper_configs/test_gen'
             ]
         )
+        self.assertEqual(0, result.exit_code, result.exception)
         case_study = Path(
             vara_cfg()["paper_config"]["folder"].value +
             "/test_gen/gravity_0.case_study"
@@ -49,6 +50,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         save_config()
         load_paper_config()
         result = runner.invoke(driver_casestudy.main, ['status', 'EmptyReport'])
+        self.assertEqual(0, result.exit_code, result.exception)
         self.assertEqual(
             "CS: xz_0: (  0/5) processed [0/0/0/3/2]\n"
             "    c5c7ceb08a [Missing]\n"
@@ -78,8 +80,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         load_paper_config()
 
         result = runner.invoke(driver_casestudy.main, ['cleanup', 'error'])
-        if result.exception:
-            print(result.exception.with_traceback())
+        self.assertEqual(0, result.exit_code, result.exception)
         self.assertFalse(
             Path(
                 vara_cfg()["result_dir"].value +
@@ -120,9 +121,10 @@ class TestDriverCaseStudy(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "test_cleanup_regex"
         save_config()
         load_paper_config()
-        runner.invoke(
+        result = runner.invoke(
             driver_casestudy.main, ['cleanup', 'regex', '-f', '.*'], 'y'
         )
+        self.assertEqual(0, result.exit_code, result.exception)
         self.assertFalse(
             Path(
                 vara_cfg()["result_dir"].value +
