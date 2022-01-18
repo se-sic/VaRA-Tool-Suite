@@ -434,7 +434,8 @@ def _remove_error_result_files() -> None:
     "--filter-regex",
     "-f",
     "regex_filter",
-    prompt="Specify a regex for the filenames to delete"
+    prompt="Specify a regex for the filenames to delete",
+    type=str
 )
 @click.option(
     "--silent", help="Hide the output of the matching filenames", is_flag=True
@@ -464,7 +465,6 @@ def _remove_result_files_by_regex(regex_filter: str, silent: bool) -> None:
         try:
             if cli_yn_choice("Do you want to delete these files", "n"):
                 for file_name in files_to_delete:
-
                     Path(result_dir_path / file_name).unlink(missing_ok=True)
         except EOFError:
             continue
