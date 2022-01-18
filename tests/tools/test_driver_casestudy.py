@@ -80,33 +80,8 @@ class TestDriverCaseStudy(unittest.TestCase):
         save_config()
         load_paper_config()
 
-        self.assertTrue(
-            Path(
-                vara_cfg()["result_dir"].value +
-                "/brotli/CRE-CR-brotli-all-6c47009892_5d26c7ff-6d27-478f-bcd1"
-                "-99e8e8e97f16_cerror.txt"
-            ).exists()
-        )
-        self.assertTrue(
-            Path(
-                vara_cfg()["result_dir"].value +
-                "/brotli/CRE-CR-brotli-all-aaa4424d9b_5d26c7ff-6d27-478f-bcd1-"
-                "99e8e8e97f16_failed.txt"
-            ).exists()
-        )
-        self.assertTrue(
-            Path(
-                vara_cfg()["result_dir"].value +
-                "/brotli/CRE-CR-brotli-brotli-21ac39f7c8_34d4d1b5-7212-4244-"
-                "9adc-b19bff599cf1_success.yaml"
-            ).exists()
-        )
-
-        with local.cwd(vara_cfg()["result_dir"].value + "/brotli/"):
-            print(ls())
-
-        runner.invoke(driver_casestudy.main, ['cleanup', 'error'])
-
+        result = runner.invoke(driver_casestudy.main, ['cleanup', 'error'])
+        print(result.stdout)
         self.assertFalse(
             Path(
                 vara_cfg()["result_dir"].value +
