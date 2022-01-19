@@ -420,14 +420,18 @@ class VersionExperiment(Experiment):  # type: ignore
                     "Experiment sub class does not implement REPORT_SPEC."
                 )
 
-            bad_revisions = [
-                revision.hash for revision, file_status in
-                get_tagged_experiment_specific_revisions(
-                    prj_cls,
-                    getattr(cls, 'REPORT_SPEC').main_report,
-                    experiment_type=cls
-                ) if file_status not in fs_good
-            ]
+            report_specific_bad_revs = []
+            for report_type in cls.report_spec():
+                report_specific_bad_revs.append({
+                    revision.hash for revision, file_status in
+                    get_tagged_experiment_specific_revisions(
+                        prj_cls, report_type, experiment_type=cls
+                    ) if file_status not in fs_good
+                })
+
+            bad_revisions = report_specific_bad_revs[0].intersection(
+                *report_specific_bad_revs[1:]
+            )
 
             variants = list(
                 filter(lambda var: str(var[0]) not in bad_revisions, variants)
