@@ -415,11 +415,6 @@ class VersionExperiment(Experiment):  # type: ignore
                 for x in fs_whitelist
             }
 
-            if not hasattr(cls, 'REPORT_SPEC'):
-                raise TypeError(
-                    "Experiment sub class does not implement REPORT_SPEC."
-                )
-
             report_specific_bad_revs = []
             for report_type in cls.report_spec():
                 report_specific_bad_revs.append({
