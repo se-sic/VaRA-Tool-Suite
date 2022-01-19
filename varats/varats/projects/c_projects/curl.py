@@ -14,9 +14,10 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     BinaryType,
     verify_binaries,
+    get_local_project_git_path,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 from varats.utils.settings import bb_cfg
 
 
@@ -48,11 +49,13 @@ class Curl(VProject):
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash  # pylint: disable=W0613
+        revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        return wrap_paths_to_binaries([
-            ('src/.libs/curl', BinaryType.EXECUTABLE)
-        ])
+        binary_map = RevisionBinaryMap(get_local_project_git_path(Curl.NAME))
+
+        binary_map.specify_binary('src/.libs/curl', BinaryType.EXECUTABLE)
+
+        return binary_map[revision]
 
     def run_tests(self) -> None:
         pass
