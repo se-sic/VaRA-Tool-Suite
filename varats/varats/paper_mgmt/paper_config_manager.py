@@ -11,6 +11,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 from plumbum import colors
 
 import varats.paper_mgmt.paper_config as PC
+from varats.experiment.experiment_util import VersionExperiment
 from varats.mapping.commit_map import create_lazy_commit_map_loader
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import (
@@ -24,14 +25,15 @@ from varats.utils.settings import vara_cfg
 
 
 def show_status_of_case_studies(
-    report_type: tp.Type['BaseReport'], filter_regex: str, short_status: bool,
-    sort: bool, print_rev_list: bool, sep_stages: bool, print_legend: bool
+    experiment_type: tp.Type[VersionExperiment], filter_regex: str,
+    short_status: bool, sort: bool, print_rev_list: bool, sep_stages: bool,
+    print_legend: bool
 ) -> None:
     """
     Prints the status of all matching case studies to the console.
 
     Args:
-        report_type: report type whose files will be considered
+        experiment_type: experiment type whose files will be considered
         filter_regex: applied to a ``name_version`` string for filtering the
                       amount of case studies to be shown
         short_status: print only a short version of the status information
@@ -72,15 +74,15 @@ def show_status_of_case_studies(
         elif short_status:
             print(
                 get_short_status(
-                    case_study, report_type, longest_cs_name, True,
+                    case_study, experiment_type, longest_cs_name, True,
                     total_status_occurrences
                 )
             )
         else:
             print(
                 get_status(
-                    case_study, report_type, longest_cs_name, sep_stages, sort,
-                    True, total_status_occurrences
+                    case_study, experiment_type, longest_cs_name, sep_stages,
+                    sort, True, total_status_occurrences
                 )
             )
 
@@ -218,7 +220,7 @@ def get_total_status(
 
 def get_short_status(
     case_study: CaseStudy,
-    result_file_type: tp.Type[BaseReport],
+    experiment_type: tp.Type[VersionExperiment],
     longest_cs_name: int,
     use_color: bool = False,
     total_status_occurrences: tp.Optional[tp.DefaultDict[
@@ -230,7 +232,7 @@ def get_short_status(
 
     Args:
         case_study: to print
-        result_file_type: report type to print
+        experiment_type: experiment type to print files for
         longest_cs_name: amount of chars that should be considered for
                          offsetting to allow case study name alignment
         use_color: add color escape sequences for highlighting
@@ -249,8 +251,9 @@ def get_short_status(
 
     status_occurrences: tp.DefaultDict[
         FileStatusExtension, tp.Set[ShortCommitHash]] = defaultdict(set)
-    for tagged_rev in get_revisions_status_for_case_study(
-        case_study, result_file_type
+
+    for tagged_rev in _combine_tagged_revs_for_experiment(
+        case_study, experiment_type
     ):
         status_occurrences[tagged_rev[1]].add(tagged_rev[0])
 
@@ -264,7 +267,7 @@ def get_short_status(
 
 def get_status(
     case_study: CaseStudy,
-    result_file_type: tp.Type[BaseReport],
+    experiment_type: tp.Type[VersionExperiment],
     longest_cs_name: int,
     sep_stages: bool,
     sort: bool,
@@ -278,7 +281,7 @@ def get_status(
 
     Args:
         case_study: to print the status for
-        result_file_type: report type to print
+        experiment_type: experiment type to print files for
         longest_cs_name: amount of chars that should be considered for
         sep_stages: print each stage separeted
         sort: sort the output order of the case studies
@@ -290,7 +293,7 @@ def get_status(
         a full string representation of all case studies
     """
     status = get_short_status(
-        case_study, result_file_type, longest_cs_name, use_color,
+        case_study, experiment_type, longest_cs_name, use_color,
         total_status_occurrences
     ) + "\n"
 
@@ -308,8 +311,8 @@ def get_status(
             if stage_name:
                 status += " ({})".format(stage_name)
             status += "\n"
-            tagged_revs = get_revisions_status_for_case_study(
-                case_study, result_file_type, stage_num
+            tagged_revs = _combine_tagged_revs_for_experiment(
+                case_study, experiment_type, stage_num
             )
             if sort:
                 tagged_revs = sorted(tagged_revs, key=rev_time, reverse=True)
@@ -321,8 +324,8 @@ def get_status(
     else:
         tagged_revs = list(
             dict.fromkeys(
-                get_revisions_status_for_case_study(
-                    case_study, result_file_type
+                _combine_tagged_revs_for_experiment(
+                    case_study, experiment_type
                 )
             )
         )
@@ -410,3 +413,43 @@ def package_paper_config(
 
         for case_study_file in case_study_files_to_include:
             pc_zip.write(case_study_file.relative_to(vara_root))
+
+
+def _combine_tagged_revs_for_experiment(
+    case_study: CaseStudy,
+    experiment_type: tp.Type[VersionExperiment],
+    stage_num: tp.Optional[int] = None
+) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
+    """
+    Combines the tagged revision results from all report that are specified in
+    the experiment.
+
+    Args:
+        case_study: to print
+        experiment_type: experiment type to print files for
+
+    Returns:
+        combined tagged revision list
+    """
+    combined_tagged_revisions: tp.Dict[ShortCommitHash,
+                                       FileStatusExtension] = {}
+    for report in experiment_type.report_spec():
+        if stage_num:
+            tagged_revs = get_revisions_status_for_case_study(
+                case_study, report, stage_num, experiment_type=experiment_type
+            )
+        else:
+            tagged_revs = get_revisions_status_for_case_study(
+                case_study, report, experiment_type=experiment_type
+            )
+
+        for tagged_rev in tagged_revs:
+            if tagged_rev[0] in combined_tagged_revisions:
+                combined_tagged_revisions[
+                    tagged_rev[0]] = FileStatusExtension.combine(
+                        combined_tagged_revisions[tagged_rev[0]], tagged_rev[1]
+                    )
+            else:
+                combined_tagged_revisions[tagged_rev[0]] = tagged_rev[1]
+
+    return list(combined_tagged_revisions.items())
