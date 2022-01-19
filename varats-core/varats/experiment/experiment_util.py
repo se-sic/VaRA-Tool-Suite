@@ -421,10 +421,11 @@ class VersionExperiment(Experiment):  # type: ignore
                 )
 
             bad_revisions = [
-                # TODO (se-sic/VaRA#791): clean up usage of report spec
-                revision.hash for revision, file_status in get_tagged_revisions(
+                revision.hash for revision, file_status in
+                get_tagged_experiment_specific_revisions(
                     prj_cls,
-                    getattr(cls, 'REPORT_SPEC').main_report
+                    getattr(cls, 'REPORT_SPEC').main_report,
+                    experiment_type=cls
                 ) if file_status not in fs_good
             ]
 
