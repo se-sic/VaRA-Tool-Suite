@@ -70,7 +70,6 @@ setup(
             'vd = varats.tools.driver_develop:main',
             'vara-gen-bbconfig = '
             'varats.tools.driver_gen_benchbuild_config:main',
-            'vara-gen-commitmap = varats.tools.driver_gen_commitmap:main',
             'vara-pc = varats.tools.driver_paper_config:main',
             'vara-plot = varats.tools.driver_plot:main',
             'vara-run = varats.tools.driver_run:main',
