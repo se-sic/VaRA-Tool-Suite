@@ -527,12 +527,9 @@ def __calc_code_churn_range_impl(
         diff_base_params = diff_base_params + \
                            churn_config.get_extensions_repr('*.')
 
-    if revision_range:
-        stdout = repo_git(diff_base_params)
-        revs = repo_git(log_base_params).strip().split()
-    else:
-        stdout = repo_git(diff_base_params)
-        revs = repo_git(log_base_params).strip().split()
+    stdout = repo_git(diff_base_params)
+    revs = repo_git(log_base_params).strip().split()
+
     # initialize with 0 as otherwise commits without changes would be
     # missing from the churn data
     for rev in revs:
