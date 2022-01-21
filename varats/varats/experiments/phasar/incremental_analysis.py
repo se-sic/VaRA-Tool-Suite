@@ -2,6 +2,8 @@
 approaches."""
 
 import os
+import shutil
+import tempfile
 import typing as tp
 from enum import Enum
 from pathlib import Path
@@ -19,11 +21,11 @@ from benchbuild.utils import actions
 from benchbuild.utils.cmd import mkdir, phasar_llvm_inc
 from benchbuild.utils.requirements import Requirement, SlurmMem
 
-from varats.data.reports.empty_report import EmptyReport
 from varats.data.reports.globals_report import (
     GlobalsReportWith,
     GlobalsReportWithout,
 )
+from varats.data.reports.incremental_reports import IncrementalReport
 from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
@@ -130,20 +132,35 @@ class RunAnalysisBase(actions.Step):
         params += self._get_extra_parameters(project, binary)
         params += ["-D", str(self.__analysis_type)]
 
-        params += ["--out", "/tmp/foobar"]
+        with tempfile.TemporaryDirectory() as tmp_result_dir:
+            params += ["--out", Path(tmp_result_dir)]
 
-        run_cmd = phasar_llvm_inc[params]
+            run_cmd = phasar_llvm_inc[params]
 
-        run_cmd = wrap_unlimit_stack_size(run_cmd)
-        print(f"Running: {run_cmd}")
+            run_cmd = wrap_unlimit_stack_size(run_cmd)
+            print(f"Running: {run_cmd}")
 
-        exec_func_with_pe_error_handler(
-            run_cmd,
-            create_default_analysis_failure_handler(
-                self.__experiment_handle, project, EmptyReport,
-                Path(vara_result_folder)
+            exec_func_with_pe_error_handler(
+                run_cmd,
+                create_default_analysis_failure_handler(
+                    self.__experiment_handle, project, IncrementalReport,
+                    Path(vara_result_folder)
+                )
             )
-        )
+
+            # Zip and persist the generated results
+            result_file_name = self.__experiment_handle.get_file_name(
+                IncrementalReport.shorthand(),
+                project_name=str(project.name),
+                binary_name=binary.name,
+                project_revision=project.version_of_primary,
+                project_uuid=str(project.run_uuid),
+                extension_type=FSE.SUCCESS
+            )
+            shutil.make_archive(
+                str(vara_result_folder / Path(result_file_name.filename).stem),
+                "zip", Path(tmp_result_dir)
+            )
 
         return actions.StepResult.OK
 
@@ -208,7 +225,7 @@ class PrecisionComparisionBase(VersionExperiment, shorthand=""):
 
     NAME = "PrecisionComparisionBase"
 
-    REPORT_SPEC = ReportSpecification(EmptyReport)
+    REPORT_SPEC = ReportSpecification(IncrementalReport)
 
     def __init__(
         self, revision_step_with: int, max_revisions_to_explore: int,
@@ -299,7 +316,7 @@ class RunPhasarIncWPA(VersionExperiment, shorthand="PIWPA"):
 
     NAME = "PIWPA"
 
-    REPORT_SPEC = ReportSpecification(EmptyReport)
+    REPORT_SPEC = ReportSpecification(IncrementalReport)
 
     def actions_for_project(
         self, project: Project
