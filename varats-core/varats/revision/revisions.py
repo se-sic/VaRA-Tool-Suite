@@ -279,7 +279,7 @@ def __get_tag_for_revision(
         return FileStatusExtension.BLOCKED
 
     newest_res_file = max(file_list, key=lambda x: x.stat().st_mtime)
-    if result_file_type.is_correct_report_type(str(newest_res_file.name)):
+    if result_file_type.is_correct_report_type(newest_res_file.name):
         return ReportFilename(str(newest_res_file)).file_status
 
     return FileStatusExtension.MISSING
@@ -288,7 +288,8 @@ def __get_tag_for_revision(
 def get_tagged_revisions(
     project_cls: tp.Type[Project],
     result_file_type: tp.Type[BaseReport],
-    tag_blocked: bool = True
+    tag_blocked: bool = True,
+    revision_filter: tp.Optional[tp.Callable[[Path], bool]] = None
 ) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
     """
     Calculates a list of revisions of a project tagged with the file status. If
@@ -298,6 +299,7 @@ def get_tagged_revisions(
         project_cls: target project
         result_file_type: the type of the result file
         tag_blocked: whether to tag blocked revisions as blocked
+        revision_filter: to select a specific subset of revisions
 
     Returns:
         list of tuples (revision, ``FileStatusExtension``)
@@ -305,13 +307,19 @@ def get_tagged_revisions(
     revisions = []
     result_files = __get_result_files_dict(project_cls.NAME, result_file_type)
     for commit_hash, file_list in result_files.items():
-        revisions.append((
-            commit_hash,
-            __get_tag_for_revision(
-                commit_hash, file_list, project_cls, result_file_type,
+        filtered_file_list = list(
+            filter(revision_filter, file_list)
+        ) if revision_filter else file_list
+
+        if filtered_file_list:
+            tag = __get_tag_for_revision(
+                commit_hash, filtered_file_list, project_cls, result_file_type,
                 tag_blocked
             )
-        ))
+        else:
+            tag = FileStatusExtension.MISSING
+
+        revisions.append((commit_hash, tag))
 
     return revisions
 
