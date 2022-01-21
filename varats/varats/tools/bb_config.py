@@ -84,6 +84,9 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
     projects_conf.value[:] += ['varats.projects.test_projects.basic_tests']
     projects_conf.value[:] += ['varats.projects.test_projects.linker_check']
     projects_conf.value[:] += ['varats.projects.test_projects.taint_tests']
+    projects_conf.value[:] += [
+        'varats.projects.test_projects.commit_inc_scenarios'
+    ]
 
     # Experiments for VaRA
     projects_conf = new_bb_cfg["plugins"]["experiments"]
@@ -97,6 +100,7 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.phasar_fta',
         'varats.experiments.phasar.ide_linear_constant_experiment',
+        'varats.experiments.phasar.incremental_analysis',
         'varats.experiments.phasar.global_analysis_compare',
         'varats.experiments.szz.szz_unleashed_experiment',
         'varats.experiments.szz.pydriller_szz_experiment',

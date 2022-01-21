@@ -19,7 +19,6 @@ from benchbuild.utils import actions
 from benchbuild.utils.cmd import mkdir, phasar_llvm_inc
 from benchbuild.utils.requirements import Requirement, SlurmMem
 
-from varats.data.reports.blame_report import BlameReport as BR
 from varats.data.reports.empty_report import EmptyReport
 from varats.data.reports.globals_report import (
     GlobalsReportWith,
@@ -38,7 +37,7 @@ from varats.experiment.experiment_util import (
 from varats.experiment.wllvm import (
     get_cached_bc_file_path,
     BCFileExtensions,
-    get_bc_cache_actions,
+    get_bc_cache_actions_for_revision,
     RunWLLVM,
 )
 from varats.experiments.vara.blame_experiment import (
@@ -74,6 +73,9 @@ class AnalysisType(Enum):
                 enabled_analysis_types.append(analysis_type)
 
         return enabled_analysis_types
+
+    def __str__(self) -> str:
+        return f"{self.value}"
 
 
 def _get_enabled_analyses() -> tp.List[AnalysisType]:
@@ -127,6 +129,8 @@ class RunAnalysisBase(actions.Step):
         ]
         params += self._get_extra_parameters(project, binary)
         params += ["-D", str(self.__analysis_type)]
+
+        params += ["--out", "/tmp/foobar"]
 
         run_cmd = phasar_llvm_inc[params]
 

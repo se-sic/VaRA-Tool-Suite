@@ -177,7 +177,8 @@ class Extract(actions.Step):  # type: ignore
 
 def project_bc_files_in_cache(
     project: Project,
-    required_bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]]
+    project_revision: ShortCommitHash,
+    required_bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]],
 ) -> bool:
     """
     Checks if all bc files, corresponding to the projects binaries, are in the
@@ -185,6 +186,7 @@ def project_bc_files_in_cache(
 
     Args:
         project: the project
+        project_revision: specific revision that should be in cache
         required_bc_file_extensions: list of required file extensions
 
     Returns: True, if all BC files are present, False otherwise.
@@ -200,7 +202,7 @@ def project_bc_files_in_cache(
                 ) + Extract.get_bc_file_name(
                     project_name=str(project.name),
                     binary_name=binary.name,
-                    project_version=project.version_of_primary,
+                    project_version=str(project_revision),
                     bc_file_extensions=required_bc_file_extensions
                 )
             )
@@ -243,7 +245,7 @@ def get_bc_cache_actions(
     extraction_error_handler: tp.Optional[PEErrorHandler] = None,
     bc_action_creator: tp.Callable[
         [Project, tp.List[BCFileExtensions], tp.Optional[PEErrorHandler]],
-        tp.List[actions.Step]] = _create_default_bc_file_creation_actions
+        tp.List[actions.Step]] = _create_default_bc_file_creation_actions,
 ) -> tp.List[actions.Step]:
     """
     Builds the action pipeline, if needed, to fill the BC file cache that
@@ -258,8 +260,43 @@ def get_bc_cache_actions(
 
     Returns: required actions to populate the BC cache
     """
+    return get_bc_cache_actions_for_revision(
+        project, None, bc_file_extensions, extraction_error_handler,
+        bc_action_creator
+    )
 
-    if not project_bc_files_in_cache(project, bc_file_extensions):
+
+def get_bc_cache_actions_for_revision(
+    project: Project,
+    project_revision: tp.Optional[ShortCommitHash] = None,
+    bc_file_extensions: tp.Optional[tp.List[BCFileExtensions]] = None,
+    extraction_error_handler: tp.Optional[PEErrorHandler] = None,
+    bc_action_creator: tp.Callable[
+        [Project, tp.List[BCFileExtensions], tp.Optional[PEErrorHandler]],
+        tp.List[actions.Step]] = _create_default_bc_file_creation_actions,
+) -> tp.List[actions.Step]:
+    """
+    Builds the action pipeline, if needed, to fill the BC file cache that
+    provides BC files for the compiled binaries of a project.
+
+    Args:
+        project: the project to compile
+        project_revision: specific revision that should be compiled
+        bc_file_extensions: list of bc file extensions
+        extraction_error_handler: error handler to report errors during
+                                  the extraction step
+        bc_action_creator: alternative BC cache actions creation callback
+
+    Returns: required actions to populate the BC cache
+    """
+    if not project_revision:
+        project_revision = ShortCommitHash(
+            project.active_variant[project.primary_source].version
+        )
+
+    if not project_bc_files_in_cache(
+        project, project_revision, bc_file_extensions
+    ):
         return bc_action_creator(
             project, bc_file_extensions if bc_file_extensions else [],
             extraction_error_handler
@@ -302,7 +339,8 @@ def get_cached_bc_file_path(
     )
     if not bc_file_path.exists():
         raise LookupError(
-            "No corresponding BC file found in cache. Project was probably not"
+            f"No corresponding BC file ({bc_file_path.stem}) found in cache."
+            " Project was probably not"
             " compiled with the correct compile/extract action."
         )
     return Path(bc_file_path)
