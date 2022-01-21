@@ -45,6 +45,7 @@ from varats.experiments.vara.blame_experiment import (
     setup_basic_blame_experiment,
     generate_basic_blame_experiment_actions,
 )
+from varats.project.project_util import ProjectBinaryWrapper
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 from varats.utils.git_util import (
@@ -124,7 +125,7 @@ class RunAnalysisBase(actions.Step):
                 project, binary, self.BC_FILE_EXTENSIONS, self.__base_revision
             )
         ]
-        params += self._get_extra_parameters()
+        params += self._get_extra_parameters(project, binary)
         params += ["-D", str(self.__analysis_type)]
 
         run_cmd = phasar_llvm_inc[params]
@@ -140,7 +141,9 @@ class RunAnalysisBase(actions.Step):
 
         return actions.StepResult.OK
 
-    def _get_extra_parameters(self) -> tp.List[str]:
+    def _get_extra_parameters(
+        self, project: Project, binary: ProjectBinaryWrapper
+    ) -> tp.List[str]:
         return []
 
 
@@ -166,11 +169,16 @@ class IncrementalProgramAnalysis(RunAnalysisBase):
         )
         self.__next_revision = next_revision
 
-    def _get_extra_parameters(self) -> tp.List[str]:
+    def _get_extra_parameters(
+        self, project: Project, binary: ProjectBinaryWrapper
+    ) -> tp.List[str]:
         return [
             "--inc-module",
-            get_cached_bc_file_path(
-                project, binary, self.BC_FILE_EXTENSIONS, self.__next_revision
+            str(
+                get_cached_bc_file_path(
+                    project, binary, self.BC_FILE_EXTENSIONS,
+                    self.__next_revision
+                )
             )
         ]
 
@@ -181,8 +189,10 @@ class AnalysisComparision(IncrementalProgramAnalysis):
     DESCRIPTION = "Running the configured analysis in both, whole program and" \
         + " incremental style."
 
-    def _get_extra_parameters(self) -> tp.List[str]:
-        return super()._get_extra_parameters() + [
+    def _get_extra_parameters(
+        self, project: Project, binary: ProjectBinaryWrapper
+    ) -> tp.List[str]:
+        return super()._get_extra_parameters(project, binary) + [
             "--wpa-inc-in-memory-comparison"
         ]
 
@@ -196,7 +206,8 @@ class PrecisionComparisionBase(VersionExperiment, shorthand=""):
 
     def __init__(
         self, revision_step_with: int, max_revisions_to_explore: int,
-        analysis: IncrementalProgramAnalysis, *args: tp.Any, **kwargs: tp.Any
+        analysis: tp.Type[IncrementalProgramAnalysis], *args: tp.Any,
+        **kwargs: tp.Any
     ) -> None:
         super().__init__(*args, **kwargs)
         self.__revision_step_with = revision_step_with
@@ -207,7 +218,10 @@ class PrecisionComparisionBase(VersionExperiment, shorthand=""):
         self, project: Project
     ) -> tp.MutableSequence[actions.Step]:
 
-        setup_basic_blame_experiment(self, project, REPORT_SPEC.main_report)
+        setup_basic_blame_experiment(
+            self, project,
+            self.report_spec().main_report
+        )
 
         analysis_actions = []
         analysis_actions.extend(
@@ -283,7 +297,10 @@ class RunPhasarIncWPA(PrecisionComparisionBase, shorthand="PIWPA"):
         self, project: Project
     ) -> tp.MutableSequence[actions.Step]:
 
-        setup_basic_blame_experiment(self, project, REPORT_SPEC.main_report)
+        setup_basic_blame_experiment(
+            self, project,
+            self.report_spec().main_report
+        )
 
         analysis_actions = []
         analysis_actions.extend(
@@ -295,11 +312,12 @@ class RunPhasarIncWPA(PrecisionComparisionBase, shorthand="PIWPA"):
             )
         )
 
+        project_repo_git = Path(target_prefix()) / Path(project.primary_source)
         for enabled_analysis_type in _get_enabled_analyses():
             analysis_actions.append(
                 WholeProgramAnalysis(
                     project, self.get_handle(),
-                    get_initial_commit(project_repo_git).hash,
+                    get_initial_commit(project_repo_git).to_short_commit_hash(),
                     enabled_analysis_type
                 )
             )
