@@ -135,11 +135,13 @@ class RunAnalysisBase(actions.Step):
         run_cmd = phasar_llvm_inc[params]
 
         run_cmd = wrap_unlimit_stack_size(run_cmd)
+        print(f"Running: {run_cmd}")
 
         exec_func_with_pe_error_handler(
             run_cmd,
             create_default_analysis_failure_handler(
-                self.__experiment_handle, project, BR, Path(vara_result_folder)
+                self.__experiment_handle, project, EmptyReport,
+                Path(vara_result_folder)
             )
         )
 
@@ -251,8 +253,8 @@ class PrecisionComparisionBase(VersionExperiment, shorthand=""):
             )
 
             analysis_actions.extend(
-                get_bc_cache_actions(
-                    project, RunAnalysisBase.BC_FILE_EXTENSIONS,
+                get_bc_cache_actions_for_revision(
+                    project, next_revision, RunAnalysisBase.BC_FILE_EXTENSIONS,
                     create_default_compiler_error_handler(
                         self.get_handle(), project, self.REPORT_SPEC.main_report
                     )
@@ -292,10 +294,12 @@ class PrecisionComparisionBase(VersionExperiment, shorthand=""):
 # Actuall, full scale experiments
 
 
-class RunPhasarIncWPA(PrecisionComparisionBase, shorthand="PIWPA"):
+class RunPhasarIncWPA(VersionExperiment, shorthand="PIWPA"):
     """Run the analyses WPA style."""
 
     NAME = "PIWPA"
+
+    REPORT_SPEC = ReportSpecification(EmptyReport)
 
     def actions_for_project(
         self, project: Project
@@ -316,12 +320,11 @@ class RunPhasarIncWPA(PrecisionComparisionBase, shorthand="PIWPA"):
             )
         )
 
-        project_repo_git = Path(target_prefix()) / Path(project.primary_source)
         for enabled_analysis_type in _get_enabled_analyses():
             analysis_actions.append(
                 WholeProgramAnalysis(
                     project, self.get_handle(),
-                    get_initial_commit(project_repo_git).to_short_commit_hash(),
+                    ShortCommitHash(project.version_of_primary),
                     enabled_analysis_type
                 )
             )
