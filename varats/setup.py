@@ -44,7 +44,7 @@ setup(
         "seaborn>=0.8.0",
         "statsmodels~=0.13.1",
         "tabulate>=0.8.6",
-        "varats-core>=11.0.0",
+        "varats-core>=11.1.1",
         "wllvm>=1.1.4",
     ],
     author="Florian Sattler",
