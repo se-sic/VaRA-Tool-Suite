@@ -4,7 +4,7 @@ time.
 
 Examples to produce a ``TimeReport``:
 
-    Commandline usage: 
+    Commandline usage:
         .. code-block:: bash
 
             export REPORT_FILE="Path/To/MyFile"
@@ -17,7 +17,6 @@ Examples to produce a ``TimeReport``:
             report_file = "Path/To/MyFile"
             command_to_measure = sleep["2"]
             time("-v", "-o", f"{report_file}", command_to_measure)
-
 """
 
 import re

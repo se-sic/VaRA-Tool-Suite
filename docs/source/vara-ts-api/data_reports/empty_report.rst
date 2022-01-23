@@ -16,4 +16,3 @@ accessible through the reports API.
 
 .. literalinclude:: ../../../../varats/varats/data/reports/empty_report.py
     :lines: 3-10
-
