@@ -57,3 +57,89 @@ With `F5` the given example is executed.
 It runs the command `benchbuild run -E JustCompile gzip` by default, which can be adapted to debug other projects and experiments by changing the arguments that are passed to `benchbuild`.
 To step through the JustCompile experiment a breakpoint has to be set in just_compile.py.
 `F9` can be used to set/unset a breakpoint at the current line.
+
+Releasing VaRA-TS and vara related tools/libraries
+..................................................
+
+In general, all VaRA related tools and libraries should have the same releases, which are compatible to each other, e.g., `vara-11.1.0` for vara-llvm-project needs to work with vara-tool-suite release `vara-11.1.0`.
+We try to prevent breaking changes to that the tools suite works with many different VaRA version, but sometimes breaking changes are necessary.
+
+vara-tool-suite
+^^^^^^^^^^^^^^^
+
+Ensure that all branches are on the right state.
+
+.. code-block:: console
+
+    cd VaRA-Tool-Suite
+    git pull vara
+    git pull vara-dev
+
+Integrate the changes from develop into the release branch `vara`.
+
+.. code-block:: console
+
+    git checkout vara
+    git merge vara-dev
+
+Build and upload release files with tox and tag the new release, this automatically builds both namespace packages `varats` and `varats-core`.
+
+.. code-block:: console
+
+    tox -e release
+    git tag -s vara-X.Y.Z
+
+    git push vara
+    git push origin vara-X.Y.Z
+
+Prepare the next version.
+
+.. code-block:: console
+
+    git checkout vara-dev
+    # Update varats/setup.py and varats-core/setup.py to the next version
+    # Update varats/setup.py to depend on the new core version
+    git commit --allow-empty -m "Bump version to $NEW_VERSION"
+    git push vara-dev
+
+vara-feature
+^^^^^^^^^^^^
+
+Ensure that all branches are on the right state.
+
+.. code-block:: console
+
+    cd vara-feature
+    git pull vara
+    git pull vara-dev
+
+Integrate the changes from develop into the release branch `vara`.
+
+.. code-block:: console
+
+    git checkout vara
+    git merge vara-dev
+
+Build and upload release files with tox and tag the new release.
+
+.. code-block:: console
+
+    tox -e release
+    git tag -s vara-X.Y.Z
+
+    git push vara
+    git push origin vara-X.Y.Z
+
+Prepare the next version.
+
+.. code-block:: console
+
+    git checkout vara-dev
+    # Update setup.py to the next version
+    git commit --allow-empty -m "Bump version to $NEW_VERSION"
+    git push vara-dev
+
+VaRA and vara-llvm-project
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. todo:: Add when making the next VaRA release
