@@ -64,6 +64,36 @@ Releasing VaRA-TS and vara related tools/libraries
 In general, all VaRA related tools and libraries should have the same releases, which are compatible to each other, e.g., `vara-11.1.0` for vara-llvm-project needs to work with vara-tool-suite release `vara-11.1.0`.
 We try to prevent breaking changes to that the tools suite works with many different VaRA version, but sometimes breaking changes are necessary.
 
+Prepare release tooling
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Before we can release anything, we need to install and prepare our release tools.
+
+Install:
+
+.. code-block:: console
+
+    pip install --user wheel tox
+
+Configure pypi credentials
+
+.. code-block:: none
+
+    [distutils]
+      index-servers =
+        testpypi
+        pypi
+
+    [pypi]
+      repository = https://upload.pypi.org/legacy/
+      username = __token__
+      password = $PYPI_PASSWORD
+
+    [testpypi]
+      repository = https://test.pypi.org/legacy/
+      username = __token__
+      password = $PYPI_PASSWORD
+
 vara-tool-suite
 ^^^^^^^^^^^^^^^
 
