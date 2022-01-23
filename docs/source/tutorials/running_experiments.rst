@@ -29,13 +29,19 @@ Creating a Case Study
 Next, we need to populate the paper config with a case study.
 Case studies are managed with the :ref:`vara-cs` tool.
 
-.. TODO: rewrite once we have a better vara-cs gen/ext tool
+For example, we can for example select revision `e7da44d515` from the project `xz` like this:
 
 .. code-block:: bash
 
-    vara-cs gen paper_configs/tutorial/ HalfNormalSamplingMethod -p xz --num-rev 10
+    vara-cs gen -p xz select_specific e7da44d515
 
-This creates a new case study for the project xz and includes 10 revisions sampled with a half normal distribution.
+or to select the lastest revision of xz like this:
+
+.. code-block:: bash
+
+    vara-cs gen -p xz select_latest
+
+This creates a new case study for the project xz and including the selected revisions.
 
 Run an Experiment
 -----------------
@@ -50,8 +56,8 @@ Under the hood, the execution of experiments is handled by `BenchBuild <https://
 
   vara-run -E JustCompile
 
-Since the ``JustCompile`` experiment produces ``EmptyReports``, we can view the status of the experiment runs as such.
+To visualize which revisions have already been processed, we use again the :ref:`vara-cs` tool but this time we query with `status`.
 
 .. code-block:: bash
 
-  vara-cs -s EmptyReport
+  vara-cs status JustCompile

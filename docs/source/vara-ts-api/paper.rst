@@ -11,39 +11,27 @@ How to use case studies
 If one wants to analyze a particular set of revisions or wants to re-evaluate the same revision over and over again, we can fixate the revisions we are interested in by creating a :class:`CaseStudy`.
 First, create a folder, where your config should be saved.
 Then, create a case study that specifies the revision to be analyzed.
-In order to ease the creation of case studies the tool suite offers different sampling methods to choose revisions from the projects history based on a probability distribution.
+In order to ease the creation of case studies the tool suite offers different selection strategies to choose revisions from the projects history, e.g., based on a probability distribution.
 
-For example, we can generate a new case study for the project ``gzip``, drawing 10 revision from the projects history based on a half-normal distribution, with::
+For example, to get the latest revision of a project use:
 
-    vara-cs gen PATH_TO_PAPER_CONF_DIR/ HalfNormalSamplingMethod -p PROJECT_NAME --num-rev 10
+    vara-cs gen -p PROJECT_NAME select_latest
+
+For example, we can also generate a new case study for the project ``gzip``, drawing 10 revision from the projects history based on a half-normal distribution, with::
+
+    vara-cs gen -p gzip select_sample HalfNormalSamplingMethod --num-rev 10
 
 To easy handling of multiple projects, created case studies should be grouped into folders, e.g., a set of case studies used for a paper, called paper config.
 For more information see :ref:`How to use paper configs`.
 
-Extending case studies
-......................
-Case studies group together revisions but sometimes these groups need to be changed or extended, e.g., when we want to sample a few more revisions to gather data for a specific revision range.
-To simplify that, our tool suite provides :ref:`vara-cs ext`, a tool for extending and changing case studies.
-
-For example::
-
-    vara-cs ext paper_configs/ase-17/gzip_0.case_study distrib_add gzip/ --distribution UniformSamplingMethod --num-rev 5
-
-will add 5 new revision, sampled uniformly from all revisions, to the case study.
+Extending an existing case studies is easy, just generate more revisions and they will be automatically added.
+Should you wish to drop the old revisions, just pass `--override`, this will remove the old ones and afterwards add the newly selected revisions.
 
 .. warning::
 
     The specified distribution only relates to the newly added revisions but does not include revisions previously added.
-    If one wants to draw all revision according to the same distribution a new case study has to be created.
+    If one wants to draw all revision according to the same distribution the old case study needs to be overwritten.
 
-In more detail, case studies have different stages that are separated from each other.
-This allows us, for example, to extend a case study with a specific revision without changing the initial set of revisions, e.g., stage 0.
-
-For example::
-
-    vara-cs ext paper_configs/ase-17/gzip_0.case_study simple_add gzip/ --extra-revs 0dd8313ea7bce --merge-stage 3
-
-will add revision ``0dd8313ea7bce`` to the stage 3 of the gzip case study, allowing us to analyze it and draw different plots, e.g., one containing only stage 0 data and another with all stages included
 
 How to use paper configs
 ------------------------
@@ -83,7 +71,7 @@ Next, we can run our experiment with BenchBuild as usual. During experiment exec
 
 The current status of all case studies belonging to the current paper config, can be visualized with :ref:`vara-cs status`::
 
-    >>> vara-cs status -s
+    >>> vara-cs status -s $EXPERIMENT_NAME
     CS: gzip_0: (0/5) processed
     CS: gzip_1: (2/5) processed
     CS: gzip_2: (5/5) processed
