@@ -16,7 +16,7 @@ vara-cs gen
 -----------
 
 The ``vara-cs gen`` command generates a new or extends a existing one case study.
-Which revisions are added to the case study depend on the chosen *selection strategy*.
+Which revisions are added to the case study depends on the chosen *selection strategy*.
 New case studies are automatically inserted into the current paper config.
 
 For more options, take a look at the command line parameters:

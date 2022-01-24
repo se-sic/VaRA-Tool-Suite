@@ -28,6 +28,7 @@ For arch:
 
 Install to varats with pip
 **************************
+
 Then, the simplest way to install VaRA-TS is by using pip.
 
 .. code-block:: console
@@ -36,8 +37,7 @@ Then, the simplest way to install VaRA-TS is by using pip.
 
 
 Making an editable install from source to python user-directory (easier)
-*******************************************************************************
-
+************************************************************************
 
 First, you need to clone the VaRA-Tool-Suite repository.
 
