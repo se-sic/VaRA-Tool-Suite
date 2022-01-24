@@ -527,12 +527,9 @@ def __calc_code_churn_range_impl(
         diff_base_params = diff_base_params + \
                            churn_config.get_extensions_repr('*.')
 
-    if revision_range:
-        stdout = repo_git(diff_base_params)
-        revs = repo_git(log_base_params).strip().split()
-    else:
-        stdout = repo_git(diff_base_params)
-        revs = repo_git(log_base_params).strip().split()
+    stdout = repo_git(diff_base_params)
+    revs = repo_git(log_base_params).strip().split()
+
     # initialize with 0 as otherwise commits without changes would be
     # missing from the churn data
     for rev in revs:
@@ -773,22 +770,26 @@ class RevisionBinaryMap(tp.Container[str]):
         """
 
         Args:
-            location: where the binary can be found, relative to the \
+            location: where the binary can be found, relative to the
                       project-source root
             binary_type: the type of binary that is produced
             override_binary_name: overrides the used binary name
-            only_valid_in: additinally specifies a validity range that \
-                           specifies in which revision range this binary is \
+            override_entry_point: overrides the executable entry point
+            only_valid_in: additinally specifies a validity range that
+                           specifies in which revision range this binary is
                            produced
         """
         binary_location_path = Path(location)
         binary_name: str = kwargs.get(
             "override_binary_name", binary_location_path.stem
         )
+        override_entry_point = kwargs.get("override_entry_point", None)
+        if override_entry_point:
+            override_entry_point = Path(override_entry_point)
         validity_range = kwargs.get("only_valid_in", None)
 
         wrapped_binary = ProjectBinaryWrapper(
-            binary_name, binary_location_path, binary_type
+            binary_name, binary_location_path, binary_type, override_entry_point
         )
 
         if validity_range:

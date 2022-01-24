@@ -197,7 +197,7 @@ class CaseStudyOverviewPlot(Plot, plot_name="case_study_overview_plot"):
             return frame
 
         revision_df = gen_revision_df(**self.plot_kwargs)
-        revision_df.sort_values(by=['revision'], inplace=True)
+        revision_df.sort_values(by=['time_id'], inplace=True)
 
         def head_cm_neighbours(
             lhs_cm: ShortCommitHash, rhs_cm: ShortCommitHash
