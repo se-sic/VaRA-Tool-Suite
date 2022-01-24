@@ -11,20 +11,20 @@ How to use case studies
 If one wants to analyze a particular set of revisions or wants to re-evaluate the same revision over and over again, we can fixate the revisions we are interested in by creating a :class:`CaseStudy`.
 First, create a folder, where your config should be saved.
 Then, create a case study that specifies the revision to be analyzed.
-In order to ease the creation of case studies the tool suite offers different selection strategies to choose revisions from the projects history, e.g., based on a probability distribution.
+To ease the creation of case studies the tool suite offers different selection strategies to choose revisions from the projects history, e.g., based on a probability distribution.
 
 For example, to get the latest revision of a project use:
 
     vara-cs gen -p PROJECT_NAME select_latest
 
-For example, we can also generate a new case study for the project ``gzip``, drawing 10 revision from the projects history based on a half-normal distribution, with::
+As another example, we can generate a new case study for the project ``gzip``, drawing 10 revision from the projects history based on a half-normal distribution, with::
 
     vara-cs gen -p gzip select_sample HalfNormalSamplingMethod --num-rev 10
 
-To easy handling of multiple projects, created case studies should be grouped into folders, e.g., a set of case studies used for a paper, called paper config.
+Multiple case studies, e.g., a set of case studies used for a paper, can be grouped into a *paper config* so that they can be managed together more easily.
 For more information see :ref:`How to use paper configs`.
 
-Extending an existing case studies is easy, just generate more revisions and they will be automatically added.
+Extending an existing case study is easy, just select more revisions and they will be added automatically.
 Should you wish to drop the old revisions, just pass `--override`, this will remove the old ones and afterwards add the newly selected revisions.
 
 .. warning::

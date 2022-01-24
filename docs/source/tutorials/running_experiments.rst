@@ -29,13 +29,13 @@ Creating a Case Study
 Next, we need to populate the paper config with a case study.
 Case studies are managed with the :ref:`vara-cs` tool.
 
-For example, we can for example select revision `e7da44d515` from the project `xz` like this:
+For example, we can select revision `e7da44d515` from the project `xz` like this:
 
 .. code-block:: bash
 
     vara-cs gen -p xz select_specific e7da44d515
 
-or to select the lastest revision of xz like this:
+or we can select the lastest revision of xz like this:
 
 .. code-block:: bash
 
