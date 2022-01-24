@@ -58,16 +58,16 @@ It runs the command `benchbuild run -E JustCompile gzip` by default, which can b
 To step through the JustCompile experiment a breakpoint has to be set in just_compile.py.
 `F9` can be used to set/unset a breakpoint at the current line.
 
-Releasing VaRA-TS and vara related tools/libraries
+Releasing VaRA-TS and VaRA related tools/libraries
 ..................................................
 
-In general, all VaRA related tools and libraries should have the same releases, which are compatible to each other, e.g., `vara-11.1.0` for vara-llvm-project needs to work with vara-tool-suite release `vara-11.1.0`.
-We try to prevent breaking changes to that the tools suite works with many different VaRA version, but sometimes breaking changes are necessary.
+In general, all VaRA related tools and libraries with the same release should be compatible with each other, e.g., `vara-11.1.0` for vara-llvm-project needs to work with vara-tool-suite release `vara-11.1.0`.
+We try to prevent breaking changes so that the tool suite works with many different VaRA versions, but sometimes breaking changes between releases are necessary.
 
 Prepare release tooling
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Before we can release anything, we need to install and prepare our release tools.
+Before we can create a release, we need to install and prepare our release tools.
 
 Install:
 
@@ -97,7 +97,7 @@ Configure pypi credentials
 vara-tool-suite
 ^^^^^^^^^^^^^^^
 
-Ensure that all branches are on the right state.
+Ensure that all branches are in the correct state.
 
 .. code-block:: console
 
@@ -129,13 +129,13 @@ Prepare the next version.
     git checkout vara-dev
     # Update varats/setup.py and varats-core/setup.py to the next version
     # Update varats/setup.py to depend on the new core version
-    git commit --allow-empty -m "Bump version to $NEW_VERSION"
+    git commit -m "Bump version to $NEW_VERSION"
     git push vara-dev
 
 vara-feature
 ^^^^^^^^^^^^
 
-Ensure that all branches are on the right state.
+Ensure that all branches are in the correct state.
 
 .. code-block:: console
 
