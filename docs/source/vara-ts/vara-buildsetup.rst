@@ -16,7 +16,7 @@ For ubuntu:
 
 .. code-block:: console
 
-    sudo apt install python3-dev python3-tk python3-psutil psutils ninja-build python3-pip autoconf cmake ruby curl time libyaml-dev
+    sudo apt install python3-dev python3-tk python3-psutil psutils ninja-build python3-pip autoconf cmake ruby curl time libyaml-dev git
     sudo apt install python3-venv # If you want to install VaRA-TS in a python virtualenv
 
 For arch:
@@ -38,7 +38,6 @@ Then, the simplest way to install VaRA-TS is by using pip.
 
 Making an editable install from source to python user-directory (easier)
 ************************************************************************
-
 
 First, you need to clone the VaRA-Tool-Suite repository.
 
@@ -97,7 +96,7 @@ Required system dependencies for building VaRA.
 
 .. code-block:: console
 
-    sudo apt install libsqlite3-dev libcurl4-openssl-dev libboost-all-dev libpapi-dev googletest libxml2-dev
+    sudo apt install libsqlite3-dev libcurl4-openssl-dev libboost-all-dev libpapi-dev googletest libxml2-dev libssl-dev
 
 The following example shows how to setup VaRA via command line.
 
