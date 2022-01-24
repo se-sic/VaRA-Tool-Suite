@@ -27,6 +27,7 @@ from varats.provider.feature.feature_model_provider import (
 )
 from varats.report.report import ReportSpecification
 from varats.report.report import FileStatusExtension as FSE
+from varats.report.report import BaseReport
 from varats.report.tef_report import TEFReport
 from varats.report.gnu_time_report import TimeReport
 
@@ -129,12 +130,65 @@ class ExecAndTraceBinary(actions.Step):  # type: ignore
         return actions.StepResult.OK
 
 
-class RunTracedTEF(VersionExperiment, shorthand="RTTEF"):
+class BaseRunner(VersionExperiment, shorthand="BR"):
+
+    NAME = "BaseRunner"
+    REPORT_SPEC = ReportSpecification(TimeReport)
+
+    def __init__(
+        self, report_type: tp.Type[BaseReport], analysis_type: tp.Type[actions.Step], *args, **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        self.cflags = []
+        self.report_type = report_type
+        self.analysis_type = analysis_type
+
+    def set_cflags(self, *flags):
+        self.cflags = flags
+
+    def actions_for_project(self, project: Project) -> tp.MutableSequence[actions.Step]:
+        """
+        Returns the specified steps to run the project(s) specified in the call
+        in a fixed order.
+
+        Args:
+            project: to analyze
+        """
+        project.cflags.extend(self.cflags)
+
+        # Add the required runtime extensions to the project(s).
+        project.runtime_extension = (
+            run.RuntimeExtension(project, self) << time.RunWithTime()
+        )
+
+        # Add the required compiler extensions to the project(s).
+        project.compiler_extension = (
+            compiler.RunCompiler(project, self) << run.WithTimeout()
+        )
+
+        # Add own error handler to compile step.
+        project.compile = get_default_compile_error_wrapped(
+            self.get_handle(), project, self.report_type
+        )
+
+        analysis_actions = []
+
+        analysis_actions.append(actions.Compile(project))
+        analysis_actions.append(self.analysis_type(project, self.get_handle()))
+        analysis_actions.append(actions.Clean(project))
+
+        return analysis_actions
+
+
+class RunTracedTEF(BaseRunner, shorthand="RTTEF"):
     """Build and run the traced version of the binary"""
 
-    NAME = "RunTraced"
+    NAME = "RunTracedTEF"
 
     REPORT_SPEC = ReportSpecification(TEFReport)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(TEFReport, ExecAndTraceBinary, *args, **kwargs)
 
     def actions_for_project(self, project: Project) -> tp.MutableSequence[actions.Step]:
         """
@@ -153,42 +207,26 @@ class RunTracedTEF(VersionExperiment, shorthand="RTTEF"):
         if fm_path is None or not fm_path.exists():
             raise FeatureModelNotFound(project, fm_path)
 
-        # Sets FM model flags
-        project.cflags += ["-fvara-feature", f"-fvara-fm-path={fm_path.absolute()}"]
-        # Sets vara tracing flags
-        project.cflags += ["-fsanitize=vara", "-fvara-instr=trace_event"]
-
-        # Add the required runtime extensions to the project(s).
-        project.runtime_extension = (
-            run.RuntimeExtension(project, self) << time.RunWithTime()
+        self.set_cflags(
+            "-fvara-feature",
+            f"-fvara-fm-path={fm_path.absolute()}",
+            "-fsanitize=vara",
+            "-fvara-instr=trace_event",
         )
 
-        # Add the required compiler extensions to the project(s).
-        project.compiler_extension = (
-            compiler.RunCompiler(project, self) << run.WithTimeout()
-        )
-
-        # Add own error handler to compile step.
-        project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, TEFReport
-        )
-
-        analysis_actions = []
-
-        analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(ExecAndTraceBinary(project, self.get_handle()))
-        analysis_actions.append(actions.Clean(project))
-
-        return analysis_actions
+        return super().actions_for_project(project)
 
 
-class RunTracedTime(VersionExperiment, shorthand="RTTIME"):
+class RunTracedTime(BaseRunner, shorthand="RTTIME"):
     """Build and run the traced version of the binary"""
 
     NAME = "RunTracedTime"
 
     REPORT_SPEC = ReportSpecification(TimeReport)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(TimeReport, TimeBinary, *args, **kwargs)
+
     def actions_for_project(self, project: Project) -> tp.MutableSequence[actions.Step]:
         """
         Returns the specified steps to run the project(s) specified in the call
@@ -206,41 +244,25 @@ class RunTracedTime(VersionExperiment, shorthand="RTTIME"):
         if fm_path is None or not fm_path.exists():
             raise FeatureModelNotFound(project, fm_path)
 
-        # Sets FM model flags
-        project.cflags += ["-fvara-feature", f"-fvara-fm-path={fm_path.absolute()}"]
-        # Sets vara tracing flags
-        project.cflags += ["-fsanitize=vara", "-fvara-instr=trace_event"]
-
-        # Add the required runtime extensions to the project(s).
-        project.runtime_extension = (
-            run.RuntimeExtension(project, self) << time.RunWithTime()
+        self.set_cflags(
+            "-fvara-feature",
+            f"-fvara-fm-path={fm_path.absolute()}",
+            "-fsanitize=vara",
+            "-fvara-instr=trace_event",
         )
 
-        # Add the required compiler extensions to the project(s).
-        project.compiler_extension = (
-            compiler.RunCompiler(project, self) << run.WithTimeout()
-        )
-
-        # Add own error handler to compile step.
-        project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, TimeReport
-        )
-
-        analysis_actions = []
-
-        analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(TimeBinary(project, self.get_handle()))
-        analysis_actions.append(actions.Clean(project))
-
-        return analysis_actions
+        return super().actions_for_project(project)
 
 
-class RunUntraced(VersionExperiment, shorthand="RU"):
+class RunUntraced(BaseRunner, shorthand="RU"):
     """Build and run the untraced version of the binary"""
 
     NAME = "RunUntraced"
 
     REPORT_SPEC = ReportSpecification(TimeReport)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(TimeReport, TimeBinary, *args, **kwargs)
 
     def actions_for_project(self, project: Project) -> tp.MutableSequence[actions.Step]:
         """
@@ -250,25 +272,4 @@ class RunUntraced(VersionExperiment, shorthand="RU"):
         Args:
             project: to analyze
         """
-        # Add the required runtime extensions to the project(s).
-        project.runtime_extension = (
-            run.RuntimeExtension(project, self) << time.RunWithTime()
-        )
-
-        # Add the required compiler extensions to the project(s).
-        project.compiler_extension = (
-            compiler.RunCompiler(project, self) << run.WithTimeout()
-        )
-
-        # Add own error handler to compile step.
-        project.compile = get_default_compile_error_wrapped(
-            self.get_handle(), project, TimeReport
-        )
-
-        analysis_actions = []
-
-        analysis_actions.append(actions.Compile(project))
-        analysis_actions.append(TimeBinary(project, self.get_handle()))
-        analysis_actions.append(actions.Clean(project))
-
-        return analysis_actions
+        return super().actions_for_project(project)
