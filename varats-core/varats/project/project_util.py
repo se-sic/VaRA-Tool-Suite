@@ -210,6 +210,14 @@ class ProjectBinaryWrapper():
         executable_entry_point = local[f"{self.entry_point}"]
         return executable_entry_point(*args, **kwargs)
 
+    def __getitem__(self, args: tp.Any) -> tp.Any:
+        if self.type is not BinaryType.EXECUTABLE:
+            LOG.warning(f"Executing {self.type} is not possible.")
+            return None
+
+        executable_entry_point = local[f"{self.entry_point}"]
+        return executable_entry_point[args]
+
     def __str__(self) -> str:
         return f"{self.name}: {self.path} | {str(self.type)}"
 
