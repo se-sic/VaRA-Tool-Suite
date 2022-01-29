@@ -213,8 +213,7 @@ class ProjectBinaryWrapper():
 
     def __getitem__(self, args: tp.Any) -> BoundCommand:
         if self.type is not BinaryType.EXECUTABLE:
-            LOG.warning(f"Executing {self.type} is not possible.")
-            return None
+            raise AssertionError(f"Executing {self.type} is not possible.")
 
         executable_entry_point = local[f"{self.entry_point}"]
         return executable_entry_point[args]
