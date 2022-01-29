@@ -174,14 +174,14 @@ class ConfigurationOptionImpl(ConfigurationOption):
 
     def __init__(self, name: str, value: tp.Any) -> None:
         self.__name = name
-        self.__value = str(value)
+        self.__value = value
 
     @property
     def name(self) -> str:
         return self.__name
 
     @property
-    def value(self) -> str:
+    def value(self) -> tp.Any:
         return self.__value
 
 
