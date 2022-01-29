@@ -13,6 +13,7 @@ from benchbuild.source import Git, GitSubmodule
 from benchbuild.source.base import target_prefix
 from benchbuild.utils.cmd import git, mkdir, cp
 from plumbum import local
+from plumbum.commands.base import BoundCommand
 
 LOG = logging.getLogger(__name__)
 
@@ -209,6 +210,13 @@ class ProjectBinaryWrapper():
 
         executable_entry_point = local[f"{self.entry_point}"]
         return executable_entry_point(*args, **kwargs)
+
+    def __getitem__(self, args: tp.Any) -> BoundCommand:
+        if self.type is not BinaryType.EXECUTABLE:
+            raise AssertionError(f"Executing {self.type} is not possible.")
+
+        executable_entry_point = local[f"{self.entry_point}"]
+        return executable_entry_point[args]
 
     def __str__(self) -> str:
         return f"{self.name}: {self.path} | {str(self.type)}"
