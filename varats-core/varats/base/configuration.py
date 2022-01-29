@@ -174,7 +174,7 @@ class ConfigurationOptionImpl(ConfigurationOption):
 
     def __init__(self, name: str, value: tp.Any) -> None:
         self.__name = name
-        self.__value = value
+        self.__value = str(value)
 
     @property
     def name(self) -> str:
@@ -257,7 +257,7 @@ class ConfigurationImpl(Configuration):
         Returns: set value for the feature
         """
         if option_name in self.__config_values:
-            return self.__config_values[option_name]
+            return self.__config_values[option_name].value
 
         return None
 
