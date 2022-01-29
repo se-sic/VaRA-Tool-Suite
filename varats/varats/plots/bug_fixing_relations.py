@@ -24,8 +24,6 @@ from varats.utils.git_util import FullCommitHash
 
 LOG = logging.getLogger(__name__)
 
-NDArrayFloat2D = np.ndarray[tp.Literal[2], np.dtype[np.float64]]
-
 
 class NodeType(Enum):
     """Enum for different Node types in the chord plots."""
@@ -269,7 +267,7 @@ def _create_line(
     dist = _get_distance(start, end)
     interval = _get_interval(dist)
 
-    control_points: NDArrayFloat2D = np.array([
+    control_points: np.ndarray[tp.Literal[2], np.dtype[np.float64]] = np.array([
         start,
         np.true_divide(start, (__CP_PARAMETERS[interval])),
         np.true_divide(end, (__CP_PARAMETERS[interval])), end
@@ -378,13 +376,15 @@ def _get_commit_interval(distance: float, commit_count: int) -> int:
 
 
 def _get_bezier_curve(
-    ctrl_points: NDArrayFloat2D, num_points: int = 5
-) -> NDArrayFloat2D:
+    ctrl_points: np.ndarray[tp.Literal[2], np.dtype[np.float64]],
+    num_points: int = 5
+) -> np.ndarray[tp.Literal[2], np.dtype[np.float64]]:
     """Implements bezier edges to display between commit nodes."""
     n = ctrl_points.shape[0]
 
     def get_coordinate_on_curve(factor: float) -> npt.NDArray[np.float64]:
-        points_cp: NDArrayFloat2D = np.copy(ctrl_points)
+        points_cp: np.ndarray[tp.Literal[2],
+                              np.dtype[np.float64]] = np.copy(ctrl_points)
         for i in range(1, n):
             points_cp[:n - i, :] = (
                 1 - factor
