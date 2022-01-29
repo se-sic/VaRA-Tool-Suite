@@ -10,11 +10,7 @@ with open(base_dir + '/README.md') as f:
 
 setup(
     name='varats',
-    use_scm_version={
-        'root': '..',
-        "relative_to": __file__,
-        "fallback_version": '11.0.0'
-    },
+    version='11.1.1',
     url='https://github.com/se-passau/vara-tool-suite',
     packages=find_namespace_packages(include=['varats.*']),
     namespace_packages=["varats"],
@@ -48,7 +44,7 @@ setup(
         "seaborn>=0.8.0",
         "statsmodels~=0.13.1",
         "tabulate>=0.8.6",
-        "varats-core>=11.0.0",
+        "varats-core>=11.1.1",
         "wllvm>=1.1.4",
     ],
     author="Florian Sattler",
@@ -70,7 +66,6 @@ setup(
             'vd = varats.tools.driver_develop:main',
             'vara-gen-bbconfig = '
             'varats.tools.driver_gen_benchbuild_config:main',
-            'vara-gen-commitmap = varats.tools.driver_gen_commitmap:main',
             'vara-pc = varats.tools.driver_paper_config:main',
             'vara-plot = varats.tools.driver_plot:main',
             'vara-run = varats.tools.driver_run:main',

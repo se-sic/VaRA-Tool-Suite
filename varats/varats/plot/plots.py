@@ -23,13 +23,9 @@ from varats.ts_utils.click_param_types import (
 from varats.utils.settings import vara_cfg
 
 if sys.version_info <= (3, 8):
-    from typing_extensions import Protocol
-    from typing_extensions import runtime_checkable
-    from typing_extensions import final
+    from typing_extensions import Protocol, runtime_checkable, final
 else:
-    from typing import Protocol
-    from typing import runtime_checkable
-    from typing import final
+    from typing import Protocol, runtime_checkable, final
 
 if tp.TYPE_CHECKING:
     import varats.plot.plot  # pylint: disable=W0611

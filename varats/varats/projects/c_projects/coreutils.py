@@ -12,10 +12,11 @@ from varats.project.project_util import (
     wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     BinaryType,
+    get_local_project_git_path,
     verify_binaries,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 from varats.utils.settings import bb_cfg
 
 
@@ -39,123 +40,120 @@ class Coreutils(VProject):
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash  # pylint: disable=W0613
+        revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        return wrap_paths_to_binaries([
-            # figure out how to handle this file correctly in filenames
-            # 'src/[',
-            ('src/uniq', BinaryType.EXECUTABLE),
-            ('src/dircolors', BinaryType.EXECUTABLE),
-            ('src/numfmt', BinaryType.EXECUTABLE),
-            ('src/b2sum', BinaryType.EXECUTABLE),
-            ('src/mv', BinaryType.EXECUTABLE),
-            ('src/fold', BinaryType.EXECUTABLE),
-            ('src/dir', BinaryType.EXECUTABLE),
-            ('src/mkfifo', BinaryType.EXECUTABLE),
-            ('src/vdir', BinaryType.EXECUTABLE),
-            ('src/sha512sum', BinaryType.EXECUTABLE),
-            ('src/unexpand', BinaryType.EXECUTABLE),
-            ('src/join', BinaryType.EXECUTABLE),
-            ('src/nproc', BinaryType.EXECUTABLE),
-            ('src/ptx', BinaryType.EXECUTABLE),
-            ('src/printf', BinaryType.EXECUTABLE),
-            ('src/ginstall', BinaryType.EXECUTABLE),
-            ('src/du', BinaryType.EXECUTABLE),
-            ('src/printenv', BinaryType.EXECUTABLE),
-            # 'dcgen', was not found in version #961d668
-            ('src/groups', BinaryType.EXECUTABLE),
-            ('src/sync', BinaryType.EXECUTABLE),
-            ('src/ln', BinaryType.EXECUTABLE),
-            ('src/shuf', BinaryType.EXECUTABLE),
-            ('src/false', BinaryType.EXECUTABLE),
-            ('src/mkdir', BinaryType.EXECUTABLE),
-            ('src/chmod', BinaryType.EXECUTABLE),
-            ('src/link', BinaryType.EXECUTABLE),
-            ('src/cat', BinaryType.EXECUTABLE),
-            ('src/pwd', BinaryType.EXECUTABLE),
-            ('src/chown', BinaryType.EXECUTABLE),
-            ('src/head', BinaryType.EXECUTABLE),
-            ('src/sleep', BinaryType.EXECUTABLE),
-            ('src/fmt', BinaryType.EXECUTABLE),
-            ('src/getlimits', BinaryType.EXECUTABLE),
-            ('src/test', BinaryType.EXECUTABLE),
-            ('src/paste', BinaryType.EXECUTABLE),
-            ('src/comm', BinaryType.EXECUTABLE),
-            ('src/mknod', BinaryType.EXECUTABLE),
-            ('src/kill', BinaryType.EXECUTABLE),
-            ('src/sha384sum', BinaryType.EXECUTABLE),
-            ('src/sort', BinaryType.EXECUTABLE),
-            ('src/sum', BinaryType.EXECUTABLE),
-            ('src/sha224sum', BinaryType.EXECUTABLE),
-            ('src/expand', BinaryType.EXECUTABLE),
-            ('src/basenc', BinaryType.EXECUTABLE),
-            ('src/truncate', BinaryType.EXECUTABLE),
-            ('src/dd', BinaryType.EXECUTABLE),
-            ('src/tail', BinaryType.EXECUTABLE),
-            ('src/df', BinaryType.EXECUTABLE),
-            ('src/tee', BinaryType.EXECUTABLE),
-            ('src/tsort', BinaryType.EXECUTABLE),
-            ('src/yes', BinaryType.EXECUTABLE),
-            ('src/sha1sum', BinaryType.EXECUTABLE),
-            ('src/rm', BinaryType.EXECUTABLE),
-            ('src/make-prime-list', BinaryType.EXECUTABLE),
-            ('src/logname', BinaryType.EXECUTABLE),
-            ('src/pathchk', BinaryType.EXECUTABLE),
-            ('src/whoami', BinaryType.EXECUTABLE),
-            ('src/wc', BinaryType.EXECUTABLE),
-            ('src/basename', BinaryType.EXECUTABLE),
-            ('src/nohup', BinaryType.EXECUTABLE),
-            # 'libstdbuf.so', could not find in version #961d668
-            ('src/chroot', BinaryType.EXECUTABLE),
-            ('src/users', BinaryType.EXECUTABLE),
-            ('src/csplit', BinaryType.EXECUTABLE),
-            # 'stdbuf',  is no tool
-            ('src/hostid', BinaryType.EXECUTABLE),
-            ('src/readlink', BinaryType.EXECUTABLE),
-            ('src/timeout', BinaryType.EXECUTABLE),
-            ('src/base64', BinaryType.EXECUTABLE),
-            ('src/id', BinaryType.EXECUTABLE),
-            ('src/nl', BinaryType.EXECUTABLE),
-            ('src/stat', BinaryType.EXECUTABLE),
-            ('src/cp', BinaryType.EXECUTABLE),
-            ('src/shred', BinaryType.EXECUTABLE),
-            ('src/who', BinaryType.EXECUTABLE),
-            ('src/tr', BinaryType.EXECUTABLE),
-            ('src/echo', BinaryType.EXECUTABLE),
-            ('src/date', BinaryType.EXECUTABLE),
-            ('src/split', BinaryType.EXECUTABLE),
-            ('src/seq', BinaryType.EXECUTABLE),
-            ('src/md5sum', BinaryType.EXECUTABLE),
-            ('src/env', BinaryType.EXECUTABLE),
-            ('src/expr', BinaryType.EXECUTABLE),
-            ('src/true', BinaryType.EXECUTABLE),
-            ('src/chcon', BinaryType.EXECUTABLE),
-            ('src/chgrp', BinaryType.EXECUTABLE),
-            ('src/mktemp', BinaryType.EXECUTABLE),
-            ('src/unlink', BinaryType.EXECUTABLE),
-            ('src/uname', BinaryType.EXECUTABLE),
-            ('src/pinky', BinaryType.EXECUTABLE),
-            ('src/stty', BinaryType.EXECUTABLE),
-            ('src/rmdir', BinaryType.EXECUTABLE),
-            ('src/ls', BinaryType.EXECUTABLE),
-            ('src/runcon', BinaryType.EXECUTABLE),
-            ('src/nice', BinaryType.EXECUTABLE),
-            # 'blake2', is a folder
-            ('src/tty', BinaryType.EXECUTABLE),
-            ('src/factor', BinaryType.EXECUTABLE),
-            ('src/tac', BinaryType.EXECUTABLE),
-            ('src/realpath', BinaryType.EXECUTABLE),
-            ('src/pr', BinaryType.EXECUTABLE),
-            ('src/sha256sum', BinaryType.EXECUTABLE),
-            # 'du-tests', removed due to bash script
-            ('src/cksum', BinaryType.EXECUTABLE),
-            ('src/touch', BinaryType.EXECUTABLE),
-            ('src/cut', BinaryType.EXECUTABLE),
-            ('src/od', BinaryType.EXECUTABLE),
-            ('src/base32', BinaryType.EXECUTABLE),
-            ('src/uptime', BinaryType.EXECUTABLE),
-            ('src/dirname', BinaryType.EXECUTABLE),
-        ])
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(Coreutils.NAME)
+        )
+
+        binary_map.specify_binary('src/uniq', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/dircolors', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/numfmt', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/b2sum', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/mv', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/fold', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/dir', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/mkfifo', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/vdir', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/sha512sum', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/unexpand', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/join', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/nproc', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/ptx', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/printf', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/ginstall', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/du', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/printenv', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/groups', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/sync', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/ln', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/shuf', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/false', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/mkdir', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/chmod', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/link', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/cat', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/pwd', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/chown', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/head', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/sleep', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/fmt', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/getlimits', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/test', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/paste', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/comm', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/mknod', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/kill', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/sha384sum', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/sort', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/sum', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/sha224sum', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/expand', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/basenc', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/truncate', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/dd', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/tail', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/df', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/tee', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/tsort', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/yes', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/sha1sum', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/rm', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/make-prime-list', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/logname', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/pathchk', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/whoami', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/wc', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/basename', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/nohup', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/chroot', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/users', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/csplit', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/hostid', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/readlink', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/timeout', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/base64', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/id', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/nl', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/stat', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/cp', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/shred', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/who', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/tr', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/echo', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/date', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/split', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/seq', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/md5sum', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/env', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/expr', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/true', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/chcon', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/chgrp', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/mktemp', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/unlink', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/uname', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/pinky', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/stty', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/rmdir', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/ls', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/runcon', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/nice', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/tty', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/factor', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/tac', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/realpath', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/pr', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/sha256sum', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/cksum', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/touch', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/cut', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/od', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/base32', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/uptime', BinaryType.EXECUTABLE)
+        binary_map.specify_binary('src/dirname', BinaryType.EXECUTABLE)
+
+        return binary_map[revision]
 
     def run_tests(self) -> None:
         coreutils_source = local.path(self.source_of_primary)
