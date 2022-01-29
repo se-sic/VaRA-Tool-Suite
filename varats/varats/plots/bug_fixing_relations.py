@@ -268,7 +268,7 @@ def _create_line(
     interval = _get_interval(dist)
 
     # TODO: With min python 3.8 replace tp.Any -> tp.Literal[2]
-    control_points: np.ndarray[tp.Any, np.dtype[np.float64]] = np.array([
+    control_points: np.ndarray[tp.Any, np._DType[np.float64]] = np.array([
         start,
         np.true_divide(start, (__CP_PARAMETERS[interval])),
         np.true_divide(end, (__CP_PARAMETERS[interval])), end
@@ -378,15 +378,15 @@ def _get_commit_interval(distance: float, commit_count: int) -> int:
 
 def _get_bezier_curve(
     # TODO: With min python 3.8 replace tp.Any -> tp.Literal[2]
-    ctrl_points: np.ndarray[tp.Any, np.dtype[np.float64]],
+    ctrl_points: np.ndarray[tp.Any, npt._DType[np.float64]],
     num_points: int = 5
-) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
+) -> np.ndarray[tp.Any, np._DType[np.float64]]:
     """Implements bezier edges to display between commit nodes."""
     n = ctrl_points.shape[0]
 
     def get_coordinate_on_curve(factor: float) -> npt.NDArray[np.float64]:
         points_cp: np.ndarray[tp.Any,
-                              np.dtype[np.float64]] = np.copy(ctrl_points)
+                              np._DType[np.float64]] = np.copy(ctrl_points)
         for i in range(1, n):
             points_cp[:n - i, :] = (
                 1 - factor
