@@ -5,6 +5,7 @@ import typing as tp
 from enum import Enum
 
 import numpy as np
+import numpy.typing as npt
 from scipy.stats import halfnorm
 
 from varats.base.configuration import Configuration
@@ -220,7 +221,9 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
 class UniformSamplingMethod(NormalSamplingMethod):
     """SampleMethod based on the uniform distribution."""
 
-    def gen_distribution_function(self) -> tp.Callable[[int], np.ndarray]:
+    def gen_distribution_function(
+        self
+    ) -> tp.Callable[[int], np.ndarray[tp.Any, np.dtype[np.float64]]]:
         """
         Generate a distribution function for the specified sampling method.
 
@@ -229,10 +232,10 @@ class UniformSamplingMethod(NormalSamplingMethod):
             according to the selected distribution
         """
 
-        def uniform(num_samples: int) -> np.ndarray:
-            return tp.cast(
-                tp.List[float], np.random.uniform(0, 1.0, num_samples)
-            )
+        def uniform(
+            num_samples: int
+        ) -> np.ndarray[tp.Any, np.dtype[np.float64]]:
+            return np.random.uniform(0, 1.0, num_samples)
 
         return uniform
 
