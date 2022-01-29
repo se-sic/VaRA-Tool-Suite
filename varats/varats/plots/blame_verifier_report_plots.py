@@ -6,6 +6,7 @@ import typing as tp
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import numpy as np
+import numpy.typing as nptp
 import pandas as pd
 from matplotlib import style
 from sklearn import preprocessing
@@ -225,7 +226,7 @@ def _verifier_plot_multiple(
 
         # Save an unique int for each varying revision to prepare the data
         # for the normalization on the x-axis
-        revisions_as_numbers = np.array([
+        revisions_as_numbers: nptp.NDArray[np.int_] = np.array([
             x + 1 for x, y in enumerate(plot_data[1]["revisions"])
         ]).reshape(-1, 1)
 
