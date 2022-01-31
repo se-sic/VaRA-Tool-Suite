@@ -396,9 +396,7 @@ class BaseReport():
     def __init_subclass__(
         cls, shorthand: str, file_type: str, *args: tp.Any, **kwargs: tp.Any
     ) -> None:
-        # mypy does not yet fully understand __init_subclass__()
-        # https://github.com/python/mypy/issues/4660
-        super().__init_subclass__(*args, **kwargs)  # type: ignore
+        super().__init_subclass__(*args, **kwargs)
 
         cls.SHORTHAND = shorthand
         cls.FILE_TYPE = file_type

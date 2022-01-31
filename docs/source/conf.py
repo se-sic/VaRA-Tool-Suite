@@ -81,6 +81,7 @@ add_module_names = True
 # The exact reason for these errors is unknown but might be related to
 # incompatible cython versions (https://github.com/cython/cython/issues/1953)
 import pandas  # isort:skip
+import numpy.typing as npt  # isort:skip
 
 # The autodocs typehints plugin does not resolve circular imports caused by type
 # annotations, so we have to manually break the circles.
