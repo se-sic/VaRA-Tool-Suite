@@ -92,6 +92,7 @@ import git  # isort:skip
 import typing as tp  # isort:skip
 
 tp.TYPE_CHECKING = True
+import numpy.typing as npt  # isort:skip
 import varats.mapping.commit_map  # isort:skip
 import varats.plot.plot  # isort:skip
 import varats.table.table  # isort:skip
