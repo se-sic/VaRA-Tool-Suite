@@ -209,7 +209,6 @@ def _generate_line_data(
                 bug_introduction] = NodeType.INTRODUCING_FIX if commit_type[
                     bug_introduction] == NodeType.FIX else NodeType.INTRODUCTION
 
-            # HERE
             commit_dist = map_commit_to_id[bug_introduction] - map_commit_to_id[
                 bug_fix]
             commit_interval = _get_commit_interval(
