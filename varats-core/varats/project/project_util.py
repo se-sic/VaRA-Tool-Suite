@@ -48,10 +48,17 @@ def get_loaded_vara_projects() -> tp.Generator[tp.Type[bb.Project], None, None]:
         yield bb.project.ProjectRegistry.projects[project_map_key]
 
 
-def _is_vara_project(project_key) -> bool:
+def _is_vara_project(project_key: str) -> bool:
+    """
+    >>> _is_vara_project("Xz/c_projects")
+    True
+
+    >>> _is_vara_project("BZip2/gentoo")
+    False
+    """
     return any(
         project_key.endswith(x)
-        for x in ("c_projects", "cpp_projects", "test_projects")
+        for x in ("c_projects", "cpp_projects", "test_projects", "perf_tests")
     )
 
 
