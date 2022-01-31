@@ -30,3 +30,9 @@ class ProjectDomains(Enum):
 
     def __str__(self) -> str:
         return str(self.value)
+
+    def __lt__(self, other: object) -> bool:
+        if isinstance(other, ProjectDomains):
+            return self.value < other.value
+
+        return False
