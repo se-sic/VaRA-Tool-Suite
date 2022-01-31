@@ -1,7 +1,6 @@
 """Driver module for `vara-buildsetup`."""
 
 import os
-import sys
 import typing as tp
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -270,7 +269,7 @@ def __build_in_container(
 
     if not install_prefix:
         install_prefix = Path(
-            str(tool.install_location()) + "_ " + image_base.name
+            str(tool.install_location()) + "_" + image_base.name
         )
 
     if not install_prefix.exists():
@@ -278,30 +277,37 @@ def __build_in_container(
 
     varats_root = Path(vara_cfg()["config_file"].value).parent
     source_mount = str(tool.source_location().relative_to(varats_root))
-    install_mount = str(tool.install_location().relative_to(varats_root))
+    install_mount = str(install_prefix.relative_to(varats_root))
 
     click.echo("Preparing container image.")
-    create_dev_image(image_base, tool, build_type, source_mount, install_mount)
+    create_dev_image(image_base, tool)
 
     with TemporaryDirectory() as tmpdir:
         image_context = BaseImageCreationContext(image_base, Path(tmpdir))
+        source_mount = str(image_context.varats_root / source_mount)
+        install_mount = str(image_context.varats_root / install_mount)
         bb_cfg()["container"]["mounts"].value[:] += [
             # mount tool src dir
-            [
-                str(tool.source_location()),
-                str(image_context.varats_root / source_mount)
-            ],
+            [str(tool.source_location()), source_mount],
             # mount install dir
-            [
-                str(install_prefix),
-                str(image_context.varats_root / install_mount)
-            ]
+            [str(install_prefix), install_mount]
         ]
 
     click.echo(
-        f"Building {tool.name} ({build_type.name}) in a container ({image_base.name})."
+        f"Building {tool.name} ({build_type.name}) "
+        f"in a container ({image_base.name})."
     )
-    run_container(image_name, f"build_{tool.name}")
+
+    run_container(
+        image_name, f"build_{tool.name}", None, [
+            "build",
+            tool.name.lower(),
+            f"--build-type={build_type.name}",
+            f"--source-location={source_mount}",
+            f"--install-prefix={install_mount}",
+            f"--build-folder-suffix={image_base.name}",
+        ]
+    )
 
 
 if __name__ == '__main__':

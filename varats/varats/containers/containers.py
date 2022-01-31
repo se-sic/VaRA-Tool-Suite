@@ -24,7 +24,6 @@ from benchbuild.utils.settings import to_yaml
 from plumbum import local
 
 from varats.tools.research_tools.research_tool import Distro, ResearchTool
-from varats.tools.research_tools.vara_manager import BuildType
 from varats.tools.tool_util import get_research_tool
 from varats.utils.settings import bb_cfg, vara_cfg, save_bb_config
 
@@ -58,10 +57,15 @@ _BASE_IMAGES: tp.Dict[ImageBase, tp.Callable[[], ContainerImage]] = {
     ImageBase.DEBIAN_10:
         lambda: ContainerImage().from_("docker.io/library/debian:10").
         run('apt', 'update').run(
-            'apt', 'install', '-y', 'python3', 'python3-dev', 'python3-pip',
-            'musl-dev', 'git', 'gcc', 'libgit2-dev', 'libffi-dev',
-            'libyaml-dev', 'clang'
-        )
+            'apt', 'install', '-y', 'wget', 'gnupg', 'lsb-release',
+            'software-properties-common', 'python3', 'python3-dev',
+            'python3-pip', 'musl-dev', 'git', 'gcc', 'libgit2-dev',
+            'libffi-dev', 'libyaml-dev'
+        ).run('wget', 'https://apt.llvm.org/llvm.sh').
+        run('chmod', '+x', './llvm.sh').run('./llvm.sh', '13', 'all').run(
+            'ln', '-s', '/usr/bin/clang-13', '/usr/bin/clang'
+        ).run('ln', '-s', '/usr/bin/clang++-13', '/usr/bin/clang++'
+             ).run('ln', '-s', '/usr/bin/lld-13', '/usr/bin/lld')
 }
 
 
@@ -303,8 +307,7 @@ def create_base_image(base: ImageBase) -> None:
 
 
 def create_dev_image(
-    base: ImageBase, research_tool: ResearchTool[tp.Any], build_type: BuildType,
-    source_location: str, install_prefix: str
+    base: ImageBase, research_tool: ResearchTool[tp.Any]
 ) -> None:
     """
     Build a dev image for the given image base and research tool.
@@ -326,22 +329,11 @@ def create_dev_image(
 
         # add research tool dependencies
         research_tool.container_install_dependencies(image_context)
-
         _add_vara_config(image_context)
         _add_benchbuild_config(image_context)
         image_context.layers.workingdir(str(image_context.varats_root))
-        image_context.layers.entrypoint(
-            "vara-buildsetup", "build", research_tool.name.lower(),
-            f"--build-type={build_type.name}",
-            f"--source-location={source_location}",
-            f"--install-prefix={install_prefix}",
-            f"--build-folder-suffix={base.name}"
-        )
-        publish(
-            CreateImage(
-                f"{base.image_name}_{build_type.name}", image_context.layers
-            )
-        )
+        image_context.layers.entrypoint("vara-buildsetup")
+        publish(CreateImage(f"{base.image_name}_dev", image_context.layers))
 
 
 def create_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
@@ -403,9 +395,17 @@ def export_base_images(images: tp.Iterable[ImageBase] = ImageBase) -> None:
 
 
 def run_container(
-    image_tag: str,
-    container_name: str,
-    build_dir: tp.Optional[str] = None
+    image_tag: str, container_name: str, build_dir: tp.Optional[str],
+    args: tp.Sequence[str]
 ) -> None:
+    """
+    Run a podman container.
+
+    Args:
+        image_tag: tag of the image to use for the container
+        container_name: name for the spawned container
+        build_dir: benchbuild's build directory
+        args: arguments that get passed to the container's entry point
+    """
     publish = bootstrap.bus()
-    publish(RunProjectContainer(image_tag, container_name, build_dir))
+    publish(RunProjectContainer(image_tag, container_name, build_dir, args))
