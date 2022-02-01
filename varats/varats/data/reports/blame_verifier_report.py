@@ -5,7 +5,7 @@ import typing as tp
 from enum import Enum
 from pathlib import Path
 
-from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
+from varats.report.report import BaseReport, ReportFilename
 from varats.utils.git_util import ShortCommitHash
 
 LOG = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class BlameVerifierReportParserMixin:
     hierarchy."""
 
     def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(**kwargs)  # type: ignore
+        super().__init__(**kwargs)
         self.__path = kwargs['path']
         self.__num_successes = -1
         self.__num_failures = -1
