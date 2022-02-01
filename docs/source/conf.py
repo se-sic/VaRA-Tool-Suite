@@ -112,15 +112,11 @@ benchbuild.utils.LOG.setLevel(logging.ERROR)
 from pathlib import Path
 
 from varats.projects.discover_projects import initialize_projects
-from varats.tools.bb_config import create_new_bb_config
 from varats.ts_utils.doc_util import (
     generate_project_overview_table_file,
     generate_projects_autoclass_files,
 )
-from varats.utils.settings import create_new_varats_config
 
-varats_cfg = create_new_varats_config()
-bb_cfg = create_new_bb_config(varats_cfg)
 initialize_projects()
 
 generate_project_overview_table_file(
