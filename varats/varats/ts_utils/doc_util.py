@@ -1,3 +1,4 @@
+"""Utility module to generate sphinx documentation for varats."""
 import typing as tp
 from pathlib import Path
 
@@ -6,15 +7,16 @@ import pandas
 import tabulate as tb
 
 from varats.project.project_util import get_loaded_vara_projects
-from varats.projects.test_projects.basic_tests import BasicTests
 
 
 def _strip_python_class_decorations(raw_class_string: str) -> str:
     """
-    >>> _strip_python_class_decorations("<class 'varats.projects.c_projects.file.File'>")
+    >>> _strip_python_class_decorations( \
+        "<class 'varats.projects.c_projects.file.File'>")
     'varats.projects.c_projects.file.File'
 
-    >>> _strip_python_class_decorations("<class 'varats.projects.cpp_projects.doxygen.Doxygen'>")
+    >>> _strip_python_class_decorations( \
+        "<class 'varats.projects.cpp_projects.doxygen.Doxygen'>")
     'varats.projects.cpp_projects.doxygen.Doxygen'
     """
     return raw_class_string[8:-2]
@@ -24,6 +26,7 @@ def _insert_class_reference_to_project(
     project_type: tp.Type[bb.Project]
 ) -> str:
     """
+    >>> from varats.projects.test_projects.basic_tests import BasicTests
     >>> _insert_class_reference_to_project(str(BasicTests))
     ':class:`~varats.projects.test_projects.basic_tests.BasicTests`'
     """
