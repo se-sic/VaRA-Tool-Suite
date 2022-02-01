@@ -27,6 +27,11 @@ class TestProjectDomain(unittest.TestCase):
         self.assertEqual(sorted_project_domains[0], pd.ProjectDomains.C_LIBRARY)
         self.assertEqual(sorted_project_domains[-1], pd.ProjectDomains.PARSER)
 
+    def test_comparision_against_other_classes(self) -> None:
+        """Check that we don't fail to compare against other classes."""
+        self.assertFalse(pd.ProjectDomains.C_LIBRARY < 42)
+        self.assertFalse(pd.ProjectDomains.C_LIBRARY < "aaaa")
+
 
 class TestProjectGroup(unittest.TestCase):
     """Tests basic functionallity for project groups."""
@@ -48,3 +53,8 @@ class TestProjectGroup(unittest.TestCase):
         self.assertEqual(
             sorted_project_groups[-1], pd.ProjectGroups.CPP_PROJECTS
         )
+
+    def test_comparision_against_other_classes(self) -> None:
+        """Check that we don't fail to compare against other classes."""
+        self.assertFalse(pd.ProjectGroups.C_PROJECTS < 42)
+        self.assertFalse(pd.ProjectGroups.C_PROJECTS < "aaaa")
