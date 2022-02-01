@@ -10,6 +10,7 @@ matplotlib>=3.1.2
 numpy>=1.21
 packaging>=20.1
 pandas>=0.22.0
+pandas-stubs
 plotly>=4.14.1
 plumbum>=1.6.6
 pre-commit>=2.3.0

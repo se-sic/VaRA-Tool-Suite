@@ -106,3 +106,20 @@ set_type_checking_flag = True
 # -- Prevent import warnings -------------------------------------------------
 
 benchbuild.utils.LOG.setLevel(logging.ERROR)
+
+# -- Generate files ----------------------------------------------------------
+
+from pathlib import Path
+
+from varats.projects.discover_projects import initialize_projects
+from varats.ts_utils.doc_util import (
+    generate_project_overview_table_file,
+    generate_projects_autoclass_files,
+)
+
+initialize_projects()
+
+generate_project_overview_table_file(
+    Path("vara-ts-api/ProjectOverviewTable.inc")
+)
+generate_projects_autoclass_files(Path("vara-ts-api"))
