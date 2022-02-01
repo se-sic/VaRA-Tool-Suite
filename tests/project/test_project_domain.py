@@ -25,9 +25,7 @@ class TestProjectDomain(unittest.TestCase):
         sorted_project_domains = sorted(unsorted_project_domains)
 
         self.assertEqual(sorted_project_domains[0], pd.ProjectDomains.C_LIBRARY)
-        self.assertEqual(
-            sorted_project_domains[-1], pd.ProjectDomains.HW_EMULATOR
-        )
+        self.assertEqual(sorted_project_domains[-1], pd.ProjectDomains.PARSER)
 
 
 class TestProjectGroup(unittest.TestCase):
