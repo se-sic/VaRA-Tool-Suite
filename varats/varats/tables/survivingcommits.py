@@ -7,7 +7,9 @@ import pandas as pd
 from tabulate import tabulate
 
 import varats.plots.surviving_commits
+from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import load_case_study_from_file
+from varats.plots import surviving_commits
 from varats.project.project_util import get_local_project_git
 from varats.table.table import Table, wrap_table_in_document
 from varats.table.tables import TableFormat
@@ -17,7 +19,6 @@ LOG = logging.Logger(__name__)
 
 
 class SurvivingInteractionsTable(Table):
-
     NAME = "surviving_interactions"
 
     def __init__(self, **kwargs: tp.Any):
@@ -27,7 +28,8 @@ class SurvivingInteractionsTable(Table):
         case_study = load_case_study_from_file(
             Path(self.table_kwargs['cs_path'])
         )
-        data = varats.plots.surviving_commits.get_normalized_interactions_per_commit(
+        data = varats.plots.surviving_commits \
+            .get_normalized_interactions_per_commit_wide(
             case_study
         )
         if self.format in [
@@ -56,27 +58,8 @@ class SurvivingLinesTable(Table):
         case_study = load_case_study_from_file(
             Path(self.table_kwargs['cs_path'])
         )
-
-        cs_data: tp.List[pd.DataFrame] = []
-
         project_name = case_study.project_name
-        project_repo = get_local_project_git(project_name)
-        starting_lines = {}
-        for revision in case_study.revisions.__reversed__():
-            lines_per_revision = calc_surviving_lines(
-                project_repo, revision, case_study.revisions
-            )
-            starting_lines[revision] = lines_per_revision[revision] \
-                if lines_per_revision.__contains__(revision) else 1
-            rev_dict = {
-                revision.__str__(): {
-                    k.__str__(): ((v / starting_lines[k]) * 100)
-                    for (k, v) in lines_per_revision.items()
-                    if case_study.revisions.__contains__(k)
-                }
-            }
-            cs_data.append(pd.DataFrame(rev_dict))
-        df = pd.concat(cs_data)
+        df = surviving_commits.get_normalized_lines_per_commit_wide(case_study)
         if self.format in [
             TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
         ]:

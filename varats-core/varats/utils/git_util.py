@@ -33,7 +33,7 @@ class CommitHash(abc.ABC):
 
     def __init__(self, short_commit_hash: str):
         if not len(short_commit_hash) >= self.hash_length():
-            raise ValueError("Commit hash too short")
+            raise ValueError(f"Commit hash too short {short_commit_hash}")
         self.__commit_hash = short_commit_hash[:self.hash_length()]
 
     @property
@@ -853,14 +853,19 @@ def calc_surviving_lines(
                 lines = git("blame", "--root", "-l", f"{file}").splitlines()
                 for line in lines:
                     if line:
-                        last_change = line[:FullCommitHash.hash_length()]
-                        last_change = FullCommitHash(last_change)
-                        if lines_per_revision.keys().__contains__(
-                            last_change
-                        ) and not math.isnan(lines_per_revision[last_change]):
-                            lines_per_revision[
-                                last_change
-                            ] = lines_per_revision[last_change] + 1
-                        else:
-                            lines_per_revision[last_change] = 1
+
+                        content = line[FullCommitHash.hash_length():]
+                        if content:
+                            last_change = line[:FullCommitHash.hash_length()]
+                            last_change = FullCommitHash(last_change)
+                            if lines_per_revision.keys().__contains__(
+                                    last_change
+                            ) and \
+                                    not math.isnan(
+                                        lines_per_revision[last_change]):
+                                lines_per_revision[
+                                    last_change
+                                ] = lines_per_revision[last_change] + 1
+                            else:
+                                lines_per_revision[last_change] = 1
     return lines_per_revision
