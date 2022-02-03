@@ -79,7 +79,7 @@ class FeatureRegionGeneration(actions.Step):  # type: ignore
             )
 
             opt_params = [
-                "-vara-PTFD", "-vara-PTFDD", "-vara-FR-verifier", "-o", "/dev/null",
+                "-vara-PTFD", "-vara-PTFDD", "-vara-FR-verifier", "--vara-verifier-options=Status", "-o", "/dev/null",
                 get_cached_bc_file_path(
                     project, binary, [
                         BCFileExtensions.NO_OPT, BCFileExtensions.TBAA,
@@ -123,16 +123,16 @@ class FeatureRegionVerificationExperiment(VersionExperiment, shorthand="FRR"):
         """
 
         # FeatureModelProvider
-        # fm_provider = FeatureModelProvider.create_provider_for_project(project)
-        # fm_path = fm_provider.get_feature_model_path(project)
+        fm_provider = FeatureModelProvider.create_provider_for_project(project)
+        fm_path = fm_provider.get_feature_model_path(project)
 
         # Try, to build the project without optimizations to get more precise
         # blame annotations. Note: this does not guarantee that a project is
         # build without optimizations because the used build tool/script can
         # still add optimizations flags after the experiment specified cflags.
         project.cflags += [
-            "-fvara-IFA", "-fvara-feature", f"-fvara-fm-path=/scratch/zatho/varats/ConfigurableSystems/Opus/FeatureModel.xml",
-            "-O1", "-Xclang", "-disable-llvm-optzns", "-g0"
+            "-fvara-IFA", "-fvara-feature", f"-fvara-fm-path={fm_path}",
+            "-O1", "-Xclang", "-disable-llvm-optzns", "-g"
         ]
 
         # TODO: missing arg for feature model
