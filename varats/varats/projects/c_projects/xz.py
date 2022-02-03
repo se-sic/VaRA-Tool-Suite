@@ -12,7 +12,7 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
+from varats.paper_mgmt.paper_config import project_filter_generator
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
@@ -38,28 +38,26 @@ class Xz(VProject):
     DOMAIN = ProjectDomains.COMPRESSION
 
     SOURCE = [
-        PaperConfigSpecificGit(
-            'xz',
-            block_revisions([
-                GoodBadSubgraph(["cf49f42a6bd40143f54a6b10d6e605599e958c0b"],
-                                ["4c7ad179c78f97f68ad548cb40a9dfa6871655ae"],
-                                "missing file api/lzma/easy.h"),
-                GoodBadSubgraph(["335fe260a81f61ec99ff5940df733b4c50aedb7c"],
-                                ["24e0406c0fb7494d2037dec033686faf1bf67068"],
-                                "use of undeclared LZMA_THREADS_MAX"),
-                RevisionRange(
-                    "5d018dc03549c1ee4958364712fb0c94e1bf2741",
-                    "c324325f9f13cdeb92153c5d00962341ba070ca2",
-                    "Initial git import without xz"
-                )
-            ])(
-                bb.source.Git(
-                    remote="https://github.com/xz-mirror/xz.git",
-                    local="xz",
-                    refspec="origin/HEAD",
-                    limit=None,
-                    shallow=False,
-                )
+        block_revisions([
+            GoodBadSubgraph(["cf49f42a6bd40143f54a6b10d6e605599e958c0b"],
+                            ["4c7ad179c78f97f68ad548cb40a9dfa6871655ae"],
+                            "missing file api/lzma/easy.h"),
+            GoodBadSubgraph(["335fe260a81f61ec99ff5940df733b4c50aedb7c"],
+                            ["24e0406c0fb7494d2037dec033686faf1bf67068"],
+                            "use of undeclared LZMA_THREADS_MAX"),
+            RevisionRange(
+                "5d018dc03549c1ee4958364712fb0c94e1bf2741",
+                "c324325f9f13cdeb92153c5d00962341ba070ca2",
+                "Initial git import without xz"
+            )
+        ])(
+            bb.source.Git(
+                remote="https://github.com/xz-mirror/xz.git",
+                local="xz",
+                refspec="origin/HEAD",
+                limit=None,
+                shallow=False,
+                version_filter=project_filter_generator("xz")
             )
         )
     ]

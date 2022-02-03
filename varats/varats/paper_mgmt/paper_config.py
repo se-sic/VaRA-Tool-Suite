@@ -11,9 +11,6 @@ import logging
 import typing as tp
 from pathlib import Path
 
-import benchbuild as bb
-from benchbuild.source.versions import BaseVersionFilter
-
 from varats.paper.case_study import (
     CaseStudy,
     load_case_study_from_file,
@@ -282,26 +279,3 @@ def get_paper_config() -> PaperConfig:
     if _G_PAPER_CONFIG is None:
         load_paper_config()
     return get_loaded_paper_config()
-
-
-class PaperConfigSpecificGit(BaseVersionFilter):
-    """
-    Paper config specific git filter to reduce the available versions.
-
-    The filter filters out all revisions that are not specified in one of the
-    case studies.
-    """
-
-    def __init__(
-        self, project_name: str, child: bb.source.base.FetchableSource
-    ) -> None:
-        super().__init__(child)
-        self.__project_name = project_name
-
-    def versions(self) -> tp.List[bb.source.base.Variant]:
-        proj_filter = project_filter_generator(self.__project_name)
-
-        return [
-            variant for variant in self.child.versions()
-            if proj_filter(variant.version)
-        ]
