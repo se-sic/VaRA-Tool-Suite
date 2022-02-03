@@ -13,7 +13,6 @@ from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     VaraTestRepoSource,
     ProjectBinaryWrapper,
-    wrap_paths_to_binaries,
     get_local_project_git_path,
     BinaryType,
     VaraTestRepoSubmodule,

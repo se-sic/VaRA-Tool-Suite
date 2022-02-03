@@ -6,10 +6,9 @@ from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     BinaryType,
     verify_binaries,
@@ -28,13 +27,13 @@ class Busybox(VProject):
     DOMAIN = ProjectDomains.UNIX_TOOLS
 
     SOURCE = [
-        bb.source.Git(
+        PaperConfigSpecificGit(
+            project_name="busybox",
             remote="https://github.com/mirror/busybox.git",
             local="busybox",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("busybox")
+            shallow=False
         )
     ]
 
