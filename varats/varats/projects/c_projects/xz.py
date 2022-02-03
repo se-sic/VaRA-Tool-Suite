@@ -16,7 +16,6 @@ from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    wrap_paths_to_binaries,
     get_local_project_git_path,
     BinaryType,
     verify_binaries,
@@ -58,7 +57,7 @@ class Xz(VProject):
                     local="xz",
                     refspec="origin/HEAD",
                     limit=None,
-                    shallow=False,
+                    shallow=False
                 )
             )
         )
