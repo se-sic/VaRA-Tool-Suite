@@ -69,9 +69,7 @@ class Artefact(ABC):
         cls, artefact_type: str, artefact_type_version: int, **kwargs: tp.Any
     ) -> None:
         """Register Artefact implementations."""
-        # mypy does not yet fully understand __init_subclass__()
-        # https://github.com/python/mypy/issues/4660
-        super().__init_subclass__(**kwargs)  # type: ignore
+        super().__init_subclass__(**kwargs)
         cls.ARTEFACT_TYPE = artefact_type
         cls.ARTEFACT_TYPE_VERSION = artefact_type_version
         cls.ARTEFACT_TYPES[cls.ARTEFACT_TYPE] = cls
