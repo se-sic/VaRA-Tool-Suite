@@ -29,7 +29,7 @@ template for your own project::
     from benchbuild.utils.settings import get_number_of_jobs
     from plumbum import local
 
-    from varats.paper_mgmt.paper_config import project_filter_generator
+    from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
     from varats.utils.settings import bb_cfg
     from varats.project.project_util import (
         ProjectBinaryWrapper,
@@ -45,13 +45,13 @@ template for your own project::
         DOMAIN = 'language'   # The application domain of this project
 
         SOURCE = [
-            bb.source.Git(
-                remote="https://github.com/marcobambini/gravity.git",
-                local="gravity",
-                refspec="origin/HEAD",
-                limit=None,
-                shallow=False,
-                version_filter=project_filter_generator("gravity")
+            PaperConfigSpecificGit(
+              "gravity",
+              remote="https://github.com/marcobambini/gravity.git",
+              local="gravity",
+              refspec="origin/HEAD",
+              limit=None,
+              shallow=False
             )
         ]
 
@@ -162,13 +162,13 @@ To block revisions, just add the ``block_revisions`` decorator around a git sour
                             ["09e59da4deff9b35224f4784fae9d0f132be9cea"],
                             "missing -lbsd"),
         ])(
-            bb.source.Git(
+            PaperConfigSpecificGit(
+                "gravity",
                 remote="https://github.com/marcobambini/gravity.git",
                 local="gravity",
                 refspec="origin/HEAD",
                 limit=None,
-                shallow=False,
-                version_filter=project_filter_generator("gravity")
+                shallow=False
             )
         )
     ]
@@ -212,25 +212,24 @@ This can be achieved by assigning `CONTAINER` a list of `(RevisionRange, Contain
 List of supported projects
 --------------------------
 
-C - Projects
-............
+.. table::
+   :align: left
+   :widths: auto
 
-.. autoclass:: varats.projects.c_projects.busybox.Busybox
-.. autoclass:: varats.projects.c_projects.coreutils.Coreutils
-.. autoclass:: varats.projects.c_projects.git.Git
-.. autoclass:: varats.projects.c_projects.gravity.Gravity
-.. autoclass:: varats.projects.c_projects.gzip.Gzip
-.. autoclass:: varats.projects.c_projects.libvpx.Libvpx
-.. autoclass:: varats.projects.c_projects.lrzip.Lrzip
-.. autoclass:: varats.projects.c_projects.openssl.OpenSSL
-.. autoclass:: varats.projects.c_projects.opus.Opus
-.. autoclass:: varats.projects.c_projects.qemu.Qemu
-.. autoclass:: varats.projects.c_projects.tmux.Tmux
-.. autoclass:: varats.projects.c_projects.vim.Vim
-.. autoclass:: varats.projects.c_projects.x264.X264
-.. autoclass:: varats.projects.c_projects.xz.Xz
+   .. include:: ProjectOverviewTable.inc
 
-C++ - Projects
-..............
 
-.. autoclass:: varats.projects.cpp_projects.doxygen.Doxygen
+C - Project Details
+...................
+
+.. include:: Autoclass_c_projects.inc
+
+C++ - Project Details
+.....................
+
+.. include:: Autoclass_cpp_projects.inc
+
+Test - Project Details
+......................
+
+.. include:: Autoclass_test_projects.inc

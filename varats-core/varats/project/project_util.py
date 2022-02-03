@@ -24,17 +24,42 @@ class CompilationError(Exception):
 
 def get_project_cls_by_name(project_name: str) -> tp.Type[bb.Project]:
     """Look up a BenchBuild project by it's name."""
-    for proj in bb.project.ProjectRegistry.projects:
-        if proj.endswith('gentoo') or proj.endswith("benchbuild"):
+    for project_map_key in bb.project.ProjectRegistry.projects:
+        if not _is_vara_project(project_map_key):
             # currently we only support vara provided projects
             continue
 
-        if proj.startswith(project_name):
-            project: tp.Type[bb.Project
-                            ] = bb.project.ProjectRegistry.projects[proj]
+        if project_map_key.startswith(project_name):
+            project: tp.Type[
+                bb.Project
+            ] = bb.project.ProjectRegistry.projects[project_map_key]
             return project
 
     raise LookupError
+
+
+def get_loaded_vara_projects() -> tp.Generator[tp.Type[bb.Project], None, None]:
+    """Get all loaded vara projects."""
+    for project_map_key in bb.project.ProjectRegistry.projects:
+        if not _is_vara_project(project_map_key):
+            # currently we only support vara provided projects
+            continue
+
+        yield bb.project.ProjectRegistry.projects[project_map_key]
+
+
+def _is_vara_project(project_key: str) -> bool:
+    """
+    >>> _is_vara_project("Xz/c_projects")
+    True
+
+    >>> _is_vara_project("BZip2/gentoo")
+    False
+    """
+    return any(
+        project_key.endswith(x)
+        for x in ("c_projects", "cpp_projects", "test_projects", "perf_tests")
+    )
 
 
 def get_primary_project_source(project_name: str) -> bb.source.FetchableSource:
