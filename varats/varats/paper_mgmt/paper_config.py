@@ -283,7 +283,7 @@ def get_paper_config() -> PaperConfig:
     return get_loaded_paper_config()
 
 
-class PaperConfigSpecificGit(bb.source.git.Git):
+class PaperConfigSpecificGit(bb.source.git.Git):  # type: ignore
     """
     Paper config specific git to reduce the available versions.
 
@@ -291,7 +291,9 @@ class PaperConfigSpecificGit(bb.source.git.Git):
     of the case studies.
     """
 
-    def __init__(self, project_name: str, *args, **kwargs) -> None:
+    def __init__(
+        self, project_name: str, *args: tp.Any, **kwargs: tp.Any
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.__project_name = project_name
 
