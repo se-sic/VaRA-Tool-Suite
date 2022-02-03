@@ -33,7 +33,7 @@ class TestDriverRun(unittest.TestCase):
         match = self.__NUM_ACTIONS_PATTERN.search(result.stdout)
         if not match:
             self.fail("Could not parse benchbuild output")
-        self.assertEqual("44", match.group(1))
+        self.assertEqual("43", match.group(1))
 
     @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
     def test_bb_run_select_revision(self) -> None:
@@ -51,7 +51,7 @@ class TestDriverRun(unittest.TestCase):
         match = self.__NUM_ACTIONS_PATTERN.search(result.stdout)
         if not match:
             self.fail("Could not parse benchbuild output")
-        self.assertEqual("12", match.group(1))
+        self.assertEqual("11", match.group(1))
 
     @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
     def test_bb_run_all(self) -> None:
@@ -67,7 +67,7 @@ class TestDriverRun(unittest.TestCase):
         match = self.__NUM_ACTIONS_PATTERN.search(result.stdout)
         if not match:
             self.fail("Could not parse benchbuild output")
-        self.assertEqual("52", match.group(1))
+        self.assertEqual("51", match.group(1))
 
     @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
     @mock.patch("varats.tools.driver_run.sbatch")
