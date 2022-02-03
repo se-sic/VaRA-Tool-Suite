@@ -7,10 +7,9 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 from plumbum.path.utils import delete
 
-from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     BinaryType,
     verify_binaries,
@@ -29,13 +28,13 @@ class Git(VProject):
     DOMAIN = ProjectDomains.VERSION_CONTROL
 
     SOURCE = [
-        bb.source.Git(
+        PaperConfigSpecificGit(
+            project_name="git",
             remote="https://github.com/git/git.git",
             local="git",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("git")
+            shallow=False
         )
     ]
 
