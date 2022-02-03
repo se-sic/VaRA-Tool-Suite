@@ -12,6 +12,7 @@ import benchbuild as bb
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.source.base import (
+    RevisionStr,
     target_prefix,
     sources_as_dict,
     Variant,
@@ -261,12 +262,10 @@ class PrecisionComparisionBase(VersionExperiment, shorthand=""):
 
         # Generate all required bc files for analysis
         for next_revision in revision_list[1:]:
-            project_variant = Variant(
-                owner=sources_as_dict(*project.source)[project.primary_source],
-                version=next_revision
-            )
             analysis_actions.append(
-                actions.SetProjectVersion(project, context(project_variant))
+                actions.SetProjectVersion(
+                    project, RevisionStr(next_revision.hash)
+                )
             )
 
             analysis_actions.extend(
