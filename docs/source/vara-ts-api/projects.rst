@@ -29,7 +29,7 @@ template for your own project::
     from benchbuild.utils.settings import get_number_of_jobs
     from plumbum import local
 
-    from varats.paper_mgmt.paper_config import project_filter_generator
+    from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
     from varats.utils.settings import bb_cfg
     from varats.project.project_util import (
         ProjectBinaryWrapper,
@@ -45,13 +45,13 @@ template for your own project::
         DOMAIN = 'language'   # The application domain of this project
 
         SOURCE = [
-            bb.source.Git(
-                remote="https://github.com/marcobambini/gravity.git",
-                local="gravity",
-                refspec="origin/HEAD",
-                limit=None,
-                shallow=False,
-                version_filter=project_filter_generator("gravity")
+            PaperConfigSpecificGit(
+              "gravity",
+              remote="https://github.com/marcobambini/gravity.git",
+              local="gravity",
+              refspec="origin/HEAD",
+              limit=None,
+              shallow=False
             )
         ]
 
@@ -162,13 +162,13 @@ To block revisions, just add the ``block_revisions`` decorator around a git sour
                             ["09e59da4deff9b35224f4784fae9d0f132be9cea"],
                             "missing -lbsd"),
         ])(
-            bb.source.Git(
+            PaperConfigSpecificGit(
+                "gravity",
                 remote="https://github.com/marcobambini/gravity.git",
                 local="gravity",
                 refspec="origin/HEAD",
                 limit=None,
-                shallow=False,
-                version_filter=project_filter_generator("gravity")
+                shallow=False
             )
         )
     ]

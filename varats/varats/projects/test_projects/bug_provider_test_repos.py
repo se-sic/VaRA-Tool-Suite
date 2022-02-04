@@ -7,12 +7,12 @@ from plumbum import local
 from varats.paper_mgmt.paper_config import project_filter_generator
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    VaraTestRepoSource,
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
     BinaryType,
 )
 from varats.project.varats_project import VProject
+from varats.ts_utils.project_sources import VaraTestRepoSource
 from varats.utils.git_util import ShortCommitHash
 
 
@@ -26,11 +26,11 @@ class BasicBugDetectionTestRepo(VProject):
 
     SOURCE = [
         VaraTestRepoSource(
+            project_name="basic_test_repo",
             remote="BugDetectionRepos/BasicTestRepo",
             local="basic_test_repo",
             refspec="origin/HEAD",
-            limit=None,
-            version_filter=project_filter_generator("basic_test_repo")
+            limit=None
         )
     ]
 

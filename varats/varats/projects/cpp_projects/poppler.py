@@ -8,11 +8,10 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    wrap_paths_to_binaries,
     get_local_project_git_path,
     BinaryType,
     verify_binaries,
@@ -38,13 +37,13 @@ class Poppler(VProject):
                 "requiers QT6 which is not easily available"
             )
         ])(
-            bb.source.Git(
+            PaperConfigSpecificGit(
+                project_name="poppler",
                 remote="https://gitlab.freedesktop.org/poppler/poppler.git",
                 local="poppler",
                 refspec="origin/HEAD",
                 limit=None,
-                shallow=False,
-                version_filter=project_filter_generator("poppler")
+                shallow=False
             )
         )
     ]

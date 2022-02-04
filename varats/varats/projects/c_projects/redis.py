@@ -6,10 +6,9 @@ from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    wrap_paths_to_binaries_with_name,
     ProjectBinaryWrapper,
     BinaryType,
     get_local_project_git_path,
@@ -32,13 +31,13 @@ class Redis(VProject):
     DOMAIN = ProjectDomains.DATABASE
 
     SOURCE = [
-        bb.source.Git(
+        PaperConfigSpecificGit(
+            project_name="redis",
             remote="https://github.com/antirez/redis.git",
             local="redis",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("redis")
+            shallow=False
         )
     ]
 
