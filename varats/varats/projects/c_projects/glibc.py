@@ -6,10 +6,9 @@ from benchbuild.utils.cmd import make
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     get_local_project_git_path,
     BinaryType,
@@ -27,13 +26,13 @@ class Glibc(VProject):
     DOMAIN = ProjectDomains.C_LIBRARY
 
     SOURCE = [
-        bb.source.Git(
+        PaperConfigSpecificGit(
+            project_name="glibc",
             remote="git://sourceware.org/git/glibc.git",
             local="glibc",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("glibc")
+            shallow=False
         )
     ]
 
