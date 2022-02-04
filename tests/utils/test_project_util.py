@@ -12,14 +12,16 @@ from tests.test_utils import test_environment
 from varats.project.project_util import (
     get_project_cls_by_name,
     get_loaded_vara_projects,
-    VaraTestRepoSource,
-    VaraTestRepoSubmodule,
     ProjectBinaryWrapper,
     BinaryType,
 )
 from varats.projects.c_projects.gravity import Gravity
 from varats.projects.discover_projects import initialize_projects
 from varats.tools.bb_config import create_new_bb_config
+from varats.ts_utils.project_sources import (
+    VaraTestRepoSource,
+    VaraTestRepoSubmodule,
+)
 from varats.utils.settings import create_new_varats_config
 
 
@@ -76,6 +78,7 @@ class TestVaraTestRepoSource(unittest.TestCase):
         )
 
         cls.elementalist = VaraTestRepoSource(
+            project_name="TwoLibsOneProjectInteractionDiscreteLibsSingleProject",
             remote="LibraryAnalysisRepos"
             "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/Elementalist",
@@ -83,7 +86,7 @@ class TestVaraTestRepoSource(unittest.TestCase):
             "/Elementalist",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False,
+            shallow=False
         )
 
         cls.fire_lib = VaraTestRepoSubmodule(
@@ -109,7 +112,7 @@ class TestVaraTestRepoSource(unittest.TestCase):
         )
 
     @mock.patch('benchbuild.source.base.target_prefix')
-    @mock.patch('varats.project.project_util.target_prefix')
+    @mock.patch('varats.ts_utils.project_sources.target_prefix')
     def test_vara_test_repo_dir_creation(
         self, mock_tgt_prefix_base, mock_tgt_prefix_project_util
     ) -> None:

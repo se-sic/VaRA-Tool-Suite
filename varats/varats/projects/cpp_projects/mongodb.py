@@ -6,11 +6,10 @@ from benchbuild.utils.cmd import python3
 from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
-from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    wrap_paths_to_binaries,
     BinaryType,
     get_local_project_git_path,
     verify_binaries,
@@ -33,13 +32,13 @@ class MongoDB(VProject):
     DOMAIN = ProjectDomains.DATABASE
 
     SOURCE = [
-        bb.source.Git(
+        PaperConfigSpecificGit(
+            project_name="mongodb",
             remote="https://github.com/mongodb/mongo.git",
             local="mongodb",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("mongodb")
+            shallow=False
         )
     ]
 
