@@ -387,12 +387,17 @@ class VaRA(ResearchTool[VaRACodeBase]):
         Args:
             image_context: the base image creation context
         """
-        if not self.verify_install(self.install_location()):
+        img_name = image_context.base.name
+        vara_install_dir = str(self.install_location()) + "_" + img_name
+        if not self.verify_install(Path(vara_install_dir)):
             raise AssertionError(
-                "VaRA is not correctly installed on your system."
+                f"Could not find VaRA build for base container {img_name}.\n"
+                f"Run 'vara-buildsetup build vara --container={img_name}' "
+                f"to compile VaRA for this base image."
             )
 
-        container_vara_dir = image_context.varats_root / "tools/VaRA"
-        image_context.layers.copy_([str(self.install_location())],
-                                   str(container_vara_dir))
+        container_vara_dir = image_context.varats_root / (
+            "tools/VaRA_" + img_name
+        )
+        image_context.layers.copy_([vara_install_dir], str(container_vara_dir))
         image_context.append_to_env("PATH", [str(container_vara_dir / 'bin')])

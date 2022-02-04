@@ -77,11 +77,21 @@ class BaseImageCreationContext():
     """
 
     def __init__(self, base: ImageBase, tmpdir: Path):
+        self.__base = base
         self.__layers = _BASE_IMAGES[base]()
-        self.__distro = base.distro
         self.__image_name = base.image_name
         self.__tmpdir = tmpdir
         self.__env: tp.Dict[str, tp.List[str]] = defaultdict(list)
+
+    @property
+    def base(self) -> ImageBase:
+        """
+        Base image this image is based on.
+
+        Returns:
+            the base image
+        """
+        return self.__base
 
     @property
     def layers(self) -> ContainerImage:
@@ -104,16 +114,6 @@ class BaseImageCreationContext():
             the name of the image that is being created
         """
         return self.__image_name
-
-    @property
-    def distro(self) -> Distro:
-        """
-        Distro the image that is being created is based on.
-
-        Returns:
-            the distro of the image that is being created
-        """
-        return self.__distro
 
     @property
     def varats_root(self) -> Path:

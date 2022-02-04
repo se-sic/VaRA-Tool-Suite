@@ -503,12 +503,12 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
             image_context: the base image creation context
         """
         if self.get_dependencies().has_dependencies_for_distro(
-            image_context.distro
+            image_context.base.distro
         ):
             image_context.layers.run(
                 *(
                     self.get_dependencies().
-                    get_install_command(image_context.distro).split(" ")
+                    get_install_command(image_context.base.distro).split(" ")
                 )
             )
 

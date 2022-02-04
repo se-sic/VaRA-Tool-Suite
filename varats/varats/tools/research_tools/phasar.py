@@ -171,7 +171,7 @@ class Phasar(ResearchTool[PhasarCodeBase]):
             "phasar"
         ).path / "build"
 
-        build_path /= build_type.build_folder()
+        build_path /= build_type.build_folder(build_folder_suffix)
 
         # Setup configured build folder
         print(" - Setting up build folder.")
