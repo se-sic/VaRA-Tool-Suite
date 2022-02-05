@@ -28,6 +28,7 @@ class VCSTestBasic01(VProject):
 
     SOURCE = [
         VaraTestRepoSource(
+            project_name="VCSTestBasic01",
             remote="VCSAnalysisRepos/Basic01",
             local="VCSTestBasic01",
             refspec="HEAD",
@@ -68,6 +69,7 @@ class VCSTestBasic02(VProject):
 
     SOURCE = [
         VaraTestRepoSource(
+            project_name="VCSTestBasic02",
             remote="VCSAnalysisRepos/Basic02",
             local="VCSTestBasic02",
             refspec="HEAD",
@@ -109,6 +111,7 @@ class VCSTestBasic03(VProject):
 
     SOURCE = [
         VaraTestRepoSource(
+            project_name="VCSTestBasic03",
             remote="VCSAnalysisRepos/Basic03",
             local="VCSTestBasic03",
             refspec="HEAD",
@@ -150,6 +153,7 @@ class VCSTestBasic04(VProject):
 
     SOURCE = [
         VaraTestRepoSource(
+            project_name="VCSTestBasic04",
             remote="VCSAnalysisRepos/Basic04",
             local="VCSTestBasic04",
             refspec="HEAD",
@@ -190,6 +194,7 @@ class VCSTestBasic05(VProject):
 
     SOURCE = [
         VaraTestRepoSource(
+            project_name="VCSTestBasic05",
             remote="VCSAnalysisRepos/Basic05",
             local="VCSTestBasic05",
             refspec="HEAD",
@@ -230,6 +235,7 @@ class VCSTestCall01(VProject):
 
     SOURCE = [
         VaraTestRepoSource(
+            project_name="VCSTestCall01",
             remote="VCSAnalysisRepos/Call01",
             local="VCSTestCall01",
             refspec="HEAD",
@@ -270,6 +276,7 @@ class VCSTestDeletionWithInteraction(VProject):
 
     SOURCE = [
         VaraTestRepoSource(
+            project_name="VCSTestDeletionWithInteraction",
             remote="VCSAnalysisRepos/DeletionWithInteraction",
             local="VCSTestDeletionWithInteraction",
             refspec="HEAD",
@@ -312,6 +319,7 @@ class VCSTestDeletionWithoutInteraction(VProject):
 
     SOURCE = [
         VaraTestRepoSource(
+            project_name="VCSTestDeletionWithoutInteraction",
             remote="VCSAnalysisRepos/DeletionWithoutInteraction",
             local="VCSTestDeletionWithoutInteraction",
             refspec="HEAD",
@@ -354,6 +362,7 @@ class VCSTestMergeExample01(VProject):
 
     SOURCE = [
         VaraTestRepoSource(
+            project_name="VCSTestMergeExample01",
             remote="VCSAnalysisRepos/MergeExample01",
             local="VCSTestMergeExample01",
             refspec="HEAD",
