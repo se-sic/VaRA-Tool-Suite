@@ -11,7 +11,6 @@ from varats.project.project_util import (
     ProjectBinaryWrapper,
     wrap_paths_to_binaries,
     BinaryType,
-    VaraTestRepoSubmodule,
     verify_binaries,
 )
 from varats.project.varats_project import VProject
