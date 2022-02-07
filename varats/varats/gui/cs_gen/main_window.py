@@ -43,7 +43,7 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
         self.project_names = [
             project.NAME
             for project in projects
-            if project.GROUP not in ["test_projects", "perf_test"]
+            if project.GROUP not in ["test_projects", "perf_tests"]
         ]
         self.project_list.addItems(self.project_names)
         self.project_list.clicked['QModelIndex'].connect(self.show_project_data)
@@ -71,7 +71,7 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
         if self.selected_project != project_name:
             self.selected_project = project_name
             project = get_project_cls_by_name(project_name)
-            project_info = f"{project_name.upper()} : \nDomain: {project.DOMAIN}\nSource: {bb.source.primary(*project.SOURCE)._remote}"
+            project_info = f"{project_name.upper()} : \nDomain: {project.DOMAIN}\nSource: {bb.source.primary(*project.SOURCE).remote}"
             self.project_details.setText(project_info)
             self.project_details.update()
             if self.revisions.isEnabled():
