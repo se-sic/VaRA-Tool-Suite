@@ -12,7 +12,7 @@ from varats.data.databases.blame_library_interactions_database import (
     BlameLibraryInteractionsDatabase,
 )
 from varats.data.databases.survivng_lines_database import SurvivingLinesDatabase
-from varats.mapping.commit_map import get_commit_map, CommitMap
+from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator, PlotConfig, REQUIRE_CASE_STUDY
@@ -133,11 +133,14 @@ def lines_and_interactions(case_study: CaseStudy) -> DataFrame:
         case_study
     )
     data = lines.merge(interactions, how='left', on=["base_hash", "revision"])
+    data.dropna(
+        axis=0, how='any', inplace=True, subset=["lines", "interactions"]
+    )
     data.insert(3, "space", np.nan)
     data = data.pivot(
         index="base_hash",
         columns="revision",
-        values=["interactions", "lines", 'space']
+        values=["lines", "interactions", 'space']
     )
     data = data.stack(level=0, dropna=False)
     cmap = get_commit_map(case_study.project_name)
