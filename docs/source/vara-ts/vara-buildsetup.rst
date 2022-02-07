@@ -126,6 +126,14 @@ To upgrade VaRA to a new release, for example, `release_70`, use:
 
     vara-buildsetup update vara --version 110
 
+
+VaRA Container build
+********************
+
+If you want to :ref:`run your experiments in a container <Running benchbuild in a container>`, you have to compile VaRA specifically for the used container environment.
+This can be done by specifying the ``--container=<base_container>`` flag when building VaRA.
+You have to compile VaRA for each :ref:`base image <Using containers>` you use in your experiments.
+
 Debugging
 ---------
 

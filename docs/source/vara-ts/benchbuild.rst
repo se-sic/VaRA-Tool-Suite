@@ -40,9 +40,9 @@ To execute BenchBuild from another directory the ``VARA_ROOT`` environment varia
 
 How-to configure BenchBuild yourself
 ------------------------------------
-BenchBuild's configuration file ``.benchbuild.yml`` normally is placed inside the ``benchbuild`` folder, which is located in the vara root folder.
+BenchBuild's configuration file ``.benchbuild.yml`` normally is placed inside the ``benchbuild`` folder, which is located in the varats root folder.
 A default version of this file can be automatically generated with our tool :ref:`vara-gen-bbconfig`.
-To adapt and tune BenchBuild further, you can moify the different configuration flags in this config file. The following list shows the most important ones:
+To adapt and tune BenchBuild further, you can modify the different configuration flags in this config file. The following list shows the most important ones:
 
 * Adding extra paths to the environment
 
@@ -154,10 +154,10 @@ If you generated your configuration via :ref:`vara-gen-bbconfig`, these options 
 Executing Experiments in a Container
 ....................................
 
-If your experiment makes use of a ref:`research tool`, the next step is to select the correct research tool for your experiment.
+If your experiment makes use of a :ref:`research tool <Provided research tools>`, the next step is to set up the correct research tool for your experiment.
 Afterwards, you need to build the base containers.
-Both tasks can be accomplished using the :ref:`vara-container` tool.
-Remember to first select a research tool and then build the base containers afterwards.
+First, you need to build the desired research tool for each base image required by your experiments (e.g., :ref:`VaRA Container build`).
+Then, you can select the desired research tool and afterwards build the base images with the :ref:`vara-container` tool.
 
 You can now run your experiments in a container simply by replacing the ``run`` in your BenchBuild command with ``container run``, for example, like this:
 

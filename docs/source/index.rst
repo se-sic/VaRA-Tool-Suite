@@ -43,6 +43,7 @@ How-Tos
    tutorials/getting_started
    tutorials/running_experiments
    tutorials/visualizing_data
+   tutorials/container_guide
 
 
 VaRA-TS Docs
