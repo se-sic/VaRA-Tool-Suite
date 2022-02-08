@@ -153,7 +153,7 @@ class TestContainerSupport(unittest.TestCase):
         mock_verify_install.return_value = True
         vara_cfg()["container"]["research_tool"] = "vara"
         vara_cfg()["vara"]["llvm_source_dir"] = "tools_src/vara-llvm-project"
-        vara_cfg()["vara"]["llvm_install_dir"] = "tools/VaRA_DEBIAN_10"
+        vara_cfg()["vara"]["llvm_install_dir"] = "tools/VaRA"
         vara_cfg()["container"]["from_source"] = False
         bb_cfg()["container"]["from_source"] = False
 
@@ -165,12 +165,15 @@ class TestContainerSupport(unittest.TestCase):
 
         layers = image_context.layers
         vara_copy_layer = self.check_layer_type(layers[12], CopyLayer)
-        self.assertEqual("/varats_root/tools/VaRA", vara_copy_layer.destination)
-        self.assertTupleEqual(("tools/VaRA",), vara_copy_layer.sources)
+        self.assertEqual(
+            "/varats_root/tools/VaRA_DEBIAN_10", vara_copy_layer.destination
+        )
+        self.assertTupleEqual(("tools/VaRA_DEBIAN_10",),
+                              vara_copy_layer.sources)
 
         bb_config_layer = self.check_layer_type(layers[15], UpdateEnv)
         self.assertTupleEqual(
-            ("BB_ENV", "{PATH: [/varats_root/tools/VaRA/bin]}"),
+            ("BB_ENV", "{PATH: [/varats_root/tools/VaRA_DEBIAN_10/bin]}"),
             bb_config_layer.env[3]
         )
 
