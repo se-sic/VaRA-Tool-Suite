@@ -153,7 +153,7 @@ class TestContainerSupport(unittest.TestCase):
         mock_verify_install.return_value = True
         vara_cfg()["container"]["research_tool"] = "vara"
         vara_cfg()["vara"]["llvm_source_dir"] = "tools_src/vara-llvm-project"
-        vara_cfg()["vara"]["llvm_install_dir"] = "tools/VaRA"
+        vara_cfg()["vara"]["llvm_install_dir"] = "tools/VaRA_DEBIAN_10"
         vara_cfg()["container"]["from_source"] = False
         bb_cfg()["container"]["from_source"] = False
 
