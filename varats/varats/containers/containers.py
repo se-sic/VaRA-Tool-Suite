@@ -306,6 +306,22 @@ def create_base_image(base: ImageBase) -> None:
         publish(CreateImage(base.image_name, image_context.layers))
 
 
+def _create_dev_image_layers(
+    image_context: BaseImageCreationContext, research_tool: ResearchTool[tp.Any]
+) -> None:
+    image_context.layers.run('pip3', 'install', '--upgrade', 'pip')
+    if bb_cfg()['container']['from_source']:
+        add_benchbuild_layers(image_context.layers)
+    _add_varats_layers(image_context)
+
+    # add research tool dependencies
+    research_tool.container_install_dependencies(image_context)
+    _add_vara_config(image_context)
+    _add_benchbuild_config(image_context)
+    image_context.layers.workingdir(str(image_context.varats_root))
+    image_context.layers.entrypoint("vara-buildsetup")
+
+
 def create_dev_image(
     base: ImageBase, research_tool: ResearchTool[tp.Any]
 ) -> None:
@@ -321,18 +337,7 @@ def create_dev_image(
     with TemporaryDirectory() as tmpdir:
         publish = bootstrap.bus()
         image_context = BaseImageCreationContext(base, Path(tmpdir))
-
-        image_context.layers.run('pip3', 'install', '--upgrade', 'pip')
-        if bb_cfg()['container']['from_source']:
-            add_benchbuild_layers(image_context.layers)
-        _add_varats_layers(image_context)
-
-        # add research tool dependencies
-        research_tool.container_install_dependencies(image_context)
-        _add_vara_config(image_context)
-        _add_benchbuild_config(image_context)
-        image_context.layers.workingdir(str(image_context.varats_root))
-        image_context.layers.entrypoint("vara-buildsetup")
+        _create_dev_image_layers(image_context, research_tool)
         publish(CreateImage(f"{base.image_name}_dev", image_context.layers))
 
 

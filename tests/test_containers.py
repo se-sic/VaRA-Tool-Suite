@@ -12,6 +12,7 @@ from benchbuild.environments.domain.model import (
     CopyLayer,
     UpdateEnv,
     RunLayer,
+    EntryPoint,
 )
 
 from tests.test_utils import run_in_test_environment
@@ -19,8 +20,10 @@ from varats.containers.containers import (
     ImageBase,
     BaseImageCreationContext,
     _create_base_image_layers,
+    _create_dev_image_layers,
 )
 from varats.tools.research_tools.research_tool import Distro
+from varats.tools.tool_util import get_research_tool
 from varats.utils.settings import vara_cfg, bb_cfg
 
 
@@ -164,6 +167,9 @@ class TestContainerSupport(unittest.TestCase):
             _create_base_image_layers(image_context)
 
         layers = image_context.layers
+        vara_deps_layer = self.check_layer_type(layers[11], RunLayer)
+        self.assertEqual("apt", vara_deps_layer.command)
+
         vara_copy_layer = self.check_layer_type(layers[12], CopyLayer)
         self.assertEqual(
             "/varats_root/tools/VaRA_DEBIAN_10", vara_copy_layer.destination
@@ -176,6 +182,41 @@ class TestContainerSupport(unittest.TestCase):
             ("BB_ENV", "{PATH: [/varats_root/tools/VaRA_DEBIAN_10/bin]}"),
             bb_config_layer.env[3]
         )
+
+    @run_in_test_environment()
+    def test_create_dev_image(self) -> None:
+        """Test VaRA install inside container."""
+        vara_cfg()["vara"]["llvm_source_dir"] = "tools_src/vara-llvm-project"
+        vara_cfg()["vara"]["llvm_install_dir"] = "tools/VaRA"
+        vara_cfg()["container"]["from_source"] = False
+        bb_cfg()["container"]["from_source"] = False
+
+        with TemporaryDirectory() as tmpdir:
+            research_tool = get_research_tool("vara")
+            image_context = BaseImageCreationContext(
+                ImageBase.DEBIAN_10, Path(tmpdir)
+            )
+            _create_dev_image_layers(image_context, research_tool)
+
+        layers = image_context.layers
+
+        # check that varats will be installed properly
+        varats_install_layer = self.check_layer_type(layers[10], RunLayer)
+        self.assertEqual("pip3", varats_install_layer.command)
+        self.assertTupleEqual(("install", "varats-core", "varats"),
+                              varats_install_layer.args)
+        varats_copy_config_layer = self.check_layer_type(layers[12], CopyLayer)
+        self.assertEqual(
+            "/varats_root/.varats.yaml", varats_copy_config_layer.destination
+        )
+
+        # check that research tool dependencies will be installed
+        vara_deps_layer = self.check_layer_type(layers[11], RunLayer)
+        self.assertEqual("apt", vara_deps_layer.command)
+
+        # check that correct entry point will be set
+        entrypoint_layer = self.check_layer_type(layers[16], EntryPoint)
+        self.assertEqual(("vara-buildsetup",), entrypoint_layer.command)
 
     LayerTy = tp.TypeVar("LayerTy", bound=Layer)
 
