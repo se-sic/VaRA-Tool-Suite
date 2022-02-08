@@ -7,9 +7,10 @@ Jinja2>=3.0.1
 jupyter>=1.0.0
 kaleido>=0.2.1
 matplotlib>=3.1.2
-numpy>=1.20
+numpy>=1.21
 packaging>=20.1
 pandas>=0.22.0
+pandas-stubs
 plotly>=4.14.1
 plumbum>=1.6.6
 pre-commit>=2.3.0
@@ -18,10 +19,10 @@ pygit2>=0.28.2
 PyGithub>=1.47
 pygtrie
 pylatex>=1.4.1
-PyQt5-stubs>=5.10.0,<5.14.0
 PyQt5>=5.10.0,<5.14.0
-pytest-cov
+PyQt5-stubs>=5.10.0,<5.14.0
 pytest>=6.0
+pytest-cov
 PyYAML>=3.12
 pyzmq>=19.0.0
 requests>=2.23.0

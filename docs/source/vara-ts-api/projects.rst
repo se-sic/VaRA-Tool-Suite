@@ -212,25 +212,24 @@ This can be achieved by assigning `CONTAINER` a list of `(RevisionRange, Contain
 List of supported projects
 --------------------------
 
-C - Projects
-............
+.. table::
+   :align: left
+   :widths: auto
 
-.. autoclass:: varats.projects.c_projects.busybox.Busybox
-.. autoclass:: varats.projects.c_projects.coreutils.Coreutils
-.. autoclass:: varats.projects.c_projects.git.Git
-.. autoclass:: varats.projects.c_projects.gravity.Gravity
-.. autoclass:: varats.projects.c_projects.gzip.Gzip
-.. autoclass:: varats.projects.c_projects.libvpx.Libvpx
-.. autoclass:: varats.projects.c_projects.lrzip.Lrzip
-.. autoclass:: varats.projects.c_projects.openssl.OpenSSL
-.. autoclass:: varats.projects.c_projects.opus.Opus
-.. autoclass:: varats.projects.c_projects.qemu.Qemu
-.. autoclass:: varats.projects.c_projects.tmux.Tmux
-.. autoclass:: varats.projects.c_projects.vim.Vim
-.. autoclass:: varats.projects.c_projects.x264.X264
-.. autoclass:: varats.projects.c_projects.xz.Xz
+   .. include:: ProjectOverviewTable.inc
 
-C++ - Projects
-..............
 
-.. autoclass:: varats.projects.cpp_projects.doxygen.Doxygen
+C - Project Details
+...................
+
+.. include:: Autoclass_c_projects.inc
+
+C++ - Project Details
+.....................
+
+.. include:: Autoclass_cpp_projects.inc
+
+Test - Project Details
+......................
+
+.. include:: Autoclass_test_projects.inc

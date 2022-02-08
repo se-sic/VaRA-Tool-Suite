@@ -168,8 +168,5 @@ class TestConfigurationMapStoreAndLoad(unittest.TestCase):
         config = config_map.get_configuration(0)
         self.assertTrue(config is not None)
         if config:
-            self.assertEqual(
-                ConfigurationOptionImpl("foo", True),
-                config.get_config_value("foo")
-            )
+            self.assertTrue(config.get_config_value("foo"))
         self.assertTrue(config_map.get_configuration(1) is not None)
