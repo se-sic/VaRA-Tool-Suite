@@ -352,8 +352,6 @@ class VaRA(ResearchTool[VaRACodeBase]):
 
         print(" - Now building...")
         # Compile llvm + VaRA
-        print("TEST_MARKER")
-        print(full_path)
         with ProcessManager.create_process(
             "ninja", ["install"], workdir=full_path
         ) as proc:
