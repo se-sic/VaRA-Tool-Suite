@@ -23,7 +23,6 @@ from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
 from varats.report.gnu_time_report import TimeReport
 
-# Please take care when changing this file, see docs experiments/just_compile
 class xzBlackboxAnalysis(actions.Step):  # type: ignore
     """Empty analysis step for testing."""
 
@@ -51,15 +50,11 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                 project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.SUCCESS,
-                executable_entry_point=binary.getitem
             )
+
             file_path = "~/varaEnv/experimentFiles/countries-land-1m.geo.json"
             xz_params = ["{compression}".format(compression = compressionLevel), "-k" , file_path]
-            xz_cmd = executable_entry_point[xz_params]
-            # xz = local["./src/xz/xz"]
-            #binary(*xz_params)
-            # xz_cmd = binary[xz_params]
-            #from benchbuild.utils.cmd import time
+            xz_cmd = binary[xz_params]
             time_xz_cmd = time["-v", "-o", f"{vara_result_folder}/{result_file}", xz_cmd]
 
         
