@@ -206,7 +206,7 @@ def build(
     show_major_release_prompt(tool)
 
     if container:
-        __build_in_container(tool, container, build_type, install_prefix)
+        _build_in_container(tool, container, build_type, install_prefix)
     else:
         tool.build(
             build_type, __get_install_prefix(tool, install_prefix),
@@ -260,9 +260,11 @@ def __get_install_prefix(
     return install_prefix
 
 
-def __build_in_container(
-    tool: ResearchTool[SpecificCodeBase], image_base: ImageBase,
-    build_type: BuildType, install_prefix: tp.Optional[Path]
+def _build_in_container(
+    tool: ResearchTool[SpecificCodeBase],
+    image_base: ImageBase,
+    build_type: BuildType,
+    install_prefix: tp.Optional[Path] = None
 ) -> None:
     vara_cfg()["container"]["research_tool"] = tool.name
     image_name = f"{image_base.image_name}_{build_type.name}"
