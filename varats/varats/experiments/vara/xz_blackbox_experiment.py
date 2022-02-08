@@ -44,7 +44,7 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
 
         for binary in project.binaries:
             result_file = self.__experiment_handle.get_file_name(
-                EmptyReport.shorthand(),
+                self.__experiment_handle.report_spec().main_report.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name,
                 project_revision=project.version_of_primary,
@@ -53,7 +53,7 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
             )
 
             file_path = "~/varaEnv/experimentFiles/countries-land-1m.geo.json"
-            xz_params = ["{compression}".format(compression = compressionLevel), "-k" , file_path]
+            xz_params = ["{compression}".format(compression = self.compressionLevel), "-k" , file_path]
             xz_cmd = binary[xz_params]
             time_xz_cmd = time["-v", "-o", f"{vara_result_folder}/{result_file}", xz_cmd]
 
@@ -61,7 +61,7 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
             exec_func_with_pe_error_handler(
                 time_xz_cmd,
                 create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, self.__experiment_handle, #TO DO GET SPEC,
+                    self.__experiment_handle, project, self.__experiment_handle.report_spec().main_report,
                     Path(vara_result_folder)
                 )
             )
@@ -96,7 +96,7 @@ class xzBlackboxAnalysisReport(VersionExperiment, shorthand="xzB"):
 
         analysis_actions = []
         
-        for x in range(1, 9):
+        for x in range(1, 2):
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(xzBlackboxAnalysis(project, self.get_handle(), x))
             analysis_actions.append(actions.Clean(project))
