@@ -8,7 +8,7 @@ from pathlib import Path
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import time_cmd
+from benchbuild.utils.cmd import time as time_cmd
 from plumbum import local
 
 from varats.experiment.experiment_util import (
@@ -28,7 +28,6 @@ from varats.provider.feature.feature_model_provider import (
 from varats.report.report import ReportSpecification
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import BaseReport
-from varats.report.tef_report import TEFReport
 from varats.report.gnu_time_report import TimeReport
 
 # TODO: Refactor to use a bass class for experiments to avoid code duplication
@@ -62,7 +61,7 @@ class TimeBinary(actions.Step):
                 TimeReport.shorthand(),
                 project_name=str(project.name),
                 binary_name=binary.name,
-                project_revision=project.version_of_primary,  # type: ignore
+                project_revision=project.version_of_primary,
                 project_uuid=str(project.run_uuid),
                 extension_type=FSE.SUCCESS,
             )
@@ -70,7 +69,13 @@ class TimeBinary(actions.Step):
             with local.cwd(local.path(project.source_of_primary)):
                 print(f"Currently at {local.path(project.source_of_primary)}")
                 print(f"Bin path {binary.path}")
-                time_cmd = local["/usr/bin/time"]
+                # TODO: In future versions, we can pass arguments to the binary here
+                # run_cmd = time_cmd[
+                #     "-o",
+                #     f"{vara_result_folder}/{result_file}",
+                #     "-v",
+                #     binary["--args", "that", "are", "passed", "to", "the", "binary"],
+                # ]
                 run_cmd = time_cmd[
                     "-o", f"{vara_result_folder}/{result_file}", "-v", binary.path
                 ]
@@ -88,55 +93,17 @@ class TimeBinary(actions.Step):
         return actions.StepResult.OK
 
 
-class ExecAndTraceBinary(actions.Step):  # type: ignore
-    """Executes the specified binaries of the project, in specific
-    configurations, against one or multiple workloads."""
-
-    NAME = "ExecBinary"
-    DESCRIPTION = "Executes each binary and white-box performance traces."
-
-    def __init__(self, project: Project, experiment_handle: ExperimentHandle):
-        super().__init__(obj=project, action_fn=self.run_perf_tracing)  # type: ignore
-        self.__experiment_handle = experiment_handle
-
-    def run_perf_tracing(self) -> actions.StepResult:
-        """Execute the specified binaries of the project, in specific
-        configurations, against one or multiple workloads."""
-        project: Project = self.obj
-
-        print(f"PWD {os.getcwd()}")
-
-        vara_result_folder = get_varats_result_folder(project)
-        for binary in project.binaries:  # type: ignore[attr-defined]
-            if binary.type != BinaryType.EXECUTABLE:
-                continue
-
-            result_file = self.__experiment_handle.get_file_name(
-                TEFReport.shorthand(),
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.SUCCESS,
-            )
-
-            with local.cwd(local.path(project.source_of_primary)):
-                print(f"Currently at {local.path(project.source_of_primary)}")
-                print(f"Bin path {binary.path}")
-                executable = local[f"{binary.path}"]
-                with local.env(VARA_TRACE_FILE=f"{vara_result_folder}/{result_file}"):
-                    executable()
-
-        return actions.StepResult.OK
-
-
 class BaseRunner(VersionExperiment, shorthand="BR"):
 
     NAME = "BaseRunner"
     REPORT_SPEC = ReportSpecification(TimeReport)
 
     def __init__(
-        self, report_type: tp.Type[BaseReport], analysis_type: tp.Type[actions.Step], *args, **kwargs
+        self,
+        report_type: tp.Type[BaseReport],
+        analysis_type: tp.Type[actions.Step],
+        *args,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.cflags = []
@@ -180,44 +147,7 @@ class BaseRunner(VersionExperiment, shorthand="BR"):
         return analysis_actions
 
 
-class RunTracedTEF(BaseRunner, shorthand="RTTEF"):
-    """Build and run the traced version of the binary"""
-
-    NAME = "RunTracedTEF"
-
-    REPORT_SPEC = ReportSpecification(TEFReport)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(TEFReport, ExecAndTraceBinary, *args, **kwargs)
-
-    def actions_for_project(self, project: Project) -> tp.MutableSequence[actions.Step]:
-        """
-        Returns the specified steps to run the project(s) specified in the call
-        in a fixed order.
-
-        Args:
-            project: to analyze
-        """
-
-        fm_provider = FeatureModelProvider.create_provider_for_project(project)
-        if fm_provider is None:
-            raise Exception("Could not get FeatureModelProvider!")
-
-        fm_path = fm_provider.get_feature_model_path(project.version_of_primary)
-        if fm_path is None or not fm_path.exists():
-            raise FeatureModelNotFound(project, fm_path)
-
-        self.set_cflags(
-            "-fvara-feature",
-            f"-fvara-fm-path={fm_path.absolute()}",
-            "-fsanitize=vara",
-            "-fvara-instr=trace_event",
-        )
-
-        return super().actions_for_project(project)
-
-
-class RunTracedTime(BaseRunner, shorthand="RTTIME"):
+class RunTraced(BaseRunner, shorthand="RTTIME"):
     """Build and run the traced version of the binary"""
 
     NAME = "RunTracedTime"
