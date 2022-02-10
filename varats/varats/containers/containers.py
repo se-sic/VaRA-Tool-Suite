@@ -213,7 +213,7 @@ def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
         image.run('mkdir', f'{tgt_dir}', runtime=crun)
         image.run('pip3', 'install', 'setuptools', runtime=crun)
 
-        pip_args = ['pip3', 'install']
+        pip_args = ['pip3', 'install', '--ignore-installed']
         if editable_install:
             pip_args.append("-e")
             _set_varats_source_mount(image_context, str(src_dir))
@@ -228,7 +228,14 @@ def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
 
     def from_pip(image: ContainerImage) -> None:
         LOG.debug("installing varats from pip release.")
-        image.run('pip3', 'install', 'varats-core', 'varats', runtime=crun)
+        image.run(
+            'pip3',
+            'install',
+            '--ignore-installed',
+            'varats-core',
+            'varats',
+            runtime=crun
+        )
 
     _unset_varats_source_mount(image_context)
     if bool(vara_cfg()['container']['dev_mode']):
@@ -275,12 +282,10 @@ def _add_benchbuild_config(image_context: BaseImageCreationContext) -> None:
 
 
 def _create_base_image_layers(image_context: BaseImageCreationContext) -> None:
-    # we need an up-to-date pip version to get the prebuilt pygit2 package
-    # with an up-to-date libgit2
     image_context.layers.run('pip3', 'install', '--upgrade', 'pip')
+    _add_varats_layers(image_context)
     if bb_cfg()['container']['from_source']:
         add_benchbuild_layers(image_context.layers)
-    _add_varats_layers(image_context)
     # add research tool if configured
     configured_research_tool = vara_cfg()["container"]["research_tool"]
     if configured_research_tool:
@@ -310,11 +315,10 @@ def _create_dev_image_layers(
     image_context: BaseImageCreationContext, research_tool: ResearchTool[tp.Any]
 ) -> None:
     image_context.layers.run('pip3', 'install', '--upgrade', 'pip')
+    _add_varats_layers(image_context)
     if bb_cfg()['container']['from_source']:
         add_benchbuild_layers(image_context.layers)
-    _add_varats_layers(image_context)
 
-    # add research tool dependencies
     research_tool.container_install_dependencies(image_context)
     _add_vara_config(image_context)
     _add_benchbuild_config(image_context)

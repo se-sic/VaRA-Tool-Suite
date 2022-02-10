@@ -70,8 +70,10 @@ class TestContainerSupport(unittest.TestCase):
 
         varats_install_layer = self.check_layer_type(layers[10], RunLayer)
         self.assertEqual("pip3", varats_install_layer.command)
-        self.assertTupleEqual(("install", "varats-core", "varats"),
-                              varats_install_layer.args)
+        self.assertTupleEqual(
+            ("install", '--ignore-installed', "varats-core", "varats"),
+            varats_install_layer.args
+        )
 
         varats_copy_config_layer = self.check_layer_type(layers[11], CopyLayer)
         self.assertEqual(
@@ -114,10 +116,10 @@ class TestContainerSupport(unittest.TestCase):
 
         varats_install_layer = self.check_layer_type(layers[12], RunLayer)
         self.assertEqual("pip3", varats_install_layer.command)
-        self.assertTupleEqual(
-            ("install", "/varats/varats-core", "/varats/varats"),
-            varats_install_layer.args
-        )
+        self.assertTupleEqual((
+            "install", "--ignore-installed", "/varats/varats-core",
+            "/varats/varats"
+        ), varats_install_layer.args)
         self.assertIn(("mount", "type=bind,src=varats_src,target=/varats"),
                       varats_install_layer.kwargs)
 
@@ -203,8 +205,10 @@ class TestContainerSupport(unittest.TestCase):
         # check that varats will be installed properly
         varats_install_layer = self.check_layer_type(layers[10], RunLayer)
         self.assertEqual("pip3", varats_install_layer.command)
-        self.assertTupleEqual(("install", "varats-core", "varats"),
-                              varats_install_layer.args)
+        self.assertTupleEqual(
+            ("install", '--ignore-installed', "varats-core", "varats"),
+            varats_install_layer.args
+        )
         varats_copy_config_layer = self.check_layer_type(layers[12], CopyLayer)
         self.assertEqual(
             "/varats_root/.varats.yaml", varats_copy_config_layer.destination
