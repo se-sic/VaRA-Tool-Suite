@@ -9,7 +9,8 @@ from varats.data.databases.szz_quality_metrics_database import (
 )
 from varats.data.reports.szz_report import SZZTool
 from varats.mapping.commit_map import get_commit_map
-from varats.table.table import Table, TableFormat, wrap_table_in_document
+from varats.table.table import Table, wrap_table_in_document
+from varats.table.tables import TableFormat
 
 
 class BugOverviewTable(Table):
@@ -55,7 +56,7 @@ class BugOverviewTable(Table):
         data.sort_index(level="fix", sort_remaining=False, inplace=True)
 
         if self.format in [
-            TableFormat.latex, TableFormat.latex_raw, TableFormat.latex_booktabs
+            TableFormat.LATEX, TableFormat.LATEX_RAW, TableFormat.LATEX_BOOKTABS
         ]:
             tex_code = data.to_latex(multicolumn_format="c", longtable=True)
             return str(tex_code) if tex_code else ""

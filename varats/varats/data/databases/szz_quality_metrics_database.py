@@ -22,31 +22,36 @@ from varats.data.reports.szz_report import (
     PyDrillerSZZReport,
 )
 from varats.jupyterhelper.file import load_blame_report
-from varats.mapping.commit_map import CommitMap
+from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.project.project_util import get_primary_project_source
-from varats.report.report import MetaReport
+from varats.report.report import ReportFilename
 from varats.revision.revisions import get_processed_revisions_files
-from varats.utils.git_util import CommitRepoPair, create_commit_lookup_helper
+from varats.utils.git_util import (
+    CommitRepoPair,
+    create_commit_lookup_helper,
+    ShortCommitHash,
+    FullCommitHash,
+)
 
 LOG = logging.getLogger(__name__)
 
 
-def _get_requested_report_paths(project_name: str,
-                                szz_report: SZZReport) -> tp.Dict[str, Path]:
+def _get_requested_report_paths(
+    project_name: str, szz_report: SZZReport
+) -> tp.Dict[ShortCommitHash, Path]:
     bugs = szz_report.get_all_raw_bugs()
-    requested_report_revisions: tp.Set[str] = set()
+    requested_report_revisions: tp.Set[ShortCommitHash] = set()
     for bug in bugs:
-        requested_report_revisions.add(bug.fixing_commit[:10])
+        requested_report_revisions.add(bug.fixing_commit.to_short_commit_hash())
         requested_report_revisions.update(
-            hash[:10] for hash in bug.introducing_commits
+            introducer.to_short_commit_hash()
+            for introducer in bug.introducing_commits
         )
 
-    report_map: tp.Dict[str, Path] = {}
+    report_map: tp.Dict[ShortCommitHash, Path] = {}
     for report_path in get_processed_revisions_files(project_name, BlameReport):
-        report_revision = MetaReport.get_commit_hash_from_result_file(
-            report_path.name
-        )
+        report_revision = ReportFilename(report_path).commit_hash
         if report_revision in requested_report_revisions:
             report_map[report_revision] = report_path
 
@@ -100,6 +105,7 @@ def _load_dataframe_for_report(
     commit_map: CommitMap, szz_report: SZZReport
 ) -> pd.DataFrame:
     commit_lookup = create_commit_lookup_helper(project_name)
+    commit_map = get_commit_map(project_name)
     prj_src = get_primary_project_source(project_name)
 
     def create_dataframe_layout() -> pd.DataFrame:
@@ -112,14 +118,26 @@ def _load_dataframe_for_report(
         # Look-up commit and infos about the HEAD commit of the report
         fix_report = load_blame_report(report_paths[0])
         intro_report = load_blame_report(report_paths[1])
-        fix_commit = commit_lookup(fix_report.head_commit, prj_src.local)
-        intro_commit = commit_lookup(intro_report.head_commit, prj_src.local)
+        fix_commit = commit_lookup(
+            commit_map.convert_to_full_or_warn(fix_report.head_commit),
+            prj_src.local
+        )
+        intro_commit = commit_lookup(
+            commit_map.convert_to_full_or_warn(intro_report.head_commit),
+            prj_src.local
+        )
 
         fix_in, fix_out = get_interacting_commits_for_commit(
-            fix_report, CommitRepoPair(str(fix_commit.id), prj_src.local)
+            fix_report,
+            CommitRepoPair(
+                FullCommitHash.from_pygit_commit(fix_commit), prj_src.local
+            )
         )
         intro_in, intro_out = get_interacting_commits_for_commit(
-            intro_report, CommitRepoPair(str(intro_commit.id), prj_src.local)
+            intro_report,
+            CommitRepoPair(
+                FullCommitHash.from_pygit_commit(intro_commit), prj_src.local
+            )
         )
 
         score = _calculate_szz_quality_score(
@@ -128,9 +146,9 @@ def _load_dataframe_for_report(
 
         return (
             pd.DataFrame({
-                'revision': fix_report.head_commit,
+                'revision': str(fix_report.head_commit),
                 'time_id': commit_map.short_time_id(fix_report.head_commit),
-                'introducer': intro_report.head_commit,
+                'introducer': str(intro_report.head_commit),
                 'score': score
             },
                          index=[0]), id_from_paths(report_paths),
@@ -144,10 +162,10 @@ def _load_dataframe_for_report(
     remove_entries: tp.List[tp.Tuple[Path, Path]] = []
     bugs = szz_report.get_all_raw_bugs()
     for bug in bugs:
-        fix = bug.fixing_commit[:10]
+        fix = bug.fixing_commit.to_short_commit_hash()
         if fix in available_revisions:
-            for intro in bug.introducing_commits:
-                intro = intro[:10]
+            for introducer in bug.introducing_commits:
+                intro = introducer.to_short_commit_hash()
                 if intro in available_revisions:
                     new_entries.append((report_map[fix], report_map[intro]))
 
