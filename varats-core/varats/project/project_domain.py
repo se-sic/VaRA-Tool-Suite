@@ -44,6 +44,8 @@ class ProjectGroups(Enum):
 
     C_PROJECTS = "c_projects"
     CPP_PROJECTS = "cpp_projects"
+    DEMO_PROJECTS = "demo_projects"
+    TEST_PROJECTS = "test_projects"
 
     def __str__(self) -> str:
         return str(self.value)
