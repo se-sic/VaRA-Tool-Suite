@@ -7,7 +7,7 @@ from enum import Enum
 from pathlib import Path
 
 import numpy as np
-import numpy.typing as nptp
+import numpy.typing as npt
 import plotly.graph_objs as gob
 import pygit2
 
@@ -152,7 +152,7 @@ ValueT = tp.TypeVar("ValueT")
 def _generate_diff_line_data(
     diff_raw_bugs: tp.Generator[DiffEntry, None,
                                 None], map_commit_to_id: tp.Dict[str, int],
-    commit_coordinates: tp.List[nptp.NDArray[np.float64]],
+    commit_coordinates: tp.List[npt.NDArray[np.float64]],
     commit_type: tp.Dict[str, DiffOccurrence]
 ) -> tp.List[gob.Scatter]:
     lines: tp.List[gob.Scatter] = []
@@ -187,7 +187,7 @@ def _generate_diff_line_data(
 
 def _generate_line_data(
     bug_set: tp.FrozenSet[PygitBug],
-    commit_coordinates: tp.List[nptp.NDArray[np.float64]],
+    commit_coordinates: tp.List[npt.NDArray[np.float64]],
     map_commit_to_id: tp.Dict[pygit2.Commit, int],
     commit_type: tp.Dict[pygit2.Commit, NodeType], edge_colors: tp.List[str]
 ) -> tp.List[gob.Scatter]:
@@ -225,7 +225,7 @@ def _generate_line_data(
 
 def _generate_node_data(
     project_repo: pygit2.Repository,
-    commit_coordinates: tp.List[nptp.NDArray[np.float64]],
+    commit_coordinates: tp.List[npt.NDArray[np.float64]],
     map_commit_to_id: tp.Dict[str, int], commit_type: tp.Dict[str, NodeType]
 ) -> tp.List[gob.Scatter]:
     nodes = []
@@ -261,12 +261,13 @@ def _generate_node_data(
 
 
 def _create_line(
-    start: nptp.NDArray[np.float64], end: nptp.NDArray[np.float64], color: str
+    start: npt.NDArray[np.float64], end: npt.NDArray[np.float64], color: str
 ) -> gob.Scatter:
     dist = _get_distance(start, end)
     interval = _get_interval(dist)
 
-    control_points = np.array([
+    # TODO: With min python 3.8 replace tp.Any -> tp.Literal[2]
+    control_points: np.ndarray[tp.Any, npt._DType[np.float64]] = np.array([
         start,
         np.true_divide(start, (__CP_PARAMETERS[interval])),
         np.true_divide(end, (__CP_PARAMETERS[interval])), end
@@ -283,7 +284,7 @@ def _create_line(
 
 
 def _create_node(
-    coordinates: nptp.NDArray[np.float64], color: str, size: int, text: str
+    coordinates: npt.NDArray[np.float64], color: str, size: int, text: str
 ) -> gob.Scatter:
     return gob.Scatter(
         x=[coordinates[0]],
@@ -323,14 +324,10 @@ def _create_layout(title: str) -> gob.Layout:
 
 
 def _get_distance(
-    first_point: nptp.NDArray[np.float64],
-    second_point: nptp.NDArray[np.float64]
+    first_point: npt.NDArray[np.float64], second_point: npt.NDArray[np.float64]
 ) -> float:
     """Returns distance between two points."""
-    distance = np.linalg.norm(  # type: ignore
-        np.array(first_point) - np.array(second_point)
-    )
-    return float(distance)
+    return float(np.linalg.norm(np.array(first_point) - np.array(second_point)))
 
 
 def _get_interval(distance: float) -> int:
@@ -347,7 +344,13 @@ __CP_PARAMETERS = [1.2, 1.5, 1.8, 2.1]
 
 __DISTANCE_THRESHOLDS = [
     0,
-    _get_distance(np.array([1, 0]), 2 * np.array([np.sqrt(2) / 2])),
+    _get_distance(
+        np.array([1, 0]),
+        tp.cast(  # look like mypy has a bug here, when infering the array dtype
+            npt.NDArray[np.float64],
+            np.array([np.sqrt(2.0) / 2.0], dtype=np.float64)
+        ) * 2.0
+    ),
     np.sqrt(2),
     _get_distance(
         np.array([1, 0]), np.array([-np.sqrt(2) / 2,
@@ -373,14 +376,17 @@ def _get_commit_interval(distance: float, commit_count: int) -> int:
 
 
 def _get_bezier_curve(
-    ctrl_points: nptp.NDArray[np.float64],
+    # TODO: With min python 3.8 replace tp.Any -> tp.Literal[2]
+    ctrl_points: npt.NDArray[np.float64],
     num_points: int = 5
-) -> nptp.NDArray[np.float64]:
+) -> npt.NDArray[np.float64]:
     """Implements bezier edges to display between commit nodes."""
     n = ctrl_points.shape[0]
 
-    def get_coordinate_on_curve(factor: float) -> nptp.NDArray[np.float64]:
-        points_cp = np.copy(ctrl_points)  # type: ignore
+    def get_coordinate_on_curve(factor: float) -> npt.NDArray[np.float64]:
+        points_cp: npt.NDArray[
+            np.float64
+        ] = tp.cast(npt.NDArray[np.float64], np.copy(ctrl_points))
         for i in range(1, n):
             points_cp[:n - i, :] = (
                 1 - factor
@@ -395,12 +401,12 @@ def _get_bezier_curve(
 
 def _compute_node_placement(
     commit_count: int
-) -> tp.List[nptp.NDArray[np.float64]]:
+) -> tp.List[npt.NDArray[np.float64]]:
     """Compute unit circle coordinates for each commit; move unit circle such
     that HEAD is on top."""
     # use commit_count + 1 since first and last coordinates are equal
     theta_vals = np.linspace(-3 * np.pi / 2, np.pi / 2, commit_count + 1)
-    commit_coordinates: tp.List[nptp.NDArray[np.float64]] = []
+    commit_coordinates: tp.List[npt.NDArray[np.float64]] = []
     for theta in theta_vals:
         commit_coordinates.append(np.array([np.cos(theta), np.sin(theta)]))
     return commit_coordinates

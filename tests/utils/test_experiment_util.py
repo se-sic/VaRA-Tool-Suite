@@ -13,6 +13,7 @@ import varats.experiment.experiment_util as EU
 from tests.test_helper import BBTestSource
 from tests.test_utils import run_in_test_environment
 from varats.data.reports.commit_report import CommitReport as CR
+from varats.report.gnu_time_report import TimeReport
 from varats.report.report import FileStatusExtension, ReportSpecification
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
@@ -24,6 +25,17 @@ class MockExperiment(EU.VersionExperiment, shorthand="mock"):
 
     NAME = "CommitReportExperiment"
     REPORT_SPEC = ReportSpecification(CR)
+
+    def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
+        return []
+
+
+class MockExperimentMultiReport(EU.VersionExperiment, shorthand="mock"):
+    """Small MockExperiment to be used as a replacement for actual experiments
+    that "produces" multiple reports."""
+
+    NAME = "CommitReportExperiment"
+    REPORT_SPEC = ReportSpecification(CR, TimeReport)
 
     def actions_for_project(self, project: Project) -> tp.List[actions.Step]:
         return []

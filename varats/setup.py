@@ -10,11 +10,7 @@ with open(base_dir + '/README.md') as f:
 
 setup(
     name='varats',
-    use_scm_version={
-        'root': '..',
-        "relative_to": __file__,
-        "fallback_version": '11.0.0'
-    },
+    version='11.1.1',
     url='https://github.com/se-passau/vara-tool-suite',
     packages=find_namespace_packages(include=['varats.*']),
     namespace_packages=["varats"],
@@ -22,7 +18,7 @@ setup(
     tests_require=["pytest", "pytest-cov"],
     install_requires=[
         "argparse-utils>=1.2.0",
-        "benchbuild>=6.2.7",
+        "benchbuild>=6.3.0",
         "click>=8.0.1",
         "distro>=1.5.0",
         "graphviz>=0.14.2",
@@ -30,7 +26,7 @@ setup(
         "kaleido>=0.2.1",
         "matplotlib>=3.1.2",
         "networkx>=2.5",
-        "numpy>=1.21.4",
+        "numpy>=1.21",
         "packaging>=20.1",
         "pandas>=0.22.0",
         "plotly>=4.14.1",
@@ -46,11 +42,11 @@ setup(
         "pyzmq>=19.0.0",
         "requests>=2.24.0",
         "rich>=1.3.1",
-        "scikit-learn>=0.24",
+        "scikit-learn~=1.0.2",
         "seaborn>=0.8.0",
-        "statsmodels~=0.11.1",
+        "statsmodels~=0.13.1",
         "tabulate>=0.8.6",
-        "varats-core>=11.0.0",
+        "varats-core>=11.1.1",
         "wllvm>=1.1.4",
     ],
     author="Florian Sattler",
@@ -72,7 +68,6 @@ setup(
             'vd = varats.tools.driver_develop:main',
             'vara-gen-bbconfig = '
             'varats.tools.driver_gen_benchbuild_config:main',
-            'vara-gen-commitmap = varats.tools.driver_gen_commitmap:main',
             'vara-pc = varats.tools.driver_paper_config:main',
             'vara-plot = varats.tools.driver_plot:main',
             'vara-run = varats.tools.driver_run:main',

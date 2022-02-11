@@ -23,13 +23,9 @@ from varats.ts_utils.click_param_types import (
 from varats.utils.settings import vara_cfg
 
 if sys.version_info <= (3, 8):
-    from typing_extensions import Protocol
-    from typing_extensions import runtime_checkable
-    from typing_extensions import final
+    from typing_extensions import Protocol, runtime_checkable, final
 else:
-    from typing import Protocol
-    from typing import runtime_checkable
-    from typing import final
+    from typing import Protocol, runtime_checkable, final
 
 if tp.TYPE_CHECKING:
     import varats.plot.plot  # pylint: disable=W0611
@@ -573,9 +569,7 @@ class PlotGenerator(abc.ABC):
             plot:           plot class used by the generator
             options:        command line options needed by the generator
         """
-        # mypy does not yet fully understand __init_subclass__()
-        # https://github.com/python/mypy/issues/4660
-        super().__init_subclass__(**kwargs)  # type: ignore
+        super().__init_subclass__(**kwargs)
         cls.NAME = generator_name
         cls.OPTIONS = options
         cls.GENERATORS[generator_name] = cls

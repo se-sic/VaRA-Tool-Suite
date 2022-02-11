@@ -7,16 +7,16 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    wrap_paths_to_binaries,
     BinaryType,
     verify_binaries,
+    get_local_project_git_path,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash
+from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 from varats.utils.settings import bb_cfg
 
 
@@ -28,13 +28,13 @@ class LibjpegTurbo(VProject):
     DOMAIN = ProjectDomains.FILE_FORMAT
 
     SOURCE = [
-        bb.source.Git(
+        PaperConfigSpecificGit(
+            project_name="libjpeg_turbo",
             remote="https://github.com/libjpeg-turbo/libjpeg-turbo",
             local="libjpeg-turbo",
             refspec="origin/HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("libjpeg_turbo")
+            shallow=False
         )
     ]
 
@@ -43,11 +43,15 @@ class LibjpegTurbo(VProject):
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash  # pylint: disable=W0613
+        revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        return wrap_paths_to_binaries([
-            ("libjpeg.so", BinaryType.SHARED_LIBRARY)
-        ])
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(LibjpegTurbo.NAME)
+        )
+
+        binary_map.specify_binary("libjpeg.so", BinaryType.SHARED_LIBRARY)
+
+        return binary_map[revision]
 
     def run_tests(self) -> None:
         pass

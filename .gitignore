@@ -16,3 +16,5 @@ env
 venv
 build/
 .tox/
+docs/source/.varats.yaml
+docs/**/*.inc

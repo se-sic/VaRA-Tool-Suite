@@ -7,12 +7,11 @@ from enum import Enum
 from pathlib import Path
 
 import benchbuild as bb
-import plumbum as pb
 import pygit2
-from benchbuild.source import Git, GitSubmodule
 from benchbuild.source.base import target_prefix
-from benchbuild.utils.cmd import git, mkdir, cp
+from benchbuild.utils.cmd import git
 from plumbum import local
+from plumbum.commands.base import BoundCommand
 
 LOG = logging.getLogger(__name__)
 
@@ -23,17 +22,42 @@ class CompilationError(Exception):
 
 def get_project_cls_by_name(project_name: str) -> tp.Type[bb.Project]:
     """Look up a BenchBuild project by it's name."""
-    for proj in bb.project.ProjectRegistry.projects:
-        if proj.endswith('gentoo') or proj.endswith("benchbuild"):
+    for project_map_key in bb.project.ProjectRegistry.projects:
+        if not _is_vara_project(project_map_key):
             # currently we only support vara provided projects
             continue
 
-        if proj.startswith(project_name):
-            project: tp.Type[bb.Project
-                            ] = bb.project.ProjectRegistry.projects[proj]
+        if project_map_key.startswith(project_name):
+            project: tp.Type[
+                bb.Project
+            ] = bb.project.ProjectRegistry.projects[project_map_key]
             return project
 
     raise LookupError
+
+
+def get_loaded_vara_projects() -> tp.Generator[tp.Type[bb.Project], None, None]:
+    """Get all loaded vara projects."""
+    for project_map_key in bb.project.ProjectRegistry.projects:
+        if not _is_vara_project(project_map_key):
+            # currently we only support vara provided projects
+            continue
+
+        yield bb.project.ProjectRegistry.projects[project_map_key]
+
+
+def _is_vara_project(project_key: str) -> bool:
+    """
+    >>> _is_vara_project("Xz/c_projects")
+    True
+
+    >>> _is_vara_project("BZip2/gentoo")
+    False
+    """
+    return any(
+        project_key.endswith(x)
+        for x in ("c_projects", "cpp_projects", "test_projects", "perf_tests")
+    )
 
 
 def get_primary_project_source(project_name: str) -> bb.source.FetchableSource:
@@ -185,11 +209,22 @@ class ProjectBinaryWrapper():
     """
 
     def __init__(
-        self, binary_name: str, path_to_binary: Path, binary_type: BinaryType
+        self,
+        binary_name: str,
+        path_to_binary: Path,
+        binary_type: BinaryType,
+        entry_point: tp.Optional[Path] = None
     ) -> None:
         self.__binary_name = binary_name
         self.__binary_path = path_to_binary
         self.__type = binary_type
+
+        if binary_type is BinaryType.EXECUTABLE:
+            self.__entry_point = entry_point
+            if not self.__entry_point:
+                self.__entry_point = self.path
+        else:
+            self.__entry_point = None
 
     @property
     def name(self) -> str:
@@ -206,6 +241,27 @@ class ProjectBinaryWrapper():
         """Specifies the type, e.g., executable, shared, or static library, of
         the binary."""
         return self.__type
+
+    @property
+    def entry_point(self) -> tp.Optional[Path]:
+        """Entry point to an executable "thing" that executes the wrapped
+        binary, if possible."""
+        return self.__entry_point
+
+    def __call__(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
+        if self.type is not BinaryType.EXECUTABLE:
+            LOG.warning(f"Executing {self.type} is not possible.")
+            return None
+
+        executable_entry_point = local[f"{self.entry_point}"]
+        return executable_entry_point(*args, **kwargs)
+
+    def __getitem__(self, args: tp.Any) -> BoundCommand:
+        if self.type is not BinaryType.EXECUTABLE:
+            raise AssertionError(f"Executing {self.type} is not possible.")
+
+        executable_entry_point = local[f"{self.entry_point}"]
+        return executable_entry_point[args]
 
     def __str__(self) -> str:
         return f"{self.name}: {self.path} | {str(self.type)}"
@@ -325,125 +381,3 @@ def copy_renamed_git_to_dest(src_dir: Path, dest_dir: Path) -> None:
         for name in dirs:
             if name == ".gitted":
                 os.rename(os.path.join(root, name), os.path.join(root, ".git"))
-
-
-# TODO (se-passau/VaRA#717): Remove pylint's disable when issue is fixed
-class VaraTestRepoSubmodule(GitSubmodule):  # type: ignore  # pylint: disable=R0901;
-    """A project source for submodule repositories stored in the vara-test-repos
-    repository."""
-
-    __vara_test_repos_git = Git(
-        remote="https://github.com/se-passau/vara-test-repos",
-        local="vara_test_repos",
-        refspec="origin/HEAD",
-        limit=1
-    )
-
-    def fetch(self) -> pb.LocalPath:
-        """
-        Overrides ``GitSubmodule`` s fetch to
-          1. fetch the vara-test-repos repo
-          2. extract the specified submodule from the vara-test-repos repo
-          3. rename files that were made git_storable (e.g., .gitted) back to
-             their original name (e.g., .git)
-
-        Returns:
-            the path where the inner repo is extracted to
-        """
-        self.__vara_test_repos_git.shallow = self.shallow
-        self.__vara_test_repos_git.clone = self.clone
-
-        vara_test_repos_path = self.__vara_test_repos_git.fetch()
-        submodule_path = vara_test_repos_path / Path(self.remote)
-        submodule_target = local.path(target_prefix()) / Path(self.local)
-
-        # Extract submodule
-        if not os.path.isdir(submodule_target):
-            copy_renamed_git_to_dest(submodule_path, submodule_target)
-
-        return submodule_target
-
-
-# TODO (se-passau/VaRA#717): Remove pylint's disable when issue is fixed
-class VaraTestRepoSource(Git):  # type: ignore  # pylint: disable=R0901;
-    """A project source for repositories stored in the vara-test-repos
-    repository."""
-
-    __vara_test_repos_git = Git(
-        remote="https://github.com/se-passau/vara-test-repos",
-        local="vara_test_repos",
-        refspec="origin/HEAD",
-        limit=1
-    )
-
-    def fetch(self) -> pb.LocalPath:
-        """
-        Overrides ``Git`` s fetch to
-          1. fetch the vara-test-repos repo
-          2. extract the specified repo from the vara-test-repos repo
-          3. rename files that were made git_storable (e.g., .gitted) back to
-             their original name (e.g., .git)
-
-        Returns:
-            the path where the inner repo is extracted to
-        """
-        self.__vara_test_repos_git.shallow = self.shallow
-        self.__vara_test_repos_git.clone = self.clone
-
-        vara_test_repos_path = self.__vara_test_repos_git.fetch()
-        main_src_path = vara_test_repos_path / self.remote
-        main_tgt_path = local.path(target_prefix()) / self.local
-
-        # Extract main repository
-        if not os.path.isdir(main_tgt_path):
-            copy_renamed_git_to_dest(main_src_path, main_tgt_path)
-
-        return main_tgt_path
-
-    def version(self, target_dir: str, version: str = 'HEAD') -> pb.LocalPath:
-        """Overrides ``Git`` s version to create a new git worktree pointing to
-        the requested version."""
-
-        main_repo_src_local = self.fetch()
-        tgt_loc = pb.local.path(target_dir) / self.local
-        vara_test_repos_path = self.__vara_test_repos_git.fetch()
-        main_repo_src_remote = vara_test_repos_path / self.remote
-
-        mkdir('-p', tgt_loc)
-
-        # Extract main repository
-        cp("-r", main_repo_src_local + "/.", tgt_loc)
-
-        # Skip submodule extraction if none exist
-        if not Path(tgt_loc / ".gitmodules").exists():
-            with pb.local.cwd(tgt_loc):
-                git("checkout", "--detach", version)
-            return tgt_loc
-
-        # Extract submodules
-        with pb.local.cwd(tgt_loc):
-
-            # Get submodule entries
-            submodule_url_entry_list = git(
-                "config", "--file", ".gitmodules", "--name-only",
-                "--get-regexp", "url"
-            ).split('\n')
-
-            # Remove empty strings
-            submodule_url_entry_list = list(
-                filter(None, submodule_url_entry_list)
-            )
-
-            for entry in submodule_url_entry_list:
-                relative_submodule_url = Path(
-                    git("config", "--file", ".gitmodules", "--get",
-                        entry).replace('\n', '')
-                )
-                copy_renamed_git_to_dest(
-                    main_repo_src_remote / relative_submodule_url,
-                    relative_submodule_url
-                )
-            git("checkout", "--detach", version)
-            git("submodule", "update")
-
-        return tgt_loc

@@ -8,7 +8,7 @@ import typing as tp
 
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as nptp
+import numpy.typing as npt
 import pandas as pd
 import seaborn as sns
 from matplotlib import axes
@@ -126,7 +126,7 @@ def logit_scatterplot(
 
 
 def _cluster_data_by_quantile(data: pd.Series,
-                              quantile: float) -> nptp.NDArray[np.float64]:
+                              quantile: float) -> npt.NDArray[np.int_]:
     n_rows = len(data)
     quantile_border = quantile * n_rows
 
@@ -136,13 +136,13 @@ def _cluster_data_by_quantile(data: pd.Series,
     return np.array([to_quantile_index(i) for i, _ in enumerate(data)])
 
 
-def _cluster_data_by_kmeans(data: pd.Series) -> nptp.NDArray[np.float64]:
+def _cluster_data_by_kmeans(data: pd.Series) -> npt.NDArray[tp.Any]:
     data2 = data.to_numpy(copy=True).reshape(-1, 1)
     stscaler = StandardScaler().fit(data2)
     data2 = stscaler.transform(data2)
     cluster = KMeans(
         n_clusters=2,
-        init=np.array([[np.min(data2)], [np.max(data2)]]),  # type: ignore
+        init=np.array([[np.min(data2)], [np.max(data2)]]),
         n_init=1
     ).fit(data2)
     return np.asarray(cluster.labels_)

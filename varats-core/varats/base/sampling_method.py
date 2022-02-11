@@ -5,7 +5,7 @@ import typing as tp
 from enum import Enum
 
 import numpy as np
-import numpy.typing as nptp
+import numpy.typing as npt
 from scipy.stats import halfnorm
 
 from varats.base.configuration import Configuration
@@ -28,9 +28,7 @@ class SamplingMethodBase(tp.Generic[SamplingMethodSubType], abc.ABC):
 
     @classmethod
     def __init_subclass__(cls, *args: tp.Any, **kwargs: tp.Any) -> None:
-        # mypy does not yet fully understand __init_subclass__()
-        # https://github.com/python/mypy/issues/4660
-        super().__init_subclass__(*args, **kwargs)  # type: ignore
+        super().__init_subclass__(*args, **kwargs)
         cls._methods[cls.name()] = cls
 
     @classmethod
@@ -186,7 +184,7 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
     @abc.abstractmethod
     def gen_distribution_function(
         self
-    ) -> tp.Callable[[int], nptp.NDArray[np.float64]]:
+    ) -> tp.Callable[[int], npt.NDArray[np.float64]]:
         """
         Generate a distribution function for the specified sampling method.
 
@@ -225,7 +223,7 @@ class UniformSamplingMethod(NormalSamplingMethod):
 
     def gen_distribution_function(
         self
-    ) -> tp.Callable[[int], nptp.NDArray[np.float64]]:
+    ) -> tp.Callable[[int], npt.NDArray[np.float64]]:
         """
         Generate a distribution function for the specified sampling method.
 
@@ -234,7 +232,7 @@ class UniformSamplingMethod(NormalSamplingMethod):
             according to the selected distribution
         """
 
-        def uniform(num_samples: int) -> nptp.NDArray[np.float64]:
+        def uniform(num_samples: int) -> npt.NDArray[np.float64]:
             return np.random.uniform(0, 1.0, num_samples)
 
         return uniform
@@ -245,7 +243,7 @@ class HalfNormalSamplingMethod(NormalSamplingMethod):
 
     def gen_distribution_function(
         self
-    ) -> tp.Callable[[int], nptp.NDArray[np.float64]]:
+    ) -> tp.Callable[[int], npt.NDArray[np.float64]]:
         """
         Generate a distribution function for the specified sampling method.
 
@@ -254,9 +252,9 @@ class HalfNormalSamplingMethod(NormalSamplingMethod):
             according to the selected distribution
         """
 
-        def halfnormal(num_samples: int) -> nptp.NDArray[np.float64]:
+        def halfnormal(num_samples: int) -> npt.NDArray[np.float64]:
             return tp.cast(
-                nptp.NDArray[np.float64],
+                npt.NDArray[np.float64],
                 halfnorm.rvs(scale=1, size=num_samples)
             )
 
@@ -350,7 +348,7 @@ class FeatureSamplingMethod(SamplingMethodBase['FeatureSamplingMethod']):
 
     @abc.abstractmethod
     def sample(
-        self, feature_model, partial_config: tp.Optional[Configuration],
+        self, feature_model: tp.Any, partial_config: tp.Optional[Configuration],
         strategy: tp.Optional[SamplingStrategy]
     ) -> tp.List[Configuration]:
         """
