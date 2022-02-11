@@ -3,9 +3,31 @@ import os
 import shutil
 import tempfile
 import typing as tp
+from enum import Enum
 from pathlib import Path
 
 from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
+
+
+class AnalysisType(Enum):
+
+    value: str
+
+    TYPE_STATE = "typestate"
+    TAINT = "taint"
+    LCA = "ide-lca"
+
+    @staticmethod
+    def convert_from(value: str) -> tp.List['AnalysisType']:
+        enabled_analysis_types = []
+        for analysis_type in AnalysisType:
+            if analysis_type.value in value:
+                enabled_analysis_types.append(analysis_type)
+
+        return enabled_analysis_types
+
+    def __str__(self) -> str:
+        return f"{self.value}"
 
 
 class IncrementalReport(BaseReport, shorthand="Inc", file_type="zip"):

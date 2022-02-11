@@ -26,7 +26,10 @@ from varats.data.reports.globals_report import (
     GlobalsReportWith,
     GlobalsReportWithout,
 )
-from varats.data.reports.incremental_reports import IncrementalReport
+from varats.data.reports.incremental_reports import (
+    IncrementalReport,
+    AnalysisType,
+)
 from varats.experiment.experiment_util import (
     exec_func_with_pe_error_handler,
     VersionExperiment,
@@ -58,27 +61,6 @@ from varats.utils.git_util import (
 )
 from varats.utils.settings import bb_cfg
 from varats.utils.util import pairwise
-
-
-class AnalysisType(Enum):
-
-    value: str
-
-    TYPE_STATE = "typestate"
-    TAINT = "taint"
-    LCA = "ide-lca"
-
-    @staticmethod
-    def convert_from(value: str) -> tp.List['AnalysisType']:
-        enabled_analysis_types = []
-        for analysis_type in AnalysisType:
-            if analysis_type.value in value:
-                enabled_analysis_types.append(analysis_type)
-
-        return enabled_analysis_types
-
-    def __str__(self) -> str:
-        return f"{self.value}"
 
 
 def _get_enabled_analyses() -> tp.List[AnalysisType]:
