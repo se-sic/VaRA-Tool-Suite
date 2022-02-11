@@ -38,9 +38,9 @@ def create_df_for_report(report, project_name, t):
 
 def _color_and_format_delta_cell(x) -> tp.Any:
     if x > 0:
-        return "\\cellcolor{cellGreen}" + str(x) + "\%"
+        return "\\cellcolor{cellRed}" + str(x) + "\%"
 
-    return "\\cellcolor{cellRed}" + str(x) + "\%"
+    return "\\cellcolor{cellGreen}" + str(x) + "\%"
 
 
 class PhasarGlobalsDataComparision(Table):
