@@ -820,23 +820,28 @@ class TestBlameReportHelperFunctions(unittest.TestCase):
         """Test if retrieving of interacting commits works."""
         report = self.reports[1]  # YAML_DOC_BR_6
         commit = CommitRepoPair(
-            "e64923e69eab82332c1bed7fe1e80e14c2c5cb7f", "Elementalist"
+            FullCommitHash("e64923e69eab82332c1bed7fe1e80e14c2c5cb7f"),
+            "Elementalist"
         )
 
         expected_in = {
             CommitRepoPair(
-                "5e030723d70f4894c21881e32dba4decec815c7e", "Elementalist"
+                FullCommitHash("5e030723d70f4894c21881e32dba4decec815c7e"),
+                "Elementalist"
             ),
             CommitRepoPair(
-                "bd693d7bc2e4ae5be93e300506ba1efea149e5b7", "Elementalist"
+                FullCommitHash("bd693d7bc2e4ae5be93e300506ba1efea149e5b7"),
+                "Elementalist"
             )
         }
         expected_out = {
             CommitRepoPair(
-                "5e030723d70f4894c21881e32dba4decec815c7e", "Elementalist"
+                FullCommitHash("5e030723d70f4894c21881e32dba4decec815c7e"),
+                "Elementalist"
             ),
             CommitRepoPair(
-                "97c573ee98a1c2143b6876433697e363c9eca98b", "Elementalist"
+                FullCommitHash("97c573ee98a1c2143b6876433697e363c9eca98b"),
+                "Elementalist"
             )
         }
 
