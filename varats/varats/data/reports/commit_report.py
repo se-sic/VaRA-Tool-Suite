@@ -8,7 +8,8 @@ import yaml
 
 from varats.base.version_header import VersionHeader
 from varats.mapping.commit_map import CommitMap
-from varats.report.report import BaseReport, FileStatusExtension, MetaReport
+from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
+from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 LOG = logging.getLogger(__name__)
 
@@ -45,10 +46,10 @@ class RegionMapping():
 
     def __init__(self, raw_yaml: tp.Dict[str, tp.Any]) -> None:
         self.id = str(raw_yaml['id'])
-        self.hash = str(raw_yaml['hash'])
+        self.hash = FullCommitHash(str(raw_yaml['hash']))
 
     def __str__(self) -> str:
-        return "{} = {}".format(self.id, self.hash)
+        return "{} = {}".format(self.id, self.hash.hash)
 
 
 class RegionToFunctionEdge():
@@ -118,14 +119,14 @@ class FunctionGraphEdges():
                 self.df_relations.append(RegionToRegionEdge(edge))
 
     def __str__(self) -> str:
-        repr_str = "FName: {}:\n\t CG-Edges [".format(self.fid)
+        repr_str = f"FName: {self.fid}:\n    CG-Edges ["
         sep = ""
         for cg_edge in self.cg_edges:
             repr_str += sep + str(cg_edge)
             sep = ", "
         repr_str += "]"
 
-        repr_str += "\n\t CF-Edges ["
+        repr_str += "\n    CF-Edges ["
         sep = ""
         for cf_edge in self.cf_edges:
             repr_str += sep + str(cf_edge)
@@ -135,11 +136,8 @@ class FunctionGraphEdges():
         return repr_str
 
 
-class CommitReport(BaseReport):
+class CommitReport(BaseReport, shorthand="CR", file_type="yaml"):
     """Data class that gives access to a loaded commit report."""
-
-    SHORTHAND = "CR"
-    FILE_TYPE = "yaml"
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
@@ -150,12 +148,12 @@ class CommitReport(BaseReport):
             version_header.raise_if_version_is_less_than(3)
 
             raw_infos = next(documents)
-            self.finfos: tp.Dict[str, FunctionInfo] = dict()
+            self.finfos: tp.Dict[str, FunctionInfo] = {}
             for raw_finfo in raw_infos['function-info']:
                 finfo = FunctionInfo(raw_finfo)
                 self.finfos[finfo.name] = finfo
 
-            self.region_mappings: tp.Dict[str, RegionMapping] = dict()
+            self.region_mappings: tp.Dict[str, RegionMapping] = {}
             raw_region_mapping = raw_infos['region-mapping']
             if raw_region_mapping is not None:
                 for raw_r_mapping in raw_region_mapping:
@@ -163,76 +161,21 @@ class CommitReport(BaseReport):
                     self.region_mappings[r_mapping.id] = r_mapping
 
             gedges = next(documents)
-            self.graph_info: tp.Dict[str, FunctionGraphEdges] = dict()
+            self.graph_info: tp.Dict[str, FunctionGraphEdges] = {}
 
             for raw_fg_edge in gedges:
                 f_edge = FunctionGraphEdges(raw_fg_edge)
                 self.graph_info[f_edge.fid] = f_edge
 
     @property
-    def head_commit(self) -> str:
+    def head_commit(self) -> ShortCommitHash:
         """The current HEAD commit under which this CommitReport was created."""
-        return CommitReport.get_commit_hash_from_result_file(
-            Path(self.path).name
-        )
-
-    @staticmethod
-    def get_file_name(
-        project_name: str,
-        binary_name: str,
-        project_version: str,
-        project_uuid: str,
-        extension_type: FileStatusExtension,
-        file_ext: str = "yaml"
-    ) -> str:
-        """
-        Generates a filename for a commit report with 'yaml' as file extension.
-
-        Args:
-            project_name: name of the project for which the report was generated
-            binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
-            project_uuid: benchbuild uuid for the experiment run
-            extension_type: to specify the status of the generated report
-            file_ext: file extension of the report file
-
-        Returns:
-            name for the report file that can later be uniquly identified
-        """
-        return MetaReport.get_file_name(
-            CommitReport.SHORTHAND, project_name, binary_name, project_version,
-            project_uuid, extension_type, file_ext
-        )
-
-    @staticmethod
-    def get_supplementary_file_name(
-        project_name: str, binary_name: str, project_version: str,
-        project_uuid: str, info_type: str, file_ext: str
-    ) -> str:
-        """
-        Generates a filename for a commit report supplementary file.
-
-        Args:
-            project_name: name of the project for which the report was generated
-            binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
-            project_uuid: benchbuild uuid for the experiment run
-            info_type: specifies the kind of supplementary file
-            file_ext: file extension of the report file
-
-        Returns:
-            name for the supplementary report file that can later be uniquly
-            identified
-        """
-        return BaseReport.get_supplementary_file_name(
-            CommitReport.SHORTHAND, project_name, binary_name, project_version,
-            project_uuid, info_type, file_ext
-        )
+        return self.filename.commit_hash
 
     def calc_max_cf_edges(self) -> int:
         """Calculate the highest amount of control-flow interactions of a single
         commit region."""
-        cf_map: tp.Dict[str, tp.List[int]] = dict()
+        cf_map: tp.Dict[str, tp.List[int]] = {}
         self.init_cf_map_with_edges(cf_map)
 
         total = 0
@@ -244,7 +187,7 @@ class CommitReport(BaseReport):
     def calc_max_df_edges(self) -> int:
         """Calculate the highest amount of data-flow interactions of a single
         commit region."""
-        df_map: tp.Dict[str, tp.List[int]] = dict()
+        df_map: tp.Dict[str, tp.List[int]] = {}
         self.init_df_map_with_edges(df_map)
 
         total = 0
@@ -284,7 +227,7 @@ class CommitReport(BaseReport):
 
     def number_of_cf_interactions(self) -> int:
         """Total number of found control-flow interactions."""
-        cf_map: tp.Dict[str, tp.List[int]] = dict()
+        cf_map: tp.Dict[str, tp.List[int]] = {}
         self.init_cf_map_with_edges(cf_map)
 
         total_interactions = 0
@@ -300,11 +243,11 @@ class CommitReport(BaseReport):
         Returns:
             tuple (incoming_head_interactions, outgoing_head_interactions)
         """
-        cf_map: tp.Dict[str, tp.List[int]] = dict()
+        cf_map: tp.Dict[str, tp.List[int]] = {}
         self.init_cf_map_with_edges(cf_map)
-        for key in cf_map:
-            if key.startswith(self.head_commit):
-                interaction_tuple = cf_map[key]
+        for key, value in cf_map.items():
+            if key.startswith(self.head_commit.hash):
+                interaction_tuple = value
                 return (interaction_tuple[0], interaction_tuple[1])
 
         return (0, 0)
@@ -330,7 +273,7 @@ class CommitReport(BaseReport):
 
     def number_of_df_interactions(self) -> int:
         """Total number of found data-flow interactions."""
-        df_map: tp.Dict[str, tp.List[int]] = dict()
+        df_map: tp.Dict[str, tp.List[int]] = {}
         self.init_df_map_with_edges(df_map)
 
         total_interactions = 0
@@ -341,11 +284,11 @@ class CommitReport(BaseReport):
     def number_of_head_df_interactions(self) -> tp.Tuple[int, int]:
         """The number of control-flow interactions the HEAD commit has with
         other commits."""
-        df_map: tp.Dict[str, tp.List[int]] = dict()
+        df_map: tp.Dict[str, tp.List[int]] = {}
         self.init_df_map_with_edges(df_map)
-        for key in df_map:
-            if key.startswith(self.head_commit):
-                interaction_tuple = df_map[key]
+        for key, value in df_map.items():
+            if key.startswith(self.head_commit.hash):
+                interaction_tuple = value
                 return (interaction_tuple[0], interaction_tuple[1])
 
         return (0, 0)
@@ -356,8 +299,8 @@ class CommitReportMeta():
     from different revisions, into one."""
 
     def __init__(self) -> None:
-        self.finfos: tp.Dict[str, FunctionInfo] = dict()
-        self.region_mappings: tp.Dict[str, RegionMapping] = dict()
+        self.finfos: tp.Dict[str, FunctionInfo] = {}
+        self.region_mappings: tp.Dict[str, RegionMapping] = {}
         self.__cf_ylimit = 0
         self.__df_ylimit = 0
 
@@ -407,7 +350,7 @@ def generate_inout_cfg_cf(
         commit_report: report containing the commit data
         cr_meta: the meta commit report, if available
     """
-    cf_map = dict()  # RM -> [from, to]
+    cf_map = {}  # RM -> [from, to]
 
     # Add all from meta commit report and ...
     if cr_meta is not None:
@@ -435,7 +378,7 @@ def generate_inout_cfg_cf(
 
 def generate_interactions(
     commit_report: CommitReport, c_map: CommitMap
-) -> pd.DataFrame:
+) -> tp.Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Converts the commit analysis interaction data from a ``CommitReport`` into a
     pandas data frame for plotting.
@@ -456,7 +399,7 @@ def generate_interactions(
         for cf_edge in func_g_edge.cf_edges:
             link_rows.append([
                 cf_edge.edge_from, cf_edge.edge_to, 1,
-                c_map.time_id(cf_edge.edge_from)
+                c_map.time_id(FullCommitHash(cf_edge.edge_from))
             ])
 
     links = pd.DataFrame(
@@ -477,7 +420,7 @@ def generate_inout_cfg_df(
         commit_report: report containing the commit data
         cr_meta: the meta commit report, if available
     """
-    df_map = dict()  # RM -> [from, to]
+    df_map = {}  # RM -> [from, to]
 
     # Add all from meta commit report and ...
     if cr_meta is not None:

@@ -5,6 +5,7 @@ import typing as tp
 from enum import Enum
 
 import numpy as np
+import numpy.typing as npt
 from scipy.stats import halfnorm
 
 from varats.base.configuration import Configuration
@@ -23,13 +24,11 @@ class SamplingMethodBase(tp.Generic[SamplingMethodSubType], abc.ABC):
 
     CONFIG_TYPE_NAME = 'sampling_method'
 
-    _methods: tp.Dict[str, tp.Type[SamplingMethodSubType]] = dict()
+    _methods: tp.Dict[str, tp.Type[SamplingMethodSubType]] = {}
 
     @classmethod
     def __init_subclass__(cls, *args: tp.Any, **kwargs: tp.Any) -> None:
-        # mypy does not yet fully understand __init_subclass__()
-        # https://github.com/python/mypy/issues/4660
-        super().__init_subclass__(*args, **kwargs)  # type: ignore
+        super().__init_subclass__(*args, **kwargs)
         cls._methods[cls.name()] = cls
 
     @classmethod
@@ -118,7 +117,7 @@ class SamplingMethodBase(tp.Generic[SamplingMethodSubType], abc.ABC):
         Implementations in subclasses should always call
         `super()._extend_config()` first.
         """
-        return dict()
+        return {}
 
     def _configure_sampling_method(self, config: tp.Dict[str, str]) -> None:
         """
@@ -183,7 +182,9 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
         )
 
     @abc.abstractmethod
-    def gen_distribution_function(self) -> tp.Callable[[int], np.ndarray]:
+    def gen_distribution_function(
+        self
+    ) -> tp.Callable[[int], npt.NDArray[np.float64]]:
         """
         Generate a distribution function for the specified sampling method.
 
@@ -220,7 +221,9 @@ class NormalSamplingMethod(SamplingMethodBase['NormalSamplingMethod']):
 class UniformSamplingMethod(NormalSamplingMethod):
     """SampleMethod based on the uniform distribution."""
 
-    def gen_distribution_function(self) -> tp.Callable[[int], np.ndarray]:
+    def gen_distribution_function(
+        self
+    ) -> tp.Callable[[int], npt.NDArray[np.float64]]:
         """
         Generate a distribution function for the specified sampling method.
 
@@ -229,10 +232,8 @@ class UniformSamplingMethod(NormalSamplingMethod):
             according to the selected distribution
         """
 
-        def uniform(num_samples: int) -> np.ndarray:
-            return tp.cast(
-                tp.List[float], np.random.uniform(0, 1.0, num_samples)
-            )
+        def uniform(num_samples: int) -> npt.NDArray[np.float64]:
+            return np.random.uniform(0, 1.0, num_samples)
 
         return uniform
 
@@ -240,7 +241,9 @@ class UniformSamplingMethod(NormalSamplingMethod):
 class HalfNormalSamplingMethod(NormalSamplingMethod):
     """SampleMethod based on a half-normal distribution."""
 
-    def gen_distribution_function(self) -> tp.Callable[[int], np.ndarray]:
+    def gen_distribution_function(
+        self
+    ) -> tp.Callable[[int], npt.NDArray[np.float64]]:
         """
         Generate a distribution function for the specified sampling method.
 
@@ -249,9 +252,10 @@ class HalfNormalSamplingMethod(NormalSamplingMethod):
             according to the selected distribution
         """
 
-        def halfnormal(num_samples: int) -> np.ndarray:
+        def halfnormal(num_samples: int) -> npt.NDArray[np.float64]:
             return tp.cast(
-                tp.List[float], halfnorm.rvs(scale=1, size=num_samples)
+                npt.NDArray[np.float64],
+                halfnorm.rvs(scale=1, size=num_samples)
             )
 
         return halfnormal
@@ -300,7 +304,7 @@ class Solver(Enum):
     """Represents the type of solver used in the background of the
     `SamplingMethod`."""
 
-    NoSolver = None
+    NO_SOLVER = None
     Z3 = 1
 
 
@@ -309,7 +313,7 @@ class FeatureSamplingMethod(SamplingMethodBase['FeatureSamplingMethod']):
     configurations from a feature model based on different sampling
     strategies."""
 
-    def __init__(self, solver: Solver = Solver.NoSolver) -> None:
+    def __init__(self, solver: Solver = Solver.NO_SOLVER) -> None:
         self.__solver = solver
 
     def _extend_config(self) -> tp.Dict[str, tp.Any]:
@@ -344,7 +348,7 @@ class FeatureSamplingMethod(SamplingMethodBase['FeatureSamplingMethod']):
 
     @abc.abstractmethod
     def sample(
-        self, feature_model, partial_config: tp.Optional[Configuration],
+        self, feature_model: tp.Any, partial_config: tp.Optional[Configuration],
         strategy: tp.Optional[SamplingStrategy]
     ) -> tp.List[Configuration]:
         """

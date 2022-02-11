@@ -5,7 +5,8 @@ import typing as tp
 from enum import Enum
 from pathlib import Path
 
-from varats.report.report import BaseReport, MetaReport, FileStatusExtension
+from varats.report.report import BaseReport, ReportFilename
+from varats.utils.git_util import ShortCommitHash
 
 LOG = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ LOG = logging.getLogger(__name__)
 class ResultRegexForBlameVerifier(Enum):
     """An enum containing the available parsing options for BlameMDVerifier
     results."""
-    value: str
+    value: str  # pylint: disable=invalid-name
 
     SUCCESSES = r"\(\d+/"
     TOTAL = r"/\d+\)"
@@ -27,7 +28,7 @@ class BlameVerifierReportParserMixin:
     hierarchy."""
 
     def __init__(self, **kwargs: tp.Any) -> None:
-        super().__init__(**kwargs)  # type: ignore
+        super().__init__(**kwargs)
         self.__path = kwargs['path']
         self.__num_successes = -1
         self.__num_failures = -1
@@ -72,19 +73,19 @@ class BlameVerifierReportParserMixin:
                         )
                         self.__num_undetermined = int(undetermined_str)
 
-        if self.__num_successes is -1:
+        if self.__num_successes == -1:
             raise RuntimeError(
                 f"The number of successful annotations could not be parsed "
                 f"from file: {self.__path}."
             )
 
-        if self.__num_total is -1:
+        if self.__num_total == -1:
             raise RuntimeError(
                 f"The number of total annotations could not be parsed from "
                 f"file: {self.__path}."
             )
 
-        if self.__num_undetermined is -1:
+        if self.__num_undetermined == -1:
             LOG.info(
                 f"The number of undetermined annotations is either 0 or "
                 f"could not be parsed from the file: {self.__path}. "
@@ -107,155 +108,46 @@ class BlameVerifierReportParserMixin:
         return self.__num_total
 
 
-class BlameVerifierReportNoOpt(BlameVerifierReportParserMixin, BaseReport):
-    """A BlameVerifierReport containing the filtered results of the chosen
-    verifier-options, e.g., the diff of VaRA-hashes and debug-hashes, without
-    any compilation optimization."""
-
-    SHORTHAND = 'BVR_NoOpt'
-    FILE_TYPE = 'txt'
-
-    def __init__(self, path: Path, **kwargs: tp.Any) -> None:
-        kwargs['path'] = path
-        super().__init__(**kwargs)
-        self.parse_verifier_results()
-
-    @property
-    def head_commit(self) -> str:
-        """The current HEAD commit under which this BlameVerifierReportNoOpt was
-        created."""
-        return BlameVerifierReportNoOpt.get_commit_hash_from_result_file(
-            Path(self.path).name
-        )
-
-    @staticmethod
-    def get_file_name(
-        project_name: str,
-        binary_name: str,
-        project_version: str,
-        project_uuid: str,
-        extension_type: FileStatusExtension,
-        file_ext: str = ".txt"
-    ) -> str:
-        """
-        Generates a filename for a blame verifier report with no optimization
-        and '.txt' as file extension.
-
-        Args:
-            project_name: name of the project for which the report was generated
-            binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
-            project_uuid: benchbuild uuid for the experiment run
-            extension_type: to specify the status of the generated report
-            file_ext: file extension of the report file
-
-        Returns:
-            name for the report file that can later be uniquely identified
-        """
-        return MetaReport.get_file_name(
-            BlameVerifierReportNoOpt.SHORTHAND, project_name, binary_name,
-            project_version, project_uuid, extension_type, file_ext
-        )
-
-
-class BlameVerifierReportOpt(BlameVerifierReportParserMixin, BaseReport):
+class BlameVerifierReportOpt(
+    BlameVerifierReportParserMixin,
+    BaseReport,
+    shorthand="BVR_Opt",
+    file_type="txt"
+):
     """A BlameVerifierReport containing the filtered results of the chosen
     verifier-options, e.g., the diff of VaRA-hashes and debug-hashes, with
     compilation optimization."""
 
-    SHORTHAND = 'BVR_Opt'
-    FILE_TYPE = 'txt'
-
     def __init__(self, path: Path, **kwargs: tp.Any) -> None:
         kwargs['path'] = path
         super().__init__(**kwargs)
         self.parse_verifier_results()
 
     @property
-    def head_commit(self) -> str:
+    def head_commit(self) -> ShortCommitHash:
         """The current HEAD commit under which this BlameVerifierReportOpt was
         created."""
-        return BlameVerifierReportOpt.get_commit_hash_from_result_file(
-            Path(self.path).name
-        )
-
-    @staticmethod
-    def get_file_name(
-        project_name: str,
-        binary_name: str,
-        project_version: str,
-        project_uuid: str,
-        extension_type: FileStatusExtension,
-        file_ext: str = ".txt"
-    ) -> str:
-        """
-        Generates a filename for a blame verifier report with optimization and
-        '.txt' as file extension.
-
-        Args:
-            project_name: name of the project for which the report was generated
-            binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
-            project_uuid: benchbuild uuid for the experiment run
-            extension_type: to specify the status of the generated report
-            file_ext: file extension of the report file
-
-        Returns:
-            name for the report file that can later be uniquely identified
-        """
-        return MetaReport.get_file_name(
-            BlameVerifierReportOpt.SHORTHAND, project_name, binary_name,
-            project_version, project_uuid, extension_type, file_ext
-        )
+        return ReportFilename(Path(self.path)).commit_hash
 
 
-class BlameVerifierReportNoOptTBAA(BlameVerifierReportParserMixin, BaseReport):
+class BlameVerifierReportNoOptTBAA(
+    BlameVerifierReportParserMixin,
+    BaseReport,
+    shorthand="BVR_NoOpt_TBAA",
+    file_type="txt"
+):
     """A BlameVerifierReport containing the filtered results of the chosen
     verifier-options, e.g., the diff of VaRA-hashes and debug-hashes, without
     any compilation optimization and TBAA (type based alias analysis)
     metadata."""
 
-    SHORTHAND = 'BVR_NoOpt_TBAA'
-    FILE_TYPE = 'txt'
-
     def __init__(self, path: Path, **kwargs: tp.Any) -> None:
         kwargs['path'] = path
         super().__init__(**kwargs)
         self.parse_verifier_results()
 
     @property
-    def head_commit(self) -> str:
+    def head_commit(self) -> ShortCommitHash:
         """The current HEAD commit under which this BlameVerifierReportNoOpt was
         created."""
-        return BlameVerifierReportNoOptTBAA.get_commit_hash_from_result_file(
-            Path(self.path).name
-        )
-
-    @staticmethod
-    def get_file_name(
-        project_name: str,
-        binary_name: str,
-        project_version: str,
-        project_uuid: str,
-        extension_type: FileStatusExtension,
-        file_ext: str = ".txt"
-    ) -> str:
-        """
-        Generates a filename for a blame verifier report with no optimization
-        and '.txt' as file extension.
-
-        Args:
-            project_name: name of the project for which the report was generated
-            binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
-            project_uuid: benchbuild uuid for the experiment run
-            extension_type: to specify the status of the generated report
-            file_ext: file extension of the report file
-
-        Returns:
-            name for the report file that can later be uniquely identified
-        """
-        return MetaReport.get_file_name(
-            BlameVerifierReportNoOptTBAA.SHORTHAND, project_name, binary_name,
-            project_version, project_uuid, extension_type, file_ext
-        )
+        return self.filename.commit_hash

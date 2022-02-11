@@ -7,7 +7,8 @@ from tabulate import tabulate
 
 from varats.project.project_util import get_project_cls_by_name
 from varats.provider.bug.bug_provider import BugProvider
-from varats.table.table import Table, TableFormat, wrap_table_in_document
+from varats.table.table import Table, wrap_table_in_document
+from varats.table.tables import TableFormat
 
 
 class BugOverviewTable(Table):
@@ -28,7 +29,7 @@ class BugOverviewTable(Table):
         variables = [
             "fixing hash", "fixing message", "fixing author", "issue_number"
         ]
-        pybugs = bug_provider.find_all_pygit_bugs()
+        pybugs = bug_provider.find_pygit_bugs()
 
         data_rows = [[
             pybug.fixing_commit.hex, pybug.fixing_commit.message,
@@ -38,7 +39,7 @@ class BugOverviewTable(Table):
         bug_df = pd.DataFrame(columns=variables, data=np.array(data_rows))
 
         if self.format in [
-            TableFormat.latex, TableFormat.latex_raw, TableFormat.latex_booktabs
+            TableFormat.LATEX, TableFormat.LATEX_RAW, TableFormat.LATEX_BOOKTABS
         ]:
             tex_code = bug_df.to_latex(
                 bold_rows=True, multicolumn_format="c", longtable=True

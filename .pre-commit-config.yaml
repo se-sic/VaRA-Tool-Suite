@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.4.0
+    rev: v4.1.0
     hooks:
     -   id: trailing-whitespace
     -   id: end-of-file-fixer
@@ -11,22 +11,18 @@ repos:
     -   id: requirements-txt-fixer
     -   id: name-tests-test
         args: ['--django']
--   repo: https://github.com/asottile/seed-isort-config
-    rev: v2.0.0
-    hooks:
-    -   id: seed-isort-config
 -   repo: https://github.com/timothycrosley/isort.git
-    rev: 4.3.21
+    rev: 5.10.1
     hooks:
     - id: isort
       args: ['-nis']
 -   repo: https://github.com/myint/docformatter.git
-    rev: v1.1
+    rev: v1.4
     hooks:
     - id: docformatter
       args: ['--in-place', '--wrap-summaries=80', '--wrap-descriptions=80', '--pre-summary-newline']
 -   repo: https://github.com/pre-commit/mirrors-yapf
-    rev: 'v0.29.0'  # Use the sha / tag you want to point at
+    rev: 'v0.32.0'  # Use the sha / tag you want to point at
     hooks:
     -   id: yapf
 exclude: ^tests/TEST_INPUTS/.*$

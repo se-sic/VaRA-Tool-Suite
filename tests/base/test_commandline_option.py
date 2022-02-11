@@ -3,17 +3,19 @@
 import unittest
 
 import varats.base.commandline_option as CO
-from tests.test_helper_config import ConfigurationTestImpl
-from varats.base.configuration import Configuration
+from tests.test_utils import ConfigurationHelper
+from varats.base.configuration import Configuration, ConfigurationImpl
 
 
 class TestCommandlineOptionSwitch(unittest.TestCase):
     """Test if CommandlineOptionSwitch is working."""
 
+    test_config: ConfigurationImpl
+
     @classmethod
     def setUpClass(cls):
         """Setup test Configuration."""
-        cls.test_config = ConfigurationTestImpl.create_test_config()
+        cls.test_config = ConfigurationHelper.create_test_config()
 
     def test_alias(self):
         self.assertEqual(CO.CommandlineOptionSwitch, CO.CLOSwitch)
@@ -61,10 +63,12 @@ class TestCommandlineOptionSwitch(unittest.TestCase):
 class TestCommandlineOptionFormat(unittest.TestCase):
     """Test if CommandlineOptionFormat is working."""
 
+    test_config: ConfigurationImpl
+
     @classmethod
     def setUpClass(cls):
         """Setup test Configuration."""
-        cls.test_config = ConfigurationTestImpl.create_test_config()
+        cls.test_config = ConfigurationHelper.create_test_config()
 
     def test_alias(self):
         self.assertEqual(CO.CommandlineOptionFormat, CO.CLOFormat)
@@ -90,7 +94,7 @@ class TestCommandlineOptionFormat(unittest.TestCase):
 
         def dont_enable_if_foo_is_true(config: Configuration) -> bool:
             maybe_value = config.get_config_value("foo")
-            if maybe_value is not None and bool(maybe_value.value):
+            if maybe_value is not None and bool(maybe_value):
                 return False
 
             return True
@@ -104,10 +108,12 @@ class TestCommandlineOptionFormat(unittest.TestCase):
 class TestCommandlineOptionGroup(unittest.TestCase):
     """Test if CommandlineOptionGroup is working."""
 
+    test_config: ConfigurationImpl
+
     @classmethod
     def setUpClass(cls):
         """Setup test Configuration."""
-        cls.test_config = ConfigurationTestImpl.create_test_config()
+        cls.test_config = ConfigurationHelper.create_test_config()
 
     def test_alias(self):
         self.assertEqual(CO.CommandlineOptionGroup, CO.CLOGroup)

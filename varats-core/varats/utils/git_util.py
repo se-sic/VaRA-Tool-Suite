@@ -1,22 +1,130 @@
 """Utility module for handling git repos."""
-
+import abc
 import os
 import re
 import typing as tp
 from enum import Enum
+from itertools import chain
 from pathlib import Path
 
 import pygit2
 from benchbuild.utils.cmd import git
+from benchbuild.utils.revision_ranges import RevisionRange
 from plumbum import local
 
 from varats.project.project_util import (
     get_local_project_git,
     get_primary_project_source,
+    BinaryType,
+    ProjectBinaryWrapper,
 )
+
+if tp.TYPE_CHECKING:
+    import varats.mapping.commit_map as cm  # pylint: disable=W0611
+
+_FULL_COMMIT_HASH_LENGTH = 40
+_SHORT_COMMIT_HASH_LENGTH = 10
+
+
+class CommitHash(abc.ABC):
+    """Base class for commit hash abstractions."""
+
+    def __init__(self, short_commit_hash: str):
+        if not len(short_commit_hash) >= self.hash_length():
+            raise ValueError("Commit hash too short")
+        self.__commit_hash = short_commit_hash[:self.hash_length()]
+
+    @property
+    def hash(self) -> str:
+        return self.__commit_hash
+
+    @staticmethod
+    @abc.abstractmethod
+    def hash_length() -> int:
+        """Required length of the CommitHash."""
+
+    @staticmethod
+    def from_pygit_commit(commit: pygit2.Commit) -> 'FullCommitHash':
+        return FullCommitHash(str(commit.id))
+
+    def __str__(self) -> str:
+        return self.hash
+
+    def __repr__(self) -> str:
+        return self.hash
+
+    def __eq__(self, other: tp.Any) -> bool:
+        if isinstance(other, CommitHash):
+            return self.hash == other.hash
+        return False
+
+    def __hash__(self) -> int:
+        return hash(self.hash)
+
+
+class ShortCommitHash(CommitHash):
+    """Shortened commit hash."""
+
+    @staticmethod
+    def hash_length() -> int:
+        return _SHORT_COMMIT_HASH_LENGTH
+
+
+class FullCommitHash(CommitHash):
+    """Full-length commit hash."""
+
+    @staticmethod
+    def hash_length() -> int:
+        return _FULL_COMMIT_HASH_LENGTH
+
+    @property
+    def short_hash(self) -> str:
+        """Abbreviated commit hash."""
+        return self.hash[:_SHORT_COMMIT_HASH_LENGTH]
+
+    def to_short_commit_hash(self) -> ShortCommitHash:
+        return ShortCommitHash(self.hash)
+
+    def startswith(self, short_hash: CommitHash) -> bool:
+        return self.hash.startswith(short_hash.hash)
+
+
+UNCOMMITTED_COMMIT_HASH = FullCommitHash(
+    "0000000000000000000000000000000000000000"
+)
+
+CommitHashTy = tp.TypeVar("CommitHashTy", bound=CommitHash)
+ShortCH = ShortCommitHash
+FullCH = FullCommitHash
+
+
+def commit_hashes_sorted_lexicographically(
+    commit_hashes: tp.Iterable[CommitHashTy]
+) -> tp.Iterable[CommitHashTy]:
+    return sorted(commit_hashes, key=lambda x: x.hash)
+
+
+def short_commit_hashes_sorted_by_time_id(
+    commit_hashes: tp.Iterable[ShortCommitHash], commit_map: 'cm.CommitMap'
+) -> tp.Iterable[ShortCommitHash]:
+    return sorted(commit_hashes, key=commit_map.short_time_id)
+
+
+def full_commit_hashes_sorted_by_time_id(
+    commit_hashes: tp.Iterable[FullCommitHash], commit_map: 'cm.CommitMap'
+) -> tp.Iterable[FullCommitHash]:
+    return sorted(commit_hashes, key=commit_map.time_id)
+
 
 ################################################################################
 # Git interaction helpers
+
+
+def __get_git_path_arg(repo_folder: tp.Optional[Path] = None) -> tp.List[str]:
+    if repo_folder is None or repo_folder == Path(''):
+        return []
+
+    return ["-C", f"{repo_folder}"]
 
 
 def get_current_branch(repo_folder: tp.Optional[Path] = None) -> str:
@@ -28,11 +136,59 @@ def get_current_branch(repo_folder: tp.Optional[Path] = None) -> str:
 
     Returns: branch name
     """
-    if repo_folder is None or repo_folder == Path(''):
-        return tp.cast(str, git("rev-parse", "--abbrev-ref", "HEAD").strip())
+    return tp.cast(
+        str,
+        git(
+            __get_git_path_arg(repo_folder), "rev-parse", "--abbrev-ref", "HEAD"
+        ).strip()
+    )
 
-    with local.cwd(repo_folder):
-        return tp.cast(str, git("rev-parse", "--abbrev-ref", "HEAD").strip())
+
+def get_initial_commit(repo_folder: tp.Optional[Path] = None) -> FullCommitHash:
+    """
+    Get the initial commit of a repository, i.e., the first commit made.
+
+    Args:
+        repo_folder: where the git repository is located
+
+    Returns: initial commit hash
+    """
+    return FullCommitHash(
+        git(
+            __get_git_path_arg(repo_folder), "rev-list", "--max-parents=0",
+            "HEAD"
+        ).strip()
+    )
+
+
+def get_all_revisions_between(
+    c_start: str,
+    c_end: str,
+    hash_type: tp.Type[CommitHashTy],
+    repo_folder: tp.Optional[Path] = None
+) -> tp.List[CommitHashTy]:
+    """
+    Returns a list of all revisions between two commits c_start and c_end
+    (inclusive), where c_start comes before c_end.
+
+    It is assumed that the current working directory is the git repository.
+
+    Args:
+        c_start: first commit of the range
+        c_end: last commit of the range
+        short: shorten revision hashes
+        repo_folder: where the git repository is located
+    """
+    result = [c_start]
+    result.extend(
+        reversed(
+            git(
+                __get_git_path_arg(repo_folder), "log", "--pretty=%H",
+                "--ancestry-path", f"{c_start}..{c_end}"
+            ).strip().split()
+        )
+    )
+    return list(map(hash_type, result))
 
 
 ################################################################################
@@ -52,7 +208,7 @@ class ChurnConfig():
     class Language(Enum):
         """Enum for different languages that can be used to filter code
         churn."""
-        value: tp.Set[str]
+        value: tp.Set[str]  # pylint: disable=invalid-name
 
         C = {"h", "c"}
         CPP = {"h", "hxx", "hpp", "cxx", "cpp"}
@@ -174,7 +330,7 @@ class ChurnConfig():
         return extensions_list
 
 
-CommitLookupTy = tp.Callable[[str, str], pygit2.Commit]
+CommitLookupTy = tp.Callable[[FullCommitHash, str], pygit2.Commit]
 
 
 def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
@@ -197,10 +353,11 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
     repos: tp.Dict[str, pygit2.Repository] = {}
 
     # Maps hash to commit within corresponding git_name
-    cache_dict: tp.Dict[str, tp.Dict[str, pygit2.Commit]] = {}
+    cache_dict: tp.Dict[str, tp.Dict[FullCommitHash, pygit2.Commit]] = {}
 
     def get_commit(
-        c_hash: str, git_name: tp.Optional[str] = None
+        c_hash: FullCommitHash,
+        git_name: tp.Optional[str] = None
     ) -> pygit2.Commit:
         """
         Gets the commit from a given commit hash within its corresponding
@@ -229,7 +386,7 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
             if c_hash in cache_dict[primary_source_name]:
                 return cache_dict[primary_source_name][c_hash]
 
-            commit = primary_project_repo.get(c_hash)
+            commit = primary_project_repo.get(c_hash.hash)
             if commit is None:
                 raise LookupError(
                     f"Could not find commit {c_hash} in {project_name}"
@@ -245,7 +402,7 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
         if c_hash in cache_dict[git_name]:
             return cache_dict[git_name][c_hash]
 
-        commit = repos[git_name].get(c_hash)
+        commit = repos[git_name].get(c_hash.hash)
         if commit is None:
             raise LookupError(
                 f"Could not find commit {c_hash} in "
@@ -260,12 +417,12 @@ def create_commit_lookup_helper(project_name: str) -> CommitLookupTy:
 class CommitRepoPair():
     """Pair of a commit hash and the name of the repository it is based in."""
 
-    def __init__(self, commit_hash: str, repo_name: str) -> None:
+    def __init__(self, commit_hash: FullCommitHash, repo_name: str) -> None:
         self.__commit_hash = commit_hash
         self.__repo_name = repo_name
 
     @property
-    def commit_hash(self) -> str:
+    def commit_hash(self) -> FullCommitHash:
         return self.__commit_hash
 
     @property
@@ -274,9 +431,9 @@ class CommitRepoPair():
 
     def __lt__(self, other: tp.Any) -> bool:
         if isinstance(other, CommitRepoPair):
-            if self.commit_hash == other.commit_hash:
+            if self.commit_hash.hash == other.commit_hash.hash:
                 return self.repository_name < other.repository_name
-            return self.commit_hash < other.commit_hash
+            return self.commit_hash.hash < other.commit_hash.hash
         return False
 
     def __eq__(self, other: tp.Any) -> bool:
@@ -300,14 +457,14 @@ MappedCommitResultType = tp.TypeVar("MappedCommitResultType")
 def map_commits(
     func: tp.Callable[[pygit2.Commit], MappedCommitResultType],
     cr_pair_list: tp.Iterable[CommitRepoPair],
-    commit_lookup: tp.Callable[[str, str], pygit2.Commit],
+    commit_lookup: CommitLookupTy,
 ) -> tp.Sequence[MappedCommitResultType]:
     """Maps a function over a range of commits."""
     # Skip 0000 hashes that we added to mark uncommitted files
     return [
         func(commit_lookup(cr_pair.commit_hash, cr_pair.repository_name))
         for cr_pair in cr_pair_list
-        if cr_pair.commit_hash != "0000000000000000000000000000000000000000"
+        if cr_pair.commit_hash != UNCOMMITTED_COMMIT_HASH
     ]
 
 
@@ -328,7 +485,7 @@ def __calc_code_churn_range_impl(
     churn_config: ChurnConfig,
     start_range: tp.Optional[str] = None,
     end_range: tp.Optional[str] = None
-) -> tp.Dict[str, tp.Tuple[int, int, int]]:
+) -> tp.Dict[FullCommitHash, tp.Tuple[int, int, int]]:
     """
     Calculates all churn values for the commits in the specified range.
 
@@ -344,7 +501,7 @@ def __calc_code_churn_range_impl(
         end_range: end churn calculation at end commit
     """
 
-    churn_values: tp.Dict[str, tp.Tuple[int, int, int]] = {}
+    churn_values: tp.Dict[FullCommitHash, tp.Tuple[int, int, int]] = {}
 
     if start_range is None and end_range is None:
         revision_range = None
@@ -370,18 +527,15 @@ def __calc_code_churn_range_impl(
         diff_base_params = diff_base_params + \
                            churn_config.get_extensions_repr('*.')
 
-    if revision_range:
-        stdout = repo_git(diff_base_params)
-        revs = repo_git(log_base_params).strip().split()
-    else:
-        stdout = repo_git(diff_base_params)
-        revs = repo_git(log_base_params).strip().split()
+    stdout = repo_git(diff_base_params)
+    revs = repo_git(log_base_params).strip().split()
+
     # initialize with 0 as otherwise commits without changes would be
     # missing from the churn data
     for rev in revs:
-        churn_values[rev] = (0, 0, 0)
+        churn_values[FullCommitHash(rev)] = (0, 0, 0)
     for match in GIT_LOG_MATCHER.finditer(stdout):
-        commit_hash = match.group('hash')
+        commit_hash = FullCommitHash(match.group('hash'))
 
         def value_or_zero(match_result: tp.Any) -> int:
             if match_result is not None:
@@ -401,7 +555,7 @@ def calc_code_churn_range(
     churn_config: tp.Optional[ChurnConfig] = None,
     start_range: tp.Optional[tp.Union[pygit2.Commit, str]] = None,
     end_range: tp.Optional[tp.Union[pygit2.Commit, str]] = None
-) -> tp.Dict[str, tp.Tuple[int, int, int]]:
+) -> tp.Dict[FullCommitHash, tp.Tuple[int, int, int]]:
     """
     Calculates all churn values for the commits in the specified range.
 
@@ -442,8 +596,8 @@ def calc_commit_code_churn(
         (files changed, insertions, deletions)
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
-    return calc_code_churn_range(repo, churn_config, commit,
-                                 commit)[str(commit.id)]
+    return calc_code_churn_range(repo, churn_config, commit, commit)[
+        FullCommitHash.from_pygit_commit(commit)]
 
 
 def calc_code_churn(
@@ -501,7 +655,7 @@ def calc_code_churn(
 def calc_repo_code_churn(
     repo: pygit2.Repository,
     churn_config: tp.Optional[ChurnConfig] = None
-) -> tp.Dict[str, tp.Tuple[int, int, int]]:
+) -> tp.Dict[FullCommitHash, tp.Tuple[int, int, int]]:
     """
     Calculates code churn for a repository.
 
@@ -526,7 +680,7 @@ def __print_calc_repo_code_churn(
     churn_map = calc_repo_code_churn(repo, churn_config)
 
     for commit in repo.walk(repo.head.target, pygit2.GIT_SORT_TIME):
-        commit_hash = str(commit.id)
+        commit_hash = FullCommitHash.from_pygit_commit(commit)
         print(commit_hash)
 
         try:
@@ -561,3 +715,111 @@ def __print_calc_repo_code_churn(
         if churn[0] > 0:
             print(changed_files + insertions + deletions)
             print()
+
+
+def calc_repo_loc(repo: pygit2.Repository, rev_range: str) -> int:
+    """
+    Calculate the LOC for a project at its HEAD.
+
+    Args:
+        repo: the repository to calculate the LOC for
+
+    Returns:
+        the number of lines in source-code files
+    """
+    project_path = repo.path[:-5]
+    churn_config = ChurnConfig.create_c_style_languages_config()
+    file_pattern = re.compile(
+        "|".join(churn_config.get_extensions_repr(r"^.*\.", r"$"))
+    )
+
+    loc: int = 0
+    with local.cwd(project_path):
+        files = git(
+            "ls-tree",
+            "-r",
+            "--name-only",
+            rev_range,
+        ).splitlines()
+
+        for file in files:
+            if file_pattern.match(file):
+                lines = git("show", f"{rev_range}:{file}").splitlines()
+                loc += len([line for line in lines if line])
+
+    return loc
+
+
+################################################################################
+# Special git-specific classes
+
+
+class RevisionBinaryMap(tp.Container[str]):
+    """A special map that specifies for which revision ranges a binaries is
+    valid."""
+
+    def __init__(self, repo_location: Path) -> None:
+        self.__repo_location = repo_location
+        self.__revision_specific_mappings: tp.Dict[RevisionRange,
+                                                   ProjectBinaryWrapper] = {}
+        self.__always_valid_mappings: tp.List[ProjectBinaryWrapper] = []
+
+    def specify_binary(
+        self, location: str, binary_type: BinaryType, **kwargs: tp.Any
+    ) -> None:
+        """
+
+        Args:
+            location: where the binary can be found, relative to the
+                      project-source root
+            binary_type: the type of binary that is produced
+            override_binary_name: overrides the used binary name
+            override_entry_point: overrides the executable entry point
+            only_valid_in: additinally specifies a validity range that
+                           specifies in which revision range this binary is
+                           produced
+        """
+        binary_location_path = Path(location)
+        binary_name: str = kwargs.get(
+            "override_binary_name", binary_location_path.stem
+        )
+        override_entry_point = kwargs.get("override_entry_point", None)
+        if override_entry_point:
+            override_entry_point = Path(override_entry_point)
+        validity_range = kwargs.get("only_valid_in", None)
+
+        wrapped_binary = ProjectBinaryWrapper(
+            binary_name, binary_location_path, binary_type, override_entry_point
+        )
+
+        if validity_range:
+            self.__revision_specific_mappings[validity_range] = wrapped_binary
+        else:
+            self.__always_valid_mappings.append(wrapped_binary)
+
+    def __getitem__(self,
+                    revision: ShortCommitHash) -> tp.List[ProjectBinaryWrapper]:
+        revision_specific_binaries = []
+
+        for validity_range, wrapped_binary \
+                in self.__revision_specific_mappings.items():
+            if revision in get_all_revisions_between(
+                validity_range.id_start, validity_range.id_end, ShortCommitHash,
+                self.__repo_location
+            ):
+                revision_specific_binaries.append(wrapped_binary)
+
+        revision_specific_binaries.extend(self.__always_valid_mappings)
+
+        return revision_specific_binaries
+
+    def __contains__(self, binary_name: object) -> bool:
+        if isinstance(binary_name, str):
+            for binary in chain(
+                self.__always_valid_mappings,
+                self.__revision_specific_mappings.values()
+            ):
+                if binary.name == binary_name:
+                    return True
+
+        return False

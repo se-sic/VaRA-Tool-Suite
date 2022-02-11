@@ -13,9 +13,9 @@ from enum import Enum
 from os import getenv, path
 from pathlib import Path
 
-import benchbuild.utils.actions as actions
 from benchbuild.extensions import base
 from benchbuild.project import Project
+from benchbuild.utils import actions
 from benchbuild.utils.cmd import cp, extract_bc, mkdir
 from benchbuild.utils.compiler import cc
 from benchbuild.utils.path import list_to_path, path_to_list
@@ -37,12 +37,13 @@ class BCFileExtensions(Enum):
     requirements, e.g., was compiled with debug metadata or compiled with
     optimizations.
     """
-    value: str
+    value: str  # pylint: disable=invalid-name
 
     DEBUG = 'dbg'
     NO_OPT = 'O0'
     OPT = 'O2'
     TBAA = "TBAA"
+    FEATURE = 'feature'
     BLAME = "blame"
 
     def __lt__(self, other: tp.Any) -> bool:
@@ -69,10 +70,10 @@ class RunWLLVM(base.Extension):  # type: ignore
 
         env = bb_cfg()["env"].value
         env_path_list = path_to_list(getenv("PATH", ""))
-        env_path_list.extend(env.get("PATH", []))
+        env_path_list = env.get("PATH", []) + env_path_list
 
         libs_path = path_to_list(getenv("LD_LIBRARY_PATH", ""))
-        libs_path.extend(env.get("LD_LIBRARY_PATH", []))
+        libs_path = env.get("LD_LIBRARY_PATH", []) + libs_path
 
         wllvm = wllvm.with_env(
             LLVM_COMPILER="clang",

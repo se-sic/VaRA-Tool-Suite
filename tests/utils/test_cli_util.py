@@ -2,12 +2,18 @@
 
 import unittest
 import unittest.mock as mock
+from enum import Enum
 from pathlib import Path
 
 from tests.test_utils import run_in_test_environment, test_environment
 from varats.tools.research_tools.phasar import Phasar
 from varats.tools.research_tools.vara import VaRA
 from varats.tools.tool_util import get_research_tool_type, get_research_tool
+from varats.ts_utils.click_param_types import (
+    TypedChoice,
+    TypedMultiChoice,
+    EnumChoice,
+)
 from varats.utils.settings import vara_cfg
 
 
@@ -53,3 +59,35 @@ class ResearchToolUtils(unittest.TestCase):
         vara = get_research_tool("vara")
         self.assertTrue(vara.has_source_location())
         self.assertEqual(vara.source_location(), configured_location)
+
+
+class ExampleTestEnum(Enum):
+    A = 0
+    B = 1
+    C = 2
+
+
+class TestChoiceTypes(unittest.TestCase):
+    """Test custom click choice types."""
+
+    def test_typed_choice_convert(self):
+        choice = TypedChoice({"a": 0, "b": 1, "c": 2})
+        self.assertEqual(1, choice.convert("b", None, None))
+
+    def test_typed_multi_choice_convert_single(self):
+        choice = TypedMultiChoice({"a": [0], "b": [1], "c": [2]})
+        self.assertEqual([1], choice.convert("b", None, None))
+
+    def test_typed_multi_choice_convert_multi(self):
+        choice = TypedMultiChoice({"a": [0], "b": [1], "c": [2]})
+        self.assertEqual([1, 0], choice.convert("b, a", None, None))
+
+    def test_enum_choice_convert_str(self):
+        choice = EnumChoice(ExampleTestEnum)
+        self.assertEqual(ExampleTestEnum.B, choice.convert("B", None, None))
+
+    def test_enum_choice_convert_enum(self):
+        choice = EnumChoice(ExampleTestEnum)
+        self.assertEqual(
+            ExampleTestEnum.B, choice.convert(ExampleTestEnum.B, None, None)
+        )

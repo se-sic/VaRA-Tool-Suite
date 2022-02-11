@@ -1,11 +1,29 @@
-"""Simple report module to create and handle the standard timing output of GNU
-time."""
+"""
+Simple report module to create and handle the standard timing output of GNU
+time.
+
+Examples to produce a ``TimeReport``:
+
+    Commandline usage:
+        .. code-block:: bash
+
+            export REPORT_FILE="Path/To/MyFile"
+            /usr/bin/time -v -o $REPORT_FILE sleep 2
+
+    Experiment code:
+        .. code-block:: python
+
+            from benchbuild.utils.cmd import time, sleep
+            report_file = "Path/To/MyFile"
+            command_to_measure = sleep["2"]
+            time("-v", "-o", f"{report_file}", command_to_measure)
+"""
 
 import re
 from datetime import timedelta
 from pathlib import Path
 
-from varats.report.report import BaseReport, FileStatusExtension, MetaReport
+from varats.report.report import BaseReport, FileStatusExtension, ReportFilename
 from varats.utils.util import static_vars
 
 
@@ -13,11 +31,8 @@ class WrongTimeReportFormat(Exception):
     """Thrown if the a time report could not be parsed."""
 
 
-class TimeReport(BaseReport):
+class TimeReport(BaseReport, shorthand="TR", file_type=""):
     """Report class to access GNU time output."""
-
-    SHORTHAND = "TR"
-    FILE_TYPE = ""
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
@@ -85,34 +100,6 @@ class TimeReport(BaseReport):
         str_repr += f"Elapsed wall clock time: {self.wall_clock_time}\n"
         str_repr += f"Max Resident Size (kbytes): {self.max_res_size}"
         return str_repr
-
-    @staticmethod
-    def get_file_name(
-        project_name: str,
-        binary_name: str,
-        project_version: str,
-        project_uuid: str,
-        extension_type: FileStatusExtension,
-        file_ext: str = ""
-    ) -> str:
-        """
-        Generates a filename for a commit report with 'yaml' as file extension.
-
-        Args:
-            project_name: name of the project for which the report was generated
-            binary_name: name of the binary for which the report was generated
-            project_version: version of the analyzed project, i.e., commit hash
-            project_uuid: benchbuild uuid for the experiment run
-            extension_type: to specify the status of the generated report
-            file_ext: file extension of the report file
-
-        Returns:
-            name for the report file that can later be uniquly identified
-        """
-        return MetaReport.get_file_name(
-            TimeReport.SHORTHAND, project_name, binary_name, project_version,
-            project_uuid, extension_type, file_ext
-        )
 
     @staticmethod
     @static_vars(

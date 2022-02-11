@@ -1,11 +1,11 @@
 """Driver module for `vara-buildsetup`."""
 
-import argparse
 import os
 import sys
 import typing as tp
 from pathlib import Path
 
+import click
 from plumbum import colors
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
@@ -14,6 +14,7 @@ from varats.gui.buildsetup_window import BuildSetup
 from varats.tools.research_tools.research_tool import (
     ResearchTool,
     SpecificCodeBase,
+    Distro,
 )
 from varats.tools.research_tools.vara import VaRACodeBase
 from varats.tools.research_tools.vara_manager import BuildType
@@ -21,7 +22,8 @@ from varats.tools.tool_util import (
     get_research_tool,
     get_supported_research_tool_names,
 )
-from varats.utils.cli_util import initialize_cli_tool, cli_yn_choice
+from varats.ts_utils.cli_util import initialize_cli_tool, cli_yn_choice
+from varats.ts_utils.click_param_types import EnumChoice
 from varats.utils.settings import save_config
 
 
@@ -102,153 +104,108 @@ def show_major_release_prompt(
         return
 
 
-def parse_string_to_build_type(build_type: str) -> BuildType:
-    """
-    Convert a string into a BuildType.
-
-    Args:
-        build_type: VaRA build configuration
-
-    Test:
-    >>> parse_string_to_build_type("DBG")
-    <BuildType.DBG: 1>
-
-    >>> parse_string_to_build_type("PGO")
-    <BuildType.PGO: 4>
-
-    >>> parse_string_to_build_type("DEV")
-    <BuildType.DEV: 2>
-
-    >>> parse_string_to_build_type("random string")
-    <BuildType.DEV: 2>
-
-    >>> parse_string_to_build_type("oPt")
-    <BuildType.OPT: 3>
-
-    >>> parse_string_to_build_type("OPT")
-    <BuildType.OPT: 3>
-
-    >>> parse_string_to_build_type("DEV-SAN")
-    <BuildType.DEV_SAN: 5>
-    """
-    build_type = build_type.upper()
-    if build_type == "DBG":
-        return BuildType.DBG
-    if build_type == "DEV":
-        return BuildType.DEV
-    if build_type == "OPT":
-        return BuildType.OPT
-    if build_type == "PGO":
-        return BuildType.PGO
-    if build_type == "DEV-SAN":
-        return BuildType.DEV_SAN
-
-    return BuildType.DEV
-
-
+@click.group(context_settings={"help_option_names": ['-h', '--help']})
 def main() -> None:
     """Build VaRA on cli."""
     initialize_cli_tool()
-    parser = argparse.ArgumentParser("vara-buildsetup")
 
-    parser.add_argument(
-        "-c",
-        "--config",
-        action="store_true",
-        default=False,
-        help="Only create a VaRA config file."
-    )
-    parser.add_argument(
-        "-i",
-        "--init",
-        action="store_true",
-        default=False,
-        help="Initializes VaRA and all components."
-    )
-    parser.add_argument(
-        "-u",
-        "--update",
-        action="store_true",
-        default=False,
-        help="Updates VaRA and all components."
-    )
-    parser.add_argument(
-        "-b",
-        "--build",
-        help="Builds VaRA and all components.",
-        action="store_true",
-        default=False
-    )
-    parser.add_argument(
-        "--buildtype",
-        default="dev",
-        choices=['dev', 'opt', 'pgo', 'dbg', 'dev-san'],
-        nargs="?",
-        help="Build type to use for the tool build configuration."
-    )
-    parser.add_argument(
-        "researchtool",
-        help="The research tool one wants to setup",
-        choices=get_supported_research_tool_names()
-    )
-    parser.add_argument(
-        "sourcelocation",
-        help="Folder to store tool sources. (Optional)",
-        nargs='?',
-        default=None
-    )
-    parser.add_argument(
-        "installprefix",
-        default=None,
-        nargs='?',
-        help="Folder to install LLVM. (Optional)"
-    )
-    parser.add_argument(
-        "--version", default=None, nargs="?", help="Version to download."
-    )
 
-    args = parser.parse_args()
+@main.command()
+def config() -> None:
+    """Only create a VaRA-TS config file."""
+    save_config()
 
-    if not (args.config or args.init or args.update or args.build):
-        parser.error(
-            "At least one argument of --config, --init, --update or --build "
-            "must be given. "
-        )
 
-    if args.config:
-        save_config()
-        return
+@click.argument(
+    "research_tool", type=click.Choice(get_supported_research_tool_names())
+)
+@click.option(
+    "--version",
+    metavar="VERSION",
+    type=int,
+    required=False,
+    help="Version to download."
+)
+@click.option(
+    "--source-location",
+    type=click.Path(path_type=Path),
+    required=False,
+    help="Folder to store tool sources."
+)
+@click.option(
+    "--install-prefix",
+    type=click.Path(path_type=Path),
+    required=False,
+    help="Tool install folder."
+)
+@main.command()
+def init(
+    version: tp.Optional[int], install_prefix: tp.Optional[Path],
+    source_location: tp.Optional[Path], research_tool: str
+) -> None:
+    """Initialize a research tool and all its components."""
+    tool = get_research_tool(research_tool)
+    __build_setup_init(tool, source_location, install_prefix, version)
 
-    tool = get_research_tool(args.researchtool, args.sourcelocation)
 
-    if args.init:
-        __build_setup_init(
-            tool, args.sourcelocation, args.installprefix, args.version
-        )
-    if args.update:
-        print_up_to_date_message(tool)
-        tool.upgrade()
-    if args.build:
-        show_major_release_prompt(tool)
-        build_type = parse_string_to_build_type(args.buildtype)
-        tool.build(build_type, __get_install_prefix(tool, args.installprefix))
-        if tool.verify_install(__get_install_prefix(tool, args.installprefix)):
-            print(f"{tool.name} was correctly installed.")
-        else:
-            print(f"Could not install {tool.name} correctly.")
+@click.argument(
+    "research_tool", type=click.Choice(get_supported_research_tool_names())
+)
+@main.command()
+def update(research_tool: str) -> None:
+    """Update a research tool and all its components."""
+    tool = get_research_tool(research_tool)
+    print_up_to_date_message(tool)
+    tool.upgrade()
+
+
+@click.argument(
+    "research_tool", type=click.Choice(get_supported_research_tool_names())
+)
+@click.option(
+    "--install-prefix",
+    type=click.Path(path_type=Path),
+    required=False,
+    help="Tool install folder."
+)
+@click.option(
+    "--build-type",
+    type=EnumChoice(BuildType, case_sensitive=False),
+    default=BuildType.DEV,
+    help="Build type to use for the tool build configuration."
+)
+@main.command()
+def build(
+    build_type: BuildType, install_prefix: tp.Optional[Path], research_tool: str
+) -> None:
+    """Build a research tool and all its components."""
+    tool = get_research_tool(research_tool)
+    show_major_release_prompt(tool)
+    tool.build(build_type, __get_install_prefix(tool, install_prefix))
+    if tool.verify_install(__get_install_prefix(tool, install_prefix)):
+        print(f"{tool.name} was correctly installed.")
+    else:
+        print(f"Could not install {tool.name} correctly.")
 
 
 def __build_setup_init(
-    tool: ResearchTool[SpecificCodeBase], raw_source_location: tp.Optional[str],
-    raw_install_prefix: tp.Optional[str], version: tp.Optional[int]
+    tool: ResearchTool[SpecificCodeBase], source_location: tp.Optional[Path],
+    raw_install_prefix: tp.Optional[Path], version: tp.Optional[int]
 ) -> None:
-    if raw_source_location:
-        source_location: tp.Optional[Path] = Path(raw_source_location)
-    else:
-        source_location = None
 
     if source_location and not source_location.exists():
         source_location.mkdir(parents=True)
+
+    distro = Distro.get_current_distro()
+    if distro:
+        if not tool.get_dependencies().has_dependencies_for_distro(distro):
+            missing_deps = tool.get_dependencies(
+            ).get_missing_dependencies_for_distro(distro)
+            print(
+                f"The following dependencies "
+                f"have to be installed: {missing_deps}"
+            )
+            return
 
     tool.setup(
         source_location,
@@ -258,10 +215,10 @@ def __build_setup_init(
 
 
 def __get_install_prefix(
-    tool: ResearchTool[SpecificCodeBase], raw_install_prefix: tp.Optional[str]
+    tool: ResearchTool[SpecificCodeBase], raw_install_prefix: tp.Optional[Path]
 ) -> Path:
     if raw_install_prefix:
-        install_prefix = Path(raw_install_prefix)
+        install_prefix = raw_install_prefix
     elif tool.has_install_location():
         install_prefix = tool.install_location()
     else:
