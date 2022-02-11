@@ -31,26 +31,23 @@ class BugOverviewTable(Table):
         szz_tool = SZZTool[szz_tool_name.upper()]
 
         commit_map = get_commit_map(project_name)
-        columns = ["revision", "introducer", "score"]
+        columns = {
+            "revision": "fix",
+            "introducer": "introducer",
+            "score": "score"
+        }
         if szz_tool == SZZTool.PYDRILLER_SZZ:
             data = PyDrillerSZZQualityMetricsDatabase.get_data_for_project(
-                project_name, columns, commit_map
+                project_name, list(columns.keys()), commit_map
             )
         elif szz_tool == SZZTool.SZZ_UNLEASHED:
             data = SZZUnleashedQualityMetricsDatabase.get_data_for_project(
-                project_name, columns, commit_map
+                project_name, list(columns.keys()), commit_map
             )
         else:
             raise ValueError(f"Unknown SZZ tool '{szz_tool_name}'")
 
-        data.rename(
-            columns={
-                "revision": "fix",
-                "introducer": "introducer",
-                "score": "score"
-            },
-            inplace=True
-        )
+        data.rename(columns=columns, inplace=True)
         data.set_index(["fix", "introducer"], inplace=True)
         data.sort_values("score", inplace=True)
         data.sort_index(level="fix", sort_remaining=False, inplace=True)
