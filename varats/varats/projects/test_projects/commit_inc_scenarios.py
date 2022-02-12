@@ -114,8 +114,7 @@ class VCSTestBasic03(VProject):
             local="VCSTestBasic03",
             refspec="HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("VCSTestBasic03")
+            shallow=False
         )
     ]
 
@@ -156,8 +155,7 @@ class VCSTestBasic04(VProject):
             local="VCSTestBasic04",
             refspec="HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("VCSTestBasic04")
+            shallow=False
         )
     ]
 
@@ -197,8 +195,7 @@ class VCSTestBasic05(VProject):
             local="VCSTestBasic05",
             refspec="HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("VCSTestBasic05")
+            shallow=False
         )
     ]
 
@@ -238,8 +235,7 @@ class VCSTestCall01(VProject):
             local="VCSTestCall01",
             refspec="HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("VCSTestCall01")
+            shallow=False
         )
     ]
 
@@ -279,10 +275,7 @@ class VCSTestDeletionWithInteraction(VProject):
             local="VCSTestDeletionWithInteraction",
             refspec="HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator(
-                "VCSTestDeletionWithInteraction"
-            )
+            shallow=False
         )
     ]
 
@@ -322,10 +315,7 @@ class VCSTestDeletionWithoutInteraction(VProject):
             local="VCSTestDeletionWithoutInteraction",
             refspec="HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator(
-                "VCSTestDeletionWithoutInteraction"
-            )
+            shallow=False
         )
     ]
 
@@ -365,8 +355,7 @@ class VCSTestMergeExample01(VProject):
             local="VCSTestMergeExample01",
             refspec="HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("VCSTestMergeExample01")
+            shallow=False
         )
     ]
 
