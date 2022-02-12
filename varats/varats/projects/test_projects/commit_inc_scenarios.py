@@ -33,8 +33,7 @@ class VCSTestBasic01(VProject):
             local="VCSTestBasic01",
             refspec="HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("VCSTestBasic01")
+            shallow=False
         )
     ]
 
@@ -74,8 +73,7 @@ class VCSTestBasic02(VProject):
             local="VCSTestBasic02",
             refspec="HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator("VCSTestBasic02")
+            shallow=False
         )
     ]
 

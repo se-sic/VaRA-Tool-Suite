@@ -87,6 +87,8 @@ class RunAnalysisBase(actions.Step):
         BCFileExtensions.BLAME,
     ]
 
+    REPS = 2
+
     def __init__(
         self, project: Project, experiment_handle: ExperimentHandle,
         base_revision: ShortCommitHash, analysis_type: AnalysisType
@@ -121,15 +123,16 @@ class RunAnalysisBase(actions.Step):
             run_cmd = phasar_llvm_inc[params]
 
             run_cmd = wrap_unlimit_stack_size(run_cmd)
-            print(f"Running: {run_cmd}")
 
-            exec_func_with_pe_error_handler(
-                run_cmd,
-                create_default_analysis_failure_handler(
-                    self.__experiment_handle, project, IncrementalReport,
-                    Path(vara_result_folder)
+            for _ in range(0, self.REPS):
+                print(f"Running: {run_cmd}")
+                exec_func_with_pe_error_handler(
+                    run_cmd,
+                    create_default_analysis_failure_handler(
+                        self.__experiment_handle, project, IncrementalReport,
+                        Path(vara_result_folder)
+                    )
                 )
-            )
 
             # Zip and persist the generated results
             result_file_name = self.__experiment_handle.get_file_name(
@@ -262,6 +265,11 @@ class PrecisionComparisionBase(VersionExperiment, shorthand=""):
         # TODO (python3.10): replace with itertools.pairwise
         for base_revision, next_revision in pairwise(reversed(revision_list)):
             print(f"Compare From: {base_revision} -> {next_revision}")
+            analysis_actions.append(
+                actions.SetProjectVersion(
+                    project, RevisionStr(next_revision.hash)
+                )
+            )
 
             for enabled_analysis_type in _get_enabled_analyses():
                 # Run all analysis steps

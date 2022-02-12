@@ -297,6 +297,9 @@ class PaperConfigSpecificGit(bb.source.git.Git):  # type: ignore
         super().__init__(*args, **kwargs)
         self.__project_name = project_name
 
+    def explore(self) -> tp.Iterable[bb.source.base.Variant]:
+        return super().versions()
+
     def versions(self) -> tp.List[bb.source.base.Variant]:
         proj_filter = project_filter_generator(self.__project_name)
 
