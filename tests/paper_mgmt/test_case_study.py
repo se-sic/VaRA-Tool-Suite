@@ -8,6 +8,7 @@ import varats.paper_mgmt.case_study as MCS
 from tests.test_utils import run_in_test_environment, UnitTestInputs
 from varats.data.reports.commit_report import CommitReport as CR
 from varats.paper_mgmt.paper_config import get_paper_config, load_paper_config
+from varats.projects.discover_projects import initialize_projects
 from varats.report.report import FileStatusExtension, ReportFilename
 from varats.utils.git_util import FullCommitHash, ShortCommitHash
 from varats.utils.settings import vara_cfg
@@ -15,6 +16,40 @@ from varats.utils.settings import vara_cfg
 
 class TestCaseStudyRevisionLookupFunctions(unittest.TestCase):
     """Test if revision look up functions find the correct revisions."""
+
+    @classmethod
+    def setUpClass(cls):
+        initialize_projects()
+
+    @run_in_test_environment(
+        UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
+    )
+    def test_newest_processed_revision(self) -> None:
+        """Check whether the newest processed revision is correctly
+        identified."""
+        vara_cfg()['paper_config']['current_config'] = "test_revision_lookup"
+        load_paper_config()
+
+        newest_processed = MCS.newest_processed_revision_for_case_study(
+            get_paper_config().get_case_studies('brotli')[0], CR
+        )
+
+        self.assertEqual(
+            FullCommitHash('21ac39f7c8ca61c855be0bc38900abe7b5a0f67f'),
+            newest_processed
+        )
+
+    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
+    def test_newest_processed_revision_no_results(self) -> None:
+        """Check None is returned when no results are available."""
+        vara_cfg()['paper_config']['current_config'] = "test_revision_lookup"
+        load_paper_config()
+
+        newest_processed = MCS.newest_processed_revision_for_case_study(
+            get_paper_config().get_case_studies('brotli')[0], CR
+        )
+
+        self.assertIsNone(newest_processed)
 
     @run_in_test_environment(
         UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
