@@ -20,6 +20,7 @@ from varats.project.project_util import (
     get_local_project_git_path,
     get_local_project_gits,
 )
+from varats.report.report import ReportFilename
 from varats.revision.revisions import get_processed_revisions_files
 from varats.utils.git_util import (
     CommitRepoPair,
@@ -426,8 +427,10 @@ def create_blame_interaction_graph(
 
     if revision:
 
-        def match_revision(rev: str) -> bool:
-            return rev == revision
+        def match_revision(file_name: str) -> bool:
+            return ReportFilename(
+                file_name
+            ).commit_hash != revision.to_short_commit_hash()
 
         file_name_filter = match_revision
 

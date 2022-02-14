@@ -42,16 +42,16 @@ class TestBlameInteractionGraphs(unittest.TestCase):
         self.assertEqual(blame_interaction_graph.project_name, "xz")
 
         cig = blame_interaction_graph.commit_interaction_graph()
-        self.assertEqual(74, len(cig.nodes))
-        self.assertEqual(475, len(cig.edges))
+        self.assertEqual(124, len(cig.nodes))
+        self.assertEqual(928, len(cig.edges))
 
         aig = blame_interaction_graph.author_interaction_graph()
-        self.assertEqual(2, len(aig.nodes))
-        self.assertEqual(2, len(aig.edges))
+        self.assertEqual(1, len(aig.nodes))
+        self.assertEqual(0, len(aig.edges))
 
         caig = blame_interaction_graph.commit_author_interaction_graph()
-        self.assertEqual(76, len(caig.nodes))
-        self.assertEqual(57, len(caig.edges))
+        self.assertEqual(125, len(caig.nodes))
+        self.assertEqual(92, len(caig.edges))
 
     @pytest.mark.slow
     @run_in_test_environment(
@@ -102,6 +102,6 @@ class TestBlameInteractionGraphs(unittest.TestCase):
         aig = blame_interaction_graph.author_interaction_graph()
         author_data = get_author_data(aig, "Lasse Collin")
         self.assertEqual(author_data["node_attrs"]["author"], "Lasse Collin")
-        self.assertEqual(author_data["neighbors"], {"Jonathan Nieder"})
-        self.assertEqual(2, len(author_data["in_attrs"][0]))
-        self.assertEqual(3, len(author_data["out_attrs"][0]))
+        self.assertEqual(author_data["neighbors"], set())
+        self.assertEqual(0, len(author_data["in_attrs"]))
+        self.assertEqual(0, len(author_data["out_attrs"]))
