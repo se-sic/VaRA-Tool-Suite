@@ -467,15 +467,14 @@ def get_author_data(aig: nx.DiGraph, author: str) -> tp.Dict[str, tp.Any]:
     Returns:
         a dict with information about the author
     """
-    node = aig.nodes[author]
-    node_attrs = tp.cast(AIGNodeAttrs, node)
+    node_attrs = tp.cast(AIGNodeAttrs, aig.nodes[author])
     in_attrs = [
         d["interactions"] for u, v, d in aig.in_edges().data() if v == author
     ]
     out_attrs = [
         d["interactions"] for u, v, d in aig.out_edges().data() if u == author
     ]
-    neighbors = set(aig.successors(node)).union(aig.predecessors(node))
+    neighbors = set(aig.successors(author)).union(aig.predecessors(author))
 
     return {
         "node_attrs": node_attrs,
