@@ -144,6 +144,20 @@ def get_current_branch(repo_folder: tp.Optional[Path] = None) -> str:
     )
 
 
+def get_head_commit(repo_folder: tp.Optional[Path] = None) -> FullCommitHash:
+    """
+    Get the current HEAD commit.
+
+    Args:
+        repo_folder:where the git repository is located
+
+    Returns: head commit hash
+    """
+    return FullCommitHash(
+        git(__get_git_path_arg(repo_folder), "rev-parse", "HEAD").strip()
+    )
+
+
 def get_initial_commit(repo_folder: tp.Optional[Path] = None) -> FullCommitHash:
     """
     Get the initial commit of a repository, i.e., the first commit made.
@@ -159,6 +173,19 @@ def get_initial_commit(repo_folder: tp.Optional[Path] = None) -> FullCommitHash:
             "HEAD"
         ).strip()
     )
+
+
+def git_checkout(
+    commit: FullCommitHash, repo_folder: tp.Optional[Path] = None
+) -> None:
+    """
+    Checkout the given commit.
+
+    Args:
+        commit: the commit to check out
+        repo_folder:where the git repository is located
+    """
+    git(__get_git_path_arg(repo_folder), "checkout", commit.hash)
 
 
 def get_all_revisions_between(
@@ -427,7 +454,7 @@ def get_submodule_head(
         return commit
 
     main_repo = get_local_project_git_path(project_name)
-    submodule_status = git("-C", str(main_repo), "ls-tree", commit)
+    submodule_status = git(__get_git_path_arg(main_repo), "ls-tree", commit)
     commit_pattern = re.compile(
         r"[0-9]* commit ([0-9abcdef]*)\t" + submodule_name
     )
@@ -499,7 +526,7 @@ def __calc_code_churn_range_impl(
     else:
         revision_range = "{}~..{}".format(start_range, end_range)
 
-    repo_git = git["-C", repo_path]
+    repo_git = git[__get_git_path_arg(Path(repo_path))]
     log_base_params = ["log", "--pretty=%H"]
     diff_base_params = [
         "log", "--pretty=format:'%H'", "--date=short", "--shortstat", "-l0"
@@ -584,7 +611,7 @@ def calc_commit_code_churn(
         (files changed, insertions, deletions)
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
-    repo_git = git["-C", str(repo_path)]
+    repo_git = git[__get_git_path_arg(repo_path)]
     show_base_params = [
         "show", "--pretty=format:'%H'", "--shortstat", "--first-parent",
         commit_hash.hash
@@ -625,7 +652,6 @@ def calc_code_churn(
         (files changed, insertions, deletions)
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
-    repo_git = git["-C", repo.path]
     diff_base_params = [
         "diff", "--shortstat", "-l0",
         str(commit_a.id),
@@ -638,7 +664,7 @@ def calc_code_churn(
         diff_base_params = diff_base_params + \
                            churn_config.get_extensions_repr('*.')
 
-    stdout = repo_git(diff_base_params)
+    stdout = git(__get_git_path_arg(repo.path), diff_base_params)
     # initialize with 0 as otherwise commits without changes would be
     # missing from the churn data
     match = GIT_DIFF_MATCHER.match(stdout)

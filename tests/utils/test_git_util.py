@@ -3,13 +3,13 @@ import unittest
 from pathlib import Path
 
 from benchbuild.utils.revision_ranges import RevisionRange
-from plumbum import local
 
 from varats.project.project_util import (
     get_local_project_git,
     get_local_project_git_path,
     BinaryType,
 )
+from varats.projects.discover_projects import initialize_projects
 from varats.utils.git_util import (
     ChurnConfig,
     CommitRepoPair,
@@ -21,11 +21,18 @@ from varats.utils.git_util import (
     get_current_branch,
     get_initial_commit,
     RevisionBinaryMap,
+    get_submodule_head,
+    get_head_commit,
+    git_checkout,
 )
 
 
 class TestGitInteractionHelpers(unittest.TestCase):
     """Test if the different git helper classes work."""
+
+    @classmethod
+    def setUpClass(cls):
+        initialize_projects()
 
     def test_get_current_branch(self):
         """Check if we can correctly retrieve the current branch of a repo."""
@@ -37,15 +44,14 @@ class TestGitInteractionHelpers(unittest.TestCase):
 
     def test_get_initial_commit(self) -> None:
         """Check if we can correctly retrieve the inital commit of a repo."""
-        repo = get_local_project_git("FeaturePerfCSCollection")
+        repo_path = get_local_project_git_path("FeaturePerfCSCollection")
 
-        with local.cwd(repo.workdir):
-            inital_commit = get_initial_commit()
+        inital_commit = get_initial_commit(repo_path)
 
-            self.assertEqual(
-                FullCommitHash("4d84c8f80ec2db3aaa880d323f7666752c4be51d"),
-                inital_commit
-            )
+        self.assertEqual(
+            FullCommitHash("4d84c8f80ec2db3aaa880d323f7666752c4be51d"),
+            inital_commit
+        )
 
     def test_get_initial_commit_with_specified_path(self) -> None:
         """Check if we can correctly retrieve the inital commit of a repo."""
@@ -60,39 +66,68 @@ class TestGitInteractionHelpers(unittest.TestCase):
 
     def test_get_all_revisions_between_full(self):
         """Check if the correct all revisions are correctly found."""
-        repo = get_local_project_git("brotli")
-        with local.cwd(repo.workdir):
-            revs = get_all_revisions_between(
-                '5692e422da6af1e991f9182345d58df87866bc5e',
-                '2f9277ff2f2d0b4113b1ffd9753cc0f6973d354a', FullCommitHash
-            )
+        repo_path = get_local_project_git_path("brotli")
+        revs = get_all_revisions_between(
+            '5692e422da6af1e991f9182345d58df87866bc5e',
+            '2f9277ff2f2d0b4113b1ffd9753cc0f6973d354a', FullCommitHash,
+            repo_path
+        )
 
-            self.assertSetEqual(
-                set(revs), {
-                    FullCommitHash("5692e422da6af1e991f9182345d58df87866bc5e"),
-                    FullCommitHash("2f9277ff2f2d0b4113b1ffd9753cc0f6973d354a"),
-                    FullCommitHash("63be8a99401992075c23e99f7c84de1c653e39e2"),
-                    FullCommitHash("2a51a85aa86abb4c294c65fab57f3d9c69f10080")
-                }
-            )
+        self.assertSetEqual(
+            set(revs), {
+                FullCommitHash("5692e422da6af1e991f9182345d58df87866bc5e"),
+                FullCommitHash("2f9277ff2f2d0b4113b1ffd9753cc0f6973d354a"),
+                FullCommitHash("63be8a99401992075c23e99f7c84de1c653e39e2"),
+                FullCommitHash("2a51a85aa86abb4c294c65fab57f3d9c69f10080")
+            }
+        )
 
     def test_get_all_revisions_between_short(self):
         """Check if the correct all revisions are correctly found."""
-        repo = get_local_project_git("brotli")
-        with local.cwd(repo.workdir):
-            revs = get_all_revisions_between(
-                '5692e422da6af1e991f9182345d58df87866bc5e',
-                '2f9277ff2f2d0b4113b1ffd9753cc0f6973d354a', ShortCommitHash
-            )
+        repo_path = get_local_project_git_path("brotli")
+        revs = get_all_revisions_between(
+            '5692e422da6af1e991f9182345d58df87866bc5e',
+            '2f9277ff2f2d0b4113b1ffd9753cc0f6973d354a', ShortCommitHash,
+            repo_path
+        )
 
-            self.assertSetEqual(
-                set(revs), {
-                    ShortCommitHash("5692e422da"),
-                    ShortCommitHash("2f9277ff2f"),
-                    ShortCommitHash("63be8a9940"),
-                    ShortCommitHash("2a51a85aa8")
-                }
+        self.assertSetEqual(
+            set(revs), {
+                ShortCommitHash("5692e422da"),
+                ShortCommitHash("2f9277ff2f"),
+                ShortCommitHash("63be8a9940"),
+                ShortCommitHash("2a51a85aa8")
+            }
+        )
+
+    def test_get_submodule_head(self):
+        """Check if correct submodule commit is retrieved."""
+        repo_path = get_local_project_git_path("grep")
+        old_head = get_head_commit(repo_path)
+        repo_head = FullCommitHash("cb15dfa4b2d7fba0d50e87b49f979c7f996b8ebc")
+        git_checkout(repo_head, repo_path)
+
+        try:
+            submodule_head = get_submodule_head("grep", "gnulib", repo_head)
+            self.assertEqual(
+                submodule_head,
+                FullCommitHash("f44eb378f7239eadac38d02463019a8a6b935525")
             )
+        finally:
+            git_checkout(old_head, repo_path)
+
+    def test_get_submodule_head_main_repo(self):
+        """Check if correct main repo commit is retrieved."""
+        repo_path = get_local_project_git_path("grep")
+        old_head = get_head_commit(repo_path)
+        repo_head = FullCommitHash("cb15dfa4b2d7fba0d50e87b49f979c7f996b8ebc")
+        git_checkout(repo_head, repo_path)
+
+        try:
+            submodule_head = get_submodule_head("grep", "grep", repo_head)
+            self.assertEqual(submodule_head, repo_head)
+        finally:
+            git_checkout(old_head, repo_path)
 
 
 class TestChurnConfig(unittest.TestCase):
