@@ -233,7 +233,9 @@ class CommitAuthorInteractionGraphGrid(Plot, plot_name='caig_grid'):
         def normalize(values: pd.Series) -> pd.Series:
             max_value = values.max()
             min_value = values.min()
-            return (values - min_value) / (max_value - min_value)
+            return tp.cast(
+                pd.Series, (values - min_value) / (max_value - min_value)
+            )
 
         degree_data: tp.List[pd.DataFrame] = []
         project_names: tp.List[str] = []

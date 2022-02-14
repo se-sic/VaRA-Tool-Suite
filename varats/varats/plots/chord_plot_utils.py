@@ -9,7 +9,7 @@ import typing as tp
 from collections import defaultdict
 
 import numpy as np
-import numpy.typing as nptp
+import numpy.typing as npt
 import plotly.graph_objs as go
 from plotly import colors
 
@@ -18,7 +18,7 @@ if sys.version_info <= (3, 8):
 else:
     from typing import TypedDict
 
-FloatArray = nptp.NDArray[np.float64]
+FloatArray = npt.NDArray[np.float64]
 PointTy = FloatArray
 
 
@@ -37,7 +37,7 @@ def _ribbon_control_points(
     ])
 
 
-def _angular_to_cartesian(angular: nptp.ArrayLike) -> FloatArray:
+def _angular_to_cartesian(angular: npt.ArrayLike) -> FloatArray:
     angular = np.asarray(angular)
     return np.array([
         angular[0] * np.cos(angular[1]), angular[0] * np.sin(angular[1])
@@ -51,7 +51,7 @@ def _get_b1(point0: FloatArray, point2: FloatArray) -> FloatArray:
         raise ValueError('p0 and p2 must have exactly 2 elements.')
     point1 = 0.5 * (point0 + point2) + 0.5 * np.asarray([
         0, 1.0 * np.sign(point2[0] - point0[0])
-    ]) * np.sqrt(3) * np.linalg.norm(point2 - point0)  # type: ignore
+    ]) * np.sqrt(3) * np.linalg.norm(point2 - point0)
     return np.asarray(point1)
 
 

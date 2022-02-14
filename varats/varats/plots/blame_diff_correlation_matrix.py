@@ -303,7 +303,9 @@ class BlameDiffDistribution(Plot, plot_name="b_distribution_comparison"):
         def normalize(values: pd.Series) -> pd.Series:
             max_value = values.max()
             min_value = values.min()
-            return (values - min_value) / (max_value - min_value)
+            return tp.cast(
+                pd.Series, (values - min_value) / (max_value - min_value)
+            )
 
         dataframes = []
         for case_study, df in data:

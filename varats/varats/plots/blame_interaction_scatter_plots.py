@@ -55,8 +55,10 @@ def apply_tukeys_fence(
     quartile_1 = data[column].quantile(0.25)
     quartile_3 = data[column].quantile(0.75)
     iqr = quartile_3 - quartile_1
-    return data.loc[(data[column] >= quartile_1 - k * iqr) &
-                    (data[column] <= quartile_3 + k * iqr)]
+    return tp.cast(
+        pd.DataFrame, data.loc[(data[column] >= quartile_1 - k * iqr) &
+                               (data[column] <= quartile_3 + k * iqr)]
+    )
 
 
 class CentralCodeScatterPlot(Plot, plot_name='central_code_scatter'):
