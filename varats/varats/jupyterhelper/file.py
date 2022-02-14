@@ -14,6 +14,7 @@ from varats.data.reports.globals_report import (
     GlobalsReportWith,
     GlobalsReportWithout,
 )
+from varats.data.reports.incremental_reports import IncrementalReport
 from varats.data.reports.szz_report import (
     SZZUnleashedReport,
     SZZReport,
@@ -115,3 +116,13 @@ def load_globals_without_report(file_path: Path) -> \
         file_path (Path): Full path to the file
     """
     return VDM.load_data_class_sync(file_path, GlobalsReportWithout)
+
+
+def load_incremental_report(file_path: Path) -> IncrementalReport:
+    """
+    Load a IncrementalReport from a file.
+
+    Attributes:
+        file_path (Path): Full path to the file
+    """
+    return VDM.load_data_class_sync(file_path, IncrementalReport)

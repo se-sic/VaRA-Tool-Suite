@@ -4,34 +4,47 @@ import pandas as pd
 from pylatex import Document, Package
 from tabulate import tabulate
 
-from varats.data.reports.incremental_reports import AnalysisType
+from varats.data.reports.incremental_reports import (
+    AnalysisType,
+    IncrementalReport,
+)
+from varats.jupyterhelper.file import load_incremental_report
 from varats.paper.case_study import CaseStudy
+from varats.paper_mgmt.case_study import get_case_study_file_name_filter
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
+from varats.revision.revisions import get_processed_revisions_files
 from varats.table.table import Table, wrap_table_in_document
 from varats.table.tables import TableFormat
 
 
-def __round_and_format_delta(base_line, increment) -> float:
+def __round_and_format_delta(base_line: float, increment: float) -> float:
     delta = increment - float(base_line)
     per_delta = delta / float(base_line) * 100
     per_delta = round(per_delta, 2)
     return per_delta
 
 
-def create_df_for_report(report, project_name, t):
+def create_df_for_report(report: IncrementalReport, project_name, t):
     cs_dict: tp.Dict[tp.Tuple[str, str], tp.Any] = {}
 
-    cs_dict[("taint", "WPA")] = 42
-    cs_dict[("taint", "INC")] = 21
-    cs_dict[("taint", "delta")] = __round_and_format_delta(42, 21)
+    cs_dict[("taint", "WPA")] = report.ifds_taint_timings().total_wpa()
+    cs_dict[("taint", "INC")] = report.ifds_taint_timings().total_incremental()
+    cs_dict[("taint", "delta")] = __round_and_format_delta(
+        cs_dict[("taint", "WPA")], cs_dict[("taint", "INC")]
+    )
 
-    cs_dict[("lca", "WPA")] = 42
-    cs_dict[("lca", "INC")] = 53
-    cs_dict[("lca", "delta")] = __round_and_format_delta(42, 53)
+    cs_dict[("lca", "WPA")] = report.ide_lca_timings().total_wpa()
+    cs_dict[("lca", "INC")] = report.ide_lca_timings().total_incremental()
+    cs_dict[("lca", "delta")] = __round_and_format_delta(
+        cs_dict[("lca", "WPA")], cs_dict[("lca", "INC")]
+    )
 
-    cs_dict[("typestate", "WPA")] = 42
-    cs_dict[("typestate", "INC")] = 41
-    cs_dict[("typestate", "delta")] = __round_and_format_delta(42, 41)
+    cs_dict[("typestate", "WPA")] = report.ide_typestate_timings().total_wpa()
+    cs_dict[("typestate", "INC")
+           ] = report.ide_typestate_timings().total_incremental()
+    cs_dict[("typestate", "delta")] = __round_and_format_delta(
+        cs_dict[("typestate", "WPA")], cs_dict[("typestate", "INC")]
+    )
 
     return pd.DataFrame.from_dict({project_name: cs_dict}, orient="index")
 
@@ -59,16 +72,22 @@ class PhasarGlobalsDataComparision(Table):
         cs_data: tp.List[pd.DataFrame] = []
 
         for case_study in case_studies:
-            print(case_study)
+            report_files = get_processed_revisions_files(
+                case_study.project_name, IncrementalReport,
+                get_case_study_file_name_filter(case_study)
+            )
+            print(f"{report_files=}")
 
             # binary = case_study.project_cls.binaries_for_revision(
             #     case_study.revisions[0]
             # )[0]
 
-            report = None
             project_name = case_study.project_name
 
-            cs_data.append(create_df_for_report(report, project_name, 1))
+            for report_file in report_files:
+                report = load_incremental_report(report_file)
+                print(report.ide_lca_timings())
+                cs_data.append(create_df_for_report(report, project_name, 1))
 
         df = pd.concat(cs_data)
 

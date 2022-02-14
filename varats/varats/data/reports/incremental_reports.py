@@ -73,7 +73,11 @@ class IncrementalTimings():
 
     """
 
-    def __init__(self, path: Path) -> None:
+    @staticmethod
+    def create_empty_report() -> 'IncrementalTimings':
+        return IncrementalTimings(None)
+
+    def __init__(self, path: tp.Optional[Path]) -> None:
         self.__wpa_irdb_construction_time = []
         self.__wpa_th_construction_time = []
         self.__wpa_pt_construction_time = []
@@ -92,12 +96,13 @@ class IncrementalTimings():
         self.__inc_incremental_icfg_construction_time = []
         self.__inc_incremental_dfa_solving_time = []
 
+        if not path:
+            return
+
         with open(path, 'r') as stream:
             documents = yaml.load_all(stream, Loader=yaml.CLoader)
             for doc in documents:
                 for line in doc:
-                    print(f"{line} = {doc[line]}")
-
                     if line == 'WPA_IRDB_CONSTRUCTION_TIME':
                         self.__wpa_irdb_construction_time.append(
                             float(doc[line])
@@ -286,6 +291,9 @@ class IncrementalReport(BaseReport, shorthand="Inc", file_type="zip"):
 
     def __init__(self, path: Path) -> None:
         super().__init__(path)
+        self.__ide_lca_timings = IncrementalTimings.create_empty_report()
+        self.__ide_typestate_timings = IncrementalTimings.create_empty_report()
+        self.__ifds_taint_timings = IncrementalTimings.create_empty_report()
 
         with tempfile.TemporaryDirectory() as tmp_result_dir:
             shutil.unpack_archive(path, extract_dir=Path(tmp_result_dir))
@@ -294,7 +302,13 @@ class IncrementalReport(BaseReport, shorthand="Inc", file_type="zip"):
                 print(f"{res_file=}")
                 if str(res_file
                       ).endswith('IDELinearConstantAnalysis-timings.yml'):
-                    self.__ide_timings = IncrementalTimings(res_file)
+                    self.__ide_lca_timings = IncrementalTimings(res_file)
+
+                if str(res_file).endswith('PlaceHolderTypestate-timings.yml'):
+                    self.__ide_typestate_timings = IncrementalTimings(res_file)
+
+                if str(res_file).endswith('PlaceHolderTaint-timings.yml'):
+                    self.__ifds_taint_timings = IncrementalTimings(res_file)
 
             # TODO: impl actual file handling
             collected_files = []
@@ -305,5 +319,11 @@ class IncrementalReport(BaseReport, shorthand="Inc", file_type="zip"):
 
             print(f"Found files: {collected_files}")
 
-    def ide_timings(self) -> IncrementalTimings:
-        return self.__ide_timings
+    def ide_lca_timings(self) -> IncrementalTimings:
+        return self.__ide_lca_timings
+
+    def ide_typestate_timings(self) -> IncrementalTimings:
+        return self.__ide_typestate_timings
+
+    def ifds_taint_timings(self) -> IncrementalTimings:
+        return self.__ifds_taint_timings
