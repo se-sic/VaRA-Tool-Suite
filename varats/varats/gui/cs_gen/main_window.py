@@ -1,17 +1,29 @@
 import sys
+import time
 import typing as tp
+from datetime import datetime, timezone, timedelta
+from enum import Enum
 from pathlib import Path
 
 import benchbuild as bb
 import pygit2
 from PyQt5 import Qt
 from PyQt5.QtCore import QModelIndex
-from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox
+from PyQt5.QtWidgets import (
+    QMainWindow,
+    QApplication,
+    QMessageBox,
+    QTableWidgetItem,
+)
 
+from varats.base.sampling_method import NormalSamplingMethod
 from varats.gui.cs_gen.main_window_ui import Ui_MainWindow
 from varats.mapping.commit_map import create_lazy_commit_map_loader
 from varats.paper.case_study import CaseStudy, store_case_study
-from varats.paper_mgmt.case_study import extend_with_extra_revs
+from varats.paper_mgmt.case_study import (
+    extend_with_extra_revs,
+    extend_with_distrib_sampling,
+)
 from varats.project.project_util import (
     get_loaded_vara_projects,
     get_local_project_git_path,
@@ -25,9 +37,15 @@ from varats.utils.git_util import (
     get_initial_commit,
     get_all_revisions_between,
     FullCommitHash,
+    ShortCommitHash,
     create_commit_lookup_helper,
 )
 from varats.utils.settings import vara_cfg
+
+
+class GenerationStrategie(Enum):
+    SELECTREVISION = 0
+    SAMPLE = 1
 
 
 class CsGenMainWindow(QMainWindow, Ui_MainWindow):
@@ -47,24 +65,52 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
         ]
         self.project_list.addItems(self.project_names)
         self.project_list.clicked['QModelIndex'].connect(self.show_project_data)
-        self.revision_list.clicked['QModelIndex'].connect(
-            self.show_revision_data
-        )
-        self.selectspecific.clicked.connect(self.show_revisions_of_project)
-        self.generate.clicked.connect(self.gen_specific)
+        self.sampling_method.addItems([
+            x.name()
+            for x in NormalSamplingMethod.normal_sampling_method_types()
+        ])
+        self.revision_list.cellClicked.connect(self.show_revision_data)
+        self.select_specific.clicked.connect(self.show_revisions_of_project)
+        self.sample.clicked.connect(self.sample_view)
+        self.generate.clicked.connect(self.gen)
         self.show()
 
-    def gen_specific(self):
+    def sample_view(self):
+        self.strategie_forms.setCurrentIndex(GenerationStrategie.SAMPLE.value)
+        self.strategie_forms.update()
+
+    def gen(self):
         cmap = create_lazy_commit_map_loader(
             self.revision_list_project, None, 'HEAD', None
         )()
         case_study = CaseStudy(self.revision_list_project, 0)
-        extend_with_extra_revs(case_study, cmap, [self.selected_commit], 0)
         paper_config = vara_cfg()["paper_config"]["current_config"].value
         path = Path(
             vara_cfg()["paper_config"]["folder"].value
-        ) / (paper_config + f"/{ self.revision_list_project}_0.case_study")
+        ) / (paper_config + f"/{self.revision_list_project}_0.case_study")
+
+        if self.strategie_forms.currentIndex(
+        ) == GenerationStrategie.SAMPLE.value:
+            self.gen_sample(cmap, case_study)
+        elif self.strategie_forms.currentIndex(
+        ) == GenerationStrategie.SELECTREVISION.value:
+            self.gen_specific(cmap, case_study)
         store_case_study(case_study, path)
+
+    def gen_sample(self, cmap, case_study):
+        sampling_method = NormalSamplingMethod.get_sampling_method_type(
+            self.sampling_method.currentText()
+        )
+        extend_with_distrib_sampling(
+            case_study, cmap, sampling_method(), 0, self.num_revs.value(), True
+        )
+
+    def gen_specific(self, cmap, case_study):
+        selected_rows = self.revision_list.selectionModel().selectedRows(0)
+        selected_commits = [row.data() for row in selected_rows]
+        extend_with_extra_revs(case_study, cmap, selected_commits, 0)
+        self.revision_list.clearSelection()
+        self.revision_list.update()
 
     def show_project_data(self, index: QModelIndex):
         project_name = index.data()
@@ -74,23 +120,56 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             project_info = f"{project_name.upper()} : \nDomain: {project.DOMAIN}\nSource: {bb.source.primary(*project.SOURCE).remote}"
             self.project_details.setText(project_info)
             self.project_details.update()
-            if self.revisions.isEnabled():
+            if self.strategie_forms.currentIndex(
+            ) == GenerationStrategie.SELECTREVISION.value:
                 self.show_revisions_of_project()
 
     def show_revisions_of_project(self):
+        self.strategie_forms.setCurrentIndex(
+            GenerationStrategie.SELECTREVISION.value
+        )
         if self.selected_project != self.revision_list_project:
-            self.revision_list.clear()
+            self.revision_list.clearContents()
+            self.revision_list.setRowCount(0)
+            self.revision_list.update()
+            print(time.time())
+            self.revision_details.setText("Loading Revisions")
+            self.revision_details.update()
             git_path = get_local_project_git_path(self.selected_project)
             initial_commit = get_initial_commit(git_path).hash
             commits = get_all_revisions_between(
-                initial_commit, 'HEAD', str, git_path
+                initial_commit, 'HEAD', ShortCommitHash, git_path
             )
-            self.revision_list.addItems(commits.__reversed__())
+            self.revision_list.setRowCount(len(commits))
+            commit_lookup_helper = create_commit_lookup_helper(
+                self.selected_project
+            )
+            for n, commit_hash in enumerate(commits):
+                commit: pygit2.Commit = commit_lookup_helper(commit_hash)
+                self.revision_list.setItem(
+                    n, 0,
+                    QTableWidgetItem(
+                        ShortCommitHash.from_pygit_commit(commit).short_hash
+                    )
+                )
+                self.revision_list.setItem(
+                    n, 1, QTableWidgetItem(commit.author.name)
+                )
+                tzinfo = timezone(timedelta(minutes=commit.author.offset))
+                dt = datetime.fromtimestamp(float(commit.author.time), tzinfo)
+                timestr = dt.strftime('%c %z')
+                self.revision_list.setItem(n, 2, QTableWidgetItem(timestr))
+            self.revision_list.resizeColumnsToContents()
+            self.revision_list.setSortingEnabled(True)
+            self.revision_details.clear()
+            self.revision_details.update()
+            print(time.time())
             self.revision_list.update()
             self.revision_list_project = self.selected_project
 
-    def show_revision_data(self, index):
-        commit_hash = FullCommitHash(index.data())
+    def show_revision_data(self, row, column):
+        index = self.revision_list.item(row, 0)
+        commit_hash = ShortCommitHash(index.text())
         commit_lookup_helper = create_commit_lookup_helper(
             self.selected_project
         )
