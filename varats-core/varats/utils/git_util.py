@@ -855,7 +855,7 @@ def calc_surviving_lines(
                     if line:
 
                         content = line[FullCommitHash.hash_length():]
-                        if content:
+                        if content and not content.startswith('//'):
                             last_change = line[:FullCommitHash.hash_length()]
                             last_change = FullCommitHash(last_change)
                             if lines_per_revision.keys().__contains__(

@@ -1,3 +1,4 @@
+import abc
 import math
 import typing as tp
 
@@ -19,18 +20,12 @@ from varats.plot.plots import PlotGenerator, PlotConfig, REQUIRE_CASE_STUDY
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
 
-def get_normalized_lines_per_commit_long(case_study: CaseStudy) -> DataFrame:
+def get_lines_per_commit_long(case_study: CaseStudy) -> DataFrame:
     project_name = case_study.project_name
     data = SurvivingLinesDatabase.get_data_for_project(
         project_name, ["revision", "commit_hash", "lines"],
         get_commit_map(project_name), case_study
     )
-    starting_lines = {
-        commit_hash: lines
-        for revision, commit_hash, lines in data.itertuples(index=False)
-        if revision == FullCommitHash(commit_hash).to_short_commit_hash() and
-        lines is not math.nan
-    }
 
     def cs_filter(data_frame: DataFrame) -> DataFrame:
         """Filter out all commits that are not in the case study if one was
@@ -44,8 +39,18 @@ def get_normalized_lines_per_commit_long(case_study: CaseStudy) -> DataFrame:
         return data_frame[data_frame["commit_hash"].
                           apply(lambda x: revisions.has_node(x) != 0)]
 
-    case_study_data = cs_filter(data)
-    case_study_data = case_study_data.apply(
+    return cs_filter(data)
+
+
+def get_normalized_lines_per_commit_long(case_study: CaseStudy) -> DataFrame:
+    data = get_lines_per_commit_long(case_study)
+    starting_lines = {
+        commit_hash: lines
+        for revision, commit_hash, lines in data.itertuples(index=False)
+        if revision == FullCommitHash(commit_hash).to_short_commit_hash() and
+        lines is not math.nan
+    }
+    data = data.apply(
         lambda x: [
             x['revision'], x['commit_hash'],
             (x['lines'] * 100 / starting_lines[x['commit_hash']])
@@ -54,7 +59,7 @@ def get_normalized_lines_per_commit_long(case_study: CaseStudy) -> DataFrame:
         axis=1,
         result_type='broadcast'
     )
-    return case_study_data.rename(columns={'commit_hash': 'base_hash'})
+    return data.rename(columns={'commit_hash': 'base_hash'})
 
 
 def get_normalized_lines_per_commit_wide(case_study: CaseStudy) -> DataFrame:
@@ -72,9 +77,7 @@ def get_normalized_lines_per_commit_wide(case_study: CaseStudy) -> DataFrame:
     return case_study_data.astype(float)
 
 
-def get_normalized_interactions_per_commit_long(
-    case_study: CaseStudy
-) -> DataFrame:
+def get_interactions_per_commit_long(case_study: CaseStudy):
     project_name = case_study.project_name
     data: DataFrame = BlameLibraryInteractionsDatabase().get_data_for_project(
         project_name, ["base_hash", "amount", "revision"],
@@ -95,7 +98,13 @@ def get_normalized_interactions_per_commit_long(
         return data_frame[
             data_frame["base_hash"].apply(lambda x: revisions.has_node(x) != 0)]
 
-    data = cs_filter(data)
+    return cs_filter(data)
+
+
+def get_normalized_interactions_per_commit_long(
+    case_study: CaseStudy
+) -> DataFrame:
+    data = get_interactions_per_commit_long(case_study)
     max_interactions = data.drop(columns=["revision"]
                                 ).groupby("base_hash").max()
     data = data.apply(
@@ -115,9 +124,10 @@ def get_normalized_interactions_per_commit_wide(
     case_study: CaseStudy
 ) -> DataFrame:
     data = get_normalized_interactions_per_commit_long(case_study)
-    data = data.pivot(index="base_hash", columns="revision", values="amount")
-    data.index.name = None
-    data.columns.name = None
+    print(data)
+    data = data.pivot(
+        index="base_hash", columns="revision", values="interactions"
+    )
     cmap = get_commit_map(case_study.project_name)
     data = data.sort_index(
         key=lambda x: x.map(lambda y: cmap.short_time_id(ShortCommitHash(y)))
@@ -152,7 +162,50 @@ def lines_and_interactions(case_study: CaseStudy) -> DataFrame:
     return data.astype(float)
 
 
-class SurvivingInteractionsPlot(Plot, plot_name="surviving_interactions_plot"):
+class HeatMapPlot(Plot, plot_name=None):
+    colormap = 'RdYlGn'
+    vmin = 0
+    vmax = 100
+    xticklables = 1
+    yticklables = 1
+
+    def __init__(
+        self, name: str, plot_config: PlotConfig,
+        data_function: tp.Callable[[CaseStudy], DataFrame], **kwargs
+    ):
+        super().__init__(name, plot_config, **kwargs)
+        self.data_function = data_function
+
+    def plot(self, view_mode: bool) -> None:
+        style.use(self.plot_config.style())
+        _, axis = plt.subplots(1, 1)
+
+        data = self.data_function(self.plot_kwargs['case_study'])
+        sns.heatmap(
+            data,
+            cmap=self.colormap,
+            vmin=self.vmin,
+            vmax=self.vmax,
+            xticklabels=self.xticklables,
+            yticklabels=self.yticklables
+        )
+        plt.setp(
+            axis.get_xticklabels(), fontsize=self.plot_config.x_tick_size()
+        )
+        plt.setp(
+            axis.get_yticklabels(), fontsize=self.plot_config.x_tick_size()
+        )
+
+    @abc.abstractmethod
+    def calc_missing_revisions(
+        self, boundary_gradient: float
+    ) -> tp.Set[FullCommitHash]:
+        """Calculate."""
+
+
+class SurvivingInteractionsPlot(
+    HeatMapPlot, plot_name="surviving_interactions_plot"
+):
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -162,27 +215,13 @@ class SurvivingInteractionsPlot(Plot, plot_name="surviving_interactions_plot"):
     NAME = 'surviving_interactions_plot'
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
-
-    def plot(self, view_mode: bool) -> None:
-        style.use(self.plot_config.style())
-        _, axis = plt.subplots(1, 1)
-
-        data = get_normalized_interactions_per_commit_wide(
-            self.plot_kwargs['case_study']
-        )
-        sns.heatmap(
-            data, cmap='RdYlGn', vmin=0, vmax=100, xticklabels=1, yticklabels=1
-        )
-        plt.setp(
-            axis.get_xticklabels(), fontsize=self.plot_config.x_tick_size()
-        )
-        plt.setp(
-            axis.get_yticklabels(), fontsize=self.plot_config.x_tick_size()
+        super().__init__(
+            self.NAME, plot_config, get_normalized_interactions_per_commit_wide,
+            **kwargs
         )
 
 
-class SurvivingLinesPlot(Plot, plot_name="surviving_commit_plot"):
+class SurvivingLinesPlot(HeatMapPlot, plot_name="surviving_commit_plot"):
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -192,27 +231,13 @@ class SurvivingLinesPlot(Plot, plot_name="surviving_commit_plot"):
     NAME = 'surviving_commit_plot'
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
-
-    def plot(self, view_mode: bool) -> None:
-        style.use(self.plot_config.style())
-        _, axis = plt.subplots(1, 1)
-
-        data = get_normalized_lines_per_commit_wide(
-            self.plot_kwargs['case_study']
-        )
-        sns.heatmap(
-            data, cmap='RdYlGn', vmin=0, vmax=100, xticklabels=1, yticklabels=1
-        )
-        plt.setp(
-            axis.get_xticklabels(), fontsize=self.plot_config.x_tick_size()
-        )
-        plt.setp(
-            axis.get_yticklabels(), fontsize=self.plot_config.x_tick_size()
+        super().__init__(
+            self.NAME, plot_config, get_normalized_lines_per_commit_wide,
+            **kwargs
         )
 
 
-class CompareSurvivalPlot(Plot, plot_name="compare_survival"):
+class CompareSurvivalPlot(HeatMapPlot, plot_name="compare_survival"):
 
     def calc_missing_revisions(
         self, boundary_gradient: float
@@ -222,29 +247,10 @@ class CompareSurvivalPlot(Plot, plot_name="compare_survival"):
     NAME = 'compare_survival'
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
-        super().__init__(self.NAME, plot_config, **kwargs)
-
-    def plot(self, view_mode: bool) -> None:
-        style.use(self.plot_config.style())
-        _, axis = plt.subplots(1, 1)
-
-        data = lines_and_interactions(self.plot_kwargs['case_study'])
-        sns.heatmap(
-            data,
-            cmap='RdYlGn',
-            vmin=0.1,
-            vmax=100,
-            xticklabels=1,
-            yticklabels=3,
-            linecolor='k',
-            linewidths=.01
+        super().__init__(
+            self.NAME, plot_config, lines_and_interactions, **kwargs
         )
-        plt.setp(
-            axis.get_xticklabels(), fontsize=self.plot_config.x_tick_size()
-        )
-        plt.setp(
-            axis.get_yticklabels(), fontsize=self.plot_config.x_tick_size()
-        )
+        self.yticklables = 3
 
 
 class SurvivingCommitPlotGenerator(
@@ -255,7 +261,7 @@ class SurvivingCommitPlotGenerator(
 
     def generate(self) -> tp.List['varats.plot.plot.Plot']:
         return [
-            #SurvivingInteractionsPlot(self.plot_config, **self.plot_kwargs),
-            #SurvivingLinesPlot(self.plot_config, **self.plot_kwargs)
-            CompareSurvivalPlot(self.plot_config, **self.plot_kwargs)
+            SurvivingInteractionsPlot(self.plot_config, **self.plot_kwargs),
+            # SurvivingLinesPlot(self.plot_config, **self.plot_kwargs)
+            # CompareSurvivalPlot(self.plot_config, **self.plot_kwargs)
         ]
