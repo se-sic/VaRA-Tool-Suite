@@ -1,7 +1,9 @@
 import math
 import typing as tp
 
+import pygit2
 from pandas import DataFrame
+from pygtrie import CharTrie
 
 from varats.data.databases.blame_library_interactions_database import (
     BlameLibraryInteractionsDatabase,
@@ -9,15 +11,13 @@ from varats.data.databases.blame_library_interactions_database import (
 from varats.data.databases.survivng_lines_database import SurvivingLinesDatabase
 from varats.mapping.commit_map import get_commit_map
 from varats.paper.case_study import CaseStudy
-from varats.plot.plots import PlotConfig, PlotGenerator
+from varats.plot.plot import Plot
+from varats.plot.plots import PlotConfig, PlotGenerator, REQUIRE_CASE_STUDY
 from varats.plots.surviving_commits import HeatMapPlot
-from varats.project.project_util import get_primary_project_source
-from varats.ts_utils.click_param_types import REQUIRE_CASE_STUDY
 from varats.utils.git_util import (
     FullCommitHash,
     create_commit_lookup_helper,
-    UNCOMMITTED_COMMIT_HASH,
-    CommitRepoPair,
+    ShortCommitHash,
 )
 
 
@@ -26,12 +26,9 @@ def _group_data_by_author(
     value_label
 ) -> DataFrame:
     commit_lookup_helper = create_commit_lookup_helper(project_name)
-    repo = get_primary_project_source(project_name).local
 
     def author_data(commit_hash: str):
-        commit = commit_lookup_helper(
-            CommitRepoPair(FullCommitHash(commit_hash), repo)
-        )
+        commit = commit_lookup_helper(FullCommitHash(commit_hash))
         return commit.author.name, commit.author.email
 
     data = data.apply(
@@ -50,12 +47,9 @@ def _group_data_by_author(
 def get_interactions_per_author(case_study: CaseStudy) -> DataFrame:
     project_name = case_study.project_name
     data: DataFrame = BlameLibraryInteractionsDatabase().get_data_for_project(
-        project_name, ["revision", "base_hash", "amount", "base_lib"],
+        project_name, ["revision", "base_hash", "amount"],
         get_commit_map(project_name), case_study
     )
-    data = data[data.base_lib.str.startswith(project_name)]
-    data = data[data.base_hash != UNCOMMITTED_COMMIT_HASH.hash]
-    data.drop(columns="base_lib", inplace=True)
     return _group_data_by_author(
         project_name, data, 'revision', 'base_hash', 'amount'
     )
@@ -154,7 +148,7 @@ def compare_lines_and_interactions_author_revision(case_study: CaseStudy):
     )
     data = lines.merge(interactions, how='left', on=['author', 'revision'])
     data.dropna(
-        axis=0, how='any', inplace=True, subset=["lines", "interactions"]
+        axis=0, how='all', inplace=True, subset=["lines", "interactions"]
     )
     data.insert(3, "space", math.nan)
     data = data.pivot(
@@ -198,8 +192,8 @@ class AuthorLineContribution(HeatMapPlot, plot_name="author_line_contribution"):
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__(
-            plot_config, get_lines_per_author_normalized_per_revision_wide,
-            **kwargs
+            self.NAME, plot_config,
+            get_lines_per_author_normalized_per_revision_wide, **kwargs
         )
 
 
@@ -216,7 +210,7 @@ class AuthorInteractionsContribution(
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__(
-            plot_config,
+            self.NAME, plot_config,
             get_interactions_per_author_normalized_per_revision_wide, **kwargs
         )
 
@@ -234,11 +228,10 @@ class AuthorContributionPlotRevision(
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__(
-            plot_config, compare_lines_and_interactions_author_revision,
-            **kwargs
+            self.NAME, plot_config,
+            compare_lines_and_interactions_author_revision, **kwargs
         )
-        self.yticklabels = 3
-        self.YLABEL = "Author Contribution Lines vs. Interactions"
+        self.yticklables = 3
 
 
 class AuthorContributionPlotAuthor(
@@ -254,9 +247,10 @@ class AuthorContributionPlotAuthor(
 
     def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any):
         super().__init__(
-            plot_config, compare_lines_and_interactions_author_author, **kwargs
+            self.NAME, plot_config,
+            compare_lines_and_interactions_author_author, **kwargs
         )
-        self.yticklabels = 3
+        self.yticklables = 3
 
 
 class AuthorContributionPlotGenerator(
@@ -272,5 +266,5 @@ class AuthorContributionPlotGenerator(
             AuthorContributionPlotRevision(
                 self.plot_config, **self.plot_kwargs
             ),
-            #AuthorContributionPlotAuthor(self.plot_config, **self.plot_kwargs)
+            AuthorContributionPlotAuthor(self.plot_config, **self.plot_kwargs)
         ]
