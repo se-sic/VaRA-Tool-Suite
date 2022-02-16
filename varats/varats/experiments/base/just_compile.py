@@ -26,7 +26,7 @@ from varats.report.report import ReportSpecification
 class EmptyAnalysis(actions.Step):  # type: ignore
     """Empty analysis step for testing."""
 
-    NAME = "EmptyAnslysis"
+    NAME = "EmptyAnalysis"
     DESCRIPTION = "Analyses nothing."
 
     def __init__(self, project: Project, experiment_handle: ExperimentHandle):
