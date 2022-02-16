@@ -15,6 +15,10 @@ from varats.utils.git_util import (
     CommitRepoPair,
     FullCommitHash,
     ShortCommitHash,
+    is_commit_hash,
+    get_commits_after_timestamp,
+    get_commits_before_timestamp,
+    contains_source_code,
     calc_code_churn,
     calc_commit_code_churn,
     get_all_revisions_between,
@@ -26,6 +30,22 @@ from varats.utils.git_util import (
 
 class TestGitInteractionHelpers(unittest.TestCase):
     """Test if the different git helper classes work."""
+
+    def test_is_commit_hash(self) -> None:
+        """Check if we can correctly identify commit hashes."""
+        self.assertTrue(is_commit_hash("a"))
+        self.assertTrue(is_commit_hash("a94"))
+        self.assertTrue(is_commit_hash("a94a8fe5cc"))
+        self.assertTrue(is_commit_hash("a94a8fe5ccb19ba61c4"))
+        self.assertTrue(
+            is_commit_hash("a94a8fe5ccb19ba61c4c0873d391e987982fbbd3")
+        )
+
+        self.assertFalse(is_commit_hash("zzz"))
+        self.assertFalse(
+            is_commit_hash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        )
+        self.assertFalse(is_commit_hash("thisisnotacommithash"))
 
     def test_get_current_branch(self):
         """Check if we can correctly retrieve the current branch of a repo."""
@@ -93,6 +113,93 @@ class TestGitInteractionHelpers(unittest.TestCase):
                     ShortCommitHash("2f9277ff2f")
                 }
             )
+
+    def test_get_commits_before_timestamp(self) -> None:
+        """Check if we can correctly determine the commits before a specific
+        timestamp."""
+        project_repo = get_local_project_git_path('brotli')
+        brotli_commits_after = get_commits_before_timestamp(
+            '2013-10-24', project_repo
+        )
+
+        # newest found commit should be
+        self.assertEqual(
+            brotli_commits_after[0].hash,
+            "c66e4e3e4fc3ba36ca36a43eee3b704f7b989c60"
+        )
+        # olderst commit should be
+        self.assertEqual(
+            brotli_commits_after[-1].hash,
+            "8f30907d0f2ef354c2b31bdee340c2b11dda0fb0"
+        )
+
+    def test_get_commits_after_timestamp(self) -> None:
+        """Check if we can correctly determine the commits after a specific
+        timestamp."""
+        project_repo = get_local_project_git_path('brotli')
+        brotli_commits_after = get_commits_after_timestamp(
+            '2021-01-01', project_repo
+        )
+
+        # oldest found commit should be
+        self.assertEqual(
+            brotli_commits_after[-1].hash,
+            "4969984a95534a508f93b38c74d150e86ef333f4"
+        )
+        # second olderst commit should be
+        self.assertEqual(
+            brotli_commits_after[-2].hash,
+            "0e8afdc968f3b7c891379e558b8dcaf42d93703b"
+        )
+
+    def test_contains_source_code_without(self) -> None:
+        """Check if we can correctly identify commits with source code."""
+        churn_conf = ChurnConfig.create_c_style_languages_config()
+        project_git_path = get_local_project_git_path('brotli')
+
+        self.assertFalse(
+            contains_source_code(
+                ShortCommitHash('f4153a09f87cbb9c826d8fc12c74642bb2d879ea'),
+                project_git_path, churn_conf
+            )
+        )
+        self.assertFalse(
+            contains_source_code(
+                ShortCommitHash('e83c7b8e8fb8b696a1df6866bc46cbb76d7e0348'),
+                project_git_path, churn_conf
+            )
+        )
+        self.assertFalse(
+            contains_source_code(
+                ShortCommitHash('698e3a7f9d3000fa44174f5be415bf713f71bd0e'),
+                project_git_path, churn_conf
+            )
+        )
+
+    def test_contains_source_code_with(self) -> None:
+        """Check if we can correctly identify commits without source code."""
+        churn_conf = ChurnConfig.create_c_style_languages_config()
+        project_git_path = get_local_project_git_path('brotli')
+
+        self.assertTrue(
+            contains_source_code(
+                ShortCommitHash('62662f87cdd96deda90ac817de94e3c4af75226a'),
+                project_git_path, churn_conf
+            )
+        )
+        self.assertTrue(
+            contains_source_code(
+                ShortCommitHash('27dd7265403d8e8fed99a854b9c3e1db7d79525f'),
+                project_git_path, churn_conf
+            )
+        )
+        # Merge commit of the previous one
+        self.assertTrue(
+            contains_source_code(
+                ShortCommitHash('4ec67035c0d97c270c1c73038cc66fc5fcdfc120'),
+                project_git_path, churn_conf
+            )
+        )
 
 
 class TestChurnConfig(unittest.TestCase):
