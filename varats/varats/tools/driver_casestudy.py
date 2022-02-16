@@ -284,9 +284,15 @@ def __gen_specific(ctx: click.Context, revisions: tp.List[str]) -> None:
 @click.option(
     "--num-rev", type=int, default=10, help="Number of revisions to select."
 )
+@click.option(
+    "--only-code-commits",
+    is_flag=True,
+    help="Only consider code changes when sampling."
+)
 @click.pass_context
 def __gen_sample(
-    ctx: click.Context, distribution: str, end: str, start: str, num_rev: int
+    ctx: click.Context, distribution: str, end: str, start: str, num_rev: int,
+    only_code_commits: bool
 ) -> None:
     """
     Add revisions based on a sampling Distribution.
@@ -308,7 +314,7 @@ def __gen_sample(
     cmap = create_lazy_commit_map_loader(ctx.obj['project'], None, end, start)()
     extend_with_distrib_sampling(
         ctx.obj['case_study'], cmap, sampling_method, ctx.obj['merge_stage'],
-        num_rev, ctx.obj['ignore_blocked']
+        num_rev, ctx.obj['ignore_blocked'], only_code_commits
     )
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 
