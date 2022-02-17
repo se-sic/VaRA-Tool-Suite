@@ -17,7 +17,7 @@ from varats.plots.surviving_commits import HeatMapPlot
 from varats.utils.git_util import (
     FullCommitHash,
     create_commit_lookup_helper,
-    ShortCommitHash,
+    UNCOMMITTED_COMMIT_HASH,
 )
 
 
@@ -47,9 +47,12 @@ def _group_data_by_author(
 def get_interactions_per_author(case_study: CaseStudy) -> DataFrame:
     project_name = case_study.project_name
     data: DataFrame = BlameLibraryInteractionsDatabase().get_data_for_project(
-        project_name, ["revision", "base_hash", "amount"],
+        project_name, ["revision", "base_hash", "amount", "base_lib"],
         get_commit_map(project_name), case_study
     )
+    data = data[data.base_lib.str.startswith(project_name)]
+    data = data[data.base_hash != UNCOMMITTED_COMMIT_HASH.hash]
+    data.drop(columns="base_lib", inplace=True)
     return _group_data_by_author(
         project_name, data, 'revision', 'base_hash', 'amount'
     )

@@ -13,7 +13,7 @@ from varats.data.databases.blame_library_interactions_database import (
     BlameLibraryInteractionsDatabase,
 )
 from varats.data.databases.survivng_lines_database import SurvivingLinesDatabase
-from varats.mapping.commit_map import get_commit_map
+from varats.mapping.commit_map import get_commit_map, CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator, PlotConfig, REQUIRE_CASE_STUDY
@@ -196,21 +196,69 @@ class HeatMapPlot(Plot, plot_name=None):
             axis.get_yticklabels(), fontsize=self.plot_config.x_tick_size()
         )
 
-    @abc.abstractmethod
     def calc_missing_revisions(
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
         """Calculate."""
+        commit_map: CommitMap = get_commit_map(
+            self.plot_kwargs['case_study'].project_name
+        )
+
+        def head_cm_neighbours(
+            lhs_cm: ShortCommitHash, rhs_cm: ShortCommitHash
+        ) -> bool:
+            return commit_map.short_time_id(
+                lhs_cm
+            ) + 1 == commit_map.short_time_id(rhs_cm)
+
+        new_revs: tp.Set[FullCommitHash] = set()
+
+        data = self.data_function(self.plot_kwargs['case_study'])
+        data.fillna(value=0, inplace=True)
+        df_iter = data.items()
+        last_revision, last_column = next(df_iter)
+        for revision, column in df_iter:
+            gradient = abs(column - last_column)
+            if any(gradient > boundary_gradient):
+                lhs_cm = last_revision
+                rhs_cm = revision
+                if head_cm_neighbours(lhs_cm, rhs_cm):
+                    print(
+                        "Found steep gradient between neighbours " +
+                        "{lhs_cm} - {rhs_cm}: {gradient}".format(
+                            lhs_cm=lhs_cm,
+                            rhs_cm=rhs_cm,
+                            gradient=round(max(gradient), 5)
+                        )
+                    )
+                else:
+                    print(
+                        "Unusual gradient between " +
+                        "{lhs_cm} - {rhs_cm}: {gradient}".format(
+                            lhs_cm=lhs_cm,
+                            rhs_cm=rhs_cm,
+                            gradient=round(max(gradient), 5)
+                        )
+                    )
+                    new_rev_id = round((
+                        commit_map.short_time_id(lhs_cm) +
+                        commit_map.short_time_id(rhs_cm)
+                    ) / 2.0)
+                    new_rev = commit_map.c_hash(new_rev_id)
+                    print(
+                        "-> Adding {rev} as new revision to the sample set".
+                        format(rev=new_rev)
+                    )
+                    new_revs.add(new_rev)
+                print()
+            last_revision = revision
+            last_column = column
+        return new_revs
 
 
 class SurvivingInteractionsPlot(
     HeatMapPlot, plot_name="surviving_interactions_plot"
 ):
-
-    def calc_missing_revisions(
-        self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
-        pass
 
     NAME = 'surviving_interactions_plot'
 
@@ -262,6 +310,6 @@ class SurvivingCommitPlotGenerator(
     def generate(self) -> tp.List['varats.plot.plot.Plot']:
         return [
             SurvivingInteractionsPlot(self.plot_config, **self.plot_kwargs),
-            # SurvivingLinesPlot(self.plot_config, **self.plot_kwargs)
-            # CompareSurvivalPlot(self.plot_config, **self.plot_kwargs)
+            SurvivingLinesPlot(self.plot_config, **self.plot_kwargs),
+            CompareSurvivalPlot(self.plot_config, **self.plot_kwargs)
         ]
