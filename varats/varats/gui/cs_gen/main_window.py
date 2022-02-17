@@ -1,5 +1,4 @@
 import sys
-import time
 import typing as tp
 from datetime import datetime, timezone, timedelta
 from enum import Enum
@@ -7,13 +6,14 @@ from pathlib import Path
 
 import benchbuild as bb
 import pygit2
-from PyQt5 import Qt
-from PyQt5.QtCore import QModelIndex
+from PyQt5.QtCore import QModelIndex, QDateTime, Qt
+from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import (
     QMainWindow,
     QApplication,
     QMessageBox,
     QTableWidgetItem,
+    QStyledItemDelegate,
 )
 
 from varats.base.sampling_method import NormalSamplingMethod
@@ -32,6 +32,7 @@ from varats.project.project_util import (
     get_project_cls_by_name,
 )
 from varats.projects.discover_projects import initialize_projects
+from varats.revision.revisions import is_revision_blocked
 from varats.tools.research_tools.vara_manager import ProcessManager
 from varats.ts_utils.cli_util import initialize_cli_tool
 from varats.utils import settings
@@ -148,7 +149,6 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             self.revision_list.clearContents()
             self.revision_list.setRowCount(0)
             self.revision_list.repaint()
-            print(time.time())
             self.revision_details.setText("Loading Revisions")
             self.revision_details.repaint()
             git_path = get_local_project_git_path(self.selected_project)
@@ -160,26 +160,34 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             commit_lookup_helper = create_commit_lookup_helper(
                 self.selected_project
             )
+
+            project = get_project_cls_by_name(self.selected_project)
             for n, commit_hash in enumerate(commits):
                 commit: pygit2.Commit = commit_lookup_helper(commit_hash)
+                commit_hash = ShortCommitHash.from_pygit_commit(commit)
+
                 self.revision_list.setItem(
-                    n, 0,
-                    QTableWidgetItem(
-                        ShortCommitHash.from_pygit_commit(commit).short_hash
-                    )
+                    n, 0, QTableWidgetItem(commit_hash.short_hash)
                 )
+                if is_revision_blocked(commit_hash, project):
+                    self.revision_list.item(n,
+                                            0).setForeground(QColor(125, 0, 0))
+                    self.revision_list.item(n, 0).setToolTip("Blocked")
                 self.revision_list.setItem(
                     n, 1, QTableWidgetItem(commit.author.name)
                 )
                 tzinfo = timezone(timedelta(minutes=commit.author.offset))
-                dt = datetime.fromtimestamp(float(commit.author.time), tzinfo)
-                timestr = dt.strftime('%c %z')
-                self.revision_list.setItem(n, 2, QTableWidgetItem(timestr))
+                date = datetime.fromtimestamp(float(commit.author.time), tzinfo)
+                table_item = QTableWidgetItem()
+                table_item.setData(Qt.DisplayRole, QDateTime(date))
+                self.revision_list.setItem(n, 2, table_item)
+            self.revision_list.setItemDelegateForColumn(
+                2, DateDelegate(self.revision_list)
+            )
             self.revision_list.resizeColumnsToContents()
             self.revision_list.setSortingEnabled(True)
             self.revision_details.clear()
             self.revision_details.update()
-            print(time.time())
             self.revision_list.update()
             self.revision_list_project = self.selected_project
 
@@ -194,6 +202,14 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
         self.selected_commit = commit_hash.hash
         self.revision_details.setText(commit_info)
         self.revision_details.update()
+
+
+class DateDelegate(QStyledItemDelegate):
+
+    def displayText(self, value, locale):
+        if isinstance(value, QDateTime):
+            return locale.toString(value, "dd-MM-yyyy")
+        return super().displayText(value, locale)
 
 
 class VaRATSGui:
