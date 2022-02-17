@@ -80,7 +80,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         result = runner.invoke(
             driver_casestudy.main, [
                 'gen', '-p', 'brotli', 'select_sample', '--num-rev', '6',
-                '--start', '2021-08-18 19:15', '--end', '2021-09-09',
+                '--start', '2021-08-17', '--end', '2021-09-09',
                 'UniformSamplingMethod'
             ]
         )

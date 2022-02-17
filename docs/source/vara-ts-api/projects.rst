@@ -3,8 +3,8 @@ Projects
 
 A *project* is an abstraction of a software project containing information on
 how to build and execute that software project.
-The tool suite already ships with some project,
-but also also allows yoy to add new projects.
+The tool suite already ships with some projects,
+but also allows you to add new ones.
 
 * :ref:`How to add a new project to VaRA-TS`
 * :ref:`List of supported projects`

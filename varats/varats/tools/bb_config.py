@@ -88,6 +88,10 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         'varats.projects.test_projects.commit_inc_scenarios'
     ]
 
+    projects_conf.value[:] += [
+        'varats.projects.perf_tests.feature_perf_cs_collection'
+    ]
+
     # Experiments for VaRA
     projects_conf = new_bb_cfg["plugins"]["experiments"]
     projects_conf.value[:] = []
