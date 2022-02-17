@@ -23,10 +23,12 @@ from varats.paper.case_study import CaseStudy, store_case_study
 from varats.paper_mgmt.case_study import (
     extend_with_extra_revs,
     extend_with_distrib_sampling,
+    extend_with_revs_per_year,
 )
 from varats.project.project_util import (
     get_loaded_vara_projects,
     get_local_project_git_path,
+    get_local_project_git,
     get_project_cls_by_name,
 )
 from varats.projects.discover_projects import initialize_projects
@@ -36,7 +38,6 @@ from varats.utils import settings
 from varats.utils.git_util import (
     get_initial_commit,
     get_all_revisions_between,
-    FullCommitHash,
     ShortCommitHash,
     create_commit_lookup_helper,
 )
@@ -46,6 +47,7 @@ from varats.utils.settings import vara_cfg
 class GenerationStrategie(Enum):
     SELECTREVISION = 0
     SAMPLE = 1
+    REVS_PER_YEAR = 2
 
 
 class CsGenMainWindow(QMainWindow, Ui_MainWindow):
@@ -69,11 +71,21 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             x.name()
             for x in NormalSamplingMethod.normal_sampling_method_types()
         ])
+        self.strategie_forms.setCurrentIndex(
+            GenerationStrategie.SELECTREVISION.value
+        )
         self.revision_list.cellClicked.connect(self.show_revision_data)
         self.select_specific.clicked.connect(self.show_revisions_of_project)
         self.sample.clicked.connect(self.sample_view)
+        self.per_year.clicked.connect(self.revs_per_year_view)
         self.generate.clicked.connect(self.gen)
         self.show()
+
+    def revs_per_year_view(self):
+        self.strategie_forms.setCurrentIndex(
+            GenerationStrategie.REVS_PER_YEAR.value
+        )
+        self.strategie_forms.update()
 
     def sample_view(self):
         self.strategie_forms.setCurrentIndex(GenerationStrategie.SAMPLE.value)
@@ -81,36 +93,39 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
 
     def gen(self):
         cmap = create_lazy_commit_map_loader(
-            self.revision_list_project, None, 'HEAD', None
+            self.selected_project, None, 'HEAD', None
         )()
-        case_study = CaseStudy(self.revision_list_project, 0)
+        version = self.cs_version.value()
+        case_study = CaseStudy(self.revision_list_project, version)
         paper_config = vara_cfg()["paper_config"]["current_config"].value
-        path = Path(
-            vara_cfg()["paper_config"]["folder"].value
-        ) / (paper_config + f"/{self.revision_list_project}_0.case_study")
+        path = Path(vara_cfg()["paper_config"]["folder"].value) / (
+            paper_config + f"/{self.revision_list_project}_{version}.case_study"
+        )
 
         if self.strategie_forms.currentIndex(
         ) == GenerationStrategie.SAMPLE.value:
-            self.gen_sample(cmap, case_study)
+            sampling_method = NormalSamplingMethod.get_sampling_method_type(
+                self.sampling_method.currentText()
+            )
+            extend_with_distrib_sampling(
+                case_study, cmap, sampling_method(), 0, self.num_revs.value(),
+                True
+            )
         elif self.strategie_forms.currentIndex(
         ) == GenerationStrategie.SELECTREVISION.value:
-            self.gen_specific(cmap, case_study)
+            selected_rows = self.revision_list.selectionModel().selectedRows(0)
+            selected_commits = [row.data() for row in selected_rows]
+            extend_with_extra_revs(case_study, cmap, selected_commits, 0)
+            self.revision_list.clearSelection()
+            self.revision_list.update()
+        elif self.strategie_forms.currentIndex(
+        ) == GenerationStrategie.REVS_PER_YEAR.value:
+            extend_with_revs_per_year(
+                case_study, cmap, 0, True,
+                get_local_project_git_path(self.selected_project),
+                self.revs_per_year.value(), self.seperate.checkState()
+            )
         store_case_study(case_study, path)
-
-    def gen_sample(self, cmap, case_study):
-        sampling_method = NormalSamplingMethod.get_sampling_method_type(
-            self.sampling_method.currentText()
-        )
-        extend_with_distrib_sampling(
-            case_study, cmap, sampling_method(), 0, self.num_revs.value(), True
-        )
-
-    def gen_specific(self, cmap, case_study):
-        selected_rows = self.revision_list.selectionModel().selectedRows(0)
-        selected_commits = [row.data() for row in selected_rows]
-        extend_with_extra_revs(case_study, cmap, selected_commits, 0)
-        self.revision_list.clearSelection()
-        self.revision_list.update()
 
     def show_project_data(self, index: QModelIndex):
         project_name = index.data()
@@ -129,12 +144,13 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             GenerationStrategie.SELECTREVISION.value
         )
         if self.selected_project != self.revision_list_project:
+            get_local_project_git(self.selected_project).remotes[0].fetch()
             self.revision_list.clearContents()
             self.revision_list.setRowCount(0)
-            self.revision_list.update()
+            self.revision_list.repaint()
             print(time.time())
             self.revision_details.setText("Loading Revisions")
-            self.revision_details.update()
+            self.revision_details.repaint()
             git_path = get_local_project_git_path(self.selected_project)
             initial_commit = get_initial_commit(git_path).hash
             commits = get_all_revisions_between(

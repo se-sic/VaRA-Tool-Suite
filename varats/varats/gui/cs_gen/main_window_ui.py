@@ -29,8 +29,41 @@ class Ui_MainWindow(object):
         MainWindow.setDocumentMode(False)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        self.horizontalLayout = QtWidgets.QHBoxLayout(self.centralwidget)
-        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
+        self.gridLayout.setObjectName("gridLayout")
+        self.strategie = QtWidgets.QGroupBox(self.centralwidget)
+        self.strategie.setObjectName("strategie")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.strategie)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.select_specific = QtWidgets.QRadioButton(self.strategie)
+        self.select_specific.setChecked(True)
+        self.select_specific.setObjectName("select_specific")
+        self.verticalLayout.addWidget(self.select_specific)
+        self.sample = QtWidgets.QRadioButton(self.strategie)
+        self.sample.setObjectName("sample")
+        self.verticalLayout.addWidget(self.sample)
+        self.per_year = QtWidgets.QRadioButton(self.strategie)
+        self.per_year.setObjectName("per_year")
+        self.verticalLayout.addWidget(self.per_year)
+        spacerItem = QtWidgets.QSpacerItem(
+            20, 22, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed
+        )
+        self.verticalLayout.addItem(spacerItem)
+        self.label_2 = QtWidgets.QLabel(self.strategie)
+        self.label_2.setObjectName("label_2")
+        self.verticalLayout.addWidget(self.label_2)
+        self.cs_version = QtWidgets.QSpinBox(self.strategie)
+        self.cs_version.setObjectName("cs_version")
+        self.verticalLayout.addWidget(self.cs_version)
+        self.generate = QtWidgets.QPushButton(self.strategie)
+        self.generate.setObjectName("generate")
+        self.verticalLayout.addWidget(self.generate)
+        spacerItem1 = QtWidgets.QSpacerItem(
+            20, 40, QtWidgets.QSizePolicy.Minimum,
+            QtWidgets.QSizePolicy.Expanding
+        )
+        self.verticalLayout.addItem(spacerItem1)
+        self.gridLayout.addWidget(self.strategie, 0, 1, 1, 1)
         self.projects = QtWidgets.QGroupBox(self.centralwidget)
         self.projects.setObjectName("projects")
         self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.projects)
@@ -45,31 +78,7 @@ class Ui_MainWindow(object):
         self.project_details.setMaximumSize(QtCore.QSize(16777189, 100))
         self.project_details.setObjectName("project_details")
         self.verticalLayout_4.addWidget(self.project_details)
-        self.horizontalLayout.addWidget(self.projects)
-        self.strategie = QtWidgets.QGroupBox(self.centralwidget)
-        self.strategie.setObjectName("strategie")
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.strategie)
-        self.verticalLayout.setObjectName("verticalLayout")
-        self.select_specific = QtWidgets.QRadioButton(self.strategie)
-        self.select_specific.setChecked(True)
-        self.select_specific.setObjectName("select_specific")
-        self.verticalLayout.addWidget(self.select_specific)
-        self.sample = QtWidgets.QRadioButton(self.strategie)
-        self.sample.setObjectName("sample")
-        self.verticalLayout.addWidget(self.sample)
-        spacerItem = QtWidgets.QSpacerItem(
-            20, 22, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed
-        )
-        self.verticalLayout.addItem(spacerItem)
-        self.generate = QtWidgets.QPushButton(self.strategie)
-        self.generate.setObjectName("generate")
-        self.verticalLayout.addWidget(self.generate)
-        spacerItem1 = QtWidgets.QSpacerItem(
-            20, 40, QtWidgets.QSizePolicy.Minimum,
-            QtWidgets.QSizePolicy.Expanding
-        )
-        self.verticalLayout.addItem(spacerItem1)
-        self.horizontalLayout.addWidget(self.strategie)
+        self.gridLayout.addWidget(self.projects, 0, 0, 1, 1)
         self.strategie_forms = QtWidgets.QStackedWidget(self.centralwidget)
         self.strategie_forms.setEnabled(True)
         self.strategie_forms.setMinimumSize(QtCore.QSize(100, 0))
@@ -144,19 +153,34 @@ class Ui_MainWindow(object):
         self.formLayout.setWidget(
             0, QtWidgets.QFormLayout.SpanningRole, self.sampling_method
         )
-        self.label = QtWidgets.QLabel(self.sample_page)
-        self.label.setObjectName("label")
-        self.formLayout.setWidget(
-            1, QtWidgets.QFormLayout.LabelRole, self.label
-        )
         self.num_revs = QtWidgets.QSpinBox(self.sample_page)
         self.num_revs.setProperty("value", 10)
         self.num_revs.setObjectName("num_revs")
         self.formLayout.setWidget(
             1, QtWidgets.QFormLayout.FieldRole, self.num_revs
         )
+        self.label = QtWidgets.QLabel(self.sample_page)
+        self.label.setObjectName("label")
+        self.formLayout.setWidget(
+            1, QtWidgets.QFormLayout.LabelRole, self.label
+        )
         self.strategie_forms.addWidget(self.sample_page)
-        self.horizontalLayout.addWidget(self.strategie_forms)
+        self.per_year_page = QtWidgets.QWidget()
+        self.per_year_page.setObjectName("per_year_page")
+        self.seperate = QtWidgets.QCheckBox(self.per_year_page)
+        self.seperate.setGeometry(QtCore.QRect(0, 40, 246, 22))
+        self.seperate.setObjectName("seperate")
+        self.widget = QtWidgets.QWidget(self.per_year_page)
+        self.widget.setGeometry(QtCore.QRect(252, 189, 16, 16))
+        self.widget.setObjectName("widget")
+        self.label_3 = QtWidgets.QLabel(self.per_year_page)
+        self.label_3.setGeometry(QtCore.QRect(0, 0, 111, 21))
+        self.label_3.setObjectName("label_3")
+        self.revs_per_year = QtWidgets.QSpinBox(self.per_year_page)
+        self.revs_per_year.setGeometry(QtCore.QRect(120, 0, 52, 32))
+        self.revs_per_year.setObjectName("revs_per_year")
+        self.strategie_forms.addWidget(self.per_year_page)
+        self.gridLayout.addWidget(self.strategie_forms, 0, 2, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 698, 30))
@@ -167,7 +191,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.strategie_forms.setCurrentIndex(1)
+        self.strategie_forms.setCurrentIndex(2)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -178,6 +202,8 @@ class Ui_MainWindow(object):
             _translate("MainWindow", "Select Revision")
         )
         self.sample.setText(_translate("MainWindow", "Sample"))
+        self.per_year.setText(_translate("MainWindow", "Revisions Per Year"))
+        self.label_2.setText(_translate("MainWindow", "Casestudy Version"))
         self.generate.setText(_translate("MainWindow", "Generate"))
         item = self.revision_list.horizontalHeaderItem(0)
         item.setText(_translate("MainWindow", "Commit Hash"))
@@ -186,6 +212,10 @@ class Ui_MainWindow(object):
         item = self.revision_list.horizontalHeaderItem(2)
         item.setText(_translate("MainWindow", "Date"))
         self.label.setText(_translate("MainWindow", "Number of Revisions"))
+        self.seperate.setText(
+            _translate("MainWindow", "Seperate Years into different Stages")
+        )
+        self.label_3.setText(_translate("MainWindow", "Revisions Per Year"))
 
 
 if __name__ == "__main__":
