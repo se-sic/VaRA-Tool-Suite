@@ -23,7 +23,7 @@ from varats.table.tables import TableFormat
 from varats.utils.git_util import calc_repo_loc
 
 
-def __round_and_format_delta(base_line: float, increment: float) -> float:
+def _round_and_format_delta(base_line: float, increment: float) -> float:
     delta = increment - float(base_line)
     per_delta = delta / float(base_line) * 100
     per_delta = round(per_delta, 2)
@@ -35,22 +35,40 @@ def create_df_for_report(report: IncrementalReport, project_name, t):
 
     cs_dict[("taint", "WPA")] = report.ifds_taint_timings().total_wpa()
     cs_dict[("taint", "INC")] = report.ifds_taint_timings().total_incremental()
-    cs_dict[("taint", "delta")] = __round_and_format_delta(
-        cs_dict[("taint", "WPA")], cs_dict[("taint", "INC")]
-    )
+    cs_dict[("taint", "delta")] = 0
 
     cs_dict[("lca", "WPA")] = report.ide_lca_timings().total_wpa()
     cs_dict[("lca", "INC")] = report.ide_lca_timings().total_incremental()
-    cs_dict[("lca", "delta")] = __round_and_format_delta(
-        cs_dict[("lca", "WPA")], cs_dict[("lca", "INC")]
-    )
+    cs_dict[("lca", "delta")] = 0
 
     cs_dict[("typestate", "WPA")] = report.ide_typestate_timings().total_wpa()
     cs_dict[("typestate", "INC")
            ] = report.ide_typestate_timings().total_incremental()
-    cs_dict[("typestate", "delta")] = __round_and_format_delta(
-        cs_dict[("typestate", "WPA")], cs_dict[("typestate", "INC")]
-    )
+    cs_dict[("typestate", "delta")] = 0
+
+    return pd.DataFrame.from_dict({project_name: cs_dict}, orient="index")
+
+
+from random import seed, randint
+
+seed(1)
+
+
+def create_df_for_report_fake(project_name):
+
+    cs_dict: tp.Dict[tp.Tuple[str, str], tp.Any] = {}
+
+    cs_dict[("taint", "WPA")] = randint(1, 100)
+    cs_dict[("taint", "INC")] = randint(1, 100)
+    cs_dict[("taint", "delta")] = 0
+
+    cs_dict[("lca", "WPA")] = randint(1, 100)
+    cs_dict[("lca", "INC")] = randint(1, 100)
+    cs_dict[("lca", "delta")] = 0
+
+    cs_dict[("typestate", "WPA")] = randint(1, 100)
+    cs_dict[("typestate", "INC")] = randint(1, 100)
+    cs_dict[("typestate", "delta")] = 0
 
     return pd.DataFrame.from_dict({project_name: cs_dict}, orient="index")
 
@@ -90,12 +108,39 @@ class PhasarGlobalsDataComparision(Table):
 
             project_name = case_study.project_name
 
+            current_cs_data: tp.List[pd.DataFrame] = []
+
             for report_file in report_files:
                 report = load_incremental_report(report_file)
                 print(report.ide_lca_timings())
-                cs_data.append(create_df_for_report(report, project_name, 1))
+                # cs_data.append(create_df_for_report(report, project_name, 1))
+                current_cs_data.append(
+                    create_df_for_report(report, project_name, 1)
+                )
+
+            # current_cs_data.append(create_df_for_report_fake(project_name))
+            # current_cs_data.append(create_df_for_report_fake(project_name))
+            # current_cs_data.append(create_df_for_report_fake(project_name))
+            # current_cs_data.append(create_df_for_report_fake(project_name))
+
+            df = pd.concat(current_cs_data)
+            df = df.agg(['mean'])
+            df.rename(index={'mean': project_name}, inplace=True)
+
+            df[("taint", "delta")] = _round_and_format_delta(
+                df[("taint", "WPA")], df[("taint", "INC")]
+            )
+            df[
+                ("lca", "delta")
+            ] = _round_and_format_delta(df[("lca", "WPA")], df[("lca", "INC")])
+            df[("typestate", "delta")] = _round_and_format_delta(
+                df[("typestate", "WPA")], df[("typestate", "INC")]
+            )
+
+            cs_data.append(df)
 
         df = pd.concat(cs_data)
+        df = df.round(2)
 
         df[('taint', 'delta')
           ] = df[('taint', 'delta')].apply(_color_and_format_delta_cell)
@@ -120,6 +165,7 @@ class PhasarGlobalsDataComparision(Table):
         if self.format in [
             TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
         ]:
+            df.style.format('j')
             caption = ("TEST")
             table = df.to_latex(
                 #index=True,
@@ -129,7 +175,9 @@ class PhasarGlobalsDataComparision(Table):
                 multicolumn_format="c",
                 multicolumn=True,
                 # longtable=True,
-                caption=caption
+                caption=caption,
+                #float_format='{:0.2f}'.format
+                float_format='%.2f'
             )
             return str(table) if table else ""
 
