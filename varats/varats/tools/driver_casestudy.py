@@ -670,7 +670,7 @@ def cleanup(
     """
 
     ctx.ensure_object(dict)
-    ctx.obj["case_study"] = case_studies
+    ctx.obj["case_studies"] = case_studies
     ctx.obj["experiment"] = experiment
     ctx.obj["report"] = report
 
@@ -699,7 +699,7 @@ def _remove_all_result_files(ctx: click.Context, error: bool) -> None:
             if any(
                 list(
                     case_study.has_revision(commit_hash)
-                    for case_study in ctx.obj["case_study"]
+                    for case_study in ctx.obj["case_studies"]
                 )
             ):
                 if error and not (
@@ -715,7 +715,7 @@ def _remove_all_result_files(ctx: click.Context, error: bool) -> None:
 def _remove_old_result_files(ctx: click.Context) -> None:
     """Remove result files of wich a newer version exists."""
     result_dir = Path(str(vara_cfg()['result_dir']))
-    for case_study in ctx.obj['case_study']:
+    for case_study in ctx.obj['case_studies']:
         old_files: tp.List[Path] = []
         newer_files: tp.Dict[ShortCommitHash, Path] = {}
         result_dir_cs = result_dir / case_study.project_name
@@ -771,7 +771,9 @@ def _remove_result_files_by_regex(
 
     Ignores experiment and report filter given to the main command
     """
-    result_dir_paths = _find_result_dir_paths_of_projects(ctx.obj["case_study"])
+    result_dir_paths = _find_result_dir_paths_of_projects(
+        ctx.obj["case_studies"]
+    )
     for result_dir_path in result_dir_paths:
         result_file_names = os.listdir(result_dir_path)
         files_to_delete: tp.List[str] = []
