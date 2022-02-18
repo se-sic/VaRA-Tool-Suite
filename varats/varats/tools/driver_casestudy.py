@@ -682,7 +682,7 @@ def cleanup(
 @click.pass_context
 def _remove_all_result_files(ctx: click.Context, error: bool) -> None:
     """Remove all report files of the current paper_config."""
-    result_folders = _find_result_dir_paths_of_projects(ctx.obj["case_study"])
+    result_folders = _find_result_dir_paths_of_projects(ctx.obj["case_studies"])
     for folder in result_folders:
         for res_file in folder.iterdir():
             report_file = ReportFilename(res_file.name)
