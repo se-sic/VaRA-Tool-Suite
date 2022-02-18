@@ -44,7 +44,6 @@ class CommitStructurePlot(Plot, plot_name='commit_structure'):
             result_type='broadcast'
         )
         data.dropna(axis=0, how='any', inplace=True)
-        print(data)
         _, axis = plt.subplots(1, 1)
         plt.setp(
             axis.get_xticklabels(), fontsize=self.plot_config.x_tick_size()
@@ -52,7 +51,8 @@ class CommitStructurePlot(Plot, plot_name='commit_structure'):
         plt.setp(
             axis.get_yticklabels(), fontsize=self.plot_config.x_tick_size()
         )
-        data.pivot(index="base_hash", columns="revision", values="lines").plot()
+        data.drop(columns=["base_hash", "interactions"]
+                 ).set_index("revision").plot()
 
     def calc_missing_revisions(
         self, boundary_gradient: float

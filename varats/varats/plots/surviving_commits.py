@@ -219,7 +219,7 @@ class HeatMapPlot(Plot, plot_name=None):
         last_revision, last_column = next(df_iter)
         for revision, column in df_iter:
             gradient = abs(column - last_column)
-            if any(gradient > boundary_gradient):
+            if any(gradient > (boundary_gradient * 100)):
                 lhs_cm = last_revision
                 rhs_cm = revision
                 if head_cm_neighbours(lhs_cm, rhs_cm):
