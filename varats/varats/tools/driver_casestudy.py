@@ -680,7 +680,7 @@ def cleanup(
     "--error", is_flag=True, help="remove only reports from failed experiments"
 )
 @click.pass_context
-def _remove_all_result_files(ctx: click.Context, error: bool):
+def _remove_all_result_files(ctx: click.Context, error: bool) -> None:
     """Remove all report files of the current paper_config."""
     result_folders = _find_result_dir_paths_of_projects(ctx.obj["case_study"])
     for folder in result_folders:
