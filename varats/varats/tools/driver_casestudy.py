@@ -639,7 +639,7 @@ def __init_commit_hash(
 
 @main.group()
 @click.option(
-    "--case_studies",
+    "--case-studies",
     "-cs",
     type=create_multi_case_study_choice(),
     default='all',
