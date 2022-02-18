@@ -136,7 +136,9 @@ class TestDriverCaseStudy(unittest.TestCase):
         save_config()
         load_paper_config()
 
-        result = runner.invoke(driver_casestudy.main, ['cleanup', 'error'])
+        result = runner.invoke(
+            driver_casestudy.main, ['cleanup', 'all', '--error']
+        )
         self.assertEqual(0, result.exit_code, result.exception)
         self.assertFalse(
             Path(
