@@ -1,8 +1,10 @@
 import typing as tp
 
+import numpy as np
 import pandas as pd
 from benchbuild.utils.cmd import git
 from pylatex import Document, Package
+from scipy.stats import gmean
 from tabulate import tabulate
 
 from varats.data.reports.incremental_reports import (
@@ -137,6 +139,18 @@ class PhasarGlobalsDataComparision(Table):
                 df[("typestate", "WPA")], df[("typestate", "INC")]
             )
 
+            df[("total", "WPA")] = gmean([
+                df[("taint", "WPA")], df[("lca", "WPA")],
+                df[("typestate", "WPA")]
+            ])
+            df[("total", "INC")] = gmean([
+                df[("taint", "INC")], df[("lca", "INC")],
+                df[("typestate", "INC")]
+            ])
+            df[("total", "delta")] = _round_and_format_delta(
+                df[("total", "WPA")], df[("total", "INC")]
+            )
+
             cs_data.append(df)
 
         df = pd.concat(cs_data)
@@ -148,6 +162,8 @@ class PhasarGlobalsDataComparision(Table):
           ] = df[('lca', 'delta')].apply(_color_and_format_delta_cell)
         df[('typestate', 'delta')
           ] = df[('typestate', 'delta')].apply(_color_and_format_delta_cell)
+        df[('total', 'delta')
+          ] = df[('total', 'delta')].apply(_color_and_format_delta_cell)
 
         # Do final formating of column names
         df.rename(
@@ -155,6 +171,7 @@ class PhasarGlobalsDataComparision(Table):
                 "taint": "Taint",
                 "lca": "LCA",
                 "typestate": "Typestate",
+                "total": "Total",
                 "WPA": "\\multicolumn{1}{c}{WPA}",
                 "INC": "\\multicolumn{1}{c}{INC}",
                 "delta": "\\multicolumn{1}{c}{$\\Delta$}"
@@ -170,7 +187,7 @@ class PhasarGlobalsDataComparision(Table):
             table = df.to_latex(
                 #index=True,
                 escape=False,
-                column_format="lccc|ccc|ccc",
+                column_format="lccc|ccc|ccc|ccc",
                 # bold_rows=True,
                 multicolumn_format="c",
                 multicolumn=True,
