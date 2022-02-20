@@ -278,8 +278,8 @@ def _build_in_container(
         install_prefix.mkdir(parents=True)
 
     varats_root = Path(vara_cfg()["config_file"].value).parent
-    source_mount = str(tool.source_location().relative_to(varats_root))
-    install_mount = str(install_prefix.relative_to(varats_root))
+    source_mount = 'tools_src/'
+    install_mount = 'tools/'
 
     click.echo("Preparing container image.")
     create_dev_image(image_base, tool)
