@@ -16,7 +16,7 @@ For ubuntu:
 
 .. code-block:: console
 
-    sudo apt install python3-dev python3-tk python3-psutil psutils ninja-build python3-pip autoconf cmake ruby curl time libyaml-dev
+    sudo apt install python3-dev python3-tk python3-psutil psutils ninja-build python3-pip autoconf cmake ruby curl time libyaml-dev git
     sudo apt install python3-venv # If you want to install VaRA-TS in a python virtualenv
 
 For arch:
@@ -25,27 +25,32 @@ For arch:
 
     sudo pacman -Syu --needed python tk python-psutil psutils ninja python-pip python-statsmodels autoconf cmake ruby curl time libyaml python-coverage
 
-Get the source
-**************
-
-First you will need to clone the VaRA Tool Suite repository.
+For fedora:
 
 .. code-block:: console
 
-    export VARA_ROOT="$HOME/vara" # or something else
-    cd "$VARA_ROOT"
-    git clone git@github.com:se-passau/VaRA-Tool-Suite.git
-    cd VaRA-Tool-Suite
+    sudo dnf install python3-devel python3-tkinter python3-psutil psutils ninja-build python3-pip autoconf cmake ruby curl time libyaml-devel gcc-c++ libgit2-devel gcc-gfortran openblas-devel
 
+Install to varats with pip
+**************************
 
-Install to python user-directory (easier)
-*****************************************
-
-The simplest way to install VaRA-TS is by using pip.
+Then, the simplest way to install VaRA-TS is by using pip.
 
 .. code-block:: console
 
     pip3 install varats
+
+
+Making an editable install from source to python user-directory (easier)
+************************************************************************
+
+First, you need to clone the VaRA-Tool-Suite repository.
+
+.. code-block:: console
+
+    git clone git@github.com:se-passau/VaRA-Tool-Suite.git
+    cd VaRA-Tool-Suite
+
 
 To install VaRA-TS from the repository into the user directory use the
 following command.  The same command can be used to update an existing
@@ -61,7 +66,7 @@ installation (if necessary).
     # (if you want to contribute to VaRA/VaRA-TS):
     python3 -m pip install -r requirements.txt
 
-This initializes `VaRA-TS` and installs the `vara-graphview` tool to visualize VaRA results.
+This initializes `VaRA-TS` and installs a collection of helpful :ref:`tools <Tools Overview>`, e.g., to produce and visualize VaRA results.
 
 Install to python virtualenv (advanced)
 ***************************************
@@ -94,9 +99,23 @@ Install VaRA
 
 Required system dependencies for building VaRA.
 
+For ubuntu:
+
 .. code-block:: console
 
-    sudo apt install libsqlite3-dev libcurl4-openssl-dev libboost-all-dev libpapi-dev googletest libxml2-dev
+    sudo apt install libsqlite3-dev libcurl4-openssl-dev libboost-all-dev libpapi-dev googletest libxml2-dev libssl-dev
+
+For arch:
+
+.. code-block:: console
+
+    sudo pacman -Syu --needed sqlite3 curl boost papi gtest libxml2
+
+For fedora:
+
+.. code-block:: console
+
+    sudo dnf install libsqlite3x-devel libcurl-devel boost-devel papi-devel llvm-googletest libxml2-devel clang
 
 The following example shows how to setup VaRA via command line.
 
@@ -104,8 +123,8 @@ The following example shows how to setup VaRA via command line.
 
     mkdir $VARA_ROOT
     cd $VARA_ROOT
-    vara-buildsetup vara -i
-    vara-buildsetup vara -b
+    vara-buildsetup init vara
+    vara-buildsetup build vara
 
 Update VaRA
 ***********
@@ -114,8 +133,8 @@ Updating VaRA to a new version can also be done with `vara-buildsetup`.
 
 .. code-block:: console
 
-    vara-buildsetup vara -u
-    vara-buildsetup vara -b
+    vara-buildsetup update vara
+    vara-buildsetup build vara
 
 Upgrading VaRA
 **************
@@ -124,7 +143,7 @@ To upgrade VaRA to a new release, for example, `release_70`, use:
 
 .. code-block:: console
 
-    vara-buildsetup vara -u --version 110
+    vara-buildsetup update vara --version 110
 
 Debugging
 ---------

@@ -10,6 +10,8 @@ from varats.base.configuration import Configuration, ConfigurationImpl
 class TestCommandlineOptionSwitch(unittest.TestCase):
     """Test if CommandlineOptionSwitch is working."""
 
+    test_config: ConfigurationImpl
+
     @classmethod
     def setUpClass(cls):
         """Setup test Configuration."""
@@ -61,6 +63,8 @@ class TestCommandlineOptionSwitch(unittest.TestCase):
 class TestCommandlineOptionFormat(unittest.TestCase):
     """Test if CommandlineOptionFormat is working."""
 
+    test_config: ConfigurationImpl
+
     @classmethod
     def setUpClass(cls):
         """Setup test Configuration."""
@@ -90,7 +94,7 @@ class TestCommandlineOptionFormat(unittest.TestCase):
 
         def dont_enable_if_foo_is_true(config: Configuration) -> bool:
             maybe_value = config.get_config_value("foo")
-            if maybe_value is not None and bool(maybe_value.value):
+            if maybe_value is not None and bool(maybe_value):
                 return False
 
             return True
@@ -103,6 +107,8 @@ class TestCommandlineOptionFormat(unittest.TestCase):
 
 class TestCommandlineOptionGroup(unittest.TestCase):
     """Test if CommandlineOptionGroup is working."""
+
+    test_config: ConfigurationImpl
 
     @classmethod
     def setUpClass(cls):

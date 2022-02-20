@@ -65,11 +65,15 @@ class BenchBuildConfig(unittest.TestCase):
         self.check_all_files_in_config_list(
             "varats.projects.cpp_projects", loaded_plugins, excluded_projects
         )
+        self.check_all_files_in_config_list(
+            "varats.projects.perf_tests", loaded_plugins, excluded_projects
+        )
 
     @run_in_test_environment()
     def test_if_experiments_were_added(self):
         """Test if all projects were added to the benchbuild config."""
         excluded_experiments = [
+            "varats.experiments.discover_experiments",
             "varats.experiments.vara.region_instrumentation",
             "varats.experiments.vara.commit_annotation_report",
             "varats.experiments.vara.blame_experiment"
