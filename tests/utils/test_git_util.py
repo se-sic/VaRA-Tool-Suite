@@ -127,7 +127,7 @@ class TestGitInteractionHelpers(unittest.TestCase):
             brotli_commits_after[0].hash,
             "c66e4e3e4fc3ba36ca36a43eee3b704f7b989c60"
         )
-        # olderst commit should be
+        # oldest commit should be
         self.assertEqual(
             brotli_commits_after[-1].hash,
             "8f30907d0f2ef354c2b31bdee340c2b11dda0fb0"
@@ -146,7 +146,7 @@ class TestGitInteractionHelpers(unittest.TestCase):
             brotli_commits_after[-1].hash,
             "4969984a95534a508f93b38c74d150e86ef333f4"
         )
-        # second olderst commit should be
+        # second oldest commit should be
         self.assertEqual(
             brotli_commits_after[-2].hash,
             "0e8afdc968f3b7c891379e558b8dcaf42d93703b"
