@@ -12,6 +12,7 @@ import numpy
 import pygit2
 from benchbuild.utils.cmd import git, grep
 from benchbuild.utils.revision_ranges import RevisionRange
+from plumbum import local
 from plumbum import local, TF, RETCODE
 
 from varats.project.project_util import (
