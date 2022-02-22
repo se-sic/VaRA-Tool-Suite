@@ -20,6 +20,7 @@ from varats.data.reports.blame_interaction_graph import (
 )
 from varats.data.reports.blame_report import BlameReport
 from varats.mapping.commit_map import get_commit_map
+from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
@@ -99,10 +100,11 @@ class CommitInteractionGraphChordPlot(Plot, plot_name='cig_chord_plot'):
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        project_name = self.plot_kwargs["project"]
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        project_name = case_study.project_name
         commit_map = get_commit_map(project_name)
 
-        revision_str = self.plot_kwargs["revision"]
+        revision_str: str = self.plot_kwargs["revision"]
         revision = commit_map.convert_to_full_or_warn(
             ShortCommitHash(revision_str)
         )
@@ -195,10 +197,11 @@ class CommitInteractionGraphArcPlot(Plot, plot_name='cig_arc_plot'):
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        project_name = self.plot_kwargs["project"]
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        project_name = case_study.project_name
         commit_map = get_commit_map(project_name)
 
-        revision_str = self.plot_kwargs["revision"]
+        revision_str: str = self.plot_kwargs["revision"]
         revision = commit_map.convert_to_full_or_warn(
             ShortCommitHash(revision_str)
         )

@@ -7,6 +7,7 @@ chord-diagram/
 import sys
 import typing as tp
 from collections import defaultdict
+from itertools import accumulate
 
 import numpy as np
 import numpy.typing as npt
@@ -38,43 +39,31 @@ def _ribbon_control_points(
 
 
 def _angular_to_cartesian(angular: npt.ArrayLike) -> FloatArray:
+    """Convert angular coordinates to cartesian."""
     angular = np.asarray(angular)
     return np.array([
         angular[0] * np.cos(angular[1]), angular[0] * np.sin(angular[1])
     ])
 
 
-def _get_b1(point0: FloatArray, point2: FloatArray) -> FloatArray:
+def _make_equilateral_triangle(
+    point0: FloatArray, point2: FloatArray
+) -> FloatArray:
     """Given two points p0 and p2, finds a point p1 such that p0p1p2 forms an
     equilateral triangle."""
     if len(point0) != 2 and len(point2) != 2:
         raise ValueError('p0 and p2 must have exactly 2 elements.')
-    point1 = 0.5 * (point0 + point2) + 0.5 * np.asarray([
-        0, 1.0 * np.sign(point2[0] - point0[0])
-    ]) * np.sqrt(3) * np.linalg.norm(point2 - point0)
+    p0p2 = point2 - point0
+    point1 = 0.5 * (point0 + point2) + 0.5 * np.asarray(
+        [-p0p2[1], p0p2[0]]
+    ) * np.sqrt(3) * np.linalg.norm(p0p2)
     return np.asarray(point1)
-
-
-def _dim_plus_1(points: tp.List[FloatArray], weights: FloatArray) -> FloatArray:
-    """Add weights by lifting the points in b to 3D points."""
-    if len(points) != len(weights):
-        raise ValueError(
-            "The number of weights must be equal to the number of points."
-        )
-
-    lifted_points = np.array([
-        np.append(point, weights[i])  # type: ignore
-        for (i, point) in enumerate(points)
-    ])
-    lifted_points[1, :2] *= weights[1]
-    return lifted_points
 
 
 def _make_bezier_curve(control_points: FloatArray,
                        num_points: int) -> tp.List[FloatArray]:
     """Evaluate nr equally spaced points on a bezier curve defined by the given
     control points."""
-    control_points = np.asarray(control_points)
     num_control_points = control_points.shape[0]
     num_points = max(0, num_points)
     distances = np.linspace(0, 1, num_points)
@@ -94,32 +83,36 @@ def _make_bezier_curve(control_points: FloatArray,
     return points
 
 
-def _make_arc(point0: FloatArray, point2: FloatArray,
+def _make_arc(point_a: FloatArray, point_b: FloatArray,
               num_points: int) -> tp.List[FloatArray]:
     """
     Make an arc (half-circle) with the given end points.
 
     Args:
-        point0: left end-point
-        point2: right end-point
+        point_a: left end-point
+        point_b: right end-point
         num_points: number of points to evaluate on the arc
 
     Returns:
         a list of points on the arc
     """
-    point1 = _get_b1(point0, point2)
-    control_points = _dim_plus_1([point0, point1, point2],
-                                 np.asarray([1, 0.5, 1]))
-    discrete_curve = _make_bezier_curve(control_points, num_points)
-    return [p[:2] / p[2] for p in discrete_curve]
+    center = (point_a + point_b) / 2
+    point = point_a - center
+    theta = np.pi / (num_points - 1)
+    rot_mat = np.array([[np.cos(theta), -np.sin(theta)],
+                        [np.sin(theta), np.cos(theta)]])
+    points = list(
+        accumulate(
+            range(num_points - 1),
+            lambda a, b: np.dot(rot_mat, a),
+            initial=point
+        )
+    )
+    return [center + p for p in points]
 
 
 def _modulo_ab(x: float, a: float, b: float) -> float:
-    """
-    Map a real number onto the unit circle identified by the interval [a, b)
-
-    with b - a = 2 * PI.
-    """
+    """Map a real number onto the interval [a, b)."""
     if a >= b:
         raise ValueError("Incorrect interval ends.")
     y = (x - a) % (b - a)
@@ -318,6 +311,15 @@ def get_color_at(colorscale: ColorScaleTy, offset: float) -> str:
 
 
 def add_alpha_channel(rgb_color: str, alpha: float) -> str:
+    """
+    Add an alpha channel to a rgb color string.
+
+    Test:
+    >>> add_alpha_channel("rgb(0.0 ,0.0 ,0.0)", 0.0)
+    'rgba(0.0, 0.0, 0.0, 0.0)'
+    >>> add_alpha_channel("rgb(0.0 ,0.0 ,0.0)", 0.7)
+    'rgba(0.0, 0.0, 0.0, 0.7)'
+    """
     red, green, blue = colors.unlabel_rgb(rgb_color)
     return f"rgba({red}, {green}, {blue}, {alpha})"
 
