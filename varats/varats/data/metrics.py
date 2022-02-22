@@ -1,4 +1,6 @@
 """This module contains functions that calculate various metrics on data."""
+import typing as tp
+
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -59,3 +61,37 @@ def normalized_gini_coefficient(distribution: pd.Series) -> float:
         return gini_coefficient(distribution)
 
     return gini_coefficient(distribution) * (n / (n - 1.0))
+
+
+def apply_tukeys_fence(
+    data: pd.DataFrame, column: str, k: float
+) -> pd.DataFrame:
+    """
+    Removes rows which are outliers in the given column using Tukey's fence.
+
+    Tukey's fence defines all values to be outliers that are outside the range
+    `[q1 - k * (q3 - q1), q3 + k * (q3 - q1)]`, i.e., values that are further
+    than `k` times the inter-quartile range away from the first or third
+    quartile.
+
+    Common values for ``k``:
+    - 2.2 (“Fine-Tuning Some Resistant Rules for Outlier Labeling”
+           Hoaglin and Iglewicz (1987))
+    - 1.5 (outliers, “Exploratory Data Analysis”, John W. Tukey (1977))
+    - 3.0 (far out outliers, “Exploratory Data Analysis”, John W. Tukey (1977))
+
+    Args:
+        data: data to remove outliers from
+        column: column to use for outlier detection
+        k: multiplicative factor on the inter-quartile-range
+
+    Returns:
+        the data without outliers
+    """
+    quartile_1 = data[column].quantile(0.25)
+    quartile_3 = data[column].quantile(0.75)
+    iqr = quartile_3 - quartile_1
+    return tp.cast(
+        pd.DataFrame, data.loc[(data[column] >= quartile_1 - k * iqr) &
+                               (data[column] <= quartile_3 + k * iqr)]
+    )
