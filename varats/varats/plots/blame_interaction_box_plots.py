@@ -201,7 +201,7 @@ class AuthorBlameVsFileDegreesViolinPlot(
         raise NotImplementedError
 
 
-class AuthorBlameVsFileDegreesViolinViolinPlotGenerator(
+class AuthorBlameVsFileDegreesViolinPlotGenerator(
     PlotGenerator, generator_name="aig-file-vs-blame-authors-box", options=[]
 ):
     """

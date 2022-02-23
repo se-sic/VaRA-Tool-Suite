@@ -41,6 +41,7 @@ def multivariate_grid(
             if color is not None:
                 kwargs["c"] = color
             kwargs["alpha"] = scatter_alpha
+            kwargs["s"] = 75
             ax = sns.scatterplot(*args, **kwargs)
             ax.xaxis.label.set_size(20)
             ax.yaxis.label.set_size(20)
@@ -70,8 +71,12 @@ def multivariate_grid(
         grid.plot_joint(
             colored_scatter(df_group[x_col], df_group[y_col], color)
         )
-        sns.kdeplot(x=df_group[x_col].values, ax=grid.ax_marg_x, color=color)
-        sns.kdeplot(y=df_group[y_col].values, ax=grid.ax_marg_y, color=color)
+        sns.kdeplot(
+            x=df_group[x_col].values, ax=grid.ax_marg_x, color=color, fill=True
+        )
+        sns.kdeplot(
+            y=df_group[y_col].values, ax=grid.ax_marg_y, color=color, fill=True
+        )
     if global_kde:
         sns.kdeplot(x=data[x_col].values, ax=grid.ax_marg_x, color='grey')
         sns.kdeplot(y=data[y_col].values, ax=grid.ax_marg_y, color='grey')

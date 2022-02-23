@@ -11,11 +11,16 @@ from varats.data.reports.blame_interaction_graph import (
     AIGNodeAttrs,
 )
 from varats.data.reports.blame_report import BlameReport
+from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plots import PlotConfig, PlotGenerator, REQUIRE_CASE_STUDY
+from varats.plot.plots import (
+    PlotConfig,
+    PlotGenerator,
+    REQUIRE_MULTI_CASE_STUDY,
+)
 from varats.plots.scatter_plot_utils import multivariate_grid
 from varats.project.project_util import get_local_project_gits
 from varats.utils.git_util import (
@@ -101,12 +106,18 @@ class CentralCodeScatterPlot(Plot, plot_name='central_code_scatter'):
 class CentralCodeScatterPlotGenerator(
     PlotGenerator,
     generator_name="central-code-scatter",
-    options=[REQUIRE_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
-    """Generates scatter plot comparing node degree with commit size."""
+    """Generates scatter plots comparing node degree with commit size."""
 
     def generate(self) -> tp.List[Plot]:
-        return [CentralCodeScatterPlot(self.plot_config, **self.plot_kwargs)]
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
+        return [
+            CentralCodeScatterPlot(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
+        ]
 
 
 class AuthorInteractionScatterPlot(
@@ -122,7 +133,7 @@ class AuthorInteractionScatterPlot(
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        case_study = self.plot_kwargs["plot_case_study"]
+        case_study = self.plot_kwargs["case_study"]
 
         project_name = case_study.project_name
         revision = newest_processed_revision_for_case_study(
@@ -161,12 +172,16 @@ class AuthorInteractionScatterPlot(
 class AuthorInteractionScatterPlotGenerator(
     PlotGenerator,
     generator_name="author-interaction-scatter",
-    options=[REQUIRE_CASE_STUDY]
+    options=[REQUIRE_MULTI_CASE_STUDY]
 ):
-    """Generates scatter plot comparing author node degree with number of
+    """Generates scatter plots comparing author node degree with number of
     commits by that author."""
 
     def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
         return [
-            AuthorInteractionScatterPlot(self.plot_config, **self.plot_kwargs)
+            AuthorInteractionScatterPlot(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
         ]
