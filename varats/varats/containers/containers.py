@@ -222,7 +222,7 @@ def _add_varats_layers(image_context: BaseImageCreationContext) -> None:
             *pip_args,
             str(tgt_dir / 'varats-core'),
             str(tgt_dir / 'varats'),
-            mount=f'type=bind,src={src_dir},target={tgt_dir}',
+            mount=f'type=bind,src={src_dir},target={tgt_dir},rw',
             runtime=crun
         )
 
