@@ -572,6 +572,11 @@ GIT_DIFF_MATCHER = re.compile(
 )
 
 
+def update_repo(git_path: Path):
+    with local.cwd(git_path):
+        git('pull')
+
+
 def __calc_code_churn_range_impl(
     repo_path: str,
     churn_config: ChurnConfig,

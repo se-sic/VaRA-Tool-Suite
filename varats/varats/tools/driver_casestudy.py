@@ -52,7 +52,7 @@ from varats.ts_utils.click_param_types import (
     TypedChoice,
     EnumChoice,
 )
-from varats.utils.git_util import ShortCommitHash, FullCommitHash
+from varats.utils.git_util import ShortCommitHash, FullCommitHash, update_repo
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
@@ -156,10 +156,14 @@ def __casestudy_status(
     is_flag=True,
     help="Ignore revisions that are marked as blocked."
 )
+@click.option(
+    "--no-update", is_flag=True, help="Project repository will not be updated."
+)
 @click.pass_context
 def __casestudy_gen(
     ctx: click.Context, project: str, override: bool, version: int,
-    ignore_blocked: bool, merge_stage: tp.Optional[str], new_stage: bool
+    ignore_blocked: bool, merge_stage: tp.Optional[str], new_stage: bool,
+    no_update: bool
 ) -> None:
     """Generate or extend a CaseStudy Sub commands can be chained to for example
     sample revisions but also add the latest."""
@@ -177,8 +181,10 @@ def __casestudy_gen(
     ctx.obj['path'] = Path(
         vara_cfg()["paper_config"]["folder"].value
     ) / (paper_config + f"/{project}_{version}.case_study")
-    click.echo(ctx.obj['path'])
     ctx.obj['git_path'] = get_local_project_git_path(project)
+    if not no_update:
+        update_repo(ctx.obj['git_path'])
+
     if override or not ctx.obj['path'].exists():
         case_study = CaseStudy(ctx.obj['project'], version)
         if merge_stage:
