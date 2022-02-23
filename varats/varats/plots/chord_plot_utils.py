@@ -99,14 +99,15 @@ def _make_arc(point_a: FloatArray, point_b: FloatArray,
     center = (point_a + point_b) / 2
     point = point_a - center
     theta = np.pi / (num_points - 1)
-    rot_mat = np.array([[np.cos(theta), -np.sin(theta)],
-                        [np.sin(theta), np.cos(theta)]])
-    points = list(
-        accumulate(
-            range(num_points - 1),
-            lambda a, b: np.dot(rot_mat, a),
-            initial=point
-        )
+    rot_mat: FloatArray = np.array([[np.cos(theta), -np.sin(theta)],
+                                    [np.sin(theta),
+                                     np.cos(theta)]])
+
+    def rotation(vector: FloatArray, _: FloatArray) -> FloatArray:
+        return tp.cast(FloatArray, np.dot(rot_mat, vector))
+
+    points: tp.List[FloatArray] = list(
+        accumulate([point for _ in range(num_points)], rotation)
     )
     return [center + p for p in points]
 
