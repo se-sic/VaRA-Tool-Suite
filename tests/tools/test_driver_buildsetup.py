@@ -51,7 +51,7 @@ class TestDriverBuildsetup(unittest.TestCase):
                 "vara",
                 "--build-type=DEV",
                 "--source-location=/varats_root/tools_src",
-                "--install-prefix=/varats_root/tools/VaRA_DEBIAN_10",
+                "--install-prefix=/varats_root/tools",
                 "--build-folder-suffix=DEBIAN_10",
             ]
         )
