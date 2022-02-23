@@ -135,10 +135,8 @@ class TestDriverCaseStudy(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "test_cleanup_error"
         save_config()
         load_paper_config()
-
         result = runner.invoke(
-            driver_casestudy.main, ['cleanup', 'all', '--error'],
-            catch_exceptions=False
+            driver_casestudy.main, ['cleanup', 'all', '--error']
         )
         self.assertEqual(0, result.exit_code, result.stdout)
         self.assertFalse(
