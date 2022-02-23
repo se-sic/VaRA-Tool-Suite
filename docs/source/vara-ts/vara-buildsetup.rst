@@ -25,6 +25,11 @@ For arch:
 
     sudo pacman -Syu --needed python tk python-psutil psutils ninja python-pip python-statsmodels autoconf cmake ruby curl time libyaml python-coverage
 
+For fedora:
+
+.. code-block:: console
+
+    sudo dnf install python3-devel python3-tkinter python3-psutil psutils ninja-build python3-pip autoconf cmake ruby curl time libyaml-devel gcc-c++ libgit2-devel gcc-gfortran openblas-devel
 
 Install to varats with pip
 **************************
@@ -94,9 +99,23 @@ Install VaRA
 
 Required system dependencies for building VaRA.
 
+For ubuntu:
+
 .. code-block:: console
 
     sudo apt install libsqlite3-dev libcurl4-openssl-dev libboost-all-dev libpapi-dev googletest libxml2-dev libssl-dev
+
+For arch:
+
+.. code-block:: console
+
+    sudo pacman -Syu --needed sqlite3 curl boost papi gtest libxml2
+
+For fedora:
+
+.. code-block:: console
+
+    sudo dnf install libsqlite3x-devel libcurl-devel boost-devel papi-devel llvm-googletest libxml2-devel clang
 
 The following example shows how to setup VaRA via command line.
 

@@ -43,6 +43,33 @@ class TestDriverCaseStudy(unittest.TestCase):
         self.assertEqual(len(case_study.revisions), 10)
 
     @run_in_test_environment()
+    def test_vara_cs_gen_sample_only_code(self):
+        """Check if vara-cs gen select_sample with --only-code-commits only
+        selects revisions that contain code."""
+        runner = CliRunner()
+        Path(vara_cfg()["paper_config"]["folder"].value + "/" +
+             "test_gen").mkdir()
+        vara_cfg()["paper_config"]["current_config"] = "test_gen"
+        result = runner.invoke(
+            driver_casestudy.main, [
+                'gen', '-p', 'brotli', 'select_sample', '--num-rev', '10',
+                '--start', '68f1b90ad0d204907beb58304d0bd06391001a4d', '--end',
+                'f4153a09f87cbb9c826d8fc12c74642bb2d879ea',
+                '--only-code-commits', 'UniformSamplingMethod'
+            ]
+        )
+
+        self.assertEqual(0, result.exit_code, result.exception)
+        case_study_path = Path(
+            vara_cfg()["paper_config"]["folder"].value +
+            "/test_gen/brotli_0.case_study"
+        )
+        self.assertTrue(case_study_path.exists())
+
+        case_study = load_case_study_from_file(case_study_path)
+        self.assertEqual(len(case_study.revisions), 5)
+
+    @run_in_test_environment()
     def test_vara_cs_gen_latest(self):
         """Test for vara-cs gen select_latest."""
         runner = CliRunner()
