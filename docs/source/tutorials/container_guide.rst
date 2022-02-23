@@ -31,7 +31,7 @@ More details about the inner workings of the container support in VaRA-TS can be
 
        vara-container build
 
-   You can use the flag ``-i <base_image>`` to only build a specific base image.
+   You can use the flag ``-i <base_image>`` to only build a specific base image and should add ``--export`` if you want to use the image with slurm.
 
 3. Running the experiments
 
