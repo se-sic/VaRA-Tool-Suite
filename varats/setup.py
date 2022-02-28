@@ -55,6 +55,7 @@ setup(
     entry_points={
         "gui_scripts": [
             'vara-graphview = varats.tools.driver_graph_view:main',
+            'vara-buildsetup-gui = varats.tools.driver_build_setup_gui:main',
         ],
         "console_scripts": [
             'vara-art = varats.tools.driver_artefacts:main',
@@ -64,7 +65,7 @@ setup(
             'vara-cs = varats.tools.driver_casestudy:main',
             'vara-develop = varats.tools.driver_develop:main',
             'vd = varats.tools.driver_develop:main',
-            'vara-gen-bbconfig = '
+            'vara-gen-bbconfig = varats.tools.driver_gen_benchbuild_config:main',
             'varats.tools.driver_gen_benchbuild_config:main',
             'vara-pc = varats.tools.driver_paper_config:main',
             'vara-plot = varats.tools.driver_plot:main',

@@ -14,7 +14,6 @@ from varats.containers.containers import (
     BaseImageCreationContext,
     create_dev_image,
 )
-# from varats.gui.buildsetup_window import BuildSetup
 from varats.tools.research_tools.research_tool import (
     ResearchTool,
     SpecificCodeBase,
@@ -29,26 +28,6 @@ from varats.tools.tool_util import (
 from varats.ts_utils.cli_util import initialize_cli_tool, cli_yn_choice
 from varats.ts_utils.click_param_types import EnumChoice
 from varats.utils.settings import save_config, vara_cfg, bb_cfg
-
-# from PyQt5.QtCore import Qt
-# from PyQt5.QtWidgets import QApplication
-
-# TODO: remove or move to other module
-# class VaRATSSetup:
-#     """Start VaRA-TS grafical user interface for setting up VaRA."""
-#
-#     def __init__(self) -> None:
-#         if hasattr(Qt, 'AA_EnableHighDpiScaling'):
-#             QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-#         if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
-#             QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
-#
-#         self.app = QApplication(sys.argv)
-#         self.main_window = BuildSetup()
-#
-#     def main(self) -> None:
-#         """Start VaRA setup GUI."""
-#         sys.exit(self.app.exec_())
 
 
 def update_term(text: str, enable_inline: bool = False) -> None:
@@ -277,7 +256,6 @@ def _build_in_container(
     if not install_prefix.exists():
         install_prefix.mkdir(parents=True)
 
-    varats_root = Path(vara_cfg()["config_file"].value).parent
     source_mount = 'tools_src/'
     install_mount = 'tools/'
 
