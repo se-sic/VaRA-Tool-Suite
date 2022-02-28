@@ -155,7 +155,10 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         """Upgrade the research tool to a newer version."""
         self.code_base.pull()
 
-    def build(self, build_type: BuildType, install_location: Path) -> None:
+    def build(
+        self, build_type: BuildType, install_location: Path,
+        build_folder_suffix: tp.Optional[str]
+    ) -> None:
         """
         Build/Compile phasar in the specified ``build_type``. This method leaves
         phasar in a finished state, i.e., being ready to be installed.
@@ -168,7 +171,7 @@ class Phasar(ResearchTool[PhasarCodeBase]):
             "phasar"
         ).path / "build"
 
-        build_path /= build_type.build_folder()
+        build_path /= build_type.build_folder(build_folder_suffix)
 
         # Setup configured build folder
         print(" - Setting up build folder.")
@@ -221,11 +224,22 @@ class Phasar(ResearchTool[PhasarCodeBase]):
 
         return status_ok
 
-    def add_container_layers(
+    def container_add_build_layer(
         self, image_context: 'containers.BaseImageCreationContext'
     ) -> None:
         """
-        Add the layers required for this research tool to the given container.
+        Add layers for building this research tool to the given container.
+
+        Args:
+            image_context: the base image creation context
+        """
+        raise NotImplementedError
+
+    def container_install_tool(
+        self, image_context: 'containers.BaseImageCreationContext'
+    ) -> None:
+        """
+        Add layers for installing this research tool to the given container.
 
         Args:
             image_context: the base image creation context
@@ -236,15 +250,6 @@ class Phasar(ResearchTool[PhasarCodeBase]):
             )
 
         container_phasar_dir = image_context.varats_root / "tools/phasar"
-        if self.get_dependencies().has_dependencies_for_distro(
-            image_context.distro
-        ):
-            image_context.layers.run(
-                *(
-                    self.get_dependencies().
-                    get_install_command(image_context.distro).split(" ")
-                )
-            )
         image_context.layers.copy_([str(self.install_location())],
                                    str(container_phasar_dir))
         image_context.append_to_env("PATH", [str(container_phasar_dir / 'bin')])
