@@ -50,6 +50,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         Path(vara_cfg()["paper_config"]["folder"].value + "/" +
              "test_gen").mkdir()
         vara_cfg()["paper_config"]["current_config"] = "test_gen"
+        from varats.tools import driver_casestudy
         result = runner.invoke(
             driver_casestudy.main, [
                 'gen', '-p', 'brotli', 'select_sample', '--num-rev', '10',
@@ -77,6 +78,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         Path(vara_cfg()["paper_config"]["folder"].value + "/" +
              "test_gen").mkdir()
         vara_cfg()["paper_config"]["current_config"] = "test_gen"
+        from varats.tools import driver_casestudy
         result = runner.invoke(
             driver_casestudy.main, [
                 'gen', '-p', 'brotli', 'select_sample', '--num-rev', '6',
