@@ -52,7 +52,12 @@ from varats.ts_utils.click_param_types import (
     TypedChoice,
     EnumChoice,
 )
-from varats.utils.git_util import ShortCommitHash, FullCommitHash
+from varats.utils.git_util import (
+    is_commit_hash,
+    get_commits_before_timestamp,
+    ShortCommitHash,
+    FullCommitHash,
+)
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
@@ -298,6 +303,14 @@ def __gen_sample(
         .get_sampling_method_type(
         distribution
     )()
+
+    project_repo_path = get_local_project_git_path(ctx.obj['project'])
+    if end != "HEAD" and not is_commit_hash(end):
+        end = get_commits_before_timestamp(end, project_repo_path)[0].hash
+
+    if start is not None and not is_commit_hash(start):
+        start = get_commits_before_timestamp(start, project_repo_path)[0].hash
+
     cmap = create_lazy_commit_map_loader(ctx.obj['project'], None, end, start)()
     extend_with_distrib_sampling(
         ctx.obj['case_study'], cmap, sampling_method, ctx.obj['merge_stage'],

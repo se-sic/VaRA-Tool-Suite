@@ -57,6 +57,7 @@ setup(
     entry_points={
         "gui_scripts": [
             'vara-graphview = varats.tools.driver_graph_view:main',
+            'vara-buildsetup-gui = varats.tools.driver_build_setup_gui:main',
         ],
         "console_scripts": [
             'vara-art = varats.tools.driver_artefacts:main',
