@@ -205,7 +205,11 @@ class TestDriverCaseStudy(unittest.TestCase):
         result = runner.invoke(
             driver_casestudy.main, ['cleanup', 'all', '--error']
         )
-        self.assertEqual(0, result.exit_code, result.stdout)
+        self.assertEqual(
+            0, result.exit_code,
+            result.stdout + vara_cfg()["paper_config"]["current_config"].value +
+            str(vara_cfg()["config_file"])
+        )
         self.assertFalse(
             Path(
                 vara_cfg()["result_dir"].value +
