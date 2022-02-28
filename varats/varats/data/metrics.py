@@ -75,10 +75,11 @@ def apply_tukeys_fence(
     quartile.
 
     Common values for ``k``:
-    - 2.2 (“Fine-Tuning Some Resistant Rules for Outlier Labeling”
-           Hoaglin and Iglewicz (1987))
-    - 1.5 (outliers, “Exploratory Data Analysis”, John W. Tukey (1977))
-    - 3.0 (far out outliers, “Exploratory Data Analysis”, John W. Tukey (1977))
+      - 2.2 (“Fine-Tuning Some Resistant Rules for Outlier Labeling”,
+             Hoaglin and Iglewicz (1987))
+      - 1.5 (outliers, “Exploratory Data Analysis”, John W. Tukey (1977))
+      - 3.0 (far out outliers, “Exploratory Data Analysis”,
+             John W. Tukey (1977))
 
     Args:
         data: data to remove outliers from
