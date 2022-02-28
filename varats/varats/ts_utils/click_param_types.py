@@ -103,8 +103,10 @@ def create_multi_case_study_choice() -> TypedMultiChoice[CaseStudy]:
     """
     try:
         paper_config = get_paper_config()
-    except ConfigurationLookupError:
-        empty_cs_dict: tp.Dict[str, tp.List[CaseStudy]] = {}
+    except ConfigurationLookupError as e:
+        empty_cs_dict: tp.Dict[str, tp.List[CaseStudy]] = {
+            e.__str__(): [CaseStudy('gravity', 1)]
+        }
         return TypedMultiChoice(empty_cs_dict)
     value_dict = {
         f"{cs.project_name}_{cs.version}": [cs]
