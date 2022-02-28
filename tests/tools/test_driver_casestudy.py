@@ -200,6 +200,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         runner = CliRunner()
         vara_cfg()["paper_config"]["current_config"] = "test_cleanup_error"
         save_config()
+        load_paper_config()
         paper_config = get_paper_config()
         from varats.tools import driver_casestudy
         result = runner.invoke(
