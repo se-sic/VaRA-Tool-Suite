@@ -65,7 +65,7 @@ setup(
             'vara-cs = varats.tools.driver_casestudy:main',
             'vara-develop = varats.tools.driver_develop:main',
             'vd = varats.tools.driver_develop:main',
-            'vara-gen-bbconfig = varats.tools.driver_gen_benchbuild_config:main',
+            'vara-gen-bbconfig = '
             'varats.tools.driver_gen_benchbuild_config:main',
             'vara-pc = varats.tools.driver_paper_config:main',
             'vara-plot = varats.tools.driver_plot:main',
