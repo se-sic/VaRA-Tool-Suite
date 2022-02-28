@@ -101,11 +101,10 @@ def create_multi_case_study_choice() -> TypedMultiChoice[CaseStudy]:
     Multiple case studies can be given as a comma separated list. The special
     value "all" selects all case studies in the current paper config.
     """
-    try:
-        paper_config = get_paper_config()
-    except ConfigurationLookupError:
-        empty_cs_dict: tp.Dict[str, tp.List[CaseStudy]] = {}
-        return TypedMultiChoice(empty_cs_dict)
+    paper_config = get_paper_config()
+    # except ConfigurationLookupError:
+    #     empty_cs_dict: tp.Dict[str, tp.List[CaseStudy]] = {}
+    #     return TypedMultiChoice(empty_cs_dict)
     value_dict = {
         f"{cs.project_name}_{cs.version}": [cs]
         for cs in paper_config.get_all_case_studies()
