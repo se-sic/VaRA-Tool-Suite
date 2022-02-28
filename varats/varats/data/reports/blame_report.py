@@ -141,7 +141,7 @@ class BlameResultFunctionEntry():
         """
         Name of the function.
 
-        The name is manged for C++ code, either with the itanium or windows
+        The name is mangled for C++ code, either with the itanium or windows
         mangling schema.
         """
         return self.__name
@@ -564,8 +564,8 @@ def gen_base_to_inter_commit_repo_pair_mapping(
 
             for interacting_c_repo_pair in interaction.interacting_commits:
                 if (
-                    interacting_c_repo_pair not in
-                    base_to_inter_mapping[base_commit_repo_pair]
+                    interacting_c_repo_pair
+                    not in base_to_inter_mapping[base_commit_repo_pair]
                 ):
                     base_to_inter_mapping[base_commit_repo_pair][
                         interacting_c_repo_pair] = 0
@@ -606,8 +606,8 @@ def generate_lib_dependent_degrees(
                 inter_hash_repo_name = inter_hash.repository_name
 
                 if (
-                    inter_hash_repo_name not in
-                    base_inter_lib_degree_amount_mapping[base_repo_name]
+                    inter_hash_repo_name
+                    not in base_inter_lib_degree_amount_mapping[base_repo_name]
                 ):
                     base_inter_lib_degree_amount_mapping[base_repo_name][
                         inter_hash_repo_name] = {}
@@ -619,8 +619,9 @@ def generate_lib_dependent_degrees(
 
             for repo_name, degree in tmp_degree_of_libs.items():
                 if (
-                    degree not in base_inter_lib_degree_amount_mapping[
-                        base_repo_name][repo_name]
+                    degree
+                    not in base_inter_lib_degree_amount_mapping[base_repo_name]
+                    [repo_name]
                 ):
                     base_inter_lib_degree_amount_mapping[base_repo_name][
                         repo_name][degree] = 0

@@ -9,13 +9,16 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.paper_mgmt.paper_config import (
+    PaperConfigSpecificGit,
+    project_filter_generator,
+)
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     get_tagged_commits,
-    wrap_paths_to_binaries,
     ProjectBinaryWrapper,
     BinaryType,
+    get_local_project_git_path,
     verify_binaries,
 )
 from varats.project.varats_project import VProject
@@ -23,7 +26,11 @@ from varats.provider.release.release_provider import (
     ReleaseProviderHook,
     ReleaseType,
 )
-from varats.utils.git_util import FullCommitHash, ShortCommitHash
+from varats.utils.git_util import (
+    FullCommitHash,
+    ShortCommitHash,
+    RevisionBinaryMap,
+)
 from varats.utils.settings import bb_cfg
 
 
@@ -43,13 +50,13 @@ class Gzip(VProject, ReleaseProviderHook):
                 "203e40cc4558a80998d05eb74b373a51e796ca8b", "Needs glibc < 2.28"
             )
         ])(
-            bb.source.Git(
+            PaperConfigSpecificGit(
+                project_name="gzip",
                 remote="https://github.com/vulder/gzip.git",
                 local="gzip",
                 refspec="origin/HEAD",
                 limit=None,
-                shallow=False,
-                version_filter=project_filter_generator("gzip")
+                shallow=False
             )
         ),
         bb.source.GitSubmodule(
@@ -69,9 +76,13 @@ class Gzip(VProject, ReleaseProviderHook):
 
     @staticmethod
     def binaries_for_revision(
-        revision: ShortCommitHash  # pylint: disable=W0613
+        revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        return wrap_paths_to_binaries([("gzip", BinaryType.EXECUTABLE)])
+        binary_map = RevisionBinaryMap(get_local_project_git_path(Gzip.NAME))
+
+        binary_map.specify_binary("gzip", BinaryType.EXECUTABLE)
+
+        return binary_map[revision]
 
     def run_tests(self) -> None:
         pass

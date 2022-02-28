@@ -21,7 +21,7 @@ from varats.plots.discover_plots import initialize_plots
 from varats.projects.discover_projects import initialize_projects
 from varats.tables.discover_tables import initialize_tables
 from varats.ts_utils.cli_util import initialize_cli_tool
-from varats.ts_utils.html_utils import (
+from varats.ts_utils.html_util import (
     CSS_IMAGE_MATRIX,
     CSS_COMMON,
     html_page,

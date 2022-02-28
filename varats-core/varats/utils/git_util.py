@@ -4,15 +4,20 @@ import os
 import re
 import typing as tp
 from enum import Enum
+from itertools import chain
 from pathlib import Path
 
 import pygit2
 from benchbuild.utils.cmd import git
+from benchbuild.utils.revision_ranges import RevisionRange
 from plumbum import local
+from plumbum.commands.modifiers import RETCODE
 
 from varats.project.project_util import (
     get_local_project_git,
     get_primary_project_source,
+    BinaryType,
+    ProjectBinaryWrapper,
 )
 
 if tp.TYPE_CHECKING:
@@ -116,6 +121,23 @@ def full_commit_hashes_sorted_by_time_id(
 # Git interaction helpers
 
 
+def is_commit_hash(value: str) -> bool:
+    """
+    Checks if a string is a valid git (sha1) hash.
+
+    Args:
+        value: to check
+    """
+    return re.search("^[a-fA-F0-9]{1,40}$", value) is not None
+
+
+def __get_git_path_arg(repo_folder: tp.Optional[Path] = None) -> tp.List[str]:
+    if repo_folder is None or repo_folder == Path(''):
+        return []
+
+    return ["-C", f"{repo_folder}"]
+
+
 def get_current_branch(repo_folder: tp.Optional[Path] = None) -> str:
     """
     Get the current branch of a repository, e.g., HEAD.
@@ -125,15 +147,36 @@ def get_current_branch(repo_folder: tp.Optional[Path] = None) -> str:
 
     Returns: branch name
     """
-    if repo_folder is None or repo_folder == Path(''):
-        return tp.cast(str, git("rev-parse", "--abbrev-ref", "HEAD").strip())
+    return tp.cast(
+        str,
+        git(
+            __get_git_path_arg(repo_folder), "rev-parse", "--abbrev-ref", "HEAD"
+        ).strip()
+    )
 
-    with local.cwd(repo_folder):
-        return tp.cast(str, git("rev-parse", "--abbrev-ref", "HEAD").strip())
+
+def get_initial_commit(repo_folder: tp.Optional[Path] = None) -> FullCommitHash:
+    """
+    Get the initial commit of a repository, i.e., the first commit made.
+
+    Args:
+        repo_folder: where the git repository is located
+
+    Returns: initial commit hash
+    """
+    return FullCommitHash(
+        git(
+            __get_git_path_arg(repo_folder), "rev-list", "--max-parents=0",
+            "HEAD"
+        ).strip()
+    )
 
 
 def get_all_revisions_between(
-    c_start: str, c_end: str, hash_type: tp.Type[CommitHashTy]
+    c_start: str,
+    c_end: str,
+    hash_type: tp.Type[CommitHashTy],
+    repo_folder: tp.Optional[Path] = None
 ) -> tp.List[CommitHashTy]:
     """
     Returns a list of all revisions between two commits c_start and c_end
@@ -145,15 +188,99 @@ def get_all_revisions_between(
         c_start: first commit of the range
         c_end: last commit of the range
         short: shorten revision hashes
+        repo_folder: where the git repository is located
     """
     result = [c_start]
     result.extend(
-        git(
-            "log", "--pretty=%H", "--ancestry-path",
-            "{}..{}".format(c_start, c_end)
-        ).strip().split()
+        reversed(
+            git(
+                __get_git_path_arg(repo_folder), "log", "--pretty=%H",
+                "--ancestry-path", f"{c_start}..{c_end}"
+            ).strip().split()
+        )
     )
     return list(map(hash_type, result))
+
+
+def get_commits_before_timestamp(
+    timestamp: str,
+    repo_folder: tp.Optional[Path] = None
+) -> tp.List[FullCommitHash]:
+    """
+    Get all commits before a specific timestamp (given as a git date format).
+
+    Note: for imprecise timestamps (e.g., only 2020), the day and month will
+    default to today.
+
+    Args:
+        timestamp: before which commits should be collected
+        repo_folder: where the git repository is located
+
+    Returns: list[last_commit_before_timestamp, ..., initial_commits]
+    """
+    return [
+        FullCommitHash(hash_val) for hash_val in git(
+            __get_git_path_arg(repo_folder), "rev-list",
+            f"--before={timestamp}", "HEAD"
+        ).split()
+    ]
+
+
+def get_commits_after_timestamp(
+    timestamp: str,
+    repo_folder: tp.Optional[Path] = None
+) -> tp.List[FullCommitHash]:
+    """
+    Get all commits after a specific timestamp (given as a git date format).
+
+    Note: for imprecise timestamps (e.g., only 2020), the day and month will
+    default to today.
+
+    Args:
+        repo_folder: where the git repository is located
+        timestamp: after which commits should be collected
+
+    Returns: list[newest_commit, ..., last_commit_after_timestamp]
+    """
+    return [
+        FullCommitHash(hash_val) for hash_val in git(
+            __get_git_path_arg(repo_folder), "rev-list", f"--after={timestamp}",
+            "HEAD"
+        ).split()
+    ]
+
+
+def contains_source_code(
+    commit: ShortCommitHash,
+    repo_folder: tp.Optional[Path] = None,
+    churn_config: tp.Optional['ChurnConfig'] = None
+) -> bool:
+    """
+    Check if a commit contains source code of any language specifyed with the
+    churn config.
+
+    Args:
+        commit: to check
+        repo_folder: of the commits repository
+        churn_config: to specify the files that should be considered
+
+    Returns: True, if source code of a language, specified in the churn
+        config, was found in the commit
+    """
+    if not churn_config:
+        churn_config = ChurnConfig.create_c_style_languages_config()
+
+    return_code = git[__get_git_path_arg(repo_folder), "diff", "--exit-code",
+                      "--quiet", f"{commit.hash}~", commit.hash, "--",
+                      churn_config.get_extensions_repr('*.')] & RETCODE
+
+    if return_code == 0:
+        return False
+
+    if return_code == 1:
+        return True
+
+    raise RuntimeError(f"git diff failed with retcode={return_code}")
 
 
 ################################################################################
@@ -492,12 +619,9 @@ def __calc_code_churn_range_impl(
         diff_base_params = diff_base_params + \
                            churn_config.get_extensions_repr('*.')
 
-    if revision_range:
-        stdout = repo_git(diff_base_params)
-        revs = repo_git(log_base_params).strip().split()
-    else:
-        stdout = repo_git(diff_base_params)
-        revs = repo_git(log_base_params).strip().split()
+    stdout = repo_git(diff_base_params)
+    revs = repo_git(log_base_params).strip().split()
+
     # initialize with 0 as otherwise commits without changes would be
     # missing from the churn data
     for rev in revs:
@@ -716,3 +840,78 @@ def calc_repo_loc(repo: pygit2.Repository, rev_range: str) -> int:
                 loc += len([line for line in lines if line])
 
     return loc
+
+
+################################################################################
+# Special git-specific classes
+
+
+class RevisionBinaryMap(tp.Container[str]):
+    """A special map that specifies for which revision ranges a binaries is
+    valid."""
+
+    def __init__(self, repo_location: Path) -> None:
+        self.__repo_location = repo_location
+        self.__revision_specific_mappings: tp.Dict[RevisionRange,
+                                                   ProjectBinaryWrapper] = {}
+        self.__always_valid_mappings: tp.List[ProjectBinaryWrapper] = []
+
+    def specify_binary(
+        self, location: str, binary_type: BinaryType, **kwargs: tp.Any
+    ) -> None:
+        """
+
+        Args:
+            location: where the binary can be found, relative to the
+                      project-source root
+            binary_type: the type of binary that is produced
+            override_binary_name: overrides the used binary name
+            override_entry_point: overrides the executable entry point
+            only_valid_in: additinally specifies a validity range that
+                           specifies in which revision range this binary is
+                           produced
+        """
+        binary_location_path = Path(location)
+        binary_name: str = kwargs.get(
+            "override_binary_name", binary_location_path.stem
+        )
+        override_entry_point = kwargs.get("override_entry_point", None)
+        if override_entry_point:
+            override_entry_point = Path(override_entry_point)
+        validity_range = kwargs.get("only_valid_in", None)
+
+        wrapped_binary = ProjectBinaryWrapper(
+            binary_name, binary_location_path, binary_type, override_entry_point
+        )
+
+        if validity_range:
+            self.__revision_specific_mappings[validity_range] = wrapped_binary
+        else:
+            self.__always_valid_mappings.append(wrapped_binary)
+
+    def __getitem__(self,
+                    revision: ShortCommitHash) -> tp.List[ProjectBinaryWrapper]:
+        revision_specific_binaries = []
+
+        for validity_range, wrapped_binary \
+                in self.__revision_specific_mappings.items():
+            if revision in get_all_revisions_between(
+                validity_range.id_start, validity_range.id_end, ShortCommitHash,
+                self.__repo_location
+            ):
+                revision_specific_binaries.append(wrapped_binary)
+
+        revision_specific_binaries.extend(self.__always_valid_mappings)
+
+        return revision_specific_binaries
+
+    def __contains__(self, binary_name: object) -> bool:
+        if isinstance(binary_name, str):
+            for binary in chain(
+                self.__always_valid_mappings,
+                self.__revision_specific_mappings.values()
+            ):
+                if binary.name == binary_name:
+                    return True
+
+        return False

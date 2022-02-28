@@ -11,10 +11,15 @@ from varats.data.databases.blame_interaction_database import (
     BlameInteractionDatabase,
 )
 from varats.data.metrics import gini_coefficient, lorenz_curve
-from varats.mapping.commit_map import CommitMap
+from varats.mapping.commit_map import CommitMap, get_commit_map
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot, PlotDataEmpty
-from varats.plot.plots import PlotConfig
+from varats.plot.plots import (
+    PlotGenerator,
+    PlotConfig,
+    REQUIRE_REPORT_TYPE,
+    REQUIRE_MULTI_CASE_STUDY,
+)
 from varats.plots.repository_churn import (
     build_repo_churn_table,
     draw_code_churn,
@@ -23,14 +28,15 @@ from varats.project.project_util import get_local_project_git
 from varats.utils.git_util import (
     ChurnConfig,
     calc_repo_code_churn,
-    FullCommitHash,
     ShortCommitHash,
+    FullCommitHash,
 )
 
 
 def draw_interaction_lorenz_curve(
-    axis: axes.SubplotBase, data: pd.DataFrame, consider_in_interactions: bool,
-    consider_out_interactions: bool, plot_cfg: tp.Dict[str, tp.Any]
+    axis: axes.SubplotBase, data: pd.DataFrame, unique_rev_strs: tp.List[str],
+    consider_in_interactions: bool, consider_out_interactions: bool,
+    line_width: float
 ) -> None:
     """
     Draws a lorenz_curve onto the given axis.
@@ -52,13 +58,12 @@ def draw_interaction_lorenz_curve(
 
     data.sort_values(by=[data_selector, 'time_id'], inplace=True)
     lor = lorenz_curve(data[data_selector])
-    axis.plot(
-        data['revision'], lor, color='#cc0099', linewidth=plot_cfg['linewidth']
-    )
+
+    axis.plot(unique_rev_strs, lor, color='#cc0099', linewidth=line_width)
 
 
 def draw_perfect_lorenz_curve(
-    axis: axes.SubplotBase, data: pd.DataFrame, plot_cfg: tp.Dict[str, tp.Any]
+    axis: axes.SubplotBase, unique_rev_strs: tp.List[str], line_width: float
 ) -> None:
     """
     Draws a perfect lorenz curve onto the given axis, i.e., a straight line from
@@ -69,11 +74,11 @@ def draw_perfect_lorenz_curve(
         data: plotting data
     """
     axis.plot(
-        data['revision'],
-        np.linspace(0.0, 1.0, len(data['revision'])),
+        unique_rev_strs,
+        np.linspace(0.0, 1.0, len(unique_rev_strs)),
         color='black',
         linestyle='--',
-        linewidth=plot_cfg['linewidth']
+        linewidth=line_width
     )
 
 
@@ -142,16 +147,11 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        plot_cfg = {
-            'linewidth': 2 if view_mode else 0.25,
-            'legend_size': 8 if view_mode else 2,
-            'xtick_size': 10 if view_mode else 2,
-        }
         style.use(self.plot_config.style())
 
-        case_study: CaseStudy = self.plot_kwargs['plot_case_study']
-        commit_map = self.plot_kwargs['get_cmap']()
-        project_name = self.plot_kwargs['project']
+        case_study: CaseStudy = self.plot_kwargs['case_study']
+        project_name: str = case_study.project_name
+        commit_map = get_commit_map(project_name)
 
         fig = plt.figure()
         fig.subplots_adjust(top=0.95, hspace=0.05, right=0.95, left=0.07)
@@ -178,15 +178,27 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
         if data.empty:
             raise PlotDataEmpty
 
+        unique_rev_strs: tp.List[str] = [rev.hash for rev in data['revision']]
+
         # Draw left side of the plot
-        draw_interaction_lorenz_curve(main_axis, data, True, False, plot_cfg)
-        draw_perfect_lorenz_curve(main_axis, data, plot_cfg)
+        draw_interaction_lorenz_curve(
+            main_axis, data, unique_rev_strs, True, False,
+            self.plot_config.line_width()
+        )
+        draw_perfect_lorenz_curve(
+            main_axis, unique_rev_strs, self.plot_config.line_width()
+        )
 
         draw_interaction_code_churn(churn_axis, data, project_name, commit_map)
 
         # Draw right side of the plot
-        draw_interaction_lorenz_curve(main_axis_r, data, False, True, plot_cfg)
-        draw_perfect_lorenz_curve(main_axis_r, data, plot_cfg)
+        draw_interaction_lorenz_curve(
+            main_axis_r, data, unique_rev_strs, False, True,
+            self.plot_config.line_width()
+        )
+        draw_perfect_lorenz_curve(
+            main_axis_r, unique_rev_strs, self.plot_config.line_width()
+        )
 
         draw_interaction_code_churn(
             churn_axis_r, data, project_name, commit_map
@@ -194,12 +206,12 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
 
         # Adapt axis to draw nicer plots
         for x_label in churn_axis.get_xticklabels():
-            x_label.set_fontsize(plot_cfg['xtick_size'])
+            x_label.set_fontsize(self.plot_config.x_tick_size())
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
         for x_label in churn_axis_r.get_xticklabels():
-            x_label.set_fontsize(plot_cfg['xtick_size'])
+            x_label.set_fontsize(self.plot_config.x_tick_size())
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
@@ -209,10 +221,27 @@ class BlameLorenzCurve(Plot, plot_name="b_lorenz_curve"):
         raise NotImplementedError
 
 
+class BlameLorenzCurveGenerator(
+    PlotGenerator,
+    generator_name="lorenz-curve-plot",
+    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+):
+    """Generates lorenz-curve plot(s) for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
+        return [
+            BlameLorenzCurve(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
+        ]
+
+
 def draw_gini_churn_over_time(
-    axis: axes.SubplotBase, blame_data: pd.DataFrame, project_name: str,
-    commit_map: CommitMap, consider_insertions: bool, consider_deletions: bool,
-    plot_cfg: tp.Dict[str, tp.Any]
+    axis: axes.SubplotBase, blame_data: pd.DataFrame,
+    unique_rev_strs: tp.List[str], project_name: str, commit_map: CommitMap,
+    consider_insertions: bool, consider_deletions: bool, line_width: float
 ) -> None:
     """
     Draws the gini of the churn distribution over time.
@@ -224,15 +253,16 @@ def draw_gini_churn_over_time(
         commit_map: CommitMap for the given project(by project_name)
         consider_insertions: True, insertions should be included
         consider_deletions: True, deletions should be included
+        line_width: line width of the plot lines
     """
     churn_data = build_repo_churn_table(project_name, commit_map)
 
     # clean data
     unique_revs = blame_data['revision'].unique()
 
-    def remove_revisions_without_data(revision: str) -> bool:
+    def remove_revisions_without_data(revision: ShortCommitHash) -> bool:
         """Removes all churn data where this plot has no data."""
-        return revision[:10] in unique_revs
+        return revision.hash[:10] in unique_revs
 
     churn_data = churn_data[churn_data.apply(
         lambda x: remove_revisions_without_data(x['revision']), axis=1
@@ -273,10 +303,10 @@ def draw_gini_churn_over_time(
         label = 'Deletions'
 
     axis.plot(
-        blame_data['revision'],
+        unique_rev_strs,
         gini_churn,
         linestyle=linestyle,
-        linewidth=plot_cfg['linewidth'],
+        linewidth=line_width,
         label=label,
         color='orange'
     )
@@ -284,8 +314,8 @@ def draw_gini_churn_over_time(
 
 def draw_gini_blame_over_time(
     axis: axes.SubplotBase, blame_data: pd.DataFrame,
-    consider_in_interactions: bool, consider_out_interactions: bool,
-    plot_cfg: tp.Dict[str, tp.Any]
+    unique_rev_strs: tp.List[str], consider_in_interactions: bool,
+    consider_out_interactions: bool, line_width: float
 ) -> None:
     """
     Draws the gini coefficients of the blame interactions over time.
@@ -295,6 +325,7 @@ def draw_gini_blame_over_time(
         blame_data: blame data of the base plot
         consider_in_interactions: True, IN interactions should be included
         consider_out_interactions: True, OUT interactions should be included
+        line_width: line width of the plot lines
     """
     if consider_in_interactions and consider_out_interactions:
         data_selector = 'HEAD_Interactions'
@@ -322,10 +353,10 @@ def draw_gini_blame_over_time(
         gini_coefficients.append(gini_coefficient(distribution))
 
     axis.plot(
-        blame_data.revision,
+        unique_rev_strs,
         gini_coefficients,
         linestyle=linestyle,
-        linewidth=plot_cfg['linewidth'],
+        linewidth=line_width,
         label=label,
         color='#cc0099'
     )
@@ -344,16 +375,11 @@ class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        plot_cfg = {
-            'linewidth': 2 if view_mode else 0.25,
-            'legend_size': 8 if view_mode else 2,
-            'xtick_size': 10 if view_mode else 2,
-        }
         style.use(self.plot_config.style())
 
-        case_study: CaseStudy = self.plot_kwargs['plot_case_study']
-        commit_map = self.plot_kwargs['get_cmap']()
-        project_name = self.plot_kwargs['project']
+        case_study: CaseStudy = self.plot_kwargs["case_study"]
+        project_name = case_study.project_name
+        commit_map: CommitMap = get_commit_map(project_name)
 
         data = BlameInteractionDatabase.get_data_for_project(
             project_name, [
@@ -376,30 +402,41 @@ class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
 
         churn_axis = fig.add_subplot(grid_spec[2, :], sharex=main_axis)
 
-        draw_gini_blame_over_time(main_axis, data, True, True, plot_cfg)
-        draw_gini_blame_over_time(main_axis, data, True, False, plot_cfg)
-        draw_gini_blame_over_time(main_axis, data, False, True, plot_cfg)
-        draw_gini_churn_over_time(
-            main_axis, data, project_name, commit_map, True, True, plot_cfg
+        unique_rev_strs: tp.List[str] = [rev.hash for rev in data['revision']]
+
+        draw_gini_blame_over_time(
+            main_axis, data, unique_rev_strs, True, True,
+            self.plot_config.line_width()
+        )
+        draw_gini_blame_over_time(
+            main_axis, data, unique_rev_strs, True, False,
+            self.plot_config.line_width()
+        )
+        draw_gini_blame_over_time(
+            main_axis, data, unique_rev_strs, False, True,
+            self.plot_config.line_width()
         )
         draw_gini_churn_over_time(
-            main_axis, data, project_name, commit_map, True, False, plot_cfg
+            main_axis, data, unique_rev_strs, project_name, commit_map, True,
+            True, self.plot_config.line_width()
         )
         draw_gini_churn_over_time(
-            main_axis, data, project_name, commit_map, False, True, plot_cfg
+            main_axis, data, unique_rev_strs, project_name, commit_map, True,
+            False, self.plot_config.line_width()
+        )
+        draw_gini_churn_over_time(
+            main_axis, data, unique_rev_strs, project_name, commit_map, False,
+            True, self.plot_config.line_width()
         )
         main_axis.legend()
 
         main_axis.set_ylim((0., 1.))
 
-        draw_interaction_code_churn(
-            churn_axis, data, self.plot_kwargs['project'],
-            self.plot_kwargs['get_cmap']()
-        )
+        draw_interaction_code_churn(churn_axis, data, project_name, commit_map)
 
         # Adapt axis to draw nicer plots
         for x_label in churn_axis.get_xticklabels():
-            x_label.set_fontsize(plot_cfg['xtick_size'])
+            x_label.set_fontsize(self.plot_config.x_tick_size())
             x_label.set_rotation(270)
             x_label.set_fontfamily('monospace')
 
@@ -407,3 +444,20 @@ class BlameGiniOverTime(Plot, plot_name="b_gini_overtime"):
         self, boundary_gradient: float
     ) -> tp.Set[FullCommitHash]:
         raise NotImplementedError
+
+
+class BlameGiniOverTimeGenerator(
+    PlotGenerator,
+    generator_name="gini-overtime-plot",
+    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
+):
+    """Generates gini-overtime plot(s) for the selected case study(ies)."""
+
+    def generate(self) -> tp.List[Plot]:
+        case_studies: tp.List[CaseStudy] = self.plot_kwargs.pop("case_study")
+
+        return [
+            BlameGiniOverTime(
+                self.plot_config, case_study=cs, **self.plot_kwargs
+            ) for cs in case_studies
+        ]
