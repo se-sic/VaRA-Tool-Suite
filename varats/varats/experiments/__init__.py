@@ -8,8 +8,7 @@ def discover() -> None:
     """Auto import all BenchBuild experiments."""
     __all__ = []
     for _, module_name, _ in pkgutil.walk_packages(
-        __path__,  # type: ignore
-        'varats.experiments.'
+        __path__, 'varats.experiments.'
     ):
         __all__.append(module_name)
         _module = importlib.import_module(module_name)

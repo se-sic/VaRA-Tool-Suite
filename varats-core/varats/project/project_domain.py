@@ -30,3 +30,26 @@ class ProjectDomains(Enum):
 
     def __str__(self) -> str:
         return str(self.value)
+
+    def __lt__(self, other: object) -> bool:
+        if isinstance(other, ProjectDomains):
+            return self.value < other.value
+
+        return False
+
+
+class ProjectGroups(Enum):
+    """Defines a set of project groups."""
+    value: str
+
+    C_PROJECTS = "c_projects"
+    CPP_PROJECTS = "cpp_projects"
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    def __lt__(self, other: object) -> bool:
+        if isinstance(other, ProjectGroups):
+            return self.value < other.value
+
+        return False

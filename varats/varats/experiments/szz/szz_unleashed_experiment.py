@@ -164,9 +164,7 @@ class CreateSZZUnleashedReport(actions.Step):  # type: ignore
         return actions.StepResult.OK
 
 
-class SZZUnleashedExperiment(
-    VersionExperiment, shorthand="SZZUnleashed"
-):  # type: ignore
+class SZZUnleashedExperiment(VersionExperiment, shorthand="SZZUnleashed"):
     """
     Generates a SZZUnleashed report.
 

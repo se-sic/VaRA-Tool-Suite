@@ -18,14 +18,14 @@ setup(
     tests_require=["pytest", "pytest-cov"],
     install_requires=[
         "argparse-utils>=1.2.0",
-        "benchbuild>=6.2.7",
+        "benchbuild>=6.3.0",
         "click>=8.0.1",
         "distro>=1.5.0",
         "graphviz>=0.14.2",
         "Jinja2>=3.0.1",
         "kaleido>=0.2.1",
         "matplotlib>=3.1.2",
-        "numpy>=1.20",
+        "numpy>=1.21",
         "packaging>=20.1",
         "pandas>=0.22.0",
         "plotly>=4.14.1",
@@ -55,6 +55,7 @@ setup(
     entry_points={
         "gui_scripts": [
             'vara-graphview = varats.tools.driver_graph_view:main',
+            'vara-buildsetup-gui = varats.tools.driver_build_setup_gui:main',
         ],
         "console_scripts": [
             'vara-art = varats.tools.driver_artefacts:main',
