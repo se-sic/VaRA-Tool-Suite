@@ -168,23 +168,21 @@ If you understand how BenchBuild uses containers to run experiments you can prep
 4. Rootless containers do not work on NFS (see `here <https://github.com/containers/podman/blob/master/rootless.md>`_), so we have to take some extra steps if we want to run containers via slurm.
    These steps can be executed easily using the following command (:ref:`documentation <vara-container>`):
 
-    .. code-block:: bash
+   .. code-block:: bash
 
-      vara-container prepare-slurm
+     vara-container prepare-slurm
 
    If you want to know in detail what happens in this command, take a look at the section :ref:`Step 4 in Detail`.
 
-5. After the preparation is complete, you can generate the slurm script from the `benchbuild` directory as follows:
+5. After the preparation is complete, you can generate the slurm script as follows:
 
-    .. code-block:: bash
+   .. code-block:: bash
 
-      benchbuild slurm -E <report_type> <project> -- container run --import
-
-    The additional ``-container run --import`` after the two dashes tells BenchBuild to use the ``container run`` command in the script instead of the default ``run`` command.
-    The ``--import`` is actually a parameter for the ``container`` command and specifies that we want to import container images from the path specified a couple of steps above if possible.
+     vara-run --slurm --container -E <report_type> <projects>
 
 6. That's it! the script obtained from the previous step can be used like any other slurm script.
    You can now make any adjustments to the script if needed or just submit it to slurm as described in the slurm guide.
+   You can also add the flag ``--submit`` to the ``vara-run`` command to directly submit the script to slurm.
 
 
 Step 4 in Detail
