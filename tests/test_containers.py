@@ -120,7 +120,7 @@ class TestContainerSupport(unittest.TestCase):
             "install", "--ignore-installed", "/varats/varats-core",
             "/varats/varats"
         ), varats_install_layer.args)
-        self.assertIn(("mount", "type=bind,src=varats_src,target=/varats"),
+        self.assertIn(("mount", "type=bind,src=varats_src,target=/varats,rw"),
                       varats_install_layer.kwargs)
 
     @run_in_test_environment()
