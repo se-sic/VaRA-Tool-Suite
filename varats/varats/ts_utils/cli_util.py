@@ -143,6 +143,7 @@ class CLIOptionConverter(abc.ABC, tp.Generic[ConversionTy]):
     def value_to_string(
         value: tp.Union[ConversionTy, tp.List[ConversionTy]]
     ) -> tp.Union[str, tp.List[str]]:
+        """Convert a value to its string representation."""
         ...
 
     @staticmethod
@@ -150,6 +151,7 @@ class CLIOptionConverter(abc.ABC, tp.Generic[ConversionTy]):
     def string_to_value(
         str_value: tp.Union[str, tp.List[str]]
     ) -> tp.Union[ConversionTy, tp.List[ConversionTy]]:
+        """Construct a value from its string representation."""
         ...
 
 

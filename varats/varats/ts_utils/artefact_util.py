@@ -1,3 +1,4 @@
+"""Utility functions for working with artefacts."""
 import typing as tp
 
 from varats.paper.case_study import CaseStudy

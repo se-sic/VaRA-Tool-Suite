@@ -697,14 +697,14 @@ def _convert_kwargs(
         ]
     }
     kwargs: tp.Dict[str, tp.Any] = {}
-    for k, v in plot_kwargs.items():
-        if k in converter.keys():
+    for key, value in plot_kwargs.items():
+        if key in converter.keys():
             if to_string:
-                kwargs[k] = converter[k].value_to_string(v)
+                kwargs[key] = converter[key].value_to_string(value)
             else:
-                kwargs[k] = converter[k].string_to_value(v)
+                kwargs[key] = converter[key].string_to_value(value)
         else:
-            kwargs[k] = v
+            kwargs[key] = value
     return kwargs
 
 
