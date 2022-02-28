@@ -31,7 +31,8 @@ LOG = logging.getLogger(__name__)
 
 
 def _get_named_df_for_case_study(
-    case_study: CaseStudy, opt_level: OptLevel, plot_kwargs: tp.Any
+    case_study: CaseStudy, opt_level: OptLevel, plot_kwargs: tp.Dict[str,
+                                                                     tp.Any]
 ) -> tp.Optional[tp.Dict[str, tp.Union[str, pd.DataFrame]]]:
     project_name = case_study.project_name
     commit_map = get_commit_map(project_name)
@@ -100,7 +101,7 @@ def _extract_data_from_named_dataframe(
 
 
 def _load_all_named_dataframes(
-    opt_level: OptLevel, plot_kwargs: tp.Any
+    opt_level: OptLevel, plot_kwargs: tp.Dict[str, tp.Any]
 ) -> tp.List[tp.Dict[str, tp.Union[str, pd.DataFrame]]]:
     all_named_dataframes: tp.List[tp.Dict[str, tp.Union[str,
                                                         pd.DataFrame]]] = []
@@ -119,9 +120,9 @@ def _load_all_named_dataframes(
 
 
 def _verifier_plot(
-    opt_level: OptLevel, plot_config: PlotConfig, plot_kwargs: tp.Any
+    opt_level: OptLevel, plot_config: PlotConfig, plot_kwargs: tp.Dict[str,
+                                                                       tp.Any]
 ) -> None:
-
     # The project name of the dataframes is stored to remember the
     # correct title of the subplots
     named_verifier_plot_df_list = _load_all_named_dataframes(
@@ -158,7 +159,6 @@ def _verifier_plot_single(
     default_fig_suptitle: str, plot_config: PlotConfig,
     plot_data: tp.Tuple[str, tp.Dict[str, tp.Any]]
 ) -> None:
-
     fig, main_axis = plt.subplots()
     fig.suptitle(
         plot_config.fig_title(default_fig_suptitle),
