@@ -30,7 +30,10 @@ from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.plot.plot import Plot
 from varats.plot.plot_utils import check_required_args
-from varats.project.project_util import get_project_cls_by_name
+from varats.project.project_util import (
+    get_project_cls_by_name,
+    get_local_project_git_path,
+)
 from varats.provider.bug.bug import RawBug
 from varats.provider.bug.bug_provider import BugProvider
 from varats.provider.release.release_provider import (
@@ -47,7 +50,12 @@ from varats.revision.revisions import (
     is_revision_blocked,
     get_processed_revisions_files,
 )
-from varats.utils.git_util import ShortCommitHash, FullCommitHash
+from varats.utils.git_util import (
+    ShortCommitHash,
+    FullCommitHash,
+    contains_source_code,
+    ChurnConfig,
+)
 
 LOG = logging.Logger(__name__)
 
@@ -419,7 +427,7 @@ def extend_with_revs_per_year(
 def extend_with_distrib_sampling(
     case_study: CaseStudy, cmap: CommitMap,
     sampling_method: NormalSamplingMethod, merge_stage: int, num_rev: int,
-    ignore_blocked: bool
+    ignore_blocked: bool, only_code_commits: bool
 ) -> None:
     """
     Extend a case study by sampling 'num_rev' new revisions, according to
@@ -428,15 +436,26 @@ def extend_with_distrib_sampling(
     Args:
         case_study: to extend
         cmap: commit map to map revisions to unique IDs
-        ignore_blocked: ignore_blocked revisions
-        num_rev: number of revisions to add
-        merge_stage: stage the revisions will be added to
         sampling_method: distribution to use for sampling
+        merge_stage: stage the revisions will be added to
+        num_rev: number of revisions to add
+        ignore_blocked: ignore_blocked revisions
+        only_code_commits: exclude commits which don't change code
     """
     is_blocked: tp.Callable[[ShortCommitHash, tp.Type[Project]],
                             bool] = lambda rev, _: False
     if ignore_blocked:
         is_blocked = is_revision_blocked
+
+    is_code_commit: tp.Callable[[ShortCommitHash], bool] = lambda rev: True
+    if only_code_commits:
+        churn_conf = ChurnConfig.create_c_style_languages_config()
+        project_git_path = get_local_project_git_path(case_study.project_name)
+
+        def is_c_cpp_code_commit(commit: ShortCommitHash) -> bool:
+            return contains_source_code(commit, project_git_path, churn_conf)
+
+        is_code_commit = is_c_cpp_code_commit
 
     # Needs to be sorted so the propability distribution over the length
     # of the list is the same as the distribution over the commits age history
@@ -446,7 +465,8 @@ def extend_with_distrib_sampling(
         for rev, idx in sorted(list(cmap.mapping_items()), key=lambda x: x[1])
         if
         not case_study.has_revision_in_stage(ShortCommitHash(rev), merge_stage)
-        and not is_blocked(ShortCommitHash(rev), project_cls)
+        and not is_blocked(ShortCommitHash(rev), project_cls) and
+        is_code_commit(ShortCommitHash(rev))
     ]
 
     case_study.include_revisions(

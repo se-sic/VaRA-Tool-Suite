@@ -52,7 +52,12 @@ from varats.ts_utils.click_param_types import (
     TypedChoice,
     EnumChoice,
 )
-from varats.utils.git_util import ShortCommitHash, FullCommitHash
+from varats.utils.git_util import (
+    is_commit_hash,
+    get_commits_before_timestamp,
+    ShortCommitHash,
+    FullCommitHash,
+)
 from varats.utils.settings import vara_cfg
 
 LOG = logging.getLogger(__name__)
@@ -279,9 +284,15 @@ def __gen_specific(ctx: click.Context, revisions: tp.List[str]) -> None:
 @click.option(
     "--num-rev", type=int, default=10, help="Number of revisions to select."
 )
+@click.option(
+    "--only-code-commits",
+    is_flag=True,
+    help="Only consider code changes when sampling."
+)
 @click.pass_context
 def __gen_sample(
-    ctx: click.Context, distribution: str, end: str, start: str, num_rev: int
+    ctx: click.Context, distribution: str, end: str, start: str, num_rev: int,
+    only_code_commits: bool
 ) -> None:
     """
     Add revisions based on a sampling Distribution.
@@ -292,10 +303,18 @@ def __gen_sample(
         .get_sampling_method_type(
         distribution
     )()
+
+    project_repo_path = get_local_project_git_path(ctx.obj['project'])
+    if end != "HEAD" and not is_commit_hash(end):
+        end = get_commits_before_timestamp(end, project_repo_path)[0].hash
+
+    if start is not None and not is_commit_hash(start):
+        start = get_commits_before_timestamp(start, project_repo_path)[0].hash
+
     cmap = create_lazy_commit_map_loader(ctx.obj['project'], None, end, start)()
     extend_with_distrib_sampling(
         ctx.obj['case_study'], cmap, sampling_method, ctx.obj['merge_stage'],
-        num_rev, ctx.obj['ignore_blocked']
+        num_rev, ctx.obj['ignore_blocked'], only_code_commits
     )
     store_case_study(ctx.obj['case_study'], ctx.obj['path'])
 

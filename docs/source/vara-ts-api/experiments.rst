@@ -3,7 +3,7 @@ Experiments
 
 ``Experiments`` are the base concept how the tool suite and BenchBuild execute research experiments, e.g., measuring performance or analyzing a software project.
 They are designed to make the execution of research experiments easy and reproducable by separating experiment specific steps from project specific ones.
-For example, how a specific project is compiled is the responsibilitty of the project writer, where how the project is evaluated during a research experiment is the ``Experiment``'s task.
+For example, how a specific project is compiled is the responsibility of the project writer, where how the project is evaluated during a research experiment is the ``Experiment``'s task.
 
 .. note::
   Details on how to run experiments can be found :ref:`here<Running experiments with BenchBuild>`.
