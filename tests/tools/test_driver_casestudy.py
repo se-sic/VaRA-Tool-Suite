@@ -208,7 +208,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         self.assertEqual(
             0, result.exit_code,
             result.stdout + vara_cfg()["paper_config"]["current_config"].value +
-            str(vara_cfg()["config_file"]) + paper_config.path
+            str(vara_cfg()["config_file"]) + paper_config.path.__str__()
         )
         self.assertFalse(
             Path(
