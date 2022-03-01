@@ -14,7 +14,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
-        MainWindow.resize(698, 379)
+        MainWindow.resize(720, 379)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.MinimumExpanding,
             QtWidgets.QSizePolicy.MinimumExpanding
@@ -68,6 +68,10 @@ class Ui_MainWindow(object):
         self.projects.setObjectName("projects")
         self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.projects)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
+        self.search = QtWidgets.QLineEdit(self.projects)
+        self.search.setClearButtonEnabled(True)
+        self.search.setObjectName("search")
+        self.verticalLayout_4.addWidget(self.search)
         self.project_list = QtWidgets.QListWidget(self.projects)
         self.project_list.setEditTriggers(
             QtWidgets.QAbstractItemView.NoEditTriggers
@@ -114,7 +118,7 @@ class Ui_MainWindow(object):
             QtWidgets.QAbstractItemView.SelectRows
         )
         self.revision_list.setShowGrid(True)
-        self.revision_list.setColumnCount(3)
+        self.revision_list.setColumnCount(4)
         self.revision_list.setObjectName("revision_list")
         self.revision_list.setRowCount(0)
         item = QtWidgets.QTableWidgetItem()
@@ -126,6 +130,8 @@ class Ui_MainWindow(object):
         self.revision_list.setHorizontalHeaderItem(1, item)
         item = QtWidgets.QTableWidgetItem()
         self.revision_list.setHorizontalHeaderItem(2, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.revision_list.setHorizontalHeaderItem(3, item)
         self.revision_list.verticalHeader().setVisible(False)
         self.revision_list.verticalHeader().setHighlightSections(False)
         self.verticalLayout_3.addWidget(self.revision_list)
@@ -183,7 +189,7 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.strategie_forms, 0, 2, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 698, 30))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 720, 30))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -191,7 +197,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.strategie_forms.setCurrentIndex(2)
+        self.strategie_forms.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -211,6 +217,8 @@ class Ui_MainWindow(object):
         item.setText(_translate("MainWindow", "Author"))
         item = self.revision_list.horizontalHeaderItem(2)
         item.setText(_translate("MainWindow", "Date"))
+        item = self.revision_list.horizontalHeaderItem(3)
+        item.setText(_translate("MainWindow", "Time ID"))
         self.label.setText(_translate("MainWindow", "Number of Revisions"))
         self.seperate.setText(
             _translate("MainWindow", "Seperate Years into different Stages")

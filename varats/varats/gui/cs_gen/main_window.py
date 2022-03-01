@@ -18,7 +18,10 @@ from PyQt5.QtWidgets import (
 
 from varats.base.sampling_method import NormalSamplingMethod
 from varats.gui.cs_gen.main_window_ui import Ui_MainWindow
-from varats.mapping.commit_map import create_lazy_commit_map_loader
+from varats.mapping.commit_map import (
+    create_lazy_commit_map_loader,
+    get_commit_map,
+)
 from varats.paper.case_study import CaseStudy, store_case_study
 from varats.paper_mgmt.case_study import (
     extend_with_extra_revs,
@@ -58,15 +61,10 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
         self.selected_commit = None
         self.setupUi(self)
         initialize_projects()
-        projects = get_loaded_vara_projects()
+
         self.selected_project = None
         self.revision_list_project = None
-        self.project_names = [
-            project.NAME
-            for project in projects
-            if project.GROUP not in ["test_projects", "perf_tests"]
-        ]
-        self.project_list.addItems(self.project_names)
+        self.update_project_list()
         self.project_list.clicked['QModelIndex'].connect(self.show_project_data)
         self.sampling_method.addItems([
             x.name()
@@ -80,7 +78,28 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
         self.sample.clicked.connect(self.sample_view)
         self.per_year.clicked.connect(self.revs_per_year_view)
         self.generate.clicked.connect(self.gen)
+        self.search.textChanged.connect(self.update_project_list)
         self.show()
+
+    def update_project_list(self, filter_string: str = ""):
+        self.project_list.clear()
+        filter_string = filter_string.lower()
+        projects = get_loaded_vara_projects()
+
+        def match(project):
+            return (filter_string in str(
+                project.NAME
+            ).lower()) or (filter_string in str(
+                project.DOMAIN
+            ).lower()) or (filter_string in str(project.GROUP).lower())
+
+        self.project_names = [
+            project.NAME
+            for project in projects
+            if project.GROUP not in ["test_projects", "perf_tests"] and
+            match(project)
+        ]
+        self.project_list.addItems(self.project_names)
 
     def revs_per_year_view(self):
         self.strategie_forms.setCurrentIndex(
@@ -145,12 +164,13 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             GenerationStrategie.SELECTREVISION.value
         )
         if self.selected_project != self.revision_list_project:
-            get_local_project_git(self.selected_project).remotes[0].fetch()
             self.revision_list.clearContents()
             self.revision_list.setRowCount(0)
             self.revision_list.repaint()
             self.revision_details.setText("Loading Revisions")
             self.revision_details.repaint()
+            get_local_project_git(self.selected_project).remotes[0].fetch()
+
             git_path = get_local_project_git_path(self.selected_project)
             initial_commit = get_initial_commit(git_path).hash
             commits = get_all_revisions_between(
@@ -162,16 +182,16 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
             )
 
             project = get_project_cls_by_name(self.selected_project)
+            cmap = get_commit_map(self.selected_project)
             for n, commit_hash in enumerate(commits):
                 commit: pygit2.Commit = commit_lookup_helper(commit_hash)
-                commit_hash = ShortCommitHash.from_pygit_commit(commit)
-
                 self.revision_list.setItem(
-                    n, 0, QTableWidgetItem(commit_hash.short_hash)
+                    n, 0, QTableWidgetItem(commit_hash.hash)
                 )
                 if is_revision_blocked(commit_hash, project):
-                    self.revision_list.item(n,
-                                            0).setForeground(QColor(125, 0, 0))
+                    self.revision_list.item(n, 0).setForeground(
+                        QColor(50, 100, 255)
+                    )
                     self.revision_list.item(n, 0).setToolTip("Blocked")
                 self.revision_list.setItem(
                     n, 1, QTableWidgetItem(commit.author.name)
@@ -181,6 +201,11 @@ class CsGenMainWindow(QMainWindow, Ui_MainWindow):
                 table_item = QTableWidgetItem()
                 table_item.setData(Qt.DisplayRole, QDateTime(date))
                 self.revision_list.setItem(n, 2, table_item)
+                time_id_item = QTableWidgetItem()
+                time_id_item.setData(
+                    Qt.DisplayRole, cmap.short_time_id(commit_hash)
+                )
+                self.revision_list.setItem(n, 3, time_id_item)
             self.revision_list.setItemDelegateForColumn(
                 2, DateDelegate(self.revision_list)
             )
