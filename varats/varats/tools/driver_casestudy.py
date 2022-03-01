@@ -14,6 +14,7 @@ from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.discover_reports import initialize_reports
 from varats.data.reports.szz_report import SZZReport
 from varats.experiment.experiment_util import VersionExperiment
+from varats.gui.cs_gen.main_window import start_gui
 from varats.mapping.commit_map import create_lazy_commit_map_loader
 from varats.paper.case_study import (
     load_case_study_from_file,
@@ -70,6 +71,11 @@ def main() -> None:
     initialize_cli_tool()
     initialize_projects()
     initialize_reports()
+
+
+@main.command("gen-gui")
+def gen_gui():
+    start_gui()
 
 
 @main.command("status")
@@ -194,7 +200,7 @@ def __casestudy_gen(
                 case_study.insert_empty_stage(stage_index)
                 case_study.name_stage(stage_index, merge_stage)
             else:
-                stage_index_opt = case_study\
+                stage_index_opt = case_study \
                     .get_stage_index_by_name(merge_stage)
                 if not stage_index_opt:
                     selected_stage = CSStage(merge_stage)

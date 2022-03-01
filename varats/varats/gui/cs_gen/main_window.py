@@ -278,7 +278,7 @@ class VaRATSGui:
         sys.exit(ret)
 
 
-def main() -> None:
+def start_gui() -> None:
     """Start VaRA-TS driver and run application."""
     initialize_cli_tool()
     driver = VaRATSGui()
@@ -286,4 +286,4 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    main()
+    start_gui()
