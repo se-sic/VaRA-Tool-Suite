@@ -226,6 +226,7 @@ class PhasarIncHelperAnalysisViolinPlot(
         helper_analyses = ["IRDB", "TH", "PT", "ICFG", "DFA"]
 
         data = pd.DataFrame(rev_deltas)
+        # pd.set_option("display.max_rows", None, "display.max_columns", None)
         print(f"{data=}")
         ax = sns.violinplot(
             x="AnalysisPart",
@@ -246,7 +247,7 @@ class PhasarIncHelperAnalysisViolinPlot(
             alpha=.25,
             size=3
         )
-        ax.set_ylim(-0.05, None)
+        # ax.set_ylim(-0.05, None)
         ax.set_aspect(0.3 / ax.get_data_ratio())
         ax.tick_params(axis='x', labelrotation=45)
         ax.set_xlabel(None)
