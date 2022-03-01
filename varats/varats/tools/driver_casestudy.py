@@ -477,7 +477,7 @@ def __gen_bug_commits(
     default=".*"
 )
 def __casestudy_package(
-    output: str, filter_regex: str, report_names: tp.List[str]
+    output: str, filter_regex: str, report_names: tp.List[tp.Type[BaseReport]]
 ) -> None:
     """
     Case study packaging util.
