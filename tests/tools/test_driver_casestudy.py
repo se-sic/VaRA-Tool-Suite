@@ -1,5 +1,5 @@
 """Test varats casestudy tool."""
-
+import importlib
 import unittest
 from pathlib import Path
 
@@ -11,7 +11,8 @@ from tests.test_utils import (
     UnitTestInputs,
 )
 from varats.paper.case_study import load_case_study_from_file
-from varats.paper_mgmt.paper_config import load_paper_config, get_paper_config
+from varats.paper_mgmt.paper_config import load_paper_config
+from varats.tools import driver_casestudy
 from varats.utils.git_util import FullCommitHash
 from varats.utils.settings import vara_cfg, save_config
 
@@ -26,7 +27,6 @@ class TestDriverCaseStudy(unittest.TestCase):
         Path(vara_cfg()["paper_config"]["folder"].value + "/" +
              "test_gen").mkdir()
         vara_cfg()["paper_config"]["current_config"] = "test_gen"
-        from varats.tools import driver_casestudy
         result = runner.invoke(
             driver_casestudy.main, [
                 'gen', '-p', 'gravity', 'select_sample',
@@ -50,7 +50,6 @@ class TestDriverCaseStudy(unittest.TestCase):
         Path(vara_cfg()["paper_config"]["folder"].value + "/" +
              "test_gen").mkdir()
         vara_cfg()["paper_config"]["current_config"] = "test_gen"
-        from varats.tools import driver_casestudy
         result = runner.invoke(
             driver_casestudy.main, [
                 'gen', '-p', 'brotli', 'select_sample', '--num-rev', '10',
@@ -78,7 +77,6 @@ class TestDriverCaseStudy(unittest.TestCase):
         Path(vara_cfg()["paper_config"]["folder"].value + "/" +
              "test_gen").mkdir()
         vara_cfg()["paper_config"]["current_config"] = "test_gen"
-        from varats.tools import driver_casestudy
         result = runner.invoke(
             driver_casestudy.main, [
                 'gen', '-p', 'brotli', 'select_sample', '--num-rev', '6',
@@ -112,7 +110,6 @@ class TestDriverCaseStudy(unittest.TestCase):
         Path(vara_cfg()["paper_config"]["folder"].value + "/" +
              "test_gen").mkdir()
         vara_cfg()["paper_config"]["current_config"] = "test_gen"
-        from varats.tools import driver_casestudy
         result = runner.invoke(
             driver_casestudy.main, ['gen', '-p', 'gravity', 'select_latest']
         )
@@ -132,7 +129,6 @@ class TestDriverCaseStudy(unittest.TestCase):
         Path(vara_cfg()["paper_config"]["folder"].value + "/" +
              "test_gen").mkdir()
         vara_cfg()["paper_config"]["current_config"] = "test_gen"
-        from varats.tools import driver_casestudy
         result = runner.invoke(
             driver_casestudy.main, [
                 'gen', '-p', 'gravity', 'select_specific',
@@ -171,7 +167,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "test_status"
         save_config()
         load_paper_config()
-        from varats.tools import driver_casestudy
+
         result = runner.invoke(driver_casestudy.main, ['status', 'JustCompile'])
         self.assertEqual(0, result.exit_code, result.exception)
         self.assertEqual(
@@ -201,16 +197,11 @@ class TestDriverCaseStudy(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "test_cleanup_error"
         save_config()
         load_paper_config()
-        paper_config = get_paper_config()
-        from varats.tools import driver_casestudy
+        importlib.reload(driver_casestudy)
         result = runner.invoke(
             driver_casestudy.main, ['cleanup', 'all', '--error']
         )
-        self.assertEqual(
-            0, result.exit_code,
-            result.stdout + vara_cfg()["paper_config"]["current_config"].value +
-            str(vara_cfg()["config_file"]) + paper_config.path.__str__()
-        )
+        self.assertEqual(0, result.exit_code, result.stdout)
         self.assertFalse(
             Path(
                 vara_cfg()["result_dir"].value +
@@ -251,7 +242,6 @@ class TestDriverCaseStudy(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "test_cleanup_regex"
         save_config()
         load_paper_config()
-        from varats.tools import driver_casestudy
         result = runner.invoke(
             driver_casestudy.main, ['cleanup', 'regex', '-f', '.*'], 'y'
         )

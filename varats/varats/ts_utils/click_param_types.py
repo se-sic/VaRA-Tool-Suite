@@ -13,7 +13,6 @@ from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.paper_config import get_paper_config
 from varats.report.report import BaseReport
 from varats.utils.exceptions import ConfigurationLookupError
-from varats.utils.settings import vara_cfg
 
 ChoiceTy = tp.TypeVar("ChoiceTy")
 
@@ -104,17 +103,8 @@ def create_multi_case_study_choice() -> TypedMultiChoice[CaseStudy]:
     """
     try:
         paper_config = get_paper_config()
-    except ConfigurationLookupError as e:
-        empty_cs_dict: tp.Dict[str, tp.List[CaseStudy]] = {
-            e.__str__(): [CaseStudy('gravity', 1)],
-            vara_cfg()["paper_config"]["current_config"].value: [
-                CaseStudy('gravity', 1)
-            ],
-            vara_cfg()["paper_config"]["folder"].value: [
-                CaseStudy('gravity', 1)
-            ],
-            vara_cfg()["config_file"].value: [CaseStudy('gravity', 1)]
-        }
+    except ConfigurationLookupError:
+        empty_cs_dict: tp.Dict[str, tp.List[CaseStudy]] = {}
         return TypedMultiChoice(empty_cs_dict)
     value_dict = {
         f"{cs.project_name}_{cs.version}": [cs]
