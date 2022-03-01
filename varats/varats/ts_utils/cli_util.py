@@ -1,5 +1,5 @@
 """Command line utilities."""
-
+import abc
 import logging
 import os
 import sys
@@ -87,7 +87,8 @@ def initialize_logger_config() -> None:
     logging.basicConfig(level=log_level)
 
 
-CLIOptionTy = tp.Callable[..., tp.Any]
+CommandTy = tp.Union[tp.Callable[..., tp.Any], click.Command]
+CLIOptionTy = tp.Callable[[CommandTy], CommandTy]
 
 
 def make_cli_option(*param_decls: str, **attrs: tp.Any) -> CLIOptionTy:
@@ -105,8 +106,7 @@ def make_cli_option(*param_decls: str, **attrs: tp.Any) -> CLIOptionTy:
     return click.option(*param_decls, **attrs)
 
 
-def add_cli_options(command: tp.Callable[..., None],
-                    *options: CLIOptionTy) -> tp.Callable[..., None]:
+def add_cli_options(command: CommandTy, *options: CLIOptionTy) -> CommandTy:
     """
     Adds click CLI options to a click command.
 
@@ -122,10 +122,96 @@ def add_cli_options(command: tp.Callable[..., None],
     return command
 
 
+ConversionTy = tp.TypeVar("ConversionTy", bound=tp.Any, covariant=True)
+
+
+class CLIOptionConverter(abc.ABC, tp.Generic[ConversionTy]):
+    """
+    Converter for CLI option declarations.
+
+    Converters are required for CLI options that are converted to complex types
+    by click so that they can still be properly stored in an artefact file.
+    In general, a converter should implement a mapping from the complex type to
+    a string value as it would be provided on the command line.
+
+    A converter can be attached to a CLI option using the function/decorator
+    :func:`convert_value()`.
+    """
+
+    @staticmethod
+    @abc.abstractmethod
+    def value_to_string(
+        value: tp.Union[ConversionTy, tp.List[ConversionTy]]
+    ) -> tp.Union[str, tp.List[str]]:
+        """Convert a value to its string representation."""
+        ...
+
+    @staticmethod
+    @abc.abstractmethod
+    def string_to_value(
+        str_value: tp.Union[str, tp.List[str]]
+    ) -> tp.Union[ConversionTy, tp.List[ConversionTy]]:
+        """Construct a value from its string representation."""
+        ...
+
+
+class CLIOptionWithConverter(tp.Generic[ConversionTy]):
+    """Wrapper class that associates a converter with a CLI option
+    declaration."""
+
+    def __init__(
+        self, name: str, converter: tp.Type[CLIOptionConverter[ConversionTy]],
+        cli_decl: tp.Callable[..., CLIOptionTy]
+    ):
+        self.__name = name
+        self.__converter = converter
+        self.__cli_decl = cli_decl
+
+    @property
+    def name(self) -> str:
+        return self.__name
+
+    @property
+    def converter(self) -> tp.Type[CLIOptionConverter[ConversionTy]]:
+        return self.__converter
+
+    def __call__(self, *param_decls: str, **attrs: tp.Any) -> CLIOptionTy:
+        return self.__cli_decl(*param_decls, **attrs)
+
+
+def convert_value(
+    name: str, converter: tp.Type[CLIOptionConverter[ConversionTy]]
+) -> tp.Callable[..., CLIOptionTy]:
+    """
+    Decorator for calls to :func:`make_cli_option()` that attaches a converter.
+
+    Converters are required for CLI options that are converted to complex types
+    by click so that they can still be properly stored in an artefact file.
+    In general, a converter should implement a mapping from the complex type to
+    a string value as it would be provided on the command line.
+
+    Args:
+        name: name for the CLI option. This must be the same as the name for the
+              click option that it wraps but with '-' replaced by '_'.
+        converter: the converter that is attached to the option
+
+    Returns:
+        a CLI option declaration that can be used as if it was created by
+        :func:`make_cli_option()`
+    """
+
+    def decorator(
+        cli_decl: tp.Callable[..., CLIOptionTy]
+    ) -> tp.Callable[..., CLIOptionTy]:
+        return CLIOptionWithConverter(name, converter, cli_decl)
+
+    return decorator
+
+
 def tee(process: PlumbumLocalPopen,
         buffered: bool = True) -> tp.Tuple[int, str, str]:
     """
-    Adapted from from plumbum's TEE implementation.
+    Adapted from plumbum's TEE implementation.
 
     Plumbum's TEE does not allow access to the underlying popen object, which we
     need to properly handle keyboard interrupts. Therefore, we just copy the
