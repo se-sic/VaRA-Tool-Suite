@@ -242,6 +242,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "test_cleanup_regex"
         save_config()
         load_paper_config()
+        importlib.reload(driver_casestudy)
         result = runner.invoke(
             driver_casestudy.main, ['cleanup', 'regex', '-f', '.*'], 'y'
         )
