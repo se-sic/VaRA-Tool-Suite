@@ -366,7 +366,7 @@ def get_legend(use_color: bool = False) -> str:
 
 def package_paper_config(
     output_file: Path, cs_filter_regex: tp.Pattern[str],
-    report_names: tp.List[str]
+    report_names: tp.List[tp.Type[BaseReport]]
 ) -> None:
     """
     Package all files from a paper config into a zip folder.
@@ -379,9 +379,9 @@ def package_paper_config(
     """
     current_config = PC.get_paper_config()
     result_dir = Path(str(vara_cfg()['result_dir']))
-    report_types = [
-        BaseReport.REPORT_TYPES[report_name] for report_name in report_names
-    ] if report_names else list(BaseReport.REPORT_TYPES.values())
+    report_types = report_names if report_names else list(
+        BaseReport.REPORT_TYPES.values()
+    )
 
     files_to_store: tp.Set[Path] = set()
     for case_study in current_config.get_all_case_studies():
