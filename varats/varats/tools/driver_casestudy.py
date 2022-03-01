@@ -14,7 +14,10 @@ from varats.base.sampling_method import NormalSamplingMethod
 from varats.data.discover_reports import initialize_reports
 from varats.data.reports.szz_report import SZZReport
 from varats.experiment.experiment_util import VersionExperiment
-from varats.mapping.commit_map import create_lazy_commit_map_loader
+from varats.mapping.commit_map import (
+    create_lazy_commit_map_loader,
+    generate_commit_map,
+)
 from varats.paper.case_study import (
     load_case_study_from_file,
     store_case_study,
@@ -239,10 +242,8 @@ def __casestudy_gen(
 @click.pass_context
 def __gen_latest(ctx: click.Context) -> None:
     """Add the latest revision of the project to the CS."""
-    get_cmap = create_lazy_commit_map_loader(
-        ctx.obj['project'], None, "HEAD", None
-    )
-    cmap = get_cmap()
+
+    cmap = generate_commit_map(ctx.obj["git_path"])
     case_study: CaseStudy = ctx.obj['case_study']
 
     repo = pygit2.Repository(pygit2.discover_repository(ctx.obj["git_path"]))
