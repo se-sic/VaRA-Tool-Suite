@@ -115,7 +115,9 @@ class PIRDViolinPlotGenerator(
         ]
 
 
-class PhasarIncHelperAnalysisViolinPlot(Plot, plot_name='psr_inc_rev_deltas'):
+class PhasarIncHelperAnalysisViolinPlot(
+    Plot, plot_name='psr_inc_helper_shares'
+):
     """Violing plot to visualize incremental speed deltas for helper
     analyses."""
 
@@ -142,83 +144,105 @@ class PhasarIncHelperAnalysisViolinPlot(Plot, plot_name='psr_inc_rev_deltas'):
             for report_file in report_files:
                 report = load_incremental_report(report_file)
 
-                rev_delta = _round_delta(
-                    report.ide_lca_timings().total_wpa(),
-                    report.ide_lca_timings().total_incremental()
+                def build_data_for_timings(timings, analysis):
+                    irdb = timings.inc_incremental_irdb_construction_time
+                    irdb_delta = _round_delta(
+                        timings.inc_initial_irdb_construction_time,
+                        timings.inc_incremental_irdb_construction_time
+                    )
+
+                    th = timings.inc_incremental_th_construction_time
+                    th_delta = _round_delta(
+                        timings.inc_initial_th_construction_time,
+                        timings.inc_incremental_th_construction_time
+                    )
+
+                    pt = timings.inc_incremental_pt_construction_time
+                    pt_delta = _round_delta(
+                        timings.inc_initial_pt_construction_time,
+                        timings.inc_incremental_pt_construction_time
+                    )
+
+                    icfg = timings.inc_incremental_icfg_construction_time
+                    icfg_delta = _round_delta(
+                        timings.inc_initial_icfg_construction_time,
+                        timings.inc_incremental_icfg_construction_time
+                    )
+
+                    dfa = timings.inc_incremental_dfa_solving_time
+                    dfa_delta = _round_delta(
+                        timings.inc_initial_dfa_solving_time,
+                        timings.inc_incremental_dfa_solving_time
+                    )
+
+                    total = irdb + th + pt + icfg + dfa
+
+                    rev_deltas.append({
+                        "Project": project_name,
+                        "Analysis": analysis,
+                        "AnalysisPart": "IRDB",
+                        "Proportion": irdb / total,
+                        "Delta": irdb_delta
+                    })
+                    rev_deltas.append({
+                        "Project": project_name,
+                        "Analysis": analysis,
+                        "AnalysisPart": "TH",
+                        "Proportion": th / total,
+                        "Delta": th_delta
+                    })
+                    rev_deltas.append({
+                        "Project": project_name,
+                        "Analysis": analysis,
+                        "AnalysisPart": "PT",
+                        "Proportion": pt / total,
+                        "Delta": pt_delta
+                    })
+                    rev_deltas.append({
+                        "Project": project_name,
+                        "Analysis": analysis,
+                        "AnalysisPart": "ICFG",
+                        "Proportion": icfg / total,
+                        "Delta": icfg_delta
+                    })
+                    rev_deltas.append({
+                        "Project": project_name,
+                        "Analysis": analysis,
+                        "AnalysisPart": "DFA",
+                        "Proportion": dfa / total,
+                        "Delta": dfa_delta
+                    })
+
+                build_data_for_timings(report.ide_lca_timings(), "lca")
+                build_data_for_timings(
+                    report.ide_typestate_timings(), "typestate"
                 )
-
-                if math.isnan(rev_delta):
-                    continue
-
-                rev_deltas.append({
-                    "Project": project_name,
-                    "Analysis Time Reduction": rev_delta
-                })
-
-                irdb = report.ide_lca_timings(
-                ).inc_incremental_irdb_construction_time
-                th = report.ide_lca_timings(
-                ).inc_incremental_th_construction_time
-                pt = report.ide_lca_timings(
-                ).inc_incremental_pt_construction_time
-                icfg = report.ide_lca_timings(
-                ).inc_incremental_icfg_construction_time
-                dfa = report.ide_lca_timings().inc_incremental_dfa_solving_time
-
-                total = irdb + th + pt + icfg + dfa
-
-                rev_deltas.append({
-                    "Project": project_name,
-                    "Analysis": "IRDB",
-                    "Proportion": irdb / total
-                })
-                rev_deltas.append({
-                    "Project": project_name,
-                    "Analysis": "TH",
-                    "Proportion": th / total
-                })
-                rev_deltas.append({
-                    "Project": project_name,
-                    "Analysis": "PT",
-                    "Proportion": pt / total
-                })
-                rev_deltas.append({
-                    "Project": project_name,
-                    "Analysis": "ICFG",
-                    "Proportion": icfg / total
-                })
-                rev_deltas.append({
-                    "Project": project_name,
-                    "Analysis": "DFA",
-                    "Proportion": dfa / total
-                })
-
-                # rev_deltas.append(time_data)
-
-                # project_names.add(project_name)
+                build_data_for_timings(report.ifds_taint_timings(), "taint")
 
         if not rev_deltas:
             LOG.warning("There were no projects found with enough data points.")
             raise PlotDataEmpty
 
-        project_names = {"IRDB", "TH", "PT", "ICFG", "DFA"}
+        helper_analyses = ["IRDB", "TH", "PT", "ICFG", "DFA"]
 
         data = pd.DataFrame(rev_deltas)
         print(f"{data=}")
         ax = sns.violinplot(
-            x="Analysis",
-            y="Proportion",
+            x="AnalysisPart",
+            # y="Proportion",
+            y="Delta",
             data=data,
-            order=sorted(project_names),
+            order=helper_analyses,
             inner=None,
             linewidth=1,
             color=".95"
         )
         sns.stripplot(
-            x="Analysis",
-            y="Proportion",
+            x="AnalysisPart",
+            # y="Proportion",
+            y="Delta",
             data=data,
-            order=sorted(project_names),
+            order=helper_analyses,
             alpha=.25,
             size=3
         )
