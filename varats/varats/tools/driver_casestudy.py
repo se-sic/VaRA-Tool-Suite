@@ -158,9 +158,10 @@ def __casestudy_status(
     "-v", "--version", type=int, default=0, help="Case study version."
 )
 @click.option(
-    "--ignore-blocked",
-    is_flag=True,
-    help="Ignore revisions that are marked as blocked."
+    "--ignore-blocked/--allow-blocked",
+    default=True,
+    help="Ignore/Allow revisions that are marked as blocked. By default, blocked "
+    "revisions will be ignored."
 )
 @click.pass_context
 def __casestudy_gen(
