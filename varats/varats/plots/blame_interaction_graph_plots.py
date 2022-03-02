@@ -17,11 +17,9 @@ from varats.data.reports.blame_interaction_graph import (
     CIGEdgeAttrs,
     AIGNodeAttrs,
     CAIGNodeAttrs,
-    BlameInteractionGraph,
 )
 from varats.data.reports.blame_report import BlameReport
 from varats.mapping.commit_map import get_commit_map
-from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import (
     newest_processed_revision_for_case_study,
 )
