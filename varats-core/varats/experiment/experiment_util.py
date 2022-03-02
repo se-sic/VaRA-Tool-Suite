@@ -29,7 +29,7 @@ from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
 
 if tp.TYPE_CHECKING:
-    TempDir = tempfile.TemporaryDirectory[Path]
+    TempDir = tempfile.TemporaryDirectory[str]
 else:
     TempDir = tempfile.TemporaryDirectory
 
@@ -496,9 +496,6 @@ class ZippedReportFolder(TempDir):
     def __init__(self, result_report_path: Path) -> None:
         super().__init__()
         self.__result_report_name: Path = result_report_path.with_suffix('')
-
-    def __enter__(self) -> Path:
-        return Path(super().__enter__())
 
     def __exit__(
         self, exc_type: tp.Optional[tp.Type[BaseException]],

@@ -270,7 +270,7 @@ class TestZippedReportFolder(unittest.TestCase):
         test_zip = test_tmp_folder / 'FooBar.zip'
 
         with EU.ZippedReportFolder(test_zip) as output_folder:
-            with open(output_folder / 'foo.txt', 'w') as output_file:
+            with open(Path(output_folder) / 'foo.txt', 'w') as output_file:
                 output_file.write('content')
 
         self.assertTrue(test_zip.exists())
