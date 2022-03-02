@@ -5,11 +5,9 @@ import typing as tp
 import pandas as pd
 import seaborn as sns
 
-from varats.data.metrics import min_max_normalize
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
     CAIGNodeAttrs,
-    CIGNodeAttrs,
     create_file_based_interaction_graph,
     AIGNodeAttrs,
 )
@@ -20,15 +18,7 @@ from varats.paper_mgmt.case_study import (
 from varats.paper_mgmt.paper_config import get_loaded_paper_config
 from varats.plot.plot import Plot
 from varats.plot.plots import PlotGenerator, PlotConfig
-from varats.project.project_util import get_local_project_gits
-from varats.utils.git_util import (
-    ChurnConfig,
-    create_commit_lookup_helper,
-    CommitRepoPair,
-    calc_repo_code_churn,
-    FullCommitHash,
-    UNCOMMITTED_COMMIT_HASH,
-)
+from varats.utils.git_util import FullCommitHash
 
 
 class CommitAuthorInteractionGraphViolinPlot(Plot, plot_name='caig_box'):
@@ -215,114 +205,6 @@ class AuthorBlameVsFileDegreesViolinPlotGenerator(
     def generate(self) -> tp.List[Plot]:
         return [
             AuthorBlameVsFileDegreesViolinPlot(
-                self.plot_config, **self.plot_kwargs
-            )
-        ]
-
-
-class CommitAuthorInteractionGraphGrid(Plot, plot_name='caig_grid'):
-    """Box plot of commit-author interaction commit node degrees."""
-
-    def __init__(self, plot_config: PlotConfig, **kwargs: tp.Any) -> None:
-        super().__init__(self.NAME, plot_config, **kwargs)
-
-    def plot(self, view_mode: bool) -> None:
-        degree_data: tp.List[pd.DataFrame] = []
-        project_names: tp.List[str] = []
-        for case_study in get_loaded_paper_config().get_all_case_studies():
-            project_name = case_study.project_name
-            added_project_name = False
-
-            commit_lookup = create_commit_lookup_helper(project_name)
-            repo_lookup = get_local_project_gits(project_name)
-            code_churn_lookup = {
-                repo_name: calc_repo_code_churn(
-                    repo, ChurnConfig.create_c_style_languages_config()
-                ) for repo_name, repo in repo_lookup.items()
-            }
-
-            def filter_nodes(node: CommitRepoPair) -> bool:
-                if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
-                    return False
-                # pylint: disable=cell-var-from-loop
-                return bool(commit_lookup(node))
-
-            revision = newest_processed_revision_for_case_study(
-                case_study, BlameReport
-            )
-            if not revision:
-                continue
-
-            big = create_blame_interaction_graph(project_name, revision)
-            cig = big.commit_interaction_graph()
-            caig = big.commit_author_interaction_graph(
-                outgoing_interactions=True, incoming_interactions=True
-            )
-
-            authors = len([
-                1 for node in caig.nodes if caig.nodes[node]["author"]
-            ])
-
-            cig_data: tp.Dict[CommitRepoPair, int] = {}
-            for node in cig.nodes:
-                cig_node_attrs = tp.cast(CIGNodeAttrs, cig.nodes[node])
-                cig_commit = cig_node_attrs["commit"]
-                if not filter_nodes(cig_commit):
-                    continue
-                cig_data[cig_commit] = cig.degree(node)
-
-            nodes: tp.List[tp.Dict[str, tp.Any]] = []
-            for node in caig.nodes:
-                caig_node_attrs = tp.cast(CAIGNodeAttrs, caig.nodes[node])
-                caig_commit = caig_node_attrs["commit"]
-
-                if caig_commit:
-                    if not filter_nodes(caig_commit):
-                        continue
-                    if not added_project_name:
-                        project_names.append(project_name)
-                        added_project_name = True
-
-                    _, insertions, _ = code_churn_lookup[
-                        caig_commit.repository_name][caig_commit.commit_hash]
-                    nodes.append(({
-                        "project": project_name,
-                        "commit": caig_commit.commit_hash,
-                        "num_authors": caig.degree(node) / authors,
-                        "insertions": insertions,
-                        "node_degree": cig_data[caig_commit]
-                    }))
-
-            data = pd.DataFrame(nodes)
-            data["insertions"] = data["insertions"]
-            data["node_degree"] = min_max_normalize(data["node_degree"])
-            degree_data.append(data)
-
-        full_data = pd.concat(degree_data)
-        grid = sns.PairGrid(
-            x_vars=["node_degree", "insertions"],
-            y_vars=["num_authors"],
-            data=full_data,
-            hue="project"
-        )
-        grid.map(sns.scatterplot, size=2, alpha=0.25)
-        grid.add_legend()
-
-    def calc_missing_revisions(
-        self, boundary_gradient: float
-    ) -> tp.Set[FullCommitHash]:
-        raise NotImplementedError
-
-
-class CAIGGridPlotGenerator(
-    PlotGenerator, generator_name="caig-grid", options=[]
-):
-    """Generates a grid plot comparing the number of authors interacting with a
-    commit with other metrics associated with that commit."""
-
-    def generate(self) -> tp.List[Plot]:
-        return [
-            CommitAuthorInteractionGraphGrid(
                 self.plot_config, **self.plot_kwargs
             )
         ]
