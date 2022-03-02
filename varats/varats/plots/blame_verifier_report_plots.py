@@ -138,31 +138,24 @@ def _verifier_plot(
     if not final_plot_data:
         raise PlotDataEmpty
 
-    project_name = plot_kwargs['case_study'][0].project_name
-    suptitle_opt_str = "with" if opt_level == OptLevel.OPT else "without"
-    default_fig_suptitle = f'Annotated project revisions {suptitle_opt_str} ' \
-                           f'optimization - Project {project_name}'
-
     if len(plot_kwargs["case_study"]) > 1 and len(final_plot_data) > 1:
-        _verifier_plot_multiple(
-            default_fig_suptitle, plot_config, final_plot_data
-        )
+        _verifier_plot_multiple(plot_config, final_plot_data)
     else:
         # Pass the only list item of the plot data
-        _verifier_plot_single(
-            default_fig_suptitle, plot_config, final_plot_data[0]
-        )
+        _verifier_plot_single(plot_config, plot_kwargs, final_plot_data[0])
 
 
 def _verifier_plot_single(
-    default_fig_suptitle: str, plot_config: PlotConfig,
+    plot_config: PlotConfig, plot_kwargs: tp.Dict[str, tp.Any],
     plot_data: tp.Tuple[str, tp.Dict[str, tp.Any]]
 ) -> None:
+    project_name = plot_kwargs['case_study'][0].project_name
+    default_fig_suptitle = f'Annotated project revisions without optimization' \
+                           f' - Project {project_name}'
+    fig_suptitle = f"{plot_config.fig_title(default_fig_suptitle)}"
+
     fig, main_axis = plt.subplots()
-    fig.suptitle(
-        plot_config.fig_title(default_fig_suptitle),
-        fontsize=plot_config.font_size(8)
-    )
+    fig.suptitle(fig_suptitle, fontsize=plot_config.font_size(8))
     main_axis.grid(linestyle='--')
     main_axis.set_xlabel('Revisions')
     main_axis.set_ylabel('Success/Failure rate in %')
@@ -203,7 +196,7 @@ def _verifier_plot_single(
 
 
 def _verifier_plot_multiple(
-    default_fig_suptitle: str, plot_config: PlotConfig,
+    plot_config: PlotConfig,
     final_plot_data: tp.List[tp.Tuple[str, tp.Dict[str, tp.Any]]]
 ) -> None:
     fig = plt.figure()
@@ -238,7 +231,9 @@ def _verifier_plot_multiple(
             f"{plot_data[0]}(\u2205 {plot_data[1]['average_success_ratio']}%)"
         )
 
-    main_axis.title.set_text(plot_config.fig_title(default_fig_suptitle))
+    default_fig_suptitle = f'Annotated project revisions without optimization' \
+                           f' - Project(s): {project_names}'
+    main_axis.title.set_text(f"{plot_config.fig_title(default_fig_suptitle)}")
 
     plt.setp(
         main_axis.get_xticklabels(), rotation=30, horizontalalignment='right'
@@ -318,16 +313,3 @@ class BlameVerifierReportOptPlot(
 
     def plot(self, view_mode: bool) -> None:
         _verifier_plot(OptLevel.OPT, self.plot_config, self.plot_kwargs)
-
-
-class BlameVerifierReportOptPlotGenerator(
-    PlotGenerator,
-    generator_name="verifier-opt-plot",
-    options=[REQUIRE_REPORT_TYPE, REQUIRE_MULTI_CASE_STUDY]
-):
-    """Generates a verifier-opt plot for the selected case study(ies)."""
-
-    def generate(self) -> tp.List[Plot]:
-        return [
-            BlameVerifierReportOptPlot(self.plot_config, **self.plot_kwargs)
-        ]
