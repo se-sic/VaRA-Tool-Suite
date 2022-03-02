@@ -4,6 +4,7 @@ import logging
 import math
 import typing as tp
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
@@ -52,17 +53,27 @@ class PhasarIncRevisionDeltaViolinPlot(Plot, plot_name='psr_inc_rev_deltas'):
             for report_file in report_files:
                 report = load_incremental_report(report_file)
 
-                rev_delta = _round_delta(
+                rev_delta_lca = _round_delta(
                     report.ide_lca_timings().total_wpa(),
                     report.ide_lca_timings().total_incremental()
                 )
+                rev_delta_taint = _round_delta(
+                    report.ifds_taint_timings().total_wpa(),
+                    report.ifds_taint_timings().total_incremental()
+                )
+                rev_delta_typestate = _round_delta(
+                    report.ide_typestate_timings().total_wpa(),
+                    report.ide_typestate_timings().total_incremental()
+                )
 
-                if math.isnan(rev_delta):
+                if math.isnan(rev_delta_lca):
                     continue
 
                 rev_deltas.append({
                     "Project": project_name,
-                    "Analysis Time Reduction": rev_delta
+                    "TimeDeltaLCA": rev_delta_lca,
+                    "TimeDeltaTaint": rev_delta_taint,
+                    "TimeDeltaTypestate": rev_delta_typestate
                 })
 
                 project_names.add(project_name)
@@ -72,10 +83,18 @@ class PhasarIncRevisionDeltaViolinPlot(Plot, plot_name='psr_inc_rev_deltas'):
             raise PlotDataEmpty
 
         data = pd.DataFrame(rev_deltas)
-        # print(f"{data=}")
-        ax = sns.violinplot(
+        print(f"{data=}")
+
+        fig, axes = plt.subplots(3, 1, sharex=True, sharey=True)
+        fig.subplots_adjust(hspace=0.03)
+        box_style = dict(boxstyle='round', facecolor='blue', alpha=0.3)
+        box_fontsize = 8
+
+        # Plot -
+        sns.violinplot(
+            ax=axes[0],
             x="Project",
-            y="Analysis Time Reduction",
+            y="TimeDeltaLCA",
             data=data,
             order=sorted(project_names),
             inner=None,
@@ -83,17 +102,97 @@ class PhasarIncRevisionDeltaViolinPlot(Plot, plot_name='psr_inc_rev_deltas'):
             color=".95"
         )
         sns.stripplot(
+            ax=axes[0],
             x="Project",
-            y="Analysis Time Reduction",
+            y="TimeDeltaLCA",
             data=data,
             order=sorted(project_names),
             alpha=.25,
             size=3
         )
-        # ax.set_ylim(-0.1, 1.1)
-        ax.set_aspect(0.3 / ax.get_data_ratio())
-        ax.tick_params(axis='x', labelrotation=45)
-        ax.set_xlabel(None)
+        axes[0].text(
+            0.95,
+            0.9,
+            "LCA",
+            transform=axes[0].transAxes,
+            fontsize=box_fontsize,
+            verticalalignment='top',
+            horizontalalignment='right',
+            bbox=box_style
+        )
+
+        # Plot -
+        sns.violinplot(
+            ax=axes[1],
+            x="Project",
+            y="TimeDeltaTaint",
+            data=data,
+            order=sorted(project_names),
+            inner=None,
+            linewidth=1,
+            color=".95"
+        )
+        sns.stripplot(
+            ax=axes[1],
+            x="Project",
+            y="TimeDeltaTaint",
+            data=data,
+            order=sorted(project_names),
+            alpha=.25,
+            size=3
+        )
+        box_style['facecolor'] = 'green'
+        axes[1].text(
+            0.95,
+            0.9,
+            "Taint",
+            transform=axes[1].transAxes,
+            fontsize=box_fontsize,
+            verticalalignment='top',
+            horizontalalignment='right',
+            bbox=box_style
+        )
+
+        # Plot -
+        sns.violinplot(
+            ax=axes[2],
+            x="Project",
+            y="TimeDeltaTypestate",
+            data=data,
+            order=sorted(project_names),
+            inner=None,
+            linewidth=1,
+            color=".95"
+        )
+        sns.stripplot(
+            ax=axes[2],
+            x="Project",
+            y="TimeDeltaTypestate",
+            data=data,
+            order=sorted(project_names),
+            alpha=.25,
+            size=3
+        )
+        box_style['facecolor'] = 'red'
+        axes[2].text(
+            0.95,
+            0.9,
+            "Typestate",
+            transform=axes[2].transAxes,
+            fontsize=box_fontsize,
+            verticalalignment='top',
+            horizontalalignment='right',
+            bbox=box_style
+        )
+
+        for ax in axes:
+            # ax.set_ylim(-0.1, 1.1)
+            ax.set_aspect(0.3 / ax.get_data_ratio())
+            ax.tick_params(axis='x', labelrotation=45)
+            ax.set_xlabel(None)
+            ax.set_ylabel(None)
+
+        axes[1].set_ylabel("Analysis Time Reduction in %")
 
     def calc_missing_revisions(
         self, boundary_gradient: float
