@@ -51,8 +51,10 @@ from varats.ts_utils.click_param_types import (
     create_report_type_choice,
     TypedChoice,
     EnumChoice,
+    create_multi_case_study_choice,
 )
 from varats.utils.git_util import (
+    get_initial_commit,
     is_commit_hash,
     get_commits_before_timestamp,
     ShortCommitHash,
@@ -157,9 +159,10 @@ def __casestudy_status(
     "-v", "--version", type=int, default=0, help="Case study version."
 )
 @click.option(
-    "--ignore-blocked",
-    is_flag=True,
-    help="Ignore revisions that are marked as blocked."
+    "--ignore-blocked/--allow-blocked",
+    default=True,
+    help="Ignore/Allow revisions that are marked as blocked. By default, "
+    "blocked revisions will be ignored."
 )
 @click.pass_context
 def __casestudy_gen(
@@ -199,7 +202,7 @@ def __casestudy_gen(
                 case_study.insert_empty_stage(stage_index)
                 case_study.name_stage(stage_index, merge_stage)
             else:
-                stage_index_opt = case_study\
+                stage_index_opt = case_study \
                     .get_stage_index_by_name(merge_stage)
                 if not stage_index_opt:
                     selected_stage = CSStage(merge_stage)
@@ -309,7 +312,11 @@ def __gen_sample(
         end = get_commits_before_timestamp(end, project_repo_path)[0].hash
 
     if start is not None and not is_commit_hash(start):
-        start = get_commits_before_timestamp(start, project_repo_path)[0].hash
+        commits_before = get_commits_before_timestamp(start, project_repo_path)
+        if commits_before:
+            start = commits_before[0].hash
+        else:
+            start = get_initial_commit(project_repo_path).hash
 
     cmap = create_lazy_commit_map_loader(ctx.obj['project'], None, end, start)()
     extend_with_distrib_sampling(
@@ -477,7 +484,7 @@ def __gen_bug_commits(
     default=".*"
 )
 def __casestudy_package(
-    output: str, filter_regex: str, report_names: tp.List[str]
+    output: str, filter_regex: str, report_names: tp.List[tp.Type[BaseReport]]
 ) -> None:
     """
     Case study packaging util.
@@ -656,17 +663,84 @@ def __init_commit_hash(
 
 
 @main.group()
-def cleanup() -> None:
-    """Cleanup report files."""
-    return
+@click.option(
+    "--case-studies",
+    "-cs",
+    type=create_multi_case_study_choice(),
+    default='all',
+    help="Only remove reports for revisions from "
+    "these case studies, defaults to all case "
+    "studies from the current paper config"
+)
+@click.option(
+    "--experiment",
+    "-exp",
+    type=create_experiment_type_choice(),
+    help="Only remove reports that belong to the given experiment"
+)
+@click.option(
+    "--report",
+    type=create_report_type_choice(),
+    help="Only remove reports from the given type."
+)
+@click.pass_context
+def cleanup(
+    ctx: click.Context, case_studies: tp.List[CaseStudy],
+    experiment: tp.Optional[VersionExperiment], report: tp.Optional[BaseReport]
+) -> None:
+    """
+    Cleanup report files.
+
+    If both --experiment and --report the report file has to belong to both
+    """
+
+    ctx.ensure_object(dict)
+    ctx.obj["case_studies"] = case_studies
+    ctx.obj["experiment"] = experiment
+    ctx.obj["report"] = report
+
+
+@cleanup.command("all")
+@click.option(
+    "--error", is_flag=True, help="remove only reports from failed experiments"
+)
+@click.pass_context
+def _remove_all_result_files(ctx: click.Context, error: bool) -> None:
+    """Remove all report files of the current paper_config."""
+    result_folders = _find_result_dir_paths_of_projects(ctx.obj["case_studies"])
+    for folder in result_folders:
+        for res_file in folder.iterdir():
+            report_file = ReportFilename(res_file.name)
+            if not report_file.is_result_file():
+                continue
+            if ctx.obj["experiment"] and not ctx.obj[
+                "experiment"].file_belongs_to_experiment(res_file.name):
+                continue
+            if ctx.obj["report"] and not ctx.obj[
+                "report"].is_correct_report_type(res_file.name):
+                continue
+
+            commit_hash = report_file.commit_hash
+            if any(
+                list(
+                    case_study.has_revision(commit_hash)
+                    for case_study in ctx.obj["case_studies"]
+                )
+            ):
+                if error and not (
+                    report_file.has_status_compileerror() or
+                    report_file.has_status_failed()
+                ):
+                    continue
+                res_file.unlink()
 
 
 @cleanup.command("old")
-def _remove_old_result_files() -> None:
+@click.pass_context
+def _remove_old_result_files(ctx: click.Context) -> None:
     """Remove result files of wich a newer version exists."""
-    paper_config = get_paper_config()
     result_dir = Path(str(vara_cfg()['result_dir']))
-    for case_study in paper_config.get_all_case_studies():
+    for case_study in ctx.obj['case_studies']:
         old_files: tp.List[Path] = []
         newer_files: tp.Dict[ShortCommitHash, Path] = {}
         result_dir_cs = result_dir / case_study.project_name
@@ -674,6 +748,15 @@ def _remove_old_result_files() -> None:
             continue
         for opt_res_file in result_dir_cs.iterdir():
             report_file = ReportFilename(opt_res_file.name)
+            if not report_file.is_result_file():
+                continue
+            if ctx.obj["experiment"] and not ctx.obj[
+                "experiment"].file_belongs_to_experiment(opt_res_file.name):
+                continue
+            if ctx.obj["report"] and not ctx.obj[
+                "report"].is_correct_report_type(opt_res_file.name):
+                continue
+
             commit_hash = report_file.commit_hash
             if case_study.has_revision(commit_hash):
                 current_file = newer_files.get(commit_hash)
@@ -693,25 +776,6 @@ def _remove_old_result_files() -> None:
                 file.unlink()
 
 
-@cleanup.command("error")
-def _remove_error_result_files() -> None:
-    """Remove error result files."""
-    result_dir_paths = _find_result_dir_paths_of_projects()
-
-    for result_dir_path in result_dir_paths:
-        result_file_names = os.listdir(result_dir_path)
-
-        for result_file_name in result_file_names:
-            report_file_name = ReportFilename(result_file_name)
-            if report_file_name.is_result_file() and (
-                report_file_name.has_status_compileerror() or
-                report_file_name.has_status_failed()
-            ):
-                file = Path(result_dir_path / report_file_name.filename)
-                if file.exists():
-                    file.unlink()
-
-
 @cleanup.command("regex")
 @click.option(
     "--filter-regex",
@@ -723,10 +787,18 @@ def _remove_error_result_files() -> None:
 @click.option(
     "--silent", help="Hide the output of the matching filenames", is_flag=True
 )
-def _remove_result_files_by_regex(regex_filter: str, silent: bool) -> None:
-    """Remove result files based on a given regex filter."""
-    result_dir_paths = _find_result_dir_paths_of_projects()
+@click.pass_context
+def _remove_result_files_by_regex(
+    ctx: click.Context, regex_filter: str, silent: bool
+) -> None:
+    """
+    Remove result files based on a given regex filter.
 
+    Ignores experiment and report filter given to the main command
+    """
+    result_dir_paths = _find_result_dir_paths_of_projects(
+        ctx.obj["case_studies"]
+    )
     for result_dir_path in result_dir_paths:
         result_file_names = os.listdir(result_dir_path)
         files_to_delete: tp.List[str] = []
@@ -755,13 +827,11 @@ def _remove_result_files_by_regex(regex_filter: str, silent: bool) -> None:
             continue
 
 
-def _find_result_dir_paths_of_projects() -> tp.List[Path]:
+def _find_result_dir_paths_of_projects(case_studies: tp.List[CaseStudy]) -> \
+        tp.List[Path]:
     result_dir_path = Path(vara_cfg()["result_dir"].value)
     existing_paper_config_result_dir_paths = []
-    paper_config = get_paper_config()
-    project_names = [
-        cs.project_name for cs in paper_config.get_all_case_studies()
-    ]
+    project_names = [cs.project_name for cs in case_studies]
     for project_name in project_names:
         path = Path(result_dir_path / project_name)
         if Path.exists(path):
