@@ -1,13 +1,13 @@
 """Utility module for BenchBuild experiments."""
 
 import os
-import shutil
 import random
+import shutil
+import tempfile
 import traceback
 import typing as tp
 from abc import abstractmethod
 from pathlib import Path
-import tempfile
 
 from benchbuild import source
 from benchbuild.experiment import Experiment
@@ -482,9 +482,9 @@ class ZippedReportFolder(tempfile.TemporaryDirectory):
     actually a folder containing multiple files and other folders.
 
     Example usage: An experiment step can, with this context manager, simply
-        create a folder into which all kinds of data is dropped into. After the
-        completion of the step (leaving the context manager), all files dropped
-        into the folder will be compressed and stored as a single report.
+    create a folder into which all kinds of data is dropped into. After the
+    completion of the step (leaving the context manager), all files dropped into
+    the folder will be compressed and stored as a single report.
     """
 
     def __init__(self, result_report_path: Path) -> None:
