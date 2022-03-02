@@ -28,6 +28,11 @@ from varats.revision.revisions import get_tagged_revisions
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
 
+if tp.TYPE_CHECKING:
+    TempDir = tempfile.TemporaryDirectory[str]
+else:
+    TempDir = tempfile.TemporaryDirectory
+
 
 def get_varats_result_folder(project: Project) -> Path:
     """
@@ -477,7 +482,7 @@ def get_tagged_experiment_specific_revisions(
     )
 
 
-class ZippedReportFolder(tempfile.TemporaryDirectory[str]):
+class ZippedReportFolder(TempDir):
     """
     Context manager for creating a folder report, i.e., a report file which is
     actually a folder containing multiple files and other folders.
