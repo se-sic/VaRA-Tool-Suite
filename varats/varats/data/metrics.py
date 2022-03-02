@@ -88,6 +88,14 @@ def apply_tukeys_fence(
 
     Returns:
         the data without outliers
+
+    Test:
+    >>> apply_tukeys_fence(pd.DataFrame({'foo': [1,1,2,2,10]}), 'foo', 3)
+       foo
+    0    1
+    1    1
+    2    2
+    3    2
     """
     quartile_1 = data[column].quantile(0.25)
     quartile_3 = data[column].quantile(0.75)
@@ -96,3 +104,25 @@ def apply_tukeys_fence(
         pd.DataFrame, data.loc[(data[column] >= quartile_1 - k * iqr) &
                                (data[column] <= quartile_3 + k * iqr)]
     )
+
+
+def min_max_normalize(values: pd.Series) -> pd.Series:
+    """
+    Min-Max normalize a series.
+
+    Args:
+        values: the series to normalize
+
+    Returns:
+        the normalized series
+
+    Test:
+    >>> min_max_normalize(pd.Series([1,2,3]))
+    0    0.0
+    1    0.5
+    2    1.0
+    dtype: float64
+    """
+    max_value = values.max()
+    min_value = values.min()
+    return tp.cast(pd.Series, (values - min_value) / (max_value - min_value))

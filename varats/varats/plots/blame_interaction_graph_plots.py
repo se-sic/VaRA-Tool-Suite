@@ -17,6 +17,7 @@ from varats.data.reports.blame_interaction_graph import (
     CIGEdgeAttrs,
     AIGNodeAttrs,
     CAIGNodeAttrs,
+    BlameInteractionGraph,
 )
 from varats.data.reports.blame_report import BlameReport
 from varats.mapping.commit_map import get_commit_map
@@ -93,6 +94,60 @@ class CommitInteractionGraphPlotGenerator(
         ]
 
 
+NodeInfoTy = tp.TypeVar("NodeInfoTy", ChordPlotNodeInfo, ArcPlotNodeInfo)
+EdgeInfoTy = tp.TypeVar("EdgeInfoTy", ChordPlotEdgeInfo, ArcPlotEdgeInfo)
+
+
+def _prepare_cig_plotly(
+    project_name: str, revision: FullCommitHash,
+    create_node_info: tp.Callable[[NodeTy, CommitRepoPair, nx.DiGraph],
+                                  NodeInfoTy],
+    create_edge_info: tp.Callable[[CommitRepoPair, CommitRepoPair, int],
+                                  EdgeInfoTy]
+) -> tp.Tuple[tp.List[tp.Tuple[NodeTy, NodeInfoTy]], tp.List[tp.Tuple[
+    NodeTy, NodeTy, EdgeInfoTy]]]:
+    commit_lookup = create_commit_lookup_helper(project_name)
+    cig = create_blame_interaction_graph(project_name,
+                                         revision).commit_interaction_graph()
+
+    def filter_nodes(node: CommitRepoPair) -> bool:
+        if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
+            return False
+        commit = commit_lookup(node)
+        if not commit:
+            return False
+        # TODO: make filter configurable
+        return datetime.utcfromtimestamp(commit.commit_time
+                                        ) >= datetime(2015, 1, 1)
+
+    nodes: tp.List[tp.Tuple[NodeTy, NodeInfoTy]] = []
+    node_meta: tp.Dict[NodeTy, CommitRepoPair] = {}
+    for node in cig.nodes:
+        node_attrs = tp.cast(CIGNodeAttrs, cig.nodes[node])
+        commit = node_attrs["commit"]
+        if not filter_nodes(commit):
+            continue
+        node_meta[node] = commit
+        nodes.append((node, create_node_info(node, commit, cig)))
+
+    nodes = sorted(
+        nodes, key=lambda x: int(commit_lookup(node_meta[x[0]]).commit_time)
+    )
+
+    edges: tp.List[tp.Tuple[NodeTy, NodeTy, EdgeInfoTy]] = []
+    for source, sink in cig.edges:
+        amount = tp.cast(CIGEdgeAttrs, cig[source][sink])["amount"]
+        source_commit = tp.cast(CIGNodeAttrs, cig.nodes[source])["commit"]
+        sink_commit = tp.cast(CIGNodeAttrs, cig.nodes[sink])["commit"]
+        if not filter_nodes(source_commit) or not filter_nodes(sink_commit):
+            continue
+        edges.append((
+            source, sink, create_edge_info(source_commit, sink_commit, amount)
+        ))
+
+    return nodes, edges
+
+
 class CommitInteractionGraphChordPlot(Plot, plot_name='cig_chord_plot'):
     """Chord plot for a commit interaction graph."""
 
@@ -100,68 +155,34 @@ class CommitInteractionGraphChordPlot(Plot, plot_name='cig_chord_plot'):
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        case_study: CaseStudy = self.plot_kwargs["case_study"]
-        project_name = case_study.project_name
-        commit_map = get_commit_map(project_name)
-
-        revision_str: str = self.plot_kwargs["revision"]
-        revision = commit_map.convert_to_full_or_warn(
-            ShortCommitHash(revision_str)
+        project_name: str = self.plot_kwargs["case_study"].project_name
+        revision = get_commit_map(project_name).convert_to_full_or_warn(
+            ShortCommitHash(self.plot_kwargs["revision"])
         )
 
-        commit_lookup = create_commit_lookup_helper(project_name)
+        def create_node_data(
+            node: NodeTy, commit: CommitRepoPair, cig: nx.DiGraph
+        ) -> ChordPlotNodeInfo:
+            del node
+            del cig
+            return {"info": commit.commit_hash.short_hash, "color": 1}
 
-        cig = create_blame_interaction_graph(project_name, revision
-                                            ).commit_interaction_graph()
+        def create_edge_data(
+            source_commit: CommitRepoPair, sink_commit: CommitRepoPair,
+            amount: int
+        ) -> ChordPlotEdgeInfo:
+            return {
+                "size": amount,
+                "color": 1,
+                "info":
+                    f"{source_commit.commit_hash.short_hash} "
+                    f"--{{{amount}}}--> "
+                    f"{sink_commit.commit_hash.short_hash}"
+            }
 
-        def filter_nodes(node: CommitRepoPair) -> bool:
-            if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
-                return False
-            commit = commit_lookup(node)
-            if not commit:
-                return False
-            # TODO: make filter configurable
-            return datetime.utcfromtimestamp(commit.commit_time
-                                            ) >= datetime(2015, 1, 1)
-
-        nodes: tp.List[tp.Tuple[NodeTy, ChordPlotNodeInfo]] = []
-        node_meta: tp.Dict[NodeTy, CommitRepoPair] = {}
-        for node in cig.nodes:
-            node_attrs = tp.cast(CIGNodeAttrs, cig.nodes[node])
-            commit = node_attrs["commit"]
-            if not filter_nodes(commit):
-                continue
-            node_meta[node] = commit
-            nodes.append(
-                (node, {
-                    "info": commit.commit_hash.short_hash,
-                    "color": 1,
-                })
-            )
-
-        def node_sort_key(node: tp.Tuple[NodeTy, ChordPlotNodeInfo]) -> int:
-            return int(commit_lookup(node_meta[node[0]]).commit_time)
-
-        nodes = sorted(nodes, key=node_sort_key)
-
-        edges: tp.List[tp.Tuple[NodeTy, NodeTy, ChordPlotEdgeInfo]] = []
-        for source, sink in cig.edges:
-            edge_attrs = tp.cast(CIGEdgeAttrs, cig[source][sink])
-            source_commit = tp.cast(CIGNodeAttrs, cig.nodes[source])["commit"]
-            sink_commit = tp.cast(CIGNodeAttrs, cig.nodes[sink])["commit"]
-            if not filter_nodes(source_commit) or not filter_nodes(sink_commit):
-                continue
-            edges.append((
-                source, sink, {
-                    "size": edge_attrs["amount"],
-                    "color": 1,
-                    "info":
-                        f"{source_commit.commit_hash.short_hash} "
-                        f"--{{{edge_attrs['amount']}}}--> "
-                        f"{sink_commit.commit_hash.short_hash}"
-                }
-            ))
-
+        nodes, edges = _prepare_cig_plotly(
+            project_name, revision, create_node_data, create_edge_data
+        )
         figure = make_chord_plot(nodes, edges, "Commit Interaction Graph")
 
         if view_mode:
@@ -197,69 +218,37 @@ class CommitInteractionGraphArcPlot(Plot, plot_name='cig_arc_plot'):
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        case_study: CaseStudy = self.plot_kwargs["case_study"]
-        project_name = case_study.project_name
-        commit_map = get_commit_map(project_name)
-
-        revision_str: str = self.plot_kwargs["revision"]
-        revision = commit_map.convert_to_full_or_warn(
-            ShortCommitHash(revision_str)
+        project_name: str = self.plot_kwargs["case_study"].project_name
+        revision = get_commit_map(project_name).convert_to_full_or_warn(
+            ShortCommitHash(self.plot_kwargs["revision"])
         )
 
-        commit_lookup = create_commit_lookup_helper(project_name)
+        def create_node_data(
+            node: NodeTy, commit: CommitRepoPair, cig: nx.DiGraph
+        ) -> ArcPlotNodeInfo:
+            return {
+                "info": commit.commit_hash.short_hash,
+                "size": cig.degree(node),
+                "fill_color": cig.out_degree(node),
+                "line_color": cig.in_degree(node)
+            }
 
-        cig = create_blame_interaction_graph(project_name, revision
-                                            ).commit_interaction_graph()
+        def create_edge_data(
+            source_commit: CommitRepoPair, sink_commit: CommitRepoPair,
+            amount: int
+        ) -> ArcPlotEdgeInfo:
+            return {
+                "size": amount,
+                "color": amount,
+                "info":
+                    f"{source_commit.commit_hash.short_hash} "
+                    f"--{{{amount}}}--> "
+                    f"{sink_commit.commit_hash.short_hash}"
+            }
 
-        def filter_nodes(node: CommitRepoPair) -> bool:
-            if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
-                return False
-            commit = commit_lookup(node)
-            if not commit:
-                return False
-            return datetime.utcfromtimestamp(commit.commit_time
-                                            ) >= datetime(2015, 1, 1)
-
-        nodes: tp.List[tp.Tuple[NodeTy, ArcPlotNodeInfo]] = []
-        node_meta: tp.Dict[NodeTy, CommitRepoPair] = {}
-        for node in cig.nodes:
-            node_attrs = tp.cast(CIGNodeAttrs, cig.nodes[node])
-            commit = node_attrs["commit"]
-            if not filter_nodes(commit):
-                continue
-            node_meta[node] = commit
-            nodes.append((
-                node, {
-                    "info": commit.commit_hash.short_hash,
-                    "size": cig.degree(node),
-                    "fill_color": cig.out_degree(node),
-                    "line_color": cig.in_degree(node)
-                }
-            ))
-
-        def node_sort_key(node: tp.Tuple[NodeTy, ArcPlotNodeInfo]) -> int:
-            return int(commit_lookup(node_meta[node[0]]).commit_time)
-
-        nodes = sorted(nodes, key=node_sort_key)
-
-        edges: tp.List[tp.Tuple[NodeTy, NodeTy, ArcPlotEdgeInfo]] = []
-        for source, sink in cig.edges:
-            edge_attrs = tp.cast(CIGEdgeAttrs, cig[source][sink])
-            source_commit = tp.cast(CIGNodeAttrs, cig.nodes[source])["commit"]
-            sink_commit = tp.cast(CIGNodeAttrs, cig.nodes[sink])["commit"]
-            if not filter_nodes(source_commit) or not filter_nodes(sink_commit):
-                continue
-            edges.append((
-                source, sink, {
-                    "size": edge_attrs["amount"],
-                    "color": edge_attrs["amount"],
-                    "info":
-                        f"{source_commit.commit_hash.short_hash} "
-                        f"--{{{edge_attrs['amount']}}}--> "
-                        f"{sink_commit.commit_hash.short_hash}"
-                }
-            ))
-
+        nodes, edges = _prepare_cig_plotly(
+            project_name, revision, create_node_data, create_edge_data
+        )
         figure = make_arc_plot(nodes, edges, "Commit Interaction Graph")
 
         if view_mode:

@@ -391,8 +391,9 @@ def _calculate_ribbon_data(
     incoming_edges: tp.Dict[NodeTy, tp.List[int]] = defaultdict(list)
     outgoing_edges: tp.Dict[NodeTy, tp.List[int]] = defaultdict(list)
     # group the edges by node
-    for idx, edge in enumerate(edges):
-        source, sink, _ = edge
+    for idx, (source, sink, _) in sorted(
+        enumerate(edges), key=lambda x: float(x[1][2]["size"]), reverse=True
+    ):
         outgoing_edges[source].append(idx)
         incoming_edges[sink].append(idx)
 
@@ -402,21 +403,13 @@ def _calculate_ribbon_data(
     for node_idx, (node, _) in enumerate(nodes):
         node_edges: tp.List[int] = []
         node_edge_sizes: tp.List[float] = []
-        for edge_idx in sorted(
-            outgoing_edges[node],
-            key=lambda x: float(edges[x][2]["size"]),
-            reverse=True
-        ):
+        for edge_idx in outgoing_edges[node]:
             node_edges.append(edge_idx)
             node_edge_sizes.append(edges[edge_idx][2].get("size", 1))
             ribbon_colors[edge_idx] = add_alpha_channel(
                 ideogram_colors[node_idx], 0.75
             )
-        for edge_idx in sorted(
-            incoming_edges[node],
-            key=lambda x: float(edges[x][2]["size"]),
-            reverse=True
-        ):
+        for edge_idx in incoming_edges[node]:
             node_edges.append(edge_idx)
             node_edge_sizes.append(edges[edge_idx][2].get("size", 1))
         ribbon_ends = _calculate_ribbon_ends(
@@ -518,8 +511,7 @@ def make_chord_plot(
 
     layout = _make_layout(title, size)
     data = ideogram_info + ribbon_info
-    figure = go.Figure(data=data, layout=layout)
-    return figure
+    return go.Figure(data=data, layout=layout)
 
 
 class ArcPlotNodeInfo(TypedDict):
@@ -632,8 +624,10 @@ def make_arc_plot(
       - size: size of the transition relation relative to others; 1 by default
 
     Args:
-        nodes:
+        nodes: list of nodes
         edges: list of edges
+        title: figure title
+        size: figure size
 
     Returns:
     """
@@ -688,9 +682,6 @@ def make_arc_plot(
         hoverinfo="text"
     )
 
-    arcs = _create_arcs(edges, arc_bounds, edge_colors)
-
     layout = _make_layout(title, size)
-    data = arcs + [node_scatter]
-    figure = go.Figure(data=data, layout=layout)
-    return figure
+    data = _create_arcs(edges, arc_bounds, edge_colors) + [node_scatter]
+    return go.Figure(data=data, layout=layout)

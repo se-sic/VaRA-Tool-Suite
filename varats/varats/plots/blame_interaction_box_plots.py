@@ -5,6 +5,7 @@ import typing as tp
 import pandas as pd
 import seaborn as sns
 
+from varats.data.metrics import min_max_normalize
 from varats.data.reports.blame_interaction_graph import (
     create_blame_interaction_graph,
     CAIGNodeAttrs,
@@ -226,32 +227,19 @@ class CommitAuthorInteractionGraphGrid(Plot, plot_name='caig_grid'):
         super().__init__(self.NAME, plot_config, **kwargs)
 
     def plot(self, view_mode: bool) -> None:
-        case_studies = get_loaded_paper_config().get_all_case_studies()
-
-        churn_config = ChurnConfig.create_c_style_languages_config()
-
-        def normalize(values: pd.Series) -> pd.Series:
-            max_value = values.max()
-            min_value = values.min()
-            return tp.cast(
-                pd.Series, (values - min_value) / (max_value - min_value)
-            )
-
         degree_data: tp.List[pd.DataFrame] = []
         project_names: tp.List[str] = []
-        for case_study in case_studies:
+        for case_study in get_loaded_paper_config().get_all_case_studies():
             project_name = case_study.project_name
             added_project_name = False
 
             commit_lookup = create_commit_lookup_helper(project_name)
             repo_lookup = get_local_project_gits(project_name)
-            code_churn_lookup: tp.Dict[str, tp.Dict[FullCommitHash,
-                                                    tp.Tuple[int, int,
-                                                             int]]] = {}
-            for repo_name, repo in repo_lookup.items():
-                code_churn_lookup[repo_name] = calc_repo_code_churn(
-                    repo, churn_config
-                )
+            code_churn_lookup = {
+                repo_name: calc_repo_code_churn(
+                    repo, ChurnConfig.create_c_style_languages_config()
+                ) for repo_name, repo in repo_lookup.items()
+            }
 
             def filter_nodes(node: CommitRepoPair) -> bool:
                 if node.commit_hash == UNCOMMITTED_COMMIT_HASH:
@@ -307,7 +295,7 @@ class CommitAuthorInteractionGraphGrid(Plot, plot_name='caig_grid'):
 
             data = pd.DataFrame(nodes)
             data["insertions"] = data["insertions"]
-            data["node_degree"] = normalize(data["node_degree"])
+            data["node_degree"] = min_max_normalize(data["node_degree"])
             degree_data.append(data)
 
         full_data = pd.concat(degree_data)
