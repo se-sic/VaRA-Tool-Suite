@@ -8,6 +8,7 @@ import traceback
 import typing as tp
 from abc import abstractmethod
 from pathlib import Path
+from types import TracebackType
 
 from benchbuild import source
 from benchbuild.experiment import Experiment
@@ -476,7 +477,7 @@ def get_tagged_experiment_specific_revisions(
     )
 
 
-class ZippedReportFolder(tempfile.TemporaryDirectory):
+class ZippedReportFolder(tempfile.TemporaryDirectory[str]):
     """
     Context manager for creating a folder report, i.e., a report file which is
     actually a folder containing multiple files and other folders.
@@ -494,7 +495,11 @@ class ZippedReportFolder(tempfile.TemporaryDirectory):
     def __enter__(self) -> Path:
         return Path(super().__enter__())
 
-    def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
+    def __exit__(
+        self, exc_type: tp.Optional[tp.Type[BaseException]],
+        exc_value: tp.Optional[BaseException],
+        exc_traceback: tp.Optional[TracebackType]
+    ) -> None:
         shutil.make_archive(
             str(self.__result_report_name), "zip", Path(self.name)
         )
