@@ -4,15 +4,23 @@ import unittest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
+from tests.test_utils import run_in_test_environment, UnitTestInputs
+from varats.data.reports.empty_report import EmptyReport
 from varats.paper_mgmt.artefacts import (
     initialize_artefact_types,
     Artefacts,
     Artefact,
     load_artefacts_from_file,
 )
-from varats.plot.plots import PlotArtefact
+from varats.paper_mgmt.paper_config import (
+    load_paper_config,
+    get_loaded_paper_config,
+)
+from varats.plot.plots import PlotArtefact, PlotConfig, CommonPlotOptions
+from varats.plots.case_study_overview import CaseStudyOverviewGenerator
 from varats.plots.discover_plots import initialize_plots
 from varats.plots.paper_config_overview import PaperConfigOverviewGenerator
+from varats.utils.settings import vara_cfg, save_config
 
 YAML_ARTEFACTS = """DocType: Artefacts
 Version: 2
@@ -101,7 +109,7 @@ class TestArtefacts(unittest.TestCase):
     def test_artefact_plot_kwargs(self):
         """Check if plot kwargs are loaded correctly."""
         self.assertEqual(
-            self.plot_artefact.plot_kwargs['report_type'], 'EmptyReport'
+            self.plot_artefact.plot_kwargs['report_type'], EmptyReport
         )
 
     def test_artefact_file_info(self):
@@ -112,6 +120,26 @@ class TestArtefacts(unittest.TestCase):
         self.assertEqual(
             "paper_config_overview_plot.png", file_infos[0].file_name
         )
+
+    @run_in_test_environment(UnitTestInputs.PAPER_CONFIGS)
+    def test_cli_option_converter(self):
+        """Test whether CLI option conversion works correctly."""
+        # setup config
+        vara_cfg()['paper_config']['current_config'] = "test_artefacts_driver"
+        load_paper_config()
+        save_config()
+
+        plot_generator = CaseStudyOverviewGenerator(
+            PlotConfig.from_kwargs(view=False),
+            report_type=EmptyReport,
+            case_study=get_loaded_paper_config().get_case_studies("xz")[0]
+        )
+        artefact = PlotArtefact.from_generator(
+            "CS Overview", plot_generator, CommonPlotOptions.from_kwargs()
+        )
+        artefact_dict = artefact.get_dict()
+        self.assertEqual("xz_0", artefact_dict["case_study"])
+        self.assertEqual("EmptyReport", artefact_dict["report_type"])
 
     # Artefacts tests
 
