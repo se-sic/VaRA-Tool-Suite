@@ -96,14 +96,16 @@ def create_new_bb_config(varats_cfg: s.Configuration) -> s.Configuration:
         'varats.experiments.base.just_compile',
         'varats.experiments.vara.blame_report_experiment',
         'varats.experiments.vara.commit_report_experiment',
+        'varats.experiments.vara.feature_dry_runner',
         'varats.experiments.vara.feature_perf_runner',
+        'varats.experiments.vara.feature_overhead_experiments',
         'varats.experiments.vara.marker_tester',
         'varats.experiments.vara.blame_verifier_experiment',
         'varats.experiments.vara.phasar_fta',
         'varats.experiments.phasar.ide_linear_constant_experiment',
         'varats.experiments.phasar.global_analysis_compare',
         'varats.experiments.szz.szz_unleashed_experiment',
-        'varats.experiments.szz.pydriller_szz_experiment',
+        'varats.experiments.szz.pydriller_szz_experiment'   
     ]
 
     # Enable version exploration by default

@@ -29,7 +29,7 @@ class FeaturePerfCSCollection(VProject):
 
     SOURCE = [
         bb.source.Git(
-            remote="https://github.com/se-sic/FeaturePerfCSCollection.git",
+            remote="https://github.com/Kaufi-Jonas/FeaturePerfCSCollection.git",
             local="FeaturePerfCSCollection",
             refspec="origin/HEAD",
             limit=None,
@@ -53,6 +53,11 @@ class FeaturePerfCSCollection(VProject):
             "build/bin/SingleLocalMultipleRegions",
             BinaryType.EXECUTABLE,
             only_valid_in=RevisionRange("162db88346", "master")
+        )
+        binary_map.specify_binary(
+            "build/bin/SimpleLoopedFeature",
+            BinaryType.EXECUTABLE,
+            only_valid_in=RevisionRange("07a9d646cc4c5185a9bc74993d9b286bb768a09b", "master")
         )
 
         return binary_map[revision]

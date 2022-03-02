@@ -83,7 +83,7 @@ class FeatureModelProvider(Provider):
     @staticmethod
     def _get_feature_model_repository_path() -> Path:
         fm_source = bb.source.Git(
-            remote="https://github.com/se-sic/ConfigurableSystems.git",
+            remote="https://github.com/Kaufi-Jonas/ConfigurableSystems.git",
             local="ConfigurableSystems",
             refspec="origin/HEAD",
             limit=1,

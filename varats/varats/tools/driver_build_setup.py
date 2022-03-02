@@ -28,7 +28,7 @@ from varats.utils.settings import save_config
 
 
 class VaRATSSetup:
-    """Start VaRA-TS grafical user interface for setting up VaRA."""
+    """Start VaRA-TS graphical user interface for setting up VaRA."""
 
     def __init__(self) -> None:
         if hasattr(Qt, 'AA_EnableHighDpiScaling'):
