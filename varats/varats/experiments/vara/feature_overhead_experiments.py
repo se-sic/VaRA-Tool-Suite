@@ -229,7 +229,7 @@ class FeatureDryTime(VersionExperiment, shorthand="FDT"):
         analysis_actions.append(actions.Compile(project))
 
         time_reports = TimeReportAggregate()
-        for i in range(5):
+        for i in range(100):
             analysis_actions.append(ExecWithTime(
                 project, self, self.get_handle(), time_reports,
                 usdt and tracing_active))
