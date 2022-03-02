@@ -39,6 +39,7 @@ from varats.experiment.experiment_util import (
     create_default_compiler_error_handler,
     create_default_analysis_failure_handler,
     get_default_compile_error_wrapped,
+    ZippedReportFolder,
 )
 from varats.experiment.wllvm import (
     get_cached_bc_file_path,
@@ -117,8 +118,18 @@ class RunAnalysisBase(actions.Step):
         params += self._get_extra_parameters(project, binary)
         params += ["-D", str(self.__analysis_type)]
 
-        with tempfile.TemporaryDirectory() as tmp_result_dir:
-            params += ["--out", Path(tmp_result_dir)]
+        result_file_name = self.__experiment_handle.get_file_name(
+            IncrementalReport.shorthand(),
+            project_name=str(project.name),
+            binary_name=binary.name,
+            project_revision=project.version_of_primary,
+            project_uuid=str(project.run_uuid),
+            extension_type=FSE.SUCCESS
+        )
+        with ZippedReportFolder(
+            vara_result_folder / result_file_name
+        ) as result_dir:
+            params += ["--out", result_dir]
 
             run_cmd = phasar_llvm_inc[params]
 
@@ -133,20 +144,6 @@ class RunAnalysisBase(actions.Step):
                         Path(vara_result_folder)
                     )
                 )
-
-            # Zip and persist the generated results
-            result_file_name = self.__experiment_handle.get_file_name(
-                IncrementalReport.shorthand(),
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.SUCCESS
-            )
-            shutil.make_archive(
-                str(vara_result_folder / Path(result_file_name.filename).stem),
-                "zip", Path(tmp_result_dir)
-            )
 
         return actions.StepResult.OK
 
