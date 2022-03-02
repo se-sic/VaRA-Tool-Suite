@@ -1,5 +1,5 @@
 """Test varats casestudy tool."""
-
+import importlib
 import unittest
 from pathlib import Path
 
@@ -167,6 +167,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "test_status"
         save_config()
         load_paper_config()
+
         result = runner.invoke(driver_casestudy.main, ['status', 'JustCompile'])
         self.assertEqual(0, result.exit_code, result.exception)
         self.assertEqual(
@@ -196,9 +197,11 @@ class TestDriverCaseStudy(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "test_cleanup_error"
         save_config()
         load_paper_config()
-
-        result = runner.invoke(driver_casestudy.main, ['cleanup', 'error'])
-        self.assertEqual(0, result.exit_code, result.exception)
+        importlib.reload(driver_casestudy)
+        result = runner.invoke(
+            driver_casestudy.main, ['cleanup', 'all', '--error']
+        )
+        self.assertEqual(0, result.exit_code, result.stdout)
         self.assertFalse(
             Path(
                 vara_cfg()["result_dir"].value +
@@ -239,6 +242,7 @@ class TestDriverCaseStudy(unittest.TestCase):
         vara_cfg()["paper_config"]["current_config"] = "test_cleanup_regex"
         save_config()
         load_paper_config()
+        importlib.reload(driver_casestudy)
         result = runner.invoke(
             driver_casestudy.main, ['cleanup', 'regex', '-f', '.*'], 'y'
         )
