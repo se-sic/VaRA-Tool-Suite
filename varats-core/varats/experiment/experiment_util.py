@@ -10,7 +10,7 @@ from pathlib import Path
 from benchbuild import source
 from benchbuild.experiment import Experiment
 from benchbuild.project import Project
-from benchbuild.utils.actions import Step
+from benchbuild.utils.actions import Step, StepResult
 from benchbuild.utils.cmd import prlimit, mkdir
 from plumbum.commands import ProcessExecutionError
 
@@ -472,3 +472,43 @@ def get_tagged_experiment_specific_revisions(
     return get_tagged_revisions(
         project_cls, result_file_type, tag_blocked, experiment_filter
     )
+
+
+class PrintProgressStep(Step):
+
+    NAME = "PrintProgress"
+    DESCRIPTION = """Prints progress in terms of number of iterations completed to stdout. Useful for Experiments which repeat a single step for multiple iterations."""
+
+    def __init__(
+        self,
+        project: Project,
+        experiment: Experiment,
+        step: Step,
+        current_iterations: int,
+        total_iterations: int
+    ):
+        super().__init__(obj=project, action_fn=self.print_progress)
+        self.__experiment = experiment
+        self.__step = step
+        self.__current_iterations = current_iterations
+        self.__total_iterations = total_iterations
+
+    def print_progress(self) -> StepResult:
+
+        project: Project = self.obj
+
+        step_description = f"Experiment={self.__experiment.name} " \
+            f"Project={project.name} " \
+            f"Step={self.__step.NAME}"
+
+        if self.__current_iterations == 0:
+            print(step_description, " Start")
+
+        output = f"Progress {self.__current_iterations}/{self.__total_iterations}"
+
+        print(output)
+
+        if self.__current_iterations == self.__total_iterations:
+            print(step_description, " End")
+
+        return StepResult.OK

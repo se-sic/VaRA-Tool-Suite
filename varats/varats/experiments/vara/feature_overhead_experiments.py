@@ -8,6 +8,7 @@ from pathlib import Path
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time as bbtime
 from benchbuild.utils import actions
+from varats.report.tef_report import TEFReport
 from benchbuild.utils.cmd import touch, sudo, time, rm
 from plumbum import local
 from plumbum.commands.base import BoundCommand
@@ -22,6 +23,7 @@ from varats.experiment.experiment_util import (
     VersionExperiment,
     get_default_compile_error_wrapped,
     PEErrorHandler,
+    PrintProgressStep
 )
 from varats.experiment.wllvm import (
     get_cached_bc_file_path,
@@ -35,7 +37,7 @@ from varats.provider.feature.feature_model_provider import (
     FeatureModelProvider,
     FeatureModelNotFound,
 )
-from varats.report.report import ReportSpecification
+from varats.report.report import FileStatusExtension, ReportSpecification
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.gnu_time_report import TimeReport, TimeReportAggregate
 from varats.data.reports.empty_report import EmptyReport
@@ -53,15 +55,15 @@ class ExecWithTime(actions.Step):  # type: ignore
     def __init__(
         self,
         project: Project,
-        experiment: VersionExperiment,
         experiment_handle: ExperimentHandle,
         time_reports: TimeReportAggregate,
+        iteration: int,
         usdt: bool = False
     ):
         super().__init__(obj=project, action_fn=self.run_perf_tracing)
-        self.__experiment = experiment
         self.__experiment_handle = experiment_handle
         self.__time_reports = time_reports
+        self.__iteration = iteration
         self.__usdt = usdt
 
     def run_perf_tracing(self) -> actions.StepResult:
@@ -85,11 +87,46 @@ class ExecWithTime(actions.Step):  # type: ignore
                     f"No workload defined for project: {project.name} and binary: {binary.name}. Skipping.")
                 continue
 
-            # Execute binary.
-            trace_file_path = Path(
-                f"/tmp/experiment_{self.__experiment.name}_{binary.name}_trace.json")
+            # Generate path for trace file.
+            trace_file = self.__experiment_handle.get_file_name(
+                TEFReport.shorthand(),
+                project_name=str(project.name),
+                binary_name=binary.name,
+                project_revision=project.version_of_primary,
+                project_uuid=str(project.run_uuid),
+                extension_type=FSE.SUCCESS
+            )
+
+            trace_file_parts = os.path.splitext(str(trace_file))
+            print(trace_file)
+            print(trace_file_parts)
+            trace_file_dir = Path(vara_result_folder, trace_file_parts[0])
+            trace_file_name = trace_file_parts[0] + \
+                f"_{self.__iteration}" + trace_file_parts[1]
+
+            trace_file_dir.mkdir(exist_ok=True)
+            trace_file_path = Path(trace_file_dir, trace_file_name)
+
+            # Generate path for time report.
+            time_report = self.__experiment_handle.get_file_name(
+                TimeReport.shorthand(),
+                project_name=str(project.name),
+                binary_name=binary.name,
+                project_revision=project.version_of_primary,
+                project_uuid=str(project.run_uuid),
+                extension_type=FSE.SUCCESS
+            )
+
+            time_report_parts = os.path.splitext(str(time_report))
+            time_report_dir = Path(vara_result_folder, time_report_parts[0])
+            time_report_name = time_report_parts[0] + \
+                f"_{self.__iteration}" + time_report_parts[1]
+
+            time_report_dir.mkdir(exist_ok=True)
             time_report_path = Path(
-                f"/tmp/experiment_{self.__experiment.name}_{binary.name}_time_report.txt")
+                time_report_dir, time_report_name)
+
+            # Execute binary.
             with local.cwd(local.path(project.source_of_primary)), \
                     local.env(VARA_TRACE_FILE=trace_file_path):
 
@@ -119,6 +156,12 @@ class ExecWithTime(actions.Step):  # type: ignore
 
                 self.__time_reports.add_report(
                     binary.name, TimeReport(time_report_path))
+
+            # Remove report directories if empty.
+            if not os.listdir(trace_file_dir):
+                trace_file_dir.rmdir()
+            if not os.listdir(time_report_dir):
+                time_report_dir.rmdir()
 
         return actions.StepResult.OK
 
@@ -169,7 +212,7 @@ class FeatureDryTime(VersionExperiment, shorthand="FDT"):
 
     NAME = "FeatureDryTime"
 
-    REPORT_SPEC = ReportSpecification(EmptyReport)
+    REPORT_SPEC = ReportSpecification(EmptyReport, TEFReport, TimeReport)
 
     def actions_for_project(
         self, project: Project, usdt: bool = False, tracing_active: bool = False
@@ -181,8 +224,6 @@ class FeatureDryTime(VersionExperiment, shorthand="FDT"):
         Args:
             project: to analyze
         """
-
-        project.cflags = ["-O3"]
 
         # Add tracing markers.
         if tracing_active or usdt:
@@ -198,8 +239,8 @@ class FeatureDryTime(VersionExperiment, shorthand="FDT"):
 
             # Sets vara tracing flags
             project.cflags += [
-                "-fvara-feature",
                 f"-fvara-fm-path={fm_path.absolute()}",
+                "-fvara-feature",
                 "-fsanitize=vara"
             ]
             if usdt:
@@ -229,13 +270,24 @@ class FeatureDryTime(VersionExperiment, shorthand="FDT"):
         analysis_actions.append(actions.Compile(project))
 
         time_reports = TimeReportAggregate()
-        for i in range(100):
-            analysis_actions.append(ExecWithTime(
-                project, self, self.get_handle(), time_reports,
-                usdt and tracing_active))
+        num_iterations = 100
 
-        analysis_actions.append(WriteTimeReportSummary(
-            project, self.get_handle(), time_reports))
+        for i in range(num_iterations):
+
+            step = ExecWithTime(
+                project, self.get_handle(), time_reports, i,
+                tracing_active and usdt)
+
+            analysis_actions.append(PrintProgressStep(
+                project, self, step, i, num_iterations))
+            analysis_actions.append(step)
+
+        # print completion of final iteration
+        analysis_actions.append(PrintProgressStep(
+            project, self, step, num_iterations, num_iterations))
+
+        # analysis_actions.append(WriteTimeReportSummary(
+        #     project, self.get_handle(), time_reports))
 
         analysis_actions.append(actions.Clean(project))
 

@@ -32,7 +32,7 @@ class WrongTimeReportFormat(Exception):
     """Thrown if the time report could not be parsed."""
 
 
-class TimeReport(BaseReport, shorthand="TR", file_type=""):
+class TimeReport(BaseReport, shorthand="TR", file_type="txt"):
     """Report class to access GNU time output."""
 
     def __init__(self, path: Path) -> None:
