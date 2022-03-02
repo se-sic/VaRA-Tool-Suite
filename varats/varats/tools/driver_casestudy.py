@@ -54,6 +54,7 @@ from varats.ts_utils.click_param_types import (
     create_multi_case_study_choice,
 )
 from varats.utils.git_util import (
+    get_initial_commit,
     is_commit_hash,
     get_commits_before_timestamp,
     ShortCommitHash,
@@ -310,7 +311,11 @@ def __gen_sample(
         end = get_commits_before_timestamp(end, project_repo_path)[0].hash
 
     if start is not None and not is_commit_hash(start):
-        start = get_commits_before_timestamp(start, project_repo_path)[0].hash
+        commits_before = get_commits_before_timestamp(start, project_repo_path)
+        if commits_before:
+            start = commits_before[0].hash
+        else:
+            start = get_initial_commit(project_repo_path).hash
 
     cmap = create_lazy_commit_map_loader(ctx.obj['project'], None, end, start)()
     extend_with_distrib_sampling(
