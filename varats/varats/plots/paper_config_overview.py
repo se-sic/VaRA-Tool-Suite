@@ -3,35 +3,33 @@
 import typing as tp
 from collections import OrderedDict, defaultdict
 from datetime import datetime
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
+import numpy.typing as npt
 import seaborn as sb
 from matplotlib import style
 from matplotlib.patches import Patch
 
 import varats.paper_mgmt.paper_config as PC
-from varats.data.databases.file_status_database import FileStatusDatabase
 from varats.data.reports.empty_report import EmptyReport
-from varats.mapping.commit_map import CommitMap
 from varats.paper_mgmt.case_study import get_revisions_status_for_case_study
 from varats.plot.plot import Plot
-from varats.plot.plot_utils import check_required_args, find_missing_revisions
 from varats.plot.plots import PlotGenerator, PlotConfig, REQUIRE_REPORT_TYPE
 from varats.project.project_util import get_local_project_git
 from varats.report.report import FileStatusExtension, BaseReport
 # colors taken from seaborn's default palette
 from varats.utils.git_util import ShortCommitHash, FullCommitHash
 
-SUCCESS_COLOR = np.asarray(
+SUCCESS_COLOR: npt.NDArray[np.float64] = np.asarray(
     (0.5568627450980392, 0.7294117647058823, 0.25882352941176473)
 )
-BLOCKED_COLOR = np.asarray(
+BLOCKED_COLOR: npt.NDArray[np.float64] = np.asarray(
     (0.20392156862745098, 0.5411764705882353, 0.7411764705882353)
 )
-FAILED_COLOR = np.asarray((0.8862745098039215, 0.2901960784313726, 0.2))
+FAILED_COLOR: npt.NDArray[np.float64] = np.asarray(
+    (0.8862745098039215, 0.2901960784313726, 0.2)
+)
 
 
 def _load_projects_ordered_by_year(
@@ -138,9 +136,10 @@ def _plot_overview_graph(
     num_years = len(results['year_range'])
     num_projects = len(results['project_names'])
 
-    revs_successful = np.asarray(results['revs_successful'])
-    revs_blocked = np.asarray(results['revs_blocked'])
-    revs_total = np.asarray(results['revs_total'])
+    revs_successful: npt.NDArray[tp.Any
+                                ] = np.asarray(results['revs_successful'])
+    revs_blocked: npt.NDArray[tp.Any] = np.asarray(results['revs_blocked'])
+    revs_total: npt.NDArray[tp.Any] = np.asarray(results['revs_total'])
 
     # We want to interpolate three values/colors in the heatmap.
     # As seaborn's heatmap does not allow this, we manually compute the colors
@@ -149,16 +148,15 @@ def _plot_overview_graph(
     # mapped to the range [0,1].
 
     # the +0.5 is needed to prevent floating point precision issues
-    revs_success_ratio = np.asarray([
+    revs_success_ratio: npt.NDArray[np.float64] = np.asarray([
         i + 0.5 if t > 0 else np.nan
         for i, t in enumerate(revs_total.flatten())
     ])
     revs_success_ratio = revs_success_ratio / len(revs_success_ratio)
     revs_success_ratio = revs_success_ratio.reshape(num_projects, num_years)
 
-    def to_color(
-        n_success: float, n_blocked: float, n_total: float
-    ) -> np.ndarray:
+    def to_color(n_success: float, n_blocked: float,
+                 n_total: float) -> npt.NDArray[np.float64]:
         f_success = n_success / float(n_total)
         f_blocked = n_blocked / float(n_total)
         f_failed = 1.0 - f_success - f_blocked
@@ -175,7 +173,7 @@ def _plot_overview_graph(
         )
     ]
 
-    labels = (
+    labels: npt.NDArray[np.str_] = (
         np.asarray([
             f"{revs_successful:1.0f}/{revs_blocked:1.0f}\n{revs_total:1.0f}"
             for revs_successful, revs_blocked, revs_total in zip(

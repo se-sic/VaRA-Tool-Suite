@@ -1,5 +1,6 @@
 """This module contains functions that calculate various metrics on data."""
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 
@@ -33,7 +34,7 @@ def gini_coefficient(distribution: pd.Series) -> float:
     Returns:
         the gini coefficient for the data
     """
-    dist_array = np.array(distribution)
+    dist_array: npt.NDArray[np.float64] = np.array(distribution)
     return 0.5 * float(
         ((np.abs(np.subtract.outer(dist_array, dist_array)).mean()) /
          np.mean(dist_array))

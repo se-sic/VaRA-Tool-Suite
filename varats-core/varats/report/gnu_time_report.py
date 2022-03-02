@@ -1,5 +1,23 @@
-"""Simple report module to create and handle the standard timing output of GNU
-time."""
+"""
+Simple report module to create and handle the standard timing output of GNU
+time.
+
+Examples to produce a ``TimeReport``:
+
+    Commandline usage:
+        .. code-block:: bash
+
+            export REPORT_FILE="Path/To/MyFile"
+            /usr/bin/time -v -o $REPORT_FILE sleep 2
+
+    Experiment code:
+        .. code-block:: python
+
+            from benchbuild.utils.cmd import time, sleep
+            report_file = "Path/To/MyFile"
+            command_to_measure = sleep["2"]
+            time("-v", "-o", f"{report_file}", command_to_measure)
+"""
 
 import re
 from datetime import timedelta

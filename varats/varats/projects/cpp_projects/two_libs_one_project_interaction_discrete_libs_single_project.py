@@ -11,15 +11,17 @@ from plumbum import local
 from varats.paper_mgmt.paper_config import project_filter_generator
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
-    VaraTestRepoSource,
     ProjectBinaryWrapper,
-    wrap_paths_to_binaries,
+    get_local_project_git_path,
     BinaryType,
-    VaraTestRepoSubmodule,
     verify_binaries,
 )
 from varats.project.varats_project import VProject
-from varats.utils.git_util import ShortCommitHash
+from varats.ts_utils.project_sources import (
+    VaraTestRepoSource,
+    VaraTestRepoSubmodule,
+)
+from varats.utils.git_util import ShortCommitHash, RevisionBinaryMap
 from varats.utils.settings import bb_cfg
 
 
@@ -33,6 +35,8 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(VProject):
 
     SOURCE = [
         VaraTestRepoSource(
+            project_name="TwoLibsOneProjectInteraction"
+            "DiscreteLibsSingleProject",
             remote="LibraryAnalysisRepos"
             "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/Elementalist",
@@ -40,10 +44,7 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(VProject):
             "/Elementalist",
             refspec="HEAD",
             limit=None,
-            shallow=False,
-            version_filter=project_filter_generator(
-                "TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
-            )
+            shallow=False
         ),
         VaraTestRepoSubmodule(
             remote="LibraryAnalysisRepos"
@@ -90,10 +91,18 @@ class TwoLibsOneProjectInteractionDiscreteLibsSingleProject(VProject):
     def binaries_for_revision(
         revision: ShortCommitHash
     ) -> tp.List[ProjectBinaryWrapper]:
-        return wrap_paths_to_binaries([(
+        binary_map = RevisionBinaryMap(
+            get_local_project_git_path(
+                TwoLibsOneProjectInteractionDiscreteLibsSingleProject.NAME
+            )
+        )
+
+        binary_map.specify_binary(
             local.path("revision") /
             "build/test_prog/elementalist/elementalist", BinaryType.EXECUTABLE
-        )])
+        )
+
+        return binary_map[revision]
 
     def run_tests(self) -> None:
         pass

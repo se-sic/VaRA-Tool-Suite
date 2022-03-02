@@ -24,6 +24,7 @@ As a simple example and help to implement your own report, take a look at the :r
 
     data_reports/empty_report
     data_reports/blame_report
+    data_reports/gnu_time_report
 
 Report module
 .............
@@ -127,6 +128,7 @@ For an example provider implementation take a look at the :ref:`CVE provider`.
 
     data_providers/cve_provider
     data_providers/release_provider
+    data_providers/feature_provider
 
 Provider module
 ...............

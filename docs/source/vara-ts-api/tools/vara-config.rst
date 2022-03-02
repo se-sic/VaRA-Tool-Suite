@@ -3,13 +3,13 @@ vara-config
 
 With this tool, you can view and modify the configuration of the tool suite.
 
-.. program-output:: vara-config -h
+.. program-output:: vara-config --help
     :nostderr:
 
 
 With `vara-config set`, you can set one or multiple config options at once:
 
-.. program-output:: vara-config set -h
+.. program-output:: vara-config set --help
     :nostderr:
 
 
@@ -24,7 +24,7 @@ With `vara-config set`, you can set one or multiple config options at once:
 You can view specific parts of the config or the complete config with
 `vara-config show`:
 
-.. program-output:: vara-config show -h
+.. program-output:: vara-config show --help
     :nostderr:
 
 
