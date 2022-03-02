@@ -29,7 +29,7 @@ from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
 
 if tp.TYPE_CHECKING:
-    TempDir = tempfile.TemporaryDirectory[str]
+    TempDir = tempfile.TemporaryDirectory[Path]
 else:
     TempDir = tempfile.TemporaryDirectory
 
