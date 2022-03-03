@@ -88,6 +88,10 @@ class TopCentralCodeCommitsTable(Table):
             (f"Top {num_commits} Central Code Commits", "centrality"):
                 top_degree.values,
         })
+        degree_data.sort_values([("Top 10 Central Code Commits", "centrality"),
+                                 ("Top 10 Central Code Commits", "commit")],
+                                ascending=[False, True],
+                                inplace=True)
 
         if self.format in [
             TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
