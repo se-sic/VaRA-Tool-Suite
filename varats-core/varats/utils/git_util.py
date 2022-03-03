@@ -186,19 +186,6 @@ def get_initial_commit(repo_folder: tp.Optional[Path] = None) -> FullCommitHash:
     )
 
 
-def git_checkout(
-    commit: FullCommitHash, repo_folder: tp.Optional[Path] = None
-) -> None:
-    """
-    Checkout the given commit.
-
-    Args:
-        commit: the commit to check out
-        repo_folder:where the git repository is located
-    """
-    git(__get_git_path_arg(repo_folder), "checkout", commit.hash)
-
-
 def get_all_revisions_between(
     c_start: str,
     c_end: str,
@@ -486,7 +473,7 @@ class CommitRepoPair():
         return f"{self.repository_name}[{self.commit_hash}]"
 
     def __repr__(self) -> str:
-        return self.__str__()
+        return str(self)
 
 
 CommitLookupTy = tp.Callable[[CommitRepoPair], pygit2.Commit]
@@ -612,11 +599,11 @@ def __calc_code_churn_range_impl(
     if start_range is None and end_range is None:
         revision_range = None
     elif start_range is None:
-        revision_range = "..{}".format(end_range)
+        revision_range = f"..{end_range}"
     elif end_range is None:
-        revision_range = "{}~..".format(start_range)
+        revision_range = f"{start_range}~.."
     else:
-        revision_range = "{}~..{}".format(start_range, end_range)
+        revision_range = f"{start_range}~..{end_range}"
 
     repo_git = git[__get_git_path_arg(Path(repo_path))]
     log_base_params = ["log", "--pretty=%H"]
@@ -705,8 +692,7 @@ def calc_commit_code_churn(
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
     repo_git = git[__get_git_path_arg(repo_path)]
     show_base_params = [
-        "show", "--pretty=format:'%H'", "--shortstat", "--first-parent",
-        commit_hash.hash
+        "show", "--pretty=format:'%H'", "--shortstat", commit_hash.hash
     ]
 
     if not churn_config.include_everything:

@@ -8,6 +8,7 @@ from pathlib import Path
 
 import benchbuild as bb
 import pygit2
+from benchbuild.source import Git
 from benchbuild.source.base import target_prefix
 from benchbuild.utils.cmd import git
 from plumbum import local
@@ -152,8 +153,11 @@ def get_local_project_gits(
     project_cls = get_project_cls_by_name(project_name)
 
     for source in project_cls.SOURCE:
-        source_name = os.path.basename(source.local)
-        repos[source_name] = get_local_project_git(project_name, source_name)
+        if isinstance(source, Git):
+            source_name = os.path.basename(source.local)
+            repos[source_name] = get_local_project_git(
+                project_name, source_name
+            )
 
     return repos
 

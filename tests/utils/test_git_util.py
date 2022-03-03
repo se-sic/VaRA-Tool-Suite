@@ -10,6 +10,7 @@ from varats.project.project_util import (
     BinaryType,
 )
 from varats.projects.discover_projects import initialize_projects
+from varats.tools.research_tools.vara_manager import checkout_branch_or_commit
 from varats.utils.git_util import (
     ChurnConfig,
     CommitRepoPair,
@@ -27,7 +28,6 @@ from varats.utils.git_util import (
     RevisionBinaryMap,
     get_submodule_head,
     get_head_commit,
-    git_checkout,
 )
 
 
@@ -125,7 +125,7 @@ class TestGitInteractionHelpers(unittest.TestCase):
         repo_path = get_local_project_git_path("grep")
         old_head = get_head_commit(repo_path)
         repo_head = FullCommitHash("cb15dfa4b2d7fba0d50e87b49f979c7f996b8ebc")
-        git_checkout(repo_head, repo_path)
+        checkout_branch_or_commit(repo_path, repo_head)
 
         try:
             submodule_head = get_submodule_head("grep", "gnulib", repo_head)
@@ -134,20 +134,20 @@ class TestGitInteractionHelpers(unittest.TestCase):
                 FullCommitHash("f44eb378f7239eadac38d02463019a8a6b935525")
             )
         finally:
-            git_checkout(old_head, repo_path)
+            checkout_branch_or_commit(repo_path, old_head)
 
     def test_get_submodule_head_main_repo(self):
         """Check if correct main repo commit is retrieved."""
         repo_path = get_local_project_git_path("grep")
         old_head = get_head_commit(repo_path)
         repo_head = FullCommitHash("cb15dfa4b2d7fba0d50e87b49f979c7f996b8ebc")
-        git_checkout(repo_head, repo_path)
+        checkout_branch_or_commit(repo_path, repo_head)
 
         try:
             submodule_head = get_submodule_head("grep", "grep", repo_head)
             self.assertEqual(submodule_head, repo_head)
         finally:
-            git_checkout(old_head, repo_path)
+            checkout_branch_or_commit(repo_path, old_head)
 
     def test_get_commits_before_timestamp(self) -> None:
         """Check if we can correctly determine the commits before a specific
@@ -411,10 +411,11 @@ class TestCodeChurnCalculation(unittest.TestCase):
     def test_one_commit_diff(self):
         """Check if we get the correct code churn for a single commit."""
 
-        repo = get_local_project_git_path("brotli")
+        repo_path = get_local_project_git_path("brotli")
 
         files_changed, insertions, deletions = calc_commit_code_churn(
-            repo, FullCommitHash("0c5603e07bed1d5fbb45e38f9bdf0e4560fde3f0"),
+            repo_path,
+            FullCommitHash("0c5603e07bed1d5fbb45e38f9bdf0e4560fde3f0"),
             ChurnConfig.create_c_style_languages_config()
         )
 
