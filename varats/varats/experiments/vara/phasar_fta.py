@@ -27,6 +27,7 @@ from varats.experiment.wllvm import (
     get_bc_cache_actions,
     get_cached_bc_file_path,
 )
+from varats.provider.feature.feature_model_provider import FeatureModelProvider
 from varats.report.report import BaseReport
 from varats.report.report import FileStatusExtension as FSE
 from varats.utils.settings import bb_cfg
@@ -134,8 +135,13 @@ class PhASARTaintAnalysis(VersionExperiment):
             project, self.REPORT_TYPE, PhASARFTACheck.RESULT_FOLDER_TEMPLATE
         )
 
+        fm_provider = FeatureModelProvider.get_provider_for_project(project)
+
+        fm_path = fm_provider.get_feature_model_path
+
         project.cflags += [
-            "-O1", "-Xclang", "-disable-llvm-optzns", "-fvara-feature"
+            "-O1", "-Xclang", "-disable-llvm-optzns", "-fvara-feature",
+            "-feature-config=" + str(fm_path)
         ]
 
         bc_file_extensions = [
