@@ -63,14 +63,14 @@ def __config_set(config_values: tp.List[str]) -> None:
     define it with double quotes: foo="bar baz".
     """
     if config_values:
-        config_values = {
+        rewritten_config_values = {
             e[0].replace('-', '_'): e[1]
             for e in [arg.split("=") for arg in config_values]
         }
     else:
-        config_values = {}
+        rewritten_config_values = {}
 
-    for option, value in config_values.items():
+    for option, value in rewritten_config_values.items():
         option_path = option.split("/")
         config = __get_config_for_path(option_path[:-1])
         config[option_path[-1]] = value

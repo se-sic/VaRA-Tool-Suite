@@ -1,0 +1,18 @@
+DocType: CaseStudy
+Version: 1
+---
+project_name: xz
+stages:
+- extender_strategy: distrib_add
+  revisions:
+  - commit_hash: c5c7ceb08a011b97d261798033e2c39613a69eb7
+    commit_id: 1142
+  - commit_hash: ef364d3abc5647111c5424ea0d83a567e184a23b
+    commit_id: 677
+  - commit_hash: 2f0bc9cd40f709152a0177c8e585c0757e9af9c9
+    commit_id: 355
+  - commit_hash: 7521bbdc83acab834594a22bec50c8e1bd836298
+    commit_id: 140
+  - commit_hash: 10437b5b567f6a025ff16c45a572e417a0a9cc26
+    commit_id: 68
+version: 0

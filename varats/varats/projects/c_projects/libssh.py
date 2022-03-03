@@ -12,11 +12,10 @@ from benchbuild.utils.settings import get_number_of_jobs
 from plumbum import local
 
 from varats.containers.containers import get_base_image, ImageBase
-from varats.paper_mgmt.paper_config import project_filter_generator
+from varats.paper_mgmt.paper_config import PaperConfigSpecificGit
 from varats.project.project_domain import ProjectDomains
 from varats.project.project_util import (
     ProjectBinaryWrapper,
-    wrap_paths_to_binaries,
     get_local_project_git_path,
     BinaryType,
     verify_binaries,
@@ -47,13 +46,13 @@ class Libssh(VProject):
                             ["0151b6e17041c56813c882a3de6330c82acc8d93"],
                             "Disabled to quickly get this running")
         ])(
-            bb.source.Git(
+            PaperConfigSpecificGit(
+                project_name="libssh",
                 remote="https://github.com/libssh/libssh-mirror.git",
                 local="libssh",
                 refspec="origin/HEAD",
                 limit=None,
-                shallow=False,
-                version_filter=project_filter_generator("libssh")
+                shallow=False
             )
         )
     ]

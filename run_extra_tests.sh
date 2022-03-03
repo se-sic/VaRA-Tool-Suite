@@ -43,21 +43,17 @@ check_err
 $COVERAGE $(which vara-pc) list
 check_err
 
-$COVERAGE $(which vara-cs) gen paper_configs/test_extra/ -p gravity HalfNormalSamplingMethod # benchbuild/tmp/gzip-HEAD #gzip/
+$COVERAGE $(which vara-cs) gen -p gravity select_sample HalfNormalSamplingMethod # benchbuild/tmp/gzip-HEAD #gzip/
 check_err
 
-$COVERAGE $(which vara-cs) ext paper_configs/test_extra/gravity_0.case_study -p gravity simple_add  --extra-revs 0dd8313ea7bce --merge-stage 3 #gravity/
+$COVERAGE $(which vara-cs) gen -p gravity --merge-stage 3 --new-stage select_specific  0dd8313ea7bce  #gravity/
 check_err
 
-$COVERAGE $(which vara-cs) ext paper_configs/test_extra/gravity_0.case_study -p gravity distrib_add --distribution UniformSamplingMethod --num-rev 5 #gravity/
+$COVERAGE $(which vara-cs) gen -p gravity select_sample UniformSamplingMethod --num-rev 5 #gravity/
 check_err
 
-$COVERAGE $(which vara-cs) ext paper_configs/test_extra/gravity_0.case_study -p gravity release_add --release-type major --merge-stage 4 #gravity/
+$COVERAGE $(which vara-cs) gen -p gravity --merge-stage 4 --new-stage select_release major  #gravity/
 check_err
-
-$COVERAGE $(which vara-cs) status EmptyReport
-check_err
-
 
 # Tests that we can add extra refs from other branches if a refspec is specified
 
@@ -65,10 +61,11 @@ check_err
 $COVERAGE $(which vara-pc) create test_extra_refs
 check_err
 
-$COVERAGE $(which vara-cs) gen paper_configs/test_extra_refs/ -p test-taint-tests UniformSamplingMethod --num-rev 0 --extra-revs f3729ae7f861dab7975f5c
+
+$COVERAGE $(which vara-cs) gen -p test-taint-tests select_specific f3729ae7f861dab7975f5c
 check_err
 
-$COVERAGE $(which vara-cs) status EmptyReport | grep -q f3729ae7f8
+$COVERAGE $(which vara-cs) status JustCompile | grep -q f3729ae7f8
 check_err
 
 #rm -rf extra_tests/

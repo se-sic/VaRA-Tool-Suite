@@ -2,10 +2,13 @@
 
 import os
 import random
+import shutil
+import tempfile
 import traceback
 import typing as tp
 from abc import abstractmethod
 from pathlib import Path
+from types import TracebackType
 
 from benchbuild import source
 from benchbuild.experiment import Experiment
@@ -24,6 +27,11 @@ from varats.report.report import (
 from varats.revision.revisions import get_tagged_revisions
 from varats.utils.git_util import ShortCommitHash
 from varats.utils.settings import vara_cfg, bb_cfg
+
+if tp.TYPE_CHECKING:
+    TempDir = tempfile.TemporaryDirectory[str]
+else:
+    TempDir = tempfile.TemporaryDirectory
 
 
 def get_varats_result_folder(project: Project) -> Path:
@@ -321,9 +329,7 @@ class VersionExperiment(Experiment):  # type: ignore
     def __init_subclass__(
         cls, shorthand: str, *args: tp.Any, **kwargs: tp.Any
     ) -> None:
-        # mypy does not yet fully understand __init_subclass__()
-        # https://github.com/python/mypy/issues/4660
-        super().__init_subclass__(*args, **kwargs)  # type: ignore
+        super().__init_subclass__(*args, **kwargs)
 
         cls.SHORTHAND = shorthand
         if not hasattr(cls, 'REPORT_SPEC'):
@@ -341,6 +347,23 @@ class VersionExperiment(Experiment):  # type: ignore
     def report_spec(cls) -> ReportSpecification:
         """Experiment report specification."""
         return cls.REPORT_SPEC
+
+    @classmethod
+    def file_belongs_to_experiment(cls, file_name: str) -> bool:
+        """
+        Checks if the file belongs to this experiment.
+
+        Args:
+            file_name: name of the file to check
+
+        Returns:
+            True, if the file belongs to this experiment type
+        """
+        try:
+            other_short_hand = ReportFilename(file_name).experiment_shorthand
+            return cls.shorthand() == other_short_hand
+        except ValueError:
+            return False
 
     def get_handle(self) -> ExperimentHandle:
         return ExperimentHandle(self)
@@ -398,18 +421,18 @@ class VersionExperiment(Experiment):  # type: ignore
                 for x in fs_whitelist
             }
 
-            if not hasattr(cls, 'REPORT_SPEC'):
-                raise TypeError(
-                    "Experiment sub class does not implement REPORT_SPEC."
-                )
+            report_specific_bad_revs = []
+            for report_type in cls.report_spec():
+                report_specific_bad_revs.append({
+                    revision.hash for revision, file_status in
+                    get_tagged_experiment_specific_revisions(
+                        prj_cls, report_type, experiment_type=cls
+                    ) if file_status not in fs_good
+                })
 
-            bad_revisions = [
-                # TODO (se-sic/VaRA#791): clean up usage of report spec
-                revision.hash for revision, file_status in get_tagged_revisions(
-                    prj_cls,
-                    getattr(cls, 'REPORT_SPEC').main_report
-                ) if file_status not in fs_good
-            ]
+            bad_revisions = report_specific_bad_revs[0].intersection(
+                *report_specific_bad_revs[1:]
+            )
 
             variants = list(
                 filter(lambda var: str(var[0]) not in bad_revisions, variants)
@@ -425,3 +448,61 @@ class VersionExperiment(Experiment):  # type: ignore
             return [source.context(*var) for var in variants]
 
         return [source.context(*variants[0])]
+
+
+def get_tagged_experiment_specific_revisions(
+    project_cls: tp.Type[Project],
+    result_file_type: tp.Type[BaseReport],
+    tag_blocked: bool = True,
+    experiment_type: tp.Optional[tp.Type[VersionExperiment]] = None
+) -> tp.List[tp.Tuple[ShortCommitHash, FileStatusExtension]]:
+    """
+    Calculates a list of revisions of a project that belong to an experiment,
+    tagged with the file status. If two files exists the newest is considered
+    for detecting the status.
+
+    Args:
+        project_cls: target project
+        result_file_type: the type of the result file
+        tag_blocked: whether to tag blocked revisions as blocked
+        experiment_type: target experiment type
+
+    Returns:
+        list of tuples (revision, ``FileStatusExtension``)
+    """
+
+    def experiment_filter(file_path: Path) -> bool:
+        if experiment_type is None:
+            return True
+
+        return experiment_type.file_belongs_to_experiment(file_path.name)
+
+    return get_tagged_revisions(
+        project_cls, result_file_type, tag_blocked, experiment_filter
+    )
+
+
+class ZippedReportFolder(TempDir):
+    """
+    Context manager for creating a folder report, i.e., a report file which is
+    actually a folder containing multiple files and other folders.
+
+    Example usage: An experiment step can, with this context manager, simply
+    create a folder into which all kinds of data is dropped into. After the
+    completion of the step (leaving the context manager), all files dropped into
+    the folder will be compressed and stored as a single report.
+    """
+
+    def __init__(self, result_report_path: Path) -> None:
+        super().__init__()
+        self.__result_report_name: Path = result_report_path.with_suffix('')
+
+    def __exit__(
+        self, exc_type: tp.Optional[tp.Type[BaseException]],
+        exc_value: tp.Optional[BaseException],
+        exc_traceback: tp.Optional[TracebackType]
+    ) -> None:
+        shutil.make_archive(
+            str(self.__result_report_name), "zip", Path(self.name)
+        )
+        super().__exit__(exc_type, exc_value, exc_traceback)
