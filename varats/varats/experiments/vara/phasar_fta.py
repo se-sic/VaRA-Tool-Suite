@@ -6,11 +6,12 @@ generates an EmptyReport.
 """
 
 import typing as tp
+from pathlib import Path
 
 from benchbuild import Project
 from benchbuild.extensions import compiler, run, time
 from benchbuild.utils import actions
-from benchbuild.utils.cmd import mkdir, opt
+from benchbuild.utils.cmd import opt
 
 from varats.data.reports.empty_report import EmptyReport as EMPTY
 from varats.experiment.experiment_util import (
@@ -18,10 +19,10 @@ from varats.experiment.experiment_util import (
     VersionExperiment,
     wrap_unlimit_stack_size,
     get_varats_result_folder,
-    PEErrorHandler,
     ExperimentHandle,
     get_default_compile_error_wrapped,
     create_default_compiler_error_handler,
+    create_default_analysis_failure_handler,
 )
 from varats.experiment.wllvm import (
     RunWLLVM,
@@ -30,10 +31,8 @@ from varats.experiment.wllvm import (
     get_cached_bc_file_path,
 )
 from varats.provider.feature.feature_model_provider import FeatureModelProvider
-from varats.report.report import BaseReport
 from varats.report.report import FileStatusExtension as FSE
 from varats.report.report import ReportSpecification
-from varats.utils.settings import bb_cfg
 
 
 class PhASARFTACheck(actions.Step):  # type: ignore
@@ -72,16 +71,6 @@ class PhASARFTACheck(actions.Step):  # type: ignore
                 extension_type=FSE.SUCCESS
             )
 
-            # Define output file name of failed runs
-            error_file = self.__experiment_handle.get_file_name(
-                EMPTY.shorthand(),
-                project_name=str(project.name),
-                binary_name=binary.name,
-                project_revision=project.version_of_primary,
-                project_uuid=str(project.run_uuid),
-                extension_type=FSE.FAILED
-            )
-
             # Combine the input bitcode file's name
             bc_target_file = get_cached_bc_file_path(
                 project, binary, self.__bc_file_extensions
@@ -101,7 +90,10 @@ class PhASARFTACheck(actions.Step):  # type: ignore
             # Run the command with custom error handler and timeout
             exec_func_with_pe_error_handler(
                 run_cmd,
-                PEErrorHandler(vara_result_folder, error_file.filename)
+                create_default_analysis_failure_handler(
+                    self.__experiment_handle, project, EMPTY,
+                    Path(vara_result_folder)
+                )
             )
 
 
