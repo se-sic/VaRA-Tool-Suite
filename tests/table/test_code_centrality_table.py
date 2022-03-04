@@ -18,7 +18,8 @@ class TestCSMetricsTable(unittest.TestCase):
         UnitTestInputs.PAPER_CONFIGS, UnitTestInputs.RESULT_FILES
     )
     def test_one_case_study_latex_booktabs(self) -> None:
-        """"Tests the latex booktabs format for the cs overview table."""
+        """Tests the latex booktabs format for the code centrality metrics
+        table."""
         vara_cfg()["paper_config"]["current_config"
                                   ] = "test_diff_correlation_overview_table"
         initialize_projects()
