@@ -245,11 +245,10 @@ def get_github_repo_name_for_project(
         project: class of said project
 
     Returns:
-        The corresponding github repo name,
-        None if the given project is not a github project.
+        the github repo name for the project or ``None`` if the given project
+        is not a github project
     """
     match = GITHUB_URL_PATTERN.match(primary(*project.SOURCE).remote)
     if match:
         return f"{match.group(1)}/{match.group(2)}"
-    # project is no github project
     return None

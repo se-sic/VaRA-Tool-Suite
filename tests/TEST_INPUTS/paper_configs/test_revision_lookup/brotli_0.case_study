@@ -1,0 +1,30 @@
+---
+DocType: CaseStudy
+Version: 1
+...
+---
+project_name: brotli
+stages:
+- revisions:
+  - commit_hash: aaa4424d9bdeb10f8af5cb4599a0fc2bbaac5553
+    commit_id: 847
+    config_ids:
+    - -1
+  - commit_hash: 6c470098928f6dbd76bca47ac61eaa6b9802ba94
+    commit_id: 816
+    config_ids:
+    - -1
+  - commit_hash: 3bb19efbb8cc4a3bfe6622a1403d745305add409
+    commit_id: 648
+    config_ids:
+    - -1
+  - commit_hash: 4dd9114c9732d9ac488810e4611fda17c2acd6ce
+    commit_id: 500
+    config_ids:
+    - -1
+  - commit_hash: 21ac39f7c8ca61c855be0bc38900abe7b5a0f67f
+    commit_id: 309
+    config_ids:
+    - -1
+version: 0
+...

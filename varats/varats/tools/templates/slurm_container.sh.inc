@@ -81,6 +81,6 @@ _project=$(echo ${_project} | sed -e "s/-/\//")
 popd > /dev/null
 
 # clean up local directory
-srun chmod -R u+w $n{node_dir} > /dev/null
+srun chmod -R u+w ${node_dir} > /dev/null
 srun rm -rf ${node_dir}
 {% endraw %}

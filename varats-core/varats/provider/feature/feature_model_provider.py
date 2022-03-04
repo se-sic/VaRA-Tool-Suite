@@ -70,7 +70,7 @@ class FeatureModelProvider(Provider):
         fm_source = bb.source.Git(
             remote="https://github.com/se-sic/ConfigurableSystems.git",
             local="ConfigurableSystems",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=1,
         )
         fm_source.fetch()

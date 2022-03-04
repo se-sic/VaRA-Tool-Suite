@@ -1,5 +1,6 @@
 """Test the cache_helper module."""
 import unittest
+from pathlib import Path
 
 import pandas as pd
 
@@ -8,6 +9,7 @@ from varats.data.cache_helper import (
     build_cached_report_table,
     get_data_file_path,
 )
+from varats.utils.settings import vara_cfg
 
 
 class TestCacheHelper(unittest.TestCase):
@@ -24,7 +26,9 @@ class TestCacheHelper(unittest.TestCase):
     @run_in_test_environment()
     def test_get_data_file_path(self):
         path = get_data_file_path("foo", "tmux")
-        self.assertEqual("data_cache/foo-tmux.csv.gz", str(path))
+        self.assertEqual(
+            str(vara_cfg()["data_cache"]) + "/foo-tmux.csv.gz", str(path)
+        )
 
     @run_in_test_environment()
     def test_build_cached_report_table(self):

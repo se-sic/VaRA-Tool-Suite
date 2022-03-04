@@ -9,24 +9,25 @@ from plumbum import local
 from PyQt5.QtCore import QProcess
 
 from varats.plot.plot_utils import check_required_args
+from varats.tools.research_tools.cmake_util import set_cmake_var
 from varats.tools.research_tools.research_tool import (
     CodeBase,
     ResearchTool,
     SubProject,
     Dependencies,
+    Distro,
 )
 from varats.tools.research_tools.vara_manager import (
     BuildType,
     ProcessManager,
     run_process_with_output,
-    set_cmake_var,
 )
 from varats.utils.exceptions import ProcessTerminatedError
 from varats.utils.logger_util import log_without_linesep
 from varats.utils.settings import save_config, vara_cfg
 
 if tp.TYPE_CHECKING:
-    import varats.containers.containers as containers  # pylint: disable=W0611
+    from varats.containers import containers  # pylint: disable=W0611
 
 
 class PhasarCodeBase(CodeBase):
@@ -76,8 +77,22 @@ class Phasar(ResearchTool[PhasarCodeBase]):
     https://github.com/secure-software-engineering/phasar.git
     """
 
-    # TODO: see se-passau/VaRA#740
-    __DEPENDENCIES = Dependencies({})
+    __DEPENDENCIES = Dependencies({
+        Distro.DEBIAN: [
+            "libboost-all-dev", "zlib1g-dev", "sqlite3", "libsqlite3-dev",
+            "bear", "python3", "doxygen", "graphviz", "python3-pip", "libxml2",
+            "libxml2-dev", "libncurses5-dev", "libncursesw5-dev", "swig",
+            "build-essential", "g++", "cmake", "libz3-dev", "libedit-dev",
+            "python3-sphinx", "libomp-dev", "libcurl4-openssl-dev",
+            "ninja-build"
+        ],
+        Distro.ARCH: [
+            "boost-libs", "boost", "which", "zlib", "sqlite3", "ncurses",
+            "make", "python3", "doxygen", "libxml2", "swig", "gcc", "cmake",
+            "z3", "libedit", "graphviz", "python-sphinx", "openmp", "curl",
+            "python-pip"
+        ]
+    })
 
     def __init__(self, base_dir: Path) -> None:
         super().__init__("phasar", [BuildType.DEV], PhasarCodeBase(base_dir))
@@ -108,7 +123,7 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         """Checks if a install location of the research tool is configured."""
         return vara_cfg()["phasar"]["install_dir"].value is not None
 
-    @check_required_args(["install_prefix", "version"])
+    @check_required_args("install_prefix", "version")
     def setup(self, source_folder: tp.Optional[Path], **kwargs: tp.Any) -> None:
         """
         Setup the research tool phasar with it's code base. This method sets up
@@ -140,7 +155,10 @@ class Phasar(ResearchTool[PhasarCodeBase]):
         """Upgrade the research tool to a newer version."""
         self.code_base.pull()
 
-    def build(self, build_type: BuildType, install_location: Path) -> None:
+    def build(
+        self, build_type: BuildType, install_location: Path,
+        build_folder_suffix: tp.Optional[str]
+    ) -> None:
         """
         Build/Compile phasar in the specified ``build_type``. This method leaves
         phasar in a finished state, i.e., being ready to be installed.
@@ -153,7 +171,7 @@ class Phasar(ResearchTool[PhasarCodeBase]):
             "phasar"
         ).path / "build"
 
-        build_path /= build_type.build_folder()
+        build_path /= build_type.build_folder(build_folder_suffix)
 
         # Setup configured build folder
         print(" - Setting up build folder.")
@@ -206,13 +224,32 @@ class Phasar(ResearchTool[PhasarCodeBase]):
 
         return status_ok
 
-    def add_container_layers(
+    def container_add_build_layer(
         self, image_context: 'containers.BaseImageCreationContext'
     ) -> None:
         """
-        Add the layers required for this research tool to the given container.
+        Add layers for building this research tool to the given container.
 
         Args:
             image_context: the base image creation context
         """
-        raise NotImplementedError("Implement phasar container install.")
+        raise NotImplementedError
+
+    def container_install_tool(
+        self, image_context: 'containers.BaseImageCreationContext'
+    ) -> None:
+        """
+        Add layers for installing this research tool to the given container.
+
+        Args:
+            image_context: the base image creation context
+        """
+        if not self.verify_install(self.install_location()):
+            raise AssertionError(
+                "Phasar is not correctly installed on your system."
+            )
+
+        container_phasar_dir = image_context.varats_root / "tools/phasar"
+        image_context.layers.copy_([str(self.install_location())],
+                                   str(container_phasar_dir))
+        image_context.append_to_env("PATH", [str(container_phasar_dir / 'bin')])

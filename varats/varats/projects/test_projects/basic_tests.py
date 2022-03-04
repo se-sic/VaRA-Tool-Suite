@@ -19,7 +19,7 @@ class BasicTests(bb.Project):  # type: ignore
             remote="https://github.com/se-passau/vara-perf-tests.git",
             local="basic-tests",
             limit=1,
-            refspec="HEAD"
+            refspec="origin/HEAD"
         )
     ]
 

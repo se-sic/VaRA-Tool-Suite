@@ -10,11 +10,50 @@ from plumbum import local
 
 from tests.test_utils import test_environment
 from varats.project.project_util import (
+    get_project_cls_by_name,
+    get_loaded_vara_projects,
+    ProjectBinaryWrapper,
+    BinaryType,
+)
+from varats.projects.c_projects.gravity import Gravity
+from varats.projects.discover_projects import initialize_projects
+from varats.tools.bb_config import create_new_bb_config
+from varats.ts_utils.project_sources import (
     VaraTestRepoSource,
     VaraTestRepoSubmodule,
 )
-from varats.tools.bb_config import create_new_bb_config
 from varats.utils.settings import create_new_varats_config
+
+
+class TestProjectLookup(unittest.TestCase):
+    """Tests different project lookup methods."""
+
+    @classmethod
+    def setUp(cls) -> None:
+        """Initialize all projects before running tests."""
+        initialize_projects()
+
+    def test_project_lookup_by_name(self) -> None:
+        """Check if we can load project classes from their name."""
+        grav_prj_cls = get_project_cls_by_name("gravity")
+
+        self.assertEqual(grav_prj_cls, Gravity)
+
+    def test_failed_project_lookup(self) -> None:
+        """Check if we correctly fail, should a project be queried that does not
+        exist."""
+        self.assertRaises(
+            LookupError, get_project_cls_by_name, "this_project_does_not_exists"
+        )
+
+    def test_project_iteration(self) -> None:
+        """Check if we can iterate over loaded vara projects."""
+        found_gravity = False
+        for prj_cls in get_loaded_vara_projects():
+            if prj_cls.NAME == "gravity":
+                found_gravity = True
+
+        self.assertTrue(found_gravity)
 
 
 class TestVaraTestRepoSource(unittest.TestCase):
@@ -39,14 +78,15 @@ class TestVaraTestRepoSource(unittest.TestCase):
         )
 
         cls.elementalist = VaraTestRepoSource(
+            project_name="TwoLibsOneProjectInteractionDiscreteLibsSingleProject",
             remote="LibraryAnalysisRepos"
             "/TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/Elementalist",
             local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/Elementalist",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
-            shallow=False,
+            shallow=False
         )
 
         cls.fire_lib = VaraTestRepoSubmodule(
@@ -55,7 +95,7 @@ class TestVaraTestRepoSource(unittest.TestCase):
             "/fire_lib",
             local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/fire_lib",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
         )
@@ -66,13 +106,13 @@ class TestVaraTestRepoSource(unittest.TestCase):
             "/water_lib",
             local="TwoLibsOneProjectInteractionDiscreteLibsSingleProject"
             "/water_lib",
-            refspec="HEAD",
+            refspec="origin/HEAD",
             limit=None,
             shallow=False,
         )
 
     @mock.patch('benchbuild.source.base.target_prefix')
-    @mock.patch('varats.project.project_util.target_prefix')
+    @mock.patch('varats.ts_utils.project_sources.target_prefix')
     def test_vara_test_repo_dir_creation(
         self, mock_tgt_prefix_base, mock_tgt_prefix_project_util
     ) -> None:
@@ -226,3 +266,27 @@ class TestVaraTestRepoSource(unittest.TestCase):
                     f"The project name {project_name} must not contain the "
                     f"dash character."
                 )
+
+
+class TestProjectBinaryWrapper(unittest.TestCase):
+    """Test if we can correctly setup and use the RevisionBinaryMap."""
+
+    def test_execution_of_executable(self) -> None:
+        """Check if we can execute a executable bianries."""
+        binary = ProjectBinaryWrapper("ls", "/bin/ls", BinaryType.EXECUTABLE)
+
+        ret = binary()
+        self.assertIsNotNone(ret)
+        self.assertIsInstance(ret, str)
+
+    def test_execution_of_libraries(self) -> None:
+        """Check if we don't fail when executing a shared/static library."""
+        static_lib_binary = ProjectBinaryWrapper(
+            "ls", "/bin/ls", BinaryType.STATIC_LIBRARY
+        )
+        self.assertIsNone(static_lib_binary())
+
+        shared_lib_binary = ProjectBinaryWrapper(
+            "ls", "/bin/ls", BinaryType.SHARED_LIBRARY
+        )
+        self.assertIsNone(shared_lib_binary())

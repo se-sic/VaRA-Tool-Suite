@@ -8,6 +8,7 @@ from pygtrie import CharTrie
 from varats.data.cache_helper import get_data_file_path
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
+from varats.utils.git_util import ShortCommitHash
 
 AvailableColumns = tp.TypeVar("AvailableColumns")
 
@@ -32,9 +33,7 @@ class EvaluationDatabase(abc.ABC):
         cls, *args: tp.Any, cache_id: str, columns: tp.List[str],
         **kwargs: tp.Any
     ) -> None:
-        # mypy does not yet fully understand __init_subclass__()
-        # https://github.com/python/mypy/issues/4660
-        super().__init_subclass__(*args, **kwargs)  # type: ignore
+        super().__init_subclass__(*args, **kwargs)
         cls.CACHE_ID = cache_id
         cls.COLUMNS = cls.COLUMNS + columns
 
@@ -89,10 +88,12 @@ class EvaluationDatabase(abc.ABC):
             # use a trie for fast prefix lookup
             revisions = CharTrie()
             for revision in case_study.revisions:
-                revisions[revision] = True
+                revisions[revision.hash] = True
             return data_frame[data_frame["revision"].
-                              apply(lambda x: revisions.has_node(x) != 0)]
+                              apply(lambda x: revisions.has_node(x.hash) != 0)]
 
+        # Convert all revisions to ShortCommitHash(es)
+        data['revision'] = data['revision'].apply(ShortCommitHash)
         data = cs_filter(data)
         return data[columns]
 

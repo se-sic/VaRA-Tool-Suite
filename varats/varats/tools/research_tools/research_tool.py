@@ -6,6 +6,9 @@ import typing as tp
 from enum import Enum
 from pathlib import Path
 
+import distro as distribution
+from benchbuild.utils.cmd import apt, pacman
+
 from varats.tools.research_tools.vara_manager import (
     BuildType,
     add_remote,
@@ -29,7 +32,7 @@ from varats.utils.git_util import get_current_branch
 from varats.utils.logger_util import log_without_linesep
 
 if tp.TYPE_CHECKING:
-    import varats.containers.containers as containers  # pylint: disable=W0611
+    from varats.containers import containers  # pylint: disable=W0611
 
 
 class Distro(Enum):
@@ -37,11 +40,24 @@ class Distro(Enum):
     DEBIAN = "debian"
     ARCH = "arch"
 
+    @staticmethod
+    def get_current_distro() -> tp.Optional['Distro']:
+        """Returns the current Linux distribution or None."""
+        if distribution.id() == "debian":
+            return Distro.DEBIAN
+        if distribution.id() == "arch":
+            return Distro.ARCH
+        return None
+
 
 _install_commands = {
     Distro.DEBIAN: "apt install -y",
     Distro.ARCH: "pacman -S --noconfirm"
 }
+
+_checker_commands = {Distro.DEBIAN: apt["list"], Distro.ARCH: pacman["-Qi"]}
+
+_expected_check_output = {Distro.DEBIAN: "installed", Distro.ARCH: "Installed"}
 
 
 class Dependencies:
@@ -71,6 +87,36 @@ class Dependencies:
         False
         """
         return bool(self.__dependencies.get(distro, None))
+
+    def has_all_dependencies_for_distro(self, distro: Distro) -> bool:
+        """
+        Given a distro, return if all specified dependencies are installed.
+        Args:
+            distro: the distro tu use
+
+        Returns:
+            True if all dependencies are installed and False otherwise
+        """
+        return len(self.get_missing_dependencies_for_distro(distro)) == 0
+
+    def get_missing_dependencies_for_distro(self,
+                                            distro: Distro) -> tp.List[str]:
+        """
+        Given a distro, return all not installed dependencies.
+        Args:
+            distro: the distro to use
+
+        Returns:
+            a list containing all not installed dependencies
+        """
+        not_installed: tp.List[str] = []
+        base_command = _checker_commands[distro]
+        for package in self.__dependencies[distro]:
+            output = base_command(package)
+            output_list = output.split()
+            if _expected_check_output[distro] not in output_list:
+                not_installed.append(package)
+        return not_installed
 
     def get_install_command(self, distro: Distro) -> str:
         """
@@ -422,7 +468,10 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
         """Upgrade the research tool to a newer version."""
 
     @abc.abstractmethod
-    def build(self, build_type: BuildType, install_location: Path) -> None:
+    def build(
+        self, build_type: BuildType, install_location: Path,
+        build_folder_suffix: tp.Optional[str]
+    ) -> None:
         """
         Build/Compile the research tool in the specified ``build_type`` and
         install it to the specified ``install_location``.
@@ -431,6 +480,7 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
             build_type: which type of build should be used, e.g., debug,
                         development or release
             install_location: location to install the research tool into
+            build_folder_suffix: a suffix that is appended to the build folder
         """
 
     @abc.abstractmethod
@@ -442,12 +492,32 @@ class ResearchTool(tp.Generic[SpecificCodeBase]):
             True, if the tool was correctly installed
         """
 
-    @abc.abstractmethod
-    def add_container_layers(
+    def container_install_dependencies(
         self, image_context: 'containers.BaseImageCreationContext'
     ) -> None:
         """
-        Add the layers required for this research tool to the given container.
+        Add layers for installing this research tool's dependencies to the given
+        container.
+
+        Args:
+            image_context: the base image creation context
+        """
+        if self.get_dependencies().has_dependencies_for_distro(
+            image_context.base.distro
+        ):
+            image_context.layers.run(
+                *(
+                    self.get_dependencies().
+                    get_install_command(image_context.base.distro).split(" ")
+                )
+            )
+
+    @abc.abstractmethod
+    def container_install_tool(
+        self, image_context: 'containers.BaseImageCreationContext'
+    ) -> None:
+        """
+        Add layers for installing this research tool to the given container.
 
         Args:
             image_context: the base image creation context

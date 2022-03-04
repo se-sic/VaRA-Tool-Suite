@@ -9,17 +9,17 @@ import pandas as pd
 from varats.data.cache_helper import build_cached_report_table
 from varats.data.databases.evaluationdatabase import EvaluationDatabase
 from varats.data.reports.blame_verifier_report import (
-    BlameVerifierReportNoOpt,
+    BlameVerifierReportNoOptTBAA,
     BlameVerifierReportOpt,
 )
 from varats.jupyterhelper.file import (
-    load_blame_verifier_report_no_opt,
+    load_blame_verifier_report_no_opt_tbaa,
     load_blame_verifier_report_opt,
 )
 from varats.mapping.commit_map import CommitMap
 from varats.paper.case_study import CaseStudy
 from varats.paper_mgmt.case_study import get_case_study_file_name_filter
-from varats.report.report import MetaReport
+from varats.report.report import ReportFilename
 from varats.revision.revisions import (
     get_failed_revisions_files,
     get_processed_revisions_files,
@@ -29,7 +29,7 @@ from varats.revision.revisions import (
 class OptLevel(Enum):
     """Enum for the different optimization levels used to create the verifier
     report."""
-    value: int
+    value: int  # pylint: disable=invalid-name
 
     NO_OPT = 0
     OPT = 2
@@ -76,17 +76,21 @@ class BlameVerifierReportDatabase(
                     "report file name could not be read from report path"
                 )
 
-            report: tp.Union[BlameVerifierReportOpt, BlameVerifierReportNoOpt]
+            report: tp.Union[BlameVerifierReportOpt,
+                             BlameVerifierReportNoOptTBAA]
 
             if BlameVerifierReportOpt.is_correct_report_type(report_file_name):
                 report_opt = load_blame_verifier_report_opt(report_path)
                 report = report_opt
                 opt_level = OptLevel.OPT.value
 
-            elif BlameVerifierReportNoOpt.is_correct_report_type(
+            elif BlameVerifierReportNoOptTBAA.is_correct_report_type(
                 report_file_name
             ):
-                report_no_opt = load_blame_verifier_report_no_opt(report_path)
+                report_no_opt = load_blame_verifier_report_no_opt_tbaa(
+                    report_path
+                )
+
                 report = report_no_opt
                 opt_level = OptLevel.NO_OPT.value
 
@@ -102,7 +106,7 @@ class BlameVerifierReportDatabase(
 
             return pd.DataFrame(
                 {
-                    'revision': report.head_commit,
+                    'revision': report.head_commit.hash,
                     'time_id': commit_map.short_time_id(report.head_commit),
                     'opt_level': opt_level,
                     'total': number_of_total_annotations,
@@ -113,7 +117,7 @@ class BlameVerifierReportDatabase(
                 index=[0]
                 # Add prefix of report name to head_commit to differentiate
                 # between reports with and without optimization
-            ), report.head_commit + report_path.name.split("-", 1)[0], str(
+            ), report.head_commit.hash + report_path.name.split("-", 1)[0], str(
                 report_path.stat().st_mtime_ns
             )
 
@@ -123,7 +127,7 @@ class BlameVerifierReportDatabase(
         )
 
         report_files_no_opt = get_processed_revisions_files(
-            project_name, BlameVerifierReportNoOpt,
+            project_name, BlameVerifierReportNoOptTBAA,
             get_case_study_file_name_filter(case_study)
         )
 
@@ -135,7 +139,7 @@ class BlameVerifierReportDatabase(
         )
 
         failed_report_files_no_opt = get_failed_revisions_files(
-            project_name, BlameVerifierReportNoOpt,
+            project_name, BlameVerifierReportNoOptTBAA,
             get_case_study_file_name_filter(case_study)
         )
 
@@ -146,9 +150,8 @@ class BlameVerifierReportDatabase(
         # pylint: disable=E1101
         data_frame = build_cached_report_table(
             cls.CACHE_ID, project_name, report_files, failed_report_files,
-            create_dataframe_layout, create_data_frame_for_report,
-            lambda path: MetaReport.get_commit_hash_from_result_file(path.name)
-            + path.name.split("-", 1)[0],
+            create_dataframe_layout, create_data_frame_for_report, lambda path:
+            ReportFilename(path).commit_hash.hash + path.name.split("-", 1)[0],
             lambda path: str(path.stat().st_mtime_ns),
             lambda a, b: int(a) > int(b)
         )

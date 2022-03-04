@@ -19,7 +19,7 @@ class ConfigurationMap():
     DUMMY_CONFIG_ID = -1
 
     def __init__(self) -> None:
-        self.__configurations: tp.Dict[int, Configuration] = dict()
+        self.__configurations: tp.Dict[int, Configuration] = {}
 
     def add_configuration(self, config: Configuration) -> int:
         """

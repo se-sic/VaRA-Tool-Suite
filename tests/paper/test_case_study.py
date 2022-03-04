@@ -6,9 +6,10 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import varats.paper.case_study as CS
-from tests.test_helper_config import ConfigurationTestImpl
+from varats.base.configuration import ConfigurationImpl
 from varats.base.sampling_method import UniformSamplingMethod
 from varats.mapping.commit_map import CommitMap
+from varats.utils.git_util import FullCommitHash, ShortCommitHash
 
 YAML_CASE_STUDY = """---
 DocType: CaseStudy
@@ -48,7 +49,7 @@ stages:
     commit_id: 494
 ...
 ---
-0: '{''foo'': ''foo: True'', ''bar'': ''bar: False'', ''bazz'': ''bazz: bazz-value''}'
+0: '{"foo": true, "bar": false, "bazz": "bazz-value", "buzz": "None"}'
 1: '{}'
 2: '{}'
 ...
@@ -71,7 +72,7 @@ def mocked_create_lazy_commit_map_loader(
     cmap_path: tp.Optional[Path] = None,  # pylint: disable=unused-argument
     end: str = "HEAD",  # pylint: disable=unused-argument
     start: tp.Optional[str] = None
-):  # pylint: disable=unused-argument
+) -> tp.Callable[[], CommitMap]:  # pylint: disable=unused-argument
     """
     Mock function to replace a lazy commit map loader callback.
 
@@ -84,7 +85,7 @@ def mocked_create_lazy_commit_map_loader(
 
     def get_test_case_study_cmap() -> CommitMap:
 
-        def format_stream():
+        def format_stream() -> tp.Generator[str, None, None]:
             for number, line in enumerate(reversed(GIT_LOG_OUT.split('\n'))):
                 yield "{}, {}\n".format(number, line)
 
@@ -96,8 +97,10 @@ def mocked_create_lazy_commit_map_loader(
 class TestCaseStudy(unittest.TestCase):
     """Test basic CaseStudy functionality."""
 
+    case_study: CS.CaseStudy
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """Setup case study from yaml doc."""
 
         with NamedTemporaryFile('w') as yaml_file:
@@ -105,86 +108,93 @@ class TestCaseStudy(unittest.TestCase):
             yaml_file.seek(0)
             cls.case_study = CS.load_case_study_from_file(Path(yaml_file.name))
 
-    def test_project_name(self):
+    def test_project_name(self) -> None:
         """Check if project name is loaded correctly."""
         self.assertEqual(self.case_study.project_name, "gzip")
 
-    def test_num_revisions(self):
+    def test_num_revisions(self) -> None:
         """Check if all revisions were loaded correctly."""
         self.assertEqual(len(self.case_study.revisions), 10)
 
-    def test_stage_name(self):
+    def test_stage_name(self) -> None:
         """Check if the name of the stage is loaded correctly."""
         self.assertEqual(self.case_study.stages[0].name, "stage_0")
         self.assertEqual(self.case_study.stages[1].name, None)
 
-    def test_version(self):
+    def test_version(self) -> None:
         """Check if all revisions were loaded correctly."""
         self.assertEqual(self.case_study.version, 1)
 
-    def test_has_revisions(self):
+    def test_has_revisions(self) -> None:
         """Check if certain revisions were loaded correctly."""
         self.assertTrue(
-            self.case_study.
-            has_revision("b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+            self.case_study.has_revision(
+                FullCommitHash("b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+            )
         )
-        self.assertTrue(self.case_study.has_revision("b8b25e7f15"))
-        self.assertTrue(self.case_study.has_revision("a3db5806d01"))
-        self.assertTrue(self.case_study.has_revision("a3"))
+        self.assertTrue(
+            self.case_study.has_revision(ShortCommitHash("b8b25e7f15"))
+        )
+        self.assertTrue(
+            self.case_study.has_revision(ShortCommitHash("a3db5806d01"))
+        )
 
         self.assertFalse(
-            self.case_study.
-            has_revision("42b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+            self.case_study.has_revision(
+                FullCommitHash("42b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+            )
         )
-        self.assertFalse(self.case_study.has_revision("42"))
 
-    def test_gen_filter(self):
+    def test_gen_filter(self) -> None:
         """Check if the project generates a revision filter."""
         revision_filter = self.case_study.get_revision_filter()
         self.assertTrue(
-            revision_filter("b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+            revision_filter(
+                FullCommitHash("b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+            )
         )
-        self.assertTrue(revision_filter("b8b25e7f15"))
+        self.assertTrue(revision_filter(ShortCommitHash("b8b25e7f15")))
 
         self.assertFalse(
-            revision_filter("42b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+            revision_filter(
+                FullCommitHash("42b25e7f1593f6dcc20660ff9fb1ed59ede15b7a")
+            )
         )
-        self.assertFalse(revision_filter("42"))
 
-    def test_get_config_ids_for_rev(self):
+    def test_get_config_ids_for_rev(self) -> None:
         """Checks if the correct config IDs are fetched for the different
         revisions."""
         self.assertEqual(
             self.case_study.get_config_ids_for_revision(
-                'b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a'
+                FullCommitHash('b8b25e7f1593f6dcc20660ff9fb1ed59ede15b7a')
             ), [0, 1]
         )
         self.assertEqual(
             self.case_study.get_config_ids_for_revision(
-                '8798d5c4fd520dcf91f36ebfa60bc5f3dca550d9'
+                FullCommitHash('8798d5c4fd520dcf91f36ebfa60bc5f3dca550d9')
             ), [-1]
         )
 
-    def test_get_config_ids_for_multiple_revs(self):
+    def test_get_config_ids_for_multiple_revs(self) -> None:
         """Checks if the correct config IDs are fetched for the different
         revisions if a revisions is part of more than one stage."""
         self.assertEqual(
             self.case_study.get_config_ids_for_revision(
-                '7620b817357d6f14356afd004ace2da426cf8c36'
+                FullCommitHash('7620b817357d6f14356afd004ace2da426cf8c36')
             ), [2]
         )
 
-    def test_get_config_ids_for_rev_in_stage(self):
+    def test_get_config_ids_for_rev_in_stage(self) -> None:
         """Checks if the correct config IDs are fetched for the different
         revisions."""
         self.assertEqual(
             self.case_study.get_config_ids_for_revision_in_stage(
-                '7620b817357d6f14356afd004ace2da426cf8c36', 0
+                FullCommitHash('7620b817357d6f14356afd004ace2da426cf8c36'), 0
             ), [2]
         )
         self.assertEqual(
             self.case_study.get_config_ids_for_revision_in_stage(
-                '7620b817357d6f14356afd004ace2da426cf8c36', 1
+                FullCommitHash('7620b817357d6f14356afd004ace2da426cf8c36'), 1
             ), [-1]
         )
 
@@ -202,7 +212,7 @@ class TestCaseStudyConfigurationMap(unittest.TestCase):
         ]
 
         config_map = CS.load_configuration_map_from_case_study_file(
-            Path("fake_file_path"), ConfigurationTestImpl
+            Path("fake_file_path"), ConfigurationImpl
         )
 
         self.assertSetEqual({0, 1, 2}, set(config_map.ids()))
@@ -212,12 +222,14 @@ class TestCaseStudyConfigurationMap(unittest.TestCase):
 class TestSampling(unittest.TestCase):
     """Test basic sampling test."""
 
+    base_list: tp.List[int]
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """Setup case study from yaml doc."""
         cls.base_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
-    def test_sample_amount(self):
+    def test_sample_amount(self) -> None:
         """Check if sampling function produces the correct amount of sample."""
         self.assertEqual(
             len(UniformSamplingMethod().sample_n(self.base_list, 5)), 5
@@ -229,7 +241,7 @@ class TestSampling(unittest.TestCase):
             len(UniformSamplingMethod().sample_n(self.base_list, 7)), 7
         )
 
-    def test_sample_more_than_max_amount(self):
+    def test_sample_more_than_max_amount(self) -> None:
         """Check if sampling function produces the correct amount of sample if
         we sample more than in the initial list."""
         self.assertEqual(
@@ -250,7 +262,7 @@ class TestSampling(unittest.TestCase):
             ), len(self.base_list)
         )
 
-    def test_sample_nothing(self):
+    def test_sample_nothing(self) -> None:
         """Check if sampling function produces the correct amount of sample if
         we want nothing."""
         self.assertEqual(

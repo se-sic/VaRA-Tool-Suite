@@ -1,0 +1,4 @@
+-----
+Traceback:
+plumbum.commands.processes.ProcessExecutionError: Unexpected exit code: 1
+Command line: | /app/results/GenerateBlameReport/brotli-c_projects@ce222e317e/brot/configure-cmake

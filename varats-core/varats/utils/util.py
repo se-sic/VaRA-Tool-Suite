@@ -16,7 +16,7 @@ def static_vars(**kwargs) -> tp.Any:
     """
 
     def add_static_vars(func: FunctionType) -> FunctionType:
-        for key in kwargs:
+        for key in kwargs:  # pylint: disable=consider-using-dict-items
             setattr(func, key, kwargs[key])
 
         return func

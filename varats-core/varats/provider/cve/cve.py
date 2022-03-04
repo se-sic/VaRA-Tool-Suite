@@ -15,12 +15,9 @@ import zipfile
 from datetime import datetime
 
 import requests
-import requests_cache  # type: ignore
 from packaging.version import LegacyVersion, Version
 from packaging.version import parse as version_parse
 from tabulate import tabulate
-
-from varats.utils.settings import vara_cfg
 
 
 class CVE:
@@ -273,20 +270,21 @@ def __find_all_cwe() -> tp.FrozenSet[CWE]:
     # Download each zip file, extract it and parse its entries
     for source_url in source_urls:
         response = __fetch_url(source_url)
-        zip_file = zipfile.ZipFile(io.BytesIO(response.content))
-        with zip_file.open(zip_file.namelist()[0], 'r') as csv_file:
-            reader = csv.DictReader(
-                io.TextIOWrapper(csv_file), delimiter=',', quotechar='"'
-            )
-            for entry in reader:
-                cwe_id = entry.get('CWE-ID')
-                cwe_list.add(
-                    CWE(
-                        cwe_id=f'CWE-{cwe_id}',
-                        name=entry.get('Name', ''),
-                        description=entry.get('Description', '')
-                    )
+
+        with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
+            with zip_file.open(zip_file.namelist()[0], 'r') as csv_file:
+                reader = csv.DictReader(
+                    io.TextIOWrapper(csv_file), delimiter=',', quotechar='"'
                 )
+                for entry in reader:
+                    cwe_id = entry.get('CWE-ID')
+                    cwe_list.add(
+                        CWE(
+                            cwe_id=f'CWE-{cwe_id}',
+                            name=entry.get('Name', ''),
+                            description=entry.get('Description', '')
+                        )
+                    )
 
     return frozenset(cwe_list)
 
@@ -333,9 +331,3 @@ def find_cwe(
     raise ValueError(
         f'Could not find CWE ({cwe_id}, {cwe_name}, {cwe_description})!'
     )
-
-
-# Cache all requests to limit external requests for a week
-requests_cache.install_cache(
-    f"{str(vara_cfg()['data_cache'])}/requests_cache", expire_after=604800
-)

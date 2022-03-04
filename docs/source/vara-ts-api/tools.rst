@@ -1,5 +1,5 @@
-Tools
-=====
+Tools Overview
+==============
 
 The **VaRA Tool-Suite** comes with a variety of tools for managing experiments,
 creating plots, configuring the tool-suite itself and more.
@@ -20,6 +20,7 @@ creating plots, configuring the tool-suite itself and more.
 
     tools/vara-pc
     tools/vara-cs
+    tools/vara-run
     tools/vara-plot
     tools/vara-table
     tools/vara-art

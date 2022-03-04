@@ -19,16 +19,16 @@ class TestDriverContainer(unittest.TestCase):
         vara_cfg()["container"]["research_tool"] = None
         result = runner.invoke(driver_container.main, ["select", "-t", "vara"])
         self.assertEqual(0, result.exit_code, result.exception)
-        self.assertEqual("vara", vara_cfg()["container"]["research_tool"].value)
+        self.assertEqual("vara", str(vara_cfg()["container"]["research_tool"]))
 
     @run_in_test_environment()
     @mock.patch("varats.tools.driver_container.export_base_images")
     @mock.patch("varats.tools.driver_container.create_base_images")
     def test_prepare_slurm(self, mock_create, mock_export) -> None:
         runner = CliRunner()
-        bb_root = vara_cfg()["benchbuild_root"].value
+        bb_root = str(vara_cfg()["benchbuild_root"])
         node_dir = "/tmp/foo"
-        export_dir = "export"
+        export_dir = "/tmp/containers/export"
         vara_cfg()["container"]["research_tool"] = None
         result = runner.invoke(
             driver_container.main, [
@@ -39,24 +39,22 @@ class TestDriverContainer(unittest.TestCase):
         self.assertEqual(0, result.exit_code, result.exception)
 
         # check vara config
-        self.assertEqual("vara", vara_cfg()["container"]["research_tool"].value)
+        self.assertEqual("vara", str(vara_cfg()["container"]["research_tool"]))
 
         # check slurm config
         self.assertEqual(
             f"{bb_root}/slurm_container.sh.inc",
-            bb_cfg()["slurm"]["template"].value
+            str(bb_cfg()["slurm"]["template"])
         )
         self.assertTrue(Path(f"{bb_root}/slurm_container.sh.inc").is_file())
 
         # check bb container config
         self.assertEqual(
-            f"{node_dir}/containers/lib",
-            bb_cfg()["container"]["root"].value
+            f"{node_dir}/containers/lib", str(bb_cfg()["container"]["root"])
         )
         self.assertEqual(
-            f"{node_dir}/containers/run",
-            bb_cfg()["container"]["runroot"].value
+            f"{node_dir}/containers/run", str(bb_cfg()["container"]["runroot"])
         )
-        self.assertEqual(export_dir, bb_cfg()["container"]["export"].value)
-        self.assertEqual(export_dir, bb_cfg()["container"]["import"].value)
+        self.assertEqual(export_dir, str(bb_cfg()["container"]["export"]))
+        self.assertEqual(export_dir, str(bb_cfg()["container"]["import"]))
         self.assertTrue(Path(export_dir).is_dir())
