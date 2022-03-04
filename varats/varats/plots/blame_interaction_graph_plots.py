@@ -114,7 +114,7 @@ def _prepare_cig_plotly(
         commit = commit_lookup(node)
         if not commit:
             return False
-        # TODO: make filter configurable
+        # make filter configurable
         return datetime.utcfromtimestamp(commit.commit_time
                                         ) >= datetime(2015, 1, 1)
 
