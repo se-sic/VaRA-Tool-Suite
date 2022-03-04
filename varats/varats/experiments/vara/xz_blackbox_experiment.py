@@ -56,7 +56,7 @@ class xzBlackboxAnalysis(actions.Step):  # type: ignore
                 extension_type=FSE.SUCCESS,
             )
 
-            file_path = "~/varaEnv/experimentFiles/countries-land-1m.geo.json"
+            file_path = "/scratch/messerig/varaEnv/experimentFiles/countries-land-1m.geo.json"
             xz_params = [
                 "-{compression}".format(compression=self.compressionLevel),
                 "-k", file_path
@@ -107,7 +107,7 @@ class xzBlackboxAnalysisReport(VersionExperiment, shorthand="xzB"):
 
         analysis_actions = []
 
-        for x in range(1, 2):
+        for x in range(2, 3):
             analysis_actions.append(actions.Compile(project))
             analysis_actions.append(
                 xzBlackboxAnalysis(project, self.get_handle(), x)
