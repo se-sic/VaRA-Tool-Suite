@@ -30,22 +30,25 @@ class TestCSMetricsTable(unittest.TestCase):
         ).tabulate()
 
         self.assertEqual(
-            r"""\begin{tabular}{lr}
+            r"""\begin{table}
+\centering
+\caption{Top 10 Central Code Commits}
+\begin{tabular}{lr}
 \toprule
-             Top 10 Central Code Commits \\
-                                  commit & centrality \\
+                                  commit &  centrality \\
 \midrule
-ef68dd4a92976276304de2aedfbe34ae91a86abb &         28 \\
-57597d42ca1740ad506437be168d800a50f1a0ad &         16 \\
-ea00545beace5b950f709ec21e46878e0f448678 &         16 \\
-7f0a4c50f4a374c40acf4b86848f301ad1e82d34 &         15 \\
-c15c42abb3c8c6e77c778ef06c97a4a10b8b5d00 &         15 \\
-fa3ab0df8ae7a8a1ad55b52266dc0fd387458671 &         10 \\
-1d924e584b146136989f48c13fff2632896efb3d &          9 \\
-d8b41eedce486d400f701b757b7b5e4e32276618 &          8 \\
-1b0ac0c53c761263e91e34195cb21dfdcfeac0bd &          6 \\
-e0ea6737b03e83ccaff4514d00e31bb926f8f0f3 &          6 \\
+ef68dd4a92976276304de2aedfbe34ae91a86abb &          28 \\
+57597d42ca1740ad506437be168d800a50f1a0ad &          16 \\
+ea00545beace5b950f709ec21e46878e0f448678 &          16 \\
+7f0a4c50f4a374c40acf4b86848f301ad1e82d34 &          15 \\
+c15c42abb3c8c6e77c778ef06c97a4a10b8b5d00 &          15 \\
+fa3ab0df8ae7a8a1ad55b52266dc0fd387458671 &          10 \\
+1d924e584b146136989f48c13fff2632896efb3d &           9 \\
+d8b41eedce486d400f701b757b7b5e4e32276618 &           8 \\
+1b0ac0c53c761263e91e34195cb21dfdcfeac0bd &           6 \\
+e0ea6737b03e83ccaff4514d00e31bb926f8f0f3 &           6 \\
 \bottomrule
 \end{tabular}
+\end{table}
 """, table_str
         )

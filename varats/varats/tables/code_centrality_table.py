@@ -83,13 +83,10 @@ class TopCentralCodeCommitsTable(Table):
         data.set_index("commit_hash", inplace=True)
         top_degree = data["code_centrality"].nlargest(num_commits)
         degree_data = pd.DataFrame.from_dict({
-            (f"Top {num_commits} Central Code Commits", "commit"):
-                top_degree.index.values,
-            (f"Top {num_commits} Central Code Commits", "centrality"):
-                top_degree.values,
+            "commit": top_degree.index.values,
+            "centrality": top_degree.values,
         })
-        degree_data.sort_values([("Top 10 Central Code Commits", "centrality"),
-                                 ("Top 10 Central Code Commits", "commit")],
+        degree_data.sort_values(["centrality", "commit"],
                                 ascending=[False, True],
                                 inplace=True)
 
@@ -97,7 +94,10 @@ class TopCentralCodeCommitsTable(Table):
             TableFormat.LATEX, TableFormat.LATEX_BOOKTABS, TableFormat.LATEX_RAW
         ]:
             table = degree_data.to_latex(
-                index=False, multicolumn_format="c", multirow=True
+                index=False,
+                multicolumn_format="c",
+                multirow=True,
+                caption=f"Top {num_commits} Central Code Commits"
             )
             return str(table) if table else ""
         return tabulate(degree_data, degree_data.columns, self.format.value)
