@@ -28,6 +28,7 @@ from varats.utils.git_util import (
     RevisionBinaryMap,
     get_submodule_head,
     get_head_commit,
+    calc_code_churn_range,
 )
 
 
@@ -408,6 +409,10 @@ class TestCommitRepoPair(unittest.TestCase):
 class TestCodeChurnCalculation(unittest.TestCase):
     """Test if we correctly compute code churn."""
 
+    @classmethod
+    def setUpClass(cls):
+        initialize_projects()
+
     def test_one_commit_diff(self):
         """Check if we get the correct code churn for a single commit."""
 
@@ -426,10 +431,11 @@ class TestCodeChurnCalculation(unittest.TestCase):
     def test_one_commit_diff_2(self):
         """Check if we get the correct code churn for a single commit."""
 
-        repo = get_local_project_git_path("brotli")
+        repo_path = get_local_project_git_path("brotli")
 
         files_changed, insertions, deletions = calc_commit_code_churn(
-            repo, FullCommitHash("fc823290a76a260b7ba6f47ab5f52064a0ce19ff"),
+            repo_path,
+            FullCommitHash("fc823290a76a260b7ba6f47ab5f52064a0ce19ff"),
             ChurnConfig.create_c_style_languages_config()
         )
 
@@ -440,10 +446,11 @@ class TestCodeChurnCalculation(unittest.TestCase):
     def test_one_commit_diff_3(self):
         """Check if we get the correct code churn for a single commit."""
 
-        repo = get_local_project_git_path("brotli")
+        repo_path = get_local_project_git_path("brotli")
 
         files_changed, insertions, deletions = calc_commit_code_churn(
-            repo, FullCommitHash("924b2b2b9dc54005edbcd85a1b872330948cdd9e"),
+            repo_path,
+            FullCommitHash("924b2b2b9dc54005edbcd85a1b872330948cdd9e"),
             ChurnConfig.create_c_style_languages_config()
         )
 
@@ -455,10 +462,11 @@ class TestCodeChurnCalculation(unittest.TestCase):
         """Check if we get the correct code churn for a single commit but only
         consider code changes."""
 
-        repo = get_local_project_git_path("brotli")
+        repo_path = get_local_project_git_path("brotli")
 
         files_changed, insertions, deletions = calc_commit_code_churn(
-            repo, FullCommitHash("f503cb709ca181dbf5c73986ebac1b18ac5c9f63"),
+            repo_path,
+            FullCommitHash("f503cb709ca181dbf5c73986ebac1b18ac5c9f63"),
             ChurnConfig.create_c_style_languages_config()
         )
 
@@ -466,14 +474,55 @@ class TestCodeChurnCalculation(unittest.TestCase):
         self.assertEqual(insertions, 11)
         self.assertEqual(deletions, 4)
 
+    def test_start_with_initial_commit(self):
+        """Check if the initial commit is handled correctly."""
+
+        repo_path = get_local_project_git_path("brotli")
+
+        churn = calc_code_churn_range(
+            repo_path, ChurnConfig.create_c_style_languages_config(),
+            FullCommitHash("8f30907d0f2ef354c2b31bdee340c2b11dda0fb0"),
+            FullCommitHash("8f30907d0f2ef354c2b31bdee340c2b11dda0fb0")
+        )
+
+        files_changed, insertions, deletions = churn[
+            FullCommitHash("8f30907d0f2ef354c2b31bdee340c2b11dda0fb0")]
+        self.assertEqual(files_changed, 11)
+        self.assertEqual(insertions, 1730)
+        self.assertEqual(deletions, 0)
+
+    def test_end_only(self):
+        """Check if churn is correct if only end range is set."""
+
+        repo_path = get_local_project_git_path("brotli")
+
+        churn = calc_code_churn_range(
+            repo_path, ChurnConfig.create_c_style_languages_config(), None,
+            FullCommitHash("645552217219c2877780ba4d7030044ec62d8255")
+        )
+
+        self.assertEqual(
+            churn[FullCommitHash("645552217219c2877780ba4d7030044ec62d8255")],
+            (2, 173, 145)
+        )
+        self.assertEqual(
+            churn[FullCommitHash("e0346c826249368f0f4a68a2b95f4ab5cf1e235b")],
+            (3, 51, 51)
+        )
+        self.assertEqual(
+            churn[FullCommitHash("8f30907d0f2ef354c2b31bdee340c2b11dda0fb0")],
+            (11, 1730, 0)
+        )
+
     def test_commit_range(self):
         """Check if we get the correct code churn for commit range."""
 
-        repo = get_local_project_git("brotli")
+        repo_path = get_local_project_git_path("brotli")
 
         files_changed, insertions, deletions = calc_code_churn(
-            repo, repo.get("36ac0feaf9654855ee090b1f042363ecfb256f31"),
-            repo.get("924b2b2b9dc54005edbcd85a1b872330948cdd9e"),
+            repo_path,
+            FullCommitHash("36ac0feaf9654855ee090b1f042363ecfb256f31"),
+            FullCommitHash("924b2b2b9dc54005edbcd85a1b872330948cdd9e"),
             ChurnConfig.create_c_style_languages_config()
         )
 

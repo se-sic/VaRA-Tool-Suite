@@ -574,10 +574,10 @@ GIT_DIFF_MATCHER = re.compile(
 
 
 def __calc_code_churn_range_impl(
-    repo_path: str,
+    repo_path: Path,
     churn_config: ChurnConfig,
-    start_range: tp.Optional[str] = None,
-    end_range: tp.Optional[str] = None
+    start_range: tp.Optional[FullCommitHash] = None,
+    end_range: tp.Optional[FullCommitHash] = None
 ) -> tp.Dict[FullCommitHash, tp.Tuple[int, int, int]]:
     """
     Calculates all churn values for the commits in the specified range.
@@ -595,20 +595,22 @@ def __calc_code_churn_range_impl(
     """
 
     churn_values: tp.Dict[FullCommitHash, tp.Tuple[int, int, int]] = {}
+    if start_range and start_range == get_initial_commit(repo_path):
+        start_range = None
 
     if start_range is None and end_range is None:
         revision_range = None
     elif start_range is None:
-        revision_range = f"..{end_range}"
+        revision_range = f"{end_range.hash}"  # type: ignore
     elif end_range is None:
-        revision_range = f"{start_range}~.."
+        revision_range = f"{start_range.hash}~.."
     else:
-        revision_range = f"{start_range}~..{end_range}"
+        revision_range = f"{start_range.hash}~..{end_range.hash}"
 
-    repo_git = git[__get_git_path_arg(Path(repo_path))]
+    repo_git = git[__get_git_path_arg(repo_path)]
     log_base_params = ["log", "--pretty=%H"]
     diff_base_params = [
-        "log", "--pretty=format:'%H'", "--date=short", "--shortstat", "-l0"
+        "log", "--pretty=format:'%H'", "--shortstat", "-l0", "--first-parent"
     ]
     if revision_range:
         log_base_params.append(revision_range)
@@ -644,10 +646,10 @@ def __calc_code_churn_range_impl(
 
 
 def calc_code_churn_range(
-    repo: tp.Union[pygit2.Repository, str],
+    repo_path: Path,
     churn_config: tp.Optional[ChurnConfig] = None,
-    start_range: tp.Optional[tp.Union[pygit2.Commit, str]] = None,
-    end_range: tp.Optional[tp.Union[pygit2.Commit, str]] = None
+    start_range: tp.Optional[FullCommitHash] = None,
+    end_range: tp.Optional[FullCommitHash] = None
 ) -> tp.Dict[FullCommitHash, tp.Tuple[int, int, int]]:
     """
     Calculates all churn values for the commits in the specified range.
@@ -656,7 +658,7 @@ def calc_code_churn_range(
     calculated.
 
     Args:
-        repo: git repository
+        repo_path: path to git repository
         churn_config: churn config to customize churn generation
 
     Returns:
@@ -665,16 +667,13 @@ def calc_code_churn_range(
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
     return __calc_code_churn_range_impl(
-        repo.path if isinstance(repo, pygit2.Repository) else repo,
-        churn_config, start_range.id
-        if isinstance(start_range, pygit2.Commit) else start_range,
-        end_range.id if isinstance(end_range, pygit2.Commit) else end_range
+        repo_path, churn_config, start_range, end_range
     )
 
 
 def calc_commit_code_churn(
     repo_path: Path,
-    commit_hash: CommitHash,
+    commit_hash: FullCommitHash,
     churn_config: tp.Optional[ChurnConfig] = None
 ) -> tp.Tuple[int, int, int]:
     """
@@ -690,30 +689,15 @@ def calc_commit_code_churn(
         (files changed, insertions, deletions)
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
-    repo_git = git[__get_git_path_arg(repo_path)]
-    show_base_params = [
-        "show", "--pretty=format:'%H'", "--shortstat", commit_hash.hash
-    ]
-
-    if not churn_config.include_everything:
-        show_base_params.append("--")
-        # builds a regex to select files that git includes into churn calc
-        show_base_params = show_base_params + \
-                           churn_config.get_extensions_repr('*.')
-
-    match = GIT_LOG_MATCHER.match(repo_git(show_base_params))
-    if match:
-        files_changed = int(match.group('files') or 0)
-        insertions = int(match.group('insertions') or 0)
-        deletions = int(match.group('deletions') or 0)
-        return files_changed, insertions, deletions
-    return 0, 0, 0
+    return calc_code_churn_range(
+        repo_path, churn_config, commit_hash, commit_hash
+    )[commit_hash]
 
 
 def calc_code_churn(
-    repo: pygit2.Repository,
-    commit_a: pygit2.Commit,
-    commit_b: pygit2.Commit,
+    repo_path: Path,
+    commit_a: FullCommitHash,
+    commit_b: FullCommitHash,
     churn_config: tp.Optional[ChurnConfig] = None
 ) -> tp.Tuple[int, int, int]:
     """
@@ -731,9 +715,7 @@ def calc_code_churn(
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
     diff_base_params = [
-        "diff", "--shortstat", "-l0",
-        str(commit_a.id),
-        str(commit_b.id)
+        "diff", "--shortstat", "-l0", commit_a.hash, commit_b.hash
     ]
 
     if not churn_config.include_everything:
@@ -742,7 +724,7 @@ def calc_code_churn(
         diff_base_params = diff_base_params + \
                            churn_config.get_extensions_repr('*.')
 
-    stdout = git(__get_git_path_arg(repo.path), diff_base_params)
+    stdout = git(__get_git_path_arg(repo_path), diff_base_params)
     # initialize with 0 as otherwise commits without changes would be
     # missing from the churn data
     match = GIT_DIFF_MATCHER.match(stdout)
@@ -762,14 +744,14 @@ def calc_code_churn(
 
 
 def calc_repo_code_churn(
-    repo: pygit2.Repository,
+    repo_path: Path,
     churn_config: tp.Optional[ChurnConfig] = None
 ) -> tp.Dict[FullCommitHash, tp.Tuple[int, int, int]]:
     """
     Calculates code churn for a repository.
 
     Args:
-        repo: git repository
+        repo: path to git repository
         churn_config: churn config to customize churn generation
 
     Returns:
@@ -777,7 +759,7 @@ def calc_repo_code_churn(
         (files changed, insertions, deletions)
     """
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
-    return calc_code_churn_range(repo, churn_config)
+    return calc_code_churn_range(repo_path, churn_config)
 
 
 def __print_calc_repo_code_churn(
@@ -786,7 +768,7 @@ def __print_calc_repo_code_churn(
 ) -> None:
     """Prints calc repo code churn data like git log would do."""
     churn_config = ChurnConfig.init_as_default_if_none(churn_config)
-    churn_map = calc_repo_code_churn(repo, churn_config)
+    churn_map = calc_repo_code_churn(Path(repo.path), churn_config)
 
     for commit in repo.walk(repo.head.target, pygit2.GIT_SORT_TIME):
         commit_hash = FullCommitHash.from_pygit_commit(commit)
